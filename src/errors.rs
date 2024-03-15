@@ -14,13 +14,21 @@ impl From<io::Error> for BuildRunError {
 }
 
 impl From<String> for BuildRunError {
-    fn from(err: String) -> Self {
-        BuildRunError::Command(err)
+    fn from(err_msg: String) -> Self {
+        BuildRunError::Command(err_msg)
     }
 }
 
 impl std::fmt::Display for BuildRunError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self:?}")
+        match self {
+            BuildRunError::Io(e) => write!(f, "{e:?}"),
+            BuildRunError::Command(string) => {
+                for line in string.lines() {
+                    writeln!(f, "{line}")?;
+                }
+                Ok(())
+            }
+        }
     }
 }

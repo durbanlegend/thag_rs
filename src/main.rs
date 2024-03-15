@@ -23,18 +23,17 @@ fn build_and_run_rust(
     let mut source_file = fs::File::create(&source_path)?;
     source_file.write_all(source.as_bytes())?;
     eprintln!("Source path: {source_path:?}");
-    eprintln!(
-        "{:?}",
-        fs::read_to_string(PathBuf::from(
-            // "/Users/donf/projects/build_run/.cargo/build_run/cargo_source.rs"
-            "/Users/donf/projects/build_run/.cargo/build_run/cargo_source.rs"
-        ))
-    );
+
+    let cargo_source = fs::read_to_string(PathBuf::from(
+        "/Users/donf/projects/build_run/.cargo/build_run/cargo_source.rs",
+    ))?;
+    cargo_source.lines().for_each(|line| eprintln!("{line}"));
 
     let relative_path = source_path;
+
     let mut absolute_path = std::env::current_dir()?;
     absolute_path.push(relative_path);
-    eprintln!("Absolute path: {absolute_path:?}");
+    eprintln!("Absolute path of generated Cargo.toml: {absolute_path:?}");
 
     // Write Cargo.toml content to a file within the directory
     let cargo_toml_path = build_dir.join("Cargo.toml");
@@ -59,7 +58,7 @@ fn build_and_run_rust(
         )));
     }
 
-    // Run the built program (no changes here)
+    // Run the built program
     let mut run_command = Command::new(format!("./target/debug/{source_stem}")); // Replace with actual program name
     run_command.current_dir(build_dir);
     let run_output = run_command.output()?;
@@ -67,7 +66,7 @@ fn build_and_run_rust(
     if !run_output.status.success() {
         let error_msg = String::from_utf8_lossy(&run_output.stderr);
         return Err(errors::BuildRunError::Command(format!(
-            "Program execution failed: {error_msg}"
+            "Program execution failed: {error_msg:?}"
         )));
     }
 
@@ -87,6 +86,7 @@ fn main() {
   }}
   "##
     );
+
     let cargo_manifest = format!(
         r##"
   [package]
@@ -105,8 +105,13 @@ fn main() {
     let result = build_and_run_rust(source_stem, &source, &cargo_manifest);
 
     match result {
-        Ok(output) => println!("Program output: {output}"),
-        Err(error) => println!("Error: {error}"),
+        Ok(output) => {
+            println!("Build output:");
+            output.lines().for_each(|line| eprintln!("{line}"));
+        }
+        Err(error) => {
+            println!("Error: {error}");
+        }
     }
     let dur = start.elapsed();
     eprintln!("Completed in {}.{}s", dur.as_secs(), dur.subsec_millis());

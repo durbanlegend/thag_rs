@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "my_generated_program"
+name = "build_run_demo"
 version = "0.0.1"

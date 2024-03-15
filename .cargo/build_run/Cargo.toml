@@ -1,12 +1,12 @@
 
   [package]
-  name = "my_generated_program"
+  name = "build_run_demo"
   version = "0.0.1"
 
   [dependencies]
   # Add any dependencies here
 
   [[bin]]
-  name = "my_generated_program"
-  path = "/Users/donf/projects/build_run/.cargo/build_run/source.rs"
+  name = "build_run_demo"
+  path = "/Users/donf/projects/build_run/.cargo/build_run/cargo_source.rs"
   

@@ -1,7 +1,7 @@
 use std::process::Command;
 use std::{fs, io::Write};
 
-use std::io;
+use std::io::{self, BufRead, BufReader};
 use std::path::PathBuf; // Use PathBuf for paths
 
 #[derive(Debug)]
@@ -59,10 +59,24 @@ fn build_and_run_rust(source: &str, cargo_manifest: &str) -> Result<String, Buil
     let cargo_toml_path = build_dir.join("Cargo.toml");
     let mut cargo_toml = fs::File::create(&cargo_toml_path)?;
     cargo_toml.write_all(cargo_manifest.as_bytes())?;
-    eprintln!(
-        "Cargo.toml contents: {:?}",
-        fs::read_to_string(cargo_toml_path)
-    );
+    let mut reader = BufReader::new(cargo_toml);
+
+    let cargo_toml_contents = fs::read_to_string(&cargo_toml_path)?;
+    eprintln!("Cargo.toml contents:");
+    cargo_toml_contents
+        .lines()
+        .for_each(|line| eprintln!("{line}"));
+
+    let mut line = String::new();
+    loop {
+        let result = reader.read_line(&mut line);
+        std::io::stdout()
+            .write_all(line.as_bytes())
+            .expect("Error writing line of Cargo.toml");
+        if result.is_err() {
+            break;
+        }
+    }
 
     // Build the Rust program using Cargo (with manifest path)
     let mut build_command = Command::new("cargo");
@@ -93,6 +107,7 @@ fn build_and_run_rust(source: &str, cargo_manifest: &str) -> Result<String, Buil
 }
 
 fn main() {
+    let start = std::time::Instant::now();
     // Example source code and Cargo.toml content
     let source = r#"
   fn main() {
@@ -118,4 +133,6 @@ fn main() {
         Ok(output) => println!("Program output: {output}"),
         Err(error) => println!("Error: {error}"),
     }
+    let dur = start.elapsed();
+    eprintln!("Completed in {}.{}s", dur.as_secs(), dur.subsec_millis());
 }

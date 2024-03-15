@@ -8,5 +8,5 @@
 
   [[bin]]
   name = "build_run_demo"
-  path = "/Users/donf/projects/build_run/.cargo/build_run/cargo_source.rs"
+  path = "/Users/donf/projects/build_run/.cargo/build_run/tmp_source.rs"
   

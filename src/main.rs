@@ -1,34 +1,11 @@
 use std::process::Command;
 use std::{fs, io::Write};
 
-use std::io::{self, BufRead, BufReader};
 use std::path::PathBuf; // Use PathBuf for paths
 
-#[derive(Debug)]
-enum BuildRunError {
-    Io(io::Error),   // For I/O errors
-    Command(String), // For errors during Cargo build or program execution
-}
+mod errors;
 
-impl From<io::Error> for BuildRunError {
-    fn from(err: io::Error) -> Self {
-        BuildRunError::Io(err)
-    }
-}
-
-impl From<String> for BuildRunError {
-    fn from(err: String) -> Self {
-        BuildRunError::Command(err)
-    }
-}
-
-impl std::fmt::Display for BuildRunError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
-fn build_and_run_rust(source: &str, cargo_manifest: &str) -> Result<String, BuildRunError> {
+fn build_and_run_rust(source: &str, cargo_manifest: &str) -> Result<String, errors::BuildRunError> {
     // Define the dedicated directory for the manifest
     let build_dir = PathBuf::from(".cargo/build_run");
 
@@ -59,24 +36,12 @@ fn build_and_run_rust(source: &str, cargo_manifest: &str) -> Result<String, Buil
     let cargo_toml_path = build_dir.join("Cargo.toml");
     let mut cargo_toml = fs::File::create(&cargo_toml_path)?;
     cargo_toml.write_all(cargo_manifest.as_bytes())?;
-    let mut reader = BufReader::new(cargo_toml);
 
     let cargo_toml_contents = fs::read_to_string(&cargo_toml_path)?;
     eprintln!("Cargo.toml contents:");
     cargo_toml_contents
         .lines()
         .for_each(|line| eprintln!("{line}"));
-
-    let mut line = String::new();
-    loop {
-        let result = reader.read_line(&mut line);
-        std::io::stdout()
-            .write_all(line.as_bytes())
-            .expect("Error writing line of Cargo.toml");
-        if result.is_err() {
-            break;
-        }
-    }
 
     // Build the Rust program using Cargo (with manifest path)
     let mut build_command = Command::new("cargo");
@@ -85,7 +50,7 @@ fn build_and_run_rust(source: &str, cargo_manifest: &str) -> Result<String, Buil
 
     if !build_output.status.success() {
         let error_msg = String::from_utf8_lossy(&build_output.stderr);
-        return Err(BuildRunError::Command(format!(
+        return Err(errors::BuildRunError::Command(format!(
             "Cargo build failed: {error_msg}"
         )));
     }
@@ -97,7 +62,7 @@ fn build_and_run_rust(source: &str, cargo_manifest: &str) -> Result<String, Buil
 
     if !run_output.status.success() {
         let error_msg = String::from_utf8_lossy(&run_output.stderr);
-        return Err(BuildRunError::Command(format!(
+        return Err(errors::BuildRunError::Command(format!(
             "Program execution failed: {error_msg}"
         )));
     }

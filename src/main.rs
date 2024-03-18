@@ -151,9 +151,12 @@ fn build(build_dir: &Path) -> Result<(), errors::BuildRunError> {
         });
     } else {
         let error_msg = String::from_utf8_lossy(&build_output.stderr);
-        return Err(errors::BuildRunError::Command(format!(
-            "Cargo build failed: {error_msg}"
-        )));
+        error_msg.lines().for_each(|line| {
+            debug!("{line}");
+        });
+        return Err(errors::BuildRunError::Command(
+            "Cargo build failed".to_string(),
+        ));
     }
     Ok(())
 }
@@ -164,11 +167,20 @@ fn run(source_stem: &str, build_dir: PathBuf) -> Result<String, errors::BuildRun
     run_command.current_dir(build_dir);
     let run_output = run_command.output()?;
 
-    if !run_output.status.success() {
+    if run_output.status.success() {
+        let success_msg = String::from_utf8_lossy(&run_output.stdout);
+        info!("##### Build succeeded!");
+        success_msg.lines().for_each(|line| {
+            debug!("{line}");
+        });
+    } else {
         let error_msg = String::from_utf8_lossy(&run_output.stderr);
-        return Err(errors::BuildRunError::Command(format!(
-            "Program execution failed: {error_msg:?}"
-        )));
+        error_msg.lines().for_each(|line| {
+            debug!("{line}");
+        });
+        return Err(errors::BuildRunError::Command(
+            "Cargo run failed".to_string(),
+        ));
     }
 
     let output = String::from_utf8_lossy(&run_output.stdout);

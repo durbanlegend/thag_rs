@@ -1,7 +1,7 @@
 use rug::Integer;
 use std::error::Error;
-// use std::io;
-// use std::io::Read;
+use std::io;
+use std::io::Read;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let fac = |n: usize| -> Integer {
@@ -12,16 +12,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    // println!("Type lines of text at the prompt and hit Ctrl-D when done");
+    println!("Type lines of text at the prompt and hit Ctrl-D when done");
 
-    // let mut buffer = String::new();
-    // io::stdin().lock().read_to_string(&mut buffer)?;
+    let mut buffer = String::new();
+    io::stdin().lock().read_to_string(&mut buffer)?;
 
-    // let n: usize = buffer
-    //     .trim_end()
-    //     .parse()
-    //     .expect("Can't parse input into a positive integer");
+    let n: usize = buffer
+        .trim_end()
+        .parse()
+        .expect("Can't parse input into a positive integer");
 
-    println!("{}", fac(100));
+    println!("fac({n} = {}", fac(n));
     Ok(())
 }

@@ -1,4 +1,4 @@
-use std::io;
+use std::{error::Error, io};
 // use std::path::PathBuf::std;
 
 #[derive(Debug)]
@@ -29,6 +29,18 @@ impl std::fmt::Display for BuildRunError {
                 }
                 Ok(())
             }
+        }
+    }
+}
+
+impl Error for BuildRunError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            // The cause is the underlying implementation error type. Is implicitly
+            // cast to the trait object `&error::Error`. This works because the
+            // underlying type already implements the `Error` trait.
+            BuildRunError::Io(ref e) => Some(e),
+            BuildRunError::Command(ref _e) => Some(self),
         }
     }
 }

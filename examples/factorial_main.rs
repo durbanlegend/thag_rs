@@ -22,6 +22,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         .parse()
         .expect("Can't parse input into a positive integer");
 
-    println!("fac({n} = {}", fac(n));
+    println!("fac({n}) = {}", fac(n));
     Ok(())
 }

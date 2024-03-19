@@ -1,6 +1,5 @@
 use std::env;
 use std::error::Error;
-// use std::fs::File;
 use std::process::Command;
 use std::{fs, io::Write};
 
@@ -161,11 +160,17 @@ fn build(build_dir: &Path) -> Result<(), errors::BuildRunError> {
     Ok(())
 }
 
+// Run the built program
 fn run(source_stem: &str, build_dir: PathBuf) -> Result<String, errors::BuildRunError> {
-    // Run the built program
-    let mut run_command = Command::new(format!("./target/debug/{source_stem}"));
-    run_command.current_dir(build_dir);
-    let run_output = run_command.output()?;
+    let relative_path = format!("./target/debug/{source_stem}");
+    let mut absolute_path = build_dir;
+    absolute_path.push(relative_path);
+    debug!("Absolute path of generated program: {absolute_path:?}");
+
+    let mut run_command = Command::new(format!("{}", absolute_path.display()));
+    debug!("Run command is {run_command:?}");
+
+    let run_output = run_command.spawn()?.wait_with_output()?;
 
     if run_output.status.success() {
         let success_msg = String::from_utf8_lossy(&run_output.stdout);

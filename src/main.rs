@@ -102,13 +102,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 cargo_manifest,
                 &build_dir,
             )?;
-            build(&build_dir)?;
-            run(source_stem, build_dir)
+            build(&flags, &build_dir)?;
+            run(&flags, source_stem, build_dir)
         } /* Generate code and Cargo.toml, then build */
         cmd_args::Action::Generate(gen_qualifier) => {
             generate(&flags, &gen_qualifier, source, cargo_manifest, &build_dir)
         }
-        cmd_args::Action::Build => build(&build_dir),
+        cmd_args::Action::Build => build(&flags, &build_dir),
         cmd_args::Action::GenAndBuild => {
             generate(
                 &flags,
@@ -117,12 +117,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                 cargo_manifest,
                 &build_dir,
             )?;
-            build(&build_dir)
+            build(&flags, &build_dir)
         } /* Generate code and Cargo.toml, then build */
-        cmd_args::Action::Run => run(source_stem, build_dir),
+        cmd_args::Action::Run => run(&flags, source_stem, build_dir),
         cmd_args::Action::BuildAndRun => {
-            build(&build_dir)?;
-            run(source_stem, build_dir)
+            build(&flags, &build_dir)?;
+            run(&flags, source_stem, build_dir)
         }
         cmd_args::Action::CheckCargo => todo!(),
         cmd_args::Action::CheckSource => todo!(), /* Generate, build, and run */
@@ -209,7 +209,7 @@ fn generate(
 }
 
 // Build the Rust program using Cargo (with manifest path)
-fn build(build_dir: &Path) -> Result<(), errors::BuildRunError> {
+fn build(flags: &Flags, build_dir: &Path) -> Result<(), errors::BuildRunError> {
     let start_build = Instant::now();
     let mut build_command = Command::new("cargo");
     build_command
@@ -238,11 +238,20 @@ fn build(build_dir: &Path) -> Result<(), errors::BuildRunError> {
         dur.as_secs(),
         dur.subsec_millis()
     );
+
+    if flags.contains(Flags::TIMINGS) {
+        println!(
+            "Completed build in {}.{}s",
+            dur.as_secs(),
+            dur.subsec_millis()
+        );
+    }
+
     Ok(())
 }
 
 // Run the built program
-fn run(source_stem: &str, build_dir: PathBuf) -> Result<(), errors::BuildRunError> {
+fn run(flags: &Flags, source_stem: &str, build_dir: PathBuf) -> Result<(), errors::BuildRunError> {
     let start_run = Instant::now();
 
     let relative_path = format!("./target/debug/{source_stem}");
@@ -282,6 +291,14 @@ fn run(source_stem: &str, build_dir: PathBuf) -> Result<(), errors::BuildRunErro
         dur.as_secs(),
         dur.subsec_millis()
     );
+
+    if flags.contains(Flags::TIMINGS) {
+        println!(
+            "Completed run in {}.{}s",
+            dur.as_secs(),
+            dur.subsec_millis()
+        );
+    }
 
     Ok(())
 }

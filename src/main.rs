@@ -1,10 +1,10 @@
 use core::str;
 use std::env;
 use std::error::Error;
+use std::fmt::Write;
 use std::process::Command;
 use std::time::Instant;
-use std::{fs, io::Write};
-
+use std::{fs, io::Write as OtherWrite};
 // use env_logger::Builder;
 // use env_logger::{Env, WriteStyle};
 use std::path::{Path, PathBuf}; // Use PathBuf for paths
@@ -18,6 +18,7 @@ mod errors;
 mod toml_utils;
 
 pub(crate) use structopt::StructOpt;
+use toml::Table;
 
 use crate::cmd_args::{Flags, GenQualifier};
 
@@ -48,6 +49,26 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     code_path.push(source_name);
     let source = read_file_contents(&code_path)?;
+    let toml_str = source
+        .lines()
+        .filter(|&line| line.starts_with("//!"))
+        .map(|line| line.trim_start_matches('/').trim_start_matches('!'))
+        .fold(String::new(), |mut output, b| {
+            let _ = writeln!(output, "{b}");
+            output
+        });
+
+    debug!("toml_str={toml_str}");
+
+    // let source_toml: Value = toml::from_str(&toml_str)?;
+    let source_toml = toml_str.parse::<Table>().unwrap();
+    debug!("source_toml={source_toml:?}");
+
+    let toml = toml::to_string(&source_toml).unwrap();
+    debug!("{toml:?}");
+
+    debug!("Reconstituted:");
+    toml.lines().for_each(|l| println!("{l}"));
 
     let cargo_manifest = format!(
         r##"
@@ -79,8 +100,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut flags = Flags::empty();
     flags.set(Flags::VERBOSE, options.verbose);
     flags.set(Flags::TIMINGS, options.timings);
-
-    debug!("@@@@ flags={flags}");
 
     let formatted = flags.to_string();
     let parsed: Flags = formatted.parse().unwrap();
@@ -186,7 +205,7 @@ fn generate(
         if !cargo_manifest.eq(&prev_cargo_toml) {
             let mut cargo_toml = fs::File::create(&cargo_toml_path)?;
 
-            cargo_toml.write_all(cargo_manifest.as_bytes())?;
+            OtherWrite::write_all(&mut cargo_toml, cargo_manifest.as_bytes())?;
             debug!("cargo_toml_path={cargo_toml_path:?}");
         }
     }

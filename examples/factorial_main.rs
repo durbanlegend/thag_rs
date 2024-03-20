@@ -1,3 +1,19 @@
+//!
+//!    [package]
+//!    name = "factorial_main"
+//!    version = "0.0.1"
+//!    edition = "2021"
+//!
+//!    [dependencies]
+//!    rug = { version = "1.24.0", features = ["integer"] }
+//!
+//!    [workspace]
+//!
+//!    [[bin]]
+//!    name = "factorial_main"
+//!    path = "/Users/donf/projects/build_run/.cargo/build_run/tmp_source.rs"
+//!
+
 use rug::Integer;
 use std::error::Error;
 use std::io;

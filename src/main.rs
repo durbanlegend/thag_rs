@@ -35,7 +35,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("PACKAGE_NAME={PACKAGE_NAME}");
     debug!("VERSION={VERSION}");
     debug!("gen_build_dir={gen_build_dir:?}",);
-    // debug!("XYZ={:#?}", *XYZ);
 
     // Next: read manifest from source file?
 
@@ -77,19 +76,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let options = cmd_args::Opt::from_args();
 
-    debug!("########options={options:?}");
-    // println!("########options={options:?}");
-
-    // options=Opt { action: Generate, help: false, check_cargo: false, check_source: false, verbose: false, timings: false }
-
-    // let flags = Flags::VERBOSE & Flags::TIMINGS;
-
-    let verbose = options.verbose;
-    let timings = options.timings;
-
     let mut flags = Flags::empty();
-    flags.set(Flags::VERBOSE, verbose);
-    flags.set(Flags::TIMINGS, timings);
+    flags.set(Flags::VERBOSE, options.verbose);
+    flags.set(Flags::TIMINGS, options.timings);
 
     debug!("@@@@ flags={flags}");
 
@@ -163,6 +152,11 @@ fn configure_log() {
     env_logger::Builder::new()
         .filter_level(LevelFilter::Debug)
         .init();
+}
+
+fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
+    debug!("Reading from {path:?}");
+    Ok(fs::read_to_string(path)?)
 }
 
 fn generate(
@@ -290,9 +284,4 @@ fn run(source_stem: &str, build_dir: PathBuf) -> Result<(), errors::BuildRunErro
     );
 
     Ok(())
-}
-
-fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
-    debug!("Reading from {path:?}");
-    Ok(fs::read_to_string(path)?)
 }

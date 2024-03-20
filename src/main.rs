@@ -1,3 +1,4 @@
+use core::{fmt, str};
 use std::env;
 use std::error::Error;
 use std::process::Command;
@@ -22,29 +23,51 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "build_run",
-    about = "Build and run n given Rust programs, with separate and combined options for stages"
+    about = "Build and run a given Rust programs, with separate and combined options for stages"
 )]
 struct Opt {
     #[structopt(subcommand)]
     action: Action,
-    #[structopt(short, long, help = "Print help message")]
-    help: bool,
-    #[structopt(
-        short = "C",
-        long = "check-cargo",
-        help = "Check for changes in Cargo.toml"
-    )]
-    check_cargo: bool,
     #[structopt(
         short = "S",
         long = "check-source",
         help = "Check for changes in source code"
     )]
-    check_source: bool,
     #[structopt(short = "v", long = "verbose", help = "Enable verbose output")]
     verbose: bool,
     #[structopt(short = "t", long = "timings", help = "Print timings for each stage")]
     timings: bool,
+}
+
+bitflags::bitflags! {
+    // You can `#[derive]` the `Debug` trait, but implementing it manually
+    // can produce output like `A | B` instead of `Flags(A | B)`.
+    // #[derive(Debug)]
+    #[derive(PartialEq, Eq)]
+    pub struct Flags: u32 {
+        const VERBOSE = 1;
+        const TIMINGS = 2;
+    }
+}
+
+impl fmt::Debug for Flags {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        bitflags::parser::to_writer(self, f)
+    }
+}
+
+impl fmt::Display for Flags {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        bitflags::parser::to_writer(self, f)
+    }
+}
+
+impl str::FromStr for Flags {
+    type Err = bitflags::parser::ParseError;
+
+    fn from_str(flags: &str) -> Result<Self, Self::Err> {
+        bitflags::parser::from_str(flags)
+    }
 }
 
 #[derive(Debug, PartialEq, StructOpt)]
@@ -54,8 +77,8 @@ pub(crate) enum Action {
         about = "Generate, build and run a Rust program from source code"
     )]
     All,
-    #[structopt(name = "generate", about = "Generate Cargo.toml and source code")]
-    Generate,
+    #[structopt(name = "gen", about = "Generate Cargo.toml and source code")]
+    Generate(GenQualifier),
     #[structopt(name = "build", about = "Build the executable from generated code")]
     Build,
     #[structopt(
@@ -67,6 +90,31 @@ pub(crate) enum Action {
     Run,
     #[structopt(name = "build-and-run", about = "Build and run the generated program")]
     BuildAndRun,
+    #[structopt(name = "check-cargo", about = "Check for changes in Cargo.toml")]
+    CheckCargo,
+    #[structopt(name = "check-source", about = "Check for changes in source code")]
+    CheckSource,
+}
+
+#[derive(StructOpt, Debug, PartialEq)]
+pub enum GenQualifier {
+    #[structopt(name = "both", about = "Generate both source and Cargo.toml")]
+    Both,
+    #[structopt(name = "c", about = "Generate Cargo.toml only")]
+    CargoToml,
+    #[structopt(name = "s", about = "Generate source only")]
+    Source,
+}
+
+#[derive(StructOpt, Debug, PartialEq)]
+pub enum BuildQualifier {
+    #[structopt(
+        name = "full",
+        about = "Generate source and Cargo.toml before building"
+    )]
+    Full,
+    #[structopt(name = "only", about = "Build only, don't generate first")]
+    Only,
 }
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
@@ -130,8 +178,23 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // options=Opt { action: Generate, help: false, check_cargo: false, check_source: false, verbose: false, timings: false }
 
+    // let flags = Flags::VERBOSE & Flags::TIMINGS;
+
     let verbose = options.verbose;
     let timings = options.timings;
+
+    let mut flags = Flags::empty();
+    flags.set(Flags::VERBOSE, verbose);
+    flags.set(Flags::TIMINGS, timings);
+
+    debug!("@@@@ flags={flags}");
+
+    let formatted = flags.to_string();
+    let parsed: Flags = formatted.parse().unwrap();
+
+    assert_eq!(flags, parsed);
+    // assert!(flags.contains(Flags::VERBOSE));
+    // assert!(flags.contains(Flags::TIMINGS));
 
     let result: Result<(), errors::BuildRunError> = match options.action {
         // Implement generate logic with optional verbose and timings
@@ -139,21 +202,37 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // match options.action {
         Action::All => {
-            generate(source, cargo_manifest, &build_dir)?;
+            generate(
+                &flags,
+                &GenQualifier::Both,
+                source,
+                cargo_manifest,
+                &build_dir,
+            )?;
             build(&build_dir)?;
             run(source_stem, build_dir)
         } /* Generate code and Cargo.toml, then build */
-        Action::Generate => generate(source, cargo_manifest, &build_dir),
+        Action::Generate(gen_qualifier) => {
+            generate(&flags, &gen_qualifier, source, cargo_manifest, &build_dir)
+        }
         Action::Build => build(&build_dir),
         Action::GenAndBuild => {
-            generate(source, cargo_manifest, &build_dir)?;
+            generate(
+                &flags,
+                &GenQualifier::Both,
+                source,
+                cargo_manifest,
+                &build_dir,
+            )?;
             build(&build_dir)
         } /* Generate code and Cargo.toml, then build */
         Action::Run => run(source_stem, build_dir),
         Action::BuildAndRun => {
             build(&build_dir)?;
             run(source_stem, build_dir)
-        } /* Generate, build, and run */
+        }
+        Action::CheckCargo => todo!(),
+        Action::CheckSource => todo!(), /* Generate, build, and run */
     };
 
     match result {
@@ -169,60 +248,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(result?)
 }
 
-// // Handle options and execute commands based on user selection
-// // let var_name =
-// match options {
-//     Opt.help => {
-//         // Implement help message logic here
-//         println!("Help message...");
-//         // Ok(())
-//     }
-//     Opt::CheckCargo => {
-//         // Implement cargo check logic here
-//         println!("Checking Cargo.toml...");
-//         // Ok(())
-//     }
-//     Opt::CheckSource => {
-//         // Implement source code check logic here
-//         println!("Checking source code...");
-//         // Ok(())
-//     }
-//     Opt::Action(action) => {
-//         let verbose = matches!(options, Opt::Verbose);
-//         let timings = matches!(options, Opt::Timings);
-//         let result: Result<(), errors::BuildRunError> = match action {
-//             // Action::Generate => {
-//             // Implement generate logic with optional verbose and timings
-//             // println!("Generating code (verbose: {}, timings: {})", verbose, timings);
-
-//             // match options.action {
-//             Action::Generate => generate(source, cargo_manifest, &build_dir),
-//             Action::Build => build(&build_dir),
-//             Action::GenAndBuild => {
-//                 generate(source, cargo_manifest, &build_dir)?;
-//                 build(&build_dir)
-//             } /* Generate code and Cargo.toml, then build */
-//             Action::Run => run(source_stem, build_dir),
-//             Action::BuildAndRun => {
-//                 build(&build_dir)?;
-//                 run(source_stem, build_dir)
-//             } /* Generate, build, and run */
-//         };
-
-//         match result {
-//             Ok(()) => {
-//                 let dur = start.elapsed();
-//                 debug!("Completed in {}.{}s", dur.as_secs(), dur.subsec_millis());
-//             }
-//             Err(ref error) => {
-//                 println!("Error: {error}");
-//             }
-//         }
-//         result?
-//         // Ok(result?)
-//     }
-// };
-
 // Configure log level
 fn configure_log() {
     // let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
@@ -237,28 +262,35 @@ fn configure_log() {
 }
 
 fn generate(
+    flags: &Flags,
+    gen_qualifier: &GenQualifier,
     source: &str,
     cargo_manifest: &str,
     build_dir: &Path,
 ) -> Result<(), errors::BuildRunError> {
     let start_gen = Instant::now();
-    let source_path = build_dir.join("tmp_source.rs");
-    let mut source_file = fs::File::create(&source_path)?;
-    source_file.write_all(source.as_bytes())?;
-    let relative_path = source_path;
-    let mut absolute_path = std::env::current_dir()?;
-    absolute_path.push(relative_path);
-    debug!("Absolute path of generated program: {absolute_path:?}");
 
-    let cargo_toml_path = build_dir.join("Cargo.toml");
+    if matches!(gen_qualifier, GenQualifier::Both | GenQualifier::Source) {
+        let source_path = build_dir.join("tmp_source.rs");
+        let mut source_file = fs::File::create(&source_path)?;
+        source_file.write_all(source.as_bytes())?;
+        let relative_path = source_path;
+        let mut absolute_path = std::env::current_dir()?;
+        absolute_path.push(relative_path);
+        debug!("Absolute path of generated program: {absolute_path:?}");
+    }
 
-    // Don't overwrite Cargo.toml if not changed - see if it will remember it's compiled.
-    let prev_cargo_toml = read_file_contents(&cargo_toml_path)?;
-    if !cargo_manifest.eq(&prev_cargo_toml) {
-        let mut cargo_toml = fs::File::create(&cargo_toml_path)?;
+    if matches!(gen_qualifier, GenQualifier::Both | GenQualifier::CargoToml) {
+        let cargo_toml_path = build_dir.join("Cargo.toml");
 
-        cargo_toml.write_all(cargo_manifest.as_bytes())?;
-        debug!("cargo_toml_path={cargo_toml_path:?}");
+        // Don't overwrite Cargo.toml if not changed - see if it will remember it's compiled.
+        let prev_cargo_toml = read_file_contents(&cargo_toml_path)?;
+        if !cargo_manifest.eq(&prev_cargo_toml) {
+            let mut cargo_toml = fs::File::create(&cargo_toml_path)?;
+
+            cargo_toml.write_all(cargo_manifest.as_bytes())?;
+            debug!("cargo_toml_path={cargo_toml_path:?}");
+        }
     }
 
     let dur = start_gen.elapsed();
@@ -267,6 +299,13 @@ fn generate(
         dur.as_secs(),
         dur.subsec_millis()
     );
+    if flags.contains(Flags::TIMINGS) {
+        println!(
+            "Completed generation in {}.{}s",
+            dur.as_secs(),
+            dur.subsec_millis()
+        );
+    }
 
     Ok(())
 }

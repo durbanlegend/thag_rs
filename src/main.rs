@@ -1,4 +1,4 @@
-use core::{fmt, str};
+use core::str;
 use std::env;
 use std::error::Error;
 use std::process::Command;
@@ -13,109 +13,13 @@ use errors::BuildRunError;
 
 use log::{debug, info, LevelFilter};
 
-// use crate::cmd_args::{Action, Opt};
 mod cmd_args;
 mod errors;
 mod toml_utils;
 
-use structopt::StructOpt;
+pub(crate) use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(
-    name = "build_run",
-    about = "Build and run a given Rust programs, with separate and combined options for stages"
-)]
-struct Opt {
-    #[structopt(subcommand)]
-    action: Action,
-    #[structopt(
-        short = "S",
-        long = "check-source",
-        help = "Check for changes in source code"
-    )]
-    #[structopt(short = "v", long = "verbose", help = "Enable verbose output")]
-    verbose: bool,
-    #[structopt(short = "t", long = "timings", help = "Print timings for each stage")]
-    timings: bool,
-}
-
-bitflags::bitflags! {
-    // You can `#[derive]` the `Debug` trait, but implementing it manually
-    // can produce output like `A | B` instead of `Flags(A | B)`.
-    // #[derive(Debug)]
-    #[derive(PartialEq, Eq)]
-    pub struct Flags: u32 {
-        const VERBOSE = 1;
-        const TIMINGS = 2;
-    }
-}
-
-impl fmt::Debug for Flags {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        bitflags::parser::to_writer(self, f)
-    }
-}
-
-impl fmt::Display for Flags {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        bitflags::parser::to_writer(self, f)
-    }
-}
-
-impl str::FromStr for Flags {
-    type Err = bitflags::parser::ParseError;
-
-    fn from_str(flags: &str) -> Result<Self, Self::Err> {
-        bitflags::parser::from_str(flags)
-    }
-}
-
-#[derive(Debug, PartialEq, StructOpt)]
-pub(crate) enum Action {
-    #[structopt(
-        name = "all",
-        about = "Generate, build and run a Rust program from source code"
-    )]
-    All,
-    #[structopt(name = "gen", about = "Generate Cargo.toml and source code")]
-    Generate(GenQualifier),
-    #[structopt(name = "build", about = "Build the executable from generated code")]
-    Build,
-    #[structopt(
-        name = "gen-and-build",
-        about = "Generate Cargo.toml and source code, then build"
-    )]
-    GenAndBuild,
-    #[structopt(name = "run", about = "Run the generated program (if already built)")]
-    Run,
-    #[structopt(name = "build-and-run", about = "Build and run the generated program")]
-    BuildAndRun,
-    #[structopt(name = "check-cargo", about = "Check for changes in Cargo.toml")]
-    CheckCargo,
-    #[structopt(name = "check-source", about = "Check for changes in source code")]
-    CheckSource,
-}
-
-#[derive(StructOpt, Debug, PartialEq)]
-pub enum GenQualifier {
-    #[structopt(name = "both", about = "Generate both source and Cargo.toml")]
-    Both,
-    #[structopt(name = "c", about = "Generate Cargo.toml only")]
-    CargoToml,
-    #[structopt(name = "s", about = "Generate source only")]
-    Source,
-}
-
-#[derive(StructOpt, Debug, PartialEq)]
-pub enum BuildQualifier {
-    #[structopt(
-        name = "full",
-        about = "Generate source and Cargo.toml before building"
-    )]
-    Full,
-    #[structopt(name = "only", about = "Build only, don't generate first")]
-    Only,
-}
+use crate::cmd_args::{Flags, GenQualifier};
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -171,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
     }
 
-    let options = Opt::from_args();
+    let options = cmd_args::Opt::from_args();
 
     debug!("########options={options:?}");
     // println!("########options={options:?}");
@@ -201,10 +105,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         // println!("Generating code (verbose: {}, timings: {})", verbose, timings);
 
         // match options.action {
-        Action::All => {
+        cmd_args::Action::All => {
             generate(
                 &flags,
-                &GenQualifier::Both,
+                &cmd_args::GenQualifier::Both,
                 source,
                 cargo_manifest,
                 &build_dir,
@@ -212,27 +116,27 @@ fn main() -> Result<(), Box<dyn Error>> {
             build(&build_dir)?;
             run(source_stem, build_dir)
         } /* Generate code and Cargo.toml, then build */
-        Action::Generate(gen_qualifier) => {
+        cmd_args::Action::Generate(gen_qualifier) => {
             generate(&flags, &gen_qualifier, source, cargo_manifest, &build_dir)
         }
-        Action::Build => build(&build_dir),
-        Action::GenAndBuild => {
+        cmd_args::Action::Build => build(&build_dir),
+        cmd_args::Action::GenAndBuild => {
             generate(
                 &flags,
-                &GenQualifier::Both,
+                &cmd_args::GenQualifier::Both,
                 source,
                 cargo_manifest,
                 &build_dir,
             )?;
             build(&build_dir)
         } /* Generate code and Cargo.toml, then build */
-        Action::Run => run(source_stem, build_dir),
-        Action::BuildAndRun => {
+        cmd_args::Action::Run => run(source_stem, build_dir),
+        cmd_args::Action::BuildAndRun => {
             build(&build_dir)?;
             run(source_stem, build_dir)
         }
-        Action::CheckCargo => todo!(),
-        Action::CheckSource => todo!(), /* Generate, build, and run */
+        cmd_args::Action::CheckCargo => todo!(),
+        cmd_args::Action::CheckSource => todo!(), /* Generate, build, and run */
     };
 
     match result {
@@ -263,7 +167,7 @@ fn configure_log() {
 
 fn generate(
     flags: &Flags,
-    gen_qualifier: &GenQualifier,
+    gen_qualifier: &cmd_args::GenQualifier,
     source: &str,
     cargo_manifest: &str,
     build_dir: &Path,

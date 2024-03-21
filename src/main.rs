@@ -9,6 +9,7 @@ use std::{fs, io::Write as OtherWrite};
 // use env_logger::{Env, WriteStyle};
 use std::path::{Path, PathBuf}; // Use PathBuf for paths
 
+use cargo_toml::Manifest;
 use errors::BuildRunError;
 
 use log::{debug, info, LevelFilter};
@@ -37,9 +38,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("VERSION={VERSION}");
     debug!("gen_build_dir={gen_build_dir:?}",);
 
-    // Next: read manifest from source file?
-
-    toml_utils::read_cargo_toml();
+    // Read manifest from source file
+    let _ = toml_utils::read_cargo_toml();
 
     let source_stem = "factorial_main"; // Replace with actual program name
     let source_name = format!("{source_stem}.rs");
@@ -59,9 +59,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             output
         });
 
-    debug!("Rust source manifest info = {toml_str}");
+    debug!("Rust source manifest info (toml_str) = {toml_str}");
 
-    // let source_toml: Value = toml::from_str(&toml_str)?;
+    let manifest = Manifest::from_str(&toml_str)?;
+    debug!("manifest (from toml_str)={manifest:#?\n}");
+
     let source_toml = toml_str.parse::<Table>().unwrap();
     debug!("source_toml={source_toml:?}");
 
@@ -80,6 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     [dependencies]
     rug = {{ version = "1.24.0", features = ["integer"] }}
+    serde = {{ version = "1.0", features = ["derive"] }}
 
     [workspace]
 
@@ -89,8 +92,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     "##
     );
 
+    let source_toml = cargo_manifest.parse::<Table>().unwrap();
+    debug!("source_toml={source_toml:#?}\n");
+
+    let toml = toml::to_string(&source_toml).unwrap();
+    debug!("Raw toml = {toml:#?}\n");
+
+    debug!("cargo_manifest reconstituted:");
+    toml.lines().for_each(|l| println!("{l}"));
+
     let source: &str = &source;
-    let cargo_manifest: &str = &cargo_manifest;
     let build_dir = PathBuf::from(".cargo/build_run");
     if !build_dir.exists() {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
@@ -119,14 +130,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                 &flags,
                 &cmd_args::GenQualifier::Both,
                 source,
-                cargo_manifest,
+                &cargo_manifest,
                 &build_dir,
             )?;
             build(&flags, &build_dir)?;
             run(&flags, source_stem, build_dir)
         } /* Generate code and Cargo.toml, then build */
         cmd_args::Action::Generate(gen_qualifier) => {
-            generate(&flags, &gen_qualifier, source, cargo_manifest, &build_dir)
+            generate(&flags, &gen_qualifier, source, &cargo_manifest, &build_dir)
         }
         cmd_args::Action::Build => build(&flags, &build_dir),
         cmd_args::Action::GenAndBuild => {
@@ -134,7 +145,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 &flags,
                 &cmd_args::GenQualifier::Both,
                 source,
-                cargo_manifest,
+                &cargo_manifest,
                 &build_dir,
             )?;
             build(&flags, &build_dir)
@@ -157,7 +168,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("Error: {error}");
         }
     }
-    // result?
     Ok(result?)
 }
 

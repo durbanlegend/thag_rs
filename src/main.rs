@@ -1,15 +1,11 @@
 use core::str;
 use std::env;
 use std::error::Error;
-use std::fmt::Write;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Instant;
-use std::{fs, io::Write as OtherWrite};
-// use env_logger::Builder;
-// use env_logger::{Env, WriteStyle};
-use std::path::{Path, PathBuf}; // Use PathBuf for paths
+use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 
-use cargo_toml::Manifest;
 use errors::BuildRunError;
 
 use log::{debug, info, LevelFilter};
@@ -19,9 +15,9 @@ mod errors;
 mod toml_utils;
 
 pub(crate) use structopt::StructOpt;
-use toml::Table;
 
 use crate::cmd_args::{Flags, GenQualifier};
+use crate::toml_utils::read_rs_toml;
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -39,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("gen_build_dir={gen_build_dir:?}",);
 
     // Read manifest from source file
-    let _ = toml_utils::read_cargo_toml();
+    // let _ = toml_utils::read_cargo_toml()?;
 
     let source_stem = "factorial_main"; // Replace with actual program name
     let source_name = format!("{source_stem}.rs");
@@ -48,30 +44,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut code_path: PathBuf = project_path.join("examples");
 
     code_path.push(source_name);
-    let source = read_file_contents(&code_path)?;
-    let toml_str = source
-        .lines()
-        .map(str::trim_start)
-        .filter(|&line| line.starts_with("//!"))
-        .map(|line| line.trim_start_matches('/').trim_start_matches('!'))
-        .fold(String::new(), |mut output, b| {
-            let _ = writeln!(output, "{b}");
-            output
-        });
+    let rs_manifest = read_rs_toml(&code_path)?;
 
-    debug!("Rust source manifest info (toml_str) = {toml_str}");
+    // let result = CargoManifest::from_str(&rs_toml_str);
+    // let rs_manifest = match result {
+    //     Ok(rs_manifest) => {
+    //         debug!("rs_manifest={rs_manifest:#?\n}");
+    //         Ok(rs_manifest)
+    //     }
+    //     Err(err) => {
+    //         err.to_string().lines().for_each(|l| debug!("{l}"));
+    //         Err(err)
+    //     }
+    // }?;
+    debug!("rs_manifest={rs_manifest:#?\n}");
+    debug!("rs_manifest.to_string()={}", rs_manifest.to_string());
 
-    let manifest = Manifest::from_str(&toml_str)?;
-    debug!("manifest (from toml_str)={manifest:#?\n}");
+    // let rs_toml_table = rs_toml_str.parse::<Table>().unwrap();
+    // debug!("rs_toml_table={rs_toml_table:#?}");
 
-    let source_toml = toml_str.parse::<Table>().unwrap();
-    debug!("source_toml={source_toml:?}");
+    // let rs_toml_to_string = toml::to_string(&rs_toml_table).unwrap();
+    // debug!("Raw toml_to_string = {rs_toml_to_string:#?}\n");
 
-    let toml = toml::to_string(&source_toml).unwrap();
-    debug!("Raw toml = {toml:?}\n");
-
-    debug!("Toml reconstituted:");
-    toml.lines().for_each(|l| println!("{l}"));
+    // debug!("toml_to_string reconstituted:");
+    // rs_toml_to_string.lines().for_each(|l| println!("{l}"));
 
     let cargo_manifest = format!(
         r##"
@@ -92,16 +88,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     "##
     );
 
-    let source_toml = cargo_manifest.parse::<Table>().unwrap();
-    debug!("source_toml={source_toml:#?}\n");
+    // let source_manifest_toml = cargo_manifest.parse::<Table>().unwrap();
+    // debug!("source_manifest_toml={source_manifest_toml:#?}\n");
 
-    let toml = toml::to_string(&source_toml).unwrap();
-    debug!("Raw toml = {toml:#?}\n");
+    // let toml = toml::to_string(&source_manifest_toml).unwrap();
+    // // debug!("Raw cargo_manifest = {toml:#?}\n");
 
-    debug!("cargo_manifest reconstituted:");
-    toml.lines().for_each(|l| println!("{l}"));
+    // debug!("Cargo_manifest reconstituted:");
+    // toml.lines().for_each(|l| println!("{l}"));
 
-    let source: &str = &source;
+    let source: &str = &rs_manifest.to_string();
     let build_dir = PathBuf::from(".cargo/build_run");
     if !build_dir.exists() {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories

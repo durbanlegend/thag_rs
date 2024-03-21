@@ -2,15 +2,17 @@ use std::{error::Error, io};
 
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
-// use std::path::PathBuf::std;
 
 #[derive(Debug)]
 pub(crate) enum BuildRunError {
+    Command(String),       // For errors during Cargo build or program execution
+    FromStr(String),       // For parsing CargoManifest from a string
     Io(io::Error),         // For I/O errors
     TomlDe(TomlDeError),   // For TOML deserialization errors
     TomlSer(TomlSerError), // For TOML serialization errors
-    Command(String),       // For errors during Cargo build or program execution
 }
+
+impl BuildRunError {}
 
 impl From<io::Error> for BuildRunError {
     fn from(err: io::Error) -> Self {
@@ -39,15 +41,16 @@ impl From<String> for BuildRunError {
 impl std::fmt::Display for BuildRunError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuildRunError::Io(e) => write!(f, "{e:?}"),
-            BuildRunError::TomlDe(e) => write!(f, "{e:?}"),
-            BuildRunError::TomlSer(e) => write!(f, "{e:?}"),
             BuildRunError::Command(string) => {
                 for line in string.lines() {
                     writeln!(f, "{line}")?;
                 }
                 Ok(())
             }
+            BuildRunError::FromStr(_) => todo!(),
+            BuildRunError::Io(e) => write!(f, "{e:?}"),
+            BuildRunError::TomlDe(e) => write!(f, "{e:?}"),
+            BuildRunError::TomlSer(e) => write!(f, "{e:?}"),
         }
     }
 }
@@ -58,10 +61,11 @@ impl Error for BuildRunError {
             // The cause is the underlying implementation error type. Is implicitly
             // cast to the trait object `&error::Error`. This works because the
             // underlying type already implements the `Error` trait.
+            BuildRunError::Command(ref _e) => Some(self),
+            BuildRunError::FromStr(ref _e) => Some(self),
             BuildRunError::Io(ref e) => Some(e),
             BuildRunError::TomlDe(ref e) => Some(e),
             BuildRunError::TomlSer(ref e) => Some(e),
-            BuildRunError::Command(ref _e) => Some(self),
         }
     }
 }

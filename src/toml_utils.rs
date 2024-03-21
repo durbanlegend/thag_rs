@@ -1,31 +1,53 @@
-use std::fs;
+use std::collections::BTreeMap;
+use std::fmt::Write;
+use std::path::Path;
+use std::{fs, str::FromStr};
 
+use log::debug;
 use serde::{Deserialize, Serialize};
-use toml::to_string;
 
 use crate::errors::BuildRunError;
+use crate::read_file_contents;
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
     #[serde(default = "default_package")]
     pub(self) package: Package,
-    #[serde(default)]
-    pub(self) dependencies: Option<Vec<Dependency>>,
+    // #[serde(default)]
+    // pub(self) dependencies: Option<Vec<Dependency>>,
+    #[serde(default, skip_serializing_if = "Dependencies::is_empty")]
+    dependencies: Dependencies,
     #[serde(default = "default_edition")]
     pub edition: String,
     #[serde(default)]
     pub workspaces: Option<Vec<String>>,
 }
 
-impl CargoManifest {
-    // Serialize the CargoManifest struct to a String
-    fn to_toml_string(&self) -> Result<String, toml::ser::Error> {
-        to_string(&self)
+impl FromStr for CargoManifest {
+    type Err = BuildRunError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        toml::from_str::<CargoManifest>(s).map_err(|e| BuildRunError::FromStr(e.to_string()))
     }
+}
 
+impl ToString for CargoManifest {
+    fn to_string(&self) -> String {
+        {
+            let this = &self;
+            toml::to_string(&this)
+        }
+        .unwrap()
+    }
+}
+
+#[allow(dead_code)]
+impl CargoManifest {
     // Save the CargoManifest struct to a Cargo.toml file
     fn save_to_file(&self, path: &str) -> Result<(), BuildRunError> {
-        let toml_string = self.to_toml_string()?;
+        let toml_string = {
+            let this = &self;
+            toml::to_string(&this)
+        }?;
         std::fs::write(path, toml_string.as_bytes())?;
         Ok(())
     }
@@ -53,17 +75,48 @@ struct Package {
     pub authors: Vec<String>,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
-struct Dependency {
-    // Add fields for dependency name, version, etc. as needed
-    pub name: String,
-    #[serde(default = "default_version")]
-    pub version: Option<String>,
-    #[serde(default)]
-    pub features: Option<Vec<String>>,
+pub(crate) type Dependencies = BTreeMap<String, Dependency>;
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Dependency {
+    /// Version requirement (e.g. `^1.5`)
+    Simple(String),
+    // /// Incomplete data
+    // Inherited(InheritedDependencyDetail), // order is important for serde
+    /// `{ version = "^1.5", features = ["a", "b"] }` etc.
+    Detailed(Box<DependencyDetail>),
 }
 
+/// When definition of a dependency is more than just a version string.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct DependencyDetail {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub features: Vec<String>,
+}
+
+// #[derive(Debug, Deserialize, Serialize)]
+// pub(crate) struct Dependencies {
+//     #[allow(dead_code)]
+//     entry: Dependency,
+//     // #[allow(dead_code)]
+//     // toml: String,
+// }
+
+// #[derive(Debug, Default, Deserialize, Serialize)]
+// pub(crate) struct Dependency {
+//     // Add fields for dependency name, version, etc. as needed
+//     pub name: String,
+//     #[serde(default = "default_version")]
+//     pub version: Option<String>,
+//     #[serde(default)]
+//     pub features: Option<Vec<String>>,
+// }
+
 // Default function for the `version` field of Dependency
+#[allow(dead_code)]
 fn default_version() -> Option<String> {
     None
 }
@@ -103,21 +156,29 @@ fn default_version() -> Option<String> {
 //     features: Vec<String>,
 // }
 
+#[allow(dead_code)]
 pub(crate) fn read_cargo_toml() -> Result<CargoManifest, BuildRunError> {
     let toml_str = fs::read_to_string("Cargo.toml").expect("Failed to read Cargo.toml file");
 
     let cargo_toml: CargoManifest = toml::from_str(&toml_str)?;
 
-    println!("#####cargo_toml={cargo_toml:#?}");
+    // debug!("cargo_toml={cargo_toml:#?}");
     Ok(cargo_toml)
 }
 
-pub(crate) fn read_rs_toml() {
-    let toml_str = fs::read_to_string("Cargo.toml").expect("Failed to read Cargo.toml file");
+pub(crate) fn read_rs_toml(code_path: &Path) -> Result<CargoManifest, BuildRunError> {
+    let rs_contents = read_file_contents(code_path)?;
+    let rs_toml_str = rs_contents
+        .lines()
+        .map(str::trim_start)
+        .filter(|&line| line.starts_with("//!"))
+        .map(|line| line.trim_start_matches('/').trim_start_matches('!'))
+        .fold(String::new(), |mut output, b| {
+            let _ = writeln!(output, "{b}");
+            output
+        });
+    debug!("Rust source manifest info (rs_toml_str) = {rs_toml_str}");
 
-    let cargo_toml: CargoManifest =
-        toml::from_str(&toml_str).expect("Failed to deserialize Cargo.toml");
-
-    println!("{cargo_toml:#?}");
+    CargoManifest::from_str(&rs_toml_str)
 }
 // end old

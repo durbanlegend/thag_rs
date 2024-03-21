@@ -51,6 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let source = read_file_contents(&code_path)?;
     let toml_str = source
         .lines()
+        .map(str::trim_start)
         .filter(|&line| line.starts_with("//!"))
         .map(|line| line.trim_start_matches('/').trim_start_matches('!'))
         .fold(String::new(), |mut output, b| {
@@ -58,16 +59,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             output
         });
 
-    debug!("toml_str={toml_str}");
+    debug!("Rust source manifest info = {toml_str}");
 
     // let source_toml: Value = toml::from_str(&toml_str)?;
     let source_toml = toml_str.parse::<Table>().unwrap();
     debug!("source_toml={source_toml:?}");
 
     let toml = toml::to_string(&source_toml).unwrap();
-    debug!("{toml:?}");
+    debug!("Raw toml = {toml:?}\n");
 
-    debug!("Reconstituted:");
+    debug!("Toml reconstituted:");
     toml.lines().for_each(|l| println!("{l}"));
 
     let cargo_manifest = format!(

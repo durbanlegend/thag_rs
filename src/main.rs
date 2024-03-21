@@ -17,7 +17,7 @@ mod toml_utils;
 pub(crate) use structopt::StructOpt;
 
 use crate::cmd_args::{Flags, GenQualifier};
-use crate::toml_utils::read_rs_toml;
+use crate::toml_utils::{read_rs_toml, CargoManifest};
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -33,6 +33,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("PACKAGE_NAME={PACKAGE_NAME}");
     debug!("VERSION={VERSION}");
     debug!("gen_build_dir={gen_build_dir:?}",);
+
+    println!("Default CargoManifest {:#?}", CargoManifest::default());
 
     // Read manifest from source file
     // let _ = toml_utils::read_cargo_toml()?;

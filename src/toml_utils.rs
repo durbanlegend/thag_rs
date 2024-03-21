@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::errors::BuildRunError;
 use crate::read_file_contents;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
     #[serde(default = "default_package")]
     pub(self) package: Package,
@@ -64,15 +64,25 @@ fn default_package() -> Package {
 
 // Default function for the `edition` field
 fn default_edition() -> String {
-    String::from("edition = \"2021\"")
+    String::from("2021")
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Package {
     pub name: String,
     pub version: String,
     #[serde(default)]
     pub authors: Vec<String>,
+}
+
+impl Default for Package {
+    fn default() -> Self {
+        Package {
+            version: String::from("0.0.1"),
+            name: String::from("your_script_name_stem"),
+            authors: Vec::<String>::new(),
+        }
+    }
 }
 
 pub(crate) type Dependencies = BTreeMap<String, Dependency>;
@@ -88,7 +98,7 @@ pub enum Dependency {
 }
 
 /// When definition of a dependency is more than just a version string.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct DependencyDetail {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -119,6 +129,11 @@ pub struct DependencyDetail {
 #[allow(dead_code)]
 fn default_version() -> Option<String> {
     None
+}
+
+#[allow(dead_code)]
+fn default_package_version() -> String {
+    "0.0.1".to_string()
 }
 
 // Old

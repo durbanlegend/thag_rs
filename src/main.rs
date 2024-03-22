@@ -17,7 +17,7 @@ mod toml_utils;
 pub(crate) use structopt::StructOpt;
 
 use crate::cmd_args::{Flags, GenQualifier};
-use crate::toml_utils::{read_rs_toml, CargoManifest};
+use crate::toml_utils::{rs_extract_toml, CargoManifest};
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     code_path.push(source_name);
     let source = read_file_contents(&code_path)?;
 
-    let rs_manifest = read_rs_toml(&code_path)?;
+    let rs_manifest = rs_extract_toml(&source)?;
 
     // let result = CargoManifest::from_str(&rs_toml_str);
     // let rs_manifest = match result {

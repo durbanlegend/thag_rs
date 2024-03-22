@@ -1,13 +1,11 @@
 use std::collections::BTreeMap;
 use std::fmt::Write;
-use std::path::Path;
 use std::{fs, str::FromStr};
 
 use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::errors::BuildRunError;
-use crate::read_file_contents;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
@@ -44,7 +42,7 @@ impl FromStr for CargoManifest {
 impl ToString for CargoManifest {
     fn to_string(&self) -> String {
         {
-            let this = &self;
+            let this = self;
             toml::to_string(&this)
         }
         .unwrap()
@@ -56,7 +54,7 @@ impl CargoManifest {
     // Save the CargoManifest struct to a Cargo.toml file
     pub(crate) fn save_to_file(&self, path: &str) -> Result<(), BuildRunError> {
         let toml_string = {
-            let this = &self;
+            let this = self;
             toml::to_string(&this)
         }?;
         std::fs::write(path, toml_string.as_bytes())?;
@@ -151,8 +149,7 @@ pub(crate) struct Workspace {}
 //     }
 // }
 
-pub(crate) fn read_rs_toml(code_path: &Path) -> Result<CargoManifest, BuildRunError> {
-    let rs_contents = read_file_contents(code_path)?;
+pub(crate) fn rs_extract_toml(rs_contents: &str) -> Result<CargoManifest, BuildRunError> {
     let rs_toml_str = rs_contents
         .lines()
         .map(str::trim_start)

@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::fmt::Write;
 use std::{fs, str::FromStr};
 
 use log::debug;
@@ -133,6 +132,7 @@ pub(crate) fn read_cargo_toml() -> Result<CargoManifest, BuildRunError> {
 pub(crate) struct Workspace {}
 
 pub(crate) fn rs_extract_toml(rs_contents: &str) -> Result<CargoManifest, BuildRunError> {
+    use std::fmt::Write;
     let rs_toml_str = rs_contents
         .lines()
         .map(str::trim_start)

@@ -11,18 +11,21 @@ use errors::BuildRunError;
 use log::{debug, info, LevelFilter};
 
 mod cmd_args;
+mod code_utils;
 mod errors;
 mod toml_utils;
 
 pub(crate) use structopt::StructOpt;
 
 use crate::cmd_args::{Flags, GenQualifier};
+use crate::code_utils::{read_file_contents, rs_extract_src};
 use crate::toml_utils::{rs_extract_toml, CargoManifest};
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
 
@@ -54,21 +57,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     default_manifest.save_to_file(default_toml_path.to_str().ok_or("Missing path?")?)?;
 
     code_path.push(source_name);
-    let source = read_file_contents(&code_path)?;
+    let rs_source = read_file_contents(&code_path)?;
 
-    let rs_manifest = rs_extract_toml(&source)?;
+    let rs_manifest = rs_extract_toml(&rs_source)?;
+    let rs_source = rs_extract_src(&rs_source);
 
-    // let result = CargoManifest::from_str(&rs_toml_str);
-    // let rs_manifest = match result {
-    //     Ok(rs_manifest) => {
-    //         debug!("rs_manifest={rs_manifest:#?\n}");
-    //         Ok(rs_manifest)
-    //     }
-    //     Err(err) => {
-    //         err.to_string().lines().for_each(|l| debug!("{l}"));
-    //         Err(err)
-    //     }
-    // }?;
+    // Infer dependencies from imports and maybe qualified item
+    // let lines = rs_source.lines().borrow();
+    // for line in lines {
+    //     regex
+    // }
+    let dependencies = code_utils::infer_dependencies(&rs_source);
+    debug!("dependencies={dependencies:#?\n}");
+
     debug!("rs_manifest={rs_manifest:#?\n}");
     debug!("rs_manifest.to_string()={}", rs_manifest.to_string());
 
@@ -109,7 +110,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     // debug!("Cargo_manifest reconstituted:");
     // toml.lines().for_each(|l| println!("{l}"));
 
-    // let source: &str = &rs_manifest.to_string();
     let build_dir = PathBuf::from(".cargo/build_run");
     if !build_dir.exists() {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
@@ -139,22 +139,26 @@ fn main() -> Result<(), Box<dyn Error>> {
             generate(
                 &flags,
                 &GenQualifier::Both,
-                &source,
+                &rs_source,
                 &cargo_manifest,
                 &build_dir,
             )?;
             build(&flags, &build_dir)?;
             run(&flags, source_stem, build_dir)
         } /* Generate code and Cargo.toml, then build */
-        cmd_args::Action::Generate(gen_qualifier) => {
-            generate(&flags, &gen_qualifier, &source, &cargo_manifest, &build_dir)
-        }
+        cmd_args::Action::Generate(gen_qualifier) => generate(
+            &flags,
+            &gen_qualifier,
+            &rs_source,
+            &cargo_manifest,
+            &build_dir,
+        ),
         cmd_args::Action::Build => build(&flags, &build_dir),
         cmd_args::Action::GenAndBuild => {
             generate(
                 &flags,
                 &GenQualifier::Both,
-                &source,
+                &rs_source,
                 &cargo_manifest,
                 &build_dir,
             )?;
@@ -192,11 +196,6 @@ fn configure_log() {
     env_logger::Builder::new()
         .filter_level(LevelFilter::Debug)
         .init();
-}
-
-fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
-    debug!("Reading from {path:?}");
-    Ok(fs::read_to_string(path)?)
 }
 
 fn generate(

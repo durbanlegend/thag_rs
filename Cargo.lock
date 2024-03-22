@@ -99,6 +99,7 @@ dependencies = [
  "cargo_toml",
  "env_logger",
  "log",
+ "regex",
  "serde",
  "structopt",
  "toml",

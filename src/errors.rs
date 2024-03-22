@@ -34,20 +34,19 @@ impl From<TomlSerError> for BuildRunError {
 
 impl From<String> for BuildRunError {
     fn from(err_msg: String) -> Self {
-        BuildRunError::Command(err_msg)
+        BuildRunError::FromStr(err_msg)
     }
 }
 
 impl std::fmt::Display for BuildRunError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuildRunError::Command(string) => {
-                for line in string.lines() {
+            BuildRunError::Command(s) | BuildRunError::FromStr(s) => {
+                for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
                 Ok(())
             }
-            BuildRunError::FromStr(_) => todo!(),
             BuildRunError::Io(e) => write!(f, "{e:?}"),
             BuildRunError::TomlDe(e) => write!(f, "{e:?}"),
             BuildRunError::TomlSer(e) => write!(f, "{e:?}"),

@@ -34,7 +34,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("VERSION={VERSION}");
     debug!("gen_build_dir={gen_build_dir:?}",);
 
-    println!("Default CargoManifest {:#?}", CargoManifest::default());
+    let default_manifest = CargoManifest::default();
+    println!("Default CargoManifest {default_manifest:#?}");
 
     // Read manifest from source file
     // let _ = toml_utils::read_cargo_toml()?;
@@ -44,6 +45,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let project_dir = env::var("PWD")?; // Set during cargo build
     let project_path = PathBuf::from(project_dir);
     let mut code_path: PathBuf = project_path.join("examples");
+
+    let default_toml_path = code_path.join("default_cargo.toml");
+    default_manifest.save_to_file(default_toml_path.to_str().ok_or("Missing path?")?)?;
 
     code_path.push(source_name);
     let rs_manifest = read_rs_toml(&code_path)?;

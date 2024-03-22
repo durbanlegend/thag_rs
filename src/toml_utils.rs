@@ -9,18 +9,26 @@ use serde::{Deserialize, Serialize};
 use crate::errors::BuildRunError;
 use crate::read_file_contents;
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
     #[serde(default = "default_package")]
     pub(self) package: Package,
-    // #[serde(default)]
-    // pub(self) dependencies: Option<Vec<Dependency>>,
-    #[serde(default, skip_serializing_if = "Dependencies::is_empty")]
-    dependencies: Dependencies,
+    dependencies: Option<Dependencies>,
     #[serde(default = "default_edition")]
     pub edition: String,
     #[serde(default)]
-    pub workspaces: Option<Vec<String>>,
+    pub workspace: Workspace,
+}
+
+impl Default for CargoManifest {
+    fn default() -> Self {
+        CargoManifest {
+            package: Package::default(),
+            dependencies: None,
+            edition: "2021".to_string(),
+            workspace: Workspace::default(),
+        }
+    }
 }
 
 impl FromStr for CargoManifest {
@@ -43,7 +51,7 @@ impl ToString for CargoManifest {
 #[allow(dead_code)]
 impl CargoManifest {
     // Save the CargoManifest struct to a Cargo.toml file
-    fn save_to_file(&self, path: &str) -> Result<(), BuildRunError> {
+    pub(crate) fn save_to_file(&self, path: &str) -> Result<(), BuildRunError> {
         let toml_string = {
             let this = &self;
             toml::to_string(&this)
@@ -58,7 +66,7 @@ fn default_package() -> Package {
     Package {
         name: String::from("your_project_name"),
         version: String::from("0.1.0"),
-        authors: Vec::new(),
+        authors: None,
     }
 }
 
@@ -72,28 +80,24 @@ struct Package {
     pub name: String,
     pub version: String,
     #[serde(default)]
-    pub authors: Vec<String>,
+    pub authors: Option<Vec<String>>,
 }
 
 impl Default for Package {
     fn default() -> Self {
         Package {
-            version: String::from("0.0.1"),
+            version: String::from("0.0.0"),
             name: String::from("your_script_name_stem"),
-            authors: Vec::<String>::new(),
+            authors: None,
         }
     }
 }
 
-pub(crate) type Dependencies = BTreeMap<String, Dependency>;
+pub(crate) type Dependencies = Option<BTreeMap<String, Dependency>>;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Dependency {
-    /// Version requirement (e.g. `^1.5`)
     Simple(String),
-    // /// Incomplete data
-    // Inherited(InheritedDependencyDetail), // order is important for serde
-    /// `{ version = "^1.5", features = ["a", "b"] }` etc.
     Detailed(Box<DependencyDetail>),
 }
 
@@ -107,70 +111,16 @@ pub struct DependencyDetail {
     pub features: Vec<String>,
 }
 
-// #[derive(Debug, Deserialize, Serialize)]
-// pub(crate) struct Dependencies {
-//     #[allow(dead_code)]
-//     entry: Dependency,
-//     // #[allow(dead_code)]
-//     // toml: String,
-// }
-
-// #[derive(Debug, Default, Deserialize, Serialize)]
-// pub(crate) struct Dependency {
-//     // Add fields for dependency name, version, etc. as needed
-//     pub name: String,
-//     #[serde(default = "default_version")]
-//     pub version: Option<String>,
-//     #[serde(default)]
-//     pub features: Option<Vec<String>>,
-// }
-
 // Default function for the `version` field of Dependency
-#[allow(dead_code)]
-fn default_version() -> Option<String> {
-    None
-}
+// #[allow(dead_code)]
+// fn default_version() -> Option<String> {
+//     None
+// }
 
 #[allow(dead_code)]
 fn default_package_version() -> String {
     "0.0.1".to_string()
 }
-
-// Old
-// #[derive(Debug, Deserialize)]
-// pub(crate) struct CargoToml {
-//     #[allow(dead_code)] // Disable dead code warning for the entire struct
-//     package: Package,
-//     #[allow(dead_code)]
-//     dependencies: Dependencies,
-// }
-
-// #[derive(Debug, Deserialize)]
-// struct Package {
-//     #[allow(dead_code)]
-//     name: String,
-//     #[allow(dead_code)]
-//     version: String,
-//     #[allow(dead_code)]
-//     edition: String,
-// }
-
-// #[derive(Debug, Deserialize)]
-// struct Dependencies {
-//     #[allow(dead_code)]
-//     serde: SerdeDependency,
-//     #[allow(dead_code)]
-//     toml: String,
-// }
-
-// #[derive(Debug, Deserialize)]
-// struct SerdeDependency {
-//     #[allow(dead_code)]
-//     version: String,
-//     #[allow(dead_code)]
-//     features: Vec<String>,
-// }
-
 #[allow(dead_code)]
 pub(crate) fn read_cargo_toml() -> Result<CargoManifest, BuildRunError> {
     let toml_str = fs::read_to_string("Cargo.toml").expect("Failed to read Cargo.toml file");
@@ -180,6 +130,15 @@ pub(crate) fn read_cargo_toml() -> Result<CargoManifest, BuildRunError> {
     // debug!("cargo_toml={cargo_toml:#?}");
     Ok(cargo_toml)
 }
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub(crate) struct Workspace {}
+
+// impl Default for Workspace {
+//     fn default() -> Self {
+//         Workspace {}
+//     }
+// }
 
 pub(crate) fn read_rs_toml(code_path: &Path) -> Result<CargoManifest, BuildRunError> {
     let rs_contents = read_file_contents(code_path)?;
@@ -196,4 +155,3 @@ pub(crate) fn read_rs_toml(code_path: &Path) -> Result<CargoManifest, BuildRunEr
 
     CargoManifest::from_str(&rs_toml_str)
 }
-// end old

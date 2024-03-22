@@ -35,7 +35,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("gen_build_dir={gen_build_dir:?}",);
 
     let default_manifest = CargoManifest::default();
-    println!("Default CargoManifest {default_manifest:#?}");
+    println!("default_manifest: {default_manifest:#?}");
+    println!("default_manifest.bin: {:#?}", default_manifest.bin);
+
+    let rs_toml_to_string = toml::to_string(&default_manifest)?;
+    println!("rs_toml_to_string: {rs_toml_to_string}");
 
     // Read manifest from source file
     // let _ = toml_utils::read_cargo_toml()?;
@@ -50,6 +54,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     default_manifest.save_to_file(default_toml_path.to_str().ok_or("Missing path?")?)?;
 
     code_path.push(source_name);
+    let source = read_file_contents(&code_path)?;
+
     let rs_manifest = read_rs_toml(&code_path)?;
 
     // let result = CargoManifest::from_str(&rs_toml_str);
@@ -66,10 +72,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("rs_manifest={rs_manifest:#?\n}");
     debug!("rs_manifest.to_string()={}", rs_manifest.to_string());
 
-    // let rs_toml_table = rs_toml_str.parse::<Table>().unwrap();
+    // let rs_toml_table = rs_toml_str.parse::<Table>()?;
     // debug!("rs_toml_table={rs_toml_table:#?}");
 
-    // let rs_toml_to_string = toml::to_string(&rs_toml_table).unwrap();
+    // let rs_toml_to_string = toml::to_string(&rs_toml_table)?;
     // debug!("Raw toml_to_string = {rs_toml_to_string:#?}\n");
 
     // debug!("toml_to_string reconstituted:");
@@ -94,16 +100,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     "##
     );
 
-    // let source_manifest_toml = cargo_manifest.parse::<Table>().unwrap();
+    // let source_manifest_toml = cargo_manifest.parse::<Table>()?;
     // debug!("source_manifest_toml={source_manifest_toml:#?}\n");
 
-    // let toml = toml::to_string(&source_manifest_toml).unwrap();
+    // let toml = toml::to_string(&source_manifest_toml)?;
     // // debug!("Raw cargo_manifest = {toml:#?}\n");
 
     // debug!("Cargo_manifest reconstituted:");
     // toml.lines().for_each(|l| println!("{l}"));
 
-    let source: &str = &rs_manifest.to_string();
+    // let source: &str = &rs_manifest.to_string();
     let build_dir = PathBuf::from(".cargo/build_run");
     if !build_dir.exists() {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
@@ -116,7 +122,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     flags.set(Flags::TIMINGS, options.timings);
 
     let formatted = flags.to_string();
-    let parsed: Flags = formatted.parse().unwrap();
+    let parsed = formatted
+        .parse::<Flags>()
+        .map_err(|e| BuildRunError::FromStr(e.to_string()))?;
 
     assert_eq!(flags, parsed);
     // assert!(flags.contains(Flags::VERBOSE));
@@ -130,8 +138,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         cmd_args::Action::All => {
             generate(
                 &flags,
-                &cmd_args::GenQualifier::Both,
-                source,
+                &GenQualifier::Both,
+                &source,
                 &cargo_manifest,
                 &build_dir,
             )?;
@@ -139,14 +147,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             run(&flags, source_stem, build_dir)
         } /* Generate code and Cargo.toml, then build */
         cmd_args::Action::Generate(gen_qualifier) => {
-            generate(&flags, &gen_qualifier, source, &cargo_manifest, &build_dir)
+            generate(&flags, &gen_qualifier, &source, &cargo_manifest, &build_dir)
         }
         cmd_args::Action::Build => build(&flags, &build_dir),
         cmd_args::Action::GenAndBuild => {
             generate(
                 &flags,
-                &cmd_args::GenQualifier::Both,
-                source,
+                &GenQualifier::Both,
+                &source,
                 &cargo_manifest,
                 &build_dir,
             )?;
@@ -193,7 +201,7 @@ fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
 
 fn generate(
     flags: &Flags,
-    gen_qualifier: &cmd_args::GenQualifier,
+    gen_qualifier: &GenQualifier,
     source: &str,
     cargo_manifest: &str,
     build_dir: &Path,

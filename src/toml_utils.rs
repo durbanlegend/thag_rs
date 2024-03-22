@@ -18,6 +18,8 @@ pub(crate) struct CargoManifest {
     pub edition: String,
     #[serde(default)]
     pub workspace: Workspace,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bin: Vec<Product>,
 }
 
 impl Default for CargoManifest {
@@ -27,6 +29,7 @@ impl Default for CargoManifest {
             dependencies: None,
             edition: "2021".to_string(),
             workspace: Workspace::default(),
+            bin: vec![Product::default()],
         }
     }
 }
@@ -66,7 +69,6 @@ fn default_package() -> Package {
     Package {
         name: String::from("your_project_name"),
         version: String::from("0.1.0"),
-        authors: None,
     }
 }
 
@@ -79,8 +81,6 @@ fn default_edition() -> String {
 struct Package {
     pub name: String,
     pub version: String,
-    #[serde(default)]
-    pub authors: Option<Vec<String>>,
 }
 
 impl Default for Package {
@@ -88,7 +88,6 @@ impl Default for Package {
         Package {
             version: String::from("0.0.0"),
             name: String::from("your_script_name_stem"),
-            authors: None,
         }
     }
 }
@@ -115,6 +114,18 @@ pub struct DependencyDetail {
 // #[allow(dead_code)]
 // fn default_version() -> Option<String> {
 //     None
+// }
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct Product {
+    pub path: Option<String>,
+    pub name: Option<String>,
+    pub required_features: Option<Vec<String>>,
+}
+
+// #[derive(Debug, Default, Deserialize, Serialize)]
+// pub struct Bin {
+//     pub products: Vec<Products>,
 // }
 
 #[allow(dead_code)]

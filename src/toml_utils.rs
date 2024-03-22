@@ -108,23 +108,12 @@ pub struct DependencyDetail {
     pub features: Vec<String>,
 }
 
-// Default function for the `version` field of Dependency
-// #[allow(dead_code)]
-// fn default_version() -> Option<String> {
-//     None
-// }
-
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Product {
     pub path: Option<String>,
     pub name: Option<String>,
     pub required_features: Option<Vec<String>>,
 }
-
-// #[derive(Debug, Default, Deserialize, Serialize)]
-// pub struct Bin {
-//     pub products: Vec<Products>,
-// }
 
 #[allow(dead_code)]
 fn default_package_version() -> String {
@@ -142,12 +131,6 @@ pub(crate) fn read_cargo_toml() -> Result<CargoManifest, BuildRunError> {
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub(crate) struct Workspace {}
-
-// impl Default for Workspace {
-//     fn default() -> Self {
-//         Workspace {}
-//     }
-// }
 
 pub(crate) fn rs_extract_toml(rs_contents: &str) -> Result<CargoManifest, BuildRunError> {
     let rs_toml_str = rs_contents

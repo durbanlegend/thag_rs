@@ -1,101 +1,112 @@
-#![allow(clippy::uninlined_format_args)]
-use structopt::StructOpt;
+use clap::Parser;
+use core::{fmt, str};
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "my_script", about = "A versatile script with various options.")]
-struct CliOptions {
-    #[structopt(subcommand)]
-    command: Option<Command>,
-
-    /// Activate verbose mode, printing additional information.
-    #[structopt(short = "v", long = "verbose")]
-    verbose: bool,
-
-    /// Show timings for each stage of script execution.
-    #[structopt(short = "t", long = "timings")]
-    timings: bool,
-
-    /// Generate necessary files without building.
-    #[structopt(short = "g", long = "generate")]
-    generate: bool,
-
-    /// Build the final project.
-    #[structopt(short = "b", long = "build")]
-    build: bool,
-
-    /// Display help information.
-    #[structopt(short = "h", long = "help")]
-    help: bool,
-
-    /// Display version information.
-    #[structopt(short = "V", long = "version")]
-    version: bool,
+/// Script Runner
+#[allow(clippy::struct_excessive_bools)]
+#[derive(Parser, Debug)]
+#[clap(version = "1.0", author = "Your Name")]
+pub(crate) struct Opt {
+    /// Sets the script to run
+    pub(crate) script: String,
+    /// Sets the arguments for the script
+    #[clap(last = true)]
+    pub(crate) args: Vec<String>,
+    /// Sets the level of verbosity
+    #[clap(short, long)]
+    pub(crate) verbose: bool,
+    /// Displays timings
+    #[clap(short, long)]
+    pub(crate) timings: bool,
+    /// Generates Rust source
+    #[clap(short = 's', long)]
+    pub(crate) gen_src: bool,
+    /// Generates Cargo.toml
+    #[clap(short = 'c', long)]
+    pub(crate) gen_cargo: bool,
+    /// Builds script
+    #[clap(short, long)]
+    pub(crate) build: bool,
+    /// Generates, builds and runs script
+    #[clap(short, long)]
+    pub(crate) all: bool,
+    /// Doesn't run script (script is run by default)
+    #[clap(short, long)]
+    pub(crate) no_run: bool,
 }
 
-#[derive(Debug, StructOpt)]
-enum Command {
-    /// Run the actual script functionality.  You would add your script logic here.
-    Run {
-        #[structopt(name = "program_name")]
-        program_name: Option<String>, // Make program_name optional
-                                      // ... other options for Run
-    },
-    Help,
-    Version,
+pub(crate) fn get_opt() -> Opt {
+    Opt::parse()
 }
 
+#[allow(dead_code)]
 fn main() {
-    let options = CliOptions::from_args();
+    let opt = Opt::parse();
 
-    match options.command {
-        Some(Command::Run { program_name }) => {
-            // Run command logic, handle Some(program_name) or None
-            if let Some(name) = program_name {
-                // Use the program name if provided
-                println!("Running program: {}", name);
-            } else {
-                // Handle the case where no program name was provided
-                println!("No program name specified. Use 'my_script run program_name'.");
-            }
-        }
-        Some(Command::Help) => {
-            CliOptions::clap().print_help().unwrap();
-        }
-        Some(Command::Version) => {
-            println!("my_script version: 1.0.0"); // Update version as needed
-        }
-        None => {
-            // Script was called without a subcommand, provide guidance or handle as needed
-            println!("my_script: No subcommand specified. Use options like 'my_script --help' or 'my_script run program_name'.");
-        }
+    if opt.verbose {
+        println!("Verbosity enabled");
     }
 
-    // // Handle help and version information
-    // if options.help {
-    //     CliOptions::clap().print_help().unwrap();
-    //     return;
-    // }
+    if opt.timings {
+        println!("Timings enabled");
+    }
 
-    // if options.version {
-    //     println!("my_script version: 1.0.0"); // Update version as needed
-    //     return;
-    // }
+    if opt.gen_src {
+        println!("Generating source");
+    }
 
-    // // Handle other options and subcommands based on your script's functionality
-    // let mut script_args = Vec::new();
-    // if let Some(command) = options.command {
-    //     match command {
-    //         Command::Run { program_name: x } => {
-    //             // Add your script logic here
-    //             println!("Running the script with options:");
-    //             println!("Verbose: {}", options.verbose);
-    //             println!("Timings: {}", options.timings);
-    //             println!("Generate: {}", options.generate);
-    //             println!("Build: {}", options.build);
-    //         }
-    //     }
-    // } else {
-    //     // Script was called without a subcommand, provide guidance or handle as needed
-    //     println!("my_script: No subcommand specified. Use 'my_script run' or other subcommands.");
-    // }
+    if opt.gen_cargo {
+        println!("Generating Cargo.toml");
+    }
+
+    if opt.build {
+        println!("Building something");
+    }
+
+    if opt.no_run {
+        println!("Not running script");
+    }
+
+    println!("Running script: {}", opt.script);
+    if !opt.args.is_empty() {
+        println!("With arguments:");
+        for arg in &opt.args {
+            println!("{arg}");
+        }
+    }
+}
+
+bitflags::bitflags! {
+    // You can `#[derive]` the `Debug` trait, but implementing it manually
+    // can produce output like `A | B` instead of `Flags(A | B)`.
+    // #[derive(Debug)]
+    #[derive(PartialEq, Eq)]
+    pub struct Flags: u32 {
+        const GEN_SRC = 1;
+        const GEN_TOML = 2;
+        const BUILD = 4;
+        const VERBOSE = 8;
+        const TIMINGS = 16;
+        const RUN = 32;
+        const ALL = 64;
+    }
+}
+
+impl fmt::Debug for Flags {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        bitflags::parser::to_writer(self, f)
+    }
+}
+
+impl fmt::Display for Flags {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        bitflags::parser::to_writer(self, f)
+    }
+}
+
+impl str::FromStr for Flags {
+    type Err = bitflags::parser::ParseError;
+
+    fn from_str(flags: &str) -> Result<Self, Self::Err> {
+        bitflags::parser::from_str(flags)
+    }
 }

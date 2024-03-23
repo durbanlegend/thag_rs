@@ -10,14 +10,15 @@ use errors::BuildRunError;
 
 use log::{debug, info, LevelFilter};
 
-mod cmd_args_old;
+mod cmd_args;
+// mod cmd_args_old;
 mod code_utils;
 mod errors;
 mod toml_utils;
 
-pub(crate) use structopt::StructOpt;
+// pub(crate) use structopt::StructOpt;
 
-use crate::cmd_args_old::{Flags, GenQualifier};
+use crate::cmd_args::Flags;
 use crate::code_utils::{read_file_contents, rs_extract_src};
 use crate::toml_utils::{rs_extract_toml, CargoManifest};
 
@@ -69,17 +70,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let dependencies = code_utils::infer_dependencies(&rs_source);
     debug!("dependencies={dependencies:#?\n}");
 
-    debug!("rs_manifest={rs_manifest:#?\n}");
-    debug!("rs_manifest.to_string()={}", rs_manifest.to_string());
-
-    // let rs_toml_table = rs_toml_str.parse::<Table>()?;
-    // debug!("rs_toml_table={rs_toml_table:#?}");
-
-    // let rs_toml_to_string = toml::to_string(&rs_toml_table)?;
-    // debug!("Raw toml_to_string = {rs_toml_to_string:#?}\n");
-
-    // debug!("toml_to_string reconstituted:");
-    // rs_toml_to_string.lines().for_each(|l| println!("{l}"));
+    // debug!("rs_manifest={rs_manifest:#?\n}");
+    // debug!("rs_manifest.to_string()={}", rs_manifest.to_string());
 
     let cargo_manifest = format!(
         r##"
@@ -114,11 +106,43 @@ fn main() -> Result<(), Box<dyn Error>> {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
     }
 
-    let options = cmd_args_old::Opt::from_args();
+    // let options = cmd_args::Opt::parse();
+    let options = cmd_args::get_opt();
+
+    if options.all && options.no_run {
+        println!(
+            "Conflicting options {} and {} specified",
+            options.all, options.no_run
+        );
+        return Ok(());
+    }
 
     let mut flags = Flags::empty();
+    flags.set(Flags::GEN_SRC, options.gen_src | options.all);
+    flags.set(Flags::GEN_TOML, options.gen_cargo | options.all);
+    flags.set(Flags::BUILD, options.build | options.all);
     flags.set(Flags::VERBOSE, options.verbose);
     flags.set(Flags::TIMINGS, options.timings);
+    flags.set(Flags::RUN, !options.no_run);
+    flags.set(Flags::ALL, options.all);
+
+    // Whole may be specified as such or as sum of parts
+    if !(flags.contains(Flags::ALL)) {
+        flags.set(
+            Flags::ALL,
+            options.gen_src & options.gen_cargo & options.build && !options.no_run,
+        );
+    }
+
+    debug!("flags={flags:#?}");
+    // return Ok(());
+
+    // intersection
+    let gen_either = Flags::GEN_SRC | Flags::GEN_TOML;
+    // debug!(
+    //     "flags.intersects(gen_either)?: {}",
+    //     flags.intersects(gen_either)
+    // );
 
     let formatted = flags.to_string();
     let parsed = formatted
@@ -129,59 +153,27 @@ fn main() -> Result<(), Box<dyn Error>> {
     // assert!(flags.contains(Flags::VERBOSE));
     // assert!(flags.contains(Flags::TIMINGS));
 
-    let result: Result<(), errors::BuildRunError> = match options.action {
-        // Implement generate logic with optional verbose and timings
-        // println!("Generating code (verbose: {}, timings: {})", verbose, timings);
+    // let result: Result<(), errors::BuildRunError> =
+    // Implement generate logic with optional verbose and timings
+    // println!("Generating code (verbose: {}, timings: {})", verbose, timings);
 
-        // match options.action {
-        cmd_args_old::Action::All => {
-            generate(
-                &flags,
-                &GenQualifier::Both,
-                &rs_source,
-                &cargo_manifest,
-                &build_dir,
-            )?;
-            build(&flags, &build_dir)?;
-            run(&flags, source_stem, build_dir)
-        } /* Generate code and Cargo.toml, then build */
-        cmd_args_old::Action::Generate(gen_qualifier) => generate(
-            &flags,
-            &gen_qualifier,
-            &rs_source,
-            &cargo_manifest,
-            &build_dir,
-        ),
-        cmd_args_old::Action::Build => build(&flags, &build_dir),
-        cmd_args_old::Action::GenAndBuild => {
-            generate(
-                &flags,
-                &GenQualifier::Both,
-                &rs_source,
-                &cargo_manifest,
-                &build_dir,
-            )?;
-            build(&flags, &build_dir)
-        } /* Generate code and Cargo.toml, then build */
-        cmd_args_old::Action::Run => run(&flags, source_stem, build_dir),
-        cmd_args_old::Action::BuildAndRun => {
-            build(&flags, &build_dir)?;
-            run(&flags, source_stem, build_dir)
-        }
-        cmd_args_old::Action::CheckCargo => todo!(),
-        cmd_args_old::Action::CheckSource => todo!(), /* Generate, build, and run */
-    };
-
-    match result {
-        Ok(()) => {
-            let dur = start.elapsed();
-            debug!("Completed in {}.{}s", dur.as_secs(), dur.subsec_millis());
-        }
-        Err(ref error) => {
-            println!("Error: {error}");
-        }
+    // match options.action {
+    if flags.intersects(gen_either) {
+        generate(&flags, &rs_source, &cargo_manifest, &build_dir)?;
     }
-    Ok(result?)
+
+    if flags.intersects(Flags::BUILD) {
+        build(&flags, &build_dir)?;
+    }
+
+    if flags.intersects(Flags::RUN) {
+        run(&flags, source_stem, build_dir)?;
+    }
+
+    let dur = start.elapsed();
+    debug!("Completed in {}.{}s", dur.as_secs(), dur.subsec_millis());
+
+    Ok(())
 }
 
 // Configure log level
@@ -199,14 +191,15 @@ fn configure_log() {
 
 fn generate(
     flags: &Flags,
-    gen_qualifier: &GenQualifier,
     source: &str,
     cargo_manifest: &str,
     build_dir: &Path,
 ) -> Result<(), errors::BuildRunError> {
     let start_gen = Instant::now();
 
-    if matches!(gen_qualifier, GenQualifier::Both | GenQualifier::Source) {
+    info!("In generate, flags={flags}");
+
+    if flags.contains(Flags::GEN_SRC) {
         let source_path = build_dir.join("tmp_source.rs");
         let mut source_file = fs::File::create(&source_path)?;
         source_file.write_all(source.as_bytes())?;
@@ -214,19 +207,23 @@ fn generate(
         let mut absolute_path = std::env::current_dir()?;
         absolute_path.push(relative_path);
         debug!("Absolute path of generated program: {absolute_path:?}");
+        info!("##### Source code generation succeeded!");
     }
 
-    if matches!(gen_qualifier, GenQualifier::Both | GenQualifier::CargoToml) {
+    if flags.contains(Flags::GEN_TOML) {
         let cargo_toml_path = build_dir.join("Cargo.toml");
 
-        // Don't overwrite Cargo.toml if not changed - see if it will remember it's compiled.
-        let prev_cargo_toml = read_file_contents(&cargo_toml_path)?;
-        if !cargo_manifest.eq(&prev_cargo_toml) {
-            let mut cargo_toml = fs::File::create(&cargo_toml_path)?;
+        info!("In generate of Cargo.toml, flags={flags}");
 
-            OtherWrite::write_all(&mut cargo_toml, cargo_manifest.as_bytes())?;
-            debug!("cargo_toml_path={cargo_toml_path:?}");
-        }
+        // ? Don't overwrite Cargo.toml if not changed - see if it will remember it's compiled.
+        // let prev_cargo_toml = read_file_contents(&cargo_toml_path)?;
+        // if !cargo_manifest.eq(&prev_cargo_toml) {
+        let mut cargo_toml = fs::File::create(&cargo_toml_path)?;
+
+        OtherWrite::write_all(&mut cargo_toml, cargo_manifest.as_bytes())?;
+        debug!("cargo_toml_path={cargo_toml_path:?}");
+        info!("##### Cargo.toml generation succeeded!");
+        // }
     }
 
     let dur = start_gen.elapsed();
@@ -304,7 +301,7 @@ fn run(flags: &Flags, source_stem: &str, build_dir: PathBuf) -> Result<(), error
 
     if run_output.status.success() {
         let success_msg = String::from_utf8_lossy(&run_output.stdout);
-        info!("##### Build succeeded!");
+        info!("##### Run succeeded!");
         success_msg.lines().for_each(|line| {
             debug!("{line}");
         });

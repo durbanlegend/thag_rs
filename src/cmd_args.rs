@@ -1,100 +1,71 @@
-use core::{fmt, str};
-
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(
-    name = "build_run",
-    about = "Build and run a given Rust programs, with separate and combined options for stages"
-)]
-pub(crate) struct Opt {
+#[structopt(name = "my_script", about = "A versatile script with various options.")]
+struct CliOptions {
     #[structopt(subcommand)]
-    pub(crate) action: Action,
-    #[structopt(
-        short = "S",
-        long = "check-source",
-        help = "Check for changes in source code"
-    )]
-    #[structopt(short = "v", long = "verbose", help = "Enable verbose output")]
-    pub(crate) verbose: bool,
-    #[structopt(short = "t", long = "timings", help = "Print timings for each stage")]
-    pub(crate) timings: bool,
+    command: Option<Command>,
+
+    /// Activate verbose mode, printing additional information.
+    #[structopt(short = "v", long = "verbose")]
+    verbose: bool,
+
+    /// Show timings for each stage of script execution.
+    #[structopt(short = "t", long = "timings")]
+    timings: bool,
+
+    /// Generate necessary files without building.
+    #[structopt(short = "g", long = "generate")]
+    generate: bool,
+
+    /// Build the final project.
+    #[structopt(short = "b", long = "build")]
+    build: bool,
+
+    /// Display help information.
+    #[structopt(short = "h", long = "help")]
+    help: bool,
+
+    /// Display version information.
+    #[structopt(short = "V", long = "version")]
+    version: bool,
 }
 
-bitflags::bitflags! {
-    // You can `#[derive]` the `Debug` trait, but implementing it manually
-    // can produce output like `A | B` instead of `Flags(A | B)`.
-    // #[derive(Debug)]
-    #[derive(PartialEq, Eq)]
-    pub struct Flags: u32 {
-        const VERBOSE = 1;
-        const TIMINGS = 2;
-    }
-}
-
-impl fmt::Debug for Flags {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        bitflags::parser::to_writer(self, f)
-    }
-}
-
-impl fmt::Display for Flags {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        bitflags::parser::to_writer(self, f)
-    }
-}
-
-impl str::FromStr for Flags {
-    type Err = bitflags::parser::ParseError;
-
-    fn from_str(flags: &str) -> Result<Self, Self::Err> {
-        bitflags::parser::from_str(flags)
-    }
-}
-
-#[derive(Debug, PartialEq, StructOpt)]
-pub(crate) enum Action {
-    #[structopt(
-        name = "all",
-        about = "Generate, build and run a Rust program from source code"
-    )]
-    All,
-    #[structopt(name = "gen", about = "Generate Cargo.toml and source code")]
-    Generate(GenQualifier),
-    #[structopt(name = "build", about = "Build the executable from generated code")]
-    Build,
-    #[structopt(
-        name = "gen-and-build",
-        about = "Generate Cargo.toml and source code, then build"
-    )]
-    GenAndBuild,
-    #[structopt(name = "run", about = "Run the generated program (if already built)")]
+#[derive(Debug, StructOpt)]
+enum Command {
+    /// Run the actual script functionality.  You would add your script logic here.
     Run,
-    #[structopt(name = "build-and-run", about = "Build and run the generated program")]
-    BuildAndRun,
-    #[structopt(name = "check-cargo", about = "Check for changes in Cargo.toml")]
-    CheckCargo,
-    #[structopt(name = "check-source", about = "Check for changes in source code")]
-    CheckSource,
 }
 
-#[derive(StructOpt, Debug, PartialEq)]
-pub enum GenQualifier {
-    #[structopt(name = "both", about = "Generate both source and Cargo.toml")]
-    Both,
-    #[structopt(name = "c", about = "Generate Cargo.toml only")]
-    CargoToml,
-    #[structopt(name = "s", about = "Generate source only")]
-    Source,
-}
+fn main() {
+    let options = CliOptions::from_args();
 
-#[derive(StructOpt, Debug, PartialEq)]
-pub enum BuildQualifier {
-    #[structopt(
-        name = "full",
-        about = "Generate source and Cargo.toml before building"
-    )]
-    Full,
-    #[structopt(name = "only", about = "Build only, don't generate first")]
-    Only,
+    // Handle help and version information
+    if options.help {
+        CliOptions::clap().print_help().unwrap();
+        return;
+    }
+
+    if options.version {
+        println!("my_script version: 1.0.0"); // Update version as needed
+        return;
+    }
+
+    // Handle other options and subcommands based on your script's functionality
+    let mut script_args = Vec::new();
+    if let Some(command) = options.command {
+        match command {
+            Command::Run => {
+                // Add your script logic here
+                println!("Running the script with options:");
+                println!("Verbose: {}", options.verbose);
+                println!("Timings: {}", options.timings);
+                println!("Generate: {}", options.generate);
+                println!("Build: {}", options.build);
+            }
+        }
+    } else {
+        // Script was called without a subcommand, provide guidance or handle as needed
+        println!("my_script: No subcommand specified. Use 'my_script run' or other subcommands.");
+    }
 }

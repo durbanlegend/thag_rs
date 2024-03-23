@@ -10,14 +10,14 @@ use errors::BuildRunError;
 
 use log::{debug, info, LevelFilter};
 
-mod cmd_args;
+mod cmd_args_old;
 mod code_utils;
 mod errors;
 mod toml_utils;
 
 pub(crate) use structopt::StructOpt;
 
-use crate::cmd_args::{Flags, GenQualifier};
+use crate::cmd_args_old::{Flags, GenQualifier};
 use crate::code_utils::{read_file_contents, rs_extract_src};
 use crate::toml_utils::{rs_extract_toml, CargoManifest};
 
@@ -39,7 +39,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let default_manifest = CargoManifest::default();
     println!("default_manifest: {default_manifest:#?}");
-    println!("default_manifest.bin: {:#?}", default_manifest.bin);
 
     let rs_toml_to_string = toml::to_string(&default_manifest)?;
     println!("rs_toml_to_string: {rs_toml_to_string}");
@@ -115,7 +114,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
     }
 
-    let options = cmd_args::Opt::from_args();
+    let options = cmd_args_old::Opt::from_args();
 
     let mut flags = Flags::empty();
     flags.set(Flags::VERBOSE, options.verbose);
@@ -135,7 +134,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // println!("Generating code (verbose: {}, timings: {})", verbose, timings);
 
         // match options.action {
-        cmd_args::Action::All => {
+        cmd_args_old::Action::All => {
             generate(
                 &flags,
                 &GenQualifier::Both,
@@ -146,15 +145,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             build(&flags, &build_dir)?;
             run(&flags, source_stem, build_dir)
         } /* Generate code and Cargo.toml, then build */
-        cmd_args::Action::Generate(gen_qualifier) => generate(
+        cmd_args_old::Action::Generate(gen_qualifier) => generate(
             &flags,
             &gen_qualifier,
             &rs_source,
             &cargo_manifest,
             &build_dir,
         ),
-        cmd_args::Action::Build => build(&flags, &build_dir),
-        cmd_args::Action::GenAndBuild => {
+        cmd_args_old::Action::Build => build(&flags, &build_dir),
+        cmd_args_old::Action::GenAndBuild => {
             generate(
                 &flags,
                 &GenQualifier::Both,
@@ -164,13 +163,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             )?;
             build(&flags, &build_dir)
         } /* Generate code and Cargo.toml, then build */
-        cmd_args::Action::Run => run(&flags, source_stem, build_dir),
-        cmd_args::Action::BuildAndRun => {
+        cmd_args_old::Action::Run => run(&flags, source_stem, build_dir),
+        cmd_args_old::Action::BuildAndRun => {
             build(&flags, &build_dir)?;
             run(&flags, source_stem, build_dir)
         }
-        cmd_args::Action::CheckCargo => todo!(),
-        cmd_args::Action::CheckSource => todo!(), /* Generate, build, and run */
+        cmd_args_old::Action::CheckCargo => todo!(),
+        cmd_args_old::Action::CheckSource => todo!(), /* Generate, build, and run */
     };
 
     match result {

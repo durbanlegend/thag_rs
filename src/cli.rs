@@ -1,71 +1,92 @@
-use structopt:: StructOpt;
+#![allow(clippy::uninlined_format_args)]
+use structopt::StructOpt;
+use structopt::clap::AppSettings;
+// use structopt::validator::ValidationError;
+
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "my_script", about = "A versatile script with various options.")]
 struct CliOptions {
-  #[structopt(subcommand)]
-  command: Option < Command >,
+    #[structopt(subcommand)]
+    command: Option<Command>,
 
-  /// Activate verbose mode, printing additional information.
-  #[structopt(short = "v", long = "verbose")]
-  verbose: bool,
+    /// Activate verbose mode, printing additional information.
+    #[structopt(short = "v", long = "verbose")]
+    verbose: bool,
 
-  /// Show timings for each stage of script execution.
-  #[structopt(short = "t", long = "timings")]
-  timings: bool,
+    /// Show timings for each stage of script execution.
+    #[structopt(short = "t", long = "timings")]
+    timings: bool,
 
-  /// Generate necessary files without building.
-  #[structopt(short = "g", long = "generate")]
-  generate: bool,
+    /// Generate necessary files without building.
+    #[structopt(short = "g", long = "generate")]
+    generate: bool,
 
-  /// Build the final project.
-  #[structopt(short = "b", long = "build")]
-  build: bool,
+    /// Build the final project.
+    #[structopt(short = "b", long = "build")]
+    build: bool,
 
-  /// Display help information.
-  #[structopt(short = "h", long = "help")]
-  help: bool,
+    /// Display help information (short option).
+      #[structopt(short = "h", long = "help")]
+      help: bool,
 
-  /// Display version information.
-  #[structopt(short = "V", long = "version")]
-  version: bool,
+      /// Display version information (short option).
+      #[structopt(short = "V", long = "version")]
+      version: bool,
 }
 
 #[derive(Debug, StructOpt)]
 enum Command {
-  /// Run the actual script functionality.  You would add your script logic here.
-  Run,
+    /// Run the actual script functionality.  You would add your script logic here.
+    Run {
+        #[structopt(name = "program_name")]
+        program_name: Option<String>, // Make program_name optional
+                                      // ... other options for Run
+    },
+    // Help,
+    // Version,
 }
 
-  let options = CliOptions:: from_args();
+// fn validate_no_program_if_help_or_version(options: &CliOptions) -> Result<(), ValidationError> {
+//   if (options.help || options.version) && options.command.program_name.is_empty() {
+//     // --help or --version specified, program name is allowed to be missing
+//     Ok(())
+//   } else if options.program_name.is_empty() && !options.help && !options.version {
+//     Err(ValidationError::new("Program name required. Use 'my_script run program_name'."))
+//   } else {
+//     Ok(())
+//   }
+// }
 
-  eprintln!("options={options:#?}");
+eprintln!("Here!");
 
-  // Handle help and version information
-  if options.help {
-    CliOptions:: clap().print_help().unwrap();
-    return Ok(());
-  }
+let options = CliOptions::from_args().command.expect("Error parsing arguments");
+println!("options={:?}", options);
+  // let validation_result = validate_no_program_if_help_or_version(&options);
 
-  if options.version {
-    println!("\n\nmy_script version: 1.0.0\n\n"); // Update version as needed
-    return Ok(());
-  }
+  // if let Err(err) = validation_result {
+  //     eprintln!("Error: {}", err);
+  //     return Ok(());
+  // }
 
-  // Handle other options and subcommands based on your script's functionality
-  // let mut script_args = Vec::new ();
-  if let Some(command) = options.command {
-    match command {
-      Command:: Run => {
-        // Add your script logic here
-        println!("Running the script with options:");
-        println!("Verbose: {}", options.verbose);
-        println!("Timings: {}", options.timings);
-        println!("Generate: {}", options.generate);
-        println!("Build: {}", options.build);
-      }
-    }
-  } else {
-    // Script was called without a subcommand, provide guidance or handle as needed
-    println!("my_script: No subcommand specified. Use 'my_script run' or other subcommands.");
-  }
+eprintln!("Still here!");
+// println!("options.command={:?}", options.command);
+
+// match options.command {
+//     Some(Command::Run { program_name }) => {
+//       // Run command logic...
+//       println!("Run command logic here");
+//     }
+//     Some(CliOptions::help) => {
+//       CliOptions::clap().print_help().unwrap();
+//       return Ok(());
+//     }
+//     Some(CliOptions::version) => {
+//       println!("my_script version: 1.0.0"); // Update version as needed
+//       return Ok(());
+//     }
+//     None => {
+//       // Script was called without a subcommand, provide guidance or handle as needed
+//       println!("my_script: No subcommand specified. Use options like 'my_script --help' or 'my_script run program_name'.");
+//     }
+//   }

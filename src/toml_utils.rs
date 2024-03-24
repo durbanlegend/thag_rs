@@ -1,4 +1,5 @@
-use log::{debug, info};
+#![allow(clippy::uninlined_format_args)]
+use log::debug;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -8,12 +9,12 @@ use std::process::Command;
 use std::time::Instant;
 use std::{fs, str::FromStr};
 
-use crate::errors::{self, BuildRunError};
+use crate::errors::BuildRunError;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
     #[serde(default = "default_package")]
-    pub(self) package: Package,
+    pub(crate) package: Package,
     pub(crate) dependencies: Option<Dependencies>,
     #[serde(default = "default_edition")]
     pub(crate) edition: String,
@@ -79,7 +80,7 @@ fn default_edition() -> String {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct Package {
+pub(crate) struct Package {
     pub name: String,
     pub version: String,
 }
@@ -170,7 +171,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
             .stdout
             .lines()
             .take(1)
-            .filter_map(|r| r.ok())
+            .filter_map(Result::ok)
             .fold(String::new(), |mut output, b| {
                 let _ = writeln!(output, "{b}");
                 output
@@ -197,7 +198,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
         dur.subsec_millis()
     );
 
-    Ok((String::from(name), String::from(version)))
+    Ok((name, version))
 }
 
 pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {

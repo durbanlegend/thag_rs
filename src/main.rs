@@ -1,3 +1,4 @@
+#![allow(clippy::uninlined_format_args)]
 use crate::code_utils::get_proc_flags;
 use crate::errors::BuildRunError;
 use core::str;
@@ -19,7 +20,7 @@ mod toml_utils;
 
 use crate::cmd_args::ProcFlags;
 use crate::code_utils::{build_paths, read_file_contents, rs_extract_src};
-use crate::toml_utils::{capture_dep, cargo_search, rs_extract_toml, CargoManifest, Dependency};
+use crate::toml_utils::{cargo_search, rs_extract_toml, CargoManifest, Dependency, Product};
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -56,20 +57,26 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // let (source_stem, source_name) = if options.script.ends_with(rs_suffix) { (a, b) } else { (c, d) };
 
+    debug!(
+        "options.script={}; options.script.ends_with(rs_suffix)? {})",
+        options.script,
+        options.script.ends_with(rs_suffix)
+    );
+
     let (source_stem, source_name) = if options.script.ends_with(rs_suffix) {
-        (
-            String::from(options.script.strip_suffix(rs_suffix).ok_or_else(|| {
-                BuildRunError::NoneOption(format!("Failed to strip {rs_suffix} suffix"))
-            })?),
-            options.script.clone(),
-        )
+        let stem = String::from(options.script.strip_suffix(rs_suffix).ok_or_else(|| {
+            BuildRunError::NoneOption(format!("Failed to strip {rs_suffix} suffix"))
+        })?);
+        (stem, options.script.clone())
     } else {
         (options.script.clone(), options.script.clone() + rs_suffix)
     };
+    debug!("source_stem={source_stem}; source_name={source_name}");
 
-    let (code_path, default_toml_path) = build_paths(&source_name)?;
-    let mut source_path = code_path.clone();
-    source_path.push(PathBuf::from_str(&source_name)?);
+    let (code_path, default_toml_path) = build_paths(&source_stem)?;
+    let source_path = code_path.clone();
+    // source_path.push(PathBuf::from_str(&source_name)?);
+    debug!("code_path={code_path:?}");
 
     // Check it exists
     if !source_path.exists() {
@@ -133,8 +140,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let cargo_manifest = rs_manifest.to_string();
-
     // let cargo_manifest = format!(
     //     r##"
     // [package]
@@ -149,7 +154,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // [workspace]
 
     // [[bin]]
-    // name = "{source_name}"
+    // name = "{source_stem}"
     // path = "/Users/donf/projects/build_run/.cargo/build_run/tmp_source.rs"
     // "##
     // );
@@ -168,6 +173,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
     }
 
+    rs_manifest.package.name = source_stem.clone();
+    rs_manifest.edition = default_manifest.edition;
+    rs_manifest.bin.insert(
+        0,
+        Product {
+            path: Some(format!("{gen_build_dir}/{source_name}")),
+            name: Some(source_stem.clone()),
+            required_features: None,
+        },
+    );
+
+    let cargo_manifest = rs_manifest.to_string();
+    debug!("cargo_manifest={cargo_manifest}");
+
     // intersection
     let gen_either = ProcFlags::GEN_SRC | ProcFlags::GEN_TOML;
     // debug!(
@@ -181,7 +200,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // match options.action {
     if proc_flags.intersects(gen_either) {
-        generate(&proc_flags, &rs_source, &cargo_manifest, &build_dir)?;
+        generate(
+            &proc_flags,
+            &source_name,
+            &rs_source,
+            &cargo_manifest,
+            &build_dir,
+        )?;
     }
 
     if proc_flags.intersects(ProcFlags::BUILD) {
@@ -213,6 +238,7 @@ fn configure_log() {
 
 fn generate(
     flags: &ProcFlags,
+    source_name: &str,
     source: &str,
     cargo_manifest: &str,
     build_dir: &Path,
@@ -222,11 +248,12 @@ fn generate(
     info!("In generate, flags={flags}");
 
     if flags.contains(ProcFlags::GEN_SRC) {
-        let source_path = build_dir.join("tmp_source.rs");
+        let source_path = build_dir.join(source_name);
         let mut source_file = fs::File::create(&source_path)?;
         source_file.write_all(source.as_bytes())?;
         let relative_path = source_path;
-        let mut absolute_path = std::env::current_dir()?;
+        let mut absolute_path = PathBuf::from(PACKAGE_DIR); // std::env::current_dir()?.canonicalize()?;
+                                                            // let absolute_path = absolute_path.canonicalize();
         absolute_path.push(relative_path);
         debug!("Absolute path of generated program: {absolute_path:?}");
         info!("##### Source code generation succeeded!");

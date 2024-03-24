@@ -1,12 +1,13 @@
+use crate::code_utils::get_proc_flags;
+use crate::errors::BuildRunError;
 use core::str;
 use std::env;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::str::FromStr;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
-
-use errors::BuildRunError;
 
 use log::{debug, info, LevelFilter};
 
@@ -16,11 +17,9 @@ mod code_utils;
 mod errors;
 mod toml_utils;
 
-// pub(crate) use structopt::StructOpt;
-
-use crate::cmd_args::Flags;
-use crate::code_utils::{read_file_contents, rs_extract_src};
-use crate::toml_utils::{rs_extract_toml, CargoManifest};
+use crate::cmd_args::ProcFlags;
+use crate::code_utils::{build_paths, read_file_contents, rs_extract_src};
+use crate::toml_utils::{capture_dep, cargo_search, rs_extract_toml, CargoManifest, Dependency};
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -38,6 +37,47 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("VERSION={VERSION}");
     debug!("gen_build_dir={gen_build_dir:?}",);
 
+    let options = cmd_args::get_opt();
+    let proc_flags = get_proc_flags(&options)?;
+    debug!("flags={proc_flags:#?}");
+
+    // let source_stem = "factorial_main"; // Replace with actual program name
+    // let source_name = options.script.clone();
+
+    let rs_suffix = ".rs";
+
+    // let strip_suffix = &options
+    //     .script
+    //     .strip_suffix(rs_suffix)
+    //     .ok_or_else(|| BuildRunError::NoneOption(String::from("Failed to strip .rs suffix")))?;
+
+    // let (a, b) = (String::from(options.script.strip_suffix(rs_suffix).ok_or_else(|| BuildRunError::NoneOption(String::from("Failed to strip .rs suffix")))?), options.script);
+    // let (c, d) = (options.script, options.script + rs_suffix);
+
+    // let (source_stem, source_name) = if options.script.ends_with(rs_suffix) { (a, b) } else { (c, d) };
+
+    let (source_stem, source_name) = if options.script.ends_with(rs_suffix) {
+        (
+            String::from(options.script.strip_suffix(rs_suffix).ok_or_else(|| {
+                BuildRunError::NoneOption(format!("Failed to strip {rs_suffix} suffix"))
+            })?),
+            options.script.clone(),
+        )
+    } else {
+        (options.script.clone(), options.script.clone() + rs_suffix)
+    };
+
+    let (code_path, default_toml_path) = build_paths(&source_name)?;
+    let mut source_path = code_path.clone();
+    source_path.push(PathBuf::from_str(&source_name)?);
+
+    // Check it exists
+    if !source_path.exists() {
+        return Err(Box::new(BuildRunError::Command(format!(
+            "No script named {source_stem} or {source_name} in path {code_path:?}"
+        ))));
+    }
+
     let default_manifest = CargoManifest::default();
     println!("default_manifest: {default_manifest:#?}");
 
@@ -47,50 +87,72 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Read manifest from source file
     // let _ = toml_utils::read_cargo_toml()?;
 
-    let source_stem = "factorial_main"; // Replace with actual program name
-    let source_name = format!("{source_stem}.rs");
-    let project_dir = env::var("PWD")?; // Set during cargo build
-    let project_path = PathBuf::from(project_dir);
-    let mut code_path: PathBuf = project_path.join("examples");
-
-    let default_toml_path = code_path.join("default_cargo.toml");
     default_manifest.save_to_file(default_toml_path.to_str().ok_or("Missing path?")?)?;
 
-    code_path.push(source_name);
-    let rs_source = read_file_contents(&code_path)?;
+    let rs_full_source = read_file_contents(&code_path)?;
 
-    let rs_manifest = rs_extract_toml(&rs_source)?;
-    let rs_source = rs_extract_src(&rs_source);
-
-    // Infer dependencies from imports and maybe qualified item
-    // let lines = rs_source.lines().borrow();
-    // for line in lines {
-    //     regex
-    // }
-    let dependencies = code_utils::infer_dependencies(&rs_source);
-    debug!("dependencies={dependencies:#?\n}");
-
-    // debug!("rs_manifest={rs_manifest:#?\n}");
-    // debug!("rs_manifest.to_string()={}", rs_manifest.to_string());
-
-    let cargo_manifest = format!(
-        r##"
-    [package]
-    name = "{source_stem}"
-    version = "0.0.1"
-    edition = "2021"
-
-    [dependencies]
-    rug = {{ version = "1.24.0", features = ["integer"] }}
-    serde = {{ version = "1.0", features = ["derive"] }}
-
-    [workspace]
-
-    [[bin]]
-    name = "{source_stem}"
-    path = "/Users/donf/projects/build_run/.cargo/build_run/tmp_source.rs"
-    "##
+    let mut rs_manifest = rs_extract_toml(&rs_full_source)?;
+    debug!("rs_manifest (before deps) = {rs_manifest:#?\n}");
+    debug!(
+        "rs_manifest.to_string() (before deps) = {}",
+        rs_manifest.to_string()
     );
+
+    // Exclude the embedded cargo manifest information
+    let rs_source = rs_extract_src(&rs_full_source);
+
+    // Infer dependencies from imports
+    let rs_deps = code_utils::infer_dependencies(&rs_source);
+    debug!("rs_deps={rs_deps:#?\n}");
+
+    if !rs_deps.is_empty() {
+        let dep_map: &mut std::collections::BTreeMap<std::string::String, toml_utils::Dependency> =
+            if let Some(Some(ref mut dep_map)) = rs_manifest.dependencies {
+                dep_map
+            } else {
+                return Err(Box::new(BuildRunError::Command(String::from(
+                    "No dependency map found",
+                ))));
+            };
+
+        debug!("dep_map={dep_map:?}");
+        for dep_name in rs_deps {
+            let cargo_search_result = cargo_search(&dep_name);
+            if dep_map.contains_key(&dep_name) {
+                // Already in manifest
+                continue;
+            }
+            let dep = if let Ok((_dep_name, version)) = cargo_search_result {
+                Dependency::Simple(version)
+            } else {
+                return Err(Box::new(BuildRunError::Command(format!(
+                    "Cargo search couldn't find crate {dep_name}"
+                ))));
+            };
+            dep_map.insert(dep_name, dep);
+        }
+    }
+
+    let cargo_manifest = rs_manifest.to_string();
+
+    // let cargo_manifest = format!(
+    //     r##"
+    // [package]
+    // name = "{source_name}"
+    // version = "0.0.1"
+    // edition = "2021"
+
+    // [dependencies]
+    // rug = {{ version = "1.24.0", features = ["integer"] }}
+    // serde = {{ version = "1.0", features = ["derive"] }}
+
+    // [workspace]
+
+    // [[bin]]
+    // name = "{source_name}"
+    // path = "/Users/donf/projects/build_run/.cargo/build_run/tmp_source.rs"
+    // "##
+    // );
 
     // let source_manifest_toml = cargo_manifest.parse::<Table>()?;
     // debug!("source_manifest_toml={source_manifest_toml:#?}\n");
@@ -106,68 +168,28 @@ fn main() -> Result<(), Box<dyn Error>> {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
     }
 
-    // let options = cmd_args::Opt::parse();
-    let options = cmd_args::get_opt();
-
-    if options.all && options.no_run {
-        println!(
-            "Conflicting options {} and {} specified",
-            options.all, options.no_run
-        );
-        return Ok(());
-    }
-
-    let mut flags = Flags::empty();
-    flags.set(Flags::GEN_SRC, options.gen_src | options.all);
-    flags.set(Flags::GEN_TOML, options.gen_cargo | options.all);
-    flags.set(Flags::BUILD, options.build | options.all);
-    flags.set(Flags::VERBOSE, options.verbose);
-    flags.set(Flags::TIMINGS, options.timings);
-    flags.set(Flags::RUN, !options.no_run);
-    flags.set(Flags::ALL, options.all);
-
-    // Whole may be specified as such or as sum of parts
-    if !(flags.contains(Flags::ALL)) {
-        flags.set(
-            Flags::ALL,
-            options.gen_src & options.gen_cargo & options.build && !options.no_run,
-        );
-    }
-
-    debug!("flags={flags:#?}");
-    // return Ok(());
-
     // intersection
-    let gen_either = Flags::GEN_SRC | Flags::GEN_TOML;
+    let gen_either = ProcFlags::GEN_SRC | ProcFlags::GEN_TOML;
     // debug!(
     //     "flags.intersects(gen_either)?: {}",
     //     flags.intersects(gen_either)
     // );
-
-    let formatted = flags.to_string();
-    let parsed = formatted
-        .parse::<Flags>()
-        .map_err(|e| BuildRunError::FromStr(e.to_string()))?;
-
-    assert_eq!(flags, parsed);
-    // assert!(flags.contains(Flags::VERBOSE));
-    // assert!(flags.contains(Flags::TIMINGS));
 
     // let result: Result<(), errors::BuildRunError> =
     // Implement generate logic with optional verbose and timings
     // println!("Generating code (verbose: {}, timings: {})", verbose, timings);
 
     // match options.action {
-    if flags.intersects(gen_either) {
-        generate(&flags, &rs_source, &cargo_manifest, &build_dir)?;
+    if proc_flags.intersects(gen_either) {
+        generate(&proc_flags, &rs_source, &cargo_manifest, &build_dir)?;
     }
 
-    if flags.intersects(Flags::BUILD) {
-        build(&flags, &build_dir)?;
+    if proc_flags.intersects(ProcFlags::BUILD) {
+        build(&proc_flags, &build_dir)?;
     }
 
-    if flags.intersects(Flags::RUN) {
-        run(&flags, source_stem, build_dir)?;
+    if proc_flags.intersects(ProcFlags::RUN) {
+        run(&proc_flags, &source_name, build_dir)?;
     }
 
     let dur = start.elapsed();
@@ -190,16 +212,16 @@ fn configure_log() {
 }
 
 fn generate(
-    flags: &Flags,
+    flags: &ProcFlags,
     source: &str,
     cargo_manifest: &str,
     build_dir: &Path,
-) -> Result<(), errors::BuildRunError> {
+) -> Result<(), BuildRunError> {
     let start_gen = Instant::now();
 
     info!("In generate, flags={flags}");
 
-    if flags.contains(Flags::GEN_SRC) {
+    if flags.contains(ProcFlags::GEN_SRC) {
         let source_path = build_dir.join("tmp_source.rs");
         let mut source_file = fs::File::create(&source_path)?;
         source_file.write_all(source.as_bytes())?;
@@ -210,7 +232,7 @@ fn generate(
         info!("##### Source code generation succeeded!");
     }
 
-    if flags.contains(Flags::GEN_TOML) {
+    if flags.contains(ProcFlags::GEN_TOML) {
         let cargo_toml_path = build_dir.join("Cargo.toml");
 
         info!("In generate of Cargo.toml, flags={flags}");
@@ -232,7 +254,7 @@ fn generate(
         dur.as_secs(),
         dur.subsec_millis()
     );
-    if flags.contains(Flags::TIMINGS) {
+    if flags.contains(ProcFlags::TIMINGS) {
         println!(
             "Completed generation in {}.{}s",
             dur.as_secs(),
@@ -244,7 +266,7 @@ fn generate(
 }
 
 // Build the Rust program using Cargo (with manifest path)
-fn build(flags: &Flags, build_dir: &Path) -> Result<(), errors::BuildRunError> {
+fn build(flags: &ProcFlags, build_dir: &Path) -> Result<(), BuildRunError> {
     let start_build = Instant::now();
     let mut build_command = Command::new("cargo");
     build_command
@@ -262,9 +284,7 @@ fn build(flags: &Flags, build_dir: &Path) -> Result<(), errors::BuildRunError> {
         error_msg.lines().for_each(|line| {
             debug!("{line}");
         });
-        return Err(errors::BuildRunError::Command(
-            "Cargo build failed".to_string(),
-        ));
+        return Err(BuildRunError::Command("Cargo build failed".to_string()));
     }
 
     let dur = start_build.elapsed();
@@ -274,7 +294,7 @@ fn build(flags: &Flags, build_dir: &Path) -> Result<(), errors::BuildRunError> {
         dur.subsec_millis()
     );
 
-    if flags.contains(Flags::TIMINGS) {
+    if flags.contains(ProcFlags::TIMINGS) {
         println!(
             "Completed build in {}.{}s",
             dur.as_secs(),
@@ -286,7 +306,7 @@ fn build(flags: &Flags, build_dir: &Path) -> Result<(), errors::BuildRunError> {
 }
 
 // Run the built program
-fn run(flags: &Flags, source_stem: &str, build_dir: PathBuf) -> Result<(), errors::BuildRunError> {
+fn run(flags: &ProcFlags, source_stem: &str, build_dir: PathBuf) -> Result<(), BuildRunError> {
     let start_run = Instant::now();
 
     let relative_path = format!("./target/debug/{source_stem}");
@@ -310,9 +330,7 @@ fn run(flags: &Flags, source_stem: &str, build_dir: PathBuf) -> Result<(), error
         error_msg.lines().for_each(|line| {
             debug!("{line}");
         });
-        return Err(errors::BuildRunError::Command(
-            "Cargo run failed".to_string(),
-        ));
+        return Err(BuildRunError::Command("Cargo run failed".to_string()));
     }
 
     let output = String::from_utf8_lossy(&run_output.stdout);
@@ -327,7 +345,7 @@ fn run(flags: &Flags, source_stem: &str, build_dir: PathBuf) -> Result<(), error
         dur.subsec_millis()
     );
 
-    if flags.contains(Flags::TIMINGS) {
+    if flags.contains(ProcFlags::TIMINGS) {
         println!(
             "Completed run in {}.{}s",
             dur.as_secs(),

@@ -1,10 +1,17 @@
+use crate::cmd_args;
+use crate::cmd_args::ProcFlags;
+use crate::errors::BuildRunError;
 use log::debug;
 use regex::Regex;
-use std::{collections::HashSet, fs, path::Path};
+use std::{
+    collections::HashSet,
+    env,
+    error::Error,
+    fs,
+    path::{Path, PathBuf},
+};
 
-use crate::errors::BuildRunError;
-
-#[allow(dead_code)]
+#[allow(dead_code, clippy::uninlined_format_args)]
 fn main() {
     let code_snippet = r#"
   use std::io;
@@ -84,4 +91,54 @@ pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
     }
 
     dependencies
+}
+
+pub(crate) fn build_paths(source_stem: &str) -> Result<(PathBuf, PathBuf), Box<dyn Error>> {
+    let source_name = format!("{source_stem}.rs");
+    let project_dir = env::var("PWD")?;
+    let project_path = PathBuf::from(project_dir);
+    let mut code_path: PathBuf = project_path.join("examples");
+    let default_toml_path = code_path.join("default_cargo.toml");
+    code_path.push(source_name);
+    Ok((code_path, default_toml_path))
+}
+
+/// Set up the processing flags from the command line arguments and pass them back.
+pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<dyn Error>> {
+    let flags = {
+        if options.all && options.no_run {
+            // println!(
+            //     "Conflicting options {} and {} specified",
+            //     options.all, options.no_run
+            // );
+            return Err(Box::new(BuildRunError::Command(format!(
+                "Conflicting options {} and {} specified",
+                options.all, options.no_run
+            ))));
+        }
+        let mut flags = ProcFlags::empty();
+        flags.set(ProcFlags::GEN_SRC, options.gen_src | options.all);
+        flags.set(ProcFlags::GEN_TOML, options.gen_cargo | options.all);
+        flags.set(ProcFlags::BUILD, options.build | options.all);
+        flags.set(ProcFlags::VERBOSE, options.verbose);
+        flags.set(ProcFlags::TIMINGS, options.timings);
+        flags.set(ProcFlags::RUN, !options.no_run);
+        flags.set(ProcFlags::ALL, options.all);
+        if !(flags.contains(ProcFlags::ALL)) {
+            flags.set(
+                ProcFlags::ALL,
+                options.gen_src & options.gen_cargo & options.build && !options.no_run,
+            );
+        }
+
+        let formatted = flags.to_string();
+        let parsed = formatted
+            .parse::<ProcFlags>()
+            .map_err(|e| BuildRunError::FromStr(e.to_string()))?;
+
+        assert_eq!(flags, parsed);
+
+        Ok::<cmd_args::ProcFlags, BuildRunError>(flags)
+    }?;
+    Ok(flags)
 }

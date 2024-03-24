@@ -1,22 +1,26 @@
+use log::{debug, info};
+use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::error::Error;
+use std::io::BufRead;
+use std::process::Command;
+use std::time::Instant;
 use std::{fs, str::FromStr};
 
-use log::debug;
-use serde::{Deserialize, Serialize};
-
-use crate::errors::BuildRunError;
+use crate::errors::{self, BuildRunError};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
     #[serde(default = "default_package")]
     pub(self) package: Package,
-    dependencies: Option<Dependencies>,
+    pub(crate) dependencies: Option<Dependencies>,
     #[serde(default = "default_edition")]
-    pub edition: String,
+    pub(crate) edition: String,
     #[serde(default)]
-    pub workspace: Workspace,
+    pub(crate) workspace: Workspace,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub bin: Vec<Product>,
+    pub(crate) bin: Vec<Product>,
 }
 
 impl Default for CargoManifest {
@@ -146,3 +150,87 @@ pub(crate) fn rs_extract_toml(rs_contents: &str) -> Result<CargoManifest, BuildR
 
     CargoManifest::from_str(&rs_toml_str)
 }
+
+pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
+    let start_build = Instant::now();
+    let mut search_command = Command::new("cargo");
+    search_command.args(["search", dep_crate, "--limit 1"]);
+    let search_output = search_command.output()?;
+
+    let first_line: String = if search_output.status.success() {
+        // let success_msg = String::from_utf8_lossy(&search_output.stdout);
+        // info!("##### cargo search succeeded!");
+        // if let Some(msg) = success_msg.lines().next() {
+        //     msg.to_string()
+        // };
+        // // }?;
+        use std::fmt::Write;
+
+        search_output
+            .stdout
+            .lines()
+            .take(1)
+            .filter_map(|r| r.ok())
+            .fold(String::new(), |mut output, b| {
+                let _ = writeln!(output, "{b}");
+                output
+            })
+    } else {
+        let error_msg = String::from_utf8_lossy(&search_output.stderr);
+        error_msg.lines().for_each(|line| {
+            debug!("{line}");
+        });
+        return Err(Box::new(BuildRunError::Command(
+            "Cargo search failed".to_string(),
+        )));
+    };
+
+    let (name, version) = match capture_dep(&first_line) {
+        Ok(value) => value,
+        Err(err) => return Err(err),
+    };
+
+    let dur = start_build.elapsed();
+    debug!(
+        "Completed build in {}.{}s",
+        dur.as_secs(),
+        dur.subsec_millis()
+    );
+
+    Ok((String::from(name), String::from(version)))
+}
+
+pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
+    let regex_str = r#"^'(?P<name>\w+)' = "(?P<version>\d+\.\d+\.\d+)"#;
+    let re = Regex::new(regex_str).unwrap();
+    let (name, version) = if re.is_match(first_line) {
+        let captures = re.captures(first_line).unwrap();
+        let name = captures.get(1).unwrap().as_str();
+        let version = captures.get(2).unwrap().as_str();
+        println!("Dependency name: {}", name);
+        println!("Dependency version: {}", version);
+        (String::from(name), String::from(version))
+    } else {
+        println!("Not a valid Cargo dependency format.");
+        return Err(Box::new(BuildRunError::Command(
+            "Not a valid Cargo dependency format".to_string(),
+        )));
+    };
+    Ok((name, version))
+}
+
+// pub(crate) fn ()
+// let regex_str = r#"^'(?P<name>\w+)' = "(?P<version>\d+\.\d+\.\d+)"#;
+// let re = Regex::new(regex_str).unwrap();
+
+// let dependency_str = "'rug' = \"1.24.0\"";
+
+// if re.is_match(dependency_str) {
+//   let captures = re.captures(dependency_str).unwrap();
+//   let name = captures.get(1).unwrap().as_str();
+//   let version = captures.get(2).unwrap().as_str();
+//   println!("Dependency name: {}", name);
+//   println!("Dependency version: {}", version);
+// } else {
+//   println!("Not a valid Cargo dependency format.");
+// }

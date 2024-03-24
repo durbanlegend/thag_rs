@@ -8,6 +8,7 @@ pub(crate) enum BuildRunError {
     Command(String),       // For errors during Cargo build or program execution
     FromStr(String),       // For parsing CargoManifest from a string
     Io(io::Error),         // For I/O errors
+    NoneOption(String),    // For unwrapping Options
     TomlDe(TomlDeError),   // For TOML deserialization errors
     TomlSer(TomlSerError), // For TOML serialization errors
 }
@@ -41,7 +42,9 @@ impl From<String> for BuildRunError {
 impl std::fmt::Display for BuildRunError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuildRunError::Command(s) | BuildRunError::FromStr(s) => {
+            BuildRunError::Command(s)
+            | BuildRunError::FromStr(s)
+            | BuildRunError::NoneOption(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
@@ -60,8 +63,9 @@ impl Error for BuildRunError {
             // The cause is the underlying implementation error type. Is implicitly
             // cast to the trait object `&error::Error`. This works because the
             // underlying type already implements the `Error` trait.
-            BuildRunError::Command(ref _e) => Some(self),
-            BuildRunError::FromStr(ref _e) => Some(self),
+            BuildRunError::Command(ref _e)
+            | BuildRunError::FromStr(ref _e)
+            | BuildRunError::NoneOption(ref _e) => Some(self),
             BuildRunError::Io(ref e) => Some(e),
             BuildRunError::TomlDe(ref e) => Some(e),
             BuildRunError::TomlSer(ref e) => Some(e),

@@ -80,7 +80,7 @@ bitflags::bitflags! {
     // can produce output like `A | B` instead of `Flags(A | B)`.
     // #[derive(Debug)]
     #[derive(PartialEq, Eq)]
-    pub struct Flags: u32 {
+    pub struct ProcFlags: u32 {
         const GEN_SRC = 1;
         const GEN_TOML = 2;
         const BUILD = 4;
@@ -91,19 +91,19 @@ bitflags::bitflags! {
     }
 }
 
-impl fmt::Debug for Flags {
+impl fmt::Debug for ProcFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         bitflags::parser::to_writer(self, f)
     }
 }
 
-impl fmt::Display for Flags {
+impl fmt::Display for ProcFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         bitflags::parser::to_writer(self, f)
     }
 }
 
-impl str::FromStr for Flags {
+impl str::FromStr for ProcFlags {
     type Err = bitflags::parser::ParseError;
 
     fn from_str(flags: &str) -> Result<Self, Self::Err> {

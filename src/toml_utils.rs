@@ -16,8 +16,6 @@ pub(crate) struct CargoManifest {
     #[serde(default = "default_package")]
     pub(crate) package: Package,
     pub(crate) dependencies: Option<Dependencies>,
-    #[serde(default = "default_edition")]
-    pub(crate) edition: String,
     #[serde(default)]
     pub(crate) workspace: Workspace,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -29,7 +27,6 @@ impl Default for CargoManifest {
         CargoManifest {
             package: Package::default(),
             dependencies: None,
-            edition: "2021".to_string(),
             workspace: Workspace::default(),
             bin: vec![Product::default()],
         }
@@ -71,7 +68,16 @@ fn default_package() -> Package {
     Package {
         name: String::from("your_project_name"),
         version: String::from("0.1.0"),
+        edition: default_edition(),
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub(crate) struct Package {
+    pub(crate) name: String,
+    pub(crate) version: String,
+    #[serde(default = "default_edition")]
+    pub(crate) edition: String,
 }
 
 // Default function for the `edition` field
@@ -79,17 +85,12 @@ fn default_edition() -> String {
     String::from("2021")
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub(crate) struct Package {
-    pub name: String,
-    pub version: String,
-}
-
 impl Default for Package {
     fn default() -> Self {
         Package {
             version: String::from("0.0.0"),
             name: String::from("your_script_name_stem"),
+            edition: default_edition(),
         }
     }
 }
@@ -136,7 +137,12 @@ pub(crate) fn read_cargo_toml() -> Result<CargoManifest, BuildRunError> {
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub(crate) struct Workspace {}
 
-pub(crate) fn rs_extract_toml(rs_contents: &str) -> Result<CargoManifest, BuildRunError> {
+pub(crate) fn rs_extract_manifest(rs_contents: &str) -> Result<CargoManifest, BuildRunError> {
+    let rs_toml_str = rs_extract_toml(rs_contents);
+    CargoManifest::from_str(&rs_toml_str)
+}
+
+fn rs_extract_toml(rs_contents: &str) -> String {
     use std::fmt::Write;
     let rs_toml_str = rs_contents
         .lines()
@@ -148,14 +154,27 @@ pub(crate) fn rs_extract_toml(rs_contents: &str) -> Result<CargoManifest, BuildR
             output
         });
     debug!("Rust source manifest info (rs_toml_str) = {rs_toml_str}");
-
-    CargoManifest::from_str(&rs_toml_str)
+    rs_toml_str
 }
 
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
-    let start_build = Instant::now();
+    let start_search = Instant::now();
+    // let mut dummy_command = Command::new("cargo");
+    // dummy_command.args(["build", "--verbose"]);
+    // debug!("\nCargo dummy command={dummy_command:#?}\n");
+
+    println!(
+        r#"
+        Doing a Cargo search for crate {dep_crate} referenced in your script.
+        To speed up build, consider embedding the required {dep_crate} = "<version>"
+        in comments (//!) in the script.
+        E.g. {dep_crate} = "<version n.n.n goes here>
+        "#
+    );
+
     let mut search_command = Command::new("cargo");
-    search_command.args(["search", dep_crate, "--limit 1"]);
+    search_command.args(["search", dep_crate, "--limit", "1"]);
+    // debug!("\nCargo search command={search_command:#?}\n");
     let search_output = search_command.output()?;
 
     let first_line: String = if search_output.status.success() {
@@ -186,14 +205,23 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
         )));
     };
 
-    let (name, version) = match capture_dep(&first_line) {
-        Ok(value) => value,
-        Err(err) => return Err(err),
-    };
+    // debug!("!!!!!!!! first_line={first_line}");
 
-    let dur = start_build.elapsed();
+    let (name, version) = match capture_dep(&first_line) {
+        Ok(value) => {
+            debug!("Success! value={value:?}");
+            value
+        }
+        Err(err) => {
+            debug!("Failure! err={err}");
+            return Err(err);
+        }
+    };
+    debug!("!!!!!!!! found name={name}, version={version}");
+
+    let dur = start_search.elapsed();
     debug!(
-        "Completed build in {}.{}s",
+        "Completed search in {}.{}s",
         dur.as_secs(),
         dur.subsec_millis()
     );
@@ -202,7 +230,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
 }
 
 pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
-    let regex_str = r#"^'(?P<name>\w+)' = "(?P<version>\d+\.\d+\.\d+)"#;
+    let regex_str = r#"^(?P<name>\w+) = "(?P<version>\d+\.\d+\.\d+)"#;
     let re = Regex::new(regex_str).unwrap();
     let (name, version) = if re.is_match(first_line) {
         let captures = re.captures(first_line).unwrap();
@@ -220,18 +248,35 @@ pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn 
     Ok((name, version))
 }
 
-// pub(crate) fn ()
-// let regex_str = r#"^'(?P<name>\w+)' = "(?P<version>\d+\.\d+\.\d+)"#;
-// let re = Regex::new(regex_str).unwrap();
+pub(crate) fn default_manifest(
+    build_dir: &str,
+    source_stem: &str,
+) -> Result<CargoManifest, BuildRunError> {
+    let cargo_manifest = format!(
+        r##"
+[package]
+name = "{source_stem}"
+version = "0.0.1"
+edition = "2021"
 
-// let dependency_str = "'rug' = \"1.24.0\"";
+[dependencies]
 
-// if re.is_match(dependency_str) {
-//   let captures = re.captures(dependency_str).unwrap();
-//   let name = captures.get(1).unwrap().as_str();
-//   let version = captures.get(2).unwrap().as_str();
-//   println!("Dependency name: {}", name);
-//   println!("Dependency version: {}", version);
-// } else {
-//   println!("Not a valid Cargo dependency format.");
-// }
+[workspace]
+
+[[bin]]
+name = "{source_stem}"
+path = "{build_dir}/{source_stem}.rs"
+"##
+    );
+
+    CargoManifest::from_str(&cargo_manifest)
+}
+
+// let source_manifest_toml = cargo_manifest.parse::<Table>()?;
+// debug!("source_manifest_toml={source_manifest_toml:#?}\n");
+
+// let toml = toml::to_string(&source_manifest_toml)?;
+// // debug!("Raw cargo_manifest = {toml:#?}\n");
+
+// debug!("Cargo_manifest reconstituted:");
+// toml.lines().for_each(|l| println!("{l}"));

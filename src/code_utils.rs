@@ -93,14 +93,14 @@ pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
     dependencies
 }
 
-pub(crate) fn build_paths(source_stem: &str) -> Result<(PathBuf, PathBuf), Box<dyn Error>> {
+pub(crate) fn build_code_path(source_stem: &str) -> Result<PathBuf, Box<dyn Error>> {
     let source_name = format!("{source_stem}.rs");
     let project_dir = env::var("PWD")?;
     let project_path = PathBuf::from(project_dir);
     let mut code_path: PathBuf = project_path.join("examples");
-    let default_toml_path = code_path.join("default_cargo.toml");
+    // let default_toml_path = code_path.join("default_cargo.toml");
     code_path.push(source_name);
-    Ok((code_path, default_toml_path))
+    Ok(code_path)
 }
 
 /// Set up the processing flags from the command line arguments and pass them back.

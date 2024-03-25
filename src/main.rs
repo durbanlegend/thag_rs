@@ -6,7 +6,6 @@ use std::env;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::str::FromStr;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 
@@ -19,8 +18,8 @@ mod errors;
 mod toml_utils;
 
 use crate::cmd_args::ProcFlags;
-use crate::code_utils::{build_paths, read_file_contents, rs_extract_src};
-use crate::toml_utils::{cargo_search, rs_extract_toml, CargoManifest, Dependency, Product};
+use crate::code_utils::{build_code_path, read_file_contents, rs_extract_src};
+use crate::toml_utils::{cargo_search, default_manifest, rs_extract_manifest, Dependency};
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -73,7 +72,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     debug!("source_stem={source_stem}; source_name={source_name}");
 
-    let (code_path, default_toml_path) = build_paths(&source_stem)?;
+    let code_path = build_code_path(&source_stem)?;
     let source_path = code_path.clone();
     // source_path.push(PathBuf::from_str(&source_name)?);
     debug!("code_path={code_path:?}");
@@ -85,25 +84,27 @@ fn main() -> Result<(), Box<dyn Error>> {
         ))));
     }
 
-    let default_manifest = CargoManifest::default();
-    println!("default_manifest: {default_manifest:#?}");
+    // let default_manifest = CargoManifest::default();
+    // println!("default_manifest: {default_manifest:#?}");
 
-    let rs_toml_to_string = toml::to_string(&default_manifest)?;
-    println!("rs_toml_to_string: {rs_toml_to_string}");
+    // let rs_toml_to_string = toml::to_string(&default_manifest)?;
+    // println!("rs_toml_to_string: {rs_toml_to_string}");
 
     // Read manifest from source file
     // let _ = toml_utils::read_cargo_toml()?;
 
-    default_manifest.save_to_file(default_toml_path.to_str().ok_or("Missing path?")?)?;
+    // default_manifest.save_to_file(default_toml_path.to_str().ok_or("Missing path?")?)?;
 
     let rs_full_source = read_file_contents(&code_path)?;
 
-    let mut rs_manifest = rs_extract_toml(&rs_full_source)?;
-    debug!("rs_manifest (before deps) = {rs_manifest:#?\n}");
-    debug!(
-        "rs_manifest.to_string() (before deps) = {}",
-        rs_manifest.to_string()
-    );
+    let mut cargo_manifest = default_manifest(&gen_build_dir, &source_stem)?;
+
+    let mut rs_manifest = rs_extract_manifest(&rs_full_source)?;
+
+    // cargo_manifest.dependencies
+    // Depletes rs_manifest.bin, don't reuse
+    // cargo_manifest.bin.append(&mut rs_manifest.bin);
+    debug!("@@@@ cargo_manifest (before deps)={cargo_manifest:#?}");
 
     // Exclude the embedded cargo manifest information
     let rs_source = rs_extract_src(&rs_full_source);
@@ -122,7 +123,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ))));
             };
 
-        debug!("dep_map={dep_map:?}");
+        debug!("dep_map= (before inferred) {dep_map:?}");
         for dep_name in rs_deps {
             let cargo_search_result = cargo_search(&dep_name);
             if dep_map.contains_key(&dep_name) {
@@ -138,54 +139,56 @@ fn main() -> Result<(), Box<dyn Error>> {
             };
             dep_map.insert(dep_name, dep);
         }
+        debug!("dep_map= (after inferred) {dep_map:?}");
+
+        let manifest_deps = cargo_manifest
+            .dependencies
+            .as_ref()
+            .unwrap()
+            .as_ref()
+            .unwrap();
+
+        // Clone dependencies
+        let mut manifest_deps_clone: std::collections::BTreeMap<
+            std::string::String,
+            toml_utils::Dependency,
+        > = manifest_deps.clone();
+        debug!("manifest_deps= (before inferred) {manifest_deps_clone:?}");
+
+        // Insert any entries from source and inferred deps that are not already in default manifest
+        dep_map
+            .iter()
+            .filter(|&(name, _dep)| !(manifest_deps.contains_key(name)))
+            .for_each(|(key, value)| {
+                manifest_deps_clone.insert(key.to_string(), value.clone());
+            });
+        cargo_manifest.dependencies = Some(Some(manifest_deps_clone));
+        debug!(
+            "cargo_manifest.dependencies= (after inferred) {:#?}",
+            cargo_manifest.dependencies
+        );
     }
 
-    // let cargo_manifest = format!(
-    //     r##"
-    // [package]
-    // name = "{source_name}"
-    // version = "0.0.1"
-    // edition = "2021"
-
-    // [dependencies]
-    // rug = {{ version = "1.24.0", features = ["integer"] }}
-    // serde = {{ version = "1.0", features = ["derive"] }}
-
-    // [workspace]
-
-    // [[bin]]
-    // name = "{source_stem}"
-    // path = "/Users/donf/projects/build_run/.cargo/build_run/tmp_source.rs"
-    // "##
-    // );
-
-    // let source_manifest_toml = cargo_manifest.parse::<Table>()?;
-    // debug!("source_manifest_toml={source_manifest_toml:#?}\n");
-
-    // let toml = toml::to_string(&source_manifest_toml)?;
-    // // debug!("Raw cargo_manifest = {toml:#?}\n");
-
-    // debug!("Cargo_manifest reconstituted:");
-    // toml.lines().for_each(|l| println!("{l}"));
+    debug!("cargo_manifest= (after inferred) {cargo_manifest:#?}");
 
     let build_dir = PathBuf::from(".cargo/build_run");
     if !build_dir.exists() {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
     }
 
-    rs_manifest.package.name = source_stem.clone();
-    rs_manifest.edition = default_manifest.edition;
-    rs_manifest.bin.insert(
-        0,
-        Product {
-            path: Some(format!("{gen_build_dir}/{source_name}")),
-            name: Some(source_stem.clone()),
-            required_features: None,
-        },
-    );
+    // rs_manifest.package.name = source_stem.clone();
+    // rs_manifest.edition = default_manifest.edition;
+    // rs_manifest.bin.insert(
+    //     0,
+    //     Product {
+    //         path: Some(format!("{gen_build_dir}/{source_name}")),
+    //         name: Some(source_stem.clone()),
+    //         required_features: None,
+    //     },
+    // );
 
-    let cargo_manifest = rs_manifest.to_string();
-    debug!("cargo_manifest={cargo_manifest}");
+    // let cargo_manifest = rs_manifest.to_string();
+    // debug!("cargo_manifest={cargo_manifest}");
 
     // intersection
     let gen_either = ProcFlags::GEN_SRC | ProcFlags::GEN_TOML;
@@ -204,7 +207,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             &proc_flags,
             &source_name,
             &rs_source,
-            &cargo_manifest,
+            &cargo_manifest.to_string(),
             &build_dir,
         )?;
     }
@@ -214,7 +217,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if proc_flags.intersects(ProcFlags::RUN) {
-        run(&proc_flags, &source_name, build_dir)?;
+        run(&proc_flags, &source_stem, build_dir)?;
     }
 
     let dur = start.elapsed();

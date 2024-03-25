@@ -18,14 +18,12 @@ mod errors;
 mod toml_utils;
 
 use crate::cmd_args::ProcFlags;
-use crate::code_utils::{build_code_path, read_file_contents, rs_extract_src};
-use crate::toml_utils::{cargo_search, default_manifest, rs_extract_manifest, Dependency};
+use crate::toml_utils::{default_manifest, resolve_deps, CargoManifest};
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
 
@@ -41,168 +39,36 @@ fn main() -> Result<(), Box<dyn Error>> {
     let proc_flags = get_proc_flags(&options)?;
     debug!("flags={proc_flags:#?}");
 
-    // let source_stem = "factorial_main"; // Replace with actual program name
-    // let source_name = options.script.clone();
-
-    let rs_suffix = ".rs";
-
-    // let strip_suffix = &options
-    //     .script
-    //     .strip_suffix(rs_suffix)
-    //     .ok_or_else(|| BuildRunError::NoneOption(String::from("Failed to strip .rs suffix")))?;
-
-    // let (a, b) = (String::from(options.script.strip_suffix(rs_suffix).ok_or_else(|| BuildRunError::NoneOption(String::from("Failed to strip .rs suffix")))?), options.script);
-    // let (c, d) = (options.script, options.script + rs_suffix);
-
-    // let (source_stem, source_name) = if options.script.ends_with(rs_suffix) { (a, b) } else { (c, d) };
-
+    let dur = start.elapsed();
     debug!(
-        "options.script={}; options.script.ends_with(rs_suffix)? {})",
-        options.script,
-        options.script.ends_with(rs_suffix)
+        "Set up processing flags in {}.{}s",
+        dur.as_secs(),
+        dur.subsec_millis()
     );
 
-    let (source_stem, source_name) = if options.script.ends_with(rs_suffix) {
-        let stem = String::from(options.script.strip_suffix(rs_suffix).ok_or_else(|| {
-            BuildRunError::NoneOption(format!("Failed to strip {rs_suffix} suffix"))
-        })?);
-        (stem, options.script.clone())
-    } else {
-        (options.script.clone(), options.script.clone() + rs_suffix)
-    };
-    debug!("source_stem={source_stem}; source_name={source_name}");
+    let (source_stem, source_name, mut rs_manifest, rs_source): (
+        String,
+        String,
+        CargoManifest,
+        String,
+    ) = code_utils::parse_source(&options)?;
 
-    let code_path = build_code_path(&source_stem)?;
-    let source_path = code_path.clone();
-    // source_path.push(PathBuf::from_str(&source_name)?);
-    debug!("code_path={code_path:?}");
+    let cargo_manifest: CargoManifest =
+        if proc_flags.intersects(ProcFlags::GEN_SRC | ProcFlags::GEN_TOML) {
+            resolve_deps(&gen_build_dir, &source_stem, &rs_source, &mut rs_manifest)?
+        } else {
+            default_manifest(&gen_build_dir, &source_stem)?
+        };
 
-    // Check it exists
-    if !source_path.exists() {
-        return Err(Box::new(BuildRunError::Command(format!(
-            "No script named {source_stem} or {source_name} in path {code_path:?}"
-        ))));
-    }
-
-    // let default_manifest = CargoManifest::default();
-    // println!("default_manifest: {default_manifest:#?}");
-
-    // let rs_toml_to_string = toml::to_string(&default_manifest)?;
-    // println!("rs_toml_to_string: {rs_toml_to_string}");
-
-    // Read manifest from source file
-    // let _ = toml_utils::read_cargo_toml()?;
-
-    // default_manifest.save_to_file(default_toml_path.to_str().ok_or("Missing path?")?)?;
-
-    let rs_full_source = read_file_contents(&code_path)?;
-
-    let mut cargo_manifest = default_manifest(&gen_build_dir, &source_stem)?;
-
-    let mut rs_manifest = rs_extract_manifest(&rs_full_source)?;
-
-    // cargo_manifest.dependencies
-    // Depletes rs_manifest.bin, don't reuse
-    // cargo_manifest.bin.append(&mut rs_manifest.bin);
-    debug!("@@@@ cargo_manifest (before deps)={cargo_manifest:#?}");
-
-    // Exclude the embedded cargo manifest information
-    let rs_source = rs_extract_src(&rs_full_source);
-
-    // Infer dependencies from imports
-    let rs_deps = code_utils::infer_dependencies(&rs_source);
-    debug!("rs_deps={rs_deps:#?\n}");
-
-    if !rs_deps.is_empty() {
-        let dep_map: &mut std::collections::BTreeMap<std::string::String, toml_utils::Dependency> =
-            if let Some(Some(ref mut dep_map)) = rs_manifest.dependencies {
-                dep_map
-            } else {
-                return Err(Box::new(BuildRunError::Command(String::from(
-                    "No dependency map found",
-                ))));
-            };
-
-        debug!("dep_map= (before inferred) {dep_map:?}");
-        for dep_name in rs_deps {
-            let cargo_search_result = cargo_search(&dep_name);
-            if dep_map.contains_key(&dep_name) {
-                // Already in manifest
-                continue;
-            }
-            let dep = if let Ok((_dep_name, version)) = cargo_search_result {
-                Dependency::Simple(version)
-            } else {
-                return Err(Box::new(BuildRunError::Command(format!(
-                    "Cargo search couldn't find crate {dep_name}"
-                ))));
-            };
-            dep_map.insert(dep_name, dep);
-        }
-        debug!("dep_map= (after inferred) {dep_map:?}");
-
-        let manifest_deps = cargo_manifest
-            .dependencies
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap();
-
-        // Clone dependencies
-        let mut manifest_deps_clone: std::collections::BTreeMap<
-            std::string::String,
-            toml_utils::Dependency,
-        > = manifest_deps.clone();
-        debug!("manifest_deps= (before inferred) {manifest_deps_clone:?}");
-
-        // Insert any entries from source and inferred deps that are not already in default manifest
-        dep_map
-            .iter()
-            .filter(|&(name, _dep)| !(manifest_deps.contains_key(name)))
-            .for_each(|(key, value)| {
-                manifest_deps_clone.insert(key.to_string(), value.clone());
-            });
-        cargo_manifest.dependencies = Some(Some(manifest_deps_clone));
-        debug!(
-            "cargo_manifest.dependencies= (after inferred) {:#?}",
-            cargo_manifest.dependencies
-        );
-    }
-
-    debug!("cargo_manifest= (after inferred) {cargo_manifest:#?}");
+    // debug!("cargo_manifest= (after inferred) {cargo_manifest:#?}");
 
     let build_dir = PathBuf::from(".cargo/build_run");
     if !build_dir.exists() {
         fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
     }
 
-    // rs_manifest.package.name = source_stem.clone();
-    // rs_manifest.edition = default_manifest.edition;
-    // rs_manifest.bin.insert(
-    //     0,
-    //     Product {
-    //         path: Some(format!("{gen_build_dir}/{source_name}")),
-    //         name: Some(source_stem.clone()),
-    //         required_features: None,
-    //     },
-    // );
-
-    // let cargo_manifest = rs_manifest.to_string();
-    // debug!("cargo_manifest={cargo_manifest}");
-
-    // intersection
-    let gen_either = ProcFlags::GEN_SRC | ProcFlags::GEN_TOML;
-    // debug!(
-    //     "flags.intersects(gen_either)?: {}",
-    //     flags.intersects(gen_either)
-    // );
-
-    // let result: Result<(), errors::BuildRunError> =
-    // Implement generate logic with optional verbose and timings
-    // println!("Generating code (verbose: {}, timings: {})", verbose, timings);
-
     // match options.action {
-    if proc_flags.intersects(gen_either) {
+    if proc_flags.intersects(ProcFlags::GEN_SRC | ProcFlags::GEN_TOML) {
         generate(
             &proc_flags,
             &source_name,
@@ -302,7 +168,15 @@ fn build(flags: &ProcFlags, build_dir: &Path) -> Result<(), BuildRunError> {
     build_command
         .args(["build", "--verbose"])
         .current_dir(build_dir);
-    let build_output = build_command.output()?;
+    let build_output = build_command.spawn()?.wait_with_output()?;
+
+    if flags.intersects(ProcFlags::VERBOSE) {
+        let output = String::from_utf8_lossy(&build_output.stdout);
+
+        println!("Build output:");
+        output.lines().for_each(|line| debug!("{line}"));
+    }
+
     if build_output.status.success() {
         let success_msg = String::from_utf8_lossy(&build_output.stdout);
         info!("##### Build succeeded!");

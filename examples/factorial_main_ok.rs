@@ -1,6 +1,5 @@
 //: -s
 
-use std::error::Error;
 use std::io::*;
 
 fn main() -> Result<()> {

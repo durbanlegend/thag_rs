@@ -9,6 +9,7 @@ use std::process::Command;
 use std::time::Instant;
 use std::{fs, str::FromStr};
 
+use crate::code_utils;
 use crate::errors::BuildRunError;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -280,3 +281,83 @@ path = "{build_dir}/{source_stem}.rs"
 
 // debug!("Cargo_manifest reconstituted:");
 // toml.lines().for_each(|l| println!("{l}"));
+
+pub(crate) fn resolve_deps(
+    gen_build_dir: &str,
+    source_stem: &str,
+    rs_source: &str,
+    rs_manifest: &mut CargoManifest,
+) -> Result<CargoManifest, Box<dyn Error>> {
+    let mut cargo_manifest = default_manifest(gen_build_dir, source_stem)?;
+    debug!("@@@@ cargo_manifest (before deps)={cargo_manifest:#?}");
+    let start_deps_rs = Instant::now();
+    let rs_inferred_deps = code_utils::infer_dependencies(rs_source);
+    debug!("rs_inferred_deps={rs_inferred_deps:#?}\n");
+    if !rs_inferred_deps.is_empty() {
+        let rs_dep_map: &mut std::collections::BTreeMap<std::string::String, Dependency> =
+            if let Some(Some(ref mut rs_dep_map)) = rs_manifest.dependencies {
+                rs_dep_map
+            } else {
+                return Err(Box::new(BuildRunError::Command(String::from(
+                    "No dependency map found",
+                ))));
+            };
+
+        debug!("dep_map  (before inferred) {rs_dep_map:#?}");
+        for dep_name in rs_inferred_deps {
+            if rs_dep_map.contains_key(&dep_name) {
+                // Already in manifest
+                debug!(
+                    "============ rs_dep_map {rs_dep_map:#?} already contains key dep_name {dep_name}"
+                );
+                continue;
+            }
+            debug!(
+                "&&&&&&&&&&&& rs_dep_map {rs_dep_map:#?} does not contain key dep_name {dep_name}"
+            );
+            debug!("############ Doing a Cargo search for key dep_name {dep_name}");
+            let cargo_search_result = cargo_search(&dep_name);
+            let dep = if let Ok((_dep_name, version)) = cargo_search_result {
+                Dependency::Simple(version)
+            } else {
+                return Err(Box::new(BuildRunError::Command(format!(
+                    "Cargo search couldn't find crate {dep_name}"
+                ))));
+            };
+            rs_dep_map.insert(dep_name, dep);
+        }
+        debug!("rs_dep_map= (after inferred) {rs_dep_map:?}");
+
+        let manifest_deps = cargo_manifest
+            .dependencies
+            .as_ref()
+            .unwrap()
+            .as_ref()
+            .unwrap();
+
+        // Clone dependencies
+        let mut manifest_deps_clone: std::collections::BTreeMap<std::string::String, Dependency> =
+            manifest_deps.clone();
+        // debug!("manifest_deps  (before inferred) {manifest_deps_clone:?}");
+
+        // Insert any entries from source and inferred deps that are not already in default manifest
+        rs_dep_map
+            .iter()
+            .filter(|&(name, _dep)| !(manifest_deps.contains_key(name)))
+            .for_each(|(key, value)| {
+                manifest_deps_clone.insert(key.to_string(), value.clone());
+            });
+        cargo_manifest.dependencies = Some(Some(manifest_deps_clone));
+        debug!(
+            "cargo_manifest.dependencies (after inferred) {:#?}",
+            cargo_manifest.dependencies
+        );
+    }
+    let dur = start_deps_rs.elapsed();
+    debug!(
+        "Processed dependencies in {}.{}s",
+        dur.as_secs(),
+        dur.subsec_millis()
+    );
+    Ok(cargo_manifest)
+}

@@ -1,8 +1,10 @@
-use crate::cmd_args;
 use crate::cmd_args::ProcFlags;
 use crate::errors::BuildRunError;
+use crate::toml_utils::CargoManifest;
+use crate::{cmd_args, toml_utils::rs_extract_manifest};
 use log::debug;
 use regex::Regex;
+use std::time::Instant;
 use std::{
     collections::HashSet,
     env,
@@ -141,4 +143,45 @@ pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<d
         Ok::<cmd_args::ProcFlags, BuildRunError>(flags)
     }?;
     Ok(flags)
+}
+
+pub(crate) fn parse_source(
+    options: &cmd_args::Opt,
+) -> Result<(String, String, CargoManifest, String), Box<dyn Error>> {
+    let start_parsing_rs = Instant::now();
+
+    let rs_suffix = ".rs";
+    debug!(
+        "options.script={}; options.script.ends_with(rs_suffix)? {})",
+        options.script,
+        options.script.ends_with(rs_suffix)
+    );
+    let (source_stem, source_name) = if options.script.ends_with(rs_suffix) {
+        let stem = String::from(options.script.strip_suffix(rs_suffix).ok_or_else(|| {
+            BuildRunError::NoneOption(format!("Failed to strip {rs_suffix} suffix"))
+        })?);
+        (stem, options.script.clone())
+    } else {
+        (options.script.clone(), options.script.clone() + rs_suffix)
+    };
+    debug!("source_stem={source_stem}; source_name={source_name}");
+    let code_path = build_code_path(&source_stem)?;
+    let source_path = code_path.clone();
+    debug!("code_path={code_path:?}");
+    if !source_path.exists() {
+        return Err(Box::new(BuildRunError::Command(format!(
+            "No script named {source_stem} or {source_name} in path {code_path:?}"
+        ))));
+    }
+    let rs_full_source = read_file_contents(&code_path)?;
+    let rs_manifest = rs_extract_manifest(&rs_full_source)?;
+    let rs_source = rs_extract_src(&rs_full_source);
+
+    let dur = start_parsing_rs.elapsed();
+    debug!(
+        "Parsed source in {}.{}s",
+        dur.as_secs(),
+        dur.subsec_millis()
+    );
+    Ok((source_stem, source_name, rs_manifest, rs_source))
 }

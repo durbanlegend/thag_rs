@@ -1,3 +1,4 @@
+use std::ffi::OsString;
 use std::{error::Error, io};
 
 use toml::de::Error as TomlDeError;
@@ -9,6 +10,7 @@ pub(crate) enum BuildRunError {
     FromStr(String),       // For parsing CargoManifest from a string
     Io(io::Error),         // For I/O errors
     NoneOption(String),    // For unwrapping Options
+    OsString(OsString),    // For unconvertible OsStrings
     TomlDe(TomlDeError),   // For TOML deserialization errors
     TomlSer(TomlSerError), // For TOML serialization errors
 }
@@ -51,6 +53,10 @@ impl std::fmt::Display for BuildRunError {
                 Ok(())
             }
             BuildRunError::Io(e) => write!(f, "{e:?}"),
+            BuildRunError::OsString(o) => {
+                writeln!(f, "{o:#?}")?;
+                Ok(())
+            }
             BuildRunError::TomlDe(e) => write!(f, "{e:?}"),
             BuildRunError::TomlSer(e) => write!(f, "{e:?}"),
         }
@@ -67,6 +73,7 @@ impl Error for BuildRunError {
             | BuildRunError::FromStr(ref _e)
             | BuildRunError::NoneOption(ref _e) => Some(self),
             BuildRunError::Io(ref e) => Some(e),
+            BuildRunError::OsString(ref _o) => Some(self),
             BuildRunError::TomlDe(ref e) => Some(e),
             BuildRunError::TomlSer(ref e) => Some(e),
         }

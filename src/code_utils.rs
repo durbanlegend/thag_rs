@@ -99,8 +99,8 @@ pub(crate) fn build_code_path(source_stem: &str) -> Result<PathBuf, Box<dyn Erro
     let source_name = format!("{source_stem}.rs");
     let project_dir = env::var("PWD")?;
     let project_path = PathBuf::from(project_dir);
-    let mut code_path: PathBuf = project_path.join("examples");
-    // let default_toml_path = code_path.join("default_cargo.toml");
+    let mut code_path: PathBuf = project_path; // .join("examples");
+                                               // let default_toml_path = code_path.join("default_cargo.toml");
     code_path.push(source_name);
     Ok(code_path)
 }
@@ -119,8 +119,7 @@ pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<d
             ))));
         }
         let mut flags = ProcFlags::empty();
-        flags.set(ProcFlags::GEN_SRC, options.gen_src | options.all);
-        flags.set(ProcFlags::GEN_TOML, options.gen_cargo | options.all);
+        flags.set(ProcFlags::GENERATE, options.generate | options.all);
         flags.set(ProcFlags::BUILD, options.build | options.all);
         flags.set(ProcFlags::VERBOSE, options.verbose);
         flags.set(ProcFlags::TIMINGS, options.timings);
@@ -129,7 +128,7 @@ pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<d
         if !(flags.contains(ProcFlags::ALL)) {
             flags.set(
                 ProcFlags::ALL,
-                options.gen_src & options.gen_cargo & options.build && !options.no_run,
+                options.generate & options.build && !options.no_run,
             );
         }
 
@@ -146,36 +145,15 @@ pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<d
 }
 
 pub(crate) fn parse_source(
-    options: &cmd_args::Opt,
-) -> Result<(String, String, CargoManifest, String), Box<dyn Error>> {
+    source_stem: &str,
+    code_path: &Path,
+) -> Result<(String, CargoManifest, String), Box<dyn Error>> {
     let start_parsing_rs = Instant::now();
 
-    let rs_suffix = ".rs";
-    debug!(
-        "options.script={}; options.script.ends_with(rs_suffix)? {})",
-        options.script,
-        options.script.ends_with(rs_suffix)
-    );
-    let (source_stem, source_name) = if options.script.ends_with(rs_suffix) {
-        let stem = String::from(options.script.strip_suffix(rs_suffix).ok_or_else(|| {
-            BuildRunError::NoneOption(format!("Failed to strip {rs_suffix} suffix"))
-        })?);
-        (stem, options.script.clone())
-    } else {
-        (options.script.clone(), options.script.clone() + rs_suffix)
-    };
-    debug!("source_stem={source_stem}; source_name={source_name}");
-    let code_path = build_code_path(&source_stem)?;
-    let source_path = code_path.clone();
-    debug!("code_path={code_path:?}");
-    if !source_path.exists() {
-        return Err(Box::new(BuildRunError::Command(format!(
-            "No script named {source_stem} or {source_name} in path {code_path:?}"
-        ))));
-    }
-    let rs_full_source = read_file_contents(&code_path)?;
+    let rs_full_source = read_file_contents(code_path)?;
     let rs_manifest = rs_extract_manifest(&rs_full_source)?;
     let rs_source = rs_extract_src(&rs_full_source);
+    let toml_name = format!("{source_stem}.toml");
 
     let dur = start_parsing_rs.elapsed();
     debug!(
@@ -183,5 +161,5 @@ pub(crate) fn parse_source(
         dur.as_secs(),
         dur.subsec_millis()
     );
-    Ok((source_stem, source_name, rs_manifest, rs_source))
+    Ok((toml_name, rs_manifest, rs_source))
 }

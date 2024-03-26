@@ -17,12 +17,9 @@ pub(crate) struct Opt {
     /// Displays timings
     #[clap(short, long)]
     pub(crate) timings: bool,
-    /// Generates Rust source
-    #[clap(short = 's', long)]
-    pub(crate) gen_src: bool,
-    /// Generates Cargo.toml
-    #[clap(short = 'c', long)]
-    pub(crate) gen_cargo: bool,
+    /// Generates Rust source and individual cargo .toml
+    #[clap(short = 's', long = "gen")]
+    pub(crate) generate: bool,
     /// Builds script
     #[clap(short, long)]
     pub(crate) build: bool,
@@ -50,12 +47,8 @@ fn main() {
         println!("Timings enabled");
     }
 
-    if opt.gen_src {
-        println!("Generating source");
-    }
-
-    if opt.gen_cargo {
-        println!("Generating Cargo.toml");
+    if opt.generate {
+        println!("Generating source and cargo .toml file");
     }
 
     if opt.build {
@@ -81,13 +74,12 @@ bitflags::bitflags! {
     // #[derive(Debug)]
     #[derive(PartialEq, Eq)]
     pub struct ProcFlags: u32 {
-        const GEN_SRC = 1;
-        const GEN_TOML = 2;
-        const BUILD = 4;
-        const VERBOSE = 8;
-        const TIMINGS = 16;
-        const RUN = 32;
-        const ALL = 64;
+        const GENERATE = 1;
+        const BUILD = 2;
+        const RUN = 4;
+        const ALL = 8;
+        const VERBOSE = 16;
+        const TIMINGS = 32;
     }
 }
 

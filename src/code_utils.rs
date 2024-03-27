@@ -5,13 +5,7 @@ use crate::{cmd_args, toml_utils::rs_extract_manifest};
 use log::debug;
 use regex::Regex;
 use std::time::Instant;
-use std::{
-    collections::HashSet,
-    env,
-    error::Error,
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashSet, error::Error, fs, path::Path};
 
 #[allow(dead_code, clippy::uninlined_format_args)]
 fn main() {
@@ -95,15 +89,15 @@ pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
     dependencies
 }
 
-pub(crate) fn build_code_path(source_stem: &str) -> Result<PathBuf, Box<dyn Error>> {
-    let source_name = format!("{source_stem}.rs");
-    let project_dir = env::var("PWD")?;
-    let project_path = PathBuf::from(project_dir);
-    let mut code_path: PathBuf = project_path; // .join("examples");
-                                               // let default_toml_path = code_path.join("default_cargo.toml");
-    code_path.push(source_name);
-    Ok(code_path)
-}
+// pub(crate) fn build_code_path(source_stem: &str) -> Result<PathBuf, Box<dyn Error>> {
+//     let source_name = format!("{source_stem}.rs");
+//     let project_dir = env::var("PWD")?;
+//     let project_path = PathBuf::from(project_dir);
+//     let mut code_path: PathBuf = project_path; // .join("examples");
+//                                                // let default_toml_path = code_path.join("default_cargo.toml");
+//     code_path.push(source_name);
+//     Ok(code_path)
+// }
 
 /// Set up the processing flags from the command line arguments and pass them back.
 pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<dyn Error>> {
@@ -144,16 +138,12 @@ pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<d
     Ok(flags)
 }
 
-pub(crate) fn parse_source(
-    source_stem: &str,
-    code_path: &Path,
-) -> Result<(String, CargoManifest, String), Box<dyn Error>> {
+pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String), Box<dyn Error>> {
     let start_parsing_rs = Instant::now();
 
-    let rs_full_source = read_file_contents(code_path)?;
+    let rs_full_source = read_file_contents(source_path)?;
     let rs_manifest = rs_extract_manifest(&rs_full_source)?;
     let rs_source = rs_extract_src(&rs_full_source);
-    let toml_name = format!("{source_stem}.toml");
 
     let dur = start_parsing_rs.elapsed();
     debug!(
@@ -161,5 +151,16 @@ pub(crate) fn parse_source(
         dur.as_secs(),
         dur.subsec_millis()
     );
-    Ok((toml_name, rs_manifest, rs_source))
+    Ok((rs_manifest, rs_source))
+}
+
+pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
+    let string = path
+        .to_path_buf()
+        .clone()
+        .into_os_string()
+        .into_string()
+        .map_err(BuildRunError::OsString)?;
+    debug!("current_dir_str={string}");
+    Ok(string)
 }

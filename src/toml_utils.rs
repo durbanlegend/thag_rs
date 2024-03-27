@@ -6,8 +6,8 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::io::BufRead;
 use std::process::Command;
+use std::str::FromStr;
 use std::time::Instant;
-use std::{fs, str::FromStr};
 
 use crate::code_utils;
 use crate::errors::BuildRunError;
@@ -125,15 +125,15 @@ pub struct Product {
 fn default_package_version() -> String {
     "0.0.1".to_string()
 }
-#[allow(dead_code)]
-pub(crate) fn read_cargo_toml() -> Result<CargoManifest, BuildRunError> {
-    let toml_str = fs::read_to_string("Cargo.toml").expect("Failed to read Cargo.toml file");
 
-    let cargo_toml: CargoManifest = toml::from_str(&toml_str)?;
+// pub(crate) fn read_cargo_toml() -> Result<CargoManifest, BuildRunError> {
+//     let toml_str = fs::read_to_string("Cargo.toml").expect("Failed to read Cargo.toml file");
 
-    // debug!("cargo_toml={cargo_toml:#?}");
-    Ok(cargo_toml)
-}
+//     let cargo_toml: CargoManifest = toml::from_str(&toml_str)?;
+
+//     // debug!("cargo_toml={cargo_toml:#?}");
+//     Ok(cargo_toml)
+// }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub(crate) struct Workspace {}

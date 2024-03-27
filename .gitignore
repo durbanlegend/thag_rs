@@ -2,7 +2,6 @@
 .DS_Store
 .cargo/
 .cargo/build_run/Cargo.toml
-examples/default_cargo.toml
 src/gpt_clap_derive.rs
 src/arg_cli.rs
 src/gpt_clap.rs

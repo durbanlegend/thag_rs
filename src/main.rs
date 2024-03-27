@@ -2,15 +2,16 @@
 use crate::code_utils::get_proc_flags;
 use crate::errors::BuildRunError;
 use core::str;
+use std::env;
 use std::error::Error;
+use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
-use std::{clone, env};
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 
-use log::{debug, info, LevelFilter};
+use log::{debug, info};
 
 mod cmd_args;
 // mod cmd_args_old;
@@ -25,7 +26,7 @@ const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const RS_SUFFIX: &str = ".rs";
-const TOML_SUFFIX: &str = ".toml";
+pub(crate) const TOML_NAME: &str = "Cargo.toml";
 
 #[derive(Debug, Default)]
 pub(crate) struct BuildState {
@@ -33,34 +34,21 @@ pub(crate) struct BuildState {
     pub(crate) source_name: String,
     pub(crate) cargo_manifest: CargoManifest,
     pub(crate) cargo_toml_path: PathBuf,
-    pub(crate) source_dir_path: PathBuf,
-    pub(crate) source_dir_str: String,
+    pub(crate) source_path: PathBuf,
+    // pub(crate) source_str: String,
     pub(crate) target_dir_path: PathBuf,
     pub(crate) target_dir_str: String,
 }
 
-// impl Default for BuildState {
-//     fn default() -> Self {
-//         BuildState {
-//             source_stem: None,
-//             source_name: None,
-//             cargo_manifest: None,
-//             cargo_toml_path: None,
-//             source_dir_path: None,
-//             source_dir_str: None,
-//             target_dir_path: None,
-//             target_dir_str: None,
-//         }
-//     }
-// }
-
-         Next: debug build crashing at start: Error: Os { code: 2, kind: NotFound, message: "No such file or directory" }
-// TODO: 1a. better always gen Cargo.toml, so as not to pick up one for the previous script.
-//       1b. Individual "Cargo.toml"s -> {source_stem}.toml, use --manifest-path to build and run
-//       2.  generate method to code_utils? etc.
+//      TODO:
+//       1.  Disallow scripts not named *.rs.
+//       2.  Move generate method to code_utils? etc.
 //       3.  snippets
 //       4.  features
 //       5.  bool -> 2-value enums?
+//       6.  Generate source to same directory as Cargo.toml? Nah
+//       7.  Rethink flags: -r just to run instead of -n and running by default
+//       8.  Print a warning if no options chosen.
 
 fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
@@ -91,34 +79,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let current_dir_path = std::env::current_dir()?.canonicalize()?;
-    let current_dir_str = current_dir_path
-        .clone()
-        .into_os_string()
-        .into_string()
-        .map_err(BuildRunError::OsString)?;
-    debug!("current_dir_str={current_dir_str}");
+    // let current_dir_str = path_to_str(&current_dir_path)?;
 
     let script_path = current_dir_path.join(PathBuf::from(options.script.clone()));
     debug!("script_path={script_path:#?}");
     let source_dir_path = script_path.canonicalize()?;
     debug!("source_dir_path={source_dir_path:#?}");
-    let source_dir_str = source_dir_path
-        .clone()
-        .into_os_string()
-        .into_string()
-        .map_err(BuildRunError::OsString)?
-        .clone();
+    // let source_dir_str = path_to_str(&source_dir_path)?;
     let target_dir_str = gen_build_dir.clone();
     let target_dir_path = PathBuf::from_str(&target_dir_str)?;
-    // let target_dir_path = std::env::current_dir()?.canonicalize()?;
-    // let target_dir_str = target_dir_path
-    //     .clone()
-    //     .into_os_string()
-    //     .into_string()
-    //     .map_err(BuildRunError::OsString)?;
     let mut build_state = BuildState {
-        source_dir_path,
-        source_dir_str,
+        source_path: source_dir_path,
+        // source_str: source_dir_str,
         target_dir_path,
         target_dir_str,
         ..Default::default()
@@ -132,28 +104,31 @@ fn main() -> Result<(), Box<dyn Error>> {
     //     build_state.source_dir_path
     // );
 
-    (build_state.source_stem, build_state.source_name) = if options.script.ends_with(RS_SUFFIX) {
-        let Some(stem) = options.script.strip_suffix(RS_SUFFIX) else {
+    let path = Path::new(&options.script);
+    let source_name = path.file_name().unwrap().to_str().unwrap();
+    debug!("source_name = {source_name}");
+    (build_state.source_stem, build_state.source_name) = if source_name.ends_with(RS_SUFFIX) {
+        let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
             return Err(Box::new(BuildRunError::Command(format!(
                 "Error stripping suffix from {}",
-                options.script
+                source_name
             ))));
         };
-        (stem.to_string(), options.script.clone())
+        (stem.to_string(), source_name.to_string())
     } else {
-        (options.script.clone(), options.script.clone() + RS_SUFFIX)
+        (source_name.to_string(), source_name.to_string() + RS_SUFFIX)
     };
 
     let (source_stem, source_name) = (&build_state.source_stem, &build_state.source_name);
-    let code_path = code_utils::build_code_path(source_stem)?;
-    let (toml_name, mut rs_manifest, rs_source): (String, CargoManifest, String) =
-        code_utils::parse_source(source_stem, &code_path)?;
+    // let code_path = code_utils::build_code_path(source_stem)?;
+    let (mut rs_manifest, rs_source): (CargoManifest, String) =
+        code_utils::parse_source(&build_state.source_path)?;
 
-    let source_path = code_path.clone();
-    debug!("code_path={code_path:?}");
+    let source_path = build_state.source_path.clone();
+    // debug!("code_path={code_path:?}");
     if !source_path.exists() {
         return Err(Box::new(BuildRunError::Command(format!(
-            "No script named {source_stem} or {source_name} in path {code_path:?}"
+            "No script named {source_stem} or {source_name} in path {source_path:?}"
         ))));
     }
 
@@ -175,17 +150,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     // let (source_path, cargo_toml_path) = {
     //     // let source: &str = &rs_source;
     //     // let source_name = format!("{source_stem}.rs");
-    //     // let toml_name = format!("{source_stem}.toml");
     //     let source_path = build_dir.join(source_name);
     //     let cargo_toml_path = build_dir.join(toml_name);
     //     (source_path, cargo_toml_path)
     // };
 
-    let cargo_toml_path = &build_state.target_dir_path.join(source_stem).clone();
+    let cargo_toml_path = &build_state
+        .target_dir_path
+        .join(source_stem)
+        .join(TOML_NAME)
+        .clone();
     build_state.cargo_toml_path = cargo_toml_path.clone();
     debug!("3. build_state={build_state:#?}");
     if proc_flags.contains(ProcFlags::GENERATE) {
-        generate(&build_state, &source_path, &rs_source, &proc_flags)?;
+        generate(&build_state, &rs_source, &proc_flags)?;
     }
 
     // let build_dir_str = build_dir.to_str().ok_or_else(|| {
@@ -209,13 +187,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let dur = start.elapsed();
     debug!("Completed in {}.{}s", dur.as_secs(), dur.subsec_millis());
+    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
+        println!("Completed in {}.{}s", dur.as_secs(), dur.subsec_millis());
+    }
 
     Ok(())
 }
 
 fn generate(
     build_state: &BuildState,
-    source_path: &PathBuf,
     rs_source: &String,
     proc_flags: &ProcFlags,
 ) -> Result<(), Box<dyn Error>> {
@@ -223,30 +203,58 @@ fn generate(
 
     info!("In generate, proc_flags={proc_flags}");
 
-    let mut source_file = fs::File::create(source_path)?;
+    let target_rs_path = build_state.target_dir_path.clone();
+    let target_rs_path = target_rs_path.join(&build_state.source_name);
+    debug!("GGGGGGGG Creating source file: {target_rs_path:?}");
+    let mut target_rs_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(target_rs_path)?;
+    debug!("GGGGGGGG Done!");
 
-    source_file.write_all(rs_source.as_bytes())?;
+    target_rs_file.write_all(rs_source.as_bytes())?;
 
-    let relative_path = source_path;
-    let mut absolute_path = PathBuf::from(PACKAGE_DIR);
-    absolute_path.push(relative_path);
-    debug!("Absolute path of generated program: {absolute_path:?}");
-    info!("##### Source code generation succeeded!");
+    // let relative_path = source_path;
+    // let mut absolute_path = PathBuf::from(PACKAGE_DIR);
+    // absolute_path.push(relative_path);
+    // debug!("Absolute path of generated program: {absolute_path:?}");
+    // info!("##### Source code generation succeeded!");
 
-    let mut cargo_toml = fs::File::create(&build_state.cargo_toml_path)?;
-    debug!("cargo_toml: {cargo_toml:?}");
+    debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
+    let cargo_toml_dir_path = &build_state.cargo_toml_path.parent().unwrap();
+    fs::create_dir_all(cargo_toml_dir_path)?;
+    if !Path::try_exists(&build_state.cargo_toml_path)? {
+        OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&build_state.cargo_toml_path)?;
+    }
+    // debug!("cargo_toml: {cargo_toml:?}");
+
     let cargo_manifest_str: &str = &build_state.cargo_manifest.to_string();
-    debug!("cargo_manifest_str: {cargo_manifest_str:?}");
-    OtherWrite::write_all(&mut cargo_toml, cargo_manifest_str.as_bytes())?;
+
+    debug!("cargo_manifest_str: {}", {
+        use std::fmt::Write;
+        cargo_manifest_str
+            .lines()
+            .fold(String::new(), |mut output, b| {
+                let _ = writeln!(output, "{b}");
+                output
+            })
+    });
+
+    let mut toml_file = fs::File::create(&build_state.cargo_toml_path)?;
+    toml_file.write_all(cargo_manifest_str.as_bytes())?;
     debug!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
     info!("##### Cargo.toml generation succeeded!");
+
     let dur = start_gen.elapsed();
     debug!(
         "Completed generation in {}.{}s",
         dur.as_secs(),
         dur.subsec_millis()
     );
-    if (proc_flags).contains(ProcFlags::TIMINGS) {
+    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
         println!(
             "Completed generation in {}.{}s",
             dur.as_secs(),
@@ -258,34 +266,44 @@ fn generate(
 
 // Configure log level
 fn configure_log() {
-    // let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
-    // let mut binding = Builder::new();
-    // let builder = binding.parse_env(env);
-    // builder.write_style(WriteStyle::Always);
-    // builder.init();
+    use env_logger::fmt::WriteStyle;
+    use env_logger::Builder;
+    use env_logger::Env;
 
-    env_logger::Builder::new()
-        .filter_level(LevelFilter::Debug)
-        .init();
+    let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
+    let mut binding = Builder::new();
+    let builder = binding.parse_env(env);
+    builder.write_style(WriteStyle::Always);
+    builder.init();
+
+    // Builder::new()
+    //     .filter_level(log::LevelFilter::Debug)
+    //     .init();
 }
 
 /// Build the Rust program using Cargo (with manifest path)
-fn build(flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRunError> {
+fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRunError> {
     let start_build = Instant::now();
+    let verbose = proc_flags.contains(ProcFlags::VERBOSE);
+
+    debug!("BBBBBBBB In build!");
 
     let build_dir = PathBuf::from(build_state.target_dir_str.clone());
+    let Ok(cargo_toml_path_str) = code_utils::path_to_str(&build_state.cargo_toml_path) else {
+        return Err(BuildRunError::OsString(
+            build_state.cargo_toml_path.clone().into_os_string(),
+        ));
+    };
     let mut build_command = Command::new("cargo");
-    build_command
-        .args([
-            "build",
-            "--verbose",
-            "--manifest-path",
-            &build_state.target_dir_str,
-        ])
-        .current_dir(build_dir);
+    let mut args = vec!["build", "--manifest-path", &cargo_toml_path_str];
+    if verbose {
+        args.push("--verbose");
+    };
+
+    build_command.args(&args).current_dir(build_dir);
     let build_output = build_command.spawn()?.wait_with_output()?;
 
-    if flags.contains(ProcFlags::VERBOSE) {
+    if verbose {
         let output = String::from_utf8_lossy(&build_output.stdout);
 
         println!("Build output:");
@@ -313,7 +331,7 @@ fn build(flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRunErro
         dur.subsec_millis()
     );
 
-    if flags.contains(ProcFlags::TIMINGS) {
+    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
         println!(
             "Completed build in {}.{}s",
             dur.as_secs(),
@@ -368,7 +386,7 @@ fn run(
         dur.subsec_millis()
     );
 
-    if flags.contains(ProcFlags::TIMINGS) {
+    if flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
         println!(
             "Completed run in {}.{}s",
             dur.as_secs(),

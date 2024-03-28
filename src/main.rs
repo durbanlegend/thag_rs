@@ -209,8 +209,21 @@ fn generate(
     let mut target_rs_file = OpenOptions::new()
         .write(true)
         .create(true)
+        .truncate(true)
         .open(target_rs_path)?;
     debug!("GGGGGGGG Done!");
+
+    use std::fmt::Write;
+    debug!(
+        "Writing out source {}",
+        rs_source
+            .clone()
+            .lines()
+            .fold(String::new(), |mut output, b| {
+                let _ = writeln!(output, "{b}");
+                output
+            })
+    );
 
     target_rs_file.write_all(rs_source.as_bytes())?;
 
@@ -276,9 +289,7 @@ fn configure_log() {
     builder.write_style(WriteStyle::Always);
     builder.init();
 
-    // Builder::new()
-    //     .filter_level(log::LevelFilter::Debug)
-    //     .init();
+    // Builder::new().filter_level(log::LevelFilter::Debug).init();
 }
 
 /// Build the Rust program using Cargo (with manifest path)
@@ -295,19 +306,28 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
         ));
     };
     let mut build_command = Command::new("cargo");
+    // Rustc writes to std
     let mut args = vec!["build", "--manifest-path", &cargo_toml_path_str];
     if verbose {
-        args.push("--verbose");
+        args.push("-vv");
     };
 
     build_command.args(&args).current_dir(build_dir);
+
+    debug!("&&&&&&&& build_command={build_command:#?}");
+
     let build_output = build_command.spawn()?.wait_with_output()?;
 
     if verbose {
-        let output = String::from_utf8_lossy(&build_output.stdout);
+        let stdout = String::from_utf8_lossy(&build_output.stdout);
+        // TODO make println
+        info!("Cargo output:");
+        stdout.lines().for_each(|line| debug!("{line}"));
 
-        println!("Build output:");
-        output.lines().for_each(|line| debug!("{line}"));
+        let stderr = String::from_utf8_lossy(&build_output.stderr);
+        // TODO make println
+        debug!("Stderr output including rustc:");
+        stderr.lines().for_each(|line| debug!("{line}"));
     }
 
     if build_output.status.success() {

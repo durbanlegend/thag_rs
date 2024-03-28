@@ -6,9 +6,6 @@ src/gpt_clap_derive.rs
 src/arg_cli.rs
 src/gpt_clap.rs
 src/my_script.rs
-obsolete/cmd_args_bank.rs
-obsolete/cmd_args_old.rs
-obsolete/my_script.rs
+obsolete/
 .cargo/build_run/Cargo.toml
 examples/default_cargo.toml
-obsolete/bank

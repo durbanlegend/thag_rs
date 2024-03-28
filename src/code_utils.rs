@@ -29,15 +29,12 @@ pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
 }
 
 pub(crate) fn rs_extract_src(rs_contents: &str) -> String {
-    use std::fmt::Write;
-    let rs_source = rs_contents
-        .lines()
-        .map(str::trim_start)
-        .filter(|&line| !line.starts_with("//!"))
-        .fold(String::new(), |mut output, b| {
-            let _ = writeln!(output, "{b}");
-            output
-        });
+    let rs_source = reassemble({
+        rs_contents
+            .lines()
+            .map(str::trim_start)
+            .filter(|&line| !line.starts_with("//!"))
+    });
     debug!("Rust source string (rs_source) = {rs_source}");
     rs_source
 }
@@ -163,4 +160,18 @@ pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
         .map_err(BuildRunError::OsString)?;
     debug!("current_dir_str={string}");
     Ok(string)
+}
+
+/// Unescape \n markers in a string to convert the wall of text to readable lines.
+pub(crate) fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
+    use std::fmt::Write;
+    map.fold(String::new(), |mut output, b| {
+        let _ = writeln!(output, "{b}");
+        output
+    })
+}
+
+/// Unescape \n markers in a string to convert the wall of text to readable lines.
+pub(crate) fn disentangle(text_wall: &str) -> String {
+    reassemble(text_wall.lines())
 }

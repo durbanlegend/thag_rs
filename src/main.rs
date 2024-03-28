@@ -58,8 +58,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("PACKAGE_DIR={PACKAGE_DIR}");
     debug!("PACKAGE_NAME={PACKAGE_NAME}");
     debug!("VERSION={VERSION}");
-    let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{PACKAGE_NAME}");
-    debug!("gen_build_dir={gen_build_dir:?}");
 
     let options = cmd_args::get_opt();
     let proc_flags = get_proc_flags(&options)?;
@@ -78,6 +76,24 @@ fn main() -> Result<(), Box<dyn Error>> {
         options.script.ends_with(RS_SUFFIX)
     );
 
+    let path = Path::new(&options.script);
+    let source_name = path.file_name().unwrap().to_str().unwrap();
+    debug!("source_name = {source_name}");
+    let (source_stem, source_name) = if source_name.ends_with(RS_SUFFIX) {
+        let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
+            return Err(Box::new(BuildRunError::Command(format!(
+                "Error stripping suffix from {}",
+                source_name
+            ))));
+        };
+        (stem.to_string(), source_name.to_string())
+    } else {
+        (source_name.to_string(), source_name.to_string() + RS_SUFFIX)
+    };
+
+    let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
+    debug!("gen_build_dir={gen_build_dir:?}");
+
     let current_dir_path = std::env::current_dir()?.canonicalize()?;
     // let current_dir_str = path_to_str(&current_dir_path)?;
 
@@ -89,6 +105,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let target_dir_str = gen_build_dir.clone();
     let target_dir_path = PathBuf::from_str(&target_dir_str)?;
     let mut build_state = BuildState {
+        source_stem,
+        source_name,
         source_path: source_dir_path,
         // source_str: source_dir_str,
         target_dir_path,
@@ -103,21 +121,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     //     "build_state.source_dir_path={:#?}",
     //     build_state.source_dir_path
     // );
-
-    let path = Path::new(&options.script);
-    let source_name = path.file_name().unwrap().to_str().unwrap();
-    debug!("source_name = {source_name}");
-    (build_state.source_stem, build_state.source_name) = if source_name.ends_with(RS_SUFFIX) {
-        let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
-            return Err(Box::new(BuildRunError::Command(format!(
-                "Error stripping suffix from {}",
-                source_name
-            ))));
-        };
-        (stem.to_string(), source_name.to_string())
-    } else {
-        (source_name.to_string(), source_name.to_string() + RS_SUFFIX)
-    };
 
     let (source_stem, source_name) = (&build_state.source_stem, &build_state.source_name);
     // let code_path = code_utils::build_code_path(source_stem)?;
@@ -213,17 +216,10 @@ fn generate(
         .open(target_rs_path)?;
     debug!("GGGGGGGG Done!");
 
-    use std::fmt::Write;
-    debug!(
-        "Writing out source {}",
-        rs_source
-            .clone()
-            .lines()
-            .fold(String::new(), |mut output, b| {
-                let _ = writeln!(output, "{b}");
-                output
-            })
-    );
+    debug!("Writing out source {}", {
+        let lines = rs_source.lines();
+        code_utils::reassemble(lines)
+    });
 
     target_rs_file.write_all(rs_source.as_bytes())?;
 
@@ -246,15 +242,10 @@ fn generate(
 
     let cargo_manifest_str: &str = &build_state.cargo_manifest.to_string();
 
-    debug!("cargo_manifest_str: {}", {
-        use std::fmt::Write;
-        cargo_manifest_str
-            .lines()
-            .fold(String::new(), |mut output, b| {
-                let _ = writeln!(output, "{b}");
-                output
-            })
-    });
+    debug!(
+        "cargo_manifest_str: {}",
+        code_utils::disentangle(cargo_manifest_str)
+    );
 
     let mut toml_file = fs::File::create(&build_state.cargo_toml_path)?;
     toml_file.write_all(cargo_manifest_str.as_bytes())?;
@@ -309,7 +300,7 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
     // Rustc writes to std
     let mut args = vec!["build", "--manifest-path", &cargo_toml_path_str];
     if verbose {
-        args.push("-vv");
+        args.push("--verbose");
     };
 
     build_command.args(&args).current_dir(build_dir);

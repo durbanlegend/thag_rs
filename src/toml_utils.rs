@@ -9,7 +9,7 @@ use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
 
-use crate::code_utils;
+use crate::code_utils::{self, reassemble};
 use crate::errors::BuildRunError;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -144,16 +144,14 @@ pub(crate) fn rs_extract_manifest(rs_contents: &str) -> Result<CargoManifest, Bu
 }
 
 fn rs_extract_toml(rs_contents: &str) -> String {
-    use std::fmt::Write;
-    let rs_toml_str = rs_contents
-        .lines()
-        .map(str::trim_start)
-        .filter(|&line| line.starts_with("//!"))
-        .map(|line| line.trim_start_matches('/').trim_start_matches('!'))
-        .fold(String::new(), |mut output, b| {
-            let _ = writeln!(output, "{b}");
-            output
-        });
+    let rs_toml_str = {
+        let str_iter = rs_contents
+            .lines()
+            .map(str::trim_start)
+            .filter(|&line| line.starts_with("//!"))
+            .map(|line| line.trim_start_matches('/').trim_start_matches('!'));
+        reassemble(str_iter)
+    };
     debug!("Rust source manifest info (rs_toml_str) = {rs_toml_str}");
     rs_toml_str
 }

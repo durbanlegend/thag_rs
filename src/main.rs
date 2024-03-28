@@ -1,17 +1,16 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::code_utils::get_proc_flags;
+use crate::code_utils::{display_output, get_proc_flags};
 use crate::errors::BuildRunError;
 use core::str;
+use log::{debug, info};
 use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::str::FromStr;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
-
-use log::{debug, info};
 
 mod cmd_args;
 // mod cmd_args_old;
@@ -32,16 +31,15 @@ pub(crate) const TOML_NAME: &str = "Cargo.toml";
 pub(crate) struct BuildState {
     pub(crate) source_stem: String,
     pub(crate) source_name: String,
-    pub(crate) cargo_manifest: CargoManifest,
-    pub(crate) cargo_toml_path: PathBuf,
     pub(crate) source_path: PathBuf,
     // pub(crate) source_str: String,
     pub(crate) target_dir_path: PathBuf,
-    pub(crate) target_dir_str: String,
+    // pub(crate) target_dir_str: String,
+    pub(crate) cargo_toml_path: PathBuf,
+    pub(crate) cargo_manifest: CargoManifest,
 }
 
 //      TODO:
-//       1.  Disallow scripts not named *.rs.
 //       2.  Move generate method to code_utils? etc.
 //       3.  snippets
 //       4.  features
@@ -49,6 +47,7 @@ pub(crate) struct BuildState {
 //       6.  Generate source to same directory as Cargo.toml? Nah
 //       7.  Rethink flags: -r just to run instead of -n and running by default
 //       8.  Print a warning if no options chosen.
+//       9.  --quiet option?.
 
 fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
@@ -76,10 +75,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         options.script.ends_with(RS_SUFFIX)
     );
 
+    if !options.script.ends_with(RS_SUFFIX) {
+        return Err(Box::new(BuildRunError::Command(format!(
+            "Script name must end in {RS_SUFFIX}"
+        ))));
+    }
+
     let path = Path::new(&options.script);
     let source_name = path.file_name().unwrap().to_str().unwrap();
     debug!("source_name = {source_name}");
-    let (source_stem, source_name) = if source_name.ends_with(RS_SUFFIX) {
+    let (source_stem, source_name) = {
         let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
             return Err(Box::new(BuildRunError::Command(format!(
                 "Error stripping suffix from {}",
@@ -87,8 +92,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             ))));
         };
         (stem.to_string(), source_name.to_string())
-    } else {
-        (source_name.to_string(), source_name.to_string() + RS_SUFFIX)
     };
 
     let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
@@ -110,11 +113,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         source_path: source_dir_path,
         // source_str: source_dir_str,
         target_dir_path,
-        target_dir_str,
+        // target_dir_str,
         ..Default::default()
     };
 
-    debug!("1. build_state={build_state:#?}");
+    // debug!("1. build_state={build_state:#?}");
 
     // info!("options.script={}", &options.script);
     // info!(
@@ -158,11 +161,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //     (source_path, cargo_toml_path)
     // };
 
-    let cargo_toml_path = &build_state
-        .target_dir_path
-        .join(source_stem)
-        .join(TOML_NAME)
-        .clone();
+    let cargo_toml_path = &build_state.target_dir_path.join(TOML_NAME).clone();
     build_state.cargo_toml_path = cargo_toml_path.clone();
     debug!("3. build_state={build_state:#?}");
     if proc_flags.contains(ProcFlags::GENERATE) {
@@ -178,14 +177,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     //     "build_dir_str != gen_build_dir"
     // );
 
-    debug!("2. build_state={build_state:#?}");
+    // debug!("2. build_state={build_state:#?}");
 
     if proc_flags.contains(ProcFlags::BUILD) {
         build(&proc_flags, &build_state)?;
     }
 
     if proc_flags.contains(ProcFlags::RUN) {
-        run(&proc_flags, source_stem, &build_state)?;
+        run(&proc_flags, source_stem, &build_state);
     }
 
     let dur = start.elapsed();
@@ -203,12 +202,17 @@ fn generate(
     proc_flags: &ProcFlags,
 ) -> Result<(), Box<dyn Error>> {
     let start_gen = Instant::now();
+    let verbose = proc_flags.contains(ProcFlags::VERBOSE);
 
     info!("In generate, proc_flags={proc_flags}");
 
+    fs::create_dir_all(&build_state.target_dir_path)?;
+
     let target_rs_path = build_state.target_dir_path.clone();
     let target_rs_path = target_rs_path.join(&build_state.source_name);
-    debug!("GGGGGGGG Creating source file: {target_rs_path:?}");
+    if verbose {
+        println!("GGGGGGGG Creating source file: {target_rs_path:?}");
+    }
     let mut target_rs_file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -230,8 +234,6 @@ fn generate(
     // info!("##### Source code generation succeeded!");
 
     debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
-    let cargo_toml_dir_path = &build_state.cargo_toml_path.parent().unwrap();
-    fs::create_dir_all(cargo_toml_dir_path)?;
     if !Path::try_exists(&build_state.cargo_toml_path)? {
         OpenOptions::new()
             .write(true)
@@ -290,7 +292,6 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
 
     debug!("BBBBBBBB In build!");
 
-    let build_dir = PathBuf::from(build_state.target_dir_str.clone());
     let Ok(cargo_toml_path_str) = code_utils::path_to_str(&build_state.cargo_toml_path) else {
         return Err(BuildRunError::OsString(
             build_state.cargo_toml_path.clone().into_os_string(),
@@ -303,37 +304,21 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
         args.push("--verbose");
     };
 
-    build_command.args(&args).current_dir(build_dir);
+    build_command.args(&args); // .current_dir(build_dir);
 
-    debug!("&&&&&&&& build_command={build_command:#?}");
-
-    let build_output = build_command.spawn()?.wait_with_output()?;
+    // Redirect stdout to a pipe
+    let mut child = build_command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("failed to spawn command");
 
     if verbose {
-        let stdout = String::from_utf8_lossy(&build_output.stdout);
-        // TODO make println
-        info!("Cargo output:");
-        stdout.lines().for_each(|line| debug!("{line}"));
-
-        let stderr = String::from_utf8_lossy(&build_output.stderr);
-        // TODO make println
-        debug!("Stderr output including rustc:");
-        stderr.lines().for_each(|line| debug!("{line}"));
+        display_output(&mut child);
     }
 
-    if build_output.status.success() {
-        let success_msg = String::from_utf8_lossy(&build_output.stdout);
-        info!("##### Build succeeded!");
-        success_msg.lines().for_each(|line| {
-            debug!("{line}");
-        });
-    } else {
-        let error_msg = String::from_utf8_lossy(&build_output.stderr);
-        error_msg.lines().for_each(|line| {
-            debug!("{line}");
-        });
-        return Err(BuildRunError::Command("Cargo build failed".to_string()));
-    }
+    // Wait for the child process to finish
+    child.wait().expect("failed to wait for child");
 
     let dur = start_build.elapsed();
     debug!(
@@ -354,12 +339,9 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
 }
 
 // Run the built program
-fn run(
-    flags: &ProcFlags,
-    source_stem: &str,
-    build_state: &BuildState,
-) -> Result<(), BuildRunError> {
+fn run(proc_flags: &ProcFlags, source_stem: &str, build_state: &BuildState) {
     let start_run = Instant::now();
+    // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
 
     let relative_path = format!("./target/debug/{source_stem}");
     let mut absolute_path = build_state.target_dir_path.clone();
@@ -369,26 +351,18 @@ fn run(
     let mut run_command = Command::new(format!("{}", absolute_path.display()));
     debug!("Run command is {run_command:?}");
 
-    let run_output = run_command.spawn()?.wait_with_output()?;
+    // Redirect stdout to a pipe
+    let mut child = run_command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("failed to spawn command");
 
-    if run_output.status.success() {
-        let success_msg = String::from_utf8_lossy(&run_output.stdout);
-        info!("##### Run succeeded!");
-        success_msg.lines().for_each(|line| {
-            debug!("{line}");
-        });
-    } else {
-        let error_msg = String::from_utf8_lossy(&run_output.stderr);
-        error_msg.lines().for_each(|line| {
-            debug!("{line}");
-        });
-        return Err(BuildRunError::Command("Cargo run failed".to_string()));
-    }
+    // Always display run output, unlike build
+    display_output(&mut child);
 
-    let output = String::from_utf8_lossy(&run_output.stdout);
-
-    println!("Run output:");
-    output.lines().for_each(|line| debug!("{line}"));
+    // Wait for the child process to finish
+    child.wait().expect("failed to wait for child");
 
     let dur = start_run.elapsed();
     debug!(
@@ -397,13 +371,11 @@ fn run(
         dur.subsec_millis()
     );
 
-    if flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
+    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
         println!(
             "Completed run in {}.{}s",
             dur.as_secs(),
             dur.subsec_millis()
         );
     }
-
-    Ok(())
 }

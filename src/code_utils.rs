@@ -4,6 +4,7 @@ use crate::toml_utils::CargoManifest;
 use crate::{cmd_args, toml_utils::rs_extract_manifest};
 use log::debug;
 use regex::Regex;
+use std::io::Read;
 use std::time::Instant;
 use std::{collections::HashSet, error::Error, fs, path::Path};
 
@@ -174,4 +175,24 @@ pub(crate) fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
 /// Unescape \n markers in a string to convert the wall of text to readable lines.
 pub(crate) fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
+}
+
+pub(crate) fn display_output(child: &mut std::process::Child) {
+    // Read the captured output from the pipe
+    let mut stdout = child.stdout.take().expect("failed to get stdout");
+    let mut output = String::new();
+    stdout
+        .read_to_string(&mut output)
+        .expect("failed to read stdout");
+
+    // Print the captured stdout
+    println!("Captured stdout:\n{}", output);
+
+    let mut stderr = child.stderr.take().expect("failed to get stdout");
+    stderr
+        .read_to_string(&mut output)
+        .expect("failed to read stderr");
+
+    // Print the captured stderr
+    println!("Captured stderr:\n{}", output);
 }

@@ -177,23 +177,12 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
     let search_output = search_command.output()?;
 
     let first_line: String = if search_output.status.success() {
-        // let success_msg = String::from_utf8_lossy(&search_output.stdout);
-        // info!("##### cargo search succeeded!");
-        // if let Some(msg) = success_msg.lines().next() {
-        //     msg.to_string()
-        // };
-        // // }?;
-        use std::fmt::Write;
-
         search_output
             .stdout
             .lines()
-            .take(1)
-            .filter_map(Result::ok)
-            .fold(String::new(), |mut output, b| {
-                let _ = writeln!(output, "{b}");
-                output
-            })
+            .map_while(Result::ok)
+            .next()
+            .unwrap()
     } else {
         let error_msg = String::from_utf8_lossy(&search_output.stderr);
         error_msg.lines().for_each(|line| {

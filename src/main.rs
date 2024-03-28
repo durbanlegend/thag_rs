@@ -376,7 +376,7 @@ fn run(
 
     let output = String::from_utf8_lossy(&run_output.stdout);
 
-    println!("Build output:");
+    println!("Run output:");
     output.lines().for_each(|line| debug!("{line}"));
 
     let dur = start_run.elapsed();

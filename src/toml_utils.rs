@@ -293,14 +293,16 @@ pub(crate) fn resolve_deps(
     let start_deps_rs = Instant::now();
     let rs_inferred_deps = code_utils::infer_dependencies(rs_source);
     debug!("rs_inferred_deps={rs_inferred_deps:#?}\n");
+    debug!("rs_manifest.dependencies={:#?}", rs_manifest.dependencies);
     if !rs_inferred_deps.is_empty() {
-        let rs_dep_map: &mut std::collections::BTreeMap<std::string::String, Dependency> =
+        let mut rs_dep_map: std::collections::BTreeMap<std::string::String, Dependency> =
             if let Some(Some(ref mut rs_dep_map)) = rs_manifest.dependencies {
-                rs_dep_map
+                rs_dep_map.clone()
             } else {
-                return Err(Box::new(BuildRunError::Command(String::from(
-                    "No dependency map found",
-                ))));
+                // return Err(Box::new(BuildRunError::Command(String::from(
+                //     "No dependency map found",
+                // ))));
+                BTreeMap::new()
             };
 
         debug!("dep_map  (before inferred) {rs_dep_map:#?}");

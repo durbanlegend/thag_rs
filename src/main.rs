@@ -8,7 +8,6 @@ use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::str::FromStr;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 
@@ -18,7 +17,8 @@ mod errors;
 mod toml_utils;
 
 use crate::cmd_args::ProcFlags;
-use crate::toml_utils::{default_manifest, resolve_deps, CargoManifest};
+use crate::code_utils::configure_build_state;
+use crate::toml_utils::CargoManifest;
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -74,58 +74,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         ))));
     }
 
-    let path = Path::new(&options.script);
-    let source_name = path.file_name().unwrap().to_str().unwrap();
-    debug!("source_name = {source_name}");
-    let (source_stem, source_name) = {
-        let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
-            return Err(Box::new(BuildRunError::Command(format!(
-                "Error stripping suffix from {}",
-                source_name
-            ))));
-        };
-        (stem.to_string(), source_name.to_string())
-    };
-
-    let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
-    debug!("gen_build_dir={gen_build_dir:?}");
-
-    let current_dir_path = std::env::current_dir()?.canonicalize()?;
-    // let current_dir_str = path_to_str(&current_dir_path)?;
-
-    let script_path = current_dir_path.join(PathBuf::from(options.script.clone()));
-    debug!("script_path={script_path:#?}");
-    let source_dir_path = script_path.canonicalize()?;
-    debug!("source_dir_path={source_dir_path:#?}");
-    // let source_dir_str = path_to_str(&source_dir_path)?;
-    let target_dir_str = gen_build_dir.clone();
-    let target_dir_path = PathBuf::from_str(&target_dir_str)?;
-    let mut build_state = BuildState {
-        source_stem,
-        source_name,
-        source_path: source_dir_path,
-        // source_str: source_dir_str,
-        target_dir_path,
-        // target_dir_str,
-        ..Default::default()
-    };
-
-    let (source_stem, source_name) = (&build_state.source_stem, &build_state.source_name);
-    let (mut rs_manifest, rs_source): (CargoManifest, String) =
-        code_utils::parse_source(&build_state.source_path)?;
-
-    let source_path = build_state.source_path.clone();
-    if !source_path.exists() {
-        return Err(Box::new(BuildRunError::Command(format!(
-            "No script named {source_stem} or {source_name} in path {source_path:?}"
-        ))));
-    }
-
-    build_state.cargo_manifest = if proc_flags.contains(ProcFlags::GENERATE) {
-        resolve_deps(&gen_build_dir, source_stem, &rs_source, &mut rs_manifest)?
-    } else {
-        default_manifest(&gen_build_dir, source_stem)?
-    };
+    let (mut build_state, rs_source) = configure_build_state(&options, &proc_flags)?;
 
     let cargo_toml_path = &build_state.target_dir_path.join(TOML_NAME).clone();
     build_state.cargo_toml_path = cargo_toml_path.clone();
@@ -139,10 +88,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if proc_flags.contains(ProcFlags::RUN) {
-        run(&proc_flags, source_stem, &build_state)?;
+        run(&proc_flags, &build_state)?;
     }
 
-    let process = &format!("{PACKAGE_NAME} completed script {source_name}");
+    let process = &format!(
+        "{PACKAGE_NAME} completed script {}",
+        &build_state.source_name
+    );
     display_timings(&start, process, &proc_flags);
 
     Ok(())
@@ -273,7 +225,7 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
 // Run the built program
 fn run(
     proc_flags: &ProcFlags,
-    source_stem: &str,
+    // source_stem: &str,
     build_state: &BuildState,
 ) -> Result<(), BuildRunError> {
     let start_run = Instant::now();
@@ -281,7 +233,7 @@ fn run(
 
     // debug!("BuildState={build_state:#?}");
     let mut absolute_path = build_state.target_dir_path.clone();
-    absolute_path.push(format!("./target/debug/{source_stem}"));
+    absolute_path.push(format!("./target/debug/{}", build_state.source_stem));
     // debug!("Absolute path of generated program: {absolute_path:?}");
 
     let mut run_command = Command::new(format!("{}", absolute_path.display()));

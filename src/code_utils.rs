@@ -1,11 +1,16 @@
 use crate::cmd_args::ProcFlags;
 use crate::errors::BuildRunError;
-use crate::toml_utils::CargoManifest;
+use crate::toml_utils::{default_manifest, resolve_deps, CargoManifest};
+use crate::BuildState;
+use crate::PACKAGE_DIR;
+use crate::RS_SUFFIX;
 use crate::{cmd_args, toml_utils::rs_extract_manifest};
 use log::debug;
 use regex::Regex;
 use std::io::Read;
+use std::path::PathBuf;
 use std::process::ExitStatus;
+use std::str::FromStr;
 use std::time::Instant;
 use std::{collections::HashSet, error::Error, fs, path::Path};
 
@@ -87,16 +92,6 @@ pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
 
     dependencies
 }
-
-// pub(crate) fn build_code_path(source_stem: &str) -> Result<PathBuf, Box<dyn Error>> {
-//     let source_name = format!("{source_stem}.rs");
-//     let project_dir = env::var("PWD")?;
-//     let project_path = PathBuf::from(project_dir);
-//     let mut code_path: PathBuf = project_path; // .join("examples");
-//                                                // let default_toml_path = code_path.join("default_cargo.toml");
-//     code_path.push(source_name);
-//     Ok(code_path)
-// }
 
 /// Set up the processing flags from the command line arguments and pass them back.
 pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<dyn Error>> {
@@ -238,4 +233,67 @@ pub(crate) fn handle_outcome(
         return Err(BuildRunError::Command(format!("{} failed", process)));
     };
     Ok(())
+}
+
+pub(crate) fn configure_build_state(
+    options: &cmd_args::Opt,
+    proc_flags: &ProcFlags,
+) -> Result<(BuildState, String), Box<dyn Error>> {
+    let path = Path::new(&options.script);
+    let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
+    debug!("source_name = {source_name}");
+    let source_stem = {
+        let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
+            return Err(Box::new(BuildRunError::Command(format!(
+                "Error stripping suffix from {}",
+                source_name
+            ))));
+        };
+        stem.to_string()
+    };
+    let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
+    debug!("gen_build_dir={gen_build_dir:?}");
+
+    let current_dir_path = std::env::current_dir()?.canonicalize()?;
+    let script_path = current_dir_path.join(PathBuf::from(options.script.clone()));
+    debug!("script_path={script_path:#?}");
+
+    let source_dir_path = script_path.canonicalize()?;
+    debug!("source_dir_path={source_dir_path:#?}");
+
+    let target_dir_str = gen_build_dir.clone();
+    let target_dir_path = PathBuf::from_str(&target_dir_str)?;
+    let source_name = source_name.to_string();
+
+    let mut build_state = BuildState {
+        source_stem,
+        source_name,
+        source_path: source_dir_path,
+        // source_str: source_dir_str,
+        target_dir_path,
+        // target_dir_str,
+        ..Default::default()
+    };
+
+    // let (source_stem, source_name) = (&build_state.source_stem, &build_state.source_name);
+    let (mut rs_manifest, rs_source): (CargoManifest, String) =
+        parse_source(&build_state.source_path)?;
+    let source_path = build_state.source_path.clone();
+    if !source_path.exists() {
+        return Err(Box::new(BuildRunError::Command(format!(
+            "No script named {} or {} in path {source_path:?}",
+            &build_state.source_stem, &build_state.source_name
+        ))));
+    }
+    build_state.cargo_manifest = if proc_flags.contains(ProcFlags::GENERATE) {
+        resolve_deps(
+            &gen_build_dir,
+            &build_state.source_stem,
+            &rs_source,
+            &mut rs_manifest,
+        )?
+    } else {
+        default_manifest(&gen_build_dir, &build_state.source_stem)?
+    };
+    Ok((build_state, rs_source))
 }

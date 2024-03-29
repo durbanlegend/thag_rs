@@ -126,15 +126,6 @@ fn default_package_version() -> String {
     "0.0.1".to_string()
 }
 
-// pub(crate) fn read_cargo_toml() -> Result<CargoManifest, BuildRunError> {
-//     let toml_str = fs::read_to_string("Cargo.toml").expect("Failed to read Cargo.toml file");
-
-//     let cargo_toml: CargoManifest = toml::from_str(&toml_str)?;
-
-//     // debug!("cargo_toml={cargo_toml:#?}");
-//     Ok(cargo_toml)
-// }
-
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub(crate) struct Workspace {}
 
@@ -158,9 +149,6 @@ fn rs_extract_toml(rs_contents: &str) -> String {
 
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();
-    // let mut dummy_command = Command::new("cargo");
-    // dummy_command.args(["build", "--verbose"]);
-    // debug!("\nCargo dummy command={dummy_command:#?}\n");
 
     println!(
         r#"
@@ -254,15 +242,6 @@ path = "{build_dir}/{source_stem}.rs"
 
     CargoManifest::from_str(&cargo_manifest)
 }
-
-// let source_manifest_toml = cargo_manifest.parse::<Table>()?;
-// debug!("source_manifest_toml={source_manifest_toml:#?}\n");
-
-// let toml = toml::to_string(&source_manifest_toml)?;
-// // debug!("Raw cargo_manifest = {toml:#?}\n");
-
-// debug!("Cargo_manifest reconstituted:");
-// toml.lines().for_each(|l| println!("{l}"));
 
 pub(crate) fn resolve_deps(
     gen_build_dir: &str,

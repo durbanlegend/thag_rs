@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::code_utils::{display_output, get_proc_flags};
+use crate::code_utils::{debug_timings, display_output, display_timings, get_proc_flags};
 use crate::errors::BuildRunError;
 use core::str;
 use log::{debug, info};
@@ -13,7 +13,6 @@ use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 
 mod cmd_args;
-// mod cmd_args_old;
 mod code_utils;
 mod errors;
 mod toml_utils;
@@ -40,12 +39,11 @@ pub(crate) struct BuildState {
 }
 
 //      TODO:
+//       1.  Rethink flags: -r just to run instead of requiring -n or running by default
 //       2.  Move generate method to code_utils? etc.
 //       3.  snippets
 //       4.  features
 //       5.  bool -> 2-value enums?
-//       6.  Generate source to same directory as Cargo.toml? Nah
-//       7.  Rethink flags: -r just to run instead of -n and running by default
 //       8.  Print a warning if no options chosen.
 //       9.  --quiet option?.
 
@@ -62,12 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let proc_flags = get_proc_flags(&options)?;
     debug!("flags={proc_flags:#?}");
 
-    let dur = start.elapsed();
-    debug!(
-        "Set up processing flags in {}.{}s",
-        dur.as_secs(),
-        dur.subsec_millis()
-    );
+    debug_timings(start, "Set up processing flags");
 
     debug!(
         "options.script={}; options.script.ends_with(RS_SUFFIX)? {})",
@@ -117,21 +110,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         ..Default::default()
     };
 
-    // debug!("1. build_state={build_state:#?}");
-
-    // info!("options.script={}", &options.script);
-    // info!(
-    //     "build_state.source_dir_path={:#?}",
-    //     build_state.source_dir_path
-    // );
-
     let (source_stem, source_name) = (&build_state.source_stem, &build_state.source_name);
-    // let code_path = code_utils::build_code_path(source_stem)?;
     let (mut rs_manifest, rs_source): (CargoManifest, String) =
         code_utils::parse_source(&build_state.source_path)?;
 
     let source_path = build_state.source_path.clone();
-    // debug!("code_path={code_path:?}");
     if !source_path.exists() {
         return Err(Box::new(BuildRunError::Command(format!(
             "No script named {source_stem} or {source_name} in path {source_path:?}"
@@ -144,23 +127,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         default_manifest(&gen_build_dir, source_stem)?
     };
 
-    debug!("build_state (after inferred) = {build_state:#?}");
-
-    // let build_dir = PathBuf::from(".cargo/build_run");
-    // if !build_dir.exists() {
-    //     fs::create_dir_all(&build_dir)?; // Use fs::create_dir_all for directories
-    // }
-
-    // let build_dir = build_dir.canonicalize()?;
-
-    // let (source_path, cargo_toml_path) = {
-    //     // let source: &str = &rs_source;
-    //     // let source_name = format!("{source_stem}.rs");
-    //     let source_path = build_dir.join(source_name);
-    //     let cargo_toml_path = build_dir.join(toml_name);
-    //     (source_path, cargo_toml_path)
-    // };
-
     let cargo_toml_path = &build_state.target_dir_path.join(TOML_NAME).clone();
     build_state.cargo_toml_path = cargo_toml_path.clone();
     debug!("3. build_state={build_state:#?}");
@@ -168,30 +134,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         generate(&build_state, &rs_source, &proc_flags)?;
     }
 
-    // let build_dir_str = build_dir.to_str().ok_or_else(|| {
-    //     BuildRunError::Command(format!("Failed to convert path {build_dir:#?} to a string"))
-    // })?;
-
-    // assert_eq!(
-    //     build_dir_str, gen_build_dir,
-    //     "build_dir_str != gen_build_dir"
-    // );
-
-    // debug!("2. build_state={build_state:#?}");
-
     if proc_flags.contains(ProcFlags::BUILD) {
         build(&proc_flags, &build_state)?;
     }
 
     if proc_flags.contains(ProcFlags::RUN) {
-        run(&proc_flags, source_stem, &build_state);
+        run(&proc_flags, source_stem, &build_state)?;
     }
 
-    let dur = start.elapsed();
-    debug!("Completed in {}.{}s", dur.as_secs(), dur.subsec_millis());
-    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        println!("Completed in {}.{}s", dur.as_secs(), dur.subsec_millis());
-    }
+    let process = &format!("{PACKAGE_NAME} completed script {source_name}");
+    display_timings(&start, process, &proc_flags);
 
     Ok(())
 }
@@ -254,19 +206,7 @@ fn generate(
     debug!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
     info!("##### Cargo.toml generation succeeded!");
 
-    let dur = start_gen.elapsed();
-    debug!(
-        "Completed generation in {}.{}s",
-        dur.as_secs(),
-        dur.subsec_millis()
-    );
-    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        println!(
-            "Completed generation in {}.{}s",
-            dur.as_secs(),
-            dur.subsec_millis()
-        );
-    }
+    display_timings(&start_gen, "Completed generation", proc_flags);
     Ok(())
 }
 
@@ -319,63 +259,45 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
 
     // Wait for the child process to finish
     child.wait().expect("failed to wait for child");
+    if build_command.status()?.success() {
+        debug!("Build succeeded");
+    } else {
+        return Err(BuildRunError::Command(String::from("Build failed")));
+    };
 
-    let dur = start_build.elapsed();
-    debug!(
-        "Completed build in {}.{}s",
-        dur.as_secs(),
-        dur.subsec_millis()
-    );
-
-    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        println!(
-            "Completed build in {}.{}s",
-            dur.as_secs(),
-            dur.subsec_millis()
-        );
-    }
+    display_timings(&start_build, "Completed build", proc_flags);
 
     Ok(())
 }
 
 // Run the built program
-fn run(proc_flags: &ProcFlags, source_stem: &str, build_state: &BuildState) {
+fn run(
+    proc_flags: &ProcFlags,
+    source_stem: &str,
+    build_state: &BuildState,
+) -> Result<(), BuildRunError> {
     let start_run = Instant::now();
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
 
-    let relative_path = format!("./target/debug/{source_stem}");
+    // debug!("BuildState={build_state:#?}");
     let mut absolute_path = build_state.target_dir_path.clone();
-    absolute_path.push(relative_path);
-    debug!("Absolute path of generated program: {absolute_path:?}");
+    absolute_path.push(format!("./target/debug/{source_stem}"));
+    // debug!("Absolute path of generated program: {absolute_path:?}");
 
     let mut run_command = Command::new(format!("{}", absolute_path.display()));
     debug!("Run command is {run_command:?}");
 
-    // Redirect stdout to a pipe
-    let mut child = run_command
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("failed to spawn command");
+    let exit_status = run_command.spawn()?.wait()?;
 
-    // Always display run output, unlike build
-    display_output(&mut child);
+    debug!("Exit status={exit_status:#?}");
 
-    // Wait for the child process to finish
-    child.wait().expect("failed to wait for child");
+    // handle_outcome(exit_status, false, false, &run_output, "Run")?;
 
-    let dur = start_run.elapsed();
-    debug!(
-        "Completed run in {}.{}s",
-        dur.as_secs(),
-        dur.subsec_millis()
-    );
+    // let output = String::from_utf8_lossy(&run_output.stdout);
+    // println!("Run output:");
+    // output.lines().for_each(|line| debug!("{line}"));
 
-    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        println!(
-            "Completed run in {}.{}s",
-            dur.as_secs(),
-            dur.subsec_millis()
-        );
-    }
+    display_timings(&start_run, "Completed run", proc_flags);
+
+    Ok(())
 }

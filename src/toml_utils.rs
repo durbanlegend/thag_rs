@@ -9,7 +9,7 @@ use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
 
-use crate::code_utils::{self, reassemble};
+use crate::code_utils::{self, debug_timings, reassemble};
 use crate::errors::BuildRunError;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -207,12 +207,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
     };
     debug!("!!!!!!!! found name={name}, version={version}");
 
-    let dur = start_search.elapsed();
-    debug!(
-        "Completed search in {}.{}s",
-        dur.as_secs(),
-        dur.subsec_millis()
-    );
+    debug_timings(start_search, "Completed search");
 
     Ok((name, version))
 }
@@ -342,11 +337,8 @@ pub(crate) fn resolve_deps(
             cargo_manifest.dependencies
         );
     }
-    let dur = start_deps_rs.elapsed();
-    debug!(
-        "Processed dependencies in {}.{}s",
-        dur.as_secs(),
-        dur.subsec_millis()
-    );
+
+    debug_timings(start_deps_rs, "Processed dependencies");
+
     Ok(cargo_manifest)
 }

@@ -5,6 +5,7 @@ use crate::{cmd_args, toml_utils::rs_extract_manifest};
 use log::debug;
 use regex::Regex;
 use std::io::Read;
+use std::process::ExitStatus;
 use std::time::Instant;
 use std::{collections::HashSet, error::Error, fs, path::Path};
 
@@ -143,12 +144,7 @@ pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String)
     let rs_manifest = rs_extract_manifest(&rs_full_source)?;
     let rs_source = rs_extract_src(&rs_full_source);
 
-    let dur = start_parsing_rs.elapsed();
-    debug!(
-        "Parsed source in {}.{}s",
-        dur.as_secs(),
-        dur.subsec_millis()
-    );
+    debug_timings(start_parsing_rs, "Parsed source");
     Ok((rs_manifest, rs_source))
 }
 
@@ -164,6 +160,7 @@ pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
 }
 
 /// Unescape \n markers in a string to convert the wall of text to readable lines.
+#[inline]
 pub(crate) fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
     map.fold(String::new(), |mut output, b| {
@@ -173,6 +170,7 @@ pub(crate) fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
 }
 
 /// Unescape \n markers in a string to convert the wall of text to readable lines.
+#[inline]
 pub(crate) fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
@@ -195,4 +193,49 @@ pub(crate) fn display_output(child: &mut std::process::Child) {
 
     // Print the captured stderr
     println!("Captured stderr:\n{}", output);
+}
+
+#[inline]
+pub(crate) fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
+    let dur = start.elapsed();
+    let msg = format!("{process} in {}.{}s", dur.as_secs(), dur.subsec_millis());
+
+    debug!("{msg}");
+    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
+        println!("{msg}");
+    }
+}
+
+#[inline]
+pub(crate) fn debug_timings(start: Instant, process: &str) {
+    let dur = start.elapsed();
+    debug!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
+}
+
+// TODO wait to see if redundant and get rid of it.
+/// Handle the outcome of a process and optionally display its stdout and/or stderr
+#[allow(dead_code)]
+pub(crate) fn handle_outcome(
+    exit_status: ExitStatus,
+    display_stdout: bool,
+    display_stderr: bool,
+    output: &std::process::Output,
+    process: &str,
+) -> Result<(), BuildRunError> {
+    if exit_status.success() {
+        if display_stdout {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            debug!("{} succeeded!", process);
+            stdout.lines().for_each(|line| {
+                debug!("{line}");
+            });
+        }
+    } else if display_stderr {
+        let error_msg = String::from_utf8_lossy(&output.stderr);
+        error_msg.lines().for_each(|line| {
+            debug!("{line}");
+        });
+        return Err(BuildRunError::Command(format!("{} failed", process)));
+    };
+    Ok(())
 }

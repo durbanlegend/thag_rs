@@ -1,5 +1,9 @@
+//! [dependencies]
+//! clap = { version = "4.5.3", features = ["derive"] }
+
 use bitflags::bitflags;
 use clap::Parser;
+use core::*;
 use core::{fmt, str};
 
 /// Script Runner
@@ -38,7 +42,9 @@ pub(crate) fn get_opt() -> Opt {
 
 #[allow(dead_code)]
 fn main() {
-    let opt = Opt::parse();
+    println!("In {}", env!("CARGO_PKG_NAME"));
+
+    let opt = get_opt();
 
     if opt.verbose {
         println!("Verbosity enabled");

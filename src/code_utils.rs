@@ -7,9 +7,9 @@ use crate::RS_SUFFIX;
 use crate::{cmd_args, toml_utils::rs_extract_manifest};
 use log::debug;
 use regex::Regex;
-use std::io::Read;
+use std::io::BufRead;
 use std::path::PathBuf;
-use std::process::ExitStatus;
+use std::process::{ExitStatus, Output};
 use std::str::FromStr;
 use std::time::Instant;
 use std::{collections::HashSet, error::Error, fs, path::Path};
@@ -95,41 +95,41 @@ pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
 
 /// Set up the processing flags from the command line arguments and pass them back.
 pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<dyn Error>> {
-    let flags = {
-        if options.all && options.no_run {
-            // println!(
-            //     "Conflicting options {} and {} specified",
-            //     options.all, options.no_run
-            // );
-            return Err(Box::new(BuildRunError::Command(format!(
-                "Conflicting options {} and {} specified",
-                options.all, options.no_run
-            ))));
-        }
-        let mut flags = ProcFlags::empty();
-        flags.set(ProcFlags::GENERATE, options.generate | options.all);
-        flags.set(ProcFlags::BUILD, options.build | options.all);
-        flags.set(ProcFlags::VERBOSE, options.verbose);
-        flags.set(ProcFlags::TIMINGS, options.timings);
-        flags.set(ProcFlags::RUN, !options.no_run);
-        flags.set(ProcFlags::ALL, options.all);
-        if !(flags.contains(ProcFlags::ALL)) {
-            flags.set(
+    let proc_flags = {
+        let mut proc_flags = ProcFlags::empty();
+        proc_flags.set(ProcFlags::GENERATE, options.generate | options.all);
+        proc_flags.set(ProcFlags::BUILD, options.build | options.all);
+        proc_flags.set(ProcFlags::VERBOSE, options.verbose);
+        proc_flags.set(ProcFlags::TIMINGS, options.timings);
+        proc_flags.set(ProcFlags::RUN, options.run);
+        proc_flags.set(ProcFlags::ALL, options.all);
+        if !(proc_flags.contains(ProcFlags::ALL)) {
+            proc_flags.set(
                 ProcFlags::ALL,
-                options.generate & options.build && !options.no_run,
+                options.generate & options.build & options.run,
             );
         }
 
-        let formatted = flags.to_string();
+        // if options.all && options.run {
+        //     // println!(
+        //     //     "Conflicting options {} and {} specified",
+        //     //     options.all, options.run
+        //     // );
+        //     return Err(Box::new(BuildRunError::Command(format!(
+        //         "Conflicting options {} and {} specified",
+        //         options.all, options.run
+        //     ))));
+        // }
+        let formatted = proc_flags.to_string();
         let parsed = formatted
             .parse::<ProcFlags>()
             .map_err(|e| BuildRunError::FromStr(e.to_string()))?;
 
-        assert_eq!(flags, parsed);
+        assert_eq!(proc_flags, parsed);
 
-        Ok::<cmd_args::ProcFlags, BuildRunError>(flags)
+        Ok::<cmd_args::ProcFlags, BuildRunError>(proc_flags)
     }?;
-    Ok(flags)
+    Ok(proc_flags)
 }
 
 pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String), Box<dyn Error>> {
@@ -170,24 +170,22 @@ pub(crate) fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
 
-pub(crate) fn display_output(child: &mut std::process::Child) {
+pub(crate) fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     // Read the captured output from the pipe
-    let mut stdout = child.stdout.take().expect("failed to get stdout");
-    let mut output = String::new();
-    stdout
-        .read_to_string(&mut output)
-        .expect("failed to read stdout");
+    // let stdout = output.stdout;
 
     // Print the captured stdout
-    println!("Captured stdout:\n{}", output);
-
-    let mut stderr = child.stderr.take().expect("failed to get stdout");
-    stderr
-        .read_to_string(&mut output)
-        .expect("failed to read stderr");
+    println!("Captured stdout");
+    for result in output.stdout.lines() {
+        println!("{}", result?);
+    }
 
     // Print the captured stderr
-    println!("Captured stderr:\n{}", output);
+    println!("Captured stderr");
+    for result in output.stderr.lines() {
+        println!("{}", result?);
+    }
+    Ok(())
 }
 
 #[inline]

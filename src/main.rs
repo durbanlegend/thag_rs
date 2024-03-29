@@ -39,7 +39,7 @@ pub(crate) struct BuildState {
 }
 
 //      TODO:
-//       1.  Rethink flags: -r just to run instead of requiring -n or running by default
+//       1.  Debug calling scripts with their own arguments in clap
 //       2.  Move generate method to code_utils? etc.
 //       3.  snippets
 //       4.  features
@@ -182,7 +182,7 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
     let start_build = Instant::now();
     let verbose = proc_flags.contains(ProcFlags::VERBOSE);
 
-    debug!("BBBBBBBB In build!");
+    debug!("BBBBBBBB In build");
 
     let Ok(cargo_toml_path_str) = code_utils::path_to_str(&build_state.cargo_toml_path) else {
         return Err(BuildRunError::OsString(
@@ -198,24 +198,24 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
 
     build_command.args(&args); // .current_dir(build_dir);
 
-    // Redirect stdout to a pipe
+    // Redirect stdout and stderr to pipes
     let mut child = build_command
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn()
-        .expect("failed to spawn command");
-
-    if verbose {
-        display_output(&mut child);
-    }
-
-    // Wait for the child process to finish
-    child.wait().expect("failed to wait for child");
-    if build_command.status()?.success() {
+        .spawn()?;
+    let exit_status = child.wait()?;
+    if exit_status.success() {
         debug!("Build succeeded");
     } else {
         return Err(BuildRunError::Command(String::from("Build failed")));
     };
+
+    // Wait for the child process to finish with output collected
+    let output = child.wait_with_output()?;
+
+    if verbose {
+        let _ = display_output(&output);
+    }
 
     display_timings(&start_build, "Completed build", proc_flags);
 
@@ -229,7 +229,7 @@ fn run(
     build_state: &BuildState,
 ) -> Result<(), BuildRunError> {
     let start_run = Instant::now();
-    // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
+    debug!("RRRRRRRR In run");
 
     // debug!("BuildState={build_state:#?}");
     let mut absolute_path = build_state.target_dir_path.clone();
@@ -239,15 +239,9 @@ fn run(
     let mut run_command = Command::new(format!("{}", absolute_path.display()));
     debug!("Run command is {run_command:?}");
 
-    let exit_status = run_command.spawn()?.wait()?;
+    let _exit_status = run_command.spawn()?.wait()?;
 
-    debug!("Exit status={exit_status:#?}");
-
-    // handle_outcome(exit_status, false, false, &run_output, "Run")?;
-
-    // let output = String::from_utf8_lossy(&run_output.stdout);
-    // println!("Run output:");
-    // output.lines().for_each(|line| debug!("{line}"));
+    // debug!("Exit status={exit_status:#?}");
 
     display_timings(&start_run, "Completed run", proc_flags);
 

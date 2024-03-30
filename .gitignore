@@ -10,3 +10,4 @@ obsolete/
 .cargo/build_run/Cargo.toml
 examples/default_cargo.toml
 examples/cargo_toml_stuff
+examples/gpt_clap.rs

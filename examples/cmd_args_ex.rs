@@ -1,9 +1,9 @@
 //! [dependencies]
+//! bitflags = "2.5.0"
 //! clap = { version = "4.5.3", features = ["derive"] }
 
 use bitflags::bitflags;
 use clap::Parser;
-use core::*;
 use core::{fmt, str};
 
 /// Script Runner

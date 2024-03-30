@@ -14,7 +14,7 @@ fn main() -> Result<()> {
     println!("Type a number from 0 to 34 at the prompt and hit Ctrl-D when done");
     println!(
         "(Larger numbers will overflow, because runner currently has to use u128 or less if you provide a full program).
-For bigger numbers, use a crate like rug and a snippet."
+For bigger numbers, use a crate like rug."
     );
 
     let mut buffer = String::new();

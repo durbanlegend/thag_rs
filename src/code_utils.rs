@@ -1,10 +1,10 @@
 use crate::cmd_args::ProcFlags;
 use crate::errors::BuildRunError;
-use crate::toml_utils::{default_manifest, resolve_deps, CargoManifest};
-use crate::BuildState;
+use crate::toml_utils::CargoManifest;
 use crate::PACKAGE_DIR;
 use crate::RS_SUFFIX;
 use crate::{cmd_args, toml_utils::rs_extract_manifest};
+use crate::{BuildState, TOML_NAME};
 use log::debug;
 use regex::Regex;
 use std::io::BufRead;
@@ -50,7 +50,7 @@ pub(crate) fn rs_extract_src(rs_contents: &str) -> String {
 pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
     let mut dependencies = HashSet::new();
 
-    let use_regex = Regex::new(r"(?i)use\s+([^;{]+)").unwrap();
+    let use_regex = Regex::new(r"(?i)^[^//]*\s+use\s+([^;{]+)").unwrap();
     let macro_use_regex = Regex::new(r"(?i)#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
     let extern_crate_regex = Regex::new(r"(?i)extern\s+crate\s+([^;{]+)").unwrap();
 
@@ -91,45 +91,6 @@ pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
     }
 
     dependencies
-}
-
-/// Set up the processing flags from the command line arguments and pass them back.
-pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<dyn Error>> {
-    let proc_flags = {
-        let mut proc_flags = ProcFlags::empty();
-        proc_flags.set(ProcFlags::GENERATE, options.generate | options.all);
-        proc_flags.set(ProcFlags::BUILD, options.build | options.all);
-        proc_flags.set(ProcFlags::VERBOSE, options.verbose);
-        proc_flags.set(ProcFlags::TIMINGS, options.timings);
-        proc_flags.set(ProcFlags::RUN, options.run);
-        proc_flags.set(ProcFlags::ALL, options.all);
-        if !(proc_flags.contains(ProcFlags::ALL)) {
-            proc_flags.set(
-                ProcFlags::ALL,
-                options.generate & options.build & options.run,
-            );
-        }
-
-        // if options.all && options.run {
-        //     // println!(
-        //     //     "Conflicting options {} and {} specified",
-        //     //     options.all, options.run
-        //     // );
-        //     return Err(Box::new(BuildRunError::Command(format!(
-        //         "Conflicting options {} and {} specified",
-        //         options.all, options.run
-        //     ))));
-        // }
-        let formatted = proc_flags.to_string();
-        let parsed = formatted
-            .parse::<ProcFlags>()
-            .map_err(|e| BuildRunError::FromStr(e.to_string()))?;
-
-        assert_eq!(proc_flags, parsed);
-
-        Ok::<cmd_args::ProcFlags, BuildRunError>(proc_flags)
-    }?;
-    Ok(proc_flags)
 }
 
 pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String), Box<dyn Error>> {
@@ -175,13 +136,13 @@ pub(crate) fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     // let stdout = output.stdout;
 
     // Print the captured stdout
-    println!("Captured stdout");
+    println!("Captured stdout:");
     for result in output.stdout.lines() {
         println!("{}", result?);
     }
 
     // Print the captured stderr
-    println!("Captured stderr");
+    println!("Captured stderr:");
     for result in output.stderr.lines() {
         println!("{}", result?);
     }
@@ -233,10 +194,9 @@ pub(crate) fn handle_outcome(
     Ok(())
 }
 
-pub(crate) fn configure_build_state(
+pub(crate) fn pre_config_build_state(
     options: &cmd_args::Opt,
-    proc_flags: &ProcFlags,
-) -> Result<(BuildState, String), Box<dyn Error>> {
+) -> Result<BuildState, Box<dyn Error>> {
     let path = Path::new(&options.script);
     let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
     debug!("source_name = {source_name}");
@@ -249,49 +209,70 @@ pub(crate) fn configure_build_state(
         };
         stem.to_string()
     };
-    let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
-    debug!("gen_build_dir={gen_build_dir:?}");
-
+    let source_name = source_name.to_string();
     let current_dir_path = std::env::current_dir()?.canonicalize()?;
     let script_path = current_dir_path.join(PathBuf::from(options.script.clone()));
     debug!("script_path={script_path:#?}");
+    let source_path = script_path.canonicalize()?;
+    debug!("source_dir_path={source_path:#?}");
 
-    let source_dir_path = script_path.canonicalize()?;
-    debug!("source_dir_path={source_dir_path:#?}");
-
+    let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
+    debug!("gen_build_dir={gen_build_dir:?}");
     let target_dir_str = gen_build_dir.clone();
     let target_dir_path = PathBuf::from_str(&target_dir_str)?;
-    let source_name = source_name.to_string();
+    let mut target_path = target_dir_path.clone();
+    target_path.push(format!("./target/debug/{}", source_stem));
 
-    let mut build_state = BuildState {
+    let cargo_toml_path = target_dir_path.join(TOML_NAME).clone();
+    let build_state = BuildState {
         source_stem,
         source_name,
-        source_path: source_dir_path,
+        source_path,
         // source_str: source_dir_str,
         target_dir_path,
-        // target_dir_str,
+        target_dir_str,
+        target_path,
+        cargo_toml_path,
         ..Default::default()
     };
+    debug!("build_state={build_state:#?}");
 
-    // let (source_stem, source_name) = (&build_state.source_stem, &build_state.source_name);
-    let (mut rs_manifest, rs_source): (CargoManifest, String) =
-        parse_source(&build_state.source_path)?;
-    let source_path = build_state.source_path.clone();
-    if !source_path.exists() {
-        return Err(Box::new(BuildRunError::Command(format!(
-            "No script named {} or {} in path {source_path:?}",
-            &build_state.source_stem, &build_state.source_name
-        ))));
-    }
-    build_state.cargo_manifest = if proc_flags.contains(ProcFlags::GENERATE) {
-        resolve_deps(
-            &gen_build_dir,
-            &build_state.source_stem,
-            &rs_source,
-            &mut rs_manifest,
-        )?
-    } else {
-        default_manifest(&gen_build_dir, &build_state.source_stem)?
+    Ok(build_state)
+}
+
+/// Check if executable is stale, i.e. if raw source script or individual Cargo.toml
+/// has a more recent modification date and time
+pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<&PathBuf> {
+    let executable = &build_state.target_path;
+    assert!(executable.exists(), "Missing executable");
+    let Ok(metadata) = fs::metadata(executable) else {
+        return None;
     };
-    Ok((build_state, rs_source))
+
+    // Panic because this shouldn't happen
+    let baseline_modified = metadata
+        .modified()
+        .expect("Missing metadata for executable file {executable:#?}");
+
+    let files = [&build_state.source_path, &build_state.cargo_toml_path];
+    let mut most_recent = None;
+    for &file in &files {
+        let Ok(metadata) = fs::metadata(file) else {
+            continue;
+        };
+
+        let modified_time = metadata
+            .modified()
+            .expect("Missing metadata for file {file:#?}"); // Handle potential errors
+
+        if most_recent.is_none() || modified_time > baseline_modified {
+            most_recent = Some(file);
+        }
+    }
+    if let Some(file) = most_recent {
+        println!("The most recently modified file compared to {executable:#?} is: {file:#?}");
+    } else {
+        println!("Neither file was modified more recently than {executable:#?}");
+    }
+    most_recent
 }

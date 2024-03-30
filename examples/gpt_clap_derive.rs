@@ -1,7 +1,10 @@
-use clap::Clap;
+//! [dependencies]
+//! clap = { version = "4.5.3", features = ["derive"] }
+
+use clap::Parser;
 
 /// Script Runner
-#[derive(Clap, Debug)]
+#[derive(Debug, Parser)]
 #[clap(version = "1.0", author = "Your Name")]
 struct Opt {
     /// Sets the script to run

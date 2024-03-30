@@ -1,8 +1,12 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::code_utils::{debug_timings, display_output, display_timings, get_proc_flags};
+use crate::cmd_args::{get_proc_flags, ProcFlags};
+use crate::code_utils::{debug_timings, display_output, display_timings};
+use crate::code_utils::{modified_since_compiled, parse_source, pre_config_build_state};
 use crate::errors::BuildRunError;
+use crate::toml_utils::{default_manifest, CargoManifest};
+
 use core::str;
-use log::{debug, info};
+use log::debug;
 use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
@@ -15,10 +19,6 @@ mod cmd_args;
 mod code_utils;
 mod errors;
 mod toml_utils;
-
-use crate::cmd_args::ProcFlags;
-use crate::code_utils::configure_build_state;
-use crate::toml_utils::CargoManifest;
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -33,18 +33,17 @@ pub(crate) struct BuildState {
     pub(crate) source_path: PathBuf,
     // pub(crate) source_str: String,
     pub(crate) target_dir_path: PathBuf,
-    // pub(crate) target_dir_str: String,
+    pub(crate) target_dir_str: String,
+    pub(crate) target_path: PathBuf,
     pub(crate) cargo_toml_path: PathBuf,
     pub(crate) cargo_manifest: CargoManifest,
 }
 
 //      TODO:
-//       1.  Debug calling scripts with their own arguments in clap
 //       2.  Move generate method to code_utils? etc.
 //       3.  snippets
 //       4.  features
 //       5.  bool -> 2-value enums?
-//       8.  Print a warning if no options chosen.
 //       9.  --quiet option?.
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -58,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let options = cmd_args::get_opt();
     let proc_flags = get_proc_flags(&options)?;
-    debug!("flags={proc_flags:#?}");
+    debug!("proc_flags={proc_flags:#?}");
 
     debug_timings(start, "Set up processing flags");
 
@@ -68,27 +67,58 @@ fn main() -> Result<(), Box<dyn Error>> {
         options.script.ends_with(RS_SUFFIX)
     );
 
+    if !&options.args.is_empty() {
+        debug!("... args:");
+        for arg in &options.args {
+            debug!("{arg}");
+        }
+    }
+
     if !options.script.ends_with(RS_SUFFIX) {
         return Err(Box::new(BuildRunError::Command(format!(
             "Script name must end in {RS_SUFFIX}"
         ))));
     }
 
-    let (mut build_state, rs_source) = configure_build_state(&options, &proc_flags)?;
+    let mut build_state = pre_config_build_state(&options)?;
 
-    let cargo_toml_path = &build_state.target_dir_path.join(TOML_NAME).clone();
-    build_state.cargo_toml_path = cargo_toml_path.clone();
-    debug!("3. build_state={build_state:#?}");
-    if proc_flags.contains(ProcFlags::GENERATE) {
+    let stale_executable = if build_state.target_path.exists() {
+        modified_since_compiled(&build_state).is_some()
+    } else {
+        true
+    };
+
+    let force = proc_flags.contains(ProcFlags::FORCE);
+    let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
+
+    if force || (gen_requested && stale_executable) {
+        let (mut rs_manifest, rs_source): (CargoManifest, String) =
+            parse_source(&build_state.source_path)?;
+        let source_path = build_state.source_path.clone();
+        if !source_path.exists() {
+            return Err(Box::new(BuildRunError::Command(format!(
+                "No script named {} or {} in path {source_path:?}",
+                &build_state.source_stem, &build_state.source_name
+            ))));
+        }
+        build_state.cargo_manifest =
+            toml_utils::resolve_deps(&build_state, &rs_source, &mut rs_manifest)?;
+
         generate(&build_state, &rs_source, &proc_flags)?;
+    } else {
+        println!("Skipping unnecessary generation step");
+        build_state.cargo_manifest = default_manifest(&build_state)?;
     }
 
-    if proc_flags.contains(ProcFlags::BUILD) {
+    let build_requested = proc_flags.contains(ProcFlags::BUILD);
+    if force || (build_requested && stale_executable) {
         build(&proc_flags, &build_state)?;
+    } else {
+        println!("Skipping unnecessary build step");
     }
 
     if proc_flags.contains(ProcFlags::RUN) {
-        run(&proc_flags, &build_state)?;
+        run(&proc_flags, &options.args, &build_state)?;
     }
 
     let process = &format!(
@@ -108,7 +138,7 @@ fn generate(
     let start_gen = Instant::now();
     let verbose = proc_flags.contains(ProcFlags::VERBOSE);
 
-    info!("In generate, proc_flags={proc_flags}");
+    debug!("In generate, proc_flags={proc_flags}");
 
     fs::create_dir_all(&build_state.target_dir_path)?;
 
@@ -124,18 +154,12 @@ fn generate(
         .open(target_rs_path)?;
     debug!("GGGGGGGG Done!");
 
-    debug!("Writing out source {}", {
+    debug!("Writing out source:\n{}", {
         let lines = rs_source.lines();
         code_utils::reassemble(lines)
     });
 
     target_rs_file.write_all(rs_source.as_bytes())?;
-
-    // let relative_path = source_path;
-    // let mut absolute_path = PathBuf::from(PACKAGE_DIR);
-    // absolute_path.push(relative_path);
-    // debug!("Absolute path of generated program: {absolute_path:?}");
-    // info!("##### Source code generation succeeded!");
 
     debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {
@@ -156,9 +180,10 @@ fn generate(
     let mut toml_file = fs::File::create(&build_state.cargo_toml_path)?;
     toml_file.write_all(cargo_manifest_str.as_bytes())?;
     debug!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
-    info!("##### Cargo.toml generation succeeded!");
+    debug!("##### Cargo.toml generation succeeded!");
 
     display_timings(&start_gen, "Completed generation", proc_flags);
+
     Ok(())
 }
 
@@ -198,17 +223,15 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
 
     build_command.args(&args); // .current_dir(build_dir);
 
+    // Show sign of life in case build takes a while
+    eprintln!("Building...");
+
     // Redirect stdout and stderr to pipes
     let mut child = build_command
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;
     let exit_status = child.wait()?;
-    if exit_status.success() {
-        debug!("Build succeeded");
-    } else {
-        return Err(BuildRunError::Command(String::from("Build failed")));
-    };
 
     // Wait for the child process to finish with output collected
     let output = child.wait_with_output()?;
@@ -216,6 +239,12 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
     if verbose {
         let _ = display_output(&output);
     }
+
+    if exit_status.success() {
+        debug!("Build succeeded");
+    } else {
+        return Err(BuildRunError::Command(String::from("Build failed")));
+    };
 
     display_timings(&start_build, "Completed build", proc_flags);
 
@@ -225,21 +254,29 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
 // Run the built program
 fn run(
     proc_flags: &ProcFlags,
-    // source_stem: &str,
+    args: &[String],
     build_state: &BuildState,
 ) -> Result<(), BuildRunError> {
     let start_run = Instant::now();
     debug!("RRRRRRRR In run");
 
     // debug!("BuildState={build_state:#?}");
-    let mut absolute_path = build_state.target_dir_path.clone();
-    absolute_path.push(format!("./target/debug/{}", build_state.source_stem));
+    let target_path = build_state.target_path.clone();
     // debug!("Absolute path of generated program: {absolute_path:?}");
 
-    let mut run_command = Command::new(format!("{}", absolute_path.display()));
+    let mut run_command = Command::new(format!("{}", target_path.display()));
+    run_command.args(args);
+
     debug!("Run command is {run_command:?}");
 
+    // Sandwich command between two lines of dashes in the terminal
+    let dash_line = "-".repeat(50);
+    println!("{dash_line}");
+
     let _exit_status = run_command.spawn()?.wait()?;
+
+    let dash_line = "-".repeat(50);
+    println!("{dash_line}");
 
     // debug!("Exit status={exit_status:#?}");
 

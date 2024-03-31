@@ -49,11 +49,13 @@ pub(crate) fn rs_extract_src(rs_contents: &str) -> String {
 
 // Make a best effort to help the user by inferring dependencies from the source code.
 pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
+    // debug!("######## In code_utils::infer_dependencies");
+
     let mut dependencies = HashSet::new();
 
-    let use_regex = Regex::new(r"(?i)^[^//]*\s+use\s+([^;{]+)").unwrap();
-    let macro_use_regex = Regex::new(r"(?i)#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
-    let extern_crate_regex = Regex::new(r"(?i)extern\s+crate\s+([^;{]+)").unwrap();
+    let use_regex = Regex::new(r"(?i)^[\s]*use\s+([^;{]+)").unwrap();
+    let macro_use_regex = Regex::new(r"(?i)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
+    let extern_crate_regex = Regex::new(r"(?i)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
 
     let built_in_crates = &["std", "core", "alloc", "collections", "fmt"];
 

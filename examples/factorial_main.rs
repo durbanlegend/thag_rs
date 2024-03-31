@@ -5,7 +5,7 @@
 //!    edition = "2021"
 //!
 //!    [dependencies]
-//!    rug = { version = "1.24.0", features = ["integer"] }
+//!    # rug = { version = "1.24.0", features = ["integer"] }
 //!    # TODO out: the following 3 dependencies are just to test retrieving multiple
 //!    #           dependencies from code and are not needed by this script at all.
 //!    serde = { version = "1.0", features = ["derive"] }

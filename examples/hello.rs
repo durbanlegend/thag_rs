@@ -1,2 +1,3 @@
-let other = "world;"
-    println!("Hello {other}");
+use rug::Integer;
+let other = "world";
+println!("Hello {other}!");

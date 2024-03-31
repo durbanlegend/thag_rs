@@ -7,7 +7,7 @@ use crate::{cmd_args, toml_utils::rs_extract_manifest};
 use crate::{BuildState, TOML_NAME};
 use log::debug;
 use regex::Regex;
-use std::io::BufRead;
+use std::io::{BufRead, Write};
 use std::path::PathBuf;
 use std::process::{ExitStatus, Output};
 use std::str::FromStr;
@@ -43,7 +43,7 @@ pub(crate) fn rs_extract_src(rs_contents: &str) -> String {
             .map(str::trim_start)
             .filter(|&line| !line.starts_with("//!"))
     });
-    debug!("Rust source string (rs_source) = {rs_source}");
+    debug!("Rust source string (rs_source) =\n{rs_source}");
     rs_source
 }
 
@@ -218,6 +218,12 @@ pub(crate) fn pre_config_build_state(
     debug!("script_path={script_path:#?}");
     let source_path = script_path.canonicalize()?;
     debug!("source_dir_path={source_path:#?}");
+    if !source_path.exists() {
+        return Err(Box::new(BuildRunError::Command(format!(
+            "No script named {} or {} in path {source_path:?}",
+            source_stem, source_name
+        ))));
+    }
 
     let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
     debug!("gen_build_dir={gen_build_dir:?}");
@@ -238,7 +244,7 @@ pub(crate) fn pre_config_build_state(
         cargo_toml_path,
         ..Default::default()
     };
-    debug!("build_state={build_state:#?}");
+    // debug!("build_state={build_state:#?}");
 
     Ok(build_state)
 }
@@ -281,7 +287,68 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&Path
         println!("The most recently modified file compared to {executable:#?} is: {file:#?}");
         debug!("Executable modified time is{baseline_modified:#?}");
     } else {
-        println!("Neither file was modified more recently than {executable:#?}");
+        debug!("Neither file was modified more recently than {executable:#?}");
     }
     most_recent
+}
+
+pub(crate) fn has_main(source: &str) -> bool {
+    let re = Regex::new(r"(?x)\bfn\s* main\(\s*\)").unwrap();
+    let matches = re.find_iter(source).count();
+    debug!("matches={matches}");
+    match matches {
+        0 => false,
+        1 => true,
+        _ => {
+            writeln!(
+                &mut std::io::stderr(),
+                "Invalid source, contains {matches} occurrences of fn main(), at most 1 is allowed"
+            )
+            .unwrap();
+            std::process::exit(1);
+        }
+    }
+}
+
+pub(crate) fn wrap_snippet(rs_source: &str) -> String {
+    use std::fmt::Write;
+    // let prelude = String.new();
+    let use_regex = Regex::new(r"(?i)^[\s]*use\s+([^;{]+)").unwrap();
+    let macro_use_regex = Regex::new(r"(?i)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
+    let extern_crate_regex = Regex::new(r"(?i)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
+
+    let (prelude, body): (Vec<Option<&str>>, Vec<Option<&str>>) = rs_source
+        .lines()
+        .map(|line| -> (Option<&str>, Option<&str>) {
+            if use_regex.is_match(line)
+                || macro_use_regex.is_match(line)
+                || extern_crate_regex.is_match(line)
+            {
+                (Some(line), None)
+            } else {
+                (None, Some(line))
+            }
+        })
+        .unzip();
+
+    // debug!("prelude={prelude:#?}\nbody={body:#?}");
+    let prelude = prelude
+        .iter()
+        .flatten()
+        .fold(String::new(), |mut output, &b| {
+            let _ = writeln!(output, "{b}");
+            output
+        });
+
+    let body = body.iter().flatten().fold(String::new(), |mut output, &b| {
+        let _ = writeln!(output, "    {b}");
+        output
+    });
+
+    format!(
+        r"{prelude}
+fn main() {{
+{body}}}
+"
+    )
 }

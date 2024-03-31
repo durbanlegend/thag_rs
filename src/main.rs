@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{get_proc_flags, ProcFlags};
-use crate::code_utils::{debug_timings, display_output, display_timings};
+use crate::code_utils::{debug_timings, display_output, display_timings, wrap_snippet};
 use crate::code_utils::{modified_since_compiled, parse_source, pre_config_build_state};
 use crate::errors::BuildRunError;
 use crate::toml_utils::{default_manifest, CargoManifest};
@@ -90,19 +90,28 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let force = proc_flags.contains(ProcFlags::FORCE);
     let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
+    let build_requested = proc_flags.contains(ProcFlags::BUILD);
+    let verbose = proc_flags.contains(ProcFlags::VERBOSE);
 
-    if force || (gen_requested && stale_executable) {
+    let must_gen = force || (gen_requested && stale_executable);
+    let must_build = force || (build_requested && stale_executable);
+
+    if must_gen {
         let (mut rs_manifest, rs_source): (CargoManifest, String) =
             parse_source(&build_state.source_path)?;
-        let source_path = build_state.source_path.clone();
-        if !source_path.exists() {
-            return Err(Box::new(BuildRunError::Command(format!(
-                "No script named {} or {} in path {source_path:?}",
-                &build_state.source_stem, &build_state.source_name
-            ))));
-        }
+
         build_state.cargo_manifest =
             toml_utils::resolve_deps(&build_state, &rs_source, &mut rs_manifest)?;
+
+        let has_main = code_utils::has_main(&rs_source);
+        if verbose {
+            println!("Source does not contain fn main(), thus a snippet");
+        }
+        let rs_source = if has_main {
+            rs_source
+        } else {
+            wrap_snippet(&rs_source)
+        };
 
         generate(&build_state, &rs_source, &proc_flags)?;
     } else {
@@ -110,8 +119,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         build_state.cargo_manifest = default_manifest(&build_state)?;
     }
 
-    let build_requested = proc_flags.contains(ProcFlags::BUILD);
-    if force || (build_requested && stale_executable) {
+    if must_build {
         build(&proc_flags, &build_state)?;
     } else {
         println!("Skipping unnecessary build step");

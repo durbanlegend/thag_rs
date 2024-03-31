@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use std::process::{ExitStatus, Output};
 use std::str::FromStr;
 use std::time::Instant;
+use std::time::SystemTime;
 use std::{collections::HashSet, error::Error, fs, path::Path};
 
 #[allow(dead_code, clippy::uninlined_format_args)]
@@ -242,7 +243,7 @@ pub(crate) fn pre_config_build_state(
 
 /// Check if executable is stale, i.e. if raw source script or individual Cargo.toml
 /// has a more recent modification date and time
-pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<&PathBuf> {
+pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, SystemTime)> {
     let executable = &build_state.target_path;
     assert!(executable.exists(), "Missing executable");
     let Ok(metadata) = fs::metadata(executable) else {
@@ -255,7 +256,7 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<&PathB
         .expect("Missing metadata for executable file {executable:#?}");
 
     let files = [&build_state.source_path, &build_state.cargo_toml_path];
-    let mut most_recent = None;
+    let mut most_recent: Option<(&PathBuf, SystemTime)> = None;
     for &file in &files {
         let Ok(metadata) = fs::metadata(file) else {
             continue;
@@ -265,12 +266,18 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<&PathB
             .modified()
             .expect("Missing metadata for file {file:#?}"); // Handle potential errors
 
-        if most_recent.is_none() || modified_time > baseline_modified {
-            most_recent = Some(file);
+        if modified_time < baseline_modified {
+            continue;
+        }
+
+        if most_recent.is_none() || modified_time > most_recent.unwrap().1 {
+            most_recent = Some((file, modified_time));
         }
     }
+    // if let Some((file, _mod_time)) = most_recent {
     if let Some(file) = most_recent {
         println!("The most recently modified file compared to {executable:#?} is: {file:#?}");
+        debug!("Executable modified time is{baseline_modified:#?}");
     } else {
         println!("Neither file was modified more recently than {executable:#?}");
     }

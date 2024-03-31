@@ -122,7 +122,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let process = &format!(
-        "{PACKAGE_NAME} completed script {}",
+        "{PACKAGE_NAME} completed processing of script {}",
         &build_state.source_name
     );
     display_timings(&start, process, &proc_flags);

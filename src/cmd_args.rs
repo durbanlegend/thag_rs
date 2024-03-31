@@ -30,8 +30,8 @@ pub(crate) struct Opt {
     /// Force generation of Rust source and individual cargo .toml, and build, even if compiled file is not stale
     #[clap(short, long)]
     pub(crate) force: bool,
-    /// Carry out generation and build steps (if necessary or forced) and run the compiled script
-    #[clap(short, long)]
+    ///  (Default) Carry out generation and build steps (if necessary or forced) and run the compiled script
+    #[clap(short, long, default_value = "true")]
     pub(crate) all: bool,
     /// Run compiled script if available
     #[clap(short, long)]

@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::cmd_args::{get_proc_flags, ProcFlags};
+use crate::cmd_args::{get_opt, get_proc_flags, ProcFlags};
 use crate::code_utils::{debug_timings, display_output, display_timings, wrap_snippet};
 use crate::code_utils::{modified_since_compiled, parse_source, pre_config_build_state};
 use crate::errors::BuildRunError;
@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("PACKAGE_NAME={PACKAGE_NAME}");
     debug!("VERSION={VERSION}");
 
-    let options = cmd_args::get_opt();
+    let options = get_opt();
     let proc_flags = get_proc_flags(&options)?;
     debug!("proc_flags={proc_flags:#?}");
 

@@ -8,7 +8,7 @@ use crate::{cmd_args, errors::BuildRunError};
 /// Script Runner
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Parser, Debug)]
-#[clap(version = "1.0", author = "Your Name")]
+#[clap(version = "1.0", author = "durbanlegend")]
 pub(crate) struct Opt {
     /// Set the script to run
     pub(crate) script: String,

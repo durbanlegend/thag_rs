@@ -349,10 +349,12 @@ pub(crate) fn wrap_snippet(rs_source: &str) -> String {
     format!(
         r"
 #![allow(unused_imports,unused_macros,unused_variables,dead_code)]
-use std::io::{{self,*}};
+use std::error::Error;
+use std::io;
+use std::io::prelude::*;
 
 {prelude}
-fn main() -> Result<()> {{
+fn main() -> Result<(), Box<dyn Error>> {{
 {body}
 Ok(())
 }}

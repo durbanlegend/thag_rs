@@ -2,14 +2,14 @@
 use log::debug;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::{self, BTreeMap};
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::io::BufRead;
 use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
 
-use crate::code_utils::{self, debug_timings, reassemble};
+use crate::code_utils::{debug_timings, infer_dependencies, reassemble};
 use crate::errors::BuildRunError;
 use crate::BuildState;
 
@@ -258,11 +258,11 @@ pub(crate) fn resolve_deps(
     let mut cargo_manifest = default_manifest(build_state)?;
     debug!("@@@@ cargo_manifest (before deps)={cargo_manifest:#?}");
 
-    let rs_inferred_deps = code_utils::infer_dependencies(rs_source);
+    let rs_inferred_deps = infer_dependencies(rs_source);
     debug!("rs_inferred_deps={rs_inferred_deps:#?}\n");
     debug!("rs_manifest.dependencies={:#?}", rs_manifest.dependencies);
 
-    let mut rs_dep_map: collections::BTreeMap<std::string::String, Dependency> =
+    let mut rs_dep_map: BTreeMap<std::string::String, Dependency> =
         if let Some(Some(ref mut rs_dep_map)) = rs_manifest.dependencies {
             rs_dep_map.clone()
         } else {
@@ -304,8 +304,7 @@ pub(crate) fn resolve_deps(
         .unwrap();
 
     // Clone dependencies
-    let mut manifest_deps_clone: collections::BTreeMap<std::string::String, Dependency> =
-        manifest_deps.clone();
+    let mut manifest_deps_clone: BTreeMap<std::string::String, Dependency> = manifest_deps.clone();
     debug!("manifest_deps  (before inferred) {manifest_deps_clone:?}");
 
     // Insert any entries from source and inferred deps that are not already in default manifest

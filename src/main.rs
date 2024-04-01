@@ -115,14 +115,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         generate(&build_state, &rs_source, &proc_flags)?;
     } else {
-        println!("Skipping unnecessary generation step");
+        println!("Skipping unnecessary generation step. Use --force (-f) to override.");
         build_state.cargo_manifest = default_manifest(&build_state)?;
     }
 
     if must_build {
         build(&proc_flags, &build_state)?;
     } else {
-        println!("Skipping unnecessary build step");
+        println!("Skipping unnecessary build step. Use --force (-f) to override.");
     }
 
     if proc_flags.contains(ProcFlags::RUN) {

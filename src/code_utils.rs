@@ -53,14 +53,15 @@ pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
 
     let mut dependencies = HashSet::new();
 
-    let use_regex = Regex::new(r"(?i)^[\s]*use\s+([^;{]+)").unwrap();
-    let macro_use_regex = Regex::new(r"(?i)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
-    let extern_crate_regex = Regex::new(r"(?i)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
+    let use_regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
+    let macro_use_regex = Regex::new(r"(?m)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
+    let extern_crate_regex = Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
 
     let built_in_crates = &["std", "core", "alloc", "collections", "fmt"];
 
     for cap in use_regex.captures_iter(code) {
         let dependency = cap[1].to_string();
+        debug!("@@@@@@@@ dependency={dependency}");
         if !built_in_crates
             .iter()
             .any(|builtin| dependency.starts_with(builtin))
@@ -346,9 +347,15 @@ pub(crate) fn wrap_snippet(rs_source: &str) -> String {
     });
 
     format!(
-        r"{prelude}
-fn main() {{
-{body}}}
+        r"
+#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
+use std::io::{{self,*}};
+
+{prelude}
+fn main() -> Result<()> {{
+{body}
+Ok(())
+}}
 "
     )
 }

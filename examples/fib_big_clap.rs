@@ -1,18 +1,18 @@
 //! [dependencies]
 //! clap = { version = "4.5.3", features = ["derive"] }
-
+//! rug = { version = "1.24.0", features = ["integer"] }
 
 // Fibonacci with big integers
+use clap::{Arg, Command};
 use rug::Integer;
 use std::iter::successors;
-use clap::{Arg, Command};
 
 let matches = Command::new("fib_big_clap")
     .arg(
         Arg::new("number")
             .help("The numeric value to process")
             .required(true)
-            .index(1), // .value_name("VALUE")
+            .index(1),
     )
     .get_matches();
 

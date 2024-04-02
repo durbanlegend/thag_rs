@@ -42,7 +42,6 @@ pub(crate) struct BuildState {
 //      TODO:
 //       2.  Move generate method to code_utils? etc.
 //       3.  snippets
-//       4.  features
 //       5.  bool -> 2-value enums?
 //       9.  --quiet option?.
 

@@ -1,8 +1,9 @@
 /// Unescape \n markers in a string to convert the wall of text to readable lines.
+/// See unescape_nl2.rs for a Regex version that seems to work
 #[inline]
-pub(crate) fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
+pub(crate) fn reassemble<'a>(iter: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
-    map.fold(String::new(), |mut output, b| {
+    iter.fold(String::new(), |mut output, b| {
         let _ = writeln!(output, "{b}");
         output
     })
@@ -14,7 +15,10 @@ pub(crate) fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
 
-use std::io::{self, Read};
+use std::{
+    io::{self, Read},
+    option::Iter,
+};
 
 fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();

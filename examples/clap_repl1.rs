@@ -27,6 +27,7 @@ enum SampleCommand {
         username: Option<String>,
     },
     Exit,
+    Quit,
 }
 
 fn main() {
@@ -56,7 +57,7 @@ fn main() {
                     .unwrap();
                 println!("Logged in with {username} and {password}");
             }
-            SampleCommand::Exit => return,
+            SampleCommand::Exit | SampleCommand::Quit => return,
         }
     }
 }

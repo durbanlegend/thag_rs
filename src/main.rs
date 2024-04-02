@@ -40,8 +40,8 @@ pub(crate) struct BuildState {
 }
 
 //      TODO:
-//       2.  Move generate method to code_utils? etc.
-//       3.  snippets
+//       1.  Read stdin
+//       2.  Deal with crates that have dashes in name instead of underscores - DONE.
 //       5.  bool -> 2-value enums?
 //       9.  --quiet option?.
 

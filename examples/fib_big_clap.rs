@@ -2,7 +2,7 @@
 //! clap = { version = "4.5.3", features = ["derive"] }
 //! rug = { version = "1.24.0", features = ["integer"] }
 
-// Fibonacci with big integers
+// Fast Fibonacci with big integers, no recursion
 use clap::{Arg, Command};
 use rug::Integer;
 use std::iter::successors;
@@ -23,7 +23,7 @@ let n: usize = matches
     .parse::<usize>()
     .unwrap();
 
-
+// Snippet accepts function or closure
 let fib = |n: usize| -> Integer {
     successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| Some((b.clone(), (a + b).into())))
         .take(n + 1)

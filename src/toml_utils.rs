@@ -186,7 +186,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
         ))));
     };
 
-    // debug!("!!!!!!!! first_line={first_line}");
+    debug!("!!!!!!!! first_line={first_line}");
 
     let (name, version) = match capture_dep(&first_line) {
         Ok(value) => {
@@ -206,7 +206,8 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
 }
 
 pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
-    let regex_str = r#"^(?P<name>\w+) = "(?P<version>\d+\.\d+\.\d+)"#;
+    debug!("first_line={first_line}");
+    let regex_str = r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#;
     let re = Regex::new(regex_str).unwrap();
     let (name, version) = if re.is_match(first_line) {
         let captures = re.captures(first_line).unwrap();
@@ -284,8 +285,11 @@ pub(crate) fn resolve_deps(
             }
             debug!("############ Doing a Cargo search for key dep_name [{dep_name}]");
             let cargo_search_result = cargo_search(&dep_name);
-            let dep = if let Ok((_dep_name, version)) = cargo_search_result {
-                Dependency::Simple(version)
+            // If the crate name is hyphenated, Cargo search will nicely search for underscore version and return the correct
+            // hyphenated name. So we must replace the incorrect underscored version we searched on with the corrected
+            // hyphenated version that the Cargo search returned.
+            let (dep_name, dep) = if let Ok((dep_name, version)) = cargo_search_result {
+                (dep_name, Dependency::Simple(version))
             } else {
                 return Err(Box::new(BuildRunError::Command(format!(
                     "Cargo search couldn't find crate [{dep_name}]"
@@ -293,7 +297,7 @@ pub(crate) fn resolve_deps(
             };
             rs_dep_map.insert(dep_name, dep);
         }
-        // debug!("rs_dep_map= (after inferred) {rs_dep_map:?}");
+        debug!("rs_dep_map (after inferred) = {rs_dep_map:?}");
     }
 
     let manifest_deps = cargo_manifest

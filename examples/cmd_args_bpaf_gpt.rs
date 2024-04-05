@@ -1,43 +1,49 @@
 //! [dependencies]
 //! bitflags = "2.5.0"
-//! clap = { version = "4.5.3", features = ["derive"] }
+//! bpaf = { version = "0.9.11", features = ["derive"] }
+//! bpaf_derive = "0.5.10"
 
 use bitflags::bitflags;
-use clap::Parser;
-use core::{fmt, str};
+// use bpaf::Parser;
+use bpaf_derive::Bpaf;
+use core::fmt;
+use std::str::FromStr;
 
 /// Script Runner
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Parser, Debug)]
-#[clap(version = "1.0", author = "Your Name")]
-pub(crate) struct Opt {
-    /// Sets the script to run
-    pub(crate) script: String,
-    /// Sets the arguments for the script
-    #[clap(last = true)]
-    pub(crate) args: Vec<String>,
-    /// Sets the level of verbosity
-    #[clap(short, long)]
+#[derive(Debug, Clone, Bpaf)]
+// #[derive(Parser, Debug)]
+#[bpaf(options)]
+pub(crate) struct Options {
+    /// Sets verbose mode
+    #[bpaf(short, long)]
     pub(crate) verbose: bool,
     /// Displays timings
-    #[clap(short, long)]
+    #[bpaf(short, long)]
     pub(crate) timings: bool,
     /// Generates Rust source and individual cargo .toml
-    #[clap(short = 'g', long = "gen")]
+    #[bpaf(short, long("gen"))]
     pub(crate) generate: bool,
     /// Builds script
-    #[clap(short, long)]
+    #[bpaf(short, long)]
     pub(crate) build: bool,
-    /// Generates, builds and runs script
-    #[clap(short, long)]
+    /// Generates, builds and runs script (default: true)
+    #[bpaf(short, long, fallback(true))]
     pub(crate) all: bool,
     /// Runs compiled script
-    #[clap(short, long)]
+    #[bpaf(short, long)]
     pub(crate) run: bool,
+    /// Sets the script to run
+    #[bpaf(short, long)]
+    pub(crate) script: String,
+    /// Sets the arguments for the script
+    // #[bpaf(any("REST", not_help), many)]
+    #[bpaf(short('A'), long)]
+    pub(crate) args: Vec<String>,
 }
 
-pub(crate) fn get_opt() -> Opt {
-    Opt::parse()
+pub(crate) fn get_opt() -> Options {
+    options().run()
 }
 
 #[allow(dead_code)]
@@ -70,7 +76,7 @@ fn main() {
     if !opt.args.is_empty() {
         println!("With arguments:");
         for arg in &opt.args {
-            println!("{arg}");
+            println!("{}", arg);
         }
     }
 }
@@ -102,7 +108,7 @@ impl fmt::Display for ProcFlags {
     }
 }
 
-impl str::FromStr for ProcFlags {
+impl FromStr for ProcFlags {
     type Err = bitflags::parser::ParseError;
 
     fn from_str(flags: &str) -> Result<Self, Self::Err> {

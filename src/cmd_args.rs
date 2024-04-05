@@ -15,7 +15,7 @@ pub(crate) struct Opt {
     /// Set the arguments for the script
     #[clap(last = true)]
     pub(crate) args: Vec<String>,
-    /// Set the level of verbosity
+    /// Set verbose mode
     #[clap(short, long)]
     pub(crate) verbose: bool,
     /// Display timings

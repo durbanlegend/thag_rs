@@ -13,3 +13,4 @@ examples/cargo_toml_stuff
 examples/gpt_clap.rs
 examples/y
 examples/z
+examples/cmd_args_bpaf_gem_bad.rs

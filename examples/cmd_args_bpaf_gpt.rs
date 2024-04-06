@@ -34,11 +34,10 @@ pub(crate) struct Options {
     #[bpaf(short, long)]
     pub(crate) run: bool,
     /// Sets the script to run
-    #[bpaf(short, long)]
+    #[bpaf(positional("SCRIPT"))]
     pub(crate) script: String,
     /// Sets the arguments for the script
-    // #[bpaf(any("REST", not_help), many)]
-    #[bpaf(short('A'), long)]
+    #[bpaf(positional("ARGS"))]
     pub(crate) args: Vec<String>,
 }
 

@@ -7,12 +7,12 @@ use crate::{cmd_args, toml_utils::rs_extract_manifest};
 use crate::{BuildState, TOML_NAME};
 use log::debug;
 use regex::Regex;
-use std::io::{BufRead, Write};
+use std::io::{self, BufRead, Read, Write};
+use std::option::Option;
 use std::path::PathBuf;
 use std::process::{ExitStatus, Output};
 use std::str::FromStr;
-use std::time::Instant;
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 use std::{collections::HashSet, error::Error, fs, path::Path};
 
 #[allow(dead_code, clippy::uninlined_format_args)]
@@ -201,7 +201,13 @@ pub(crate) fn handle_outcome(
 pub(crate) fn pre_config_build_state(
     options: &cmd_args::Opt,
 ) -> Result<BuildState, Box<dyn Error>> {
-    let path = Path::new(&options.script);
+    if options.script.is_none() {
+        return Err(Box::new(BuildRunError::NoneOption(
+            "No script specified".to_string(),
+        )));
+    }
+    let script = (options.script).clone().unwrap();
+    let path = Path::new(&script);
     let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
     debug!("source_name = {source_name}");
     let source_stem = {
@@ -215,7 +221,7 @@ pub(crate) fn pre_config_build_state(
     };
     let source_name = source_name.to_string();
     let current_dir_path = std::env::current_dir()?.canonicalize()?;
-    let script_path = current_dir_path.join(PathBuf::from(options.script.clone()));
+    let script_path = current_dir_path.join(PathBuf::from(script.clone()));
     debug!("script_path={script_path:#?}");
     let source_path = script_path.canonicalize()?;
     debug!("source_dir_path={source_path:#?}");
@@ -313,7 +319,6 @@ pub(crate) fn has_main(source: &str) -> bool {
 
 pub(crate) fn wrap_snippet(rs_source: &str) -> String {
     use std::fmt::Write;
-    // let prelude = String.new();
     let use_regex = Regex::new(r"(?i)^[\s]*use\s+([^;{]+)").unwrap();
     let macro_use_regex = Regex::new(r"(?i)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
     let extern_crate_regex = Regex::new(r"(?i)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
@@ -360,4 +365,71 @@ Ok(())
 }}
 "
     )
+}
+
+pub(crate) fn create_next_repl_file() -> PathBuf {
+    let examples_dir = Path::new("examples");
+
+    // Ensure examples subdirectory exists
+    fs::create_dir_all(examples_dir).expect("Failed to create examples directory");
+
+    // Find existing files with the pattern repl_<nnnnnn>.rs
+    let existing_files: Vec<_> = fs::read_dir(examples_dir)
+        .unwrap()
+        .filter_map(|entry| {
+            let path = entry.unwrap().path();
+            // println!("path={path:?}, path.is_file()={}, path.extension()?.to_str()={:?}, path.file_stem()?.to_str()={:?}", path.is_file(), path.extension()?.to_str(), path.file_stem()?.to_str());
+            if path.is_file()
+                && path.extension()?.to_str() == Some("rs")
+                && path.file_stem()?.to_str()?.starts_with("repl_")
+            {
+                let stem = path.file_stem().unwrap();
+                let num_str = stem.to_str().unwrap().trim_start_matches("repl_");
+                // println!("stem={stem:?}; num_str={num_str}");
+                if num_str.len() == 6 && num_str.chars().all(char::is_numeric) {
+                    Some(num_str.parse::<u32>().unwrap())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // debug!("existing_files={existing_files:?}");
+
+    let next_file_num = match existing_files.as_slice() {
+        [] => 0, // No existing files, start with 000000
+        _ if existing_files.contains(&999_999) => {
+            // Wrap around and find the first gap
+            for i in 0..999_999 {
+                if !existing_files.contains(&i) {
+                    return create_file(examples_dir, i);
+                }
+            }
+            panic!("Cannot create new file: all possible filenames already exist in the examples directory.");
+        }
+        _ => existing_files.iter().max().unwrap() + 1, // Increment from highest existing number
+    };
+
+    create_file(examples_dir, next_file_num)
+}
+
+pub(crate) fn create_file(examples_dir: &Path, num: u32) -> PathBuf {
+    let padded_num = format!("{:06}", num);
+    let filename = format!("repl_{}.rs", padded_num);
+    let path = examples_dir.join(&filename);
+    fs::File::create(path.clone()).expect("Failed to create file");
+    println!("Created file: {}", filename);
+    path
+}
+
+pub(crate) fn read_stdin() -> Result<String, io::Error> {
+    println!("Enter or paste Rust source code at the prompt and hit Ctrl-D when done");
+    let mut buffer = String::new();
+    let stdin = io::stdin();
+    let mut handle = stdin.lock();
+    handle.read_to_string(&mut buffer)?;
+    Ok(buffer)
 }

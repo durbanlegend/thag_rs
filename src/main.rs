@@ -54,17 +54,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("PACKAGE_NAME={PACKAGE_NAME}");
     debug!("VERSION={VERSION}");
 
-    let options = get_opt();
+    let mut options = get_opt();
     let proc_flags = get_proc_flags(&options)?;
     debug!("proc_flags={proc_flags:#?}");
 
     debug_timings(start, "Set up processing flags");
-
-    debug!(
-        "options.script={}; options.script.ends_with(RS_SUFFIX)? {})",
-        options.script,
-        options.script.ends_with(RS_SUFFIX)
-    );
 
     if !&options.args.is_empty() {
         debug!("... args:");
@@ -73,15 +67,29 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if !options.script.ends_with(RS_SUFFIX) {
-        return Err(Box::new(BuildRunError::Command(format!(
-            "Script name must end in {RS_SUFFIX}"
-        ))));
-    }
+    let (_script, empty) = if let Some(ref script) = options.script {
+        if !script.ends_with(RS_SUFFIX) {
+            return Err(Box::new(BuildRunError::Command(format!(
+                "Script name must end in {RS_SUFFIX}"
+            ))));
+        }
+        (script.to_owned(), false)
+    } else {
+        assert!(proc_flags.contains(ProcFlags::REPL));
+        let rs_source = code_utils::read_stdin()?;
+        let path = code_utils::create_next_repl_file();
+
+        fs::write(path.clone(), rs_source).expect("Unable to write file");
+
+        let script = path.file_name().unwrap().to_str().unwrap().to_string();
+        // Backfill script name into CLI options.
+        options.script = Some(format!("examples/{script}"));
+        (script, true)
+    };
 
     let mut build_state = pre_config_build_state(&options)?;
 
-    let stale_executable = if build_state.target_path.exists() {
+    let stale_executable = if !empty && build_state.target_path.exists() {
         modified_since_compiled(&build_state).is_some()
     } else {
         true
@@ -91,9 +99,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
     let build_requested = proc_flags.contains(ProcFlags::BUILD);
     let verbose = proc_flags.contains(ProcFlags::VERBOSE);
+    let repl = proc_flags.contains(ProcFlags::REPL);
 
-    let must_gen = force || (gen_requested && stale_executable);
-    let must_build = force || (build_requested && stale_executable);
+    let must_gen = force || repl || (gen_requested && stale_executable);
+    let must_build = force || repl || (build_requested && stale_executable);
 
     if must_gen {
         let (mut rs_manifest, rs_source): (CargoManifest, String) =

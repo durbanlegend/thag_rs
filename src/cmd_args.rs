@@ -11,7 +11,7 @@ use crate::{cmd_args, errors::BuildRunError};
 #[clap(version = "1.0", author = "durbanlegend")]
 pub(crate) struct Opt {
     /// Set the script to run
-    pub(crate) script: String,
+    pub(crate) script: Option<String>,
     /// Set the arguments for the script
     #[clap(last = true)]
     pub(crate) args: Vec<String>,
@@ -36,6 +36,9 @@ pub(crate) struct Opt {
     /// Run compiled script if available
     #[clap(short, long)]
     pub(crate) run: bool,
+    /// Run in REPL mode (read–eval–print loop)
+    #[clap(short = 'l', long)]
+    repl: bool,
 }
 
 pub(crate) fn get_opt() -> Opt {
@@ -70,7 +73,7 @@ fn main() {
         println!("Running script");
     }
 
-    println!("Running script: {}", opt.script);
+    println!("Running script: {:?}", opt.script);
     if !opt.args.is_empty() {
         println!("With arguments:");
         for arg in &opt.args {
@@ -92,6 +95,7 @@ bitflags! {
         const ALL = 16;
         const VERBOSE = 32;
         const TIMINGS = 64;
+        const REPL = 128;
     }
 }
 
@@ -138,6 +142,7 @@ pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<d
                 options.generate & options.build & options.run,
             );
         }
+        proc_flags.set(ProcFlags::REPL, options.repl);
 
         // if options.all && options.run {
         //     // println!(

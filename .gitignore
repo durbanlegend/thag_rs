@@ -13,3 +13,4 @@ examples/cargo_toml_stuff
 examples/gpt_clap.rs
 examples/y
 examples/z
+examples/repl_*.rs

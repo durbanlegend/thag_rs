@@ -1,9 +1,9 @@
+use crate::cmd_args;
 use crate::cmd_args::ProcFlags;
 use crate::errors::BuildRunError;
 use crate::toml_utils::CargoManifest;
 use crate::PACKAGE_DIR;
 use crate::RS_SUFFIX;
-use crate::{cmd_args, toml_utils::rs_extract_manifest};
 use crate::{BuildState, TOML_NAME};
 use log::debug;
 use regex::Regex;
@@ -106,6 +106,24 @@ pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String)
 
     debug_timings(start_parsing_rs, "Parsed source");
     Ok((rs_manifest, rs_source))
+}
+
+fn rs_extract_manifest(rs_contents: &str) -> Result<CargoManifest, BuildRunError> {
+    let rs_toml_str = rs_extract_toml(rs_contents);
+    CargoManifest::from_str(&rs_toml_str)
+}
+
+fn rs_extract_toml(rs_contents: &str) -> String {
+    let rs_toml_str = {
+        let str_iter = rs_contents
+            .lines()
+            .map(str::trim_start)
+            .filter(|&line| line.starts_with("//!"))
+            .map(|line| line.trim_start_matches('/').trim_start_matches('!'));
+        reassemble(str_iter)
+    };
+    debug!("Rust source manifest info (rs_toml_str) = {rs_toml_str}");
+    rs_toml_str
 }
 
 pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {

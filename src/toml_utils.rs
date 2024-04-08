@@ -9,7 +9,7 @@ use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
 
-use crate::code_utils::{debug_timings, infer_dependencies, reassemble};
+use crate::code_utils::{debug_timings, infer_dependencies};
 use crate::errors::BuildRunError;
 use crate::BuildState;
 
@@ -129,24 +129,6 @@ fn default_package_version() -> String {
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub(crate) struct Workspace {}
-
-pub(crate) fn rs_extract_manifest(rs_contents: &str) -> Result<CargoManifest, BuildRunError> {
-    let rs_toml_str = rs_extract_toml(rs_contents);
-    CargoManifest::from_str(&rs_toml_str)
-}
-
-fn rs_extract_toml(rs_contents: &str) -> String {
-    let rs_toml_str = {
-        let str_iter = rs_contents
-            .lines()
-            .map(str::trim_start)
-            .filter(|&line| line.starts_with("//!"))
-            .map(|line| line.trim_start_matches('/').trim_start_matches('!'));
-        reassemble(str_iter)
-    };
-    debug!("Rust source manifest info (rs_toml_str) = {rs_toml_str}");
-    rs_toml_str
-}
 
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();

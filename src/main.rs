@@ -42,6 +42,7 @@ pub(crate) struct BuildState {
 //      TODO:
 //       1.  Read stdin
 //       2.  Deal with crates that have dashes in name instead of underscores - DONE.
+//       3.  Rename toml_utils crate to manifest?
 //       5.  bool -> 2-value enums?
 //       9.  --quiet option?.
 

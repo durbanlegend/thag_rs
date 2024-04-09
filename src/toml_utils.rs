@@ -258,7 +258,9 @@ pub(crate) fn resolve_deps(
     if !rs_inferred_deps.is_empty() {
         debug!("dep_map (before inferred) {rs_dep_map:#?}");
         for dep_name in rs_inferred_deps {
-            if rs_dep_map.contains_key(&dep_name) {
+            if rs_dep_map.contains_key(&dep_name)
+                || rs_dep_map.contains_key(&dep_name.replace('_', "-"))
+            {
                 // Already in manifest
                 // debug!(
                 //     "============ rs_dep_map {rs_dep_map:#?} already contains key dep_name {dep_name}"

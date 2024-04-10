@@ -40,10 +40,8 @@ fn main() -> Result<()> {
             // let editor_buffer_string = std::fs::read_to_string(file)?;
 
             // Open the in-place editor with the existing file
-            let mut in_place_editor: InPlaceFile = recycle(file)?;
+            let mut in_place_editor: InPlaceFile = new_editor(file)?;
             let mut reader = BufReader::new(in_place_editor.reader());
-
-            // in_place_editor.save(); // test
 
             let mut editor_buffer_string = String::new();
             reader.read_to_string(&mut editor_buffer_string);
@@ -66,36 +64,35 @@ fn main() -> Result<()> {
                 }
 
                 if line.starts_with(':') {
-                    {
-                        let command = line.trim_start_matches(':');
-                        match command {
-                            "save" => {
-                                // Implement logic to save the current editor buffer to the file
-                                in_place_editor.save();
-                                in_place_editor = recycle(file)?;
-                                println!("File saved successfully!");
+                    let command = line.trim_start_matches(':');
+                    match command {
+                        "save" => {
+                            // Implement logic to save the current editor buffer to the file
+                            let mut writer = in_place_editor.writer();
+                            for line in editor_buffer_vec.iter() {
+                                writeln!(writer, "{line}");
                             }
-                            "run" => {
-                                // Implement logic to save the buffer, build and run the program using Cargo
-                                println!("Running the program...");
-                                // (Call your existing build and run functions here)
-                            }
-                            "help" => println!("Available commands: save, run, quit"),
-                            "quit" => return Err(ReadlineError::Eof),
-                            _ => println!(
-                                "Unknown command {command}. Type ':help' for a list of commands."
-                            ),
+
+                            in_place_editor.save();
+                            in_place_editor = new_editor(file)?;
+                            println!("File saved successfully!");
                         }
-                        // Ok(())
-                    };
+                        "run" => {
+                            // Implement logic to save the buffer, build and run the program using Cargo
+                            println!("Running the program...");
+                            // (Call your existing build and run functions here)
+                        }
+                        "help" => println!("Available commands: save, run, quit"),
+                        "quit" => return Err(ReadlineError::Eof),
+                        _ => println!(
+                            "Unknown command {command}. Type ':help' for a list of commands."
+                        ),
+                    }
+                    // Ok(());
                 } else {
                     // Process user input line
                     // (replace with logic to modify the in-place editor buffer)
                     // in_place_editor.write_all(line.as_bytes())?; // Example write operation
-                    // writeln!(writer, "{line}")?;
-                    // for line in editor_buffer_vec.iter() {
-                    //     writeln!(writer, "{line}")?;
-                    // }
                     editor_buffer_vec.push(line.to_string());
                 }
             }
@@ -103,10 +100,7 @@ fn main() -> Result<()> {
             // Save the buffer to the file (moved inside the if block)
             if true {
                 // std::fs::write(current_file.as_ref().unwrap(), editor_buffer.as_bytes())?;
-                let mut writer = in_place_editor.writer();
-                for line in editor_buffer_vec.iter() {
-                    writeln!(writer, "{line}");
-                }
+                write_buffer_to_tempfile(in_place_editor, editor_buffer_vec);
             }
         } else {
             // Handle scenario where no file is loaded (show message?)
@@ -119,7 +113,14 @@ fn main() -> Result<()> {
     }
 }
 
-fn recycle(file: &String) -> Result<InPlaceFile> {
+fn write_buffer_to_tempfile(in_place_editor: InPlaceFile, editor_buffer_vec: Vec<String>) {
+    let mut writer = in_place_editor.writer();
+    for line in editor_buffer_vec.iter() {
+        writeln!(writer, "{line}");
+    }
+}
+
+fn new_editor(file: &String) -> Result<InPlaceFile> {
     let in_place_editor = InPlace::new(file.as_str())
         .open()
         .map_err(|_err| ReadlineError::from(ErrorKind::Other))?;

@@ -57,15 +57,15 @@ fn main() -> Result<()> {
         let mut line = editor.readline(">> ")?;
 
         loop {
-            if line.is_empty() {
-                break;
-            }
+            // if line.is_empty() {
+            //     break;
+            // }
 
             if line.starts_with(':') {
                 handle_repl_command(line.trim_start_matches(':'))?;
             } else {
                 // Add the line to the editor buffer (replace with your in-place editing logic)
-                println!("Line entered: {}", line);
+                // println!("Line entered: {}", line);
             }
 
             // Prompt for another line if needed

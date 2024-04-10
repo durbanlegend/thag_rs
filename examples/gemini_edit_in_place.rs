@@ -121,6 +121,11 @@ fn handle_repl_command(
             // (Call your existing build and run functions here)
         }
         "help" => println!("Available commands: save, run, quit"),
+        "list" => {
+            for line in editor_buffer_vec.iter() {
+                println!("{line}");
+            }
+        }
         "quit" => return Err(ReadlineError::Eof),
         _ => println!("Unknown command {command}. Type ':help' for a list of commands."),
     }

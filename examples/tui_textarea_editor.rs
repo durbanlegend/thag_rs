@@ -118,6 +118,8 @@ impl<'a> Buffer<'a> {
             TextArea::default() // File does not exist
         };
         textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
+        textarea.set_block(Block::default().borders(Borders::TOP).title("Code editor"));
+
         Ok(Self {
             textarea,
             path,
@@ -145,6 +147,7 @@ struct Editor<'a> {
     term: Terminal<CrosstermBackend<io::Stdout>>,
     message: Option<Cow<'static, str>>,
     search: SearchBox<'a>,
+    output: TextArea<'a>,
 }
 
 impl<'a> Editor<'a> {
@@ -164,12 +167,16 @@ impl<'a> Editor<'a> {
         crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
         let backend = CrosstermBackend::new(stdout);
         let term = Terminal::new(backend)?;
+        let mut output = TextArea::default();
+        output.set_block(Block::default().borders(Borders::TOP).title("Output"));
+
         Ok(Self {
             current: 0,
             buffers,
             term,
             message: None,
             search: SearchBox::default(),
+            output,
         })
     }
 
@@ -184,6 +191,7 @@ impl<'a> Editor<'a> {
                         Constraint::Min(1),
                         Constraint::Length(1),
                         Constraint::Length(1),
+                        Constraint::Percentage(20),
                     ]
                     .as_ref(),
                 );
@@ -217,7 +225,10 @@ impl<'a> Editor<'a> {
                         .as_ref(),
                     )
                     .split(chunks[2]);
-                let status_style = Style::default().add_modifier(Modifier::REVERSED);
+                let status_style = Style::default()
+                    // .add_modifier(Modifier::REVERSED)
+                    .add_modifier(Modifier::BOLD)
+                    .fg(Color::Blue);
                 f.render_widget(Paragraph::new(slot).style(status_style), status_chunks[0]);
                 f.render_widget(Paragraph::new(path).style(status_style), status_chunks[1]);
                 f.render_widget(Paragraph::new(cursor).style(status_style), status_chunks[2]);
@@ -257,6 +268,7 @@ impl<'a> Editor<'a> {
                     ])
                 };
                 f.render_widget(Paragraph::new(message), chunks[3]);
+                f.render_widget(self.output.widget(), chunks[4]);
             })?;
 
             if search_height > 0 {

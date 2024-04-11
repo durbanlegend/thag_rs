@@ -19,6 +19,7 @@ mod cmd_args;
 mod code_utils;
 mod errors;
 mod toml_utils;
+mod tui_textarea_editor;
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");

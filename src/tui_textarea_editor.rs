@@ -148,6 +148,28 @@ impl<'a> Buffer<'a> {
     }
 }
 
+#[derive(Debug, Default)]
+struct Output<'a> {
+    textarea: TextArea<'a>,
+    modified: bool,
+}
+
+impl<'a> Output<'a> {
+    fn new() -> Self {
+        let mut textarea = TextArea::default();
+        textarea.set_style(Style::default().fg(Color::DarkGray));
+        textarea.set_cursor_style(textarea.cursor_line_style());
+        // Disable cursor line style
+        textarea.set_cursor_line_style(Style::default());
+        textarea.set_block(Block::default().borders(Borders::TOP).title("Output"));
+
+        Self {
+            textarea,
+            modified: true, // For initial display
+        }
+    }
+}
+
 #[allow(dead_code)]
 struct Editor<'a> {
     current: usize,
@@ -155,7 +177,7 @@ struct Editor<'a> {
     term: Terminal<CrosstermBackend<io::Stdout>>,
     message: Option<Cow<'static, str>>,
     search: SearchBox<'a>,
-    output: TextArea<'a>,
+    output: Output<'a>,
 }
 
 #[allow(dead_code)]
@@ -181,8 +203,6 @@ impl<'a> Editor<'a> {
         )?;
         let backend = CrosstermBackend::new(stdout);
         let term = Terminal::new(backend)?;
-        let mut output = TextArea::default();
-        output.set_block(Block::default().borders(Borders::TOP).title("Output"));
 
         Ok(Self {
             current: 0,
@@ -190,7 +210,7 @@ impl<'a> Editor<'a> {
             term,
             message: None,
             search: SearchBox::default(),
-            output,
+            output: Output::new(),
         })
     }
 
@@ -248,7 +268,7 @@ impl<'a> Editor<'a> {
                 f.render_widget(Paragraph::new(path).style(status_style), status_chunks[1]);
                 f.render_widget(Paragraph::new(cursor).style(status_style), status_chunks[2]);
 
-                // Render message at bottom
+                // Render message at bottom of editor
                 let message = if let Some(message) = self.message.take() {
                     Line::from(Span::raw(message))
                 } else if search_height > 0 {
@@ -283,7 +303,13 @@ impl<'a> Editor<'a> {
                     ])
                 };
                 f.render_widget(Paragraph::new(message), chunks[3]);
-                f.render_widget(self.output.widget(), chunks[4]);
+
+                // if self.output.modified {
+                let textarea = &self.output.textarea;
+                let widget = textarea.widget();
+                f.render_widget(widget, chunks[4]);
+                self.output.modified = false;
+                // }
             })?;
 
             if search_height > 0 {
@@ -341,7 +367,10 @@ impl<'a> Editor<'a> {
                 let event = crossterm::event::read()?;
 
                 if let Paste(data) = event {
-                    println!("Pasting data");
+                    self.output.textarea.insert_str("Pasting data");
+                    self.output.textarea.insert_newline();
+                    self.output.modified = true;
+
                     let buffer = &mut self.buffers[self.current];
                     for line in data.lines() {
                         buffer.textarea.insert_str(line);
@@ -366,16 +395,20 @@ impl<'a> Editor<'a> {
                             ..
                         } => {
                             self.current = (self.current + 1) % self.buffers.len();
-                            self.message =
-                                Some(format!("Switched to buffer #{}", self.current + 1).into());
+                            let msg: Cow<'static, str> =
+                                format!("Switched to buffer #{}", self.current + 1).into();
+                            self.message = Some(msg.clone());
+                            self.write_output(&msg);
                         }
                         Input {
                             key: Key::Char('s'),
                             ctrl: true,
                             ..
                         } => {
+                            let msg = "Saved!";
                             self.buffers[self.current].save()?;
-                            self.message = Some("Saved!".into());
+                            self.message = Some(msg.into());
+                            self.write_output(msg);
                         }
                         Input {
                             key: Key::Char('g'),
@@ -394,6 +427,12 @@ impl<'a> Editor<'a> {
             }
         }
         Ok(())
+    }
+
+    fn write_output(&mut self, msg: &str) {
+        self.output.textarea.insert_str(msg);
+        self.output.textarea.insert_newline();
+        self.output.modified = true;
     }
 }
 

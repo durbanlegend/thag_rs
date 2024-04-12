@@ -3,7 +3,7 @@ use crate::cmd_args::{get_opt, get_proc_flags, ProcFlags};
 use crate::code_utils::{debug_timings, display_output, display_timings, wrap_snippet};
 use crate::code_utils::{modified_since_compiled, parse_source, pre_config_build_state};
 use crate::errors::BuildRunError;
-use crate::toml_utils::{default_manifest, CargoManifest};
+use crate::manifest::{default_manifest, CargoManifest};
 
 use core::str;
 use log::debug;
@@ -18,7 +18,7 @@ use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 mod cmd_args;
 mod code_utils;
 mod errors;
-mod toml_utils;
+mod manifest;
 mod tui_textarea_editor;
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
@@ -41,9 +41,7 @@ pub(crate) struct BuildState {
 }
 
 //      TODO:
-//       1.  Read stdin
-//       2.  Deal with crates that have dashes in name instead of underscores - DONE.
-//       3.  Rename toml_utils crate to manifest?
+//       1.  REPL
 //       5.  bool -> 2-value enums?
 //       9.  --quiet option?.
 
@@ -111,7 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             parse_source(&build_state.source_path)?;
 
         build_state.cargo_manifest =
-            toml_utils::resolve_deps(&build_state, &rs_source, &mut rs_manifest)?;
+            manifest::resolve_deps(&build_state, &rs_source, &mut rs_manifest)?;
 
         let has_main = code_utils::has_main(&rs_source);
         if verbose {

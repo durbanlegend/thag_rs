@@ -1,7 +1,7 @@
 use crate::cmd_args;
 use crate::cmd_args::ProcFlags;
 use crate::errors::BuildRunError;
-use crate::toml_utils::CargoManifest;
+use crate::manifest::CargoManifest;
 use crate::PACKAGE_DIR;
 use crate::RS_SUFFIX;
 use crate::{BuildState, TOML_NAME};

@@ -129,7 +129,9 @@ fn default_package_version() -> String {
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-pub(crate) struct Workspace {}
+pub(crate) struct Workspace {
+    pub(crate)
+}
 
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();

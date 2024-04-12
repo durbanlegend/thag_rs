@@ -15,4 +15,8 @@ structopt = "0.3"
 toml = "0.8.12"
 crossterm = "0.27.0"
 ratatui = "0.26.1"
-tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
+# tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
+tui-textarea-don = { path = "/Users/donf/projects/tui-textarea-don", features = [
+    "crossterm",
+    "search",
+] }

@@ -1,9 +1,8 @@
 //! [dependencies]
 //! crossterm = "0.27.0"
 //! ratatui = "0.26.1"
-//! tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
+//! tui-textarea-don = { path = "/Users/donf/projects/tui-textarea-don", features = ["crossterm", "search"] }
 
-use crossterm::cursor;
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
@@ -12,20 +11,19 @@ use crossterm::event::{
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
-use crossterm::ExecutableCommand;
-use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
 use ratatui::Terminal;
+use ratatui::{backend::CrosstermBackend, style::Stylize};
 use std::borrow::Cow;
 use std::env;
 use std::fmt::Display;
 use std::fs;
-use std::io::{self, stdout, BufRead, Write};
+use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
-use tui_textarea::{CursorMove, Input, Key, TextArea};
+use tui_textarea_don::{CursorMove, Input, Key, TextArea};
 
 macro_rules! error {
     ($fmt: expr $(, $args:tt)*) => {{
@@ -129,6 +127,9 @@ impl<'a> Buffer<'a> {
         };
         textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
         textarea.set_selection_style(Style::default().bg(Color::LightCyan));
+        textarea.set_line_number_style(Style::default());
+        textarea.set_cursor_style(Style::default().on_yellow());
+        textarea.set_cursor_line_style(Style::default().on_light_yellow());
         textarea.set_block(Block::default().borders(Borders::TOP).title("Editor"));
 
         Ok(Self {
@@ -221,7 +222,7 @@ impl<'a> Editor<'a> {
     #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
     fn run(&mut self) -> io::Result<()> {
         let mut selecting = false;
-        let mut start_pos = (0, 0);
+        let mut start_pos;
         let mut offset: (u16, u16) = (0, 0);
 
         loop {
@@ -234,14 +235,14 @@ impl<'a> Editor<'a> {
                         Constraint::Length(1),
                         Constraint::Min(1),
                         Constraint::Length(1),
-                        Constraint::Percentage(15),
+                        Constraint::Percentage(25),
                     ]
                     .as_ref(),
                 );
 
             self.term.draw(|f| {
                 let chunks = layout.split(f.size());
-                offset = (chunks[2].x + 2, chunks[2].y + 2);
+                offset = (chunks[2].x + 2, chunks[2].y + 3);
                 if search_height > 0 {
                     f.render_widget(self.search.textarea.widget(), chunks[0]);
                 }
@@ -395,13 +396,16 @@ impl<'a> Editor<'a> {
                                 let end_pos = (event.row - offset.0, event.column - offset.1);
                                 // Handle the selected text here
                                 // println!("Selected text from {:?} to {:?}", start_pos, end_pos);
-                                textarea.move_cursor(CursorMove::Jump(end_pos.0, end_pos.1));
-                                textarea.copy();
-                                self.output
-                                    .textarea
-                                    .insert_str(format!("yank_text={}", textarea.yank_text()));
-                                self.output.textarea.insert_newline();
-                                self.output.modified = true;
+                                textarea.move_cursor_with_shift(
+                                    CursorMove::Jump(end_pos.0, end_pos.1),
+                                    true,
+                                );
+                                // textarea.copy();
+                                // self.output
+                                //     .textarea
+                                //     .insert_str(format!("yank_text={}", textarea.yank_text()));
+                                // self.output.textarea.insert_newline();
+                                // self.output.modified = true;
                                 // println!("yank_text={}", textarea.yank_text());
                             }
                             MouseEventKind::Drag(MouseButton::Left) => {
@@ -412,10 +416,20 @@ impl<'a> Editor<'a> {
                                     //     "Dragging to position: ({}, {})",
                                     //     event.row, event.column
                                     // );
+                                    let end_pos = (event.row - offset.0, event.column - offset.1);
+                                    textarea.move_cursor_with_shift(
+                                        CursorMove::Jump(end_pos.0, end_pos.1),
+                                        true,
+                                    );
                                 }
                             }
 
-                            _ => {}
+                            _ => {
+                                let input = Input::from(event.clone());
+                                let buffer = &mut self.buffers[self.current];
+                                let just_modified = buffer.textarea.input(input);
+                                buffer.modified = buffer.modified || just_modified;
+                            }
                         }
                     }
                     Paste(data) => {
@@ -433,7 +447,7 @@ impl<'a> Editor<'a> {
                     _ => {
                         let input = Input::from(event.clone());
                         // if input.ctrl {
-                        println!("input={input:?}");
+                        // println!("input={input:?}");
                         // }
 
                         match input {

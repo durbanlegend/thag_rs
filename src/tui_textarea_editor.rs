@@ -1,12 +1,13 @@
 //! [dependencies]
 //! crossterm = "0.27.0"
 //! ratatui = "0.26.1"
-//! tui-textarea-don = { path = "/Users/donf/projects/tui-textarea-don", features = ["crossterm", "search"] }
+//! #tui-textarea-don = { path = "/Users/donf/projects/tui-textarea-don", features = ["crossterm", "search"] }
+//! tui_textarea_mouse = { path = "/Users/donf/projects/tui_textarea_mouse", features = ["crossterm", "search"] }
 
 use crossterm::event::{
-    DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+    self, DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
-    MouseButton, MouseEventKind,
+    MouseButton, MouseEvent, MouseEventKind,
 };
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -15,7 +16,8 @@ use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
-use ratatui::Terminal;
+use ratatui::{Terminal, Viewport};
+
 use ratatui::{backend::CrosstermBackend, style::Stylize};
 use std::borrow::Cow;
 use std::env;
@@ -23,7 +25,7 @@ use std::fmt::Display;
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
-use tui_textarea_don::{CursorMove, Input, Key, TextArea};
+use tui_textarea_mouse::{CursorMove, Input, Key, TextArea};
 
 macro_rules! error {
     ($fmt: expr $(, $args:tt)*) => {{
@@ -242,15 +244,30 @@ impl<'a> Editor<'a> {
 
             self.term.draw(|f| {
                 let chunks = layout.split(f.size());
+                // for chunk in chunks
+                // for (i, chunk) in chunks
+                //     .iter()
+                //     .enumerate() {
+                //     println!("chunk {i}={chunk}:")
+                // }
                 offset = (chunks[2].x + 2, chunks[2].y + 3);
+
                 if search_height > 0 {
                     f.render_widget(self.search.textarea.widget(), chunks[0]);
                 }
 
                 let buffer = &self.buffers[self.current];
                 let textarea = &buffer.textarea;
+                // let inner = match textarea.block() {
+                //     None => chunks[2],
+                //     Some(block) => block.inner(chunks[2]),
+                // };
+                // offset = (inner.x - chunks[2].x, inner.y - chunks[2].y);
+                // println!("offset={offset:#?}");
                 let widget = textarea.widget();
                 f.render_widget(widget, chunks[2]);
+
+                // println!("Viewport.rect()={:#?}", textarea.viewport.rect());
 
                 // Render status line
                 let modified = if buffer.modified { " [modified]" } else { "" };
@@ -323,7 +340,7 @@ impl<'a> Editor<'a> {
 
             let textarea = &mut self.buffers[self.current].textarea;
             if search_height > 0 {
-                match crossterm::event::read()?.into() {
+                match event::read()?.into() {
                     Input {
                         key: Key::Char('g' | 'n'),
                         ctrl: true,
@@ -373,22 +390,29 @@ impl<'a> Editor<'a> {
                     }
                 }
             } else {
-                let event = crossterm::event::read()?;
+                let event = event::read()?;
 
                 match event {
                     Event::Mouse(event) => {
                         match event.kind {
                             MouseEventKind::Down(MouseButton::Left) => {
                                 selecting = true;
+                                // start_pos = (event.row - offset.0, event.column - offset.1);
                                 start_pos = (event.row - offset.0, event.column - offset.1);
-                                // stdout().execute(cursor::MoveTo(event.row, event.column))?;
                                 textarea.move_cursor(CursorMove::Jump(start_pos.0, start_pos.1));
                                 textarea.start_selection();
-                                self.output.textarea.insert_str(format!(
-                                    "start_pos = row{}, col{}, offset={:?}",
-                                    start_pos.0, start_pos.1, offset
-                                ));
-                                self.output.textarea.insert_newline();
+                                self.write_output(
+                                    &(format!(
+                                        "start_pos = row{}, col{}, offset={:?}",
+                                        start_pos.0, start_pos.1, offset
+                                    )),
+                                );
+                                // let pos = crossterm::cursor::position()?;
+                                // let pos = ratatui::terminal::Terminal::get_cursor(&mut self);
+                                // self.write_output(&format!(
+                                //     "crossterm cursor position is row{}, col{}",
+                                //     pos.0, pos.1
+                                // ));
                                 self.output.modified = true;
                             }
                             MouseEventKind::Up(MouseButton::Left) => {
@@ -400,13 +424,6 @@ impl<'a> Editor<'a> {
                                     CursorMove::Jump(end_pos.0, end_pos.1),
                                     true,
                                 );
-                                // textarea.copy();
-                                // self.output
-                                //     .textarea
-                                //     .insert_str(format!("yank_text={}", textarea.yank_text()));
-                                // self.output.textarea.insert_newline();
-                                // self.output.modified = true;
-                                // println!("yank_text={}", textarea.yank_text());
                             }
                             MouseEventKind::Drag(MouseButton::Left) => {
                                 if selecting {
@@ -433,8 +450,7 @@ impl<'a> Editor<'a> {
                         }
                     }
                     Paste(data) => {
-                        self.output.textarea.insert_str("Pasting data");
-                        self.output.textarea.insert_newline();
+                        self.write_output("Pasting data");
                         self.output.modified = true;
 
                         let buffer = &mut self.buffers[self.current];
@@ -488,6 +504,7 @@ impl<'a> Editor<'a> {
                             }
                             input => {
                                 let buffer = &mut self.buffers[self.current];
+                                // println!("buffer.textarea.cursor={:?}", buffer.textarea.cursor());
                                 let just_modified = buffer.textarea.input(input);
                                 buffer.modified = buffer.modified || just_modified;
                             }

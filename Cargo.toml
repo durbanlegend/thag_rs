@@ -16,7 +16,7 @@ toml = "0.8.12"
 crossterm = "0.27.0"
 ratatui = "0.26.1"
 # tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
-tui-textarea-don = { path = "/Users/donf/projects/tui-textarea-don", features = [
+tui_textarea_mouse = { path = "/Users/donf/projects/tui_textarea_mouse", features = [
     "crossterm",
     "search",
 ] }

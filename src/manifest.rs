@@ -112,6 +112,7 @@ pub struct DependencyDetail {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
     pub path: Option<String>,
+    pub registry: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub features: Vec<String>,
 }
@@ -129,9 +130,7 @@ fn default_package_version() -> String {
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-pub(crate) struct Workspace {
-    pub(crate)
-}
+pub(crate) struct Workspace {}
 
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();

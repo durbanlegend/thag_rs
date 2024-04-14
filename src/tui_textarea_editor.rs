@@ -140,9 +140,6 @@ impl<'a> Buffer<'a> {
     }
 
     fn save(&mut self) -> io::Result<()> {
-        if !self.modified {
-            return Ok(());
-        }
         let mut f = io::BufWriter::new(fs::File::create(&self.path)?);
         for line in self.textarea.lines() {
             f.write_all(line.as_bytes())?;
@@ -163,7 +160,7 @@ impl<'a> Output<'a> {
     fn new() -> Self {
         let mut textarea = TextArea::default();
         textarea.set_style(Style::default().fg(Color::DarkGray));
-        textarea.set_cursor_style(textarea.cursor_line_style());
+        textarea.set_cursor_style(Style::default().add_modifier(Modifier::HIDDEN));
         // Disable cursor line style
         textarea.set_cursor_line_style(Style::default());
         textarea.set_block(Block::default().borders(Borders::TOP).title("Output"));
@@ -309,12 +306,11 @@ impl<'a> Editor<'a> {
                 };
                 f.render_widget(Paragraph::new(message), chunks[3]);
 
-                // if self.output.modified {
+                // Render output belowx editor
                 let textarea = &self.output.textarea;
                 let widget = textarea.widget();
                 f.render_widget(widget, chunks[4]);
                 self.output.modified = false;
-                // }
             })?;
 
             if search_height > 0 {
@@ -410,8 +406,12 @@ impl<'a> Editor<'a> {
                             ctrl: true,
                             ..
                         } => {
-                            let msg = "Saved!";
-                            self.buffers[self.current].save()?;
+                            let msg = if self.buffers[self.current].modified {
+                                self.buffers[self.current].save()?;
+                                "Saved!"
+                            } else {
+                                "No changes to save"
+                            };
                             self.message = Some(msg.into());
                             self.write_output(msg);
                         }

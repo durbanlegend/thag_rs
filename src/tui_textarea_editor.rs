@@ -1,31 +1,29 @@
 //! [dependencies]
 //! crossterm = "0.27.0"
 //! ratatui = "0.26.1"
-//! #tui-textarea-don = { path = "/Users/donf/projects/tui-textarea-don", features = ["crossterm", "search"] }
-//! tui_textarea_mouse = { path = "/Users/donf/projects/tui_textarea_mouse", features = ["crossterm", "search"] }
+//! tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
 
+use crossterm::event::read;
 use crossterm::event::{
-    self, DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
-    Event::{self, Paste},
-    MouseButton, MouseEvent, MouseEventKind,
+    DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+    Event::Paste,
 };
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
+use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
-use ratatui::{Terminal, Viewport};
-
-use ratatui::{backend::CrosstermBackend, style::Stylize};
+use ratatui::Terminal;
 use std::borrow::Cow;
 use std::env;
 use std::fmt::Display;
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
-use tui_textarea_mouse::{CursorMove, Input, Key, TextArea};
+use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 macro_rules! error {
     ($fmt: expr $(, $args:tt)*) => {{
@@ -223,10 +221,6 @@ impl<'a> Editor<'a> {
 
     #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
     fn run(&mut self) -> io::Result<()> {
-        let mut selecting = false;
-        let mut start_pos;
-        let mut offset: (u16, u16) = (0, 0);
-
         loop {
             let search_height = self.search.height();
             let layout = Layout::default()
@@ -244,13 +238,6 @@ impl<'a> Editor<'a> {
 
             self.term.draw(|f| {
                 let chunks = layout.split(f.size());
-                // for chunk in chunks
-                // for (i, chunk) in chunks
-                //     .iter()
-                //     .enumerate() {
-                //     println!("chunk {i}={chunk}:")
-                // }
-                offset = (chunks[2].x + 2, chunks[2].y + 3);
 
                 if search_height > 0 {
                     f.render_widget(self.search.textarea.widget(), chunks[0]);
@@ -258,16 +245,8 @@ impl<'a> Editor<'a> {
 
                 let buffer = &self.buffers[self.current];
                 let textarea = &buffer.textarea;
-                // let inner = match textarea.block() {
-                //     None => chunks[2],
-                //     Some(block) => block.inner(chunks[2]),
-                // };
-                // offset = (inner.x - chunks[2].x, inner.y - chunks[2].y);
-                // println!("offset={offset:#?}");
                 let widget = textarea.widget();
                 f.render_widget(widget, chunks[2]);
-
-                // println!("Viewport.rect()={:#?}", textarea.viewport.rect());
 
                 // Render status line
                 let modified = if buffer.modified { " [modified]" } else { "" };
@@ -338,9 +317,9 @@ impl<'a> Editor<'a> {
                 // }
             })?;
 
-            let textarea = &mut self.buffers[self.current].textarea;
             if search_height > 0 {
-                match event::read()?.into() {
+                let textarea = &mut self.buffers[self.current].textarea;
+                match read()?.into() {
                     Input {
                         key: Key::Char('g' | 'n'),
                         ctrl: true,
@@ -390,124 +369,63 @@ impl<'a> Editor<'a> {
                     }
                 }
             } else {
-                let event = event::read()?;
+                let event = read()?;
 
-                match event {
-                    Event::Mouse(event) => {
-                        match event.kind {
-                            MouseEventKind::Down(MouseButton::Left) => {
-                                selecting = true;
-                                // start_pos = (event.row - offset.0, event.column - offset.1);
-                                start_pos = (event.row - offset.0, event.column - offset.1);
-                                textarea.move_cursor(CursorMove::Jump(start_pos.0, start_pos.1));
-                                textarea.start_selection();
-                                self.write_output(
-                                    &(format!(
-                                        "start_pos = row{}, col{}, offset={:?}",
-                                        start_pos.0, start_pos.1, offset
-                                    )),
-                                );
-                                // let pos = crossterm::cursor::position()?;
-                                // let pos = ratatui::terminal::Terminal::get_cursor(&mut self);
-                                // self.write_output(&format!(
-                                //     "crossterm cursor position is row{}, col{}",
-                                //     pos.0, pos.1
-                                // ));
-                                self.output.modified = true;
-                            }
-                            MouseEventKind::Up(MouseButton::Left) => {
-                                selecting = false;
-                                let end_pos = (event.row - offset.0, event.column - offset.1);
-                                // Handle the selected text here
-                                // println!("Selected text from {:?} to {:?}", start_pos, end_pos);
-                                textarea.move_cursor_with_shift(
-                                    CursorMove::Jump(end_pos.0, end_pos.1),
-                                    true,
-                                );
-                            }
-                            MouseEventKind::Drag(MouseButton::Left) => {
-                                if selecting {
-                                    // Handle the dragging here
-                                    // For simplicity, we're just printing the current position
-                                    // println!(
-                                    //     "Dragging to position: ({}, {})",
-                                    //     event.row, event.column
-                                    // );
-                                    let end_pos = (event.row - offset.0, event.column - offset.1);
-                                    textarea.move_cursor_with_shift(
-                                        CursorMove::Jump(end_pos.0, end_pos.1),
-                                        true,
-                                    );
-                                }
-                            }
+                if let Paste(data) = event {
+                    self.output.textarea.insert_str("Pasting data");
+                    self.output.textarea.insert_newline();
+                    self.output.modified = true;
 
-                            _ => {
-                                let input = Input::from(event.clone());
-                                let buffer = &mut self.buffers[self.current];
-                                let just_modified = buffer.textarea.input(input);
-                                buffer.modified = buffer.modified || just_modified;
-                            }
-                        }
+                    let buffer = &mut self.buffers[self.current];
+                    for line in data.lines() {
+                        buffer.textarea.insert_str(line);
+                        buffer.textarea.insert_newline();
+                        buffer.modified = true;
                     }
-                    Paste(data) => {
-                        self.write_output("Pasting data");
-                        self.output.modified = true;
+                } else {
+                    let input = Input::from(event.clone());
+                    // if input.ctrl {
+                    //     println!("input={input:?}");
+                    // }
 
-                        let buffer = &mut self.buffers[self.current];
-                        for line in data.lines() {
-                            buffer.textarea.insert_str(line);
-                            buffer.textarea.insert_newline();
-                            buffer.modified = true;
+                    match input {
+                        Input {
+                            key: Key::Char('q'),
+                            ctrl: true,
+                            ..
+                        } => break,
+                        Input {
+                            key: Key::Char('t'),
+                            ctrl: true,
+                            ..
+                        } => {
+                            self.current = (self.current + 1) % self.buffers.len();
+                            let msg: Cow<'static, str> =
+                                format!("Switched to buffer #{}", self.current + 1).into();
+                            self.message = Some(msg.clone());
+                            self.write_output(&msg);
                         }
-                    }
-                    _ => {
-                        let input = Input::from(event.clone());
-                        // if input.ctrl {
-                        // println!("input={input:?}");
-                        // }
-
-                        match input {
-                            Input {
-                                key: Key::Char('q'),
-                                ctrl: true,
-                                ..
-                            } => break,
-                            Input {
-                                key: Key::Char('t'),
-                                ctrl: true,
-                                ..
-                            } => {
-                                self.current = (self.current + 1) % self.buffers.len();
-                                let msg = format!(
-                                    "Switched to {}",
-                                    self.buffers[self.current].path.display()
-                                );
-                                self.write_output(&msg);
-                                self.message = Some(Cow::Owned(msg));
-                            }
-                            Input {
-                                key: Key::Char('s'),
-                                ctrl: true,
-                                ..
-                            } => {
-                                let msg = "Saved!";
-                                self.buffers[self.current].save()?;
-                                self.message = Some(msg.into());
-                                self.write_output(msg);
-                            }
-                            Input {
-                                key: Key::Char('g'),
-                                ctrl: true,
-                                ..
-                            } => {
-                                self.search.open();
-                            }
-                            input => {
-                                let buffer = &mut self.buffers[self.current];
-                                // println!("buffer.textarea.cursor={:?}", buffer.textarea.cursor());
-                                let just_modified = buffer.textarea.input(input);
-                                buffer.modified = buffer.modified || just_modified;
-                            }
+                        Input {
+                            key: Key::Char('s'),
+                            ctrl: true,
+                            ..
+                        } => {
+                            let msg = "Saved!";
+                            self.buffers[self.current].save()?;
+                            self.message = Some(msg.into());
+                            self.write_output(msg);
+                        }
+                        Input {
+                            key: Key::Char('g'),
+                            ctrl: true,
+                            ..
+                        } => {
+                            self.search.open();
+                        }
+                        input => {
+                            let buffer = &mut self.buffers[self.current];
+                            let just_modified = buffer.textarea.input(input);
+                            buffer.modified = buffer.modified || just_modified;
                         }
                     }
                 }

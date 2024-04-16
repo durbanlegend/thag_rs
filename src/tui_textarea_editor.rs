@@ -13,9 +13,10 @@ use crossterm::terminal::{
 };
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Paragraph};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use std::borrow::Cow;
 use std::env;
@@ -180,6 +181,7 @@ struct Editor<'a> {
     message: Option<Cow<'static, str>>,
     search: SearchBox<'a>,
     output: Output<'a>,
+    show_popup: bool,
 }
 
 #[allow(dead_code)]
@@ -213,6 +215,7 @@ impl<'a> Editor<'a> {
             message: None,
             search: SearchBox::default(),
             output: Output::new(),
+            show_popup: false,
         })
     }
 
@@ -306,11 +309,22 @@ impl<'a> Editor<'a> {
                 };
                 f.render_widget(Paragraph::new(message), chunks[3]);
 
-                // Render output belowx editor
+                // Render output below editor
                 let textarea = &self.output.textarea;
                 let widget = textarea.widget();
                 f.render_widget(widget, chunks[4]);
                 self.output.modified = false;
+
+                // self.term
+                //     .draw(|f| {
+                if self.show_popup {
+                    let block = Block::default().title("Popup").borders(Borders::ALL);
+                    let area = centered_rect(60, 20, f.size());
+                    f.render_widget(Clear, area); //this clears out the background
+                    f.render_widget(block, area);
+                }
+                // })
+                // .expect("Error showing popup");
             })?;
 
             if search_height > 0 {
@@ -386,6 +400,12 @@ impl<'a> Editor<'a> {
 
                     match input {
                         Input {
+                            key: Key::Char('h'),
+                            ctrl: true,
+                            ..
+                        } => self.show_popup = !self.show_popup,
+
+                        Input {
                             key: Key::Char('q'),
                             ctrl: true,
                             ..
@@ -453,6 +473,22 @@ impl<'a> Drop for Editor<'a> {
         )
         .unwrap();
     }
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::vertical([
+        Constraint::Percentage((100 - percent_y) / 2),
+        Constraint::Percentage(percent_y),
+        Constraint::Percentage((100 - percent_y) / 2),
+    ])
+    .split(r);
+
+    Layout::horizontal([
+        Constraint::Percentage((100 - percent_x) / 2),
+        Constraint::Percentage(percent_x),
+        Constraint::Percentage((100 - percent_x) / 2),
+    ])
+    .split(popup_layout[1])[1]
 }
 
 #[allow(dead_code)]

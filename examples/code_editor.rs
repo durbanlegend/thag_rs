@@ -13,6 +13,12 @@
 //! egui_extras = "0.27.2"
 //!
 //! env_logger = "0.10"
+//!
+//! [features]
+//! default = ["syntect"]
+//!
+//! ## Enable better syntax highlighting using [`syntect`](https://docs.rs/syntect).
+//! syntect = ["egui_extras/syntect"]
 
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release

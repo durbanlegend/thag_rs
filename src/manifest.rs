@@ -18,6 +18,7 @@ pub(crate) struct CargoManifest {
     #[serde(default = "default_package")]
     pub(crate) package: Package,
     pub(crate) dependencies: Option<Dependencies>,
+    pub(crate) features: Option<Features>,
     #[serde(default)]
     pub(crate) workspace: Workspace,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -29,6 +30,7 @@ impl Default for CargoManifest {
         CargoManifest {
             package: Package::default(),
             dependencies: None,
+            features: None,
             workspace: Workspace::default(),
             bin: vec![Product::default()],
         }
@@ -97,7 +99,7 @@ impl Default for Package {
     }
 }
 
-pub(crate) type Dependencies = Option<BTreeMap<String, Dependency>>;
+pub(crate) type Dependencies = BTreeMap<String, Dependency>;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Dependency {
@@ -115,6 +117,13 @@ pub struct DependencyDetail {
     pub registry: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub features: Vec<String>,
+}
+
+pub(crate) type Features = BTreeMap<String, Vec<Feature>>;
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Feature {
+    Simple(String),
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -222,6 +231,8 @@ edition = "2021"
 
 [dependencies]
 
+[features]
+
 [workspace]
 
 [[bin]]
@@ -233,12 +244,12 @@ path = "{build_dir}/{source_stem}.rs"
     CargoManifest::from_str(&cargo_manifest)
 }
 
-pub(crate) fn resolve_deps(
+pub(crate) fn merge_manifest(
     build_state: &BuildState,
     rs_source: &str,
     rs_manifest: &mut CargoManifest,
 ) -> Result<CargoManifest, Box<dyn Error>> {
-    let start_deps_rs = Instant::now();
+    let start_merge_manifest = Instant::now();
 
     let mut cargo_manifest = default_manifest(build_state)?;
     debug!("@@@@ cargo_manifest (before deps)={cargo_manifest:#?}");
@@ -248,7 +259,7 @@ pub(crate) fn resolve_deps(
     debug!("rs_manifest.dependencies={:#?}", rs_manifest.dependencies);
 
     let mut rs_dep_map: BTreeMap<std::string::String, Dependency> =
-        if let Some(Some(ref mut rs_dep_map)) = rs_manifest.dependencies {
+        if let Some(ref mut rs_dep_map) = rs_manifest.dependencies {
             rs_dep_map.clone()
         } else {
             // return Err(Box::new(BuildRunError::Command(String::from(
@@ -286,16 +297,11 @@ pub(crate) fn resolve_deps(
         debug!("rs_dep_map (after inferred) = {rs_dep_map:?}");
     }
 
-    let manifest_deps = cargo_manifest
-        .dependencies
-        .as_ref()
-        .unwrap()
-        .as_ref()
-        .unwrap();
+    // Clone and merge dependencies
+    let manifest_deps = cargo_manifest.dependencies.as_ref().unwrap();
 
-    // Clone dependencies
     let mut manifest_deps_clone: BTreeMap<std::string::String, Dependency> = manifest_deps.clone();
-    debug!("manifest_deps  (before inferred) {manifest_deps_clone:?}");
+    debug!("manifest_deps  (before merge) {manifest_deps_clone:?}");
 
     // Insert any entries from source and inferred deps that are not already in default manifest
     rs_dep_map
@@ -304,13 +310,43 @@ pub(crate) fn resolve_deps(
         .for_each(|(key, value)| {
             manifest_deps_clone.insert(key.to_string(), value.clone());
         });
-    cargo_manifest.dependencies = Some(Some(manifest_deps_clone));
+    cargo_manifest.dependencies = Some(manifest_deps_clone);
     debug!(
         "cargo_manifest.dependencies (after merge) {:#?}",
         cargo_manifest.dependencies
     );
 
-    debug_timings(start_deps_rs, "Processed dependencies");
+    // Clone and merge features
+    let manifest_feats = cargo_manifest.features.as_ref().unwrap();
+
+    let rs_feat_map: BTreeMap<std::string::String, Vec<Feature>> =
+        if let Some(ref mut rs_feat_map) = rs_manifest.features {
+            rs_feat_map.clone()
+        } else {
+            // return Err(Box::new(BuildRunError::Command(String::from(
+            //     "No feature map found",
+            // ))));
+            BTreeMap::new()
+        };
+
+    let mut manifest_features_clone: BTreeMap<std::string::String, Vec<Feature>> =
+        manifest_feats.clone();
+    // debug!("manifest_features (before merge) {manifest_features_clone:?}");
+
+    // Insert any entries from source features that are not already in default manifest
+    rs_feat_map
+        .iter()
+        .filter(|&(name, _dep)| !(manifest_feats.contains_key(name)))
+        .for_each(|(key, value)| {
+            manifest_features_clone.insert(key.to_string(), value.clone());
+        });
+    cargo_manifest.features = Some(manifest_features_clone);
+    debug!(
+        "cargo_manifest.features (after merge) {:#?}",
+        cargo_manifest.features
+    );
+
+    debug_timings(start_merge_manifest, "Processed features");
 
     Ok(cargo_manifest)
 }

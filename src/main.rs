@@ -109,7 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             parse_source(&build_state.source_path)?;
 
         build_state.cargo_manifest =
-            manifest::resolve_deps(&build_state, &rs_source, &mut rs_manifest)?;
+            manifest::merge_manifest(&build_state, &rs_source, &mut rs_manifest)?;
 
         let has_main = code_utils::has_main(&rs_source);
         if verbose {

@@ -102,6 +102,8 @@ pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String)
 
     let rs_full_source = read_file_contents(source_path)?;
     let rs_manifest = rs_extract_manifest(&rs_full_source)?;
+    // debug!("@@@@ rs_manifest (before deps, showing features)={rs_manifest:#?}");
+
     let rs_source = rs_extract_src(&rs_full_source);
 
     debug_timings(start_parsing_rs, "Parsed source");

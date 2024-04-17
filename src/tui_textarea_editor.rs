@@ -360,7 +360,10 @@ impl<'a> Editor<'a> {
                         Span::raw(" edit "),
                         Span::styled(
                             &other_filename,
-                            Style::default().add_modifier(Modifier::ITALIC),
+                            Style::default()
+                                .fg(Color::Blue)
+                                .bg(Color::Black)
+                                .add_modifier(Modifier::REVERSED), // .bg(Color::Blue),
                         ),
                         Span::raw(", "),
                         Span::styled("^H", Style::default().add_modifier(Modifier::BOLD)),
@@ -378,7 +381,8 @@ impl<'a> Editor<'a> {
                 // Show key bindings on Ctrl-H  TODO resolve conflict
                 if self.show_popup {
                     // let block = Block::default().title("Key bindings (Ctrl_H to toggle").borders(Borders::ALL);
-                    let area = centered_rect(96, 80, f.size());
+                    // let area = centered_rect(96, 80, f.size());
+                    let area = centered_rect(90, 30, f.size());
                     let inner = area.inner(&Margin {
                         vertical: 2,
                         horizontal: 2,
@@ -509,7 +513,7 @@ impl<'a> Editor<'a> {
                             self.current = (self.current + 1) % self.buffers.len();
                             let msg: Cow<'static, str> =
                                 format!("Switched to buffer #{}", self.current + 1).into();
-                            self.message = Some(msg.clone());
+                            // self.message = Some(msg.clone());
                             self.write_output(&msg);
                         }
                         Input {
@@ -566,18 +570,18 @@ impl<'a> Drop for Editor<'a> {
     }
 }
 
-fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     let popup_layout = Layout::vertical([
-        Constraint::Percentage((100 - percent_y) / 2),
-        Constraint::Percentage(percent_y),
-        Constraint::Percentage((100 - percent_y) / 2),
+        Constraint::Fill(1),
+        Constraint::Max(max_height),
+        Constraint::Fill(1),
     ])
     .split(r);
 
     Layout::horizontal([
-        Constraint::Percentage((100 - percent_x) / 2),
-        Constraint::Percentage(percent_x),
-        Constraint::Percentage((100 - percent_x) / 2),
+        Constraint::Fill(1),
+        Constraint::Max(max_width),
+        Constraint::Fill(1),
     ])
     .split(popup_layout[1])[1]
 }

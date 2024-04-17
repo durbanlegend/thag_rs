@@ -32,7 +32,6 @@ pub(crate) struct BuildState {
     pub(crate) source_stem: String,
     pub(crate) source_name: String,
     pub(crate) source_path: PathBuf,
-    // pub(crate) source_str: String,
     pub(crate) target_dir_path: PathBuf,
     pub(crate) target_dir_str: String,
     pub(crate) target_path: PathBuf,
@@ -42,6 +41,7 @@ pub(crate) struct BuildState {
 
 //      TODO:
 //       1.  REPL
+//       2.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
 //       5.  bool -> 2-value enums?
 //       9.  --quiet option?.
 
@@ -98,18 +98,39 @@ fn main() -> Result<(), Box<dyn Error>> {
     let force = proc_flags.contains(ProcFlags::FORCE);
     let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
     let build_requested = proc_flags.contains(ProcFlags::BUILD);
-    let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let repl = proc_flags.contains(ProcFlags::REPL);
-
     let must_gen = force || repl || (gen_requested && stale_executable);
     let must_build = force || repl || (build_requested && stale_executable);
+    let verbose = proc_flags.contains(ProcFlags::VERBOSE);
 
+    gen_build_run(
+        must_gen,
+        must_build,
+        verbose,
+        &proc_flags,
+        &options,
+        &mut build_state,
+        start,
+    )?;
+
+    Ok(())
+}
+
+fn gen_build_run(
+    must_gen: bool,
+    must_build: bool,
+    verbose: bool,
+    proc_flags: &ProcFlags,
+    options: &cmd_args::Opt,
+    build_state: &mut BuildState,
+    start: Instant,
+) -> Result<(), Box<dyn Error>> {
     if must_gen {
         let (mut rs_manifest, rs_source): (CargoManifest, String) =
             parse_source(&build_state.source_path)?;
 
         build_state.cargo_manifest =
-            manifest::merge_manifest(&build_state, &rs_source, &mut rs_manifest)?;
+            manifest::merge_manifest(build_state, &rs_source, &mut rs_manifest)?;
 
         let has_main = code_utils::has_main(&rs_source);
         if verbose {
@@ -121,28 +142,24 @@ fn main() -> Result<(), Box<dyn Error>> {
             wrap_snippet(&rs_source)
         };
 
-        generate(&build_state, &rs_source, &proc_flags)?;
+        generate(build_state, &rs_source, proc_flags)?;
     } else {
         println!("Skipping unnecessary generation step. Use --force (-f) to override.");
-        build_state.cargo_manifest = default_manifest(&build_state)?;
+        build_state.cargo_manifest = default_manifest(build_state)?;
     }
-
     if must_build {
-        build(&proc_flags, &build_state)?;
+        build(proc_flags, build_state)?;
     } else {
         println!("Skipping unnecessary build step. Use --force (-f) to override.");
     }
-
     if proc_flags.contains(ProcFlags::RUN) {
-        run(&proc_flags, &options.args, &build_state)?;
+        run(proc_flags, &options.args, build_state)?;
     }
-
     let process = &format!(
         "{PACKAGE_NAME} completed processing script {}",
-        &build_state.source_name
+        build_state.source_name
     );
-    display_timings(&start, process, &proc_flags);
-
+    display_timings(&start, process, proc_flags);
     Ok(())
 }
 

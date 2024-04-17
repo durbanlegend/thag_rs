@@ -1,3 +1,4 @@
+#![allow(clippy::doc_link_with_quotes)]
 //! [dependencies]
 //! crossterm = "0.27.0"
 //! ratatui = "0.26.2"
@@ -225,7 +226,7 @@ impl<'a> Output<'a> {
 }
 
 #[allow(dead_code)]
-struct Editor<'a> {
+pub(crate) struct Editor<'a> {
     current: usize,
     buffers: Vec<Buffer<'a>>,
     term: Terminal<CrosstermBackend<io::Stdout>>,
@@ -237,7 +238,7 @@ struct Editor<'a> {
 
 #[allow(dead_code)]
 impl<'a> Editor<'a> {
-    fn new<I>(paths: I) -> io::Result<Self>
+    pub(crate) fn new<I>(paths: I) -> io::Result<Self>
     where
         I: Iterator,
         I::Item: Into<PathBuf>,
@@ -271,7 +272,7 @@ impl<'a> Editor<'a> {
     }
 
     #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
-    fn run(&mut self) -> io::Result<()> {
+    pub(crate) fn run(&mut self) -> io::Result<()> {
         loop {
             let search_height = self.search.height();
             let layout = Layout::default()

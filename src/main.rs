@@ -4,9 +4,11 @@ use crate::code_utils::{debug_timings, display_output, display_timings, wrap_sni
 use crate::code_utils::{modified_since_compiled, parse_source, pre_config_build_state};
 use crate::errors::BuildRunError;
 use crate::manifest::{default_manifest, CargoManifest};
+use crate::tui_textarea_editor::Editor;
 
 use core::str;
 use log::debug;
+use ratatui::symbols::line::THICK_CROSS;
 use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
@@ -42,6 +44,8 @@ pub(crate) struct BuildState {
 //      TODO:
 //       1.  REPL
 //       2.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
+//       3.  Don't infer dependencies from use statements that refer back to something already
+//              defined, like KeyCode and Constraint in tui_scrollview.rs.
 //       5.  bool -> 2-value enums?
 //       9.  --quiet option?.
 
@@ -67,7 +71,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let (_script, empty) = if let Some(ref script) = options.script {
+    let repl = proc_flags.contains(ProcFlags::REPL);
+
+    let (script, empty) = if let Some(ref script) = options.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(Box::new(BuildRunError::Command(format!(
                 "Script name must end in {RS_SUFFIX}"
@@ -75,26 +81,62 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         (script.to_owned(), false)
     } else {
-        assert!(proc_flags.contains(ProcFlags::REPL));
-        let rs_source = code_utils::read_stdin()?;
+        assert!(repl);
         let path = code_utils::create_next_repl_file();
 
-        fs::write(path.clone(), rs_source).expect("Unable to write file");
-
         let script = path.file_name().unwrap().to_str().unwrap().to_string();
-        // Backfill script name into CLI options.
-        options.script = Some(format!("examples/{script}"));
         (script, true)
     };
 
+    TODO Distinguish two meanings of empty.
+        1. No script provided for repl, one has been provided by this point, so this
+            meaning is redundant at this point in the code.
+        2. The script in 1. is supposed to have been filled in but may still be empty,
+
+    if empty {
+        // Backfill script name into CLI options before calling pre_config_build_state.
+        options.script = Some(format!("examples/{script}"));
+    }
+
     let mut build_state = pre_config_build_state(&options)?;
 
+    let files = [
+        build_state.source_name.clone(),
+        format!("{}/Cargo.toml", build_state.target_dir_str),
+    ]
+    .into_iter();
+    Editor::new(files)?.run()?;
+
+    let num_loops = if empty { usize::MAX } else { 1 };
+
+    for _i in 1..=num_loops {
+        gen_build_run(
+            empty,
+            &mut options,
+            &proc_flags,
+            &script,
+            &mut build_state,
+            &start,
+        )?;
+    }
+
+    Ok(())
+}
+
+fn gen_build_run(
+    empty: bool,
+    options: &mut cmd_args::Opt,
+    proc_flags: &ProcFlags,
+    script: &str,
+    build_state: &mut BuildState,
+    start: &Instant,
+) -> Result<(), Box<dyn Error>> {
+    // let mut build_state = pre_config_build_state(options)?;
     let stale_executable = if !empty && build_state.target_path.exists() {
-        modified_since_compiled(&build_state).is_some()
+        modified_since_compiled(build_state).is_some()
     } else {
         true
     };
-
     let force = proc_flags.contains(ProcFlags::FORCE);
     let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
     let build_requested = proc_flags.contains(ProcFlags::BUILD);
@@ -102,29 +144,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let must_gen = force || repl || (gen_requested && stale_executable);
     let must_build = force || repl || (build_requested && stale_executable);
     let verbose = proc_flags.contains(ProcFlags::VERBOSE);
-
-    gen_build_run(
-        must_gen,
-        must_build,
-        verbose,
-        &proc_flags,
-        &options,
-        &mut build_state,
-        start,
-    )?;
-
-    Ok(())
-}
-
-fn gen_build_run(
-    must_gen: bool,
-    must_build: bool,
-    verbose: bool,
-    proc_flags: &ProcFlags,
-    options: &cmd_args::Opt,
-    build_state: &mut BuildState,
-    start: Instant,
-) -> Result<(), Box<dyn Error>> {
+    let proc_flags = &proc_flags;
+    let options = &options;
+    let build_state: &mut BuildState = build_state;
+    if empty {
+        let path = &build_state.source_path;
+        let rs_source = code_utils::read_stdin()?;
+        fs::write(path.clone(), rs_source).expect("Unable to write file");
+    }
     if must_gen {
         let (mut rs_manifest, rs_source): (CargoManifest, String) =
             parse_source(&build_state.source_path)?;
@@ -159,7 +186,7 @@ fn gen_build_run(
         "{PACKAGE_NAME} completed processing script {}",
         build_state.source_name
     );
-    display_timings(&start, process, proc_flags);
+    display_timings(start, process, proc_flags);
     Ok(())
 }
 

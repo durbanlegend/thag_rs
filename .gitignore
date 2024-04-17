@@ -20,3 +20,4 @@ examples/gemini_edit_in_place3.rs
 examples/gemini_repl_orig.rs
 examples/._in_place-YlxBQC
 examples/tui_ta_minimal.rs
+repl_000017.rs

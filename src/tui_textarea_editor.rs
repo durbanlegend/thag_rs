@@ -12,7 +12,7 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use ratatui::backend::CrosstermBackend;
-use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
@@ -31,6 +31,51 @@ macro_rules! error {
         Err(io::Error::new(io::ErrorKind::Other, format!($fmt $(, $args)*)))
     }};
 }
+
+const MAPPINGS: &[[&str; 2]; 27] = &[
+    ["Mappings", "Description"],
+    ["Ctrl+H, Backspace", "Delete one character before cursor"],
+    ["Ctrl+D, Delete", "Delete one character next to cursor"],
+    ["Ctrl+M, Enter", "Insert newline"],
+    ["Ctrl+K", "Delete from cursor until the end of line"],
+    ["Ctrl+J", "Delete from cursor until the head of line"],
+    [
+        "Ctrl+W, Alt+H, Alt+Backspace",
+        "Delete one word before cursor",
+    ],
+    ["Alt+D, Alt+Delete", "Delete one word next to cursor"],
+    ["Ctrl+U", "Undo"],
+    ["Ctrl+R", "Redo"],
+    ["Ctrl+C, Copy", "Copy selected text"],
+    ["Ctrl+X, Cut", "Cut selected text"],
+    ["Ctrl+Y, Paste", "Paste yanked text"],
+    ["Ctrl+F, →", "Move cursor forward by one character"],
+    ["Ctrl+B, ←", "Move cursor backward by one character"],
+    ["Ctrl+P, ↑", "Move cursor up by one line"],
+    ["Ctrl+N, ↓", "Move cursor down by one line"],
+    ["Alt+F, Ctrl+→", "Move cursor forward by word"],
+    ["Atl+B, Ctrl+←", "Move cursor backward by word"],
+    ["Alt+], Alt+P, Ctrl+↑", "Move cursor up by paragraph"],
+    ["Alt+[, Alt+N, Ctrl+↓", "Move cursor down by paragraph"],
+    [
+        "Ctrl+E, End, Ctrl+Alt+F, Ctrl+Alt+→",
+        "Move cursor to the end of line",
+    ],
+    [
+        "Ctrl+A, Home, Ctrl+Alt+B, Ctrl+Alt+←",
+        "Move cursor to the head of line",
+    ],
+    [
+        "Alt+<, Ctrl+Alt+P, Ctrl+Alt+↑",
+        "Move cursor to top of lines",
+    ],
+    [
+        "Alt+>, Ctrl+Alt+N, Ctrl+Alt+↓",
+        "Move cursor to bottom of lines",
+    ],
+    ["Ctrl+V, PageDown", "Scroll down by page"],
+    ["Alt+V, PageUp", "Scroll up by page"],
+];
 
 #[allow(dead_code)]
 struct SearchBox<'a> {
@@ -131,7 +176,9 @@ impl<'a> Buffer<'a> {
         textarea.set_line_number_style(Style::default());
         textarea.set_cursor_style(Style::default().on_yellow());
         textarea.set_cursor_line_style(Style::default().on_light_yellow());
-        textarea.set_block(Block::default().borders(Borders::TOP).title("Editor"));
+        textarea.set_block(
+            Block::default().borders(Borders::TOP).title("Editor"), // .add_modifier(Modifier::BOLD),
+        );
 
         Ok(Self {
             textarea,
@@ -164,7 +211,9 @@ impl<'a> Output<'a> {
         textarea.set_cursor_style(Style::default().add_modifier(Modifier::HIDDEN));
         // Disable cursor line style
         textarea.set_cursor_line_style(Style::default());
-        textarea.set_block(Block::default().borders(Borders::TOP).title("Output"));
+        textarea.set_block(
+            Block::default().borders(Borders::TOP).title("Output"), // .add_modifier(Modifier::BOLD),
+        );
 
         Self {
             textarea,
@@ -305,6 +354,8 @@ impl<'a> Editor<'a> {
                         Span::raw(" to search, "),
                         Span::styled("^T", Style::default().add_modifier(Modifier::BOLD)),
                         Span::raw(" to switch buffer"),
+                        Span::styled("^H", Style::default().add_modifier(Modifier::BOLD)),
+                        Span::raw(" to show keys"),
                     ])
                 };
                 f.render_widget(Paragraph::new(message), chunks[3]);
@@ -315,16 +366,47 @@ impl<'a> Editor<'a> {
                 f.render_widget(widget, chunks[4]);
                 self.output.modified = false;
 
-                // self.term
-                //     .draw(|f| {
+                // Show key bindings on Ctrl-H  TODO resolve conflict
                 if self.show_popup {
-                    let block = Block::default().title("Popup").borders(Borders::ALL);
-                    let area = centered_rect(60, 20, f.size());
+                    // let block = Block::default().title("Key bindings (Ctrl_H to toggle").borders(Borders::ALL);
+                    let area = centered_rect(96, 80, f.size());
+                    let inner = area.inner(&Margin {
+                        vertical: 2,
+                        horizontal: 2,
+                    });
+                    let block = Block::default()
+                        .borders(Borders::ALL)
+                        .title("Key bindings (Ctrl_H to toggle)")
+                        .add_modifier(Modifier::BOLD);
                     f.render_widget(Clear, area); //this clears out the background
                     f.render_widget(block, area);
+                    let row_layout = Layout::default()
+                        .direction(Direction::Vertical)
+                        .constraints::<Vec<Constraint>>(
+                            std::iter::repeat(Constraint::Ratio(1, 27))
+                                .take(27)
+                                .collect::<Vec<Constraint>>(), // .as_ref(),
+                        );
+                    let rows = row_layout.split(inner);
+
+                    for (i, row) in rows.iter().enumerate() {
+                        let col_layout = Layout::default()
+                            .direction(Direction::Horizontal)
+                            .constraints(
+                                [Constraint::Percentage(45), Constraint::Percentage(55)].as_ref(),
+                            );
+                        let cells = col_layout.split(*row);
+                        for n in 0..=1 {
+                            let mut widget = Paragraph::new(MAPPINGS[i][n]);
+                            if i == 0 {
+                                widget = widget.add_modifier(Modifier::BOLD);
+                            } else {
+                                widget = widget.remove_modifier(Modifier::BOLD);
+                            }
+                            f.render_widget(widget, cells[n]);
+                        }
+                    }
                 }
-                // })
-                // .expect("Error showing popup");
             })?;
 
             if search_height > 0 {

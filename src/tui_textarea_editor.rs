@@ -1,6 +1,6 @@
 //! [dependencies]
 //! crossterm = "0.27.0"
-//! ratatui = "0.26.1"
+//! ratatui = "0.26.2"
 //! tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
 
 use crossterm::event::read;
@@ -12,10 +12,11 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use ratatui::backend::CrosstermBackend;
-use ratatui::layout::{Constraint, Direction, Layout, Margin};
+use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
+use ratatui::widgets::block::Title;
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use std::borrow::Cow;
@@ -32,15 +33,16 @@ macro_rules! error {
     }};
 }
 
-const MAPPINGS: &[[&str; 2]; 27] = &[
+const MAPPINGS: &[[&str; 2]; 28] = &[
     ["Mappings", "Description"],
     ["Ctrl+H, Backspace", "Delete one character before cursor"],
     ["Ctrl+D, Delete", "Delete one character next to cursor"],
+    ["Ctrl+I, Tab", "Indent"],
     ["Ctrl+M, Enter", "Insert newline"],
     ["Ctrl+K", "Delete from cursor until the end of line"],
     ["Ctrl+J", "Delete from cursor until the head of line"],
     [
-        "Ctrl+W, Alt+H, Alt+Backspace",
+        "Ctrl+W, Alt+<, Alt+Backspace",
         "Delete one word before cursor",
     ],
     ["Alt+D, Alt+Delete", "Delete one word next to cursor"],
@@ -366,7 +368,7 @@ impl<'a> Editor<'a> {
                                 .add_modifier(Modifier::REVERSED), // .bg(Color::Blue),
                         ),
                         Span::raw(", "),
-                        Span::styled("^H", Style::default().add_modifier(Modifier::BOLD)),
+                        Span::styled("^Y", Style::default().add_modifier(Modifier::BOLD)),
                         Span::raw(" show keys"),
                     ])
                 };
@@ -378,10 +380,8 @@ impl<'a> Editor<'a> {
                 f.render_widget(widget, chunks[4]);
                 self.output.modified = false;
 
-                // Show key bindings on Ctrl-H  TODO resolve conflict
+                // Show key bindings on Ctrl-Y
                 if self.show_popup {
-                    // let block = Block::default().title("Key bindings (Ctrl_H to toggle").borders(Borders::ALL);
-                    // let area = centered_rect(96, 80, f.size());
                     let area = centered_rect(90, 30, f.size());
                     let inner = area.inner(&Margin {
                         vertical: 2,
@@ -389,7 +389,11 @@ impl<'a> Editor<'a> {
                     });
                     let block = Block::default()
                         .borders(Borders::ALL)
-                        .title("Key bindings (Ctrl_H to toggle)")
+                        .title(
+                            Title::from("Platform-dependent key mappings (YMMV)")
+                                .alignment(ratatui::layout::Alignment::Center),
+                        )
+                        .title(Title::from("(Ctrl_Y to toggle)").alignment(Alignment::Center))
                         .add_modifier(Modifier::BOLD);
                     f.render_widget(Clear, area); //this clears out the background
                     f.render_widget(block, area);
@@ -495,7 +499,7 @@ impl<'a> Editor<'a> {
 
                     match input {
                         Input {
-                            key: Key::Char('h'),
+                            key: Key::Char('y'),
                             ctrl: true,
                             ..
                         } => self.show_popup = !self.show_popup,

@@ -323,6 +323,10 @@ impl<'a> Editor<'a> {
                 f.render_widget(Paragraph::new(cursor).style(status_style), status_chunks[2]);
 
                 // Render message at bottom of editor
+                let other_buffer = &self.buffers[(self.current + 1) % 2];
+                let other_path = other_buffer.path.file_name().unwrap().to_string_lossy();
+                let other_filename = format!("{other_path}");
+
                 let message = if let Some(message) = self.message.take() {
                     Line::from(Span::raw(message))
                 } else if search_height > 0 {
@@ -345,17 +349,22 @@ impl<'a> Editor<'a> {
                     ])
                 } else {
                     Line::from(vec![
-                        Span::raw("Press "),
+                        // Span::raw("Press "),
                         Span::styled("^Q", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" to quit, "),
+                        Span::raw(" quit, "),
                         Span::styled("^S", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" to save, "),
+                        Span::raw(" save, "),
                         Span::styled("^G", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" to search, "),
+                        Span::raw(" search, "),
                         Span::styled("^T", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" to switch buffer"),
+                        Span::raw(" edit "),
+                        Span::styled(
+                            &other_filename,
+                            Style::default().add_modifier(Modifier::ITALIC),
+                        ),
+                        Span::raw(", "),
                         Span::styled("^H", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(" to show keys"),
+                        Span::raw(" show keys"),
                     ])
                 };
                 f.render_widget(Paragraph::new(message), chunks[3]);

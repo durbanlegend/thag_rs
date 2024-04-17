@@ -425,7 +425,7 @@ pub(crate) fn create_next_repl_file() -> PathBuf {
             // Wrap around and find the first gap
             for i in 0..999_999 {
                 if !existing_files.contains(&i) {
-                    return create_file(examples_dir, i);
+                    return create_repl_file(examples_dir, i);
                 }
             }
             panic!("Cannot create new file: all possible filenames already exist in the examples directory.");
@@ -433,10 +433,10 @@ pub(crate) fn create_next_repl_file() -> PathBuf {
         _ => existing_files.iter().max().unwrap() + 1, // Increment from highest existing number
     };
 
-    create_file(examples_dir, next_file_num)
+    create_repl_file(examples_dir, next_file_num)
 }
 
-pub(crate) fn create_file(examples_dir: &Path, num: u32) -> PathBuf {
+pub(crate) fn create_repl_file(examples_dir: &Path, num: u32) -> PathBuf {
     let padded_num = format!("{:06}", num);
     let filename = format!("repl_{}.rs", padded_num);
     let path = examples_dir.join(&filename);

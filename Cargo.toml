@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 bitflags = "2.5.0"
 cargo_toml = "0.19.2"
-clap = { version = "4.5.3", features = ["derive"] }
+clap = { version = "4.5.4", features = ["derive"] }
 env_logger = "0.11.3"
 log = "0.4.21"
 regex = "1.10.3"
@@ -16,3 +16,6 @@ toml = "0.8.12"
 crossterm = "0.27.0"
 ratatui = "0.26.2"
 tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
+clap-repl = "0.1.1"
+console = "0.15.8"
+rustyline = "14.0.0"

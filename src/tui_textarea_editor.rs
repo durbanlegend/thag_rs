@@ -36,49 +36,44 @@ macro_rules! error {
 
 const MAPPINGS: &[[&str; 2]; 28] = &[
     ["Mappings", "Description"],
-    ["Ctrl+H, Backspace", "Delete one character before cursor"],
-    ["Ctrl+D, Delete", "Delete one character next to cursor"],
+    ["Ctrl+H, Backspace", "Delete character before cursor"],
+    ["Ctrl+D, Delete", "Delete character at cursor"],
     ["Ctrl+I, Tab", "Indent"],
     ["Ctrl+M, Enter", "Insert newline"],
-    ["Ctrl+K", "Delete from cursor until the end of line"],
-    ["Ctrl+J", "Delete from cursor until the head of line"],
+    ["Ctrl+K", "Delete from cursor to end of line"],
+    ["Ctrl+J", "Delete from cursor to start of line"],
     [
-        "Ctrl+W, Alt+<, Alt+Backspace",
+        "Ctrl+W, Alt+< or Backspace",
         "Delete one word before cursor",
     ],
-    ["Alt+D, Alt+Delete", "Delete one word next to cursor"],
+    ["Alt+D or Delete", "Delete one word from cursor position"],
     ["Ctrl+U", "Undo"],
     ["Ctrl+R", "Redo"],
     ["Ctrl+C, Copy", "Copy selected text"],
     ["Ctrl+X, Cut", "Cut selected text"],
     ["Ctrl+Y, Paste", "Paste yanked text"],
-    ["Ctrl+F, →", "Move cursor forward by one character"],
-    ["Ctrl+B, ←", "Move cursor backward by one character"],
-    ["Ctrl+P, ↑", "Move cursor up by one line"],
-    ["Ctrl+N, ↓", "Move cursor down by one line"],
-    ["Alt+F, Ctrl+→", "Move cursor forward by word"],
-    ["Atl+B, Ctrl+←", "Move cursor backward by word"],
-    ["Alt+], Alt+P, Ctrl+↑", "Move cursor up by paragraph"],
-    ["Alt+[, Alt+N, Ctrl+↓", "Move cursor down by paragraph"],
+    ["Ctrl+F, →", "Move cursor forward one character"],
+    ["Ctrl+B, ←", "Move cursor backward one character"],
+    ["Ctrl+P, ↑", "Move cursor up one line"],
+    ["Ctrl+N, ↓", "Move cursor down one line"],
+    ["Alt+F, Ctrl+→", "Move cursor forward one word"],
+    ["Atl+B, Ctrl+←", "Move cursor backward one word"],
+    ["Alt+] or P, Ctrl+↑", "Move cursor up one paragraph"],
+    ["Alt+[ or N, Ctrl+↓", "Move cursor down one paragraph"],
     [
-        "Ctrl+E, End, Ctrl+Alt+F, Ctrl+Alt+→",
-        "Move cursor to the end of line",
+        "Ctrl+E, End, Ctrl+Alt+F or → , Cmd+→",
+        "Move cursor to end of line",
     ],
     [
-        "Ctrl+A, Home, Ctrl+Alt+B, Ctrl+Alt+←",
-        "Move cursor to the head of line",
+        "Ctrl+A, Home, Ctrl+Alt+B or ← , Cmd+←",
+        "Move cursor to start of line",
     ],
-    [
-        "Alt+<, Ctrl+Alt+P, Ctrl+Alt+↑",
-        "Move cursor to top of lines",
-    ],
-    [
-        "Alt+>, Ctrl+Alt+N, Ctrl+Alt+↓",
-        "Move cursor to bottom of lines",
-    ],
-    ["Ctrl+V, PageDown", "Scroll down by page"],
-    ["Alt+V, PageUp", "Scroll up by page"],
+    ["Alt+<, Ctrl+Alt+P or ↑", "Move cursor to top of file"],
+    ["Alt+>, Ctrl+Alt+N or↓", "Move cursor to bottom of file"],
+    ["Ctrl+V, PageDown, Cmd+↓", "Page down"],
+    ["Alt+V, PageUp, Cmd+↑", "Page up"],
 ];
+const NUM_ROWS: usize = MAPPINGS.len();
 
 #[allow(dead_code)]
 struct SearchBox<'a> {
@@ -369,7 +364,7 @@ impl<'a> Editor<'a> {
                                 .add_modifier(Modifier::REVERSED), // .bg(Color::Blue),
                         ),
                         Span::raw(", "),
-                        Span::styled("^Y", Style::default().add_modifier(Modifier::BOLD)),
+                        Span::styled("^L", Style::default().add_modifier(Modifier::BOLD)),
                         Span::raw(" show keys"),
                     ])
                 };
@@ -381,9 +376,9 @@ impl<'a> Editor<'a> {
                 f.render_widget(widget, chunks[4]);
                 self.output.modified = false;
 
-                // Show key bindings on Ctrl-Y
+                // Show key bindings on Ctrl-L
                 if self.show_popup {
-                    let area = centered_rect(90, 30, f.size());
+                    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
                     let inner = area.inner(&Margin {
                         vertical: 2,
                         horizontal: 2,
@@ -394,15 +389,15 @@ impl<'a> Editor<'a> {
                             Title::from("Platform-dependent key mappings (YMMV)")
                                 .alignment(ratatui::layout::Alignment::Center),
                         )
-                        .title(Title::from("(Ctrl_Y to toggle)").alignment(Alignment::Center))
+                        .title(Title::from("(Ctrl_L to toggle)").alignment(Alignment::Center))
                         .add_modifier(Modifier::BOLD);
                     f.render_widget(Clear, area); //this clears out the background
                     f.render_widget(block, area);
                     let row_layout = Layout::default()
                         .direction(Direction::Vertical)
                         .constraints::<Vec<Constraint>>(
-                            std::iter::repeat(Constraint::Ratio(1, 27))
-                                .take(27)
+                            std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32))
+                                .take(NUM_ROWS)
                                 .collect::<Vec<Constraint>>(), // .as_ref(),
                         );
                     let rows = row_layout.split(inner);
@@ -410,9 +405,7 @@ impl<'a> Editor<'a> {
                     for (i, row) in rows.iter().enumerate() {
                         let col_layout = Layout::default()
                             .direction(Direction::Horizontal)
-                            .constraints(
-                                [Constraint::Percentage(45), Constraint::Percentage(55)].as_ref(),
-                            );
+                            .constraints([Constraint::Length(45), Constraint::Length(43)].as_ref());
                         let cells = col_layout.split(*row);
                         for n in 0..=1 {
                             let mut widget = Paragraph::new(MAPPINGS[i][n]);
@@ -482,8 +475,7 @@ impl<'a> Editor<'a> {
                 let event = read()?;
 
                 if let Paste(data) = event {
-                    self.output.textarea.insert_str("Pasting data");
-                    self.output.textarea.insert_newline();
+                    self.write_output("Pasting data");
                     self.output.modified = true;
 
                     let buffer = &mut self.buffers[self.current];
@@ -494,13 +486,13 @@ impl<'a> Editor<'a> {
                     }
                 } else {
                     let input = Input::from(event.clone());
-                    // if input.ctrl {
-                    //     println!("input={input:?}");
-                    // }
+                    if input.alt || input.ctrl || input.shift {
+                        self.write_output(format!("input={input:?}").as_str());
+                    }
 
                     match input {
                         Input {
-                            key: Key::Char('y'),
+                            key: Key::Char('l'),
                             ctrl: true,
                             ..
                         } => self.show_popup = !self.show_popup,
@@ -532,8 +524,8 @@ impl<'a> Editor<'a> {
                             } else {
                                 "No changes to save"
                             };
-                            self.message = Some(msg.into());
                             self.write_output(msg);
+                            self.message = Some(msg.into());
                         }
                         Input {
                             key: Key::Char('g'),

@@ -1,7 +1,8 @@
 //! [dependencies]
-//! rustyline = "14.0.0"
+//! rustyline = { version = "14.0.0", features=["with-file-history", "default"] }
 
 // Example from rustyline crate readme.
+// TODO debug history writing.
 use rustyline::error::ReadlineError;
 use rustyline::{DefaultEditor, Result};
 
@@ -16,7 +17,7 @@ fn main() -> Result<()> {
         let readline = rl.readline(">> ");
         match readline {
             Ok(line) => {
-                rl.add_history_entry(line.as_str());
+                rl.add_history_entry(line.as_str())?;
                 println!("Line: {}", line);
             }
             Err(ReadlineError::Interrupted) => {

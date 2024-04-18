@@ -6,9 +6,10 @@ use crate::errors::BuildRunError;
 use crate::manifest::{default_manifest, CargoManifest};
 use crate::tui_textarea_editor::Editor;
 
+use clap::Parser;
+use clap_repl::ClapEditor;
 use core::str;
 use log::debug;
-use ratatui::symbols::line::THICK_CROSS;
 use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
@@ -41,12 +42,36 @@ pub(crate) struct BuildState {
     pub(crate) cargo_manifest: CargoManifest,
 }
 
+#[derive(Debug, Parser)]
+#[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
+enum LoopCommand {
+    /// Edit your code and/or your generated Cargo.toml .
+    Continue,
+    /// Exit REPL
+    Exit,
+}
+
+#[derive(Debug, Parser)]
+#[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
+enum ProcessCommand {
+    /// Cancel and discard this code, restart REPL
+    Cancel,
+    /// Return to editor for another try
+    Retry,
+    /// Attempt to build and run your Rust code
+    Submit,
+    // Exit REPL
+    Exit,
+}
+
 //      TODO:
 //       1.  REPL
-//       2.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
-//       3.  Don't infer dependencies from use statements that refer back to something already
+//       2.  Implement Submit / cancel from TUI editor - maybe use clap_repl to decide.
+//       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
+//       4.  Return enum value in Result?
+//       5.  Don't infer dependencies from use statements that refer back to something already
 //              defined, like KeyCode and Constraint in tui_scrollview.rs.
-//       5.  bool -> 2-value enums?
+//       6.  bool -> 2-value enums?
 //       9.  --quiet option?.
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -88,10 +113,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         (script, true)
     };
 
-    TODO Distinguish two meanings of empty.
-        1. No script provided for repl, one has been provided by this point, so this
-            meaning is redundant at this point in the code.
-        2. The script in 1. is supposed to have been filled in but may still be empty,
+    // TODO Distinguish two meanings of empty.
+    //     1. No script provided for repl, one has been provided by this point, so this
+    //         meaning is redundant at this point in the code.
+    //     2. The script in 1. is supposed to have been filled in but may still be empty,
 
     if empty {
         // Backfill script name into CLI options before calling pre_config_build_state.
@@ -100,21 +125,73 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut build_state = pre_config_build_state(&options)?;
 
-    let files = [
-        build_state.source_name.clone(),
-        format!("{}/Cargo.toml", build_state.target_dir_str),
-    ]
-    .into_iter();
-    Editor::new(files)?.run()?;
+    let num_loops = usize::MAX;
+    // let num_loops = 1;
 
-    let num_loops = if empty { usize::MAX } else { 1 };
+    if repl {
+        // 'repl: for _i in 1..=num_loops {
+        let dash_line = "-".repeat(50);
+        println!("{dash_line}");
+        println!("Enter continue, exit or help");
+        let mut loop_editor = ClapEditor::<LoopCommand>::new();
+        let mut loop_command = loop_editor.read_command();
+        'level2: loop {
+            let Some(ref command) = loop_command else {
+                loop_command = loop_editor.read_command();
+                continue 'level2;
+            };
+            match command {
+                LoopCommand::Exit => return Ok(()),
+                LoopCommand::Continue => {
+                    let files = [
+                        format!("{}", build_state.source_path.display()),
+                        format!("{}/Cargo.toml", build_state.target_dir_str),
+                    ]
+                    .into_iter();
+                    debug!("files={files:#?}");
+                    Editor::new(files)?.run()?;
 
-    for _i in 1..=num_loops {
+                    println!("Enter cancel, retry, submit, exit or help");
+                    let mut process_editor = ClapEditor::<ProcessCommand>::new();
+                    'level3: loop {
+                        let Some(command) = process_editor.read_command() else {
+                            continue 'level3;
+                        };
+                        match command {
+                            ProcessCommand::Exit => return Ok(()),
+                            ProcessCommand::Submit => {
+                                gen_build_run(
+                                    empty,
+                                    &mut options,
+                                    &proc_flags,
+                                    // &script,
+                                    &mut build_state,
+                                    &start,
+                                )?;
+
+                                break 'level3;
+                            }
+                            ProcessCommand::Cancel => {
+                                loop_command = loop_editor.read_command();
+                                continue 'level2;
+                            }
+                            ProcessCommand::Retry => {
+                                loop_command = Some(LoopCommand::Continue);
+                                continue 'level2;
+                            }
+                        }
+                    }
+                }
+            }
+            loop_command = loop_editor.read_command();
+        }
+        // }
+    } else {
         gen_build_run(
             empty,
             &mut options,
             &proc_flags,
-            &script,
+            // &script,
             &mut build_state,
             &start,
         )?;
@@ -127,7 +204,7 @@ fn gen_build_run(
     empty: bool,
     options: &mut cmd_args::Opt,
     proc_flags: &ProcFlags,
-    script: &str,
+    // script: &str,
     build_state: &mut BuildState,
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
@@ -147,11 +224,11 @@ fn gen_build_run(
     let proc_flags = &proc_flags;
     let options = &options;
     let build_state: &mut BuildState = build_state;
-    if empty {
-        let path = &build_state.source_path;
-        let rs_source = code_utils::read_stdin()?;
-        fs::write(path.clone(), rs_source).expect("Unable to write file");
-    }
+    // if empty {
+    //     let path = &build_state.source_path;
+    //     let rs_source = code_utils::read_stdin()?;
+    //     fs::write(path.clone(), rs_source).expect("Unable to write file");
+    // }
     if must_gen {
         let (mut rs_manifest, rs_source): (CargoManifest, String) =
             parse_source(&build_state.source_path)?;

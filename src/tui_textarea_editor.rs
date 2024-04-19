@@ -389,7 +389,7 @@ impl<'a> Editor<'a> {
                             Title::from("Platform-dependent key mappings (YMMV)")
                                 .alignment(ratatui::layout::Alignment::Center),
                         )
-                        .title(Title::from("(Ctrl_L to toggle)").alignment(Alignment::Center))
+                        .title(Title::from("(^L to toggle)").alignment(Alignment::Center))
                         .add_modifier(Modifier::BOLD);
                     f.render_widget(Clear, area); //this clears out the background
                     f.render_widget(block, area);

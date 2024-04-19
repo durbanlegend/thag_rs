@@ -1,6 +1,8 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{get_opt, get_proc_flags, ProcFlags};
-use crate::code_utils::{debug_timings, display_output, display_timings, wrap_snippet};
+use crate::code_utils::{
+    clean_up, debug_timings, display_dir_contents, display_timings, wrap_snippet,
+};
 use crate::code_utils::{modified_since_compiled, parse_source, pre_config_build_state};
 use crate::errors::BuildRunError;
 use crate::manifest::{default_manifest, CargoManifest};
@@ -14,7 +16,7 @@ use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 
@@ -43,16 +45,20 @@ pub(crate) struct BuildState {
 }
 
 #[derive(Debug, Parser)]
-#[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
+#[command(name = "", arg_required_else_help(true))] // This name will show up in clap's error messages, so it is important to set it to "".
 enum LoopCommand {
-    /// Edit your code and/or your generated Cargo.toml .
+    /// Enter, paste or modify your code and optionally edit your generated Cargo.toml .
     Continue,
+    /// Delete generated files
+    Delete,
+    /// List generated files
+    List,
     /// Exit REPL
     Exit,
 }
 
 #[derive(Debug, Parser)]
-#[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
+#[command(name = "", arg_required_else_help(true))] // This name will show up in clap's error messages, so it is important to set it to "".
 enum ProcessCommand {
     /// Cancel and discard this code, restart REPL
     Cancel,
@@ -65,15 +71,17 @@ enum ProcessCommand {
 }
 
 //      TODO:
-//       1.  REPL
-//       2.  Implement Submit / cancel from TUI editor - maybe use clap_repl to decide.
+//       1.  Rename tui_textarea_editor to tui_editor.
+//       2.  Simple repl option for snippets?
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
 //       4.  Return enum value in Result?
 //       5.  Don't infer dependencies from use statements that refer back to something already
 //              defined, like KeyCode and Constraint in tui_scrollview.rs.
 //       6.  bool -> 2-value enums?
+//       7.  Find a way to print out a nice prompt before loop
 //       9.  --quiet option?.
-
+//
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
 
@@ -125,14 +133,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut build_state = pre_config_build_state(&options)?;
 
-    let num_loops = usize::MAX;
-    // let num_loops = 1;
-
     if repl {
-        // 'repl: for _i in 1..=num_loops {
         let dash_line = "-".repeat(50);
         println!("{dash_line}");
-        println!("Enter continue, exit or help");
+        // println!("Enter continue, exit or help");
         let mut loop_editor = ClapEditor::<LoopCommand>::new();
         let mut loop_command = loop_editor.read_command();
         'level2: loop {
@@ -142,6 +146,25 @@ fn main() -> Result<(), Box<dyn Error>> {
             };
             match command {
                 LoopCommand::Exit => return Ok(()),
+                LoopCommand::Delete => {
+                    clean_up(&build_state.source_path, &build_state.target_dir_path)?;
+                    println!("Deleted");
+                }
+                LoopCommand::List => {
+                    // Display file listing
+                    if build_state.source_path.exists() {
+                        println!("File: {:?}", &build_state.source_path);
+                    }
+
+                    // Display directory contents
+                    display_dir_contents(&build_state.target_dir_path)?;
+
+                    // Check if neither file nor directory exist
+                    if !&build_state.source_path.exists() && !&build_state.target_dir_path.exists()
+                    {
+                        println!("No temporary files found");
+                    }
+                }
                 LoopCommand::Continue => {
                     let files = [
                         format!("{}", build_state.source_path.display()),
@@ -160,14 +183,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                         match command {
                             ProcessCommand::Exit => return Ok(()),
                             ProcessCommand::Submit => {
-                                gen_build_run(
+                                let result = gen_build_run(
                                     empty,
                                     &mut options,
                                     &proc_flags,
                                     // &script,
                                     &mut build_state,
                                     &start,
-                                )?;
+                                );
+                                if result.is_err() {
+                                    println!("{result:?}");
+                                }
 
                                 break 'level3;
                             }
@@ -185,7 +211,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             loop_command = loop_editor.read_command();
         }
-        // }
     } else {
         gen_build_run(
             empty,
@@ -208,7 +233,6 @@ fn gen_build_run(
     build_state: &mut BuildState,
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
-    // let mut build_state = pre_config_build_state(options)?;
     let stale_executable = if !empty && build_state.target_path.exists() {
         modified_since_compiled(build_state).is_some()
     } else {
@@ -224,11 +248,7 @@ fn gen_build_run(
     let proc_flags = &proc_flags;
     let options = &options;
     let build_state: &mut BuildState = build_state;
-    // if empty {
-    //     let path = &build_state.source_path;
-    //     let rs_source = code_utils::read_stdin()?;
-    //     fs::write(path.clone(), rs_source).expect("Unable to write file");
-    // }
+
     if must_gen {
         let (mut rs_manifest, rs_source): (CargoManifest, String) =
             parse_source(&build_state.source_path)?;
@@ -363,21 +383,36 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
     // Show sign of life in case build takes a while
     eprintln!("Building...");
 
-    // Redirect stdout and stderr to pipes
-    let mut child = build_command
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
-    let exit_status = child.wait()?;
+    // // Redirect stdout and stderr to pipes
+    // let mut child = build_command
+    //     .stdout(Stdio::piped())
+    //     .stderr(Stdio::piped())
+    //     .spawn()?;
+    // let exit_status = child.wait()?;
 
-    // Wait for the child process to finish with output collected
-    let output = child.wait_with_output()?;
+    // // Wait for the child process to finish with output collected
+    // let output = child.wait_with_output()?;
 
-    if verbose {
-        let _ = display_output(&output);
-    }
+    // if verbose {
+    //     let _ = display_output(&output);
+    // }
 
-    if exit_status.success() {
+    // Redirect stdout and stderr to inherit from the parent process (terminal)
+    build_command
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit());
+
+    // Execute the command and handle the result
+    let output = build_command
+        .spawn()
+        .expect("failed to spawn cargo build process");
+
+    // Wait for the process to finish
+    let exit_status = output
+        .wait_with_output()
+        .expect("failed to wait on cargo build");
+
+    if exit_status.status.success() {
         debug!("Build succeeded");
     } else {
         return Err(BuildRunError::Command(String::from("Build failed")));

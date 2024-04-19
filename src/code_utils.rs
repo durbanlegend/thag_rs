@@ -7,6 +7,7 @@ use crate::RS_SUFFIX;
 use crate::{BuildState, TOML_NAME};
 use log::debug;
 use regex::Regex;
+use std::fs::{remove_dir_all, remove_file};
 use std::io::{self, BufRead, Read, Write};
 use std::option::Option;
 use std::path::PathBuf;
@@ -155,6 +156,7 @@ pub(crate) fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
 
+#[allow(dead_code)]
 pub(crate) fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     // Read the captured output from the pipe
     // let stdout = output.stdout;
@@ -271,7 +273,7 @@ pub(crate) fn pre_config_build_state(
         cargo_toml_path,
         ..Default::default()
     };
-    // debug!("build_state={build_state:#?}");
+    debug!("build_state={build_state:#?}");
 
     Ok(build_state)
 }
@@ -445,6 +447,7 @@ pub(crate) fn create_repl_file(examples_dir: &Path, num: u32) -> PathBuf {
     path
 }
 
+#[allow(dead_code)]
 pub(crate) fn read_stdin() -> Result<String, io::Error> {
     println!("Enter or paste Rust source code at the prompt and hit Ctrl-D when done");
     let mut buffer = String::new();
@@ -452,4 +455,34 @@ pub(crate) fn read_stdin() -> Result<String, io::Error> {
     let mut handle = stdin.lock();
     handle.read_to_string(&mut buffer)?;
     Ok(buffer)
+}
+
+pub(crate) fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<()> {
+    // Delete the file
+    remove_file(source_path)?;
+
+    // Remove the directory and its contents recursively
+    remove_dir_all(target_dir_path)
+}
+
+pub(crate) fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
+    if path.is_dir() {
+        let entries = fs::read_dir(path)?;
+
+        println!("Directory listing for {:?}", path);
+        for entry in entries {
+            let entry = entry?;
+            let file_type = entry.file_type()?;
+            let file_name = entry.file_name();
+            println!(
+                "  {file_name:?} ({})",
+                if file_type.is_dir() {
+                    "Directory"
+                } else {
+                    "File"
+                }
+            );
+        }
+    }
+    Ok(())
 }

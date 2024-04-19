@@ -1,7 +1,6 @@
 //! [dependencies]
 //! clap = { version = "4.5.4", features = ["cargo"] }
 
-
 use std::path::PathBuf;
 
 use clap::{arg, command, value_parser, ArgAction, Command};

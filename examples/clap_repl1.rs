@@ -11,7 +11,9 @@ use console::style;
 use rustyline::DefaultEditor;
 
 #[derive(Debug, Parser)]
-#[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
+// This change didn't do the trick. I want an explanatory prompt up front,
+// not expect the user to guess and type "help"".
+#[command(name = "", arg_required_else_help(true))] // This name will show up in clap's error messages, so it is important to set it to "".
 enum SampleCommand {
     Download {
         path: String,

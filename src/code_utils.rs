@@ -1,10 +1,7 @@
-use crate::cmd_args;
 use crate::cmd_args::ProcFlags;
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::PACKAGE_DIR;
-use crate::RS_SUFFIX;
-use crate::{BuildState, TOML_NAME};
+use crate::BuildState;
 use log::debug;
 use regex::Regex;
 use std::fs::{remove_dir_all, remove_file};
@@ -220,63 +217,63 @@ pub(crate) fn handle_outcome(
     Ok(())
 }
 
-pub(crate) fn pre_config_build_state(
-    options: &cmd_args::Opt,
-) -> Result<BuildState, Box<dyn Error>> {
-    if options.script.is_none() {
-        return Err(Box::new(BuildRunError::NoneOption(
-            "No script specified".to_string(),
-        )));
-    }
-    let script = (options.script).clone().unwrap();
-    let path = Path::new(&script);
-    let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
-    debug!("source_name = {source_name}");
-    let source_stem = {
-        let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
-            return Err(Box::new(BuildRunError::Command(format!(
-                "Error stripping suffix from {}",
-                source_name
-            ))));
-        };
-        stem.to_string()
-    };
-    let source_name = source_name.to_string();
-    let current_dir_path = std::env::current_dir()?.canonicalize()?;
-    let script_path = current_dir_path.join(PathBuf::from(script.clone()));
-    debug!("script_path={script_path:#?}");
-    let source_path = script_path.canonicalize()?;
-    debug!("source_dir_path={source_path:#?}");
-    if !source_path.exists() {
-        return Err(Box::new(BuildRunError::Command(format!(
-            "No script named {} or {} in path {source_path:?}",
-            source_stem, source_name
-        ))));
-    }
+// pub(crate) fn pre_config_build_state(
+//     options: &cmd_args::Opt,
+// ) -> Result<BuildState, Box<dyn Error>> {
+//     if options.script.is_none() {
+//         return Err(Box::new(BuildRunError::NoneOption(
+//             "No script specified".to_string(),
+//         )));
+//     }
+//     let script = (options.script).clone().unwrap();
+//     let path = Path::new(&script);
+//     let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
+//     debug!("source_name = {source_name}");
+//     let source_stem = {
+//         let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
+//             return Err(Box::new(BuildRunError::Command(format!(
+//                 "Error stripping suffix from {}",
+//                 source_name
+//             ))));
+//         };
+//         stem.to_string()
+//     };
+//     let source_name = source_name.to_string();
+//     let current_dir_path = std::env::current_dir()?.canonicalize()?;
+//     let script_path = current_dir_path.join(PathBuf::from(script.clone()));
+//     debug!("script_path={script_path:#?}");
+//     let source_path = script_path.canonicalize()?;
+//     debug!("source_dir_path={source_path:#?}");
+//     if !source_path.exists() {
+//         return Err(Box::new(BuildRunError::Command(format!(
+//             "No script named {} or {} in path {source_path:?}",
+//             source_stem, source_name
+//         ))));
+//     }
 
-    let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
-    debug!("gen_build_dir={gen_build_dir:?}");
-    let target_dir_str = gen_build_dir.clone();
-    let target_dir_path = PathBuf::from_str(&target_dir_str)?;
-    let mut target_path = target_dir_path.clone();
-    target_path.push(format!("./target/debug/{}", source_stem));
+//     let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
+//     debug!("gen_build_dir={gen_build_dir:?}");
+//     let target_dir_str = gen_build_dir.clone();
+//     let target_dir_path = PathBuf::from_str(&target_dir_str)?;
+//     let mut target_path = target_dir_path.clone();
+//     target_path.push(format!("./target/debug/{}", source_stem));
 
-    let cargo_toml_path = target_dir_path.join(TOML_NAME).clone();
-    let build_state = BuildState {
-        source_stem,
-        source_name,
-        source_path,
-        // source_str: source_dir_str,
-        target_dir_path,
-        target_dir_str,
-        target_path,
-        cargo_toml_path,
-        ..Default::default()
-    };
-    debug!("build_state={build_state:#?}");
+//     let cargo_toml_path = target_dir_path.join(TOML_NAME).clone();
+//     let build_state = BuildState {
+//         source_stem,
+//         source_name,
+//         source_path,
+//         // source_str: source_dir_str,
+//         target_dir_path,
+//         target_dir_str,
+//         target_path,
+//         cargo_toml_path,
+//         ..Default::default()
+//     };
+//     debug!("build_state={build_state:#?}");
 
-    Ok(build_state)
-}
+//     Ok(build_state)
+// }
 
 /// Check if executable is stale, i.e. if raw source script or individual Cargo.toml
 /// has a more recent modification date and time

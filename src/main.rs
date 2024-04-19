@@ -3,9 +3,9 @@ use crate::cmd_args::{get_opt, get_proc_flags, ProcFlags};
 use crate::code_utils::{
     clean_up, debug_timings, display_dir_contents, display_timings, wrap_snippet,
 };
-use crate::code_utils::{modified_since_compiled, parse_source, pre_config_build_state};
+use crate::code_utils::{modified_since_compiled, parse_source};
 use crate::errors::BuildRunError;
-use crate::manifest::{default_manifest, CargoManifest};
+use crate::manifest::CargoManifest;
 use crate::tui_textarea_editor::Editor;
 
 use clap::Parser;
@@ -17,6 +17,7 @@ use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::str::FromStr;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 
@@ -41,7 +42,86 @@ pub(crate) struct BuildState {
     pub(crate) target_dir_str: String,
     pub(crate) target_path: PathBuf,
     pub(crate) cargo_toml_path: PathBuf,
-    pub(crate) cargo_manifest: CargoManifest,
+    pub(crate) cargo_manifest: Option<CargoManifest>,
+    pub(crate) must_gen: bool,
+    pub(crate) must_build: bool,
+}
+
+impl BuildState {
+    pub(crate) fn pre_configure(
+        options: &cmd_args::Opt,
+        proc_flags: &ProcFlags,
+        empty: bool,
+    ) -> Result<Self, Box<dyn Error>> {
+        if options.script.is_none() {
+            return Err(Box::new(BuildRunError::NoneOption(
+                "No script specified".to_string(),
+            )));
+        }
+        let script = (options.script).clone().unwrap();
+        let path = Path::new(&script);
+        let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
+        debug!("source_name = {source_name}");
+        let source_stem = {
+            let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
+                return Err(Box::new(BuildRunError::Command(format!(
+                    "Error stripping suffix from {}",
+                    source_name
+                ))));
+            };
+            stem.to_string()
+        };
+        let source_name = source_name.to_string();
+        let current_dir_path = std::env::current_dir()?.canonicalize()?;
+        let script_path = current_dir_path.join(PathBuf::from(script.clone()));
+        debug!("script_path={script_path:#?}");
+        let source_path = script_path.canonicalize()?;
+        debug!("source_dir_path={source_path:#?}");
+        if !source_path.exists() {
+            return Err(Box::new(BuildRunError::Command(format!(
+                "No script named {} or {} in path {source_path:?}",
+                source_stem, source_name
+            ))));
+        }
+
+        let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
+        debug!("gen_build_dir={gen_build_dir:?}");
+        let target_dir_str = gen_build_dir.clone();
+        let target_dir_path = PathBuf::from_str(&target_dir_str)?;
+        let mut target_path = target_dir_path.clone();
+        target_path.push(format!("./target/debug/{}", source_stem));
+        let target_path_clone = target_path.clone();
+
+        let cargo_toml_path = target_dir_path.join(TOML_NAME).clone();
+
+        let mut build_state = Self {
+            source_stem,
+            source_name,
+            source_path,
+            target_dir_path,
+            target_dir_str,
+            target_path,
+            cargo_toml_path,
+            ..Default::default()
+        };
+
+        // let (must_gen, must_build) = get_must_gen_build(empty, &mut build_state, &proc_flags);
+        let stale_executable = if !empty && target_path_clone.exists() {
+            modified_since_compiled(&build_state).is_some()
+        } else {
+            true
+        };
+        let force = proc_flags.contains(ProcFlags::FORCE);
+        let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
+        let build_requested = proc_flags.contains(ProcFlags::BUILD);
+        let repl = proc_flags.contains(ProcFlags::REPL);
+        build_state.must_gen = force || repl || (gen_requested && stale_executable);
+        build_state.must_build = force || repl || (build_requested && stale_executable);
+
+        debug!("build_state={build_state:#?}");
+
+        Ok(build_state)
+    }
 }
 
 #[derive(Debug, Parser)]
@@ -71,6 +151,8 @@ enum ProcessCommand {
 }
 
 //      TODO:
+//      -1.  Try implementing help manually.
+//       0.  Relocate target directory to ~./cargo.
 //       1.  Rename tui_textarea_editor to tui_editor.
 //       2.  Simple repl option for snippets?
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
@@ -79,7 +161,11 @@ enum ProcessCommand {
 //              defined, like KeyCode and Constraint in tui_scrollview.rs.
 //       6.  bool -> 2-value enums?
 //       7.  Find a way to print out a nice prompt before loop
+//       8.  Cat files before delete.
 //       9.  --quiet option?.
+//      10.  Delete generated files by default on exit.
+//      11.  Support calculator-like snippets.
+//      12.  Consider supporting vi editor family or
 //
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -131,7 +217,21 @@ fn main() -> Result<(), Box<dyn Error>> {
         options.script = Some(format!("examples/{script}"));
     }
 
-    let mut build_state = pre_config_build_state(&options)?;
+    // let mut build_state = pre_config_build_state(&options)?;
+    let mut build_state = BuildState::pre_configure(&options, &proc_flags, empty)?;
+
+    // let (must_gen, must_build) = get_must_gen_build(empty, &mut build_state, &proc_flags);
+
+    if build_state.must_gen {
+        let (mut rs_manifest, rs_source): (CargoManifest, String) =
+            parse_source(&build_state.source_path)?;
+
+        build_state.cargo_manifest = Some(manifest::merge_manifest(
+            &build_state,
+            &rs_source,
+            &mut rs_manifest,
+        )?);
+    }
 
     if repl {
         let dash_line = "-".repeat(50);
@@ -184,7 +284,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             ProcessCommand::Exit => return Ok(()),
                             ProcessCommand::Submit => {
                                 let result = gen_build_run(
-                                    empty,
+                                    // empty,
                                     &mut options,
                                     &proc_flags,
                                     // &script,
@@ -213,7 +313,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     } else {
         gen_build_run(
-            empty,
+            // empty,
             &mut options,
             &proc_flags,
             // &script,
@@ -226,35 +326,27 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn gen_build_run(
-    empty: bool,
+    // empty: bool,
     options: &mut cmd_args::Opt,
     proc_flags: &ProcFlags,
     // script: &str,
     build_state: &mut BuildState,
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
-    let stale_executable = if !empty && build_state.target_path.exists() {
-        modified_since_compiled(build_state).is_some()
-    } else {
-        true
-    };
-    let force = proc_flags.contains(ProcFlags::FORCE);
-    let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
-    let build_requested = proc_flags.contains(ProcFlags::BUILD);
-    let repl = proc_flags.contains(ProcFlags::REPL);
-    let must_gen = force || repl || (gen_requested && stale_executable);
-    let must_build = force || repl || (build_requested && stale_executable);
     let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let proc_flags = &proc_flags;
     let options = &options;
-    let build_state: &mut BuildState = build_state;
+    // let build_state: &mut BuildState = build_state;
 
-    if must_gen {
+    if build_state.must_gen {
         let (mut rs_manifest, rs_source): (CargoManifest, String) =
             parse_source(&build_state.source_path)?;
 
-        build_state.cargo_manifest =
-            manifest::merge_manifest(build_state, &rs_source, &mut rs_manifest)?;
+        build_state.cargo_manifest = Some(manifest::merge_manifest(
+            build_state,
+            &rs_source,
+            &mut rs_manifest,
+        )?);
 
         let has_main = code_utils::has_main(&rs_source);
         if verbose {
@@ -269,9 +361,10 @@ fn gen_build_run(
         generate(build_state, &rs_source, proc_flags)?;
     } else {
         println!("Skipping unnecessary generation step. Use --force (-f) to override.");
-        build_state.cargo_manifest = default_manifest(build_state)?;
+        // build_state.cargo_manifest = Some(default_manifest(build_state)?);
+        build_state.cargo_manifest = None; // Don't need it in memory, build will find it on disk
     }
-    if must_build {
+    if build_state.must_build {
         build(proc_flags, build_state)?;
     } else {
         println!("Skipping unnecessary build step. Use --force (-f) to override.");
@@ -286,6 +379,25 @@ fn gen_build_run(
     display_timings(start, process, proc_flags);
     Ok(())
 }
+
+// fn get_must_gen_build(
+//     empty: bool,
+//     build_state: &mut BuildState,
+//     proc_flags: &ProcFlags,
+// ) -> (bool, bool) {
+//     let stale_executable = if !empty && build_state.target_path.exists() {
+//         modified_since_compiled(build_state).is_some()
+//     } else {
+//         true
+//     };
+//     let force = proc_flags.contains(ProcFlags::FORCE);
+//     let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
+//     let build_requested = proc_flags.contains(ProcFlags::BUILD);
+//     let repl = proc_flags.contains(ProcFlags::REPL);
+//     let must_gen = force || repl || (gen_requested && stale_executable);
+//     let must_build = force || repl || (build_requested && stale_executable);
+//     (must_gen, must_build)
+// }
 
 fn generate(
     build_state: &BuildState,
@@ -327,7 +439,7 @@ fn generate(
     }
     // debug!("cargo_toml: {cargo_toml:?}");
 
-    let cargo_manifest_str: &str = &build_state.cargo_manifest.to_string();
+    let cargo_manifest_str: &str = &build_state.cargo_manifest.as_ref().unwrap().to_string();
 
     debug!(
         "cargo_manifest_str: {}",
@@ -362,7 +474,7 @@ fn configure_log() {
 /// Build the Rust program using Cargo (with manifest path)
 fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRunError> {
     let start_build = Instant::now();
-    let verbose = proc_flags.contains(ProcFlags::VERBOSE);
+    // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
 
     debug!("BBBBBBBB In build");
 
@@ -373,10 +485,10 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
     };
     let mut build_command = Command::new("cargo");
     // Rustc writes to std
-    let mut args = vec!["build", "--manifest-path", &cargo_toml_path_str];
-    if verbose {
-        args.push("--verbose");
-    };
+    let args = vec!["build", "--manifest-path", &cargo_toml_path_str];
+    // if verbose {
+    //     args.push("--verbose");
+    // };
 
     build_command.args(&args); // .current_dir(build_dir);
 

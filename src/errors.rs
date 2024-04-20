@@ -6,13 +6,13 @@ use toml::ser::Error as TomlSerError;
 
 #[derive(Debug)]
 pub(crate) enum BuildRunError {
-    Command(String), // For errors during Cargo build or program execution
-    FromStr(String), // For parsing CargoManifest from a string
-    Io(io::Error),   // For I/O errors
-    #[allow(dead_code)]
+    Command(String),    // For errors during Cargo build or program execution
+    FromStr(String),    // For parsing CargoManifest from a string
+    Io(io::Error),      // For I/O errors
     NoneOption(String), // For unwrapping Options
     OsString(OsString), // For unconvertible OsStrings
-    TomlDe(TomlDeError), // For TOML deserialization errors
+    // Path(String),          // For Path and PathBuf issues
+    TomlDe(TomlDeError),   // For TOML deserialization errors
     TomlSer(TomlSerError), // For TOML serialization errors
 }
 

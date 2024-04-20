@@ -1,9 +1,4 @@
 #![allow(clippy::doc_link_with_quotes)]
-//! [dependencies]
-//! crossterm = "0.27.0"
-//! ratatui = "0.26.2"
-//! tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
-
 use crossterm::event::read;
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
@@ -12,7 +7,6 @@ use crossterm::event::{
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
-use env_logger::{fmt::WriteStyle, Builder, Env};
 use log::debug;
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
@@ -29,8 +23,6 @@ use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use tui_textarea::{CursorMove, Input, Key, TextArea};
-
-use crate::tui_editor;
 
 macro_rules! error {
     ($fmt: expr $(, $args:tt)*) => {{
@@ -513,8 +505,14 @@ impl<'a> Editor<'a> {
                             ..
                         } => {
                             self.current = (self.current + 1) % self.buffers.len();
-                            let msg: Cow<'static, str> =
-                                format!("Switched to buffer #{}", self.current + 1).into();
+                            let path = &self.buffers[self.current].path;
+                            let msg: Cow<'static, str> = format!(
+                                "Switched to {}",
+                                path.file_name()
+                                    .expect("Error accessing filename")
+                                    .to_string_lossy()
+                            )
+                            .into();
                             // self.message = Some(msg.clone());
                             self.write_output(&msg);
                         }

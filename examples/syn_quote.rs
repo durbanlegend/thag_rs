@@ -15,10 +15,11 @@ fn main() {
 
         // Parse the expression string into a syntax tree
         let expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(&input.trim());
+
         match expr {
             Ok(expr) => {
                 // Generate Rust code for the expression
-                let rust_code = quote!(let result = #expr; println!("result={}", result););
+                let rust_code = quote!(println!("result={}", #expr););
 
                 eprintln!("rust_code={rust_code}");
             }

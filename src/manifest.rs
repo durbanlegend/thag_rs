@@ -107,6 +107,15 @@ pub enum Dependency {
     Detailed(Box<DependencyDetail>),
 }
 
+fn default_true() -> bool {
+    true
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_true(val: &bool) -> bool {
+    *val
+}
+
 /// When definition of a dependency is more than just a version string.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -117,6 +126,8 @@ pub struct DependencyDetail {
     pub registry: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub features: Vec<String>,
+    #[serde(default = "default_true", skip_serializing_if = "is_true")]
+    pub default_features: bool,
 }
 
 pub(crate) type Features = BTreeMap<String, Vec<Feature>>;

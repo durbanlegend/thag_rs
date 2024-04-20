@@ -2,7 +2,7 @@ use regex::Regex;
 use std::io::Write;
 
 fn has_main(source: &str, verbose: bool) -> bool {
-    let re = Regex::new(r"(?x)\bfn\s* main\(\s*\)").unwrap();
+    let re = Regex::new(r"(?m)^\s*fn\s* main\(\s*\)").unwrap();
     let matches = re.find_iter(source).count();
     eprintln!("matches={matches}, verbose={verbose}");
     match matches {

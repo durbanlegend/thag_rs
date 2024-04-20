@@ -319,7 +319,7 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&Path
 }
 
 pub(crate) fn has_main(source: &str) -> bool {
-    let re = Regex::new(r"(?x)\bfn\s* main\(\s*\)").unwrap();
+    let re = Regex::new(r"(?m)^\s*fn\s* main\(\s*\)").unwrap();
     let matches = re.find_iter(source).count();
     debug!("matches={matches}");
     match matches {

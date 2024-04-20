@@ -8,6 +8,7 @@ use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
 use crate::tui_textarea_editor::Editor;
 
+use clap::command;
 use clap::Parser;
 use clap_repl::ClapEditor;
 use core::str;
@@ -151,12 +152,11 @@ enum ProcessCommand {
 }
 
 //      TODO:
-//      -1.  Try implementing help manually.
 //       0.  Relocate target directory to ~./cargo.
 //       1.  Rename tui_textarea_editor to tui_editor.
 //       2.  Simple repl option for snippets?
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
-//       4.  Return enum value in Result?
+//       4.  Debug tui_textarea_editor.rs not saving Cargo.toml.
 //       5.  Don't infer dependencies from use statements that refer back to something already
 //              defined, like KeyCode and Constraint in tui_scrollview.rs.
 //       6.  bool -> 2-value enums?
@@ -180,6 +180,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut options = get_opt();
     let proc_flags = get_proc_flags(&options)?;
     debug!("proc_flags={proc_flags:#?}");
+
+    // let m = clap::command!().get_matches();
+    // debug!("matches={m:?}");
 
     debug_timings(start, "Set up processing flags");
 

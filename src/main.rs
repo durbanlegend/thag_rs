@@ -6,12 +6,13 @@ use crate::code_utils::{
 use crate::code_utils::{modified_since_compiled, parse_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::tui_textarea_editor::Editor;
+use crate::tui_editor::Editor;
 
 use clap::command;
 use clap::Parser;
 use clap_repl::ClapEditor;
 use core::str;
+use env_logger::{fmt::WriteStyle, Builder, Env};
 use log::debug;
 use std::env;
 use std::error::Error;
@@ -26,7 +27,7 @@ mod cmd_args;
 mod code_utils;
 mod errors;
 mod manifest;
-mod tui_textarea_editor;
+mod tui_editor;
 
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -383,25 +384,6 @@ fn gen_build_run(
     Ok(())
 }
 
-// fn get_must_gen_build(
-//     empty: bool,
-//     build_state: &mut BuildState,
-//     proc_flags: &ProcFlags,
-// ) -> (bool, bool) {
-//     let stale_executable = if !empty && build_state.target_path.exists() {
-//         modified_since_compiled(build_state).is_some()
-//     } else {
-//         true
-//     };
-//     let force = proc_flags.contains(ProcFlags::FORCE);
-//     let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
-//     let build_requested = proc_flags.contains(ProcFlags::BUILD);
-//     let repl = proc_flags.contains(ProcFlags::REPL);
-//     let must_gen = force || repl || (gen_requested && stale_executable);
-//     let must_build = force || repl || (build_requested && stale_executable);
-//     (must_gen, must_build)
-// }
-
 fn generate(
     build_state: &BuildState,
     rs_source: &String,
@@ -461,10 +443,6 @@ fn generate(
 
 // Configure log level
 fn configure_log() {
-    use env_logger::fmt::WriteStyle;
-    use env_logger::Builder;
-    use env_logger::Env;
-
     let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
     let mut binding = Builder::new();
     let builder = binding.parse_env(env);
@@ -497,20 +475,6 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
 
     // Show sign of life in case build takes a while
     eprintln!("Building...");
-
-    // // Redirect stdout and stderr to pipes
-    // let mut child = build_command
-    //     .stdout(Stdio::piped())
-    //     .stderr(Stdio::piped())
-    //     .spawn()?;
-    // let exit_status = child.wait()?;
-
-    // // Wait for the child process to finish with output collected
-    // let output = child.wait_with_output()?;
-
-    // if verbose {
-    //     let _ = display_output(&output);
-    // }
 
     // Redirect stdout and stderr to inherit from the parent process (terminal)
     build_command

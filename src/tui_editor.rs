@@ -12,6 +12,8 @@ use crossterm::event::{
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
+use env_logger::{fmt::WriteStyle, Builder, Env};
+use log::debug;
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
@@ -27,6 +29,8 @@ use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use tui_textarea::{CursorMove, Input, Key, TextArea};
+
+use crate::tui_editor;
 
 macro_rules! error {
     ($fmt: expr $(, $args:tt)*) => {{
@@ -191,6 +195,7 @@ impl<'a> Buffer<'a> {
             f.write_all(line.as_bytes())?;
             f.write_all(b"\n")?;
         }
+        debug!("Saved to {}", &self.path.display());
         self.modified = false;
         Ok(())
     }

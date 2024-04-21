@@ -24,3 +24,9 @@ repl_000017.rs
 examples/eval.rs
 examples/codegen.rs
 temp.rs
+examples/rustyline_compl.rs
+examples/lsp_completion.rs
+examples/lsp_compl2.rs
+examples/code_completion.rs
+examples/code_compl2.rs
+history.txt

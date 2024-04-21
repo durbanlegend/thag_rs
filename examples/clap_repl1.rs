@@ -3,12 +3,16 @@
 //! clap-repl = "0.1.1"
 //! console = "0.15.8"
 //! rustyline = "14.0.0"
+//! quote = "1.0.36"
+//! syn = { version = "2.0.60", features = ["full"] }
 
 // REPL based on clap-repl package
 use clap::Parser;
 use clap_repl::ClapEditor;
 use console::style;
+use quote::quote;
 use rustyline::DefaultEditor;
+use syn::{self, Expr};
 
 #[derive(Debug, Parser)]
 // This change didn't do the trick. I want an explanatory prompt up front,
@@ -21,6 +25,8 @@ enum SampleCommand {
         #[arg(long)]
         check_sha: bool,
     },
+    /// A command to evaluate a Rust expression.
+    Eval,
     /// A command to upload things.
     Upload,
     Login {
@@ -60,6 +66,32 @@ fn main() {
                 println!("Logged in with {username} and {password}");
             }
             SampleCommand::Exit | SampleCommand::Quit => return,
+            SampleCommand::Eval => {
+                loop {
+                    println!("Enter an expression (e.g., 2 + 3), or q to quit:");
+                    let mut input = String::new();
+                    std::io::stdin()
+                        .read_line(&mut input)
+                        .expect("Failed to read input");
+
+                    // Parse the expression string into a syntax tree
+                    let str = &input.trim();
+                    if str.to_lowercase() == "q" {
+                        break;
+                    }
+                    let expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(str);
+
+                    match expr {
+                        Ok(expr) => {
+                            // Generate Rust code for the expression
+                            let rust_code = quote!(println!("result={}", #expr););
+
+                            eprintln!("rust_code={rust_code}");
+                        }
+                        Err(err) => println!("Error parsing expression: {}", err),
+                    }
+                }
+            }
         }
     }
 }

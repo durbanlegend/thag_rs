@@ -153,11 +153,9 @@ enum ProcessCommand {
 }
 
 //      TODO:
-//       0.  Relocate target directory to ~./cargo.
-//       1.  Rename tui_textarea_editor to tui_editor.
+//       1.  Relocate target directory to ~./cargo.
 //       2.  Simple repl option for snippets?
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
-//       4.  Debug tui_textarea_editor.rs not saving Cargo.toml.
 //       5.  Don't infer dependencies from use statements that refer back to something already
 //              defined, like KeyCode and Constraint in tui_scrollview.rs.
 //       6.  bool -> 2-value enums?
@@ -165,7 +163,7 @@ enum ProcessCommand {
 //       8.  Cat files before delete.
 //       9.  --quiet option?.
 //      10.  Delete generated files by default on exit.
-//      11.  Support calculator-like snippets.
+//      11.  Support calculator-like snippets / expressions - see syn_quote.rs
 //      12.  Consider supporting vi editor family or
 //
 #[allow(clippy::too_many_lines)]

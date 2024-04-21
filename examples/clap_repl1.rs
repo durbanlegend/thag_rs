@@ -11,6 +11,7 @@ use clap::Parser;
 use clap_repl::ClapEditor;
 use console::style;
 use quote::quote;
+use rustyline::config::Configurer;
 use rustyline::DefaultEditor;
 use syn::{self, Expr};
 
@@ -40,10 +41,10 @@ enum SampleCommand {
 
 fn main() {
     // Use `ClapEditor` instead of the `rustyline::DefaultEditor`.
-    let mut rl = ClapEditor::<SampleCommand>::new();
+    let mut editor = ClapEditor::<SampleCommand>::new();
     loop {
         // Use `read_command` instead of `readline`.
-        let Some(command) = rl.read_command() else {
+        let Some(command) = editor.read_command() else {
             continue;
         };
         match command {
@@ -67,13 +68,14 @@ fn main() {
             }
             SampleCommand::Exit | SampleCommand::Quit => return,
             SampleCommand::Eval => {
+                let mut rl = DefaultEditor::new().unwrap();
+                rl.set_auto_add_history(true);
                 loop {
                     println!("Enter an expression (e.g., 2 + 3), or q to quit:");
-                    let mut input = String::new();
-                    std::io::stdin()
-                        .read_line(&mut input)
-                        .expect("Failed to read input");
 
+                    let input = rl.readline(">> ").expect("Failed to read input");
+                    // Process user input (line)
+                    // rl.add_history_entry(&line); // Add current line to history
                     // Parse the expression string into a syntax tree
                     let str = &input.trim();
                     if str.to_lowercase() == "q" {

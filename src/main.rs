@@ -5,7 +5,7 @@ use crate::code_utils::{
 };
 use crate::code_utils::{modified_since_compiled, parse_source};
 use crate::errors::BuildRunError;
-use crate::manifest::CargoManifest;
+use crate::manifest::{default_manifest, CargoManifest};
 use crate::tui_editor::Editor;
 
 use clap::command;
@@ -14,6 +14,9 @@ use clap_repl::ClapEditor;
 use core::str;
 use env_logger::{fmt::WriteStyle, Builder, Env};
 use log::debug;
+use quote::quote;
+use rustyline::config::Configurer;
+use rustyline::DefaultEditor;
 use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
@@ -22,6 +25,7 @@ use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
+use syn::{self, Expr};
 
 mod cmd_args;
 mod code_utils;
@@ -34,6 +38,28 @@ const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const RS_SUFFIX: &str = ".rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
+
+#[derive(Debug)]
+pub(crate) enum ScriptState {
+    /// Repl with no script name provided by user
+    #[allow(dead_code)]
+    Anonymous,
+    /// Repl with script name programmatically assigned
+    NamedEmpty { script: String },
+    /// Script name provided by user
+    Named { script: String },
+}
+
+impl ScriptState {
+    pub(crate) fn get_script(&self) -> Option<String> {
+        match self {
+            ScriptState::Anonymous => None,
+            ScriptState::NamedEmpty { script } | ScriptState::Named { script } => {
+                Some(script.to_string())
+            }
+        }
+    }
+}
 
 #[derive(Debug, Default)]
 pub(crate) struct BuildState {
@@ -51,16 +77,16 @@ pub(crate) struct BuildState {
 
 impl BuildState {
     pub(crate) fn pre_configure(
-        options: &cmd_args::Opt,
         proc_flags: &ProcFlags,
-        empty: bool,
+        script_state: &ScriptState,
     ) -> Result<Self, Box<dyn Error>> {
-        if options.script.is_none() {
+        let maybe_script = script_state.get_script();
+        if maybe_script.is_none() {
             return Err(Box::new(BuildRunError::NoneOption(
                 "No script specified".to_string(),
             )));
         }
-        let script = (options.script).clone().unwrap();
+        let script = (maybe_script).clone().unwrap();
         let path = Path::new(&script);
         let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
         debug!("source_name = {source_name}");
@@ -107,12 +133,9 @@ impl BuildState {
             ..Default::default()
         };
 
-        // let (must_gen, must_build) = get_must_gen_build(empty, &mut build_state, &proc_flags);
-        let stale_executable = if !empty && target_path_clone.exists() {
-            modified_since_compiled(&build_state).is_some()
-        } else {
-            true
-        };
+        let stale_executable = matches!(script_state, ScriptState::NamedEmpty { .. })
+            || !target_path_clone.exists()
+            || modified_since_compiled(&build_state).is_some();
         let force = proc_flags.contains(ProcFlags::FORCE);
         let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
         let build_requested = proc_flags.contains(ProcFlags::BUILD);
@@ -133,6 +156,8 @@ enum LoopCommand {
     Continue,
     /// Delete generated files
     Delete,
+    /// Evaluate an expression. Enclose complex expressions in braces {}.
+    Eval,
     /// List generated files
     List,
     /// Exit REPL
@@ -163,8 +188,7 @@ enum ProcessCommand {
 //       8.  Cat files before delete.
 //       9.  --quiet option?.
 //      10.  Delete generated files by default on exit.
-//      11.  Support calculator-like snippets / expressions - see syn_quote.rs
-//      12.  Consider supporting vi editor family or
+//      12.  Consider supporting vi editor family or editor crate
 //
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -194,46 +218,52 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let repl = proc_flags.contains(ProcFlags::REPL);
 
-    let (script, empty) = if let Some(ref script) = options.script {
+    let script_state = if let Some(ref script) = options.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(Box::new(BuildRunError::Command(format!(
                 "Script name must end in {RS_SUFFIX}"
             ))));
         }
-        (script.to_owned(), false)
+        let script = script.to_owned();
+        ScriptState::Named { script }
     } else {
         assert!(repl);
         let path = code_utils::create_next_repl_file();
 
         let script = path.file_name().unwrap().to_str().unwrap().to_string();
-        (script, true)
+        let script = format!("examples/{script}");
+        ScriptState::NamedEmpty { script }
     };
 
-    // TODO Distinguish two meanings of empty.
+    // TODO Out:
+    // Distinguish two meanings of empty.
     //     1. No script provided for repl, one has been provided by this point, so this
     //         meaning is redundant at this point in the code.
     //     2. The script in 1. is supposed to have been filled in but may still be empty,
 
-    if empty {
-        // Backfill script name into CLI options before calling pre_config_build_state.
-        options.script = Some(format!("examples/{script}"));
-    }
+    // if let ScriptState::NamedEmpty { ref script } = script_state {
+    //     // Backfill script name into CLI options before calling pre_config_build_state.
+    //     options.script = Some(format!("examples/{script}"));
+    // };
 
-    // let mut build_state = pre_config_build_state(&options)?;
-    let mut build_state = BuildState::pre_configure(&options, &proc_flags, empty)?;
+    let mut build_state = BuildState::pre_configure(&proc_flags, &script_state)?;
 
-    // let (must_gen, must_build) = get_must_gen_build(empty, &mut build_state, &proc_flags);
+    build_state.cargo_manifest = if build_state.must_gen {
+        if matches!(script_state, ScriptState::Named { .. }) {
+            let (mut rs_manifest, rs_source): (CargoManifest, String) =
+                parse_source(&build_state.source_path)?;
 
-    if build_state.must_gen {
-        let (mut rs_manifest, rs_source): (CargoManifest, String) =
-            parse_source(&build_state.source_path)?;
-
-        build_state.cargo_manifest = Some(manifest::merge_manifest(
-            &build_state,
-            &rs_source,
-            &mut rs_manifest,
-        )?);
-    }
+            Some(manifest::merge_manifest(
+                &build_state,
+                &rs_source,
+                &mut rs_manifest,
+            )?)
+        } else {
+            Some(default_manifest(&build_state)?)
+        }
+    } else {
+        None
+    };
 
     if repl {
         let dash_line = "-".repeat(50);
@@ -307,6 +337,50 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 loop_command = Some(LoopCommand::Continue);
                                 continue 'level2;
                             }
+                        }
+                    }
+                }
+                LoopCommand::Eval => {
+                    let mut rl = DefaultEditor::new().unwrap();
+                    rl.set_auto_add_history(true);
+                    loop {
+                        println!("Enter an expression (e.g., 2 + 3), or q to quit:");
+
+                        let input = rl.readline(">> ").expect("Failed to read input");
+                        // Process user input (line)
+                        // rl.add_history_entry(&line); // Add current line to history
+                        // Parse the expression string into a syntax tree
+                        let str = &input.trim();
+                        if str.to_lowercase() == "q" {
+                            break;
+                        }
+                        let expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(str);
+
+                        match expr {
+                            Ok(expr) => {
+                                // Generate Rust code for the expression
+                                let rust_code = quote!(println!("result={:?}", #expr););
+
+                                let rs_source = format!("{rust_code}");
+                                // debug!("rs_source={rs_source}"); // Careful, needs to impl Display
+
+                                write_source(build_state.source_path.clone(), &rs_source)?;
+
+                                let result = gen_build_run(
+                                    // empty,
+                                    &mut options,
+                                    &proc_flags,
+                                    // &script,
+                                    &mut build_state,
+                                    &start,
+                                );
+                                if result.is_err() {
+                                    println!("{result:?}");
+                                }
+
+                                break;
+                            }
+                            Err(err) => println!("Error parsing expression: {}", err),
                         }
                     }
                 }
@@ -399,19 +473,7 @@ fn generate(
     if verbose {
         println!("GGGGGGGG Creating source file: {target_rs_path:?}");
     }
-    let mut target_rs_file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(target_rs_path)?;
-    debug!("GGGGGGGG Done!");
-
-    debug!("Writing out source:\n{}", {
-        let lines = rs_source.lines();
-        code_utils::reassemble(lines)
-    });
-
-    target_rs_file.write_all(rs_source.as_bytes())?;
+    let _target_rs_file = write_source(target_rs_path, rs_source)?;
 
     debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {
@@ -437,6 +499,22 @@ fn generate(
     display_timings(&start_gen, "Completed generation", proc_flags);
 
     Ok(())
+}
+
+fn write_source(to_rs_path: PathBuf, rs_source: &String) -> Result<fs::File, Box<dyn Error>> {
+    let mut to_rs_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(to_rs_path)?;
+    debug!("Writing out source:\n{}", {
+        let lines = rs_source.lines();
+        code_utils::reassemble(lines)
+    });
+    to_rs_file.write_all(rs_source.as_bytes())?;
+    debug!("Done!");
+
+    Ok(to_rs_file)
 }
 
 // Configure log level

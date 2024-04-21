@@ -11,7 +11,6 @@ env_logger = "0.11.3"
 log = "0.4.21"
 regex = "1.10.3"
 serde = { version = "1.0", features = ["derive"] }
-structopt = "0.3"
 toml = "0.8.12"
 crossterm = "0.27.0"
 ratatui = "0.26.2"
@@ -19,3 +18,5 @@ tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
 clap-repl = "0.1.1"
 console = "0.15.8"
 rustyline = "14.0.0"
+syn = { version = "2.0.60", features = ["full"] }
+quote = "1.0.36"

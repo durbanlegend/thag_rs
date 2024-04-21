@@ -25,17 +25,17 @@ pub(crate) struct CargoManifest {
     pub(crate) bin: Vec<Product>,
 }
 
-impl Default for CargoManifest {
-    fn default() -> Self {
-        CargoManifest {
-            package: Package::default(),
-            dependencies: None,
-            features: None,
-            workspace: Workspace::default(),
-            bin: vec![Product::default()],
-        }
-    }
-}
+// impl Default for CargoManifest {
+//     fn default() -> Self {
+//         CargoManifest {
+//             package: Package::default(),
+//             dependencies: None,
+//             features: None,
+//             workspace: Workspace::default(),
+//             bin: vec![Product::default()],
+//         }
+//     }
+// }
 
 impl FromStr for CargoManifest {
     type Err = BuildRunError;

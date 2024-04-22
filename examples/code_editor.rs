@@ -38,7 +38,7 @@ impl Default for CodeEditor {
         Self {
             language: "rs".into(),
             code: r#"// A very simple example
-fn mainx() {
+fn main() {
 	println!("Hello world!");
 }
 "#

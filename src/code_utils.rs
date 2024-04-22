@@ -12,6 +12,7 @@ use std::process::{Command, ExitStatus, Output};
 use std::str::FromStr;
 use std::time::{Instant, SystemTime};
 use std::{collections::HashSet, error::Error, fs, path::Path};
+use syn::{File, Item};
 
 #[allow(dead_code, clippy::uninlined_format_args)]
 fn main() {
@@ -34,16 +35,16 @@ pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
     Ok(fs::read_to_string(path)?)
 }
 
-pub(crate) fn rs_extract_src(rs_contents: &str) -> String {
-    let rs_source = reassemble({
-        rs_contents
-            .lines()
-            .map(str::trim_start)
-            .filter(|&line| !line.starts_with("//!"))
-    });
-    debug!("Rust source string (rs_source) =\n{rs_source}");
-    rs_source
-}
+// pub(crate) fn rs_extract_src(rs_contents: &str) -> String {
+//     let rs_source = reassemble({
+//         rs_contents
+//             .lines()
+//             .map(str::trim_start)
+//             .filter(|&line| !line.starts_with("//!"))
+//     });
+//     debug!("Rust source string (rs_source) =\n{rs_source}");
+//     rs_source
+// }
 
 // Make a best effort to help the user by inferring dependencies from the source code.
 pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
@@ -99,32 +100,78 @@ pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String)
     let start_parsing_rs = Instant::now();
 
     let rs_full_source = read_file_contents(source_path)?;
-    let rs_manifest = rs_extract_manifest(&rs_full_source)?;
-    // debug!("@@@@ rs_manifest (before deps, showing features)={rs_manifest:#?}");
 
-    let rs_source = rs_extract_src(&rs_full_source);
+    let (rs_source, rs_toml_str) = separate_rust_and_toml(&rs_full_source);
+
+    let rs_manifest = CargoManifest::from_str(&rs_toml_str)?;
+    //     let rs_manifest = rs_extract_manifest(&rs_full_source)?;
+    //     // debug!("@@@@ rs_manifest (before deps, showing features)={rs_manifest:#?}");
+
+    //     let rs_source = rs_extract_src(&rs_full_source);
 
     debug_timings(start_parsing_rs, "Parsed source");
     Ok((rs_manifest, rs_source))
 }
 
-fn rs_extract_manifest(rs_contents: &str) -> Result<CargoManifest, BuildRunError> {
-    let rs_toml_str = rs_extract_toml(rs_contents);
-    CargoManifest::from_str(&rs_toml_str)
+// fn rs_extract_manifest(rs_contents: &str) -> Result<CargoManifest, BuildRunError> {
+//     let rs_toml_str = rs_extract_toml(rs_contents);
+//     CargoManifest::from_str(&rs_toml_str)
+// }
+
+fn separate_rust_and_toml(source_code: &str) -> (String, String) {
+    let mut rust_code = String::new();
+    let mut toml_metadata = String::new();
+    let mut is_metadata_block = false;
+
+    for line in source_code.lines() {
+        // Check if the line contains the start of the metadata block
+        if line.trim().starts_with("/*[toml]") {
+            is_metadata_block = true;
+            continue;
+        }
+
+        // Check if the line contains the end of the metadata block
+        if line.trim() == "*/" {
+            is_metadata_block = false;
+            continue;
+        }
+
+        // Check if the line is a TOML comment
+        if line.trim().starts_with("//!") {
+            toml_metadata.push_str(line.trim_start_matches("//!"));
+            toml_metadata.push('\n');
+            continue;
+        }
+
+        // Add the line to the appropriate string based on the metadata block status
+        if is_metadata_block {
+            toml_metadata.push_str(line);
+            toml_metadata.push('\n');
+        } else {
+            rust_code.push_str(line);
+            rust_code.push('\n');
+        }
+    }
+
+    // Trim trailing whitespace from both strings
+    rust_code = rust_code.trim().to_string();
+    toml_metadata = toml_metadata.trim().to_string();
+
+    (rust_code, toml_metadata)
 }
 
-fn rs_extract_toml(rs_contents: &str) -> String {
-    let rs_toml_str = {
-        let str_iter = rs_contents
-            .lines()
-            .map(str::trim_start)
-            .filter(|&line| line.starts_with("//!"))
-            .map(|line| line.trim_start_matches('/').trim_start_matches('!'));
-        reassemble(str_iter)
-    };
-    debug!("Rust source manifest info (rs_toml_str) = {rs_toml_str}");
-    rs_toml_str
-}
+// fn rs_extract_toml(rs_contents: &str) -> String {
+//     let rs_toml_str = {
+//         let str_iter = rs_contents
+//             .lines()
+//             .map(str::trim_start)
+//             .filter(|&line| line.starts_with("//!"))
+//             .map(|line| line.trim_start_matches('/').trim_start_matches('!'));
+//         reassemble(str_iter)
+//     };
+//     debug!("Rust source manifest info (rs_toml_str) = {rs_toml_str}");
+//     rs_toml_str
+// }
 
 pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
     let string = path
@@ -319,21 +366,40 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&Path
 }
 
 pub(crate) fn has_main(source: &str) -> bool {
-    let re = Regex::new(r"(?m)^\s*fn\s* main\(\s*\)").unwrap();
-    let matches = re.find_iter(source).count();
-    debug!("matches={matches}");
-    match matches {
+    let main_methods = count_main_methods(source);
+    debug!("main_methods={main_methods}");
+    match main_methods {
         0 => false,
         1 => true,
         _ => {
             writeln!(
                 &mut std::io::stderr(),
-                "Invalid source, contains {matches} occurrences of fn main(), at most 1 is allowed"
+                "Invalid source, contains {main_methods} occurrences of fn main(), at most 1 is allowed"
             )
             .unwrap();
             std::process::exit(1);
         }
     }
+}
+
+pub(crate) fn count_main_methods(source_code: &str) -> usize {
+    // Parse the source code into a syntax tree
+    let syntax_tree: File = match syn::parse_str(source_code) {
+        Ok(tree) => tree,
+        Err(_) => return 0, // Return 0 if parsing fails
+    };
+
+    // Count the number of main() methods
+    let mut main_method_count = 0;
+    for item in syntax_tree.items {
+        if let Item::Fn(item_fn) = item {
+            // Check if the function is named "main" and has no arguments
+            if item_fn.sig.ident == "main" && item_fn.sig.inputs.is_empty() {
+                main_method_count += 1;
+            }
+        }
+    }
+    main_method_count
 }
 
 pub(crate) fn wrap_snippet(rs_source: &str) -> String {

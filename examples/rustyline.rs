@@ -1,5 +1,7 @@
-//! [dependencies]
-//! rustyline = { version = "14.0.0", features=["with-file-history", "default"] }
+/*[toml]
+[dependencies]
+rustyline = { version = "14.0.0", features=["with-file-history", "default"] }
+*/
 
 // Example from rustyline crate readme.
 // TODO debug history writing.

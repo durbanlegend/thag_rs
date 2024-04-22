@@ -1,4 +1,3 @@
-#![allow(clippy::doc_link_with_quotes)]
 use crossterm::event::read;
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,

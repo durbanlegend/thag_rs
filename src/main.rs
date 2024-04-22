@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{get_opt, get_proc_flags, ProcFlags};
 use crate::code_utils::{
-    clean_up, debug_timings, display_dir_contents, display_timings, wrap_snippet,
+    clean_up, debug_timings, display_dir_contents, display_timings, rustfmt, wrap_snippet,
 };
 use crate::code_utils::{modified_since_compiled, parse_source};
 use crate::errors::BuildRunError;
@@ -179,7 +179,7 @@ enum ProcessCommand {
 
 //      TODO:
 //       1.  Relocate target directory to ~./cargo.
-//       2.  Simple repl option for snippets?
+//       2.  Rustfmt of source file in tui editor or repl?
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
 //       5.  Don't infer dependencies from use statements that refer back to something already
 //              defined, like KeyCode and Constraint in tui_scrollview.rs.
@@ -362,9 +362,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 let rust_code = quote!(println!("result={:?}", #expr););
 
                                 let rs_source = format!("{rust_code}");
-                                // debug!("rs_source={rs_source}"); // Careful, needs to impl Display
+                                debug!("rs_source={rs_source}"); // Careful, needs to impl Display
 
                                 write_source(build_state.source_path.clone(), &rs_source)?;
+
+                                rustfmt(&build_state)?;
 
                                 let result = gen_build_run(
                                     // empty,

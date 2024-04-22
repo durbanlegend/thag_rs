@@ -8,7 +8,7 @@ use std::fs::{remove_dir_all, remove_file};
 use std::io::{self, BufRead, Read, Write};
 use std::option::Option;
 use std::path::PathBuf;
-use std::process::{ExitStatus, Output};
+use std::process::{Command, ExitStatus, Output};
 use std::str::FromStr;
 use std::time::{Instant, SystemTime};
 use std::{collections::HashSet, error::Error, fs, path::Path};
@@ -480,6 +480,33 @@ pub(crate) fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
                 }
             );
         }
+    }
+    Ok(())
+}
+
+pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), Box<dyn Error>> {
+    let source_path_buf = build_state.source_path.clone();
+    let source_path_str = source_path_buf
+        .to_str()
+        .ok_or("Error accessing path to source file")?;
+
+    if Command::new("rustfmt").arg("--version").output().is_ok() {
+        // Run rustfmt on the source file
+        let mut command = Command::new("rustfmt");
+        command.arg(source_path_str);
+        let output = command.output().expect("Failed to run rustfmt");
+
+        if output.status.success() {
+            println!("Successfully formatted {} with rustfmt.", source_path_str);
+        } else {
+            eprintln!(
+                "Failed to format {} with rustfmt:\n{}",
+                source_path_str,
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+    } else {
+        eprintln!("`rustfmt` not found. Please install it to use this script.");
     }
     Ok(())
 }

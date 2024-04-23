@@ -155,19 +155,19 @@ impl BuildState {
 #[command(name = "", arg_required_else_help(true))] // This name will show up in clap's error messages, so it is important to set it to "".
 enum LoopCommand {
     /// Enter, paste or modify your code and optionally edit your generated Cargo.toml
-    #[clap(alias = "c")]
+    #[clap(visible_alias = "c")]
     Continue,
     /// Delete generated files
-    #[clap(alias = "d")]
+    #[clap(visible_alias = "d")]
     Delete,
     /// Evaluate an expression. Enclose complex expressions in braces {}.
-    #[clap(alias = "e")]
+    #[clap(visible_alias = "e")]
     Eval,
     /// List generated files
-    #[clap(alias = "l")]
+    #[clap(visible_alias = "l")]
     List,
     /// Exit REPL
-    #[clap(alias = "q")]
+    #[clap(visible_alias = "q")]
     Quit,
 }
 

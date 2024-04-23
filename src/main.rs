@@ -91,7 +91,7 @@ impl BuildState {
         let script = (maybe_script).clone().unwrap();
         let path = Path::new(&script);
         let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
-        debug!("source_name = {source_name}");
+        // debug!("source_name={source_name}");
         let source_stem = {
             let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
                 return Err(Box::new(BuildRunError::Command(format!(
@@ -106,7 +106,7 @@ impl BuildState {
         let script_path = current_dir_path.join(PathBuf::from(script.clone()));
         // debug!("script_path={script_path:#?}");
         let source_path = script_path.canonicalize()?;
-        debug!("source_dir_path={source_path:#?}");
+        // debug!("source_dir_path={source_path:#?}");
         if !source_path.exists() {
             return Err(Box::new(BuildRunError::Command(format!(
                 "No script named {} or {} in path {source_path:?}",
@@ -115,7 +115,7 @@ impl BuildState {
         }
 
         let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
-        debug!("gen_build_dir={gen_build_dir:?}");
+        // debug!("gen_build_dir={gen_build_dir:?}");
         let target_dir_str = gen_build_dir.clone();
         let target_dir_path = PathBuf::from_str(&target_dir_str)?;
         let mut target_path = target_dir_path.clone();
@@ -284,8 +284,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             match command {
                 LoopCommand::Quit => return Ok(()),
                 LoopCommand::Delete => {
-                    clean_up(&build_state.source_path, &build_state.target_dir_path)?;
-                    println!("Deleted");
+                    let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
+                    if clean_up.is_ok()
+                        || (!&build_state.source_path.exists()
+                            && !&build_state.target_dir_path.exists())
+                    {
+                        println!("Deleted");
+                    } else {
+                        println!(
+                            "Failed to delete all files - enter l(ist) to list remaining files"
+                        );
+                    }
                 }
                 LoopCommand::List => {
                     // Display file listing

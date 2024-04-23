@@ -8,12 +8,13 @@ use crate::errors::BuildRunError;
 use crate::manifest::{default_manifest, CargoManifest};
 use crate::tui_editor::Editor;
 
-use clap::command;
 use clap::Parser;
 use clap_repl::ClapEditor;
+use convert_case::{Case, Casing};
 use core::str;
 use env_logger::{fmt::WriteStyle, Builder, Env};
 use log::{debug, log_enabled, Level::Debug};
+use owo_colors::{OwoColorize, Stream};
 use quote::quote;
 use rustyline::config::Configurer;
 use rustyline::DefaultEditor;
@@ -25,6 +26,7 @@ use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
+use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
 use syn::{self, Expr};
 
 mod cmd_args;
@@ -149,19 +151,24 @@ impl BuildState {
     }
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, EnumIter, EnumProperty, IntoStaticStr)]
 #[command(name = "", arg_required_else_help(true))] // This name will show up in clap's error messages, so it is important to set it to "".
 enum LoopCommand {
-    /// Enter, paste or modify your code and optionally edit your generated Cargo.toml .
+    /// Enter, paste or modify your code and optionally edit your generated Cargo.toml
+    #[clap(alias = "c")]
     Continue,
     /// Delete generated files
+    #[clap(alias = "d")]
     Delete,
     /// Evaluate an expression. Enclose complex expressions in braces {}.
+    #[clap(alias = "e")]
     Eval,
     /// List generated files
+    #[clap(alias = "l")]
     List,
     /// Exit REPL
-    Exit,
+    #[clap(alias = "q")]
+    Quit,
 }
 
 #[derive(Debug, Parser)]
@@ -174,7 +181,7 @@ enum ProcessCommand {
     /// Attempt to build and run your Rust code
     Submit,
     // Exit REPL
-    Exit,
+    Quit,
 }
 
 //      TODO:
@@ -254,8 +261,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if repl {
         let dash_line = "-".repeat(50);
+
+        // Using strum and convert_case, but be careful that the latter's kebab case
+        // doesn't match serde's version when it comes to numbers :(
+        let cmd_vec = LoopCommand::iter()
+            .map(|v| <LoopCommand as Into<&'static str>>::into(v).to_case(Case::Kebab))
+            .collect::<Vec<String>>();
+        let cmd_list = cmd_vec.join(", ") + " or help";
+
         println!("{dash_line}");
-        // println!("Enter continue, exit or help");
+        println!(
+            "Enter one of: {}",
+            cmd_list.if_supports_color(Stream::Stdout, |text| text.blue())
+        );
         let mut loop_editor = ClapEditor::<LoopCommand>::new();
         let mut loop_command = loop_editor.read_command();
         'level2: loop {
@@ -264,7 +282,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 continue 'level2;
             };
             match command {
-                LoopCommand::Exit => return Ok(()),
+                LoopCommand::Quit => return Ok(()),
                 LoopCommand::Delete => {
                     clean_up(&build_state.source_path, &build_state.target_dir_path)?;
                     println!("Deleted");
@@ -300,7 +318,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             continue 'level3;
                         };
                         match command {
-                            ProcessCommand::Exit => return Ok(()),
+                            ProcessCommand::Quit => return Ok(()),
                             ProcessCommand::Submit => {
                                 let result = gen_build_run(
                                     // empty,

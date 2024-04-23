@@ -39,7 +39,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    layout::{self, Layout},
+    layout::Layout,
     prelude::*,
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };

@@ -1,7 +1,8 @@
-//! [dependencies]
-//! syn = { version = "2.0.60", features = ["full"] }
+/*[toml]
+[dependencies]
+syn = { version = "2.0.60", features = ["full"] }
+*/
 
-use syn::{parse_quote, File, Item, ItemFn};
 
 fn count_main_methods(source_code: &str) -> usize {
     // Parse the source code into a syntax tree

@@ -36,7 +36,7 @@ pub(crate) struct Opt {
     /// Run compiled script if available
     #[clap(short, long)]
     pub(crate) run: bool,
-    /// Run in REPL mode (read–eval–print loop)
+    /// Run in REPL mode (read–eval–print loop). Existing script name is optional.
     #[clap(short = 'l', long)]
     repl: bool,
 }

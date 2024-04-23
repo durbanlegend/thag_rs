@@ -13,7 +13,7 @@ use clap::Parser;
 use clap_repl::ClapEditor;
 use core::str;
 use env_logger::{fmt::WriteStyle, Builder, Env};
-use log::debug;
+use log::{debug, log_enabled, Level::Debug};
 use quote::quote;
 use rustyline::config::Configurer;
 use rustyline::DefaultEditor;
@@ -102,7 +102,7 @@ impl BuildState {
         let source_name = source_name.to_string();
         let current_dir_path = std::env::current_dir()?.canonicalize()?;
         let script_path = current_dir_path.join(PathBuf::from(script.clone()));
-        debug!("script_path={script_path:#?}");
+        // debug!("script_path={script_path:#?}");
         let source_path = script_path.canonicalize()?;
         debug!("source_dir_path={source_path:#?}");
         if !source_path.exists() {
@@ -178,17 +178,19 @@ enum ProcessCommand {
 }
 
 //      TODO:
-//       1.  Relocate target directory to ~./cargo.
-//       2.  Rustfmt of source file in tui editor or repl?
+//       1.  Relocate target directory to ~./cargo, hard-coded /examples dependency to ?
+//       2.  Delete generated files by default on exit. Use tempfile crate for repl files?
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
+//       4.  Consider add braces around repl if not an expression.
 //       5.  Don't infer dependencies from use statements that refer back to something already
 //              defined, like KeyCode and Constraint in tui_scrollview.rs.
 //       6.  bool -> 2-value enums?
 //       7.  Find a way to print out a nice prompt before loop
 //       8.  Cat files before delete.
 //       9.  --quiet option?.
-//      10.  Delete generated files by default on exit.
-//      12.  Consider supporting vi editor family or editor crate
+//      10.  Consider making script name optional, with -n/stdin parm as per my runner changes?
+//      11.  Clean up debugging
+//      12.  Consider supporting vi editor family, nvim/Helix for rust-analyzer support or editor crate
 //
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -196,23 +198,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     configure_log();
 
-    debug!("PACKAGE_DIR={PACKAGE_DIR}");
-    debug!("PACKAGE_NAME={PACKAGE_NAME}");
-    debug!("VERSION={VERSION}");
-
     let mut options = get_opt();
     let proc_flags = get_proc_flags(&options)?;
-    debug!("proc_flags={proc_flags:#?}");
 
-    // let m = clap::command!().get_matches();
-    // debug!("matches={m:?}");
+    if log_enabled!(Debug) {
+        debug_cargo_config();
+        debug!("proc_flags={proc_flags:#?}");
+        debug_timings(start, "Set up processing flags");
 
-    debug_timings(start, "Set up processing flags");
-
-    if !&options.args.is_empty() {
-        debug!("... args:");
-        for arg in &options.args {
-            debug!("{arg}");
+        if !&options.args.is_empty() {
+            debug!("... args:");
+            for arg in &options.args {
+                debug!("{arg}");
+            }
         }
     }
 
@@ -234,17 +232,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         let script = format!("examples/{script}");
         ScriptState::NamedEmpty { script }
     };
-
-    // TODO Out:
-    // Distinguish two meanings of empty.
-    //     1. No script provided for repl, one has been provided by this point, so this
-    //         meaning is redundant at this point in the code.
-    //     2. The script in 1. is supposed to have been filled in but may still be empty,
-
-    // if let ScriptState::NamedEmpty { ref script } = script_state {
-    //     // Backfill script name into CLI options before calling pre_config_build_state.
-    //     options.script = Some(format!("examples/{script}"));
-    // };
 
     let mut build_state = BuildState::pre_configure(&proc_flags, &script_state)?;
 
@@ -401,6 +388,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+fn debug_cargo_config() {
+    debug!("PACKAGE_DIR={PACKAGE_DIR}");
+    debug!("PACKAGE_NAME={PACKAGE_NAME}");
+    debug!("VERSION={VERSION}");
 }
 
 fn gen_build_run(

@@ -23,7 +23,7 @@ struct Cli {
     ValueEnum,
     EnumIter,
     EnumProperty,
-    IntoStaticStr
+    IntoStaticStr,
     // Copy,
     Clone,
     Debug,
@@ -58,6 +58,7 @@ enum Opt {
 fn main() {
     let cli = Cli::parse();
 
+    println!("Chosen option:");
     match cli.opt {
         Opt::VariantNum1 => println!("Door number 1"),
         Opt::VariantNum2 => println!("Door number 2"),
@@ -76,23 +77,24 @@ fn main() {
 
     // Using strum and convert_case, but note that the latter's kebab case
     // doesn't match serde's version when it comes to numbers :(
+    println!("\nEnum properties and text, using strum and convert_case:");
     for option in Opt::iter() {
         println!(
-            "option: {:?}, {:?}, {}",
-            option,
+            "option: {:?}, {}",
+            // option,
             option.get_str("key").unwrap(),
             <Opt as Into<&'static str>>::into(option).to_case(Case::Kebab)
         );
     }
 
-    // Print summary of enum variants
-    println!("Enum Variants:");
+    // Print summary of enum variants using clap
+    println!("\nEnum Variants, using clap:");
     for variant in Opt::value_variants() {
         let poss_val = variant.to_possible_value().unwrap();
         println!("{}={poss_val:#?}", poss_val.get_name());
         // Optionally, print doc comments if available
         if let Some(comment) = poss_val.get_help() {
-            println!("Help = {}", comment);
+            println!("Help (from doc comment) = {}", comment);
         }
     }
 }

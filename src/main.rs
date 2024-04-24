@@ -192,10 +192,6 @@ enum ProcessCommand {
 
 //      TODO:
 //       1.  Relocate target directory to ~./cargo, hard-coded /examples dependency to ?
-//       2.  Delete generated files by default on exit. Use tempfile crate for repl files?
-//       2.  Delete generated files by default on exit.
-//           Use tempfile crate for repl files? - Don't think so - tricky.
-//           Consider using existing names but in /tmp or $TMPDIR instead.
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
 //       4.  Consider adding braces around repl if not an expression.
 //       5.  Don't infer dependencies from use statements that refer back to something already

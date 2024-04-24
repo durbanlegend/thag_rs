@@ -13,6 +13,7 @@ use clap_repl::ClapEditor;
 use convert_case::{Case, Casing};
 use core::str;
 use env_logger::{fmt::WriteStyle, Builder, Env};
+use homedir::get_my_home;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
 use owo_colors::{OwoColorize, Stream};
@@ -24,7 +25,6 @@ use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::str::FromStr;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
@@ -36,7 +36,7 @@ mod errors;
 mod manifest;
 mod tui_editor;
 
-const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
+// const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub(crate) const REPL_SUBDIR: &str = "rs_repl";
@@ -44,6 +44,8 @@ const RS_SUFFIX: &str = ".rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
 
 lazy_static! {
+    // #[derive(Debug)]
+    // static ref HOME_DIR: &'static Path = get_my_home().unwrap().unwrap().as_path();
     static ref TMP_DIR: PathBuf = env::temp_dir();
 }
 
@@ -120,12 +122,26 @@ impl BuildState {
             ))));
         }
 
-        let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
+        // let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
+
+        // // debug!("gen_build_dir={gen_build_dir:?}");
+        // let target_dir_str = gen_build_dir.clone();
+        // let target_dir_path = PathBuf::from_str(&target_dir_str)?;
+        // let mut target_path = target_dir_path.clone();
+        // target_path.push(format!("./target/debug/{}", source_stem));
+
+        let home_dir = get_my_home()?.ok_or("Can't resolve home directory")?;
+        debug!("home_dir={}", home_dir.display());
+        let target_dir_path = home_dir.join(format!(".cargo/{source_stem}"));
+        debug!("target_dir_path={}", target_dir_path.display());
+        // let gen_build_dir = format!("/.cargo/{source_stem}", home_dir.display().to_str());
         // debug!("gen_build_dir={gen_build_dir:?}");
-        let target_dir_str = gen_build_dir.clone();
-        let target_dir_path = PathBuf::from_str(&target_dir_str)?;
-        let mut target_path = target_dir_path.clone();
-        target_path.push(format!("./target/debug/{}", source_stem));
+        // let target_dir_str = gen_build_dir.clone();
+        // let target_dir_path = PathBuf::from_str(&target_dir_str)?;
+        let target_dir_str = target_dir_path.display().to_string();
+        let target_path = target_dir_path
+            // .clone()
+            .join(format!("./target/debug/{}", source_stem));
         let target_path_clone = target_path.clone();
 
         let cargo_toml_path = target_dir_path.join(TOML_NAME).clone();
@@ -191,7 +207,7 @@ enum ProcessCommand {
 }
 
 //      TODO:
-//       1.  Relocate target directory to ~./cargo, hard-coded /examples dependency to ?
+//       1.
 //       2.  tui-editor auto-save or check for unsaved changes on quit.
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
 //       4.  Consider adding braces around repl if not an expression.
@@ -215,7 +231,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let proc_flags = get_proc_flags(&options)?;
 
     if log_enabled!(Debug) {
-        debug_cargo_config();
+        debug_print_config();
         debug!("proc_flags={proc_flags:#?}");
         debug_timings(start, "Set up processing flags");
 
@@ -231,10 +247,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Temporary directory: {:?}", *TMP_DIR);
 
     let repl = proc_flags.contains(ProcFlags::REPL);
-    // use tempfile::NamedTempFile;
-    // let file = NamedTempFile::new()?;
-    // // Close the file, but keep the path to it around.
-    // let temp_path = file.into_temp_path(); // .with_extension(RS_SUFFIX);
 
     let script_state = if let Some(ref script) = options.script {
         if !script.ends_with(RS_SUFFIX) {
@@ -248,16 +260,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         assert!(repl);
         let path = code_utils::create_next_repl_file();
         let script = path.to_str().unwrap().to_string();
-        // let script = format!("examples/{script}");
         ScriptState::NamedEmpty { script }
     };
-
-    // // Try a ref to keep the path alive
-    // let _temp_path_ref = if let ScriptState::NamedEmpty { temp_path, .. } = script_state {
-    //     Some(&temp_path)
-    // } else {
-    //     None
-    // };
 
     if repl {
         debug!("script_state={script_state:?}");
@@ -451,8 +455,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn debug_cargo_config() {
-    debug!("PACKAGE_DIR={PACKAGE_DIR}");
+fn debug_print_config() {
     debug!("PACKAGE_NAME={PACKAGE_NAME}");
     debug!("VERSION={VERSION}");
     debug!("REPL_SUBDIR={REPL_SUBDIR}");

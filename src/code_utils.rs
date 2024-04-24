@@ -400,8 +400,8 @@ pub(crate) fn create_next_repl_file() -> PathBuf {
     // Create a directory inside of `std::env::temp_dir()`
     debug!("repl_temp_dir = std::env::temp_dir() = {repl_temp_dir:?}");
 
-    // Ensure examples subdirectory exists
-    fs::create_dir_all(repl_temp_dir.clone()).expect("Failed to create examples directory");
+    // Ensure REPL subdirectory exists
+    fs::create_dir_all(repl_temp_dir.clone()).expect("Failed to create REPL directory");
 
     // Find existing files with the pattern repl_<nnnnnn>.rs
     let existing_files: Vec<_> = fs::read_dir(repl_temp_dir.clone())
@@ -438,7 +438,7 @@ pub(crate) fn create_next_repl_file() -> PathBuf {
                     return create_repl_file(&repl_temp_dir, i);
                 }
             }
-            panic!("Cannot create new file: all possible filenames already exist in the examples directory.");
+            panic!("Cannot create new file: all possible filenames already exist in the REPL directory.");
         }
         _ => existing_files.iter().max().unwrap() + 1, // Increment from highest existing number
     };
@@ -446,10 +446,10 @@ pub(crate) fn create_next_repl_file() -> PathBuf {
     create_repl_file(&repl_temp_dir, next_file_num)
 }
 
-pub(crate) fn create_repl_file(examples_dir: &Path, num: u32) -> PathBuf {
+pub(crate) fn create_repl_file(repl_dir: &Path, num: u32) -> PathBuf {
     let padded_num = format!("{:06}", num);
     let filename = format!("repl_{}.rs", padded_num);
-    let path = examples_dir.join(&filename);
+    let path = repl_dir.join(&filename);
     fs::File::create(path.clone()).expect("Failed to create file");
     println!("Created file: {}", filename);
     path

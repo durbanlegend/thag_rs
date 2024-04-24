@@ -6,7 +6,6 @@ use crossterm::event::{
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
-use log::debug;
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
@@ -29,7 +28,7 @@ macro_rules! error {
     }};
 }
 
-const MAPPINGS: &[[&str; 2]; 28] = &[
+const MAPPINGS: &[[&str; 2]; 29] = &[
     ["Mappings", "Description"],
     ["Ctrl+H, Backspace", "Delete character before cursor"],
     ["Ctrl+D, Delete", "Delete character at cursor"],
@@ -44,9 +43,10 @@ const MAPPINGS: &[[&str; 2]; 28] = &[
     ["Alt+D or Delete", "Delete one word from cursor position"],
     ["Ctrl+U", "Undo"],
     ["Ctrl+R", "Redo"],
-    ["Ctrl+C, Copy", "Copy selected text"],
-    ["Ctrl+X, Cut", "Cut selected text"],
-    ["Ctrl+Y, Paste", "Paste yanked text"],
+    ["Ctrl+C, Copy", "Copy (yank) selected text"],
+    ["Ctrl+X, Cut", "Cut (yank) selected text"],
+    ["Ctrl+Y, Paste yanked", "Paste yanked text"],
+    ["Ctrl+V, Paste clipboard", "Paste from system clipboard"],
     ["Ctrl+F, →", "Move cursor forward one character"],
     ["Ctrl+B, ←", "Move cursor backward one character"],
     ["Ctrl+P, ↑", "Move cursor up one line"],
@@ -65,7 +65,7 @@ const MAPPINGS: &[[&str; 2]; 28] = &[
     ],
     ["Alt+<, Ctrl+Alt+P or ↑", "Move cursor to top of file"],
     ["Alt+>, Ctrl+Alt+N or↓", "Move cursor to bottom of file"],
-    ["Ctrl+V, PageDown, Cmd+↓", "Page down"],
+    ["PageDown, Cmd+↓", "Page down"],
     ["Alt+V, PageUp, Cmd+↑", "Page up"],
 ];
 const NUM_ROWS: usize = MAPPINGS.len();
@@ -186,7 +186,7 @@ impl<'a> Buffer<'a> {
             f.write_all(line.as_bytes())?;
             f.write_all(b"\n")?;
         }
-        debug!("Saved to {}", &self.path.display());
+        // debug!("Saved to {}", &self.path.display());
         self.modified = false;
         Ok(())
     }

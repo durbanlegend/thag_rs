@@ -158,7 +158,7 @@ impl BuildState {
 }
 
 #[derive(Debug, Parser, EnumIter, EnumProperty, IntoStaticStr)]
-#[command(name = "", arg_required_else_help(true))] // This name will show up in clap's error messages, so it is important to set it to "".
+#[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
 enum LoopCommand {
     /// Enter, paste or modify your code and optionally edit your generated Cargo.toml
     #[clap(visible_alias = "c")]
@@ -192,6 +192,7 @@ enum ProcessCommand {
 
 //      TODO:
 //       1.  Relocate target directory to ~./cargo, hard-coded /examples dependency to ?
+//       2.  tui-editor auto-save or check for unsaved changes on quit.
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
 //       4.  Consider adding braces around repl if not an expression.
 //       5.  Don't infer dependencies from use statements that refer back to something already
@@ -481,12 +482,12 @@ fn gen_build_run(
         )?);
 
         let has_main = code_utils::has_main(&rs_source);
-        if verbose {
-            println!("Source does not contain fn main(), thus a snippet");
-        }
         let rs_source = if has_main {
             rs_source
         } else {
+            if verbose {
+                println!("Source does not contain fn main(), thus a snippet");
+            }
             wrap_snippet(&rs_source)
         };
 

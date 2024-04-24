@@ -13,6 +13,7 @@ use clap_repl::ClapEditor;
 use convert_case::{Case, Casing};
 use core::str;
 use env_logger::{fmt::WriteStyle, Builder, Env};
+use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
 use owo_colors::{OwoColorize, Stream};
 use quote::quote;
@@ -38,15 +39,20 @@ mod tui_editor;
 const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub(crate) const REPL_SUBDIR: &str = "rs_repl";
 const RS_SUFFIX: &str = ".rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
+
+lazy_static! {
+    static ref TMP_DIR: PathBuf = env::temp_dir();
+}
 
 #[derive(Debug)]
 pub(crate) enum ScriptState {
     /// Repl with no script name provided by user
     #[allow(dead_code)]
     Anonymous,
-    /// Repl with script name programmatically assigned
+    /// Repl with script name
     NamedEmpty { script: String },
     /// Script name provided by user
     Named { script: String },
@@ -187,8 +193,11 @@ enum ProcessCommand {
 //      TODO:
 //       1.  Relocate target directory to ~./cargo, hard-coded /examples dependency to ?
 //       2.  Delete generated files by default on exit. Use tempfile crate for repl files?
+//       2.  Delete generated files by default on exit.
+//           Use tempfile crate for repl files? - Don't think so - tricky.
+//           Consider using existing names but in /tmp or $TMPDIR instead.
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
-//       4.  Consider add braces around repl if not an expression.
+//       4.  Consider adding braces around repl if not an expression.
 //       5.  Don't infer dependencies from use statements that refer back to something already
 //              defined, like KeyCode and Constraint in tui_scrollview.rs.
 //       6.  bool -> 2-value enums?
@@ -221,7 +230,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
+    // Access TMP_DIR
+    println!("Temporary directory: {:?}", *TMP_DIR);
+
     let repl = proc_flags.contains(ProcFlags::REPL);
+    // use tempfile::NamedTempFile;
+    // let file = NamedTempFile::new()?;
+    // // Close the file, but keep the path to it around.
+    // let temp_path = file.into_temp_path(); // .with_extension(RS_SUFFIX);
 
     let script_state = if let Some(ref script) = options.script {
         if !script.ends_with(RS_SUFFIX) {
@@ -234,13 +250,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     } else {
         assert!(repl);
         let path = code_utils::create_next_repl_file();
-
-        let script = path.file_name().unwrap().to_str().unwrap().to_string();
-        let script = format!("examples/{script}");
+        let script = path.to_str().unwrap().to_string();
+        // let script = format!("examples/{script}");
         ScriptState::NamedEmpty { script }
     };
 
+    // // Try a ref to keep the path alive
+    // let _temp_path_ref = if let ScriptState::NamedEmpty { temp_path, .. } = script_state {
+    //     Some(&temp_path)
+    // } else {
+    //     None
+    // };
+
+    if repl {
+        debug!("script_state={script_state:?}");
+    }
     let mut build_state = BuildState::pre_configure(&proc_flags, &script_state)?;
+    if repl {
+        debug!("build_state.source_path={:?}", build_state.source_path);
+    }
 
     build_state.cargo_manifest = if build_state.must_gen {
         if matches!(script_state, ScriptState::Named { .. }) {
@@ -282,6 +310,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                 continue 'level2;
             };
             match command {
+                // LoopCommand::Quit => {
+                //     // Closing it manually to catch any error
+                //     match script_state {
+                //         ScriptState::NamedEmpty { temp_path, .. } => temp_path.close(),
+                //         _ => Ok(()),
+                //     }?;
+
+                //     return Ok(());
+                // }
                 LoopCommand::Quit => return Ok(()),
                 LoopCommand::Delete => {
                     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
@@ -421,6 +458,7 @@ fn debug_cargo_config() {
     debug!("PACKAGE_DIR={PACKAGE_DIR}");
     debug!("PACKAGE_NAME={PACKAGE_NAME}");
     debug!("VERSION={VERSION}");
+    debug!("REPL_SUBDIR={REPL_SUBDIR}");
 }
 
 fn gen_build_run(

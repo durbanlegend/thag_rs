@@ -107,6 +107,7 @@ dependencies = [
  "convert_case",
  "crossterm",
  "env_logger",
+ "lazy_static",
  "log",
  "owo-colors",
  "quote",

@@ -1,7 +1,7 @@
 use crate::cmd_args::ProcFlags;
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::BuildState;
+use crate::{BuildState, REPL_SUBDIR, TMP_DIR};
 use log::debug;
 use regex::Regex;
 use std::fs::{remove_dir_all, remove_file};
@@ -395,13 +395,16 @@ Ok(())
 }
 
 pub(crate) fn create_next_repl_file() -> PathBuf {
-    let examples_dir = Path::new("examples");
+    // let repl_temp_dir = Path::new(&TMP_DIR);
+    let repl_temp_dir = TMP_DIR.join(REPL_SUBDIR);
+    // Create a directory inside of `std::env::temp_dir()`
+    debug!("repl_temp_dir = std::env::temp_dir() = {repl_temp_dir:?}");
 
     // Ensure examples subdirectory exists
-    fs::create_dir_all(examples_dir).expect("Failed to create examples directory");
+    fs::create_dir_all(repl_temp_dir.clone()).expect("Failed to create examples directory");
 
     // Find existing files with the pattern repl_<nnnnnn>.rs
-    let existing_files: Vec<_> = fs::read_dir(examples_dir)
+    let existing_files: Vec<_> = fs::read_dir(repl_temp_dir.clone())
         .unwrap()
         .filter_map(|entry| {
             let path = entry.unwrap().path();
@@ -432,7 +435,7 @@ pub(crate) fn create_next_repl_file() -> PathBuf {
             // Wrap around and find the first gap
             for i in 0..999_999 {
                 if !existing_files.contains(&i) {
-                    return create_repl_file(examples_dir, i);
+                    return create_repl_file(&repl_temp_dir, i);
                 }
             }
             panic!("Cannot create new file: all possible filenames already exist in the examples directory.");
@@ -440,7 +443,7 @@ pub(crate) fn create_next_repl_file() -> PathBuf {
         _ => existing_files.iter().max().unwrap() + 1, // Increment from highest existing number
     };
 
-    create_repl_file(examples_dir, next_file_num)
+    create_repl_file(&repl_temp_dir, next_file_num)
 }
 
 pub(crate) fn create_repl_file(examples_dir: &Path, num: u32) -> PathBuf {

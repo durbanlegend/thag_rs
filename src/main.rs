@@ -15,7 +15,7 @@ use env_logger::{fmt::WriteStyle, Builder, Env};
 use homedir::get_my_home;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
-use owo_colors::colors::{Blue, BrightWhite, Magenta, Red, Yellow};
+use owo_colors::colors::{BrightWhite, Red};
 use owo_colors::{OwoColorize, Stream};
 use quote::quote;
 use rustyline::config::Configurer;
@@ -34,6 +34,7 @@ mod cmd_args;
 mod code_utils;
 mod errors;
 mod manifest;
+mod owo_styles;
 mod tui_editor;
 
 // const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");

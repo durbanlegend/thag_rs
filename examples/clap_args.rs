@@ -49,12 +49,6 @@ enum Opt {
     VariantNum3,
 }
 
-// #[derive(Deserialize, Debug)]
-// pub(crate) struct Check {
-//     // #[serde(flatten)]
-//     pub condition: Option<Opt>,
-// }
-
 fn main() {
     let cli = Cli::parse();
 
@@ -67,13 +61,6 @@ fn main() {
 
     // println!("crate_version={:#?}", cli.get_version());
     assert_eq!("MY VARIABLE NAME", "My variable NAME".to_case(Case::Upper));
-
-    // println!(
-    //     "Check={:?}",
-    //     Check {
-    //         condition: Some(cli.opt)
-    //     }
-    // );
 
     // Using strum and convert_case, but note that the latter's kebab case
     // doesn't match serde's version when it comes to numbers :(

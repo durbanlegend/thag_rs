@@ -30,3 +30,5 @@ examples/lsp_compl2.rs
 examples/code_completion.rs
 examples/code_compl2.rs
 history.txt
+colors.sh
+sample_bg.html

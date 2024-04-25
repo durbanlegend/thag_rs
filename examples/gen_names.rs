@@ -1,5 +1,7 @@
-//! [dependencies]
-//! names = { version = "0.14.0", default-features = false }
+/*[toml]
+[dependencies]
+names = { version = "0.14.0", default-features = false }
+*/
 
 use names::{Generator, Name};
 

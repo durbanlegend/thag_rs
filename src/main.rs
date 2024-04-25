@@ -6,7 +6,6 @@ use crate::code_utils::{
 use crate::code_utils::{modified_since_compiled, parse_source};
 use crate::errors::BuildRunError;
 use crate::manifest::{default_manifest, CargoManifest};
-use crate::tui_editor::Editor;
 
 use clap::Parser;
 use clap_repl::ClapEditor;
@@ -16,6 +15,7 @@ use env_logger::{fmt::WriteStyle, Builder, Env};
 use homedir::get_my_home;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
+use owo_colors::colors::{Blue, BrightWhite, Magenta, Red, Yellow};
 use owo_colors::{OwoColorize, Stream};
 use quote::quote;
 use rustyline::config::Configurer;
@@ -299,10 +299,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         let cmd_list = cmd_vec.join(", ") + " or help";
 
         println!("{dash_line}");
-        println!(
-            "Enter one of: {}",
-            cmd_list.if_supports_color(Stream::Stdout, |text| text.blue())
-        );
+        let disp_cmd_list = || {
+            println!(
+                "Enter one of: {}",
+                cmd_list.if_supports_color(Stream::Stdout, |text| text.blue().on_cyan())
+            );
+        };
+        disp_cmd_list();
         let mut loop_editor = ClapEditor::<LoopCommand>::new();
         let mut loop_command = loop_editor.read_command();
         'level2: loop {
@@ -356,9 +359,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                     ]
                     .into_iter();
                     debug!("files={files:#?}");
-                    Editor::new(files)?.run()?;
+                    // let editor = &mut Editor::new(files)?;
+                    // editor.run()?;
+                    edit::edit_file(&build_state.source_path)?;
 
-                    println!("Enter cancel, retry, submit, exit or help");
+                    println!("Enter cancel, retry, submit, quit or help");
                     let mut process_editor = ClapEditor::<ProcessCommand>::new();
                     'level3: loop {
                         let Some(command) = process_editor.read_command() else {
@@ -383,10 +388,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                             }
                             ProcessCommand::Cancel => {
                                 loop_command = loop_editor.read_command();
+                                disp_cmd_list();
                                 continue 'level2;
                             }
                             ProcessCommand::Retry => {
                                 loop_command = Some(LoopCommand::Continue);
+                                disp_cmd_list();
                                 continue 'level2;
                             }
                         }
@@ -404,6 +411,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         // Parse the expression string into a syntax tree
                         let str = &input.trim();
                         if str.to_lowercase() == "q" {
+                            disp_cmd_list();
                             break;
                         }
                         let expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(str);
@@ -431,10 +439,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 if result.is_err() {
                                     println!("{result:?}");
                                 }
-
+                                disp_cmd_list();
                                 break;
                             }
-                            Err(err) => println!("Error parsing expression: {}", err),
+                            Err(err) => {
+                                println!(
+                                    "{}",
+                                    format!("Error parsing expression: {}", err)
+                                        .fg::<Red>()
+                                        .bg::<BrightWhite>()
+                                );
+                            }
                         }
                     }
                 }
@@ -454,6 +469,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+// fn color_stream(var_name: String, fg: dyn OwoColorize::color, bg: dyn OwoColorize::on_color) {
+//     let _ = OwoColorize::if_supports_color(&var_name, Stream::Stdout, |text| text.fg().bg());
+// }
 
 fn debug_print_config() {
     debug!("PACKAGE_NAME={PACKAGE_NAME}");

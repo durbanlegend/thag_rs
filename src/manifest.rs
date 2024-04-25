@@ -159,7 +159,11 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
         r#"
         Doing a Cargo search for crate {dep_crate} referenced in your script.
         To speed up build, consider embedding the required {dep_crate} = "<version>"
-        in comments (//!) in the script.
+        in a block comment at the top of the script, in the form:
+        /*[toml]
+        [dependencies]
+        {dep_crate} = "n.n.n"
+        */
         E.g.:
 //! [dependencies]
 //! {dep_crate} = "<version n.n.n goes here>"

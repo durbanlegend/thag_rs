@@ -13,7 +13,11 @@ use owo_colors::colors::*;
 use owo_colors::{OwoColorize, Style};
 // use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
-use termbg::{Error, Theme};
+use termbg::Theme;
+
+pub trait ThemeStyle {
+    fn get_style(&self) -> Style;
+}
 
 // Enum for light theme styles
 #[derive(Clone, Copy, EnumIter, IntoStaticStr)]
@@ -33,50 +37,29 @@ pub enum DarkStyle {
     Debug,
 }
 
-impl LightStyle {
+impl ThemeStyle for LightStyle {
     // Get the corresponding color style for the message type
-    pub fn style(&self) -> Style {
+    fn get_style(&self) -> Style {
         match *self {
-            LightStyle::Error => {
-                let style = Style::new();
-                style.fg::<Red>()
-            }
-            LightStyle::Warning => {
-                let style = Style::new();
-                style.fg::<Orange>()
-            }
+            LightStyle::Error => Style::new().fg::<Red>(),
+            LightStyle::Warning => Style::new().fg::<Orange>(),
             LightStyle::Info => {
-                let style = Style::new();
-                style.fg::<White>()
+                // Unexplained anomaly
+                Style::new().fg::<White>()
             }
-            LightStyle::Debug => {
-                let style = Style::new();
-                style.fg::<Blue>()
-            }
+            LightStyle::Debug => Style::new().fg::<Blue>(),
         }
     }
 }
 
-impl DarkStyle {
+impl ThemeStyle for DarkStyle {
     // Get the corresponding color style for the message type
-    pub fn style(&self) -> Style {
+    fn get_style(&self) -> Style {
         match *self {
-            DarkStyle::Error => {
-                let style = Style::new();
-                style.fg::<Red>()
-            }
-            DarkStyle::Warning => {
-                let style = Style::new();
-                style.fg::<Orange>()
-            }
-            DarkStyle::Info => {
-                let style = Style::new();
-                style.fg::<White>()
-            }
-            DarkStyle::Debug => {
-                let style = Style::new();
-                style.fg::<Cyan>()
-            }
+            DarkStyle::Error => Style::new().fg::<Red>(),
+            DarkStyle::Warning => Style::new().fg::<Orange>(),
+            DarkStyle::Info => Style::new().fg::<White>(),
+            DarkStyle::Debug => Style::new().fg::<Cyan>(),
         }
     }
 }
@@ -87,7 +70,7 @@ fn main() {
     println!("Check terminal background color");
     let term = termbg::terminal();
     // let rgb = termbg::rgb(timeout);
-    let theme: Result<Theme, Error> = termbg::theme(timeout);
+    let theme: Result<Theme, termbg::Error> = termbg::theme(timeout);
 
     println!("  Term : {:?}", term);
 
@@ -112,24 +95,32 @@ fn main() {
             Theme::Light => {
                 for variant in LightStyle::iter() {
                     // <Opt as Into<&'static str>>::into(option).to_case(Case::Kebab)
-                    let level: &str = &<&str as Into<&'static str>>::into(
-                        <LightStyle as Into<&'static str>>::into(variant).into(),
-                    )
-                    .to_case(Case::Kebab);
-                    let style = variant.style();
-                    let msg = &format!("My {level} message");
-                    println!("{}  style {style:?}", msg.style(style));
+                    {
+                        let level: &str =
+                            &<&str as Into<&'static str>>::into(<LightStyle as Into<
+                                &'static str,
+                            >>::into(
+                                variant
+                            ))
+                            .to_case(Case::Kebab);
+                        let style = variant.get_style();
+                        let msg = &format!("My {level} message");
+                        // println!("{}  style {style:?}", msg.style(style));
+                        println!("{}", msg.style(style));
+                    };
                 }
             }
             Theme::Dark => {
                 for variant in DarkStyle::iter() {
-                    let level: &str = &<&str as Into<&'static str>>::into(
-                        <DarkStyle as Into<&'static str>>::into(variant).into(),
-                    )
-                    .to_case(Case::Kebab);
-                    let style = variant.style();
+                    let level: &str =
+                        &<&str as Into<&'static str>>::into(
+                            <DarkStyle as Into<&'static str>>::into(variant),
+                        )
+                        .to_case(Case::Kebab);
+                    let style = variant.get_style();
                     let msg = &format!("My {level} message");
-                    println!("{}  style {style:?}", msg.style(style));
+                    // println!("{}  style {style:?}", msg.style(style));
+                    println!("{}", msg.style(style));
                 }
             }
         }

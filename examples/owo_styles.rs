@@ -8,7 +8,7 @@ termbg = "0.5.0"
 */
 
 use convert_case::{Case, Casing};
-use owo_colors::colors::css::Orange;
+use owo_colors::colors::css::{DarkOrange, Orange};
 use owo_colors::colors::*;
 use owo_colors::{OwoColorize, Style};
 // use serde::{Deserialize, Serialize};
@@ -41,8 +41,8 @@ impl ThemeStyle for LightStyle {
     // Get the corresponding color style for the message type
     fn get_style(&self) -> Style {
         match *self {
-            LightStyle::Error => Style::new().fg::<Red>(),
-            LightStyle::Warning => Style::new().fg::<Orange>(),
+            LightStyle::Error => Style::new().fg::<Red>().bold(),
+            LightStyle::Warning => Style::new().fg::<DarkOrange>().bold(),
             LightStyle::Info => {
                 // Unexplained anomaly
                 Style::new().fg::<White>()
@@ -56,8 +56,8 @@ impl ThemeStyle for DarkStyle {
     // Get the corresponding color style for the message type
     fn get_style(&self) -> Style {
         match *self {
-            DarkStyle::Error => Style::new().fg::<Red>(),
-            DarkStyle::Warning => Style::new().fg::<Orange>(),
+            DarkStyle::Error => Style::new().fg::<Red>().bold(),
+            DarkStyle::Warning => Style::new().fg::<Orange>().bold(),
             DarkStyle::Info => Style::new().fg::<White>(),
             DarkStyle::Debug => Style::new().fg::<Cyan>(),
         }
@@ -97,12 +97,7 @@ fn main() {
                     // <Opt as Into<&'static str>>::into(option).to_case(Case::Kebab)
                     {
                         let level: &str =
-                            &<&str as Into<&'static str>>::into(<LightStyle as Into<
-                                &'static str,
-                            >>::into(
-                                variant
-                            ))
-                            .to_case(Case::Kebab);
+                            &<LightStyle as Into<&str>>::into(variant).to_case(Case::Kebab);
                         let style = variant.get_style();
                         let msg = &format!("My {level} message");
                         // println!("{}  style {style:?}", msg.style(style));
@@ -110,13 +105,12 @@ fn main() {
                     };
                 }
             }
+
+            // <Opt as Into<&'static str>>::into(option).to_case(Case::Kebab)
             Theme::Dark => {
                 for variant in DarkStyle::iter() {
                     let level: &str =
-                        &<&str as Into<&'static str>>::into(
-                            <DarkStyle as Into<&'static str>>::into(variant),
-                        )
-                        .to_case(Case::Kebab);
+                        &<DarkStyle as Into<&str>>::into(variant).to_case(Case::Kebab);
                     let style = variant.get_style();
                     let msg = &format!("My {level} message");
                     // println!("{}  style {style:?}", msg.style(style));

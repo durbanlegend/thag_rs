@@ -96,7 +96,6 @@ fn main() {
                     let level: &str =
                         &<DarkStyle as Into<&str>>::into(variant).to_case(Case::Kebab);
                     let msg = &format!("My {} message", level);
-                    let style: Style = variant.get_style();
                     println!("{}", msg.style(variant.get_style()));
                 }
             }

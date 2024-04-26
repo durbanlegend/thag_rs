@@ -160,19 +160,6 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
     (rust_code, toml_metadata)
 }
 
-// fn rs_extract_toml(rs_contents: &str) -> String {
-//     let rs_toml_str = {
-//         let str_iter = rs_contents
-//             .lines()
-//             .map(str::trim_start)
-//             .filter(|&line| line.starts_with("//!"))
-//             .map(|line| line.trim_start_matches('/').trim_start_matches('!'));
-//         reassemble(str_iter)
-//     };
-//     debug!("Rust source manifest info (rs_toml_str) = {rs_toml_str}");
-//     rs_toml_str
-// }
-
 pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
     let string = path
         .to_path_buf()

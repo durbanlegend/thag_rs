@@ -123,26 +123,12 @@ impl BuildState {
             ))));
         }
 
-        // let gen_build_dir = format!("{PACKAGE_DIR}/.cargo/{source_stem}");
-
-        // // debug!("gen_build_dir={gen_build_dir:?}");
-        // let target_dir_str = gen_build_dir.clone();
-        // let target_dir_path = PathBuf::from_str(&target_dir_str)?;
-        // let mut target_path = target_dir_path.clone();
-        // target_path.push(format!("./target/debug/{}", source_stem));
-
         let home_dir = get_my_home()?.ok_or("Can't resolve home directory")?;
         debug!("home_dir={}", home_dir.display());
         let target_dir_path = home_dir.join(format!(".cargo/{source_stem}"));
         debug!("target_dir_path={}", target_dir_path.display());
-        // let gen_build_dir = format!("/.cargo/{source_stem}", home_dir.display().to_str());
-        // debug!("gen_build_dir={gen_build_dir:?}");
-        // let target_dir_str = gen_build_dir.clone();
-        // let target_dir_path = PathBuf::from_str(&target_dir_str)?;
         let target_dir_str = target_dir_path.display().to_string();
-        let target_path = target_dir_path
-            // .clone()
-            .join(format!("./target/debug/{}", source_stem));
+        let target_path = target_dir_path.join(format!("./target/debug/{}", source_stem));
         let target_path_clone = target_path.clone();
 
         let cargo_toml_path = target_dir_path.join(TOML_NAME).clone();

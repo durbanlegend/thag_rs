@@ -25,18 +25,6 @@ pub(crate) struct CargoManifest {
     pub(crate) bin: Vec<Product>,
 }
 
-// impl Default for CargoManifest {
-//     fn default() -> Self {
-//         CargoManifest {
-//             package: Package::default(),
-//             dependencies: None,
-//             features: None,
-//             workspace: Workspace::default(),
-//             bin: vec![Product::default()],
-//         }
-//     }
-// }
-
 impl FromStr for CargoManifest {
     type Err = BuildRunError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -236,8 +224,10 @@ pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn 
 }
 
 pub(crate) fn default_manifest(build_state: &BuildState) -> Result<CargoManifest, BuildRunError> {
-    let build_dir = &build_state.target_dir_str;
     let source_stem = &build_state.source_stem;
+    let source_name = &build_state.source_name;
+    let binding = build_state.target_dir_path.join(source_name);
+    let gen_src_path = &binding.to_string_lossy();
 
     let cargo_manifest = format!(
         r##"
@@ -254,7 +244,7 @@ edition = "2021"
 
 [[bin]]
 name = "{source_stem}"
-path = "{build_dir}/{source_stem}.rs"
+path = "{gen_src_path}"
 "##
     );
 

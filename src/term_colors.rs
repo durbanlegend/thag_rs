@@ -1,11 +1,10 @@
-/*[toml]
-[dependencies]
-convert_case = "0.6.0"
-owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.2", features = ["derive"] }
-termbg = "0.5.0"
-*/
-
+// /*[toml]
+// [dependencies]
+// convert_case = "0.6.0"
+// owo-colors = { version = "4.0.0", features = ["supports-colors"] }
+// strum = { version = "0.26.2", features = ["derive"] }
+// termbg = "0.5.0"
+// */
 use convert_case::{Case, Casing};
 use owo_colors::colors::css::{Black, DarkOrange, Orange};
 use owo_colors::colors::{Blue, Cyan, Green, Red, White};

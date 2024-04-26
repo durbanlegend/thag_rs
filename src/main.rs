@@ -34,7 +34,7 @@ mod cmd_args;
 mod code_utils;
 mod errors;
 mod manifest;
-mod owo_styles;
+mod term_colors;
 mod tui_editor;
 
 // const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");

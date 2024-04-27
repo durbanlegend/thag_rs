@@ -45,8 +45,6 @@ pub enum YinYangStyle {
 
 impl ThemeStyle for YinYangStyle {
     // Get the corresponding color style for the message type
-                YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                YinYangStyle::Warning => Style::new().fg::<Orange>().bold(),
     fn get_style(&self) -> Option<Style> {
         let theme_result = get_theme();
         if let Ok(theme) = theme_result {

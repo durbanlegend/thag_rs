@@ -1,12 +1,10 @@
 /*[toml]
 [dependencies]
-convert_case = "0.6.0"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 strum = { version = "0.26.2", features = ["derive"] }
 termbg = "0.5.0"
 */
 
-use convert_case::{Case, Casing};
 use owo_colors::colors::css::{Black, DarkOrange, Orange};
 use owo_colors::colors::{Blue, Cyan, Green, Red, White};
 use owo_colors::{OwoColorize, Style};
@@ -19,6 +17,7 @@ pub trait ThemeStyle {
 
 // Enum for light theme styles
 #[derive(Clone, Copy, EnumIter, IntoStaticStr)]
+#[strum(serialize_all = "kebab-case")]
 pub enum LightStyle {
     Error,
     Warning,
@@ -83,8 +82,7 @@ fn main() {
         match theme.unwrap() {
             Theme::Light => {
                 for variant in LightStyle::iter() {
-                    let level: &str =
-                        &<LightStyle as Into<&str>>::into(variant).to_case(Case::Kebab);
+                    let level: &str = &<LightStyle as Into<&str>>::into(variant);
                     let msg = &format!("My {} message", level);
                     println!("{}", msg.style(variant.get_style()));
                 }

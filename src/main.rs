@@ -6,17 +6,17 @@ use crate::code_utils::{
 use crate::code_utils::{modified_since_compiled, parse_source};
 use crate::errors::BuildRunError;
 use crate::manifest::{default_manifest, CargoManifest};
+use crate::term_colors::{ThemeStyle, YinYangStyle};
 
 use clap::Parser;
 use clap_repl::ClapEditor;
-use convert_case::{Case, Casing};
 use core::str;
 use env_logger::{fmt::WriteStyle, Builder, Env};
 use homedir::get_my_home;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
 use owo_colors::colors::{BrightWhite, Red};
-use owo_colors::{OwoColorize, Stream};
+use owo_colors::OwoColorize;
 use quote::quote;
 use rustyline::config::Configurer;
 use rustyline::DefaultEditor;
@@ -162,6 +162,7 @@ impl BuildState {
 
 #[derive(Debug, Parser, EnumIter, EnumProperty, IntoStaticStr)]
 #[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
+#[strum(serialize_all = "kebab-case")]
 enum LoopCommand {
     /// Enter, paste or modify your code and optionally edit your generated Cargo.toml
     #[clap(visible_alias = "c")]
@@ -194,7 +195,7 @@ enum ProcessCommand {
 }
 
 //      TODO:
-//       1.
+//       1.  In term_colors, detect f terminal is xterm compatible, and if so choose nicer colors.
 //       2.  tui-editor auto-save or check for unsaved changes on quit.
 //       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
 //       4.  Consider adding braces around repl if not an expression.
@@ -278,19 +279,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     if repl {
         let dash_line = "-".repeat(50);
 
-        // Using strum and convert_case, but be careful that the latter's kebab case
-        // doesn't match serde's version when it comes to numbers :(
+        // Using strum
         let cmd_vec = LoopCommand::iter()
-            .map(|v| <LoopCommand as Into<&'static str>>::into(v).to_case(Case::Kebab))
+            .map(<LoopCommand as Into<&'static str>>::into)
+            .map(String::from)
             .collect::<Vec<String>>();
         let cmd_list = cmd_vec.join(", ") + " or help";
 
         println!("{dash_line}");
+        // let disp_cmd_list = || {
+        //     println!(
+        //         "Enter one of: {}",
+        //         cmd_list.if_supports_color(Stream::Stdout, |text| text.blue().on_cyan())
+        //     );
+        // };
         let disp_cmd_list = || {
-            println!(
-                "Enter one of: {}",
-                cmd_list.if_supports_color(Stream::Stdout, |text| text.blue().on_cyan())
-            );
+            let x = YinYangStyle::Emphasis;
+            color_println!(x.get_style(), "Enter one of: {}", cmd_list);
         };
         disp_cmd_list();
         let mut loop_editor = ClapEditor::<LoopCommand>::new();

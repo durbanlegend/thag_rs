@@ -1,13 +1,11 @@
 /*[toml]
 [dependencies]
 clap = { version = "4.5.4", features = ["cargo", "derive"] }
-convert_case = "0.6.0"
 serde = { version = "1.0.198", features = ["derive"] }
 strum = { version = "0.26.2", features = ["derive"] }
 */
 
 use clap::{Parser, ValueEnum};
-use convert_case::{Case, Casing};
 use serde::{Deserialize, Serialize};
 use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
 
@@ -35,7 +33,7 @@ struct Cli {
     PartialOrd,
     Ord,
 )]
-// #[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
 enum Opt {
     #[default]
     /// Help for variant 1
@@ -59,18 +57,14 @@ fn main() {
         Opt::VariantNum3 => println!("Door number 3"),
     }
 
-    // println!("crate_version={:#?}", cli.get_version());
-    assert_eq!("MY VARIABLE NAME", "My variable NAME".to_case(Case::Upper));
-
-    // Using strum and convert_case, but note that the latter's kebab case
-    // doesn't match serde's version when it comes to numbers :(
-    println!("\nEnum properties and text, using strum and convert_case:");
+    // Using strum
+    println!("\nEnum properties and text, using strum:");
     for option in Opt::iter() {
         println!(
             "option: {:?}, {}",
             // option,
             option.get_str("key").unwrap(),
-            <Opt as Into<&'static str>>::into(option).to_case(Case::Kebab)
+            <Opt as Into<&'static str>>::into(option)
         );
     }
 

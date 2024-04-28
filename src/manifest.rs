@@ -229,6 +229,8 @@ pub(crate) fn default_manifest(build_state: &BuildState) -> Result<CargoManifest
     let binding = build_state.target_dir_path.join(source_name);
     let gen_src_path = &binding.to_string_lossy();
 
+    let gen_src_path = preprocess_path_for_windows(&gen_src_path);
+
     let cargo_manifest = format!(
         r##"
 [package]
@@ -248,9 +250,23 @@ path = "{gen_src_path}"
 "##
     );
 
-    eprintln!("cargo_manifest=\n{cargo_manifest}");
+    eprintln!("cargo_manifest=\n{cargo_manifest}");    
+    
     CargoManifest::from_str(&cargo_manifest)
 }
+
+fn preprocess_path_for_windows(path: &str) -> String {
+    #[cfg(windows)]
+    {
+        path.replace("\\", "\\\\")
+    }
+    #[cfg(not(windows))]
+    {
+        path.to_string()
+    }
+}
+
+
 
 pub(crate) fn merge_manifest(
     build_state: &BuildState,

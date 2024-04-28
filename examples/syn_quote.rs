@@ -4,15 +4,21 @@
 
 use quote::quote;
 use syn::{self, Expr};
+use std::io::Read;
 
 fn main() {
     loop {
         println!("Enter an expression (e.g., 2 + 3): ");
-        let mut input = String::new();
+        let mut input = Vec::<u8>::new();
         std::io::stdin()
-            .read_line(&mut input)
+            .read_to_end(&mut input)
             .expect("Failed to read input");
 
+            let input = match std::str::from_utf8(&input) {
+                Ok(v) => v,
+                Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+            };
+        
         // Parse the expression string into a syntax tree
         let expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(&input.trim());
 

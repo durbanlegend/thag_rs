@@ -8,7 +8,7 @@ termbg = "0.5.0"
 
 use log::debug;
 use owo_colors::colors::css::{Black, DarkOrange, Orange};
-use owo_colors::colors::{Blue, BrightBlue, Cyan, Green, Red, White, Yellow};
+use owo_colors::colors::{Blue, Cyan, Red, White, Yellow};
 use owo_colors::{AnsiColors, OwoColorize, Style, XtermColors};
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use termbg::Theme;
@@ -82,6 +82,7 @@ impl ThemeStyle for YinYangStyle {
 }
 
 #[allow(dead_code)]
+#[allow(clippy::too_many_lines)]
 fn main() {
     let term = termbg::terminal();
     debug!("  Term : {:?}", term);
@@ -139,7 +140,7 @@ fn main() {
         println!("No color support");
     }
 
-    if let Ok(theme_ref) = borrowed_theme {
+    if let Ok(_theme_ref) = borrowed_theme {
         let style = Style::new();
         for variant in &[
             XtermColors::AeroBlue,

@@ -583,21 +583,48 @@ fn gen_build_run(
     // let build_state: &mut BuildState = build_state;
 
     if build_state.must_gen {
-        let (mut rs_manifest, rs_source): (CargoManifest, String) =
-            parse_source(&build_state.source_path)?;
+        // let (mut rs_manifest, rs_source): (CargoManifest, String) =
+        //     parse_source(&build_state.source_path)?;
 
-        build_state.cargo_manifest = Some(manifest::merge_manifest(
-            build_state,
-            &rs_source,
-            &mut rs_manifest,
-        )?);
+        // let syntax_tree = if let Some(syntax_tree) = maybe_syntax_tree {
+        //     syntax_tree
+        // } else {
+        //     return Err(Box::new(BuildRunError::NoneOption(
+        //         "Error unwrapping syntax tree".to_string(),
+        //     )));
+        // };
+        let borrowed_syntax_tree = maybe_syntax_tree.as_mut();
+        let borrowed_rs_manifest = maybe_rs_manifest.as_mut();
+        if let Some(syntax_tree_mut) = borrowed_syntax_tree {
+            if let Some(rs_manifest_ref) = borrowed_rs_manifest {
+                build_state.cargo_manifest = Some(manifest::merge_manifest(
+                    build_state,
+                    syntax_tree_mut,
+                    rs_manifest_ref,
+                )?);
+                let has_main = code_utils::has_main(syntax_tree_mut);
+                // let borrowed_rs_source = maybe_rs_source.as_ref();
+                // if let Some(rs_source) = borrowed_rs_source {
+                //     let x = if !has_main {
+                //         &wrap_snippet(rs_source)
+                //     } else {
+                //         rs_source
+                //     };
 
-        let has_main = code_utils::has_main(&rs_source);
-        let rs_source = if has_main {
-            rs_source
-        } else {
-            if verbose {
-                println!("Source does not contain fn main(), thus a snippet");
+                //     generate(build_state, &x, proc_flags)?;
+                // }
+                let borrowed_rs_source = maybe_rs_source.as_ref();
+                if let Some(rs_source_ref) = borrowed_rs_source {
+                    if has_main {
+                        generate(build_state, rs_source_ref, proc_flags)?;
+                    } else {
+                        if verbose {
+                            println!("Source does not contain fn main(), thus a snippet");
+                        }
+                        generate(build_state, &wrap_snippet(rs_source_ref), proc_flags)?;
+                        // &wrap_snippet(rs_source_ref).clone()
+                    }
+                }
             }
         }
     } else {

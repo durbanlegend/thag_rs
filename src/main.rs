@@ -3,7 +3,7 @@ use crate::cmd_args::{get_opt, get_proc_flags, ProcFlags};
 use crate::code_utils::{
     clean_up, debug_timings, display_dir_contents, display_timings, rustfmt, wrap_snippet,
 };
-use crate::code_utils::{modified_since_compiled, parse_source};
+use crate::code_utils::{modified_since_compiled, parse_source, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::{default_manifest, CargoManifest};
 use crate::term_colors::{ThemeStyle, YinYangStyle};
@@ -242,11 +242,10 @@ impl Highlighter for EvalHelper {
 
 //      TODO:
 //       1.  In term_colors, detect f terminal is xterm compatible, and if so choose nicer colors.
-//       2.  tui-editor auto-save or check for unsaved changes on quit.
-//       3.  Replace //! by //: or something else that doesn't conflict with intra-doc links.
+//       2.  Drop tui_editor
+//       3.  Debug Windows always doing regen and rebuild.
 //       4.  Consider adding braces around repl if not an expression.
-//       5.  Don't infer dependencies from use statements that refer back to something already
-//              defined, like KeyCode and Constraint in tui_scrollview.rs.
+//       5.
 //       6.  bool -> 2-value enums?
 //       7.  Find a way to print out a nice prompt before loop
 //       8.  Cat files before delete.
@@ -306,8 +305,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // build_state.cargo_manifest = None;
-    let (mut maybe_rs_manifest, mut maybe_rs_source) = (None, None);
+    let mut maybe_rs_manifest = None;
+    let mut maybe_rs_source = None;
     let mut maybe_syntax_tree: Option<File> = None;
+    println!("script_state={:#?}", script_state);
     if build_state.must_gen && matches!(script_state, ScriptState::Named { .. }) {
         let (rs_manif, rs_source): (CargoManifest, String) =
             parse_source(&build_state.source_path)?;
@@ -316,9 +317,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let syntax_tree = code_utils::to_ast(&rs_source)?;
         maybe_syntax_tree = Some(syntax_tree);
         let borrowed_syntax_tree = maybe_syntax_tree.as_ref();
-        let borowed_rs_manifest = maybe_rs_manifest.as_mut();
+        let borrowed_rs_manifest = maybe_rs_manifest.as_mut();
         if let Some(syntax_tree_ref) = borrowed_syntax_tree {
-            if let Some(rs_manifest_ref) = borowed_rs_manifest {
+            if let Some(rs_manifest_ref) = borrowed_rs_manifest {
                 build_state.cargo_manifest = Some(manifest::merge_manifest(
                     &build_state,
                     syntax_tree_ref,
@@ -340,13 +341,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             .collect::<Vec<String>>();
         let cmd_list = cmd_vec.join(", ") + " or help";
 
-        println!("{dash_line}");
-        // let disp_cmd_list = || {
-        //     println!(
-        //         "Enter one of: {}",
-        //         cmd_list.if_supports_color(Stream::Stdout, |text| text.blue().on_cyan())
-        //     );
-        // };
         let disp_cmd_list = || {
             let x = YinYangStyle::OuterPrompt;
             color_println!(x.get_style(), "Enter one of: {}", cmd_list);
@@ -360,15 +354,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 continue 'level2;
             };
             match command {
-                // LoopCommand::Quit => {
-                //     // Closing it manually to catch any error
-                //     match script_state {
-                //         ScriptState::NamedEmpty { temp_path, .. } => temp_path.close(),
-                //         _ => Ok(()),
-                //     }?;
-
-                //     return Ok(());
-                // }
                 LoopCommand::Quit => return Ok(()),
                 LoopCommand::Delete => {
                     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
@@ -419,10 +404,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                             ProcessCommand::Quit => return Ok(()),
                             ProcessCommand::Submit => {
                                 let result = gen_build_run(
-                                    // empty,
                                     &mut options,
                                     &proc_flags,
-                                    // &script,
                                     &mut build_state,
                                     &mut maybe_syntax_tree,
                                     &mut maybe_rs_manifest,
@@ -488,12 +471,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                         // rl.add_history_entry(&line); // Add current line to history
                         // rl.append_history("history.txt")?;
 
-                        // Parse the expression string into a syntax tree
                         let str = &input.trim();
                         if str.to_lowercase() == "q" {
                             disp_cmd_list();
                             break;
                         }
+                        // Parse the expression string into a syntax tree
                         let expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(str);
 
                         match expr {
@@ -509,10 +492,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 rustfmt(&build_state)?;
 
                                 let result = gen_build_run(
-                                    // empty,
                                     &mut options,
                                     &proc_flags,
-                                    // &script,
                                     &mut build_state,
                                     &mut maybe_syntax_tree,
                                     &mut maybe_rs_manifest,
@@ -541,10 +522,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     } else {
         gen_build_run(
-            // empty,
             &mut options,
             &proc_flags,
-            // &script,
             &mut build_state,
             &mut maybe_syntax_tree,
             &mut maybe_rs_manifest,
@@ -567,10 +546,8 @@ fn debug_print_config() {
 }
 
 fn gen_build_run(
-    // empty: bool,
     options: &mut cmd_args::Opt,
     proc_flags: &ProcFlags,
-    // script: &str,
     build_state: &mut BuildState,
     maybe_syntax_tree: &mut Option<File>,
     maybe_rs_manifest: &mut Option<CargoManifest>,
@@ -580,41 +557,33 @@ fn gen_build_run(
     let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let proc_flags = &proc_flags;
     let options = &options;
-    // let build_state: &mut BuildState = build_state;
 
+    debug!(
+        "maybe_syntax_tree.is_some()={}",
+        maybe_syntax_tree.is_some()
+    );
+    debug!(
+        "maybe_rs_manifest.is_some()={}",
+        maybe_rs_manifest.is_some()
+    );
+    debug!("maybe_rs_source.is_some()={}", maybe_rs_source.is_some());
+    debug!("build_state={build_state:#?}");
     if build_state.must_gen {
-        // let (mut rs_manifest, rs_source): (CargoManifest, String) =
-        //     parse_source(&build_state.source_path)?;
-
-        // let syntax_tree = if let Some(syntax_tree) = maybe_syntax_tree {
-        //     syntax_tree
-        // } else {
-        //     return Err(Box::new(BuildRunError::NoneOption(
-        //         "Error unwrapping syntax tree".to_string(),
-        //     )));
-        // };
         let borrowed_syntax_tree = maybe_syntax_tree.as_mut();
         let borrowed_rs_manifest = maybe_rs_manifest.as_mut();
         if let Some(syntax_tree_mut) = borrowed_syntax_tree {
+            println!("syntax_tree_mut is Some");
             if let Some(rs_manifest_ref) = borrowed_rs_manifest {
+                println!("rs_manifest_ref is Some");
                 build_state.cargo_manifest = Some(manifest::merge_manifest(
                     build_state,
                     syntax_tree_mut,
                     rs_manifest_ref,
                 )?);
                 let has_main = code_utils::has_main(syntax_tree_mut);
-                // let borrowed_rs_source = maybe_rs_source.as_ref();
-                // if let Some(rs_source) = borrowed_rs_source {
-                //     let x = if !has_main {
-                //         &wrap_snippet(rs_source)
-                //     } else {
-                //         rs_source
-                //     };
-
-                //     generate(build_state, &x, proc_flags)?;
-                // }
                 let borrowed_rs_source = maybe_rs_source.as_ref();
                 if let Some(rs_source_ref) = borrowed_rs_source {
+                    println!("rs_source_ref is Some");
                     if has_main {
                         generate(build_state, rs_source_ref, proc_flags)?;
                     } else {
@@ -622,7 +591,6 @@ fn gen_build_run(
                             println!("Source does not contain fn main(), thus a snippet");
                         }
                         generate(build_state, &wrap_snippet(rs_source_ref), proc_flags)?;
-                        // &wrap_snippet(rs_source_ref).clone()
                     }
                 }
             }
@@ -691,22 +659,6 @@ fn generate(
     display_timings(&start_gen, "Completed generation", proc_flags);
 
     Ok(())
-}
-
-fn write_source(to_rs_path: PathBuf, rs_source: &String) -> Result<fs::File, Box<dyn Error>> {
-    let mut to_rs_file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(to_rs_path)?;
-    debug!("Writing out source:\n{}", {
-        let lines = rs_source.lines();
-        code_utils::reassemble(lines)
-    });
-    to_rs_file.write_all(rs_source.as_bytes())?;
-    debug!("Done!");
-
-    Ok(to_rs_file)
 }
 
 // Configure log level

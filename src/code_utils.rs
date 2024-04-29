@@ -4,7 +4,8 @@ use crate::manifest::CargoManifest;
 use crate::{BuildState, REPL_SUBDIR, TMP_DIR};
 use log::debug;
 use regex::Regex;
-use std::fs::{remove_dir_all, remove_file};
+use std::fs::{remove_dir_all, remove_file, OpenOptions};
+
 use std::io::{self, BufRead, Read, Write};
 use std::option::Option;
 use std::path::PathBuf;
@@ -290,6 +291,7 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&Path
         let modified_time = metadata
             .modified()
             .expect("Missing metadata for file {file:#?}"); // Handle potential errors
+        eprintln!("File: {file:?} modified time is {modified_time:#?}");
 
         if modified_time < baseline_modified {
             continue;
@@ -299,7 +301,6 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&Path
             most_recent = Some((file, modified_time));
         }
     }
-    // if let Some((file, _mod_time)) = most_recent {
     if let Some(file) = most_recent {
         println!("The most recently modified file compared to {executable:#?} is: {file:#?}");
         debug!("Executable modified time is{baseline_modified:#?}");
@@ -398,6 +399,25 @@ Ok(())
 }}
 "
     )
+}
+
+pub(crate) fn write_source(
+    to_rs_path: PathBuf,
+    rs_source: &String,
+) -> Result<fs::File, Box<dyn Error>> {
+    let mut to_rs_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(to_rs_path)?;
+    debug!("Writing out source:\n{}", {
+        let lines = rs_source.lines();
+        reassemble(lines)
+    });
+    to_rs_file.write_all(rs_source.as_bytes())?;
+    debug!("Done!");
+
+    Ok(to_rs_file)
 }
 
 pub(crate) fn create_next_repl_file() -> PathBuf {

@@ -10,7 +10,7 @@ use std::str::FromStr;
 use std::time::Instant;
 use syn::File;
 
-use crate::code_utils::{debug_timings, infer_dependencies};
+use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
 use crate::BuildState;
 
@@ -269,7 +269,8 @@ fn escape_path_for_windows(path: &str) -> String {
 
 pub(crate) fn merge_manifest(
     build_state: &BuildState,
-    syntax_tree: &File,
+    maybe_syntax_tree: Option<&File>,
+    maybe_rs_source: Option<&String>,
     rs_manifest: &mut CargoManifest,
 ) -> Result<CargoManifest, Box<dyn Error>> {
     let start_merge_manifest = Instant::now();
@@ -277,7 +278,11 @@ pub(crate) fn merge_manifest(
     let mut cargo_manifest = default_manifest(build_state)?;
     debug!("@@@@ cargo_manifest (before deps)={cargo_manifest:#?}");
 
-    let rs_inferred_deps = infer_dependencies(syntax_tree);
+    let rs_inferred_deps = if let Some(syntax_tree) = maybe_syntax_tree {
+        infer_deps_from_ast(syntax_tree)
+    } else {
+        infer_deps_from_source(maybe_rs_source.ok_or("Missing source code")?)
+    };
     debug!("rs_inferred_deps={rs_inferred_deps:#?}\n");
     debug!("rs_manifest.dependencies={:#?}", rs_manifest.dependencies);
 

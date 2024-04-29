@@ -5,7 +5,7 @@ use crate::code_utils::{
 };
 use crate::code_utils::{modified_since_compiled, parse_source, write_source};
 use crate::errors::BuildRunError;
-use crate::manifest::{default_manifest, CargoManifest};
+use crate::manifest::CargoManifest;
 use crate::term_colors::{ThemeStyle, YinYangStyle};
 
 use clap::Parser;
@@ -15,7 +15,6 @@ use env_logger::{fmt::WriteStyle, Builder, Env};
 use homedir::get_my_home;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
-use owo_colors::colors::{BrightWhite, Red};
 use owo_colors::OwoColorize;
 use quote::quote;
 use rustyline::completion::FilenameCompleter;
@@ -36,7 +35,7 @@ use std::process::Command;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
-use syn::{self, Expr, File};
+use syn::{self, Expr};
 
 mod cmd_args;
 mod code_utils;
@@ -241,11 +240,12 @@ impl Highlighter for EvalHelper {
 }
 
 //      TODO:
+//       0.  Debug cargo search not being called - get hello.rs to compile.
 //       1.  In term_colors, detect f terminal is xterm compatible, and if so choose nicer colors.
-//       2.  Drop tui_editor
+//       2.  Don't use println{} when wrapping snippet if return type of expressionq is ()
 //       3.  Debug Windows always doing regen and rebuild.
 //       4.  Consider adding braces around repl if not an expression.
-//       5.
+//       5.  Drop tui_editor
 //       6.  bool -> 2-value enums?
 //       7.  Find a way to print out a nice prompt before loop
 //       8.  Cat files before delete.
@@ -304,35 +304,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         debug!("build_state.source_path={:?}", build_state.source_path);
     }
 
-    // build_state.cargo_manifest = None;
-    let mut maybe_rs_manifest = None;
-    let mut maybe_rs_source = None;
-    let mut maybe_syntax_tree: Option<File> = None;
-    println!("script_state={:#?}", script_state);
-    if build_state.must_gen && matches!(script_state, ScriptState::Named { .. }) {
-        let (rs_manif, rs_source): (CargoManifest, String) =
-            parse_source(&build_state.source_path)?;
-        maybe_rs_manifest = Some(rs_manif);
-        maybe_rs_source = Some(rs_source.clone());
-        let syntax_tree = code_utils::to_ast(&rs_source)?;
-        maybe_syntax_tree = Some(syntax_tree);
-        let borrowed_syntax_tree = maybe_syntax_tree.as_ref();
-        let borrowed_rs_manifest = maybe_rs_manifest.as_mut();
-        if let Some(syntax_tree_ref) = borrowed_syntax_tree {
-            if let Some(rs_manifest_ref) = borrowed_rs_manifest {
-                build_state.cargo_manifest = Some(manifest::merge_manifest(
-                    &build_state,
-                    syntax_tree_ref,
-                    rs_manifest_ref,
-                )?);
-            }
-        }
-    } else {
-        build_state.cargo_manifest = Some(default_manifest(&build_state)?);
-    }
-
+    println!("script_state={script_state:?}");
     if repl {
-        let dash_line = "-".repeat(50);
+        // let dash_line = "-".repeat(50);
 
         // Using strum
         let cmd_vec = LoopCommand::iter()
@@ -407,9 +381,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                                     &mut options,
                                     &proc_flags,
                                     &mut build_state,
-                                    &mut maybe_syntax_tree,
-                                    &mut maybe_rs_manifest,
-                                    &maybe_rs_source,
+                                    // &mut maybe_syntax_tree,
+                                    // &mut maybe_rs_manifest,
+                                    // &maybe_rs_source,
                                     &start,
                                 );
                                 if result.is_err() {
@@ -477,7 +451,21 @@ fn main() -> Result<(), Box<dyn Error>> {
                             break;
                         }
                         // Parse the expression string into a syntax tree
-                        let expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(str);
+                        let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(str);
+                        println!(
+                            r"expr.is_err()={}, str.starts_with('{{')={}, str.ends_with('}}')={}",
+                            expr.is_err(),
+                            str.starts_with('{'),
+                            str.ends_with('}')
+                        );
+                        if expr.is_err() && !(str.starts_with('{') && str.ends_with('}')) {
+                            // Try putting the expression in braces.
+                            let string = format!(r"{{{str}}}");
+                            let str = string.as_str();
+                            println!("str={str}");
+
+                            expr = syn::parse_str::<Expr>(str);
+                        }
 
                         match expr {
                             Ok(expr) => {
@@ -489,15 +477,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                                 write_source(build_state.source_path.clone(), &rs_source)?;
 
+                                // TODO out - not helpful
+                                let _script_state = ScriptState::Named {
+                                    script: script_state.get_script().unwrap(),
+                                };
+
                                 rustfmt(&build_state)?;
 
                                 let result = gen_build_run(
                                     &mut options,
                                     &proc_flags,
                                     &mut build_state,
-                                    &mut maybe_syntax_tree,
-                                    &mut maybe_rs_manifest,
-                                    &maybe_rs_source,
+                                    // &mut maybe_syntax_tree,
+                                    // &mut maybe_rs_manifest,
+                                    // &maybe_rs_source,
                                     &start,
                                 );
                                 if result.is_err() {
@@ -507,11 +500,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 break;
                             }
                             Err(err) => {
-                                println!(
-                                    "{}",
-                                    format!("Error parsing expression: {}", err)
-                                        .fg::<Red>()
-                                        .bg::<BrightWhite>()
+                                color_println!(
+                                    YinYangStyle::Error.get_style(),
+                                    "Error parsing code: {}",
+                                    err
                                 );
                             }
                         }
@@ -525,9 +517,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             &mut options,
             &proc_flags,
             &mut build_state,
-            &mut maybe_syntax_tree,
-            &mut maybe_rs_manifest,
-            &maybe_rs_source,
+            // &mut maybe_syntax_tree,
+            // &mut maybe_rs_manifest,
+            // &maybe_rs_source,
             &start,
         )?;
     }
@@ -549,50 +541,79 @@ fn gen_build_run(
     options: &mut cmd_args::Opt,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
-    maybe_syntax_tree: &mut Option<File>,
-    maybe_rs_manifest: &mut Option<CargoManifest>,
-    maybe_rs_source: &Option<String>,
+    // maybe_syntax_tree: &mut Option<File>,
+    // maybe_rs_manifest: &mut Option<CargoManifest>,
+    // maybe_rs_source: &Option<String>,
+    // script_state: &ScriptState,
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
     let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let proc_flags = &proc_flags;
     let options = &options;
 
-    debug!(
-        "maybe_syntax_tree.is_some()={}",
-        maybe_syntax_tree.is_some()
-    );
-    debug!(
-        "maybe_rs_manifest.is_some()={}",
-        maybe_rs_manifest.is_some()
-    );
-    debug!("maybe_rs_source.is_some()={}", maybe_rs_source.is_some());
-    debug!("build_state={build_state:#?}");
+    // let mut maybe_rs_manifest = None;
+    // let mut maybe_rs_source = None;
+    // let mut maybe_syntax_tree: Option<File> = None;
     if build_state.must_gen {
-        let borrowed_syntax_tree = maybe_syntax_tree.as_mut();
+        let (rs_manif, rs_source): (CargoManifest, String) =
+            parse_source(&build_state.source_path)?;
+        let mut maybe_rs_manifest = Some(rs_manif);
+        let maybe_rs_source = Some(rs_source.clone());
+        let maybe_syntax_tree = code_utils::to_ast(&rs_source);
+        let borrowed_syntax_tree = maybe_syntax_tree.as_ref();
         let borrowed_rs_manifest = maybe_rs_manifest.as_mut();
-        if let Some(syntax_tree_mut) = borrowed_syntax_tree {
-            println!("syntax_tree_mut is Some");
-            if let Some(rs_manifest_ref) = borrowed_rs_manifest {
-                println!("rs_manifest_ref is Some");
-                build_state.cargo_manifest = Some(manifest::merge_manifest(
-                    build_state,
-                    syntax_tree_mut,
-                    rs_manifest_ref,
-                )?);
-                let has_main = code_utils::has_main(syntax_tree_mut);
-                let borrowed_rs_source = maybe_rs_source.as_ref();
-                if let Some(rs_source_ref) = borrowed_rs_source {
-                    println!("rs_source_ref is Some");
-                    if has_main {
-                        generate(build_state, rs_source_ref, proc_flags)?;
-                    } else {
-                        if verbose {
-                            println!("Source does not contain fn main(), thus a snippet");
-                        }
-                        generate(build_state, &wrap_snippet(rs_source_ref), proc_flags)?;
-                    }
+        let borrowed_rs_source = maybe_rs_source.as_ref();
+        if let Some(rs_manifest_ref) = borrowed_rs_manifest {
+            build_state.cargo_manifest = Some(manifest::merge_manifest(
+                build_state,
+                borrowed_syntax_tree,
+                borrowed_rs_source,
+                rs_manifest_ref,
+            )?);
+        }
+        // }
+        // } else {
+        //     build_state.cargo_manifest = Some(default_manifest(build_state)?);
+        // }
+
+        // debug!(
+        //     "maybe_syntax_tree.is_some()={}",
+        //     maybe_syntax_tree.is_some()
+        // );
+        // debug!(
+        //     "maybe_rs_manifest.is_some()={}",
+        //     maybe_rs_manifest.is_some()
+        // );
+        // debug!("maybe_rs_source.is_some()={}", maybe_rs_source.is_some());
+        // debug!("build_state={build_state:#?}");
+        // if build_state.must_gen {
+        //     let borrowed_syntax_tree = maybe_syntax_tree.as_mut();
+        //     let borrowed_rs_manifest = maybe_rs_manifest.as_mut();
+        //     if let Some(syntax_tree_mut) = borrowed_syntax_tree {
+        //         println!("syntax_tree_mut is Some");
+        //         if let Some(rs_manifest_ref) = borrowed_rs_manifest {
+        //             println!("rs_manifest_ref is Some");
+        //             build_state.cargo_manifest = Some(manifest::merge_manifest(
+        //                 build_state,
+        //                 syntax_tree_mut,
+        //                 rs_manifest_ref,
+        //             )?);
+
+        let has_main = if let Some(syntax_tree_ref) = borrowed_syntax_tree {
+            code_utils::has_main(syntax_tree_ref)
+        } else {
+            code_utils::has_main_alt(borrowed_rs_source.ok_or("Missing source")?)
+        };
+        let borrowed_rs_source = maybe_rs_source.as_ref();
+        if let Some(rs_source_ref) = borrowed_rs_source {
+            println!("rs_source_ref is Some");
+            if has_main {
+                generate(build_state, rs_source_ref, proc_flags)?;
+            } else {
+                if verbose {
+                    println!("Source does not contain fn main(), thus a snippet");
                 }
+                generate(build_state, &wrap_snippet(rs_source_ref), proc_flags)?;
             }
         }
     } else {

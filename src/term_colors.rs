@@ -6,9 +6,13 @@ strum = { version = "0.26.2", features = ["derive"] }
 termbg = "0.5.0"
 */
 
+use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
+use owo_colors::colors as owo_ansi;
+
+use owo_ansi::xterm as owo_xterm;
+use owo_xterm::{Black, BlazeOrange, DecoOrange};
+
 use log::debug;
-use owo_colors::colors::css::{Black, DarkOrange, Orange};
-use owo_colors::colors::{Blue, Cyan, Red, White, Yellow};
 use owo_colors::{AnsiColors, OwoColorize, Style, XtermColors};
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use termbg::Theme;
@@ -18,7 +22,6 @@ use termbg::Theme;
 #[macro_export]
 macro_rules! color_println {
     ($style:expr, $($arg:tt)*) => {{
-
         let content = format!("{}", format_args!($($arg)*));
         if let Some(style) = $style {
                 println!("{}", content.style(style));
@@ -39,6 +42,8 @@ pub enum YinYangStyle {
     Error,
     Warning,
     Emphasis,
+    OuterPrompt,
+    InnerPrompt,
     Info,
     Debug,
 }
@@ -51,15 +56,19 @@ impl ThemeStyle for YinYangStyle {
             let style = match theme {
                 Theme::Light => match *self {
                     YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                    YinYangStyle::Warning => Style::new().fg::<DarkOrange>().bold(),
+                    YinYangStyle::Warning => Style::new().fg::<DecoOrange>().bold(),
                     YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
+                    YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
+                    YinYangStyle::InnerPrompt => Style::new().fg::<Green>().bold(),
                     YinYangStyle::Info => Style::new().fg::<Black>(),
-                    YinYangStyle::Debug => Style::new().fg::<Blue>(),
+                    YinYangStyle::Debug => Style::new().fg::<Cyan>(),
                 },
                 Theme::Dark => match *self {
                     YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                    YinYangStyle::Warning => Style::new().fg::<Orange>().bold(),
+                    YinYangStyle::Warning => Style::new().fg::<BlazeOrange>().bold(),
                     YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
+                    YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
+                    YinYangStyle::InnerPrompt => Style::new().fg::<Green>().bold(),
                     YinYangStyle::Info => Style::new().fg::<White>(),
                     YinYangStyle::Debug => Style::new().fg::<Cyan>(),
                 },
@@ -75,6 +84,8 @@ impl ThemeStyle for YinYangStyle {
             YinYangStyle::Error => String::from("error"),
             YinYangStyle::Warning => String::from("warning"),
             YinYangStyle::Emphasis => String::from("emphasis"),
+            YinYangStyle::OuterPrompt => String::from("outer_prompt"),
+            YinYangStyle::InnerPrompt => String::from("inner_prompt"),
             YinYangStyle::Info => String::from("info"),
             YinYangStyle::Debug => String::from("debug"),
         }

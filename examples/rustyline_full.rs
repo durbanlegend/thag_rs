@@ -4,7 +4,9 @@ env_logger = "0.11.3"
 rustyline = { version = "14.0.0", features=["with-file-history", "default", "derive"] }
 */
 
-// Example from rustyline crate readme.
+/// Example from rustyline crate readme.
+/// MatchingBracketValidator uses matching brackets to decide between single- annd multi-line
+/// inpit.
 use std::borrow::Cow::{self, Borrowed, Owned};
 
 use rustyline::completion::FilenameCompleter;
@@ -12,8 +14,9 @@ use rustyline::error::ReadlineError;
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::HistoryHinter;
 use rustyline::validate::MatchingBracketValidator;
-use rustyline::{Cmd, CompletionType, Config, EditMode, Editor, KeyEvent};
-use rustyline::{Completer, Helper, Hinter, Validator};
+use rustyline::{
+    Cmd, Completer, CompletionType, Config, EditMode, Editor, Helper, Hinter, KeyEvent, Validator,
+};
 
 #[derive(Helper, Completer, Hinter, Validator)]
 struct MyHelper {

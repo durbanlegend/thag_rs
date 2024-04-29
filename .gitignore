@@ -32,3 +32,4 @@ examples/code_compl2.rs
 history.txt
 colors.sh
 sample_bg.html
+examples/syn_ast_deps.rs

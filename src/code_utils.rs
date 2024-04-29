@@ -11,25 +11,9 @@ use std::path::PathBuf;
 use std::process::{Command, ExitStatus, Output};
 use std::str::FromStr;
 use std::time::{Instant, SystemTime};
-use std::{collections::HashSet, error::Error, fs, path::Path};
-use syn::{File, Item};
+use std::{error::Error, fs, path::Path};
+use syn::{File, Item, UseTree};
 
-#[allow(dead_code, clippy::uninlined_format_args)]
-fn main() {
-    let code_snippet = r#"
-  use std::io;
-
-  #[macro_use]
-  extern crate serde_derive;
-
-  fn main() {
-    println!("Hello, world!");
-  }
-  "#;
-
-    let dependencies = infer_dependencies(code_snippet);
-    println!("Potential dependencies: {dependencies:?}");
-}
 pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
     debug!("Reading from {path:?}");
     Ok(fs::read_to_string(path)?)
@@ -47,51 +31,82 @@ pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
 // }
 
 // Make a best effort to help the user by inferring dependencies from the source code.
-pub(crate) fn infer_dependencies(code: &str) -> HashSet<String> {
+pub(crate) fn infer_dependencies(syntax_tree: &File) -> Vec<String> {
     // debug!("######## In code_utils::infer_dependencies");
 
-    let mut dependencies = HashSet::new();
+    // let mut dependencies = HashSet::new();
 
-    let use_regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
-    let macro_use_regex = Regex::new(r"(?m)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
-    let extern_crate_regex = Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
+    // let use_regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
+    // let macro_use_regex = Regex::new(r"(?m)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
+    // let extern_crate_regex = Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
 
-    let built_in_crates = &["std", "core", "alloc", "collections", "fmt"];
+    // let built_in_crates = &["std", "core", "alloc", "collections", "fmt", "crate"];
 
-    for cap in use_regex.captures_iter(code) {
-        let dependency = cap[1].to_string();
-        debug!("@@@@@@@@ dependency={dependency}");
-        if !built_in_crates
-            .iter()
-            .any(|builtin| dependency.starts_with(builtin))
-        {
-            if let Some((dep, _)) = dependency.split_once(':') {
-                dependencies.insert(dep.to_owned());
+    // for cap in use_regex.captures_iter(code) {
+    //     let dependency = cap[1].to_string();
+    //     debug!("@@@@@@@@ dependency={dependency}");
+    //     if !built_in_crates
+    //         .iter()
+    //         .any(|builtin| dependency.starts_with(builtin))
+    //     {
+    //         if let Some((dep, _)) = dependency.split_once(':') {
+    //             dependencies.insert(dep.to_owned());
+    //         }
+    //     }
+    // }
+
+    // // Similar checks for other regex patterns
+
+    // for cap in macro_use_regex.captures_iter(code) {
+    //     let dependency = cap[1].to_string();
+    //     if !built_in_crates
+    //         .iter()
+    //         .any(|builtin| dependency.starts_with(builtin))
+    //     {
+    //         dependencies.insert(dependency);
+    //     }
+    // }
+
+    // for cap in extern_crate_regex.captures_iter(code) {
+    //     let dependency = cap[1].to_string();
+    //     if !built_in_crates
+    //         .iter()
+    //         .any(|builtin| dependency.starts_with(builtin))
+    //     {
+    //         dependencies.insert(dependency);
+    //     }
+    // }
+
+    let mut dependencies = Vec::new();
+
+    for item in &syntax_tree.items {
+        match item {
+            Item::ExternCrate(extern_crate) => {
+                dependencies.push(extern_crate.ident.to_string());
             }
+            Item::Use(use_item) => {
+                if let UseTree::Path(ref use_tree_path) = use_item.tree {
+                    // if let Some(first_segment) = use_tree_path.ident {
+                    let crate_name = use_tree_path.ident.to_string();
+                    if crate_name != "crate" {
+                        // Filter out "crate" entries
+                        dependencies.push(crate_name);
+                    }
+                    // }
+                }
+            }
+            Item::Macro(macro_item) => {
+                if let Some(macro_path) = macro_item.mac.path.get_ident() {
+                    dependencies.push(macro_path.to_string());
+                }
+            }
+            _ => {}
         }
     }
 
-    // Similar checks for other regex patterns
-
-    for cap in macro_use_regex.captures_iter(code) {
-        let dependency = cap[1].to_string();
-        if !built_in_crates
-            .iter()
-            .any(|builtin| dependency.starts_with(builtin))
-        {
-            dependencies.insert(dependency);
-        }
-    }
-
-    for cap in extern_crate_regex.captures_iter(code) {
-        let dependency = cap[1].to_string();
-        if !built_in_crates
-            .iter()
-            .any(|builtin| dependency.starts_with(builtin))
-        {
-            dependencies.insert(dependency);
-        }
-    }
+    // Deduplicate the list of dependencies
+    dependencies.sort();
+    dependencies.dedup();
 
     dependencies
 }
@@ -294,8 +309,8 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&Path
     most_recent
 }
 
-pub(crate) fn has_main(source: &str) -> bool {
-    let main_methods = count_main_methods(source);
+pub(crate) fn has_main(syntax_tree: &File) -> bool {
+    let main_methods = count_main_methods(syntax_tree.clone());
     debug!("main_methods={main_methods}");
     match main_methods {
         0 => false,
@@ -311,15 +326,19 @@ pub(crate) fn has_main(source: &str) -> bool {
     }
 }
 
-pub(crate) fn count_main_methods(source_code: &str) -> usize {
-    // Parse the source code into a syntax tree
-    let syntax_tree: File = match syn::parse_str(source_code) {
+/// Parse the code into an abstract syntax tree for inspection
+pub(crate) fn to_ast(source_code: &str) -> Result<File, String> {
+    let syntax_tree: File = match syn::parse_file(source_code) {
         Ok(tree) => tree,
-        Err(_) => return 0, // Return 0 if parsing fails
+        Err(_) => return Err("Error parsing syntax tree".to_string()), // Return 0 if parsing fails
     };
+    Ok(syntax_tree)
+}
 
-    // Count the number of main() methods
+/// Count the number of `main()` methods
+fn count_main_methods(syntax_tree: File) -> usize {
     let mut main_method_count = 0;
+    // let vec: &[&Item] = std::convert::AsRef::<&[&Item]>::as_ref(syntax_tree.items);
     for item in syntax_tree.items {
         if let Item::Fn(item_fn) = item {
             // Check if the function is named "main" and has no arguments

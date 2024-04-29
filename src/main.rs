@@ -18,8 +18,16 @@ use log::{debug, log_enabled, Level::Debug};
 use owo_colors::colors::{BrightWhite, Red};
 use owo_colors::OwoColorize;
 use quote::quote;
+use rustyline::completion::FilenameCompleter;
+// use rustyline::config::{CompletionType, Config, Configurer, EditMode};
 use rustyline::config::Configurer;
-use rustyline::DefaultEditor;
+use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
+use rustyline::hint::HistoryHinter;
+use rustyline::validate::MatchingBracketValidator;
+use rustyline::{
+    Cmd, Completer, CompletionType, Config, EditMode, Editor, Helper, Hinter, KeyEvent, Validator,
+};
+use std::borrow::Cow::{self, Borrowed, Owned};
 use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
@@ -28,7 +36,7 @@ use std::process::Command;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
-use syn::{self, Expr};
+use syn::{self, Expr, File};
 
 mod cmd_args;
 mod code_utils;
@@ -194,6 +202,44 @@ enum ProcessCommand {
     Quit,
 }
 
+#[derive(Helper, Completer, Hinter, Validator)]
+struct EvalHelper {
+    #[rustyline(Completer)]
+    completer: FilenameCompleter,
+    highlighter: MatchingBracketHighlighter,
+    #[rustyline(Validator)]
+    validator: MatchingBracketValidator,
+    #[rustyline(Hinter)]
+    hinter: HistoryHinter,
+    colored_prompt: String,
+}
+
+impl Highlighter for EvalHelper {
+    fn highlight_prompt<'b, 's: 'b, 'p: 'b>(
+        &'s self,
+        prompt: &'p str,
+        default: bool,
+    ) -> Cow<'b, str> {
+        if default {
+            Borrowed(&self.colored_prompt)
+        } else {
+            Borrowed(prompt)
+        }
+    }
+
+    fn highlight_hint<'h>(&self, hint: &'h str) -> Cow<'h, str> {
+        Owned("\x1b[1m".to_owned() + hint + "\x1b[m")
+    }
+
+    fn highlight<'l>(&self, line: &'l str, pos: usize) -> Cow<'l, str> {
+        self.highlighter.highlight(line, pos)
+    }
+
+    fn highlight_char(&self, line: &str, pos: usize, forced: bool) -> bool {
+        self.highlighter.highlight_char(line, pos, forced)
+    }
+}
+
 //      TODO:
 //       1.  In term_colors, detect f terminal is xterm compatible, and if so choose nicer colors.
 //       2.  tui-editor auto-save or check for unsaved changes on quit.
@@ -259,22 +305,30 @@ fn main() -> Result<(), Box<dyn Error>> {
         debug!("build_state.source_path={:?}", build_state.source_path);
     }
 
-    build_state.cargo_manifest = if build_state.must_gen {
-        if matches!(script_state, ScriptState::Named { .. }) {
-            let (mut rs_manifest, rs_source): (CargoManifest, String) =
-                parse_source(&build_state.source_path)?;
-
-            Some(manifest::merge_manifest(
-                &build_state,
-                &rs_source,
-                &mut rs_manifest,
-            )?)
-        } else {
-            Some(default_manifest(&build_state)?)
+    // build_state.cargo_manifest = None;
+    let (mut maybe_rs_manifest, mut maybe_rs_source) = (None, None);
+    let mut maybe_syntax_tree: Option<File> = None;
+    if build_state.must_gen && matches!(script_state, ScriptState::Named { .. }) {
+        let (rs_manif, rs_source): (CargoManifest, String) =
+            parse_source(&build_state.source_path)?;
+        maybe_rs_manifest = Some(rs_manif);
+        maybe_rs_source = Some(rs_source.clone());
+        let syntax_tree = code_utils::to_ast(&rs_source)?;
+        maybe_syntax_tree = Some(syntax_tree);
+        let borrowed_syntax_tree = maybe_syntax_tree.as_ref();
+        let borowed_rs_manifest = maybe_rs_manifest.as_mut();
+        if let Some(syntax_tree_ref) = borrowed_syntax_tree {
+            if let Some(rs_manifest_ref) = borowed_rs_manifest {
+                build_state.cargo_manifest = Some(manifest::merge_manifest(
+                    &build_state,
+                    syntax_tree_ref,
+                    rs_manifest_ref,
+                )?);
+            }
         }
     } else {
-        None
-    };
+        build_state.cargo_manifest = Some(default_manifest(&build_state)?);
+    }
 
     if repl {
         let dash_line = "-".repeat(50);
@@ -294,7 +348,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         //     );
         // };
         let disp_cmd_list = || {
-            let x = YinYangStyle::Emphasis;
+            let x = YinYangStyle::OuterPrompt;
             color_println!(x.get_style(), "Enter one of: {}", cmd_list);
         };
         disp_cmd_list();
@@ -370,6 +424,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                                     &proc_flags,
                                     // &script,
                                     &mut build_state,
+                                    &mut maybe_syntax_tree,
+                                    &mut maybe_rs_manifest,
+                                    &maybe_rs_source,
                                     &start,
                                 );
                                 if result.is_err() {
@@ -392,14 +449,45 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
                 LoopCommand::Eval => {
-                    let mut rl = DefaultEditor::new().unwrap();
+                    // From Rustyline example 2
+                    let builder = Config::builder()
+                        .history_ignore_space(true)
+                        .completion_type(CompletionType::Circular)
+                        .edit_mode(EditMode::Emacs);
+                    // builder.set_check_cursor_position(true);
+                    let config = builder.build();
+                    let helper = EvalHelper {
+                        completer: FilenameCompleter::new(),
+                        highlighter: MatchingBracketHighlighter::new(),
+                        hinter: HistoryHinter::new(),
+                        colored_prompt: String::new(),
+                        // Use bracket matching to decide on multiline vs single-line input mode.
+                        validator: MatchingBracketValidator::new(),
+                    };
+                    // let mut rl = DefaultEditor::with_config(config)?;
+                    let mut rl = Editor::with_config(config)?;
                     rl.set_auto_add_history(true);
+                    rl.set_helper(Some(helper));
+                    rl.bind_sequence(KeyEvent::ctrl('n'), Cmd::HistorySearchForward);
+                    rl.bind_sequence(KeyEvent::ctrl('p'), Cmd::HistorySearchBackward);
+                    // if rl.load_history("history.txt").is_err() {
+                    //     println!("No previous history.");
+                    // }
                     loop {
-                        println!("Enter an expression (e.g., 2 + 3), or q to quit:");
+                        let x = YinYangStyle::InnerPrompt;
+                        color_println!(
+                            x.get_style(),
+                            "Enter an expression (e.g., 2 + 3), or q to quit:"
+                        );
 
+                        let p = String::from(".>");
+                        rl.helper_mut().expect("No helper").colored_prompt =
+                            format!("\x1b[1;32m{p}\x1b[0m");
                         let input = rl.readline(">> ").expect("Failed to read input");
                         // Process user input (line)
                         // rl.add_history_entry(&line); // Add current line to history
+                        // rl.append_history("history.txt")?;
+
                         // Parse the expression string into a syntax tree
                         let str = &input.trim();
                         if str.to_lowercase() == "q" {
@@ -426,6 +514,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                                     &proc_flags,
                                     // &script,
                                     &mut build_state,
+                                    &mut maybe_syntax_tree,
+                                    &mut maybe_rs_manifest,
+                                    &maybe_rs_source,
                                     &start,
                                 );
                                 if result.is_err() {
@@ -455,6 +546,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             &proc_flags,
             // &script,
             &mut build_state,
+            &mut maybe_syntax_tree,
+            &mut maybe_rs_manifest,
+            &maybe_rs_source,
             &start,
         )?;
     }
@@ -478,6 +572,9 @@ fn gen_build_run(
     proc_flags: &ProcFlags,
     // script: &str,
     build_state: &mut BuildState,
+    maybe_syntax_tree: &mut Option<File>,
+    maybe_rs_manifest: &mut Option<CargoManifest>,
+    maybe_rs_source: &Option<String>,
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
     let verbose = proc_flags.contains(ProcFlags::VERBOSE);
@@ -502,10 +599,7 @@ fn gen_build_run(
             if verbose {
                 println!("Source does not contain fn main(), thus a snippet");
             }
-            wrap_snippet(&rs_source)
-        };
-
-        generate(build_state, &rs_source, proc_flags)?;
+        }
     } else {
         println!("Skipping unnecessary generation step. Use --force (-f) to override.");
         // build_state.cargo_manifest = Some(default_manifest(build_state)?);

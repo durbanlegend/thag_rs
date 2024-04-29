@@ -8,6 +8,7 @@ use std::io::BufRead;
 use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
+use syn::File;
 
 use crate::code_utils::{debug_timings, infer_dependencies};
 use crate::errors::BuildRunError;
@@ -229,7 +230,7 @@ pub(crate) fn default_manifest(build_state: &BuildState) -> Result<CargoManifest
     let binding = build_state.target_dir_path.join(source_name);
     let gen_src_path = &binding.to_string_lossy();
 
-    let gen_src_path = escape_path_for_windows(&gen_src_path);
+    let gen_src_path = escape_path_for_windows(gen_src_path);
 
     let cargo_manifest = format!(
         r##"
@@ -268,7 +269,7 @@ fn escape_path_for_windows(path: &str) -> String {
 
 pub(crate) fn merge_manifest(
     build_state: &BuildState,
-    rs_source: &str,
+    syntax_tree: &File,
     rs_manifest: &mut CargoManifest,
 ) -> Result<CargoManifest, Box<dyn Error>> {
     let start_merge_manifest = Instant::now();
@@ -276,7 +277,7 @@ pub(crate) fn merge_manifest(
     let mut cargo_manifest = default_manifest(build_state)?;
     debug!("@@@@ cargo_manifest (before deps)={cargo_manifest:#?}");
 
-    let rs_inferred_deps = infer_dependencies(rs_source);
+    let rs_inferred_deps = infer_dependencies(syntax_tree);
     debug!("rs_inferred_deps={rs_inferred_deps:#?}\n");
     debug!("rs_manifest.dependencies={:#?}", rs_manifest.dependencies);
 
@@ -295,11 +296,8 @@ pub(crate) fn merge_manifest(
         for dep_name in rs_inferred_deps {
             if rs_dep_map.contains_key(&dep_name)
                 || rs_dep_map.contains_key(&dep_name.replace('_', "-"))
+                || !["crate"].contains(&dep_name.as_str())
             {
-                // Already in manifest
-                // debug!(
-                //     "============ rs_dep_map {rs_dep_map:#?} already contains key dep_name {dep_name}"
-                // );
                 continue;
             }
             debug!("############ Doing a Cargo search for key dep_name [{dep_name}]");

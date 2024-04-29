@@ -1,5 +1,7 @@
-//! [dependencies]
-//! syn = { version = "2.0.60", features = ["extra-traits"] }
+/*[toml]
+[dependencies]
+syn = { version = "2.0.60", features = ["extra-traits"] }
+*/
 
 use syn::{Expr, Type};
 
@@ -10,4 +12,3 @@ let expr = syn::parse_str::<Expr>(code)?;
  println!("{:#?}", expr);
 
 // println!("type={t:?}");
-

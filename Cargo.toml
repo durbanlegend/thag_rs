@@ -17,7 +17,11 @@ ratatui = "0.26.2"
 tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
 clap-repl = "0.1.1"
 console = "0.15.8"
-rustyline = "14.0.0"
+rustyline = { version = "14.0.0", features = [
+    "with-file-history",
+    "default",
+    "derive",
+] }
 syn = { version = "2.0.60", features = ["full"] }
 quote = "1.0.36"
 strum = { version = "0.26.2", features = ["derive"] }

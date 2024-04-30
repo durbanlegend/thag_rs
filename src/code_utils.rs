@@ -38,7 +38,7 @@ pub(crate) fn infer_deps_from_source(code: &str) -> Vec<String> {
     let mut dependencies = Vec::new();
 
     let use_regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
-    let macro_use_regex = Regex::new(r"(?m)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
+    let macro_use_regex = Regex::new(r"(?m)^[\s]*#\[macro_use\((\w+)\)").unwrap();
     let extern_crate_regex = Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
 
     let built_in_crates = &["std", "core", "alloc", "collections", "fmt", "crate"];
@@ -84,12 +84,14 @@ pub(crate) fn infer_deps_from_source(code: &str) -> Vec<String> {
     dependencies
 }
 
-// Inferring dependencies from the abstrct syntax tree.
+// Inferring dependencies from the abstract syntax tree.
 pub(crate) fn infer_deps_from_ast(syntax_tree: &File) -> Vec<String> {
     let mut dependencies = Vec::new();
+    let built_in_crates = &["std", "core", "alloc", "collections", "fmt", "crate"];
 
     for item in &syntax_tree.items {
         match item {
+            // Think this covers macro_use
             Item::ExternCrate(extern_crate) => {
                 dependencies.push(extern_crate.ident.to_string());
             }
@@ -97,18 +99,18 @@ pub(crate) fn infer_deps_from_ast(syntax_tree: &File) -> Vec<String> {
                 if let UseTree::Path(ref use_tree_path) = use_item.tree {
                     // if let Some(first_segment) = use_tree_path.ident {
                     let crate_name = use_tree_path.ident.to_string();
-                    if crate_name != "crate" {
+                    if !built_in_crates.contains(&crate_name.as_str()) {
                         // Filter out "crate" entries
                         dependencies.push(crate_name);
                     }
-                    // }
                 }
             }
-            Item::Macro(macro_item) => {
-                if let Some(macro_path) = macro_item.mac.path.get_ident() {
-                    dependencies.push(macro_path.to_string());
-                }
-            }
+            // Wrong - not macro_use
+            // Item::Macro(macro_item) => {
+            //     if let Some(macro_path) = macro_item.mac.path.get_ident() {
+            //         dependencies.push(macro_path.to_string());
+            //     }
+            // }
             _ => {}
         }
     }
@@ -133,7 +135,7 @@ pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String)
 
     //     let rs_source = rs_extract_src(&rs_full_source);
 
-    debug_timings(start_parsing_rs, "Parsed source");
+    debug_timings(&start_parsing_rs, "Parsed source");
     Ok((rs_manifest, rs_source))
 }
 
@@ -242,7 +244,7 @@ pub(crate) fn display_timings(start: &Instant, process: &str, proc_flags: &ProcF
 }
 
 #[inline]
-pub(crate) fn debug_timings(start: Instant, process: &str) {
+pub(crate) fn debug_timings(start: &Instant, process: &str) {
     let dur = start.elapsed();
     debug!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
 }
@@ -349,10 +351,13 @@ fn has_one_main(main_methods: usize) -> bool {
 /// Parse the code into an abstract syntax tree for inspection
 /// if possible. Otherwise don't give up - it may yet compile.
 pub(crate) fn to_ast(source_code: &str) -> Option<File> {
+    let start_ast = Instant::now();
     if let Ok(tree) = syn::parse_file(source_code) {
+        debug_timings(&start_ast, "Completed successful AST parse");
         Some(tree)
     } else {
-        debug!("Error parsing syntax tree");
+        debug!("Error parsing syntax tree, using regex instead");
+        debug_timings(&start_ast, "Completed unsuccessful AST parse");
         None
     }
 }

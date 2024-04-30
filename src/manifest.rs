@@ -12,7 +12,8 @@ use syn::File;
 
 use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
-use crate::BuildState;
+use crate::term_colors::{ThemeStyle, YinYangStyle};
+use crate::{color_println, BuildState};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
@@ -144,20 +145,28 @@ pub(crate) struct Workspace {}
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();
 
+    let dep_crate_styled =
+        owo_colors::Style::style(&YinYangStyle::Emphasis.get_style().unwrap(), dep_crate);
     println!(
         r#"
-        Doing a Cargo search for crate {dep_crate} referenced in your script.
-        To speed up build, consider embedding the required {dep_crate} = "<version>"
-        in a block comment at the top of the script, in the form:
-        /*[toml]
-        [dependencies]
-        {dep_crate} = "n.n.n"
-        */
-        E.g.:
-//! [dependencies]
-//! {dep_crate} = "<version n.n.n goes here>"
-        "#
+            Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
+            To speed up build, consider embedding the required {dep_crate_styled} = "<version>"
+            in a block comment at the top of the script, in the form:
+            /*[toml]
+            [dependencies]
+            {dep_crate_styled} = "n.n.n"
+            */
+            E.g.:
+    //! [dependencies]
+    //! {dep_crate_styled} = "<version n.n.n goes here>"
+            "#,
     );
+
+    // let content = format!(r#"hello"#);
+    // println!(
+    //     "Why, {} world!",
+    //     owo_colors::Style::style(&YinYangStyle::Emphasis.get_style().unwrap(), content)
+    // );
 
     let mut search_command = Command::new("cargo");
     search_command.args(["search", dep_crate, "--limit", "1"]);
@@ -186,11 +195,17 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
     };
 
     debug!("!!!!!!!! first_line={first_line}");
-
-    let (name, version) = match capture_dep(&first_line) {
-        Ok(value) => {
-            debug!("Success! value={value:?}");
-            value
+    let result = capture_dep(&first_line);
+    let (name, version) = match result {
+        Ok((name, version)) => {
+            if name != dep_crate {
+                debug!("First line of cargo search for crate {dep_crate} found non-matching crate {name}");
+                return Err(Box::new(BuildRunError::Command(format!(
+                    "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"
+                ))));
+            }
+            debug!("Success! value={:?}", (&name, &version));
+            (name, version)
         }
         Err(err) => {
             debug!("Failure! err={err}");
@@ -199,7 +214,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
     };
     debug!("!!!!!!!! found name={name}, version={version}");
 
-    debug_timings(start_search, "Completed search");
+    debug_timings(&start_search, "Completed search");
 
     Ok((name, version))
 }
@@ -301,11 +316,11 @@ pub(crate) fn merge_manifest(
         for dep_name in rs_inferred_deps {
             if rs_dep_map.contains_key(&dep_name)
                 || rs_dep_map.contains_key(&dep_name.replace('_', "-"))
-                || !["crate"].contains(&dep_name.as_str())
+                || ["crate", "macro_rules"].contains(&dep_name.as_str())
             {
                 continue;
             }
-            debug!("############ Doing a Cargo search for key dep_name [{dep_name}]");
+            debug!("############ Starting Cargo search for key dep_name [{dep_name}]");
             let cargo_search_result = cargo_search(&dep_name);
             // If the crate name is hyphenated, Cargo search will nicely search for underscore version and return the correct
             // hyphenated name. So we must replace the incorrect underscored version we searched on with the corrected
@@ -313,13 +328,15 @@ pub(crate) fn merge_manifest(
             let (dep_name, dep) = if let Ok((dep_name, version)) = cargo_search_result {
                 (dep_name, Dependency::Simple(version))
             } else {
-                return Err(Box::new(BuildRunError::Command(format!(
-                    "Cargo search couldn't find crate [{dep_name}]"
-                ))));
+                // return Err(Box::new(BuildRunError::Command(format!(
+                //     "Cargo search couldn't find crate [{dep_name}]"
+                // ))));
+                println!("Cargo search couldn't find crate [{dep_name}]");
+                continue;
             };
             rs_dep_map.insert(dep_name, dep);
         }
-        debug!("rs_dep_map (after inferred) = {rs_dep_map:?}");
+        debug!("rs_dep_map (after inferred) = {rs_dep_map:#?}");
     }
 
     // Clone and merge dependencies
@@ -371,7 +388,7 @@ pub(crate) fn merge_manifest(
         cargo_manifest.features
     );
 
-    debug_timings(start_merge_manifest, "Processed features");
+    debug_timings(&start_merge_manifest, "Processed features");
 
     Ok(cargo_manifest)
 }

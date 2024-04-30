@@ -7,13 +7,13 @@ termbg = "0.5.0"
 */
 
 use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
-use owo_colors::colors as owo_ansi;
+use owo_colors::colors::{self as owo_ansi, Magenta};
 
 use owo_ansi::xterm as owo_xterm;
-use owo_xterm::{Black, BlazeOrange, DecoOrange};
+use owo_xterm::Black;
 
 use log::debug;
-use owo_colors::{AnsiColors, OwoColorize, Style, XtermColors};
+use owo_colors::{AnsiColors, Style, XtermColors};
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use termbg::Theme;
 
@@ -24,7 +24,8 @@ macro_rules! color_println {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
         if let Some(style) = $style {
-                println!("{}", content.style(style));
+                // Qualified form to avoid imports in calling code.
+                println!("{}", owo_colors::Style::style(&style, content));
         } else {
             println!("{}", content);
         }
@@ -56,16 +57,16 @@ impl ThemeStyle for YinYangStyle {
             let style = match theme {
                 Theme::Light => match *self {
                     YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                    YinYangStyle::Warning => Style::new().fg::<DecoOrange>().bold(),
+                    YinYangStyle::Warning => Style::new().fg::<Magenta>().bold(),
                     YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
                     YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
-                    YinYangStyle::InnerPrompt => Style::new().fg::<Green>().bold(),
+                    YinYangStyle::InnerPrompt => Style::new().fg::<Cyan>().bold(),
                     YinYangStyle::Info => Style::new().fg::<Black>(),
                     YinYangStyle::Debug => Style::new().fg::<Cyan>(),
                 },
                 Theme::Dark => match *self {
                     YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                    YinYangStyle::Warning => Style::new().fg::<BlazeOrange>().bold(),
+                    YinYangStyle::Warning => Style::new().fg::<Magenta>().bold(),
                     YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
                     YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
                     YinYangStyle::InnerPrompt => Style::new().fg::<Green>().bold(),

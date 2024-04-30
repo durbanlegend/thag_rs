@@ -26,7 +26,7 @@ fn read_stdin() -> Result<String, io::Error> {
 }
 
 fn main() {
-    use ::quote::ToTokens;
+    // use ::quote::ToTokens;
     use ::syn::{visit::*, *};
 
     let mut args = env::args_os();
@@ -41,8 +41,8 @@ fn main() {
 
     struct FindCrates;
     impl<'ast> Visit<'ast> for FindCrates {
-        fn visit_use_rename(&mut self, node: &'ast syn::ExprPath) {
-            println!("Path with first segment={:#?}", node.path.segments.first());
+        fn visit_use_rename(&mut self, node: &'ast syn::UseRename) {
+            println!("Path with UseTree::Rename={:#?}", node.rename);
         }
     }
 

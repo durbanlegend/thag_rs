@@ -380,7 +380,7 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&Path
         let modified_time = metadata
             .modified()
             .expect("Missing metadata for file {file:#?}"); // Handle potential errors
-        eprintln!("File: {file:?} modified time is {modified_time:#?}");
+        debug!("File: {file:?} modified time is {modified_time:#?}");
 
         if modified_time < baseline_modified {
             continue;
@@ -515,10 +515,10 @@ pub(crate) fn write_source(
         .create(true)
         .truncate(true)
         .open(to_rs_path)?;
-    debug!("Writing out source:\n{}", {
-        let lines = rs_source.lines();
-        reassemble(lines)
-    });
+    // debug!("Writing out source:\n{}", {
+    //     let lines = rs_source.lines();
+    //     reassemble(lines)
+    // });
     to_rs_file.write_all(rs_source.as_bytes())?;
     debug!("Done!");
 

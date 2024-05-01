@@ -150,6 +150,12 @@ impl BuildState {
             ..Default::default()
         };
 
+//         debug!(r"About to determine stale_executable:
+// matches!(script_state, ScriptState::NamedEmpty {{ .. }})={},
+// target_path_clone.exists()={},
+// modified_since_compiled(&build_state).is_some()={}",
+// matches!(script_state, ScriptState::NamedEmpty { .. }), target_path_clone.exists(),
+//             modified_since_compiled(&build_state).is_some());
         let stale_executable = matches!(script_state, ScriptState::NamedEmpty { .. })
             || !target_path_clone.exists()
             || modified_since_compiled(&build_state).is_some();

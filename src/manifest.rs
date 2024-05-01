@@ -274,7 +274,7 @@ path = "{gen_src_path}"
 fn escape_path_for_windows(path: &str) -> String {
     #[cfg(windows)]
     {
-        path.replace("\\", "\\\\")
+        path.replace('\\', "\\\\")
     }
     #[cfg(not(windows))]
     {

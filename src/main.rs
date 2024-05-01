@@ -134,13 +134,17 @@ impl BuildState {
         let target_dir_path = home_dir.join(format!(".cargo/{source_stem}"));
         debug!("target_dir_path={}", target_dir_path.display());
         let target_dir_str = target_dir_path.display().to_string();
-        let target_path = target_dir_path
+        let mut target_path = target_dir_path
             .join("target")
             .join("debug")
-            .join(&source_stem);
+            ;
         #[cfg(windows)]
         {
-            let target_path = target_path.push(".exe");
+            target_path = target_path.join(source_stem.clone() + ".exe");
+        }
+        #[cfg(not(windows))]
+        {
+            target_path = target_path.join(&source_stem);
         }
 
         let target_path_clone = target_path.clone();

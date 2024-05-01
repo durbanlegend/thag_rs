@@ -134,7 +134,15 @@ impl BuildState {
         let target_dir_path = home_dir.join(format!(".cargo/{source_stem}"));
         debug!("target_dir_path={}", target_dir_path.display());
         let target_dir_str = target_dir_path.display().to_string();
-        let target_path = target_dir_path.join(format!("./target/debug/{}", source_stem));
+        let target_path = target_dir_path
+            .join("target")
+            .join("debug")
+            .join(&source_stem);
+        #[cfg(windows)]
+        {
+            let target_path = target_path.push(".exe");
+        }
+
         let target_path_clone = target_path.clone();
 
         let cargo_toml_path = target_dir_path.join(TOML_NAME).clone();
@@ -150,12 +158,12 @@ impl BuildState {
             ..Default::default()
         };
 
-//         debug!(r"About to determine stale_executable:
-// matches!(script_state, ScriptState::NamedEmpty {{ .. }})={},
-// target_path_clone.exists()={},
-// modified_since_compiled(&build_state).is_some()={}",
-// matches!(script_state, ScriptState::NamedEmpty { .. }), target_path_clone.exists(),
-//             modified_since_compiled(&build_state).is_some());
+        //         debug!(r"About to determine stale_executable:
+        // matches!(script_state, ScriptState::NamedEmpty {{ .. }})={},
+        // target_path_clone.exists()={},
+        // modified_since_compiled(&build_state).is_some()={}",
+        // matches!(script_state, ScriptState::NamedEmpty { .. }), target_path_clone.exists(),
+        //             modified_since_compiled(&build_state).is_some());
         let stale_executable = matches!(script_state, ScriptState::NamedEmpty { .. })
             || !target_path_clone.exists()
             || modified_since_compiled(&build_state).is_some();

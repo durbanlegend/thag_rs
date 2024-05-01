@@ -31,9 +31,10 @@ pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
 //     rs_source
 // }
 
-// Make a best effort to help the user by inferring dependencies from the source code.
+/// When no AST, make a best effort to help the user by inferring dependencies from the source code.
 pub(crate) fn infer_deps_from_source(code: &str) -> Vec<String> {
     debug!("######## In code_utils::infer_deps_from_source");
+    let use_renames = find_use_renames_source(code);
 
     let mut dependencies = Vec::new();
 
@@ -41,74 +42,113 @@ pub(crate) fn infer_deps_from_source(code: &str) -> Vec<String> {
     let macro_use_regex = Regex::new(r"(?m)^[\s]*#\[macro_use\((\w+)\)").unwrap();
     let extern_crate_regex = Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
 
-    let built_in_crates = &["std", "core", "alloc", "collections", "fmt", "crate"];
+    let built_in_crates = ["std", "core", "alloc", "collections", "fmt", "crate"];
 
     for cap in use_regex.captures_iter(code) {
-        let dependency = cap[1].to_string();
-        debug!("@@@@@@@@ dependency={dependency}");
-        if !built_in_crates
-            .iter()
-            .any(|builtin| dependency.starts_with(builtin))
-        {
-            if let Some((dep, _)) = dependency.split_once(':') {
-                dependencies.push(dep.to_owned());
-            }
-        }
+        let crate_name = cap[1].to_string();
+        debug!("@@@@@@@@ dependency={crate_name}");
+        filter_deps_source(
+            &crate_name,
+            &built_in_crates,
+            &use_renames,
+            &mut dependencies,
+        );
     }
 
     // Similar checks for other regex patterns
 
     for cap in macro_use_regex.captures_iter(code) {
-        let dependency = cap[1].to_string();
-        if !built_in_crates
-            .iter()
-            .any(|builtin| dependency.starts_with(builtin))
-        {
-            dependencies.push(dependency);
-        }
+        let crate_name = cap[1].to_string();
+        filter_deps_source(
+            &crate_name,
+            &built_in_crates,
+            &use_renames,
+            &mut dependencies,
+        );
     }
 
     for cap in extern_crate_regex.captures_iter(code) {
-        let dependency = cap[1].to_string();
-        if !built_in_crates
-            .iter()
-            .any(|builtin| dependency.starts_with(builtin))
-        {
-            dependencies.push(dependency);
-        }
+        let crate_name = cap[1].to_string();
+        filter_deps_source(
+            &crate_name,
+            &built_in_crates,
+            &use_renames,
+            &mut dependencies,
+        );
     }
     // Deduplicate the list of dependencies
     dependencies.sort();
     dependencies.dedup();
 
+    debug!("dependencies from source={dependencies:#?}");
     dependencies
+}
+
+fn filter_deps_source(
+    crate_name: &str,
+    built_in_crates: &[&str; 6],
+    use_renames: &[String],
+    dependencies: &mut Vec<String>,
+) {
+    if let Some((dep, _)) = crate_name.split_once(':') {
+        let dep_string = dep.to_owned();
+        if !built_in_crates.contains(&dep) && !use_renames.contains(&dep_string) {
+            dependencies.push(dep_string);
+        }
+    }
+}
+
+/// When no AST, find redefined crates (that would cause Cargo search false positives) from the source code.
+pub(crate) fn find_use_renames_source(code: &str) -> Vec<String> {
+    debug!("######## In code_utils::find_use_renames_source");
+
+    let use_as_regex = Regex::new(r"(?m)^\s*use\s+.+as\s+(\w+)").unwrap();
+
+    let mut use_renames: Vec<String> = vec![];
+
+    for cap in use_as_regex.captures_iter(code) {
+        let use_rename = cap[1].to_string();
+        debug!("@@@@@@@@ use_rename={use_rename}");
+        use_renames.push(use_rename);
+    }
+
+    debug!("use_renames from source={use_renames:#?}");
+    use_renames
 }
 
 // Inferring dependencies from the abstract syntax tree.
 pub(crate) fn infer_deps_from_ast(syntax_tree: &File) -> Vec<String> {
-    let use_renames = find_use_renames(syntax_tree);
+    let use_renames = find_use_renames_ast(syntax_tree);
 
     let mut dependencies = Vec::new();
-    let built_in_crates = &["std", "core", "alloc", "collections", "fmt", "crate"];
+    let built_in_crates = ["std", "core", "alloc", "collections", "fmt", "crate"];
 
     for item in &syntax_tree.items {
         match item {
-            // Think this covers macro_use
-            Item::ExternCrate(extern_crate) => {
-                dependencies.push(extern_crate.ident.to_string());
-            }
             Item::Use(use_item) => {
                 if let UseTree::Path(ref use_tree_path) = use_item.tree {
                     // if let Some(first_segment) = use_tree_path.ident {
                     let crate_name = use_tree_path.ident.to_string();
-                    if !built_in_crates.contains(&crate_name.as_str())
-                        && !use_renames.contains(&crate_name)
-                    {
-                        // Filter out "crate" entries
-                        dependencies.push(crate_name);
-                    }
+                    filter_deps_ast(
+                        &crate_name,
+                        &built_in_crates,
+                        &use_renames,
+                        &mut dependencies,
+                    );
                 }
             }
+
+            // Think this covers macro_use
+            Item::ExternCrate(extern_crate) => {
+                let crate_name = extern_crate.ident.to_string();
+                filter_deps_ast(
+                    &crate_name,
+                    &built_in_crates,
+                    &use_renames,
+                    &mut dependencies,
+                );
+            }
+
             // Wrong - not macro_use
             // Item::Macro(macro_item) => {
             //     if let Some(macro_path) = macro_item.mac.path.get_ident() {
@@ -126,7 +166,20 @@ pub(crate) fn infer_deps_from_ast(syntax_tree: &File) -> Vec<String> {
     dependencies
 }
 
-fn find_use_renames(syntax_tree: &File) -> Vec<String> {
+fn filter_deps_ast(
+    crate_name: &str,
+    built_in_crates: &[&str; 6],
+    use_renames: &[String],
+    dependencies: &mut Vec<String>,
+) {
+    let crate_name_string = crate_name.to_string();
+    if !built_in_crates.contains(&crate_name) && !use_renames.contains(&crate_name_string) {
+        // Filter out "crate" entries
+        dependencies.push(crate_name_string);
+    }
+}
+
+fn find_use_renames_ast(syntax_tree: &File) -> Vec<String> {
     struct FindCrates<'a> {
         use_renames: &'a mut Vec<String>,
     }
@@ -144,7 +197,7 @@ fn find_use_renames(syntax_tree: &File) -> Vec<String> {
 
     finder.visit_file(syntax_tree);
 
-    debug!("use_renames={use_renames:#?}");
+    debug!("use_renames from ast={use_renames:#?}");
     use_renames
 }
 

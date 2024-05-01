@@ -13,7 +13,7 @@ use syn::File;
 use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
 use crate::term_colors::{ThemeStyle, YinYangStyle};
-use crate::{BuildState};
+use crate::BuildState;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
@@ -292,6 +292,9 @@ pub(crate) fn merge_manifest(
 
     let mut cargo_manifest = default_manifest(build_state)?;
     debug!("@@@@ cargo_manifest (before deps)={cargo_manifest:#?}");
+
+    // // TODO temp debug out
+    // infer_deps_from_source(maybe_rs_source.ok_or("Missing source code")?);
 
     let rs_inferred_deps = if let Some(syntax_tree) = maybe_syntax_tree {
         infer_deps_from_ast(syntax_tree)

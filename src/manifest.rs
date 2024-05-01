@@ -13,7 +13,7 @@ use syn::File;
 use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
 use crate::term_colors::{ThemeStyle, YinYangStyle};
-use crate::{color_println, BuildState};
+use crate::{BuildState};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {

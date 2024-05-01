@@ -13,7 +13,7 @@ use std::process::{Command, ExitStatus, Output};
 use std::str::FromStr;
 use std::time::{Instant, SystemTime};
 use std::{error::Error, fs, path::Path};
-use syn::{parse_file, visit::Visit, File, Item, UseRename, UseTree};
+use syn::{visit::Visit, File, Item, UseRename, UseTree};
 
 pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
     debug!("Reading from {path:?}");
@@ -86,27 +86,10 @@ pub(crate) fn infer_deps_from_source(code: &str) -> Vec<String> {
 
 // Inferring dependencies from the abstract syntax tree.
 pub(crate) fn infer_deps_from_ast(syntax_tree: &File) -> Vec<String> {
+    let use_renames = find_use_renames(syntax_tree);
+
     let mut dependencies = Vec::new();
     let built_in_crates = &["std", "core", "alloc", "collections", "fmt", "crate"];
-
-    struct FindCrates<'a> {
-        use_renames: &'a mut Vec<String>,
-    }
-
-    impl<'a> Visit<'a> for FindCrates<'a> {
-        fn visit_use_rename(&mut self, node: &'a UseRename) {
-            self.use_renames.push(node.rename.to_string());
-        }
-    }
-
-    let mut use_renames: Vec<String> = vec![];
-    let mut finder = FindCrates {
-        use_renames: &mut use_renames,
-    };
-
-    finder.visit_file(syntax_tree);
-
-    debug!("use_renames={use_renames:#?}");
 
     for item in &syntax_tree.items {
         match item {
@@ -143,9 +126,27 @@ pub(crate) fn infer_deps_from_ast(syntax_tree: &File) -> Vec<String> {
     dependencies
 }
 
-// fn find_use_renames -> Vec<String> {
+fn find_use_renames(syntax_tree: &File) -> Vec<String> {
+    struct FindCrates<'a> {
+        use_renames: &'a mut Vec<String>,
+    }
 
-// }
+    impl<'a> Visit<'a> for FindCrates<'a> {
+        fn visit_use_rename(&mut self, node: &'a UseRename) {
+            self.use_renames.push(node.rename.to_string());
+        }
+    }
+
+    let mut use_renames: Vec<String> = vec![];
+    let mut finder = FindCrates {
+        use_renames: &mut use_renames,
+    };
+
+    finder.visit_file(syntax_tree);
+
+    debug!("use_renames={use_renames:#?}");
+    use_renames
+}
 
 pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String), Box<dyn Error>> {
     let start_parsing_rs = Instant::now();

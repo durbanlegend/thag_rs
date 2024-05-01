@@ -134,10 +134,7 @@ impl BuildState {
         let target_dir_path = home_dir.join(format!(".cargo/{source_stem}"));
         debug!("target_dir_path={}", target_dir_path.display());
         let target_dir_str = target_dir_path.display().to_string();
-        let mut target_path = target_dir_path
-            .join("target")
-            .join("debug")
-            ;
+        let mut target_path = target_dir_path.join("target").join("debug");
         #[cfg(windows)]
         {
             target_path = target_path.join(source_stem.clone() + ".exe");
@@ -162,12 +159,6 @@ impl BuildState {
             ..Default::default()
         };
 
-        //         debug!(r"About to determine stale_executable:
-        // matches!(script_state, ScriptState::NamedEmpty {{ .. }})={},
-        // target_path_clone.exists()={},
-        // modified_since_compiled(&build_state).is_some()={}",
-        // matches!(script_state, ScriptState::NamedEmpty { .. }), target_path_clone.exists(),
-        //             modified_since_compiled(&build_state).is_some());
         let stale_executable = matches!(script_state, ScriptState::NamedEmpty { .. })
             || !target_path_clone.exists()
             || modified_since_compiled(&build_state).is_some();
@@ -260,7 +251,7 @@ impl Highlighter for EvalHelper {
 //       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
 //       2.  Don't use println{} when wrapping snippet if return type of expressionq is ()
 //       3.  Debug Windows always doing regen and rebuild.
-//       4.  Consider adding braces around repl if not an expression.
+//       4.
 //       5.  Drop tui_editor
 //       6.  bool -> 2-value enums?
 //       7.

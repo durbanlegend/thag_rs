@@ -13,7 +13,7 @@ use std::process::{Command, ExitStatus, Output};
 use std::str::FromStr;
 use std::time::{Instant, SystemTime};
 use std::{error::Error, fs, path::Path};
-use syn::{File, Item, UseTree};
+use syn::{parse_file, visit::Visit, File, Item, UseRename, UseTree};
 
 pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
     debug!("Reading from {path:?}");
@@ -89,6 +89,25 @@ pub(crate) fn infer_deps_from_ast(syntax_tree: &File) -> Vec<String> {
     let mut dependencies = Vec::new();
     let built_in_crates = &["std", "core", "alloc", "collections", "fmt", "crate"];
 
+    struct FindCrates<'a> {
+        use_renames: &'a mut Vec<String>,
+    }
+
+    impl<'a> Visit<'a> for FindCrates<'a> {
+        fn visit_use_rename(&mut self, node: &'a UseRename) {
+            self.use_renames.push(node.rename.to_string());
+        }
+    }
+
+    let mut use_renames: Vec<String> = vec![];
+    let mut finder = FindCrates {
+        use_renames: &mut use_renames,
+    };
+
+    finder.visit_file(syntax_tree);
+
+    debug!("use_renames={use_renames:#?}");
+
     for item in &syntax_tree.items {
         match item {
             // Think this covers macro_use
@@ -99,7 +118,9 @@ pub(crate) fn infer_deps_from_ast(syntax_tree: &File) -> Vec<String> {
                 if let UseTree::Path(ref use_tree_path) = use_item.tree {
                     // if let Some(first_segment) = use_tree_path.ident {
                     let crate_name = use_tree_path.ident.to_string();
-                    if !built_in_crates.contains(&crate_name.as_str()) {
+                    if !built_in_crates.contains(&crate_name.as_str())
+                        && !use_renames.contains(&crate_name)
+                    {
                         // Filter out "crate" entries
                         dependencies.push(crate_name);
                     }
@@ -121,6 +142,10 @@ pub(crate) fn infer_deps_from_ast(syntax_tree: &File) -> Vec<String> {
 
     dependencies
 }
+
+// fn find_use_renames -> Vec<String> {
+
+// }
 
 pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String), Box<dyn Error>> {
     let start_parsing_rs = Instant::now();

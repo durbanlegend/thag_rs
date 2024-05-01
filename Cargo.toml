@@ -22,7 +22,7 @@ rustyline = { version = "14.0.0", features = [
     "default",
     "derive",
 ] }
-syn = { version = "2.0.60", features = ["full"] }
+syn = { version = "2.0.60", features = ["full", "visit"] }
 quote = "1.0.36"
 strum = { version = "0.26.2", features = ["derive"] }
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }

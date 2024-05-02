@@ -69,11 +69,15 @@ match luma {
     }
 }
 
-let bg_rgb = terminal_light::background_color()
-    .map(|c| c.rgb()).unwrap();  // may be an error
+match terminal_light::background_color()
+    .map(|c| c.rgb()) {
+        Ok(bg_rgb) => 
+ {
 let luma_255 = 0.2126 * (bg_rgb.r as f32) + 0.7152 * (bg_rgb.g as f32) + 0.0722 * (bg_rgb.b as f32);
 let luma_0_to_1 = luma_255 / 255.0;
 println!("\nTerminal-light: Background color is {bg_rgb:#?}, luma_255={luma_255}, luma_0_to_1={luma_0_to_1}");
+}
+Err(_) => println!("terminal_light::background_color() not supported"),    }
 
 println!("\nSupports-color:");
 

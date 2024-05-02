@@ -198,7 +198,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
     let result = capture_dep(&first_line);
     let (name, version) = match result {
         Ok((name, version)) => {
-            if name != dep_crate {
+            if name != dep_crate && name.replace('-', "_") != dep_crate {
                 debug!("First line of cargo search for crate {dep_crate} found non-matching crate {name}");
                 return Err(Box::new(BuildRunError::Command(format!(
                     "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"

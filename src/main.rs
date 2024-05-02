@@ -250,7 +250,7 @@ impl Highlighter for EvalHelper {
 //      TODO:
 //       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
 //       2.  Don't use println{} when wrapping snippet if return type of expressionq is ()
-//       3.  Debug Windows always doing regen and rebuild.
+//       3.
 //       4.
 //       5.  Drop tui_editor
 //       6.  bool -> 2-value enums?
@@ -260,10 +260,8 @@ impl Highlighter for EvalHelper {
 //      10.  Consider making script name optional, with -n/stdin parm as per my runner changes?
 //      11.  Clean up debugging
 //      12.  Consider supporting vi editor family, nvim/Helix for rust-analyzer support or editor crate.
-//      13.  Remove false-positive Cargo searches for use "as", e.g. in term_colors.rs.
-//           Use logic in examples/syn_visit_use_rename.rs. Also in source code / regex version.
-//      14.  Check if Cargo search found a good hit, as it sometime picks up an unrelated crate.
-//      15.  Debug left-brace misbehaviour in eval. One of the MatchingBracket mafia?
+//      13.
+//      14.  Debug left-brace misbehaviour in eval. One of the MatchingBracket mafia?
 //
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {

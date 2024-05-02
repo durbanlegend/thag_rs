@@ -1,15 +1,11 @@
 /*[toml]
 [dependencies]
-gethostname = "0.4.3"
 supports-color= "3.0.0"
 termbg = "0.5.0"
 terminal-light = "1.4.0"
 */
 
 use supports_color::Stream;
-use terminal_light::r255;
-
-use gethostname::gethostname;
 
 println!("Hostname: {:?}", gethostname());
 
@@ -26,7 +22,11 @@ println!("  Term : {:?}", term);
 
 match rgb {
     Ok(rgb) => {
-        println!("  Color: R={}, G={}, B={}", r255(rgb.r.into()), rgb.g / 257, rgb.b / 257);
+        // Note: to go from 16-bit color range (0-65535) returned by xterm to 8-bit RGB range (0-255),
+        // we need to divide by 65535 / 255 = 257.
+        // While it's clear that 256 x 256 = 65536, it may not be so obvious that 255 * 257 = 65535!
+        // Search for 257 in https://retrocomputing.stackexchange.com/questions/27436/classic-mac-os-colors-to-modern-rgb.
+        println!("  Color: R={}, G={}, B={}", rgb.r / 257, rgb.g / 257, rgb.b / 257);
         println!("  Color={rgb:#?}");
     }
     Err(e) => {

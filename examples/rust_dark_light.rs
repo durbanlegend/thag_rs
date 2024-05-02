@@ -3,6 +3,7 @@
 dark-light = "1.1.1"
 */
 
+/// This seems to think even the darkest themes are light.
 fn main() {
     let mode = dark_light::detect();
 

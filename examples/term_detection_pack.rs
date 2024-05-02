@@ -1,18 +1,23 @@
 /*[toml]
 [dependencies]
-dark-light = "1.1.1"
+gethostname = "0.4.3"
 supports-color= "3.0.0"
 termbg = "0.5.0"
 terminal-light = "1.4.0"
 */
 
 use supports_color::Stream;
+use terminal_light::r255;
+
+use gethostname::gethostname;
+
+println!("Hostname: {:?}", gethostname());
 
 let timeout = std::time::Duration::from_millis(100);
 
-println!("Termbg:");
+println!(r"Crate termbg:
+    (Note that crate termbg seems to ");
 
-println!("Check terminal background color");
 let term = termbg::terminal();
 let rgb = termbg::rgb(timeout);
 let theme = termbg::theme(timeout);
@@ -21,7 +26,8 @@ println!("  Term : {:?}", term);
 
 match rgb {
     Ok(rgb) => {
-        println!("  Color: R={:x}, G={:x}, B={:x}", rgb.r, rgb.g, rgb.b);
+        println!("  Color: R={}, G={}, B={}", r255(rgb.r.into()), rgb.g / 257, rgb.b / 257);
+        println!("  Color={rgb:#?}");
     }
     Err(e) => {
         println!("  Color: detection failed {:?}", e);
@@ -37,19 +43,7 @@ match theme {
     }
 }
 
-let mode = dark_light::detect();
-
-match mode {
-    // Dark mode
-    dark_light::Mode::Dark => {}
-    // Light mode
-    dark_light::Mode::Light => {}
-    // Unspecified
-    dark_light::Mode::Default => {}
-}
-println!("\nRust-dark-light: mode={mode:#?}");
-
-println!("\nTerminal_light:");
+println!("\nCrate terminal_light:");
 
 let luma = terminal_light::luma();
 println!("luma={luma:#?}");
@@ -71,7 +65,7 @@ match luma {
 
 match terminal_light::background_color()
     .map(|c| c.rgb()) {
-        Ok(bg_rgb) => 
+        Ok(bg_rgb) =>
  {
 let luma_255 = 0.2126 * (bg_rgb.r as f32) + 0.7152 * (bg_rgb.g as f32) + 0.0722 * (bg_rgb.b as f32);
 let luma_0_to_1 = luma_255 / 255.0;
@@ -79,7 +73,7 @@ println!("\nTerminal-light: Background color is {bg_rgb:#?}, luma_255={luma_255}
 }
 Err(_) => println!("terminal_light::background_color() not supported"),    }
 
-println!("\nSupports-color:");
+println!("\nCrate supports-color:");
 
 if let Some(support) = supports_color::on(Stream::Stdout) {
     if support.has_16m {

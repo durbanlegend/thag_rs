@@ -7,12 +7,7 @@ terminal-light = "1.4.0"
 
 use supports_color::Stream;
 
-println!("Hostname: {:?}", gethostname());
-
 let timeout = std::time::Duration::from_millis(100);
-
-println!(r"Crate termbg:
-    (Note that crate termbg seems to ");
 
 let term = termbg::terminal();
 let rgb = termbg::rgb(timeout);
@@ -26,6 +21,8 @@ match rgb {
         // we need to divide by 65535 / 255 = 257.
         // While it's clear that 256 x 256 = 65536, it may not be so obvious that 255 * 257 = 65535!
         // Search for 257 in https://retrocomputing.stackexchange.com/questions/27436/classic-mac-os-colors-to-modern-rgb.
+        // Also note that the 16-bit colours are generally doubled up, like D7D7. I.e. 256xD7 + D7, which
+        // may make dividing by 257 seem more intuitive.
         println!("  Color: R={}, G={}, B={}", rgb.r / 257, rgb.g / 257, rgb.b / 257);
         println!("  Color={rgb:#?}");
     }

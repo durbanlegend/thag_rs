@@ -1,10 +1,12 @@
-//! [dependencies]
-//! clap = { version = "4.5.4", features = ["cargo", "derive"] }
-//! clap-repl = "0.1.1"
-//! console = "0.15.8"
-//! rustyline = "14.0.0"
-//! quote = "1.0.36"
-//! syn = { version = "2.0.60", features = ["full"] }
+/*[toml]
+[dependencies]
+clap = { version = "4.5.4", features = ["cargo", "derive"] }
+clap-repl = "0.1.1"
+console = "0.15.8"
+rustyline = "14.0.0"
+quote = "1.0.36"
+syn = { version = "2.0.60", features = ["full"] }
+*/
 
 // REPL based on clap-repl package
 use clap::Parser;

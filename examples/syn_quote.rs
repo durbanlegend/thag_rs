@@ -1,10 +1,12 @@
-//! [dependencies]
-//! quote = "1.0.36"
-//! syn = { version = "2.0.60", features = ["full"] }
+/*[toml]
+[dependencies]
+quote = "1.0.36"
+syn = { version = "2.0.60", features = ["full"] }
+*/
 
 use quote::quote;
-use syn::{self, Expr};
 use std::io::Read;
+use syn::{self, Expr};
 
 fn main() {
     loop {
@@ -14,11 +16,11 @@ fn main() {
             .read_to_end(&mut input)
             .expect("Failed to read input");
 
-            let input = match std::str::from_utf8(&input) {
-                Ok(v) => v,
-                Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-            };
-        
+        let input = match std::str::from_utf8(&input) {
+            Ok(v) => v,
+            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+        };
+
         // Parse the expression string into a syntax tree
         let expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(&input.trim());
 

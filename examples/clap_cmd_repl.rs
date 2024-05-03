@@ -1,5 +1,5 @@
 /*[toml]
-[dependencies*
+[dependencies]
 clapcmd = "0.3.3"
 */
 use clapcmd::{Arg, ArgMatches, ClapCmd, ClapCmdResult, Command, ValueHint};

@@ -36,7 +36,7 @@ impl MessageType {
 
             (MessageType::Normal, _) => owo_colors::Style::new().green(),
 
-            (MessageType::Debug, _) => owo_colors::Style::new().blue().dimmed(),
+            (MessageType::Debug, _) => owo_colors::Style::new().cyan().dimmed(),
         }
     }
 }

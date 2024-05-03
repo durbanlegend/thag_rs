@@ -3,6 +3,7 @@
 log = "0.4.21"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 strum = { version = "0.26.2", features = ["derive"] }
+supports-color= "3.0.0"
 termbg = "0.5.0"
 */
 
@@ -15,6 +16,7 @@ use owo_xterm::Black;
 use log::debug;
 use owo_colors::{AnsiColors, Style, XtermColors};
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
+use supports_color::Stream;
 use termbg::Theme;
 
 /// A version of println that prints an entire message in colour or otherwise styled.
@@ -75,6 +77,18 @@ impl ThemeStyle for YinYangStyle {
                 },
             };
             Some(style)
+        } else if let Some(_support) = supports_color::on(Stream::Stdout) {
+            // If supports colour, default to dark theme - safer
+            let style: Style = match *self {
+                YinYangStyle::Error => Style::new().fg::<Red>().bold(),
+                YinYangStyle::Warning => Style::new().fg::<Magenta>().bold(),
+                YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
+                YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
+                YinYangStyle::InnerPrompt => Style::new().fg::<Green>().bold(),
+                YinYangStyle::Info => Style::new().fg::<White>(),
+                YinYangStyle::Debug => Style::new().fg::<Cyan>(),
+            };
+            Some(style)
         } else {
             None
         }
@@ -112,6 +126,22 @@ fn main() {
             color_println!(
                 variant.get_style(),
                 "My {theme_ref:?} style {} message",
+                level
+            );
+        }
+    } else if let Some(support) = supports_color::on(Stream::Stdout) {
+        // if support.has_16m {
+        //     println!("16 million (RGB) colors are supported");
+        // } else if support.has_256 {
+        //     println!("256 colors are supported.");
+        // } else if support.has_basic {
+        //     println!("Only basic ANSI colors are supported.");
+        // }
+        for variant in YinYangStyle::iter() {
+            let level: &str = &variant.to_string();
+            color_println!(
+                variant.get_style(),
+                "My unknown theme (defaulting to Dark) style {} message",
                 level
             );
         }

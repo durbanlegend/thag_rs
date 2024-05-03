@@ -131,7 +131,7 @@ impl BuildState {
 
         let home_dir = get_my_home()?.ok_or("Can't resolve home directory")?;
         debug!("home_dir={}", home_dir.display());
-        let target_dir_path = home_dir.join(format!(".cargo/{source_stem}"));
+        let target_dir_path = home_dir.join(".cargo").join(&source_stem);
         debug!("target_dir_path={}", target_dir_path.display());
         let target_dir_str = target_dir_path.display().to_string();
         let mut target_path = target_dir_path.join("target").join("debug");

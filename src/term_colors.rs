@@ -1,5 +1,6 @@
 /*[toml]
 [dependencies]
+lazy_static = "1.4.0"
 log = "0.4.21"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
@@ -18,11 +19,25 @@ use owo_xterm::{
     LightCaribbeanGreen, LochmaraBlue, Silver,
 };
 
+use lazy_static::lazy_static;
 use log::debug;
 use owo_colors::Style;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
+
+lazy_static! {
+    static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
+        Some(color_support) => {
+            if color_support.has_16m || color_support.has_256 {
+                Some(ColorSupport::Xterm256)
+            } else {
+                Some(ColorSupport::Ansi16)
+            }
+        }
+        None => None,
+    };
+}
 
 /// A version of println that prints an entire message in colour or otherwise styled.
 /// Format: `color_println`!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);
@@ -54,7 +69,7 @@ pub enum TermTheme {
 }
 
 #[derive(Debug, Clone, Copy, EnumString, Display, PartialEq)]
-enum MessageType {
+pub enum MessageLevel {
     Error,
     Warning,
     Emphasis,
@@ -108,36 +123,43 @@ pub enum MessageStyle {
 impl ThemeStyle for MessageStyle {
     fn get_style(&self) -> Option<Style> {
         let style = match self {
-            MessageStyle::Ansi16LightError => Style::new().fg::<Red>().bold(),
-            MessageStyle::Ansi16LightWarning => Style::new().fg::<Magenta>().bold(),
-            MessageStyle::Ansi16LightEmphasis => Style::new().fg::<Yellow>().bold(),
-            MessageStyle::Ansi16LightOuterPrompt => Style::new().fg::<Blue>().bold(),
+            MessageStyle::Ansi16LightError | MessageStyle::Ansi16DarkError => {
+                Style::new().fg::<Red>().bold()
+            }
+            MessageStyle::Ansi16LightWarning | MessageStyle::Ansi16DarkWarning => {
+                Style::new().fg::<Magenta>().bold()
+            }
+            MessageStyle::Ansi16LightEmphasis | MessageStyle::Ansi16DarkEmphasis => {
+                Style::new().fg::<Yellow>().bold()
+            }
+            MessageStyle::Ansi16LightOuterPrompt | MessageStyle::Ansi16DarkOuterPrompt => {
+                Style::new().fg::<Blue>().bold()
+            }
             MessageStyle::Ansi16LightInnerPrompt => Style::new().fg::<Cyan>().bold(),
-            MessageStyle::Ansi16LightNormal => Style::new().fg::<Black>(),
-            MessageStyle::Ansi16LightDebug => Style::new().fg::<Cyan>(),
-            MessageStyle::Ansi16DarkError => Style::new().fg::<Red>().bold(),
-            MessageStyle::Ansi16DarkWarning => Style::new().fg::<Magenta>().bold(),
-            MessageStyle::Ansi16DarkEmphasis => Style::new().fg::<Yellow>().bold(),
-            MessageStyle::Ansi16DarkOuterPrompt => Style::new().fg::<Blue>().bold(),
+            #[allow(clippy::match_same_arms)]
+            MessageStyle::Ansi16LightNormal => Style::new().fg::<White>(), // Reversal beats me
+            MessageStyle::Ansi16LightDebug | MessageStyle::Ansi16DarkDebug => {
+                Style::new().fg::<Cyan>()
+            }
             MessageStyle::Ansi16DarkInnerPrompt => Style::new().fg::<Green>().bold(),
+            #[allow(clippy::match_same_arms)]
             MessageStyle::Ansi16DarkNormal => Style::new().fg::<White>(),
-            MessageStyle::Ansi16DarkDebug => Style::new().fg::<Cyan>(),
-            MessageStyle::Xterm256LightError => Style::new().fg::<GuardsmanRed>().bold(),
+            MessageStyle::Xterm256LightError | MessageStyle::Xterm256DarkError => {
+                Style::new().fg::<GuardsmanRed>().bold()
+            }
             MessageStyle::Xterm256LightWarning => Style::new().fg::<DarkViolet>().bold(),
-            MessageStyle::Xterm256LightEmphasis => Style::new().fg::<Copperfield>().bold(),
-            MessageStyle::Xterm256LightOuterPrompt => Style::new().fg::<DarkMalibuBlue>().bold(),
-            MessageStyle::Xterm256LightInnerPrompt => {
+            MessageStyle::Xterm256LightEmphasis | MessageStyle::Xterm256DarkEmphasis => {
+                Style::new().fg::<Copperfield>().bold()
+            }
+            MessageStyle::Xterm256LightOuterPrompt | MessageStyle::Xterm256DarkOuterPrompt => {
+                Style::new().fg::<DarkMalibuBlue>().bold()
+            }
+            MessageStyle::Xterm256LightInnerPrompt | MessageStyle::Xterm256DarkInnerPrompt => {
                 Style::new().fg::<LightCaribbeanGreen>().bold()
             }
             MessageStyle::Xterm256LightNormal => Style::new().fg::<Black>(),
             MessageStyle::Xterm256LightDebug => Style::new().fg::<LochmaraBlue>(),
-            MessageStyle::Xterm256DarkError => Style::new().fg::<GuardsmanRed>().bold(),
             MessageStyle::Xterm256DarkWarning => Style::new().fg::<DarkPurplePizzazz>().bold(),
-            MessageStyle::Xterm256DarkEmphasis => Style::new().fg::<Copperfield>().bold(),
-            MessageStyle::Xterm256DarkOuterPrompt => Style::new().fg::<DarkMalibuBlue>().bold(),
-            MessageStyle::Xterm256DarkInnerPrompt => {
-                Style::new().fg::<LightCaribbeanGreen>().bold()
-            }
             MessageStyle::Xterm256DarkNormal => Style::new().fg::<Silver>(),
             MessageStyle::Xterm256DarkDebug => Style::new().fg::<BondiBlue>(),
         };
@@ -153,18 +175,38 @@ fn get_theme() -> Result<Theme, termbg::Error> {
     theme
 }
 
-fn main() {
-    let term = termbg::terminal();
-    debug!("  Term : {:?}", term);
-
-    let maybe_theme = get_theme();
-    let term_theme = match maybe_theme {
+pub(crate) fn get_term_theme() -> TermTheme {
+    match get_theme() {
         Ok(theme) => match theme {
             Theme::Light => TermTheme::Light,
             Theme::Dark => TermTheme::Dark,
         },
         Err(_) => TermTheme::Dark,
-    };
+    }
+}
+
+pub fn resolve_style(message_level: MessageLevel) -> Option<Style> {
+    let term_theme = get_term_theme();
+    let color_qual = COLOR_SUPPORT.as_ref().unwrap().to_string().to_lowercase();
+    let theme_qual = term_theme.to_string().to_lowercase();
+    let msg_level_qual = message_level.to_string().to_lowercase();
+    // debug!("Calling from_str on {}_{}_{}", &color_qual, &theme_qual, &msg_level_qual);
+    let message_style = MessageStyle::from_str(&format!(
+        "{}_{}_{}",
+        &color_qual, &theme_qual, &msg_level_qual
+    ));
+    match message_style {
+        Ok(message_style) => message_style.get_style(),
+        Err(_) => None,
+    }
+}
+
+#[allow(dead_code)]
+fn main() {
+    let term = termbg::terminal();
+    debug!("  Term : {:?}", term);
+
+    let term_theme = get_term_theme();
 
     let color_support = match supports_color::on(Stream::Stdout) {
         Some(color_support) => {
@@ -180,20 +222,20 @@ fn main() {
     if color_support.is_none() {
         println!("No colour support found for terminal");
     } else {
-        let msg_level = MessageType::Warning;
+        let msg_level = MessageLevel::Warning;
 
         let color_qual = color_support.unwrap().to_string().to_lowercase();
         let theme_qual = term_theme.to_string().to_lowercase();
         let msg_level_qual = msg_level.to_string().to_lowercase();
         // eprintln!("Calling from_str on {}_{}_{}", &color_qual, &theme_qual, &msg_level_qual);
-        let style = MessageStyle::from_str(&format!(
+        let message_style = MessageStyle::from_str(&format!(
             "{}_{}_{}",
             &color_qual, &theme_qual, &msg_level_qual
         ));
-        let actual_style = style.unwrap().get_style();
+        let style = message_style.unwrap().get_style();
 
-        // Use actual_style for displaying the message
-        color_println!(actual_style, "{}", "Colored Warning message\n");
+        // Use style for displaying the message
+        color_println!(style, "{}", "Colored Warning message\n");
 
         for variant in MessageStyle::iter() {
             let variant_string: &str = &variant.to_string();

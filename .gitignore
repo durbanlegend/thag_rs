@@ -34,3 +34,4 @@ colors.sh
 sample_bg.html
 examples/syn_ast_deps.rs
 term_colors.ast
+examples/msg_colors_gpt.rs

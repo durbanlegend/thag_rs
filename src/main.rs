@@ -41,9 +41,7 @@ mod code_utils;
 mod errors;
 mod manifest;
 mod term_colors;
-mod tui_editor;
 
-// const PACKAGE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub(crate) const REPL_SUBDIR: &str = "rs_repl";
@@ -51,8 +49,6 @@ const RS_SUFFIX: &str = ".rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
 
 lazy_static! {
-    // #[derive(Debug)]
-    // static ref HOME_DIR: &'static Path = get_my_home().unwrap().unwrap().as_path();
     static ref TMP_DIR: PathBuf = env::temp_dir();
 }
 
@@ -252,7 +248,7 @@ impl Highlighter for EvalHelper {
 //       2.  Don't use println{} when wrapping snippet if return type of expressionq is ()
 //       3.  Crate clap_repl cursor displacement in Windows
 //       4.
-//       5.  Drop tui_editor
+//       5.
 //       6.  bool -> 2-value enums?
 //       7.
 //       8.  Cat files before delete.

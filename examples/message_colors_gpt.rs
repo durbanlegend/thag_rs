@@ -24,8 +24,8 @@ impl MessageType {
             (MessageType::Error, Theme::Dark) => owo_colors::Style::new().red().bold(),
             (MessageType::Error, Theme::Light) => owo_colors::Style::new().red().bold(),
 
-            (MessageType::Warning, Theme::Dark) => owo_colors::Style::new().yellow(),
-            (MessageType::Warning, Theme::Light) => owo_colors::Style::new().yellow(),
+            (MessageType::Warning, Theme::Dark) => owo_colors::Style::new().yellow().bold(),
+            (MessageType::Warning, Theme::Light) => owo_colors::Style::new().yellow().bold(),
 
             (MessageType::Emphasis, Theme::Dark) => owo_colors::Style::new().cyan().bold(),
             (MessageType::Emphasis, Theme::Light) => owo_colors::Style::new().cyan().bold(),

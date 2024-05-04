@@ -12,7 +12,7 @@ use syn::File;
 
 use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
-use crate::term_colors::{ThemeStyle, YinYangStyle};
+use crate::term_colors::{MessageStyle, ThemeStyle};
 use crate::BuildState;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -146,7 +146,8 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
     let start_search = Instant::now();
 
     let dep_crate_styled =
-        owo_colors::Style::style(&YinYangStyle::Emphasis.get_style().unwrap(), dep_crate);
+        // TODO remove hard coded colour support and theme variant
+        owo_colors::Style::style(&MessageStyle::Ansi16DarkEmphasis.get_style().unwrap(), dep_crate);
     println!(
         r#"
             Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
@@ -165,7 +166,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
     // let content = format!(r#"hello"#);
     // println!(
     //     "Why, {} world!",
-    //     owo_colors::Style::style(&YinYangStyle::Emphasis.get_style().unwrap(), content)
+    //     owo_colors::Style::style(&MessageStyle::Emphasis.get_style().unwrap(), content)
     // );
 
     let mut search_command = Command::new("cargo");

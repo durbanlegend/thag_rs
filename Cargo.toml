@@ -24,11 +24,10 @@ rustyline = { version = "14.0.0", features = [
 ] }
 syn = { version = "2.0.60", features = ["full", "visit"] }
 quote = "1.0.36"
-strum = { version = "0.26.2", features = ["derive"] }
+strum = { version = "0.26.2", features = ["derive", "phf"] }
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 lazy_static = "1.4.0"
 homedir = "0.2.1"
 edit = "0.1.5"
 termbg = "0.5.0"
 supports-color = "3.0.0"
-enum-assoc = "1.1.0"

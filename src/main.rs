@@ -6,7 +6,7 @@ use crate::code_utils::{
 use crate::code_utils::{modified_since_compiled, parse_source, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::term_colors::{ThemeStyle, YinYangStyle};
+use crate::term_colors::{ColorSupport, MessageStyle, ThemeStyle};
 
 use clap::Parser;
 use clap_repl::ClapEditor;
@@ -34,6 +34,7 @@ use std::process::Command;
 use std::time::Instant;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
+use supports_color::Stream;
 use syn::{self, Expr};
 
 mod cmd_args;
@@ -50,6 +51,16 @@ pub(crate) const TOML_NAME: &str = "Cargo.toml";
 
 lazy_static! {
     static ref TMP_DIR: PathBuf = env::temp_dir();
+    static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
+        Some(color_support) => {
+            if color_support.has_16m || color_support.has_256 {
+                Some(ColorSupport::Xterm256)
+            } else {
+                Some(term_colors::ColorSupport::Ansi16)
+            }
+        }
+        None => None,
+    };
 }
 
 #[derive(Debug)]
@@ -321,8 +332,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let cmd_list = cmd_vec.join(", ") + " or help";
 
         let disp_cmd_list = || {
-            let x = YinYangStyle::OuterPrompt;
-            color_println!(x.get_style(), "Enter one of: {}", cmd_list);
+            // TODO remove hard coded colour support and theme variant
+            let variant = MessageStyle::Ansi16DarkOuterPrompt;
+            color_println!(variant.get_style(), "Enter one of: {}", cmd_list);
         };
         disp_cmd_list();
         let mut loop_editor = ClapEditor::<LoopCommand>::new();
@@ -437,7 +449,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     // }
                     loop {
                         color_println!(
-                            YinYangStyle::InnerPrompt.get_style(),
+                            // TODO remove hard coded colour support and theme variant
+                            MessageStyle::Ansi16DarkInnerPrompt.get_style(),
                             "Enter an expression (e.g., 2 + 3), or q to quit:"
                         );
 
@@ -505,7 +518,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                             }
                             Err(err) => {
                                 color_println!(
-                                    YinYangStyle::Error.get_style(),
+                                    // TODO remove hard coded colour support and theme variant
+                                    MessageStyle::Ansi16DarkError.get_style(),
                                     "Error parsing code: {}",
                                     err
                                 );

@@ -2,20 +2,25 @@
 [dependencies]
 log = "0.4.21"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.2", features = ["derive"] }
+strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
 termbg = "0.5.0"
 */
+
+use std::{fmt::Display, str::FromStr};
 
 use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
 use owo_colors::colors::{self as owo_ansi, Magenta};
 
 use owo_ansi::xterm as owo_xterm;
-use owo_xterm::Black;
+use owo_xterm::{
+    Black, BondiBlue, Copperfield, DarkMalibuBlue, DarkPurplePizzazz, DarkViolet, GuardsmanRed,
+    LightCaribbeanGreen, LochmaraBlue, Silver,
+};
 
 use log::debug;
-use owo_colors::{AnsiColors, Style, XtermColors};
-use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
+use owo_colors::Style;
+use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
 
@@ -34,432 +39,109 @@ macro_rules! color_println {
     }};
 }
 
-pub trait ThemeStyle {
-    fn get_style(&self) -> Option<Style>;
-    fn to_string(&self) -> String;
+#[derive(Clone, EnumString, Display, PartialEq)]
+/// We include `TrueColor` in Xterm256 as we're not interested in more than 256 colours just for messages.
+pub enum ColorSupport {
+    Xterm256,
+    Ansi16,
+    None,
 }
 
-// Enum for light and dark theme styles
-#[derive(Clone, Copy, EnumIter, IntoStaticStr)]
-pub enum YinYangStyle {
+#[derive(EnumString, Display, PartialEq)]
+pub enum TermTheme {
+    Light,
+    Dark,
+}
+
+#[derive(Debug, Clone, Copy, EnumString, Display, PartialEq)]
+enum MessageType {
     Error,
     Warning,
     Emphasis,
     OuterPrompt,
     InnerPrompt,
-    Info,
+    Normal,
     Debug,
 }
 
-impl ThemeStyle for YinYangStyle {
-    // Get the corresponding color style for the message type
+pub trait ThemeStyle: Display {
+    fn get_style(&self) -> Option<Style>;
+}
+
+#[derive(Clone, Debug, Display, EnumIter, EnumString, PartialEq)]
+#[strum(serialize_all = "snake_case")]
+#[strum(use_phf)]
+pub enum MessageStyle {
+    Ansi16LightError,
+    Ansi16LightWarning,
+    Ansi16LightEmphasis,
+    Ansi16LightOuterPrompt,
+    Ansi16LightInnerPrompt,
+    Ansi16LightNormal,
+    Ansi16LightDebug,
+
+    Ansi16DarkError,
+    Ansi16DarkWarning,
+    Ansi16DarkEmphasis,
+    Ansi16DarkOuterPrompt,
+    Ansi16DarkInnerPrompt,
+    Ansi16DarkNormal,
+    Ansi16DarkDebug,
+
+    Xterm256LightError,
+    Xterm256LightWarning,
+    Xterm256LightEmphasis,
+    Xterm256LightOuterPrompt,
+    Xterm256LightInnerPrompt,
+    Xterm256LightNormal,
+    Xterm256LightDebug,
+
+    Xterm256DarkError,
+    Xterm256DarkWarning,
+    Xterm256DarkEmphasis,
+    Xterm256DarkOuterPrompt,
+    Xterm256DarkInnerPrompt,
+    Xterm256DarkNormal,
+    Xterm256DarkDebug,
+}
+
+impl ThemeStyle for MessageStyle {
     fn get_style(&self) -> Option<Style> {
-        let theme_result = get_theme();
-        if let Ok(theme) = theme_result {
-            let style = match theme {
-                Theme::Light => match *self {
-                    YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                    YinYangStyle::Warning => Style::new().fg::<Magenta>().bold(),
-                    YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
-                    YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
-                    YinYangStyle::InnerPrompt => Style::new().fg::<Cyan>().bold(),
-                    YinYangStyle::Info => Style::new().fg::<Black>(),
-                    YinYangStyle::Debug => Style::new().fg::<Cyan>(),
-                },
-                Theme::Dark => match *self {
-                    YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                    YinYangStyle::Warning => Style::new().fg::<Magenta>().bold(),
-                    YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
-                    YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
-                    YinYangStyle::InnerPrompt => Style::new().fg::<Green>().bold(),
-                    YinYangStyle::Info => Style::new().fg::<White>(),
-                    YinYangStyle::Debug => Style::new().fg::<Cyan>(),
-                },
-            };
-            Some(style)
-        } else if let Some(_support) = supports_color::on(Stream::Stdout) {
-            // If supports colour, default to dark theme - safer
-            let style: Style = match *self {
-                YinYangStyle::Error => Style::new().fg::<Red>().bold(),
-                YinYangStyle::Warning => Style::new().fg::<Magenta>().bold(),
-                YinYangStyle::Emphasis => Style::new().fg::<Yellow>().bold(),
-                YinYangStyle::OuterPrompt => Style::new().fg::<Blue>().bold(),
-                YinYangStyle::InnerPrompt => Style::new().fg::<Green>().bold(),
-                YinYangStyle::Info => Style::new().fg::<White>(),
-                YinYangStyle::Debug => Style::new().fg::<Cyan>(),
-            };
-            Some(style)
-        } else {
-            None
-        }
-    }
-
-    fn to_string(&self) -> String {
-        match *self {
-            YinYangStyle::Error => String::from("error"),
-            YinYangStyle::Warning => String::from("warning"),
-            YinYangStyle::Emphasis => String::from("emphasis"),
-            YinYangStyle::OuterPrompt => String::from("outer_prompt"),
-            YinYangStyle::InnerPrompt => String::from("inner_prompt"),
-            YinYangStyle::Info => String::from("info"),
-            YinYangStyle::Debug => String::from("debug"),
-        }
-    }
-}
-
-#[allow(dead_code)]
-fn main() {
-    let term = termbg::terminal();
-    debug!("  Term : {:?}", term);
-
-    let theme = get_theme();
-
-    // Get the appropriate style based on the theme
-    let borrowed_theme = theme.as_ref();
-
-    if let Ok(theme_ref) = borrowed_theme {
-        for variant in YinYangStyle::iter() {
-            let level: &str = &variant.to_string();
-            // let borrowed_theme = theme.as_ref();
-            // if let Ok(theme_ref) = borrowed_theme {
-            color_println!(
-                variant.get_style(),
-                "My {theme_ref:?} style {} message",
-                level
-            );
-        }
-    } else if let Some(_support) = supports_color::on(Stream::Stdout) {
-        // if support.has_16m {
-        //     println!("16 million (RGB) colors are supported");
-        // } else if support.has_256 {
-        //     println!("256 colors are supported.");
-        // } else if support.has_basic {
-        //     println!("Only basic ANSI colors are supported.");
-        // }
-        for variant in YinYangStyle::iter() {
-            let level: &str = &variant.to_string();
-            color_println!(
-                variant.get_style(),
-                "My unknown theme (defaulting to Dark) style {} message",
-                level
-            );
-        }
-    } else {
-        println!("My warning message - no color support");
-    }
-
-    println!();
-
-    if let Some(support) = supports_color::on(Stream::Stdout) {
-        if support.has_16m || support.has_256 {
-            print_xterm_colors();
-        } else if support.has_basic {
-            print_ansi_colors();
-        }
-    } else {
-        println!("No color support.");
-    }
-}
-
-#[allow(clippy::too_many_lines)]
-fn print_xterm_colors() {
-    let style = Style::new();
-    for variant in &[
-        XtermColors::UserBlack,
-        XtermColors::UserRed,
-        XtermColors::UserGreen,
-        XtermColors::UserYellow,
-        XtermColors::UserBlue,
-        XtermColors::UserMagenta,
-        XtermColors::UserCyan,
-        XtermColors::UserWhite,
-        XtermColors::UserBrightBlack,
-        XtermColors::UserBrightRed,
-        XtermColors::UserBrightGreen,
-        XtermColors::UserBrightYellow,
-        XtermColors::UserBrightBlue,
-        XtermColors::UserBrightMagenta,
-        XtermColors::UserBrightCyan,
-        XtermColors::UserBrightWhite,
-        XtermColors::Black,
-        XtermColors::StratosBlue,
-        XtermColors::NavyBlue,
-        XtermColors::MidnightBlue,
-        XtermColors::DarkBlue,
-        XtermColors::Blue,
-        XtermColors::CamaroneGreen,
-        XtermColors::BlueStone,
-        XtermColors::OrientBlue,
-        XtermColors::EndeavourBlue,
-        XtermColors::ScienceBlue,
-        XtermColors::BlueRibbon,
-        XtermColors::JapaneseLaurel,
-        XtermColors::DeepSeaGreen,
-        XtermColors::Teal,
-        XtermColors::DeepCerulean,
-        XtermColors::LochmaraBlue,
-        XtermColors::AzureRadiance,
-        XtermColors::LightJapaneseLaurel,
-        XtermColors::Jade,
-        XtermColors::PersianGreen,
-        XtermColors::BondiBlue,
-        XtermColors::Cerulean,
-        XtermColors::LightAzureRadiance,
-        XtermColors::DarkGreen,
-        XtermColors::Malachite,
-        XtermColors::CaribbeanGreen,
-        XtermColors::LightCaribbeanGreen,
-        XtermColors::RobinEggBlue,
-        XtermColors::Aqua,
-        XtermColors::Green,
-        XtermColors::DarkSpringGreen,
-        XtermColors::SpringGreen,
-        XtermColors::LightSpringGreen,
-        XtermColors::BrightTurquoise,
-        XtermColors::Cyan,
-        XtermColors::Rosewood,
-        XtermColors::PompadourMagenta,
-        XtermColors::PigmentIndigo,
-        XtermColors::DarkPurple,
-        XtermColors::ElectricIndigo,
-        XtermColors::ElectricPurple,
-        XtermColors::VerdunGreen,
-        XtermColors::ScorpionOlive,
-        XtermColors::Lilac,
-        XtermColors::ScampiIndigo,
-        XtermColors::Indigo,
-        XtermColors::DarkCornflowerBlue,
-        XtermColors::DarkLimeade,
-        XtermColors::GladeGreen,
-        XtermColors::JuniperGreen,
-        XtermColors::HippieBlue,
-        XtermColors::HavelockBlue,
-        XtermColors::CornflowerBlue,
-        XtermColors::Limeade,
-        XtermColors::FernGreen,
-        XtermColors::SilverTree,
-        XtermColors::Tradewind,
-        XtermColors::ShakespeareBlue,
-        XtermColors::DarkMalibuBlue,
-        XtermColors::DarkBrightGreen,
-        XtermColors::DarkPastelGreen,
-        XtermColors::PastelGreen,
-        XtermColors::DownyTeal,
-        XtermColors::Viking,
-        XtermColors::MalibuBlue,
-        XtermColors::BrightGreen,
-        XtermColors::DarkScreaminGreen,
-        XtermColors::ScreaminGreen,
-        XtermColors::DarkAquamarine,
-        XtermColors::Aquamarine,
-        XtermColors::LightAquamarine,
-        XtermColors::Maroon,
-        XtermColors::DarkFreshEggplant,
-        XtermColors::LightFreshEggplant,
-        XtermColors::Purple,
-        XtermColors::ElectricViolet,
-        XtermColors::LightElectricViolet,
-        XtermColors::Brown,
-        XtermColors::CopperRose,
-        XtermColors::StrikemasterPurple,
-        XtermColors::DelugePurple,
-        XtermColors::DarkMediumPurple,
-        XtermColors::DarkHeliotropePurple,
-        XtermColors::Olive,
-        XtermColors::ClayCreekOlive,
-        XtermColors::DarkGray,
-        XtermColors::WildBlueYonder,
-        XtermColors::ChetwodeBlue,
-        XtermColors::SlateBlue,
-        XtermColors::LightLimeade,
-        XtermColors::ChelseaCucumber,
-        XtermColors::BayLeaf,
-        XtermColors::GulfStream,
-        XtermColors::PoloBlue,
-        XtermColors::LightMalibuBlue,
-        XtermColors::Pistachio,
-        XtermColors::LightPastelGreen,
-        XtermColors::DarkFeijoaGreen,
-        XtermColors::VistaBlue,
-        XtermColors::Bermuda,
-        XtermColors::DarkAnakiwaBlue,
-        XtermColors::ChartreuseGreen,
-        XtermColors::LightScreaminGreen,
-        XtermColors::DarkMintGreen,
-        XtermColors::MintGreen,
-        XtermColors::LighterAquamarine,
-        XtermColors::AnakiwaBlue,
-        XtermColors::AeroBlue,
-        XtermColors::BrightRed,
-        XtermColors::DarkFlirt,
-        XtermColors::Flirt,
-        XtermColors::LightFlirt,
-        XtermColors::DarkViolet,
-        XtermColors::BrightElectricViolet,
-        XtermColors::RoseofSharonOrange,
-        XtermColors::MatrixPink,
-        XtermColors::TapestryPink,
-        XtermColors::FuchsiaPink,
-        XtermColors::MediumPurple,
-        XtermColors::Heliotrope,
-        XtermColors::PirateGold,
-        XtermColors::MuesliOrange,
-        XtermColors::PharlapPink,
-        XtermColors::Bouquet,
-        XtermColors::Lavender,
-        XtermColors::LightHeliotrope,
-        XtermColors::BuddhaGold,
-        XtermColors::OliveGreen,
-        XtermColors::HillaryOlive,
-        XtermColors::SilverChalice,
-        XtermColors::WistfulLilac,
-        XtermColors::MelroseLilac,
-        XtermColors::RioGrandeGreen,
-        XtermColors::ConiferGreen,
-        XtermColors::Feijoa,
-        XtermColors::PixieGreen,
-        XtermColors::JungleMist,
-        XtermColors::LightAnakiwaBlue,
-        XtermColors::Lime,
-        XtermColors::GreenYellow,
-        XtermColors::LightMintGreen,
-        XtermColors::Celadon,
-        XtermColors::FrenchPassLightBlue,
-        XtermColors::GuardsmanRed,
-        XtermColors::RazzmatazzCerise,
-        XtermColors::MediumVioletRed,
-        XtermColors::HollywoodCerise,
-        XtermColors::DarkPurplePizzazz,
-        XtermColors::BrighterElectricViolet,
-        XtermColors::TennOrange,
-        XtermColors::RomanOrange,
-        XtermColors::CranberryPink,
-        XtermColors::HopbushPink,
-        XtermColors::Orchid,
-        XtermColors::LighterHeliotrope,
-        XtermColors::MangoTango,
-        XtermColors::Copperfield,
-        XtermColors::SeaPink,
-        XtermColors::CanCanPink,
-        XtermColors::LightOrchid,
-        XtermColors::BrightHeliotrope,
-        XtermColors::DarkCorn,
-        XtermColors::DarkTachaOrange,
-        XtermColors::TanBeige,
-        XtermColors::ClamShell,
-        XtermColors::ThistlePink,
-        XtermColors::Mauve,
-        XtermColors::Corn,
-        XtermColors::TachaOrange,
-        XtermColors::DecoOrange,
-        XtermColors::PaleGoldenrod,
-        XtermColors::AltoBeige,
-        XtermColors::FogPink,
-        XtermColors::ChartreuseYellow,
-        XtermColors::Canary,
-        XtermColors::Honeysuckle,
-        XtermColors::ReefPaleYellow,
-        XtermColors::SnowyMint,
-        XtermColors::OysterBay,
-        XtermColors::Red,
-        XtermColors::DarkRose,
-        XtermColors::Rose,
-        XtermColors::LightHollywoodCerise,
-        XtermColors::PurplePizzazz,
-        XtermColors::Fuchsia,
-        XtermColors::BlazeOrange,
-        XtermColors::BittersweetOrange,
-        XtermColors::WildWatermelon,
-        XtermColors::DarkHotPink,
-        XtermColors::HotPink,
-        XtermColors::PinkFlamingo,
-        XtermColors::FlushOrange,
-        XtermColors::Salmon,
-        XtermColors::VividTangerine,
-        XtermColors::PinkSalmon,
-        XtermColors::DarkLavenderRose,
-        XtermColors::BlushPink,
-        XtermColors::YellowSea,
-        XtermColors::TexasRose,
-        XtermColors::Tacao,
-        XtermColors::Sundown,
-        XtermColors::CottonCandy,
-        XtermColors::LavenderRose,
-        XtermColors::Gold,
-        XtermColors::Dandelion,
-        XtermColors::GrandisCaramel,
-        XtermColors::Caramel,
-        XtermColors::CosmosSalmon,
-        XtermColors::PinkLace,
-        XtermColors::Yellow,
-        XtermColors::LaserLemon,
-        XtermColors::DollyYellow,
-        XtermColors::PortafinoYellow,
-        XtermColors::Cumulus,
-        XtermColors::White,
-        XtermColors::DarkCodGray,
-        XtermColors::CodGray,
-        XtermColors::LightCodGray,
-        XtermColors::DarkMineShaft,
-        XtermColors::MineShaft,
-        XtermColors::LightMineShaft,
-        XtermColors::DarkTundora,
-        XtermColors::Tundora,
-        XtermColors::ScorpionGray,
-        XtermColors::DarkDoveGray,
-        XtermColors::DoveGray,
-        XtermColors::Boulder,
-        XtermColors::Gray,
-        XtermColors::LightGray,
-        XtermColors::DustyGray,
-        XtermColors::NobelGray,
-        XtermColors::DarkSilverChalice,
-        XtermColors::LightSilverChalice,
-        XtermColors::DarkSilver,
-        XtermColors::Silver,
-        XtermColors::DarkAlto,
-        XtermColors::Alto,
-        XtermColors::Mercury,
-        XtermColors::GalleryGray,
-    ] {
-        let style = style.color(*variant);
-
-        // debug!("style={style:?}");
-        color_println!(Some(style), "My Xterm {variant:?} style message");
-        let style = style.color(*variant).bold();
-        // debug!("style={style:?}");
-        color_println!(Some(style), "My bold Xterm {variant:?} style message");
-    }
-}
-
-fn print_ansi_colors() {
-    let style = Style::new();
-    for variant in &[
-        AnsiColors::Black,
-        AnsiColors::Red,
-        AnsiColors::Green,
-        AnsiColors::Yellow,
-        AnsiColors::Magenta,
-        AnsiColors::Blue,
-        AnsiColors::Cyan,
-        AnsiColors::White,
-        AnsiColors::Default,
-        AnsiColors::BrightBlack,
-        AnsiColors::BrightRed,
-        AnsiColors::BrightGreen,
-        AnsiColors::BrightYellow,
-        AnsiColors::BrightBlue,
-        AnsiColors::BrightMagenta,
-        AnsiColors::BrightCyan,
-        AnsiColors::BrightWhite,
-    ] {
-        let style = style.color(*variant);
-
-        // debug!("style={style:?}");
-        color_println!(Some(style), "My Ansi {variant:?} style message");
-        let style = style.color(*variant).bold();
-        // debug!("style={style:?}");
-        color_println!(Some(style), "My bold Ansi {variant:?} style message");
+        let style = match self {
+            MessageStyle::Ansi16LightError => Style::new().fg::<Red>().bold(),
+            MessageStyle::Ansi16LightWarning => Style::new().fg::<Magenta>().bold(),
+            MessageStyle::Ansi16LightEmphasis => Style::new().fg::<Yellow>().bold(),
+            MessageStyle::Ansi16LightOuterPrompt => Style::new().fg::<Blue>().bold(),
+            MessageStyle::Ansi16LightInnerPrompt => Style::new().fg::<Cyan>().bold(),
+            MessageStyle::Ansi16LightNormal => Style::new().fg::<Black>(),
+            MessageStyle::Ansi16LightDebug => Style::new().fg::<Cyan>(),
+            MessageStyle::Ansi16DarkError => Style::new().fg::<Red>().bold(),
+            MessageStyle::Ansi16DarkWarning => Style::new().fg::<Magenta>().bold(),
+            MessageStyle::Ansi16DarkEmphasis => Style::new().fg::<Yellow>().bold(),
+            MessageStyle::Ansi16DarkOuterPrompt => Style::new().fg::<Blue>().bold(),
+            MessageStyle::Ansi16DarkInnerPrompt => Style::new().fg::<Green>().bold(),
+            MessageStyle::Ansi16DarkNormal => Style::new().fg::<White>(),
+            MessageStyle::Ansi16DarkDebug => Style::new().fg::<Cyan>(),
+            MessageStyle::Xterm256LightError => Style::new().fg::<GuardsmanRed>().bold(),
+            MessageStyle::Xterm256LightWarning => Style::new().fg::<DarkViolet>().bold(),
+            MessageStyle::Xterm256LightEmphasis => Style::new().fg::<Copperfield>().bold(),
+            MessageStyle::Xterm256LightOuterPrompt => Style::new().fg::<DarkMalibuBlue>().bold(),
+            MessageStyle::Xterm256LightInnerPrompt => {
+                Style::new().fg::<LightCaribbeanGreen>().bold()
+            }
+            MessageStyle::Xterm256LightNormal => Style::new().fg::<Black>(),
+            MessageStyle::Xterm256LightDebug => Style::new().fg::<LochmaraBlue>(),
+            MessageStyle::Xterm256DarkError => Style::new().fg::<GuardsmanRed>().bold(),
+            MessageStyle::Xterm256DarkWarning => Style::new().fg::<DarkPurplePizzazz>().bold(),
+            MessageStyle::Xterm256DarkEmphasis => Style::new().fg::<Copperfield>().bold(),
+            MessageStyle::Xterm256DarkOuterPrompt => Style::new().fg::<DarkMalibuBlue>().bold(),
+            MessageStyle::Xterm256DarkInnerPrompt => {
+                Style::new().fg::<LightCaribbeanGreen>().bold()
+            }
+            MessageStyle::Xterm256DarkNormal => Style::new().fg::<Silver>(),
+            MessageStyle::Xterm256DarkDebug => Style::new().fg::<BondiBlue>(),
+        };
+        Some(style)
     }
 }
 
@@ -469,4 +151,53 @@ fn get_theme() -> Result<Theme, termbg::Error> {
     // debug!("Check terminal background color");
     let theme: Result<Theme, termbg::Error> = termbg::theme(timeout);
     theme
+}
+
+fn main() {
+    let term = termbg::terminal();
+    debug!("  Term : {:?}", term);
+
+    let maybe_theme = get_theme();
+    let term_theme = match maybe_theme {
+        Ok(theme) => match theme {
+            Theme::Light => TermTheme::Light,
+            Theme::Dark => TermTheme::Dark,
+        },
+        Err(_) => TermTheme::Dark,
+    };
+
+    let color_support = match supports_color::on(Stream::Stdout) {
+        Some(color_support) => {
+            if color_support.has_16m || color_support.has_256 {
+                Some(ColorSupport::Xterm256)
+            } else {
+                Some(ColorSupport::Ansi16)
+            }
+        }
+        None => None,
+    };
+
+    if color_support.is_none() {
+        println!("No colour support found for terminal");
+    } else {
+        let msg_level = MessageType::Warning;
+
+        let color_qual = color_support.unwrap().to_string().to_lowercase();
+        let theme_qual = term_theme.to_string().to_lowercase();
+        let msg_level_qual = msg_level.to_string().to_lowercase();
+        // eprintln!("Calling from_str on {}_{}_{}", &color_qual, &theme_qual, &msg_level_qual);
+        let style = MessageStyle::from_str(&format!(
+            "{}_{}_{}",
+            &color_qual, &theme_qual, &msg_level_qual
+        ));
+        let actual_style = style.unwrap().get_style();
+
+        // Use actual_style for displaying the message
+        color_println!(actual_style, "{}", "Colored Warning message\n");
+
+        for variant in MessageStyle::iter() {
+            let variant_string: &str = &variant.to_string();
+            color_println!(variant.get_style(), "My {variant_string} message");
+        }
+    }
 }

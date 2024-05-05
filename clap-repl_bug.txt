@@ -5,3 +5,26 @@ Essentially, the text alternates between a) staying with the cursor, thus effect
 This occurs in both Powershell and Command Prompt.
 In WSL 2 (Ubuntu flavour)
 I've had no problems in  non-Windows Linux environments, nor in MacOs.
+
+rs_source_ref is Some
+Building...
+   Compiling repl_000003 v0.0.1 (/home/donf/.cargo/repl_000003)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.23s
+--------------------------------------------------
+result="Hello!"
+--------------------------------------------------
+Enter an expression (e.g., 2 + 3), or q to quit:
+.> q
+Enter one of: "continue, delete, eval, list, quit or help"
+>> continue
+
+Select an editor.  To change later, run 'select-editor'.
+  1. /bin/nano        <---- easiest
+  2. /usr/bin/hx
+  3. /usr/bin/vim.tiny
+  4. /usr/bin/code
+  5. /bin/ed
+
+Choose 1-5 [1]: ^C
+donf@donf-Inspiron-5459:~/Documents/GitHub/build_run$ 
+

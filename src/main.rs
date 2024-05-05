@@ -246,8 +246,8 @@ impl Highlighter for EvalHelper {
 //      TODO:
 //       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
 //       2.  Don't use println{} when wrapping snippet if return type of expressionq is ()
-//       3.  Crate clap_repl cursor displacement in Windows
-//       4.
+//       3.  Crate clap_repl cursor displacement in Windows - try reedline
+//       4.  Redo term_colors.rs with 4 individual enums.
 //       5.
 //       6.  bool -> 2-value enums?
 //       7.

@@ -156,7 +156,7 @@ impl ThemeStyle for MessageStyle {
                 Style::new().fg::<DarkMalibuBlue>().bold()
             }
             MessageStyle::Xterm256LightInnerPrompt | MessageStyle::Xterm256DarkInnerPrompt => {
-                Style::new().fg::<LightCaribbeanGreen>().bold()
+                Style::new().fg::<LightCaribbeanGreen>()
             }
             MessageStyle::Xterm256LightNormal => Style::new().fg::<Black>(),
             MessageStyle::Xterm256LightDebug => Style::new().fg::<LochmaraBlue>(),

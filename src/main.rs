@@ -404,8 +404,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 break 'level3;
                             }
                             ProcessCommand::Cancel => {
-                                loop_command = loop_editor.read_command();
                                 outer_prompt();
+                                loop_command = loop_editor.read_command();
                                 continue 'level2;
                             }
                             ProcessCommand::Retry => {
@@ -447,9 +447,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                             "Enter an expression (e.g., 2 + 3), or q to quit:"
                         );
 
-                        let p = String::from(".> ");
-                        rl.helper_mut().expect("No helper").colored_prompt =
-                            format!("\x1b[1;32m{p}\x1b[0m");
+                        rl.helper_mut().expect("No helper").colored_prompt = format!(
+                            "{}",
+                            owo_colors::Style::style(
+                                &resolve_style(term_colors::MessageLevel::InnerPrompt).unwrap(),
+                                ".> "
+                            )
+                        );
                         let input = rl.readline(">> ").expect("Failed to read input");
                         // Process user input (line)
                         // rl.add_history_entry(&line); // Add current line to history

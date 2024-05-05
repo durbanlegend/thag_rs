@@ -69,6 +69,7 @@ pub enum TermTheme {
 }
 
 #[derive(Debug, Clone, Copy, EnumString, Display, PartialEq)]
+#[strum(serialize_all = "snake_case")]
 pub enum MessageLevel {
     Error,
     Warning,
@@ -190,11 +191,14 @@ pub fn resolve_style(message_level: MessageLevel) -> Option<Style> {
     let color_qual = COLOR_SUPPORT.as_ref().unwrap().to_string().to_lowercase();
     let theme_qual = term_theme.to_string().to_lowercase();
     let msg_level_qual = message_level.to_string().to_lowercase();
-    // debug!("Calling from_str on {}_{}_{}", &color_qual, &theme_qual, &msg_level_qual);
     let message_style = MessageStyle::from_str(&format!(
         "{}_{}_{}",
         &color_qual, &theme_qual, &msg_level_qual
     ));
+    // debug!(
+    //     "Called from_str on {}_{}_{}, found {message_style:#?}",
+    //     &color_qual, &theme_qual, &msg_level_qual,
+    // );
     match message_style {
         Ok(message_style) => message_style.get_style(),
         Err(_) => None,

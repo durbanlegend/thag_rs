@@ -6,7 +6,7 @@ use crate::code_utils::{
 use crate::code_utils::{modified_since_compiled, parse_source, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::term_colors::{resolve_style, MessageStyle, ThemeStyle};
+use crate::term_colors::resolve_style;
 
 use clap::Parser;
 use clap_repl::ClapEditor;
@@ -319,17 +319,18 @@ fn main() -> Result<(), Box<dyn Error>> {
             .map(String::from)
             .collect::<Vec<String>>();
         let cmd_list = cmd_vec.join(", ") + " or help";
-
-        let disp_cmd_list = || {
-            // TODO remove hard coded colour support and theme variant
-            // let variant = MessageStyle::Ansi16DarkOuterPrompt;
+        // debug!(
+        //     "resolve_style(term_colors::MessageLevel::OuterPrompt){:#?}",
+        //     resolve_style(term_colors::MessageLevel::OuterPrompt)
+        // );
+        let outer_prompt = || {
             color_println!(
                 resolve_style(term_colors::MessageLevel::OuterPrompt),
-                "Enter one of: {}",
+                "Enter one of: {:#?}",
                 cmd_list
             );
         };
-        disp_cmd_list();
+        outer_prompt();
         let mut loop_editor = ClapEditor::<LoopCommand>::new();
         let mut loop_command = loop_editor.read_command();
         'level2: loop {
@@ -404,12 +405,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                             }
                             ProcessCommand::Cancel => {
                                 loop_command = loop_editor.read_command();
-                                disp_cmd_list();
+                                outer_prompt();
                                 continue 'level2;
                             }
                             ProcessCommand::Retry => {
                                 loop_command = Some(LoopCommand::Continue);
-                                disp_cmd_list();
+                                outer_prompt();
                                 continue 'level2;
                             }
                         }
@@ -442,8 +443,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     // }
                     loop {
                         color_println!(
-                            // TODO remove hard coded colour support and theme variant
-                            MessageStyle::Ansi16DarkInnerPrompt.get_style(),
+                            resolve_style(term_colors::MessageLevel::InnerPrompt),
                             "Enter an expression (e.g., 2 + 3), or q to quit:"
                         );
 
@@ -457,7 +457,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                         let str = &input.trim();
                         if str.to_lowercase() == "q" {
-                            disp_cmd_list();
+                            outer_prompt();
                             break;
                         }
                         // Parse the expression string into a syntax tree
@@ -512,7 +512,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             Err(err) => {
                                 color_println!(
                                     // TODO remove hard coded colour support and theme variant
-                                    MessageStyle::Ansi16DarkError.get_style(),
+                                    resolve_style(term_colors::MessageLevel::Error),
                                     "Error parsing code: {}",
                                     err
                                 );

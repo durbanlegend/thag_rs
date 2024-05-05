@@ -68,7 +68,7 @@ enum MessageType {
 
 #[derive(Debug, Assoc, Display, EnumIter, EnumString, PartialEq)]
 #[strum(serialize_all = "snake_case")]
-#[func(pub fn value(&self) -> Style)]
+#[strum(use_phf)]
 enum MessageStyle {
     // Use Assoc to associate owo-colors::Style with each variant
     #[assoc(value = Style::new().fg::<Red>().bold())]

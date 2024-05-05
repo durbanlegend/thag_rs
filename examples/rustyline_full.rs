@@ -89,6 +89,7 @@ fn main() -> rustyline::Result<()> {
                 rl.add_history_entry(line.as_str())?;
                 println!("Line: {line}");
             }
+
             Err(ReadlineError::Interrupted) => {
                 println!("Interrupted");
                 break;

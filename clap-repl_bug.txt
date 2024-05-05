@@ -1,0 +1,7 @@
+Bug: Cursor hijinks, only in Windows
+
+Doing cross-platform testing of my project which uses clap-repl, I found this apparent bug which I've reproduced in the clap-repl example simple.rs.  In Windows (11, I don't have access to an earlier Windows version), the cursor is offset to the right by 12 positions and various strange behaviours ensue. I've captured two of them in the screenshot, with a yellow line under each to highlight the gap.
+Essentially, the text alternates between a) staying with the cursor, thus effectively indented 12 spaces from the prompt, and b) moving back to the prompt. History seems to align correctly with the prompt, so there's a definite general misbehaviour.
+This occurs in both Powershell and Command Prompt.
+In WSL 2 (Ubuntu flavour)
+I've had no problems in  non-Windows Linux environments, nor in MacOs.

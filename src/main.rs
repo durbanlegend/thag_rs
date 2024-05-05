@@ -447,7 +447,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             "Enter an expression (e.g., 2 + 3), or q to quit:"
                         );
 
-                        let p = String::from(".>");
+                        let p = String::from(".> ");
                         rl.helper_mut().expect("No helper").colored_prompt =
                             format!("\x1b[1;32m{p}\x1b[0m");
                         let input = rl.readline(">> ").expect("Failed to read input");

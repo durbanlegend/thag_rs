@@ -248,7 +248,7 @@ impl Highlighter for EvalHelper {
 //       2.  Don't use println{} when wrapping snippet if return type of expressionq is ()
 //       3.  Crate clap_repl cursor displacement in Windows - try reedline
 //       4.  Redo term_colors.rs with 4 individual enums.
-//       5.
+//       5.  Inferred deps to use a visitor to find embedded use statements
 //       6.  bool -> 2-value enums?
 //       7.
 //       8.  Cat files before delete.

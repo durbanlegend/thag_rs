@@ -6,6 +6,7 @@ reedline = "0.32.0"
 
 // Create a reedline object with in-line hint support.
 // cargo run --example cwd_aware_hinter
+// cwd = curent working directory
 //
 // Fish-style cwd history based hinting
 // assuming history ["abc", "ade"]

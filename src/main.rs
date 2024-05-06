@@ -18,13 +18,11 @@ use log::{debug, log_enabled, Level::Debug};
 use quote::quote;
 use rustyline::completion::FilenameCompleter;
 // use rustyline::config::{CompletionType, Config, Configurer, EditMode};
-use rustyline::config::Configurer;
+
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::HistoryHinter;
 use rustyline::validate::MatchingBracketValidator;
-use rustyline::{
-    Cmd, Completer, CompletionType, Config, EditMode, Editor, Helper, Hinter, KeyEvent, Validator,
-};
+use rustyline::{Completer, Helper, Hinter, Validator};
 use std::borrow::Cow::{self, Borrowed, Owned};
 use std::env;
 use std::error::Error;
@@ -262,49 +260,13 @@ enum ProcessCommand {
     Quit,
 }
 
-#[derive(Helper, Completer, Hinter, Validator)]
-struct EvalHelper {
-    #[rustyline(Completer)]
-    completer: FilenameCompleter,
-    highlighter: MatchingBracketHighlighter,
-    #[rustyline(Validator)]
-    validator: MatchingBracketValidator,
-    #[rustyline(Hinter)]
-    hinter: HistoryHinter,
-    colored_prompt: String,
-}
-
-impl Highlighter for EvalHelper {
-    fn highlight_prompt<'b, 's: 'b, 'p: 'b>(
-        &'s self,
-        prompt: &'p str,
-        default: bool,
-    ) -> Cow<'b, str> {
-        if default {
-            Borrowed(&self.colored_prompt)
-        } else {
-            Borrowed(prompt)
-        }
-    }
-
-    fn highlight_hint<'h>(&self, hint: &'h str) -> Cow<'h, str> {
-        Owned("\x1b[1m".to_owned() + hint + "\x1b[m")
-    }
-
-    fn highlight<'l>(&self, line: &'l str, pos: usize) -> Cow<'l, str> {
-        self.highlighter.highlight(line, pos)
-    }
-
-    fn highlight_char(&self, line: &str, pos: usize, forced: bool) -> bool {
-        self.highlighter.highlight_char(line, pos, forced)
-    }
-}
-
 //      TODO:
 //       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
 //       2.  Don't use println{} when wrapping snippet if return type of expressionq is ()
 //       3.  Crate clap_repl cursor displacement in Windows - try reedline
-//       4.  Redo term_colors.rs with 4 individual enums.
+//       4.  Redo term_colors.rs with 4 individual enums. Reconcile nu-ansi-term colours with owo-colors.
+//              See https://codebrowser.dev/rust/crates/owo-colors/src/colors/xterm.rs.html
+//                  and end section of term_colors.rs.
 //       5.  Inferred deps to use a visitor to find embedded use statements
 //       6.  bool -> 2-value enums?
 //       7.
@@ -476,9 +438,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 LoopCommand::Eval => {
                     // From Reedline validation example with enhancements
 
-                    let history_file = build_state.cargo_home.join("buildrun_history.txt");
+                    let history_file = build_state.cargo_home.join("rs_eval_hist.txt");
                     let history = Box::new(
-                        FileBackedHistory::with_file(20, history_file.into())
+                        FileBackedHistory::with_file(20, history_file)
                             .expect("Error configuring history with file"),
                     );
 

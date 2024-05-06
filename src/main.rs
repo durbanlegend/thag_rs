@@ -48,6 +48,54 @@ pub(crate) const REPL_SUBDIR: &str = "rs_repl";
 const RS_SUFFIX: &str = ".rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
 
+use nu_ansi_term::{Color, Style};
+use reedline::{
+    DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
+    PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
+};
+use std::cell::Cell;
+
+pub struct CustomPrompt(Cell<u32>, &'static str);
+pub static DEFAULT_MULTILINE_INDICATOR: &str = " :::: ";
+impl Prompt for CustomPrompt {
+    fn render_prompt_left(&self) -> Cow<str> {
+        {
+            Cow::Owned(self.1.to_string())
+        }
+    }
+
+    fn render_prompt_right(&self) -> Cow<str> {
+        {
+            let old = self.0.get();
+            self.0.set(old + 1);
+            Cow::Owned(String::from("q: quit"))
+        }
+    }
+
+    fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<str> {
+        Cow::Owned("> ".to_string())
+    }
+
+    fn render_prompt_multiline_indicator(&self) -> Cow<str> {
+        Cow::Borrowed(DEFAULT_MULTILINE_INDICATOR)
+    }
+
+    fn render_prompt_history_search_indicator(
+        &self,
+        history_search: PromptHistorySearch,
+    ) -> Cow<str> {
+        let prefix = match history_search.status {
+            PromptHistorySearchStatus::Passing => "",
+            PromptHistorySearchStatus::Failing => "failing ",
+        };
+
+        Cow::Owned(format!(
+            "({}reverse-search: {}) ",
+            prefix, history_search.term
+        ))
+    }
+}
+
 lazy_static! {
     static ref TMP_DIR: PathBuf = env::temp_dir();
 }
@@ -79,6 +127,7 @@ pub(crate) struct BuildState {
     pub(crate) source_stem: String,
     pub(crate) source_name: String,
     pub(crate) source_path: PathBuf,
+    pub(crate) cargo_home: PathBuf,
     pub(crate) target_dir_path: PathBuf,
     pub(crate) target_dir_str: String,
     pub(crate) target_path: PathBuf,
@@ -125,9 +174,16 @@ impl BuildState {
             ))));
         }
 
-        let home_dir = get_my_home()?.ok_or("Can't resolve home directory")?;
-        debug!("home_dir={}", home_dir.display());
-        let target_dir_path = home_dir.join(".cargo").join(&source_stem);
+        let cargo_home_string: String = match std::env::var("CARGO_HOME") {
+            Ok(string) if string != String::new() => string,
+            _ => {
+                let home_dir = get_my_home()?.ok_or("Can't resolve home directory")?;
+                debug!("home_dir={}", home_dir.display());
+                home_dir.join(".cargo").display().to_string()
+            }
+        };
+        let cargo_home = PathBuf::from(cargo_home_string);
+        let target_dir_path = cargo_home.join(&source_stem);
         debug!("target_dir_path={}", target_dir_path.display());
         let target_dir_str = target_dir_path.display().to_string();
         let mut target_path = target_dir_path.join("target").join("debug");
@@ -148,6 +204,7 @@ impl BuildState {
             source_stem,
             source_name,
             source_path,
+            cargo_home,
             target_dir_path,
             target_dir_str,
             target_path,
@@ -417,49 +474,51 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
                 LoopCommand::Eval => {
-                    // From Rustyline example 2
-                    let builder = Config::builder()
-                        .history_ignore_space(true)
-                        .completion_type(CompletionType::Circular)
-                        .edit_mode(EditMode::Emacs);
-                    // builder.set_check_cursor_position(true);
-                    let config = builder.build();
-                    let helper = EvalHelper {
-                        completer: FilenameCompleter::new(),
-                        highlighter: MatchingBracketHighlighter::new(),
-                        hinter: HistoryHinter::new(),
-                        colored_prompt: String::new(),
-                        // Use bracket matching to decide on multiline vs single-line input mode.
-                        validator: MatchingBracketValidator::new(),
-                    };
-                    // let mut rl = DefaultEditor::with_config(config)?;
-                    let mut rl = Editor::with_config(config)?;
-                    rl.set_auto_add_history(true);
-                    rl.set_helper(Some(helper));
-                    rl.bind_sequence(KeyEvent::ctrl('n'), Cmd::HistorySearchForward);
-                    rl.bind_sequence(KeyEvent::ctrl('p'), Cmd::HistorySearchBackward);
-                    // if rl.load_history("history.txt").is_err() {
-                    //     println!("No previous history.");
-                    // }
+                    // From Reedline validation example with enhancements
+
+                    let history_file = build_state.cargo_home.join("buildrun_history.txt");
+                    let history = Box::new(
+                        FileBackedHistory::with_file(20, history_file.into())
+                            .expect("Error configuring history with file"),
+                    );
+
+                    let mut line_editor = Reedline::create()
+                        .with_validator(Box::new(DefaultValidator))
+                        .with_hinter(Box::new(
+                            DefaultHinter::default()
+                                .with_style(Style::new().italic().fg(Color::Cyan)),
+                        ))
+                        .with_history(history);
+
+                    let prompt = CustomPrompt(Cell::new(0), "expr");
+
                     loop {
                         color_println!(
                             resolve_style(term_colors::MessageLevel::InnerPrompt),
-                            "Enter an expression (e.g., 2 + 3), or q to quit:"
+                            r"Enter an expression (e.g., 2 + 3), or q to quit.
+Expressions in matching braces, brackets or quotes may span multiple lines."
                         );
 
-                        rl.helper_mut().expect("No helper").colored_prompt = format!(
-                            "{}",
-                            owo_colors::Style::style(
-                                &resolve_style(term_colors::MessageLevel::InnerPrompt).unwrap(),
-                                ".> "
-                            )
-                        );
-                        let input = rl.readline(">> ").expect("Failed to read input");
+                        // rl.helper_mut().expect("No helper").colored_prompt = format!(
+                        //     "{}",
+                        //     owo_colors::Style::style(
+                        //         &resolve_style(term_colors::MessageLevel::InnerPrompt).unwrap(),
+                        //         ".> "
+                        //     )
+                        // );
+                        // let input = rl.readline(">> ").expect("Failed to read input");
+
+                        let sig = line_editor.read_line(&prompt)?;
+                        let input: &str = match sig {
+                            Signal::Success(ref buffer) => buffer,
+                            Signal::CtrlD | Signal::CtrlC => {
+                                println!("\nAborted!");
+                                break;
+                            }
+                        };
                         // Process user input (line)
-                        // rl.add_history_entry(&line); // Add current line to history
-                        // rl.append_history("history.txt")?;
 
-                        let str = &input.trim();
+                        let str = input.trim();
                         if str.to_lowercase() == "q" {
                             outer_prompt();
                             break;
@@ -515,7 +574,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                             }
                             Err(err) => {
                                 color_println!(
-                                    // TODO remove hard coded colour support and theme variant
                                     resolve_style(term_colors::MessageLevel::Error),
                                     "Error parsing code: {}",
                                     err

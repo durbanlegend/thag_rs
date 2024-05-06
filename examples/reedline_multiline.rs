@@ -59,7 +59,7 @@ impl Prompt for CustomPrompt {
 
 fn main() -> io::Result<()> {
     let history = Box::new(
-        FileBackedHistory::with_file(5, "history.txt".into())
+        FileBackedHistory::with_file(20, "history.txt".into())
             .expect("Error configuring history with file"),
     );
 

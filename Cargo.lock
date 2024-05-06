@@ -299,7 +299,6 @@ dependencies = [
  "ratatui",
  "reedline",
  "regex",
- "rustyline 14.0.0",
  "serde",
  "strum",
  "supports-color 3.0.0",
@@ -353,12 +352,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "cfg_aliases"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
-
-[[package]]
 name = "chrono"
 version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -389,7 +382,7 @@ checksum = "f12da83fedc68840a4de52d5a4459801dd32e541badf80c0c76b75f56946b16c"
 dependencies = [
  "clap",
  "console",
- "rustyline 12.0.0",
+ "rustyline",
  "shlex",
 ]
 
@@ -429,18 +422,9 @@ version = "4.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7191c27c2357d9b7ef96baac1773290d4ca63b24205b82a3fd8a0637afcf0362"
 dependencies = [
- "error-code 2.3.1",
+ "error-code",
  "str-buf",
  "winapi",
-]
-
-[[package]]
-name = "clipboard-win"
-version = "5.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79f4473f5144e20d9aceaf2972478f06ddf687831eafeeb434fbaf0acc4144ad"
-dependencies = [
- "error-code 3.2.0",
 ]
 
 [[package]]
@@ -598,12 +582,6 @@ dependencies = [
  "libc",
  "str-buf",
 ]
-
-[[package]]
-name = "error-code"
-version = "3.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0474425d51df81997e2f90a21591180b38eccf27292d755f3e30750225c175b"
 
 [[package]]
 name = "event-listener"
@@ -874,7 +852,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22074da8bba2ef26fc1737ae6c777b5baab5524c2dc403b5c6a76166766ccda5"
 dependencies = [
  "cfg-if",
- "nix 0.26.4",
+ "nix",
  "serde",
  "widestring",
  "windows-sys 0.48.0",
@@ -1095,18 +1073,6 @@ dependencies = [
  "libc",
  "memoffset",
  "pin-utils",
-]
-
-[[package]]
-name = "nix"
-version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab2156c4fce2f8df6c499cc1c763e4394b7482525bf2a9701c9d79d215f519e4"
-dependencies = [
- "bitflags 2.5.0",
- "cfg-if",
- "cfg_aliases",
- "libc",
 ]
 
 [[package]]
@@ -1464,53 +1430,19 @@ checksum = "994eca4bca05c87e86e15d90fc7a91d1be64b4482b38cb2d27474568fe7c9db9"
 dependencies = [
  "bitflags 2.5.0",
  "cfg-if",
- "clipboard-win 4.5.0",
+ "clipboard-win",
  "fd-lock 3.0.13",
  "home",
  "libc",
  "log",
  "memchr",
- "nix 0.26.4",
+ "nix",
  "radix_trie",
  "scopeguard",
  "unicode-segmentation",
  "unicode-width",
  "utf8parse",
  "winapi",
-]
-
-[[package]]
-name = "rustyline"
-version = "14.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7803e8936da37efd9b6d4478277f4b2b9bb5cdb37a113e8d63222e58da647e63"
-dependencies = [
- "bitflags 2.5.0",
- "cfg-if",
- "clipboard-win 5.3.1",
- "fd-lock 4.0.2",
- "home",
- "libc",
- "log",
- "memchr",
- "nix 0.28.0",
- "radix_trie",
- "rustyline-derive",
- "unicode-segmentation",
- "unicode-width",
- "utf8parse",
- "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "rustyline-derive"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5af959c8bf6af1aff6d2b463a57f71aae53d1332da58419e30ad8dc7011d951"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.60",
 ]
 
 [[package]]

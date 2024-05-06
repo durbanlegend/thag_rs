@@ -17,12 +17,6 @@ use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
 use quote::quote;
 
-// use rustyline::config::{CompletionType, Config, Configurer, EditMode};
-
-
-
-
-
 use std::borrow::Cow::{self};
 use std::env;
 use std::error::Error;

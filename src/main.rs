@@ -16,14 +16,14 @@ use homedir::get_my_home;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
 use quote::quote;
-use rustyline::completion::FilenameCompleter;
+
 // use rustyline::config::{CompletionType, Config, Configurer, EditMode};
 
-use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
-use rustyline::hint::HistoryHinter;
-use rustyline::validate::MatchingBracketValidator;
-use rustyline::{Completer, Helper, Hinter, Validator};
-use std::borrow::Cow::{self, Borrowed, Owned};
+
+
+
+
+use std::borrow::Cow::{self};
 use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;

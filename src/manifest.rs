@@ -12,7 +12,7 @@ use syn::File;
 
 use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
-use crate::term_colors::{MessageStyle, ThemeStyle};
+use crate::term_colors::{MessageStyle, OwoThemeStyle};
 use crate::BuildState;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -147,7 +147,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
 
     let dep_crate_styled =
         // TODO remove hard coded colour support and theme variant
-        owo_colors::Style::style(&MessageStyle::Ansi16DarkEmphasis.get_style().unwrap(), dep_crate);
+        owo_colors::Style::style(&MessageStyle::Ansi16DarkEmphasis.get_owo_style().unwrap(), dep_crate);
     println!(
         r#"
             Doing a Cargo search for crate {dep_crate_styled} referenced in your script.

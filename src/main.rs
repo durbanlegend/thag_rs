@@ -6,7 +6,7 @@ use crate::code_utils::{
 use crate::code_utils::{modified_since_compiled, parse_source, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::term_colors::resolve_style;
+use crate::term_colors::owo_resolve_style;
 
 use clap::Parser;
 use clap_repl::ClapEditor;
@@ -45,21 +45,18 @@ use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
     PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
 };
-use std::cell::Cell;
 
-pub struct CustomPrompt(Cell<u32>, &'static str);
-pub static DEFAULT_MULTILINE_INDICATOR: &str = " :::: ";
+pub struct CustomPrompt(&'static str);
+pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 impl Prompt for CustomPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
         {
-            Cow::Owned(self.1.to_string())
+            Cow::Owned(self.0.to_string())
         }
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
         {
-            let old = self.0.get();
-            self.0.set(old + 1);
             Cow::Owned(String::from("q: quit"))
         }
     }
@@ -336,11 +333,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         //     "resolve_style(term_colors::MessageLevel::OuterPrompt){:#?}",
         //     resolve_style(term_colors::MessageLevel::OuterPrompt)
         // );
+        // let outer_prompt = || {
+        //     color_println!(
+        //         resolve_style(term_colors::MessageLevel::OuterPrompt),
+        //         "Enter one of: {:#?}",
+        //         cmd_list
+        //     );
+        // };
         let outer_prompt = || {
-            color_println!(
-                resolve_style(term_colors::MessageLevel::OuterPrompt),
-                "Enter one of: {:#?}",
-                cmd_list
+            println!(
+                "{}",
+                nu_ansi_term::Color::Blue
+                    .bold()
+                    .paint(format!("Enter one of: {:#?}", cmd_list))
             );
         };
         outer_prompt();
@@ -446,32 +451,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                         ))
                         .with_history(history);
 
-                    let prompt = CustomPrompt(Cell::new(0), "expr");
+                    let prompt = CustomPrompt("expr");
 
                     loop {
-                        println!("{}", nu_ansi_term::Color::Red.paint(r"Enter an expression (e.g., 2 + 3), or q to quit.
-                        Expressions in matching braces, brackets or quotes may span multiple lines."));
-                        
-                        // let style =  resolve_style(term_colors::MessageLevel::InnerPrompt).ok_or("Couldn't resolve style")?;
-                        // println!("{}", owo_colors::Style::style(&style, r"Enter an expression (e.g., 2 + 3), or q to quit.
-                        // Expressions in matching braces, brackets or quotes may span multiple lines."));
-                        // color_println!(
-                        //     resolve_style(term_colors::MessageLevel::InnerPrompt),
-                        //     r"Enter an expression (e.g., 2 + 3), or q to quit.
-                        // Expressions in matching braces, brackets or quotes may span multiple lines."
-                        // );
-                        // //                         println!(
-                        //                             r"Enter an expression (e.g., 2 + 3), or q to quit.
-                        // Expressions in matching braces, brackets or quotes may span multiple lines."
-                        // );
-                        // rl.helper_mut().expect("No helper").colored_prompt = format!(
-                        //     "{}",
-                        //     owo_colors::Style::style(
-                        //         &resolve_style(term_colors::MessageLevel::InnerPrompt).unwrap(),
-                        //         ".> "
-                        //     )
-                        // );
-                        // let input = rl.readline(">> ").expect("Failed to read input");
+                        println!(
+                            "{}",
+                            nu_ansi_term::Color::Cyan.paint(
+                                r"Enter an expression (e.g., 2 + 3), or q to quit.
+Expressions in matching braces, brackets or quotes may span multiple lines."
+                            )
+                        );
 
                         let sig = line_editor.read_line(&prompt)?;
                         let input: &str = match sig {
@@ -538,8 +527,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 continue;
                             }
                             Err(err) => {
-                                color_println!(
-                                    resolve_style(term_colors::MessageLevel::Error),
+                                owo_color_println!(
+                                    owo_resolve_style(term_colors::MessageLevel::Error),
                                     "Error parsing code: {}",
                                     err
                                 );

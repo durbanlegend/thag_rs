@@ -15,10 +15,6 @@ use std::{fmt::Display, str::FromStr};
 use owo_colors::colors as owo_ansi;
 
 use owo_ansi::xterm as owo_xterm;
-// use owo_xterm::{
-//     Black, BondiBlue, Copperfield, DarkMalibuBlue, DarkPurplePizzazz, DarkViolet, GuardsmanRed,
-//     LightCaribbeanGreen, LochmaraBlue, Silver,
-// };
 
 use lazy_static::lazy_static;
 use log::debug;
@@ -627,141 +623,6 @@ pub trait NuThemeStyle: Display {
     fn get_style(&self) -> nu_ansi_term::Style;
 }
 
-// #[derive(Debug, Display)]
-// pub enum Ansi16Dark {
-//     Error,
-//     Warning,
-//     Emphasis,
-//     OuterPrompt,
-//     InnerPrompt,
-//     Normal,
-//     Debug,
-// }
-
-// impl NuThemeStyle for Ansi16Dark {
-//     fn get_style(&self) -> nu_ansi_term::Style {
-//         match self {
-//             Ansi16Dark::Error => nu_ansi_term::Color::Red.bold(),
-//             Ansi16Dark::Warning => nu_ansi_term::Color::Magenta.bold(),
-//             Ansi16Dark::Emphasis => nu_ansi_term::Color::Yellow.bold(),
-//             Ansi16Dark::OuterPrompt => nu_ansi_term::Color::LightBlue.bold(),
-//             Ansi16Dark::InnerPrompt => nu_ansi_term::Color::Green.bold(),
-//             Ansi16Dark::Normal => nu_ansi_term::Color::White.normal(),
-//             Ansi16Dark::Debug => nu_ansi_term::Color::Cyan.normal(),
-//         }
-//     }
-// }
-
-// #[derive(Debug, Display)]
-// pub enum Ansi16Light {
-//     Error,
-//     Warning,
-//     Emphasis,
-//     OuterPrompt,
-//     InnerPrompt,
-//     Normal,
-//     Debug,
-// }
-
-// impl NuThemeStyle for Ansi16Light {
-//     fn get_style(&self) -> nu_ansi_term::Style {
-//         match self {
-//             Ansi16Light::Error => nu_ansi_term::Color::Red.bold(),
-//             Ansi16Light::Warning => nu_ansi_term::Color::Magenta.bold(),
-//             Ansi16Light::Emphasis => nu_ansi_term::Color::Yellow.bold(),
-//             Ansi16Light::OuterPrompt => nu_ansi_term::Color::LightBlue.bold(),
-//             Ansi16Light::InnerPrompt => nu_ansi_term::Color::Cyan.bold(),
-//             Ansi16Light::Normal => nu_ansi_term::Color::White.normal(),
-//             Ansi16Light::Debug => nu_ansi_term::Color::Cyan.normal(),
-//         }
-//     }
-// }
-
-// #[derive(Debug, Display)]
-// pub enum Ansi256Dark {
-//     Error,
-//     Warning,
-//     Emphasis,
-//     OuterPrompt,
-//     InnerPrompt,
-//     Normal,
-//     Debug,
-// }
-
-// impl NuThemeStyle for Ansi256Dark {
-//     fn get_style(&self) -> nu_ansi_term::Style {
-//         match self {
-//             Ansi256Dark::Error => XtermColor::GuardsmanRed.get_color().bold(),
-//             Ansi256Dark::Warning => XtermColor::DarkViolet.get_color().bold(),
-//             Ansi256Dark::Emphasis => XtermColor::Copperfield.get_color().bold(),
-//             Ansi256Dark::OuterPrompt => XtermColor::DarkMalibuBlue.get_color().bold(),
-//             Ansi256Dark::InnerPrompt => XtermColor::LightCaribbeanGreen.get_color().normal(),
-//             Ansi256Dark::Normal => XtermColor::Silver.get_color().normal(),
-//             Ansi256Dark::Debug => XtermColor::BondiBlue.get_color().normal(),
-//         }
-//     }
-// }
-
-// #[derive(Debug, Display)]
-// pub enum Ansi256Light {
-//     Error,
-//     Warning,
-//     Emphasis,
-//     OuterPrompt,
-//     InnerPrompt,
-//     Normal,
-//     Debug,
-// }
-
-// impl NuThemeStyle for Ansi256Light {
-//     fn get_style(&self) -> nu_ansi_term::Style {
-//         match self {
-//             Ansi256Light::Error => XtermColor::GuardsmanRed.get_color().bold(),
-//             Ansi256Light::Warning => XtermColor::DarkPurplePizzazz.get_color().bold(),
-//             Ansi256Light::Emphasis => XtermColor::Copperfield.get_color().bold(),
-//             Ansi256Light::OuterPrompt => XtermColor::DarkMalibuBlue.get_color().bold(),
-//             Ansi256Light::InnerPrompt => XtermColor::LightCaribbeanGreen.get_color().normal(),
-//             Ansi256Light::Normal => XtermColor::Black.get_color().normal(),
-//             Ansi256Light::Debug => XtermColor::LochmaraBlue.get_color().normal(),
-//         }
-//     }
-// }
-
-// pub trait NuThemeEnum: Display {
-//     fn get_enum(&self, term_theme: &TermTheme) -> Box<impl NuThemeEnum>;
-// }
-
-// // Define enums for different color support and terminal themes
-// #[derive(Debug, Display)]
-// enum Ansi16Theme {
-//     Light(Ansi16Light),
-//     Dark(Ansi16Dark),
-// }
-
-// impl NuThemeEnum for Ansi16Theme {
-//     fn get_enum(&self, term_theme: &TermTheme) -> Box<impl NuThemeEnum> {
-//         match term_theme {
-//             TermTheme::Light => Box::new(Ansi16Theme::Light(Ansi16Light::)),
-//             TermTheme::Dark => Box::new(Ansi16Theme::Dark),
-//         }
-//     }
-// }
-
-// #[derive(Debug, Display)]
-// enum Xterm256Theme {
-//     Light(Ansi256Light),
-//     Dark(Ansi256Dark),
-// }
-
-// impl NuThemeEnum for Xterm256Theme {
-//     fn get_enum(&self, term_theme: &TermTheme) -> Box<impl NuThemeEnum> {
-//         match term_theme {
-//             TermTheme::Light => Box::new(Self::Light),
-//             TermTheme::Dark => Box::new(Self::Dark),
-//         }
-//     }
-// }
-
 #[derive(Clone, Debug, Display, EnumIter, EnumString, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 #[strum(use_phf)]
@@ -909,27 +770,6 @@ pub(crate) fn get_term_theme() -> TermTheme {
         Err(_) => TermTheme::Dark,
     }
 }
-
-// // Function to select the correct enum based on color support and theme
-// fn select_message_style(
-//     color_support: &Option<ColorSupport>,
-//     theme: &TermTheme,
-// ) -> Box<impl NuThemeStyle> {
-//     match color_support {
-//         Some(ColorSupport::Ansi16) => Ansi16Theme::get_enum(term_theme),
-//         // match theme {
-//         //     TermTheme::Dark => Box::new(Ansi16Theme::Dark),
-//         //     TermTheme::Light => Box::new(Ansi16Theme::Light),
-//         //     _ => panic!("Invalid theme"),
-//         // },
-//         Some(ColorSupport::Xterm256) => match theme {
-//             TermTheme::Dark => Box::new(Xterm256Theme::Dark),
-//             TermTheme::Light => Box::new(Xterm256Theme::Light),
-//             _ => panic!("Invalid theme"),
-//         },
-//         _ => panic!("Invalid color support"),
-//     }
-// }
 
 pub fn nu_resolve_style(message_level: MessageLevel) -> Option<nu_ansi_term::Style> {
     let term_theme = get_term_theme();

@@ -254,20 +254,20 @@ enum ProcessCommand {
 //      TODO:
 //       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
 //       2.  Don't use println{} when wrapping snippet if return type of expressionq is ()
-//       3.  Crate clap_repl cursor displacement in Windows - try reedline
-//       4.  Redo term_colors.rs with 4 individual enums. Reconcile nu-ansi-term colours with owo-colors.
+//       3.  Replace clap_repl in outer eval loop by reedline.
+//       4.  Impractical?: Redo term_colors.rs with 4 individual enums. Reconcile nu-ansi-term colours with owo-colors.
 //              See https://codebrowser.dev/rust/crates/owo-colors/src/colors/xterm.rs.html
 //                  and end section of term_colors.rs.
 //       5.  Inferred deps to use a visitor to find embedded use statements
 //       6.  bool -> 2-value enums?
-//       7.  How to insert line feed from keyboard in reedline.
+//       7.  How to insert line feed from keyboard in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
 //       9.  --quiet option?.
 //      10.  Consider making script name optional, with -n/stdin parm as per my runner changes?
 //      11.  Clean up debugging
 //      12.  Consider supporting vi editor family, nvim/Helix for rust-analyzer support or editor crate.
 //      13.
-//      14.  Debug left-brace misbehaviour in eval. One of the MatchingBracket mafia?
+//      14.  Resolved by switch to reedline: Debug left-brace misbehaviour in eval. One of the MatchingBracket mafia?
 //
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-#crossterm = "*"
+crossterm = "*"
 reedline = "0.32.0"
 #reedline-repl-rs = "1.1.1"
 */
@@ -25,9 +25,9 @@ fn main() -> io::Result<()> {
 
     let mut keybindings = default_emacs_keybindings();
     keybindings.add_binding(
-        KeyModifiers::ALT,
+        KeyModifiers::CONTROL,
         KeyCode::Char('m'),
-        ReedlineEvent::Edit(vec![EditCommand::BackspaceWord]),
+        ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
     );
     let edit_mode = Box::new(Emacs::new(keybindings));
 

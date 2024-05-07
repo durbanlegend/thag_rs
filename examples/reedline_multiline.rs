@@ -63,6 +63,14 @@ fn main() -> io::Result<()> {
             .expect("Error configuring history with file"),
     );
 
+    // let mut keybindings = default_emacs_keybindings();
+    // keybindings.add_binding(
+    //     KeyModifiers::CONTROL,
+    //     KeyCode::Char('m'),
+    //     ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
+    // );
+    // let edit_mode = Box::new(Emacs::new(keybindings));
+
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(

@@ -263,7 +263,7 @@ enum ProcessCommand {
 //                  and end section of term_colors.rs.
 //       5.  Inferred deps to use a visitor to find embedded use statements
 //       6.  bool -> 2-value enums?
-//       7.
+//       7.  How to insert line feed from keyboard in reedline.
 //       8.  Cat files before delete.
 //       9.  --quiet option?.
 //      10.  Consider making script name optional, with -n/stdin parm as per my runner changes?

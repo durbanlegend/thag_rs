@@ -449,12 +449,21 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let prompt = CustomPrompt(Cell::new(0), "expr");
 
                     loop {
-                        color_println!(
-                            resolve_style(term_colors::MessageLevel::InnerPrompt),
-                            r"Enter an expression (e.g., 2 + 3), or q to quit.
-Expressions in matching braces, brackets or quotes may span multiple lines."
-                        );
-
+                        println!("{}", nu_ansi_term::Color::Red.paint(r"Enter an expression (e.g., 2 + 3), or q to quit.
+                        Expressions in matching braces, brackets or quotes may span multiple lines."));
+                        
+                        // let style =  resolve_style(term_colors::MessageLevel::InnerPrompt).ok_or("Couldn't resolve style")?;
+                        // println!("{}", owo_colors::Style::style(&style, r"Enter an expression (e.g., 2 + 3), or q to quit.
+                        // Expressions in matching braces, brackets or quotes may span multiple lines."));
+                        // color_println!(
+                        //     resolve_style(term_colors::MessageLevel::InnerPrompt),
+                        //     r"Enter an expression (e.g., 2 + 3), or q to quit.
+                        // Expressions in matching braces, brackets or quotes may span multiple lines."
+                        // );
+                        // //                         println!(
+                        //                             r"Enter an expression (e.g., 2 + 3), or q to quit.
+                        // Expressions in matching braces, brackets or quotes may span multiple lines."
+                        // );
                         // rl.helper_mut().expect("No helper").colored_prompt = format!(
                         //     "{}",
                         //     owo_colors::Style::style(

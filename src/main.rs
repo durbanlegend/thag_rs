@@ -458,28 +458,30 @@ fn main() -> Result<(), Box<dyn Error>> {
                     // println!("{:#?}", nu_resolve_style(MessageLevel::InnerPrompt)
                     //     .unwrap_or_default()
                     //     .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
-                    // // "\u{1b}[1;38;5;43mnu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes\u{1b}[0m"
-                    // // "\u{1b}[36mColor::paint() escape codes\u{1b}[0m"
-                    // // ?Bad - LF: printf "\033[1;38;5;43mHi\033[0m"
-                    // // Good - no LF: printf "\033[\033[1;38;5;43mHi\033[0m"
+                    // println!("{:#?}", nu_ansi_term::Style::new().fg(Color::Yellow).bold().paint("nu_ansi_term::Style::new().fg(Color::Yellow).bold().paint escape codes").to_string());
+                    // // "\u{1b}[1;32mnu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes\u{1b}[0m"
+                    // // "\u{1b}[1;33mnu_ansi_term::Style::new().fg(Color::Yellow).bold().paint escape codes\u{1b}[0m"
+                    // // "\u{1b}[1;36mnu_ansi_term::Color::Cyan.bold().paint() escape codes\u{1b}[0m"                    // // ?Bad - LF: printf "\033[1;38;5;43mHi\033[0m"
+                    // // // Good - no LF: printf "\033[\033[1;38;5;43mHi\033[0m"
                     // println!(
                     //     "{:#?}",
                     //     nu_ansi_term::Color::Cyan
-                    //         .paint("Color::paint() escape codes")
+                    //         .bold()
+                    //         .paint("nu_ansi_term::Color::Cyan.bold().paint() escape codes")
                     //         .to_string()
                     // );
 
                     loop {
                         println!(
                             "{}",
-                            // nu_resolve_style(MessageLevel::Debug)
+                            // nu_resolve_style(MessageLevel::InnerPrompt)
                             //     .unwrap_or_default()
                             //     .paint(
-                                    nu_ansi_term::Color::Cyan.paint(
-                                    "Enter an expression (e.g., 2 + 3), or q to quit.
+                            // nu_ansi_term::Color::Cyan.bold().paint(
+                            nu_ansi_term::Style::new().fg(Color::Yellow).bold().paint(
+                                "Enter an expression (e.g., 2 + 3), or q to quit.
 Expressions in matching braces, brackets or quotes may span multiple lines."
-                                )
-                                // "x"
+                            )
                         );
                         // print!("");
 

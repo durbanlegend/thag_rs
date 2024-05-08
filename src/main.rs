@@ -345,10 +345,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         // };
         let outer_prompt = || {
             println!(
-                "{}",
-                nu_resolve_style(MessageLevel::OuterPrompt)
-                    .unwrap_or_default()
-                    .paint(format!("Enter one of: {}", cmd_list))
+                "Enter one of: {}", cmd_list
+                // "{}",
+                // nu_resolve_style(MessageLevel::OuterPrompt)
+                //     .unwrap_or_default()
+                //     .paint(format!("Enter one of: {}", cmd_list))
             );
         };
         outer_prompt();
@@ -457,12 +458,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let prompt = CustomPrompt("expr");
                     // println!("{:#?}", nu_resolve_style(MessageLevel::InnerPrompt)
                     //     .unwrap_or_default()
-                    //     .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
-                    // println!("{:#?}", nu_ansi_term::Style::new().fg(Color::Yellow).bold().paint("nu_ansi_term::Style::new().fg(Color::Yellow).bold().paint escape codes").to_string());
-                    // // "\u{1b}[1;32mnu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes\u{1b}[0m"
-                    // // "\u{1b}[1;33mnu_ansi_term::Style::new().fg(Color::Yellow).bold().paint escape codes\u{1b}[0m"
-                    // // "\u{1b}[1;36mnu_ansi_term::Color::Cyan.bold().paint() escape codes\u{1b}[0m"                    // // ?Bad - LF: printf "\033[1;38;5;43mHi\033[0m"
-                    // // // Good - no LF: printf "\033[\033[1;38;5;43mHi\033[0m"
+                    //     .paint(r"nu_resolve_style(
+                    //     )").to_string());
+                    // println!("{:#?}", nu_ansi_term::Style::new().fg(Color::Green).bold().paint(r"nu_ansi_term::Style::new().fg(Color::Green).bold(
+                    // )").to_string());
+                    // "\u{1b}[1;32mnu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes\u{1b}[0m"
+                    // "\u{1b}[1;33mnu_ansi_term::Style::new().fg(Color::Yellow).bold().paint escape codes\u{1b}[0m"
+                    // "\u{1b}[1;36mnu_ansi_term::Color::Cyan.bold().paint() escape codes\u{1b}[0m"                    // // ?Bad - LF: printf "\033[1;38;5;43mHi\033[0m"
+                    // // Good - no LF: printf "\033[\033[1;38;5;43mHi\033[0m"
                     // println!(
                     //     "{:#?}",
                     //     nu_ansi_term::Color::Cyan
@@ -470,20 +473,22 @@ fn main() -> Result<(), Box<dyn Error>> {
                     //         .paint("nu_ansi_term::Color::Cyan.bold().paint() escape codes")
                     //         .to_string()
                     // );
+                    let new_style = nu_ansi_term::Style::new().fg(Color::Green).bold();
+                    let resolved_style = nu_resolve_style(MessageLevel::InnerPrompt)
+                                .unwrap_or_default();
+                    assert_eq!(new_style, resolved_style);
 
                     loop {
                         println!(
                             "{}",
-                            // nu_resolve_style(MessageLevel::InnerPrompt)
-                            //     .unwrap_or_default()
-                            //     .paint(
+                            // resolved_style.paint(
                             // nu_ansi_term::Color::Cyan.bold().paint(
-                            nu_ansi_term::Style::new().fg(Color::Yellow).bold().paint(
-                                "Enter an expression (e.g., 2 + 3), or q to quit.
-Expressions in matching braces, brackets or quotes may span multiple lines."
-                            )
+                            // new_style.paint(
+                                r"Enter an expression (e.g., 2 + 3), or q to quit.
+Expressions in matching braces,
+brackets or quotes may span multiple lines."
+                            // )
                         );
-                        // print!("");
 
                         let sig = line_editor.read_line(&prompt)?;
                         let input: &str = match sig {

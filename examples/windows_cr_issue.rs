@@ -146,5 +146,6 @@ Expressions in matching braces, brackets or quotes may span multiple lines."
 }
 
 fn quit(_args: ArgMatches, _ccontext: &mut Context) -> Result<Option<String>, CustomError> {
-    Err(CustomError::Quit("Done".to_string()))
+    println!("Done");
+    system::process::exit(0);
 }

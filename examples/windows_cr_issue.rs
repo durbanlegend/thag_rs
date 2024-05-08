@@ -8,15 +8,13 @@ reedline-repl-rs = "1.1.1"
 
 use nu_ansi_term::{Color, Style};
 use reedline::{
-    DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
+    DefaultHinter, DefaultValidator, Prompt, PromptEditMode,
     PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
 };
-use reedline_repl_rs::clap::{Arg, ArgAction, ArgMatches, Command};
+use reedline_repl_rs::clap::{ArgMatches, Command};
 use reedline_repl_rs::Repl;
 use std::borrow::Cow;
-use std::collections::VecDeque;
-use std::sync::Arc;
-use std::{fmt, process};
+use std::fmt;
 
 pub struct CustomPrompt(&'static str);
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
@@ -61,7 +59,7 @@ impl Prompt for CustomPrompt {
 enum CustomError {
     Quit(String),
     ReplError(reedline_repl_rs::Error),
-    StringError(String),
+    // StringError(String),
 }
 
 impl From<reedline_repl_rs::Error> for CustomError {
@@ -74,7 +72,7 @@ impl fmt::Display for CustomError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             CustomError::ReplError(e) => write!(f, "REPL Error: {}", e),
-            CustomError::StringError(s) => write!(f, "String Error: {}", s),
+            // CustomError::StringError(s) => write!(f, "String Error: {}", s),
             CustomError::Quit(s) => write!(f, "{}", s),
         }
     }
@@ -84,7 +82,6 @@ impl std::error::Error for CustomError {}
 
 #[derive(Default)]
 struct Context {
-    list: VecDeque<String>,
 }
 
 fn main() -> Result<(), reedline_repl_rs::Error> {
@@ -105,7 +102,7 @@ fn main() -> Result<(), reedline_repl_rs::Error> {
     repl.run()
 }
 
-fn eval(_args: ArgMatches, _ccontext: &mut Context) -> Result<Option<String>, CustomError> {
+fn eval(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, CustomError> {
     let mut line_editor = Reedline::create()
             .with_validator(Box::new(DefaultValidator))
             .with_hinter(Box::new(
@@ -117,10 +114,10 @@ fn eval(_args: ArgMatches, _ccontext: &mut Context) -> Result<Option<String>, Cu
 
     let prompt = CustomPrompt("expr");
     loop {
-        print!(
+        println!(
             "{}",
             nu_ansi_term::Color::Cyan.paint(
-                r"Enter an expression (e.g., 2 + 3), or q to quit.
+                "Enter an expression (e.g., 2 + 3), or q to quit.
 Expressions in matching braces, brackets or quotes may span multiple lines."
             )
         );
@@ -145,6 +142,6 @@ Expressions in matching braces, brackets or quotes may span multiple lines."
     Ok(Some("q".to_string()))
 }
 
-fn quit(_args: ArgMatches, _ccontext: &mut Context) -> Result<Option<String>, CustomError> {
+fn quit(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, CustomError> {
     Err(CustomError::Quit("Done".to_string()))
 }

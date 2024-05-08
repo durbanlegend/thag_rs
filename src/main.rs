@@ -467,12 +467,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                     // Write-Host "$esc[1;38;5;43mHi$esc[0m" -NoNewLine (also works without NoNewLine)
                     // CMD:
                     //
-                    println!(
-                        "{:#?}",
-                        nu_ansi_term::Color::Cyan
-                            .paint("Color::paint() escape codes")
-                            .to_string()
-                    );
+                    // println!(
+                    //     "{:#?}",
+                    //     nu_ansi_term::Color::Cyan
+                    //         .paint("Color::paint() escape codes")
+                    //         .to_string()
+                    // );
 
                     loop {
                         print!(

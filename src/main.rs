@@ -459,12 +459,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                     loop {
                         println!(
                             "{}",
-                            nu_resolve_style(MessageLevel::InnerPrompt)
-                                .unwrap_or_default()
-                                .paint(
-                                    r"Enter an expression (e.g., 2 + 3), or q to quit.
+                            // nu_resolve_style(MessageLevel::InnerPrompt)
+                            //     .unwrap_or_default()
+                            //     .paint(
+                            nu_ansi_term::Color::Cyan.paint(
+                                r"Enter an expression (e.g., 2 + 3), or q to quit.
 Expressions in matching braces, brackets or quotes may span multiple lines."
-                                )
+                            )
                         );
 
                         let sig = line_editor.read_line(&prompt)?;

@@ -462,6 +462,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                     // "\u{1b}[36mColor::paint() escape codes\u{1b}[0m"
                     // ?Bad - LF: printf "\033[1;38;5;43mHi\033[0m"
                     // Good - no LF: printf "\033[\033[1;38;5;43mHi\033[0m"
+                    // Powershell 5:
+                    // $esc = [char]27
+                    // Write-Host "$esc[1;38;5;43mHi$esc[0m" -NoNewLine (also works without NoNewLine)
+                    // CMD:
+                    //
                     println!(
                         "{:#?}",
                         nu_ansi_term::Color::Cyan

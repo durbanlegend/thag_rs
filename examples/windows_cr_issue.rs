@@ -12,9 +12,11 @@ use reedline::{
     PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
 };
 use reedline_repl_rs::clap::{Arg, ArgAction, ArgMatches, Command};
-use reedline_repl_rs::{paint_green_bold, Repl, Result};
+use reedline_repl_rs::Repl;
 use std::borrow::Cow;
 use std::collections::VecDeque;
+use std::sync::Arc;
+use std::{fmt, process};
 
 pub struct CustomPrompt(&'static str);
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
@@ -55,12 +57,37 @@ impl Prompt for CustomPrompt {
     }
 }
 
+#[derive(Debug)]
+enum CustomError {
+    Quit(String),
+    ReplError(reedline_repl_rs::Error),
+    StringError(String),
+}
+
+impl From<reedline_repl_rs::Error> for CustomError {
+    fn from(e: reedline_repl_rs::Error) -> Self {
+        CustomError::ReplError(e)
+    }
+}
+
+impl fmt::Display for CustomError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            CustomError::ReplError(e) => write!(f, "REPL Error: {}", e),
+            CustomError::StringError(s) => write!(f, "String Error: {}", s),
+            CustomError::Quit(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl std::error::Error for CustomError {}
+
 #[derive(Default)]
 struct Context {
     list: VecDeque<String>,
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(), reedline_repl_rs::Error> {
     let mut repl = Repl::new(Context::default())
         .with_name("REPL")
         .with_version("v0.1.0")
@@ -71,26 +98,15 @@ fn main() -> Result<()> {
                 .bold()
                 .paint("Enter one of: continue, delete, eval, list, quit or help"),
         ))
-        .with_command(
-            Command::new("choose")
-                .subcommand(Command::new("eval"))
-                .subcommand(Command::new("quit")),
-            choose,
-        )
-        .with_on_after_command(|context| Ok(Some(String::from(">>"))));
+        .with_command(Command::new("eval"), eval)
+        .with_command(Command::new("quit"), quit)
+        .with_stop_on_ctrl_c(true);
+    // .with_error_handler(|ref _err, ref _repl| process::exit(0)),
     repl.run()
 }
 
-fn choose(args: ArgMatches, _ccontext: &mut Context) -> Result<Option<String>> {
-    match args.subcommand() {
-        Some(("eval", _)) => {
-            // let history_file = "cr_eval_hist.txt";
-            // let history = Box::new(
-            //     FileBackedHistory::with_file(20, history_file)
-            //         .expect("Error configuring history with file"),
-            // );
-
-            let mut line_editor = Reedline::create()
+fn eval(_args: ArgMatches, _ccontext: &mut Context) -> Result<Option<String>, CustomError> {
+    let mut line_editor = Reedline::create()
             .with_validator(Box::new(DefaultValidator))
             .with_hinter(Box::new(
                 DefaultHinter::default()
@@ -99,37 +115,36 @@ fn choose(args: ArgMatches, _ccontext: &mut Context) -> Result<Option<String>> {
             // .with_history(history)
             ;
 
-            let prompt = CustomPrompt("expr");
-            loop {
-                print!(
-                    "{}",
-                    nu_ansi_term::Color::Cyan.paint(
-                        r"Enter an expression (e.g., 2 + 3), or q to quit.
+    let prompt = CustomPrompt("expr");
+    loop {
+        print!(
+            "{}",
+            nu_ansi_term::Color::Cyan.paint(
+                r"Enter an expression (e.g., 2 + 3), or q to quit.
 Expressions in matching braces, brackets or quotes may span multiple lines."
-                    )
-                );
+            )
+        );
 
-                let sig = line_editor.read_line(&prompt).expect("Error reading line");
-                let input: &str = match sig {
-                    Signal::Success(ref buffer) => buffer,
-                    Signal::CtrlD | Signal::CtrlC => {
-                        println!("\nAborted!");
-                        break;
-                    }
-                };
-                // Process user input (line)
-
-                let str = input.trim();
-                if str.to_lowercase() == "q" {
-                    // outer_prompt();
-                    break;
-                }
+        let sig = line_editor.read_line(&prompt).expect("Error reading line");
+        let input: &str = match sig {
+            Signal::Success(ref buffer) => buffer,
+            Signal::CtrlD | Signal::CtrlC => {
+                println!("\nAborted!");
+                break;
             }
+        };
+        // Process user input (line)
 
-            // Ok(Some("q".to_string()))
+        let str = input.trim();
+        if str.to_lowercase() == "q" {
+            // outer_prompt();
+            break;
         }
-        Some(("quit", _)) => return Ok(None),
-        _ => panic!("Unknown subcommand {:?}", args.subcommand_name()),
     }
-    Ok(Some("Done".to_string()))
+
+    Ok(Some("q".to_string()))
+}
+
+fn quit(_args: ArgMatches, _ccontext: &mut Context) -> Result<Option<String>, CustomError> {
+    Err(CustomError::Quit("Done".to_string()))
 }

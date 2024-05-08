@@ -6,7 +6,7 @@ use crate::code_utils::{
 use crate::code_utils::{modified_since_compiled, parse_source, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::term_colors::owo_resolve_style;
+use crate::term_colors::{nu_resolve_style, owo_resolve_style};
 
 use clap::Parser;
 use clap_repl::ClapEditor;
@@ -45,6 +45,7 @@ use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
     PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
 };
+use term_colors::MessageLevel;
 
 pub struct CustomPrompt(&'static str);
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
@@ -252,15 +253,17 @@ enum ProcessCommand {
 }
 
 //      TODO:
+//          Next: 1. test in Windows, 2. nu_ansi_term color_println macro.
+//                3. test reedline partial completions. 4. Print out all colours again
 //       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
-//       2.  Don't use println{} when wrapping snippet if return type of expressionq is ()
+//       2.  Don't use println{} when wrapping snippet if return type of expression is ()
 //       3.  Replace clap_repl in outer eval loop by reedline.
 //       4.  Impractical?: Redo term_colors.rs with 4 individual enums. Reconcile nu-ansi-term colours with owo-colors.
 //              See https://codebrowser.dev/rust/crates/owo-colors/src/colors/xterm.rs.html
 //                  and end section of term_colors.rs.
 //       5.  Inferred deps to use a visitor to find embedded use statements
 //       6.  bool -> 2-value enums?
-//       7.  How to insert line feed from keyboard in reedline. (Supposedly shift+enter)
+//       7.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
 //       9.  --quiet option?.
 //      10.  Consider making script name optional, with -n/stdin parm as per my runner changes?
@@ -343,9 +346,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let outer_prompt = || {
             println!(
                 "{}",
-                nu_ansi_term::Color::Blue
-                    .bold()
-                    .paint(format!("Enter one of: {:#?}", cmd_list))
+                nu_resolve_style(MessageLevel::OuterPrompt)
+                    .unwrap_or_default()
+                    .paint(format!("Enter one of: {}", cmd_list))
             );
         };
         outer_prompt();
@@ -456,10 +459,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                     loop {
                         println!(
                             "{}",
-                            nu_ansi_term::Color::Cyan.paint(
-                                r"Enter an expression (e.g., 2 + 3), or q to quit.
+                            nu_resolve_style(MessageLevel::InnerPrompt)
+                                .unwrap_or_default()
+                                .paint(
+                                    r"Enter an expression (e.g., 2 + 3), or q to quit.
 Expressions in matching braces, brackets or quotes may span multiple lines."
-                            )
+                                )
                         );
 
                         let sig = line_editor.read_line(&prompt)?;
@@ -528,7 +533,7 @@ Expressions in matching braces, brackets or quotes may span multiple lines."
                             }
                             Err(err) => {
                                 owo_color_println!(
-                                    owo_resolve_style(term_colors::MessageLevel::Error),
+                                    owo_resolve_style(MessageLevel::Error),
                                     "Error parsing code: {}",
                                     err
                                 );

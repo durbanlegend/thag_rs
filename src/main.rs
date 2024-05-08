@@ -28,6 +28,13 @@ use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
 use syn::{self, Expr};
 
+use nu_ansi_term::{Color, Style};
+use reedline::{
+    DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
+    PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
+};
+use term_colors::MessageLevel;
+
 mod cmd_args;
 mod code_utils;
 mod errors;
@@ -39,13 +46,6 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub(crate) const REPL_SUBDIR: &str = "rs_repl";
 const RS_SUFFIX: &str = ".rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
-
-use nu_ansi_term::{Color, Style};
-use reedline::{
-    DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
-    PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
-};
-use term_colors::MessageLevel;
 
 pub struct CustomPrompt(&'static str);
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";

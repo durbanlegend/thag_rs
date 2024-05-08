@@ -455,17 +455,30 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .with_history(history);
 
                     let prompt = CustomPrompt("expr");
+                    println!("{:#?}", nu_resolve_style(MessageLevel::InnerPrompt)
+                        .unwrap_or_default()
+                        .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
+                    // "\u{1b}[1;38;5;43mnu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes\u{1b}[0m"
+                    // "\u{1b}[36mColor::paint() escape codes\u{1b}[0m"
+                    // ?Bad - LF: printf "\033[1;38;5;43mHi\033[0m"
+                    // Good - no LF: printf "\033[\033[1;38;5;43mHi\033[0m"
+                    println!(
+                        "{:#?}",
+                        nu_ansi_term::Color::Cyan
+                            .paint("Color::paint() escape codes")
+                            .to_string()
+                    );
 
                     loop {
-                        println!(
+                        print!(
                             "{}",
-                            // nu_resolve_style(MessageLevel::InnerPrompt)
-                            //     .unwrap_or_default()
-                            //     .paint(
-                            nu_ansi_term::Color::Cyan.paint(
-                                r"Enter an expression (e.g., 2 + 3), or q to quit.
+                            nu_resolve_style(MessageLevel::InnerPrompt)
+                                .unwrap_or_default()
+                                .paint(
+                                    // nu_ansi_term::Color::Cyan.paint(
+                                    r"Enter an expression (e.g., 2 + 3), or q to quit.
 Expressions in matching braces, brackets or quotes may span multiple lines."
-                            )
+                                )
                         );
 
                         let sig = line_editor.read_line(&prompt)?;

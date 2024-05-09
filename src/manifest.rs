@@ -15,7 +15,7 @@ use crate::errors::BuildRunError;
 use crate::term_colors::{MessageStyle, OwoThemeStyle};
 use crate::BuildState;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
     #[serde(default = "default_package")]
     pub(crate) package: Package,
@@ -66,7 +66,7 @@ fn default_package() -> Package {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct Package {
     pub(crate) name: String,
     pub(crate) version: String,
@@ -127,7 +127,7 @@ pub enum Feature {
     Simple(String),
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Product {
     pub path: Option<String>,
     pub name: Option<String>,
@@ -139,7 +139,7 @@ fn default_package_version() -> String {
     "0.0.1".to_string()
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub(crate) struct Workspace {}
 
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {

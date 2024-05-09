@@ -7,9 +7,7 @@ use crate::code_utils::{modified_since_compiled, parse_source, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
 use crate::term_colors::{nu_resolve_style, owo_resolve_style};
-
 use clap::Parser;
-use clap_repl::ClapEditor;
 use env_logger::{fmt::WriteStyle, Builder, Env};
 use homedir::get_my_home;
 use lazy_static::lazy_static;
@@ -28,12 +26,13 @@ use term_colors::MessageLevel;
 
 // use core::str;
 use std::borrow::Cow::{self};
+use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Instant;
-use std::{env, process};
+// use std::process;
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
 use syn::{self, Expr};
@@ -115,7 +114,7 @@ impl ScriptState {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct BuildState {
     pub(crate) source_stem: String,
     pub(crate) source_name: String,
@@ -221,6 +220,7 @@ impl BuildState {
     }
 }
 
+#[derive(Debug)]
 struct Context<'a> {
     options: &'a mut Opt,
     proc_flags: &'a ProcFlags,
@@ -249,18 +249,18 @@ enum LoopCommand {
     Quit,
 }
 
-#[derive(Debug, Parser)]
-#[command(name = "", arg_required_else_help(true))] // This name will show up in clap's error messages, so it is important to set it to "".
-enum ProcessCommand {
-    /// Cancel and discard this code, restart REPL
-    Cancel,
-    /// Return to editor for another try
-    Retry,
-    /// Attempt to build and run your Rust code
-    Submit,
-    // Exit REPL
-    Quit,
-}
+// #[derive(Debug, Parser)]
+// #[command(name = "", arg_required_else_help(true))] // This name will show up in clap's error messages, so it is important to set it to "".
+// enum ProcessCommand {
+//     /// Cancel and discard this code, restart REPL
+//     Cancel,
+//     /// Return to editor for another try
+//     Retry,
+//     /// Attempt to build and run your Rust code
+//     Submit,
+//     // Exit REPL
+//     Quit,
+// }
 
 //      TODO:
 //          Next: 1. test in Windows, 2. nu_ansi_term color_println macro.
@@ -381,10 +381,19 @@ fn main() -> Result<(), Box<dyn Error>> {
             ))
             .with_command(ReplCommand::new("delete"), delete)
             .with_command(ReplCommand::new("edit"), edit)
-            .with_command(ReplCommand::new("eval"), eval)
+            .with_command(
+                ReplCommand::new("eval").subcommand(ReplCommand::new("quit")),
+                eval,
+            )
             .with_command(ReplCommand::new("list"), list)
             .with_command(ReplCommand::new("quit"), quit)
             .with_stop_on_ctrl_c(true);
+        // show help with CTRL+h
+        // .with_keybinding(
+        //     KeyModifiers::CONTROL,
+        //     KeyCode::Char('h'),
+        //     ReedlineEvent::ExecuteHostCommand("help".to_string()),
+        // );
         // .with_error_handler(|ref _err, ref _repl| process::exit(0)),
         repl.run()?;
         // let mut loop_editor = ClapEditor::<LoopCommand>::new();
@@ -436,8 +445,8 @@ fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn edit<'a>(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    let (options, proc_flags, build_state, start) = (
+fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    let (options, proc_flags, build_state, _start) = (
         &mut context.options,
         context.proc_flags,
         &mut context.build_state,
@@ -454,20 +463,26 @@ fn edit<'a>(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
     // editor.run()?;
     edit::edit_file(&build_state.source_path)?;
 
-    let mut repl: Repl<& mut Context, BuildRunError> = Repl::new(context)
+    let context = Context {
+        options: &mut (**options).clone(),
+        proc_flags: &proc_flags.clone(),
+        build_state: &mut build_state.clone(),
+        start: &Instant::now(),
+    };
+    let mut repl: Repl<Context, BuildRunError> = Repl::new(context)
         .with_name("edit")
         .with_banner(&format!(
             "{}",
             nu_resolve_style(MessageLevel::InnerPrompt)
                 .unwrap_or_default()
-                .paint(format!("Enter cancel, retry, submit, quit or help"),)
+                .paint(String::from("Enter cancel, retry, submit, quit or help"))
         ))
-        .with_command(ReplCommand::new("cancel"), cancel<'a>)
+        .with_command(ReplCommand::new("cancel"), cancel)
         .with_command(ReplCommand::new("quit"), quit)
         .with_command(ReplCommand::new("retry"), edit)
         .with_command(ReplCommand::new("submit"), submit)
         .with_stop_on_ctrl_c(true);
-    repl.run();
+    repl.run()?;
 
     //     ProcessCommand::Submit => {
     //         let result = gen_build_run(
@@ -503,7 +518,7 @@ fn edit<'a>(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn cancel<'a>(_args: ArgMatches, _context: &'a mut Context) -> Result<Option<String>, BuildRunError> {
+fn cancel(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
     println!("Cancelled");
     Ok(Some(String::from("Cancelled")))
 }

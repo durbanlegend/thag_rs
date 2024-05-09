@@ -7,7 +7,7 @@ use crate::{cmd_args, errors::BuildRunError};
 
 /// Script Runner
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Parser, Debug)]
+#[derive(Clone, Parser, Debug)]
 #[clap(version = "1.0", author = "durbanlegend")]
 pub(crate) struct Opt {
     /// Set the script to run
@@ -86,7 +86,7 @@ bitflags! {
     // You can `#[derive]` the `Debug` trait, but implementing it manually
     // can produce output like `A | B` instead of `Flags(A | B)`.
     // #[derive(Debug)]
-    #[derive(PartialEq, Eq)]
+    #[derive(Clone, PartialEq, Eq)]
     pub struct ProcFlags: u32 {
         const GENERATE = 1;
         const BUILD = 2;

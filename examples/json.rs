@@ -1,6 +1,8 @@
-//! [dependencies]
-//! serde = "1.0.198"
-//! serde_json = "1.0.116"
+/*[toml]
+[dependencies]
+serde = "1.0.198"
+serde_json = "1.0.116"
+*/
 
 use serde::de::Deserialize;
 use serde_json::Value;

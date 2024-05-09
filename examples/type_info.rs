@@ -71,7 +71,7 @@ macro_rules! type_of {
 
 impl_type_info!(i32, i64, f32, f64, str, String, Vec<T>, Result<T,S>);
 
-fn main() {
+// fn main() {
     println!("{}", type_of!(1));
     println!("{}", type_of!(&1));
     println!("{}", type_of!(&&1));
@@ -88,4 +88,4 @@ fn main() {
     println!("{}", <Result<String, i64>>::type_name());
     println!("{}", <&i32>::type_name());
     println!("{}", <&str>::type_name());
-}
+// }

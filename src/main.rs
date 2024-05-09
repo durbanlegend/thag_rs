@@ -373,11 +373,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             .with_name("REPL")
             .with_version("v0.1.0")
             .with_description("REPL mode")
-            .with_banner(&format!(
+            .with_banner(
+                &format!(
                 "{}",
-                nu_resolve_style(MessageLevel::OuterPrompt)
-                    .unwrap_or_default()
-                    .paint(format!("Enter one of: {}", cmd_list)),
+                // nu_resolve_style(MessageLevel::OuterPrompt)
+                //     .unwrap_or_default()
+                nu_ansi_term::Color::LightMagenta
+                    .paint(
+                &format!("Enter one of: {}", cmd_list)),
             ))
             .with_command(ReplCommand::new("delete"), delete)
             .with_command(ReplCommand::new("edit"), edit)
@@ -579,12 +582,12 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
     //     .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
 
     loop {
-        print!(
+        println!(
             "{}",
-            nu_resolve_style(MessageLevel::InnerPrompt)
-                .unwrap_or_default()
-                .paint(
-                    // nu_ansi_term::Color::Cyan.paint(
+            // nu_resolve_style(MessageLevel::InnerPrompt)
+            //     .unwrap_or_default()
+            //     .paint(
+                    nu_ansi_term::Color::Cyan.paint(
                     r"Enter an expression (e.g., 2 + 3), or q to quit. Expressions in matching braces, brackets or quotes may span multiple lines."
                 )
         );
@@ -600,8 +603,8 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         // Process user input (line)
 
         let str = input.trim();
-        let str = str.to_lowercase();
-        if str == "q" || str == "quit" {
+        let lc = str.to_lowercase();
+        if lc == "q" || lc == "quit" {
             break;
         }
         // Parse the expression string into a syntax tree

@@ -436,7 +436,7 @@ fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+fn edit<'a>(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let (options, proc_flags, build_state, start) = (
         &mut context.options,
         context.proc_flags,
@@ -454,44 +454,84 @@ fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
     // editor.run()?;
     edit::edit_file(&build_state.source_path)?;
 
-    println!("Enter cancel, retry, submit, quit or help");
-    let mut process_editor = ClapEditor::<ProcessCommand>::new();
-    'level3: loop {
-        let Some(command) = process_editor.read_command() else {
-            continue 'level3;
-        };
-        match command {
-            ProcessCommand::Quit => process::exit(0),
-            ProcessCommand::Submit => {
-                let result = gen_build_run(
-                    options,
-                    proc_flags,
-                    build_state,
-                    // &mut maybe_syntax_tree,
-                    // &mut maybe_rs_manifest,
-                    // &maybe_rs_source,
-                    start,
-                );
-                if result.is_err() {
-                    println!("{result:?}");
-                }
+    let mut repl: Repl<& mut Context, BuildRunError> = Repl::new(context)
+        .with_name("edit")
+        .with_banner(&format!(
+            "{}",
+            nu_resolve_style(MessageLevel::InnerPrompt)
+                .unwrap_or_default()
+                .paint(format!("Enter cancel, retry, submit, quit or help"),)
+        ))
+        .with_command(ReplCommand::new("cancel"), cancel<'a>)
+        .with_command(ReplCommand::new("quit"), quit)
+        .with_command(ReplCommand::new("retry"), edit)
+        .with_command(ReplCommand::new("submit"), submit)
+        .with_stop_on_ctrl_c(true);
+    repl.run();
 
-                break 'level3;
-            }
-            ProcessCommand::Cancel => {
-                // loop_command = loop_editor.read_command();
-                // outer_prompt();
-                return Ok(Some(String::from("Cancel")));
-            }
-            ProcessCommand::Retry => {
-                // loop_command = Some(LoopCommand::Edit);
-                // outer_prompt();
-                return Ok(Some(String::from("Retry")));
-            }
-        }
-    }
+    //     ProcessCommand::Submit => {
+    //         let result = gen_build_run(
+    //             options,
+    //             proc_flags,
+    //             build_state,
+    //             // &mut maybe_syntax_tree,
+    //             // &mut maybe_rs_manifest,
+    //             // &maybe_rs_source,
+    //             start,
+    //         );
+    //         if result.is_err() {
+    //             println!("{result:?}");
+    //         }
+
+    //         break 'level3;
+    //     }
+    //     ProcessCommand::Cancel => {
+    //         // loop_command = loop_editor.read_command();
+    //         // outer_prompt();
+    //         return Ok(Some(String::from("Cancel")));
+    //     }
+    //     ProcessCommand::Retry => {
+    //         // loop_command = Some(LoopCommand::Edit);
+    //         // outer_prompt();
+    //         return Ok(Some(String::from("Retry")));
+    //     }
+    // }
+    // }
 
     Ok(Some(String::from("End of continue"))) // TODO make nice
+}
+
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
+fn cancel<'a>(_args: ArgMatches, _context: &'a mut Context) -> Result<Option<String>, BuildRunError> {
+    println!("Cancelled");
+    Ok(Some(String::from("Cancelled")))
+}
+
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
+fn submit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    let (options, proc_flags, build_state, start) = (
+        &mut context.options,
+        context.proc_flags,
+        &mut context.build_state,
+        context.start,
+    );
+    let result = gen_build_run(
+        options,
+        proc_flags,
+        build_state,
+        // &mut maybe_syntax_tree,
+        // &mut maybe_rs_manifest,
+        // &maybe_rs_source,
+        start,
+    );
+    if result.is_err() {
+        println!("{result:?}");
+    }
+
+    println!("Submitted");
+    Ok(Some(String::from("Submitted")))
 }
 
 /// From Reedline validation example with enhancements
@@ -519,9 +559,9 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         .with_history(history);
 
     let prompt = CustomPrompt("expr");
-    println!("{:#?}", nu_resolve_style(MessageLevel::InnerPrompt)
-        .unwrap_or_default()
-        .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
+    // println!("{:#?}", nu_resolve_style(MessageLevel::InnerPrompt)
+    //     .unwrap_or_default()
+    //     .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
 
     loop {
         print!(
@@ -530,8 +570,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
                 .unwrap_or_default()
                 .paint(
                     // nu_ansi_term::Color::Cyan.paint(
-                    r"Enter an expression (e.g., 2 + 3), or q to quit.
-Expressions in matching braces, brackets or quotes may span multiple lines."
+                    r"Enter an expression (e.g., 2 + 3), or q to quit. Expressions in matching braces, brackets or quotes may span multiple lines."
                 )
         );
 

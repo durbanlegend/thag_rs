@@ -27,7 +27,7 @@ impl Prompt for CustomPrompt {
 
     fn render_prompt_right(&self) -> Cow<str> {
         {
-            Cow::Owned(String::from("q: quit"))
+            Cow::Owned(String::new())
         }
     }
 
@@ -114,10 +114,11 @@ fn eval(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, Cus
     let prompt = CustomPrompt("expr");
     loop {
         println!(
-            "{}",
+            "{}{}\n{}",
+            nu_ansi_term::Color::Cyan.paint("Enter an expression (e.g., 2 + 3), or "),
+            nu_ansi_term::Color::Cyan.bold().paint("quit"),
             nu_ansi_term::Color::Cyan.paint(
-                "Enter an expression (e.g., 2 + 3), or q to quit.
-Expressions in matching braces, brackets or quotes may span multiple lines."
+                "Expressions in matching braces, brackets or quotes may span multiple lines."
             )
         );
 
@@ -125,23 +126,22 @@ Expressions in matching braces, brackets or quotes may span multiple lines."
         let input: &str = match sig {
             Signal::Success(ref buffer) => buffer,
             Signal::CtrlD | Signal::CtrlC => {
-                println!("\nAborted!");
+                // println!("quit");
                 break;
             }
         };
         // Process user input (line)
 
         let str = input.trim();
-        if str.to_lowercase() == "q" {
-            // outer_prompt();
+        let input = str.to_lowercase();
+        if input == "q" || input == "quit" {
             break;
         }
     }
-
-    Ok(Some("q".to_string()))
+    Ok(Some("quit".to_string()))
 }
 
-fn quit(_args: ArgMatches, _ccontext: &mut Context) -> Result<Option<String>, CustomError> {
+fn quit(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, CustomError> {
     println!("Done");
     std::process::exit(0);
 }

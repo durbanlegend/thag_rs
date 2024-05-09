@@ -12,8 +12,9 @@ pub(crate) enum BuildRunError {
     NoneOption(String), // For unwrapping Options
     OsString(OsString), // For unconvertible OsStrings
     // Path(String),          // For Path and PathBuf issues
-    TomlDe(TomlDeError),   // For TOML deserialization errors
-    TomlSer(TomlSerError), // For TOML serialization errors
+    ReplError(reedline_repl_rs::Error), // For REPL errors
+    TomlDe(TomlDeError),                // For TOML deserialization errors
+    TomlSer(TomlSerError),              // For TOML serialization errors
 }
 
 impl BuildRunError {}
@@ -21,6 +22,12 @@ impl BuildRunError {}
 impl From<io::Error> for BuildRunError {
     fn from(err: io::Error) -> Self {
         BuildRunError::Io(err)
+    }
+}
+
+impl From<reedline_repl_rs::Error> for BuildRunError {
+    fn from(err: reedline_repl_rs::Error) -> Self {
+        BuildRunError::ReplError(err)
     }
 }
 
@@ -58,6 +65,7 @@ impl std::fmt::Display for BuildRunError {
                 writeln!(f, "{o:#?}")?;
                 Ok(())
             }
+            BuildRunError::ReplError(e) => write!(f, "REPL Error: {e}"),
             BuildRunError::TomlDe(e) => write!(f, "{e:?}"),
             BuildRunError::TomlSer(e) => write!(f, "{e:?}"),
         }
@@ -75,6 +83,7 @@ impl Error for BuildRunError {
             | BuildRunError::NoneOption(ref _e) => Some(self),
             BuildRunError::Io(ref e) => Some(e),
             BuildRunError::OsString(ref _o) => Some(self),
+            BuildRunError::ReplError(ref e) => Some(e),
             BuildRunError::TomlDe(ref e) => Some(e),
             BuildRunError::TomlSer(ref e) => Some(e),
         }

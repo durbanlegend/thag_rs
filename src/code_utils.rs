@@ -509,7 +509,7 @@ Ok(())
 pub(crate) fn write_source(
     to_rs_path: PathBuf,
     rs_source: &String,
-) -> Result<fs::File, Box<dyn Error>> {
+) -> Result<fs::File, BuildRunError> {
     let mut to_rs_file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -626,11 +626,11 @@ pub(crate) fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     Ok(())
 }
 
-pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), Box<dyn Error>> {
+pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
     let source_path_buf = build_state.source_path.clone();
     let source_path_str = source_path_buf
         .to_str()
-        .ok_or("Error accessing path to source file")?;
+        .ok_or(String::from("Error accessing path to source file"))?;
 
     if Command::new("rustfmt").arg("--version").output().is_ok() {
         // Run rustfmt on the source file

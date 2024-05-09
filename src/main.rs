@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::cmd_args::{get_opt, get_proc_flags, ProcFlags};
+use crate::cmd_args::{get_opt, get_proc_flags, Opt, ProcFlags};
 use crate::code_utils::{
     clean_up, debug_timings, display_dir_contents, display_timings, rustfmt, wrap_snippet,
 };
@@ -10,30 +10,33 @@ use crate::term_colors::{nu_resolve_style, owo_resolve_style};
 
 use clap::Parser;
 use clap_repl::ClapEditor;
-use core::str;
 use env_logger::{fmt::WriteStyle, Builder, Env};
 use homedir::get_my_home;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
+use nu_ansi_term::{Color, Style};
 use quote::quote;
+use reedline::{
+    DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
+    PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
+};
+use reedline_repl_rs::{
+    clap::{ArgMatches, Command as ReplCommand},
+    Repl,
+};
+use term_colors::MessageLevel;
 
+// use core::str;
 use std::borrow::Cow::{self};
-use std::env;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Instant;
+use std::{env, process};
 use std::{fs, io::Write as OtherWrite}; // Use PathBuf for paths
 use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
 use syn::{self, Expr};
-
-use nu_ansi_term::{Color, Style};
-use reedline::{
-    DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
-    PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
-};
-use term_colors::MessageLevel;
 
 mod cmd_args;
 mod code_utils;
@@ -46,6 +49,10 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub(crate) const REPL_SUBDIR: &str = "rs_repl";
 const RS_SUFFIX: &str = ".rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
+
+lazy_static! {
+    static ref TMP_DIR: PathBuf = env::temp_dir();
+}
 
 pub struct CustomPrompt(&'static str);
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
@@ -84,10 +91,6 @@ impl Prompt for CustomPrompt {
             prefix, history_search.term
         ))
     }
-}
-
-lazy_static! {
-    static ref TMP_DIR: PathBuf = env::temp_dir();
 }
 
 #[derive(Debug)]
@@ -218,13 +221,20 @@ impl BuildState {
     }
 }
 
+struct Context<'a> {
+    options: &'a mut Opt,
+    proc_flags: &'a ProcFlags,
+    build_state: &'a mut BuildState,
+    start: &'a Instant,
+}
+
 #[derive(Debug, Parser, EnumIter, EnumProperty, IntoStaticStr)]
 #[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
 #[strum(serialize_all = "kebab-case")]
 enum LoopCommand {
     /// Enter, paste or modify your code and optionally edit your generated Cargo.toml
     #[clap(visible_alias = "c")]
-    Continue,
+    Edit,
     /// Delete generated files
     #[clap(visible_alias = "d")]
     Delete,
@@ -343,6 +353,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         //         cmd_list
         //     );
         // };
+        #[allow(unused_variables)]
         let outer_prompt = || {
             println!(
                 "{}",
@@ -351,221 +362,50 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .paint(format!("Enter one of: {}", cmd_list))
             );
         };
-        outer_prompt();
-        let mut loop_editor = ClapEditor::<LoopCommand>::new();
-        let mut loop_command = loop_editor.read_command();
-        'level2: loop {
-            let Some(ref command) = loop_command else {
-                loop_command = loop_editor.read_command();
-                continue 'level2;
-            };
-            match command {
-                LoopCommand::Quit => return Ok(()),
-                LoopCommand::Delete => {
-                    let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
-                    if clean_up.is_ok()
-                        || (!&build_state.source_path.exists()
-                            && !&build_state.target_dir_path.exists())
-                    {
-                        println!("Deleted");
-                    } else {
-                        println!(
-                            "Failed to delete all files - enter l(ist) to list remaining files"
-                        );
-                    }
-                }
-                LoopCommand::List => {
-                    // Display file listing
-                    if build_state.source_path.exists() {
-                        println!("File: {:?}", &build_state.source_path);
-                    }
-
-                    // Display directory contents
-                    display_dir_contents(&build_state.target_dir_path)?;
-
-                    // Check if neither file nor directory exist
-                    if !&build_state.source_path.exists() && !&build_state.target_dir_path.exists()
-                    {
-                        println!("No temporary files found");
-                    }
-                }
-                LoopCommand::Continue => {
-                    let files = [
-                        format!("{}", build_state.source_path.display()),
-                        format!("{}/Cargo.toml", build_state.target_dir_str),
-                    ]
-                    .into_iter();
-                    debug!("files={files:#?}");
-                    // let editor = &mut Editor::new(files)?;
-                    // editor.run()?;
-                    edit::edit_file(&build_state.source_path)?;
-
-                    println!("Enter cancel, retry, submit, quit or help");
-                    let mut process_editor = ClapEditor::<ProcessCommand>::new();
-                    'level3: loop {
-                        let Some(command) = process_editor.read_command() else {
-                            continue 'level3;
-                        };
-                        match command {
-                            ProcessCommand::Quit => return Ok(()),
-                            ProcessCommand::Submit => {
-                                let result = gen_build_run(
-                                    &mut options,
-                                    &proc_flags,
-                                    &mut build_state,
-                                    // &mut maybe_syntax_tree,
-                                    // &mut maybe_rs_manifest,
-                                    // &maybe_rs_source,
-                                    &start,
-                                );
-                                if result.is_err() {
-                                    println!("{result:?}");
-                                }
-
-                                break 'level3;
-                            }
-                            ProcessCommand::Cancel => {
-                                outer_prompt();
-                                loop_command = loop_editor.read_command();
-                                continue 'level2;
-                            }
-                            ProcessCommand::Retry => {
-                                loop_command = Some(LoopCommand::Continue);
-                                outer_prompt();
-                                continue 'level2;
-                            }
-                        }
-                    }
-                }
-                LoopCommand::Eval => {
-                    // From Reedline validation example with enhancements
-
-                    let history_file = build_state.cargo_home.join("rs_eval_hist.txt");
-                    let history = Box::new(
-                        FileBackedHistory::with_file(20, history_file)
-                            .expect("Error configuring history with file"),
-                    );
-
-                    let mut line_editor = Reedline::create()
-                        .with_validator(Box::new(DefaultValidator))
-                        .with_hinter(Box::new(
-                            DefaultHinter::default()
-                                .with_style(Style::new().italic().fg(Color::Cyan)),
-                        ))
-                        .with_history(history);
-
-                    let prompt = CustomPrompt("expr");
-                    println!("{:#?}", nu_resolve_style(MessageLevel::InnerPrompt)
-                        .unwrap_or_default()
-                        .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
-                    // "\u{1b}[1;38;5;43mnu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes\u{1b}[0m"
-                    // "\u{1b}[36mColor::paint() escape codes\u{1b}[0m"
-                    // ?Bad - LF: printf "\033[1;38;5;43mHi\033[0m"
-                    // Good - no LF: printf "\033[\033[1;38;5;43mHi\033[0m"
-                    // Powershell 5:
-                    // $esc = [char]27
-                    // Write-Host "$esc[1;38;5;43mHi$esc[0m" -NoNewLine (also works without NoNewLine)
-                    // CMD:
-                    //
-                    // println!(
-                    //     "{:#?}",
-                    //     nu_ansi_term::Color::Cyan
-                    //         .paint("Color::paint() escape codes")
-                    //         .to_string()
-                    // );
-
-                    loop {
-                        print!(
-                            "{}",
-                            nu_resolve_style(MessageLevel::InnerPrompt)
-                                .unwrap_or_default()
-                                .paint(
-                                    // nu_ansi_term::Color::Cyan.paint(
-                                    r"Enter an expression (e.g., 2 + 3), or q to quit.
-Expressions in matching braces, brackets or quotes may span multiple lines."
-                                )
-                        );
-
-                        let sig = line_editor.read_line(&prompt)?;
-                        let input: &str = match sig {
-                            Signal::Success(ref buffer) => buffer,
-                            Signal::CtrlD | Signal::CtrlC => {
-                                println!("\nAborted!");
-                                break;
-                            }
-                        };
-                        // Process user input (line)
-
-                        let str = input.trim();
-                        if str.to_lowercase() == "q" {
-                            outer_prompt();
-                            break;
-                        }
-                        // Parse the expression string into a syntax tree
-                        let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(str);
-                        println!(
-                            r"expr.is_err()={}, str.starts_with('{{')={}, str.ends_with('}}')={}",
-                            expr.is_err(),
-                            str.starts_with('{'),
-                            str.ends_with('}')
-                        );
-                        if expr.is_err() && !(str.starts_with('{') && str.ends_with('}')) {
-                            // Try putting the expression in braces.
-                            let string = format!(r"{{{str}}}");
-                            let str = string.as_str();
-                            println!("str={str}");
-
-                            expr = syn::parse_str::<Expr>(str);
-                        }
-
-                        match expr {
-                            Ok(expr) => {
-                                // Generate Rust code for the expression
-                                let rust_code = quote!(println!("result={:?}", #expr););
-
-                                let rs_source = format!("{rust_code}");
-                                debug!("rs_source={rs_source}"); // Careful, needs to impl Display
-
-                                write_source(build_state.source_path.clone(), &rs_source)?;
-
-                                // TODO out - not helpful
-                                let _script_state = ScriptState::Named {
-                                    script: script_state.get_script().unwrap(),
-                                };
-
-                                rustfmt(&build_state)?;
-
-                                let result = gen_build_run(
-                                    &mut options,
-                                    &proc_flags,
-                                    &mut build_state,
-                                    // &mut maybe_syntax_tree,
-                                    // &mut maybe_rs_manifest,
-                                    // &maybe_rs_source,
-                                    &start,
-                                );
-                                if result.is_err() {
-                                    println!("{result:?}");
-                                }
-                                // disp_cmd_list();
-                                continue;
-                            }
-                            Err(err) => {
-                                owo_color_println!(
-                                    owo_resolve_style(MessageLevel::Error),
-                                    "Error parsing code: {}",
-                                    err
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-            loop_command = loop_editor.read_command();
-        }
+        // outer_prompt();
+        let context = Context {
+            options: &mut options,
+            proc_flags: &proc_flags,
+            build_state: &mut build_state,
+            start: &start,
+        };
+        let mut repl = Repl::new(context)
+            .with_name("REPL")
+            .with_version("v0.1.0")
+            .with_description("REPL mode")
+            .with_banner(&format!(
+                "{}",
+                nu_resolve_style(MessageLevel::OuterPrompt)
+                    .unwrap_or_default()
+                    .paint(format!("Enter one of: {}", cmd_list)),
+            ))
+            .with_command(ReplCommand::new("delete"), delete)
+            .with_command(ReplCommand::new("edit"), edit)
+            .with_command(ReplCommand::new("eval"), eval)
+            .with_command(ReplCommand::new("list"), list)
+            .with_command(ReplCommand::new("quit"), quit)
+            .with_stop_on_ctrl_c(true);
+        // .with_error_handler(|ref _err, ref _repl| process::exit(0)),
+        repl.run()?;
+        // let mut loop_editor = ClapEditor::<LoopCommand>::new();
+        // let mut loop_command = loop_editor.read_command();
+        // 'level2: loop {
+        //     let Some(ref command) = loop_command else {
+        //         loop_command = loop_editor.read_command();
+        //         continue 'level2;
+        //     };
+        //     match command {
+        //         LoopCommand::Quit => return Ok(()),
+        //         LoopCommand::Delete => {}
+        //         LoopCommand::List => {}
+        //         LoopCommand::Edit => {}
+        //         LoopCommand::Eval => {}
+        //     }
+        //     loop_command = loop_editor.read_command();
+        // }
     } else {
         gen_build_run(
-            &mut options,
+            &&mut options,
             &proc_flags,
             &mut build_state,
             // &mut maybe_syntax_tree,
@@ -578,9 +418,263 @@ Expressions in matching braces, brackets or quotes may span multiple lines."
     Ok(())
 }
 
-// fn color_stream(var_name: String, fg: dyn OwoColorize::color, bg: dyn OwoColorize::on_color) {
-//     let _ = OwoColorize::if_supports_color(&var_name, Stream::Stdout, |text| text.fg().bg());
-// }
+/// Delete our temporary files
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
+fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    let build_state = &context.build_state;
+    let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
+    if clean_up.is_ok()
+        || (!&build_state.source_path.exists() && !&build_state.target_dir_path.exists())
+    {
+        println!("Deleted");
+    } else {
+        println!("Failed to delete all files - enter l(ist) to list remaining files");
+    }
+    Ok(Some(String::from("End of delete")))
+}
+
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
+fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    let (options, proc_flags, build_state, start) = (
+        &mut context.options,
+        context.proc_flags,
+        &mut context.build_state,
+        context.start,
+    );
+
+    let files = [
+        format!("{}", build_state.source_path.display()),
+        format!("{}/Cargo.toml", build_state.target_dir_str),
+    ]
+    .into_iter();
+    debug!("files={files:#?}");
+    // let editor = &mut Editor::new(files)?;
+    // editor.run()?;
+    edit::edit_file(&build_state.source_path)?;
+
+    println!("Enter cancel, retry, submit, quit or help");
+    let mut process_editor = ClapEditor::<ProcessCommand>::new();
+    'level3: loop {
+        let Some(command) = process_editor.read_command() else {
+            continue 'level3;
+        };
+        match command {
+            ProcessCommand::Quit => process::exit(0),
+            ProcessCommand::Submit => {
+                let result = gen_build_run(
+                    options,
+                    proc_flags,
+                    build_state,
+                    // &mut maybe_syntax_tree,
+                    // &mut maybe_rs_manifest,
+                    // &maybe_rs_source,
+                    start,
+                );
+                if result.is_err() {
+                    println!("{result:?}");
+                }
+
+                break 'level3;
+            }
+            ProcessCommand::Cancel => {
+                // loop_command = loop_editor.read_command();
+                // outer_prompt();
+                return Ok(Some(String::from("Cancel")));
+            }
+            ProcessCommand::Retry => {
+                // loop_command = Some(LoopCommand::Edit);
+                // outer_prompt();
+                return Ok(Some(String::from("Retry")));
+            }
+        }
+    }
+
+    Ok(Some(String::from("End of continue"))) // TODO make nice
+}
+
+/// From Reedline validation example with enhancements
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
+fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    let (options, proc_flags, build_state, start) = (
+        &mut context.options,
+        &context.proc_flags,
+        &mut context.build_state,
+        &context.start,
+    );
+
+    let history_file = build_state.cargo_home.join("rs_eval_hist.txt");
+    let history = Box::new(
+        FileBackedHistory::with_file(20, history_file)
+            .expect("Error configuring history with file"),
+    );
+
+    let mut line_editor = Reedline::create()
+        .with_validator(Box::new(DefaultValidator))
+        .with_hinter(Box::new(
+            DefaultHinter::default().with_style(Style::new().italic().fg(Color::Cyan)),
+        ))
+        .with_history(history);
+
+    let prompt = CustomPrompt("expr");
+    println!("{:#?}", nu_resolve_style(MessageLevel::InnerPrompt)
+        .unwrap_or_default()
+        .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
+
+    loop {
+        print!(
+            "{}",
+            nu_resolve_style(MessageLevel::InnerPrompt)
+                .unwrap_or_default()
+                .paint(
+                    // nu_ansi_term::Color::Cyan.paint(
+                    r"Enter an expression (e.g., 2 + 3), or q to quit.
+Expressions in matching braces, brackets or quotes may span multiple lines."
+                )
+        );
+
+        let sig = line_editor.read_line(&prompt)?;
+        let input: &str = match sig {
+            Signal::Success(ref buffer) => buffer,
+            Signal::CtrlD | Signal::CtrlC => {
+                println!("\nAborted!");
+                break;
+            }
+        };
+        // Process user input (line)
+
+        let str = input.trim();
+        let str = str.to_lowercase();
+        if str == "q" || str == "quit" {
+            break;
+        }
+        // Parse the expression string into a syntax tree
+        let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(&str);
+        println!(
+            r"expr.is_err()={}, str.starts_with('{{')={}, str.ends_with('}}')={}",
+            expr.is_err(),
+            str.starts_with('{'),
+            str.ends_with('}')
+        );
+        if expr.is_err() && !(str.starts_with('{') && str.ends_with('}')) {
+            // Try putting the expression in braces.
+            let string = format!(r"{{{str}}}");
+            let str = string.as_str();
+            println!("str={str}");
+
+            expr = syn::parse_str::<Expr>(str);
+        }
+
+        match expr {
+            Ok(expr) => {
+                // Generate Rust code for the expression
+                let rust_code = quote!(println!("result={:?}", #expr););
+
+                let rs_source = format!("{rust_code}");
+                debug!("rs_source={rs_source}"); // Careful, needs to impl Display
+
+                write_source(build_state.source_path.clone(), &rs_source)?;
+
+                // // TODO out - not helpful
+                // let _script_state = ScriptState::Named {
+                //     script: script_state.get_script().unwrap(),
+                // };
+
+                rustfmt(build_state)?;
+
+                let result = gen_build_run(
+                    options,
+                    proc_flags,
+                    build_state,
+                    // &mut maybe_syntax_tree,
+                    // &mut maybe_rs_manifest,
+                    // &maybe_rs_source,
+                    start,
+                );
+                if result.is_err() {
+                    println!("{result:?}");
+                }
+                // disp_cmd_list();
+                continue;
+            }
+            Err(err) => {
+                owo_color_println!(
+                    owo_resolve_style(MessageLevel::Error),
+                    "Error parsing code: {}",
+                    err
+                );
+            }
+        }
+    }
+
+    // let mut line_editor = Reedline::create()
+    //         .with_validator(Box::new(DefaultValidator))
+    //         .with_hinter(Box::new(
+    //             DefaultHinter::default()
+    //                 .with_style(Style::new().italic().fg(Color::Cyan)),
+    //         ))
+    //         // .with_history(history)
+    //         ;
+
+    // let prompt = CustomPrompt("expr");
+    // loop {
+    //     println!(
+    //         "{}{}\n{}",
+    //         nu_ansi_term::Color::Cyan.paint("Enter an expression (e.g., 2 + 3), or "),
+    //         nu_ansi_term::Color::Cyan.bold().paint("quit"),
+    //         nu_ansi_term::Color::Cyan.paint(
+    //             "Expressions in matching braces, brackets or quotes may span multiple lines."
+    //         )
+    //     );
+
+    //     let sig = line_editor.read_line(&prompt).expect("Error reading line");
+    //     let input: &str = match sig {
+    //         Signal::Success(ref buffer) => buffer,
+    //         Signal::CtrlD | Signal::CtrlC => {
+    //             // println!("quit");
+    //             break;
+    //         }
+    //     };
+    //     // Process user input (line)
+
+    //     let str = input.trim();
+    //     let x = str.to_lowercase();
+    //     if x == "q" || x == "quit" {
+    //         break;
+    //     }
+    // }
+    Ok(Some("quit".to_string()))
+}
+
+/// Display file listing
+
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
+fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    let build_state = &context.build_state;
+    let source_path = &build_state.source_path;
+    if source_path.exists() {
+        println!("File: {:?}", &source_path);
+    }
+
+    // Display directory contents
+    display_dir_contents(&build_state.target_dir_path)?;
+
+    // Check if neither file nor directory exist
+    if !&source_path.exists() && !&build_state.target_dir_path.exists() {
+        println!("No temporary files found");
+    }
+    Ok(Some(String::from("End of list")))
+}
+
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
+fn quit(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    println!("Done");
+    std::process::exit(0);
+}
 
 fn debug_print_config() {
     debug!("PACKAGE_NAME={PACKAGE_NAME}");
@@ -589,7 +683,7 @@ fn debug_print_config() {
 }
 
 fn gen_build_run(
-    options: &mut cmd_args::Opt,
+    options: &&mut cmd_args::Opt,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     // maybe_syntax_tree: &mut Option<File>,

@@ -5,6 +5,8 @@ use crate::{BuildState, REPL_SUBDIR, TMP_DIR};
 use log::debug;
 use regex::Regex;
 use std::fs::{remove_dir_all, remove_file, OpenOptions};
+use strum::Display;
+use syn::{Expr, UsePath};
 
 use std::io::{self, BufRead, Read, Write};
 use std::option::Option;
@@ -13,7 +15,14 @@ use std::process::{Command, ExitStatus, Output};
 use std::str::FromStr;
 use std::time::{Instant, SystemTime};
 use std::{error::Error, fs, path::Path};
-use syn::{visit::Visit, File, Item, UseRename, UseTree};
+use syn::{visit::Visit, UseRename};
+
+#[derive(Display)]
+pub(crate) enum Ast {
+    File(syn::File),
+    Expr(syn::Expr),
+    // None,
+}
 
 pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
     debug!("Reading from {path:?}");
@@ -32,46 +41,35 @@ pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
 // }
 
 // Inferring dependencies from the abstract syntax tree.
-pub(crate) fn infer_deps_from_ast(syntax_tree: &File) -> Vec<String> {
+pub(crate) fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
+    let use_crates = find_use_crates_ast(syntax_tree);
+    let extern_crates = find_extern_crates_ast(syntax_tree);
     let use_renames = find_use_renames_ast(syntax_tree);
+
+    match syntax_tree {
+        Ast::File(ast) => debug!("&&&&&&&& Ast={ast:#?}"),
+        Ast::Expr(ast) => debug!("&&&&&&&& Ast={ast:#?}"),
+    }
 
     let mut dependencies = Vec::new();
     let built_in_crates = ["std", "core", "alloc", "collections", "fmt", "crate"];
 
-    for item in &syntax_tree.items {
-        match item {
-            Item::Use(use_item) => {
-                if let UseTree::Path(ref use_tree_path) = use_item.tree {
-                    // if let Some(first_segment) = use_tree_path.ident {
-                    let crate_name = use_tree_path.ident.to_string();
-                    filter_deps_ast(
-                        &crate_name,
-                        &built_in_crates,
-                        &use_renames,
-                        &mut dependencies,
-                    );
-                }
-            }
+    for crate_name in use_crates {
+        filter_deps_ast(
+            &crate_name,
+            &built_in_crates,
+            &use_renames,
+            &mut dependencies,
+        );
+    }
 
-            // Think this covers macro_use
-            Item::ExternCrate(extern_crate) => {
-                let crate_name = extern_crate.ident.to_string();
-                filter_deps_ast(
-                    &crate_name,
-                    &built_in_crates,
-                    &use_renames,
-                    &mut dependencies,
-                );
-            }
-
-            // Wrong - not macro_use
-            // Item::Macro(macro_item) => {
-            //     if let Some(macro_path) = macro_item.mac.path.get_ident() {
-            //         dependencies.push(macro_path.to_string());
-            //     }
-            // }
-            _ => {}
-        }
+    for crate_name in extern_crates {
+        filter_deps_ast(
+            &crate_name,
+            &built_in_crates,
+            &use_renames,
+            &mut dependencies,
+        );
     }
 
     // Deduplicate the list of dependencies
@@ -94,26 +92,73 @@ fn filter_deps_ast(
     }
 }
 
-fn find_use_renames_ast(syntax_tree: &File) -> Vec<String> {
-    struct FindCrates<'a> {
-        use_renames: &'a mut Vec<String>,
+fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
+    #[derive(Default)]
+    struct FindCrates {
+        use_renames: Vec<String>,
     }
 
-    impl<'a> Visit<'a> for FindCrates<'a> {
+    impl<'a> Visit<'a> for FindCrates {
         fn visit_use_rename(&mut self, node: &'a UseRename) {
             self.use_renames.push(node.rename.to_string());
         }
     }
 
-    let mut use_renames: Vec<String> = vec![];
-    let mut finder = FindCrates {
-        use_renames: &mut use_renames,
-    };
+    let mut finder = FindCrates::default();
 
-    finder.visit_file(syntax_tree);
+    match syntax_tree {
+        Ast::File(ast) => finder.visit_file(ast),
+        Ast::Expr(ast) => finder.visit_expr(ast),
+    }
 
-    debug!("use_renames from ast={use_renames:#?}");
-    use_renames
+    debug!("use_renames from ast={:#?}", finder.use_renames);
+    finder.use_renames
+}
+
+fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
+    #[derive(Default)]
+    struct FindCrates {
+        use_crates: Vec<String>,
+    }
+
+    impl<'a> Visit<'a> for FindCrates {
+        fn visit_use_path(&mut self, node: &'a UsePath) {
+            self.use_crates.push(node.ident.to_string());
+        }
+    }
+
+    let mut finder = FindCrates::default();
+
+    match syntax_tree {
+        Ast::File(ast) => finder.visit_file(ast),
+        Ast::Expr(ast) => finder.visit_expr(ast),
+    }
+
+    debug!("use_crates from ast={:#?}", finder.use_crates);
+    finder.use_crates
+}
+
+fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
+    #[derive(Default)]
+    struct FindCrates {
+        extern_crates: Vec<String>,
+    }
+
+    impl<'a> Visit<'a> for FindCrates {
+        fn visit_use_path(&mut self, node: &'a UsePath) {
+            self.extern_crates.push(node.ident.to_string());
+        }
+    }
+
+    let mut finder = FindCrates::default();
+
+    match syntax_tree {
+        Ast::File(ast) => finder.visit_file(ast),
+        Ast::Expr(ast) => finder.visit_expr(ast),
+    }
+
+    debug!("extern_crates from ast={:#?}", finder.extern_crates);
+    finder.extern_crates
 }
 
 /// When no AST, make a best effort to help the user by inferring dependencies from the source code.
@@ -399,8 +444,8 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&Path
     most_recent
 }
 
-pub(crate) fn has_main(syntax_tree: &File) -> bool {
-    let main_methods = count_main_methods(syntax_tree.clone());
+pub(crate) fn has_main(syntax_tree: &Ast) -> bool {
+    let main_methods = count_main_methods(syntax_tree);
     debug!("main_methods={main_methods}");
     has_one_main(main_methods)
 }
@@ -429,11 +474,14 @@ fn has_one_main(main_methods: usize) -> bool {
 
 /// Parse the code into an abstract syntax tree for inspection
 /// if possible. Otherwise don't give up - it may yet compile.
-pub(crate) fn to_ast(source_code: &str) -> Option<File> {
+pub(crate) fn to_ast(source_code: &str) -> Option<Ast> {
     let start_ast = Instant::now();
     if let Ok(tree) = syn::parse_file(source_code) {
-        debug_timings(&start_ast, "Completed successful AST parse");
-        Some(tree)
+        debug_timings(&start_ast, "Completed successful AST parse to syn::File");
+        Some(Ast::File(tree))
+    } else if let Ok(tree) = syn::parse_str::<Expr>(source_code) {
+        debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
+        Some(Ast::Expr(tree))
     } else {
         debug!("Error parsing syntax tree, using regex instead");
         debug_timings(&start_ast, "Completed unsuccessful AST parse");
@@ -442,18 +490,28 @@ pub(crate) fn to_ast(source_code: &str) -> Option<File> {
 }
 
 /// Count the number of `main()` methods
-fn count_main_methods(syntax_tree: File) -> usize {
-    let mut main_method_count = 0;
-    // let vec: &[&Item] = std::convert::AsRef::<&[&Item]>::as_ref(syntax_tree.items);
-    for item in syntax_tree.items {
-        if let Item::Fn(item_fn) = item {
-            // Check if the function is named "main" and has no arguments
-            if item_fn.sig.ident == "main" && item_fn.sig.inputs.is_empty() {
-                main_method_count += 1;
+fn count_main_methods(syntax_tree: &Ast) -> usize {
+    #[derive(Default)]
+    struct FindCrates {
+        main_method_count: usize,
+    }
+
+    impl<'a> Visit<'a> for FindCrates {
+        fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
+            if node.sig.ident == "main" && node.sig.inputs.is_empty() {
+                self.main_method_count += 1;
             }
         }
     }
-    main_method_count
+
+    let mut finder = FindCrates::default();
+
+    match syntax_tree {
+        Ast::File(ast) => finder.visit_file(ast),
+        Ast::Expr(ast) => finder.visit_expr(ast),
+    }
+
+    finder.main_method_count
 }
 
 pub(crate) fn wrap_snippet(rs_source: &str) -> String {

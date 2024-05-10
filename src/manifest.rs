@@ -8,8 +8,8 @@ use std::io::BufRead;
 use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
-use syn::File;
 
+use crate::code_utils::Ast;
 use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
 use crate::term_colors::{MessageStyle, OwoThemeStyle};
@@ -285,7 +285,7 @@ fn escape_path_for_windows(path: &str) -> String {
 
 pub(crate) fn merge_manifest(
     build_state: &BuildState,
-    maybe_syntax_tree: Option<&File>,
+    maybe_syntax_tree: Option<&Ast>,
     maybe_rs_source: Option<&String>,
     rs_manifest: &mut CargoManifest,
 ) -> Result<CargoManifest, Box<dyn Error>> {

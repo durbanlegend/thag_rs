@@ -268,7 +268,8 @@ enum LoopCommand {
 //       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
 //       2.  Don't use println{} when wrapping snippet if return type of expression is ()
 //       3.  Replace clap_repl in outer eval loop by reedline.
-//       4.  Impractical?: Redo term_colors.rs with 4 individual enums. Reconcile nu-ansi-term colours with owo-colors.
+//       4.  Impractical?: I think so. Bigger fish to fry with Styles interfering with reading responses in Windows.
+//              Redo term_colors.rs with 4 individual enums. Reconcile nu-ansi-term colours with owo-colors.
 //              See https://codebrowser.dev/rust/crates/owo-colors/src/colors/xterm.rs.html
 //                  and end section of term_colors.rs.
 //       5.  Inferred deps to use a visitor to find embedded use statements
@@ -278,9 +279,10 @@ enum LoopCommand {
 //       9.  --quiet option?.
 //      10.  Consider making script name optional, with -n/stdin parm as per my runner changes?
 //      11.  Clean up debugging
-//      12.  Consider supporting vi editor family, nvim/Helix for rust-analyzer support or editor crate.
-//      13.
+//      12.  "edit"" crate - how to reconfigure editors dynamically - instructions unclear.
+//      13.  Cargo search not being done for snippets - maybe AST issue to be resolved by visitor pattern above.
 //      14.  Resolved by switch to reedline: Debug left-brace misbehaviour in eval. One of the MatchingBracket mafia?
+//      15   Clap aliases not working in REPL.
 //
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -386,7 +388,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 eval,
             )
             .with_command(ReplCommand::new("list"), list)
-            .with_command(ReplCommand::new("quit"), quit)
+            .with_command(ReplCommand::new("quit").aliases(["q", "exit"]), quit)
             .with_stop_on_ctrl_c(true);
         // show help with CTRL+h
         // .with_keybinding(
@@ -477,10 +479,10 @@ fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
                 .unwrap_or_default()
                 .paint(String::from("Enter cancel, retry, submit, quit or help"))
         ))
-        .with_command(ReplCommand::new("cancel"), cancel)
-        .with_command(ReplCommand::new("quit"), quit)
-        .with_command(ReplCommand::new("retry"), edit)
-        .with_command(ReplCommand::new("submit"), submit)
+        .with_command(ReplCommand::new("cancel").alias("c"), cancel)
+        .with_command(ReplCommand::new("quit").aliases(["q", "exit"]), quit)
+        .with_command(ReplCommand::new("retry").alias("r"), edit)
+        .with_command(ReplCommand::new("submit").alias("s"), submit)
         .with_stop_on_ctrl_c(true);
     repl.run()?;
 
@@ -599,22 +601,22 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         };
         // Process user input (line)
 
-        let str = input.trim();
-        let str = str.to_lowercase();
-        if str == "q" || str == "quit" {
+        let s = input.trim();
+        let lc = s.to_lowercase();
+        if lc == "q" || lc == "quit" {
             break;
         }
         // Parse the expression string into a syntax tree
-        let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(&str);
+        let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(s);
         println!(
             r"expr.is_err()={}, str.starts_with('{{')={}, str.ends_with('}}')={}",
             expr.is_err(),
-            str.starts_with('{'),
-            str.ends_with('}')
+            s.starts_with('{'),
+            s.ends_with('}')
         );
-        if expr.is_err() && !(str.starts_with('{') && str.ends_with('}')) {
+        if expr.is_err() && !(s.starts_with('{') && s.ends_with('}')) {
             // Try putting the expression in braces.
-            let string = format!(r"{{{str}}}");
+            let string = format!(r"{{{s}}}");
             let str = string.as_str();
             println!("str={str}");
 
@@ -758,6 +760,7 @@ fn gen_build_run(
             parse_source(&build_state.source_path)?;
         let mut maybe_rs_manifest = Some(rs_manif);
         let maybe_rs_source = Some(rs_source.clone());
+        println!("&&&&&&&& rs_source={rs_source}");
         let maybe_syntax_tree = code_utils::to_ast(&rs_source);
         let borrowed_syntax_tree = maybe_syntax_tree.as_ref();
         let borrowed_rs_manifest = maybe_rs_manifest.as_mut();

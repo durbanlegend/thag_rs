@@ -1,9 +1,10 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{get_opt, get_proc_flags, Opt, ProcFlags};
 use crate::code_utils::{
-    clean_up, debug_timings, display_dir_contents, display_timings, rustfmt, wrap_snippet,
+    clean_up, debug_timings, display_dir_contents, display_timings, parse_source_str, rustfmt,
+    wrap_snippet,
 };
-use crate::code_utils::{modified_since_compiled, parse_source, write_source};
+use crate::code_utils::{modified_since_compiled, parse_source_file, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
 use crate::term_colors::{nu_resolve_style, owo_resolve_style};
@@ -116,12 +117,14 @@ pub(crate) struct BuildState {
     pub(crate) source_stem: String,
     pub(crate) source_name: String,
     pub(crate) source_path: PathBuf,
+    pub(crate) rs_source: Option<String>,
     pub(crate) syntax_tree: Option<Ast>,
     pub(crate) cargo_home: PathBuf,
     pub(crate) target_dir_path: PathBuf,
     pub(crate) target_dir_str: String,
     pub(crate) target_path: PathBuf,
     pub(crate) cargo_toml_path: PathBuf,
+    pub(crate) rs_manifest: Option<CargoManifest>,
     pub(crate) cargo_manifest: Option<CargoManifest>,
     pub(crate) must_gen: bool,
     pub(crate) must_build: bool,
@@ -208,9 +211,9 @@ impl BuildState {
         let force = proc_flags.contains(ProcFlags::FORCE);
         let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
         let build_requested = proc_flags.contains(ProcFlags::BUILD);
-        let repl = proc_flags.contains(ProcFlags::REPL);
-        build_state.must_gen = force || repl || (gen_requested && stale_executable);
-        build_state.must_build = force || repl || (build_requested && stale_executable);
+        let is_repl = proc_flags.contains(ProcFlags::REPL);
+        build_state.must_gen = force || is_repl || (gen_requested && stale_executable);
+        build_state.must_build = force || is_repl || (build_requested && stale_executable);
 
         debug!("build_state={build_state:#?}");
 
@@ -266,8 +269,8 @@ enum LoopCommand {
 //       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
 //       2.  How though? Don't use println{} when wrapping snippet if return type of expression is ()
 //       3.  Replace clap_repl in outer eval loop by reedline.
-//       4.
-//       5.
+//       4.  Figure out how to avoid printing out empty result
+//       5.  Debug why evals not going to temp - manifest problem?
 //       6.
 //       7.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
@@ -302,7 +305,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Access TMP_DIR
     println!("Temporary directory: {:?}", *TMP_DIR);
 
-    let repl = proc_flags.contains(ProcFlags::REPL);
+    let is_repl = proc_flags.contains(ProcFlags::REPL);
 
     let script_state = if let Some(ref script) = options.script {
         if !script.ends_with(RS_SUFFIX) {
@@ -313,22 +316,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         let script = script.to_owned();
         ScriptState::Named { script }
     } else {
-        assert!(repl);
+        assert!(is_repl);
         let path = code_utils::create_next_repl_file();
         let script = path.to_str().unwrap().to_string();
         ScriptState::NamedEmpty { script }
     };
 
-    if repl {
+    if is_repl {
         debug!("script_state={script_state:?}");
     }
     let mut build_state = BuildState::pre_configure(&proc_flags, &script_state)?;
-    if repl {
+    if is_repl {
         debug!("build_state.source_path={:?}", build_state.source_path);
     }
 
     println!("script_state={script_state:?}");
-    if repl {
+    if is_repl {
         // let dash_line = "-".repeat(50);
 
         // Using strum
@@ -408,15 +411,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         //     loop_command = loop_editor.read_command();
         // }
     } else {
-        gen_build_run(
-            &&mut options,
-            &proc_flags,
-            &mut build_state,
-            // &mut maybe_syntax_tree,
-            // &mut maybe_rs_manifest,
-            // &maybe_rs_source,
-            &start,
-        )?;
+        gen_build_run(&&mut options, &proc_flags, &mut build_state, &start)?;
     }
 
     Ok(())
@@ -527,15 +522,7 @@ fn submit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
         &mut context.build_state,
         context.start,
     );
-    let result = gen_build_run(
-        options,
-        proc_flags,
-        build_state,
-        // &mut maybe_syntax_tree,
-        // &mut maybe_rs_manifest,
-        // &maybe_rs_source,
-        start,
-    );
+    let result = gen_build_run(options, proc_flags, build_state, start);
     if result.is_err() {
         println!("{result:?}");
     }
@@ -594,23 +581,37 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         };
         // Process user input (line)
 
-        let s = input.trim();
-        let lc = s.to_lowercase();
+        let input = input.trim();
+        if input.is_empty() {
+            continue;
+        }
+        let lc = input.to_lowercase();
         if lc == "q" || lc == "quit" {
             break;
         }
+
+        // Split any manifest portion
+        let (rs_manifest, rs_source) = parse_source_str(input, Instant::now())
+            .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
+
+        println!("######## Parsed out rs_manifest={rs_manifest:#?}");
+        println!("######## Parsed out rs_source={}", rs_source.as_str());
+        build_state.rs_manifest = Some(rs_manifest);
+        // TODO A bit expensive to store it there
+        build_state.rs_source = Some(rs_source.clone());
+        let rs_source: &str = rs_source.as_str();
         // Parse the expression string into a syntax tree.
         // The REPL is not catering for programs with a main method (syn::File),
-        let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(s);
+        let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
         println!(
-            r"expr.is_err()={}, str.starts_with('{{')={}, str.ends_with('}}')={}",
+            r"expr.i_err()={}, str.starts_with('{{')={}, str.ends_with('}}')={}",
             expr.is_err(),
-            s.starts_with('{'),
-            s.ends_with('}')
+            rs_source.starts_with('{'),
+            rs_source.ends_with('}')
         );
-        if expr.is_err() && !(s.starts_with('{') && s.ends_with('}')) {
+        if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
             // Try putting the expression in braces.
-            let string = format!(r"{{{s}}}");
+            let string = format!(r"{{{rs_source}}}");
             let str = string.as_str();
             println!("str={str}");
 
@@ -630,21 +631,17 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
                 let rust_code = quote!(println!("result={:?}", #expr););
 
                 let rs_source = format!("{rust_code}");
-                debug!("rs_source={rs_source}"); // Careful, needs to impl Display
+                debug!("rs_source={rs_source}");
 
+                // // Store with its toml code instance
+                // write_source(build_state.source_path.clone(), input)?;
+
+                // Store without its toml code instance for now to get it back working
                 write_source(build_state.source_path.clone(), &rs_source)?;
 
                 rustfmt(build_state)?;
 
-                let result = gen_build_run(
-                    options,
-                    proc_flags,
-                    build_state,
-                    // &mut maybe_syntax_tree,
-                    // &mut maybe_rs_manifest,
-                    // &maybe_rs_source,
-                    start,
-                );
+                let result = gen_build_run(options, proc_flags, build_state, start);
                 if result.is_err() {
                     println!("{result:?}");
                 }
@@ -738,47 +735,55 @@ fn gen_build_run(
     options: &&mut cmd_args::Opt,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
-    // maybe_syntax_tree: &mut Option<File>,
-    // maybe_rs_manifest: &mut Option<CargoManifest>,
-    // maybe_rs_source: &Option<String>,
-    // script_state: &ScriptState,
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
     let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let proc_flags = &proc_flags;
     let options = &options;
 
-    // let mut maybe_rs_manifest = None;
-    // let mut maybe_rs_source = None;
-    // let mut maybe_syntax_tree: Option<File> = None;
     if build_state.must_gen {
-        let (rs_manif, rs_source): (CargoManifest, String) =
-            parse_source(&build_state.source_path)?;
-        let mut maybe_rs_manifest = Some(rs_manif);
-        let maybe_rs_source = Some(rs_source.clone());
-        // println!("&&&&&&&& rs_source={rs_source}");
-        if build_state.syntax_tree.is_none() {
-            build_state.syntax_tree = code_utils::to_ast(&rs_source);
+        if build_state.rs_manifest.is_none() {
+            let (rs_manifest, rs_source): (CargoManifest, String) =
+                parse_source_file(&build_state.source_path)?;
+            println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
+            build_state.rs_manifest = Some(rs_manifest);
+            if build_state.rs_source.is_none() {
+                build_state.rs_source = Some(rs_source.clone());
+            }
+            println!(
+                "&&&&&&&& build_state.rs_source={:#?}",
+                build_state.rs_source
+            );
         }
-        // let maybe_syntax_tree = code_utils::to_ast(&rs_source);
-        // let borrowed_syntax_tree = maybe_syntax_tree.as_ref();
-        let borrowed_rs_manifest = maybe_rs_manifest.as_mut();
-        let borrowed_rs_source = maybe_rs_source.as_ref();
-        if let Some(rs_manifest_ref) = borrowed_rs_manifest {
-            build_state.cargo_manifest = Some(manifest::merge_manifest(
-                build_state,
-                // borrowed_syntax_tree,
-                borrowed_rs_source,
-                rs_manifest_ref,
-            )?);
+        if build_state.syntax_tree.is_none() {
+            let borrowed_rs_source = build_state.rs_source.as_ref();
+            if let Some(rs_source) = borrowed_rs_source {
+                build_state.syntax_tree = code_utils::to_ast(rs_source);
+            }
+        }
+        // let borrowed_rs_manifest = build_state.rs_manifest.as_mut();
+        // let borrowed_rs_source = build_state.rs_source.as_ref();
+        // if let Some(rs_manifest_ref) = borrowed_rs_manifest {
+        //     build_state.cargo_manifest = Some(manifest::merge_manifest(
+        //         build_state,
+        //         borrowed_rs_source,
+        //         rs_manifest_ref,
+        //     )?);
+        // }
+
+        if build_state.rs_manifest.is_some() && build_state.rs_source.is_some() {
+            build_state.cargo_manifest = Some(manifest::merge_manifest(build_state)?);
         }
 
         let has_main = if let Some(ref syntax_tree_ref) = build_state.syntax_tree {
             code_utils::has_main(syntax_tree_ref)
         } else {
+            let borrowed_rs_source = &build_state.rs_source.as_ref();
             code_utils::has_main_alt(borrowed_rs_source.ok_or("Missing source")?)
         };
-        let borrowed_rs_source = maybe_rs_source.as_ref();
+
+        println!("######## build_state={build_state:#?}");
+        let borrowed_rs_source = build_state.rs_source.as_ref();
         if let Some(rs_source_ref) = borrowed_rs_source {
             // println!("rs_source_ref is Some");
             if has_main {
@@ -813,7 +818,7 @@ fn gen_build_run(
 
 fn generate(
     build_state: &BuildState,
-    rs_source: &String,
+    rs_source: &str,
     proc_flags: &ProcFlags,
 ) -> Result<(), Box<dyn Error>> {
     let start_gen = Instant::now();
@@ -828,7 +833,10 @@ fn generate(
     if verbose {
         println!("GGGGGGGG Creating source file: {target_rs_path:?}");
     }
-    let _target_rs_file = write_source(target_rs_path, rs_source)?;
+    let is_repl = proc_flags.contains(ProcFlags::REPL);
+    if !is_repl {
+        write_source(target_rs_path, rs_source)?;
+    }
 
     // debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {

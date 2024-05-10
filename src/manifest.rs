@@ -282,10 +282,9 @@ fn escape_path_for_windows(path: &str) -> String {
 }
 
 pub(crate) fn merge_manifest(
-    build_state: &BuildState,
-    // maybe_syntax_tree: Option<&Ast>,
-    maybe_rs_source: Option<&String>,
-    rs_manifest: &mut CargoManifest,
+    build_state: &mut BuildState,
+    // maybe_rs_source: Option<&String>,
+    // rs_manifest: &mut CargoManifest,
 ) -> Result<CargoManifest, Box<dyn Error>> {
     let start_merge_manifest = Instant::now();
 
@@ -297,24 +296,35 @@ pub(crate) fn merge_manifest(
 
     let rs_inferred_deps = if let Some(ref syntax_tree) = build_state.syntax_tree {
         infer_deps_from_ast(syntax_tree)
+    } else if let Some(rs_source) = &build_state.rs_source {
+        infer_deps_from_source(rs_source)
     } else {
-        infer_deps_from_source(maybe_rs_source.ok_or("Missing source code")?)
+        return Err(Box::new(BuildRunError::NoneOption(
+            "Missing source code".to_string(),
+        )));
     };
+
     debug!("rs_inferred_deps={rs_inferred_deps:#?}\n");
-    debug!("rs_manifest.dependencies={:#?}", rs_manifest.dependencies);
+    if let Some(rs_manifest) = &build_state.rs_manifest {
+        debug!(
+            "build_state.rs_manifest.dependencies={:#?}",
+            rs_manifest.dependencies
+        );
+    }
 
     let mut rs_dep_map: BTreeMap<std::string::String, Dependency> =
-        if let Some(ref mut rs_dep_map) = rs_manifest.dependencies {
-            rs_dep_map.clone()
+        if let Some(ref rs_manifest) = &build_state.rs_manifest {
+            if let Some(ref rs_dep_map) = rs_manifest.dependencies {
+                rs_dep_map.clone()
+            } else {
+                BTreeMap::new()
+            }
         } else {
-            // return Err(Box::new(BuildRunError::Command(String::from(
-            //     "No dependency map found",
-            // ))));
             BTreeMap::new()
         };
 
     if !rs_inferred_deps.is_empty() {
-        debug!("dep_map (before inferred) {rs_dep_map:#?}");
+        debug!("rs_dep_map (before inferred) {rs_dep_map:#?}");
         for dep_name in rs_inferred_deps {
             if rs_dep_map.contains_key(&dep_name)
                 || rs_dep_map.contains_key(&dep_name.replace('_', "-"))
@@ -364,12 +374,13 @@ pub(crate) fn merge_manifest(
     let manifest_feats = cargo_manifest.features.as_ref().unwrap();
 
     let rs_feat_map: BTreeMap<std::string::String, Vec<Feature>> =
-        if let Some(ref mut rs_feat_map) = rs_manifest.features {
-            rs_feat_map.clone()
+        if let Some(ref mut rs_manifest) = build_state.rs_manifest {
+            if let Some(ref mut rs_feat_map) = rs_manifest.features {
+                rs_feat_map.clone()
+            } else {
+                BTreeMap::new()
+            }
         } else {
-            // return Err(Box::new(BuildRunError::Command(String::from(
-            //     "No feature map found",
-            // ))));
             BTreeMap::new()
         };
 

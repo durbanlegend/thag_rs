@@ -8,13 +8,14 @@ use std::fs::{remove_dir_all, remove_file, OpenOptions};
 use strum::Display;
 use syn::{Expr, UsePath};
 
+use std::error::Error;
+use std::fs;
 use std::io::{self, BufRead, Read, Write};
 use std::option::Option;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output};
 use std::str::FromStr;
 use std::time::{Instant, SystemTime};
-use std::{error::Error, fs, path::Path};
 use syn::{visit::Visit, UseRename};
 
 #[derive(Clone, Debug, Display)]
@@ -246,12 +247,23 @@ pub(crate) fn find_use_renames_source(code: &str) -> Vec<String> {
     use_renames
 }
 
-pub(crate) fn parse_source(source_path: &Path) -> Result<(CargoManifest, String), Box<dyn Error>> {
+pub(crate) fn parse_source_file(
+    source_path: &Path,
+) -> Result<(CargoManifest, String), Box<dyn Error>> {
     let start_parsing_rs = Instant::now();
 
     let rs_full_source = read_file_contents(source_path)?;
 
-    let (rs_source, rs_toml_str) = separate_rust_and_toml(&rs_full_source);
+    let result = parse_source_str(&rs_full_source, start_parsing_rs);
+    debug_timings(&start_parsing_rs, "Parsed source");
+    result
+}
+
+pub(crate) fn parse_source_str(
+    rs_full_source: &str,
+    start_parsing_rs: Instant,
+) -> Result<(CargoManifest, String), Box<dyn Error>> {
+    let (rs_source, rs_toml_str) = separate_rust_and_toml(rs_full_source);
 
     let rs_manifest = CargoManifest::from_str(&rs_toml_str)?;
     //     let rs_manifest = rs_extract_manifest(&rs_full_source)?;
@@ -272,24 +284,45 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
     let mut rust_code = String::new();
     let mut toml_metadata = String::new();
     let mut is_metadata_block = false;
+    let mut metadata_block_finished = false;
 
     for line in source_code.lines() {
         // Check if the line contains the start of the metadata block
-        if line.trim().starts_with("/*[toml]") {
+        let line = line.trim();
+        debug!("line={line}");
+        if !metadata_block_finished && !is_metadata_block {
             is_metadata_block = true;
-            continue;
+            let toml_flag = "/*[toml]";
+            let index = line.find(toml_flag);
+            debug!("index={index:#?}");
+            match index {
+                Some(i) => {
+                    // Save anything before the toml flag.
+                    if i > 0 {
+                        let (rust, _toml_flag) = line.split_at(i);
+                        rust_code.push_str(rust);
+                        rust_code.push('\n');
+                        debug!("Saved rust portion: {rust}");
+                    }
+                    continue;
+                }
+                None => continue,
+            };
         }
 
         // Check if the line contains the end of the metadata block
-        if line.trim() == "*/" {
+        if line == "*/" {
             is_metadata_block = false;
+            metadata_block_finished = true;
+            debug!("End of metadata block");
             continue;
         }
 
         // Check if the line is a TOML comment
-        if line.trim().starts_with("//!") {
+        if line.starts_with("//!") {
             toml_metadata.push_str(line.trim_start_matches("//!"));
             toml_metadata.push('\n');
+            debug!("Pushed old-style toml comment");
             continue;
         }
 
@@ -297,9 +330,11 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
         if is_metadata_block {
             toml_metadata.push_str(line);
             toml_metadata.push('\n');
+            debug!("Saved toml line: {line}");
         } else {
             rust_code.push_str(line);
             rust_code.push('\n');
+            debug!("Saved rust line: {line}");
         }
     }
 
@@ -317,7 +352,7 @@ pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
         .into_os_string()
         .into_string()
         .map_err(BuildRunError::OsString)?;
-    debug!("current_dir_str={string}");
+    debug!("path_to_str={string}");
     Ok(string)
 }
 
@@ -566,7 +601,7 @@ Ok(())
 
 pub(crate) fn write_source(
     to_rs_path: PathBuf,
-    rs_source: &String,
+    rs_source: &str,
 ) -> Result<fs::File, BuildRunError> {
     let mut to_rs_file = OpenOptions::new()
         .write(true)

@@ -8,6 +8,7 @@ use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
 use crate::term_colors::{nu_resolve_style, owo_resolve_style};
 use clap::Parser;
+use code_utils::Ast;
 use env_logger::{fmt::WriteStyle, Builder, Env};
 use homedir::get_my_home;
 use lazy_static::lazy_static;
@@ -57,15 +58,11 @@ pub struct CustomPrompt(&'static str);
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 impl Prompt for CustomPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
-        {
-            Cow::Owned(self.0.to_string())
-        }
+        Cow::Owned(self.0.to_string())
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
-        {
-            Cow::Owned(String::from("q: quit"))
-        }
+        Cow::Owned(String::from("q: quit"))
     }
 
     fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<str> {
@@ -119,6 +116,7 @@ pub(crate) struct BuildState {
     pub(crate) source_stem: String,
     pub(crate) source_name: String,
     pub(crate) source_path: PathBuf,
+    pub(crate) syntax_tree: Option<Ast>,
     pub(crate) cargo_home: PathBuf,
     pub(crate) target_dir_path: PathBuf,
     pub(crate) target_dir_str: String,
@@ -266,23 +264,18 @@ enum LoopCommand {
 //          Next: 1. test in Windows, 2. nu_ansi_term color_println macro.
 //                3. test reedline partial completions. 4. Print out all colours again
 //       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
-//       2.  Don't use println{} when wrapping snippet if return type of expression is ()
+//       2.  How though? Don't use println{} when wrapping snippet if return type of expression is ()
 //       3.  Replace clap_repl in outer eval loop by reedline.
-//       4.  Impractical?: I think so. Bigger fish to fry with Styles interfering with reading responses in Windows.
-//              Redo term_colors.rs with 4 individual enums. Reconcile nu-ansi-term colours with owo-colors.
-//              See https://codebrowser.dev/rust/crates/owo-colors/src/colors/xterm.rs.html
-//                  and end section of term_colors.rs.
-//       5.  Inferred deps to use a visitor to find embedded use statements
-//       6.  bool -> 2-value enums?
+//       4.
+//       5.
+//       6.
 //       7.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
-//       9.  --quiet option?.
-//      10.  Consider making script name optional, with -n/stdin parm as per my runner changes?
+//       9.  Consider making script name optional, with -n/stdin parm as per my runner changes?
 //      11.  Clean up debugging
 //      12.  "edit"" crate - how to reconfigure editors dynamically - instructions unclear.
 //      13.  Cargo search not being done for snippets - maybe AST issue to be resolved by visitor pattern above.
-//      14.  Resolved by switch to reedline: Debug left-brace misbehaviour in eval. One of the MatchingBracket mafia?
-//      15   Clap aliases not working in REPL.
+//      14.  Clap aliases not working in REPL.
 //
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -606,7 +599,8 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         if lc == "q" || lc == "quit" {
             break;
         }
-        // Parse the expression string into a syntax tree
+        // Parse the expression string into a syntax tree.
+        // The REPL is not catering for programs with a main method (syn::File),
         let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(s);
         println!(
             r"expr.is_err()={}, str.starts_with('{{')={}, str.ends_with('}}')={}",
@@ -625,6 +619,13 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 
         match expr {
             Ok(expr) => {
+                // Store it in the BuildState
+                build_state.syntax_tree = Some(Ast::Expr(expr.clone()));
+
+                // // Determine type of expression
+                // println!("******** Printing type of expression:");
+                // attribute!(s);
+
                 // Generate Rust code for the expression
                 let rust_code = quote!(println!("result={:?}", #expr););
 
@@ -632,11 +633,6 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
                 debug!("rs_source={rs_source}"); // Careful, needs to impl Display
 
                 write_source(build_state.source_path.clone(), &rs_source)?;
-
-                // // TODO out - not helpful
-                // let _script_state = ScriptState::Named {
-                //     script: script_state.get_script().unwrap(),
-                // };
 
                 rustfmt(build_state)?;
 
@@ -760,55 +756,31 @@ fn gen_build_run(
             parse_source(&build_state.source_path)?;
         let mut maybe_rs_manifest = Some(rs_manif);
         let maybe_rs_source = Some(rs_source.clone());
-        println!("&&&&&&&& rs_source={rs_source}");
-        let maybe_syntax_tree = code_utils::to_ast(&rs_source);
-        let borrowed_syntax_tree = maybe_syntax_tree.as_ref();
+        // println!("&&&&&&&& rs_source={rs_source}");
+        if build_state.syntax_tree.is_none() {
+            build_state.syntax_tree = code_utils::to_ast(&rs_source);
+        }
+        // let maybe_syntax_tree = code_utils::to_ast(&rs_source);
+        // let borrowed_syntax_tree = maybe_syntax_tree.as_ref();
         let borrowed_rs_manifest = maybe_rs_manifest.as_mut();
         let borrowed_rs_source = maybe_rs_source.as_ref();
         if let Some(rs_manifest_ref) = borrowed_rs_manifest {
             build_state.cargo_manifest = Some(manifest::merge_manifest(
                 build_state,
-                borrowed_syntax_tree,
+                // borrowed_syntax_tree,
                 borrowed_rs_source,
                 rs_manifest_ref,
             )?);
         }
-        // }
-        // } else {
-        //     build_state.cargo_manifest = Some(default_manifest(build_state)?);
-        // }
 
-        // debug!(
-        //     "maybe_syntax_tree.is_some()={}",
-        //     maybe_syntax_tree.is_some()
-        // );
-        // debug!(
-        //     "maybe_rs_manifest.is_some()={}",
-        //     maybe_rs_manifest.is_some()
-        // );
-        // debug!("maybe_rs_source.is_some()={}", maybe_rs_source.is_some());
-        // debug!("build_state={build_state:#?}");
-        // if build_state.must_gen {
-        //     let borrowed_syntax_tree = maybe_syntax_tree.as_mut();
-        //     let borrowed_rs_manifest = maybe_rs_manifest.as_mut();
-        //     if let Some(syntax_tree_mut) = borrowed_syntax_tree {
-        //         println!("syntax_tree_mut is Some");
-        //         if let Some(rs_manifest_ref) = borrowed_rs_manifest {
-        //             println!("rs_manifest_ref is Some");
-        //             build_state.cargo_manifest = Some(manifest::merge_manifest(
-        //                 build_state,
-        //                 syntax_tree_mut,
-        //                 rs_manifest_ref,
-        //             )?);
-
-        let has_main = if let Some(syntax_tree_ref) = borrowed_syntax_tree {
+        let has_main = if let Some(ref syntax_tree_ref) = build_state.syntax_tree {
             code_utils::has_main(syntax_tree_ref)
         } else {
             code_utils::has_main_alt(borrowed_rs_source.ok_or("Missing source")?)
         };
         let borrowed_rs_source = maybe_rs_source.as_ref();
         if let Some(rs_source_ref) = borrowed_rs_source {
-            println!("rs_source_ref is Some");
+            // println!("rs_source_ref is Some");
             if has_main {
                 generate(build_state, rs_source_ref, proc_flags)?;
             } else {
@@ -858,7 +830,7 @@ fn generate(
     }
     let _target_rs_file = write_source(target_rs_path, rs_source)?;
 
-    debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
+    // debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {
         OpenOptions::new()
             .write(true)
@@ -876,8 +848,8 @@ fn generate(
 
     let mut toml_file = fs::File::create(&build_state.cargo_toml_path)?;
     toml_file.write_all(cargo_manifest_str.as_bytes())?;
-    debug!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
-    debug!("##### Cargo.toml generation succeeded!");
+    // debug!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
+    // debug!("##### Cargo.toml generation succeeded!");
 
     display_timings(&start_gen, "Completed generation", proc_flags);
 

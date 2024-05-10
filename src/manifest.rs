@@ -9,7 +9,6 @@ use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
 
-use crate::code_utils::Ast;
 use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
 use crate::term_colors::{MessageStyle, OwoThemeStyle};
@@ -195,7 +194,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
         ))));
     };
 
-    debug!("!!!!!!!! first_line={first_line}");
+    // debug!("!!!!!!!! first_line={first_line}");
     let result = capture_dep(&first_line);
     let (name, version) = match result {
         Ok((name, version)) => {
@@ -205,7 +204,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
                     "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"
                 ))));
             }
-            debug!("Success! value={:?}", (&name, &version));
+            println!("Cargo found dependency {name} = {version}");
             (name, version)
         }
         Err(err) => {
@@ -213,7 +212,6 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
             return Err(err);
         }
     };
-    debug!("!!!!!!!! found name={name}, version={version}");
 
     debug_timings(&start_search, "Completed search");
 
@@ -221,15 +219,15 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
 }
 
 pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
-    debug!("first_line={first_line}");
+    // debug!("first_line={first_line}");
     let regex_str = r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#;
     let re = Regex::new(regex_str).unwrap();
     let (name, version) = if re.is_match(first_line) {
         let captures = re.captures(first_line).unwrap();
         let name = captures.get(1).unwrap().as_str();
         let version = captures.get(2).unwrap().as_str();
-        println!("Dependency name: {}", name);
-        println!("Dependency version: {}", version);
+        // println!("Dependency name: {}", name);
+        // println!("Dependency version: {}", version);
         (String::from(name), String::from(version))
     } else {
         println!("Not a valid Cargo dependency format.");
@@ -285,7 +283,7 @@ fn escape_path_for_windows(path: &str) -> String {
 
 pub(crate) fn merge_manifest(
     build_state: &BuildState,
-    maybe_syntax_tree: Option<&Ast>,
+    // maybe_syntax_tree: Option<&Ast>,
     maybe_rs_source: Option<&String>,
     rs_manifest: &mut CargoManifest,
 ) -> Result<CargoManifest, Box<dyn Error>> {
@@ -297,7 +295,7 @@ pub(crate) fn merge_manifest(
     // // TODO temp debug out
     // infer_deps_from_source(maybe_rs_source.ok_or("Missing source code")?);
 
-    let rs_inferred_deps = if let Some(syntax_tree) = maybe_syntax_tree {
+    let rs_inferred_deps = if let Some(ref syntax_tree) = build_state.syntax_tree {
         infer_deps_from_ast(syntax_tree)
     } else {
         infer_deps_from_source(maybe_rs_source.ok_or("Missing source code")?)

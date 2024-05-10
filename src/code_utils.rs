@@ -17,7 +17,7 @@ use std::time::{Instant, SystemTime};
 use std::{error::Error, fs, path::Path};
 use syn::{visit::Visit, UseRename};
 
-#[derive(Display)]
+#[derive(Clone, Debug, Display)]
 pub(crate) enum Ast {
     File(syn::File),
     Expr(syn::Expr),
@@ -46,10 +46,10 @@ pub(crate) fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     let extern_crates = find_extern_crates_ast(syntax_tree);
     let use_renames = find_use_renames_ast(syntax_tree);
 
-    match syntax_tree {
-        Ast::File(ast) => debug!("&&&&&&&& Ast={ast:#?}"),
-        Ast::Expr(ast) => debug!("&&&&&&&& Ast={ast:#?}"),
-    }
+    // match syntax_tree {
+    //     Ast::File(ast) => debug!("&&&&&&&& Ast={ast:#?}"),
+    //     Ast::Expr(ast) => debug!("&&&&&&&& Ast={ast:#?}"),
+    // }
 
     let mut dependencies = Vec::new();
     let built_in_crates = ["std", "core", "alloc", "collections", "fmt", "crate"];
@@ -578,7 +578,7 @@ pub(crate) fn write_source(
     //     reassemble(lines)
     // });
     to_rs_file.write_all(rs_source.as_bytes())?;
-    debug!("Done!");
+    // debug!("Done!");
 
     Ok(to_rs_file)
 }

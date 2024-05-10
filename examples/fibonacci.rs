@@ -1,3 +1,7 @@
+/*[toml]
+[dependencies]
+itertools = "0.12.1"
+*/
 use itertools::Itertools;
 
 let fib = |n: usize| -> usize {
@@ -8,7 +12,8 @@ let fib = |n: usize| -> usize {
         .0
 };
 
-println!("Type lines of text at the prompt and hit Ctrl-D when done");
+println!("Enter a number from 0 to 91");
+println!("Type lines of text at the prompt and hit Ctrl-{} on a new line when done", if cfg!(windows) {'Z'} else {'D'});
 
 let mut buffer = String::new();
 io::stdin().lock().read_to_string(&mut buffer)?;

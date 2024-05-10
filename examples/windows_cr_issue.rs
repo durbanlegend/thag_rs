@@ -71,7 +71,7 @@ impl From<reedline_repl_rs::Error> for CustomError {
 impl fmt::Display for CustomError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            CustomError::ReplError(e) => write!(f, "REPL Error: {}", e),
+            CustomError::ReplError(e) => write!(f, "REPL: {}", e),
             // CustomError::StringError(s) => write!(f, "String Error: {}", s),
             CustomError::Quit(s) => write!(f, "{}", s),
         }

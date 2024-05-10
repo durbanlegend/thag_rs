@@ -65,7 +65,7 @@ impl std::fmt::Display for BuildRunError {
                 writeln!(f, "{o:#?}")?;
                 Ok(())
             }
-            BuildRunError::ReplError(e) => write!(f, "REPL Error: {e}"),
+            BuildRunError::ReplError(e) => write!(f, "REPL: {e}"),
             BuildRunError::TomlDe(e) => write!(f, "{e:?}"),
             BuildRunError::TomlSer(e) => write!(f, "{e:?}"),
         }

@@ -204,7 +204,7 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
                     "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"
                 ))));
             }
-            println!("Cargo found dependency {name} = {version}");
+            println!(r#"Cargo found dependency {name} = "{{version}}""#);
             (name, version)
         }
         Err(err) => {

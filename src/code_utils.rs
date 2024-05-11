@@ -294,19 +294,16 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
             let toml_flag = "/*[toml]";
             let index = line.find(toml_flag);
             // debug!("index={index:#?}");
-            match index {
-                Some(i) => {
-                    // Save anything before the toml flag.
-                    if i > 0 {
-                        let (rust, _toml_flag) = line.split_at(i);
-                        rust_code.push_str(rust);
-                        rust_code.push('\n');
-                        // debug!("Saved rust portion: {rust}");
-                    }
-                    is_metadata_block = true;
-                    continue;
+            if let Some(i) = index {
+                // Save anything before the toml flag.
+                if i > 0 {
+                    let (rust, _toml_flag) = line.split_at(i);
+                    rust_code.push_str(rust);
+                    rust_code.push('\n');
+                    // debug!("Saved rust portion: {rust}");
                 }
-                None => continue,
+                is_metadata_block = true;
+                continue;
             };
         }
 
@@ -314,7 +311,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
         if line == "*/" {
             is_metadata_block = false;
             metadata_block_finished = true;
-            debug!("End of metadata block");
+            // debug!("End of metadata block");
             continue;
         }
 
@@ -330,7 +327,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
         if is_metadata_block {
             toml_metadata.push_str(line);
             toml_metadata.push('\n');
-            debug!("Saved toml line: {line}");
+            // debug!("Saved toml line: {line}");
         } else {
             rust_code.push_str(line);
             rust_code.push('\n');

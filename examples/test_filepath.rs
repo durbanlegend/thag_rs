@@ -1,15 +1,29 @@
-use std::fs::File;
-use std::io::prelude::*;
+/*[toml]
+regex = "1.10.4"
+*/
+use regex::Regex;
+use std::io::{self, Read};
+
+/// Unescape \n markers in a string to convert the wall of text to readable lines.
+/// This version using regex seems to work where the original approach using .lines() fails.
+/// Tip: Regex tested using https://rustexp.lpil.uk/.
+#[inline]
+pub(crate) fn disentangle(text_wall: &str) -> String {
+    use std::fmt::Write;
+    // We extract the non-greedy capturing group named "line" from each capture of the multi-line mode regex..
+    let re = Regex::new(r"(?m)(?P<line>.*?)(?:[\\]n|$)").unwrap();
+    re.captures_iter(text_wall)
+        .map(|c| c.name("line").unwrap().as_str())
+        .fold(String::new(), |mut output, b| {
+            let _ = writeln!(output, "{b}");
+            output
+        })
+}
 
 fn main() -> std::io::Result<()> {
-    eprintln!("Hello world!");
-    // let x = "/Users/donf/projects/build_run/examples/test_filepath.rs";
-    // // let mut file = File::open("/private/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/rs_repl/repl_000100/repl_000100.rs")?;
-    // // let mut file = File::open(x)?;
-    // // let mut contents = String::new();
-    // // file.read_to_string(&mut contents)?;
-    // // assert_eq!(contents, "Hello, world!");
-    // let contents = std::fs::read_to_string(x);
-    // println!("contents={contents:#?}");
+    let path = "/Users/donf/projects/build_run/examples/test_filepath.rs";
+    let contents = std::fs::read_to_string(path)?;
+    println!("contents={}", disentangle(&contents));
+
     Ok(())
 }

@@ -531,16 +531,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
 fn back(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    use enigo::{
-        Direction::{Click, Press, Release},
-        Enigo, Key, Keyboard, Settings,
-    };
-    let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    // Ctrl-D in 3 steps
-    let _ = enigo.key(Key::Control, Press);
-    let _ = enigo.key(Key::Unicode('d'), Click);
-    let _ = enigo.key(Key::Control, Release);
-
     Ok(Some(String::from("...")))
 }
 

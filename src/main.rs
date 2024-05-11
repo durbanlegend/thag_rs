@@ -650,6 +650,8 @@ fn submit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
         &mut context.build_state,
         context.start,
     );
+
+    debug!("In submit: build_state={build_state:#?}");
     let result = gen_build_run(options, proc_flags, build_state, start);
     if result.is_err() {
         println!("{result:?}");
@@ -873,14 +875,15 @@ fn gen_build_run(
             let (rs_manifest, rs_source): (CargoManifest, String) =
                 parse_source_file(&build_state.source_path)?;
             println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
+            println!("&&&&&&&& rs_source={rs_source}");
             build_state.rs_manifest = Some(rs_manifest);
             if build_state.rs_source.is_none() {
                 build_state.rs_source = Some(rs_source.clone());
             }
-            println!(
-                "&&&&&&&& build_state.rs_source={:#?}",
-                build_state.rs_source
-            );
+            // println!(
+            //     "&&&&&&&& build_state.rs_source={:#?}",
+            //     build_state.rs_source
+            // );
         }
         if build_state.syntax_tree.is_none() {
             let borrowed_rs_source = build_state.rs_source.as_ref();

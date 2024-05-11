@@ -55,5 +55,5 @@ fn create_file(examples_dir: &Path, num: u32) {
     let filename = format!("repl_{}.rs", padded_num);
     let path = examples_dir.join(&filename);
     fs::File::create(path).expect("Failed to create file");
-    println!("Created file: {}", filename);
+    println!("Created file: {path:#?}");
 }

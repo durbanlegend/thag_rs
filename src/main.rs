@@ -95,8 +95,9 @@ pub(crate) enum ScriptState {
     /// Repl with no script name provided by user
     #[allow(dead_code)]
     Anonymous,
-    /// Repl with script name
-    NamedEmpty { script: String },
+    /// Repl with script name.
+    // TODO: phase out script string? Or replace by path? Can maybe phase out whole enum ScriptState.
+    NamedEmpty { script: String, repl_path: PathBuf },
     /// Script name provided by user
     Named { script: String },
 }
@@ -105,29 +106,37 @@ impl ScriptState {
     pub(crate) fn get_script(&self) -> Option<String> {
         match self {
             ScriptState::Anonymous => None,
-            ScriptState::NamedEmpty { script } | ScriptState::Named { script } => {
+            ScriptState::NamedEmpty { script, .. } | ScriptState::Named { script } => {
                 Some(script.to_string())
             }
+        }
+    }
+    pub(crate) fn get_repl_path(&self) -> Option<PathBuf> {
+        match self {
+            ScriptState::Anonymous | ScriptState::Named { .. } => None,
+            ScriptState::NamedEmpty { repl_path, .. } => Some(repl_path.clone()),
         }
     }
 }
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct BuildState {
+    #[allow(dead_code)]
+    pub(crate) working_dir_path: PathBuf,
     pub(crate) source_stem: String,
     pub(crate) source_name: String,
     pub(crate) source_path: PathBuf,
-    pub(crate) rs_source: Option<String>,
-    pub(crate) syntax_tree: Option<Ast>,
     pub(crate) cargo_home: PathBuf,
     pub(crate) target_dir_path: PathBuf,
-    pub(crate) target_dir_str: String,
+    // pub(crate) target_dir_str: String,
     pub(crate) target_path: PathBuf,
     pub(crate) cargo_toml_path: PathBuf,
     pub(crate) rs_manifest: Option<CargoManifest>,
     pub(crate) cargo_manifest: Option<CargoManifest>,
     pub(crate) must_gen: bool,
     pub(crate) must_build: bool,
+    pub(crate) rs_source: Option<String>,
+    pub(crate) syntax_tree: Option<Ast>,
 }
 
 impl BuildState {
@@ -135,6 +144,7 @@ impl BuildState {
         proc_flags: &ProcFlags,
         script_state: &ScriptState,
     ) -> Result<Self, Box<dyn Error>> {
+        let is_repl = proc_flags.contains(ProcFlags::REPL);
         let maybe_script = script_state.get_script();
         if maybe_script.is_none() {
             return Err(Box::new(BuildRunError::NoneOption(
@@ -142,9 +152,11 @@ impl BuildState {
             )));
         }
         let script = (maybe_script).clone().unwrap();
+        debug!("script={script}");
         let path = Path::new(&script);
+        debug!("path={path:#?}");
         let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
-        // debug!("source_name={source_name}");
+        debug!("source_name={source_name}");
         let source_stem = {
             let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
                 return Err(Box::new(BuildRunError::Command(format!(
@@ -155,30 +167,48 @@ impl BuildState {
             stem.to_string()
         };
         let source_name = source_name.to_string();
-        let current_dir_path = std::env::current_dir()?.canonicalize()?;
-        let script_path = current_dir_path.join(PathBuf::from(script.clone()));
-        // debug!("script_path={script_path:#?}");
-        let source_path = script_path.canonicalize()?;
-        // debug!("source_dir_path={source_path:#?}");
-        if !source_path.exists() {
+
+        let working_dir_path = if is_repl {
+            TMP_DIR.join(REPL_SUBDIR)
+        } else {
+            std::env::current_dir()?.canonicalize()?
+        };
+
+        let script_path = working_dir_path.join(PathBuf::from(script.clone()));
+        debug!("script_path={script_path:#?}");
+        let source_dir_path = script_path.canonicalize()?;
+        debug!("source_dir_path={source_dir_path:#?}");
+        if !source_dir_path.exists() {
             return Err(Box::new(BuildRunError::Command(format!(
-                "No script named {} or {} in path {source_path:?}",
+                "No script named {} or {} in path {source_dir_path:?}",
                 source_stem, source_name
             ))));
         }
 
-        let cargo_home_string: String = match std::env::var("CARGO_HOME") {
-            Ok(string) if string != String::new() => string,
-            _ => {
-                let home_dir = get_my_home()?.ok_or("Can't resolve home directory")?;
-                debug!("home_dir={}", home_dir.display());
-                home_dir.join(".cargo").display().to_string()
-            }
+        let cargo_home = if is_repl {
+            working_dir_path.clone()
+        } else {
+            PathBuf::from(match std::env::var("CARGO_HOME") {
+                Ok(string) if string != String::new() => string,
+                _ => {
+                    let home_dir = get_my_home()?.ok_or("Can't resolve home directory")?;
+                    debug!("home_dir={}", home_dir.display());
+                    home_dir.join(".cargo").display().to_string()
+                }
+            })
         };
-        let cargo_home = PathBuf::from(cargo_home_string);
-        let target_dir_path = cargo_home.join(&source_stem);
+        debug!("cargo_home={}", cargo_home.display());
+
+        let target_dir_path = if is_repl {
+            script_state
+                .get_repl_path()
+                .expect("Missing ScriptState::NamedEmpty.repl_path")
+        } else {
+            cargo_home.join(&source_stem)
+        };
+
         debug!("target_dir_path={}", target_dir_path.display());
-        let target_dir_str = target_dir_path.display().to_string();
+        // let target_dir_str = target_dir_path.display().to_string();
         let mut target_path = target_dir_path.join("target").join("debug");
         #[cfg(windows)]
         {
@@ -194,12 +224,13 @@ impl BuildState {
         let cargo_toml_path = target_dir_path.join(TOML_NAME).clone();
 
         let mut build_state = Self {
+            working_dir_path,
             source_stem,
             source_name,
-            source_path,
+            source_path: source_dir_path,
             cargo_home,
             target_dir_path,
-            target_dir_str,
+            // target_dir_str,
             target_path,
             cargo_toml_path,
             ..Default::default()
@@ -211,7 +242,6 @@ impl BuildState {
         let force = proc_flags.contains(ProcFlags::FORCE);
         let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
         let build_requested = proc_flags.contains(ProcFlags::BUILD);
-        let is_repl = proc_flags.contains(ProcFlags::REPL);
         build_state.must_gen = force || is_repl || (gen_requested && stale_executable);
         build_state.must_build = force || is_repl || (build_requested && stale_executable);
 
@@ -303,7 +333,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Access TMP_DIR
-    println!("Temporary directory: {:?}", *TMP_DIR);
+    // println!("Temporary directory: {:?}", *TMP_DIR);
 
     let is_repl = proc_flags.contains(ProcFlags::REPL);
 
@@ -317,20 +347,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         ScriptState::Named { script }
     } else {
         assert!(is_repl);
-        let path = code_utils::create_next_repl_file();
-        let script = path.to_str().unwrap().to_string();
-        ScriptState::NamedEmpty { script }
+        let repl_source_path = code_utils::create_next_repl_file();
+        let repl_path = repl_source_path
+            .parent()
+            .expect("Could not find parent directory of repl source file")
+            .to_path_buf();
+        let script = repl_source_path.to_str().unwrap().to_string();
+        ScriptState::NamedEmpty { repl_path, script }
     };
 
-    if is_repl {
-        debug!("script_state={script_state:?}");
-    }
+    println!("script_state={script_state:?}");
+
     let mut build_state = BuildState::pre_configure(&proc_flags, &script_state)?;
     if is_repl {
         debug!("build_state.source_path={:?}", build_state.source_path);
     }
 
-    println!("script_state={script_state:?}");
     if is_repl {
         // let dash_line = "-".repeat(50);
 
@@ -445,7 +477,7 @@ fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 
     let files = [
         format!("{}", build_state.source_path.display()),
-        format!("{}/Cargo.toml", build_state.target_dir_str),
+        format!("{}/Cargo.toml", build_state.target_dir_path.display()),
     ]
     .into_iter();
     debug!("files={files:#?}");
@@ -634,10 +666,11 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
                 debug!("rs_source={rs_source}");
 
                 // // Store with its toml code instance
-                // write_source(build_state.source_path.clone(), input)?;
+                // write_source(&build_state.source_path, input)?;
 
                 // Store without its toml code instance for now to get it back working
-                write_source(build_state.source_path.clone(), &rs_source)?;
+
+                write_source(&build_state.source_path.clone(), &rs_source)?;
 
                 rustfmt(build_state)?;
 
@@ -826,17 +859,24 @@ fn generate(
 
     debug!("In generate, proc_flags={proc_flags}");
 
-    fs::create_dir_all(&build_state.target_dir_path)?;
+    debug!(
+        "build_state.target_dir_path={:#?}",
+        build_state.target_dir_path
+    );
+
+    if !build_state.target_dir_path.exists() {
+        fs::create_dir_all(&build_state.target_dir_path)?;
+    }
 
     let target_rs_path = build_state.target_dir_path.clone();
     let target_rs_path = target_rs_path.join(&build_state.source_name);
     if verbose {
         println!("GGGGGGGG Creating source file: {target_rs_path:?}");
     }
-    let is_repl = proc_flags.contains(ProcFlags::REPL);
-    if !is_repl {
-        write_source(target_rs_path, rs_source)?;
-    }
+    // let is_repl = proc_flags.contains(ProcFlags::REPL);
+    // if !is_repl {
+    write_source(&target_rs_path, rs_source)?;
+    // }
 
     // debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {

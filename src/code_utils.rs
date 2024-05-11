@@ -294,7 +294,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
             is_metadata_block = true;
             let toml_flag = "/*[toml]";
             let index = line.find(toml_flag);
-            debug!("index={index:#?}");
+            // debug!("index={index:#?}");
             match index {
                 Some(i) => {
                     // Save anything before the toml flag.
@@ -302,7 +302,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
                         let (rust, _toml_flag) = line.split_at(i);
                         rust_code.push_str(rust);
                         rust_code.push('\n');
-                        debug!("Saved rust portion: {rust}");
+                        // debug!("Saved rust portion: {rust}");
                     }
                     continue;
                 }
@@ -322,7 +322,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
         if line.starts_with("//!") {
             toml_metadata.push_str(line.trim_start_matches("//!"));
             toml_metadata.push('\n');
-            debug!("Pushed old-style toml comment");
+            // debug!("Pushed old-style toml comment");
             continue;
         }
 
@@ -330,7 +330,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
         if is_metadata_block {
             toml_metadata.push_str(line);
             toml_metadata.push('\n');
-            debug!("Saved toml line: {line}");
+            // debug!("Saved toml line: {line}");
         } else {
             rust_code.push_str(line);
             rust_code.push('\n');
@@ -555,6 +555,17 @@ pub(crate) fn wrap_snippet(rs_source: &str) -> String {
     let macro_use_regex = Regex::new(r"(?i)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
     let extern_crate_regex = Regex::new(r"(?i)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
 
+    debug!("In wrap_snippet");
+
+    // Workaround: strip off any enclosing braces.
+    let rs_source = if rs_source.starts_with('{') && rs_source.ends_with('}') {
+        let rs_source = rs_source.trim_start_matches('{');
+        let rs_source = rs_source.trim_end_matches('}');
+        rs_source
+    } else {
+        rs_source
+    };
+
     let (prelude, body): (Vec<Option<&str>>, Vec<Option<&str>>) = rs_source
         .lines()
         .map(|line| -> (Option<&str>, Option<&str>) {
@@ -583,7 +594,7 @@ pub(crate) fn wrap_snippet(rs_source: &str) -> String {
         output
     });
 
-    format!(
+    let wrapped_snippet = format!(
         r"
 #![allow(unused_imports,unused_macros,unused_variables,dead_code)]
 use std::error::Error;
@@ -596,11 +607,13 @@ fn main() -> Result<(), Box<dyn Error>> {{
 Ok(())
 }}
 "
-    )
+    );
+    debug!("wrapped_snippet={wrapped_snippet}");
+    wrapped_snippet
 }
 
 pub(crate) fn write_source(
-    to_rs_path: PathBuf,
+    to_rs_path: &PathBuf,
     rs_source: &str,
 ) -> Result<fs::File, BuildRunError> {
     let mut to_rs_file = OpenOptions::new()
@@ -608,33 +621,33 @@ pub(crate) fn write_source(
         .create(true)
         .truncate(true)
         .open(to_rs_path)?;
-    // debug!("Writing out source:\n{}", {
-    //     let lines = rs_source.lines();
-    //     reassemble(lines)
-    // });
+    debug!("Writing out source to {to_rs_path:#?}:\n{}", {
+        let lines = rs_source.lines();
+        reassemble(lines)
+    });
     to_rs_file.write_all(rs_source.as_bytes())?;
-    // debug!("Done!");
+    debug!("Done!");
 
     Ok(to_rs_file)
 }
 
 pub(crate) fn create_next_repl_file() -> PathBuf {
     // let repl_temp_dir = Path::new(&TMP_DIR);
-    let repl_temp_dir = TMP_DIR.join(REPL_SUBDIR);
+    let gen_repl_temp_dir_path = TMP_DIR.join(REPL_SUBDIR);
     // Create a directory inside of `std::env::temp_dir()`
-    debug!("repl_temp_dir = std::env::temp_dir() = {repl_temp_dir:?}");
+    debug!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
 
     // Ensure REPL subdirectory exists
-    fs::create_dir_all(repl_temp_dir.clone()).expect("Failed to create REPL directory");
+    fs::create_dir_all(gen_repl_temp_dir_path.clone()).expect("Failed to create REPL directory");
 
-    // Find existing files with the pattern repl_<nnnnnn>.rs
-    let existing_files: Vec<_> = fs::read_dir(repl_temp_dir.clone())
+    // Find existing dirs with the pattern repl_<nnnnnn>
+    let existing_dirs: Vec<_> = fs::read_dir(gen_repl_temp_dir_path.clone())
         .unwrap()
         .filter_map(|entry| {
             let path = entry.unwrap().path();
             // println!("path={path:?}, path.is_file()={}, path.extension()?.to_str()={:?}, path.file_stem()?.to_str()={:?}", path.is_file(), path.extension()?.to_str(), path.file_stem()?.to_str());
-            if path.is_file()
-                && path.extension()?.to_str() == Some("rs")
+            if path.is_dir()
+                // && path.extension()?.to_str() == Some("rs")
                 && path.file_stem()?.to_str()?.starts_with("repl_")
             {
                 let stem = path.file_stem().unwrap();
@@ -653,29 +666,33 @@ pub(crate) fn create_next_repl_file() -> PathBuf {
 
     // debug!("existing_files={existing_files:?}");
 
-    let next_file_num = match existing_files.as_slice() {
+    let next_file_num = match existing_dirs.as_slice() {
         [] => 0, // No existing files, start with 000000
-        _ if existing_files.contains(&999_999) => {
+        _ if existing_dirs.contains(&999_999) => {
             // Wrap around and find the first gap
             for i in 0..999_999 {
-                if !existing_files.contains(&i) {
-                    return create_repl_file(&repl_temp_dir, i);
+                if !existing_dirs.contains(&i) {
+                    return create_repl_file(&gen_repl_temp_dir_path, i);
                 }
             }
             panic!("Cannot create new file: all possible filenames already exist in the REPL directory.");
         }
-        _ => existing_files.iter().max().unwrap() + 1, // Increment from highest existing number
+        _ => existing_dirs.iter().max().unwrap() + 1, // Increment from highest existing number
     };
 
-    create_repl_file(&repl_temp_dir, next_file_num)
+    create_repl_file(&gen_repl_temp_dir_path, next_file_num)
 }
 
-pub(crate) fn create_repl_file(repl_dir: &Path, num: u32) -> PathBuf {
+pub(crate) fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
     let padded_num = format!("{:06}", num);
-    let filename = format!("repl_{}.rs", padded_num);
-    let path = repl_dir.join(&filename);
+    let dir_name = format!("repl_{padded_num}");
+    let target_dir_path = gen_repl_temp_dir_path.join(dir_name);
+    fs::create_dir_all(target_dir_path.clone()).expect("Failed to create REPL directory");
+
+    let filename = format!("repl_{padded_num}.rs");
+    let path = target_dir_path.join(filename);
     fs::File::create(path.clone()).expect("Failed to create file");
-    println!("Created file: {}", filename);
+    println!("Created file: {path:#?}");
     path
 }
 

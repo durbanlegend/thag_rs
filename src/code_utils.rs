@@ -263,7 +263,7 @@ pub(crate) fn parse_source_str(
     rs_full_source: &str,
     start_parsing_rs: Instant,
 ) -> Result<(CargoManifest, String), Box<dyn Error>> {
-    let (rs_source, rs_toml_str) = separate_rust_and_toml(rs_full_source);
+    let (rs_toml_str, rs_source) = separate_rust_and_toml(rs_full_source);
 
     let rs_manifest = CargoManifest::from_str(&rs_toml_str)?;
     //     let rs_manifest = rs_extract_manifest(&rs_full_source)?;
@@ -289,9 +289,8 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
     for line in source_code.lines() {
         // Check if the line contains the start of the metadata block
         let line = line.trim();
-        debug!("line={line}");
+        // debug!("line={line}");
         if !metadata_block_finished && !is_metadata_block {
-            is_metadata_block = true;
             let toml_flag = "/*[toml]";
             let index = line.find(toml_flag);
             // debug!("index={index:#?}");
@@ -304,6 +303,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
                         rust_code.push('\n');
                         // debug!("Saved rust portion: {rust}");
                     }
+                    is_metadata_block = true;
                     continue;
                 }
                 None => continue,
@@ -330,19 +330,19 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
         if is_metadata_block {
             toml_metadata.push_str(line);
             toml_metadata.push('\n');
-            // debug!("Saved toml line: {line}");
+            debug!("Saved toml line: {line}");
         } else {
             rust_code.push_str(line);
             rust_code.push('\n');
-            debug!("Saved rust line: {line}");
+            // debug!("Saved rust line: {line}");
         }
     }
 
     // Trim trailing whitespace from both strings
-    rust_code = rust_code.trim().to_string();
     toml_metadata = toml_metadata.trim().to_string();
+    rust_code = rust_code.trim().to_string();
 
-    (rust_code, toml_metadata)
+    (toml_metadata, rust_code)
 }
 
 pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
@@ -557,14 +557,14 @@ pub(crate) fn wrap_snippet(rs_source: &str) -> String {
 
     debug!("In wrap_snippet");
 
-    // Workaround: strip off any enclosing braces.
-    let rs_source = if rs_source.starts_with('{') && rs_source.ends_with('}') {
-        let rs_source = rs_source.trim_start_matches('{');
-        let rs_source = rs_source.trim_end_matches('}');
-        rs_source
-    } else {
-        rs_source
-    };
+    // // Workaround: strip off any enclosing braces.
+    // let rs_source = if rs_source.starts_with('{') && rs_source.ends_with('}') {
+    //     let rs_source = rs_source.trim_start_matches('{');
+    //     let rs_source = rs_source.trim_end_matches('}');
+    //     rs_source
+    // } else {
+    //     rs_source
+    // };
 
     let (prelude, body): (Vec<Option<&str>>, Vec<Option<&str>>) = rs_source
         .lines()

@@ -99,21 +99,27 @@ pub(crate) enum ScriptState {
     // TODO: phase out script string? Or replace by path? Can maybe phase out whole enum ScriptState.
     NamedEmpty { script: String, repl_path: PathBuf },
     /// Script name provided by user
-    Named { script: String },
+    Named {
+        script: String,
+        script_dir_path: PathBuf,
+    },
 }
 
 impl ScriptState {
     pub(crate) fn get_script(&self) -> Option<String> {
         match self {
             ScriptState::Anonymous => None,
-            ScriptState::NamedEmpty { script, .. } | ScriptState::Named { script } => {
+            ScriptState::NamedEmpty { script, .. } | ScriptState::Named { script, .. } => {
                 Some(script.to_string())
             }
         }
     }
     pub(crate) fn get_repl_path(&self) -> Option<PathBuf> {
         match self {
-            ScriptState::Anonymous | ScriptState::Named { .. } => None,
+            ScriptState::Anonymous => None,
+            ScriptState::Named {
+                script_dir_path, ..
+            } => Some(script_dir_path.clone()),
             ScriptState::NamedEmpty { repl_path, .. } => Some(repl_path.clone()),
         }
     }
@@ -125,6 +131,8 @@ pub(crate) struct BuildState {
     pub(crate) working_dir_path: PathBuf,
     pub(crate) source_stem: String,
     pub(crate) source_name: String,
+    #[allow(dead_code)]
+    pub(crate) source_dir_path: PathBuf,
     pub(crate) source_path: PathBuf,
     pub(crate) cargo_home: PathBuf,
     pub(crate) target_dir_path: PathBuf,
@@ -140,6 +148,7 @@ pub(crate) struct BuildState {
 }
 
 impl BuildState {
+    #[allow(clippy::too_many_lines)]
     pub(crate) fn pre_configure(
         proc_flags: &ProcFlags,
         script_state: &ScriptState,
@@ -166,7 +175,6 @@ impl BuildState {
             };
             stem.to_string()
         };
-        let source_name = source_name.to_string();
 
         let working_dir_path = if is_repl {
             TMP_DIR.join(REPL_SUBDIR)
@@ -174,17 +182,29 @@ impl BuildState {
             std::env::current_dir()?.canonicalize()?
         };
 
-        let script_path = working_dir_path.join(PathBuf::from(script.clone()));
+        let script_path = if is_repl {
+            script_state
+                .get_repl_path()
+                .expect("Missing script path")
+                .join(source_name.clone())
+        } else {
+            working_dir_path.join(PathBuf::from(script.clone()))
+        };
+
         debug!("script_path={script_path:#?}");
-        let source_dir_path = script_path.canonicalize()?;
-        debug!("source_dir_path={source_dir_path:#?}");
-        if !source_dir_path.exists() {
+        let source_path = script_path.canonicalize()?;
+        debug!("source_dir_path={source_path:#?}");
+        if !source_path.exists() {
             return Err(Box::new(BuildRunError::Command(format!(
-                "No script named {} or {} in path {source_dir_path:?}",
+                "No script named {} or {} in path {source_path:?}",
                 source_stem, source_name
             ))));
         }
 
+        let source_dir_path = source_path
+            .parent()
+            .expect("Problem resolving to parent directory")
+            .to_path_buf();
         let cargo_home = if is_repl {
             working_dir_path.clone()
         } else {
@@ -210,14 +230,11 @@ impl BuildState {
         debug!("target_dir_path={}", target_dir_path.display());
         // let target_dir_str = target_dir_path.display().to_string();
         let mut target_path = target_dir_path.join("target").join("debug");
-        #[cfg(windows)]
-        {
-            target_path = target_path.join(source_stem.clone() + ".exe");
-        }
-        #[cfg(not(windows))]
-        {
-            target_path = target_path.join(&source_stem);
-        }
+        target_path = if cfg!(windows) {
+            target_path.join(source_stem.clone() + ".exe")
+        } else {
+            target_path.join(&source_stem)
+        };
 
         let target_path_clone = target_path.clone();
 
@@ -227,23 +244,28 @@ impl BuildState {
             working_dir_path,
             source_stem,
             source_name,
-            source_path: source_dir_path,
+            source_dir_path,
+            source_path,
             cargo_home,
             target_dir_path,
-            // target_dir_str,
             target_path,
             cargo_toml_path,
             ..Default::default()
         };
 
-        let stale_executable = matches!(script_state, ScriptState::NamedEmpty { .. })
-            || !target_path_clone.exists()
-            || modified_since_compiled(&build_state).is_some();
         let force = proc_flags.contains(ProcFlags::FORCE);
-        let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
-        let build_requested = proc_flags.contains(ProcFlags::BUILD);
-        build_state.must_gen = force || is_repl || (gen_requested && stale_executable);
-        build_state.must_build = force || is_repl || (build_requested && stale_executable);
+        (build_state.must_gen, build_state.must_build) = if force {
+            (true, true)
+        } else {
+            let stale_executable = matches!(script_state, ScriptState::NamedEmpty { .. })
+                || !target_path_clone.exists()
+                || modified_since_compiled(&build_state).is_some();
+            let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
+            let build_requested = proc_flags.contains(ProcFlags::BUILD);
+            let must_gen = force || is_repl || (gen_requested && stale_executable);
+            let must_build = force || is_repl || (build_requested && stale_executable);
+            (must_gen, must_build)
+        };
 
         debug!("build_state={build_state:#?}");
 
@@ -301,7 +323,7 @@ enum LoopCommand {
 //       3.  Replace clap_repl in outer eval loop by reedline.
 //       4.  Figure out how to avoid printing out empty result
 //       5.  Debug why evals not going to temp - manifest problem?
-//       6.
+//       6.  REPL option to edit generated Cargo.toml
 //       7.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
 //       9.  Consider making script name optional, with -n/stdin parm as per my runner changes?
@@ -309,7 +331,7 @@ enum LoopCommand {
 //      12.  "edit"" crate - how to reconfigure editors dynamically - instructions unclear.
 //      13.  Cargo search not being done for snippets - maybe AST issue to be resolved by visitor pattern above.
 //      14.  Clap aliases not working in REPL.
-//
+
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
@@ -337,23 +359,80 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let is_repl = proc_flags.contains(ProcFlags::REPL);
 
-    let script_state = if let Some(ref script) = options.script {
+    let working_dir_path = if is_repl {
+        TMP_DIR.join(REPL_SUBDIR)
+    } else {
+        std::env::current_dir()?.canonicalize()?
+    };
+
+    if let Some(ref script) = options.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(Box::new(BuildRunError::Command(format!(
                 "Script name must end in {RS_SUFFIX}"
             ))));
         }
+    }
+
+    // Normal REPL with no named script
+    let repl_source_path = if is_repl && options.script.is_none() {
+        Some(code_utils::create_next_repl_file())
+    } else {
+        None
+    };
+
+    let script_dir_path = if is_repl {
+        if let Some(ref script) = options.script {
+            // REPL with repeat of named script
+            let source_stem = script
+                .strip_suffix(RS_SUFFIX)
+                .expect("Failed to strip extension off the script name");
+            working_dir_path.join(source_stem)
+        } else {
+            // Normal REPL with no script name
+            repl_source_path
+                .as_ref()
+                .expect("Missing path of newly created REPL souece file")
+                .parent()
+                .expect("Could not find parent directory of repl source file")
+                .to_path_buf()
+        }
+    } else {
+        // Normal script file prepared beforeh
+        let script = options
+            .script
+            .clone()
+            .expect("Problem resolving script path");
+        let script_path = PathBuf::from(script);
+        let script_dir_path = script_path
+            .parent()
+            .expect("Problem resolving script parent path");
+        // working_dir_path.join(PathBuf::from(script.clone()))
+        script_dir_path
+            .canonicalize()
+            .expect("Problem resolving script dir path")
+    };
+
+    let script_state = if let Some(ref script) = options.script {
         let script = script.to_owned();
-        ScriptState::Named { script }
+        ScriptState::Named {
+            script_dir_path,
+            script,
+        }
     } else {
         assert!(is_repl);
-        let repl_source_path = code_utils::create_next_repl_file();
-        let repl_path = repl_source_path
-            .parent()
-            .expect("Could not find parent directory of repl source file")
-            .to_path_buf();
-        let script = repl_source_path.to_str().unwrap().to_string();
-        ScriptState::NamedEmpty { repl_path, script }
+        // let repl_source_path = code_utils::create_next_repl_file();
+        // let repl_path = repl_source_path
+        //     .parent()
+        //     .expect("Could not find parent directory of repl source file")
+        //     .to_path_buf();
+        let script = repl_source_path
+            .expect("Missing newly created REPL source path")
+            .display()
+            .to_string();
+        ScriptState::NamedEmpty {
+            repl_path: script_dir_path,
+            script,
+        }
     };
 
     println!("script_state={script_state:?}");
@@ -418,6 +497,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .with_command(ReplCommand::new("list"), list)
             .with_command(ReplCommand::new("quit").aliases(["q", "exit"]), quit)
             .with_stop_on_ctrl_c(true);
+        repl.run()?;
         // show help with CTRL+h
         // .with_keybinding(
         //     KeyModifiers::CONTROL,
@@ -425,7 +505,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         //     ReedlineEvent::ExecuteHostCommand("help".to_string()),
         // );
         // .with_error_handler(|ref _err, ref _repl| process::exit(0)),
-        repl.run()?;
         // let mut loop_editor = ClapEditor::<LoopCommand>::new();
         // let mut loop_command = loop_editor.read_command();
         // 'level2: loop {
@@ -447,6 +526,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
+fn back(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    use enigo::{
+        Direction::{Click, Press, Release},
+        Enigo, Key, Keyboard, Settings,
+    };
+    let mut enigo = Enigo::new(&Settings::default()).unwrap();
+    // Ctrl-D in 3 steps
+    let _ = enigo.key(Key::Control, Press);
+    let _ = enigo.key(Key::Unicode('d'), Click);
+    let _ = enigo.key(Key::Control, Release);
+
+    Ok(Some(String::from("...")))
 }
 
 /// Delete our temporary files
@@ -495,12 +590,13 @@ fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         .with_name("edit")
         .with_banner(&format!(
             "{}",
-            nu_resolve_style(MessageLevel::InnerPrompt)
-                .unwrap_or_default()
+            // nu_resolve_style(MessageLevel::InnerPrompt)
+            //     .unwrap_or_default()
+            nu_ansi_term::Color::LightMagenta
                 .paint(String::from("Enter cancel, retry, submit, quit or help"))
         ))
         .with_command(ReplCommand::new("cancel").alias("c"), cancel)
-        .with_command(ReplCommand::new("quit").aliases(["q", "exit"]), quit)
+        .with_command(ReplCommand::new("quit").aliases(["q", "exit"]), back)
         .with_command(ReplCommand::new("retry").alias("r"), edit)
         .with_command(ReplCommand::new("submit").alias("s"), submit)
         .with_stop_on_ctrl_c(true);
@@ -535,7 +631,7 @@ fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
     // }
     // }
 
-    Ok(Some(String::from("End of continue"))) // TODO make nice
+    Ok(Some(String::from("End of edit"))) // TODO make nice
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -558,8 +654,6 @@ fn submit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
     if result.is_err() {
         println!("{result:?}");
     }
-
-    println!("Submitted");
     Ok(Some(String::from("Submitted")))
 }
 

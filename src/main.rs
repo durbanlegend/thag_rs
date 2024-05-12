@@ -55,9 +55,9 @@ lazy_static! {
     static ref TMP_DIR: PathBuf = env::temp_dir();
 }
 
-pub struct CustomPrompt(&'static str);
+pub struct EvalPrompt(&'static str);
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
-impl Prompt for CustomPrompt {
+impl Prompt for EvalPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
         Cow::Owned(self.0.to_string())
     }
@@ -281,42 +281,24 @@ struct Context<'a> {
     start: &'a Instant,
 }
 
+// Legacy enum, still useful but not sure if it still pays its way.
 #[derive(Debug, Parser, EnumIter, EnumProperty, IntoStaticStr)]
 #[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
 #[strum(serialize_all = "kebab-case")]
 enum LoopCommand {
     /// Enter, paste or modify your Rust expression
-    #[clap(visible_alias = "c")]
     Edit,
     /// Enter, paste or modify the generated Cargo.toml
-    #[clap(visible_alias = "c")]
     Toml,
     /// Delete generated files
-    #[clap(visible_alias = "d")]
     Delete,
     /// Evaluate an expression. Enclose complex expressions in braces {}.
-    #[clap(visible_alias = "e")]
     Eval,
     /// List generated files
-    #[clap(visible_alias = "l")]
     List,
     /// Exit REPL
-    #[clap(visible_alias = "q")]
     Quit,
 }
-
-// #[derive(Debug, Parser)]
-// #[command(name = "", arg_required_else_help(true))] // This name will show up in clap's error messages, so it is important to set it to "".
-// enum ProcessCommand {
-//     /// Cancel and discard this code, restart REPL
-//     Cancel,
-//     /// Return to editor for another try
-//     Retry,
-//     /// Attempt to build and run your Rust code
-//     Submit,
-//     // Exit REPL
-//     Quit,
-// }
 
 //      TODO:
 //          Next: 1. test in Windows, 2. nu_ansi_term color_println macro.
@@ -325,15 +307,16 @@ enum LoopCommand {
 //       2.  How though? Don't use println{} when wrapping snippet if return type of expression is ()
 //       3.  Replace clap_repl in outer eval loop by reedline.
 //       4.  Figure out how to avoid printing out empty result
-//       5.  Debug why evals not going to temp - manifest problem?
-//       6.  REPL option to edit generated Cargo.toml
+//       5.
+//       6.
 //       7.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
 //       9.  Consider making script name optional, with -n/stdin parm as per my runner changes?
 //      11.  Clean up debugging
 //      12.  "edit"" crate - how to reconfigure editors dynamically - instructions unclear.
 //      13.  Clap aliases not working in REPL.
-//      14.  Get rid of date and time in RHS of REPL
+//      14.  Get rid of date and time in RHS of REPL - can't seem to
+//      15.  Help command in eval, same as quit and q
 
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -400,7 +383,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .to_path_buf()
         }
     } else {
-        // Normal script file prepared beforeh
+        // Normal script file prepared beforehand
         let script = options
             .script
             .clone()
@@ -486,13 +469,26 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut repl = Repl::new(context)
             .with_name("REPL")
             .with_version("v0.1.0")
-            .with_description("REPL mode")
+            .with_description("REPL mode lets you type or paste in a Rust expression to be evaluated.
+Start by choosing the eval option and entering your expression. Expressions between matching braces, brackets, parens or quotes may span multiple lines.
+If valid, the expression will be converted into a Rust program and built and run using Cargo.
+Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
+of doing so can be avoided by placing them in Cargo.toml format in a comment block of the form
+/*[toml]
+[depedencies]
+...
+*/
+at the top of the expression. In this case the whole expression must be enclosed in curly braces.
+At any stage before exiting the REPL, or at least as long as your TMP_DIR is not cleared, you can go back and edit your expression or its generated Cargo.toml file and copy
+or save them from the editor or their temporary disk locations.")
             .with_banner(&format!(
                 "{}",
                 // nu_resolve_style(MessageLevel::OuterPrompt)
                 //     .unwrap_or_default()
                 nu_ansi_term::Color::LightMagenta.paint(&format!("Enter {}", cmd_list)),
             ))
+            .with_quick_completions(false)
+            .with_partial_completions(true)
             .with_command(
                 ReplCommand::new("delete")
                     .about("Delete all temporary files for this eval (see list)"),
@@ -516,7 +512,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ReplCommand::new("toml").about("Edit generated Cargo.toml"),
                 toml,
             )
+            .with_error_handler(|ref _err, _repl| {
+                Ok(())
+            })
             .with_stop_on_ctrl_c(true);
+        repl
         repl.run()?;
         // show help with CTRL+h
         // .with_keybinding(
@@ -524,23 +524,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         //     KeyCode::Char('h'),
         //     ReedlineEvent::ExecuteHostCommand("help".to_string()),
         // );
-        // .with_error_handler(|ref _err, ref _repl| process::exit(0)),
-        // let mut loop_editor = ClapEditor::<LoopCommand>::new();
-        // let mut loop_command = loop_editor.read_command();
-        // 'level2: loop {
-        //     let Some(ref command) = loop_command else {
-        //         loop_command = loop_editor.read_command();
-        //         continue 'level2;
-        //     };
-        //     match command {
-        //         LoopCommand::Quit => return Ok(()),
-        //         LoopCommand::Delete => {}
-        //         LoopCommand::List => {}
-        //         LoopCommand::Edit => {}
-        //         LoopCommand::Eval => {}
-        //     }
-        //     loop_command = loop_editor.read_command();
-        // }
     } else {
         gen_build_run(&&mut options, &proc_flags, &mut build_state, &start)?;
     }
@@ -548,11 +531,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[allow(clippy::unnecessary_wraps)]
-fn back(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    Ok(Some(String::from("...")))
-}
+// #[allow(clippy::needless_pass_by_value)]
+// #[allow(clippy::unnecessary_wraps)]
+// fn back(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
+//     Ok(Some(String::from("...")))
+// }
 
 /// Delete our temporary files
 #[allow(clippy::needless_pass_by_value)]
@@ -594,64 +577,36 @@ fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
             "{}",
             // nu_resolve_style(MessageLevel::InnerPrompt)
             //     .unwrap_or_default()
-            nu_ansi_term::Color::LightMagenta
-                .paint(String::from("Enter edit, run, toml or help. Ctrl-D to go back to the main REPL"))
+            nu_ansi_term::Color::LightMagenta.paint(String::from(
+                "Enter edit, run, toml or help. Ctrl-D to go back to the main REPL"
+            ))
         ))
-        // .with_command(ReplCommand::new("cancel"), cancel)
-        // .with_command(ReplCommand::new("quit"), back)
-        .with_command(ReplCommand::new("edit"), edit)
-        .with_command(ReplCommand::new("run"), run_expr)
+        .with_description("Inner REPL lets you edit the Rust expression or generated Cargo.toml using a chosen or default editor.
+Use the VISUAL or EDITOR environment variables to set your preferred editor, or accept a default such as Nano.
+Use Ctrl-C or Ctrl-D to go back to the main REPL")
         .with_command(
-            ReplCommand::new("toml")
-                .about("Edit generated Cargo.toml")
-            toml,
+            ReplCommand::new("edit").about("Re-edit Rust expression in editor"),
+            edit
+        )
+        .with_command(
+            ReplCommand::new("run").about("Attempt to build and run Rust expression"),
+            run_expr
+        )
+        .with_command(
+            ReplCommand::new("toml").about("Edit generated Cargo.toml"),
+            toml
         )
         .with_stop_on_ctrl_c(true);
     repl.run()?;
 
-    //     ProcessCommand::Submit => {
-    //         let result = gen_build_run(
-    //             options,
-    //             proc_flags,
-    //             build_state,
-    //             // &mut maybe_syntax_tree,
-    //             // &mut maybe_rs_manifest,
-    //             // &maybe_rs_source,
-    //             start,
-    //         );
-    //         if result.is_err() {
-    //             println!("{result:?}");
-    //         }
-
-    //         break 'level3;
-    //     }
-    //     ProcessCommand::Cancel => {
-    //         // loop_command = loop_editor.read_command();
-    //         // outer_prompt();
-    //         return Ok(Some(String::from("Cancel")));
-    //     }
-    //     ProcessCommand::Retry => {
-    //         // loop_command = Some(LoopCommand::Edit);
-    //         // outer_prompt();
-    //         return Ok(Some(String::from("Retry")));
-    //     }
-    // }
-    // }
-
-    Ok(Some(String::from("Back to main REPLt"))) // TODO make nice
+    Ok(Some(String::from("Back in main REPL")))
 }
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
 fn toml(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     edit::edit_file(&context.build_state.cargo_toml_path)?;
-    Ok(Some(String::from("End of Cargo.toml edit"))) // TODO make nice
-}
-
-#[allow(clippy::needless_pass_by_value)]
-#[allow(clippy::unnecessary_wraps)]
-fn cancel(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    Ok(Some(String::from("Cancelled")))
+    Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -696,7 +651,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         ))
         .with_history(history);
 
-    let prompt = CustomPrompt("expr");
+    let prompt = EvalPrompt("expr");
     // println!("{:#?}", nu_resolve_style(MessageLevel::InnerPrompt)
     //     .unwrap_or_default()
     //     .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
@@ -716,7 +671,6 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         let input: &str = match sig {
             Signal::Success(ref buffer) => buffer,
             Signal::CtrlD | Signal::CtrlC => {
-                // println!("Aborted");
                 break;
             }
         };
@@ -839,7 +793,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
     //         break;
     //     }
     // }
-    Ok(Some("Back to main REPL".to_string()))
+    Ok(Some("Back in main REPL".to_string()))
 }
 
 /// Display file listing

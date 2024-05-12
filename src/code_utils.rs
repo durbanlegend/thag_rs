@@ -288,18 +288,18 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
 
     for line in source_code.lines() {
         // Check if the line contains the start of the metadata block
-        println!("line={line}");
+        // debug!("line={line}");
         if !metadata_block_finished && !is_metadata_block {
             let toml_flag = "/*[toml]";
             let index = line.find(toml_flag);
-            println!("index={index:#?}");
+            // debug!("index={index:#?}");
             if let Some(i) = index {
                 // Save anything before the toml flag.
                 if i > 0 {
                     let (rust, _toml_flag) = line.split_at(i);
                     rust_code.push_str(rust);
                     rust_code.push('\n');
-                    println!("Saved rust portion: {rust}");
+                    // debug!("Saved rust portion: {rust}");
                 }
                 is_metadata_block = true;
                 continue;
@@ -309,24 +309,24 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
         // Check if the line contains the end of the metadata block
         let end_toml_flag = "*/";
         let index = line.find(end_toml_flag);
-        println!("index={index:#?}");
+        // debug!("index={index:#?}");
         if let Some(mut i) = index {
             // Save anything before the toml flag as toml.
             if i > 0 {
                 let (toml, _remnant) = line.split_at(i);
                 toml_metadata.push_str(toml);
                 toml_metadata.push('\n');
-                println!("Saved toml portion: {toml}");
+                // debug!("Saved toml portion: {toml}");
             }
 
             // Save anything after the toml flag as Rust code.
             i += end_toml_flag.len();
-            println!("i={i}");
+            // debug!("i={i}");
             if i < line.len() {
                 let (_toml_flag, rust) = line.split_at(i);
                 rust_code.push_str(rust);
                 rust_code.push('\n');
-                println!("Saved rust portion: {rust}");
+                // debug!("Saved rust portion: {rust}");
             }
             is_metadata_block = false;
             continue;
@@ -338,7 +338,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
             if !toml.is_empty() {
                 toml_metadata.push_str(toml);
                 toml_metadata.push('\n');
-                println!("Pushed old-style toml comment {toml}");
+                // debug!("Pushed old-style toml comment {toml}");
             }
             continue;
         }
@@ -349,12 +349,12 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
             if !toml.is_empty() {
                 toml_metadata.push_str(toml);
                 toml_metadata.push('\n');
-                println!("Saved toml line: {line}");
+                // debug!("Saved toml line: {line}");
             }
         } else {
             rust_code.push_str(line);
             rust_code.push('\n');
-            println!("Saved rust line: {line}");
+            // debug!("Saved rust line: {line}");
         }
     }
 

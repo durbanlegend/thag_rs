@@ -333,8 +333,9 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
         };
 
         // Check if the line is a TOML comment
-        if line.starts_with("//!") {
-            let toml = line.trim_start_matches("//!").trim();
+        let line_trim = line.trim();
+        if line_trim.starts_with("//!") {
+            let toml = line_trim.trim_start_matches("//!").trim();
             if !toml.is_empty() {
                 toml_metadata.push_str(toml);
                 toml_metadata.push('\n');
@@ -359,8 +360,8 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
     }
 
     // Trim trailing whitespace from both strings
-    toml_metadata = toml_metadata.trim().to_string();
-    rust_code = rust_code.trim().to_string();
+    toml_metadata = toml_metadata.trim_end().to_string();
+    rust_code = rust_code.trim_end().to_string();
 
     (toml_metadata, rust_code)
 }
@@ -788,7 +789,7 @@ fn get_mismatched_lines(expected_rust_code: &str, rust_code: &str) -> Vec<(Strin
     let mut mismatched_lines = Vec::new();
     for (expected_line, actual_line) in expected_rust_code.lines().zip(rust_code.lines()) {
         if expected_line != actual_line {
-            println!("expected:{expected_line}\n   actual:{actual_line}");
+            println!("expected:{expected_line}\n  actual:{actual_line}");
             mismatched_lines.push((expected_line.to_string(), actual_line.to_string()));
         }
     }
@@ -803,8 +804,8 @@ fn compare(mismatched_lines: &[(String, String)], expected_rust_code: &str, rust
                 expected:{}
                   actual:{}",
             // mismatched_lines
-            expected_rust_code.trim(),
-            rust_code.trim()
+            expected_rust_code,
+            rust_code
         );
     }
 }

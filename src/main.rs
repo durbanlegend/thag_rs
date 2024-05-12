@@ -63,7 +63,7 @@ impl Prompt for CustomPrompt {
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
-        Cow::Owned(String::from("q: quit"))
+        Cow::Owned(String::new())
     }
 
     fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<str> {
@@ -285,9 +285,12 @@ struct Context<'a> {
 #[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
 #[strum(serialize_all = "kebab-case")]
 enum LoopCommand {
-    /// Enter, paste or modify your code and optionally edit your generated Cargo.toml
+    /// Enter, paste or modify your Rust expression
     #[clap(visible_alias = "c")]
     Edit,
+    /// Enter, paste or modify the generated Cargo.toml
+    #[clap(visible_alias = "c")]
+    Toml,
     /// Delete generated files
     #[clap(visible_alias = "d")]
     Delete,
@@ -329,8 +332,8 @@ enum LoopCommand {
 //       9.  Consider making script name optional, with -n/stdin parm as per my runner changes?
 //      11.  Clean up debugging
 //      12.  "edit"" crate - how to reconfigure editors dynamically - instructions unclear.
-//      13.  Cargo search not being done for snippets - maybe AST issue to be resolved by visitor pattern above.
-//      14.  Clap aliases not working in REPL.
+//      13.  Clap aliases not working in REPL.
+//      14.  Get rid of date and time in RHS of REPL
 
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -446,11 +449,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         // let dash_line = "-".repeat(50);
 
         // Using strum
-        let cmd_vec = LoopCommand::iter()
+        let mut cmd_vec = LoopCommand::iter()
+            .filter(|v| !matches!(v, LoopCommand::Eval))
             .map(<LoopCommand as Into<&'static str>>::into)
             .map(String::from)
             .collect::<Vec<String>>();
-        let cmd_list = cmd_vec.join(", ") + " or help";
+        cmd_vec.sort();
+        let cmd_list = "eval or one of: ".to_owned() + &cmd_vec.join(", ") + " or help";
         // debug!(
         //     "resolve_style(term_colors::MessageLevel::OuterPrompt){:#?}",
         //     resolve_style(term_colors::MessageLevel::OuterPrompt)
@@ -468,7 +473,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "{}",
                 nu_resolve_style(MessageLevel::OuterPrompt)
                     .unwrap_or_default()
-                    .paint(format!("Enter one of: {}", cmd_list))
+                    .paint(format!("Enter {}", cmd_list))
             );
         };
         // outer_prompt();
@@ -486,16 +491,31 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "{}",
                 // nu_resolve_style(MessageLevel::OuterPrompt)
                 //     .unwrap_or_default()
-                nu_ansi_term::Color::LightMagenta.paint(&format!("Enter one of: {}", cmd_list)),
+                nu_ansi_term::Color::LightMagenta.paint(&format!("Enter {}", cmd_list)),
             ))
-            .with_command(ReplCommand::new("delete"), delete)
-            .with_command(ReplCommand::new("edit"), edit)
             .with_command(
-                ReplCommand::new("eval").subcommand(ReplCommand::new("quit")),
+                ReplCommand::new("delete")
+                    .about("Delete all temporary files for this eval (see list)"),
+                delete,
+            )
+            .with_command(ReplCommand::new("edit").about("Edit eval expression in an editor (you can pre-set system variables VISUAL or EDITOR or be given a simple default editor)"), edit)
+            .with_command(
+                ReplCommand::new("eval")
+                    .about("Enter/paste and evaluate a Rust expression")
+                    .subcommand(ReplCommand::new("quit")),
                 eval,
             )
-            .with_command(ReplCommand::new("list"), list)
-            .with_command(ReplCommand::new("quit").aliases(["q", "exit"]), quit)
+            .with_command(ReplCommand::new("list").about("List temporary files"), list)
+            .with_command(
+                ReplCommand::new("quit")
+                    .about("Exit the REPL"),
+                    // .aliases(["q", "exit"]), // don't work
+                quit,
+            )
+            .with_command(
+                ReplCommand::new("toml").about("Edit generated Cargo.toml"),
+                toml,
+            )
             .with_stop_on_ctrl_c(true);
         repl.run()?;
         // show help with CTRL+h
@@ -560,14 +580,6 @@ fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         context.start,
     );
 
-    let files = [
-        format!("{}", build_state.source_path.display()),
-        format!("{}/Cargo.toml", build_state.target_dir_path.display()),
-    ]
-    .into_iter();
-    debug!("files={files:#?}");
-    // let editor = &mut Editor::new(files)?;
-    // editor.run()?;
     edit::edit_file(&build_state.source_path)?;
 
     let context = Context {
@@ -583,12 +595,17 @@ fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
             // nu_resolve_style(MessageLevel::InnerPrompt)
             //     .unwrap_or_default()
             nu_ansi_term::Color::LightMagenta
-                .paint(String::from("Enter cancel, retry, submit, quit or help"))
+                .paint(String::from("Enter edit, run, toml or help. Ctrl-D to go back to the main REPL"))
         ))
-        .with_command(ReplCommand::new("cancel").alias("c"), cancel)
-        .with_command(ReplCommand::new("quit").aliases(["q", "exit"]), back)
-        .with_command(ReplCommand::new("retry").alias("r"), edit)
-        .with_command(ReplCommand::new("submit").alias("s"), submit)
+        // .with_command(ReplCommand::new("cancel"), cancel)
+        // .with_command(ReplCommand::new("quit"), back)
+        .with_command(ReplCommand::new("edit"), edit)
+        .with_command(ReplCommand::new("run"), run_expr)
+        .with_command(
+            ReplCommand::new("toml")
+                .about("Edit generated Cargo.toml")
+            toml,
+        )
         .with_stop_on_ctrl_c(true);
     repl.run()?;
 
@@ -621,19 +638,25 @@ fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
     // }
     // }
 
-    Ok(Some(String::from("End of edit"))) // TODO make nice
+    Ok(Some(String::from("Back to main REPLt"))) // TODO make nice
+}
+
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
+fn toml(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    edit::edit_file(&context.build_state.cargo_toml_path)?;
+    Ok(Some(String::from("End of Cargo.toml edit"))) // TODO make nice
 }
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
 fn cancel(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    println!("Cancelled");
     Ok(Some(String::from("Cancelled")))
 }
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn submit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let (options, proc_flags, build_state, start) = (
         &mut context.options,
         context.proc_flags,
@@ -641,7 +664,7 @@ fn submit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
         context.start,
     );
 
-    debug!("In submit: build_state={build_state:#?}");
+    debug!("In run_expr: build_state={build_state:#?}");
     let result = gen_build_run(options, proc_flags, build_state, start);
     if result.is_err() {
         println!("{result:?}");
@@ -685,7 +708,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
             //     .unwrap_or_default()
             //     .paint(
                     nu_ansi_term::Color::Cyan.paint(
-                    r"Enter an expression (e.g., 2 + 3), or q to quit. Expressions in matching braces, brackets or quotes may span multiple lines."
+                    r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines."
                 )
         );
 
@@ -693,7 +716,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         let input: &str = match sig {
             Signal::Success(ref buffer) => buffer,
             Signal::CtrlD | Signal::CtrlC => {
-                println!("\nAborted!");
+                // println!("Aborted");
                 break;
             }
         };
@@ -716,7 +739,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         println!("######## Parsed out rs_source={}", rs_source.as_str());
         build_state.rs_manifest = Some(rs_manifest);
         // TODO A bit expensive to store it there
-        build_state.rs_source = Some(rs_source.clone());
+        // build_state.rs_source = Some(rs_source.clone()); // Bad - still raw
         let rs_source: &str = rs_source.as_str();
         // Parse the expression string into a syntax tree.
         // The REPL is not catering for programs with a main method (syn::File),
@@ -750,6 +773,9 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 
                 let rs_source = format!("{rust_code}");
                 debug!("rs_source={rs_source}");
+
+                // TODO A bit expensive to store it there
+                build_state.rs_source = Some(rs_source.clone());
 
                 // // Store with its toml code instance
                 // write_source(&build_state.source_path, input)?;
@@ -813,7 +839,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
     //         break;
     //     }
     // }
-    Ok(Some("quit".to_string()))
+    Ok(Some("Back to main REPL".to_string()))
 }
 
 /// Display file listing
@@ -957,11 +983,13 @@ fn generate(
 
     let target_rs_path = build_state.target_dir_path.clone();
     let target_rs_path = target_rs_path.join(&build_state.source_name);
+    // let is_repl = proc_flags.contains(ProcFlags::REPL);
+    // I think condition was removed for repl with named (existing) script.
+    // Out: Trying removing it because unmodified raw version is being wrongly written here for new expr.
+    // if !is_repl {
     if verbose {
         println!("GGGGGGGG Creating source file: {target_rs_path:?}");
     }
-    // let is_repl = proc_flags.contains(ProcFlags::REPL);
-    // if !is_repl {
     write_source(&target_rs_path, rs_source)?;
     // }
 

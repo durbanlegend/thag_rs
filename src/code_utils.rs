@@ -284,23 +284,22 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
     let mut rust_code = String::new();
     let mut toml_metadata = String::new();
     let mut is_metadata_block = false;
-    let mut metadata_block_finished = false;
+    let metadata_block_finished = false;
 
     for line in source_code.lines() {
         // Check if the line contains the start of the metadata block
-        let line = line.trim();
-        // debug!("line={line}");
+        println!("line={line}");
         if !metadata_block_finished && !is_metadata_block {
             let toml_flag = "/*[toml]";
             let index = line.find(toml_flag);
-            // debug!("index={index:#?}");
+            println!("index={index:#?}");
             if let Some(i) = index {
                 // Save anything before the toml flag.
                 if i > 0 {
                     let (rust, _toml_flag) = line.split_at(i);
                     rust_code.push_str(rust);
                     rust_code.push('\n');
-                    // debug!("Saved rust portion: {rust}");
+                    println!("Saved rust portion: {rust}");
                 }
                 is_metadata_block = true;
                 continue;
@@ -308,30 +307,54 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
         }
 
         // Check if the line contains the end of the metadata block
-        if line == "*/" {
+        let end_toml_flag = "*/";
+        let index = line.find(end_toml_flag);
+        println!("index={index:#?}");
+        if let Some(mut i) = index {
+            // Save anything before the toml flag as toml.
+            if i > 0 {
+                let (toml, _remnant) = line.split_at(i);
+                toml_metadata.push_str(toml);
+                toml_metadata.push('\n');
+                println!("Saved toml portion: {toml}");
+            }
+
+            // Save anything after the toml flag as Rust code.
+            i += end_toml_flag.len();
+            println!("i={i}");
+            if i < line.len() {
+                let (_toml_flag, rust) = line.split_at(i);
+                rust_code.push_str(rust);
+                rust_code.push('\n');
+                println!("Saved rust portion: {rust}");
+            }
             is_metadata_block = false;
-            metadata_block_finished = true;
-            // debug!("End of metadata block");
             continue;
-        }
+        };
 
         // Check if the line is a TOML comment
         if line.starts_with("//!") {
-            toml_metadata.push_str(line.trim_start_matches("//!"));
-            toml_metadata.push('\n');
-            // debug!("Pushed old-style toml comment");
+            let toml = line.trim_start_matches("//!").trim();
+            if !toml.is_empty() {
+                toml_metadata.push_str(toml);
+                toml_metadata.push('\n');
+                println!("Pushed old-style toml comment {toml}");
+            }
             continue;
         }
 
         // Add the line to the appropriate string based on the metadata block status
         if is_metadata_block {
-            toml_metadata.push_str(line);
-            toml_metadata.push('\n');
-            // debug!("Saved toml line: {line}");
+            let toml = line.trim();
+            if !toml.is_empty() {
+                toml_metadata.push_str(toml);
+                toml_metadata.push('\n');
+                println!("Saved toml line: {line}");
+            }
         } else {
             rust_code.push_str(line);
             rust_code.push('\n');
-            // debug!("Saved rust line: {line}");
+            println!("Saved rust line: {line}");
         }
     }
 
@@ -758,4 +781,330 @@ pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
         eprintln!("`rustfmt` not found. Please install it to use this script.");
     }
     Ok(())
+}
+
+#[cfg(test)]
+fn get_mismatched_lines(expected_rust_code: &str, rust_code: &str) -> Vec<(String, String)> {
+    let mut mismatched_lines = Vec::new();
+    for (expected_line, actual_line) in expected_rust_code.lines().zip(rust_code.lines()) {
+        if expected_line != actual_line {
+            println!("expected:{expected_line}\n   actual:{actual_line}");
+            mismatched_lines.push((expected_line.to_string(), actual_line.to_string()));
+        }
+    }
+    mismatched_lines
+}
+
+#[cfg(test)]
+fn compare(mismatched_lines: &[(String, String)], expected_rust_code: &str, rust_code: &str) {
+    if !mismatched_lines.is_empty() {
+        println!(
+            r"Found mismatched lines between expected and actual code:
+                expected:{}
+                  actual:{}",
+            // mismatched_lines
+            expected_rust_code.trim(),
+            rust_code.trim()
+        );
+    }
+}
+
+#[test]
+fn test_separate_rust_and_toml_empty() {
+    let source_code = "";
+
+    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+
+    // Assert TOML metadata
+    assert_eq!("", toml_metadata);
+
+    // Assert Rust code (ignoring potential whitespace differences)
+    let expected_rust_code = "";
+
+    let mismatched_lines = get_mismatched_lines(expected_rust_code, &rust_code);
+
+    println!("mismatched_lines={mismatched_lines:#?}");
+
+    compare(&mismatched_lines, expected_rust_code, &rust_code);
+    assert!(expected_rust_code.trim() == rust_code.trim());
+}
+
+#[test]
+fn test_separate_rust_and_toml_but_toml_only() {
+    let source_code = r#"{/*[toml]
+[dependencies]
+itertools = "0.12.1"
+*/}
+    "#;
+
+    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+
+    // Assert TOML metadata
+    let expected_toml_metadata = r#"[dependencies]
+itertools = "0.12.1""#;
+    assert_eq!(expected_toml_metadata, toml_metadata);
+
+    // Assert Rust code (ignoring potential whitespace differences)
+    let expected_rust_code = r#"{
+}"#;
+
+    let mismatched_lines = get_mismatched_lines(expected_rust_code, &rust_code);
+
+    println!("mismatched_lines={mismatched_lines:#?}");
+
+    compare(&mismatched_lines, expected_rust_code, &rust_code);
+    assert!(expected_rust_code.trim() == rust_code.trim());
+}
+
+#[test]
+fn test_separate_rust_and_toml_but_rust_only() {
+    let source_code = r#"use rug::Integer;
+let other = "world";
+println!("Hello {other}!");
+"#;
+
+    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+
+    // Assert TOML metadata
+    let expected_toml_metadata = "";
+    assert_eq!(expected_toml_metadata, toml_metadata);
+
+    // Assert Rust code (ignoring potential whitespace differences)
+    let expected_rust_code = source_code;
+
+    let mismatched_lines = get_mismatched_lines(expected_rust_code, &rust_code);
+
+    println!("mismatched_lines={mismatched_lines:#?}");
+
+    compare(&mismatched_lines, expected_rust_code, &rust_code);
+    assert!(expected_rust_code.trim() == rust_code.trim());
+}
+
+#[test]
+fn test_separate_rust_and_toml_both_ways() {
+    let source_code = r#"/*[toml]
+[dependencies]
+crossterm = "0.27.0"
+*/
+
+//! log = "0.4.21"
+
+use std::io::stdout;
+
+use crossterm::{
+    execute,
+    style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
+    ExecutableCommand,
+};
+
+fn main() -> std::io::Result<()> {
+    // using the macro
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::DarkBlue),
+        SetBackgroundColor(Color::Yellow),
+        Print("Styled text here."),
+        ResetColor
+    )?;
+
+    println!();
+
+    Ok(())
+}
+"#;
+
+    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+
+    // Assert TOML metadata
+    let expected_toml_metadata = r#"[dependencies]
+crossterm = "0.27.0"
+log = "0.4.21""#;
+    assert_eq!(expected_toml_metadata, toml_metadata);
+
+    // Assert Rust code (ignoring potential whitespace differences)
+    let expected_rust_code = r#"
+
+use std::io::stdout;
+
+use crossterm::{
+    execute,
+    style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
+    ExecutableCommand,
+};
+
+fn main() -> std::io::Result<()> {
+    // using the macro
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::DarkBlue),
+        SetBackgroundColor(Color::Yellow),
+        Print("Styled text here."),
+        ResetColor
+    )?;
+
+    println!();
+
+    Ok(())
+}
+"#;
+
+    let mismatched_lines = get_mismatched_lines(expected_rust_code, &rust_code);
+
+    println!("mismatched_lines={mismatched_lines:#?}");
+
+    compare(&mismatched_lines, expected_rust_code, &rust_code);
+    assert!(expected_rust_code.trim() == rust_code.trim());
+}
+
+#[test]
+fn test_separate_rust_and_toml_whitespace() {
+    let source_code = r#"/*[toml]
+
+  [dependencies]
+
+   crossterm = "0.27.0"
+*/
+
+//!    log = "0.4.21"
+
+use std::io::stdout;
+
+use crossterm::{
+    execute,
+    style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
+    ExecutableCommand,
+};
+
+fn main() -> std::io::Result<()> {
+    // using the macro
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::DarkBlue),
+        SetBackgroundColor(Color::Yellow),
+        Print("Styled text here."),
+        ResetColor
+    )?;
+
+    println!();
+
+    Ok(())
+}
+"#;
+
+    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+
+    // Assert TOML metadata
+    let expected_toml_metadata = r#"[dependencies]
+crossterm = "0.27.0"
+log = "0.4.21""#;
+    assert_eq!(expected_toml_metadata, toml_metadata);
+
+    // Assert Rust code (ignoring potential whitespace differences)
+    let expected_rust_code = r#"
+
+use std::io::stdout;
+
+use crossterm::{
+    execute,
+    style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
+    ExecutableCommand,
+};
+
+fn main() -> std::io::Result<()> {
+    // using the macro
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::DarkBlue),
+        SetBackgroundColor(Color::Yellow),
+        Print("Styled text here."),
+        ResetColor
+    )?;
+
+    println!();
+
+    Ok(())
+}
+"#;
+
+    let mismatched_lines = get_mismatched_lines(expected_rust_code, &rust_code);
+
+    println!("mismatched_lines={mismatched_lines:#?}");
+
+    compare(&mismatched_lines, expected_rust_code, &rust_code);
+    assert!(expected_rust_code.trim() == rust_code.trim());
+}
+
+#[test]
+fn test_separate_rust_and_toml_full() {
+    let source_code = r#"{/*[toml]
+[dependencies]
+itertools = "0.12.1"
+*/
+
+use itertools::Itertools;
+
+let fib = |n: usize| -> usize {
+  itertools::iterate((0, 1), |&(a, b)| (b, a + b))
+    .take(n + 1)
+    .last()
+    .unwrap()
+    .0
+};
+
+println!("Enter a number from 0 to 91");
+println!("Type lines of text at the prompt and hit Ctrl-{} on a new line when done", if cfg!(windows) {'Z'} else {'D'});
+
+let mut buffer = String::new();
+io::stdin().lock().read_to_string(&mut buffer)?;
+
+let n: usize = buffer.trim_end()
+  .parse()
+  .expect("Can't parse input into a positive integer");
+
+let f = fib(n);
+println!("Number {n} in the Fibonacci sequence is {f}");
+}"#;
+
+    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+
+    // Assert TOML metadata
+    assert_eq!(
+        toml_metadata,
+        r#"[dependencies]
+itertools = "0.12.1""#
+    );
+
+    // Assert Rust code (ignoring potential whitespace differences)
+    let expected_rust_code = r#"{
+
+use itertools::Itertools;
+
+let fib = |n: usize| -> usize {
+  itertools::iterate((0, 1), |&(a, b)| (b, a + b))
+    .take(n + 1)
+    .last()
+    .unwrap()
+    .0
+};
+
+println!("Enter a number from 0 to 91");
+println!("Type lines of text at the prompt and hit Ctrl-{} on a new line when done", if cfg!(windows) {'Z'} else {'D'});
+
+let mut buffer = String::new();
+io::stdin().lock().read_to_string(&mut buffer)?;
+
+let n: usize = buffer.trim_end()
+  .parse()
+  .expect("Can't parse input into a positive integer");
+
+let f = fib(n);
+println!("Number {n} in the Fibonacci sequence is {f}");
+}"#;
+
+    let mismatched_lines = get_mismatched_lines(expected_rust_code, &rust_code);
+
+    println!("mismatched_lines={mismatched_lines:#?}");
+
+    compare(&mismatched_lines, expected_rust_code, &rust_code);
+    assert!(expected_rust_code.trim() == rust_code.trim());
 }

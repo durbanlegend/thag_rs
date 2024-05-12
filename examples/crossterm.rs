@@ -1,10 +1,12 @@
-//! [dependencies]
-//! crossterm = "0.27.0"
+/*[toml]
+[dependencies]
+crossterm = "0.27.0"
+*/
 
 use std::io::stdout;
 
 use crossterm::{
-    event, execute,
+    execute,
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     ExecutableCommand,
 };
@@ -19,7 +21,7 @@ fn main() -> std::io::Result<()> {
         ResetColor
     )?;
 
-    println!("");
+    println!();
 
     // or using functions
     stdout()

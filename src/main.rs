@@ -50,6 +50,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub(crate) const REPL_SUBDIR: &str = "rs_repl";
 const RS_SUFFIX: &str = ".rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
+pub(crate) const FLOWER_BOX_LEN: usize = 70;
 
 lazy_static! {
     static ref TMP_DIR: PathBuf = env::temp_dir();
@@ -305,8 +306,8 @@ enum LoopCommand {
 //                3. test reedline partial completions. 4. Print out all colours again
 //       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
 //       2.  How though? Don't use println{} when wrapping snippet if return type of expression is ()
-//       3.  Replace clap_repl in outer eval loop by reedline.
-//       4.  Figure out how to avoid printing out empty result
+//       3.  Figure out how to avoid printing out empty result (partial dup of above TODO item.)
+//       4.  Colour the lines and maybe highlight the answer to make it stand out.
 //       5.
 //       6.
 //       7.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
@@ -429,8 +430,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if is_repl {
-        // let dash_line = "-".repeat(50);
-
         // Using strum
         let mut cmd_vec = LoopCommand::iter()
             .filter(|v| !matches!(v, LoopCommand::Eval))
@@ -487,7 +486,7 @@ or save them from the editor or their temporary disk locations.")
                 //     .unwrap_or_default()
                 nu_ansi_term::Color::LightMagenta.paint(&format!("Enter {}", cmd_list)),
             ))
-            .with_quick_completions(false)
+            // .with_quick_completions(false)
             .with_partial_completions(true)
             .with_command(
                 ReplCommand::new("delete")
@@ -516,7 +515,6 @@ or save them from the editor or their temporary disk locations.")
                 Ok(())
             })
             .with_stop_on_ctrl_c(true);
-        repl
         repl.run()?;
         // show help with CTRL+h
         // .with_keybinding(
@@ -1053,13 +1051,23 @@ fn run(
     debug!("Run command is {run_command:?}");
 
     // Sandwich command between two lines of dashes in the terminal
-    let dash_line = "-".repeat(50);
-    println!("{dash_line}");
+
+    let dash_line = "-".repeat(FLOWER_BOX_LEN);
+    println!(
+        "{}",
+        nu_ansi_term::Color::LightYellow
+            .bold()
+            .paint(dash_line.clone())
+    );
 
     let _exit_status = run_command.spawn()?.wait()?;
 
-    let dash_line = "-".repeat(50);
-    println!("{dash_line}");
+    println!(
+        "{}",
+        nu_ansi_term::Color::LightYellow
+            .bold()
+            .paint(dash_line.clone())
+    );
 
     // debug!("Exit status={exit_status:#?}");
 

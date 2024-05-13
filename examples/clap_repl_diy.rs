@@ -1,6 +1,8 @@
-//! [dependencies]
-//! clap = { version = "4.5.3", features = ["derive"] }
-//! shlex = "0.1.1"
+/*[toml]
+[dependencies]
+clap = { version = "4.5.3", features = ["derive"] }
+shlex = "0.1.1"
+*/
 
 /// Example from clap cookbook.
 /// Can't find a keybinding to navigate history,

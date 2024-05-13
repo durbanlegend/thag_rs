@@ -283,8 +283,7 @@ fn escape_path_for_windows(path: &str) -> String {
 
 pub(crate) fn merge_manifest(
     build_state: &mut BuildState,
-    // maybe_rs_source: Option<&String>,
-    // rs_manifest: &mut CargoManifest,
+    rs_source: &str,
 ) -> Result<CargoManifest, Box<dyn Error>> {
     let start_merge_manifest = Instant::now();
 
@@ -296,12 +295,8 @@ pub(crate) fn merge_manifest(
 
     let rs_inferred_deps = if let Some(ref syntax_tree) = build_state.syntax_tree {
         infer_deps_from_ast(syntax_tree)
-    } else if let Some(rs_source) = &build_state.rs_source {
-        infer_deps_from_source(rs_source)
     } else {
-        return Err(Box::new(BuildRunError::NoneOption(
-            "Missing source code".to_string(),
-        )));
+        infer_deps_from_source(rs_source)
     };
 
     debug!("rs_inferred_deps={rs_inferred_deps:#?}\n");

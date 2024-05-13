@@ -637,7 +637,7 @@ fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
     if result.is_err() {
         println!("{result:?}");
     }
-    Ok(Some(String::from("Submitted")))
+    Ok(Some(String::from("End of run")))
 }
 
 /// From Reedline validation example with enhancements

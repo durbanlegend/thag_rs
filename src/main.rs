@@ -866,7 +866,7 @@ fn gen_build_run(
             //     build_state.rs_source
             // );
         }
-        let rs_source = read_file_contents(&build_state.source_path)?;
+        let mut rs_source = read_file_contents(&build_state.source_path)?;
         if build_state.syntax_tree.is_none() {
             build_state.syntax_tree = code_utils::to_ast(&rs_source);
         }
@@ -882,10 +882,10 @@ fn gen_build_run(
         };
 
         println!("######## build_state={build_state:#?}");
-        let rs_source = if has_main {
-            rs_source
+        if has_main {
         } else {
-            wrap_snippet(&rs_source)
+            rs_source = wrap_snippet(&rs_source);
+            build_state.syntax_tree = Some(Ast::File(syn::parse_file(&rs_source)?));
         };
         generate(build_state, &rs_source, proc_flags)?;
     } else {

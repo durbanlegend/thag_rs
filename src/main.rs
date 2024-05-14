@@ -471,21 +471,23 @@ fn main() -> Result<(), Box<dyn Error>> {
             .with_name("REPL")
             .with_version("v0.1.0")
             .with_description(
-                "REPL mode lets you type or paste in a Rust expression to be evaluated.
+                "REPL mode lets you type or paste a Rust expression to be evaluated.
 Start by choosing the eval option and entering your expression. Expressions between matching braces,
 brackets, parens or quotes may span multiple lines.
-If valid, the expression will be converted into a Rust program and built and run using Cargo.
+If valid, the expression will be converted into a Rust program, and built and run using Cargo.
 Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
 of doing so can be avoided by placing them in Cargo.toml format in a comment block of the form
 /*[toml]
 [depedencies]
 ...
 */
-at the top of the expression. In this case the whole expression must be enclosed in curly braces.
+at the top of the expression, from where they will be extracted to a dedicated Cargo.toml file.
+In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
 At any stage before exiting the REPL, or at least as long as your TMP_DIR is not cleared, you can
 go back and edit your expression or its generated Cargo.toml file and copy or save them from the
 editor or their temporary disk locations.
-Use tab key here to show selections and to complete partial matching selections.",
+Outside of the expression evaluator, use the tab key to show selections and to complete partial
+matching selections.",
             )
             .with_banner(&format!(
                 "{}",
@@ -506,13 +508,16 @@ Use tab key here to show selections and to complete partial matching selections.
                 ReplCommand::new("advanced").about(
                     "Edit eval expression or generated Cargo.toml in an editor.
 You can preselect an editor by setting environment variables VISUAL or
-EDITOR, or default to a simple default editor.",
+EDITOR, or default to a simple default editor.
+This is useful for correcting your expression and is also an intermediate option
+between using the expression evaluator and our normal script file processor",
                 ),
                 advanced,
             )
             .with_command(
                 ReplCommand::new("eval")
-                    .about("Enter/paste and evaluate a Rust expression")
+                    .about("Enter/paste and evaluate a Rust expression
+This is the convenient option to use for snippets or even brief programs.")
                     .subcommand(ReplCommand::new("quit")),
                 eval,
             )
@@ -587,7 +592,7 @@ fn advanced(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
                 "Enter edit, run, toml or help. Ctrl-D to go back to the main REPL"
             ))
         ))
-        .with_description("Inner REPL lets you edit the Rust expression or generated Cargo.toml using a chosen or default editor.
+        .with_description("This inner REPL lets you edit the Rust expression or generated Cargo.toml using a chosen or default editor.
 Use the VISUAL or EDITOR environment variables to set your preferred editor, or accept a default such as Nano.
 Use Ctrl-C or Ctrl-D to go back to the main REPL")
         .with_command(
@@ -687,9 +692,25 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
             //     .paint(
                     nu_ansi_term::Color::Cyan.paint(
                     r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
-Use up and down arrows to navigate history, right arrow to select current, Ctru-U to clear. Entering data will replace everything after cursor."
+Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
                 )
         );
+
+        //         let s = format!(
+        //             "{}",
+        //             // nu_resolve_style(MessageLevel::InnerPrompt)
+        //             //     .unwrap_or_default()
+        //             //     .paint(
+        //                     nu_ansi_term::Color::Cyan.paint(
+        //                     r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
+        // Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
+        //                 )
+        //         );
+        //         if cfg!(windows) {
+        //             println!("{s}\r");
+        //         } else {
+        //             println!("{s}");
+        //         }
 
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {

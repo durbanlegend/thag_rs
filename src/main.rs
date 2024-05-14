@@ -487,7 +487,9 @@ editor or their temporary disk locations.",
                 "{}",
                 // nu_resolve_style(MessageLevel::OuterPrompt)
                 //     .unwrap_or_default()
-                nu_ansi_term::Color::LightMagenta.paint(&format!("Enter {}", cmd_list)),
+                nu_ansi_term::Color::Green
+                    .bold()
+                    .paint(&format!("Enter {}", cmd_list)),
             ))
             // .with_quick_completions(false)
             .with_partial_completions(true)

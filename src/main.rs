@@ -287,7 +287,7 @@ struct Context<'a> {
 #[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
 #[strum(serialize_all = "kebab-case")]
 enum LoopCommand {
-    /// Capture or modify your Rust expression or its generated Cargo.toml file in an editor (specified by environment variable $VISUAL or $EDITOR, or default editor)
+    /// Capture or modify your Rust expression or its generated Cargo.toml file in your preferred editor (specified by environment variable $VISUAL or $EDITOR, or in a simple default editor)
     Advanced,
     /// Enter, paste or modify the generated Cargo.toml
     Delete,
@@ -515,10 +515,6 @@ EDITOR, or default to a simple default editor.",
                 ReplCommand::new("quit").about("Exit the REPL"),
                 // .aliases(["q", "exit"]), // don't work
                 quit,
-            )
-            .with_command(
-                ReplCommand::new("toml").about("Edit generated Cargo.toml"),
-                toml,
             )
             .with_error_handler(|ref _err, _repl| Ok(()))
             .with_stop_on_ctrl_c(true);

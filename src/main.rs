@@ -685,18 +685,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
     //     .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
 
     loop {
-        println!(
-            "{}",
-            // nu_resolve_style(MessageLevel::InnerPrompt)
-            //     .unwrap_or_default()
-            //     .paint(
-                    nu_ansi_term::Color::Cyan.paint(
-                    r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
-Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
-                )
-        );
-
-        //         let s = format!(
+        //         println!(
         //             "{}",
         //             // nu_resolve_style(MessageLevel::InnerPrompt)
         //             //     .unwrap_or_default()
@@ -706,11 +695,22 @@ Use up and down arrows to navigate history, right arrow to select current, Ctrl-
         // Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
         //                 )
         //         );
-        //         if cfg!(windows) {
-        //             println!("{s}\r");
-        //         } else {
-        //             println!("{s}");
-        //         }
+
+        let s = format!(
+                    "{}",
+                    // nu_resolve_style(MessageLevel::InnerPrompt)
+                    //     .unwrap_or_default()
+                    //     .paint(
+                            nu_ansi_term::Color::Cyan.paint(
+                            r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
+        Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
+                        )
+                );
+        if cfg!(windows) {
+            println!("{s}\r");
+        } else {
+            println!("{s}");
+        }
 
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {

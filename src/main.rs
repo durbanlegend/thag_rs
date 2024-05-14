@@ -51,6 +51,7 @@ pub(crate) const REPL_SUBDIR: &str = "rs_repl";
 const RS_SUFFIX: &str = ".rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
 pub(crate) const FLOWER_BOX_LEN: usize = 70;
+pub(crate) const HISTORY_FILE: &str = "rs_eval_hist.txt";
 
 lazy_static! {
     static ref TMP_DIR: PathBuf = env::temp_dir();
@@ -290,11 +291,13 @@ enum LoopCommand {
     /// Capture or modify your Rust expression or its generated Cargo.toml file in your preferred editor (specified by environment variable $VISUAL or $EDITOR, or in a simple default editor)
     Advanced,
     /// Enter, paste or modify the generated Cargo.toml
-    Delete,
-    /// Evaluate an expression. Enclose complex expressions in braces {}.
     Eval,
     /// List generated files
+    Delete,
+    /// Evaluate an expression. Enclose complex expressions in braces {}.
     List,
+    /// Edit history
+    History,
     /// Exit REPL
     Quit,
 }
@@ -311,7 +314,7 @@ enum LoopCommand {
 //       8.  Cat files before delete.
 //       9.  Consider making script name optional, with -n/stdin parm as per my runner changes?
 //      11.  Clean up debugging
-//      12.  "edit"" crate - how to reconfigure editors dynamically - instructions unclear.
+//      12.  "edit" crate - how to reconfigure editors dynamically - instructions unclear.
 //      13.  Clap aliases not working in REPL.
 //      14.  Get rid of date and time in RHS of REPL? - doesn't seem to be an option.
 //      15.  Help command in eval, same as quit and q
@@ -481,7 +484,8 @@ of doing so can be avoided by placing them in Cargo.toml format in a comment blo
 at the top of the expression. In this case the whole expression must be enclosed in curly braces.
 At any stage before exiting the REPL, or at least as long as your TMP_DIR is not cleared, you can
 go back and edit your expression or its generated Cargo.toml file and copy or save them from the
-editor or their temporary disk locations.",
+editor or their temporary disk locations.
+Use tab key here to show selections and to complete partial matching selections.",
             )
             .with_banner(&format!(
                 "{}",
@@ -518,6 +522,7 @@ EDITOR, or default to a simple default editor.",
                 // .aliases(["q", "exit"]), // don't work
                 quit,
             )
+            .with_command(ReplCommand::new("history").about("Edit history."), history)
             .with_error_handler(|ref _err, _repl| Ok(()))
             .with_stop_on_ctrl_c(true);
         repl.run()?;
@@ -605,6 +610,13 @@ Use Ctrl-C or Ctrl-D to go back to the main REPL")
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
+fn history(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    edit::edit_file(context.build_state.working_dir_path.join(HISTORY_FILE))?;
+    Ok(Some(String::from("End of history file edit")))
+}
+
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
 fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let (build_state, _start) = (&mut context.build_state, context.start);
 
@@ -649,7 +661,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         &context.start,
     );
 
-    let history_file = build_state.cargo_home.join("rs_eval_hist.txt");
+    let history_file = build_state.cargo_home.join(HISTORY_FILE);
     let history = Box::new(
         FileBackedHistory::with_file(20, history_file)
             .expect("Error configuring history with file"),
@@ -674,7 +686,8 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
             //     .unwrap_or_default()
             //     .paint(
                     nu_ansi_term::Color::Cyan.paint(
-                    r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines."
+                    r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
+Use up and down arrows to navigate history, right arrow to select current, Ctru-U to clear. Entering data will replace everything after cursor."
                 )
         );
 

@@ -594,16 +594,14 @@ fn advanced(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
     };
     let mut repl: Repl<Context, BuildRunError> = Repl::new(context)
         .with_name("advanced")
-        .with_banner(
-        // &format!(
-        //     "{}",
-        //     // nu_resolve_style(MessageLevel::InnerPrompt)
-        //     //     .unwrap_or_default()
-        //     nu_ansi_term::Color::LightMagenta.paint(String::from(
+        .with_banner(&format!(
+            "{}",
+            // nu_resolve_style(MessageLevel::InnerPrompt)
+            //     .unwrap_or_default()
+            nu_ansi_term::Color::LightMagenta.paint(String::from(
                 "Enter edit, run, toml or help. Ctrl-D to go back to the main REPL"
-            // ))
-        // )
-        )
+            ))
+        ))
         .with_description("This inner REPL lets you edit the Rust expression or generated Cargo.toml using a chosen or default editor.
 Use the VISUAL or EDITOR environment variables to set your preferred editor, or accept a default such as Nano.
 Use Ctrl-C or Ctrl-D to go back to the main REPL")

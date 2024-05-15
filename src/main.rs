@@ -309,6 +309,7 @@ enum LoopCommand {
 //       2.  How though? Don't use println{} when wrapping snippet if return type of expression is ()
 //       3.  Figure out how to avoid printing out empty result (partial dup of above TODO item.)
 //       4.  Option on main REPL to edit or delete history.
+//       5.  Debug return from advanced breaking Windows command line.
 //       6.  Determine size limitations on reedline editor
 //       7.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
@@ -322,6 +323,7 @@ enum LoopCommand {
 //      15.  Help command in eval, same as quit and q
 //      16.  Work on examples/reedline_clap_repl_gemini.rs
 //      17.  Move AST to disk and out of BuildState if possible.
+//      18.  How to set editor in Windows.
 
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -518,7 +520,7 @@ between using the expression evaluator and our normal script file processor",
             )
             .with_command(
                 ReplCommand::new("eval")
-                    .about("Enter/paste and evaluate a Rust expression
+                    .about("Enter/paste and evaluate a Rust expression.
 This is the convenient option to use for snippets or even brief programs.")
                     .subcommand(ReplCommand::new("quit")),
                 eval,
@@ -530,7 +532,7 @@ This is the convenient option to use for snippets or even brief programs.")
                 quit,
             )
             .with_command(ReplCommand::new("history").about("Edit history."), history)
-            .with_error_handler(|ref _err, _repl| Ok(()))
+            // .with_error_handler(|ref _err, _repl| Ok(()))
             .with_stop_on_ctrl_c(true);
         repl.run()?;
         // show help with CTRL+h
@@ -592,14 +594,16 @@ fn advanced(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
     };
     let mut repl: Repl<Context, BuildRunError> = Repl::new(context)
         .with_name("advanced")
-        .with_banner(&format!(
-            "{}",
-            // nu_resolve_style(MessageLevel::InnerPrompt)
-            //     .unwrap_or_default()
-            nu_ansi_term::Color::LightMagenta.paint(String::from(
+        .with_banner(
+        // &format!(
+        //     "{}",
+        //     // nu_resolve_style(MessageLevel::InnerPrompt)
+        //     //     .unwrap_or_default()
+        //     nu_ansi_term::Color::LightMagenta.paint(String::from(
                 "Enter edit, run, toml or help. Ctrl-D to go back to the main REPL"
-            ))
-        ))
+            // ))
+        // )
+        )
         .with_description("This inner REPL lets you edit the Rust expression or generated Cargo.toml using a chosen or default editor.
 Use the VISUAL or EDITOR environment variables to set your preferred editor, or accept a default such as Nano.
 Use Ctrl-C or Ctrl-D to go back to the main REPL")

@@ -446,13 +446,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         //     "resolve_style(term_colors::MessageLevel::OuterPrompt){:#?}",
         //     resolve_style(term_colors::MessageLevel::OuterPrompt)
         // );
-        let outer_prompt = || {
-            nu_color_println!(
-                nu_resolve_style(term_colors::MessageLevel::OuterPrompt),
-                "Enter {:#?}",
-                cmd_list
-            );
-        };
+        // let outer_prompt = || {
+        //     nu_color_println!(
+        //         nu_resolve_style(term_colors::MessageLevel::OuterPrompt),
+        //         "Enter {:#?}",
+        //         cmd_list
+        //     );
+        // };
         #[allow(unused_variables)]
         // let outer_prompt = || {
         //     println!(
@@ -462,7 +462,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         //             .paint(format!("Enter {}", cmd_list))
         //     );
         // };
-        outer_prompt();
+        // outer_prompt();
         let context = Context {
             options: &mut options,
             proc_flags: &proc_flags,
@@ -491,15 +491,15 @@ editor or their temporary disk locations.
 Outside of the expression evaluator, use the tab key to show selections and to complete partial
 matching selections.",
             )
-            // .with_banner(&format!(
-            //     "{}",
-            //     // nu_resolve_style(MessageLevel::OuterPrompt)
-            //     //     .unwrap_or_default()
-            //     nu_ansi_term::Color::Green
-            //         .bold()
-            //         .paint(&format!("Enter {}", cmd_list)),
-            // ))
-            // .with_quick_completions(true)
+            .with_banner(&format!(
+                "{}",
+                // nu_resolve_style(MessageLevel::OuterPrompt)
+                //     .unwrap_or_default()
+                nu_ansi_term::Color::Green
+                    .bold()
+                    .paint(&format!("Enter {}", cmd_list)),
+            ))
+            .with_quick_completions(true)
             .with_partial_completions(true)
             .with_command(
                 ReplCommand::new("delete")
@@ -508,9 +508,9 @@ matching selections.",
             )
             .with_command(
                 ReplCommand::new("advanced").about(
-                    "Edit eval expression or generated Cargo.toml in an editor.
-You can preselect an editor by setting environment variables VISUAL or
-EDITOR, or default to a simple default editor.
+                    "Edit eval expression or generated Cargo.toml.
+You can preselect an editor via environment variables VISUAL or EDITOR,
+or accept a simple default editor.
 This is useful for correcting your expression and is also an intermediate option
 between using the expression evaluator and our normal script file processor",
                 ),

@@ -12,7 +12,7 @@ use std::time::Instant;
 use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
 use crate::term_colors::{MessageStyle, OwoThemeStyle};
-use crate::BuildState;
+use crate::{Ast, BuildState};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
@@ -284,6 +284,7 @@ fn escape_path_for_windows(path: &str) -> String {
 pub(crate) fn merge_manifest(
     build_state: &mut BuildState,
     rs_source: &str,
+    syntax_tree: &Option<Ast>,
 ) -> Result<CargoManifest, Box<dyn Error>> {
     let start_merge_manifest = Instant::now();
 
@@ -293,7 +294,7 @@ pub(crate) fn merge_manifest(
     // // TODO temp debug out
     // infer_deps_from_source(maybe_rs_source.ok_or("Missing source code")?);
 
-    let rs_inferred_deps = if let Some(ref syntax_tree) = build_state.syntax_tree {
+    let rs_inferred_deps = if let Some(ref syntax_tree) = syntax_tree {
         infer_deps_from_ast(syntax_tree)
     } else {
         infer_deps_from_source(rs_source)

@@ -7,7 +7,7 @@ use crate::code_utils::{
 use crate::code_utils::{modified_since_compiled, parse_source_file, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::term_colors::{nu_resolve_style, owo_resolve_style};
+use crate::term_colors::nu_resolve_style;
 use clap::Parser;
 use code_utils::Ast;
 use env_logger::{fmt::WriteStyle, Builder, Env};
@@ -146,7 +146,7 @@ pub(crate) struct BuildState {
     pub(crate) must_gen: bool,
     pub(crate) must_build: bool,
     // pub(crate) rs_source: Option<String>,
-    pub(crate) syntax_tree: Option<Ast>,
+    // pub(crate) syntax_tree: Option<Ast>,
 }
 
 impl BuildState {
@@ -313,6 +313,8 @@ enum LoopCommand {
 //       7.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
 //       9.  Consider making script name optional, with -n/stdin parm as per my runner changes?
+//      10.  Decide if it's worth passing the wrapped syntax tree to gen_build_run from eval just to avoid
+//           re-parsing it for that specific use case.
 //      11.  Clean up debugging
 //      12.  "edit" crate - how to reconfigure editors dynamically - instructions unclear.
 //      13.  Clap aliases not working in REPL.
@@ -444,23 +446,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         //     "resolve_style(term_colors::MessageLevel::OuterPrompt){:#?}",
         //     resolve_style(term_colors::MessageLevel::OuterPrompt)
         // );
-        // let outer_prompt = || {
-        //     color_println!(
-        //         resolve_style(term_colors::MessageLevel::OuterPrompt),
-        //         "Enter one of: {:#?}",
-        //         cmd_list
-        //     );
-        // };
-        #[allow(unused_variables)]
         let outer_prompt = || {
-            println!(
-                "{}",
-                nu_resolve_style(MessageLevel::OuterPrompt)
-                    .unwrap_or_default()
-                    .paint(format!("Enter {}", cmd_list))
+            nu_color_println!(
+                nu_resolve_style(term_colors::MessageLevel::OuterPrompt),
+                "Enter {:#?}",
+                cmd_list
             );
         };
-        // outer_prompt();
+        #[allow(unused_variables)]
+        // let outer_prompt = || {
+        //     println!(
+        //         "{}",
+        //         nu_resolve_style(MessageLevel::OuterPrompt)
+        //             .unwrap_or_default()
+        //             .paint(format!("Enter {}", cmd_list))
+        //     );
+        // };
+        outer_prompt();
         let context = Context {
             options: &mut options,
             proc_flags: &proc_flags,
@@ -489,14 +491,14 @@ editor or their temporary disk locations.
 Outside of the expression evaluator, use the tab key to show selections and to complete partial
 matching selections.",
             )
-            .with_banner(&format!(
-                "{}",
-                // nu_resolve_style(MessageLevel::OuterPrompt)
-                //     .unwrap_or_default()
-                nu_ansi_term::Color::Green
-                    .bold()
-                    .paint(&format!("Enter {}", cmd_list)),
-            ))
+            // .with_banner(&format!(
+            //     "{}",
+            //     // nu_resolve_style(MessageLevel::OuterPrompt)
+            //     //     .unwrap_or_default()
+            //     nu_ansi_term::Color::Green
+            //         .bold()
+            //         .paint(&format!("Enter {}", cmd_list)),
+            // ))
             // .with_quick_completions(true)
             .with_partial_completions(true)
             .with_command(
@@ -538,7 +540,13 @@ This is the convenient option to use for snippets or even brief programs.")
         //     ReedlineEvent::ExecuteHostCommand("help".to_string()),
         // );
     } else {
-        gen_build_run(&&mut options, &proc_flags, &mut build_state, &start)?;
+        gen_build_run(
+            &&mut options,
+            &proc_flags,
+            &mut build_state,
+            None::<Ast>,
+            &start,
+        )?;
     }
 
     Ok(())
@@ -648,7 +656,7 @@ fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
     );
 
     debug!("In run_expr: build_state={build_state:#?}");
-    let result = gen_build_run(options, proc_flags, build_state, start);
+    let result = gen_build_run(options, proc_flags, build_state, None::<Ast>, start);
     if result.is_err() {
         println!("{result:?}");
     }
@@ -703,7 +711,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
                     //     .paint(
                             nu_ansi_term::Color::Cyan.paint(
                             r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
-                            Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
+Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
                         )
                 );
         if cfg!(windows) {
@@ -760,8 +768,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 
         match expr {
             Ok(expr) => {
-                // Store it in the BuildState
-                build_state.syntax_tree = Some(Ast::Expr(expr.clone()));
+                let syntax_tree = Some(Ast::Expr(expr.clone()));
 
                 // // Determine type of expression
                 // println!("******** Printing type of expression:");
@@ -785,16 +792,14 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 
                 rustfmt(build_state)?;
 
-                let result = gen_build_run(options, proc_flags, build_state, start);
-                if result.is_err() {
-                    println!("{result:?}");
-                }
+                let result = gen_build_run(options, proc_flags, build_state, syntax_tree, start);
+                println!("{result:?}");
                 // disp_cmd_list();
                 continue;
             }
             Err(err) => {
-                owo_color_println!(
-                    owo_resolve_style(MessageLevel::Error),
+                nu_color_println!(
+                    nu_resolve_style(MessageLevel::Error),
                     "Error parsing code: {}",
                     err
                 );
@@ -879,6 +884,7 @@ fn gen_build_run(
     options: &&mut cmd_args::Opt,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
+    syntax_tree: Option<Ast>,
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
@@ -901,25 +907,30 @@ fn gen_build_run(
             // );
         }
         let mut rs_source = read_file_contents(&build_state.source_path)?;
-        if build_state.syntax_tree.is_none() {
-            build_state.syntax_tree = code_utils::to_ast(&rs_source);
-        }
+        let syntax_tree: Option<Ast> = if syntax_tree.is_none() {
+            code_utils::to_ast(&rs_source)
+        } else {
+            syntax_tree
+        };
 
         if build_state.rs_manifest.is_some() {
-            build_state.cargo_manifest = Some(manifest::merge_manifest(build_state, &rs_source)?);
+            build_state.cargo_manifest = Some(manifest::merge_manifest(
+                build_state,
+                &rs_source,
+                &syntax_tree,
+            )?);
         }
 
-        let has_main = if let Some(ref syntax_tree_ref) = build_state.syntax_tree {
+        let has_main = if let Some(ref syntax_tree_ref) = syntax_tree {
             code_utils::has_main(syntax_tree_ref)
         } else {
             code_utils::has_main_alt(&rs_source)
         };
 
         println!("######## build_state={build_state:#?}");
-        if has_main {
-        } else {
+        if !has_main {
             rs_source = wrap_snippet(&rs_source);
-            build_state.syntax_tree = Some(Ast::File(syn::parse_file(&rs_source)?));
+            // build_state.syntax_tree = Some(Ast::File(syn::parse_file(&rs_source)?));
         };
         generate(build_state, &rs_source, proc_flags)?;
     } else {

@@ -309,7 +309,7 @@ enum LoopCommand {
 //       2.  How though? Don't use println{} when wrapping snippet if return type of expression is ()
 //       3.  Figure out how to avoid printing out empty result (partial dup of above TODO item.)
 //       4.  Option on main REPL to edit or delete history.
-//       5.  Debug return from advanced breaking Windows command line.
+//       5.  Debug return from "advanced"" breaking Windows command line. Look into using subcommands for advanced in main REPL.
 //       6.  Determine size limitations on reedline editor
 //       7.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.

@@ -497,7 +497,7 @@ matching selections.",
                     .bold()
                     .paint(&format!("Enter {}", cmd_list)),
             ))
-            // .with_quick_completions(false)
+            // .with_quick_completions(true)
             .with_partial_completions(true)
             .with_command(
                 ReplCommand::new("delete")
@@ -703,7 +703,7 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
                     //     .paint(
                             nu_ansi_term::Color::Cyan.paint(
                             r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
-        Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
+                            Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
                         )
                 );
         if cfg!(windows) {

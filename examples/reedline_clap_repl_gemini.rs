@@ -2,6 +2,8 @@
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 crossterm = "*"
+homedir = "0.2.1"
+lazy_static = "1.4.0"
 reedline = "0.32.0"
 shlex = "0.1.1"
 */
@@ -10,8 +12,10 @@ use clap::{
     error::{Error, ErrorKind},
     Command, FromArgMatches, Parser, Subcommand as _, ValueEnum,
 };
+use homedir::get_my_home;
 use reedline::{
-    ColumnarMenu, DefaultCompleter, DefaultValidator, KeyCode, KeyModifiers, ReedlineEvent,
+    ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultPrompt, DefaultValidator, Emacs,
+    ExampleHighlighter, KeyCode, KeyModifiers, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
 
 #[derive(Clone, Parser, Debug)]
@@ -21,6 +25,10 @@ enum ReplCommand {
     List,
     Delete,
     Quit,
+}
+
+lazy_static! {
+    static ref TMP_DIR: PathBuf = env::temp_dir();
 }
 
 // impl FromArgMatches for ReplCommand {
@@ -54,7 +62,21 @@ enum ReplCommand {
 // }
 
 fn main() {
-    let mut history = Vec::new();
+    let completer = DefaultCompleter::new().insert(vec![
+        "eval".to_string(),
+        "edit".to_string(),
+        "list".to_string(),
+        "delete".to_string(),
+        "quit".to_string(),
+    ]);
+
+    let home_dir = get_my_home()?.ok_or("Can't resolve home directory")?;
+    let history_file = home_dir.join("reedline_clap_repl_gemini_hist.txt");
+    let history = Box::new(
+        FileBackedHistory::with_file(20, history_file)
+            .expect("Error configuring history with file"),
+    );
+
     // let mut line_editor = reedline::Reedline::create();
     let mut valid_commands: Vec<String> = self
         .commands
@@ -71,41 +93,24 @@ fn main() {
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_highlighter(Box::new(ExampleHighlighter::new(valid_commands.clone())))
         .with_validator(validator)
-        .with_partial_completions(self.partial_completions)
-        .with_quick_completions(self.quick_completions)
-        .with_external_printer(self.external_printer.clone());
-
-    if self.hinter_enabled {
-        line_editor = line_editor.with_hinter(Box::new(
+        .with_partial_completions(true)
+        .with_quick_completions(true)
+        .with_hinter(Box::new(
             DefaultHinter::default().with_style(self.hinter_style),
         ));
-    }
-
-    if let Some(history_path) = &self.history {
-        let capacity = self.history_capacity.unwrap();
-        let history = FileBackedHistory::with_file(capacity, history_path.to_path_buf()).unwrap();
-        line_editor = line_editor.with_history(Box::new(history));
-    }
 
     // Ok(line_editor)
 
-    line_editor.set_prompt(">> ");
+    // line_editor.set_prompt(">> ");
 
-    let completer = DefaultCompleter::new().insert(vec![
-        "eval".to_string(),
-        "edit".to_string(),
-        "list".to_string(),
-        "delete".to_string(),
-        "quit".to_string(),
-    ]);
-    line_editor.set_completer(Box::new(completer));
+    // line_editor.set_completer(Box::new(completer));
 
-    // Add Ctrl-h for help binding
-    line_editor.add_binding(
-        KeyModifiers::CONTROL,
-        KeyCode::Char('h'),
-        ReedlineEvent::MenuDown,
-    );
+    // // Add Ctrl-h for help binding
+    // line_editor.add_binding(
+    //     KeyModifiers::CONTROL,
+    //     KeyCode::Char('h'),
+    //     ReedlineEvent::MenuDown,
+    // );
 
     let cli = Command::new("REPL").
         version("0.1.0")
@@ -114,50 +119,76 @@ fn main() {
         // (@arg command: ValueEnum::from_bounded::<ReplCommand>(ReplCommand::values()) -h "Command to run")
 ;
     let cli = ReplCommand::augment_subcommands(cli);
+
     loop {
-        let line = line_editor.read_line().unwrap();
-        history.push(line.clone());
-
-        if line.is_empty() {
-            continue;
-        }
-
-        let mut has_error = false;
-        let mut inner_loop = false;
-
-        let matches = cli.parse_from(line.split_whitespace());
-
-        if let Err(err) = matches {
-            eprintln!("Error: {}", err);
-            has_error = true;
-        } else {
-            let command = matches
-                .get_str("command")
-                .unwrap()
-                .parse::<ReplCommand>()
-                .unwrap();
-
-            match command {
-                ReplCommand::Eval => {
-                    line_editor.set_prompt(">> (eval) > ".to_string());
-                    loop {
-                        let inner_line = line_editor.read_line().unwrap();
-                        history.push(inner_line.clone());
-                        if inner_line.is_empty() {
-                            break;
-                        } else if inner_line == "back" {
-                            line_editor.set_prompt(">> ".to_string());
-                            inner_loop = true;
-                            break;
-                        }
-                        // Simulate evaluation here, print instead
-                        println!("Eval Result: {}", inner_line);
-                    }
+        let sig = line_editor
+            .read_line(&self.prompt)
+            .expect("failed to read_line");
+        match sig {
+            Signal::Success(line) => {
+                if let Err(err) = self.process_line(line) {
+                    (self.error_handler)(err, self)?;
                 }
-                ReplCommand::Edit => println!("You chose the edit function"),
-                ReplCommand::List => println!("You chose the list function"),
-                ReplCommand::Delete => println!("You chose the delete function"),
-                ReplCommand::Quit => break,
+            }
+            Signal::CtrlC => {
+                if self.stop_on_ctrl_c {
+                    break;
+                }
+            }
+            Signal::CtrlD => {
+                if self.stop_on_ctrl_d {
+                    break;
+                }
+            }
+        }
+    }
+
+    loop {
+        let signal = line_editor.read_line(&DefaultPrompt::default()).unwrap();
+
+        if let Signal::Success(line) = signal {
+            history.push(line);
+            if line.is_empty() {
+                continue;
+            }
+
+            let mut has_error = false;
+            let mut inner_loop = false;
+
+            let matches = cli.parse_from(line.split_whitespace());
+
+            if let Err(err) = matches {
+                eprintln!("Error: {}", err);
+                has_error = true;
+            } else {
+                let command = matches
+                    .get_str("command")
+                    .unwrap()
+                    .parse::<ReplCommand>()
+                    .unwrap();
+
+                match command {
+                    ReplCommand::Eval => {
+                        line_editor.set_prompt(">> (eval) > ".to_string());
+                        loop {
+                            let inner_line = line_editor.read_line().unwrap();
+                            history.push(inner_line.clone());
+                            if inner_line.is_empty() {
+                                break;
+                            } else if inner_line == "back" {
+                                line_editor.set_prompt(">> ".to_string());
+                                inner_loop = true;
+                                break;
+                            }
+                            // Simulate evaluation here, print instead
+                            println!("Eval Result: {}", inner_line);
+                        }
+                    }
+                    ReplCommand::Edit => println!("You chose the edit function"),
+                    ReplCommand::List => println!("You chose the list function"),
+                    ReplCommand::Delete => println!("You chose the delete function"),
+                    ReplCommand::Quit => break,
+                }
             }
         }
 

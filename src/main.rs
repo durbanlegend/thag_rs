@@ -288,17 +288,21 @@ struct Context<'a> {
 #[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
 #[strum(serialize_all = "kebab-case")]
 enum LoopCommand {
-    /// Capture or modify your Rust expression or its generated Cargo.toml file in your preferred editor (specified by environment variable $VISUAL or $EDITOR, or in a simple default editor)
-    Advanced,
-    /// Enter, paste or modify the generated Cargo.toml
+    /// Enter/paste and evaluate a Rust expression. This is the convenient option to use for snippets or even short programs.
     Eval,
-    /// List generated files
+    /// Edit the Rust expression. Edit/run can also be used as an alternative to eval for longer snippets and programs.
+    Edit,
+    /// Edit the generated Cargo.toml
+    Toml,
+    /// Attempt to build and run the Rust expression
+    Run,
+    /// Delete all temporary files for this eval (see list)
     Delete,
-    /// Evaluate an expression. Enclose complex expressions in braces {}.
+    /// List temporary files
     List,
     /// Edit history
     History,
-    /// Exit REPL
+    /// Exit the REPL
     Quit,
 }
 
@@ -504,38 +508,30 @@ matching selections.",
             .with_quick_completions(true)
             .with_partial_completions(true)
             .with_command(
-                ReplCommand::new("delete")
-                    .about("Delete all temporary files for this eval (see list)"),
-                delete,
-            )
-            .with_command(
-                ReplCommand::new("advanced")
-                    .subcommand(
-                        ReplCommand::new("edit").about("Edit Rust expression in editor"),
-                    )
-                    .subcommand(
-                        ReplCommand::new("run").about("Attempt to build and run Rust expression"),
-                    )
-                    .subcommand(
-                        ReplCommand::new("toml").about("Edit generated Cargo.toml"),
-                    )
-                    .about(
-                    "Edit eval expression or generated Cargo.toml.
-You can preselect an editor via environment variables VISUAL or EDITOR,
-or accept a simple default editor.
-This is useful for correcting your expression and is also an intermediate option
-between using the expression evaluator and our normal script file processor",
-                ),
-                advanced,
-            )
-            .with_command(
                 ReplCommand::new("eval")
                     .about("Enter/paste and evaluate a Rust expression.
-This is the convenient option to use for snippets or even brief programs.")
+This is the convenient option to use for snippets or even short programs.")
                     .subcommand(ReplCommand::new("quit")),
                 eval,
             )
+            .with_command(
+                ReplCommand::new("edit").about("Edit Rust expression in editor"),
+                edit
+            )
+            .with_command(
+                ReplCommand::new("run").about("Attempt to build and run Rust expression"),
+                run_expr
+            )
+            .with_command(
+                ReplCommand::new("toml").about("Edit generated Cargo.toml"),
+                toml
+            )
             .with_command(ReplCommand::new("list").about("List temporary files"), list)
+                .with_command(
+                    ReplCommand::new("delete")
+                        .about("Delete all temporary files for this eval (see list)"),
+                    delete,
+                )
             .with_command(
                 ReplCommand::new("quit").about("Exit the REPL"),
                 // .aliases(["q", "exit"]), // don't work
@@ -584,62 +580,6 @@ fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
         println!("Failed to delete all files - enter l(ist) to list remaining files");
     }
     Ok(Some(String::from("End of delete")))
-}
-
-#[allow(clippy::needless_pass_by_value)]
-#[allow(clippy::unnecessary_wraps)]
-fn advanced(args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    let (options, proc_flags, build_state, _start) = (
-        &mut context.options,
-        context.proc_flags,
-        &mut context.build_state,
-        context.start,
-    );
-
-    let mut context = Context {
-        options: &mut (**options).clone(),
-        proc_flags: &proc_flags.clone(),
-        build_state: &mut build_state.clone(),
-        start: &Instant::now(),
-    };
-
-    match args.subcommand() {
-        Some(("edit", _)) => edit(args, &mut context),
-        Some(("run", _)) => run_expr(args, &mut context),
-        Some(("toml", _)) => toml(args, &mut context),
-        _ => panic!("Unknown subcommand {:?}", args.subcommand_name()),
-    }
-
-    //     // Migrate logic below to match expression above
-    //     let mut repl: Repl<Context, BuildRunError> = Repl::new(context)
-    //         .with_name("advanced")
-    //         .with_banner(&format!(
-    //             "{}",
-    //             // nu_resolve_style(MessageLevel::InnerPrompt)
-    //             //     .unwrap_or_default()
-    //             nu_ansi_term::Color::LightMagenta.paint(String::from(
-    //                 "Enter edit, run, toml or help. Ctrl-D to go back to the main REPL"
-    //             ))
-    //         ))
-    //         .with_description("This inner REPL lets you edit the Rust expression or generated Cargo.toml using a chosen or default editor.
-    // Use the VISUAL or EDITOR environment variables to set your preferred editor, or accept a default such as Nano.
-    // Use Ctrl-C or Ctrl-D to go back to the main REPL")
-    //         .with_command(
-    //             ReplCommand::new("edit").about("Edit Rust expression in editor"),
-    //             edit
-    //         )
-    //         .with_command(
-    //             ReplCommand::new("run").about("Attempt to build and run Rust expression"),
-    //             run_expr
-    //         )
-    //         .with_command(
-    //             ReplCommand::new("toml").about("Edit generated Cargo.toml"),
-    //             toml
-    //         )
-    //         .with_stop_on_ctrl_c(true);
-    // repl.run()?;
-
-    // Ok(Some(String::from("Back in main REPL")))
 }
 
 #[allow(clippy::needless_pass_by_value)]

@@ -509,7 +509,17 @@ matching selections.",
                 delete,
             )
             .with_command(
-                ReplCommand::new("advanced").about(
+                ReplCommand::new("advanced")
+                    .subcommand(
+                        ReplCommand::new("edit").about("Edit Rust expression in editor"),
+                    )
+                    .subcommand(
+                        ReplCommand::new("run").about("Attempt to build and run Rust expression"),
+                    )
+                    .subcommand(
+                        ReplCommand::new("toml").about("Edit generated Cargo.toml"),
+                    )
+                    .about(
                     "Edit eval expression or generated Cargo.toml.
 You can preselect an editor via environment variables VISUAL or EDITOR,
 or accept a simple default editor.
@@ -578,7 +588,7 @@ fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn advanced(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+fn advanced(args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let (options, proc_flags, build_state, _start) = (
         &mut context.options,
         context.proc_flags,
@@ -586,41 +596,50 @@ fn advanced(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
         context.start,
     );
 
-    let context = Context {
+    let mut context = Context {
         options: &mut (**options).clone(),
         proc_flags: &proc_flags.clone(),
         build_state: &mut build_state.clone(),
         start: &Instant::now(),
     };
-    let mut repl: Repl<Context, BuildRunError> = Repl::new(context)
-        .with_name("advanced")
-        .with_banner(&format!(
-            "{}",
-            // nu_resolve_style(MessageLevel::InnerPrompt)
-            //     .unwrap_or_default()
-            nu_ansi_term::Color::LightMagenta.paint(String::from(
-                "Enter edit, run, toml or help. Ctrl-D to go back to the main REPL"
-            ))
-        ))
-        .with_description("This inner REPL lets you edit the Rust expression or generated Cargo.toml using a chosen or default editor.
-Use the VISUAL or EDITOR environment variables to set your preferred editor, or accept a default such as Nano.
-Use Ctrl-C or Ctrl-D to go back to the main REPL")
-        .with_command(
-            ReplCommand::new("edit").about("Edit Rust expression in editor"),
-            edit
-        )
-        .with_command(
-            ReplCommand::new("run").about("Attempt to build and run Rust expression"),
-            run_expr
-        )
-        .with_command(
-            ReplCommand::new("toml").about("Edit generated Cargo.toml"),
-            toml
-        )
-        .with_stop_on_ctrl_c(true);
-    repl.run()?;
 
-    Ok(Some(String::from("Back in main REPL")))
+    match args.subcommand() {
+        Some(("edit", _)) => edit(args, &mut context),
+        Some(("run", _)) => run_expr(args, &mut context),
+        Some(("toml", _)) => toml(args, &mut context),
+        _ => panic!("Unknown subcommand {:?}", args.subcommand_name()),
+    }
+
+    //     // Migrate logic below to match expression above
+    //     let mut repl: Repl<Context, BuildRunError> = Repl::new(context)
+    //         .with_name("advanced")
+    //         .with_banner(&format!(
+    //             "{}",
+    //             // nu_resolve_style(MessageLevel::InnerPrompt)
+    //             //     .unwrap_or_default()
+    //             nu_ansi_term::Color::LightMagenta.paint(String::from(
+    //                 "Enter edit, run, toml or help. Ctrl-D to go back to the main REPL"
+    //             ))
+    //         ))
+    //         .with_description("This inner REPL lets you edit the Rust expression or generated Cargo.toml using a chosen or default editor.
+    // Use the VISUAL or EDITOR environment variables to set your preferred editor, or accept a default such as Nano.
+    // Use Ctrl-C or Ctrl-D to go back to the main REPL")
+    //         .with_command(
+    //             ReplCommand::new("edit").about("Edit Rust expression in editor"),
+    //             edit
+    //         )
+    //         .with_command(
+    //             ReplCommand::new("run").about("Attempt to build and run Rust expression"),
+    //             run_expr
+    //         )
+    //         .with_command(
+    //             ReplCommand::new("toml").about("Edit generated Cargo.toml"),
+    //             toml
+    //         )
+    //         .with_stop_on_ctrl_c(true);
+    // repl.run()?;
+
+    // Ok(Some(String::from("Back in main REPL")))
 }
 
 #[allow(clippy::needless_pass_by_value)]

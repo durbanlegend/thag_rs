@@ -13,9 +13,10 @@ use clap::{
     Command, FromArgMatches, Parser, Subcommand as _, ValueEnum,
 };
 use homedir::get_my_home;
+use lazy_static::lazy_static;
 use reedline::{
     ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultPrompt, DefaultValidator, Emacs,
-    ExampleHighlighter, KeyCode, KeyModifiers, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    ExampleHighlighter,FileBackedHistory KeyCode, KeyModifiers, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
 
 #[derive(Clone, Parser, Debug)]
@@ -77,8 +78,8 @@ fn main() {
             .expect("Error configuring history with file"),
     );
 
-    // let mut line_editor = reedline::Reedline::create();
-    let mut valid_commands: Vec<String> = self
+    let mut line_editor = reedline::Reedline::create();
+    let mut valid_commands: Vec<String> = line_editor
         .commands
         .iter()
         .map(|(_, command)| command.name.clone())

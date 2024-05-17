@@ -279,6 +279,7 @@ impl BuildState {
 struct Context<'a> {
     options: &'a mut Opt,
     proc_flags: &'a ProcFlags,
+    cmd_list: String,
     build_state: &'a mut BuildState,
     start: &'a Instant,
 }
@@ -472,9 +473,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         let context = Context {
             options: &mut options,
             proc_flags: &proc_flags,
+            cmd_list: cmd_list.clone(),
             build_state: &mut build_state,
             start: &start,
         };
+        // let display_banner = AfterCommandCallback::<Context, BuildRunError>::new();
+
         let mut repl = Repl::new(context)
             .with_name("REPL")
             .with_version("v0.1.0")
@@ -507,6 +511,8 @@ matching selections.",
             ))
             .with_quick_completions(true)
             .with_partial_completions(true)
+            .with_on_after_command(display_banner)
+
             .with_command(
                 ReplCommand::new("eval")
                     .about("Enter/paste and evaluate a Rust expression.
@@ -561,10 +567,18 @@ This is the convenient option to use for snippets or even short programs.")
 }
 
 // #[allow(clippy::needless_pass_by_value)]
-// #[allow(clippy::unnecessary_wraps)]
-// fn back(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
-//     Ok(Some(String::from("...")))
-// }
+#[allow(clippy::unnecessary_wraps)]
+fn display_banner(context: &mut Context) -> Result<Option<String>, BuildRunError> {
+    let banner = format!(
+        "{}",
+        nu_resolve_style(MessageLevel::OuterPrompt)
+            .unwrap_or_default()
+            // nu_ansi_term::Color::Green
+            //     .bold()
+            .paint(&format!("Enter {}", context.cmd_list))
+    );
+    Ok(Some(banner))
+}
 
 /// Delete our temporary files
 #[allow(clippy::needless_pass_by_value)]

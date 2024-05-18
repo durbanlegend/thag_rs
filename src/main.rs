@@ -503,10 +503,10 @@ matching selections.",
             )
             .with_banner(&format!(
                 "{}",
-                // nu_resolve_style(MessageLevel::OuterPrompt)
-                //     .unwrap_or_default()
-                nu_ansi_term::Color::Green
-                    .bold()
+                nu_resolve_style(MessageLevel::OuterPrompt)
+                    .unwrap_or_default()
+                // nu_ansi_term::Color::Green
+                //     .bold()
                     .paint(&format!("Enter {}", cmd_list)),
             ))
             .with_quick_completions(true)
@@ -569,7 +569,7 @@ This is the convenient option to use for snippets or even short programs.")
 // #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
 fn display_banner(context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    let banner = format!(
+    println!(
         "{}",
         nu_resolve_style(MessageLevel::OuterPrompt)
             .unwrap_or_default()
@@ -577,7 +577,7 @@ fn display_banner(context: &mut Context) -> Result<Option<String>, BuildRunError
             //     .bold()
             .paint(&format!("Enter {}", context.cmd_list))
     );
-    Ok(Some(banner))
+    Ok(Some("REPL".to_string()))
 }
 
 /// Delete our temporary files
@@ -668,32 +668,20 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
     //     .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
 
     loop {
+        nu_color_println!(
+            nu_resolve_style(MessageLevel::InnerPrompt),
+            r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
+Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
+        );
         //         println!(
         //             "{}",
-        //             // nu_resolve_style(MessageLevel::InnerPrompt)
-        //             //     .unwrap_or_default()
-        //             //     .paint(
-        //                     nu_ansi_term::Color::Cyan.paint(
+        //             nu_resolve_style(MessageLevel::InnerPrompt)
+        //                 .unwrap_or_default()
+        //                 .paint(
+        // //                     nu_ansi_term::Color::Cyan.paint(
         //                     r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
         // Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
-        //                 )
         //         );
-
-        let s = format!(
-                    "{}",
-                    // nu_resolve_style(MessageLevel::InnerPrompt)
-                    //     .unwrap_or_default()
-                    //     .paint(
-                            nu_ansi_term::Color::Cyan.paint(
-                            r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
-Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
-                        )
-                );
-        if cfg!(windows) {
-            println!("{s}\r");
-        } else {
-            println!("{s}");
-        }
 
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {

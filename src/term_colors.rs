@@ -444,7 +444,7 @@ impl NuThemeStyle for MessageStyle {
             MessageStyle::Xterm256DarkEmphasis => XtermColor::Copperfield.get_color().bold(),
             MessageStyle::Xterm256DarkOuterPrompt => XtermColor::DarkMalibuBlue.get_color().bold(),
             MessageStyle::Xterm256DarkInnerPrompt => {
-                XtermColor::LightCaribbeanGreen.get_color().bold()
+                XtermColor::CaribbeanGreen.get_color().normal()
             }
             MessageStyle::Xterm256DarkNormal => XtermColor::Silver.get_color().normal(),
             MessageStyle::Xterm256DarkDebug => XtermColor::BondiBlue.get_color().normal(),
@@ -506,11 +506,30 @@ impl OwoThemeStyle for MessageStyle {
 }
 
 fn get_theme() -> Result<Theme, termbg::Error> {
-    let timeout = std::time::Duration::from_millis(100);
-
-    // debug!("Check terminal background color");
-    let theme: Result<Theme, termbg::Error> = termbg::theme(timeout);
-    theme
+    // Windows Terminal is the default on Windows 11 and still doesn't respond
+    // to xterm OSC commands, despite a comment to the contrary in termbg lib.rs
+    // which is not borne out by the provided link:
+    // https://github.com/microsoft/terminal/issues/3718
+    // This results in the first character of input after running termbg::theme
+    // - specifically termbg::from_xterm - getting swallowed.
+    // See for examples/termbg_bug.rs and examples/termbg_bug1.rs.
+    //
+    // Note that the termbg Readme lists Windows Terminal as unsupported. The
+    // older Windows Console is supported and seems OK but there seems no
+    // foolproof way to tell which you're in.
+    // In short, with Dark mode colours being visible in light mode, Microsoft
+    // not making an effort and 99% of Windows users using Dark mode anyway,
+    // it's just not worth the effort fighting against Windows.
+    // I've spent an inordinate amount of effort trying to give Windows users a
+    // decent experience, but I can only work with what Mocrosoft is prepared to
+    // provide.
+    if cfg!(windows) {
+        Ok(Theme::Dark)
+    } else {
+        let timeout = std::time::Duration::from_millis(100);
+        // debug!("Check terminal background color");
+        termbg::theme(timeout)
+    }
 }
 
 pub(crate) fn get_term_theme() -> TermTheme {

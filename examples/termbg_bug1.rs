@@ -116,19 +116,20 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<(), Error> {
         let mut buf = [0; 1];
         println!("buf.len()={}", buf.len());
         let mut start = false;
-        // let _ = stdin.read_to_string(&mut buffer).await?;
+        // let _ = stdin.read_line(&mut buffer).await?;
         loop {
             let _ = stdin.read_exact(&mut buf).await?;
+            print!("{:#?},", char::from(buf[0]));
             // response terminated by BEL(0x7)
             if start && (buf[0] == 0x7) {
-                break;
+                continue;
             }
             // response terminated by ST(0x1b 0x5c)
             if start && (buf[0] == 0x1b) {
                 // consume last 0x5c
                 let _ = stdin.read_exact(&mut buf).await?;
                 debug_assert_eq!(buf[0], 0x5c);
-                break;
+                continue;
             }
             if start {
                 buffer.push(buf[0] as char);

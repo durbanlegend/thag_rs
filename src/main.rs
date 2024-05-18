@@ -481,7 +481,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let mut repl = Repl::new(context)
             .with_name("REPL")
-            .with_version("v0.1.0")
+            // .with_version("v0.1.0")
             .with_description(
                 "REPL mode lets you type or paste a Rust expression to be evaluated.
 Start by choosing the eval option and entering your expression. Expressions between matching braces,

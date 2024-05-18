@@ -772,8 +772,8 @@ pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
         if output.status.success() {
             //     println!("Successfully formatted {} with rustfmt.", source_path_str);
             // } else {
-            eprintln!(
-                "Failed to format {} with rustfmt:\n{}",
+            debug!(
+                "Failed to format {} with rustfmt\n{}",
                 source_path_str,
                 String::from_utf8_lossy(&output.stderr)
             );

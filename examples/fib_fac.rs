@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+itertools = "0.13.0"
+rug = "1.24.1"
+*/
 use itertools::iterate;
 use rug::Integer;
 use std::iter::successors;

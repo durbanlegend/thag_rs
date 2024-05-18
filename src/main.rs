@@ -279,7 +279,7 @@ impl BuildState {
 struct Context<'a> {
     options: &'a mut Opt,
     proc_flags: &'a ProcFlags,
-    cmd_list: String,
+    // cmd_list: String,
     build_state: &'a mut BuildState,
     start: &'a Instant,
 }
@@ -473,7 +473,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let context = Context {
             options: &mut options,
             proc_flags: &proc_flags,
-            cmd_list: cmd_list.clone(),
+            // cmd_list: cmd_list.clone(),
             build_state: &mut build_state,
             start: &start,
         };
@@ -511,7 +511,7 @@ matching selections.",
             ))
             .with_quick_completions(true)
             .with_partial_completions(true)
-            .with_on_after_command(display_banner)
+            // .with_on_after_command(display_banner)
 
             .with_command(
                 ReplCommand::new("eval")
@@ -566,19 +566,20 @@ This is the convenient option to use for snippets or even short programs.")
     Ok(())
 }
 
-// #[allow(clippy::needless_pass_by_value)]
-#[allow(clippy::unnecessary_wraps)]
-fn display_banner(context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    println!(
-        "{}",
-        nu_resolve_style(MessageLevel::OuterPrompt)
-            .unwrap_or_default()
-            // nu_ansi_term::Color::Green
-            //     .bold()
-            .paint(&format!("Enter {}", context.cmd_list))
-    );
-    Ok(Some("REPL".to_string()))
-}
+// Getting unable to locate cursor and OSC instructions randomly appearing, both in MacOS.
+// // #[allow(clippy::needless_pass_by_value)]
+// #[allow(clippy::unnecessary_wraps)]
+// fn display_banner(context: &mut Context) -> Result<Option<String>, BuildRunError> {
+//     println!(
+//         "{}",
+//         nu_resolve_style(MessageLevel::OuterPrompt)
+//             .unwrap_or_default()
+//             // nu_ansi_term::Color::Green
+//             //     .bold()
+//             .paint(&format!("Enter {}", context.cmd_list))
+//     );
+//     Ok(Some("REPL".to_string()))
+// }
 
 /// Delete our temporary files
 #[allow(clippy::needless_pass_by_value)]
@@ -705,8 +706,8 @@ Use up and down arrows to navigate history, right arrow to select current, Ctrl-
         let (rs_manifest, rs_source) = parse_source_str(input, Instant::now())
             .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
 
-        println!("######## Parsed out rs_manifest={rs_manifest:#?}");
-        println!("######## Parsed out rs_source={}", rs_source.as_str());
+        // println!("######## Parsed out rs_manifest={rs_manifest:#?}");
+        // println!("######## Parsed out rs_source={}", rs_source.as_str());
         build_state.rs_manifest = Some(rs_manifest);
         // TODO A bit expensive to store it there
         // build_state.rs_source = Some(rs_source.clone()); // Bad - still raw
@@ -714,12 +715,12 @@ Use up and down arrows to navigate history, right arrow to select current, Ctrl-
         // Parse the expression string into a syntax tree.
         // The REPL is not catering for programs with a main method (syn::File),
         let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
-        println!(
-            r"expr.i_err()={}, str.starts_with('{{')={}, str.ends_with('}}')={}",
-            expr.is_err(),
-            rs_source.starts_with('{'),
-            rs_source.ends_with('}')
-        );
+        // println!(
+        //     r"expr.is_err()={}, str.starts_with('{{')={}, str.ends_with('}}')={}",
+        //     expr.is_err(),
+        //     rs_source.starts_with('{'),
+        //     rs_source.ends_with('}')
+        // );
         if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
             // Try putting the expression in braces.
             let string = format!(r"{{{rs_source}}}");
@@ -856,10 +857,10 @@ fn gen_build_run(
 
     if build_state.must_gen {
         if build_state.rs_manifest.is_none() {
-            let (rs_manifest, rs_source): (CargoManifest, String) =
+            let (rs_manifest, _rs_source): (CargoManifest, String) =
                 parse_source_file(&build_state.source_path)?;
-            println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
-            println!("&&&&&&&& rs_source={rs_source}");
+            // println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
+            // println!("&&&&&&&& rs_source={rs_source}");
             build_state.rs_manifest = Some(rs_manifest);
             // if build_state.rs_source.is_none() {
             //     build_state.rs_source = Some(rs_source.clone());
@@ -890,7 +891,7 @@ fn gen_build_run(
             code_utils::has_main_alt(&rs_source)
         };
 
-        println!("######## build_state={build_state:#?}");
+        // println!("######## build_state={build_state:#?}");
         if !has_main {
             rs_source = wrap_snippet(&rs_source);
             // build_state.syntax_tree = Some(Ast::File(syn::parse_file(&rs_source)?));

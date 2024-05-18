@@ -265,7 +265,7 @@ path = "{gen_src_path}"
 "##
     );
 
-    eprintln!("cargo_manifest=\n{cargo_manifest}");
+    // eprintln!("cargo_manifest=\n{cargo_manifest}");
 
     CargoManifest::from_str(&cargo_manifest)
 }

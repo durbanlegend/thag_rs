@@ -770,8 +770,8 @@ pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
         let output = command.output().expect("Failed to run rustfmt");
 
         if output.status.success() {
-            println!("Successfully formatted {} with rustfmt.", source_path_str);
-        } else {
+            //     println!("Successfully formatted {} with rustfmt.", source_path_str);
+            // } else {
             eprintln!(
                 "Failed to format {} with rustfmt:\n{}",
                 source_path_str,

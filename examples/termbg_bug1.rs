@@ -143,8 +143,12 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<(), Error> {
 
     terminal::disable_raw_mode()?;
 
-    // let s = ``buffer.iter().map(|u| char::from(u)).collect();
-    println!("s={:#?}", String::from_utf8(buffer.unwrap().to_vec()));
+    if let Ok(buf) = buffer {
+        println!("s={:#?}", String::from_utf8(buf.to_vec()));
+    } else {
+        println!("Err={buffer:#?}");
+    }
+
 
     // // Should return by error after disable_raw_mode
     // let buffer = buffer?;
@@ -160,12 +164,11 @@ fn main() {
 
     // let rgb = termbg::rgb(timeout);
     // // let theme = termbg::theme(timeout);
+    let term = terminal();
+    from_xterm(term, timeout).unwrap();
 
     println!("Type in something and see if first character gets swallowed in Windows Terminal");
     let mut buffer = String::new();
     io::stdin().lock().read_to_string(&mut buffer).unwrap();
     println!("buffer={buffer:?}");
-
-    let term = terminal();
-    from_xterm(term, timeout).unwrap();
 }

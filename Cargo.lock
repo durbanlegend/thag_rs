@@ -286,6 +286,7 @@ dependencies = [
  "syn 2.0.60",
  "termbg",
  "toml",
+ "wsl",
 ]
 
 [[package]]
@@ -2114,6 +2115,12 @@ dependencies = [
  "thiserror",
  "windows",
 ]
+
+[[package]]
+name = "wsl"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8dab7ac864710bdea6594becbea5b5050333cf34fefb0dc319567eb347950d4"
 
 [[package]]
 name = "yansi"

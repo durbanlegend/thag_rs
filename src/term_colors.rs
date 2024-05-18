@@ -523,7 +523,7 @@ fn get_theme() -> Result<Theme, termbg::Error> {
     // I've spent an inordinate amount of effort trying to give Windows users a
     // decent experience, but I can only work with what Mocrosoft is prepared to
     // provide.
-    if cfg!(windows) {
+    if cfg!(windows) || wsl::is_wsl() {
         Ok(Theme::Dark)
     } else {
         let timeout = std::time::Duration::from_millis(100);

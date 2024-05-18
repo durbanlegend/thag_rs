@@ -11,7 +11,7 @@ thiserror = "1.0.61"
 use crossterm::terminal;
 use is_terminal::IsTerminal;
 use std::env;
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use std::time::Duration;
 use thiserror::Error;
 
@@ -113,37 +113,38 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<(), Error> {
         // let mut buffer = Vec::new();
         let mut buffer = String::new();
         let mut stdin = async_std::io::stdin();
-        let mut buf = [0; 1];
+        let mut buf = [0; 25];
         println!("buf.len()={}", buf.len());
         let mut start = false;
-        // let _ = stdin.read_line(&mut buffer).await?;
-        loop {
-            let _ = stdin.read_exact(&mut buf).await?;
-            print!("{:#?},", char::from(buf[0]));
-            // response terminated by BEL(0x7)
-            if start && (buf[0] == 0x7) {
-                continue;
-            }
-            // response terminated by ST(0x1b 0x5c)
-            if start && (buf[0] == 0x1b) {
-                // consume last 0x5c
-                let _ = stdin.read_exact(&mut buf).await?;
-                debug_assert_eq!(buf[0], 0x5c);
-                continue;
-            }
-            if start {
-                buffer.push(buf[0] as char);
-            }
-            if buf[0] == b':' {
-                start = true;
-            }
-        }
-        Ok(buffer)
+        let _ = stdin.read(&mut buf).await?;
+        // loop {
+        //     let _ = stdin.read_exact(&mut buf).await?;
+        //     print!("{:#?},", char::from(buf[0]));
+        //     // response terminated by BEL(0x7)
+        //     if start && (buf[0] == 0x7) {
+        //         continue;
+        //     }
+        //     // response terminated by ST(0x1b 0x5c)
+        //     if start && (buf[0] == 0x1b) {
+        //         // consume last 0x5c
+        //         let _ = stdin.read_exact(&mut buf).await?;
+        //         debug_assert_eq!(buf[0], 0x5c);
+        //         continue;
+        //     }
+        //     if start {
+        //         buffer.push(buf[0] as char);
+        //     }
+        //     if buf[0] == b':' {
+        //         start = true;
+        //     }
+        // }
+        Ok(buf)
     }));
 
     terminal::disable_raw_mode()?;
 
-    println!("buffer={buffer:#?}");
+    // let s = ``buffer.iter().map(|u| char::from(u)).collect();
+    println!("s={:#?}", String::from_utf8(buffer.unwrap().to_vec()));
 
     // // Should return by error after disable_raw_mode
     // let buffer = buffer?;
@@ -160,10 +161,10 @@ fn main() {
     // let rgb = termbg::rgb(timeout);
     // // let theme = termbg::theme(timeout);
 
-    // println!("Type in something and see if first character gets swallowed in Windows Terminal");
-    // let mut buffer = String::new();
-    // io::stdin().lock().read_to_string(&mut buffer).unwrap();
-    // println!("buffer={buffer:?}");
+    println!("Type in something and see if first character gets swallowed in Windows Terminal");
+    let mut buffer = String::new();
+    io::stdin().lock().read_to_string(&mut buffer).unwrap();
+    println!("buffer={buffer:?}");
 
     let term = terminal();
     from_xterm(term, timeout).unwrap();

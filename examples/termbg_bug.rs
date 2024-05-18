@@ -16,22 +16,4 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().lock().read_to_string(&mut buffer).unwrap();
     println!("buffer={buffer:?}");
-
-    // match rgb {
-    //     Ok(rgb) => {
-    //         println!("  Color: R={:x}, G={:x}, B={:x}", rgb.r, rgb.g, rgb.b);
-    //     }
-    //     Err(e) => {
-    //         println!("  Color: detection failed {:?}", e);
-    //     }
-    // }
-
-    // match theme {
-    //     Ok(theme) => {
-    //         println!("  Theme: {:?}", theme);
-    //     }
-    //     Err(e) => {
-    //         println!("  Theme: detection failed {:?}", e);
-    //     }
-    // }
 }

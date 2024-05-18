@@ -110,7 +110,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> Result<(), Error> {
 
     let buffer = async_std::task::block_on(async_std::io::timeout(timeout, async {
         use async_std::io::ReadExt;
-        // let mut buffer = Vec::new();
+        let mut buffer = Vec::new();
         let mut stdin = async_std::io::stdin();
         let mut buf = [0; 1];
         // println!("buf.len()={}", buf.len());

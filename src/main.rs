@@ -467,10 +467,9 @@ fn fun_name(
     // };
     // outer_prompt();
     let context = Context {
-        options: options,
-        proc_flags: proc_flags,
-        // cmd_list: cmd_list.clone(),
-        build_state: build_state,
+        options,
+        proc_flags,
+        build_state,
         start: &start,
     };
     let mut repl = Repl::new(context)

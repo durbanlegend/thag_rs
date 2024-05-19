@@ -144,9 +144,7 @@ pub(crate) struct Workspace {}
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();
 
-    let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis)
-        .unwrap_or_default()
-        .paint(dep_crate);
+    let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(dep_crate);
     println!(
         r#"
             Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
@@ -161,12 +159,6 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
     //! {dep_crate_styled} = "<version n.n.n goes here>"
             "#,
     );
-
-    // let content = format!(r#"hello"#);
-    // println!(
-    //     "Why, {} world!",
-    //     owo_colors::Style::style(&MessageStyle::Emphasis.get_style().unwrap(), content)
-    // );
 
     let mut search_command = Command::new("cargo");
     search_command.args(["search", dep_crate, "--limit", "1"]);

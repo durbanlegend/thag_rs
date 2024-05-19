@@ -26,7 +26,6 @@ use reedline_repl_rs::{
 };
 use term_colors::MessageLevel;
 
-// use core::str;
 use std::borrow::Cow::{self};
 use std::env;
 use std::error::Error;
@@ -138,15 +137,12 @@ pub(crate) struct BuildState {
     pub(crate) source_path: PathBuf,
     pub(crate) cargo_home: PathBuf,
     pub(crate) target_dir_path: PathBuf,
-    // pub(crate) target_dir_str: String,
     pub(crate) target_path: PathBuf,
     pub(crate) cargo_toml_path: PathBuf,
     pub(crate) rs_manifest: Option<CargoManifest>,
     pub(crate) cargo_manifest: Option<CargoManifest>,
     pub(crate) must_gen: bool,
     pub(crate) must_build: bool,
-    // pub(crate) rs_source: Option<String>,
-    // pub(crate) syntax_tree: Option<Ast>,
 }
 
 impl BuildState {
@@ -230,7 +226,6 @@ impl BuildState {
         };
 
         debug!("target_dir_path={}", target_dir_path.display());
-        // let target_dir_str = target_dir_path.display().to_string();
         let mut target_path = target_dir_path.join("target").join("debug");
         target_path = if cfg!(windows) {
             target_path.join(source_stem.clone() + ".exe")
@@ -308,15 +303,9 @@ enum LoopCommand {
 }
 
 //      TODO:
-//          Next: 1. test in Windows, 2. nu_ansi_term color_println macro.
-//                3. test reedline partial completions. 4. Print out all colours again
-//       1.  In term_colors, detect if terminal is xterm compatible, and if so choose nicer colors.
-//       2.  How though? Don't use println{} when wrapping snippet if return type of expression is ()
-//       3.  Figure out how to avoid printing out empty result (partial dup of above TODO item.)
-//       4.  Option on main REPL to edit or delete history.
-//       5.  Debug return from "advanced"" breaking Windows command line. Look into using subcommands for advanced in main REPL.
-//       6.  Determine size limitations on reedline editor
-//       7.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
+//       1.  Why rustfmt sometimes fails.
+//       5.  Get term_colors.rs fn main to print out full 256-colour palette as before.
+//       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
 //       9.  Consider making script name optional, with -n/stdin parm as per my runner changes?
 //      10.  Decide if it's worth passing the wrapped syntax tree to gen_build_run from eval just to avoid
@@ -327,8 +316,9 @@ enum LoopCommand {
 //      14.  Get rid of date and time in RHS of REPL? - doesn't seem to be an option.
 //      15.  Help command in eval, same as quit and q
 //      16.  Work on examples/reedline_clap_repl_gemini.rs
-//      17.  Move AST to disk and out of BuildState if possible.
+//      17.
 //      18.  How to set editor in Windows.
+//
 
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -465,7 +455,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         //     println!(
         //         "{}",
         //         nu_resolve_style(MessageLevel::OuterPrompt)
-        //             .unwrap_or_default()
         //             .paint(format!("Enter {}", cmd_list))
         //     );
         // };
@@ -504,9 +493,6 @@ matching selections.",
             .with_banner(&format!(
                 "{}",
                 nu_resolve_style(MessageLevel::OuterPrompt)
-                    .unwrap_or_default()
-                // nu_ansi_term::Color::Green
-                //     .bold()
                     .paint(&format!("Enter {}", cmd_list)),
             ))
             .with_quick_completions(true)
@@ -573,7 +559,6 @@ This is the convenient option to use for snippets or even short programs.")
 //     println!(
 //         "{}",
 //         nu_resolve_style(MessageLevel::OuterPrompt)
-//             .unwrap_or_default()
 //             // nu_ansi_term::Color::Green
 //             //     .bold()
 //             .paint(&format!("Enter {}", context.cmd_list))
@@ -664,9 +649,6 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         .with_history(history);
 
     let prompt = EvalPrompt("expr");
-    // println!("{:#?}", nu_resolve_style(MessageLevel::InnerPrompt)
-    //     .unwrap_or_default()
-    //     .paint("nu_resolve_style(MessageLevel::InnerPrompt).unwrap_or_default().paint escape codes").to_string());
 
     loop {
         nu_color_println!(
@@ -674,15 +656,6 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
             r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
 Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
         );
-        //         println!(
-        //             "{}",
-        //             nu_resolve_style(MessageLevel::InnerPrompt)
-        //                 .unwrap_or_default()
-        //                 .paint(
-        // //                     nu_ansi_term::Color::Cyan.paint(
-        //                     r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
-        // Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
-        //         );
 
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {
@@ -715,12 +688,6 @@ Use up and down arrows to navigate history, right arrow to select current, Ctrl-
         // Parse the expression string into a syntax tree.
         // The REPL is not catering for programs with a main method (syn::File),
         let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
-        // println!(
-        //     r"expr.is_err()={}, str.starts_with('{{')={}, str.ends_with('}}')={}",
-        //     expr.is_err(),
-        //     rs_source.starts_with('{'),
-        //     rs_source.ends_with('}')
-        // );
         if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
             // Try putting the expression in braces.
             let string = format!(r"{{{rs_source}}}");
@@ -734,24 +701,16 @@ Use up and down arrows to navigate history, right arrow to select current, Ctrl-
             Ok(expr) => {
                 let syntax_tree = Some(Ast::Expr(expr.clone()));
 
-                // // Determine type of expression
-                // println!("******** Printing type of expression:");
-                // attribute!(s);
-
                 // Generate Rust code for the expression
                 let rust_code = quote!(println!("Expression returned {:?}", #expr););
 
                 let rs_source = format!("{rust_code}");
                 // debug!("rs_source={rs_source}");
 
-                // TODO A bit expensive to store it there
-                // build_state.rs_source = Some(rs_source.clone());
-
                 // // Store with its toml code instance
                 // write_source(&build_state.source_path, input)?;
 
                 // Store without its toml code instance for now to get it back working
-
                 write_source(&build_state.source_path.clone(), &rs_source)?;
 
                 rustfmt(build_state)?;
@@ -771,42 +730,6 @@ Use up and down arrows to navigate history, right arrow to select current, Ctrl-
         }
     }
 
-    // let mut line_editor = Reedline::create()
-    //         .with_validator(Box::new(DefaultValidator))
-    //         .with_hinter(Box::new(
-    //             DefaultHinter::default()
-    //                 .with_style(Style::new().italic().fg(Color::Cyan)),
-    //         ))
-    //         // .with_history(history)
-    //         ;
-
-    // let prompt = CustomPrompt("expr");
-    // loop {
-    //     println!(
-    //         "{}{}\n{}",
-    //         nu_ansi_term::Color::Cyan.paint("Enter an expression (e.g., 2 + 3), or "),
-    //         nu_ansi_term::Color::Cyan.bold().paint("quit"),
-    //         nu_ansi_term::Color::Cyan.paint(
-    //             "Expressions in matching braces, brackets or quotes may span multiple lines."
-    //         )
-    //     );
-
-    //     let sig = line_editor.read_line(&prompt).expect("Error reading line");
-    //     let input: &str = match sig {
-    //         Signal::Success(ref buffer) => buffer,
-    //         Signal::CtrlD | Signal::CtrlC => {
-    //             // println!("quit");
-    //             break;
-    //         }
-    //     };
-    //     // Process user input (line)
-
-    //     let str = input.trim();
-    //     let x = str.to_lowercase();
-    //     if x == "q" || x == "quit" {
-    //         break;
-    //     }
-    // }
     Ok(Some("Back in main REPL".to_string()))
 }
 
@@ -862,13 +785,6 @@ fn gen_build_run(
             // println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
             // println!("&&&&&&&& rs_source={rs_source}");
             build_state.rs_manifest = Some(rs_manifest);
-            // if build_state.rs_source.is_none() {
-            //     build_state.rs_source = Some(rs_source.clone());
-            // }
-            // println!(
-            //     "&&&&&&&& build_state.rs_source={:#?}",
-            //     build_state.rs_source
-            // );
         }
         let mut rs_source = read_file_contents(&build_state.source_path)?;
         let syntax_tree: Option<Ast> = if syntax_tree.is_none() {
@@ -950,14 +866,10 @@ fn generate(
     let target_rs_path = build_state.target_dir_path.clone();
     let target_rs_path = target_rs_path.join(&build_state.source_name);
     // let is_repl = proc_flags.contains(ProcFlags::REPL);
-    // I think condition was removed for repl with named (existing) script.
-    // Out: Trying removing it because unmodified raw version is being wrongly written here for new expr.
-    // if !is_repl {
     if verbose {
         println!("GGGGGGGG Creating source file: {target_rs_path:?}");
     }
     write_source(&target_rs_path, rs_source)?;
-    // }
 
     // debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {

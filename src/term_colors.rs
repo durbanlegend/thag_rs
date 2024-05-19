@@ -3,7 +3,7 @@
 lazy_static = "1.4.0"
 log = "0.4.21"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-# owo-colors = { version = "4.0.0", features = ["supports-colors"] }
+
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
 termbg = "0.5.0"
@@ -11,15 +11,9 @@ termbg = "0.5.0"
 
 use std::{fmt::Display, str::FromStr};
 
-// use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
-// use owo_colors::colors as owo_ansi;
-
-// use owo_ansi::xterm as owo_xterm;
-
 use lazy_static::lazy_static;
 use log::debug;
-// use owo_colors::Style;
-use nu_ansi_term::Style;
+
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
@@ -317,30 +311,11 @@ impl NuColor for XtermColor {
 macro_rules! nu_color_println {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
-        if let Some(style) = $style {
-                // Qualified form to avoid imports in calling code.
-                if cfg!(windows) {println!("{}\r", style.paint(content));} else {println!("{}", style.paint(content)); }
-                // println!("{}{cr}", style.paint(content), cr = if cfg!(windows) {'\r'} else {()});
-        } else {
-            println!("{}", content);
-        }
+     let style = $style;
+    // Qualified form to avoid imports in calling code.
+    if cfg!(windows) {println!("{}\r", style.paint(content));} else {println!("{}", style.paint(content)); }
     }};
 }
-
-/// A version of println that prints an entire message in colour or otherwise styled.
-/// Format: `owo_color_println`!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);
-// #[macro_export]
-// macro_rules! owo_color_println {
-//     ($style:expr, $($arg:tt)*) => {{
-//         let content = format!("{}", format_args!($($arg)*));
-//         if let Some(style) = $style {
-//                 // Qualified form to avoid imports in calling code.
-//                 println!("{}", owo_colors::Style::style(&style, content));
-//         } else {
-//             println!("{}", content);
-//         }
-//     }};
-// }
 
 #[derive(Clone, EnumString, Display, PartialEq)]
 /// We include `TrueColor` in Xterm256 as we're not interested in more than 256 colours just for messages.
@@ -367,10 +342,6 @@ pub enum MessageLevel {
     Normal,
     Debug,
 }
-
-// pub trait OwoThemeStyle: Display {
-//     fn get_owo_style(&self) -> Option<Style>;
-// }
 
 pub trait NuThemeStyle: Display {
     fn get_style(&self) -> nu_ansi_term::Style;
@@ -453,59 +424,6 @@ impl NuThemeStyle for MessageStyle {
     }
 }
 
-// impl OwoThemeStyle for MessageStyle {
-//     fn get_owo_style(&self) -> Option<Style> {
-//         let style = match self {
-//             MessageStyle::Ansi16LightError | MessageStyle::Ansi16DarkError => {
-//                 Style::new().fg::<owo_colors::colors::Red>().bold()
-//             }
-//             MessageStyle::Ansi16LightWarning | MessageStyle::Ansi16DarkWarning => {
-//                 Style::new().fg::<owo_colors::colors::Magenta>().bold()
-//             }
-//             MessageStyle::Ansi16LightEmphasis | MessageStyle::Ansi16DarkEmphasis => {
-//                 Style::new().fg::<owo_colors::colors::Yellow>().bold()
-//             }
-//             MessageStyle::Ansi16LightOuterPrompt | MessageStyle::Ansi16DarkOuterPrompt => {
-//                 Style::new().fg::<owo_colors::colors::Blue>().bold()
-//             }
-//             MessageStyle::Ansi16LightInnerPrompt => {
-//                 Style::new().fg::<owo_colors::colors::Cyan>().bold()
-//             }
-//             #[allow(clippy::match_same_arms)]
-//             MessageStyle::Ansi16LightNormal => Style::new().fg::<owo_colors::colors::White>(), // Reversal beats me
-//             MessageStyle::Ansi16LightDebug | MessageStyle::Ansi16DarkDebug => {
-//                 Style::new().fg::<owo_colors::colors::Cyan>()
-//             }
-//             MessageStyle::Ansi16DarkInnerPrompt => {
-//                 Style::new().fg::<owo_colors::colors::Green>().bold()
-//             }
-//             #[allow(clippy::match_same_arms)]
-//             MessageStyle::Ansi16DarkNormal => Style::new().fg::<owo_colors::colors::White>(),
-//             MessageStyle::Xterm256LightError | MessageStyle::Xterm256DarkError => {
-//                 Style::new().fg::<owo_xterm::GuardsmanRed>().bold()
-//             }
-//             MessageStyle::Xterm256LightWarning => Style::new().fg::<owo_xterm::DarkViolet>().bold(),
-//             MessageStyle::Xterm256LightEmphasis | MessageStyle::Xterm256DarkEmphasis => {
-//                 Style::new().fg::<owo_xterm::Copperfield>().bold()
-//             }
-//             MessageStyle::Xterm256LightOuterPrompt | MessageStyle::Xterm256DarkOuterPrompt => {
-//                 Style::new().fg::<owo_xterm::DarkMalibuBlue>().bold()
-//             }
-//             MessageStyle::Xterm256LightInnerPrompt | MessageStyle::Xterm256DarkInnerPrompt => {
-//                 Style::new().fg::<owo_xterm::LightCaribbeanGreen>()
-//             }
-//             MessageStyle::Xterm256LightNormal => Style::new().fg::<owo_xterm::Black>(),
-//             MessageStyle::Xterm256LightDebug => Style::new().fg::<owo_xterm::LochmaraBlue>(),
-//             MessageStyle::Xterm256DarkWarning => {
-//                 Style::new().fg::<owo_xterm::DarkPurplePizzazz>().bold()
-//             }
-//             MessageStyle::Xterm256DarkNormal => Style::new().fg::<owo_xterm::Silver>(),
-//             MessageStyle::Xterm256DarkDebug => Style::new().fg::<owo_xterm::BondiBlue>(),
-//         };
-//         Some(style)
-//     }
-// }
-
 fn get_theme() -> Result<Theme, termbg::Error> {
     // Windows Terminal is the default on Windows 11 and still doesn't respond
     // to xterm OSC commands, despite a comment to the contrary in termbg lib.rs
@@ -543,7 +461,7 @@ pub(crate) fn get_term_theme() -> TermTheme {
     }
 }
 
-pub fn nu_resolve_style(message_level: MessageLevel) -> Option<nu_ansi_term::Style> {
+pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
     let term_theme = get_term_theme();
     let color_qual = COLOR_SUPPORT.as_ref().unwrap().to_string().to_lowercase();
     let theme_qual = term_theme.to_string().to_lowercase();
@@ -557,29 +475,10 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> Option<nu_ansi_term::Sty
     //     &color_qual, &theme_qual, &msg_level_qual,
     // );
     match message_style {
-        Ok(message_style) => Some(NuThemeStyle::get_style(&message_style)),
-        Err(_) => Some(nu_ansi_term::Style::default()),
+        Ok(message_style) => NuThemeStyle::get_style(&message_style),
+        Err(_) => nu_ansi_term::Style::default(),
     }
 }
-
-// pub fn owo_resolve_style(message_level: MessageLevel) -> Option<Style> {
-//     let term_theme = get_term_theme();
-//     let color_qual = COLOR_SUPPORT.as_ref().unwrap().to_string().to_lowercase();
-//     let theme_qual = term_theme.to_string().to_lowercase();
-//     let msg_level_qual = message_level.to_string().to_lowercase();
-//     let message_style = MessageStyle::from_str(&format!(
-//         "{}_{}_{}",
-//         &color_qual, &theme_qual, &msg_level_qual
-//     ));
-//     // debug!(
-//     //     "Called from_str on {}_{}_{}, found {message_style:#?}",
-//     //     &color_qual, &theme_qual, &msg_level_qual,
-//     // );
-//     match message_style {
-//         Ok(message_style) => OwoThemeStyle::get_owo_style(&message_style),
-//         Err(_) => None,
-//     }
-// }
 
 #[allow(dead_code)]
 fn main() {
@@ -614,8 +513,6 @@ fn main() {
         ));
         let style = message_style.unwrap().get_style();
 
-        // Use style for displaying the message
-        // owo_color_println!(style, "{}", "Colored Warning message\n");
         println!("{}", style.paint("Colored Warning message\n"));
 
         for variant in MessageStyle::iter() {

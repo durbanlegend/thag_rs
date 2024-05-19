@@ -11,7 +11,7 @@ use std::time::Instant;
 
 use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
-use crate::term_colors::{MessageStyle, OwoThemeStyle};
+use crate::term_colors::{nu_resolve_style, MessageLevel};
 use crate::{Ast, BuildState};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -144,9 +144,9 @@ pub(crate) struct Workspace {}
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();
 
-    let dep_crate_styled =
-        // TODO remove hard coded colour support and theme variant
-        owo_colors::Style::style(&MessageStyle::Ansi16DarkEmphasis.get_owo_style().unwrap(), dep_crate);
+    let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis)
+        .unwrap_or_default()
+        .paint(dep_crate);
     println!(
         r#"
             Doing a Cargo search for crate {dep_crate_styled} referenced in your script.

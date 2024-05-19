@@ -620,8 +620,7 @@ pub(crate) fn wrap_snippet(rs_source: &str) -> String {
     });
 
     let wrapped_snippet = format!(
-        r"
-#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
+        r"#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
 use std::error::Error;
 use std::io;
 use std::io::prelude::*;

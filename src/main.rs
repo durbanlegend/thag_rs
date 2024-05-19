@@ -11,7 +11,7 @@ use crate::term_colors::nu_resolve_style;
 use clap::Parser;
 use code_utils::Ast;
 use env_logger::{fmt::WriteStyle, Builder, Env};
-use homedir::get_my_home;
+use home::home_dir;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
 use nu_ansi_term::{Color, Style};
@@ -209,7 +209,7 @@ impl BuildState {
             PathBuf::from(match std::env::var("CARGO_HOME") {
                 Ok(string) if string != String::new() => string,
                 _ => {
-                    let home_dir = get_my_home()?.ok_or("Can't resolve home directory")?;
+                    let home_dir = home_dir().ok_or("Can't resolve home directory")?;
                     debug!("home_dir={}", home_dir.display());
                     home_dir.join(".cargo").display().to_string()
                 }

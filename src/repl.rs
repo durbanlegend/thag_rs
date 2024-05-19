@@ -295,7 +295,7 @@ pub(crate) fn eval(
         nu_color_println!(
             nu_resolve_style(MessageLevel::InnerPrompt),
             r"Enter an expression (e.g., 2 + 3), or Ctrl-C/D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
-Use ↑ ↓ to navigate history, →  to select current, Ctrl-U to clear. Ctrl-K to delete to end."
+Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
         );
 
         let sig = line_editor.read_line(&prompt)?;
@@ -345,7 +345,6 @@ Use ↑ ↓ to navigate history, →  to select current, Ctrl-U to clear. Ctrl-K
                 // Generate Rust code for the expression
                 let rust_code = quote!(println!("Expression returned {:?}", #expr););
 
-                let rs_source = format!("{rust_code}");
                 // debug!("rs_source={rs_source}");
 
                 // // Store with its toml code instance

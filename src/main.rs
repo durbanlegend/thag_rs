@@ -226,6 +226,7 @@ struct Context<'a> {
 }
 
 //      TODO:
+//       1.  Debug toml getting lostwhen e.g pasting tokio_hello_world.rs into eval.
 //       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.

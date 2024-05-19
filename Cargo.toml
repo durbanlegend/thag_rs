@@ -11,7 +11,6 @@ log = "0.4.21"
 regex = "1.10.3"
 serde = { version = "1.0.98", features = ["derive"] }
 toml = "0.8.12"
-crossterm = "0.27.0"
 syn = { version = "2.0.60", features = ["extra-traits", "full", "visit"] }
 quote = "1.0.36"
 strum = { version = "0.26.2", features = ["derive", "phf"] }

@@ -266,7 +266,6 @@ version = "0.1.0"
 dependencies = [
  "bitflags 2.5.0",
  "clap",
- "crossterm",
  "edit",
  "env_logger",
  "home",

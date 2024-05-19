@@ -353,6 +353,10 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
                 // debug!("Saved toml line: {line}");
             }
         } else {
+            if line.starts_with("#!") {
+                debug!("Ignoring shebang {line}");
+                continue;
+            }
             rust_code.push_str(line);
             rust_code.push('\n');
             // debug!("Saved rust line: {line}");

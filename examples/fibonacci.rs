@@ -1,3 +1,4 @@
+#! /usr/bin/env /Users/donf/projects/build_run/target/release/build_run
 /*[toml]
 [dependencies]
 itertools = "0.12.1"

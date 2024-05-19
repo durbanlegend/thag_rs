@@ -1,8 +1,8 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{get_opt, get_proc_flags, Opt, ProcFlags};
 use crate::code_utils::{
-    clean_up, debug_timings, display_dir_contents, display_timings, parse_source_str,
-    read_file_contents, rustfmt, wrap_snippet,
+    clean_up, debug_timings, display_dir_contents, display_timings, parse_source_str, rustfmt,
+    wrap_snippet,
 };
 use crate::code_utils::{modified_since_compiled, parse_source_file, write_source};
 use crate::errors::BuildRunError;
@@ -767,14 +767,14 @@ fn gen_build_run(
     let options = &options;
 
     if build_state.must_gen {
+        let (rs_manifest, mut rs_source): (CargoManifest, String) =
+            parse_source_file(&build_state.source_path)?;
+        // println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
+        // println!("&&&&&&&& rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
-            let (rs_manifest, _rs_source): (CargoManifest, String) =
-                parse_source_file(&build_state.source_path)?;
-            // println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
-            // println!("&&&&&&&& rs_source={rs_source}");
             build_state.rs_manifest = Some(rs_manifest);
         }
-        let mut rs_source = read_file_contents(&build_state.source_path)?;
+        // let mut rs_source = read_file_contents(&build_state.source_path)?;
         let syntax_tree: Option<Ast> = if syntax_tree.is_none() {
             code_utils::to_ast(&rs_source)
         } else {

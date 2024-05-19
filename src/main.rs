@@ -320,7 +320,6 @@ enum LoopCommand {
 //      18.  How to set editor in Windows.
 //
 
-#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
 
@@ -431,48 +430,54 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if is_repl {
-        // Using strum
-        let mut cmd_vec = LoopCommand::iter()
-            .filter(|v| !matches!(v, LoopCommand::Eval))
-            .map(<LoopCommand as Into<&'static str>>::into)
-            .map(String::from)
-            .collect::<Vec<String>>();
-        cmd_vec.sort();
-        let cmd_list = "eval or one of: ".to_owned() + &cmd_vec.join(", ") + " or help";
-        // debug!(
-        //     "resolve_style(term_colors::MessageLevel::OuterPrompt){:#?}",
-        //     resolve_style(term_colors::MessageLevel::OuterPrompt)
-        // );
-        // let outer_prompt = || {
-        //     nu_color_println!(
-        //         nu_resolve_style(term_colors::MessageLevel::OuterPrompt),
-        //         "Enter {:#?}",
-        //         cmd_list
-        //     );
-        // };
-        #[allow(unused_variables)]
-        // let outer_prompt = || {
-        //     println!(
-        //         "{}",
-        //         nu_resolve_style(MessageLevel::OuterPrompt)
-        //             .paint(format!("Enter {}", cmd_list))
-        //     );
-        // };
-        // outer_prompt();
-        let context = Context {
-            options: &mut options,
-            proc_flags: &proc_flags,
-            // cmd_list: cmd_list.clone(),
-            build_state: &mut build_state,
-            start: &start,
-        };
-        // let display_banner = AfterCommandCallback::<Context, BuildRunError>::new();
+        fun_name(&mut options, &proc_flags, &mut build_state, start)?;
+    } else {
+        gen_build_run(
+            &&mut options,
+            &proc_flags,
+            &mut build_state,
+            None::<Ast>,
+            &start,
+        )?;
+    }
 
-        let mut repl = Repl::new(context)
-            .with_name("REPL")
-            // .with_version("v0.1.0")
-            .with_description(
-                "REPL mode lets you type or paste a Rust expression to be evaluated.
+    Ok(())
+}
+
+fn fun_name(
+    options: &mut Opt,
+    proc_flags: &ProcFlags,
+    build_state: &mut BuildState,
+    start: Instant,
+) -> Result<(), Box<dyn Error>> {
+    let mut cmd_vec = LoopCommand::iter()
+        .filter(|v| !matches!(v, LoopCommand::Eval))
+        .map(<LoopCommand as Into<&'static str>>::into)
+        .map(String::from)
+        .collect::<Vec<String>>();
+    cmd_vec.sort();
+    let cmd_list = "eval or one of: ".to_owned() + &cmd_vec.join(", ") + " or help";
+    #[allow(unused_variables)]
+    // let outer_prompt = || {
+    //     println!(
+    //         "{}",
+    //         nu_resolve_style(MessageLevel::OuterPrompt)
+    //             .paint(format!("Enter {}", cmd_list))
+    //     );
+    // };
+    // outer_prompt();
+    let context = Context {
+        options: options,
+        proc_flags: proc_flags,
+        // cmd_list: cmd_list.clone(),
+        build_state: build_state,
+        start: &start,
+    };
+    let mut repl = Repl::new(context)
+        .with_name("REPL")
+        // .with_version("v0.1.0")
+        .with_description(
+            "REPL mode lets you type or paste a Rust expression to be evaluated.
 Start by choosing the eval option and entering your expression. Expressions between matching braces,
 brackets, parens or quotes may span multiple lines.
 If valid, the expression will be converted into a Rust program, and built and run using Cargo.
@@ -489,66 +494,50 @@ go back and edit your expression or its generated Cargo.toml file and copy or sa
 editor or their temporary disk locations.
 Outside of the expression evaluator, use the tab key to show selections and to complete partial
 matching selections.",
-            )
-            .with_banner(&format!(
-                "{}",
-                nu_resolve_style(MessageLevel::OuterPrompt)
-                    .paint(&format!("Enter {}", cmd_list)),
-            ))
-            .with_quick_completions(true)
-            .with_partial_completions(true)
-            // .with_on_after_command(display_banner)
+        )
+        .with_banner(&format!(
+            "{}",
+            nu_resolve_style(MessageLevel::OuterPrompt)
+                .paint(&format!("Enter {}", cmd_list)),
+        ))
+        .with_quick_completions(true)
+        .with_partial_completions(true)
+        // .with_on_after_command(display_banner)
 
-            .with_command(
-                ReplCommand::new("eval")
-                    .about("Enter/paste and evaluate a Rust expression.
+        .with_command(
+            ReplCommand::new("eval")
+                .about("Enter/paste and evaluate a Rust expression.
 This is the convenient option to use for snippets or even short programs.")
-                    .subcommand(ReplCommand::new("quit")),
-                eval,
-            )
+                .subcommand(ReplCommand::new("quit")),
+            eval,
+        )
+        .with_command(
+            ReplCommand::new("edit").about("Edit Rust expression in editor"),
+            edit
+        )
+        .with_command(
+            ReplCommand::new("run").about("Attempt to build and run Rust expression"),
+            run_expr
+        )
+        .with_command(
+            ReplCommand::new("toml").about("Edit generated Cargo.toml"),
+            toml
+        )
+        .with_command(ReplCommand::new("list").about("List temporary files"), list)
             .with_command(
-                ReplCommand::new("edit").about("Edit Rust expression in editor"),
-                edit
+                ReplCommand::new("delete")
+                    .about("Delete all temporary files for this eval (see list)"),
+                delete,
             )
-            .with_command(
-                ReplCommand::new("run").about("Attempt to build and run Rust expression"),
-                run_expr
-            )
-            .with_command(
-                ReplCommand::new("toml").about("Edit generated Cargo.toml"),
-                toml
-            )
-            .with_command(ReplCommand::new("list").about("List temporary files"), list)
-                .with_command(
-                    ReplCommand::new("delete")
-                        .about("Delete all temporary files for this eval (see list)"),
-                    delete,
-                )
-            .with_command(
-                ReplCommand::new("quit").about("Exit the REPL"),
-                // .aliases(["q", "exit"]), // don't work
-                quit,
-            )
-            .with_command(ReplCommand::new("history").about("Edit history."), history)
-            // .with_error_handler(|ref _err, _repl| Ok(()))
-            .with_stop_on_ctrl_c(true);
-        repl.run()?;
-        // show help with CTRL+h
-        // .with_keybinding(
-        //     KeyModifiers::CONTROL,
-        //     KeyCode::Char('h'),
-        //     ReedlineEvent::ExecuteHostCommand("help".to_string()),
-        // );
-    } else {
-        gen_build_run(
-            &&mut options,
-            &proc_flags,
-            &mut build_state,
-            None::<Ast>,
-            &start,
-        )?;
-    }
-
+        .with_command(
+            ReplCommand::new("quit").about("Exit the REPL"),
+            // .aliases(["q", "exit"]), // don't work
+            quit,
+        )
+        .with_command(ReplCommand::new("history").about("Edit history."), history)
+        // .with_error_handler(|ref _err, _repl| Ok(()))
+        .with_stop_on_ctrl_c(true);
+    repl.run()?;
     Ok(())
 }
 

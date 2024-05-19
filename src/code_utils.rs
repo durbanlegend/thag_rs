@@ -769,12 +769,20 @@ pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
     if Command::new("rustfmt").arg("--version").output().is_ok() {
         // Run rustfmt on the source file
         let mut command = Command::new("rustfmt");
+        command.arg("--verbose");
+        command.arg("--edition");
+        command.arg("2021");
         command.arg(source_path_str);
         let output = command.output().expect("Failed to run rustfmt");
 
         if output.status.success() {
-            //     println!("Successfully formatted {} with rustfmt.", source_path_str);
-            // } else {
+            debug!("Successfully formatted {} with rustfmt.", source_path_str);
+            debug!(
+                "{}\n{}",
+                source_path_str,
+                String::from_utf8_lossy(&output.stdout)
+            );
+        } else {
             debug!(
                 "Failed to format {} with rustfmt\n{}",
                 source_path_str,

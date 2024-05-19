@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{get_opt, get_proc_flags, Opt, ProcFlags};
-use crate::code_utils::{debug_timings, display_timings, wrap_snippet};
+use crate::code_utils::{debug_timings, display_timings, rustfmt, wrap_snippet};
 use crate::code_utils::{modified_since_compiled, parse_source_file, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
@@ -17,7 +17,6 @@ use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Instant;
-// use std::process;
 use std::{fs, io::Write as OtherWrite};
 
 mod cmd_args;
@@ -29,10 +28,10 @@ mod term_colors;
 
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-pub(crate) const REPL_SUBDIR: &str = "rs_repl";
 const RS_SUFFIX: &str = ".rs";
-pub(crate) const TOML_NAME: &str = "Cargo.toml";
 pub(crate) const FLOWER_BOX_LEN: usize = 70;
+pub(crate) const REPL_SUBDIR: &str = "rs_repl";
+pub(crate) const TOML_NAME: &str = "Cargo.toml";
 
 lazy_static! {
     static ref TMP_DIR: PathBuf = env::temp_dir();
@@ -227,8 +226,7 @@ struct Context<'a> {
 }
 
 //      TODO:
-//       1.  Why rustfmt sometimes fails.
-//       5.  Get term_colors.rs fn main to print out full 256-colour palette as before.
+//       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
 //       9.  Consider making script name optional, with -n/stdin parm as per my runner changes?
@@ -477,6 +475,7 @@ fn generate(
         println!("GGGGGGGG Creating source file: {target_rs_path:?}");
     }
     write_source(&target_rs_path, rs_source)?;
+    rustfmt(build_state)?;
 
     // debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {

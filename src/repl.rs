@@ -7,7 +7,6 @@ use crate::code_utils;
 use crate::code_utils::clean_up;
 use crate::code_utils::display_dir_contents;
 use crate::code_utils::parse_source_str;
-use crate::code_utils::rustfmt;
 use crate::errors::BuildRunError;
 use crate::nu_color_println;
 use crate::term_colors::nu_resolve_style;
@@ -185,6 +184,7 @@ This is the convenient option to use for snippets or even short programs.")
         .with_command(ReplCommand::new("history").about("Edit history."), history)
         // .with_error_handler(|ref _err, _repl| Ok(()))
         .with_stop_on_ctrl_c(true);
+
     repl.run()?;
     Ok(())
 }
@@ -285,7 +285,7 @@ pub(crate) fn eval(
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
-            DefaultHinter::default().with_style(Style::new().italic().fg(Color::Cyan)),
+            DefaultHinter::default().with_style(Style::new().italic().fg(Color::LightCyan)),
         ))
         .with_history(history);
 
@@ -294,8 +294,8 @@ pub(crate) fn eval(
     loop {
         nu_color_println!(
             nu_resolve_style(MessageLevel::InnerPrompt),
-            r"Enter an expression (e.g., 2 + 3), or Ctrl-D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
-Use up and down arrows to navigate history, right arrow to select current, Ctrl-U to clear. Entering data will replace everything after cursor."
+            r"Enter an expression (e.g., 2 + 3), or Ctrl-C/D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
+Use ↑ ↓ to navigate history, →  to select current, Ctrl-U to clear. Ctrl-K to delete to end."
         );
 
         let sig = line_editor.read_line(&prompt)?;
@@ -354,7 +354,7 @@ Use up and down arrows to navigate history, right arrow to select current, Ctrl-
                 // Store without its toml code instance for now to get it back working
                 write_source(&build_state.source_path.clone(), &rs_source)?;
 
-                rustfmt(build_state)?;
+                // rustfmt(build_state)?;
 
                 let result = gen_build_run(options, proc_flags, build_state, syntax_tree, start);
                 println!("{result:?}");

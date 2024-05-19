@@ -18,7 +18,7 @@ use std::io;
 
 fn main() -> io::Result<()> {
     let mut line_editor = Reedline::create().with_hinter(Box::new(
-        DefaultHinter::default().with_style(Style::new().italic().fg(Color::LightGray)),
+        DefaultHinter::default().with_style(Style::new().italic().fg(Color::LightCyan)),
     ));
     let prompt = DefaultPrompt::default();
 

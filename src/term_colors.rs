@@ -18,7 +18,6 @@ use log::debug;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
-use wsl;
 
 lazy_static! {
     static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
@@ -259,7 +258,7 @@ fn main() {
                 XtermColor::iter().for_each(|variant| {
                     let color = variant.get_color();
                     println!("{}", color.paint(variant.to_string()));
-                })
+                });
             }
         }
     }

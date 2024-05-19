@@ -430,7 +430,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if is_repl {
-        fun_name(&mut options, &proc_flags, &mut build_state, start)?;
+        run_repl(&mut options, &proc_flags, &mut build_state, start)?;
     } else {
         gen_build_run(
             &&mut options,
@@ -444,7 +444,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn fun_name(
+fn run_repl(
     options: &mut Opt,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,

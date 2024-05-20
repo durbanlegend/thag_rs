@@ -247,6 +247,7 @@ struct Context<'a> {
 //      18.  How to set editor in Windows.
 //
 
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
 
@@ -286,6 +287,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "Script name must end in {RS_SUFFIX}"
             ))));
         }
+        if proc_flags.contains(ProcFlags::EXPR) {
+            return Err(Box::new(BuildRunError::Command(
+                "Incompatible options: --expr option and script namen".to_string(),
+            )));
+        }
+    } else if !proc_flags.contains(ProcFlags::EXPR) && !proc_flags.contains(ProcFlags::REPL) {
+        return Err(Box::new(BuildRunError::Command(
+            "Missing script name".to_string(),
+        )));
     }
 
     // Normal REPL with no named script

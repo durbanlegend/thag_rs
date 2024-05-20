@@ -37,10 +37,10 @@ pub(crate) struct Opt {
     #[clap(short, long)]
     pub(crate) run: bool,
     /// Run in REPL mode (read–eval–print loop). Existing script name is optional.
-    #[clap(short = 'l', long)]
-    repl: bool,
-    #[clap(short, long = "expr")]
-    expression: bool,
+    #[clap(short = 'l', long, conflicts_with_all(["all", "generate", "build", "run"]))]
+    pub(crate) repl: bool,
+    #[clap(short, long = "expr", conflicts_with_all(["all", "generate", "build", "run", "repl"]))]
+    pub(crate) expression: bool,
 }
 
 pub(crate) fn get_opt() -> Opt {

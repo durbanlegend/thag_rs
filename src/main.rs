@@ -228,6 +228,7 @@ struct Context<'a> {
 }
 
 //      TODO:
+//       1.  -e xxpression evaluator
 //       2.  Discontinue //! support?
 //       3.  Only check terminal once up front? Avoid test string showing up unexpectedly.
 //       5.  How to navigate reedline history entry by entry instead of line by line.
@@ -271,6 +272,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // println!("Temporary directory: {:?}", *TMP_DIR);
 
     let is_repl = proc_flags.contains(ProcFlags::REPL);
+    // let is_expr = proc_flags.contains(ProcFlags::EXPR);
 
     let working_dir_path = if is_repl {
         TMP_DIR.join(REPL_SUBDIR)

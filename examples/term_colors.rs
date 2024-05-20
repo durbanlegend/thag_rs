@@ -463,10 +463,10 @@ fn print_ansi_colors() {
     }
 }
 
-fn get_theme() -> Result<Theme, termbg::Error> {
+fn get_theme() -> Result<Theme, Error> {
     let timeout = std::time::Duration::from_millis(100);
 
     // debug!("Check terminal background color");
-    let theme: Result<Theme, termbg::Error> = termbg::theme(timeout);
+    let theme: Result<Theme, Error> = termbg::theme(timeout);
     theme
 }

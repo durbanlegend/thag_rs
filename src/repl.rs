@@ -15,7 +15,6 @@ use crate::MessageLevel;
 use clap::Parser;
 use code_utils::Ast;
 use log::debug;
-use nu_ansi_term::{Color, Style};
 // use quote::quote;
 use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
@@ -285,7 +284,7 @@ pub(crate) fn eval(
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
-            DefaultHinter::default().with_style(Style::new().italic().fg(Color::LightCyan)),
+            DefaultHinter::default().with_style(nu_resolve_style(MessageLevel::Ghost)),
         ))
         .with_history(history);
 

@@ -228,8 +228,8 @@ struct Context<'a> {
 }
 
 //      TODO:
-//       1.  Debug toml getting lost when e.g pasting tokio_hello_world.rs into eval.
 //       2.  Discontinue //! support?
+//       3.  Only check terminal once up front? Avoid test string showing up unexpectedly.
 //       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.

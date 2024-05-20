@@ -17,7 +17,7 @@ use log::debug;
 
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
-use termbg::Theme;
+use termbg::{Error, Theme};
 
 lazy_static! {
     static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
@@ -29,6 +29,22 @@ lazy_static! {
             }
         }
         None => None,
+    };
+
+    static ref THEME: Result<Theme, Error> = if cfg!(windows) || wsl::is_wsl() {
+        Ok(Theme::Dark)
+    } else {
+        let timeout = std::time::Duration::from_millis(100);
+        // debug!("Check terminal background color");
+        termbg::theme(timeout)
+    };
+
+    static ref TERM_THEME: TermTheme = match THEME.as_ref() {
+        Ok(theme) => match theme {
+            Theme::Light => TermTheme::Light,
+            Theme::Dark => TermTheme::Dark,
+        },
+        Err(_) => TermTheme::Dark,
     };
 }
 
@@ -74,6 +90,7 @@ pub enum MessageLevel {
     InnerPrompt,
     Normal,
     Debug,
+    Ghost,
 }
 
 pub trait NuThemeStyle: Display {
@@ -91,6 +108,7 @@ pub enum MessageStyle {
     Ansi16LightInnerPrompt,
     Ansi16LightNormal,
     Ansi16LightDebug,
+    Ansi16LightGhost,
 
     Ansi16DarkError,
     Ansi16DarkWarning,
@@ -99,6 +117,7 @@ pub enum MessageStyle {
     Ansi16DarkInnerPrompt,
     Ansi16DarkNormal,
     Ansi16DarkDebug,
+    Ansi16DarkGhost,
 
     Xterm256LightError,
     Xterm256LightWarning,
@@ -107,6 +126,7 @@ pub enum MessageStyle {
     Xterm256LightInnerPrompt,
     Xterm256LightNormal,
     Xterm256LightDebug,
+    Xterm256LightGhost,
 
     Xterm256DarkError,
     Xterm256DarkWarning,
@@ -115,6 +135,7 @@ pub enum MessageStyle {
     Xterm256DarkInnerPrompt,
     Xterm256DarkNormal,
     Xterm256DarkDebug,
+    Xterm256DarkGhost,
 }
 
 #[allow(clippy::match_same_arms)]
@@ -124,17 +145,19 @@ impl NuThemeStyle for MessageStyle {
             MessageStyle::Ansi16LightError => nu_ansi_term::Color::Red.bold(),
             MessageStyle::Ansi16LightWarning => nu_ansi_term::Color::Magenta.bold(),
             MessageStyle::Ansi16LightEmphasis => nu_ansi_term::Color::Yellow.bold(),
-            MessageStyle::Ansi16LightOuterPrompt => nu_ansi_term::Color::LightBlue.bold(),
+            MessageStyle::Ansi16LightOuterPrompt => nu_ansi_term::Color::Blue.bold(),
             MessageStyle::Ansi16LightInnerPrompt => nu_ansi_term::Color::Cyan.bold(),
             MessageStyle::Ansi16LightNormal => nu_ansi_term::Color::White.normal(),
             MessageStyle::Ansi16LightDebug => nu_ansi_term::Color::Cyan.normal(),
+            MessageStyle::Ansi16LightGhost => nu_ansi_term::Color::Cyan.dimmed().italic(),
             MessageStyle::Ansi16DarkError => nu_ansi_term::Color::Red.bold(),
             MessageStyle::Ansi16DarkWarning => nu_ansi_term::Color::Magenta.bold(),
             MessageStyle::Ansi16DarkEmphasis => nu_ansi_term::Color::Yellow.bold(),
-            MessageStyle::Ansi16DarkOuterPrompt => nu_ansi_term::Color::LightBlue.bold(),
+            MessageStyle::Ansi16DarkOuterPrompt => nu_ansi_term::Color::Cyan.bold(),
             MessageStyle::Ansi16DarkInnerPrompt => nu_ansi_term::Color::Green.bold(),
             MessageStyle::Ansi16DarkNormal => nu_ansi_term::Color::White.normal(),
             MessageStyle::Ansi16DarkDebug => nu_ansi_term::Color::Cyan.normal(),
+            MessageStyle::Ansi16DarkGhost => nu_ansi_term::Color::LightGray.dimmed().italic(),
             MessageStyle::Xterm256LightError => XtermColor::GuardsmanRed.get_color().bold(),
             MessageStyle::Xterm256LightWarning => XtermColor::DarkPurplePizzazz.get_color().bold(),
             MessageStyle::Xterm256LightEmphasis => XtermColor::Copperfield.get_color().bold(),
@@ -142,6 +165,7 @@ impl NuThemeStyle for MessageStyle {
             MessageStyle::Xterm256LightInnerPrompt => XtermColor::ScienceBlue.get_color().normal(),
             MessageStyle::Xterm256LightNormal => XtermColor::Black.get_color().normal(),
             MessageStyle::Xterm256LightDebug => XtermColor::LochmaraBlue.get_color().normal(),
+            MessageStyle::Xterm256LightGhost => XtermColor::Silver.get_color().normal().italic(),
             MessageStyle::Xterm256DarkError => XtermColor::GuardsmanRed.get_color().bold(),
             MessageStyle::Xterm256DarkWarning => XtermColor::DarkViolet.get_color().bold(),
             MessageStyle::Xterm256DarkEmphasis => XtermColor::Copperfield.get_color().bold(),
@@ -151,51 +175,16 @@ impl NuThemeStyle for MessageStyle {
             }
             MessageStyle::Xterm256DarkNormal => XtermColor::Silver.get_color().normal(),
             MessageStyle::Xterm256DarkDebug => XtermColor::BondiBlue.get_color().normal(),
+            MessageStyle::Xterm256DarkGhost => {
+                XtermColor::DarkSilverChalice.get_color().dimmed().italic()
+            }
         }
     }
 }
 
-fn get_theme() -> Result<Theme, termbg::Error> {
-    // Windows Terminal is the default on Windows 11 and still doesn't respond
-    // to xterm OSC commands, despite a comment to the contrary in termbg lib.rs
-    // which is not borne out by the provided link:
-    // https://github.com/microsoft/terminal/issues/3718
-    // This results in the first character of input after running termbg::theme
-    // - specifically termbg::from_xterm - getting swallowed.
-    // See for examples/termbg_bug.rs and examples/termbg_bug1.rs.
-    //
-    // Note that the termbg Readme lists Windows Terminal as unsupported. The
-    // older Windows Console is supported and seems OK but there seems no
-    // foolproof way to tell which you're in.
-    // In short, with Dark mode colours being visible in light mode, Microsoft
-    // not making an effort and 99% of Windows users using Dark mode anyway,
-    // it's just not worth the effort fighting against Windows.
-    // I've spent an inordinate amount of effort trying to give Windows users a
-    // decent experience, but I can only work with what Mocrosoft is prepared to
-    // provide.
-    if cfg!(windows) || wsl::is_wsl() {
-        Ok(Theme::Dark)
-    } else {
-        let timeout = std::time::Duration::from_millis(100);
-        // debug!("Check terminal background color");
-        termbg::theme(timeout)
-    }
-}
-
-pub(crate) fn get_term_theme() -> TermTheme {
-    match get_theme() {
-        Ok(theme) => match theme {
-            Theme::Light => TermTheme::Light,
-            Theme::Dark => TermTheme::Dark,
-        },
-        Err(_) => TermTheme::Dark,
-    }
-}
-
 pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
-    let term_theme = get_term_theme();
     let color_qual = COLOR_SUPPORT.as_ref().unwrap().to_string().to_lowercase();
-    let theme_qual = term_theme.to_string().to_lowercase();
+    let theme_qual = TERM_THEME.to_string().to_lowercase();
     let msg_level_qual = message_level.to_string().to_lowercase();
     let message_style = MessageStyle::from_str(&format!(
         "{}_{}_{}",
@@ -216,8 +205,6 @@ fn main() {
     let term = termbg::terminal();
     debug!("  Term : {:?}", term);
 
-    let term_theme = get_term_theme();
-
     let color_support = match supports_color::on(Stream::Stdout) {
         Some(color_support) => {
             if color_support.has_16m || color_support.has_256 {
@@ -234,18 +221,7 @@ fn main() {
             println!("No colour support found for terminal");
         }
         Some(support) => {
-            let msg_level = MessageLevel::Warning;
-
-            let color_qual = support.to_string().to_lowercase();
-            let theme_qual = term_theme.to_string().to_lowercase();
-            let msg_level_qual = msg_level.to_string().to_lowercase();
-            // eprintln!("Calling from_str on {}_{}_{}", &color_qual, &theme_qual, &msg_level_qual);
-            let message_style = MessageStyle::from_str(&format!(
-                "{}_{}_{}",
-                &color_qual, &theme_qual, &msg_level_qual
-            ));
-            let style = message_style.unwrap().get_style();
-
+            let style = nu_resolve_style(MessageLevel::Warning);
             println!("{}", style.paint("Colored Warning message\n"));
 
             for variant in MessageStyle::iter() {

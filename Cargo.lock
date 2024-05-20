@@ -261,31 +261,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "build_run"
-version = "0.1.0"
-dependencies = [
- "bitflags 2.5.0",
- "clap",
- "edit",
- "env_logger",
- "home",
- "lazy_static",
- "log",
- "nu-ansi-term",
- "quote",
- "reedline 0.32.0",
- "reedline-repl-rs",
- "regex",
- "serde",
- "strum 0.26.2",
- "supports-color",
- "syn 2.0.60",
- "termbg",
- "toml",
- "wsl",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1172,6 +1147,31 @@ name = "regex-syntax"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
+
+[[package]]
+name = "rs-script"
+version = "0.1.0"
+dependencies = [
+ "bitflags 2.5.0",
+ "clap",
+ "edit",
+ "env_logger",
+ "home",
+ "lazy_static",
+ "log",
+ "nu-ansi-term",
+ "quote",
+ "reedline 0.32.0",
+ "reedline-repl-rs",
+ "regex",
+ "serde",
+ "strum 0.26.2",
+ "supports-color",
+ "syn 2.0.60",
+ "termbg",
+ "toml",
+ "wsl",
+]
 
 [[package]]
 name = "rustix"

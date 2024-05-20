@@ -17,7 +17,7 @@
 
    [[bin]]
    name = "factorial_main"
-   path = "/Users/donf/projects/build_run/.cargo/build_run/tmp_source.rs"
+   path = "/Users/donf/projects/rs-script/.cargo/rs-script/tmp_source.rs"
 
 */
 

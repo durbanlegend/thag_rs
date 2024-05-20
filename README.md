@@ -6,14 +6,10 @@
 
 ## Overview
 
-* A Cargo-based script runner and REPL for Rust snippets and programs. It attempts to handle any valid program, snippet or expression. It will usually manage to generate
-a dedicated Cargo.toml from use statements in your code, or you can embed your
-own in a /*[toml] */ block at the start of the program.
-It aims for speed and simplicity. It uses timestamps to rerun compiled scripts without unnecesssary rebuilding, although this behaviour may be overridden.
-
-## Overview
-
 `rs-script` is a script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to quickly run and test Rust code from the command line, making it an excellent choice for rapid prototyping and learning.
+
+`rs-script` is Cargo-based. It attempts to handle any valid program, snippet or expression. It will usually manage to generate a dedicated Cargo.toml for this script from use statements in your code, or you can embed your own in a /*[toml] */ block at the start of the script.
+`rs-script` aims to be as comprehensive as possible without sacrificing speed and simplicity. It uses timestamps to rerun compiled scripts without unnecesssary rebuilding, although this behaviour may be overridden. Thus a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 Macbook Air.
 
 ## Installation
 

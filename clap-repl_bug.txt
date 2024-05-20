@@ -26,5 +26,4 @@ Select an editor.  To change later, run 'select-editor'.
   5. /bin/ed
 
 Choose 1-5 [1]: ^C
-donf@donf-Inspiron-5459:~/Documents/GitHub/build_run$ 
-
+donf@donf-Inspiron-5459:~/Documents/GitHub/rs-script$

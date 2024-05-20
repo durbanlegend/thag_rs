@@ -15,7 +15,7 @@ println!(
             "method": "textDocument/completion",
             "params": {
                 "textDocument": {
-                    "uri": "file://Users/donf/projects/build_run/examples/fib_big_clap.rs"
+                    "uri": "file://Users/donf/projects/rs-script/examples/fib_big_clap.rs"
                 },
                 "position": {
                     "line": 15,
@@ -32,7 +32,7 @@ println!(
 println!(
     "{:#?}",
     serde_json::from_str::<Value>(
-        "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"textDocument/completion\",\"params\":{\"position\":{\"character\":26,\"line\":171},\"textDocument\":{\"uri\":\"file:///Users/donf/projects/build_run/src/main.rs\"}}}"
+        "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"textDocument/completion\",\"params\":{\"position\":{\"character\":26,\"line\":171},\"textDocument\":{\"uri\":\"file:///Users/donf/projects/rs-script/src/main.rs\"}}}"
     )
     .unwrap()
 );

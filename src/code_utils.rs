@@ -267,7 +267,7 @@ pub(crate) fn parse_source_str(
 
     let rs_manifest = CargoManifest::from_str(&rs_toml_str)?;
     //     let rs_manifest = rs_extract_manifest(&rs_full_source)?;
-    //     // debug!("@@@@ rs_manifest (before deps, showing features)={rs_manifest:#?}");
+    debug!("@@@@ rs_manifest (before deps, showing features)={rs_manifest:#?}");
 
     //     let rs_source = rs_extract_src(&rs_full_source);
 
@@ -338,6 +338,19 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
             let toml = line_trim.trim_start_matches("//!").trim();
             if !toml.is_empty() {
                 toml_metadata.push_str(toml);
+                toml_metadata.push('\n');
+                // debug!("Pushed old-style toml comment {toml}");
+            }
+            continue;
+        }
+        if line_trim.starts_with("{//!") {
+            // Save the curly brace.
+            let (_rust, toml) = line.split_at(4);
+            rust_code.push('{');
+            rust_code.push('\n');
+            // debug!("Saved rust portion: {{");
+            if !toml.is_empty() {
+                toml_metadata.push_str(toml.trim());
                 toml_metadata.push('\n');
                 // debug!("Pushed old-style toml comment {toml}");
             }
@@ -793,6 +806,15 @@ pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
         eprintln!("`rustfmt` not found. Please install it to use this script.");
     }
     Ok(())
+}
+
+pub(crate) fn strip_curly_braces(haystack: &str) -> Option<String> {
+    // Define the regex pattern
+    let re = Regex::new(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$").unwrap();
+
+    // Apply the regex to the input string
+    re.captures(haystack)
+        .map(|captures| captures[1].to_string())
 }
 
 #[cfg(test)]

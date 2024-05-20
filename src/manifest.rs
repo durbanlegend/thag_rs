@@ -280,7 +280,14 @@ pub(crate) fn merge_manifest(
 ) -> Result<CargoManifest, Box<dyn Error>> {
     let start_merge_manifest = Instant::now();
 
-    let mut cargo_manifest = default_manifest(build_state)?;
+    let mut default_manifest = default_manifest(build_state)?;
+    let cargo_manifest: &mut CargoManifest =
+        if let Some(ref mut manifest) = build_state.cargo_manifest {
+            manifest
+        } else {
+            &mut default_manifest
+        };
+
     debug!("@@@@ cargo_manifest (before deps)={cargo_manifest:#?}");
 
     // // TODO temp debug out
@@ -391,5 +398,5 @@ pub(crate) fn merge_manifest(
 
     debug_timings(&start_merge_manifest, "Processed features");
 
-    Ok(cargo_manifest)
+    Ok(cargo_manifest.clone())
 }

@@ -1,6 +1,8 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{get_opt, get_proc_flags, Opt, ProcFlags};
-use crate::code_utils::{debug_timings, display_timings, rustfmt, wrap_snippet};
+use crate::code_utils::{
+    debug_timings, display_timings, rustfmt, strip_curly_braces, wrap_snippet,
+};
 use crate::code_utils::{modified_since_compiled, parse_source_file, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
@@ -226,7 +228,8 @@ struct Context<'a> {
 }
 
 //      TODO:
-//       1.  Debug toml getting lostwhen e.g pasting tokio_hello_world.rs into eval.
+//       1.  Debug toml getting lost when e.g pasting tokio_hello_world.rs into eval.
+//       2.  Discontinue //! support?
 //       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
@@ -387,8 +390,8 @@ fn gen_build_run(
     if build_state.must_gen {
         let (rs_manifest, mut rs_source): (CargoManifest, String) =
             parse_source_file(&build_state.source_path)?;
-        // println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
-        // println!("&&&&&&&& rs_source={rs_source}");
+        println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
+        println!("&&&&&&&& rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
             build_state.rs_manifest = Some(rs_manifest);
         }
@@ -414,8 +417,15 @@ fn gen_build_run(
         };
 
         // println!("######## build_state={build_state:#?}");
-        if !has_main {
-            rs_source = wrap_snippet(&rs_source);
+        rs_source = if has_main {
+            // Strip off any enclosing braces we may have added
+            if rs_source.starts_with('{') {
+                strip_curly_braces(&rs_source).unwrap_or(rs_source)
+            } else {
+                rs_source
+            }
+        } else {
+            wrap_snippet(&rs_source)
             // build_state.syntax_tree = Some(Ast::File(syn::parse_file(&rs_source)?));
         };
         generate(build_state, &rs_source, proc_flags)?;

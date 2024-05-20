@@ -16,7 +16,7 @@ use clap::Parser;
 use code_utils::Ast;
 use log::debug;
 use nu_ansi_term::{Color, Style};
-use quote::quote;
+// use quote::quote;
 use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
     PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
@@ -291,13 +291,8 @@ pub(crate) fn eval(
 
     let prompt = EvalPrompt("expr");
 
+    disp_eval_banner();
     loop {
-        nu_color_println!(
-            nu_resolve_style(MessageLevel::InnerPrompt),
-            r"Enter an expression (e.g., 2 + 3), or Ctrl-C/D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
-Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
-        );
-
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {
             Signal::Success(ref buffer) => buffer,
@@ -343,15 +338,15 @@ Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: 
                 let syntax_tree = Some(Ast::Expr(expr.clone()));
 
                 // Generate Rust code for the expression
-                let rust_code = quote!(println!("Expression returned {:?}", #expr););
+                // let rust_code = quote!(println!("Expression returned {:?}", #expr););
 
                 // debug!("rs_source={rs_source}");
 
                 // // Store with its toml code instance
-                // write_source(&build_state.source_path, input)?;
+                write_source(&build_state.source_path, input)?;
 
                 // Store without its toml code instance for now to get it back working
-                write_source(&build_state.source_path.clone(), &rs_source)?;
+                // write_source(&build_state.source_path.clone(), &rs_source)?;
 
                 // rustfmt(build_state)?;
 
@@ -368,9 +363,18 @@ Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: 
                 );
             }
         }
+        disp_eval_banner();
     }
 
     Ok(Some("Back in main REPL".to_string()))
+}
+
+fn disp_eval_banner() {
+    nu_color_println!(
+        nu_resolve_style(MessageLevel::InnerPrompt),
+        r"Enter an expression (e.g., 2 + 3), or Ctrl-C/D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
+Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
+    );
 }
 
 /// Display file listing

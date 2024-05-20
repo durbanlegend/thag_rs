@@ -39,6 +39,8 @@ pub(crate) struct Opt {
     /// Run in REPL mode (read–eval–print loop). Existing script name is optional.
     #[clap(short = 'l', long)]
     repl: bool,
+    #[clap(short, long = "expr")]
+    expression: bool,
 }
 
 pub(crate) fn get_opt() -> Opt {
@@ -96,6 +98,7 @@ bitflags! {
         const VERBOSE = 32;
         const TIMINGS = 64;
         const REPL = 128;
+        const EXPR = 256;
     }
 }
 
@@ -125,11 +128,11 @@ pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<d
         let mut proc_flags = ProcFlags::empty();
         proc_flags.set(
             ProcFlags::GENERATE,
-            options.generate | options.force | options.all,
+            options.generate | options.force | options.all | options.expression,
         );
         proc_flags.set(
             ProcFlags::BUILD,
-            options.build | options.force | options.all,
+            options.build | options.force | options.all | options.expression,
         );
         proc_flags.set(ProcFlags::FORCE, options.force);
         proc_flags.set(ProcFlags::VERBOSE, options.verbose);
@@ -143,6 +146,7 @@ pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<d
             );
         }
         proc_flags.set(ProcFlags::REPL, options.repl);
+        proc_flags.set(ProcFlags::EXPR, options.expression);
 
         // if options.all && options.run {
         //     // println!(

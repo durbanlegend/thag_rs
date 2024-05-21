@@ -1,4 +1,5 @@
 /*[toml]
+[dependencies]
 regex = "1.10.4"
 */
 use regex::Regex;

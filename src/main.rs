@@ -219,9 +219,9 @@ impl BuildState {
 }
 
 //      TODO:
-//       1.  -e xxpression evaluator
+//       1.  -e expression evaluator
 //       2.  Discontinue //! support?
-//       3.  Only check terminal once up front? Avoid test string showing up unexpectedly.
+//       3.  Consider supporting alternative TOML embedding keywords so we can run examples/regex_capture_toml.rs.
 //       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.

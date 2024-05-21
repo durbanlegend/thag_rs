@@ -269,19 +269,31 @@ pub(crate) fn parse_source_str(
     rs_full_source: &str,
     start_parsing_rs: Instant,
 ) -> Result<(CargoManifest, String), Box<dyn Error>> {
-    let (rs_toml_str, rs_source) = separate_rust_and_toml(rs_full_source);
+    // let (rs_toml_str, rs_source) = extract_rust_and_toml(rs_full_source);
+    let maybe_rs_toml = extract_toml_block(rs_full_source);
 
-    let rs_manifest = CargoManifest::from_str(&rs_toml_str)?;
+    let rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
+        CargoManifest::from_str(&rs_toml_str)?
+    } else {
+        CargoManifest::from_str("")?
+    };
     //     let rs_manifest = rs_extract_manifest(&rs_full_source)?;
     debug!("@@@@ rs_manifest (before deps, showing features)={rs_manifest:#?}");
 
     //     let rs_source = rs_extract_src(&rs_full_source);
 
     debug_timings(&start_parsing_rs, "Parsed source");
-    Ok((rs_manifest, rs_source))
+    Ok((rs_manifest, rs_full_source.to_string()))
 }
 
-fn separate_rust_and_toml(source_code: &str) -> (String, String) {
+fn extract_toml_block(input: &str) -> Option<String> {
+    let re = Regex::new(r"(?s)/\*\[toml\](.*?)\*/").unwrap();
+    re.captures(input)
+        .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
+}
+
+#[allow(dead_code)]
+fn extract_rust_and_toml(source_code: &str) -> (String, String) {
     let mut rust_code = String::new();
     let mut toml_metadata = String::new();
     let mut is_metadata_block = false;
@@ -311,7 +323,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
         let end_toml_flag = "*/";
         let index = line.find(end_toml_flag);
         // debug!("index={index:#?}");
-        if let Some(mut i) = index {
+        if let Some(i) = index {
             // Save anything before the toml flag as toml.
             if i > 0 {
                 let (toml, _remnant) = line.split_at(i);
@@ -320,15 +332,10 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
                 // debug!("Saved toml portion: {toml}");
             }
 
-            // Save anything after the toml flag as Rust code.
-            i += end_toml_flag.len();
-            // debug!("i={i}");
-            if i < line.len() {
-                let (_toml_flag, rust) = line.split_at(i);
-                rust_code.push_str(rust);
-                rust_code.push('\n');
-                // debug!("Saved rust portion: {rust}");
-            }
+            // Save the line as Rust code.
+            rust_code.push_str(line);
+            rust_code.push('\n');
+            // debug!("Saved line to rustn: {line}");
             is_metadata_block = false;
             continue;
         };
@@ -349,7 +356,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
             let (_rust, toml) = line.split_at(4);
             rust_code.push('{');
             rust_code.push('\n');
-            // debug!("Saved rust portion: {{");
+            // debug!("Saved opening brace as Rust: {{");
             if !toml.is_empty() {
                 toml_metadata.push_str(toml.trim());
                 toml_metadata.push('\n');
@@ -878,7 +885,7 @@ fn compare(mismatched_lines: &[(String, String)], expected_rust_code: &str, rust
 fn test_separate_rust_and_toml_empty() {
     let source_code = "";
 
-    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+    let (toml_metadata, rust_code) = extract_rust_and_toml(source_code);
 
     // Assert TOML metadata
     assert_eq!("", toml_metadata);
@@ -902,7 +909,7 @@ itertools = "0.12.1"
 */}
     "#;
 
-    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+    let (toml_metadata, rust_code) = extract_rust_and_toml(source_code);
 
     // Assert TOML metadata
     let expected_toml_metadata = r#"[dependencies]
@@ -928,7 +935,7 @@ let other = "world";
 println!("Hello {other}!");
 "#;
 
-    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+    let (toml_metadata, rust_code) = extract_rust_and_toml(source_code);
 
     // Assert TOML metadata
     let expected_toml_metadata = "";
@@ -978,7 +985,7 @@ fn main() -> std::io::Result<()> {
 }
 "#;
 
-    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+    let (toml_metadata, rust_code) = extract_rust_and_toml(source_code);
 
     // Assert TOML metadata
     let expected_toml_metadata = r#"[dependencies]
@@ -1056,7 +1063,7 @@ fn main() -> std::io::Result<()> {
 }
 "#;
 
-    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+    let (toml_metadata, rust_code) = extract_rust_and_toml(source_code);
 
     // Assert TOML metadata
     let expected_toml_metadata = r#"[dependencies]
@@ -1130,7 +1137,7 @@ let f = fib(n);
 println!("Number {n} in the Fibonacci sequence is {f}");
 }"#;
 
-    let (toml_metadata, rust_code) = separate_rust_and_toml(source_code);
+    let (toml_metadata, rust_code) = extract_rust_and_toml(source_code);
 
     // Assert TOML metadata
     assert_eq!(

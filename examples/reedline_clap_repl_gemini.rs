@@ -29,7 +29,7 @@ enum ReplCommand {
 }
 
 lazy_static! {
-    static ref TMP_DIR: PathBuf = env::temp_dir();
+    static ref TMPDIR: PathBuf = env::temp_dir();
 }
 
 // impl FromArgMatches for ReplCommand {

@@ -1,5 +1,8 @@
-{//! [dependencies]
-//! tokio = { version = "1.37.0", features = ["full"] }
+{
+/*[toml]
+[dependencies]
+tokio = { version = "1.37.0", features = ["full"] }
+*/
 
 // Shortened for pasting into REPL.
 //

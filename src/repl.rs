@@ -128,14 +128,15 @@ Start by choosing the eval option and entering your expression. Expressions betw
 brackets, parens or quotes may span multiple lines.
 If valid, the expression will be converted into a Rust program, and built and run using Cargo.
 Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
-of doing so can be avoided by placing them in Cargo.toml format in a comment block of the form
+of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
+comment block of the form
 /*[toml]
 [depedencies]
 ...
 */
-at the top of the expression, from where they will be extracted to a dedicated Cargo.toml file.
+From here they will be extracted to a dedicated Cargo.toml file.
 In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
-At any stage before exiting the REPL, or at least as long as your TMP_DIR is not cleared, you can
+At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
 go back and edit your expression or its generated Cargo.toml file and copy or save them from the
 editor or their temporary disk locations.
 Outside of the expression evaluator, use the tab key to show selections and to complete partial
@@ -277,7 +278,7 @@ pub(crate) fn eval(
 
     let history_file = build_state.cargo_home.join(HISTORY_FILE);
     let history = Box::new(
-        FileBackedHistory::with_file(20, history_file)
+        FileBackedHistory::with_file(25, history_file)
             .expect("Error configuring history with file"),
     );
 

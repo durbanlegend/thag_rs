@@ -36,7 +36,7 @@ pub(crate) const REPL_SUBDIR: &str = "rs_repl";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
 
 lazy_static! {
-    static ref TMP_DIR: PathBuf = env::temp_dir();
+    static ref TMPDIR: PathBuf = env::temp_dir();
 }
 
 #[derive(Debug)]
@@ -123,7 +123,7 @@ impl BuildState {
         };
 
         let working_dir_path = if is_repl {
-            TMP_DIR.join(REPL_SUBDIR)
+            TMPDIR.join(REPL_SUBDIR)
         } else {
             std::env::current_dir()?.canonicalize()?
         };
@@ -276,7 +276,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // let is_expr = proc_flags.contains(ProcFlags::EXPR);
 
     let working_dir_path = if is_repl {
-        TMP_DIR.join(REPL_SUBDIR)
+        TMPDIR.join(REPL_SUBDIR)
     } else {
         std::env::current_dir()?.canonicalize()?
     };

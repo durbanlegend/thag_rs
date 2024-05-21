@@ -1,7 +1,7 @@
 use crate::cmd_args::ProcFlags;
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::{BuildState, REPL_SUBDIR, TMP_DIR};
+use crate::{BuildState, REPL_SUBDIR, TMPDIR};
 use log::debug;
 use regex::Regex;
 use std::fs::{remove_dir_all, remove_file, OpenOptions};
@@ -670,7 +670,7 @@ pub(crate) fn write_source(
 
 pub(crate) fn create_next_repl_file() -> PathBuf {
     // let repl_temp_dir = Path::new(&TMP_DIR);
-    let gen_repl_temp_dir_path = TMP_DIR.join(REPL_SUBDIR);
+    let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
     // Create a directory inside of `std::env::temp_dir()`
     debug!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
 

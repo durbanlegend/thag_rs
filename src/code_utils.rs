@@ -2,6 +2,7 @@ use crate::cmd_args::ProcFlags;
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
 use crate::{BuildState, REPL_SUBDIR, TMPDIR};
+use lazy_static::lazy_static;
 use log::debug;
 use regex::Regex;
 use std::fs::{remove_dir_all, remove_file, OpenOptions};
@@ -19,29 +20,20 @@ use std::time::{Instant, SystemTime};
 use syn::{visit::Visit, UseRename};
 
 #[derive(Clone, Debug, Display)]
+/// Abstract syntax tree wrapper for use with syn.
 pub(crate) enum Ast {
     File(syn::File),
     Expr(syn::Expr),
     // None,
 }
 
+/// Read the contents of a file. For reading the Rust script.
 pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
     debug!("Reading from {path:?}");
     Ok(fs::read_to_string(path)?)
 }
 
-// pub(crate) fn rs_extract_src(rs_contents: &str) -> String {
-//     let rs_source = reassemble({
-//         rs_contents
-//             .lines()
-//             .map(str::trim_start)
-//             .filter(|&line| !line.starts_with("//!"))
-//     });
-//     debug!("Rust source string (rs_source) =\n{rs_source}");
-//     rs_source
-// }
-
-// Inferring dependencies from the abstract syntax tree.
+/// Infer dependencies from the abstract syntax tree to put in a Cargo.toml.
 pub(crate) fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     let use_crates = find_use_crates_ast(syntax_tree);
     let extern_crates = find_extern_crates_ast(syntax_tree);
@@ -80,6 +72,7 @@ pub(crate) fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     dependencies
 }
 
+/// Filter out crates that don't need to be added as dependencies: abstract syntax tree-based version.
 fn filter_deps_ast(
     crate_name: &str,
     built_in_crates: &[&str; 6],
@@ -87,12 +80,13 @@ fn filter_deps_ast(
     dependencies: &mut Vec<String>,
 ) {
     let crate_name_string = crate_name.to_string();
+    // Filter out "crate" entries
     if !built_in_crates.contains(&crate_name) && !use_renames.contains(&crate_name_string) {
-        // Filter out "crate" entries
         dependencies.push(crate_name_string);
     }
 }
 
+/// Identify use ... as statements for exclusion from Cargo.toml metadata: abstract syntax tree-based version.
 fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
     #[derive(Default)]
     struct FindCrates {
@@ -116,6 +110,7 @@ fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
     finder.use_renames
 }
 
+/// Identify use crate statements for exclusion from Cargo.toml metadata: abstract syntax tree-based version.
 fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     #[derive(Default)]
     struct FindCrates {
@@ -139,6 +134,7 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     finder.use_crates
 }
 
+/// Identify extern crate statements for inclusion in Cargo.toml metadata: abstract syntax tree-based version.
 fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     #[derive(Default)]
     struct FindCrates {
@@ -162,20 +158,24 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     finder.extern_crates
 }
 
-/// When no AST, make a best effort to help the user by inferring dependencies from the source code.
+/// Infer dependencies from source code to put in a Cargo.toml.
+/// Fallback version for when an abstract syntax tree cannot be parsed.
 pub(crate) fn infer_deps_from_source(code: &str) -> Vec<String> {
+    lazy_static! {
+        static ref USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
+        static ref MACRO_USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*#\[macro_use\((\w+)\)").unwrap();
+        static ref EXTERN_CRATE_REGEX: Regex =
+            Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
+    }
+
     debug!("######## In code_utils::infer_deps_from_source");
     let use_renames = find_use_renames_source(code);
 
     let mut dependencies = Vec::new();
 
-    let use_regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
-    let macro_use_regex = Regex::new(r"(?m)^[\s]*#\[macro_use\((\w+)\)").unwrap();
-    let extern_crate_regex = Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
-
     let built_in_crates = ["std", "core", "alloc", "collections", "fmt", "crate"];
 
-    for cap in use_regex.captures_iter(code) {
+    for cap in USE_REGEX.captures_iter(code) {
         let crate_name = cap[1].to_string();
         debug!("@@@@@@@@ dependency={crate_name}");
         filter_deps_source(
@@ -188,7 +188,7 @@ pub(crate) fn infer_deps_from_source(code: &str) -> Vec<String> {
 
     // Similar checks for other regex patterns
 
-    for cap in macro_use_regex.captures_iter(code) {
+    for cap in MACRO_USE_REGEX.captures_iter(code) {
         let crate_name = cap[1].to_string();
         filter_deps_source(
             &crate_name,
@@ -198,7 +198,7 @@ pub(crate) fn infer_deps_from_source(code: &str) -> Vec<String> {
         );
     }
 
-    for cap in extern_crate_regex.captures_iter(code) {
+    for cap in EXTERN_CRATE_REGEX.captures_iter(code) {
         let crate_name = cap[1].to_string();
         filter_deps_source(
             &crate_name,
@@ -215,6 +215,7 @@ pub(crate) fn infer_deps_from_source(code: &str) -> Vec<String> {
     dependencies
 }
 
+/// Filter out crates that don't need to be added as dependencies: fallback version using regex on source code.
 fn filter_deps_source(
     crate_name: &str,
     built_in_crates: &[&str; 6],
@@ -229,15 +230,18 @@ fn filter_deps_source(
     }
 }
 
-/// When no AST, find redefined crates (that would cause Cargo search false positives) from the source code.
+/// Identify use ... as statements for exclusion from Cargo.toml metadata.
+/// Fallback version for when an abstract syntax tree cannot be parsed.
 pub(crate) fn find_use_renames_source(code: &str) -> Vec<String> {
-    debug!("######## In code_utils::find_use_renames_source");
+    lazy_static! {
+        static ref USE_AS_REGEX: Regex = Regex::new(r"(?m)^\s*use\s+.+as\s+(\w+)").unwrap();
+    }
 
-    let use_as_regex = Regex::new(r"(?m)^\s*use\s+.+as\s+(\w+)").unwrap();
+    debug!("######## In code_utils::find_use_renames_source");
 
     let mut use_renames: Vec<String> = vec![];
 
-    for cap in use_as_regex.captures_iter(code) {
+    for cap in USE_AS_REGEX.captures_iter(code) {
         let use_rename = cap[1].to_string();
         debug!("@@@@@@@@ use_rename={use_rename}");
         use_renames.push(use_rename);
@@ -247,6 +251,7 @@ pub(crate) fn find_use_renames_source(code: &str) -> Vec<String> {
     use_renames
 }
 
+/// Extract embedded Cargo.toml metadata from a Rust source file.
 pub(crate) fn parse_source_file(
     source_path: &Path,
 ) -> Result<(CargoManifest, String), Box<dyn Error>> {
@@ -259,6 +264,7 @@ pub(crate) fn parse_source_file(
     result
 }
 
+/// Extract embedded Cargo.toml metadata from a Rust source string.
 pub(crate) fn parse_source_str(
     rs_full_source: &str,
     start_parsing_rs: Instant,
@@ -274,11 +280,6 @@ pub(crate) fn parse_source_str(
     debug_timings(&start_parsing_rs, "Parsed source");
     Ok((rs_manifest, rs_source))
 }
-
-// fn rs_extract_manifest(rs_contents: &str) -> Result<CargoManifest, BuildRunError> {
-//     let rs_toml_str = rs_extract_toml(rs_contents);
-//     CargoManifest::from_str(&rs_toml_str)
-// }
 
 fn separate_rust_and_toml(source_code: &str) -> (String, String) {
     let mut rust_code = String::new();
@@ -383,6 +384,7 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
     (toml_metadata, rust_code)
 }
 
+/// Convert a Path to a string value, assuming the path contains only valid characters.
 pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
     let string = path
         .to_path_buf()
@@ -394,7 +396,7 @@ pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
     Ok(string)
 }
 
-/// Unescape \n markers in a string to convert the wall of text to readable lines.
+/// Reassemble an Iterator of lines from the disentangle function to a string of text.
 #[inline]
 pub(crate) fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
@@ -404,13 +406,14 @@ pub(crate) fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     })
 }
 
-/// Unescape \n markers in a string to convert the wall of text to readable lines.
+/// Unescape \n markers to convert a string of raw text to readable lines.
 #[inline]
 pub(crate) fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
 
 #[allow(dead_code)]
+/// Display output captued to `std::process::Output`.
 pub(crate) fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     // Read the captured output from the pipe
     // let stdout = output.stdout;
@@ -430,6 +433,7 @@ pub(crate) fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
 }
 
 #[inline]
+/// Display method timings when either the --verbose or --timings option is chosen.
 pub(crate) fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
     let dur = start.elapsed();
     let msg = format!("{process} in {}.{}s", dur.as_secs(), dur.subsec_millis());
@@ -441,6 +445,7 @@ pub(crate) fn display_timings(start: &Instant, process: &str, proc_flags: &ProcF
 }
 
 #[inline]
+/// Developer method to log method timings.
 pub(crate) fn debug_timings(start: &Instant, process: &str) {
     let dur = start.elapsed();
     debug!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
@@ -517,19 +522,51 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&Path
     most_recent
 }
 
+/// Determine if a Rust script already has a main method: abstract syntax tree version.
 pub(crate) fn has_main(syntax_tree: &Ast) -> bool {
     let main_methods = count_main_methods(syntax_tree);
     debug!("main_methods={main_methods}");
     has_one_main(main_methods)
 }
 
+/// Count the number of `main()` methods in an abstract syntax tree.
+fn count_main_methods(syntax_tree: &Ast) -> usize {
+    #[derive(Default)]
+    struct FindCrates {
+        main_method_count: usize,
+    }
+
+    impl<'a> Visit<'a> for FindCrates {
+        fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
+            if node.sig.ident == "main" && node.sig.inputs.is_empty() {
+                self.main_method_count += 1;
+            }
+        }
+    }
+
+    let mut finder = FindCrates::default();
+
+    match syntax_tree {
+        Ast::File(ast) => finder.visit_file(ast),
+        Ast::Expr(ast) => finder.visit_expr(ast),
+    }
+
+    finder.main_method_count
+}
+
+/// Determine if a Rust script already has a main method.
+/// Fallback version for when an abstract syntax tree cannot be parsed.
 pub(crate) fn has_main_alt(rs_source: &str) -> bool {
-    let re = Regex::new(r"(?m)^\s*fn\s* main\(\s*\)").unwrap();
-    let main_methods = re.find_iter(rs_source).count();
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?m)^\s*fn\s* main\(\s*\)").unwrap();
+    }
+    let main_methods = RE.find_iter(rs_source).count();
     debug!("main_methods={main_methods}");
     has_one_main(main_methods)
 }
 
+/// Determine if a Rust script has a single main method or none.
+/// Terminate processing if there is more than one main method.
 fn has_one_main(main_methods: usize) -> bool {
     match main_methods {
         0 => false,
@@ -562,36 +599,17 @@ pub(crate) fn to_ast(source_code: &str) -> Option<Ast> {
     }
 }
 
-/// Count the number of `main()` methods
-fn count_main_methods(syntax_tree: &Ast) -> usize {
-    #[derive(Default)]
-    struct FindCrates {
-        main_method_count: usize,
-    }
-
-    impl<'a> Visit<'a> for FindCrates {
-        fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
-            if node.sig.ident == "main" && node.sig.inputs.is_empty() {
-                self.main_method_count += 1;
-            }
-        }
-    }
-
-    let mut finder = FindCrates::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    finder.main_method_count
-}
-
+/// Convert a Rust code snippet into a program by wrapping it in a main method and other scaffolding.
 pub(crate) fn wrap_snippet(rs_source: &str) -> String {
     use std::fmt::Write;
-    let use_regex = Regex::new(r"(?i)^[\s]*use\s+([^;{]+)").unwrap();
-    let macro_use_regex = Regex::new(r"(?i)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
-    let extern_crate_regex = Regex::new(r"(?i)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
+
+    lazy_static! {
+        static ref USE_REGEX: Regex = Regex::new(r"(?i)^[\s]*use\s+([^;{]+)").unwrap();
+        static ref MACRO_USE_REGEX: Regex =
+            Regex::new(r"(?i)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
+        static ref EXTERN_CRATE_REGEX: Regex =
+            Regex::new(r"(?i)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
+    }
 
     debug!("In wrap_snippet");
 
@@ -607,9 +625,9 @@ pub(crate) fn wrap_snippet(rs_source: &str) -> String {
     let (prelude, body): (Vec<Option<&str>>, Vec<Option<&str>>) = rs_source
         .lines()
         .map(|line| -> (Option<&str>, Option<&str>) {
-            if use_regex.is_match(line)
-                || macro_use_regex.is_match(line)
-                || extern_crate_regex.is_match(line)
+            if USE_REGEX.is_match(line)
+                || MACRO_USE_REGEX.is_match(line)
+                || EXTERN_CRATE_REGEX.is_match(line)
             {
                 (Some(line), None)
             } else {
@@ -668,6 +686,7 @@ pub(crate) fn write_source(
     Ok(to_rs_file)
 }
 
+/// Create the next sequential REPL file according to the `repl_nnnnnn.rs` standard used by this crate.
 pub(crate) fn create_next_repl_file() -> PathBuf {
     // let repl_temp_dir = Path::new(&TMP_DIR);
     let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
@@ -720,6 +739,7 @@ pub(crate) fn create_next_repl_file() -> PathBuf {
     create_repl_file(&gen_repl_temp_dir_path, next_file_num)
 }
 
+// Create a REPL file on disk, given the path and sequence number.
 pub(crate) fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
     let padded_num = format!("{:06}", num);
     let dir_name = format!("repl_{padded_num}");
@@ -734,8 +754,11 @@ pub(crate) fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathB
 }
 
 #[allow(dead_code)]
+/// Prompt for and read Rust source code from stdin.
 pub(crate) fn read_stdin() -> Result<String, io::Error> {
-    println!("Enter or paste Rust source code at the prompt and hit Ctrl-D when done");
+    println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
+        if cfg!(windows) { 'Z' } else { 'D' }
+    );
     let mut buffer = String::new();
     let stdin = io::stdin();
     let mut handle = stdin.lock();
@@ -743,6 +766,7 @@ pub(crate) fn read_stdin() -> Result<String, io::Error> {
     Ok(buffer)
 }
 
+/// Clean up temporary files.
 pub(crate) fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<()> {
     // Delete the file
     remove_file(source_path)?;
@@ -751,6 +775,7 @@ pub(crate) fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::
     remove_dir_all(target_dir_path)
 }
 
+/// Display the contents of a given directory.
 pub(crate) fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
@@ -773,6 +798,7 @@ pub(crate) fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     Ok(())
 }
 
+/// Format a Rust source file in situ using rustfmt.
 pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
     let source_path_buf = build_state.source_path.clone();
     let source_path_str = source_path_buf
@@ -808,12 +834,17 @@ pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
     Ok(())
 }
 
+/// Strip a set of curly braces off a Rust script, if present. This is intended to
+/// undo the effect of adding them to create an expression that can be parsed into
+/// an abstract syntax tree.
 pub(crate) fn strip_curly_braces(haystack: &str) -> Option<String> {
     // Define the regex pattern
-    let re = Regex::new(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$").unwrap();
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$").unwrap();
+    }
 
     // Apply the regex to the input string
-    re.captures(haystack)
+    RE.captures(haystack)
         .map(|captures| captures[1].to_string())
 }
 

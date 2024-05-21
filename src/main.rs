@@ -1,9 +1,9 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{get_opt, get_proc_flags, Opt, ProcFlags};
 use crate::code_utils::{
-    debug_timings, display_timings, rustfmt, strip_curly_braces, wrap_snippet,
+    debug_timings, display_timings, modified_since_compiled, parse_source_file, rustfmt,
+    strip_curly_braces, wrap_snippet, write_source,
 };
-use crate::code_utils::{modified_since_compiled, parse_source_file, write_source};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
 use code_utils::Ast;
@@ -218,15 +218,6 @@ impl BuildState {
     }
 }
 
-#[derive(Debug)]
-struct Context<'a> {
-    options: &'a mut Opt,
-    proc_flags: &'a ProcFlags,
-    // cmd_list: String,
-    build_state: &'a mut BuildState,
-    start: &'a Instant,
-}
-
 //      TODO:
 //       1.  -e xxpression evaluator
 //       2.  Discontinue //! support?
@@ -389,7 +380,7 @@ fn debug_print_config() {
 }
 
 fn gen_build_run(
-    options: &&mut cmd_args::Opt,
+    options: &&mut Opt,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     syntax_tree: Option<Ast>,

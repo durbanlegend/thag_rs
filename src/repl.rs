@@ -1,17 +1,8 @@
-use super::gen_build_run;
-use super::BuildState;
-use super::Context;
-use crate::cmd_args::Opt;
-use crate::cmd_args::ProcFlags;
-use crate::code_utils;
-use crate::code_utils::clean_up;
-use crate::code_utils::display_dir_contents;
-use crate::code_utils::parse_source_str;
+use crate::cmd_args::{Opt, ProcFlags};
+use crate::code_utils::{self, clean_up, display_dir_contents, parse_source_str};
 use crate::errors::BuildRunError;
-use crate::nu_color_println;
 use crate::term_colors::nu_resolve_style;
-use crate::write_source;
-use crate::MessageLevel;
+use crate::{gen_build_run, nu_color_println, write_source, BuildState, MessageLevel};
 use clap::Parser;
 use code_utils::Ast;
 use log::debug;
@@ -27,11 +18,10 @@ use reedline_repl_rs::{
 use std::borrow::Cow;
 use std::error::Error;
 use std::time::Instant;
-use strum::EnumProperty;
-use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
+use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
 use syn::{self, Expr};
 
-pub(crate) const HISTORY_FILE: &str = "rs_eval_hist.txt";
+const HISTORY_FILE: &str = "rs_eval_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
 // Legacy enum, still useful but not sure if it still pays its way.
@@ -55,6 +45,15 @@ enum LoopCommand {
     History,
     /// Exit the REPL
     Quit,
+}
+
+#[derive(Debug)]
+struct Context<'a> {
+    options: &'a mut Opt,
+    proc_flags: &'a ProcFlags,
+    // cmd_list: String,
+    build_state: &'a mut BuildState,
+    start: &'a Instant,
 }
 
 pub struct EvalPrompt(&'static str);
@@ -192,10 +191,7 @@ This is the convenient option to use for snippets or even short programs.")
 /// Delete our temporary files
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-pub(crate) fn delete(
-    _args: ArgMatches,
-    context: &mut Context,
-) -> Result<Option<String>, BuildRunError> {
+fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let build_state = &context.build_state;
     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
     if clean_up.is_ok()
@@ -210,20 +206,14 @@ pub(crate) fn delete(
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-pub(crate) fn history(
-    _args: ArgMatches,
-    context: &mut Context,
-) -> Result<Option<String>, BuildRunError> {
+fn history(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     edit::edit_file(context.build_state.working_dir_path.join(HISTORY_FILE))?;
     Ok(Some(String::from("End of history file edit")))
 }
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-pub(crate) fn edit(
-    _args: ArgMatches,
-    context: &mut Context,
-) -> Result<Option<String>, BuildRunError> {
+fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let (build_state, _start) = (&mut context.build_state, context.start);
 
     edit::edit_file(&build_state.source_path)?;
@@ -233,20 +223,14 @@ pub(crate) fn edit(
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-pub(crate) fn toml(
-    _args: ArgMatches,
-    context: &mut Context,
-) -> Result<Option<String>, BuildRunError> {
+fn toml(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     edit::edit_file(&context.build_state.cargo_toml_path)?;
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-pub(crate) fn run_expr(
-    _args: ArgMatches,
-    context: &mut Context,
-) -> Result<Option<String>, BuildRunError> {
+fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let (options, proc_flags, build_state, start) = (
         &mut context.options,
         context.proc_flags,
@@ -265,10 +249,7 @@ pub(crate) fn run_expr(
 /// From Reedline validation example with enhancements
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-pub(crate) fn eval(
-    _args: ArgMatches,
-    context: &mut Context,
-) -> Result<Option<String>, BuildRunError> {
+fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let (options, proc_flags, build_state, start) = (
         &mut context.options,
         &context.proc_flags,
@@ -381,10 +362,7 @@ Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: 
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-pub(crate) fn list(
-    _args: ArgMatches,
-    context: &mut Context,
-) -> Result<Option<String>, BuildRunError> {
+fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let build_state = &context.build_state;
     let source_path = &build_state.source_path;
     if source_path.exists() {
@@ -403,10 +381,7 @@ pub(crate) fn list(
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-pub(crate) fn quit(
-    _args: ArgMatches,
-    _context: &mut Context,
-) -> Result<Option<String>, BuildRunError> {
+fn quit(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
     println!("Done");
     std::process::exit(0);
 }

@@ -1,4 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
+use lazy_static::lazy_static;
 use log::debug;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -9,10 +10,12 @@ use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
 
-use crate::code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source};
 use crate::errors::BuildRunError;
 use crate::term_colors::{nu_resolve_style, MessageLevel};
-use crate::{Ast, BuildState};
+use crate::{
+    code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source},
+    Ast, BuildState,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct CargoManifest {
@@ -212,10 +215,12 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
 
 pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
     // debug!("first_line={first_line}");
-    let regex_str = r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#;
-    let re = Regex::new(regex_str).unwrap();
-    let (name, version) = if re.is_match(first_line) {
-        let captures = re.captures(first_line).unwrap();
+    lazy_static! {
+        static ref RE: Regex =
+            Regex::new(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#).unwrap();
+    }
+    let (name, version) = if RE.is_match(first_line) {
+        let captures = RE.captures(first_line).unwrap();
         let name = captures.get(1).unwrap().as_str();
         let version = captures.get(2).unwrap().as_str();
         // println!("Dependency name: {}", name);

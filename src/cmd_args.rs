@@ -3,9 +3,9 @@ use clap::Parser;
 use core::{fmt, str};
 use std::error::Error;
 
-use crate::{cmd_args, errors::BuildRunError};
+use crate::errors::BuildRunError;
 
-/// Script Runner
+/// Clap command-line options
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Parser, Debug)]
 #[clap(version = "1.0", author = "durbanlegend")]
@@ -43,45 +43,9 @@ pub(crate) struct Opt {
     pub(crate) expression: bool,
 }
 
+/// Getter for clap command-line options
 pub(crate) fn get_opt() -> Opt {
     Opt::parse()
-}
-
-#[allow(dead_code)]
-fn main() {
-    let opt = Opt::parse();
-
-    if opt.verbose {
-        println!("Verbosity enabled");
-    }
-
-    if opt.timings {
-        println!("Timings enabled");
-    }
-
-    if opt.generate {
-        println!("Generating source and cargo .toml file");
-    }
-
-    if opt.build {
-        println!("Building something");
-    }
-
-    if opt.force {
-        println!("Generating and building something");
-    }
-
-    if opt.run {
-        println!("Running script");
-    }
-
-    println!("Running script: {:?}", opt.script);
-    if !opt.args.is_empty() {
-        println!("With arguments:");
-        for arg in &opt.args {
-            println!("{arg}");
-        }
-    }
 }
 
 bitflags! {
@@ -89,6 +53,7 @@ bitflags! {
     // can produce output like `A | B` instead of `Flags(A | B)`.
     // #[derive(Debug)]
     #[derive(Clone, PartialEq, Eq)]
+    /// Processing flags for ease of handling command-line options
     pub struct ProcFlags: u32 {
         const GENERATE = 1;
         const BUILD = 2;
@@ -123,7 +88,7 @@ impl str::FromStr for ProcFlags {
 }
 
 /// Set up the processing flags from the command line arguments and pass them back.
-pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<dyn Error>> {
+pub(crate) fn get_proc_flags(options: &Opt) -> Result<ProcFlags, Box<dyn Error>> {
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
         proc_flags.set(
@@ -165,7 +130,44 @@ pub(crate) fn get_proc_flags(options: &cmd_args::Opt) -> Result<ProcFlags, Box<d
 
         assert_eq!(proc_flags, parsed);
 
-        Ok::<cmd_args::ProcFlags, BuildRunError>(proc_flags)
+        Ok::<ProcFlags, BuildRunError>(proc_flags)
     }?;
     Ok(proc_flags)
+}
+
+#[allow(dead_code)]
+fn main() {
+    let opt = Opt::parse();
+
+    if opt.verbose {
+        println!("Verbosity enabled");
+    }
+
+    if opt.timings {
+        println!("Timings enabled");
+    }
+
+    if opt.generate {
+        println!("Generating source and cargo .toml file");
+    }
+
+    if opt.build {
+        println!("Building something");
+    }
+
+    if opt.force {
+        println!("Generating and building something");
+    }
+
+    if opt.run {
+        println!("Running script");
+    }
+
+    println!("Running script: {:?}", opt.script);
+    if !opt.args.is_empty() {
+        println!("With arguments:");
+        for arg in &opt.args {
+            println!("{arg}");
+        }
+    }
 }

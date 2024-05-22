@@ -1,7 +1,7 @@
-use crate::cmd_args::ProcFlags;
+use crate::cmd_args::{Opt, ProcFlags};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::{BuildState, REPL_SUBDIR, TMPDIR};
+use crate::{gen_build_run, BuildState, EXPR_SUBDIR, REPL_SUBDIR, TMPDIR};
 use lazy_static::lazy_static;
 use log::debug;
 use regex::Regex;
@@ -251,25 +251,11 @@ pub(crate) fn find_use_renames_source(code: &str) -> Vec<String> {
     use_renames
 }
 
-/// Extract embedded Cargo.toml metadata from a Rust source file.
-pub(crate) fn parse_source_file(
-    source_path: &Path,
-) -> Result<(CargoManifest, String), Box<dyn Error>> {
-    let start_parsing_rs = Instant::now();
-
-    let rs_full_source = read_file_contents(source_path)?;
-
-    let result = parse_source_str(&rs_full_source, start_parsing_rs);
-    debug_timings(&start_parsing_rs, "Parsed source");
-    result
-}
-
 /// Extract embedded Cargo.toml metadata from a Rust source string.
-pub(crate) fn parse_source_str(
+pub(crate) fn extract_manifest(
     rs_full_source: &str,
     start_parsing_rs: Instant,
-) -> Result<(CargoManifest, String), Box<dyn Error>> {
-    // let (rs_toml_str, rs_source) = extract_rust_and_toml(rs_full_source);
+) -> Result<CargoManifest, Box<dyn Error>> {
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     let rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
@@ -277,13 +263,9 @@ pub(crate) fn parse_source_str(
     } else {
         CargoManifest::from_str("")?
     };
-    //     let rs_manifest = rs_extract_manifest(&rs_full_source)?;
-    debug!("@@@@ rs_manifest (before deps, showing features)={rs_manifest:#?}");
-
-    //     let rs_source = rs_extract_src(&rs_full_source);
 
     debug_timings(&start_parsing_rs, "Parsed source");
-    Ok((rs_manifest, rs_full_source.to_string()))
+    Ok(rs_manifest)
 }
 
 fn extract_toml_block(input: &str) -> Option<String> {
@@ -391,6 +373,60 @@ fn extract_rust_and_toml(source_code: &str) -> (String, String) {
     (toml_metadata, rust_code)
 }
 
+/// Parse a Rust expression source string into a syntax tree.
+/// We are not primarily catering for programs with a main method (`syn::File`),
+pub(crate) fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
+    let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
+    if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
+        // Try putting the expression in braces.
+        let string = format!(r"{{{rs_source}}}");
+        let str = string.as_str();
+        println!("str={str}");
+
+        expr = syn::parse_str::<Expr>(str);
+    }
+    expr
+}
+
+// pub(crate) fn process_expression(
+//     ast: &Result<Expr, syn::Error>,
+//     build_state: &mut BuildState,
+//     rs_source: &str,
+//     options: &mut Opt,
+//     proc_flags: &ProcFlags,
+//     start: &Instant,
+// ) -> Result<(), BuildRunError> {
+//     match ast {
+//         Ok(ref expr_ast) => {
+//             process_expr(expr_ast, build_state, rs_source, options, proc_flags, start)?;
+//         }
+//         Err(err) => {
+//             nu_color_println!(
+//                 nu_resolve_style(MessageLevel::Error),
+//                 "Error parsing code: {}",
+//                 err
+//             );
+//         }
+//     };
+//     Ok(())
+// }
+
+/// Process a Rust expression
+pub(crate) fn process_expr(
+    expr_ast: &Expr,
+    build_state: &mut BuildState,
+    rs_source: &str,
+    options: &mut Opt,
+    proc_flags: &ProcFlags,
+    start: &Instant,
+) -> Result<(), BuildRunError> {
+    let syntax_tree = Some(Ast::Expr(expr_ast.clone()));
+    write_source(&build_state.source_path, rs_source)?;
+    let result = gen_build_run(options, proc_flags, build_state, syntax_tree, start);
+    println!("{result:?}");
+    Ok(())
+}
+
 /// Convert a Path to a string value, assuming the path contains only valid characters.
 pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
     let string = path
@@ -420,7 +456,7 @@ pub(crate) fn disentangle(text_wall: &str) -> String {
 }
 
 #[allow(dead_code)]
-/// Display output captued to `std::process::Output`.
+/// Display output captured to `std::process::Output`.
 pub(crate) fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     // Read the captured output from the pipe
     // let stdout = output.stdout;
@@ -695,9 +731,9 @@ pub(crate) fn write_source(
 
 /// Create the next sequential REPL file according to the `repl_nnnnnn.rs` standard used by this crate.
 pub(crate) fn create_next_repl_file() -> PathBuf {
-    // let repl_temp_dir = Path::new(&TMP_DIR);
-    let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
     // Create a directory inside of `std::env::temp_dir()`
+    let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
+
     debug!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
 
     // Ensure REPL subdirectory exists
@@ -756,6 +792,28 @@ pub(crate) fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathB
     let filename = format!("repl_{padded_num}.rs");
     let path = target_dir_path.join(filename);
     fs::File::create(path.clone()).expect("Failed to create file");
+    println!("Created file: {path:#?}");
+    path
+}
+
+/// Create empty script file `temp.rs` to hold expression for --expr or --stdin options,
+/// and open it for writing.
+pub(crate) fn create_temp_source_path() -> PathBuf {
+    // Create a directory inside of `std::env::temp_dir()`
+    let gen_expr_temp_dir_path = TMPDIR.join(EXPR_SUBDIR);
+
+    // Ensure EXPR subdirectory exists
+    fs::create_dir_all(gen_expr_temp_dir_path.clone()).expect("Failed to create REPL directory");
+
+    let filename = "temp.rs";
+    let path = gen_expr_temp_dir_path.join(filename);
+    // fs::File::create(path.clone()).expect("Failed to create file");
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(path.clone())
+        .expect("Failed to create file");
     println!("Created file: {path:#?}");
     path
 }

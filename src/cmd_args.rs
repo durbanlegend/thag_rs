@@ -40,7 +40,7 @@ pub(crate) struct Opt {
     #[clap(short = 'l', long, conflicts_with_all(["all", "generate", "build", "run"]))]
     pub(crate) repl: bool,
     #[clap(short, long = "expr", conflicts_with_all(["all", "generate", "build", "run", "repl"]))]
-    pub(crate) expression: bool,
+    pub(crate) expression: Option<String>,
 }
 
 /// Getter for clap command-line options
@@ -89,15 +89,16 @@ impl str::FromStr for ProcFlags {
 
 /// Set up the processing flags from the command line arguments and pass them back.
 pub(crate) fn get_proc_flags(options: &Opt) -> Result<ProcFlags, Box<dyn Error>> {
+    let is_expr = options.expression.is_some();
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
         proc_flags.set(
             ProcFlags::GENERATE,
-            options.generate | options.force | options.all | options.expression,
+            options.generate | options.force | options.all | is_expr,
         );
         proc_flags.set(
             ProcFlags::BUILD,
-            options.build | options.force | options.all | options.expression,
+            options.build | options.force | options.all | is_expr,
         );
         proc_flags.set(ProcFlags::FORCE, options.force);
         proc_flags.set(ProcFlags::VERBOSE, options.verbose);
@@ -111,7 +112,7 @@ pub(crate) fn get_proc_flags(options: &Opt) -> Result<ProcFlags, Box<dyn Error>>
             );
         }
         proc_flags.set(ProcFlags::REPL, options.repl);
-        proc_flags.set(ProcFlags::EXPR, options.expression);
+        proc_flags.set(ProcFlags::EXPR, is_expr);
 
         // if options.all && options.run {
         //     // println!(

@@ -1,10 +1,10 @@
 use crate::cmd_args::{Opt, ProcFlags};
-use crate::code_utils::{self, clean_up, display_dir_contents, parse_source_str};
+use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast, extract_manifest, Ast};
 use crate::errors::BuildRunError;
 use crate::term_colors::nu_resolve_style;
-use crate::{gen_build_run, nu_color_println, write_source, BuildState, MessageLevel};
+use crate::{gen_build_run, nu_color_println, BuildState, MessageLevel};
 use clap::Parser;
-use code_utils::Ast;
+// use code_utils::Ast;
 use log::debug;
 // use quote::quote;
 use reedline::{
@@ -19,7 +19,6 @@ use std::borrow::Cow;
 use std::error::Error;
 use std::time::Instant;
 use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
-use syn::{self, Expr};
 
 const HISTORY_FILE: &str = "rs_eval_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
@@ -283,67 +282,37 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         };
         // Process user input (line)
 
-        let input = input.trim();
-        if input.is_empty() {
+        let rs_source = input.trim();
+        if rs_source.is_empty() {
             continue;
         }
-        let lc = input.to_lowercase();
+        let lc = rs_source.to_lowercase();
         if lc == "q" || lc == "quit" {
             break;
         }
 
-        // Split any manifest portion
-        let (rs_manifest, rs_source) = parse_source_str(input, Instant::now())
+        let rs_manifest = extract_manifest(rs_source, Instant::now())
             .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
-
-        // println!("######## Parsed out rs_manifest={rs_manifest:#?}");
-        // println!("######## Parsed out rs_source={}", rs_source.as_str());
         build_state.rs_manifest = Some(rs_manifest);
-        // TODO A bit expensive to store it there
-        // build_state.rs_source = Some(rs_source.clone()); // Bad - still raw
-        let rs_source: &str = rs_source.as_str();
-        // Parse the expression string into a syntax tree.
-        // The REPL is not catering for programs with a main method (syn::File),
-        let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
-        if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
-            // Try putting the expression in braces.
-            let string = format!(r"{{{rs_source}}}");
-            let str = string.as_str();
-            println!("str={str}");
 
-            expr = syn::parse_str::<Expr>(str);
+        let maybe_ast = extract_ast(rs_source);
+
+        if let Ok(expr_ast) = maybe_ast {
+            code_utils::process_expr(
+                &expr_ast,
+                build_state,
+                rs_source,
+                options,
+                proc_flags,
+                start,
+            )?;
+        } else {
+            nu_color_println!(
+                nu_resolve_style(MessageLevel::Error),
+                "Error parsing code: {maybe_ast:#?}"
+            );
         }
 
-        match expr {
-            Ok(expr) => {
-                let syntax_tree = Some(Ast::Expr(expr.clone()));
-
-                // Generate Rust code for the expression
-                // let rust_code = quote!(println!("Expression returned {:?}", #expr););
-
-                // debug!("rs_source={rs_source}");
-
-                // // Store with its toml code instance
-                write_source(&build_state.source_path, input)?;
-
-                // Store without its toml code instance for now to get it back working
-                // write_source(&build_state.source_path.clone(), &rs_source)?;
-
-                // rustfmt(build_state)?;
-
-                let result = gen_build_run(options, proc_flags, build_state, syntax_tree, start);
-                println!("{result:?}");
-                // disp_cmd_list();
-                continue;
-            }
-            Err(err) => {
-                nu_color_println!(
-                    nu_resolve_style(MessageLevel::Error),
-                    "Error parsing code: {}",
-                    err
-                );
-            }
-        }
         disp_eval_banner();
     }
 

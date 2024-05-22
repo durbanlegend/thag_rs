@@ -1,13 +1,14 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{get_opt, get_proc_flags, Opt, ProcFlags};
 use crate::code_utils::{
-    debug_timings, display_timings, modified_since_compiled, parse_source_file, rustfmt,
-    strip_curly_braces, wrap_snippet, write_source,
+    debug_timings, display_timings, extract_ast, extract_manifest, modified_since_compiled,
+    read_file_contents, rustfmt, strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
+use crate::term_colors::nu_resolve_style;
 use code_utils::Ast;
-use env_logger::{fmt::WriteStyle, Builder, Env};
+use env_logger::Builder;
 use home::home_dir;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
@@ -33,6 +34,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const RS_SUFFIX: &str = ".rs";
 pub(crate) const FLOWER_BOX_LEN: usize = 70;
 pub(crate) const REPL_SUBDIR: &str = "rs_repl";
+pub(crate) const EXPR_SUBDIR: &str = "rs_expr";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
 
 lazy_static! {
@@ -46,7 +48,10 @@ pub(crate) enum ScriptState {
     Anonymous,
     /// Repl with script name.
     // TODO: phase out script string? Or replace by path? Can maybe phase out whole enum ScriptState.
-    NamedEmpty { script: String, repl_path: PathBuf },
+    NamedEmpty {
+        script: String,
+        script_path: PathBuf,
+    },
     /// Script name provided by user
     Named {
         script: String,
@@ -69,7 +74,10 @@ impl ScriptState {
             ScriptState::Named {
                 script_dir_path, ..
             } => Some(script_dir_path.clone()),
-            ScriptState::NamedEmpty { repl_path, .. } => Some(repl_path.clone()),
+            ScriptState::NamedEmpty {
+                script_path: repl_path,
+                ..
+            } => Some(repl_path.clone()),
         }
     }
 }
@@ -264,7 +272,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     // println!("Temporary directory: {:?}", *TMP_DIR);
 
     let is_repl = proc_flags.contains(ProcFlags::REPL);
-    // let is_expr = proc_flags.contains(ProcFlags::EXPR);
 
     let working_dir_path = if is_repl {
         TMPDIR.join(REPL_SUBDIR)
@@ -272,26 +279,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         std::env::current_dir()?.canonicalize()?
     };
 
-    if let Some(ref script) = options.script {
-        if !script.ends_with(RS_SUFFIX) {
-            return Err(Box::new(BuildRunError::Command(format!(
-                "Script name must end in {RS_SUFFIX}"
-            ))));
-        }
-        if proc_flags.contains(ProcFlags::EXPR) {
-            return Err(Box::new(BuildRunError::Command(
-                "Incompatible options: --expr option and script namen".to_string(),
-            )));
-        }
-    } else if !proc_flags.contains(ProcFlags::EXPR) && !proc_flags.contains(ProcFlags::REPL) {
-        return Err(Box::new(BuildRunError::Command(
-            "Missing script name".to_string(),
-        )));
-    }
+    validate_options(&options, &proc_flags)?;
 
     // Normal REPL with no named script
     let repl_source_path = if is_repl && options.script.is_none() {
         Some(code_utils::create_next_repl_file())
+    } else {
+        None
+    };
+
+    let is_expr = proc_flags.contains(ProcFlags::EXPR);
+
+    // Reusable source path for expressions and stdin evaluation
+    let temp_source_path = if is_expr {
+        Some(code_utils::create_temp_source_path())
     } else {
         None
     };
@@ -312,6 +313,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .expect("Could not find parent directory of repl source file")
                 .to_path_buf()
         }
+    } else if is_expr {
+        temp_source_path
+            .as_ref()
+            .expect("Missing path of newly created EXPR souece file")
+            .clone()
     } else {
         // Normal script file prepared beforehand
         let script = options
@@ -331,23 +337,24 @@ fn main() -> Result<(), Box<dyn Error>> {
     let script_state = if let Some(ref script) = options.script {
         let script = script.to_owned();
         ScriptState::Named {
-            script_dir_path,
             script,
+            script_dir_path,
         }
-    } else {
-        assert!(is_repl);
-        // let repl_source_path = code_utils::create_next_repl_file();
-        // let repl_path = repl_source_path
-        //     .parent()
-        //     .expect("Could not find parent directory of repl source file")
-        //     .to_path_buf();
+    } else if is_repl {
         let script = repl_source_path
             .expect("Missing newly created REPL source path")
             .display()
             .to_string();
         ScriptState::NamedEmpty {
-            repl_path: script_dir_path,
             script,
+            script_path: script_dir_path,
+        }
+    } else {
+        assert!(is_expr);
+        ScriptState::NamedEmpty {
+            script: String::from("temp.rs"),
+            script_path: temp_source_path
+                .expect("Could not resolve source path for temporary script"),
         }
     };
 
@@ -361,8 +368,37 @@ fn main() -> Result<(), Box<dyn Error>> {
     if is_repl {
         repl::run_repl(&mut options, &proc_flags, &mut build_state, start)?;
     } else {
+        if is_expr {
+            let Some(ref rs_source) = options.expression.clone() else {
+                return Err(Box::new(BuildRunError::Command(
+                    "Missing expression for --expr option".to_string(),
+                )));
+            };
+            let rs_manifest = extract_manifest(rs_source, Instant::now())
+                .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
+            build_state.rs_manifest = Some(rs_manifest);
+
+            let maybe_ast = extract_ast(rs_source);
+
+            if let Ok(expr_ast) = maybe_ast {
+                code_utils::process_expr(
+                    &expr_ast,
+                    &mut build_state,
+                    rs_source,
+                    &mut options,
+                    &proc_flags,
+                    &start,
+                )?;
+            } else {
+                nu_color_println!(
+                    nu_resolve_style(MessageLevel::Error),
+                    "Error parsing code: {:#?}",
+                    maybe_ast
+                );
+            }
+        }
         gen_build_run(
-            &&mut options,
+            &mut options,
             &proc_flags,
             &mut build_state,
             None::<Ast>,
@@ -373,6 +409,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn validate_options(options: &Opt, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
+    if let Some(ref script) = options.script {
+        if !script.ends_with(RS_SUFFIX) {
+            return Err(Box::new(BuildRunError::Command(format!(
+                "Script name must end in {RS_SUFFIX}"
+            ))));
+        }
+        if proc_flags.contains(ProcFlags::EXPR) {
+            return Err(Box::new(BuildRunError::Command(
+                "Incompatible options: --expr option and script name".to_string(),
+            )));
+        }
+    } else if !proc_flags.contains(ProcFlags::EXPR) && !proc_flags.contains(ProcFlags::REPL) {
+        return Err(Box::new(BuildRunError::Command(
+            "Missing script name".to_string(),
+        )));
+    }
+    Ok(())
+}
+
 fn debug_print_config() {
     debug!("PACKAGE_NAME={PACKAGE_NAME}");
     debug!("VERSION={VERSION}");
@@ -380,7 +436,7 @@ fn debug_print_config() {
 }
 
 fn gen_build_run(
-    options: &&mut Opt,
+    options: &mut Opt,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     syntax_tree: Option<Ast>,
@@ -391,8 +447,14 @@ fn gen_build_run(
     let options = &options;
 
     if build_state.must_gen {
-        let (rs_manifest, mut rs_source): (CargoManifest, String) =
-            parse_source_file(&build_state.source_path)?;
+        let source_path: &Path = &build_state.source_path;
+        let start_parsing_rs = Instant::now();
+        let mut rs_source = read_file_contents(source_path)?;
+        let rs_manifest: CargoManifest = {
+            let result = extract_manifest(&rs_source, start_parsing_rs);
+            debug_timings(&start_parsing_rs, "Parsed source");
+            result
+        }?;
         println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
         println!("&&&&&&&& rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
@@ -428,7 +490,9 @@ fn gen_build_run(
                 rs_source
             }
         } else {
-            wrap_snippet(&rs_source)
+            wrap_snippet(&format!(
+                r#"println!("Expression returned {{}}", {rs_source});"#
+            ))
             // build_state.syntax_tree = Some(Ast::File(syn::parse_file(&rs_source)?));
         };
         generate(build_state, &rs_source, proc_flags)?;
@@ -519,13 +583,13 @@ fn generate(
 
 // Configure log level
 fn configure_log() {
-    let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
-    let mut binding = Builder::new();
-    let builder = binding.parse_env(env);
-    builder.write_style(WriteStyle::Always);
-    builder.init();
+    // let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
+    // let mut binding = Builder::new();
+    // let builder = binding.parse_env(env);
+    // builder.write_style(WriteStyle::Always);
+    // builder.init();
 
-    // Builder::new().filter_level(log::LevelFilter::Debug).init();
+    Builder::new().filter_level(log::LevelFilter::Debug).init();
 }
 
 /// Build the Rust program using Cargo (with manifest path)

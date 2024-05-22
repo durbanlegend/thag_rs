@@ -490,10 +490,8 @@ fn gen_build_run(
                 rs_source
             }
         } else {
-            wrap_snippet(&format!(
-                r#"println!("Expression returned {{}}", {rs_source});"#
-            ))
-            // build_state.syntax_tree = Some(Ast::File(syn::parse_file(&rs_source)?));
+            let rust_code = quote::quote!(println!("Expression returned {}", #rs_source););
+            wrap_snippet(&rust_code.to_string())
         };
         generate(build_state, &rs_source, proc_flags)?;
     } else {

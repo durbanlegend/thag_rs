@@ -9,9 +9,12 @@ use crate::manifest::CargoManifest;
 use crate::term_colors::nu_resolve_style;
 use code_utils::Ast;
 use env_logger::Builder;
+use env_logger::Env;
+use env_logger::WriteStyle;
 use home::home_dir;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
+use syn::Expr;
 use term_colors::MessageLevel;
 
 use std::env;
@@ -405,14 +408,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                     maybe_ast
                 );
             }
+        } else {
+            gen_build_run(
+                &mut options,
+                &proc_flags,
+                &mut build_state,
+                None::<Ast>,
+                &start,
+            )?;
         }
-        gen_build_run(
-            &mut options,
-            &proc_flags,
-            &mut build_state,
-            None::<Ast>,
-            &start,
-        )?;
     }
 
     Ok(())
@@ -501,9 +505,12 @@ fn gen_build_run(
         } else {
             // let rust_code = quote::quote!(println!("Expression returned {}", #rs_source););
             // wrap_snippet(&rust_code.to_string())
-            wrap_snippet(&format!(
-                r#"println!("Expression returned {{}}", {rs_source});"#
-            ))
+            // wrap_snippet(&format!(
+            //     r#"println!("Expression returned {{}}", {rs_source});"#
+            // ))
+            let parsed_expr: Expr = syn::parse_str(&rs_source).expect("Failed to parse expression");
+            let rust_code = quote::quote!(println!("Expression returned {}", #parsed_expr););
+            wrap_snippet(&rust_code.to_string())
         };
         generate(build_state, &rs_source, proc_flags)?;
     } else {
@@ -593,13 +600,13 @@ fn generate(
 
 // Configure log level
 fn configure_log() {
-    // let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
-    // let mut binding = Builder::new();
-    // let builder = binding.parse_env(env);
-    // builder.write_style(WriteStyle::Always);
-    // builder.init();
+    let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
+    let mut binding = Builder::new();
+    let builder = binding.parse_env(env);
+    builder.write_style(WriteStyle::Always);
+    builder.init();
 
-    Builder::new().filter_level(log::LevelFilter::Debug).init();
+    // Builder::new().filter_level(log::LevelFilter::Debug).init();
 }
 
 /// Build the Rust program using Cargo (with manifest path)

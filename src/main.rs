@@ -499,8 +499,11 @@ fn gen_build_run(
                 rs_source
             }
         } else {
-            let rust_code = quote::quote!(println!("Expression returned {}", #rs_source););
-            wrap_snippet(&rust_code.to_string())
+            // let rust_code = quote::quote!(println!("Expression returned {}", #rs_source););
+            // wrap_snippet(&rust_code.to_string())
+            wrap_snippet(&format!(
+                r#"println!("Expression returned {{}}", {rs_source});"#
+            ))
         };
         generate(build_state, &rs_source, proc_flags)?;
     } else {

@@ -27,7 +27,7 @@ pub(crate) struct Opt {
     /// Build script if compiled file is stale
     #[clap(short, long)]
     pub(crate) build: bool,
-    /// Force generation of Rust source and individual cargo .toml, and build, even if compiled file is not stale
+    /// Force generation of Rust source and individual Cargo.toml, and build, even if compiled file is not stale
     #[clap(short, long)]
     pub(crate) force: bool,
     ///  (Default) Carry out generation and build steps (if necessary or forced) and run the compiled script
@@ -39,8 +39,10 @@ pub(crate) struct Opt {
     /// Run in REPL mode (read–eval–print loop). Existing script name is optional.
     #[clap(short = 'l', long, conflicts_with_all(["all", "generate", "build", "run"]))]
     pub(crate) repl: bool,
-    #[clap(short, long = "expr", conflicts_with_all(["all", "generate", "build", "run", "repl"]))]
+    #[clap(short, long = "expr", conflicts_with_all(["all", "generate", "build", "run", "repl", "script", "stdin"]))]
     pub(crate) expression: Option<String>,
+    #[clap(short, long, conflicts_with_all(["all", "expression", "generate", "build", "run", "repl", "script"]))]
+    pub(crate) stdin: bool,
     #[clap(short, long, conflicts_with("verbose"))]
     pub(crate) quiet: bool,
 }
@@ -66,7 +68,8 @@ bitflags! {
         const TIMINGS = 64;
         const REPL = 128;
         const EXPR = 256;
-        const QUIET = 512;
+        const STDIN = 512;
+        const QUIET = 1024;
     }
 }
 
@@ -95,6 +98,7 @@ pub(crate) fn get_proc_flags(options: &Opt) -> Result<ProcFlags, Box<dyn Error>>
     let is_expr = options.expression.is_some();
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
+        // TODO: out? once clap default_value_ifs is working
         proc_flags.set(
             ProcFlags::GENERATE,
             options.generate | options.force | options.all | is_expr,
@@ -117,6 +121,7 @@ pub(crate) fn get_proc_flags(options: &Opt) -> Result<ProcFlags, Box<dyn Error>>
         }
         proc_flags.set(ProcFlags::REPL, options.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);
+        proc_flags.set(ProcFlags::STDIN, options.stdin);
 
         // if options.all && options.run {
         //     // println!(

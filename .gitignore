@@ -38,3 +38,4 @@ examples/msg_colors_gpt.rs
 temp.txt
 xterm_colors.txt
 *.rsx
+examples/clap_default_value_ifs.rs

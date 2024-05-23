@@ -370,7 +370,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    println!("script_state={script_state:?}");
+    // debug!("script_state={script_state:?}");
 
     let mut build_state = BuildState::pre_configure(&proc_flags, &options, &script_state)?;
     if is_repl {
@@ -379,44 +379,42 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if is_repl {
         repl::run_repl(&mut options, &proc_flags, &mut build_state, start)?;
-    } else {
-        if is_expr {
-            let Some(ref rs_source) = options.expression.clone() else {
-                return Err(Box::new(BuildRunError::Command(
-                    "Missing expression for --expr option".to_string(),
-                )));
-            };
-            let rs_manifest = extract_manifest(rs_source, Instant::now())
-                .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
-            build_state.rs_manifest = Some(rs_manifest);
+    } else if is_expr {
+        let Some(ref rs_source) = options.expression.clone() else {
+            return Err(Box::new(BuildRunError::Command(
+                "Missing expression for --expr option".to_string(),
+            )));
+        };
+        let rs_manifest = extract_manifest(rs_source, Instant::now())
+            .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
+        build_state.rs_manifest = Some(rs_manifest);
 
-            let maybe_ast = extract_ast(rs_source);
+        let maybe_ast = extract_ast(rs_source);
 
-            if let Ok(expr_ast) = maybe_ast {
-                code_utils::process_expr(
-                    &expr_ast,
-                    &mut build_state,
-                    rs_source,
-                    &mut options,
-                    &proc_flags,
-                    &start,
-                )?;
-            } else {
-                nu_color_println!(
-                    nu_resolve_style(MessageLevel::Error),
-                    "Error parsing code: {:#?}",
-                    maybe_ast
-                );
-            }
-        } else {
-            gen_build_run(
+        if let Ok(expr_ast) = maybe_ast {
+            code_utils::process_expr(
+                &expr_ast,
+                &mut build_state,
+                rs_source,
                 &mut options,
                 &proc_flags,
-                &mut build_state,
-                None::<Ast>,
                 &start,
             )?;
+        } else {
+            nu_color_println!(
+                nu_resolve_style(MessageLevel::Error),
+                "Error parsing code: {:#?}",
+                maybe_ast
+            );
         }
+    } else {
+        gen_build_run(
+            &mut options,
+            &proc_flags,
+            &mut build_state,
+            None::<Ast>,
+            &start,
+        )?;
     }
 
     Ok(())
@@ -468,8 +466,8 @@ fn gen_build_run(
             debug_timings(&start_parsing_rs, "Parsed source");
             result
         }?;
-        println!("&&&&&&&& rs_manifest={rs_manifest:#?}");
-        println!("&&&&&&&& rs_source={rs_source}");
+        // debug!("&&&&&&&& rs_manifest={rs_manifest:#?}");
+        // debug!("&&&&&&&& rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
             build_state.rs_manifest = Some(rs_manifest);
         }
@@ -508,8 +506,12 @@ fn gen_build_run(
             // wrap_snippet(&format!(
             //     r#"println!("Expression returned {{}}", {rs_source});"#
             // ))
+            // let start_parse = Instant::now();
             let parsed_expr: Expr = syn::parse_str(&rs_source).expect("Failed to parse expression");
+            // display_timings(&start_parse, "Completed parse", proc_flags);
+            // let start_quote = Instant::now();
             let rust_code = quote::quote!(println!("Expression returned {}", #parsed_expr););
+            // display_timings(&start_quote, "Completed quote", proc_flags);
             wrap_snippet(&rust_code.to_string())
         };
         generate(build_state, &rs_source, proc_flags)?;
@@ -613,6 +615,7 @@ fn configure_log() {
 fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRunError> {
     let start_build = Instant::now();
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
+    let quiet = proc_flags.contains(ProcFlags::QUIET);
 
     debug!("BBBBBBBB In build");
 
@@ -623,10 +626,13 @@ fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRu
     };
     let mut build_command = Command::new("cargo");
     // Rustc writes to std
-    let args = vec!["build", "--manifest-path", &cargo_toml_path_str];
+    let mut args = vec!["build", "--manifest-path", &cargo_toml_path_str];
     // if verbose {
     //     args.push("--verbose");
     // };
+    if quiet {
+        args.push("--quiet");
+    }
 
     build_command.args(&args); // .current_dir(build_dir);
 

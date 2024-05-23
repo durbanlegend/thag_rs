@@ -41,6 +41,8 @@ pub(crate) struct Opt {
     pub(crate) repl: bool,
     #[clap(short, long = "expr", conflicts_with_all(["all", "generate", "build", "run", "repl"]))]
     pub(crate) expression: Option<String>,
+    #[clap(short, long, conflicts_with("verbose"))]
+    pub(crate) quiet: bool,
 }
 
 /// Getter for clap command-line options
@@ -64,6 +66,7 @@ bitflags! {
         const TIMINGS = 64;
         const REPL = 128;
         const EXPR = 256;
+        const QUIET = 512;
     }
 }
 
@@ -101,6 +104,7 @@ pub(crate) fn get_proc_flags(options: &Opt) -> Result<ProcFlags, Box<dyn Error>>
             options.build | options.force | options.all | is_expr,
         );
         proc_flags.set(ProcFlags::FORCE, options.force);
+        proc_flags.set(ProcFlags::QUIET, options.quiet);
         proc_flags.set(ProcFlags::VERBOSE, options.verbose);
         proc_flags.set(ProcFlags::TIMINGS, options.timings);
         proc_flags.set(ProcFlags::RUN, options.run | options.all);

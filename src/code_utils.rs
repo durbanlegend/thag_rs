@@ -792,7 +792,7 @@ pub(crate) fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathB
     let filename = format!("repl_{padded_num}.rs");
     let path = target_dir_path.join(filename);
     fs::File::create(path.clone()).expect("Failed to create file");
-    println!("Created file: {path:#?}");
+    // debug!("Created file: {path:#?}");
     path
 }
 
@@ -814,7 +814,7 @@ pub(crate) fn create_temp_source_file() -> PathBuf {
         .truncate(true)
         .open(path.clone())
         .expect("Failed to create file");
-    println!("Created file: {path:#?}");
+    // debug!("Created file: {path:#?}");
     path
 }
 

@@ -35,10 +35,11 @@ const RS_SUFFIX: &str = ".rs";
 pub(crate) const FLOWER_BOX_LEN: usize = 70;
 pub(crate) const REPL_SUBDIR: &str = "rs_repl";
 pub(crate) const EXPR_SUBDIR: &str = "rs_expr";
+pub(crate) const TEMP_SCRIPT_NAME: &str = "temp.rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
 
 lazy_static! {
-    static ref TMPDIR: PathBuf = env::temp_dir();
+    pub(crate) static ref TMPDIR: PathBuf = env::temp_dir();
 }
 
 #[derive(Debug)]
@@ -47,12 +48,9 @@ pub(crate) enum ScriptState {
     #[allow(dead_code)]
     Anonymous,
     /// Repl with script name.
-    /// TODO: script_path is a directory path for the REPL case but the full source
-    /// path for the expression case. Consider making it a directory path in the expression
-    /// case as well, for consistency.
     NamedEmpty {
         script: String,
-        script_path: PathBuf,
+        script_dir_path: PathBuf,
     },
     /// Script name provided by user
     Named {
@@ -70,16 +68,16 @@ impl ScriptState {
             }
         }
     }
-    pub(crate) fn get_script_path(&self) -> Option<PathBuf> {
+    pub(crate) fn get_script_dir_path(&self) -> Option<PathBuf> {
         match self {
             ScriptState::Anonymous => None,
             ScriptState::Named {
                 script_dir_path, ..
             } => Some(script_dir_path.clone()),
             ScriptState::NamedEmpty {
-                script_path: repl_path,
+                script_dir_path: script_path,
                 ..
-            } => Some(repl_path.clone()),
+            } => Some(script_path.clone()),
         }
     }
 }
@@ -142,11 +140,14 @@ impl BuildState {
 
         let script_path = if is_repl {
             script_state
-                .get_script_path()
+                .get_script_dir_path()
                 .expect("Missing script path")
                 .join(source_name.clone())
         } else if is_expr {
-            script_state.get_script_path().expect("Missing script path")
+            script_state
+                .get_script_dir_path()
+                .expect("Missing script path")
+                .join(TEMP_SCRIPT_NAME)
         } else {
             working_dir_path.join(PathBuf::from(script.clone()))
         };
@@ -181,8 +182,9 @@ impl BuildState {
 
         let target_dir_path = if is_repl {
             script_state
-                .get_script_path()
+                .get_script_dir_path()
                 .expect("Missing ScriptState::NamedEmpty.repl_path")
+                .join(TEMP_SCRIPT_NAME)
         } else if is_expr {
             TMPDIR.join(EXPR_SUBDIR)
         } else {
@@ -235,9 +237,7 @@ impl BuildState {
 }
 
 //      TODO:
-//       1.  -e expression evaluator
-//       2.  Discontinue //! support?
-//       3.  Consider supporting alternative TOML embedding keywords so we can run examples/regex_capture_toml.rs.
+//       1.  Consider supporting alternative TOML embedding keywords so we can run examples/regex_capture_toml.rs.
 //       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
@@ -297,13 +297,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
+    if is_expr {
+        code_utils::create_temp_source_file();
+    }
 
     // Reusable source path for expressions and stdin evaluation
-    let temp_source_path = if is_expr {
-        Some(code_utils::create_temp_source_path())
-    } else {
-        None
-    };
+    // let temp_source_path = if is_expr {
+    //     Some(code_utils::create_temp_source_file())
+    // } else {
+    //     None
+    // };
 
     let script_dir_path = if is_repl {
         if let Some(ref script) = options.script {
@@ -322,9 +325,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .to_path_buf()
         }
     } else if is_expr {
-        temp_source_path
-            .as_ref()
-            .expect("Missing path of newly created EXPR souece file")
+        <std::path::PathBuf as std::convert::AsRef<Path>>::as_ref(&TMPDIR)
+            .join(EXPR_SUBDIR)
             .clone()
     } else {
         // Normal script file prepared beforehand
@@ -355,14 +357,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             .to_string();
         ScriptState::NamedEmpty {
             script,
-            script_path: script_dir_path,
+            script_dir_path,
         }
     } else {
         assert!(is_expr);
         ScriptState::NamedEmpty {
-            script: String::from("temp.rs"),
-            script_path: temp_source_path
-                .expect("Could not resolve source path for temporary script"),
+            script: String::from(TEMP_SCRIPT_NAME),
+            script_dir_path,
         }
     };
 

@@ -1,7 +1,7 @@
 use crate::cmd_args::{Opt, ProcFlags};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::{gen_build_run, BuildState, EXPR_SUBDIR, REPL_SUBDIR, TMPDIR};
+use crate::{gen_build_run, BuildState, EXPR_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 use lazy_static::lazy_static;
 use log::debug;
 use regex::Regex;
@@ -798,14 +798,14 @@ pub(crate) fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathB
 
 /// Create empty script file `temp.rs` to hold expression for --expr or --stdin options,
 /// and open it for writing.
-pub(crate) fn create_temp_source_path() -> PathBuf {
+pub(crate) fn create_temp_source_file() -> PathBuf {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(EXPR_SUBDIR);
 
     // Ensure EXPR subdirectory exists
     fs::create_dir_all(gen_expr_temp_dir_path.clone()).expect("Failed to create REPL directory");
 
-    let filename = "temp.rs";
+    let filename = TEMP_SCRIPT_NAME;
     let path = gen_expr_temp_dir_path.join(filename);
     // fs::File::create(path.clone()).expect("Failed to create file");
     std::fs::OpenOptions::new()

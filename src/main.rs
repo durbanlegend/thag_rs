@@ -47,7 +47,9 @@ pub(crate) enum ScriptState {
     #[allow(dead_code)]
     Anonymous,
     /// Repl with script name.
-    // TODO: phase out script string? Or replace by path? Can maybe phase out whole enum ScriptState.
+    /// TODO: script_path is a directory path for the REPL case but the full source
+    /// path for the expression case. Consider making it a directory path in the expression
+    /// case as well, for consistency.
     NamedEmpty {
         script: String,
         script_path: PathBuf,
@@ -68,7 +70,7 @@ impl ScriptState {
             }
         }
     }
-    pub(crate) fn get_repl_path(&self) -> Option<PathBuf> {
+    pub(crate) fn get_script_path(&self) -> Option<PathBuf> {
         match self {
             ScriptState::Anonymous => None,
             ScriptState::Named {
@@ -105,9 +107,11 @@ impl BuildState {
     #[allow(clippy::too_many_lines)]
     pub(crate) fn pre_configure(
         proc_flags: &ProcFlags,
+        options: &Opt,
         script_state: &ScriptState,
     ) -> Result<Self, Box<dyn Error>> {
         let is_repl = proc_flags.contains(ProcFlags::REPL);
+        let is_expr = options.expression.is_some();
         let maybe_script = script_state.get_script();
         if maybe_script.is_none() {
             return Err(Box::new(BuildRunError::NoneOption(
@@ -138,9 +142,11 @@ impl BuildState {
 
         let script_path = if is_repl {
             script_state
-                .get_repl_path()
+                .get_script_path()
                 .expect("Missing script path")
                 .join(source_name.clone())
+        } else if is_expr {
+            script_state.get_script_path().expect("Missing script path")
         } else {
             working_dir_path.join(PathBuf::from(script.clone()))
         };
@@ -175,8 +181,10 @@ impl BuildState {
 
         let target_dir_path = if is_repl {
             script_state
-                .get_repl_path()
+                .get_script_path()
                 .expect("Missing ScriptState::NamedEmpty.repl_path")
+        } else if is_expr {
+            TMPDIR.join(EXPR_SUBDIR)
         } else {
             cargo_home.join(&source_stem)
         };
@@ -360,7 +368,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("script_state={script_state:?}");
 
-    let mut build_state = BuildState::pre_configure(&proc_flags, &script_state)?;
+    let mut build_state = BuildState::pre_configure(&proc_flags, &options, &script_state)?;
     if is_repl {
         debug!("build_state.source_path={:?}", build_state.source_path);
     }

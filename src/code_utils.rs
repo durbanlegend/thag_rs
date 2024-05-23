@@ -4,9 +4,12 @@ use crate::manifest::CargoManifest;
 use crate::{gen_build_run, BuildState, EXPR_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 use lazy_static::lazy_static;
 use log::debug;
+use proc_macro2::TokenStream;
+use quote::ToTokens;
 use regex::Regex;
 use std::fs::{remove_dir_all, remove_file, OpenOptions};
 use strum::Display;
+
 use syn::{Expr, UsePath};
 
 use std::error::Error;
@@ -25,6 +28,16 @@ pub(crate) enum Ast {
     File(syn::File),
     Expr(syn::Expr),
     // None,
+}
+
+/// Required to use quote! macro to generate code to resolve expression.
+impl ToTokens for Ast {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            Ast::File(file) => file.to_tokens(tokens),
+            Ast::Expr(expr) => expr.to_tokens(tokens),
+        }
+    }
 }
 
 /// Read the contents of a file. For reading the Rust script.

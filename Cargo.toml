@@ -27,6 +27,7 @@ nu-ansi-term = "0.50.0"
 reedline-repl-rs = "1.1.1"
 wsl = "0.1.0"
 home = "0.5.9"
+proc-macro2 = "1.0.83"
 
 [profile.dev]
 opt-level = 1 # Use slightly better optimizations.

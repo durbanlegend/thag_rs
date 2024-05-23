@@ -14,7 +14,6 @@ use env_logger::WriteStyle;
 use home::home_dir;
 use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
-use syn::Expr;
 use term_colors::MessageLevel;
 
 use std::env;
@@ -501,16 +500,12 @@ fn gen_build_run(
                 rs_source
             }
         } else {
-            // let rust_code = quote::quote!(println!("Expression returned {}", #rs_source););
-            // wrap_snippet(&rust_code.to_string())
-            // wrap_snippet(&format!(
-            //     r#"println!("Expression returned {{}}", {rs_source});"#
-            // ))
-            // let start_parse = Instant::now();
-            let parsed_expr: Expr = syn::parse_str(&rs_source).expect("Failed to parse expression");
-            // display_timings(&start_parse, "Completed parse", proc_flags);
             // let start_quote = Instant::now();
-            let rust_code = quote::quote!(println!("Expression returned {}", #parsed_expr););
+            let rust_code = if let Some(ref syntax_tree_ref) = syntax_tree {
+                quote::quote!(println!("Expression returned {}", #syntax_tree_ref);).to_string()
+            } else {
+                format!(r#"println!("Expression returned {{}}", {rs_source});"#)
+            };
             // display_timings(&start_quote, "Completed quote", proc_flags);
             wrap_snippet(&rust_code.to_string())
         };

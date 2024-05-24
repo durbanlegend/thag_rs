@@ -263,6 +263,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     configure_log();
 
     let mut options = get_opt();
+
     let proc_flags = get_proc_flags(&options)?;
 
     if log_enabled!(Debug) {
@@ -431,7 +432,10 @@ fn validate_options(options: &Opt, proc_flags: &ProcFlags) -> Result<(), Box<dyn
                 "Incompatible options: --expr option and script name".to_string(),
             )));
         }
-    } else if !proc_flags.contains(ProcFlags::EXPR) && !proc_flags.contains(ProcFlags::REPL) {
+    } else if !proc_flags.contains(ProcFlags::EXPR)
+        && !proc_flags.contains(ProcFlags::REPL)
+        && !proc_flags.contains(ProcFlags::STDIN)
+    {
         return Err(Box::new(BuildRunError::Command(
             "Missing script name".to_string(),
         )));

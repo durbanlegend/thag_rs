@@ -36,7 +36,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const RS_SUFFIX: &str = ".rs";
 pub(crate) const FLOWER_BOX_LEN: usize = 70;
 pub(crate) const REPL_SUBDIR: &str = "rs_repl";
-pub(crate) const EXPR_SUBDIR: &str = "rs_expr";
+pub(crate) const DYNAMIC_SUBDIR: &str = "rs_dyn";
 pub(crate) const TEMP_SCRIPT_NAME: &str = "temp.rs";
 pub(crate) const TOML_NAME: &str = "Cargo.toml";
 
@@ -112,6 +112,8 @@ impl BuildState {
     ) -> Result<Self, Box<dyn Error>> {
         let is_repl = proc_flags.contains(ProcFlags::REPL);
         let is_expr = options.expression.is_some();
+        let is_stdin = proc_flags.contains(ProcFlags::STDIN);
+        let is_dynamic = is_expr | is_stdin;
         let maybe_script = script_state.get_script();
         if maybe_script.is_none() {
             return Err(Box::new(BuildRunError::NoneOption(
@@ -145,7 +147,7 @@ impl BuildState {
                 .get_script_dir_path()
                 .expect("Missing script path")
                 .join(source_name.clone())
-        } else if is_expr {
+        } else if is_dynamic {
             script_state
                 .get_script_dir_path()
                 .expect("Missing script path")
@@ -187,8 +189,8 @@ impl BuildState {
                 .get_script_dir_path()
                 .expect("Missing ScriptState::NamedEmpty.repl_path")
                 .join(TEMP_SCRIPT_NAME)
-        } else if is_expr {
-            TMPDIR.join(EXPR_SUBDIR)
+        } else if is_dynamic {
+            TMPDIR.join(DYNAMIC_SUBDIR)
         } else {
             cargo_home.join(&source_stem)
         };
@@ -300,7 +302,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
-    if is_expr {
+    let is_stdin = proc_flags.contains(ProcFlags::STDIN);
+    let is_dynamic = is_expr | is_stdin;
+
+    if is_dynamic {
         code_utils::create_temp_source_file();
     }
 
@@ -327,9 +332,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .expect("Could not find parent directory of repl source file")
                 .to_path_buf()
         }
-    } else if is_expr {
+    } else if is_dynamic {
+        debug!("^^^^^^^^ is_dynamic={is_dynamic}");
         <std::path::PathBuf as std::convert::AsRef<Path>>::as_ref(&TMPDIR)
-            .join(EXPR_SUBDIR)
+            .join(DYNAMIC_SUBDIR)
             .clone()
     } else {
         // Normal script file prepared beforehand
@@ -363,7 +369,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             script_dir_path,
         }
     } else {
-        assert!(is_expr);
+        assert!(is_dynamic);
         ScriptState::NamedEmpty {
             script: String::from(TEMP_SCRIPT_NAME),
             script_dir_path,
@@ -379,23 +385,30 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if is_repl {
         repl::run_repl(&mut options, &proc_flags, &mut build_state, start)?;
-    } else if is_expr {
-        let Some(ref rs_source) = options.expression.clone() else {
-            return Err(Box::new(BuildRunError::Command(
-                "Missing expression for --expr option".to_string(),
-            )));
+    } else if is_dynamic {
+        let rs_source = if is_expr {
+            let Some(rs_source) = options.expression.clone() else {
+                return Err(Box::new(BuildRunError::Command(
+                    "Missing expression for --expr option".to_string(),
+                )));
+            };
+            rs_source
+        } else {
+            assert!(is_stdin);
+            debug!("About to call read_stdin()");
+            code_utils::read_stdin()?
         };
-        let rs_manifest = extract_manifest(rs_source, Instant::now())
+        let rs_manifest = extract_manifest(&rs_source, Instant::now())
             .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
         build_state.rs_manifest = Some(rs_manifest);
 
-        let maybe_ast = extract_ast(rs_source);
+        let maybe_ast = extract_ast(&rs_source);
 
         if let Ok(expr_ast) = maybe_ast {
             code_utils::process_expr(
                 &expr_ast,
                 &mut build_state,
-                rs_source,
+                &rs_source,
                 &mut options,
                 &proc_flags,
                 &start,
@@ -506,7 +519,17 @@ fn gen_build_run(
         } else {
             // let start_quote = Instant::now();
             let rust_code = if let Some(ref syntax_tree_ref) = syntax_tree {
-                quote::quote!(println!("Expression returned {}", #syntax_tree_ref);).to_string()
+                quote::quote!(
+                    // fn type_of<T>(_: T) -> &'static str {
+                    //     std::any::type_name::<T>()
+                    // }
+                    //     println!("Type of expression is {}", type_of(#syntax_tree_ref));)
+                    // .to_string()
+                    // println!("Expression returned {:#?}", #syntax_tree_ref);)
+                    // .to_string()
+                    dbg!(#syntax_tree_ref);
+                )
+                .to_string()
             } else {
                 format!(r#"println!("Expression returned {{}}", {rs_source});"#)
             };

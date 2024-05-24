@@ -1,7 +1,7 @@
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
-use crate::{gen_build_run, BuildState, EXPR_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
+use crate::{gen_build_run, BuildState, DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 use lazy_static::lazy_static;
 use log::debug;
 use proc_macro2::TokenStream;
@@ -813,7 +813,7 @@ pub(crate) fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathB
 /// and open it for writing.
 pub(crate) fn create_temp_source_file() -> PathBuf {
     // Create a directory inside of `std::env::temp_dir()`
-    let gen_expr_temp_dir_path = TMPDIR.join(EXPR_SUBDIR);
+    let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
     // Ensure EXPR subdirectory exists
     fs::create_dir_all(gen_expr_temp_dir_path.clone()).expect("Failed to create REPL directory");

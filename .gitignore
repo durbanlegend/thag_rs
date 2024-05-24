@@ -39,3 +39,4 @@ temp.txt
 xterm_colors.txt
 *.rsx
 examples/clap_default_value_ifs.rs
+examples/displayable.rs

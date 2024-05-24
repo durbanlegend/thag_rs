@@ -1,4 +1,4 @@
-use crate::cmd_args::{Opt, ProcFlags};
+use crate::cmd_args::{Cli, ProcFlags};
 use crate::errors::BuildRunError;
 use crate::manifest::CargoManifest;
 use crate::{gen_build_run, BuildState, EXPR_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
@@ -429,7 +429,7 @@ pub(crate) fn process_expr(
     expr_ast: &Expr,
     build_state: &mut BuildState,
     rs_source: &str,
-    options: &mut Opt,
+    options: &mut Cli,
     proc_flags: &ProcFlags,
     start: &Instant,
 ) -> Result<(), BuildRunError> {

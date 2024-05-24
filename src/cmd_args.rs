@@ -9,7 +9,7 @@ use crate::errors::BuildRunError;
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Parser, Debug)]
 #[command(version = "1.0", author = "durbanlegend")]
-pub(crate) struct Opt {
+pub(crate) struct Cli {
     /// Set the script to run
     pub(crate) script: Option<String>,
     /// Set the arguments for the script
@@ -48,8 +48,8 @@ pub(crate) struct Opt {
 }
 
 /// Getter for clap command-line options
-pub(crate) fn get_opt() -> Opt {
-    Opt::parse()
+pub(crate) fn get_opt() -> Cli {
+    Cli::parse()
 }
 
 bitflags! {
@@ -94,7 +94,7 @@ impl str::FromStr for ProcFlags {
 }
 
 /// Set up the processing flags from the command line arguments and pass them back.
-pub(crate) fn get_proc_flags(options: &Opt) -> Result<ProcFlags, Box<dyn Error>> {
+pub(crate) fn get_proc_flags(options: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
     let is_expr = options.expression.is_some();
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
@@ -147,7 +147,7 @@ pub(crate) fn get_proc_flags(options: &Opt) -> Result<ProcFlags, Box<dyn Error>>
 
 #[allow(dead_code)]
 fn main() {
-    let opt = Opt::parse();
+    let opt = Cli::parse();
 
     if opt.verbose {
         println!("Verbosity enabled");

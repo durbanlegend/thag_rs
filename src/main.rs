@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::cmd_args::{get_opt, get_proc_flags, Opt, ProcFlags};
+use crate::cmd_args::{get_opt, get_proc_flags, Cli, ProcFlags};
 use crate::code_utils::{
     debug_timings, display_timings, extract_ast, extract_manifest, modified_since_compiled,
     read_file_contents, rustfmt, strip_curly_braces, wrap_snippet, write_source,
@@ -107,7 +107,7 @@ impl BuildState {
     #[allow(clippy::too_many_lines)]
     pub(crate) fn pre_configure(
         proc_flags: &ProcFlags,
-        options: &Opt,
+        options: &Cli,
         script_state: &ScriptState,
     ) -> Result<Self, Box<dyn Error>> {
         let is_repl = proc_flags.contains(ProcFlags::REPL);
@@ -420,7 +420,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn validate_options(options: &Opt, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
+fn validate_options(options: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
     if let Some(ref script) = options.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(Box::new(BuildRunError::Command(format!(
@@ -450,7 +450,7 @@ fn debug_print_config() {
 }
 
 fn gen_build_run(
-    options: &mut Opt,
+    options: &mut Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     syntax_tree: Option<Ast>,

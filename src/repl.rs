@@ -1,4 +1,4 @@
-use crate::cmd_args::{Opt, ProcFlags};
+use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast, extract_manifest, Ast};
 use crate::errors::BuildRunError;
 use crate::term_colors::nu_resolve_style;
@@ -48,7 +48,7 @@ enum LoopCommand {
 
 #[derive(Debug)]
 struct Context<'a> {
-    options: &'a mut Opt,
+    options: &'a mut Cli,
     proc_flags: &'a ProcFlags,
     // cmd_list: String,
     build_state: &'a mut BuildState,
@@ -90,7 +90,7 @@ impl Prompt for EvalPrompt {
 }
 
 pub(crate) fn run_repl(
-    options: &mut Opt,
+    options: &mut Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     start: Instant,

@@ -8,42 +8,42 @@ use crate::errors::BuildRunError;
 /// Clap command-line options
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Parser, Debug)]
-#[clap(version = "1.0", author = "durbanlegend")]
+#[command(version = "1.0", author = "durbanlegend")]
 pub(crate) struct Opt {
     /// Set the script to run
     pub(crate) script: Option<String>,
     /// Set the arguments for the script
-    #[clap(last = true)]
+    #[arg(last = true)]
     pub(crate) args: Vec<String>,
     /// Set verbose mode
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub(crate) verbose: bool,
     /// Display timings
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub(crate) timings: bool,
     /// Generate Rust source and individual cargo .toml if compiled file is stale
-    #[clap(short = 'g', long = "gen")]
+    #[arg(short = 'g', long = "gen")]
     pub(crate) generate: bool,
     /// Build script if compiled file is stale
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub(crate) build: bool,
     /// Force generation of Rust source and individual Cargo.toml, and build, even if compiled file is not stale
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub(crate) force: bool,
     ///  (Default) Carry out generation and build steps (if necessary or forced) and run the compiled script
-    #[clap(short, long, default_value = "true")]
+    #[arg(short, long, default_value = "true")]
     pub(crate) all: bool,
     /// Run compiled script if available
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub(crate) run: bool,
     /// Run in REPL mode (read–eval–print loop). Existing script name is optional.
-    #[clap(short = 'l', long, conflicts_with_all(["all", "generate", "build", "run"]))]
+    #[arg(short = 'l', long, conflicts_with_all(["all", "generate", "build", "run"]))]
     pub(crate) repl: bool,
-    #[clap(short, long = "expr", conflicts_with_all(["all", "generate", "build", "run", "repl", "script", "stdin"]))]
+    #[arg(short, long = "expr", conflicts_with_all(["all", "generate", "build", "run", "repl", "script", "stdin"]))]
     pub(crate) expression: Option<String>,
-    #[clap(short, long, conflicts_with_all(["all", "expression", "generate", "build", "run", "repl", "script"]))]
+    #[arg(short, long, conflicts_with_all(["all", "expression", "generate", "build", "run", "repl", "script"]))]
     pub(crate) stdin: bool,
-    #[clap(short, long, conflicts_with("verbose"))]
+    #[arg(short, long, conflicts_with("verbose"))]
     pub(crate) quiet: bool,
 }
 

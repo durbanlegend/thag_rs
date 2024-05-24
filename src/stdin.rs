@@ -1,10 +1,7 @@
 /*[toml]
 [dependencies]
 crossterm = "0.27.0"
-lazy_static = "1.4.0"
 ratatui = "0.26.3"
-regex = "1.10.3"
-
 tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
 */
 
@@ -14,12 +11,10 @@ use crossterm::event::{
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
-use lazy_static::lazy_static;
 use ratatui::backend::CrosstermBackend;
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::widgets::{Block, Borders};
 use ratatui::Terminal;
-use regex::Regex;
 use std::io;
 use tui_textarea::{Input, Key, TextArea};
 
@@ -44,7 +39,8 @@ fn main() -> io::Result<()> {
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter Rust script. Ctrl-D: submit"),
+            .title("Enter Rust script. Ctrl-D: submit")
+            .title_style(Style::default().italic()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::LightCyan));
@@ -88,20 +84,4 @@ fn main() -> io::Result<()> {
 
     // println!("Lines: {:?}", re_disentangle(&x));
     Ok(())
-}
-
-#[allow(dead_code)]
-pub(crate) fn re_disentangle(text_wall: &str) -> String {
-    use std::fmt::Write;
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?m)(?P<line>.*?)(?:[\\]n|$)").unwrap();
-    }
-
-    // We extract the non-greedy capturing group named "line" from each capture of the multi-line mode regex..
-    RE.captures_iter(text_wall)
-        .map(|c| c.name("line").unwrap().as_str())
-        .fold(String::new(), |mut output, b| {
-            let _ = writeln!(output, "{b}");
-            output
-        })
 }

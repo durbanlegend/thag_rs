@@ -14,7 +14,7 @@ use syn::{Expr, UsePath};
 
 use std::error::Error;
 use std::fs;
-use std::io::{self, BufRead, Read, Write};
+use std::io::{self, BufRead, Write};
 use std::option::Option;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output};
@@ -469,6 +469,22 @@ pub(crate) fn disentangle(text_wall: &str) -> String {
 }
 
 #[allow(dead_code)]
+pub(crate) fn re_disentangle(text_wall: &str) -> String {
+    use std::fmt::Write;
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?m)(?P<line>.*?)(?:[\\]n|$)").unwrap();
+    }
+
+    // We extract the non-greedy capturing group named "line" from each capture of the multi-line mode regex..
+    RE.captures_iter(text_wall)
+        .map(|c| c.name("line").unwrap().as_str())
+        .fold(String::new(), |mut output, b| {
+            let _ = writeln!(output, "{b}");
+            output
+        })
+}
+
+#[allow(dead_code)]
 /// Display output captured to `std::process::Output`.
 pub(crate) fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     // Read the captured output from the pipe
@@ -832,6 +848,7 @@ pub(crate) fn create_temp_source_file() -> PathBuf {
 }
 
 #[allow(dead_code)]
+#[allow(clippy::unnecessary_wraps)]
 /// Prompt for and read Rust source code from stdin.
 pub(crate) fn read_stdin() -> Result<String, io::Error> {
     println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
@@ -840,7 +857,20 @@ pub(crate) fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();
     let stdin = io::stdin();
     let mut handle = stdin.lock();
-    handle.read_to_string(&mut buffer)?;
+    // let mut handle = stdin.lock().lines()?;
+    // for line in handle {
+    //     let line = line?;
+    //     buffer.push_str(&line);
+    //     buffer.push('\n');
+    // }
+
+    loop {
+        let result = handle.read_line(&mut buffer);
+        if let Ok(0) = result {
+            break;
+        }
+    }
+    // handle.read_to_string(&mut buffer)?;
     Ok(buffer)
 }
 

@@ -1,3 +1,10 @@
+/*[toml]
+[dependencies]
+crossterm = "0.27.0"
+ratatui = "0.26.1"
+tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
+*/
+
 use crossterm::event::read;
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,

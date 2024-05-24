@@ -1,6 +1,8 @@
-//! [dependencies]
-//! prettyplease = "0.2"
-//! syn = { version = "2", default-features = false, features = ["full", "parsing"] }
+/*[toml]
+[dependencies]
+prettyplease = "0.2"
+syn = { version = "2", default-features = false, features = ["full", "parsing"] }
+*/
 
 const INPUT: &str = stringify! {
     use crate::{

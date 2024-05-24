@@ -1,6 +1,8 @@
-//! [dependencies]
-//! crossterm = "0.27.0"
-//! ratatui = "0.26.2"
+/*[toml]
+[dependencies]
+crossterm = "0.27.0"
+ratatui = "0.26.2"
+*/
 
 // # [Ratatui] User Input example
 //

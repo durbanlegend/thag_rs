@@ -29,6 +29,7 @@ mod code_utils;
 mod errors;
 mod manifest;
 mod repl;
+mod stdin;
 mod term_colors;
 
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");

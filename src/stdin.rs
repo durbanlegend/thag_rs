@@ -60,11 +60,6 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     textarea.set_cursor_style(Style::default().on_yellow());
     textarea.set_cursor_line_style(Style::default().on_light_yellow());
 
-    // for line in buffer.lines() {
-    //     insert_line(&mut textarea, line);
-    // }
-    // textarea.insert_str(&initial_content);
-
     textarea.move_cursor(CursorMove::Bottom);
 
     loop {

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
+crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 ratatui = "0.26.3"
 tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
 */
@@ -11,14 +11,16 @@ use crossterm::event::{
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
+// use log::debug;
 use ratatui::backend::CrosstermBackend;
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::widgets::{Block, Borders};
 use ratatui::Terminal;
 use std::error::Error;
 use std::io;
-use tui_textarea::{Input, Key, TextArea};
+use tui_textarea::{CursorMove, Input, Key, TextArea};
 
+use crate::code_utils;
 use crate::errors::BuildRunError;
 
 // use crate::code_utils;
@@ -32,6 +34,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
+    let initial_content = code_utils::read_stdin()?;
+
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
     enable_raw_mode()?;
@@ -43,7 +47,8 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     )?;
     let backend = CrosstermBackend::new(stdout);
     let mut term = Terminal::new(backend)?;
-    let mut textarea = TextArea::default();
+    let mut textarea = TextArea::from(initial_content.lines());
+
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
@@ -54,6 +59,14 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     textarea.set_selection_style(Style::default().bg(Color::LightCyan));
     textarea.set_cursor_style(Style::default().on_yellow());
     textarea.set_cursor_line_style(Style::default().on_light_yellow());
+
+    // for line in buffer.lines() {
+    //     insert_line(&mut textarea, line);
+    // }
+    // textarea.insert_str(&initial_content);
+
+    textarea.move_cursor(CursorMove::Bottom);
+
     loop {
         term.draw(|f| {
             f.render_widget(textarea.widget(), f.size());
@@ -61,8 +74,7 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
         let event = crossterm::event::read()?;
         if let Paste(data) = event {
             for line in data.lines() {
-                textarea.insert_str(line);
-                textarea.insert_newline();
+                insert_line(&mut textarea, line);
             }
         } else {
             let input = Input::from(event.clone());
@@ -73,7 +85,7 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
                     ..
                 } => {
                     reset_term(term)?;
-                    return Err(Box::new(BuildRunError::Cancel));
+                    return Err(Box::new(BuildRunError::Cancelled));
                 }
                 Input {
                     key: Key::Char('d'),
@@ -89,6 +101,14 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     reset_term(term)?;
 
     Ok(textarea.lines().to_vec())
+}
+
+fn insert_line(textarea: &mut TextArea, line: &str) {
+    textarea.insert_str(line);
+    if cfg!(windows) {
+        textarea.insert_str("\r");
+    }
+    textarea.insert_newline();
 }
 
 fn reset_term(

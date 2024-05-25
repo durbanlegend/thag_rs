@@ -857,20 +857,12 @@ pub(crate) fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();
     let stdin = io::stdin();
     let mut handle = stdin.lock();
-    // let mut handle = stdin.lock().lines()?;
-    // for line in handle {
-    //     let line = line?;
-    //     buffer.push_str(&line);
-    //     buffer.push('\n');
-    // }
-
     loop {
         let result = handle.read_line(&mut buffer);
         if let Ok(0) = result {
             break;
         }
     }
-    // handle.read_to_string(&mut buffer)?;
     Ok(buffer)
 }
 

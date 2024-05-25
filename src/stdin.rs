@@ -13,8 +13,11 @@ use crossterm::terminal::{
 };
 // use log::debug;
 use ratatui::backend::CrosstermBackend;
-use ratatui::style::{Color, Style, Stylize};
-use ratatui::widgets::{Block, Borders};
+use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
+use ratatui::prelude::Rect;
+use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::widgets::block::Title;
+use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use std::error::Error;
 use std::io;
@@ -36,6 +39,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     let initial_content = code_utils::read_stdin()?;
 
+    let mut popup = false;
+
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
     enable_raw_mode()?;
@@ -52,7 +57,7 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit Rust script. Ctrl-D: submit")
+            .title("Enter / paste / edit Rust script. Ctrl-D: submit  Ctrl-C: cancel  Ctrl-L: keys")
             .title_style(Style::default().italic()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
@@ -65,6 +70,9 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     loop {
         term.draw(|f| {
             f.render_widget(textarea.widget(), f.size());
+            if popup {
+                show_popup(f);
+            }
         })?;
         let event = crossterm::event::read()?;
         if let Paste(data) = event {
@@ -87,6 +95,12 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
                     ctrl: true,
                     ..
                 } => break,
+                Input {
+                    key: Key::Char('l'),
+                    ctrl: true,
+                    ..
+                } => popup = !popup,
+
                 input => {
                     textarea.input(input);
                 }
@@ -118,3 +132,106 @@ fn reset_term(
     term.show_cursor()?;
     Ok(())
 }
+
+#[allow(clippy::cast_possible_truncation)]
+fn show_popup(f: &mut ratatui::prelude::Frame) {
+    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
+    let inner = area.inner(&Margin {
+        vertical: 2,
+        horizontal: 2,
+    });
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title(
+            Title::from("Platform-dependent key mappings (YMMV)")
+                .alignment(ratatui::layout::Alignment::Center),
+        )
+        .title(Title::from("(Ctrl-L to toggle)").alignment(Alignment::Center))
+        .add_modifier(Modifier::BOLD);
+    f.render_widget(Clear, area);
+    //this clears out the background
+    f.render_widget(block, area);
+    let row_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints::<Vec<Constraint>>(
+            std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32))
+                .take(NUM_ROWS)
+                .collect::<Vec<Constraint>>(), // .as_ref(),
+        );
+    let rows = row_layout.split(inner);
+
+    for (i, row) in rows.iter().enumerate() {
+        let col_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Length(45), Constraint::Length(43)].as_ref());
+        let cells = col_layout.split(*row);
+        for n in 0..=1 {
+            let mut widget = Paragraph::new(MAPPINGS[i][n]);
+            if i == 0 {
+                widget = widget.add_modifier(Modifier::BOLD);
+            } else {
+                widget = widget.remove_modifier(Modifier::BOLD);
+            }
+            f.render_widget(widget, cells[n]);
+        }
+    }
+}
+
+fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Max(max_height),
+        Constraint::Fill(1),
+    ])
+    .split(r);
+
+    Layout::horizontal([
+        Constraint::Fill(1),
+        Constraint::Max(max_width),
+        Constraint::Fill(1),
+    ])
+    .split(popup_layout[1])[1]
+}
+
+const MAPPINGS: &[[&str; 2]; 30] = &[
+    ["Key Bindings", "Description"],
+    ["Shift+arrow keys", "Select text from cursor position"],
+    ["Ctrl+H, Backspace", "Delete character before cursor"],
+    ["Ctrl+D, Delete", "Delete character at cursor"],
+    ["Ctrl+I, Tab", "Indent"],
+    ["Ctrl+M, Enter", "Insert newline"],
+    ["Ctrl+K", "Delete from cursor to end of line"],
+    ["Ctrl+J", "Delete from cursor to start of line"],
+    [
+        "Ctrl+W, Alt+< or Backspace",
+        "Delete one word before cursor",
+    ],
+    ["Alt+D or Delete", "Delete one word from cursor position"],
+    ["Ctrl+U", "Undo"],
+    ["Ctrl+R", "Redo"],
+    ["Ctrl+C, Copy", "Copy (yank) selected text"],
+    ["Ctrl+X, Cut", "Cut (yank) selected text"],
+    ["Ctrl+Y, Paste yanked", "Paste yanked text"],
+    ["Ctrl+V, Paste clipboard", "Paste from system clipboard"],
+    ["Ctrl+F, →", "Move cursor forward one character"],
+    ["Ctrl+B, ←", "Move cursor backward one character"],
+    ["Ctrl+P, ↑", "Move cursor up one line"],
+    ["Ctrl+N, ↓", "Move cursor down one line"],
+    ["Alt+F, Ctrl+→", "Move cursor forward one word"],
+    ["Atl+B, Ctrl+←", "Move cursor backward one word"],
+    ["Alt+] or P, Ctrl+↑", "Move cursor up one paragraph"],
+    ["Alt+[ or N, Ctrl+↓", "Move cursor down one paragraph"],
+    [
+        "Ctrl+E, End, Ctrl+Alt+F or → , Cmd+→",
+        "Move cursor to end of line",
+    ],
+    [
+        "Ctrl+A, Home, Ctrl+Alt+B or ← , Cmd+←",
+        "Move cursor to start of line",
+    ],
+    ["Alt+<, Ctrl+Alt+P or ↑", "Move cursor to top of file"],
+    ["Alt+>, Ctrl+Alt+N or↓", "Move cursor to bottom of file"],
+    ["PageDown, Cmd+↓", "Page down"],
+    ["Alt+V, PageUp, Cmd+↑", "Page up"],
+];
+const NUM_ROWS: usize = MAPPINGS.len();

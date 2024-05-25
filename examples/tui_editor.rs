@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
+crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 ratatui = "0.26.1"
 tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
 */
@@ -381,45 +381,7 @@ impl<'a> Editor<'a> {
 
                 // Show key bindings on Ctrl-L
                 if self.show_popup {
-                    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
-                    let inner = area.inner(&Margin {
-                        vertical: 2,
-                        horizontal: 2,
-                    });
-                    let block = Block::default()
-                        .borders(Borders::ALL)
-                        .title(
-                            Title::from("Platform-dependent key mappings (YMMV)")
-                                .alignment(ratatui::layout::Alignment::Center),
-                        )
-                        .title(Title::from("(^L to toggle)").alignment(Alignment::Center))
-                        .add_modifier(Modifier::BOLD);
-                    f.render_widget(Clear, area); //this clears out the background
-                    f.render_widget(block, area);
-                    let row_layout = Layout::default()
-                        .direction(Direction::Vertical)
-                        .constraints::<Vec<Constraint>>(
-                            std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32))
-                                .take(NUM_ROWS)
-                                .collect::<Vec<Constraint>>(), // .as_ref(),
-                        );
-                    let rows = row_layout.split(inner);
-
-                    for (i, row) in rows.iter().enumerate() {
-                        let col_layout = Layout::default()
-                            .direction(Direction::Horizontal)
-                            .constraints([Constraint::Length(45), Constraint::Length(43)].as_ref());
-                        let cells = col_layout.split(*row);
-                        for n in 0..=1 {
-                            let mut widget = Paragraph::new(MAPPINGS[i][n]);
-                            if i == 0 {
-                                widget = widget.add_modifier(Modifier::BOLD);
-                            } else {
-                                widget = widget.remove_modifier(Modifier::BOLD);
-                            }
-                            f.render_widget(widget, cells[n]);
-                        }
-                    }
+                    show_popup(f);
                 }
             })?;
 
@@ -559,6 +521,49 @@ impl<'a> Editor<'a> {
         self.output.textarea.insert_str(msg);
         self.output.textarea.insert_newline();
         self.output.modified = true;
+    }
+}
+
+fn show_popup(f: &mut ratatui::prelude::Frame) {
+    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
+    let inner = area.inner(&Margin {
+        vertical: 2,
+        horizontal: 2,
+    });
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title(
+            Title::from("Platform-dependent key mappings (YMMV)")
+                .alignment(ratatui::layout::Alignment::Center),
+        )
+        .title(Title::from("(^L to toggle)").alignment(Alignment::Center))
+        .add_modifier(Modifier::BOLD);
+    f.render_widget(Clear, area);
+    //this clears out the background
+    f.render_widget(block, area);
+    let row_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints::<Vec<Constraint>>(
+            std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32))
+                .take(NUM_ROWS)
+                .collect::<Vec<Constraint>>(), // .as_ref(),
+        );
+    let rows = row_layout.split(inner);
+
+    for (i, row) in rows.iter().enumerate() {
+        let col_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Length(45), Constraint::Length(43)].as_ref());
+        let cells = col_layout.split(*row);
+        for n in 0..=1 {
+            let mut widget = Paragraph::new(MAPPINGS[i][n]);
+            if i == 0 {
+                widget = widget.add_modifier(Modifier::BOLD);
+            } else {
+                widget = widget.remove_modifier(Modifier::BOLD);
+            }
+            f.render_widget(widget, cells[n]);
+        }
     }
 }
 

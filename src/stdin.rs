@@ -57,7 +57,7 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit Rust script. Ctrl-D: submit  Ctrl-C: cancel  Ctrl-L: keys")
+            .title("Enter / paste / edit Rust script. Ctrl-D: submit  Ctrl-Q: quit  Ctrl-L: keys")
             .title_style(Style::default().italic()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
@@ -83,7 +83,7 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
             let input = Input::from(event.clone());
             match input {
                 Input {
-                    key: Key::Char('c'),
+                    key: Key::Char('q'),
                     ctrl: true,
                     ..
                 } => {
@@ -193,11 +193,16 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     .split(popup_layout[1])[1]
 }
 
-const MAPPINGS: &[[&str; 2]; 30] = &[
+const MAPPINGS: &[[&str; 2]; 32] = &[
     ["Key Bindings", "Description"],
-    ["Shift+arrow keys", "Select text from cursor position"],
+    ["Shift+arrow keys", "Select/deselect ← chars→  / ↑ lines↓"],
+    [
+        "Shift+Ctrl+arrow keys",
+        "Select/deselect ← words→  / ↑ paras↓",
+    ],
+    ["Ctrl+D", "Submit"],
+    ["Ctrl+Q", "Cancel and quit"],
     ["Ctrl+H, Backspace", "Delete character before cursor"],
-    ["Ctrl+D, Delete", "Delete character at cursor"],
     ["Ctrl+I, Tab", "Indent"],
     ["Ctrl+M, Enter", "Insert newline"],
     ["Ctrl+K", "Delete from cursor to end of line"],

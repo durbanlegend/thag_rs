@@ -243,6 +243,7 @@ impl BuildState {
 
 //      TODO:
 //       1.  Consider supporting alternative TOML embedding keywords so we can run examples/regex_capture_toml.rs.
+//       2.  COnsider history support for stdin.
 //       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.

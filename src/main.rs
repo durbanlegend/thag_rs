@@ -397,7 +397,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         } else {
             assert!(is_stdin);
             debug!("About to call read_stdin()");
-            code_utils::read_stdin()?
+            let vec = stdin::read_stdin()?;
+            debug!("vec={vec:#?}");
+            vec.join("\n")
         };
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
             .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;

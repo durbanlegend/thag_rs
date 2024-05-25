@@ -6,6 +6,7 @@ use toml::ser::Error as TomlSerError;
 
 #[derive(Debug)]
 pub(crate) enum BuildRunError {
+    Cancel,             // For user electing to cancel
     Command(String),    // For errors during Cargo build or program execution
     FromStr(String),    // For parsing CargoManifest from a string
     Io(io::Error),      // For I/O errors
@@ -52,6 +53,7 @@ impl From<String> for BuildRunError {
 impl std::fmt::Display for BuildRunError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            BuildRunError::Cancel => write!(f, "Cancelled"),
             BuildRunError::Command(s)
             | BuildRunError::FromStr(s)
             | BuildRunError::NoneOption(s) => {
@@ -86,6 +88,7 @@ impl Error for BuildRunError {
             BuildRunError::ReplError(ref e) => Some(e),
             BuildRunError::TomlDe(ref e) => Some(e),
             BuildRunError::TomlSer(ref e) => Some(e),
+            BuildRunError::Cancel => Some(self),
         }
     }
 }

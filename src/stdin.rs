@@ -15,16 +15,25 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::widgets::{Block, Borders};
 use ratatui::Terminal;
+use std::error::Error;
 use std::io;
 use tui_textarea::{Input, Key, TextArea};
+
+use crate::errors::BuildRunError;
 
 // use crate::code_utils;
 
 #[allow(dead_code)]
-fn main() -> io::Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
+    for line in &read_stdin()? {
+        println!("{line}");
+    }
+    Ok(())
+}
+
+pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
-
     enable_raw_mode()?;
     crossterm::execute!(
         stdout,
@@ -34,20 +43,17 @@ fn main() -> io::Result<()> {
     )?;
     let backend = CrosstermBackend::new(stdout);
     let mut term = Terminal::new(backend)?;
-
     let mut textarea = TextArea::default();
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter Rust script. Ctrl-D: submit")
+            .title("Enter / paste / edit Rust script. Ctrl-D: submit")
             .title_style(Style::default().italic()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::LightCyan));
-    // textarea.set_line_number_style(Style::default());
     textarea.set_cursor_style(Style::default().on_yellow());
     textarea.set_cursor_line_style(Style::default().on_light_yellow());
-
     loop {
         term.draw(|f| {
             f.render_widget(textarea.widget(), f.size());
@@ -62,7 +68,15 @@ fn main() -> io::Result<()> {
             let input = Input::from(event.clone());
             match input {
                 Input {
-                    key: Key::Char('c' | 'd'),
+                    key: Key::Char('c'),
+                    ctrl: true,
+                    ..
+                } => {
+                    reset_term(term)?;
+                    return Err(Box::new(BuildRunError::Cancel));
+                }
+                Input {
+                    key: Key::Char('d'),
                     ctrl: true,
                     ..
                 } => break,
@@ -72,6 +86,14 @@ fn main() -> io::Result<()> {
             }
         }
     }
+    reset_term(term)?;
+
+    Ok(textarea.lines().to_vec())
+}
+
+fn reset_term(
+    mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,
+) -> Result<(), Box<dyn Error>> {
     disable_raw_mode()?;
     crossterm::execute!(
         term.backend_mut(),
@@ -79,9 +101,5 @@ fn main() -> io::Result<()> {
         DisableMouseCapture
     )?;
     term.show_cursor()?;
-
-    textarea.lines().iter().for_each(|l| println!("{l}"));
-
-    // println!("Lines: {:?}", re_disentangle(&x));
     Ok(())
 }

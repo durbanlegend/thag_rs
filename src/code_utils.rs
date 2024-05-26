@@ -630,7 +630,7 @@ fn count_main_methods(syntax_tree: &Ast) -> usize {
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 pub(crate) fn has_main_alt(rs_source: &str) -> bool {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?m)^\s*fn\s* main\(\s*\)").unwrap();
+        static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
     }
     let main_methods = RE.find_iter(rs_source).count();
     debug!("main_methods={main_methods}");

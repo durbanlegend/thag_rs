@@ -55,6 +55,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
+    // Flush any pending events
+    while event::poll(Duration::from_millis(0))? {
+        event::read()?;
+    }
+
     // Create a channel to communicate between the input handling thread and the main thread
     let (tx, rx) = mpsc::channel();
     let tick_rate = Duration::from_millis(250);

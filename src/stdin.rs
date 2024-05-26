@@ -25,7 +25,6 @@ use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 use crate::code_utils;
 use crate::errors::BuildRunError;
-use crate::term_colors::{TermTheme, TERM_THEME};
 
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -47,6 +46,7 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     };
 
     let mut popup = false;
+    let mut alt_highlights = false;
 
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
@@ -68,20 +68,9 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
             .title_style(Style::default().italic()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
-    textarea.set_selection_style(Style::default().bg(Color::LightCyan));
-
-    match *TERM_THEME {
-        TermTheme::Light => {
-            // println!("The theme is Light")
-            textarea.set_cursor_style(Style::default().on_yellow());
-            textarea.set_cursor_line_style(Style::default().on_light_yellow());
-        }
-        TermTheme::Dark => {
-            // println!("The theme is Dark")
-            textarea.set_cursor_style(Style::default().on_magenta());
-            textarea.set_cursor_line_style(Style::default().on_dark_gray());
-        }
-    }
+    textarea.set_selection_style(Style::default().bg(Color::Blue));
+    textarea.set_cursor_style(Style::default().on_magenta());
+    textarea.set_cursor_line_style(Style::default().on_dark_gray());
 
     textarea.move_cursor(CursorMove::Bottom);
 
@@ -90,6 +79,15 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
             f.render_widget(textarea.widget(), f.size());
             if popup {
                 show_popup(f);
+            }
+            if alt_highlights {
+                textarea.set_selection_style(Style::default().bg(Color::LightRed));
+                textarea.set_cursor_style(Style::default().on_yellow());
+                textarea.set_cursor_line_style(Style::default().on_light_yellow());
+            } else {
+                textarea.set_selection_style(Style::default().bg(Color::LightCyan));
+                textarea.set_cursor_style(Style::default().on_magenta());
+                textarea.set_cursor_line_style(Style::default().on_dark_gray());
             }
         })?;
         let event = crossterm::event::read()?;
@@ -118,6 +116,24 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
                     ctrl: true,
                     ..
                 } => popup = !popup,
+                Input {
+                    key: Key::Char('t'),
+                    ctrl: true,
+                    ..
+                } => {
+                    alt_highlights = !alt_highlights;
+                    term.draw(|_| {
+                        if alt_highlights {
+                            textarea.set_selection_style(Style::default().bg(Color::LightRed));
+                            textarea.set_cursor_style(Style::default().on_yellow());
+                            textarea.set_cursor_line_style(Style::default().on_light_yellow());
+                        } else {
+                            textarea.set_selection_style(Style::default().bg(Color::LightCyan));
+                            textarea.set_cursor_style(Style::default().on_magenta());
+                            textarea.set_cursor_line_style(Style::default().on_dark_gray());
+                        }
+                    })?;
+                }
 
                 input => {
                     textarea.input(input);
@@ -211,7 +227,7 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     .split(popup_layout[1])[1]
 }
 
-const MAPPINGS: &[[&str; 2]; 32] = &[
+const MAPPINGS: &[[&str; 2]; 33] = &[
     ["Key Bindings", "Description"],
     ["Shift+arrow keys", "Select/deselect ← chars→  / ↑ lines↓"],
     [
@@ -256,5 +272,6 @@ const MAPPINGS: &[[&str; 2]; 32] = &[
     ["Alt+>, Ctrl+Alt+N or↓", "Move cursor to bottom of file"],
     ["PageDown, Cmd+↓", "Page down"],
     ["Alt+V, PageUp, Cmd+↑", "Page up"],
+    ["Ctrl-T", "Toggle highlight colours"],
 ];
 const NUM_ROWS: usize = MAPPINGS.len();

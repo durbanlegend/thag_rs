@@ -20,7 +20,7 @@ use ratatui::widgets::block::Title;
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use std::error::Error;
-use std::io;
+use std::io::{self, IsTerminal};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 use crate::code_utils;
@@ -37,7 +37,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
-    let initial_content = code_utils::read_stdin()?;
+    let input = std::io::stdin();
+
+    // let initial_content = code_utils::read_stdin()?;
+    let initial_content = if input.is_terminal() {
+        // No input available
+        String::new()
+    } else {
+        code_utils::read_stdin()?
+    };
 
     let mut popup = false;
 

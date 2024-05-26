@@ -243,7 +243,8 @@ impl BuildState {
 
 //      TODO:
 //       1.  Consider supporting alternative TOML embedding keywords so we can run examples/regex_capture_toml.rs.
-//       2.  COnsider history support for stdin.
+//       2.  Consider history support for stdin.
+//       3.  Debug why can't read AST for gpt_tui_tokio.rs
 //       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
@@ -497,6 +498,8 @@ fn gen_build_run(
         } else {
             syntax_tree
         };
+
+        debug!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
             build_state.cargo_manifest = Some(manifest::merge_manifest(

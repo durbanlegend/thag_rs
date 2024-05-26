@@ -20,7 +20,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     Terminal,
 };
-use std::io::{self, Read};
+use std::io::{self, IsTerminal};
 use std::time::Duration;
 use tokio::io::AsyncReadExt;
 use tokio::time::timeout;
@@ -41,8 +41,6 @@ async fn read_from_stdin() -> io::Result<Option<String>> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use std::io::IsTerminal;
-
     let input = std::io::stdin();
 
     // let initial_content = read_from_stdin().await?;

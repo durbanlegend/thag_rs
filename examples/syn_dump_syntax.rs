@@ -1,9 +1,11 @@
-//! [dependencies]
-//! colored = "2.1.0"
-//! quote = "1.0.36"
-//! syn = {vesrion = "2.0.60", features = ["extra-traits", "full", "parsing"] }
-//! proc-macro2 = { version = "1", features = ["span-locations"] }
-//
+/*[toml]
+[dependencies]
+colored = "2.1.0"
+quote = "1.0.36"
+syn = {vesrion = "2.0.60", features = ["extra-traits", "full", "parsing"] }
+proc-macro2 = { version = "1", features = ["span-locations"] }
+*/
+
 // Parse a Rust source file into a `syn::File` and print out a debug
 // representation of the syntax tree.
 //

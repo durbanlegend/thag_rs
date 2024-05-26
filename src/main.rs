@@ -245,6 +245,7 @@ impl BuildState {
 //       1.  Consider supporting alternative TOML embedding keywords so we can run examples/regex_capture_toml.rs.
 //       2.  Consider history support for stdin.
 //       3.  DONE Debug why can't read AST for gpt_tui_tokio.rs - underscore was missing from final_content.
+//       4.  Paste event in Windows slow or not happening?
 //       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.

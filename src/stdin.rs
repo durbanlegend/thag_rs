@@ -64,7 +64,7 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit Rust script. Ctrl-D: submit  Ctrl-Q: quit  Ctrl-L: keys")
+            .title("Enter / paste / edit Rust script. Ctrl+D: submit  Ctrl+Q: quit  Ctrl+L: keys")
             .title_style(Style::default().italic()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
@@ -80,15 +80,7 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
             if popup {
                 show_popup(f);
             }
-            if alt_highlights {
-                textarea.set_selection_style(Style::default().bg(Color::LightRed));
-                textarea.set_cursor_style(Style::default().on_yellow());
-                textarea.set_cursor_line_style(Style::default().on_light_yellow());
-            } else {
-                textarea.set_selection_style(Style::default().bg(Color::LightCyan));
-                textarea.set_cursor_style(Style::default().on_magenta());
-                textarea.set_cursor_line_style(Style::default().on_dark_gray());
-            }
+            apply_highlights(alt_highlights, &mut textarea)
         })?;
         let event = crossterm::event::read()?;
         if let Paste(data) = event {
@@ -123,15 +115,7 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
                 } => {
                     alt_highlights = !alt_highlights;
                     term.draw(|_| {
-                        if alt_highlights {
-                            textarea.set_selection_style(Style::default().bg(Color::LightRed));
-                            textarea.set_cursor_style(Style::default().on_yellow());
-                            textarea.set_cursor_line_style(Style::default().on_light_yellow());
-                        } else {
-                            textarea.set_selection_style(Style::default().bg(Color::LightCyan));
-                            textarea.set_cursor_style(Style::default().on_magenta());
-                            textarea.set_cursor_line_style(Style::default().on_dark_gray());
-                        }
+                        apply_highlights(alt_highlights, &mut textarea);
                     })?;
                 }
 
@@ -144,6 +128,18 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     reset_term(term)?;
 
     Ok(textarea.lines().to_vec())
+}
+
+fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
+    if alt_highlights {
+        textarea.set_selection_style(Style::default().bg(Color::LightRed));
+        textarea.set_cursor_style(Style::default().on_yellow());
+        textarea.set_cursor_line_style(Style::default().on_light_yellow());
+    } else {
+        textarea.set_selection_style(Style::default().bg(Color::Green));
+        textarea.set_cursor_style(Style::default().on_magenta());
+        textarea.set_cursor_line_style(Style::default().on_dark_gray());
+    }
 }
 
 fn insert_line(textarea: &mut TextArea, line: &str) {
@@ -180,7 +176,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
             Title::from("Platform-dependent key mappings (YMMV)")
                 .alignment(ratatui::layout::Alignment::Center),
         )
-        .title(Title::from("(Ctrl-L to toggle)").alignment(Alignment::Center))
+        .title(Title::from("(Ctrl+L to toggle)").alignment(Alignment::Center))
         .add_modifier(Modifier::BOLD);
     f.render_widget(Clear, area);
     //this clears out the background
@@ -248,10 +244,10 @@ const MAPPINGS: &[[&str; 2]; 33] = &[
     ["Alt+D or Delete", "Delete one word from cursor position"],
     ["Ctrl+U", "Undo"],
     ["Ctrl+R", "Redo"],
-    ["Ctrl+C, Copy", "Copy (yank) selected text"],
-    ["Ctrl+X, Cut", "Cut (yank) selected text"],
-    ["Ctrl+Y, Paste yanked", "Paste yanked text"],
-    ["Ctrl+V, Paste clipboard", "Paste from system clipboard"],
+    ["Ctrl+C", "Copy (yank) selected text"],
+    ["Ctrl+X", "Cut (yank) selected text"],
+    ["Ctrl+Y", "Paste yanked text"],
+    ["Ctrl+V, Shift+Ins, Cmd+V", "Paste from system clipboard"],
     ["Ctrl+F, →", "Move cursor forward one character"],
     ["Ctrl+B, ←", "Move cursor backward one character"],
     ["Ctrl+P, ↑", "Move cursor up one line"],
@@ -272,6 +268,6 @@ const MAPPINGS: &[[&str; 2]; 33] = &[
     ["Alt+>, Ctrl+Alt+N or↓", "Move cursor to bottom of file"],
     ["PageDown, Cmd+↓", "Page down"],
     ["Alt+V, PageUp, Cmd+↑", "Page up"],
-    ["Ctrl-T", "Toggle highlight colours"],
+    ["Ctrl+T", "Toggle highlight colours"],
 ];
 const NUM_ROWS: usize = MAPPINGS.len();

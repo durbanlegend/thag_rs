@@ -499,7 +499,7 @@ fn gen_build_run(
             syntax_tree
         };
 
-        debug!("syntax_tree={syntax_tree:#?}");
+        // debug!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
             build_state.cargo_manifest = Some(manifest::merge_manifest(

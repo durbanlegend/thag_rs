@@ -25,8 +25,7 @@ use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 use crate::code_utils;
 use crate::errors::BuildRunError;
-
-// use crate::code_utils;
+use crate::term_colors::{TermTheme, TERM_THEME};
 
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -70,8 +69,19 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::LightCyan));
-    textarea.set_cursor_style(Style::default().on_yellow());
-    textarea.set_cursor_line_style(Style::default().on_light_yellow());
+
+    match *TERM_THEME {
+        TermTheme::Light => {
+            // println!("The theme is Light")
+            textarea.set_cursor_style(Style::default().on_yellow());
+            textarea.set_cursor_line_style(Style::default().on_light_yellow());
+        }
+        TermTheme::Dark => {
+            // println!("The theme is Dark")
+            textarea.set_cursor_style(Style::default().on_magenta());
+            textarea.set_cursor_line_style(Style::default().on_dark_gray());
+        }
+    }
 
     textarea.move_cursor(CursorMove::Bottom);
 

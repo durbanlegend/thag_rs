@@ -17,7 +17,7 @@ use log::debug;
 
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
-use termbg::{Error, Theme};
+use termbg::Theme;
 
 lazy_static! {
     static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
@@ -31,20 +31,14 @@ lazy_static! {
         None => None,
     };
 
-    static ref THEME: Result<Theme, Error> = if cfg!(windows) || wsl::is_wsl() {
-        Ok(Theme::Dark)
-    } else {
+    #[derive(Debug)]
+    pub static ref TERM_THEME: TermTheme = {
         let timeout = std::time::Duration::from_millis(100);
         // debug!("Check terminal background color");
-        termbg::theme(timeout)
-    };
-
-    static ref TERM_THEME: TermTheme = match THEME.as_ref() {
-        Ok(theme) => match theme {
-            Theme::Light => TermTheme::Light,
-            Theme::Dark => TermTheme::Dark,
-        },
-        Err(_) => TermTheme::Dark,
+        match termbg::theme(timeout) {
+            Ok(Theme::Light) => TermTheme::Light,
+            Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+        }
     };
 }
 
@@ -190,10 +184,10 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
         "{}_{}_{}",
         &color_qual, &theme_qual, &msg_level_qual
     ));
-    // debug!(
-    //     "Called from_str on {}_{}_{}, found {message_style:#?}",
-    //     &color_qual, &theme_qual, &msg_level_qual,
-    // );
+    debug!(
+        "Called from_str on {}_{}_{}, found {message_style:#?}",
+        &color_qual, &theme_qual, &msg_level_qual,
+    );
     match message_style {
         Ok(message_style) => NuThemeStyle::get_style(&message_style),
         Err(_) => nu_ansi_term::Style::default(),

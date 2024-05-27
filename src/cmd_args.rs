@@ -5,12 +5,12 @@ use std::error::Error;
 
 use crate::errors::BuildRunError;
 
-/// Clap command-line options
+/// rs-script script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Parser, Debug)]
 #[command(version = "1.0", author = "durbanlegend")]
 pub(crate) struct Cli {
-    /// Set the script to run
+    /// Optional name of a script to run
     pub(crate) script: Option<String>,
     /// Set the arguments for the script
     #[arg(last = true)]
@@ -33,7 +33,7 @@ pub(crate) struct Cli {
     ///  (Default) Carry out generation and build steps (if necessary or forced) and run the compiled script
     #[arg(short, long, default_value = "true")]
     pub(crate) all: bool,
-    /// Run compiled script if available
+    /// Run without rebuilding if already compiled
     #[arg(short, long)]
     pub(crate) run: bool,
     /// Run in REPL mode (read–eval–print loop). Existing script name is optional.

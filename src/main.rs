@@ -244,12 +244,12 @@ impl BuildState {
 //      TODO:
 //       1.  Consider supporting alternative TOML embedding keywords so we can run examples/regex_capture_toml.rs.
 //       2.  Consider history support for stdin.
-//       3.  DONE Debug why can't read AST for gpt_tui_tokio.rs - underscore was missing from final_content.
-//       4.  Paste event in Windows slow or not happening?
+//       3.  Paste event in Windows slow or not happening?
+//       4.  TUI editor as an option on stdin.
 //       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 //       8.  Cat files before delete.
-//       9.  Consider making script name optional, with -n/stdin parm as per my runner changes?
+//       9.  DONE Consider making script name optional, with -s/stdin parm as per my runner changes?
 //      10.  Decide if it's worth passing the wrapped syntax tree to gen_build_run from eval just to avoid
 //           re-parsing it for that specific use case.
 //      11.  Clean up debugging

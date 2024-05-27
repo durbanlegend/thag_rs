@@ -237,11 +237,8 @@ const MAPPINGS: &[[&str; 2]; 33] = &[
     ["Ctrl+M, Enter", "Insert newline"],
     ["Ctrl+K", "Delete from cursor to end of line"],
     ["Ctrl+J", "Delete from cursor to start of line"],
-    [
-        "Ctrl+W, Alt+< or Backspace",
-        "Delete one word before cursor",
-    ],
-    ["Alt+D or Delete", "Delete one word from cursor position"],
+    ["Ctrl+W, Alt+<, Backspace", "Delete one word before cursor"],
+    ["Alt+D, Delete", "Delete one word from cursor position"],
     ["Ctrl+U", "Undo"],
     ["Ctrl+R", "Redo"],
     ["Ctrl+C", "Copy (yank) selected text"],

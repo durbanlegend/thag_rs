@@ -19,6 +19,7 @@ use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::widgets::block::Title;
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
+use regex::Regex;
 use std::error::Error;
 use std::io::{self, IsTerminal};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
@@ -83,10 +84,7 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
         })?;
         let event = crossterm::event::read()?;
         if let Paste(data) = event {
-            // for line in data.lines() {
-            //     insert_line(&mut textarea, line);
-            // }
-            textarea.insert_str(data);
+            textarea.insert_str(normalize_newlines(&data));
         } else {
             let input = Input::from(event.clone());
             match input {
@@ -130,6 +128,11 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     Ok(textarea.lines().to_vec())
 }
 
+fn normalize_newlines(input: &str) -> String {
+    let re = Regex::new(r"\r\n?").unwrap();
+    re.replace_all(input, "\n").to_string()
+}
+
 fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     if alt_highlights {
         textarea.set_selection_style(Style::default().bg(Color::LightRed));
@@ -142,13 +145,13 @@ fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     }
 }
 
-fn insert_line(textarea: &mut TextArea, line: &str) {
-    textarea.insert_str(line);
-    if cfg!(windows) {
-        textarea.insert_str("\r");
-    }
-    textarea.insert_newline();
-}
+// fn insert_line(textarea: &mut TextArea, line: &str) {
+//     textarea.insert_str(line);
+//     if cfg!(windows) {
+//         textarea.insert_str("\r");
+//     }
+//     textarea.insert_newline();
+// }
 
 fn reset_term(
     mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,

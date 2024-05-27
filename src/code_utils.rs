@@ -847,22 +847,14 @@ pub(crate) fn create_temp_source_file() -> PathBuf {
     path
 }
 
-#[allow(dead_code)]
-#[allow(clippy::unnecessary_wraps)]
 /// Prompt for and read Rust source code from stdin.
-pub(crate) fn read_stdin() -> Result<String, io::Error> {
-    println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
-        if cfg!(windows) { 'Z' } else { 'D' }
-    );
+pub(crate) fn read_stdin() -> Result<String, std::io::Error> {
+    // println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
+    //     if cfg!(windows) { 'Z' } else { 'D' }
+    // );
+    use std::io::Read;
     let mut buffer = String::new();
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    loop {
-        let result = handle.read_line(&mut buffer);
-        if let Ok(0) = result {
-            break;
-        }
-    }
+    std::io::stdin().lock().read_to_string(&mut buffer)?;
     Ok(buffer)
 }
 

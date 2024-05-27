@@ -37,7 +37,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     let input = std::io::stdin();
 
-    // let initial_content = code_utils::read_stdin()?;
     let initial_content = if input.is_terminal() {
         // No input available
         String::new()
@@ -80,13 +79,14 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
             if popup {
                 show_popup(f);
             }
-            apply_highlights(alt_highlights, &mut textarea)
+            apply_highlights(alt_highlights, &mut textarea);
         })?;
         let event = crossterm::event::read()?;
         if let Paste(data) = event {
-            for line in data.lines() {
-                insert_line(&mut textarea, line);
-            }
+            // for line in data.lines() {
+            //     insert_line(&mut textarea, line);
+            // }
+            textarea.insert_str(data);
         } else {
             let input = Input::from(event.clone());
             match input {

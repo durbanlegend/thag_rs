@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use env_logger::{Builder, Env, WriteStyle};
-use home::home_dir;
+
 use log::{debug, log_enabled, Level::Debug};
 use rs_script::builder::gen_build_run;
 use rs_script::cmd_args::{get_opt, get_proc_flags, Cli, ProcFlags};
@@ -15,13 +15,13 @@ use rs_script::{
     DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
 };
 
-use std::env;
+
 use std::error::Error;
-use std::fs::OpenOptions;
+
 use std::path::{Path, PathBuf};
-use std::process::Command;
+
 use std::time::Instant;
-use std::{fs, io::Write as OtherWrite};
+
 
 //      TODO:
 //       1.  Consider supporting alternative TOML embedding keywords so we can run examples/regex_capture_toml.rs.

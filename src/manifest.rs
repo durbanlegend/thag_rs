@@ -2,7 +2,6 @@
 use lazy_static::lazy_static;
 use log::debug;
 use regex::Regex;
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::io::BufRead;
@@ -10,140 +9,10 @@ use std::process::Command;
 use std::str::FromStr;
 use std::time::Instant;
 
+use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 use crate::errors::BuildRunError;
+use crate::shared::{debug_timings, Ast, BuildState, CargoManifest, Dependency, Feature};
 use crate::term_colors::{nu_resolve_style, MessageLevel};
-use crate::{
-    code_utils::{debug_timings, infer_deps_from_ast, infer_deps_from_source},
-    Ast, BuildState,
-};
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub(crate) struct CargoManifest {
-    #[serde(default = "default_package")]
-    pub(crate) package: Package,
-    pub(crate) dependencies: Option<Dependencies>,
-    pub(crate) features: Option<Features>,
-    #[serde(default)]
-    pub(crate) workspace: Workspace,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub(crate) bin: Vec<Product>,
-}
-
-impl FromStr for CargoManifest {
-    type Err = BuildRunError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str::<CargoManifest>(s).map_err(|e| BuildRunError::FromStr(e.to_string()))
-    }
-}
-
-impl ToString for CargoManifest {
-    fn to_string(&self) -> String {
-        {
-            let this = self;
-            toml::to_string(&this)
-        }
-        .unwrap()
-    }
-}
-
-#[allow(dead_code)]
-impl CargoManifest {
-    // Save the CargoManifest struct to a Cargo.toml file
-    pub(crate) fn save_to_file(&self, path: &str) -> Result<(), BuildRunError> {
-        let toml_string = {
-            let this = self;
-            toml::to_string(&this)
-        }?;
-        std::fs::write(path, toml_string.as_bytes())?;
-        Ok(())
-    }
-}
-
-// Default function for the `package` field
-fn default_package() -> Package {
-    Package {
-        name: String::from("your_project_name"),
-        version: String::from("0.1.0"),
-        edition: default_edition(),
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub(crate) struct Package {
-    pub(crate) name: String,
-    pub(crate) version: String,
-    #[serde(default = "default_edition")]
-    pub(crate) edition: String,
-}
-
-// Default function for the `edition` field
-fn default_edition() -> String {
-    String::from("2021")
-}
-
-impl Default for Package {
-    fn default() -> Self {
-        Package {
-            version: String::from("0.0.0"),
-            name: String::from("your_script_name_stem"),
-            edition: default_edition(),
-        }
-    }
-}
-
-pub(crate) type Dependencies = BTreeMap<String, Dependency>;
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum Dependency {
-    Simple(String),
-    Detailed(Box<DependencyDetail>),
-}
-
-fn default_true() -> bool {
-    true
-}
-
-#[allow(clippy::trivially_copy_pass_by_ref)]
-fn is_true(val: &bool) -> bool {
-    *val
-}
-
-/// When definition of a dependency is more than just a version string.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct DependencyDetail {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
-    pub path: Option<String>,
-    pub registry: Option<String>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub features: Vec<String>,
-    #[serde(default = "default_true", skip_serializing_if = "is_true")]
-    pub default_features: bool,
-}
-
-pub(crate) type Features = BTreeMap<String, Vec<Feature>>;
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum Feature {
-    Simple(String),
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct Product {
-    pub path: Option<String>,
-    pub name: Option<String>,
-    pub required_features: Option<Vec<String>>,
-}
-
-#[allow(dead_code)]
-fn default_package_version() -> String {
-    "0.0.1".to_string()
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub(crate) struct Workspace {}
-
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();
 

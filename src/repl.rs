@@ -1,10 +1,13 @@
 use crate::cmd_args::{Cli, ProcFlags};
-use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast, extract_manifest, Ast};
+use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast, extract_manifest};
 use crate::errors::BuildRunError;
-use crate::term_colors::nu_resolve_style;
-use crate::{gen_build_run, nu_color_println, BuildState, MessageLevel};
+use crate::shared::Ast;
+use crate::{
+    gen_build_run, nu_color_println,
+    shared::BuildState,
+    term_colors::{nu_resolve_style, MessageLevel},
+};
 use clap::Parser;
-// use code_utils::Ast;
 use log::debug;
 // use quote::quote;
 use reedline::{

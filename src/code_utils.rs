@@ -1,19 +1,16 @@
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::errors::BuildRunError;
-use crate::manifest::CargoManifest;
-use crate::{gen_build_run, BuildState, DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
+use crate::shared::debug_timings;
+use crate::shared::Ast;
+use crate::shared::BuildState;
+use crate::shared::CargoManifest; // Still valid if no circular dependency
+use crate::{gen_build_run, DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 use lazy_static::lazy_static;
 use log::debug;
-use proc_macro2::TokenStream;
-use quote::ToTokens;
 use regex::Regex;
-use std::fs::{remove_dir_all, remove_file, OpenOptions};
-use strum::Display;
-
-use syn::{Expr, UsePath};
-
 use std::error::Error;
 use std::fs;
+use std::fs::{remove_dir_all, remove_file, OpenOptions};
 use std::io::{self, BufRead, Write};
 use std::option::Option;
 use std::path::{Path, PathBuf};
@@ -21,24 +18,7 @@ use std::process::{Command, ExitStatus, Output};
 use std::str::FromStr;
 use std::time::{Instant, SystemTime};
 use syn::{visit::Visit, UseRename};
-
-#[derive(Clone, Debug, Display)]
-/// Abstract syntax tree wrapper for use with syn.
-pub(crate) enum Ast {
-    File(syn::File),
-    Expr(syn::Expr),
-    // None,
-}
-
-/// Required to use quote! macro to generate code to resolve expression.
-impl ToTokens for Ast {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            Ast::File(file) => file.to_tokens(tokens),
-            Ast::Expr(expr) => expr.to_tokens(tokens),
-        }
-    }
-}
+use syn::{Expr, UsePath};
 
 /// Read the contents of a file. For reading the Rust script.
 pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
@@ -504,25 +484,6 @@ pub(crate) fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[inline]
-/// Display method timings when either the --verbose or --timings option is chosen.
-pub(crate) fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
-    let dur = start.elapsed();
-    let msg = format!("{process} in {}.{}s", dur.as_secs(), dur.subsec_millis());
-
-    debug!("{msg}");
-    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        println!("{msg}");
-    }
-}
-
-#[inline]
-/// Developer method to log method timings.
-pub(crate) fn debug_timings(start: &Instant, process: &str) {
-    let dur = start.elapsed();
-    debug!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
-}
-
 // TODO wait to see if redundant and get rid of it.
 /// Handle the outcome of a process and optionally display its stdout and/or stderr
 #[allow(dead_code)]
@@ -546,7 +507,7 @@ pub(crate) fn handle_outcome(
         error_msg.lines().for_each(|line| {
             debug!("{line}");
         });
-        return Err(BuildRunError::Command(format!("{} failed", process)));
+        return Err(BuildRunError::Command(format!("{process} failed")));
     };
     Ok(())
 }

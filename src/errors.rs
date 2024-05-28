@@ -5,7 +5,7 @@ use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
 
 #[derive(Debug)]
-pub(crate) enum BuildRunError {
+pub enum BuildRunError {
     Cancelled,          // For user electing to cancel
     Command(String),    // For errors during Cargo build or program execution
     FromStr(String),    // For parsing CargoManifest from a string

@@ -11,40 +11,40 @@ use crate::errors::BuildRunError;
 #[command(version = "1.0", author = "durbanlegend")]
 pub(crate) struct Cli {
     /// Optional name of a script to run
-    pub(crate) script: Option<String>,
+    pub script: Option<String>,
     /// Set the arguments for the script
     #[arg(last = true)]
-    pub(crate) args: Vec<String>,
+    pub args: Vec<String>,
     /// Set verbose mode
     #[arg(short, long)]
-    pub(crate) verbose: bool,
+    pub verbose: bool,
     /// Display timings
     #[arg(short, long)]
-    pub(crate) timings: bool,
+    pub timings: bool,
     /// Generate Rust source and individual cargo .toml if compiled file is stale
     #[arg(short = 'g', long = "gen")]
-    pub(crate) generate: bool,
+    pub generate: bool,
     /// Build script if compiled file is stale
     #[arg(short, long)]
-    pub(crate) build: bool,
+    pub build: bool,
     /// Force generation of Rust source and individual Cargo.toml, and build, even if compiled file is not stale
     #[arg(short, long)]
-    pub(crate) force: bool,
+    pub force: bool,
     ///  (Default) Carry out generation and build steps (if necessary or forced) and run the compiled script
     #[arg(short, long, default_value = "true")]
-    pub(crate) all: bool,
+    pub all: bool,
     /// Run without rebuilding if already compiled
     #[arg(short, long)]
-    pub(crate) run: bool,
+    pub run: bool,
     /// Run in REPL mode (read–eval–print loop). Existing script name is optional.
     #[arg(short = 'l', long, conflicts_with_all(["all", "generate", "build", "run"]))]
-    pub(crate) repl: bool,
+    pub repl: bool,
     #[arg(short, long = "expr", conflicts_with_all(["all", "generate", "build", "run", "repl", "script", "stdin"]))]
-    pub(crate) expression: Option<String>,
+    pub expression: Option<String>,
     #[arg(short, long, conflicts_with_all(["all", "expression", "generate", "build", "run", "repl", "script"]))]
-    pub(crate) stdin: bool,
+    pub stdin: bool,
     #[arg(short, long, conflicts_with("verbose"))]
-    pub(crate) quiet: bool,
+    pub quiet: bool,
 }
 
 /// Getter for clap command-line options
@@ -58,7 +58,7 @@ bitflags! {
     // #[derive(Debug)]
     #[derive(Clone, PartialEq, Eq)]
     /// Processing flags for ease of handling command-line options
-    pub struct ProcFlags: u32 {
+    pub(crate) struct ProcFlags: u32 {
         const GENERATE = 1;
         const BUILD = 2;
         const FORCE = 4;

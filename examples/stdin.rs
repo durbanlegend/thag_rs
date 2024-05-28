@@ -28,8 +28,8 @@ use std::error::Error;
 use std::io::{self, IsTerminal};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
-use crate::code_utils;
-use crate::errors::BuildRunError;
+use rs_script::code_utils;
+use rs_script::errors::BuildRunError;
 
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {

@@ -1,6 +1,9 @@
 /*[toml]
 [dependencies]
+rs-script = { path = "/Users/donf/projects/rs-script" }
 crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
+lazy_static = "1.4.0"
+regex = "1.10.4"
 ratatui = "0.26.3"
 tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
 */
@@ -12,6 +15,7 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 // use log::debug;
+use lazy_static::lazy_static;
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
@@ -129,8 +133,10 @@ pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
 }
 
 fn normalize_newlines(input: &str) -> String {
-    let re = Regex::new(r"\r\n?").unwrap();
-    re.replace_all(input, "\n").to_string()
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\r\n?").unwrap();
+    }
+    RE.replace_all(input, "\n").to_string()
 }
 
 fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {

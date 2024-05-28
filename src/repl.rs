@@ -92,7 +92,7 @@ impl Prompt for EvalPrompt {
     }
 }
 
-pub(crate) fn run_repl(
+pub fn run_repl(
     options: &mut Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,

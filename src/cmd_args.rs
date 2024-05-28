@@ -9,7 +9,7 @@ use crate::errors::BuildRunError;
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Parser, Debug)]
 #[command(version = "1.0", author = "durbanlegend")]
-pub(crate) struct Cli {
+pub struct Cli {
     /// Optional name of a script to run
     pub script: Option<String>,
     /// Set the arguments for the script
@@ -48,7 +48,7 @@ pub(crate) struct Cli {
 }
 
 /// Getter for clap command-line options
-pub(crate) fn get_opt() -> Cli {
+pub fn get_opt() -> Cli {
     Cli::parse()
 }
 
@@ -58,7 +58,7 @@ bitflags! {
     // #[derive(Debug)]
     #[derive(Clone, PartialEq, Eq)]
     /// Processing flags for ease of handling command-line options
-    pub(crate) struct ProcFlags: u32 {
+    pub struct ProcFlags: u32 {
         const GENERATE = 1;
         const BUILD = 2;
         const FORCE = 4;
@@ -94,7 +94,7 @@ impl str::FromStr for ProcFlags {
 }
 
 /// Set up the processing flags from the command line arguments and pass them back.
-pub(crate) fn get_proc_flags(options: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
+pub fn get_proc_flags(options: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
     let is_expr = options.expression.is_some();
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();

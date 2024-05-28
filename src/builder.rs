@@ -1,6 +1,6 @@
-use home::home_dir;
+
 use log::debug;
-use std::path::PathBuf;
+
 use std::{
     error::Error,
     fs::{self, OpenOptions},
@@ -12,7 +12,7 @@ use std::{
 
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{
-    self, extract_manifest, modified_since_compiled, read_file_contents, rustfmt,
+    self, extract_manifest, read_file_contents, rustfmt,
     strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::errors::BuildRunError;

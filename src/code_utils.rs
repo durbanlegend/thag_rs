@@ -21,13 +21,13 @@ use syn::{visit::Visit, UseRename};
 use syn::{Expr, UsePath};
 
 /// Read the contents of a file. For reading the Rust script.
-pub(crate) fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
+pub fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
     debug!("Reading from {path:?}");
     Ok(fs::read_to_string(path)?)
 }
 
 /// Infer dependencies from the abstract syntax tree to put in a Cargo.toml.
-pub(crate) fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
+pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     let use_crates = find_use_crates_ast(syntax_tree);
     let extern_crates = find_extern_crates_ast(syntax_tree);
     let use_renames = find_use_renames_ast(syntax_tree);
@@ -153,7 +153,7 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
 
 /// Infer dependencies from source code to put in a Cargo.toml.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
-pub(crate) fn infer_deps_from_source(code: &str) -> Vec<String> {
+pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     lazy_static! {
         static ref USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
         static ref MACRO_USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*#\[macro_use\((\w+)\)").unwrap();
@@ -225,7 +225,7 @@ fn filter_deps_source(
 
 /// Identify use ... as statements for exclusion from Cargo.toml metadata.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
-pub(crate) fn find_use_renames_source(code: &str) -> Vec<String> {
+pub fn find_use_renames_source(code: &str) -> Vec<String> {
     lazy_static! {
         static ref USE_AS_REGEX: Regex = Regex::new(r"(?m)^\s*use\s+.+as\s+(\w+)").unwrap();
     }
@@ -245,7 +245,7 @@ pub(crate) fn find_use_renames_source(code: &str) -> Vec<String> {
 }
 
 /// Extract embedded Cargo.toml metadata from a Rust source string.
-pub(crate) fn extract_manifest(
+pub fn extract_manifest(
     rs_full_source: &str,
     start_parsing_rs: Instant,
 ) -> Result<CargoManifest, Box<dyn Error>> {
@@ -368,7 +368,7 @@ fn extract_rust_and_toml(source_code: &str) -> (String, String) {
 
 /// Parse a Rust expression source string into a syntax tree.
 /// We are not primarily catering for programs with a main method (`syn::File`),
-pub(crate) fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
+pub fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
     let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
     if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
         // Try putting the expression in braces.
@@ -381,7 +381,7 @@ pub(crate) fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
     expr
 }
 
-// pub(crate) fn process_expression(
+// pub fn process_expression(
 //     ast: &Result<Expr, syn::Error>,
 //     build_state: &mut BuildState,
 //     rs_source: &str,
@@ -405,7 +405,7 @@ pub(crate) fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
 // }
 
 /// Process a Rust expression
-pub(crate) fn process_expr(
+pub fn process_expr(
     expr_ast: &Expr,
     build_state: &mut BuildState,
     rs_source: &str,
@@ -421,7 +421,7 @@ pub(crate) fn process_expr(
 }
 
 /// Convert a Path to a string value, assuming the path contains only valid characters.
-pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
+pub fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
     let string = path
         .to_path_buf()
         .clone()
@@ -434,7 +434,7 @@ pub(crate) fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.
 #[inline]
-pub(crate) fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
+pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
     map.fold(String::new(), |mut output, b| {
         let _ = writeln!(output, "{b}");
@@ -444,12 +444,12 @@ pub(crate) fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
 
 /// Unescape \n markers to convert a string of raw text to readable lines.
 #[inline]
-pub(crate) fn disentangle(text_wall: &str) -> String {
+pub fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
 
 #[allow(dead_code)]
-pub(crate) fn re_disentangle(text_wall: &str) -> String {
+pub fn re_disentangle(text_wall: &str) -> String {
     use std::fmt::Write;
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?m)(?P<line>.*?)(?:[\\]n|$)").unwrap();
@@ -466,7 +466,7 @@ pub(crate) fn re_disentangle(text_wall: &str) -> String {
 
 #[allow(dead_code)]
 /// Display output captured to `std::process::Output`.
-pub(crate) fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
+pub fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     // Read the captured output from the pipe
     // let stdout = output.stdout;
 
@@ -487,7 +487,7 @@ pub(crate) fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
 // TODO wait to see if redundant and get rid of it.
 /// Handle the outcome of a process and optionally display its stdout and/or stderr
 #[allow(dead_code)]
-pub(crate) fn handle_outcome(
+pub fn handle_outcome(
     exit_status: ExitStatus,
     display_stdout: bool,
     display_stderr: bool,
@@ -514,7 +514,7 @@ pub(crate) fn handle_outcome(
 
 /// Check if executable is stale, i.e. if raw source script or individual Cargo.toml
 /// has a more recent modification date and time
-pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, SystemTime)> {
+pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, SystemTime)> {
     let executable = &build_state.target_path;
     assert!(executable.exists(), "Missing executable");
     let Ok(metadata) = fs::metadata(executable) else {
@@ -556,7 +556,7 @@ pub(crate) fn modified_since_compiled(build_state: &BuildState) -> Option<(&Path
 }
 
 /// Determine if a Rust script already has a main method: abstract syntax tree version.
-pub(crate) fn has_main(syntax_tree: &Ast) -> bool {
+pub fn has_main(syntax_tree: &Ast) -> bool {
     let main_methods = count_main_methods(syntax_tree);
     debug!("main_methods={main_methods}");
     has_one_main(main_methods)
@@ -589,7 +589,7 @@ fn count_main_methods(syntax_tree: &Ast) -> usize {
 
 /// Determine if a Rust script already has a main method.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
-pub(crate) fn has_main_alt(rs_source: &str) -> bool {
+pub fn has_main_alt(rs_source: &str) -> bool {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
     }
@@ -617,7 +617,7 @@ fn has_one_main(main_methods: usize) -> bool {
 
 /// Parse the code into an abstract syntax tree for inspection
 /// if possible. Otherwise don't give up - it may yet compile.
-pub(crate) fn to_ast(source_code: &str) -> Option<Ast> {
+pub fn to_ast(source_code: &str) -> Option<Ast> {
     let start_ast = Instant::now();
     if let Ok(tree) = syn::parse_file(source_code) {
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
@@ -633,7 +633,7 @@ pub(crate) fn to_ast(source_code: &str) -> Option<Ast> {
 }
 
 /// Convert a Rust code snippet into a program by wrapping it in a main method and other scaffolding.
-pub(crate) fn wrap_snippet(rs_source: &str) -> String {
+pub fn wrap_snippet(rs_source: &str) -> String {
     use std::fmt::Write;
 
     lazy_static! {
@@ -700,10 +700,7 @@ Ok(())
     wrapped_snippet
 }
 
-pub(crate) fn write_source(
-    to_rs_path: &PathBuf,
-    rs_source: &str,
-) -> Result<fs::File, BuildRunError> {
+pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, BuildRunError> {
     let mut to_rs_file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -720,7 +717,7 @@ pub(crate) fn write_source(
 }
 
 /// Create the next sequential REPL file according to the `repl_nnnnnn.rs` standard used by this crate.
-pub(crate) fn create_next_repl_file() -> PathBuf {
+pub fn create_next_repl_file() -> PathBuf {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
 
@@ -773,7 +770,7 @@ pub(crate) fn create_next_repl_file() -> PathBuf {
 }
 
 // Create a REPL file on disk, given the path and sequence number.
-pub(crate) fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
+pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
     let padded_num = format!("{:06}", num);
     let dir_name = format!("repl_{padded_num}");
     let target_dir_path = gen_repl_temp_dir_path.join(dir_name);
@@ -788,7 +785,7 @@ pub(crate) fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathB
 
 /// Create empty script file `temp.rs` to hold expression for --expr or --stdin options,
 /// and open it for writing.
-pub(crate) fn create_temp_source_file() -> PathBuf {
+pub fn create_temp_source_file() -> PathBuf {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
@@ -809,7 +806,7 @@ pub(crate) fn create_temp_source_file() -> PathBuf {
 }
 
 /// Prompt for and read Rust source code from stdin.
-pub(crate) fn read_stdin() -> Result<String, std::io::Error> {
+pub fn read_stdin() -> Result<String, std::io::Error> {
     // println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
     //     if cfg!(windows) { 'Z' } else { 'D' }
     // );
@@ -820,7 +817,7 @@ pub(crate) fn read_stdin() -> Result<String, std::io::Error> {
 }
 
 /// Clean up temporary files.
-pub(crate) fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<()> {
+pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<()> {
     // Delete the file
     remove_file(source_path)?;
 
@@ -829,7 +826,7 @@ pub(crate) fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::
 }
 
 /// Display the contents of a given directory.
-pub(crate) fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
+pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
@@ -852,7 +849,7 @@ pub(crate) fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 }
 
 /// Format a Rust source file in situ using rustfmt.
-pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
+pub fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
     let source_path_buf = build_state.source_path.clone();
     let source_path_str = source_path_buf
         .to_str()
@@ -890,7 +887,7 @@ pub(crate) fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
 /// Strip a set of curly braces off a Rust script, if present. This is intended to
 /// undo the effect of adding them to create an expression that can be parsed into
 /// an abstract syntax tree.
-pub(crate) fn strip_curly_braces(haystack: &str) -> Option<String> {
+pub fn strip_curly_braces(haystack: &str) -> Option<String> {
     // Define the regex pattern
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$").unwrap();

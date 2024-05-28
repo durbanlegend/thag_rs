@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub(crate) fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
+pub fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     let input = std::io::stdin();
 
     let initial_content = if input.is_terminal() {

@@ -365,14 +365,14 @@ impl ScriptState {
 
 #[inline]
 /// Developer method to log method timings.
-pub(crate) fn debug_timings(start: &Instant, process: &str) {
+pub fn debug_timings(start: &Instant, process: &str) {
     let dur = start.elapsed();
     debug!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
 }
 
 #[inline]
 /// Display method timings when either the --verbose or --timings option is chosen.
-pub(crate) fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
+pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
     let dur = start.elapsed();
     let msg = format!("{process} in {}.{}s", dur.as_secs(), dur.subsec_millis());
 

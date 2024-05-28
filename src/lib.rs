@@ -14,11 +14,9 @@ pub mod stdin;
 pub mod term_colors;
 
 // Re-export commonly used items for convenience
-pub(crate) use builder::{build, gen_build_run, generate, run};
-pub(crate) use cmd_args::{get_opt, get_proc_flags, Cli, ProcFlags};
-pub(crate) use code_utils::{extract_manifest, modified_since_compiled, rustfmt, write_source};
-pub(crate) use errors::BuildRunError;
-pub(crate) use shared::{debug_timings, display_timings, BuildState};
+pub(crate) use builder::gen_build_run;
+pub use cmd_args::{get_opt, get_proc_flags, Cli, ProcFlags};
+pub(crate) use code_utils::modified_since_compiled;
 
 // Re-export specific items if they are defined in the respective modules
 // pub use crate::{gen_build_run, BuildState, DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};

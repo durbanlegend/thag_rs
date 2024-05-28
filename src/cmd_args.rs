@@ -48,6 +48,7 @@ pub struct Cli {
 }
 
 /// Getter for clap command-line options
+#[must_use]
 pub fn get_opt() -> Cli {
     Cli::parse()
 }
@@ -94,6 +95,13 @@ impl str::FromStr for ProcFlags {
 }
 
 /// Set up the processing flags from the command line arguments and pass them back.
+/// # Errors
+///
+/// Will return `Err` if there is an error parsing the flags to set up and internal
+/// correctness chack.
+/// # Panics
+///
+/// Will panic if the internal correctness check fails.
 pub fn get_proc_flags(options: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
     let is_expr = options.expression.is_some();
     let proc_flags = {

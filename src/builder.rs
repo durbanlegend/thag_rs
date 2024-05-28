@@ -1,4 +1,3 @@
-
 use log::debug;
 
 use std::{
@@ -12,8 +11,8 @@ use std::{
 
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{
-    self, extract_manifest, read_file_contents, rustfmt,
-    strip_curly_braces, wrap_snippet, write_source,
+    self, extract_manifest, read_file_contents, rustfmt, strip_curly_braces, wrap_snippet,
+    write_source,
 };
 use crate::errors::BuildRunError;
 use crate::manifest;
@@ -130,6 +129,10 @@ pub fn gen_build_run(
     Ok(())
 }
 
+/// # Errors
+///
+/// Will return `Err` if there is an error creating the directory path, writing to the
+/// target source or `Cargo.toml` file or formatting the source file with rustfmt.
 pub fn generate(
     build_state: &BuildState,
     rs_source: &str,
@@ -185,6 +188,9 @@ pub fn generate(
 }
 
 /// Build the Rust program using Cargo (with manifest path)
+/// # Panics
+///
+/// Will panic if the cargo build process fails to spawn.
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRunError> {
     let start_build = Instant::now();
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
@@ -238,7 +244,11 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     Ok(())
 }
 
-// Run the built program
+/// Run the built program
+/// # Errors
+///
+/// Will return `Err` if there is an error waiting for the spawned command
+/// that runs the user script.
 pub fn run(
     proc_flags: &ProcFlags,
     args: &[String],

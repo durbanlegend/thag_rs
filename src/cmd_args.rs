@@ -8,7 +8,7 @@ use crate::errors::BuildRunError;
 /// rs-script script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Parser, Debug)]
-#[command(version = "1.0", author = "durbanlegend")]
+#[command(name = "rs_script", version = "1.0", author = "Don Forbes")]
 pub struct Cli {
     /// Optional name of a script to run
     pub script: Option<String>,

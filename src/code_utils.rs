@@ -252,6 +252,7 @@ pub fn extract_manifest(
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     let rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
+        // debug!("rs_toml_str={rs_toml_str}");
         CargoManifest::from_str(&rs_toml_str)?
     } else {
         CargoManifest::from_str("")?
@@ -380,29 +381,6 @@ pub fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
     }
     expr
 }
-
-// pub fn process_expression(
-//     ast: &Result<Expr, syn::Error>,
-//     build_state: &mut BuildState,
-//     rs_source: &str,
-//     options: &mut Opt,
-//     proc_flags: &ProcFlags,
-//     start: &Instant,
-// ) -> Result<(), BuildRunError> {
-//     match ast {
-//         Ok(ref expr_ast) => {
-//             process_expr(expr_ast, build_state, rs_source, options, proc_flags, start)?;
-//         }
-//         Err(err) => {
-//             nu_color_println!(
-//                 nu_resolve_style(MessageLevel::Error),
-//                 "Error parsing code: {}",
-//                 err
-//             );
-//         }
-//     };
-//     Ok(())
-// }
 
 /// Process a Rust expression
 pub fn process_expr(
@@ -850,8 +828,9 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 
 /// Format a Rust source file in situ using rustfmt.
 pub fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
-    let source_path_buf = build_state.source_path.clone();
-    let source_path_str = source_path_buf
+    let target_rs_path = build_state.target_dir_path.clone();
+    let target_rs_path = target_rs_path.join(&build_state.source_name);
+    let source_path_str = target_rs_path
         .to_str()
         .ok_or(String::from("Error accessing path to source file"))?;
 
@@ -1000,9 +979,8 @@ fn test_separate_rust_and_toml_both_ways() {
     let source_code = r#"/*[toml]
 [dependencies]
 crossterm = "0.27.0"
+log = "0.4.21"
 */
-
-//! log = "0.4.21"
 
 use std::io::stdout;
 
@@ -1074,13 +1052,11 @@ fn main() -> std::io::Result<()> {
 #[test]
 fn test_separate_rust_and_toml_whitespace() {
     let source_code = r#"/*[toml]
+[dependencies]
 
-  [dependencies]
-
-   crossterm = "0.27.0"
+crossterm = "0.27.0"
+log = "0.4.21"
 */
-
-//!    log = "0.4.21"
 
 use std::io::stdout;
 

@@ -15,13 +15,11 @@ use rs_script::{
     DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
 };
 
-
 use std::error::Error;
 
 use std::path::{Path, PathBuf};
 
 use std::time::Instant;
-
 
 //      TODO:
 //       1.  Consider supporting alternative TOML embedding keywords so we can run examples/regex_capture_toml.rs.

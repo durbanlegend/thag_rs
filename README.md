@@ -61,9 +61,9 @@ The REPL feature, in particular the most convenient `eval` mode, is not suited t
 ## Features
 * Runs serious Rust scripts (not just the "Hello, world!" variety) with no need to create a project.
 * Aims to be the most capable and reliable script runner.
-* Crucially, specific features of dependencies may be specified, giving your scripts access to advanced functionality.
+* Crucially, specific features of dependencies may be specified, giving your scripts access to advanced functionality. Local path and git dependencies may also be specified, allowing you to access your unpublished crates.
 * A choice of modes:
-    * expression mode for the smallest most basic expressions on the fly
+    * expression mode for small, basic expressions on the fly
     * REPL adds interactivity and a more convenient multi-line mode
     * stdin mode accepts larger scripts on the fly and provides basic TUI (terminal user interface) editing in place.
     * script mode runs any valid script or program in a .rs file.

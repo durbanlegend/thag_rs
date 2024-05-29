@@ -49,7 +49,7 @@ pub trait NuColor: Display {
 }
 
 /// A version of println that prints an entire message in colour or otherwise styled.
-/// Format: `nu_color_println`!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);
+/// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! nu_color_println {
     ($style:expr, $($arg:tt)*) => {{
@@ -177,20 +177,25 @@ impl NuThemeStyle for MessageStyle {
 }
 
 pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
-    let color_qual = COLOR_SUPPORT.as_ref().unwrap().to_string().to_lowercase();
-    let theme_qual = TERM_THEME.to_string().to_lowercase();
-    let msg_level_qual = message_level.to_string().to_lowercase();
-    let message_style = MessageStyle::from_str(&format!(
-        "{}_{}_{}",
-        &color_qual, &theme_qual, &msg_level_qual
-    ));
-    debug!(
-        "Called from_str on {}_{}_{}, found {message_style:#?}",
-        &color_qual, &theme_qual, &msg_level_qual,
-    );
-    match message_style {
-        Ok(message_style) => NuThemeStyle::get_style(&message_style),
-        Err(_) => nu_ansi_term::Style::default(),
+    let maybe_color_support = COLOR_SUPPORT.as_ref();
+    if let Some(color_support) = maybe_color_support {
+        let color_qual = color_support.to_string().to_lowercase();
+        let theme_qual = TERM_THEME.to_string().to_lowercase();
+        let msg_level_qual = message_level.to_string().to_lowercase();
+        let message_style = MessageStyle::from_str(&format!(
+            "{}_{}_{}",
+            &color_qual, &theme_qual, &msg_level_qual
+        ));
+        debug!(
+            "Called from_str on {}_{}_{}, found {message_style:#?}",
+            &color_qual, &theme_qual, &msg_level_qual,
+        );
+        match message_style {
+            Ok(message_style) => NuThemeStyle::get_style(&message_style),
+            Err(_) => nu_ansi_term::Style::default(),
+        }
+    } else {
+        nu_ansi_term::Style::default()
     }
 }
 

@@ -27,9 +27,10 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
             {dep_crate_styled} = "n.n.n"
             */
             E.g.:
-    //! [dependencies]
-    //! {dep_crate_styled} = "<version n.n.n goes here>"
-            "#,
+    /*[toml]
+[dependencies]
+{dep_crate_styled} = "<version n.n.n goes here>"
+*/"#,
     );
 
     let mut search_command = Command::new("cargo");

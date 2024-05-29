@@ -17,7 +17,7 @@ use crate::code_utils::{
 use crate::errors::BuildRunError;
 use crate::manifest;
 use crate::shared::CargoManifest;
-use crate::shared::{debug_timings, display_timings, Ast, BuildState};
+use crate::shared::{display_timings, Ast, BuildState};
 use crate::FLOWER_BOX_LEN;
 use crate::PACKAGE_NAME;
 
@@ -37,11 +37,10 @@ pub fn gen_build_run(
         let start_parsing_rs = Instant::now();
         let mut rs_source = read_file_contents(source_path)?;
         let rs_manifest: CargoManifest = {
-            let result = extract_manifest(&rs_source, start_parsing_rs);
-            debug_timings(&start_parsing_rs, "Parsed source");
-            result
+            // debug_timings(&start_parsing_rs, "Parsed source");
+            extract_manifest(&rs_source, start_parsing_rs)
         }?;
-        // debug!("&&&&&&&& rs_manifest={rs_manifest:#?}");
+        debug!("&&&&&&&& rs_manifest={rs_manifest:#?}");
         // debug!("&&&&&&&& rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
             build_state.rs_manifest = Some(rs_manifest);
@@ -92,7 +91,10 @@ pub fn gen_build_run(
                 )
                 .to_string()
             } else {
-                format!(r#"println!("Expression returned {{}}", {rs_source});"#)
+                // examples/fizz_buzz.rs broke this: not an expression but still a valid snippet.
+                // format!(r#"println!("Expression returned {{}}", {rs_source});"#)
+                debug!("dbg!(rs_source)={}", dbg!(rs_source.clone()));
+                dbg!(rs_source)
             };
             // display_timings(&start_quote, "Completed quote", proc_flags);
             wrap_snippet(&rust_code.to_string())

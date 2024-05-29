@@ -41,4 +41,4 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "rs_script"
-path = "src/main.rs"
+path = "src/bin/rs_script.rs"

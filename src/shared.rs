@@ -1,4 +1,3 @@
-use crate::errors::BuildRunError;
 use home::home_dir;
 use log::debug;
 use proc_macro2::TokenStream;
@@ -10,8 +9,10 @@ use std::path::Path;
 use std::str::FromStr;
 use std::{path::PathBuf, time::Instant};
 use strum::Display;
+use toml::Value;
 
 use crate::cmd_args::{Cli, ProcFlags};
+use crate::errors::BuildRunError;
 use crate::modified_since_compiled;
 use crate::DYNAMIC_SUBDIR;
 use crate::REPL_SUBDIR;
@@ -127,22 +128,102 @@ fn default_true() -> bool {
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_false(val: &bool) -> bool {
+    !*val
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
 fn is_true(val: &bool) -> bool {
     *val
 }
 
-/// When definition of a dependency is more than just a version string.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+/// Credit to cargo_toml crate.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct DependencyDetail {
+    /// Semver requirement. Note that a plain version number implies this version *or newer* compatible one.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
-    pub path: Option<String>,
+
+    /// Fetch this dependency from a custom 3rd party registry (alias defined in Cargo config), not crates-io.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub registry: Option<String>,
+
+    /// Directly define custom 3rd party registry URL (may be `sparse+https:`) instead of a config nickname.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub registry_index: Option<String>,
+
+    /// This path is usually relative to the crate's manifest, but when using workspace inheritance, it may be relative to the workspace!
+    ///
+    /// When calling [`Manifest::complete_from_path_and_workspace`] use absolute path for the workspace manifest, and then this will be corrected to be an absolute
+    /// path when inherited from the workspace.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+
+    /// If true, the dependency has been defined at the workspace level, so the `path` is joined with workspace's base path.
+    ///
+    /// Note that `Dependency::Simple` won't have this flag, even if it was inherited.
+    #[serde(skip)]
+    pub inherited: bool,
+
+    /// Read dependency from git repo URL, not allowed on crates-io.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub git: Option<String>,
+    /// Read dependency from git branch, not allowed on crates-io.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    /// Read dependency from git tag, not allowed on crates-io.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>,
+    /// Read dependency from git commit, not allowed on crates-io.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rev: Option<String>,
+
+    /// Enable these features of the dependency. `default` is handled in a special way.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub features: Vec<String>,
+
+    /// NB: Not allowed at workspace level
+    ///
+    /// If not used with `dep:` or `?/` syntax in `[features]`, this also creates an implicit feature.
+    /// See the [`features`] module for more info.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub optional: bool,
+
+    /// Enable the `default` set of features of the dependency (enabled by default).
     #[serde(default = "default_true", skip_serializing_if = "is_true")]
     pub default_features: bool,
+
+    /// Use this crate name instead of table key.
+    ///
+    /// By using this, a crate can have multiple versions of the same dependency.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub package: Option<String>,
+
+    /// Contains the remaining unstable keys and values for the dependency.
+    #[serde(flatten)]
+    pub unstable: BTreeMap<String, Value>,
+}
+
+impl Default for DependencyDetail {
+    fn default() -> Self {
+        DependencyDetail {
+            version: None,
+            registry: None,
+            registry_index: None,
+            path: None,
+            inherited: false,
+            git: None,
+            branch: None,
+            tag: None,
+            rev: None,
+            features: Vec::new(),
+            optional: false,
+            default_features: true, // != bool::default()
+            package: None,
+            unstable: BTreeMap::new(),
+        }
+    }
 }
 
 pub(crate) type Features = BTreeMap<String, Vec<Feature>>;

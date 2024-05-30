@@ -1,6 +1,7 @@
 # Contributing to rs-script
 
-I welcome all kinds of contributions including bug reports, feature requests, documentation improvements, and code contributions.
+I welcome all kinds of contributions including bug reports, feature requests, documentation improvements, as well as code contributions that I find to be a good fit with the project.
+You are obviously welcome to fork the project in terms of the Apache 2 and MIT licences if you don't get satisfaction.
 
 ## How to Contribute
 

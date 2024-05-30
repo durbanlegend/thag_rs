@@ -4,6 +4,7 @@ use core::{fmt, str};
 use std::error::Error;
 
 use crate::errors::BuildRunError;
+use crate::RS_SUFFIX;
 
 /// rs-script script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
@@ -36,13 +37,19 @@ pub struct Cli {
     /// Run without rebuilding if already compiled
     #[arg(short, long)]
     pub run: bool,
-    /// Run in REPL mode (read–eval–print loop). Existing script name is optional.
+    /// REPL mode (read–eval–print loop) for Rust expressions. Option: existing script name.
     #[arg(short = 'l', long, conflicts_with_all(["all", "generate", "build", "run"]))]
     pub repl: bool,
+    /// Evaluate a quoted expression on the fly
     #[arg(short, long = "expr", conflicts_with_all(["all", "generate", "build", "run", "repl", "script", "stdin"]))]
     pub expression: Option<String>,
+    /// Read script from stdin.
     #[arg(short, long, conflicts_with_all(["all", "expression", "generate", "build", "run", "repl", "script"]))]
     pub stdin: bool,
+    /// Read script from stdin with edit.
+    #[arg(short = 'd', long, conflicts_with_all(["all", "expression", "generate", "build", "run", "repl", "script"]))]
+    pub edit: bool,
+    /// Suppress unnecessary output
     #[arg(short, long, conflicts_with("verbose"))]
     pub quiet: bool,
 }
@@ -51,6 +58,30 @@ pub struct Cli {
 #[must_use]
 pub fn get_opt() -> Cli {
     Cli::parse()
+}
+
+pub fn validate_options(options: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
+    if let Some(ref script) = options.script {
+        if !script.ends_with(RS_SUFFIX) {
+            return Err(Box::new(BuildRunError::Command(format!(
+                "Script name must end in {RS_SUFFIX}"
+            ))));
+        }
+        // if proc_flags.contains(ProcFlags::EXPR) {
+        //     return Err(Box::new(BuildRunError::Command(
+        //         "Incompatible options: --expr option and script name".to_string(),
+        //     )));
+        // }
+    } else if !proc_flags.contains(ProcFlags::EXPR)
+        && !proc_flags.contains(ProcFlags::REPL)
+        && !proc_flags.contains(ProcFlags::STDIN)
+        && !proc_flags.contains(ProcFlags::EDIT)
+    {
+        return Err(Box::new(BuildRunError::Command(
+            "Missing script name".to_string(),
+        )));
+    }
+    Ok(())
 }
 
 bitflags! {
@@ -70,7 +101,8 @@ bitflags! {
         const REPL = 128;
         const EXPR = 256;
         const STDIN = 512;
-        const QUIET = 1024;
+        const EDIT = 1024;
+        const QUIET = 2048;
     }
 }
 
@@ -130,6 +162,7 @@ pub fn get_proc_flags(options: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::REPL, options.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);
         proc_flags.set(ProcFlags::STDIN, options.stdin);
+        proc_flags.set(ProcFlags::EDIT, options.edit);
 
         // if options.all && options.run {
         //     // println!(

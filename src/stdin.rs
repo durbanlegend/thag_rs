@@ -28,25 +28,24 @@ use std::error::Error;
 use std::io::{self, IsTerminal};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
-use crate::code_utils;
 use crate::errors::BuildRunError;
 
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {
-    for line in &read_stdin()? {
+    for line in &edit_stdin()? {
         println!("{line}");
     }
     Ok(())
 }
 
-pub fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
+pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     let input = std::io::stdin();
 
     let initial_content = if input.is_terminal() {
         // No input available
         String::new()
     } else {
-        code_utils::read_stdin()?
+        read_stdin()?
     };
 
     let mut popup = false;
@@ -130,6 +129,17 @@ pub fn read_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     reset_term(term)?;
 
     Ok(textarea.lines().to_vec())
+}
+
+/// Prompt for and read Rust source code from stdin.
+pub fn read_stdin() -> Result<String, std::io::Error> {
+    // println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
+    //     if cfg!(windows) { 'Z' } else { 'D' }
+    // );
+    use std::io::Read;
+    let mut buffer = String::new();
+    std::io::stdin().lock().read_to_string(&mut buffer)?;
+    Ok(buffer)
 }
 
 fn normalize_newlines(input: &str) -> String {

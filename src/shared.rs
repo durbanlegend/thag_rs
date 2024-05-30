@@ -277,7 +277,8 @@ impl BuildState {
         let is_repl = proc_flags.contains(ProcFlags::REPL);
         let is_expr = options.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
-        let is_dynamic = is_expr | is_stdin;
+        let is_edit = proc_flags.contains(ProcFlags::EDIT);
+        let is_dynamic = is_expr | is_stdin | is_edit;
         let maybe_script = script_state.get_script();
         if maybe_script.is_none() {
             return Err(Box::new(BuildRunError::NoneOption(

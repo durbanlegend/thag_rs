@@ -2,23 +2,22 @@
 use env_logger::{Builder, Env, WriteStyle};
 
 use log::{debug, log_enabled, Level::Debug};
-use rs_script::builder::gen_build_run;
-use rs_script::cmd_args::{get_opt, get_proc_flags, Cli, ProcFlags};
-use rs_script::code_utils::{self, extract_ast, extract_manifest};
-use rs_script::errors::BuildRunError;
-use rs_script::nu_color_println;
-use rs_script::repl;
-use rs_script::shared::{debug_timings, Ast, BuildState, ScriptState};
-use rs_script::stdin;
-use rs_script::term_colors::{nu_resolve_style, MessageLevel};
+use rs_script::gen_build_run;
+use rs_script::run_repl;
+use rs_script::validate_options;
+use rs_script::BuildRunError;
+use rs_script::{self, extract_ast, extract_manifest};
+use rs_script::{create_next_repl_file, create_temp_source_file, process_expr};
+use rs_script::{debug_timings, Ast, BuildState, ScriptState};
+use rs_script::{edit_stdin, read_stdin};
+use rs_script::{get_opt, get_proc_flags, ProcFlags};
+use rs_script::{nu_color_println, nu_resolve_style, MessageLevel};
 use rs_script::{
     DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
 };
 
 use std::error::Error;
-
 use std::path::{Path, PathBuf};
-
 use std::time::Instant;
 
 //      TODO:
@@ -28,9 +27,9 @@ use std::time::Instant;
 //       4.  TUI editor as an option on stdin.
 //       5.  How to navigate reedline history entry by entry instead of line by line.
 //       6.  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
+//       7.  More unit and integration tests
 //       8.  Cat files before delete.
-//       9.  DONE Consider making script name optional, with -s/stdin parm as per my runner changes?
-//      10.  Decide if it's worth passing the wrapped syntax tree to gen_build_run from eval just to avoid
+//       9.  Decide if it's worth passing the wrapped syntax tree to gen_build_run from eval just to avoid
 //           re-parsing it for that specific use case.
 //      11.  Clean up debugging
 //      12.  "edit" crate - how to reconfigure editors dynamically - instructions unclear.
@@ -38,7 +37,7 @@ use std::time::Instant;
 //      14.  Get rid of date and time in RHS of REPL? - doesn't seem to be an option.
 //      15.  Help command in eval, same as quit and q
 //      16.  Work on examples/reedline_clap_repl_gemini.rs
-//      17.
+//      17.  Put the more intractable long-term problems here in a separate TODO file?
 //      18.  How to set editor in Windows.
 //
 
@@ -80,17 +79,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Normal REPL with no named script
     let repl_source_path = if is_repl && options.script.is_none() {
-        Some(code_utils::create_next_repl_file())
+        Some(create_next_repl_file())
     } else {
         None
     };
 
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
-    let is_dynamic = is_expr | is_stdin;
+    let is_edit = proc_flags.contains(ProcFlags::EDIT);
+    let is_dynamic = is_expr | is_stdin | is_edit;
 
     if is_dynamic {
-        code_utils::create_temp_source_file();
+        create_temp_source_file();
     }
 
     // Reusable source path for expressions and stdin evaluation
@@ -168,7 +168,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if is_repl {
-        repl::run_repl(&mut options, &proc_flags, &mut build_state, start)?;
+        run_repl(&mut options, &proc_flags, &mut build_state, start)?;
     } else if is_dynamic {
         let rs_source = if is_expr {
             let Some(rs_source) = options.expression.clone() else {
@@ -177,12 +177,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                 )));
             };
             rs_source
+        } else if is_edit {
+            debug!("About to call edit_stdin()");
+            let vec = edit_stdin()?;
+            debug!("vec={vec:#?}");
+            vec.join("\n")
         } else {
             assert!(is_stdin);
             debug!("About to call read_stdin()");
-            let vec = stdin::read_stdin()?;
-            debug!("vec={vec:#?}");
-            vec.join("\n")
+            let str = read_stdin()? + "\n";
+            debug!("str={str:#?}");
+            str
         };
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
             .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
@@ -191,7 +196,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let maybe_ast = extract_ast(&rs_source);
 
         if let Ok(expr_ast) = maybe_ast {
-            code_utils::process_expr(
+            process_expr(
                 &expr_ast,
                 &mut build_state,
                 &rs_source,
@@ -216,29 +221,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         )?;
     }
 
-    Ok(())
-}
-
-fn validate_options(options: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
-    if let Some(ref script) = options.script {
-        if !script.ends_with(RS_SUFFIX) {
-            return Err(Box::new(BuildRunError::Command(format!(
-                "Script name must end in {RS_SUFFIX}"
-            ))));
-        }
-        if proc_flags.contains(ProcFlags::EXPR) {
-            return Err(Box::new(BuildRunError::Command(
-                "Incompatible options: --expr option and script name".to_string(),
-            )));
-        }
-    } else if !proc_flags.contains(ProcFlags::EXPR)
-        && !proc_flags.contains(ProcFlags::REPL)
-        && !proc_flags.contains(ProcFlags::STDIN)
-    {
-        return Err(Box::new(BuildRunError::Command(
-            "Missing script name".to_string(),
-        )));
-    }
     Ok(())
 }
 

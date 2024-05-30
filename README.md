@@ -6,9 +6,9 @@
 
 ## Overview
 
-`rs-script` is a simple and serious script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to quickly run and test Rust code from the command line for rapid prototyping and learning. It is intended to handle cases that are beyond the scope of the Rust playground.
+`rs-script` is a simple and serious script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to quickly run and test Rust code from the command line for rapid prototyping and learning. It is intended to handle cases that are beyond the scope of the Rust playground, and dare I say of your average script runner.
 
-`rs-script` is Cargo-based. It attempts to handle any valid Rust program, snippet or expression. It will usually manage to generate a dedicated Cargo.toml for this script from "use" statements in your code, or for speed and precision you can embed your own in a /*[toml] */ block at the start of the script, as shown in numerous examples.
+`rs-script` is Cargo-based and prefers tools like syn and quote over string operations to ensure correctness. It attempts to handle any valid Rust program, snippet or expression. It will usually manage to generate a dedicated Cargo.toml for this script from "use" statements in your code, although for speed and precision it is recommended that you embed your own in a /*[toml] */ block at the start of the script, as shown in numerous examples.
 
 `rs-script` aims to be as comprehensive as possible without sacrificing speed and simplicity. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although this behaviour may be overridden. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 Macbook Air.
 
@@ -59,14 +59,20 @@ All REPL files are created under the rs_repl subdirectory of your temporary dire
 The REPL feature, in particular the most convenient `eval` mode, is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. These limitations can be overcome by using the `edit` mode instead, but by this point it is probably more convenient just to use the --stdin/-s feature instead or save the source in a .rs file and run it from the command line.
 
 ## Features
+
+_Rust is primarily an expression language.... In contrast, statements serve mostly to contain and explicitly sequence expression evaluation._
+
+_— The Rust Reference_
+
 * Runs serious Rust scripts (not just the "Hello, world!" variety) with no need to create a project.
 * Aims to be the most capable and reliable script runner.
 * Crucially, specific features of dependencies may be specified, giving your scripts access to advanced functionality. Local path and git dependencies may also be specified, allowing you to access your unpublished crates.
-* A choice of modes:
+* A choice of modes - bearing in mind the importance of expressions in Rust:
     * expression mode for small, basic expressions on the fly
-    * REPL adds interactivity and a more convenient multi-line mode
-    * stdin mode accepts larger scripts on the fly and provides basic TUI (terminal user interface) editing in place.
-    * script mode runs any valid script or program in a .rs file.
+    * REPL mode offers interactivity and accepts multi-line expressions since it respects matching braces, brackets, parens and quotes.
+    * stdin mode accepts larger scripts or programs on the fly, which need not be expressions as such. Being stdin it can be used with piped input.
+    * edit mode adds basic TUI (terminal user interface) editing-in-place to stdin mode.
+    * the classic script mode runs any .rs file consisting of a valid Rust script or program.
 * You may develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from rs-script.
 * You can use a shebang to write scripts in Rust.
 * Supports a personal library of code samples for reuse. The starter set provided includes multiple examples from popular crates, as well as original examples including fast factorial and Fibonacci calculation with big-integer support, light-dark theme detection, TUI editing and colour support.
@@ -96,7 +102,18 @@ This crate is designed to be cross-platform and supports:
 
 ## Contributing
 
-Contributions are welcome. Please see CONTRIBUTING.md for more details.
+Contributions will be given due consideration if they fit the goals of the project. Please see CONTRIBUTING.md for more details.
+
+## Of possible interest: AI
+
+I made extensive use of free versions of AI - mostly ChatGPT and to a lesser extent Gemini - for three aspects of this project:
+* problem solving
+* guidance on best practices
+* grunt work of generating "first-approximation" code and boilerplate to spec.
+
+Although these LLMs could be very hit-and-miss or clichéd when it comes to specifics and to received wisdom, my experience has been that intensive dialogues with the LLMs have generally either led them to produce worthwhile solutions, or at least led me to see that there were sometimes deeper-seated issues that AI couldn't solve and to dig deeper researching on my own.
+
+I short I found using AI hugely beneficial in terms not only of productivity but of extending the scope of work that I could comfortably take on. I didn't use any licensed or integrated features and at this stage I'm not feeling the lack of same.
 
 ## License
 

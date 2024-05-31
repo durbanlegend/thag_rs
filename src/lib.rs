@@ -15,7 +15,7 @@ pub mod term_colors;
 
 // Re-export commonly used items for convenience
 pub use builder::{execute, gen_build_run};
-pub use cmd_args::{get_args, get_proc_flags, validate_options, Cli, ProcFlags};
+pub use cmd_args::{get_args, get_proc_flags, validate_args, Cli, ProcFlags};
 pub use code_utils::{
     create_next_repl_file, create_temp_source_file, extract_ast, extract_manifest,
     modified_since_compiled, process_expr,

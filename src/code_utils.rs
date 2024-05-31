@@ -1,10 +1,9 @@
+use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::errors::BuildRunError;
-use crate::shared::debug_timings;
-use crate::shared::Ast;
-use crate::shared::BuildState;
-use crate::shared::CargoManifest; // Still valid if no circular dependency
-use crate::{gen_build_run, DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
+use crate::shared::{debug_timings, Ast, BuildState, CargoManifest};
+use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
+
 use lazy_static::lazy_static;
 use log::debug;
 use regex::Regex;

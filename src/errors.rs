@@ -1,6 +1,5 @@
 use std::ffi::OsString;
 use std::{error::Error, io};
-
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
 

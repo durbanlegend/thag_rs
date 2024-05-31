@@ -1,10 +1,10 @@
+use crate::errors::BuildRunError;
+use crate::RS_SUFFIX;
+
 use bitflags::bitflags;
 use clap::Parser;
 use core::{fmt, str};
 use std::error::Error;
-
-use crate::errors::BuildRunError;
-use crate::RS_SUFFIX;
 
 /// rs-script script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
@@ -54,24 +54,18 @@ pub struct Cli {
     pub quiet: bool,
 }
 
-/// Getter for clap command-line options
-#[must_use]
+/// Getter for clap command-line arguments
 pub fn get_args() -> Cli {
     Cli::parse()
 }
 
-pub fn validate_options(options: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
-    if let Some(ref script) = options.script {
+pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
+    if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(Box::new(BuildRunError::Command(format!(
                 "Script name must end in {RS_SUFFIX}"
             ))));
         }
-        // if proc_flags.contains(ProcFlags::EXPR) {
-        //     return Err(Box::new(BuildRunError::Command(
-        //         "Incompatible options: --expr option and script name".to_string(),
-        //     )));
-        // }
     } else if !proc_flags.contains(ProcFlags::EXPR)
         && !proc_flags.contains(ProcFlags::REPL)
         && !proc_flags.contains(ProcFlags::STDIN)
@@ -164,16 +158,6 @@ pub fn get_proc_flags(options: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::STDIN, options.stdin);
         proc_flags.set(ProcFlags::EDIT, options.edit);
 
-        // if options.all && options.run {
-        //     // println!(
-        //     //     "Conflicting options {} and {} specified",
-        //     //     options.all, options.run
-        //     // );
-        //     return Err(Box::new(BuildRunError::Command(format!(
-        //         "Conflicting options {} and {} specified",
-        //         options.all, options.run
-        //     ))));
-        // }
         let formatted = proc_flags.to_string();
         let parsed = formatted
             .parse::<ProcFlags>()

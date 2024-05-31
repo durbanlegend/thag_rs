@@ -1,15 +1,3 @@
-use env_logger::{Builder, Env, WriteStyle};
-use log::{debug, log_enabled, Level::Debug};
-
-use std::{
-    error::Error,
-    fs::{self, OpenOptions},
-    io::Write,
-    path::{Path, PathBuf},
-    process::Command,
-    time::Instant,
-};
-
 use crate::code_utils::{
     self, create_next_repl_file, create_temp_source_file, extract_ast, extract_manifest,
     process_expr, read_file_contents, rustfmt, strip_curly_braces, wrap_snippet, write_source,
@@ -22,7 +10,7 @@ use crate::shared::{debug_timings, display_timings, Ast, BuildState};
 use crate::stdin::{edit_stdin, read_stdin};
 use crate::term_colors::{nu_resolve_style, MessageLevel};
 use crate::{
-    cmd_args::{get_proc_flags, validate_options, Cli, ProcFlags},
+    cmd_args::{get_proc_flags, validate_args, Cli, ProcFlags},
     ScriptState,
 };
 use crate::{
@@ -30,10 +18,20 @@ use crate::{
     TEMP_SCRIPT_NAME, TMPDIR, VERSION,
 };
 
+use env_logger::{Builder, Env, WriteStyle};
+use log::{debug, log_enabled, Level::Debug};
+use std::{
+    error::Error,
+    fs::{self, OpenOptions},
+    io::Write,
+    path::{Path, PathBuf},
+    process::Command,
+    time::Instant,
+};
+
 pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     configure_log();
-    // let mut options = get_opt();
     let proc_flags = get_proc_flags(&args)?;
     if log_enabled!(Debug) {
         debug_print_config();
@@ -53,7 +51,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     } else {
         std::env::current_dir()?.canonicalize()?
     };
-    validate_options(&args, &proc_flags)?;
+    validate_args(&args, &proc_flags)?;
     let repl_source_path = if is_repl && args.script.is_none() {
         Some(create_next_repl_file())
     } else {

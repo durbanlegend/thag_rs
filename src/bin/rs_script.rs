@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 
-use rs_script::{execute, get_opt};
+use rs_script::{execute, get_args};
 use std::error::Error;
 
 //      TODO:
@@ -26,8 +26,8 @@ use std::error::Error;
 
 #[allow(clippy::too_many_lines)]
 pub fn main() -> Result<(), Box<dyn Error>> {
-    let options = get_opt();
-    execute(options)?;
+    let args = get_args();
+    execute(args)?;
 
     Ok(())
 }

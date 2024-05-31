@@ -30,19 +30,19 @@ use crate::{
     TEMP_SCRIPT_NAME, TMPDIR, VERSION,
 };
 
-pub fn execute(mut options: Cli) -> Result<(), Box<dyn Error>> {
+pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     configure_log();
     // let mut options = get_opt();
-    let proc_flags = get_proc_flags(&options)?;
+    let proc_flags = get_proc_flags(&args)?;
     if log_enabled!(Debug) {
         debug_print_config();
         debug!("proc_flags={proc_flags:#?}");
         debug_timings(&start, "Set up processing flags");
 
-        if !&options.args.is_empty() {
+        if !&args.args.is_empty() {
             debug!("... args:");
-            for arg in &options.args {
+            for arg in &args.args {
                 debug!("{arg}");
             }
         }
@@ -53,8 +53,8 @@ pub fn execute(mut options: Cli) -> Result<(), Box<dyn Error>> {
     } else {
         std::env::current_dir()?.canonicalize()?
     };
-    validate_options(&options, &proc_flags)?;
-    let repl_source_path = if is_repl && options.script.is_none() {
+    validate_options(&args, &proc_flags)?;
+    let repl_source_path = if is_repl && args.script.is_none() {
         Some(create_next_repl_file())
     } else {
         None
@@ -67,7 +67,7 @@ pub fn execute(mut options: Cli) -> Result<(), Box<dyn Error>> {
         create_temp_source_file();
     }
     let script_dir_path = if is_repl {
-        if let Some(ref script) = options.script {
+        if let Some(ref script) = args.script {
             // REPL with repeat of named script
             let source_stem = script
                 .strip_suffix(RS_SUFFIX)
@@ -89,10 +89,7 @@ pub fn execute(mut options: Cli) -> Result<(), Box<dyn Error>> {
             .clone()
     } else {
         // Normal script file prepared beforehand
-        let script = options
-            .script
-            .clone()
-            .expect("Problem resolving script path");
+        let script = args.script.clone().expect("Problem resolving script path");
         let script_path = PathBuf::from(script);
         let script_dir_path = script_path
             .parent()
@@ -102,7 +99,7 @@ pub fn execute(mut options: Cli) -> Result<(), Box<dyn Error>> {
             .canonicalize()
             .expect("Problem resolving script dir path")
     };
-    let script_state: ScriptState = if let Some(ref script) = options.script {
+    let script_state: ScriptState = if let Some(ref script) = args.script {
         let script = script.to_owned();
         ScriptState::Named {
             script,
@@ -124,15 +121,15 @@ pub fn execute(mut options: Cli) -> Result<(), Box<dyn Error>> {
             script_dir_path,
         }
     };
-    let mut build_state = BuildState::pre_configure(&proc_flags, &options, &script_state)?;
+    let mut build_state = BuildState::pre_configure(&proc_flags, &args, &script_state)?;
     if is_repl {
         debug!("build_state.source_path={:?}", build_state.source_path);
     }
     if is_repl {
-        run_repl(&mut options, &proc_flags, &mut build_state, start)
+        run_repl(&mut args, &proc_flags, &mut build_state, start)
     } else if is_dynamic {
         let rs_source = if is_expr {
-            let Some(rs_source) = options.expression.clone() else {
+            let Some(rs_source) = args.expression.clone() else {
                 return Err(Box::new(BuildRunError::Command(
                     "Missing expression for --expr option".to_string(),
                 )));
@@ -161,7 +158,7 @@ pub fn execute(mut options: Cli) -> Result<(), Box<dyn Error>> {
                 &expr_ast,
                 &mut build_state,
                 &rs_source,
-                &mut options,
+                &mut args,
                 &proc_flags,
                 &start,
             )
@@ -177,7 +174,7 @@ pub fn execute(mut options: Cli) -> Result<(), Box<dyn Error>> {
         }
     } else {
         gen_build_run(
-            &mut options,
+            &mut args,
             &proc_flags,
             &mut build_state,
             None::<Ast>,

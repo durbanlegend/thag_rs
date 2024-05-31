@@ -56,7 +56,7 @@ pub struct Cli {
 
 /// Getter for clap command-line options
 #[must_use]
-pub fn get_opt() -> Cli {
+pub fn get_args() -> Cli {
     Cli::parse()
 }
 

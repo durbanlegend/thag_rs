@@ -9,7 +9,7 @@ use std::error::Error;
 /// rs-script script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Parser, Debug)]
-#[command(name = "rs_script", version = "1.0", author = "Don Forbes")]
+#[command(name = "rs_script")]
 pub struct Cli {
     /// Optional name of a script to run
     pub script: Option<String>,
@@ -128,35 +128,32 @@ impl str::FromStr for ProcFlags {
 /// # Panics
 ///
 /// Will panic if the internal correctness check fails.
-pub fn get_proc_flags(options: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
-    let is_expr = options.expression.is_some();
+pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
+    let is_expr = args.expression.is_some();
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
         // TODO: out? once clap default_value_ifs is working
         proc_flags.set(
             ProcFlags::GENERATE,
-            options.generate | options.force | options.all | is_expr,
+            args.generate | args.force | args.all | is_expr,
         );
         proc_flags.set(
             ProcFlags::BUILD,
-            options.build | options.force | options.all | is_expr,
+            args.build | args.force | args.all | is_expr,
         );
-        proc_flags.set(ProcFlags::FORCE, options.force);
-        proc_flags.set(ProcFlags::QUIET, options.quiet);
-        proc_flags.set(ProcFlags::VERBOSE, options.verbose);
-        proc_flags.set(ProcFlags::TIMINGS, options.timings);
-        proc_flags.set(ProcFlags::RUN, options.run | options.all);
-        proc_flags.set(ProcFlags::ALL, options.all);
+        proc_flags.set(ProcFlags::FORCE, args.force);
+        proc_flags.set(ProcFlags::QUIET, args.quiet);
+        proc_flags.set(ProcFlags::VERBOSE, args.verbose);
+        proc_flags.set(ProcFlags::TIMINGS, args.timings);
+        proc_flags.set(ProcFlags::RUN, args.run | args.all);
+        proc_flags.set(ProcFlags::ALL, args.all);
         if !(proc_flags.contains(ProcFlags::ALL)) {
-            proc_flags.set(
-                ProcFlags::ALL,
-                options.generate & options.build & options.run,
-            );
+            proc_flags.set(ProcFlags::ALL, args.generate & args.build & args.run);
         }
-        proc_flags.set(ProcFlags::REPL, options.repl);
+        proc_flags.set(ProcFlags::REPL, args.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);
-        proc_flags.set(ProcFlags::STDIN, options.stdin);
-        proc_flags.set(ProcFlags::EDIT, options.edit);
+        proc_flags.set(ProcFlags::STDIN, args.stdin);
+        proc_flags.set(ProcFlags::EDIT, args.edit);
 
         let formatted = proc_flags.to_string();
         let parsed = formatted

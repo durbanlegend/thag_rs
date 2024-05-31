@@ -1,25 +1,207 @@
-use log::debug;
+use env_logger::{Builder, Env, WriteStyle};
+use log::{debug, log_enabled, Level::Debug};
 
 use std::{
     error::Error,
     fs::{self, OpenOptions},
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
     process::Command,
     time::Instant,
 };
 
-use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{
-    self, extract_manifest, read_file_contents, rustfmt, strip_curly_braces, wrap_snippet,
-    write_source,
+    self, create_next_repl_file, create_temp_source_file, extract_ast, extract_manifest,
+    process_expr, read_file_contents, rustfmt, strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::errors::BuildRunError;
 use crate::manifest;
+use crate::repl::run_repl;
 use crate::shared::CargoManifest;
-use crate::shared::{display_timings, Ast, BuildState};
-use crate::FLOWER_BOX_LEN;
-use crate::PACKAGE_NAME;
+use crate::shared::{debug_timings, display_timings, Ast, BuildState};
+use crate::stdin::{edit_stdin, read_stdin};
+use crate::term_colors::{nu_resolve_style, MessageLevel};
+use crate::{
+    cmd_args::{get_proc_flags, validate_options, Cli, ProcFlags},
+    ScriptState,
+};
+use crate::{
+    nu_color_println, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
+    TEMP_SCRIPT_NAME, TMPDIR, VERSION,
+};
+
+pub fn execute(mut options: Cli) -> Result<(), Box<dyn Error>> {
+    let start = Instant::now();
+    configure_log();
+    // let mut options = get_opt();
+    let proc_flags = get_proc_flags(&options)?;
+    if log_enabled!(Debug) {
+        debug_print_config();
+        debug!("proc_flags={proc_flags:#?}");
+        debug_timings(&start, "Set up processing flags");
+
+        if !&options.args.is_empty() {
+            debug!("... args:");
+            for arg in &options.args {
+                debug!("{arg}");
+            }
+        }
+    }
+    let is_repl = proc_flags.contains(ProcFlags::REPL);
+    let working_dir_path = if is_repl {
+        TMPDIR.join(REPL_SUBDIR)
+    } else {
+        std::env::current_dir()?.canonicalize()?
+    };
+    validate_options(&options, &proc_flags)?;
+    let repl_source_path = if is_repl && options.script.is_none() {
+        Some(create_next_repl_file())
+    } else {
+        None
+    };
+    let is_expr = proc_flags.contains(ProcFlags::EXPR);
+    let is_stdin = proc_flags.contains(ProcFlags::STDIN);
+    let is_edit = proc_flags.contains(ProcFlags::EDIT);
+    let is_dynamic = is_expr | is_stdin | is_edit;
+    if is_dynamic {
+        create_temp_source_file();
+    }
+    let script_dir_path = if is_repl {
+        if let Some(ref script) = options.script {
+            // REPL with repeat of named script
+            let source_stem = script
+                .strip_suffix(RS_SUFFIX)
+                .expect("Failed to strip extension off the script name");
+            working_dir_path.join(source_stem)
+        } else {
+            // Normal REPL with no script name
+            repl_source_path
+                .as_ref()
+                .expect("Missing path of newly created REPL souece file")
+                .parent()
+                .expect("Could not find parent directory of repl source file")
+                .to_path_buf()
+        }
+    } else if is_dynamic {
+        debug!("^^^^^^^^ is_dynamic={is_dynamic}");
+        <std::path::PathBuf as std::convert::AsRef<Path>>::as_ref(&TMPDIR)
+            .join(DYNAMIC_SUBDIR)
+            .clone()
+    } else {
+        // Normal script file prepared beforehand
+        let script = options
+            .script
+            .clone()
+            .expect("Problem resolving script path");
+        let script_path = PathBuf::from(script);
+        let script_dir_path = script_path
+            .parent()
+            .expect("Problem resolving script parent path");
+        // working_dir_path.join(PathBuf::from(script.clone()))
+        script_dir_path
+            .canonicalize()
+            .expect("Problem resolving script dir path")
+    };
+    let script_state: ScriptState = if let Some(ref script) = options.script {
+        let script = script.to_owned();
+        ScriptState::Named {
+            script,
+            script_dir_path,
+        }
+    } else if is_repl {
+        let script = repl_source_path
+            .expect("Missing newly created REPL source path")
+            .display()
+            .to_string();
+        ScriptState::NamedEmpty {
+            script,
+            script_dir_path,
+        }
+    } else {
+        assert!(is_dynamic);
+        ScriptState::NamedEmpty {
+            script: String::from(TEMP_SCRIPT_NAME),
+            script_dir_path,
+        }
+    };
+    let mut build_state = BuildState::pre_configure(&proc_flags, &options, &script_state)?;
+    if is_repl {
+        debug!("build_state.source_path={:?}", build_state.source_path);
+    }
+    if is_repl {
+        run_repl(&mut options, &proc_flags, &mut build_state, start)
+    } else if is_dynamic {
+        let rs_source = if is_expr {
+            let Some(rs_source) = options.expression.clone() else {
+                return Err(Box::new(BuildRunError::Command(
+                    "Missing expression for --expr option".to_string(),
+                )));
+            };
+            rs_source
+        } else if is_edit {
+            debug!("About to call edit_stdin()");
+            let vec = edit_stdin()?;
+            debug!("vec={vec:#?}");
+            vec.join("\n")
+        } else {
+            assert!(is_stdin);
+            debug!("About to call read_stdin()");
+            let str = read_stdin()? + "\n";
+            debug!("str={str:#?}");
+            str
+        };
+        let rs_manifest = extract_manifest(&rs_source, Instant::now())
+            .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
+        build_state.rs_manifest = Some(rs_manifest);
+
+        let maybe_ast = extract_ast(&rs_source);
+
+        if let Ok(expr_ast) = maybe_ast {
+            process_expr(
+                &expr_ast,
+                &mut build_state,
+                &rs_source,
+                &mut options,
+                &proc_flags,
+                &start,
+            )
+        } else {
+            nu_color_println!(
+                nu_resolve_style(MessageLevel::Error),
+                "Error parsing code: {:#?}",
+                maybe_ast
+            );
+            Err(Box::new(BuildRunError::Command(
+                "Error parsing code".to_string(),
+            )))
+        }
+    } else {
+        gen_build_run(
+            &mut options,
+            &proc_flags,
+            &mut build_state,
+            None::<Ast>,
+            &start,
+        )
+    }
+}
+
+fn debug_print_config() {
+    debug!("PACKAGE_NAME={PACKAGE_NAME}");
+    debug!("VERSION={VERSION}");
+    debug!("REPL_SUBDIR={REPL_SUBDIR}");
+}
+
+// Configure log level
+fn configure_log() {
+    let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
+    let mut binding = Builder::new();
+    let builder = binding.parse_env(env);
+    builder.write_style(WriteStyle::Always);
+    builder.init();
+
+    // Builder::new().filter_level(log::LevelFilter::Debug).init();
+}
 
 pub fn gen_build_run(
     options: &mut Cli,

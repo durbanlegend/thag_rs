@@ -291,7 +291,7 @@ pub fn process_expr(
     options: &mut Cli,
     proc_flags: &ProcFlags,
     start: &Instant,
-) -> Result<(), BuildRunError> {
+) -> Result<(), Box<dyn Error>> {
     let syntax_tree = Some(Ast::Expr(expr_ast.clone()));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(options, proc_flags, build_state, syntax_tree, start);
@@ -768,6 +768,7 @@ pub fn strip_curly_braces(haystack: &str) -> Option<String> {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 fn get_mismatched_lines(expected_rust_code: &str, rust_code: &str) -> Vec<(String, String)> {
     let mut mismatched_lines = Vec::new();
     for (expected_line, actual_line) in expected_rust_code.lines().zip(rust_code.lines()) {
@@ -780,6 +781,7 @@ fn get_mismatched_lines(expected_rust_code: &str, rust_code: &str) -> Vec<(Strin
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 fn compare(mismatched_lines: &[(String, String)], expected_rust_code: &str, rust_code: &str) {
     if !mismatched_lines.is_empty() {
         println!(

@@ -308,12 +308,16 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
                 options,
                 proc_flags,
                 start,
-            )?;
+            )
+            .map_err(|_err| BuildRunError::Command("Error processing expression".to_string()))?;
         } else {
             nu_color_println!(
                 nu_resolve_style(MessageLevel::Error),
                 "Error parsing code: {maybe_ast:#?}"
             );
+            return Err(BuildRunError::Command(
+                "Error parsing code: {maybe_ast:#?}".to_string(),
+            ));
         }
 
         disp_eval_banner();

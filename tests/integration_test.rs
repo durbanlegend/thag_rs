@@ -1,11 +1,12 @@
 // tests/integration_test.rs
 
-use rs_script::{DYNAMIC_SUBDIR, TMPDIR};
+use clap::Parser;
+use log::debug;
+use rs_script::{execute, Cli, DYNAMIC_SUBDIR, TMPDIR};
+use std::env;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path::PathBuf;
-use std::process::Command;
-// use tempfile::TempDir; // Assuming your library crate is named rs_script
 
 #[test]
 fn test_script_runner_with_dependencies() -> Result<(), Box<dyn std::error::Error>> {
@@ -28,46 +29,29 @@ fn main() {{
 }}"#
     )?;
 
-    // Build the command to run your script runner
-    let mut cmd = Command::new("target/debug/rs_script"); // Replace with actual path
+    // Simulate command-line arguments
+    let args = vec![
+        "rs_script", // Typically, this would be the binary name
+        source_path.to_str().unwrap(),
+        "--",
+        "2>&1",
+    ];
 
-    // Add the script path as an argument
-    cmd.arg(source_path.to_str().unwrap());
+    // Save the real command-line arguments and replace them with the test ones
+    let real_args: Vec<String> = env::args().collect();
+    env::set_var("RUST_TEST_ARGS", real_args.join(" "));
 
-    // // Execute the command and capture output (optional)
-    // let output = cmd.output()?;
+    // Set up clap to use the test arguments
+    let cli = Cli::parse_from(&args);
 
-    // Redirect stdout to a pipe
-    let mut child = cmd
-        .stderr(std::process::Stdio::inherit()) // Inherit stderr
-        .stdout(std::process::Stdio::piped()) // Redirect stdout to a pipe
-        .arg("--")
-        .arg("2>&1") // Combine stdout and stderr
-        .spawn()
-        .expect("failed to spawn child process");
+    println!("cli={:#?}", cli);
+    // rs_script::Cli = cli;
 
-    // Read the captured output from the pipe
-    let mut stdout = child.stdout.take().expect("failed to get stdout");
-    let mut buffer = vec![0; 1024]; // Allocate a buffer for reading
-    loop {
-        let size = match stdout.read(&mut buffer) {
-            Ok(0) => break, // End of output reached
-            Ok(n) => n,
-            Err(err) => {
-                eprintln!("Error reading output: {}", err);
-                break;
-            }
-        };
+    // Call the execute function directly
+    execute(cli)?;
 
-        // Display the read data (combine stdout and stderr)
-        print!("{}", String::from_utf8_lossy(&buffer[..size]));
-    }
-
-    // Wait for the child process to finish
-    let exit_code = child.wait().expect("failed to wait for child");
-
-    // Assert on the output or exit code (replace with your assertions)
-    assert!(exit_code.success());
+    // Restore the real command-line arguments
+    env::set_var("RUST_TEST_ARGS", real_args.join(" "));
 
     Ok(())
 }

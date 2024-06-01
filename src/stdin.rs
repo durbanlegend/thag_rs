@@ -133,9 +133,9 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
 
 /// Prompt for and read Rust source code from stdin.
 pub fn read_stdin() -> Result<String, std::io::Error> {
-    // println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
-    //     if cfg!(windows) { 'Z' } else { 'D' }
-    // );
+    println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
+        if cfg!(windows) { 'Z' } else { 'D' }
+    );
     use std::io::Read;
     let mut buffer = String::new();
     std::io::stdin().lock().read_to_string(&mut buffer)?;
@@ -205,7 +205,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
         .constraints::<Vec<Constraint>>(
             std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32))
                 .take(NUM_ROWS)
-                .collect::<Vec<Constraint>>(), // .as_ref(),
+                .collect::<Vec<Constraint>>(),
         );
     let rows = row_layout.split(inner);
 

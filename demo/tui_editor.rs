@@ -546,7 +546,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
         .constraints::<Vec<Constraint>>(
             std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32))
                 .take(NUM_ROWS)
-                .collect::<Vec<Constraint>>(), // .as_ref(),
+                .collect::<Vec<Constraint>>(),
         );
     let rows = row_layout.split(inner);
 

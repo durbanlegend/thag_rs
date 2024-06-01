@@ -1,7 +1,15 @@
-use crate::errors::BuildRunError;
-use crate::log;
-use crate::logging::{self, Verbosity};
-use crate::RS_SUFFIX;
+/*[toml]
+[dependencies]
+bitflags = "2.5.0"
+clap = { version = "4.5.4", features = ["cargo", "derive"] }
+rs_script = { path = "/Users/donf/projects/rs-script" }
+*/
+
+/// E.g. cargo run -- -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+use rs_script::errors::BuildRunError;
+use rs_script::log;
+use rs_script::logging::{self, Verbosity};
+use rs_script::RS_SUFFIX;
 
 use bitflags::bitflags;
 use clap::Parser;

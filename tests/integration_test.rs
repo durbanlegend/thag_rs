@@ -23,8 +23,10 @@ nu-ansi-term = "0.50.0"
 rs_script = {{ path = "/Users/donf/projects/rs-script" }}
 */
 use rs_script::term_colors::{{nu_resolve_style, MessageLevel}};
+use rs_script::log;
+use rs_script::logging::Verbosity;
 fn main() {{
-    println!("nu_resolve_style(MessageLevel::Emphasis)={{:#?}}", nu_resolve_style(MessageLevel::Emphasis));
+    log!(Verbosity::Normal, "nu_resolve_style(MessageLevel::Emphasis)={{:#?}}", nu_resolve_style(MessageLevel::Emphasis));
 }}"#
     )?;
 

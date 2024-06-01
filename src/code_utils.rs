@@ -703,7 +703,7 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
             let file_type = entry.file_type()?;
             let file_name = entry.file_name();
             log!(
-                Verbosity::Normal,
+                Verbosity::Quiet,
                 "  {file_name:?} ({})",
                 if file_type.is_dir() {
                     "Directory"

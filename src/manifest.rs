@@ -220,7 +220,10 @@ pub(crate) fn merge_manifest(
                 // return Err(Box::new(BuildRunError::Command(format!(
                 //     "Cargo search couldn't find crate [{dep_name}]"
                 // ))));
-                println!("Cargo search couldn't find crate [{dep_name}]");
+                log!(
+                    Verbosity::Quiet,
+                    "Cargo search couldn't find crate [{dep_name}]"
+                );
                 continue;
             };
             rs_dep_map.insert(dep_name, dep);

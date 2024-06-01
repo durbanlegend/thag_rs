@@ -109,14 +109,6 @@ pub fn run_repl(
     cmd_vec.sort();
     let cmd_list = "eval or one of: ".to_owned() + &cmd_vec.join(", ") + " or help";
     #[allow(unused_variables)]
-    // let outer_prompt = || {
-    //     log!(Verbosity::Normal,
-    //         "{}",
-    //         nu_resolve_style(MessageLevel::OuterPrompt)
-    //             .paint(format!("Enter {}", cmd_list))
-    //     );
-    // };
-    // outer_prompt();
     let context = Context {
         options,
         proc_flags,
@@ -202,10 +194,10 @@ fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
     if clean_up.is_ok()
         || (!&build_state.source_path.exists() && !&build_state.target_dir_path.exists())
     {
-        log!(Verbosity::Normal, "Deleted");
+        log!(Verbosity::Quiet, "Deleted");
     } else {
         log!(
-            Verbosity::Normal,
+            Verbosity::Quiet,
             "Failed to delete all files - enter l(ist) to list remaining files"
         );
     }
@@ -249,7 +241,7 @@ fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
     debug!("In run_expr: build_state={build_state:#?}");
     let result = gen_build_run(options, proc_flags, build_state, None::<Ast>, start);
     if result.is_err() {
-        log!(Verbosity::Normal, "{result:?}");
+        log!(Verbosity::Quiet, "{result:?}");
     }
     Ok(Some(String::from("End of run")))
 }
@@ -321,9 +313,9 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
                 nu_resolve_style(MessageLevel::Error),
                 "Error parsing code: {maybe_ast:#?}"
             );
-            return Err(BuildRunError::Command(
-                "Error parsing code: {maybe_ast:#?}".to_string(),
-            ));
+            // return Err(BuildRunError::Command(
+            //     "Error parsing code: {maybe_ast:#?}".to_string(),
+            // ));
         }
 
         disp_eval_banner();
@@ -348,7 +340,7 @@ fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
     let build_state = &context.build_state;
     let source_path = &build_state.source_path;
     if source_path.exists() {
-        log!(Verbosity::Normal, "File: {:?}", &source_path);
+        log!(Verbosity::Quiet, "File: {:?}", &source_path);
     }
 
     // Display directory contents
@@ -356,7 +348,7 @@ fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 
     // Check if neither file nor directory exist
     if !&source_path.exists() && !&build_state.target_dir_path.exists() {
-        log!(Verbosity::Normal, "No temporary files found");
+        log!(Verbosity::Quiet, "No temporary files found");
     }
     Ok(Some(String::from("End of list")))
 }
@@ -364,6 +356,6 @@ fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
 fn quit(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    log!(Verbosity::Normal, "Done");
+    log!(Verbosity::Quiet, "Done");
     std::process::exit(0);
 }

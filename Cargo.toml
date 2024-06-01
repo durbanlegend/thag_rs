@@ -5,7 +5,7 @@ authors = ["Don Forbes <don.forbes3@gmail.com>"]
 description = "A script runner and REPL for Rust snippets and programs"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-
+exclude = ["obsolete"]
 
 [dependencies]
 bitflags = "2.5.0"

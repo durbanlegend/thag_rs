@@ -74,7 +74,8 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
             }
             log!(
                 Verbosity::Normal,
-                r#"Cargo found dependency, which you can copy if you don't need special features:\n{name} = "{version}""#
+                r#"Cargo found the following dependency, which you can copy into the toml block if you don't need special features:
+{name} = "{version}""#
             );
             (name, version)
         }

@@ -7,6 +7,9 @@ regex = "1.10.4"
 ratatui = "0.26.3"
 tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
 */
+use crate::errors::BuildRunError;
+use crate::log;
+use crate::logging::Verbosity;
 
 use crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, Event::Paste,
@@ -28,12 +31,10 @@ use std::error::Error;
 use std::io::{self, IsTerminal};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
-use crate::errors::BuildRunError;
-
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {
     for line in &edit_stdin()? {
-        println!("{line}");
+        log!(Verbosity::Normal, "{line}");
     }
     Ok(())
 }
@@ -133,7 +134,7 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
 
 /// Prompt for and read Rust source code from stdin.
 pub fn read_stdin() -> Result<String, std::io::Error> {
-    println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
+    log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
         if cfg!(windows) { 'Z' } else { 'D' }
     );
     use std::io::Read;

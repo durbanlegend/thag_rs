@@ -1,3 +1,15 @@
+use crate::cmd_args::{Cli, ProcFlags};
+use crate::errors::BuildRunError;
+use crate::log;
+use crate::logging::Verbosity;
+use crate::modified_since_compiled;
+use crate::DYNAMIC_SUBDIR;
+use crate::REPL_SUBDIR;
+use crate::RS_SUFFIX;
+use crate::TEMP_SCRIPT_NAME;
+use crate::TMPDIR;
+use crate::TOML_NAME;
+
 use home::home_dir;
 use log::debug;
 use proc_macro2::TokenStream;
@@ -10,16 +22,6 @@ use std::str::FromStr;
 use std::{path::PathBuf, time::Instant};
 use strum::Display;
 use toml::Value;
-
-use crate::cmd_args::{Cli, ProcFlags};
-use crate::errors::BuildRunError;
-use crate::modified_since_compiled;
-use crate::DYNAMIC_SUBDIR;
-use crate::REPL_SUBDIR;
-use crate::RS_SUFFIX;
-use crate::TEMP_SCRIPT_NAME;
-use crate::TMPDIR;
-use crate::TOML_NAME;
 
 #[derive(Clone, Debug, Display)]
 /// Abstract syntax tree wrapper for use with syn.
@@ -460,7 +462,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
 
     debug!("{msg}");
     if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        println!("{msg}");
+        log!(Verbosity::Quiet, "{msg}");
     }
 }
 

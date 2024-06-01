@@ -9,12 +9,12 @@ supports-color= "3.0.0"
 termbg = "0.5.0"
 wsl = "0.1.0"
 */
-
-use std::{fmt::Display, str::FromStr};
+use crate::log;
+use crate::logging::Verbosity;
 
 use lazy_static::lazy_static;
 use log::debug;
-
+use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
@@ -56,7 +56,7 @@ macro_rules! nu_color_println {
         let content = format!("{}", format_args!($($arg)*));
      let style = $style;
     // Qualified form to avoid imports in calling code.
-    if cfg!(windows) {println!("{}\r", style.paint(content));} else {println!("{}", style.paint(content)); }
+    if cfg!(windows) {log!(Verbosity::Normal, "{}\r", style.paint(content));} else {log!(Verbosity::Normal, "{}", style.paint(content)); }
     }};
 }
 
@@ -217,22 +217,30 @@ fn main() {
 
     match color_support {
         None => {
-            println!("No colour support found for terminal");
+            log!(Verbosity::Normal, "No colour support found for terminal");
         }
         Some(support) => {
             let style = nu_resolve_style(MessageLevel::Warning);
-            println!("{}", style.paint("Colored Warning message\n"));
+            log!(
+                Verbosity::Normal,
+                "{}",
+                style.paint("Colored Warning message\n")
+            );
 
             for variant in MessageStyle::iter() {
                 let variant_string: &str = &variant.to_string();
-                println!("My {} message", variant.get_style().paint(variant_string));
+                log!(
+                    Verbosity::Normal,
+                    "My {} message",
+                    variant.get_style().paint(variant_string)
+                );
             }
 
             if matches!(support, ColorSupport::Xterm256) {
-                println!();
+                log!(Verbosity::Normal, "");
                 XtermColor::iter().for_each(|variant| {
                     let color = variant.get_color();
-                    println!("{}", color.paint(variant.to_string()));
+                    log!(Verbosity::Normal, "{}", color.paint(variant.to_string()));
                 });
             }
         }

@@ -3,6 +3,8 @@ use crate::code_utils::{
     process_expr, read_file_contents, rustfmt, strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::errors::BuildRunError;
+use crate::log;
+use crate::logging::Verbosity;
 use crate::manifest;
 use crate::repl::run_repl;
 use crate::shared::CargoManifest;
@@ -270,15 +272,17 @@ pub fn gen_build_run(
             } else {
                 // demo/fizz_buzz.rs broke this: not an expression but still a valid snippet.
                 // format!(r#"println!("Expression returned {{}}", {rs_source});"#)
-                debug!("dbg!(rs_source)={}", dbg!(rs_source.clone()));
-                dbg!(rs_source)
+                // debug!("dbg!(rs_source)={}", dbg!(rs_source.clone()));
+                // dbg!(rs_source)
+                rs_source
             };
             // display_timings(&start_quote, "Completed quote", proc_flags);
             wrap_snippet(&rust_code.to_string())
         };
         generate(build_state, &rs_source, proc_flags)?;
     } else {
-        println!(
+        log!(
+            Verbosity::Normal,
             "{}",
             nu_ansi_term::Color::Yellow
                 // .bold()
@@ -290,7 +294,8 @@ pub fn gen_build_run(
     if build_state.must_build {
         build(proc_flags, build_state)?;
     } else {
-        println!(
+        log!(
+            Verbosity::Normal,
             "{}",
             nu_ansi_term::Color::Yellow
                 // .bold()
@@ -318,7 +323,6 @@ pub fn generate(
     proc_flags: &ProcFlags,
 ) -> Result<(), Box<dyn Error>> {
     let start_gen = Instant::now();
-    let verbose = proc_flags.contains(ProcFlags::VERBOSE);
 
     debug!("In generate, proc_flags={proc_flags}");
 
@@ -334,9 +338,11 @@ pub fn generate(
     let target_rs_path = build_state.target_dir_path.clone();
     let target_rs_path = target_rs_path.join(&build_state.source_name);
     // let is_repl = proc_flags.contains(ProcFlags::REPL);
-    if verbose {
-        println!("GGGGGGGG Creating source file: {target_rs_path:?}");
-    }
+    log!(
+        Verbosity::Verbose,
+        "GGGGGGGG Creating source file: {target_rs_path:?}"
+    );
+
     write_source(&target_rs_path, rs_source)?;
     rustfmt(build_state)?;
 
@@ -395,12 +401,19 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     build_command.args(&args); // .current_dir(build_dir);
 
     // Show sign of life in case build takes a while
-    eprintln!("Building...");
+    log!(Verbosity::Normal, "Building...");
 
-    // Redirect stdout and stderr to inherit from the parent process (terminal)
-    build_command
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit());
+    if quiet {
+        // Pipe output: TODO: debug
+        build_command
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+    } else {
+        // Redirect stdout and stderr to inherit from the parent process (terminal)
+        build_command
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit());
+    }
 
     // Execute the command and handle the result
     let output = build_command
@@ -448,11 +461,21 @@ pub fn run(
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    println!("{}", nu_ansi_term::Color::Yellow.paint(dash_line.clone()));
+    // println!("{}", nu_ansi_term::Color::Yellow.paint(dash_line.clone()));
+    log!(
+        Verbosity::Normal,
+        "{}",
+        nu_ansi_term::Color::Yellow.paint(dash_line.clone())
+    );
 
     let _exit_status = run_command.spawn()?.wait()?;
 
-    println!("{}", nu_ansi_term::Color::Yellow.paint(dash_line.clone()));
+    // println!("{}", nu_ansi_term::Color::Yellow.paint(dash_line.clone()));
+    log!(
+        Verbosity::Normal,
+        "{}",
+        nu_ansi_term::Color::Yellow.paint(dash_line.clone())
+    );
 
     // debug!("Exit status={exit_status:#?}");
 

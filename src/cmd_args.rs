@@ -1,5 +1,5 @@
-use crate::errors::BuildRunError;
-use crate::RS_SUFFIX;
+use crate::{errors::BuildRunError, logging::Verbosity};
+use crate::{logging, RS_SUFFIX};
 
 use bitflags::bitflags;
 use clap::Parser;
@@ -155,6 +155,16 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::STDIN, args.stdin);
         proc_flags.set(ProcFlags::EDIT, args.edit);
 
+        let verbosity = if args.verbose {
+            Verbosity::Verbose
+        } else if args.quiet {
+            Verbosity::Quiet
+        } else {
+            Verbosity::Normal
+        };
+        logging::set_global_verbosity(verbosity);
+
+        // Check all good
         let formatted = proc_flags.to_string();
         let parsed = formatted
             .parse::<ProcFlags>()

@@ -11,13 +11,16 @@ use std::time::Instant;
 
 use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 use crate::errors::BuildRunError;
+use crate::log;
+use crate::logging::Verbosity;
 use crate::shared::{debug_timings, Ast, BuildState, CargoManifest, Dependency, Feature};
 use crate::term_colors::{nu_resolve_style, MessageLevel};
 pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();
 
     let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(dep_crate);
-    println!(
+    log!(
+        Verbosity::Normal,
         r#"
             Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
             To speed up build, consider embedding the required {dep_crate_styled} = "<version>"
@@ -69,7 +72,10 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
                     "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"
                 ))));
             }
-            println!(r#"Cargo found dependency {name} = "{version}""#);
+            log!(
+                Verbosity::Normal,
+                r#"Cargo found dependency, which you can copy if you don't need special features:\n{name} = "{version}""#
+            );
             (name, version)
         }
         Err(err) => {
@@ -93,11 +99,11 @@ pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn 
         let captures = RE.captures(first_line).unwrap();
         let name = captures.get(1).unwrap().as_str();
         let version = captures.get(2).unwrap().as_str();
-        // println!("Dependency name: {}", name);
-        // println!("Dependency version: {}", version);
+        // log!(Verbosity::Normal, "Dependency name: {}", name);
+        // log!(Verbosity::Normal, "Dependency version: {}", version);
         (String::from(name), String::from(version))
     } else {
-        println!("Not a valid Cargo dependency format.");
+        log!(Verbosity::Quiet, "Not a valid Cargo dependency format.");
         return Err(Box::new(BuildRunError::Command(
             "Not a valid Cargo dependency format".to_string(),
         )));
@@ -132,7 +138,7 @@ path = "{gen_src_path}"
 "##
     );
 
-    // eprintln!("cargo_manifest=\n{cargo_manifest}");
+    // log!(Verbosity::Normal, "cargo_manifest=\n{cargo_manifest}");
 
     CargoManifest::from_str(&cargo_manifest)
 }

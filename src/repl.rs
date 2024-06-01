@@ -1,12 +1,15 @@
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast, extract_manifest};
 use crate::errors::BuildRunError;
+use crate::log;
+use crate::logging::Verbosity;
 use crate::shared::Ast;
 use crate::{
     gen_build_run, nu_color_println,
     shared::BuildState,
     term_colors::{nu_resolve_style, MessageLevel},
 };
+
 use clap::Parser;
 use log::debug;
 // use quote::quote;
@@ -107,7 +110,7 @@ pub fn run_repl(
     let cmd_list = "eval or one of: ".to_owned() + &cmd_vec.join(", ") + " or help";
     #[allow(unused_variables)]
     // let outer_prompt = || {
-    //     println!(
+    //     log!(Verbosity::Normal,
     //         "{}",
     //         nu_resolve_style(MessageLevel::OuterPrompt)
     //             .paint(format!("Enter {}", cmd_list))
@@ -199,9 +202,12 @@ fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
     if clean_up.is_ok()
         || (!&build_state.source_path.exists() && !&build_state.target_dir_path.exists())
     {
-        println!("Deleted");
+        log!(Verbosity::Normal, "Deleted");
     } else {
-        println!("Failed to delete all files - enter l(ist) to list remaining files");
+        log!(
+            Verbosity::Normal,
+            "Failed to delete all files - enter l(ist) to list remaining files"
+        );
     }
     Ok(Some(String::from("End of delete")))
 }
@@ -243,7 +249,7 @@ fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
     debug!("In run_expr: build_state={build_state:#?}");
     let result = gen_build_run(options, proc_flags, build_state, None::<Ast>, start);
     if result.is_err() {
-        println!("{result:?}");
+        log!(Verbosity::Normal, "{result:?}");
     }
     Ok(Some(String::from("End of run")))
 }
@@ -342,7 +348,7 @@ fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
     let build_state = &context.build_state;
     let source_path = &build_state.source_path;
     if source_path.exists() {
-        println!("File: {:?}", &source_path);
+        log!(Verbosity::Normal, "File: {:?}", &source_path);
     }
 
     // Display directory contents
@@ -350,7 +356,7 @@ fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 
     // Check if neither file nor directory exist
     if !&source_path.exists() && !&build_state.target_dir_path.exists() {
-        println!("No temporary files found");
+        log!(Verbosity::Normal, "No temporary files found");
     }
     Ok(Some(String::from("End of list")))
 }
@@ -358,6 +364,6 @@ fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
 fn quit(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    println!("Done");
+    log!(Verbosity::Normal, "Done");
     std::process::exit(0);
 }

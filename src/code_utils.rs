@@ -1,6 +1,8 @@
 use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::errors::BuildRunError;
+use crate::log;
+use crate::logging::Verbosity;
 use crate::shared::{debug_timings, Ast, BuildState, CargoManifest};
 use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
@@ -30,11 +32,6 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     let use_crates = find_use_crates_ast(syntax_tree);
     let extern_crates = find_extern_crates_ast(syntax_tree);
     let use_renames = find_use_renames_ast(syntax_tree);
-
-    // match syntax_tree {
-    //     Ast::File(ast) => debug!("&&&&&&&& Ast={ast:#?}"),
-    //     Ast::Expr(ast) => debug!("&&&&&&&& Ast={ast:#?}"),
-    // }
 
     let mut dependencies = Vec::new();
     let built_in_crates = ["std", "core", "alloc", "collections", "fmt", "crate"];
@@ -275,7 +272,7 @@ pub fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
         // Try putting the expression in braces.
         let string = format!(r"{{{rs_source}}}");
         let str = string.as_str();
-        println!("str={str}");
+        log!(Verbosity::Normal, "str={str}");
 
         expr = syn::parse_str::<Expr>(str);
     }
@@ -294,7 +291,7 @@ pub fn process_expr(
     let syntax_tree = Some(Ast::Expr(expr_ast.clone()));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(options, proc_flags, build_state, syntax_tree, start);
-    println!("{result:?}");
+    log!(Verbosity::Normal, "{result:?}");
     Ok(())
 }
 
@@ -349,15 +346,15 @@ pub fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     // let stdout = output.stdout;
 
     // Print the captured stdout
-    println!("Captured stdout:");
+    log!(Verbosity::Normal, "Captured stdout:");
     for result in output.stdout.lines() {
-        println!("{}", result?);
+        log!(Verbosity::Normal, "{}", result?);
     }
 
     // Print the captured stderr
-    println!("Captured stderr:");
+    log!(Verbosity::Normal, "Captured stderr:");
     for result in output.stderr.lines() {
-        println!("{}", result?);
+        log!(Verbosity::Normal, "{}", result?);
     }
     Ok(())
 }
@@ -425,7 +422,10 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
         }
     }
     if let Some(file) = most_recent {
-        println!("The most recently modified file compared to {executable:#?} is: {file:#?}");
+        log!(
+            Verbosity::Normal,
+            "The most recently modified file compared to {executable:#?} is: {file:#?}"
+        );
         debug!("Executable modified time is{baseline_modified:#?}");
     } else {
         debug!("Neither file was modified more recently than {executable:#?}");
@@ -697,12 +697,13 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
-        println!("Directory listing for {:?}", path);
+        log!(Verbosity::Normal, "Directory listing for {:?}", path);
         for entry in entries {
             let entry = entry?;
             let file_type = entry.file_type()?;
             let file_name = entry.file_name();
-            println!(
+            log!(
+                Verbosity::Normal,
                 "  {file_name:?} ({})",
                 if file_type.is_dir() {
                     "Directory"
@@ -747,7 +748,10 @@ pub fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
             );
         }
     } else {
-        eprintln!("`rustfmt` not found. Please install it to use this script.");
+        log!(
+            Verbosity::Quiet,
+            "`rustfmt` not found. Please install it to use this script."
+        );
     }
     Ok(())
 }

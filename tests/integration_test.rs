@@ -1,7 +1,6 @@
 // tests/integration_test.rs
 
 use clap::Parser;
-use log::debug;
 use rs_script::{execute, Cli, DYNAMIC_SUBDIR, TMPDIR};
 use std::env;
 use std::fs::File;

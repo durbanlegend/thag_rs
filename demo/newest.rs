@@ -2,7 +2,7 @@ use std::fs;
 
 fn main() {
     let files = [
-        "examples/factorial_main.rs",
+        "demo/factorial_main.rs",
         ".cargo/factorial_main/Cargo.toml",
         ".cargo/factorial_main/target/debug/factorial_main",
     ];

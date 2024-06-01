@@ -15,7 +15,7 @@ println!(
             "method": "textDocument/completion",
             "params": {
                 "textDocument": {
-                    "uri": "file://Users/donf/projects/rs-script/examples/fib_big_clap.rs"
+                    "uri": "file://Users/donf/projects/rs-script/demo/fib_big_clap.rs"
                 },
                 "position": {
                     "line": 15,

@@ -3,7 +3,7 @@ use std::io::{self, BufRead};
 
 fn main() {
     // Replace "your_source_file.rs" with the path to your Rust source file
-    if let Ok(file) = fs::File::open("examples/has_main.rs") {
+    if let Ok(file) = fs::File::open("demo/has_main.rs") {
         let reader = io::BufReader::new(file);
         for line in reader.lines() {
             if let Ok(line) = line {

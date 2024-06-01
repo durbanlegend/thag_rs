@@ -2,7 +2,7 @@ use regex::Regex;
 use std::io::{self, Read};
 
 /// Remove leading and trailing double quotes and unescape embedded quotes
-/// from a string. Intended for cleaning up old history logs (examples/y) after
+/// from a string. Intended for cleaning up old history logs (demo/y) after
 /// using unescape_nl2.rs.
 #[inline]
 pub(crate) fn disentangle(text_wall: &str) -> String {

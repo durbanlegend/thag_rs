@@ -2,13 +2,13 @@ use std::fs;
 use std::path::Path;
 
 fn main() {
-    let examples_dir = Path::new("examples");
+    let demo_dir = Path::new("demo");
 
-    // Ensure examples subdirectory exists
-    fs::create_dir_all(examples_dir).expect("Failed to create examples directory");
+    // Ensure demo subdirectory exists
+    fs::create_dir_all(demo_dir).expect("Failed to create demo directory");
 
     // Find existing files with the pattern repl_<nnnnnn>.rs
-    let existing_files: Vec<_> = fs::read_dir(examples_dir)
+    let existing_files: Vec<_> = fs::read_dir(demo_dir)
         .unwrap()
         .filter_map(|entry| {
             let path = entry.unwrap().path();
@@ -39,21 +39,21 @@ fn main() {
             // Wrap around and find the first gap
             for i in 0..999999 {
                 if !existing_files.contains(&i) {
-                    return create_file(examples_dir, i);
+                    return create_file(demo_dir, i);
                 }
             }
-            panic!("Cannot create new file: all possible filenames already exist in the examples directory.");
+            panic!("Cannot create new file: all possible filenames already exist in the demo directory.");
         }
         _ => existing_files.iter().max().unwrap() + 1, // Increment from highest existing number
     };
 
-    create_file(examples_dir, next_file_num);
+    create_file(demo_dir, next_file_num);
 }
 
-fn create_file(examples_dir: &Path, num: u32) {
+fn create_file(demo_dir: &Path, num: u32) {
     let padded_num = format!("{:06}", num);
     let filename = format!("repl_{}.rs", padded_num);
-    let path = examples_dir.join(&filename);
+    let path = demo_dir.join(&filename);
     fs::File::create(path).expect("Failed to create file");
     println!("Created file: {path:#?}");
 }

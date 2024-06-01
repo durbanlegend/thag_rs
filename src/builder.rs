@@ -268,7 +268,7 @@ pub fn gen_build_run(
                 )
                 .to_string()
             } else {
-                // examples/fizz_buzz.rs broke this: not an expression but still a valid snippet.
+                // demo/fizz_buzz.rs broke this: not an expression but still a valid snippet.
                 // format!(r#"println!("Expression returned {{}}", {rs_source});"#)
                 debug!("dbg!(rs_source)={}", dbg!(rs_source.clone()));
                 dbg!(rs_source)

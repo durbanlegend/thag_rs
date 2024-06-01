@@ -33,7 +33,7 @@ fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
-    let source_path = PathBuf::from("examples/repl_000012.rs");
+    let source_path = PathBuf::from("demo/repl_000012.rs");
     let target_dir_path = PathBuf::from(".cargo/repl_000012");
 
     // Display file listing

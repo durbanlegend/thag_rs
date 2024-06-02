@@ -18,20 +18,32 @@ fn main() {
 
     // This works!
     let fib1 = |n: usize| -> usize {
-        iterate((0, 1), |&(a, b)| (b, a + b))
-            .take(n + 1)
-            .last()
-            .unwrap()
-            .0
+        match n {
+            0 => 0_usize,
+            1 => 1_usize,
+            _ => {
+                iterate((0, 1), |&(a, b)| (b, a + b))
+                    .take(n)
+                    .last()
+                    .unwrap()
+                    .0
+            }
+        }
     };
 
     // This works too!
     let fib2 = |n: usize| -> usize {
-        successors(Some((0, 1)), |&(a, b)| Some((b, a + b)))
-            .take(n + 1)
-            .last()
-            .unwrap()
-            .0
+        match n {
+            0 => 0_usize,
+            1 => 1_usize,
+            _ => {
+                successors(Some((0, 1)), |&(a, b)| Some((b, a + b)))
+                    .take(n)
+                    .last()
+                    .unwrap()
+                    .0
+            }
+        }
     };
 
     let limit = 50_usize;
@@ -71,13 +83,15 @@ fn factorial(n: usize) -> Integer {
 }
 
 fn fibonacci(n: usize) -> usize {
-    if n == 0 {
-        n
-    } else {
-        let (mut a, mut b) = (0, 1);
-        for _ in 1..n {
-            (a, b) = (b, a + b);
+    match n {
+        0 => 0_usize,
+        1 => 1_usize,
+        _ => {
+            let (mut a, mut b) = (0, 1);
+            for _ in 1..n - 1 {
+                (a, b) = (b, a + b);
+            }
+            b
         }
-        b
     }
 }

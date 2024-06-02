@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 fn fib(n: usize) -> usize {
     itertools::iterate((0, 1), |&(a, b)| (b, a + b))
-        .take(n + 1)
+        .take(n)
         .last()
         .unwrap()
         .0

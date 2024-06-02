@@ -1,4 +1,4 @@
-#! /usr/bin/env /Users/donf/projects/rs-script/target/release/rs-script
+// #! /usr/bin/env /Users/donf/projects/rs-script/target/release/rs-script
 /*[toml]
 [dependencies]
 itertools = "0.12.1"
@@ -7,7 +7,7 @@ use itertools::Itertools;
 
 let fib = |n: usize| -> usize {
     itertools::iterate((0, 1), |&(a, b)| (b, a + b))
-        .take(n + 1)
+        .take(n)
         .last()
         .unwrap()
         .0

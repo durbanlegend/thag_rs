@@ -22,9 +22,8 @@ use std::error::Error;
 //      16.  Work on demo/reedline_clap_repl_gemini.rs
 //      17.  Put the more intractable long-term problems here in a separate TODO file?
 //      18.  How to set editor in Windows.
-//      19.  Verbosity enum as per cargo crate?
+//      19.
 
-#[allow(clippy::too_many_lines)]
 pub fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
     execute(args)?;

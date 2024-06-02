@@ -1,4 +1,4 @@
-// #! /usr/bin/env /Users/donf/projects/rs-script/target/release/rs-script
+#! /usr/bin/env /Users/donf/projects/rs-script/target/debug/rs_script
 /*[toml]
 [dependencies]
 itertools = "0.12.1"

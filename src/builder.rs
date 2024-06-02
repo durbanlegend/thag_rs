@@ -31,6 +31,7 @@ use std::{
     time::Instant,
 };
 
+#[allow(clippy::too_many_lines)]
 pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     configure_log();
@@ -215,6 +216,17 @@ pub fn gen_build_run(
         let source_path: &Path = &build_state.source_path;
         let start_parsing_rs = Instant::now();
         let mut rs_source = read_file_contents(source_path)?;
+
+        // Strip off any shebang: it may have got us here but we don't need it
+        // in the gen_build_run process.
+        rs_source = if rs_source.starts_with("#!") {
+            let split_once = rs_source.split_once('\n');
+            let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
+            debug!("Successfully stripped shebang {shebang}");
+            rust_code.to_string()
+        } else {
+            rs_source
+        };
         let rs_manifest: CargoManifest = {
             // debug_timings(&start_parsing_rs, "Parsed source");
             extract_manifest(&rs_source, start_parsing_rs)

@@ -14,7 +14,7 @@ use std::error::Error;
 //       9.  Decide if it's worth passing the wrapped syntax tree to gen_build_run from eval just to avoid
 //           re-parsing it for that specific use case.
 //      10.  Clean up debugging
-//  >>> 11.  Replace dbg by something less funky
+//  >>> 11.  Replace dbg by something less funky - or maybe a CLI option
 //      12.  "edit" crate - how to reconfigure editors dynamically - instructions unclear.
 //      13.  Clap aliases not working in REPL.
 //      14.  Get rid of date and time in RHS of REPL? - doesn't seem to be an option.

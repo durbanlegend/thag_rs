@@ -266,7 +266,8 @@ pub fn gen_build_run(
                     // .to_string()
                     // println!("Expression returned {:#?}", #syntax_tree_ref);)
                     // .to_string()
-                    dbg!(#syntax_tree_ref);
+                    // dbg!(#syntax_tree_ref);
+                    println!("{:#?}", #syntax_tree_ref);
                 )
                 .to_string()
             } else {

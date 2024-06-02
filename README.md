@@ -22,6 +22,7 @@ I also found that `rs-script` started to "write itself", by allowing me to exper
 ### Minimum Supported Rust Version
 The minimum supported Rust version (MSRV) for rs-script is 1.74.1.
 
+### TODO >>>
 You can install `rs-script` using `cargo install`:
 
 ```bash
@@ -34,9 +35,41 @@ Once installed, you can use rs-script from the command line. rs-script uses the 
 ### TODO >>>
 Here are some examples:
 
-### Running a script
+### Evaluating an expression
+#### Quickly calculate the factorial of a number up to 34 (overflows beyond that, but see demos for bigger numbers):
 ```bash
-rs-script [OPTIONS] path/to/your_script.rs
+rs-script -e '(1..=34_u128).product::<u128>()'
+```
+
+#### Shoehorn a script into an expression, just to prove a point of some kind:
+```bash
+rs-script -e "$(cat demo/fizz_buzz.rs)"
+```
+
+#### Run a script quietly except for timings
+```bash
+rs-script -tq demo/fizz_buzz.rs
+1
+2
+fizz
+4
+buzz
+fizz
+7
+8
+fizz
+buzz
+...
+fizz
+94
+buzz
+fizz
+97
+98
+fizz
+Completed run in 0.14s
+rs_script completed processing script fizz_buzz.rs in 0.15s
+
 ```
 
 ### Using the REPL

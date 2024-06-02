@@ -1,24 +1,26 @@
-//! [dependencies]
-//! egui = "0.27.0"
-//! eframe = { version = "0.27.0", default-features = false, features = [
-//!     "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
-//!     "default_fonts", # Embed the default egui fonts.
-//!     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
-//!     "persistence",   # Enable restoring app state when restarting the app.
-//! ] }
-//! log = "0.4"
-//!
-//! # You only need serde if you want app persistence:
-//! serde = { version = "1", features = ["derive"] }
-//! egui_extras = "0.27.2"
-//!
-//! env_logger = "0.10"
-//!
-//! [features]
-//! default = ["syntect"]
-//!
-//! ## Enable better syntax highlighting using [`syntect`](https://docs.rs/syntect).
-//! syntect = ["egui_extras/syntect"]
+/*[toml]
+[dependencies]
+egui = "0.27.0"
+eframe = { version = "0.27.0", default-features = false, features = [
+    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
+    "default_fonts", # Embed the default egui fonts.
+    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "persistence",   # Enable restoring app state when restarting the app.
+] }
+log = "0.4"
+
+# You only need serde if you want app persistence:
+serde = { version = "1", features = ["derive"] }
+egui_extras = "0.27.2"
+
+env_logger = "0.10"
+
+[features]
+default = ["syntect"]
+
+## Enable better syntax highlighting using [`syntect`](https://docs.rs/syntect).
+syntect = ["egui_extras/syntect"]
+*/
 
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
@@ -133,6 +135,7 @@ impl eframe::App for CodeEditor {
     }
 }
 
+/// A prototype GUI editor with saved state.
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result<()> {

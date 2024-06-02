@@ -1,8 +1,11 @@
-//! [dependencies]
-//! clap = { version = "4.5.3", features = ["derive"] }
-//! rug = { version = "1.24.0", features = ["integer"] }
+/*[toml]
+[dependencies]
+clap = { version = "4.5.3", features = ["derive"] }
+rug = { version = "1.24.0", features = ["integer"] }
+*/
 
-// Fast Fibonacci with big integers, no recursion
+/// Fast Fibonacci with big integers, no recursion.
+/// Won't work with default Windows 11.
 use clap::{Arg, Command};
 use rug::Integer;
 use std::iter::successors;

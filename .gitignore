@@ -40,3 +40,6 @@ xterm_colors.txt
 *.rsx
 demo/clap_default_value_ifs.rs
 demo/displayable.rs
+benches/support/mod.rs
+benches/support/tokiort.rs
+demo/hyper_client.rs

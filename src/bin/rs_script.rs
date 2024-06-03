@@ -23,6 +23,7 @@ use std::error::Error;
 //      17.  Put the more intractable long-term problems here in a separate TODO file?
 //      18.  How to set editor in Windows.
 //      19.  Consider other Rust gui packages.
+//      20.  Debug Cargo search happening for package defined with mod.
 
 pub fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();

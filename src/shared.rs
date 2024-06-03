@@ -60,13 +60,9 @@ impl FromStr for CargoManifest {
     }
 }
 
-impl ToString for CargoManifest {
-    fn to_string(&self) -> String {
-        {
-            let this = self;
-            toml::to_string(&this)
-        }
-        .unwrap()
+impl std::fmt::Display for CargoManifest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", toml::to_string(&self).unwrap())
     }
 }
 

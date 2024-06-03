@@ -19,7 +19,7 @@ use std::process::{Command, ExitStatus, Output};
 use std::str::FromStr;
 use std::time::{Instant, SystemTime};
 use syn::{visit::Visit, UseRename};
-use syn::{Expr, UsePath};
+use syn::{Expr, ItemExternCrate, ItemMod, UsePath};
 
 /// Read the contents of a file. For reading the Rust script.
 pub fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
@@ -32,6 +32,7 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     let use_crates = find_use_crates_ast(syntax_tree);
     let extern_crates = find_extern_crates_ast(syntax_tree);
     let use_renames = find_use_renames_ast(syntax_tree);
+    let modules = find_modules_ast(syntax_tree);
 
     let mut dependencies = Vec::new();
     let built_in_crates = ["std", "core", "alloc", "collections", "fmt", "crate"];
@@ -41,6 +42,7 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
             &crate_name,
             &built_in_crates,
             &use_renames,
+            &modules,
             &mut dependencies,
         );
     }
@@ -50,6 +52,7 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
             &crate_name,
             &built_in_crates,
             &use_renames,
+            &modules,
             &mut dependencies,
         );
     }
@@ -66,11 +69,15 @@ fn filter_deps_ast(
     crate_name: &str,
     built_in_crates: &[&str; 6],
     use_renames: &[String],
+    modules: &[String],
     dependencies: &mut Vec<String>,
 ) {
     let crate_name_string = crate_name.to_string();
     // Filter out "crate" entries
-    if !built_in_crates.contains(&crate_name) && !use_renames.contains(&crate_name_string) {
+    if !built_in_crates.contains(&crate_name)
+        && !use_renames.contains(&crate_name_string)
+        && !modules.contains(&crate_name_string)
+    {
         dependencies.push(crate_name_string);
     }
 }
@@ -99,7 +106,31 @@ fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
     finder.use_renames
 }
 
-/// Identify use crate statements for exclusion from Cargo.toml metadata: abstract syntax tree-based version.
+/// Identify modules for filtering use statements from Cargo.toml metadata: abstract syntax tree-based version.
+fn find_modules_ast(syntax_tree: &Ast) -> Vec<String> {
+    #[derive(Default)]
+    struct FindMods {
+        modules: Vec<String>,
+    }
+
+    impl<'a> Visit<'a> for FindMods {
+        fn visit_item_mod(&mut self, node: &'a ItemMod) {
+            self.modules.push(node.ident.to_string());
+        }
+    }
+
+    let mut finder = FindMods::default();
+
+    match syntax_tree {
+        Ast::File(ast) => finder.visit_file(ast),
+        Ast::Expr(ast) => finder.visit_expr(ast),
+    }
+
+    debug!("modules from ast={:#?}", finder.modules);
+    finder.modules
+}
+
+/// Identify use crate statements for inclusion in Cargo.toml metadata: abstract syntax tree-based version.
 fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     #[derive(Default)]
     struct FindCrates {
@@ -123,7 +154,7 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     finder.use_crates
 }
 
-/// Identify extern crate statements for inclusion in Cargo.toml metadata: abstract syntax tree-based version.
+/// Identify extern crate stxatements for inclusion in Cargo.toml metadata: abstract syntax tree-based version.
 fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     #[derive(Default)]
     struct FindCrates {
@@ -131,7 +162,7 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     }
 
     impl<'a> Visit<'a> for FindCrates {
-        fn visit_use_path(&mut self, node: &'a UsePath) {
+        fn visit_item_extern_crate(&mut self, node: &'a ItemExternCrate) {
             self.extern_crates.push(node.ident.to_string());
         }
     }
@@ -159,6 +190,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 
     debug!("######## In code_utils::infer_deps_from_source");
     let use_renames = find_use_renames_source(code);
+    let modules = find_modules_source(code);
 
     let mut dependencies = Vec::new();
 
@@ -171,6 +203,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
             &crate_name,
             &built_in_crates,
             &use_renames,
+            &modules,
             &mut dependencies,
         );
     }
@@ -183,6 +216,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
             &crate_name,
             &built_in_crates,
             &use_renames,
+            &modules,
             &mut dependencies,
         );
     }
@@ -193,6 +227,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
             &crate_name,
             &built_in_crates,
             &use_renames,
+            &modules,
             &mut dependencies,
         );
     }
@@ -209,11 +244,15 @@ fn filter_deps_source(
     crate_name: &str,
     built_in_crates: &[&str; 6],
     use_renames: &[String],
+    modules: &[String],
     dependencies: &mut Vec<String>,
 ) {
     if let Some((dep, _)) = crate_name.split_once(':') {
         let dep_string = dep.to_owned();
-        if !built_in_crates.contains(&dep) && !use_renames.contains(&dep_string) {
+        if !built_in_crates.contains(&dep)
+            && !use_renames.contains(&dep_string)
+            && !modules.contains(&dep_string)
+        {
             dependencies.push(dep_string);
         }
     }
@@ -238,6 +277,27 @@ pub fn find_use_renames_source(code: &str) -> Vec<String> {
 
     debug!("use_renames from source={use_renames:#?}");
     use_renames
+}
+
+/// Identify mod statements for exclusion from Cargo.toml metadata.
+/// Fallback version for when an abstract syntax tree cannot be parsed.
+pub fn find_modules_source(code: &str) -> Vec<String> {
+    lazy_static! {
+        static ref MODULE_REGEX: Regex = Regex::new(r"(?m)^[\s]*mod\s+([^;{]+)").unwrap();
+    }
+
+    debug!("######## In code_utils::find_use_renames_source");
+
+    let mut modules: Vec<String> = vec![];
+
+    for cap in MODULE_REGEX.captures_iter(code) {
+        let module = cap[1].to_string();
+        debug!("@@@@@@@@ use_rename={module}");
+        modules.push(module);
+    }
+
+    debug!("modules from source={modules:#?}");
+    modules
 }
 
 /// Extract embedded Cargo.toml metadata from a Rust source string.
@@ -436,11 +496,11 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
 /// Count the number of `main()` methods in an abstract syntax tree.
 pub(crate) fn count_main_methods(syntax_tree: &Ast) -> usize {
     #[derive(Default)]
-    struct FindCrates {
+    struct FindMainFns {
         main_method_count: usize,
     }
 
-    impl<'a> Visit<'a> for FindCrates {
+    impl<'a> Visit<'a> for FindMainFns {
         fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
             if node.sig.ident == "main" && node.sig.inputs.is_empty() {
                 self.main_method_count += 1;
@@ -448,7 +508,7 @@ pub(crate) fn count_main_methods(syntax_tree: &Ast) -> usize {
         }
     }
 
-    let mut finder = FindCrates::default();
+    let mut finder = FindMainFns::default();
 
     match syntax_tree {
         Ast::File(ast) => finder.visit_file(ast),

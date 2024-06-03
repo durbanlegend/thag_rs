@@ -12,14 +12,15 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     let server_addr = format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT);
     let _puffin_server = Server::new(&server_addr).unwrap();
     eprintln!("Run this to view profiling data:  puffin_viewer {server_addr}");
-
+    // DHF: add a delay up front to ensure it connects
     puffin::set_scopes_on(true);
+    std::thread::sleep(std::time::Duration::from_secs(10));
+
     puffin::profile_scope!("main");
 
     // Call new_frame at the start of the program
     puffin::GlobalProfiler::lock().new_frame();
 
-    // Your program logic
     let args;
     {
         puffin::profile_scope!("get_args");
@@ -43,12 +44,16 @@ fn get_args() -> Args {
     Args {}
 }
 
-fn execute(_args: Args) -> Result<(), Box<dyn Error>> {
+fn execute(args: Args) -> Result<(), Box<dyn Error>> {
     puffin::profile_function!();
-    for _ in 0..100 {
+    for i in 0..1000 {
         puffin::GlobalProfiler::lock().new_frame();
-        // Simulate work
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        {
+            puffin::profile_scope!("loop_iteration");
+            // Simulate work
+            eprintln!("Iteration: {}", i); // Add logging to observe progress
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
     }
     Ok(())
 }

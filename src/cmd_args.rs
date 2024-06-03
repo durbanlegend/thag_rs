@@ -54,6 +54,9 @@ pub struct Cli {
     /// Suppress unnecessary output
     #[arg(short, long, conflicts_with("verbose"))]
     pub quiet: bool,
+    /// Allow multiple main methods
+    #[arg(short, long)]
+    pub multimain: bool,
 }
 
 /// Getter for clap command-line arguments
@@ -99,6 +102,7 @@ bitflags! {
         const STDIN = 512;
         const EDIT = 1024;
         const QUIET = 2048;
+        const MULTI = 4096;
     }
 }
 
@@ -145,6 +149,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         );
         proc_flags.set(ProcFlags::FORCE, args.force);
         proc_flags.set(ProcFlags::QUIET, args.quiet);
+        proc_flags.set(ProcFlags::MULTI, args.multimain);
         proc_flags.set(ProcFlags::VERBOSE, args.verbose);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
         proc_flags.set(ProcFlags::RUN, args.run | args.all);

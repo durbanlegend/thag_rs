@@ -433,15 +433,8 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
     most_recent
 }
 
-/// Determine if a Rust script already has a main method: abstract syntax tree version.
-pub fn has_main(syntax_tree: &Ast) -> bool {
-    let main_methods = count_main_methods(syntax_tree);
-    debug!("main_methods={main_methods}");
-    has_one_main(main_methods)
-}
-
 /// Count the number of `main()` methods in an abstract syntax tree.
-fn count_main_methods(syntax_tree: &Ast) -> usize {
+pub(crate) fn count_main_methods(syntax_tree: &Ast) -> usize {
     #[derive(Default)]
     struct FindCrates {
         main_method_count: usize,
@@ -463,34 +456,6 @@ fn count_main_methods(syntax_tree: &Ast) -> usize {
     }
 
     finder.main_method_count
-}
-
-/// Determine if a Rust script already has a main method.
-/// Fallback version for when an abstract syntax tree cannot be parsed.
-pub fn has_main_alt(rs_source: &str) -> bool {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
-    }
-    let main_methods = RE.find_iter(rs_source).count();
-    debug!("main_methods={main_methods}");
-    has_one_main(main_methods)
-}
-
-/// Determine if a Rust script has a single main method or none.
-/// Terminate processing if there is more than one main method.
-fn has_one_main(main_methods: usize) -> bool {
-    match main_methods {
-        0 => false,
-        1 => true,
-        _ => {
-            writeln!(
-                &mut std::io::stderr(),
-                "Invalid source, contains {main_methods} occurrences of fn main(), at most 1 is allowed"
-            )
-            .unwrap();
-            std::process::exit(1);
-        }
-    }
 }
 
 /// Parse the code into an abstract syntax tree for inspection

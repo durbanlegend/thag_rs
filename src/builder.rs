@@ -21,7 +21,9 @@ use crate::{
 };
 
 use env_logger::{Builder, Env, WriteStyle};
+use lazy_static::lazy_static;
 use log::{debug, log_enabled, Level::Debug};
+use regex::Regex;
 use std::{
     error::Error,
     fs::{self, OpenOptions},
@@ -253,10 +255,29 @@ pub fn gen_build_run(
             )?);
         }
 
-        let has_main = if let Some(ref syntax_tree_ref) = syntax_tree {
-            code_utils::has_main(syntax_tree_ref)
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
+        }
+        let main_methods = if let Some(ref syntax_tree_ref) = syntax_tree {
+            code_utils::count_main_methods(syntax_tree_ref)
         } else {
-            code_utils::has_main_alt(&rs_source)
+            RE.find_iter(&rs_source).count()
+        };
+        let has_main = match main_methods {
+            0 => false,
+            1 => true,
+            _ => {
+                if options.multimain {
+                    true
+                } else {
+                    writeln!(
+                    &mut std::io::stderr(),
+                    "{main_methods} main methods found, only one allowed by default. Specify --multimain option to allow more"
+                )
+                .unwrap();
+                    std::process::exit(1);
+                }
+            }
         };
 
         // println!("######## build_state={build_state:#?}");

@@ -127,7 +127,7 @@ Dependencies will be inferred from imports if possible using a Cargo search, but
 of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
 comment block of the form
 /*[toml]
-[depedencies]
+[dependencies]
 ...
 */
 From here they will be extracted to a dedicated Cargo.toml file.

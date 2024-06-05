@@ -43,3 +43,4 @@ demo/displayable.rs
 benches/support/mod.rs
 benches/support/tokiort.rs
 demo/hyper_client.rs
+demo/yew_boids/

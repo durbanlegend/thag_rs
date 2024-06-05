@@ -10,6 +10,8 @@ log = "0.4"
 env_logger = "0.11"
 */
 
+/// Published demo of the profiling crate using the puffin profiler.
+
 //
 // Example of marking up all functions on an impl block
 //
@@ -98,7 +100,7 @@ impl eframe::App for TemplateApp {
         Foo::function1();
         Foo::function2();
 
-        println!("frame complete");
+        // println!("frame complete");
 
         puffin_egui::profiler_window(ctx);
 

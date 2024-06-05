@@ -249,6 +249,7 @@ fn filter_deps_source(
 ) {
     if let Some((dep, _)) = crate_name.split_once(':') {
         let dep_string = dep.to_owned();
+        eprintln!("dep_string={dep_string}, built_in_crates={built_in_crates:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
         if !built_in_crates.contains(&dep)
             && !use_renames.contains(&dep_string)
             && !modules.contains(&dep_string)
@@ -283,7 +284,7 @@ pub fn find_use_renames_source(code: &str) -> Vec<String> {
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 pub fn find_modules_source(code: &str) -> Vec<String> {
     lazy_static! {
-        static ref MODULE_REGEX: Regex = Regex::new(r"(?m)^[\s]*mod\s+([^;{]+)").unwrap();
+        static ref MODULE_REGEX: Regex = Regex::new(r"(?m)^[\s]*mod\s+([^;{\s]+)").unwrap();
     }
 
     debug!("######## In code_utils::find_use_renames_source");
@@ -292,7 +293,7 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
 
     for cap in MODULE_REGEX.captures_iter(code) {
         let module = cap[1].to_string();
-        debug!("@@@@@@@@ use_rename={module}");
+        debug!("@@@@@@@@ module={module}");
         modules.push(module);
     }
 

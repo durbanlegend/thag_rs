@@ -16,8 +16,11 @@ let fac1 = |n: usize| -> UBig {
     }
 };
 
+let ubig_1 = ubig!(1);
 let fac2 = |n: usize| -> UBig {
-    successors(Some((ubig!(1), ubig!(1))), |(a, b)| Some(((*&a + ubig!(1)), (*&a + ubig!(1)) * b)))
+    successors(Some((ubig!(1), ubig!(1))), |(a, b)| {
+        Some(((*&a + &ubig_1), (*&a + ubig!(1)) * b))
+    })
         .take(n)
         .last()
         .unwrap()

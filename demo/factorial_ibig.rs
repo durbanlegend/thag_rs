@@ -7,7 +7,7 @@ use ibig::{ubig, UBig};
 use std::io::Read;
 use std::iter::successors;
 
-// Closure could just as well be a method
+// Closures could just as well be methods
 let fac1 = |n: usize| -> UBig {
     if n == 0 {
         ubig!(0)
@@ -16,10 +16,14 @@ let fac1 = |n: usize| -> UBig {
     }
 };
 
+// Can't substitute this in initial values (which hardly matter anyway)
+// without getting further down a deferencing rabbit hole and ending up cloning.
 let ubig_1 = ubig!(1);
+
+// Using successors is possible, but turns out pretty inscrutable
 let fac2 = |n: usize| -> UBig {
     successors(Some((ubig!(1), ubig!(1))), |(a, b)| {
-        Some(((*&a + &ubig_1), (*&a + ubig!(1)) * b))
+        Some(((*&a + &ubig_1), (*&a + &ubig_1) * b))
     })
         .take(n)
         .last()

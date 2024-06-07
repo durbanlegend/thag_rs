@@ -21,19 +21,9 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
     let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(dep_crate);
     log!(
         Verbosity::Normal,
-        r#"
-            Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
-            To speed up build, consider embedding the required {dep_crate_styled} = "<version>"
-            in a block comment at the top of the script, in the form:
-            /*[toml]
-            [dependencies]
-            {dep_crate_styled} = "n.n.n"
-            */
-            E.g.:
-    /*[toml]
-[dependencies]
-{dep_crate_styled} = "<version n.n.n goes here>"
-*/"#,
+        r#"Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
+See below for how to avoid this and speed up future builds.
+"#,
     );
 
     let mut search_command = Command::new("cargo");
@@ -72,10 +62,19 @@ pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn 
                     "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"
                 ))));
             }
+
+            let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(&name);
+            let dep_version_styled = nu_resolve_style(MessageLevel::Emphasis).paint(&version);
+
             log!(
                 Verbosity::Normal,
-                r#"Cargo found the following dependency, which you can copy into the toml block if you don't need special features:
-{name} = "{version}""#
+                r#"Cargo found the following dependency, which you can copy into the toml block
+as shown if you don't need special features:
+/*[toml]
+[dependencies]
+{dep_crate_styled} = "{dep_version_styled}"
+*/
+"#
             );
             (name, version)
         }
@@ -121,8 +120,7 @@ pub(crate) fn default_manifest(build_state: &BuildState) -> Result<CargoManifest
     let gen_src_path = escape_path_for_windows(gen_src_path);
 
     let cargo_manifest = format!(
-        r##"
-[package]
+        r##"[package]
 name = "{source_stem}"
 version = "0.0.1"
 edition = "2021"

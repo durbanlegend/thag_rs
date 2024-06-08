@@ -249,7 +249,7 @@ fn filter_deps_source(
 ) {
     if let Some((dep, _)) = crate_name.split_once(':') {
         let dep_string = dep.to_owned();
-        eprintln!("dep_string={dep_string}, built_in_crates={built_in_crates:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
+        // debug!("dep_string={dep_string}, built_in_crates={built_in_crates:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
         if !built_in_crates.contains(&dep)
             && !use_renames.contains(&dep_string)
             && !modules.contains(&dep_string)
@@ -314,6 +314,8 @@ pub fn extract_manifest(
     } else {
         CargoManifest::from_str("")?
     };
+
+    // debug!("rs_manifest={rs_manifest:#?}");
 
     debug_timings(&start_parsing_rs, "Parsed source");
     Ok(rs_manifest)

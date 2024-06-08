@@ -41,16 +41,18 @@ impl ToTokens for Ast {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct CargoManifest {
     #[serde(default = "default_package")]
-    pub(crate) package: Package,
-    pub(crate) dependencies: Option<Dependencies>,
-    pub(crate) features: Option<Features>,
+    pub package: Package,
+    pub dependencies: Option<Dependencies>,
+    pub features: Option<Features>,
     #[serde(default)]
-    pub(crate) workspace: Workspace,
+    pub workspace: Workspace,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub(crate) bin: Vec<Product>,
+    pub bin: Vec<Product>,
+    pub lib: Option<Product>,
 }
 
 impl FromStr for CargoManifest {
@@ -69,7 +71,7 @@ impl std::fmt::Display for CargoManifest {
 #[allow(dead_code)]
 impl CargoManifest {
     // Save the CargoManifest struct to a Cargo.toml file
-    pub(crate) fn save_to_file(&self, path: &str) -> Result<(), BuildRunError> {
+    pub fn save_to_file(&self, path: &str) -> Result<(), BuildRunError> {
         let toml_string = {
             let this = self;
             toml::to_string(&this)
@@ -84,18 +86,18 @@ impl CargoManifest {
 // Default function for the `package` field
 fn default_package() -> Package {
     Package {
-        name: String::from("your_project_name"),
+        name: String::from("your_script_name"),
         version: String::from("0.1.0"),
         edition: default_edition(),
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub(crate) struct Package {
-    pub(crate) name: String,
-    pub(crate) version: String,
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct Package {
+    pub name: String,
+    pub version: String,
     #[serde(default = "default_edition")]
-    pub(crate) edition: String,
+    pub edition: String,
 }
 
 // Default function for the `edition` field
@@ -113,7 +115,7 @@ impl Default for Package {
     }
 }
 
-pub(crate) type Dependencies = BTreeMap<String, Dependency>;
+pub type Dependencies = BTreeMap<String, Dependency>;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Dependency {
@@ -224,18 +226,20 @@ impl Default for DependencyDetail {
     }
 }
 
-pub(crate) type Features = BTreeMap<String, Vec<Feature>>;
+pub type Features = BTreeMap<String, Vec<Feature>>;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Feature {
     Simple(String),
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct Product {
     pub path: Option<String>,
     pub name: Option<String>,
     pub required_features: Option<Vec<String>>,
+    pub crate_type: Option<Vec<String>>,
 }
 
 #[allow(dead_code)]
@@ -243,8 +247,8 @@ fn default_package_version() -> String {
     "0.0.1".to_string()
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub(crate) struct Workspace {}
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Workspace {}
 
 #[derive(Clone, Debug, Default)]
 pub struct BuildState {

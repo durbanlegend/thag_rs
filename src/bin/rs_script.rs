@@ -24,7 +24,7 @@ use std::error::Error;
 //      18.  How to set editor in Windows.
 //      19.  Consider other Rust gui packages.
 //      20.  Debug Cargo search happening for package defined with mod - AST OK, still to test source-regex example
-//      21.  Find a WASM demo
+//      21.  Find a WASM demo - try trunk vanilla rust example generating html?
 
 pub fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();

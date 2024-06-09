@@ -325,7 +325,7 @@ impl BuildState {
 
         debug!("script_path={script_path:#?}");
         let source_path = script_path.canonicalize()?;
-        debug!("source_dir_path={source_path:#?}");
+        debug!("source_path={source_path:#?}");
         if !source_path.exists() {
             return Err(Box::new(BuildRunError::Command(format!(
                 "No script named {} or {} in path {source_path:?}",

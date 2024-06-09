@@ -133,9 +133,11 @@ fn test_build_state_pre_configure() {
 
     let proc_flags = ProcFlags::empty();
     let cli = Cli::default();
+    let path_to_script = "tests/assets/test_script.rs";
+    let script = path_to_script;
     let script_state = ScriptState::Named {
-        script: "test_script.rs".to_string(),
-        script_dir_path: PathBuf::from("/path/to/scripts"),
+        script: script.to_string(),
+        script_dir_path: PathBuf::from(script),
     };
 
     let build_state = BuildState::pre_configure(&proc_flags, &cli, &script_state).unwrap();
@@ -144,9 +146,16 @@ fn test_build_state_pre_configure() {
     assert_eq!(build_state.source_name, "test_script.rs");
     assert_eq!(
         build_state.source_dir_path,
-        PathBuf::from("/path/to/scripts")
+        PathBuf::from(path_to_script)
+            .parent()
+            .unwrap()
+            .canonicalize()
+            .unwrap()
     );
-    assert_eq!(build_state.cargo_home, PathBuf::from("/path/to/scripts"));
+    assert_eq!(
+        build_state.cargo_home,
+        PathBuf::from(std::env::var("CARGO_HOME").unwrap())
+    );
 }
 
 #[test]

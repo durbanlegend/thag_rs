@@ -10,7 +10,7 @@ use std::error::Error;
 
 /// rs-script script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Clone, Parser, Debug)]
+#[derive(Clone, Default, Parser, Debug)]
 #[command(name = "rs_script")]
 pub struct Cli {
     /// Optional name of a script to run

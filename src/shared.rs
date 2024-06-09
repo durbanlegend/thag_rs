@@ -1,6 +1,5 @@
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::errors::BuildRunError;
-use crate::log;
 use crate::logging::Verbosity;
 use crate::modified_since_compiled;
 use crate::DYNAMIC_SUBDIR;
@@ -9,6 +8,7 @@ use crate::RS_SUFFIX;
 use crate::TEMP_SCRIPT_NAME;
 use crate::TMPDIR;
 use crate::TOML_NAME;
+use crate::{log, PACKAGE_NAME};
 
 use home::home_dir;
 use log::debug;
@@ -337,18 +337,14 @@ impl BuildState {
             .parent()
             .expect("Problem resolving to parent directory")
             .to_path_buf();
-        let cargo_home = if is_repl {
-            working_dir_path.clone()
-        } else {
-            PathBuf::from(match std::env::var("CARGO_HOME") {
-                Ok(string) if string != String::new() => string,
-                _ => {
-                    let home_dir = home_dir().ok_or("Can't resolve home directory")?;
-                    debug!("home_dir={}", home_dir.display());
-                    home_dir.join(".cargo").display().to_string()
-                }
-            })
-        };
+        let cargo_home = PathBuf::from(match std::env::var("CARGO_HOME") {
+            Ok(string) if string != String::new() => string,
+            _ => {
+                let home_dir = home_dir().ok_or("Can't resolve home directory")?;
+                debug!("home_dir={}", home_dir.display());
+                home_dir.join(".cargo").display().to_string()
+            }
+        });
         debug!("cargo_home={}", cargo_home.display());
 
         let target_dir_path = if is_repl {
@@ -359,7 +355,7 @@ impl BuildState {
         } else if is_dynamic {
             TMPDIR.join(DYNAMIC_SUBDIR)
         } else {
-            cargo_home.join(&source_stem)
+            TMPDIR.join(PACKAGE_NAME).join(&source_stem)
         };
 
         debug!("target_dir_path={}", target_dir_path.display());

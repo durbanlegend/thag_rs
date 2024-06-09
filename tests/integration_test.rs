@@ -3,7 +3,7 @@
 use clap::Parser;
 use rs_script::{execute, Cli, DYNAMIC_SUBDIR, TMPDIR};
 use std::env;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -11,16 +11,17 @@ use std::path::PathBuf;
 fn test_script_runner_with_dependencies() -> Result<(), Box<dyn std::error::Error>> {
     // Create a temporary directory for the test project
     let temp_dir: PathBuf = TMPDIR.join(DYNAMIC_SUBDIR);
-
+    fs::create_dir_all(&temp_dir).expect("Failed to create temp_dir directory");
     // Create a sample script file with a dependency
     let source_path = temp_dir.join("script.rs");
     let mut script_file = File::create(&source_path)?;
+    let rs_script_path = env::current_dir()?;
     write!(
         script_file,
         r#"/*[toml]
 [dependencies]
 nu-ansi-term = "0.50.0"
-rs_script = {{ path = "/Users/donf/projects/rs-script" }}
+rs_script = {{ path = {rs_script_path:#?} }}
 */
 use rs_script::term_colors::{{nu_resolve_style, MessageLevel}};
 use rs_script::log;

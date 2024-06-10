@@ -1,5 +1,6 @@
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast, extract_manifest};
+use crate::debug_log;
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
@@ -11,8 +12,6 @@ use crate::{
 };
 
 use clap::Parser;
-use log::debug;
-// use quote::quote;
 use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
     PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
@@ -238,7 +237,7 @@ fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
         context.start,
     );
 
-    debug!("In run_expr: build_state={build_state:#?}");
+    debug_log!("In run_expr: build_state={build_state:#?}");
     let result = gen_build_run(options, proc_flags, build_state, None::<Ast>, start);
     if result.is_err() {
         log!(Verbosity::Quiet, "{result:?}");

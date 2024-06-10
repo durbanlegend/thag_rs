@@ -1,5 +1,6 @@
 use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
+use crate::debug_log;
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
@@ -7,7 +8,6 @@ use crate::shared::{debug_timings, Ast, BuildState, CargoManifest};
 use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use lazy_static::lazy_static;
-use log::debug;
 use regex::Regex;
 use std::error::Error;
 use std::fs;
@@ -23,7 +23,7 @@ use syn::{Expr, ItemExternCrate, ItemMod, UsePath};
 
 /// Read the contents of a file. For reading the Rust script.
 pub fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
-    debug!("Reading from {path:?}");
+    debug_log!("Reading from {path:?}");
     Ok(fs::read_to_string(path)?)
 }
 
@@ -102,7 +102,7 @@ fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
-    debug!("use_renames from ast={:#?}", finder.use_renames);
+    debug_log!("use_renames from ast={:#?}", finder.use_renames);
     finder.use_renames
 }
 
@@ -126,7 +126,7 @@ fn find_modules_ast(syntax_tree: &Ast) -> Vec<String> {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
-    debug!("modules from ast={:#?}", finder.modules);
+    debug_log!("modules from ast={:#?}", finder.modules);
     finder.modules
 }
 
@@ -150,7 +150,7 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
-    debug!("use_crates from ast={:#?}", finder.use_crates);
+    debug_log!("use_crates from ast={:#?}", finder.use_crates);
     finder.use_crates
 }
 
@@ -174,7 +174,7 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
-    debug!("extern_crates from ast={:#?}", finder.extern_crates);
+    debug_log!("extern_crates from ast={:#?}", finder.extern_crates);
     finder.extern_crates
 }
 
@@ -188,7 +188,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
             Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
     }
 
-    debug!("######## In code_utils::infer_deps_from_source");
+    debug_log!("In code_utils::infer_deps_from_source");
     let use_renames = find_use_renames_source(code);
     let modules = find_modules_source(code);
 
@@ -198,7 +198,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 
     for cap in USE_REGEX.captures_iter(code) {
         let crate_name = cap[1].to_string();
-        debug!("@@@@@@@@ dependency={crate_name}");
+        debug_log!("dependency={crate_name}");
         filter_deps_source(
             &crate_name,
             &built_in_crates,
@@ -235,7 +235,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     dependencies.sort();
     dependencies.dedup();
 
-    debug!("dependencies from source={dependencies:#?}");
+    debug_log!("dependencies from source={dependencies:#?}");
     dependencies
 }
 
@@ -249,7 +249,7 @@ fn filter_deps_source(
 ) {
     if let Some((dep, _)) = crate_name.split_once(':') {
         let dep_string = dep.to_owned();
-        // debug!("dep_string={dep_string}, built_in_crates={built_in_crates:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
+        debug_log!("dep_string={dep_string}, built_in_crates={built_in_crates:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
         if !built_in_crates.contains(&dep)
             && !use_renames.contains(&dep_string)
             && !modules.contains(&dep_string)
@@ -266,17 +266,17 @@ pub fn find_use_renames_source(code: &str) -> Vec<String> {
         static ref USE_AS_REGEX: Regex = Regex::new(r"(?m)^\s*use\s+.+as\s+(\w+)").unwrap();
     }
 
-    debug!("######## In code_utils::find_use_renames_source");
+    debug_log!("In code_utils::find_use_renames_source");
 
     let mut use_renames: Vec<String> = vec![];
 
     for cap in USE_AS_REGEX.captures_iter(code) {
         let use_rename = cap[1].to_string();
-        debug!("@@@@@@@@ use_rename={use_rename}");
+        debug_log!("use_rename={use_rename}");
         use_renames.push(use_rename);
     }
 
-    debug!("use_renames from source={use_renames:#?}");
+    debug_log!("use_renames from source={use_renames:#?}");
     use_renames
 }
 
@@ -287,17 +287,17 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
         static ref MODULE_REGEX: Regex = Regex::new(r"(?m)^[\s]*mod\s+([^;{\s]+)").unwrap();
     }
 
-    debug!("######## In code_utils::find_use_renames_source");
+    debug_log!("In code_utils::find_use_renames_source");
 
     let mut modules: Vec<String> = vec![];
 
     for cap in MODULE_REGEX.captures_iter(code) {
         let module = cap[1].to_string();
-        debug!("@@@@@@@@ module={module}");
+        debug_log!("module={module}");
         modules.push(module);
     }
 
-    debug!("modules from source={modules:#?}");
+    debug_log!("modules from source={modules:#?}");
     modules
 }
 
@@ -309,13 +309,13 @@ pub fn extract_manifest(
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     let rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
-        // debug!("rs_toml_str={rs_toml_str}");
+        debug_log!("rs_toml_str={rs_toml_str}");
         CargoManifest::from_str(&rs_toml_str)?
     } else {
         CargoManifest::from_str("")?
     };
 
-    // debug!("rs_manifest={rs_manifest:#?}");
+    debug_log!("rs_manifest={rs_manifest:#?}");
 
     debug_timings(&start_parsing_rs, "Parsed source");
     Ok(rs_manifest)
@@ -366,7 +366,7 @@ pub fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
         .into_os_string()
         .into_string()
         .map_err(BuildRunError::OsString)?;
-    debug!("path_to_str={string}");
+    debug_log!("path_to_str={string}");
     Ok(string)
 }
 
@@ -435,15 +435,15 @@ pub fn handle_outcome(
     if exit_status.success() {
         if display_stdout {
             let stdout = String::from_utf8_lossy(&output.stdout);
-            debug!("{} succeeded!", process);
+            debug_log!("{} succeeded!", process);
             stdout.lines().for_each(|line| {
-                debug!("{line}");
+                debug_log!("{}", line);
             });
         }
     } else if display_stderr {
         let error_msg = String::from_utf8_lossy(&output.stderr);
         error_msg.lines().for_each(|line| {
-            debug!("{line}");
+            debug_log!("{line}");
         });
         return Err(BuildRunError::Command(format!("{process} failed")));
     };
@@ -474,7 +474,7 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
         let modified_time = metadata
             .modified()
             .expect("Missing metadata for file {file:#?}"); // Handle potential errors
-        debug!("File: {file:?} modified time is {modified_time:#?}");
+        debug_log!("File: {file:?} modified time is {modified_time:#?}");
 
         if modified_time < baseline_modified {
             continue;
@@ -489,9 +489,9 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
             Verbosity::Normal,
             "The most recently modified file compared to {executable:#?} is: {file:#?}"
         );
-        debug!("Executable modified time is{baseline_modified:#?}");
+        debug_log!("Executable modified time is{baseline_modified:#?}");
     } else {
-        debug!("Neither file was modified more recently than {executable:#?}");
+        debug_log!("Neither file was modified more recently than {executable:#?}");
     }
     most_recent
 }
@@ -532,7 +532,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
-        debug!("Error parsing syntax tree, using regex instead");
+        debug_log!("Error parsing syntax tree, using regex instead");
         debug_timings(&start_ast, "Completed unsuccessful AST parse");
         None
     }
@@ -550,7 +550,7 @@ pub fn wrap_snippet(rs_source: &str) -> String {
             Regex::new(r"(?i)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
     }
 
-    debug!("In wrap_snippet");
+    debug_log!("In wrap_snippet");
 
     // // Workaround: strip off any enclosing braces.
     // let rs_source = if rs_source.starts_with('{') && rs_source.ends_with('}') {
@@ -575,7 +575,7 @@ pub fn wrap_snippet(rs_source: &str) -> String {
         })
         .unzip();
 
-    // debug!("prelude={prelude:#?}\nbody={body:#?}");
+    debug_log!("prelude={prelude:#?}\nbody={body:#?}");
     let prelude = prelude
         .iter()
         .flatten()
@@ -602,7 +602,7 @@ Ok(())
 }}
 "
     );
-    debug!("wrapped_snippet={wrapped_snippet}");
+    debug_log!("wrapped_snippet={wrapped_snippet}");
     wrapped_snippet
 }
 
@@ -612,12 +612,12 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, B
         .create(true)
         .truncate(true)
         .open(to_rs_path)?;
-    debug!("Writing out source to {to_rs_path:#?}:\n{}", {
+    debug_log!("Writing out source to {to_rs_path:#?}:\n{}", {
         let lines = rs_source.lines();
         reassemble(lines)
     });
     to_rs_file.write_all(rs_source.as_bytes())?;
-    debug!("Done!");
+    debug_log!("Done!");
 
     Ok(to_rs_file)
 }
@@ -627,7 +627,7 @@ pub fn create_next_repl_file() -> PathBuf {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
 
-    debug!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
+    debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
 
     // Ensure REPL subdirectory exists
     fs::create_dir_all(gen_repl_temp_dir_path.clone()).expect("Failed to create REPL directory");
@@ -656,8 +656,6 @@ pub fn create_next_repl_file() -> PathBuf {
         })
         .collect();
 
-    // debug!("existing_files={existing_files:?}");
-
     let next_file_num = match existing_dirs.as_slice() {
         [] => 0, // No existing files, start with 000000
         _ if existing_dirs.contains(&999_999) => {
@@ -685,7 +683,7 @@ pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
     let filename = format!("repl_{padded_num}.rs");
     let path = target_dir_path.join(filename);
     fs::File::create(path.clone()).expect("Failed to create file");
-    // debug!("Created file: {path:#?}");
+    debug_log!("Created file: {path:#?}");
     path
 }
 
@@ -707,7 +705,7 @@ pub fn create_temp_source_file() -> PathBuf {
         .truncate(true)
         .open(path.clone())
         .expect("Failed to create file");
-    // debug!("Created file: {path:#?}");
+    debug_log!("Created file: {path:#?}");
     path
 }
 
@@ -762,14 +760,14 @@ pub fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
         let output = command.output().expect("Failed to run rustfmt");
 
         if output.status.success() {
-            debug!("Successfully formatted {} with rustfmt.", source_path_str);
-            debug!(
+            debug_log!("Successfully formatted {} with rustfmt.", source_path_str);
+            debug_log!(
                 "{}\n{}",
                 source_path_str,
                 String::from_utf8_lossy(&output.stdout)
             );
         } else {
-            debug!(
+            debug_log!(
                 "Failed to format {} with rustfmt\n{}",
                 source_path_str,
                 String::from_utf8_lossy(&output.stderr)

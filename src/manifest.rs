@@ -1,6 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
 use lazy_static::lazy_static;
-use log::debug;
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::error::Error;
@@ -10,6 +9,7 @@ use std::str::FromStr;
 use std::time::Instant;
 
 use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
+use crate::debug_log;
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
@@ -28,7 +28,7 @@ See below for how to avoid this and speed up future builds.
 
     let mut search_command = Command::new("cargo");
     search_command.args(["search", dep_crate, "--limit", "1"]);
-    debug!("\nCargo search command={search_command:#?}\n");
+    debug_log!("\nCargo search command={search_command:#?}\n");
     let search_output = search_command.output()?;
 
     let first_line = if search_output.status.success() {
@@ -45,19 +45,19 @@ See below for how to avoid this and speed up future builds.
     } else {
         let error_msg = String::from_utf8_lossy(&search_output.stderr);
         error_msg.lines().for_each(|line| {
-            debug!("{line}");
+            debug_log!("{line}");
         });
         return Err(Box::new(BuildRunError::Command(format!(
             "Cargo search failed for [{dep_crate}]"
         ))));
     };
 
-    // debug!("!!!!!!!! first_line={first_line}");
+    debug_log!("first_line={first_line}");
     let result = capture_dep(&first_line);
     let (name, version) = match result {
         Ok((name, version)) => {
             if name != dep_crate && name.replace('-', "_") != dep_crate {
-                debug!("First line of cargo search for crate {dep_crate} found non-matching crate {name}");
+                debug_log!("First line of cargo search for crate {dep_crate} found non-matching crate {name}");
                 return Err(Box::new(BuildRunError::Command(format!(
                     "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"
                 ))));
@@ -79,7 +79,7 @@ as shown if you don't need special features:
             (name, version)
         }
         Err(err) => {
-            debug!("Failure! err={err}");
+            debug_log!("Failure! err={err}");
             return Err(err);
         }
     };
@@ -90,7 +90,7 @@ as shown if you don't need special features:
 }
 
 pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
-    // debug!("first_line={first_line}");
+    debug_log!("first_line={first_line}");
     lazy_static! {
         static ref RE: Regex =
             Regex::new(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#).unwrap();
@@ -168,10 +168,7 @@ pub(crate) fn merge_manifest(
             &mut default_manifest
         };
 
-    debug!("@@@@ cargo_manifest (before deps)={cargo_manifest:#?}");
-
-    // // TODO temp debug out
-    // infer_deps_from_source(maybe_rs_source.ok_or("Missing source code")?);
+    debug_log!("cargo_manifest (before deps)={cargo_manifest:#?}");
 
     let rs_inferred_deps = if let Some(ref syntax_tree) = syntax_tree {
         infer_deps_from_ast(syntax_tree)
@@ -179,13 +176,13 @@ pub(crate) fn merge_manifest(
         infer_deps_from_source(rs_source)
     };
 
-    debug!("rs_inferred_deps={rs_inferred_deps:#?}\n");
-    if let Some(rs_manifest) = &build_state.rs_manifest {
-        debug!(
-            "build_state.rs_manifest.dependencies={:#?}",
-            rs_manifest.dependencies
-        );
-    }
+    debug_log!("rs_inferred_deps={rs_inferred_deps:#?}\n");
+    // if let Some(rs_manifest) = &build_state.rs_manifest {
+    //     debug_log!(
+    //         "build_state.rs_manifest.dependencies={:#?}",
+    //         rs_manifest.dependencies
+    //     );
+    // }
 
     let mut rs_dep_map: BTreeMap<std::string::String, Dependency> =
         if let Some(ref rs_manifest) = &build_state.rs_manifest {
@@ -199,7 +196,7 @@ pub(crate) fn merge_manifest(
         };
 
     if !rs_inferred_deps.is_empty() {
-        debug!("rs_dep_map (before inferred) {rs_dep_map:#?}");
+        debug_log!("rs_dep_map (before inferred) {rs_dep_map:#?}");
         for dep_name in rs_inferred_deps {
             if rs_dep_map.contains_key(&dep_name)
                 || rs_dep_map.contains_key(&dep_name.replace('_', "-"))
@@ -207,7 +204,7 @@ pub(crate) fn merge_manifest(
             {
                 continue;
             }
-            debug!("############ Starting Cargo search for key dep_name [{dep_name}]");
+            debug_log!("Starting Cargo search for key dep_name [{dep_name}]");
             let cargo_search_result = cargo_search(&dep_name);
             // If the crate name is hyphenated, Cargo search will nicely search for underscore version and return the correct
             // hyphenated name. So we must replace the incorrect underscored version we searched on with the corrected
@@ -226,14 +223,14 @@ pub(crate) fn merge_manifest(
             };
             rs_dep_map.insert(dep_name, dep);
         }
-        debug!("rs_dep_map (after inferred) = {rs_dep_map:#?}");
+        debug_log!("rs_dep_map (after inferred) = {rs_dep_map:#?}");
     }
 
     // Clone and merge dependencies
     let manifest_deps = cargo_manifest.dependencies.as_ref().unwrap();
 
     let mut manifest_deps_clone: BTreeMap<std::string::String, Dependency> = manifest_deps.clone();
-    debug!("manifest_deps  (before merge) {manifest_deps_clone:?}");
+    debug_log!("manifest_deps  (before merge) {manifest_deps_clone:?}");
 
     // Insert any entries from source and inferred deps that are not already in default manifest
     rs_dep_map
@@ -243,7 +240,7 @@ pub(crate) fn merge_manifest(
             manifest_deps_clone.insert(key.to_string(), value.clone());
         });
     cargo_manifest.dependencies = Some(manifest_deps_clone);
-    debug!(
+    debug_log!(
         "cargo_manifest.dependencies (after merge) {:#?}",
         cargo_manifest.dependencies
     );
@@ -264,7 +261,7 @@ pub(crate) fn merge_manifest(
 
     let mut manifest_features_clone: BTreeMap<std::string::String, Vec<Feature>> =
         manifest_feats.clone();
-    // debug!("manifest_features (before merge) {manifest_features_clone:?}");
+    debug_log!("manifest_features (before merge) {manifest_features_clone:?}");
 
     // Insert any entries from source features that are not already in default manifest
     rs_feat_map
@@ -274,7 +271,7 @@ pub(crate) fn merge_manifest(
             manifest_features_clone.insert(key.to_string(), value.clone());
         });
     cargo_manifest.features = Some(manifest_features_clone);
-    debug!(
+    debug_log!(
         "cargo_manifest.features (after merge) {:#?}",
         cargo_manifest.features
     );

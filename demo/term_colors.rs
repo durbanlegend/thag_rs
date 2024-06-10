@@ -424,10 +424,10 @@ fn print_xterm_colors() {
     ] {
         let style = style.color(*variant);
 
-        // debug!("style={style:?}");
+        debug_log!("style={style:?}");
         color_println!(Some(style), "My Xterm {variant:?} style message");
         let style = style.color(*variant).bold();
-        // debug!("style={style:?}");
+        debug_log!("style={style:?}");
         color_println!(Some(style), "My bold Xterm {variant:?} style message");
     }
 }
@@ -455,10 +455,10 @@ fn print_ansi_colors() {
     ] {
         let style = style.color(*variant);
 
-        // debug!("style={style:?}");
+        debug_log!("style={style:?}");
         color_println!(Some(style), "My Ansi {variant:?} style message");
         let style = style.color(*variant).bold();
-        // debug!("style={style:?}");
+        debug_log!("style={style:?}");
         color_println!(Some(style), "My bold Ansi {variant:?} style message");
     }
 }
@@ -466,7 +466,7 @@ fn print_ansi_colors() {
 fn get_theme() -> Result<Theme, Error> {
     let timeout = std::time::Duration::from_millis(100);
 
-    // debug!("Check terminal background color");
+    debug_log!("Check terminal background color");
     let theme: Result<Theme, Error> = termbg::theme(timeout);
     theme
 }

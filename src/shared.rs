@@ -1,4 +1,5 @@
 use crate::cmd_args::{Cli, ProcFlags};
+use crate::debug_log;
 use crate::errors::BuildRunError;
 use crate::logging::Verbosity;
 use crate::modified_since_compiled;
@@ -288,11 +289,11 @@ impl BuildState {
             )));
         }
         let script = (maybe_script).clone().unwrap();
-        debug!("script={script}");
+        debug_log!("script={script}");
         let path = Path::new(&script);
-        debug!("path={path:#?}");
+        debug_log!("path={path:#?}");
         let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
-        debug!("source_name={source_name}");
+        debug_log!("source_name={source_name}");
         let source_stem = {
             let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
                 return Err(Box::new(BuildRunError::Command(format!(
@@ -323,9 +324,9 @@ impl BuildState {
             working_dir_path.join(PathBuf::from(script.clone()))
         };
 
-        debug!("script_path={script_path:#?}");
+        debug_log!("script_path={script_path:#?}");
         let source_path = script_path.canonicalize()?;
-        debug!("source_path={source_path:#?}");
+        debug_log!("source_path={source_path:#?}");
         if !source_path.exists() {
             return Err(Box::new(BuildRunError::Command(format!(
                 "No script named {} or {} in path {source_path:?}",
@@ -341,11 +342,11 @@ impl BuildState {
             Ok(string) if string != String::new() => string,
             _ => {
                 let home_dir = home_dir().ok_or("Can't resolve home directory")?;
-                debug!("home_dir={}", home_dir.display());
+                debug_log!("home_dir={}", home_dir.display());
                 home_dir.join(".cargo").display().to_string()
             }
         });
-        debug!("cargo_home={}", cargo_home.display());
+        debug_log!("cargo_home={}", cargo_home.display());
 
         let target_dir_path = if is_repl {
             script_state
@@ -358,7 +359,7 @@ impl BuildState {
             TMPDIR.join(PACKAGE_NAME).join(&source_stem)
         };
 
-        debug!("target_dir_path={}", target_dir_path.display());
+        debug_log!("target_dir_path={}", target_dir_path.display());
         let mut target_path = target_dir_path.join("target").join("debug");
         target_path = if cfg!(windows) {
             target_path.join(source_stem.clone() + ".exe")
@@ -397,7 +398,7 @@ impl BuildState {
             (must_gen, must_build)
         };
 
-        debug!("build_state={build_state:#?}");
+        debug_log!("build_state={build_state:#?}");
 
         Ok(build_state)
     }
@@ -447,7 +448,7 @@ impl ScriptState {
 /// Developer method to log method timings.
 pub fn debug_timings(start: &Instant, process: &str) {
     let dur = start.elapsed();
-    debug!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
+    debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
 }
 
 #[inline]
@@ -456,10 +457,41 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
     let dur = start.elapsed();
     let msg = format!("{process} in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
-    debug!("{msg}");
+    debug_log!("{msg}");
     if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
         log!(Verbosity::Quiet, "{msg}");
     }
 }
+
+/// Control debug logging
+#[macro_export]
+macro_rules! debug_log {
+    // When the feature is enabled, pass everything to log::debug!
+    ($($arg:tt)*) => {
+        #[cfg(feature = "debug-logs")]
+        {
+            log::debug!($($arg)*);
+        }
+
+        #[cfg(not(feature = "debug-logs"))]
+        {
+            // Drop the arguments to avoid unused variable warnings
+            let _ = format_args!($($arg)*);
+        }
+    };
+}
+// #[cfg(feature = "debug-logs")]
+// #[macro_export]
+// macro_rules! debug_log {
+//     ($($arg:tt)*) => {
+//         log::debug!($($arg)*);
+//     };
+// }
+
+// #[cfg(not(feature = "debug-logs"))]
+// #[macro_export]
+// macro_rules! debug_log {
+//     ($($arg:tt)*) => {};
+// }
 
 // Add other shared functions and types here

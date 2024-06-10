@@ -135,7 +135,7 @@ enum MessageStyle {
 fn get_theme() -> Result<Theme, termbg::Error> {
     let timeout = std::time::Duration::from_millis(100);
 
-    // debug!("Check terminal background color");
+    debug_log!("Check terminal background color");
     let theme: Result<Theme, termbg::Error> = termbg::theme(timeout);
     theme
 }

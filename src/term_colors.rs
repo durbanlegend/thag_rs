@@ -9,11 +9,11 @@ supports-color= "3.0.0"
 termbg = "0.5.0"
 wsl = "0.1.0"
 */
+use crate::debug_log;
 use crate::log;
 use crate::logging::Verbosity;
 
 use lazy_static::lazy_static;
-use log::debug;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
@@ -34,7 +34,7 @@ lazy_static! {
     #[derive(Debug)]
     pub static ref TERM_THEME: TermTheme = {
         let timeout = std::time::Duration::from_millis(100);
-        // debug!("Check terminal background color");
+        debug_log!("Check terminal background color");
         match termbg::theme(timeout) {
             Ok(Theme::Light) => TermTheme::Light,
             Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
@@ -186,9 +186,11 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
             "{}_{}_{}",
             &color_qual, &theme_qual, &msg_level_qual
         ));
-        debug!(
+        debug_log!(
             "Called from_str on {}_{}_{}, found {message_style:#?}",
-            &color_qual, &theme_qual, &msg_level_qual,
+            &color_qual,
+            &theme_qual,
+            &msg_level_qual,
         );
         match message_style {
             Ok(message_style) => NuThemeStyle::get_style(&message_style),
@@ -202,7 +204,7 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
 #[allow(dead_code)]
 fn main() {
     let term = termbg::terminal();
-    debug!("  Term : {:?}", term);
+    debug_log!("  Term : {:?}", term);
 
     let color_support = match supports_color::on(Stream::Stdout) {
         Some(color_support) => {

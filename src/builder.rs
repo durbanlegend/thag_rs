@@ -7,22 +7,28 @@ use crate::log;
 use crate::logging::Verbosity;
 use crate::manifest;
 use crate::repl::run_repl;
+#[cfg(debug_assertions)]
+use crate::shared::debug_timings;
 use crate::shared::CargoManifest;
-use crate::shared::{debug_timings, display_timings, Ast, BuildState};
+use crate::shared::{display_timings, Ast, BuildState};
 use crate::stdin::{edit_stdin, read_stdin};
 use crate::term_colors::{nu_resolve_style, MessageLevel};
+#[cfg(debug_assertions)]
+use crate::VERSION;
 use crate::{
     cmd_args::{get_proc_flags, validate_args, Cli, ProcFlags},
     ScriptState,
 };
 use crate::{
-    nu_color_println, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
-    TEMP_SCRIPT_NAME, TMPDIR, VERSION,
+    debug_log, nu_color_println, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SUBDIR,
+    RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR,
 };
 
+#[cfg(debug_assertions)]
 use env_logger::{Builder, Env, WriteStyle};
 use lazy_static::lazy_static;
-use log::{debug, log_enabled, Level::Debug};
+#[cfg(debug_assertions)]
+use log::{log_enabled, Level::Debug};
 use regex::Regex;
 use std::{
     error::Error,
@@ -36,17 +42,19 @@ use std::{
 #[allow(clippy::too_many_lines)]
 pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
+    #[cfg(debug_assertions)]
     configure_log();
     let proc_flags = get_proc_flags(&args)?;
+    #[cfg(debug_assertions)]
     if log_enabled!(Debug) {
         debug_print_config();
-        debug!("proc_flags={proc_flags:#?}");
         debug_timings(&start, "Set up processing flags");
+        debug_log!("proc_flags={proc_flags:#?}");
 
         if !&args.args.is_empty() {
-            debug!("... args:");
+            debug_log!("... args:");
             for arg in &args.args {
-                debug!("{arg}");
+                debug_log!("{}", arg);
             }
         }
     }
@@ -86,7 +94,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
                 .to_path_buf()
         }
     } else if is_dynamic {
-        debug!("^^^^^^^^ is_dynamic={is_dynamic}");
+        debug_log!("is_dynamic={is_dynamic}");
         <std::path::PathBuf as std::convert::AsRef<Path>>::as_ref(&TMPDIR)
             .join(DYNAMIC_SUBDIR)
             .clone()
@@ -126,7 +134,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     };
     let mut build_state = BuildState::pre_configure(&proc_flags, &args, &script_state)?;
     if is_repl {
-        debug!("build_state.source_path={:?}", build_state.source_path);
+        debug_log!("build_state.source_path={:?}", build_state.source_path);
     }
     if is_repl {
         run_repl(&mut args, &proc_flags, &mut build_state, start)
@@ -139,15 +147,15 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
             };
             rs_source
         } else if is_edit {
-            debug!("About to call edit_stdin()");
+            debug_log!("About to call edit_stdin()");
             let vec = edit_stdin()?;
-            debug!("vec={vec:#?}");
+            debug_log!("vec={vec:#?}");
             vec.join("\n")
         } else {
             assert!(is_stdin);
-            debug!("About to call read_stdin()");
+            debug_log!("About to call read_stdin()");
             let str = read_stdin()? + "\n";
-            debug!("str={str:#?}");
+            debug_log!("str={str:#?}");
             str
         };
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
@@ -186,13 +194,15 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     }
 }
 
+#[cfg(debug_assertions)]
 fn debug_print_config() {
-    debug!("PACKAGE_NAME={PACKAGE_NAME}");
-    debug!("VERSION={VERSION}");
-    debug!("REPL_SUBDIR={REPL_SUBDIR}");
+    debug_log!("PACKAGE_NAME={PACKAGE_NAME}");
+    debug_log!("VERSION={VERSION}");
+    debug_log!("REPL_SUBDIR={REPL_SUBDIR}");
 }
 
 // Configure log level
+#[cfg(debug_assertions)]
 fn configure_log() {
     let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
     let mut binding = Builder::new();
@@ -224,7 +234,7 @@ pub fn gen_build_run(
         rs_source = if rs_source.starts_with("#!") {
             let split_once = rs_source.split_once('\n');
             let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
-            debug!("Successfully stripped shebang {shebang}");
+            debug_log!("Successfully stripped shebang {shebang}");
             rust_code.to_string()
         } else {
             rs_source
@@ -233,8 +243,8 @@ pub fn gen_build_run(
             // debug_timings(&start_parsing_rs, "Parsed source");
             extract_manifest(&rs_source, start_parsing_rs)
         }?;
-        debug!("&&&&&&&& rs_manifest={rs_manifest:#?}");
-        // debug!("&&&&&&&& rs_source={rs_source}");
+        // debug_log!("rs_manifest={rs_manifest:#?}");
+        // debug_log!("rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
             build_state.rs_manifest = Some(rs_manifest);
         }
@@ -245,7 +255,7 @@ pub fn gen_build_run(
             syntax_tree
         };
 
-        // debug!("syntax_tree={syntax_tree:#?}");
+        // debug_log!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
             build_state.cargo_manifest = Some(manifest::merge_manifest(
@@ -280,7 +290,7 @@ pub fn gen_build_run(
             }
         };
 
-        // println!("######## build_state={build_state:#?}");
+        // println!("build_state={build_state:#?}");
         rs_source = if has_main {
             // Strip off any enclosing braces we may have added
             if rs_source.starts_with('{') {
@@ -306,7 +316,7 @@ pub fn gen_build_run(
             } else {
                 // demo/fizz_buzz.rs broke this: not an expression but still a valid snippet.
                 // format!(r#"println!("Expression returned {{}}", {rs_source});"#)
-                // debug!("dbg!(rs_source)={}", dbg!(rs_source.clone()));
+                // debug_log!("dbg!(rs_source)={}", dbg!(rs_source.clone()));
                 // dbg!(rs_source)
                 rs_source
             };
@@ -358,9 +368,9 @@ pub fn generate(
 ) -> Result<(), Box<dyn Error>> {
     let start_gen = Instant::now();
 
-    debug!("In generate, proc_flags={proc_flags}");
+    debug_log!("In generate, proc_flags={proc_flags}");
 
-    debug!(
+    debug_log!(
         "build_state.target_dir_path={:#?}",
         build_state.target_dir_path
     );
@@ -380,26 +390,26 @@ pub fn generate(
     write_source(&target_rs_path, rs_source)?;
     rustfmt(build_state)?;
 
-    // debug!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
+    // debug_log!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {
         OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(&build_state.cargo_toml_path)?;
     }
-    // debug!("cargo_toml: {cargo_toml:?}");
+    // debug_log!("cargo_toml: {cargo_toml:?}");
 
     let cargo_manifest_str: &str = &build_state.cargo_manifest.as_ref().unwrap().to_string();
 
-    debug!(
+    debug_log!(
         "cargo_manifest_str: {}",
         code_utils::disentangle(cargo_manifest_str)
     );
 
     let mut toml_file = fs::File::create(&build_state.cargo_toml_path)?;
     toml_file.write_all(cargo_manifest_str.as_bytes())?;
-    // debug!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
-    // debug!("##### Cargo.toml generation succeeded!");
+    // debug_log!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
+    // debug_log!("##### Cargo.toml generation succeeded!");
 
     display_timings(&start_gen, "Completed generation", proc_flags);
 
@@ -415,7 +425,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let quiet = proc_flags.contains(ProcFlags::QUIET);
 
-    debug!("BBBBBBBB In build");
+    debug_log!("BBBBBBBB In build");
 
     let Ok(cargo_toml_path_str) = code_utils::path_to_str(&build_state.cargo_toml_path) else {
         return Err(BuildRunError::OsString(
@@ -460,7 +470,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
         .expect("failed to wait on cargo build");
 
     if exit_status.status.success() {
-        debug!("Build succeeded");
+        debug_log!("Build succeeded");
     } else {
         return Err(BuildRunError::Command(String::from("Build failed")));
     };
@@ -481,16 +491,16 @@ pub fn run(
     build_state: &BuildState,
 ) -> Result<(), BuildRunError> {
     let start_run = Instant::now();
-    debug!("RRRRRRRR In run");
+    debug_log!("RRRRRRRR In run");
 
-    // debug!("BuildState={build_state:#?}");
+    // debug_log!("BuildState={build_state:#?}");
     let target_path = build_state.target_path.clone();
-    // debug!("Absolute path of generated program: {absolute_path:?}");
+    // debug_log!("Absolute path of generated program: {absolute_path:?}");
 
     let mut run_command = Command::new(format!("{}", target_path.display()));
     run_command.args(args);
 
-    debug!("Run command is {run_command:?}");
+    debug_log!("Run command is {run_command:?}");
 
     // Sandwich command between two lines of dashes in the terminal
 
@@ -511,7 +521,7 @@ pub fn run(
         nu_ansi_term::Color::Yellow.paint(dash_line.clone())
     );
 
-    // debug!("Exit status={exit_status:#?}");
+    // debug_log!("Exit status={exit_status:#?}");
 
     display_timings(&start_run, "Completed run", proc_flags);
 

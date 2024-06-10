@@ -34,6 +34,10 @@ crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 
 [profile.dev]
 opt-level = 1 # Use slightly better optimizations.
+debug = true
+
+[profile.release]
+debug = false
 
 [lib]
 name = "rs_script"
@@ -42,3 +46,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "rs_script"
 path = "src/bin/rs_script.rs"
+
+[features]
+debug-logs = []

@@ -1,12 +1,12 @@
 # TODO List
 
 ## High Priority
-- [ ]  Clean up demos and additional popular crates
+- [ ]  Clean up demos
+- [ ]  Add additional popular crates
 
 ## Medium Priority
 - [ ]  Document public APIs
 - [ ]  More unit and integration tests
-- [ ]  Clean up debugging
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

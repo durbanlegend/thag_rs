@@ -14,90 +14,118 @@ pin-project-lite = "0.2.14"
 */
 
 #![deny(warnings)]
-#![warn(rust_2018_idioms)]
+
+// // A simple type alias so as to DRY.
+// type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
 use bytes::Bytes;
-use http_body_util::{BodyExt, Empty};
-use hyper::Request;
-use std::env;
-use tokio::io::{self, AsyncWriteExt as _};
-use tokio::net::TcpStream;
+use http_body_util::{combinators::BoxBody, BodyExt, Empty, Full};
+use hyper::body::Frame;
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper::{body::Body, Method, Request, Response, StatusCode};
+use std::net::SocketAddr;
+use tokio::net::TcpListener;
 
 use crate::support::TokioIo;
 
-// A simple type alias so as to DRY.
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+/// This is our service handler. It receives a Request, routes on its
+/// path, and returns a Future of a Response.
+async fn echo(
+    req: Request<hyper::body::Incoming>,
+) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
+    match (req.method(), req.uri().path()) {
+        // Serve some instructions at /
+        (&Method::GET, "/") => Ok(Response::new(full(
+            "Try POSTing data to /echo such as: `curl localhost:3000/echo -XPOST -d \"hello world\"`",
+        ))),
 
-/// Published simple HTTP client example from the client crate,
+        // Simply echo the body back to the client.
+        (&Method::POST, "/echo") => Ok(Response::new(req.into_body().boxed())),
+
+        // Convert to uppercase before sending back to client using a stream.
+        (&Method::POST, "/echo/uppercase") => {
+            let frame_stream = req.into_body().map_frame(|frame| {
+                let frame = if let Ok(data) = frame.into_data() {
+                    data.iter()
+                        .map(|byte| byte.to_ascii_uppercase())
+                        .collect::<Bytes>()
+                } else {
+                    Bytes::new()
+                };
+
+                Frame::data(frame)
+            });
+
+            Ok(Response::new(frame_stream.boxed()))
+        }
+
+        // Reverse the entire body before sending back to the client.
+        //
+        // Since we don't know the end yet, we can't simply stream
+        // the chunks as they arrive as we did with the above uppercase endpoint.
+        // So here we do `.await` on the future, waiting on concatenating the full body,
+        // then afterwards the content can be reversed. Only then can we return a `Response`.
+        (&Method::POST, "/echo/reversed") => {
+            // To protect our server, reject requests with bodies larger than
+            // 64kbs of data.
+            let max = req.body().size_hint().upper().unwrap_or(u64::MAX);
+            if max > 1024 * 64 {
+                let mut resp = Response::new(full("Body too big"));
+                *resp.status_mut() = hyper::StatusCode::PAYLOAD_TOO_LARGE;
+                return Ok(resp);
+            }
+
+            let whole_body = req.collect().await?.to_bytes();
+
+            let reversed_body = whole_body.iter().rev().cloned().collect::<Vec<u8>>();
+            Ok(Response::new(full(reversed_body)))
+        }
+
+        // Return the 404 Not Found for other routes.
+        _ => {
+            let mut not_found = Response::new(empty());
+            *not_found.status_mut() = StatusCode::NOT_FOUND;
+            Ok(not_found)
+        }
+    }
+}
+
+fn empty() -> BoxBody<Bytes, hyper::Error> {
+    Empty::<Bytes>::new()
+        .map_err(|never| match never {})
+        .boxed()
+}
+
+fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, hyper::Error> {
+    Full::new(chunk.into())
+        .map_err(|never| match never {})
+        .boxed()
+}
+
+/// Published simple echo HTTP server example from the client crate,
 /// with the referenced modules "support" and "tokiort" refactored
 /// into the script, while respecting their original structure and
 /// redundancies.
-/// You can run the hyper_echo_server.rs demo as the HTTP server on
-/// another command line and connect to it on port 3000:
-/// rs_script demo/hyper_client.rs -- http://127.0.0.1:3000.
-/// Or use any other available HTTP server.
 #[tokio::main]
-async fn main() -> Result<()> {
-    pretty_env_logger::init();
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
-    // Some simple CLI args requirements...
-    let url = match env::args().nth(1) {
-        Some(url) => url,
-        None => {
-            println!("Usage: client <url>");
-            return Ok(());
-        }
-    };
+    let listener = TcpListener::bind(addr).await?;
+    println!("Listening on http://{}", addr);
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let io = TokioIo::new(stream);
 
-    // HTTPS requires picking a TLS implementation, so give a better
-    // warning if the user tries to request an 'https' URL.
-    let url = url.parse::<hyper::Uri>().unwrap();
-    if url.scheme_str() != Some("http") {
-        println!("This example only works with 'http' URLs.");
-        return Ok(());
+        tokio::task::spawn(async move {
+            if let Err(err) = http1::Builder::new()
+                .serve_connection(io, service_fn(echo))
+                .await
+            {
+                println!("Error serving connection: {:?}", err);
+            }
+        });
     }
-
-    fetch_url(url).await
-}
-
-async fn fetch_url(url: hyper::Uri) -> Result<()> {
-    let host = url.host().expect("uri has no host");
-    let port = url.port_u16().unwrap_or(80);
-    let addr = format!("{}:{}", host, port);
-    let stream = TcpStream::connect(addr).await?;
-    let io = TokioIo::new(stream);
-
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            println!("Connection failed: {:?}", err);
-        }
-    });
-
-    let authority = url.authority().unwrap().clone();
-
-    let path = url.path();
-    let req = Request::builder()
-        .uri(path)
-        .header(hyper::header::HOST, authority.as_str())
-        .body(Empty::<Bytes>::new())?;
-
-    let mut res = sender.send_request(req).await?;
-
-    println!("Response: {}", res.status());
-    println!("Headers: {:#?}\n", res.headers());
-
-    // Stream the body, writing each chunk to stdout as we get it
-    // (instead of buffering and printing at the end).
-    while let Some(next) = res.frame().await {
-        let frame = next?;
-        if let Some(chunk) = frame.data_ref() {
-            io::stdout().write_all(&chunk).await?;
-        }
-    }
-
-    println!("\n\nDone!");
-
-    Ok(())
 }
 
 mod support {

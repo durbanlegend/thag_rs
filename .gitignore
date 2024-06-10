@@ -20,7 +20,6 @@ demo/gemini_edit_in_place2.rs
 demo/gemini_edit_in_place3.rs
 demo/gemini_repl_orig.rs
 demo/gpt_clap.rs
-demo/hyper_client.rs
 demo/lsp_compl2.rs
 demo/lsp_completion.rs
 demo/msg_colors_gpt.rs

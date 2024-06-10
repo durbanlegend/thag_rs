@@ -12,7 +12,6 @@ use crate::TOML_NAME;
 use crate::{log, PACKAGE_NAME};
 
 use home::home_dir;
-use log::debug;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use serde::{Deserialize, Serialize};

@@ -7,6 +7,7 @@
 ## Medium Priority
 - [ ]  Document public APIs
 - [ ]  More unit and integration tests
+- [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

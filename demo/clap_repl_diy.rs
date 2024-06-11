@@ -6,7 +6,7 @@ shlex = "0.1.1"
 
 /// Example from clap cookbook.
 /// Can't find a keybinding to navigate history,
-/// unlike clap_repl1.rs
+/// unlike clap_repl_rustyline.rs and unlike clap_repl_reedline.rs.
 use std::io::Write;
 
 use clap::{Parser, Subcommand};
@@ -32,6 +32,7 @@ fn main() -> Result<(), String> {
         }
     }
 
+    println!();
     Ok(())
 }
 

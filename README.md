@@ -6,16 +6,16 @@
 
 ## Overview
 
-`rs-script` is a simple and serious script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to quickly run and test Rust code from the command line for rapid prototyping and learning. It is intended to handle cases that are beyond the scope of the Rust playground, and dare I say of your average script runner.
+`rs-script` is a simple and serious script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to quickly run and test Rust code from the command line for rapid prototyping and exploration. It is intended to handle cases that are beyond the scope of the Rust playground or the average script runner.
 
-`rs-script` is Cargo-based and prefers tools like syn and quote over string operations to ensure correctness. It attempts to handle any valid Rust program, snippet or expression. It will usually manage to generate a dedicated Cargo.toml for this script from "use" statements in your code, although for speed and precision it is recommended that you embed your own in a /*[toml] */ block at the start of the script, as shown in numerous examples.
+`rs-script` is Cargo-based and will prefer tools like syn, quote and toml over string operations where possible, in order to ensure correctness. It attempts to handle any valid Rust program, snippet or expression. It will usually manage to generate a dedicated Cargo.toml for your script from "use" statements in your code, although for speed and precision it is recommended that you embed your own in a /*[toml] */ block at the start of the script, as in most of the demos. The Cargo search will helpfully print the equivalent block for you to copy and paste if you want to.
 
-`rs-script` aims to be as comprehensive as possible without sacrificing speed and simplicity. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although this behaviour may be overridden. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 Macbook Air.
+`rs-script` aims to be as comprehensive as possible without sacrificing speed and simplicity. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 Macbook Air.
 
 ### Why `rs-script`?
 As so often happens, this project arose out of need. Initially I was looking for a hosted version of the Rust playground to allow me to try out new ideas quickly. This soon led me to the various script runners, but I found that what they ran more than anything was "out of steam". I even went so far as to fork the idiosyncratic but versatile `runner` crate with extensive modification to bring it up to date and attempt to resolve some tricky dependency issues, but I saw that by staying in the Cargo mainstream I could easily overcome these issues and leverage Cargo to do most of the hard work, so I started `rs-script` from scratch.
 
-I also found that `rs-script` started to "write itself", by allowing me to experiment wiht promising crates before incorporationg them as dependencies. I don't know what the market is for a tool like this, but I hope you may find it as useful as I do.
+I also found that `rs-script` started to "write itself", by allowing me to experiment wiht promising crates before incorporationg them as dependencies. I don't know what the level of interest may be for a tool like this, but I hope you may find it as useful as I do.
 
 ## Installation
 
@@ -38,7 +38,7 @@ Here are some examples:
 ### Evaluating an expression
 #### Quickly calculate the factorial of a number up to 34 (overflows beyond that, but see demos for bigger numbers):
 ```bash
-rs-script -e '(1..=34_u128).product::<u128>()'
+rs-script -e '(1..=34).product::<u128>()'
 ```
 
 #### Shoehorn a script into an expression, just to prove a point of some kind:
@@ -76,9 +76,10 @@ rs_script completed processing script fizz_buzz.rs in 0.15s
 ```bash
 rs-script -l
 ```
-This will start an interactive REPL session where you can enter, paste, or modify from history, a single- or multi-line Rust expression and press Enter to run it. You can then edit the expression and / or the generated Cargo.toml in your preferred editor (VS Code, Helix, Zed, nano...) and rerun it. The REPL also offers a few houskeeping functions for the temporary files generated, otherwise being in temporary space they will be housekept by the operating system in due course.
+This will start an interactive REPL session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally modify and expression from history.
+Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano...) and rerun it. The REPL also offers a few houskeeping functions for the temporary files generated, otherwise being in temporary space they will be housekept by the operating system in due course.
 
-#### Revisiting a REPL expression
+#### Revisiting a REPL expression from a previous session
 ```bash
 rs-script -l repl_nnnnnn.rs
 ```
@@ -87,9 +88,9 @@ will return to edit and run a named generated script from a previous REPL sessio
 More informally, the last 25 previous REPL expressions can be accessed from within the REPL function just by using the up and down arrow keys to navigate history from the `eval` command.
 
 #### General notes on REPL
-All REPL files are created under the rs_repl subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust) so as not to clog up your system, but before they are harvested you can display the locations and copy them if desired.
+All REPL files are created under the rs_repl subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust) so as not to clog up your system. Before they are harvested by the OS you can display the locations and copy the files if desired.
 
-The REPL feature, in particular the most convenient `eval` mode, is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. These limitations can be overcome by using the `edit` mode instead, but by this point it is probably more convenient just to use the --stdin/-s feature instead or save the source in a .rs file and run it from the command line.
+The REPL feature, in particular the most convenient `eval` mode, is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. These limitations can be overcome by using the `edit` mode instead, but by this point it is probably more convenient just to use the --stdin / -s feature instead, or save the source in a .rs file and run it from the command line.
 
 ## Features
 
@@ -101,15 +102,15 @@ _— The Rust Reference_
 * Aims to be the most capable and reliable script runner.
 * Crucially, specific features of dependencies may be specified, giving your scripts access to advanced functionality. Local path and git dependencies may also be specified, allowing you to access your unpublished crates.
 * A choice of modes - bearing in mind the importance of expressions in Rust:
-    * expression mode for small, basic expressions on the fly
-    * REPL mode offers interactivity and accepts multi-line expressions since it respects matching braces, brackets, parens and quotes.
+    * expression mode for small, basic expressions on the fly.
+    * REPL mode offers interactivity, and accepts multi-line expressions since it respects matching braces, brackets, parens and quotes.
     * stdin mode accepts larger scripts or programs on the fly, which need not be expressions as such. Being stdin it can be used with piped input.
     * edit mode adds basic TUI (terminal user interface) editing-in-place to stdin mode.
     * the classic script mode runs any .rs file consisting of a valid Rust script or program.
 * You may develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from rs-script.
 * You can use a shebang to write scripts in Rust.
 * Supports a personal library of code samples for reuse. The starter set provided includes multiple examples from popular crates, as well as original examples including fast factorial and Fibonacci calculation with big-integer support, light-dark theme detection, TUI editing and colour support.
-* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. Defaults to basic ANSI-16 colours and dark mode support on Windows for reasons beyond my control, but it defaults to dark mode colours that will also work well with light modes.
+* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. `rs-script` defaults to basic ANSI-16 colours and dark mode support on Windows for reasons beyond my control, but the dark mode colours it uses should also work well with most light modes.
 
 ## Platform Support
 This crate is designed to be cross-platform and supports:
@@ -139,7 +140,7 @@ Contributions will be given due consideration if they fit the goals of the proje
 
 ## Of possible interest: AI
 
-I made extensive use of free versions of AI - mostly ChatGPT and to a lesser extent Gemini - for three aspects of this project:
+I made extensive use of free versions of LLMs - mostly ChatGPT and to a lesser extent Gemini - for three aspects of this project:
 * problem solving
 * guidance on best practices
 * grunt work of generating "first-approximation" code and boilerplate to spec.
@@ -157,4 +158,4 @@ MIT license (LICENSE-MIT or http://opensource.org/licenses/MIT)
 at your option.
 
 ## Contribution
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you shall be dual-licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you will be dual-licensed as above, without any additional terms or conditions.

@@ -2,35 +2,49 @@
 name = "rs_script"
 version = "0.1.0"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
-description = "A script runner and REPL for Rust snippets and programs"
+description = "A script runner and REPL for Rust snippets, expressions and programs"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 exclude = ["obsolete"]
+categories = ["command-line-utilities", "development-tools::build-utils"]
+keywords = [
+    "REPL",
+    "command-line",
+    "development",
+    "eval",
+    "expression",
+    "playground",
+    "prototyping",
+    "rapid",
+    "runner",
+    "script",
+    "tool",
+]
 
 [dependencies]
 bitflags = "2.5.0"
 clap = { version = "4.5.4", features = ["cargo", "derive"] }
+crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
+edit = "0.1.5"
 env_logger = "0.11.3"
+home = "0.5.9"
+lazy_static = "1.4.0"
 log = "0.4.21"
+nu-ansi-term = "0.50.0"
+proc-macro2 = "1.0.83"
+quote = "1.0.36"
+ratatui = "0.26.3"
+reedline = "0.32.0"
+reedline-repl-rs = "1.1.1"
 regex = "1.10.3"
 serde = { version = "1.0.98", features = ["derive"] }
-toml = "0.8.12"
-syn = { version = "2.0.60", features = ["extra-traits", "full", "visit"] }
-quote = "1.0.36"
 strum = { version = "0.26.2", features = ["derive", "phf"] }
-lazy_static = "1.4.0"
-edit = "0.1.5"
-termbg = "0.5.0"
 supports-color = "3.0.0"
-reedline = "0.32.0"
-nu-ansi-term = "0.50.0"
-reedline-repl-rs = "1.1.1"
-wsl = "0.1.0"
-home = "0.5.9"
-proc-macro2 = "1.0.83"
-ratatui = "0.26.3"
+syn = { version = "2.0.60", features = ["extra-traits", "full", "visit"] }
+termbg = "0.5.0"
+toml = "0.8.12"
 tui-textarea = "0.4.0"
-crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
+wsl = "0.1.0"
 
 [profile.dev]
 opt-level = 1 # Use slightly better optimizations.

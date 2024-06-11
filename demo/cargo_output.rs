@@ -24,7 +24,7 @@ fn prog() -> Option<String> {
 
 /// Run a command (in this case a cargo search for the log crate),
 /// and capture and print its stdout and stderr concurrently in a
-///  separate thread.
+/// separate thread.
 fn main() {
     Builder::new().filter_level(log::LevelFilter::Debug).init();
 

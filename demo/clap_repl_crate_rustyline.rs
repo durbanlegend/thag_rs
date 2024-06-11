@@ -41,6 +41,8 @@ enum SampleCommand {
     Quit,
 }
 
+/// Older version of published clap_repl crate example, modified to prototype a
+/// (dummy) Rust REPL.
 fn main() {
     // Use `ClapEditor` instead of the `rustyline::DefaultEditor`.
     let mut editor = ClapEditor::<SampleCommand>::new();

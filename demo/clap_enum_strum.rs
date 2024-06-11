@@ -18,20 +18,7 @@ struct Cli {
 }
 
 #[derive(
-    ValueEnum,
-    EnumIter,
-    EnumProperty,
-    IntoStaticStr,
-    // Copy,
-    Clone,
-    Debug,
-    Default,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
+    ValueEnum, EnumIter, EnumProperty, IntoStaticStr, Clone, Debug, Default, Serialize, Deserialize,
 )]
 #[strum(serialize_all = "kebab-case")]
 enum Opt {
@@ -47,6 +34,8 @@ enum Opt {
     VariantNum3,
 }
 
+/// Exploring using clap with an enum, in conjunction with strum.
+/// E.g. rs_script demo/clap_enum_strum.rs -- variant-num2
 fn main() {
     let cli = Cli::parse();
 
@@ -61,10 +50,9 @@ fn main() {
     println!("\nEnum properties and text, using strum:");
     for option in Opt::iter() {
         println!(
-            "option: {:?}, {}",
-            // option,
+            "strum associated property 'key'={}, variant={:#?}",
             option.get_str("key").unwrap(),
-            <Opt as Into<&'static str>>::into(option)
+            <Opt as Into<&'static str>>::into(option),
         );
     }
 
@@ -72,10 +60,11 @@ fn main() {
     println!("\nEnum Variants, using clap:");
     for variant in Opt::value_variants() {
         let poss_val = variant.to_possible_value().unwrap();
-        println!("{}={poss_val:#?}", poss_val.get_name());
+        println!("name={}\nvariant={poss_val:#?}", poss_val.get_name());
         // Optionally, print doc comments if available
         if let Some(comment) = poss_val.get_help() {
             println!("Help (from doc comment) = {}", comment);
         }
+        println!();
     }
 }

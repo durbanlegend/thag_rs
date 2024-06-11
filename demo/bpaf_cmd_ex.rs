@@ -1,6 +1,8 @@
-//! [dependencies]
-//! bpaf = { version = "0.9.11", features = ["derive"] }
-//! bpaf_derive = "0.5.10"
+/*[toml]
+[dependencies]
+bpaf = { version = "0.9.11", features = ["derive"] }
+bpaf_derive = "0.5.10"
+*/
 
 use bpaf_derive::Bpaf;
 
@@ -25,6 +27,7 @@ pub struct Options {
     cmd: Cmd,
 }
 
+/// E.g. demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6
 fn main() {
     println!("{:?}", options().run())
 }

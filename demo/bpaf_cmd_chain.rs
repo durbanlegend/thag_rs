@@ -1,7 +1,11 @@
-//! [dependencies]
-//!  bpaf = { version = "0.9.11", features = ["derive"] }
-//!  bpaf_derive = "0.5.10"
+/*[toml]
+[dependencies]
+ bpaf = { version = "0.9.11", features = ["derive"] }
+ bpaf_derive = "0.5.10"
+*/
 
+/// Example from bpaf crate docs2/src/adjacent_command/derive.rs
+/// E.g. rs_script demo/bpaf_cmd-chain.rs -- eat Fastfood drink --coffee sleep --time=5
 use bpaf_derive::Bpaf;
 
 #[derive(Debug, Clone, Bpaf)]

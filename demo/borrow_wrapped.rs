@@ -3,6 +3,8 @@ struct MyStruct {
     // fields
 }
 
+/// Snippet demonstrating how to reference or clone a wrapped value without
+/// falling foul of the borrow checker.
 fn main() {
     let optional_struct: Option<MyStruct> = Some(MyStruct { /* initialize fields */ });
 

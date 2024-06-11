@@ -1,10 +1,11 @@
-// Parsing snippet from cargo-show-asm
-// Derive + typed fallback + external both with and without name
+/*[toml]
+[dependencies]
+ bpaf = { version = "0.9.11", features = ["derive", "autocomplete"] }
+ bpaf_derive = "0.5.10"
+*/
 
-//! [dependencies]
-//!  bpaf = { version = "0.9.11", features = ["derive", "autocomplete"] }
-//!  bpaf_derive = "0.5.10"
-
+/// Parsing snippet from cargo-show-asm
+/// Derive + typed fallback + external both with and without name
 use bpaf::{construct, long, Bpaf, Parser, ShellComp};
 use std::{convert::Infallible, path::PathBuf};
 

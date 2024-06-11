@@ -1,6 +1,8 @@
-//!    [dependencies]
-//!     env_logger = "0.11.3"
-//!     log = "0.4.21"
+/*[toml]
+[dependencies]
+env_logger = "0.11.3"
+log = "0.4.21"
+*/
 
 use env_logger::Builder;
 use log::debug;
@@ -20,14 +22,17 @@ fn prog() -> Option<String> {
         .map(String::from)
 }
 
+/// Run a command (in this case a cargo search for the log crate),
+/// and capture and print its stdout and stderr concurrently in a
+///  separate thread.
 fn main() {
     Builder::new().filter_level(log::LevelFilter::Debug).init();
 
-    debug!("@@@@@@@@ Running {:#?}", prog().unwrap());
+    eprintln!("Running {:#?}", prog().unwrap());
     // Define the command and arguments
     let mut cmd = Command::new("cargo");
-    cmd.args(["build", "--verbose"]);
-    // cmd.args(["search", "log", "--limit", "1"]);
+    // cmd.args(["build", "--verbose"]);
+    cmd.args(["search", "log", "--limit", "1"]);
 
     // Redirect stdout to a pipe
     let mut child = cmd

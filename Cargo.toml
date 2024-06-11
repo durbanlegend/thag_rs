@@ -12,7 +12,7 @@ keywords = [
     "command-line",
     "development",
     "eval",
-    "expression",
+    "expression-evaluator",
     "playground",
     "prototyping",
     "rapid",

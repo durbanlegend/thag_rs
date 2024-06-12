@@ -13,6 +13,7 @@ pub enum BuildRunError {
     OsString(OsString), // For unconvertible OsStrings
     // Path(String),          // For Path and PathBuf issues
     ReplError(reedline_repl_rs::Error), // For REPL errors
+    StrumParse(strum::ParseError),      // For strum parse enum
     TomlDe(TomlDeError),                // For TOML deserialization errors
     TomlSer(TomlSerError),              // For TOML serialization errors
 }
@@ -28,6 +29,12 @@ impl From<io::Error> for BuildRunError {
 impl From<reedline_repl_rs::Error> for BuildRunError {
     fn from(err: reedline_repl_rs::Error) -> Self {
         BuildRunError::ReplError(err)
+    }
+}
+
+impl From<strum::ParseError> for BuildRunError {
+    fn from(err: strum::ParseError) -> Self {
+        BuildRunError::StrumParse(err)
     }
 }
 
@@ -67,6 +74,7 @@ impl std::fmt::Display for BuildRunError {
                 Ok(())
             }
             BuildRunError::ReplError(e) => write!(f, "REPL: {e}"),
+            BuildRunError::StrumParse(e) => write!(f, "{e:?}"),
             BuildRunError::TomlDe(e) => write!(f, "{e:?}"),
             BuildRunError::TomlSer(e) => write!(f, "{e:?}"),
         }
@@ -85,6 +93,7 @@ impl Error for BuildRunError {
             BuildRunError::Io(ref e) => Some(e),
             BuildRunError::OsString(ref _o) => Some(self),
             BuildRunError::ReplError(ref e) => Some(e),
+            BuildRunError::StrumParse(ref e) => Some(e),
             BuildRunError::TomlDe(ref e) => Some(e),
             BuildRunError::TomlSer(ref e) => Some(e),
             BuildRunError::Cancelled => Some(self),

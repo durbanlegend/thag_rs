@@ -11,10 +11,12 @@ use crate::{
     term_colors::{nu_resolve_style, MessageLevel},
 };
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use reedline::{
-    DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
-    PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
+    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
+    EditCommand, Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt,
+    PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent,
+    ReedlineMenu, Signal,
 };
 use reedline_repl_rs::{
     clap::{ArgMatches, Command as ReplCommand},
@@ -22,14 +24,15 @@ use reedline_repl_rs::{
 };
 use std::borrow::Cow;
 use std::error::Error;
+use std::str::FromStr;
 use std::time::Instant;
-use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
+use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 
 const HISTORY_FILE: &str = "rs_eval_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
 // Legacy enum, still useful but not sure if it still pays its way.
-#[derive(Debug, Parser, EnumIter, EnumProperty, IntoStaticStr)]
+#[derive(Debug, Parser, EnumIter, IntoStaticStr)]
 #[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
 #[strum(serialize_all = "kebab-case")]
 enum LoopCommand {
@@ -49,6 +52,28 @@ enum LoopCommand {
     History,
     /// Exit the REPL
     Quit,
+}
+
+#[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
+#[command(name = "", disable_help_flag = true, disable_help_subcommand = true)] // Disable automatic help subcommand and flag
+#[strum(serialize_all = "kebab-case")]
+/// Enter a Rust expression to be evaluated.
+/// Unlike the main REPL, partial commands are accepted without the tab key.
+enum EvalCommand {
+    /// Show help information
+    Help,
+    /// Exit the expression evaluator, back to the main REPL
+    Quit,
+}
+
+impl EvalCommand {
+    fn print_help() {
+        let mut command = EvalCommand::command();
+        let mut buf = Vec::new();
+        command.write_help(&mut buf).unwrap();
+        let help_message = String::from_utf8(buf).unwrap();
+        println!("{}", help_message);
+    }
 }
 
 #[derive(Debug)]
@@ -92,6 +117,22 @@ impl Prompt for EvalPrompt {
             prefix, history_search.term
         ))
     }
+}
+
+fn add_menu_keybindings(keybindings: &mut Keybindings) {
+    keybindings.add_binding(
+        KeyModifiers::NONE,
+        KeyCode::Tab,
+        ReedlineEvent::UntilFound(vec![
+            ReedlineEvent::Menu("completion_menu".to_string()),
+            ReedlineEvent::MenuNext,
+        ]),
+    );
+    keybindings.add_binding(
+        KeyModifiers::ALT,
+        KeyCode::Enter,
+        ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
+    );
 }
 
 pub fn run_repl(
@@ -262,12 +303,37 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
             .expect("Error configuring history with file"),
     );
 
+    let cmd_vec = EvalCommand::iter()
+        .map(<EvalCommand as Into<&'static str>>::into)
+        .map(String::from)
+        .collect::<Vec<String>>();
+
+    let completer = Box::new(DefaultCompleter::new_with_wordlen(cmd_vec.clone(), 2));
+
+    // Use the interactive menu to select options from the completer
+    let columnar_menu = ColumnarMenu::default()
+        .with_name("completion_menu")
+        .with_columns(2)
+        .with_column_width(None)
+        .with_column_padding(2);
+
+    let completion_menu = Box::new(columnar_menu);
+
+    let mut keybindings = default_emacs_keybindings();
+    add_menu_keybindings(&mut keybindings);
+
+    let edit_mode = Box::new(Emacs::new(keybindings));
+
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
             DefaultHinter::default().with_style(nu_resolve_style(MessageLevel::Ghost)),
         ))
-        .with_history(history);
+        .with_history(history)
+        .with_completer(completer)
+        .with_hinter(Box::<DefaultHinter>::default())
+        .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
+        .with_edit_mode(edit_mode);
 
     let prompt = EvalPrompt("expr");
 
@@ -286,9 +352,47 @@ fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
         if rs_source.is_empty() {
             continue;
         }
-        let lc = rs_source.to_lowercase();
-        if lc == "q" || lc == "quit" {
-            break;
+        // let lc = rs_source.to_lowercase();
+        // if lc == "q" || lc == "quit" {
+        //     break;
+        // }
+        let maybe_cmd = match shlex::split(rs_source) {
+            Some(split) => {
+                // eprintln!("split={split:?}");
+                // TODO look up in command vector
+                let mut matches = 0;
+                // let mut matching_key = String::new();
+                let first_word = split[0].as_str();
+                let mut cmd = String::new();
+                for key in cmd_vec.iter() {
+                    if key.starts_with(first_word) {
+                        matches += 1;
+                        // Selects last match
+                        if matches == 1 {
+                            cmd = key.to_string();
+                        }
+                        // eprintln!("key={key}, split[0]={}", split[0]);
+                    }
+                }
+                if matches == 1 {
+                    Some(cmd)
+                } else {
+                    // println!("No single matching key found");
+                    None
+                }
+            }
+            None => None,
+        };
+
+        if let Some(cmd) = maybe_cmd {
+            let variant = EvalCommand::from_str(&cmd)?;
+            match variant {
+                EvalCommand::Help => {
+                    EvalCommand::print_help();
+                    continue;
+                }
+                EvalCommand::Quit => break,
+            }
         }
 
         let rs_manifest = extract_manifest(rs_source, Instant::now())

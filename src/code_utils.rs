@@ -486,7 +486,7 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
     }
     if let Some(file) = most_recent {
         log!(
-            Verbosity::Normal,
+            Verbosity::Verbose,
             "The most recently modified file compared to {executable:#?} is: {file:#?}"
         );
         debug_log!("Executable modified time is{baseline_modified:#?}");

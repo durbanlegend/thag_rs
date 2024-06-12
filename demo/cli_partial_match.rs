@@ -11,22 +11,24 @@ strum = { version = "0.26.2", features = ["derive"] }
 use clap::{CommandFactory, Parser};
 use console::style;
 use rustyline::DefaultEditor;
-use std::collections::HashMap;
 use std::error::Error;
-use strum::{EnumIter, EnumProperty, FromRepr, IntoEnumIterator, IntoStaticStr};
+use std::str::FromStr;
+use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 
-#[derive(Debug, Parser, EnumIter, EnumProperty, FromRepr, IntoStaticStr)]
+#[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(name = "", disable_help_flag = true, disable_help_subcommand = true)] // Disable automatic help subcommand and flag
 #[strum(serialize_all = "kebab-case")]
 enum LoopCommand {
-    /// Enter, paste or modify your code and optionally edit your generated Cargo.toml
-    Edit,
-    /// Delete generated files
-    Delete,
     /// Evaluate an expression. Enclose complex expressions in braces {}.
     Eval,
+    /// Enter, paste or modify your code
+    Edit,
+    /// Enter, paste or modify the generated Cargo.toml file your code
+    Toml,
     /// List generated files
     List,
+    /// Delete generated files
+    Delete,
     /// Exit REPL
     Quit,
     /// Show help information
@@ -45,29 +47,12 @@ impl LoopCommand {
 
 /// Experiment with matching REPL commands with a partial match of any length.
 fn main() -> Result<(), Box<dyn Error>> {
-    let hashmap: HashMap<String, LoopCommand> = LoopCommand::iter()
-        .map(|v| {
-            let d = v as usize;
-            let v = LoopCommand::from_repr(d).unwrap();
-            let kebab = <LoopCommand as Into<&'static str>>::into(v).to_string(); //.to_case(Case::Kebab);
-            (kebab, LoopCommand::from_repr(d).unwrap())
-        })
-        .collect();
-
-    // println!("{hashmap:#?}");
-
-    // `()` can be used when no completer is required
     let mut rl = DefaultEditor::new().unwrap();
-    #[cfg(feature = "with-file-history")]
-    if rl.load_history("history.txt").is_err() {
-        println!("No previous history.");
-    }
 
-    let mut cmd_vec = LoopCommand::iter()
+    let cmd_vec = LoopCommand::iter()
         .map(<LoopCommand as Into<&'static str>>::into)
         .map(String::from)
         .collect::<Vec<String>>();
-    cmd_vec.sort();
     let cmd_list =
         "Enter full or partial match of one of the following: ".to_owned() + &cmd_vec.join(", ");
 
@@ -86,33 +71,29 @@ fn main() -> Result<(), Box<dyn Error>> {
             continue;
         }
         _ = rl.add_history_entry(line.as_str());
-        match shlex::split(&line) {
+        let command = match shlex::split(&line) {
             Some(split) => {
                 // eprintln!("split={split:?}");
-                // TODO look up in hashmap keys, which contains the splt
+                // TODO look up in command vector
                 let mut matches = 0;
-                let mut matching_key = String::new();
-                for key in hashmap.keys() {
-                    if key.starts_with(split[0].as_str()) {
+                // let mut matching_key = String::new();
+                let first_word = split[0].as_str();
+                let mut cmd = String::new();
+                for key in cmd_vec.iter() {
+                    if key.starts_with(first_word) {
                         matches += 1;
                         // Selects last match
                         if matches == 1 {
-                            matching_key = key.to_string();
+                            cmd = key.to_string();
                         }
                         // eprintln!("key={key}, split[0]={}", split[0]);
                     }
                 }
                 if matches == 1 {
-                    println!(
-                        "matching_key={matching_key}, matching variant={:#?}",
-                        hashmap.get(&matching_key).unwrap()
-                    );
-                    if matching_key == "help" {
-                        LoopCommand::print_help();
-                    }
+                    cmd
                 } else {
                     println!("No single matching key found");
-                    LoopCommand::print_help();
+                    continue;
                 }
             }
             None => {
@@ -121,7 +102,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                     style("error:").red().bold()
                 );
                 LoopCommand::print_help();
+                continue;
             }
+        };
+        println!(
+            "command={command}, matching variant={:#?}",
+            LoopCommand::from_str(&command)?
+        );
+        if command == "help" {
+            println!();
+            LoopCommand::print_help();
+            continue;
         }
     }
     Ok(())

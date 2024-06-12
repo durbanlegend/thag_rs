@@ -7,7 +7,6 @@ nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
 termbg = "0.5.0"
-wsl = "0.1.0"
 */
 use crate::debug_log;
 use crate::log;

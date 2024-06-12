@@ -36,7 +36,7 @@ quote = "1.0.36"
 ratatui = "0.26.3"
 reedline = "0.32.0"
 reedline-repl-rs = "1.1.1"
-regex = "1.10.3"
+regex = "1.10.5"
 serde = { version = "1.0.98", features = ["derive"] }
 strum = { version = "0.26.2", features = ["derive", "phf"] }
 supports-color = "3.0.0"

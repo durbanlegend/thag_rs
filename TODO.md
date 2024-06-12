@@ -8,6 +8,7 @@
 - [ ]  Document public APIs
 - [ ]  More unit and integration tests
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
+- [ ]  Use partial matching in repl.rs as per demo/cli_partial_match.rs
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

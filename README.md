@@ -41,7 +41,7 @@ Here are some examples:
 rs-script -e '(1..=34).product::<u128>()'
 ```
 
-#### Shoehorn a script into an expression, just to prove a point of some kind:
+#### Shoehorn a script into an expression, should the need ever arise!:
 ```bash
 rs-script -e "$(cat demo/fizz_buzz.rs)"
 ```

@@ -4,7 +4,7 @@ clap = { version = "4.5.3", features = ["derive"] }
 shlex = "0.1.1"
 */
 
-/// Example from clap cookbook.
+/// Example from the clap cookbook, not using the clap-repl crate.
 /// Can't find a keybinding to navigate history,
 /// unlike clap_repl_rustyline.rs and unlike clap_repl_reedline.rs.
 use std::io::Write;

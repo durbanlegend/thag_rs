@@ -8,7 +8,8 @@ quote = "1.0.36"
 syn = { version = "2.0.60", features = ["full"] }
 */
 
-/// Original example from clap-repl package
+/// Original published example from clap-repl crate, before change
+/// from rustyline to reedline.
 use clap::Parser;
 use clap_repl::ClapEditor;
 use console::style;

@@ -1,10 +1,14 @@
-//! [dependencies]
-//! clap = { version = "4.5.4", features = ["cargo"] }
+/*[toml]
+[dependencies]
+clap = { version = "4.5.4", features = ["cargo"] }
+*/
 
 use std::path::PathBuf;
 
 use clap::{arg, command, value_parser, ArgAction, Command};
 
+/// Published example from clap tutorial (builder)
+/// E.g. rs-script demo/clap_tut_01.rs -ddd -c dummy.cfg test -l
 fn main() {
     let matches = command!() // requires `cargo` feature
         .arg(arg!([name] "Optional name to operate on"))

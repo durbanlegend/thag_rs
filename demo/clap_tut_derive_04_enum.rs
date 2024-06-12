@@ -3,7 +3,7 @@
 clap = { version = "4.5.4", features = ["cargo", "derive"] }
 */
 
-use clap::{crate_version, Parser, ValueEnum};
+use clap::{Parser, ValueEnum};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -23,6 +23,8 @@ enum Mode {
     Slow,
 }
 
+/// Published example from clap tutorial (derive), with added displays.
+/// E.g. rs-script demo/clap_tut_04.rs -ddd -c dummy.cfg test -l
 fn main() {
     let cli = Cli::parse();
 
@@ -34,6 +36,8 @@ fn main() {
             println!("Tortoise");
         }
     }
+
+    println!();
 
     // println!("{}", cli.long_version(crate_version!()));
 
@@ -47,4 +51,5 @@ fn main() {
             println!("Help = {}", comment);
         }
     }
+    println!();
 }

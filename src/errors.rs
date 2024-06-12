@@ -5,17 +5,17 @@ use toml::ser::Error as TomlSerError;
 
 #[derive(Debug)]
 pub enum BuildRunError {
-    Cancelled,          // For user electing to cancel
-    Command(String),    // For errors during Cargo build or program execution
-    FromStr(String),    // For parsing CargoManifest from a string
-    Io(io::Error),      // For I/O errors
-    NoneOption(String), // For unwrapping Options
-    OsString(OsString), // For unconvertible OsStrings
+    Cancelled,                     // For user electing to cancel
+    ClapError(clap::error::Error), // For clap errors
+    Command(String),               // For errors during Cargo build or program execution
+    FromStr(String),               // For parsing CargoManifest from a string
+    Io(io::Error),                 // For I/O errors
+    NoneOption(String),            // For unwrapping Options
+    OsString(OsString),            // For unconvertible OsStrings
     // Path(String),          // For Path and PathBuf issues
-    ReplError(reedline_repl_rs::Error), // For REPL errors
-    StrumParse(strum::ParseError),      // For strum parse enum
-    TomlDe(TomlDeError),                // For TOML deserialization errors
-    TomlSer(TomlSerError),              // For TOML serialization errors
+    StrumParse(strum::ParseError), // For strum parse enum
+    TomlDe(TomlDeError),           // For TOML deserialization errors
+    TomlSer(TomlSerError),         // For TOML serialization errors
 }
 
 impl BuildRunError {}
@@ -26,9 +26,9 @@ impl From<io::Error> for BuildRunError {
     }
 }
 
-impl From<reedline_repl_rs::Error> for BuildRunError {
-    fn from(err: reedline_repl_rs::Error) -> Self {
-        BuildRunError::ReplError(err)
+impl From<clap::error::Error> for BuildRunError {
+    fn from(err: clap::error::Error) -> Self {
+        BuildRunError::ClapError(err)
     }
 }
 
@@ -60,6 +60,7 @@ impl std::fmt::Display for BuildRunError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BuildRunError::Cancelled => write!(f, "Cancelled"),
+            BuildRunError::ClapError(e) => write!(f, "{e:?}"),
             BuildRunError::Command(s)
             | BuildRunError::FromStr(s)
             | BuildRunError::NoneOption(s) => {
@@ -73,7 +74,6 @@ impl std::fmt::Display for BuildRunError {
                 writeln!(f, "{o:#?}")?;
                 Ok(())
             }
-            BuildRunError::ReplError(e) => write!(f, "REPL: {e}"),
             BuildRunError::StrumParse(e) => write!(f, "{e:?}"),
             BuildRunError::TomlDe(e) => write!(f, "{e:?}"),
             BuildRunError::TomlSer(e) => write!(f, "{e:?}"),
@@ -90,9 +90,9 @@ impl Error for BuildRunError {
             BuildRunError::Command(ref _e)
             | BuildRunError::FromStr(ref _e)
             | BuildRunError::NoneOption(ref _e) => Some(self),
+            BuildRunError::ClapError(ref e) => Some(e),
             BuildRunError::Io(ref e) => Some(e),
             BuildRunError::OsString(ref _o) => Some(self),
-            BuildRunError::ReplError(ref e) => Some(e),
             BuildRunError::StrumParse(ref e) => Some(e),
             BuildRunError::TomlDe(ref e) => Some(e),
             BuildRunError::TomlSer(ref e) => Some(e),

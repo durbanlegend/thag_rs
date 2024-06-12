@@ -11,17 +11,16 @@ use crate::{
     term_colors::{nu_resolve_style, MessageLevel},
 };
 
+use clap::ArgMatches;
 use clap::{CommandFactory, Parser};
+use lazy_static::lazy_static;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
     EditCommand, Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt,
     PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent,
     ReedlineMenu, Signal,
 };
-use reedline_repl_rs::{
-    clap::{ArgMatches, Command as ReplCommand},
-    Repl,
-};
+use regex::Regex;
 use std::borrow::Cow;
 use std::error::Error;
 use std::str::FromStr;
@@ -31,14 +30,49 @@ use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 const HISTORY_FILE: &str = "rs_eval_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
-// Legacy enum, still useful but not sure if it still pays its way.
-#[derive(Debug, Parser, EnumIter, IntoStaticStr)]
-#[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
+#[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
+#[command(name = "", disable_help_flag = true, disable_help_subcommand = true)] // Disable automatic help subcommand and flag
 #[strum(serialize_all = "kebab-case")]
-enum LoopCommand {
-    /// Enter/paste and evaluate a Rust expression. This is the convenient option to use for snippets or even short programs.
-    Eval,
-    /// Edit the Rust expression. Edit/run can also be used as an alternative to eval for longer snippets and programs.
+#[doc = r"REPL mode lets you type or paste a Rust expression to be evaluated.
+Start by choosing the eval option and entering your expression. Expressions between matching braces,
+brackets, parens or quotes may span multiple lines.
+If valid, the expression will be converted into a Rust program, and built and run using Cargo.
+Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
+of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
+comment block of the form
+/*[toml]
+[dependencies]
+...
+*/
+From here they will be extracted to a dedicated Cargo.toml file.
+In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
+At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
+go back and edit your expression or its generated Cargo.toml file and copy or save them from the
+editor or directly from their temporary disk locations.
+Outside of the expression evaluator, use the tab key to show selections and to complete partial
+matching selections."]
+#[doc = r"REPL mode lets you type or paste a Rust expression to be evaluated.
+Start by choosing the eval option and entering your expression. Expressions between matching braces,
+brackets, parens or quotes may span multiple lines.
+If valid, the expression will be converted into a Rust program, and built and run using Cargo.
+Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
+of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
+comment block of the form
+/*[toml]
+[dependencies]
+...
+*/
+From here they will be extracted to a dedicated Cargo.toml file.
+In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
+At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
+go back and edit your expression or its generated Cargo.toml file and copy or save them from the
+editor or directly from their temporary disk locations.
+Outside of the expression evaluator, use the tab key to show selections and to complete partial
+matching selections."]
+enum ReplCommand {
+    /// Show the REPL banner
+    Banner,
+    /// Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
     Edit,
     /// Edit the generated Cargo.toml
     Toml,
@@ -46,29 +80,19 @@ enum LoopCommand {
     Run,
     /// Delete all temporary files for this eval (see list)
     Delete,
-    /// List temporary files
+    /// List temporary files for this eval
     List,
     /// Edit history
     History,
+    /// Show help information
+    Help,
     /// Exit the REPL
     Quit,
 }
 
-#[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
-#[command(name = "", disable_help_flag = true, disable_help_subcommand = true)] // Disable automatic help subcommand and flag
-#[strum(serialize_all = "kebab-case")]
-/// Enter a Rust expression to be evaluated.
-/// Unlike the main REPL, partial commands are accepted without the tab key.
-enum EvalCommand {
-    /// Show help information
-    Help,
-    /// Exit the expression evaluator, back to the main REPL
-    Quit,
-}
-
-impl EvalCommand {
+impl ReplCommand {
     fn print_help() {
-        let mut command = EvalCommand::command();
+        let mut command = ReplCommand::command();
         let mut buf = Vec::new();
         command.write_help(&mut buf).unwrap();
         let help_message = String::from_utf8(buf).unwrap();
@@ -85,8 +109,8 @@ struct Context<'a> {
     start: &'a Instant,
 }
 
-pub struct EvalPrompt(&'static str);
-impl Prompt for EvalPrompt {
+pub struct ReplPrompt(&'static str);
+impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
         Cow::Owned(self.0.to_string())
     }
@@ -141,87 +165,154 @@ pub fn run_repl(
     build_state: &mut BuildState,
     start: Instant,
 ) -> Result<(), Box<dyn Error>> {
-    let mut cmd_vec = LoopCommand::iter()
-        .filter(|v| !matches!(v, LoopCommand::Eval))
-        .map(<LoopCommand as Into<&'static str>>::into)
-        .map(String::from)
-        .collect::<Vec<String>>();
-    cmd_vec.sort();
-    let cmd_list = "eval or one of: ".to_owned() + &cmd_vec.join(", ") + " or help";
     #[allow(unused_variables)]
-    let context = Context {
+    let mut context = Context {
         options,
         proc_flags,
         build_state,
         start: &start,
     };
-    let mut repl = Repl::new(context)
-        .with_name("REPL")
-        // .with_version("v0.1.0")
-        .with_description(
-            "REPL mode lets you type or paste a Rust expression to be evaluated.
-Start by choosing the eval option and entering your expression. Expressions between matching braces,
-brackets, parens or quotes may span multiple lines.
-If valid, the expression will be converted into a Rust program, and built and run using Cargo.
-Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
-of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
-comment block of the form
-/*[toml]
-[dependencies]
-...
-*/
-From here they will be extracted to a dedicated Cargo.toml file.
-In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
-At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
-go back and edit your expression or its generated Cargo.toml file and copy or save them from the
-editor or their temporary disk locations.
-Outside of the expression evaluator, use the tab key to show selections and to complete partial
-matching selections.",
-        )
-        .with_banner(&format!(
-            "{}",
-            nu_resolve_style(MessageLevel::OuterPrompt)
-                .paint(&format!("Enter {}", cmd_list)),
+    let context: &mut Context = &mut context;
+    let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
+    let history = Box::new(
+        FileBackedHistory::with_file(25, history_file)
+            .expect("Error configuring history with file"),
+    );
+
+    let cmd_vec = ReplCommand::iter()
+        .map(<ReplCommand as Into<&'static str>>::into)
+        .map(String::from)
+        .collect::<Vec<String>>();
+
+    let completer = Box::new(DefaultCompleter::new_with_wordlen(cmd_vec.clone(), 2));
+
+    // Use the interactive menu to select options from the completer
+    let columnar_menu = ColumnarMenu::default()
+        .with_name("completion_menu")
+        .with_columns(2)
+        .with_column_width(None)
+        .with_column_padding(2);
+
+    let completion_menu = Box::new(columnar_menu);
+
+    let mut keybindings = default_emacs_keybindings();
+    add_menu_keybindings(&mut keybindings);
+
+    let edit_mode = Box::new(Emacs::new(keybindings));
+
+    let mut line_editor = Reedline::create()
+        .with_validator(Box::new(DefaultValidator))
+        .with_hinter(Box::new(
+            DefaultHinter::default().with_style(nu_resolve_style(MessageLevel::Ghost)),
         ))
-        .with_quick_completions(true)
-        .with_partial_completions(true)
-        // .with_on_after_command(display_banner)
+        .with_history(history)
+        .with_completer(completer)
+        .with_hinter(Box::<DefaultHinter>::default())
+        .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
+        .with_edit_mode(edit_mode);
 
-        .with_command(
-            ReplCommand::new("eval")
-                .about("Enter/paste and evaluate a Rust expression.
-This is the convenient option to use for snippets or even short programs.")
-                .subcommand(ReplCommand::new("quit")),
-            eval,
-        )
-        .with_command(
-            ReplCommand::new("edit").about("Edit Rust expression in editor"),
-            edit
-        )
-        .with_command(
-            ReplCommand::new("run").about("Attempt to build and run Rust expression"),
-            run_expr
-        )
-        .with_command(
-            ReplCommand::new("toml").about("Edit generated Cargo.toml"),
-            toml
-        )
-        .with_command(ReplCommand::new("list").about("List temporary files"), list)
-            .with_command(
-                ReplCommand::new("delete")
-                    .about("Delete all temporary files for this eval (see list)"),
-                delete,
+    let prompt = ReplPrompt("repl");
+
+    let cmd_list = cmd_vec.join(", ");
+
+    disp_repl_banner(&cmd_list);
+    loop {
+        let sig = line_editor.read_line(&prompt)?;
+        let input: &str = match sig {
+            Signal::Success(ref buffer) => buffer,
+            Signal::CtrlD | Signal::CtrlC => {
+                break;
+            }
+        };
+
+        // Process user input (line)
+
+        let rs_source = input.trim();
+        if rs_source.is_empty() {
+            continue;
+        }
+
+        let (first_word, rest) = parse_line(rs_source);
+        let maybe_cmd = {
+            let mut matches = 0;
+            let mut cmd = String::new();
+            for key in cmd_vec.iter() {
+                if key.starts_with(&first_word) {
+                    matches += 1;
+                    // Selects last match
+                    if matches == 1 {
+                        cmd = key.to_string();
+                    }
+                    // eprintln!("key={key}, split[0]={}", split[0]);
+                }
+            }
+            if matches == 1 {
+                Some(cmd)
+            } else {
+                // println!("No single matching key found");
+                None
+            }
+        };
+
+        if let Some(cmd) = maybe_cmd {
+            if let Ok(repl_command) = ReplCommand::from_str(&cmd) {
+                let args = clap::Command::new("")
+                    .no_binary_name(true)
+                    .try_get_matches_from_mut(rest)?;
+                match repl_command {
+                    ReplCommand::Banner => disp_repl_banner(&cmd_list),
+                    ReplCommand::Help => {
+                        ReplCommand::print_help();
+                    }
+                    ReplCommand::Quit => {
+                        quit(args.clone(), context)?;
+                    }
+                    ReplCommand::Edit => {
+                        edit(args.clone(), context)?;
+                    }
+                    ReplCommand::Toml => {
+                        toml(args.clone(), context)?;
+                    }
+                    ReplCommand::Run => {
+                        run_expr(args.clone(), context)?;
+                    }
+                    ReplCommand::Delete => {
+                        delete(args.clone(), context)?;
+                    }
+                    ReplCommand::List => {
+                        list(args.clone(), context)?;
+                    }
+                    ReplCommand::History => {
+                        edit_history(args.clone(), context)?;
+                    }
+                }
+                continue;
+            }
+        }
+
+        let rs_manifest = extract_manifest(rs_source, Instant::now())
+            .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
+        context.build_state.rs_manifest = Some(rs_manifest);
+
+        let maybe_ast = extract_ast(rs_source);
+
+        if let Ok(expr_ast) = maybe_ast {
+            code_utils::process_expr(
+                &expr_ast,
+                context.build_state,
+                rs_source,
+                context.options,
+                context.proc_flags,
+                context.start,
             )
-        .with_command(
-            ReplCommand::new("quit").about("Exit the REPL"),
-            // .aliases(["q", "exit"]), // don't work
-            quit,
-        )
-        .with_command(ReplCommand::new("history").about("Edit history."), history)
-        // .with_error_handler(|ref _err, _repl| Ok(()))
-        .with_stop_on_ctrl_c(true);
-
-    repl.run()?;
+            .map_err(|_err| BuildRunError::Command("Error processing expression".to_string()))?;
+        } else {
+            nu_color_println!(
+                nu_resolve_style(MessageLevel::Error),
+                "Error parsing code: {maybe_ast:#?}"
+            );
+        }
+    }
     Ok(())
 }
 
@@ -246,7 +337,7 @@ fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn history(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+fn edit_history(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     edit::edit_file(context.build_state.working_dir_path.join(HISTORY_FILE))?;
     Ok(Some(String::from("End of history file edit")))
 }
@@ -286,151 +377,28 @@ fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
     Ok(Some(String::from("End of run")))
 }
 
-/// From Reedline validation example with enhancements
-#[allow(clippy::needless_pass_by_value)]
-#[allow(clippy::unnecessary_wraps)]
-fn eval(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    let (options, proc_flags, build_state, start) = (
-        &mut context.options,
-        &context.proc_flags,
-        &mut context.build_state,
-        &context.start,
-    );
-
-    let history_file = build_state.cargo_home.join(HISTORY_FILE);
-    let history = Box::new(
-        FileBackedHistory::with_file(25, history_file)
-            .expect("Error configuring history with file"),
-    );
-
-    let cmd_vec = EvalCommand::iter()
-        .map(<EvalCommand as Into<&'static str>>::into)
-        .map(String::from)
-        .collect::<Vec<String>>();
-
-    let completer = Box::new(DefaultCompleter::new_with_wordlen(cmd_vec.clone(), 2));
-
-    // Use the interactive menu to select options from the completer
-    let columnar_menu = ColumnarMenu::default()
-        .with_name("completion_menu")
-        .with_columns(2)
-        .with_column_width(None)
-        .with_column_padding(2);
-
-    let completion_menu = Box::new(columnar_menu);
-
-    let mut keybindings = default_emacs_keybindings();
-    add_menu_keybindings(&mut keybindings);
-
-    let edit_mode = Box::new(Emacs::new(keybindings));
-
-    let mut line_editor = Reedline::create()
-        .with_validator(Box::new(DefaultValidator))
-        .with_hinter(Box::new(
-            DefaultHinter::default().with_style(nu_resolve_style(MessageLevel::Ghost)),
-        ))
-        .with_history(history)
-        .with_completer(completer)
-        .with_hinter(Box::<DefaultHinter>::default())
-        .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
-        .with_edit_mode(edit_mode);
-
-    let prompt = EvalPrompt("expr");
-
-    disp_eval_banner();
-    loop {
-        let sig = line_editor.read_line(&prompt)?;
-        let input: &str = match sig {
-            Signal::Success(ref buffer) => buffer,
-            Signal::CtrlD | Signal::CtrlC => {
-                break;
-            }
-        };
-        // Process user input (line)
-
-        let rs_source = input.trim();
-        if rs_source.is_empty() {
-            continue;
-        }
-        // let lc = rs_source.to_lowercase();
-        // if lc == "q" || lc == "quit" {
-        //     break;
-        // }
-        let maybe_cmd = match shlex::split(rs_source) {
-            Some(split) => {
-                // eprintln!("split={split:?}");
-                // TODO look up in command vector
-                let mut matches = 0;
-                // let mut matching_key = String::new();
-                let first_word = split[0].as_str();
-                let mut cmd = String::new();
-                for key in cmd_vec.iter() {
-                    if key.starts_with(first_word) {
-                        matches += 1;
-                        // Selects last match
-                        if matches == 1 {
-                            cmd = key.to_string();
-                        }
-                        // eprintln!("key={key}, split[0]={}", split[0]);
-                    }
-                }
-                if matches == 1 {
-                    Some(cmd)
-                } else {
-                    // println!("No single matching key found");
-                    None
-                }
-            }
-            None => None,
-        };
-
-        if let Some(cmd) = maybe_cmd {
-            let variant = EvalCommand::from_str(&cmd)?;
-            match variant {
-                EvalCommand::Help => {
-                    EvalCommand::print_help();
-                    continue;
-                }
-                EvalCommand::Quit => break,
-            }
-        }
-
-        let rs_manifest = extract_manifest(rs_source, Instant::now())
-            .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
-        build_state.rs_manifest = Some(rs_manifest);
-
-        let maybe_ast = extract_ast(rs_source);
-
-        if let Ok(expr_ast) = maybe_ast {
-            code_utils::process_expr(
-                &expr_ast,
-                build_state,
-                rs_source,
-                options,
-                proc_flags,
-                start,
-            )
-            .map_err(|_err| BuildRunError::Command("Error processing expression".to_string()))?;
-        } else {
-            nu_color_println!(
-                nu_resolve_style(MessageLevel::Error),
-                "Error parsing code: {maybe_ast:#?}"
-            );
-            // return Err(BuildRunError::Command(
-            //     "Error parsing code: {maybe_ast:#?}".to_string(),
-            // ));
-        }
-
-        disp_eval_banner();
+// Borrowed from clap-repl crate.
+fn parse_line(line: &str) -> (String, Vec<String>) {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r#"("[^"\n]+"|[\S]+)"#).unwrap();
     }
-
-    Ok(Some("Back in main REPL".to_string()))
+    let mut args = RE
+        .captures_iter(line)
+        .map(|a| a[0].to_string().replace('\"', ""))
+        .collect::<Vec<String>>();
+    let command: String = args.drain(..1).collect();
+    (command, args)
 }
 
-fn disp_eval_banner() {
+fn disp_repl_banner(cmd_list: &str) {
+    nu_color_println!(
+        nu_resolve_style(MessageLevel::OuterPrompt),
+        r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#
+    );
+
     nu_color_println!(
         nu_resolve_style(MessageLevel::InnerPrompt),
-        r"Enter an expression (e.g., 2 + 3), or Ctrl-C/D to go back. Expressions in matching braces, brackets or quotes may span multiple lines.
+        r"Expressions in matching braces, brackets or quotes may span multiple lines.
 Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
     );
 }

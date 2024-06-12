@@ -33,7 +33,7 @@ fn main() {{
 
     // Simulate command-line arguments
     let args = vec![
-        "rs_script", // Typically, this would be the binary name
+        "rs-script", // Typically, this would be the binary name
         source_path.to_str().unwrap(),
         "--",
         "2>&1",

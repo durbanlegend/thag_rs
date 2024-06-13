@@ -31,9 +31,13 @@ const HISTORY_FILE: &str = "rs_eval_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
-#[command(name = "", disable_help_flag = true, disable_help_subcommand = true)] // Disable automatic help subcommand and flag
+#[command(
+    name = "",
+    disable_help_flag = true,
+    disable_help_subcommand = true,
+    verbatim_doc_comment
+)] // Disable automatic help subcommand and flag
 #[strum(serialize_all = "kebab-case")]
-
 /// REPL mode lets you type or paste a Rust expression to be evaluated.
 /// Start by choosing the eval option and entering your expression. Expressions between matching braces,
 /// brackets, parens or quotes may span multiple lines.
@@ -50,8 +54,7 @@ pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 /// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
 /// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
 /// editor or directly from their temporary disk locations.
-/// Outside of the expression evaluator, use the tab key to show selections and to complete partial
-/// matching selections."
+/// The tab key will show command selections and complete partial matching selections."
 enum ReplCommand {
     /// Show the REPL banner
     Banner,
@@ -172,7 +175,7 @@ pub fn run_repl(
     // Use the interactive menu to select options from the completer
     let columnar_menu = ColumnarMenu::default()
         .with_name("completion_menu")
-        .with_columns(2)
+        .with_columns(4)
         .with_column_width(None)
         .with_column_padding(2);
 
@@ -183,14 +186,16 @@ pub fn run_repl(
 
     let edit_mode = Box::new(Emacs::new(keybindings));
 
+    // TODO implement a highlighter?
+    // let highlighter = Box::<ExampleHighlighter>::default();
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
-            DefaultHinter::default().with_style(nu_resolve_style(MessageLevel::Ghost)),
+            DefaultHinter::default().with_style(nu_resolve_style(MessageLevel::Ghost).italic()),
         ))
         .with_history(history)
+        // .with_highlighter(highlighter)
         .with_completer(completer)
-        .with_hinter(Box::<DefaultHinter>::default())
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
 
@@ -321,7 +326,8 @@ fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
 fn edit_history(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    edit::edit_file(context.build_state.working_dir_path.join(HISTORY_FILE))?;
+    let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
+    edit::edit_file(history_file)?;
     Ok(Some(String::from("End of history file edit")))
 }
 

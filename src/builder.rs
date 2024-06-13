@@ -445,7 +445,11 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     build_command.args(&args); // .current_dir(build_dir);
 
     // Show sign of life in case build takes a while
-    log!(Verbosity::Normal, "Building...");
+    log!(
+        Verbosity::Normal,
+        "Building {} ...",
+        nu_resolve_style(MessageLevel::Emphasis).paint(&build_state.source_name)
+    );
 
     if quiet {
         // Pipe output: TODO: debug

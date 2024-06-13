@@ -1,13 +1,3 @@
-/*[toml]
-[dependencies]
-lazy_static = "1.4.0"
-log = "0.4.21"
-nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-
-strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
-supports-color= "3.0.0"
-termbg = "0.5.0"
-*/
 use crate::debug_log;
 use crate::log;
 use crate::logging::Verbosity;
@@ -158,7 +148,7 @@ impl NuThemeStyle for MessageStyle {
             MessageStyle::Xterm256LightInnerPrompt => XtermColor::ScienceBlue.get_color().normal(),
             MessageStyle::Xterm256LightNormal => XtermColor::Black.get_color().normal(),
             MessageStyle::Xterm256LightDebug => XtermColor::LochmaraBlue.get_color().normal(),
-            MessageStyle::Xterm256LightGhost => XtermColor::Silver.get_color().normal().italic(),
+            MessageStyle::Xterm256LightGhost => XtermColor::Boulder.get_color().normal().italic(),
             MessageStyle::Xterm256DarkError => XtermColor::GuardsmanRed.get_color().bold(),
             MessageStyle::Xterm256DarkWarning => XtermColor::DarkViolet.get_color().bold(),
             MessageStyle::Xterm256DarkEmphasis => XtermColor::Copperfield.get_color().bold(),
@@ -168,9 +158,7 @@ impl NuThemeStyle for MessageStyle {
             }
             MessageStyle::Xterm256DarkNormal => XtermColor::Silver.get_color().normal(),
             MessageStyle::Xterm256DarkDebug => XtermColor::BondiBlue.get_color().normal(),
-            MessageStyle::Xterm256DarkGhost => {
-                XtermColor::DarkSilverChalice.get_color().dimmed().italic()
-            }
+            MessageStyle::Xterm256DarkGhost => XtermColor::Silver.get_color().normal().italic(),
         }
     }
 }
@@ -221,11 +209,10 @@ fn main() {
             log!(Verbosity::Normal, "No colour support found for terminal");
         }
         Some(support) => {
-            let style = nu_resolve_style(MessageLevel::Warning);
             log!(
                 Verbosity::Normal,
                 "{}",
-                style.paint("Colored Warning message\n")
+                nu_resolve_style(MessageLevel::Warning).paint("Colored Warning message\n")
             );
 
             for variant in MessageStyle::iter() {

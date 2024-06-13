@@ -33,42 +33,25 @@ pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(name = "", disable_help_flag = true, disable_help_subcommand = true)] // Disable automatic help subcommand and flag
 #[strum(serialize_all = "kebab-case")]
-#[doc = r"REPL mode lets you type or paste a Rust expression to be evaluated.
-Start by choosing the eval option and entering your expression. Expressions between matching braces,
-brackets, parens or quotes may span multiple lines.
-If valid, the expression will be converted into a Rust program, and built and run using Cargo.
-Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
-of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
-comment block of the form
-/*[toml]
-[dependencies]
-...
-*/
-From here they will be extracted to a dedicated Cargo.toml file.
-In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
-At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
-go back and edit your expression or its generated Cargo.toml file and copy or save them from the
-editor or directly from their temporary disk locations.
-Outside of the expression evaluator, use the tab key to show selections and to complete partial
-matching selections."]
-#[doc = r"REPL mode lets you type or paste a Rust expression to be evaluated.
-Start by choosing the eval option and entering your expression. Expressions between matching braces,
-brackets, parens or quotes may span multiple lines.
-If valid, the expression will be converted into a Rust program, and built and run using Cargo.
-Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
-of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
-comment block of the form
-/*[toml]
-[dependencies]
-...
-*/
-From here they will be extracted to a dedicated Cargo.toml file.
-In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
-At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
-go back and edit your expression or its generated Cargo.toml file and copy or save them from the
-editor or directly from their temporary disk locations.
-Outside of the expression evaluator, use the tab key to show selections and to complete partial
-matching selections."]
+
+/// REPL mode lets you type or paste a Rust expression to be evaluated.
+/// Start by choosing the eval option and entering your expression. Expressions between matching braces,
+/// brackets, parens or quotes may span multiple lines.
+/// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
+/// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
+/// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
+/// comment block of the form
+/// /*[toml]
+/// [dependencies]
+/// ...
+/// */
+/// From here they will be extracted to a dedicated Cargo.toml file.
+/// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
+/// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
+/// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
+/// editor or directly from their temporary disk locations.
+/// Outside of the expression evaluator, use the tab key to show selections and to complete partial
+/// matching selections."
 enum ReplCommand {
     /// Show the REPL banner
     Banner,

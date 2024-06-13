@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.4", features = ["cargo"] }
+clap = { version = "4.5.7", features = ["cargo"] }
 */
 
 use std::path::PathBuf;

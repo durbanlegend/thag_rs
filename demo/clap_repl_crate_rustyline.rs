@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.4", features = ["cargo", "derive"] }
+clap = { version = "4.5.7", features = ["cargo", "derive"] }
 clap-repl = "0.1.1"
 console = "0.15.8"
 rustyline = "14.0.0"

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
+clap = { version = "4.5.7", features = ["derive"] }
 crossterm = "*"
 homedir = "0.2.1"
 lazy_static = "1.4.0"

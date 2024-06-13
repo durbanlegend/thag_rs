@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 bitflags = "2.5.0"
-clap = { version = "4.5.4", features = ["cargo", "derive"] }
+clap = { version = "4.5.7", features = ["cargo", "derive"] }
 rs_script = { path = "/Users/donf/projects/rs-script" }
 */
 

@@ -28,6 +28,8 @@ You can install `rs-script` using `cargo install`:
 ```bash
 cargo install rs-script
 ```
+### TODO >>> Installing the starter kit (demo directory)
+
 
 ## Usage
 Once installed, you can use rs-script from the command line. rs-script uses the clap crate to process command-line arguments including --help.

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.4", features = ["cargo", "derive"] }
+clap = { version = "4.5.7", features = ["cargo", "derive"] }
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 */
 

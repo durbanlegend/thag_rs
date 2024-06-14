@@ -6,16 +6,21 @@
 
 ## Overview
 
-`rs-script` is a simple and serious script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to quickly run and test Rust code from the command line for rapid prototyping and exploration. It is intended to handle cases that are beyond the scope of the Rust playground or the average script runner.
+`rs-script` is a simple and serious script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner.
 
-`rs-script` is Cargo-based and will prefer tools like syn, quote and toml over string operations where possible, in order to ensure correctness. It attempts to handle any valid Rust program, snippet or expression. It will usually manage to generate a dedicated Cargo.toml for your script from "use" statements in your code, although for speed and precision it is recommended that you embed your own in a /*[toml] */ block at the start of the script, as in most of the demos. The Cargo search will helpfully print the equivalent block for you to copy and paste if you want to.
+`rs-script` is Cargo-based. For correctness it will prefer tools like syn, quote and toml over string operations where possible. It attempts to handle any valid Rust program, snippet or expression. It will try to generate a dedicated Cargo.toml for your script from "use" statements in your code, although for speed and precision I recommend that you embed your own in a toml block:
+/*[toml]
+[dependencies]
+...
+*/
+at the start of the script, as in most of the demos. For each successful search, Cargo search will generate and print a basic toml block with the crate name and version under a [dependencies] header, for you to copy and paste if you want to. It does not print a combined block, so it's up to you to merge all the dependencies into the same toml block. All dependencies can typically go under the single [dependencies] header in the toml block, but you should be able to add other Cargo-compliant dependencies sections if you choose to do so.
 
-`rs-script` aims to be as comprehensive as possible without sacrificing speed and simplicity. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 Macbook Air.
+`rs-script` aims to be as comprehensive as possible without sacrificing speed and simplicity. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
 
 ### Why `rs-script`?
-As so often happens, this project arose out of need. Initially I was looking for a hosted version of the Rust playground to allow me to try out new ideas quickly. This soon led me to the various script runners, but I found that what they ran more than anything was "out of steam". I even went so far as to fork the idiosyncratic but versatile `runner` crate with extensive modification to bring it up to date and attempt to resolve some tricky dependency issues, but I saw that by staying in the Cargo mainstream I could easily overcome these issues and leverage Cargo to do most of the hard work, so I started `rs-script` from scratch.
+As so often happens, this project arose out of need. Initially I was looking for a hosted version of the Rust playground to allow me to try out new ideas as easily as possible. This soon led me to the various script runners, but I found that what they ran more than anything was "out of steam". Honorable mention to the idiosyncratic but versatile `runner` crate, which I ended up forking with some extensive modifications to bring it up to date and attempt to resolve some tricky dependency issues. However, issues such as conflicting regex dependencies made me realise by staying in the Cargo mainstream I could easily overcome these issues and leverage Cargo to do most of the hard work, so I started `rs-script` from scratch.
 
-I also found that `rs-script` started to "write itself", by allowing me to experiment wiht promising crates before incorporationg them as dependencies. I don't know what the level of interest may be for a tool like this, but I hope you may find it as useful as I do.
+I also found that `rs-script` started to "write itself", by allowing me to experiment with promising crates before incorporating them as dependencies. I don't know what the level of interest may be for a tool like this, but I hope you may find it as useful as I do.
 
 ## Installation
 
@@ -38,7 +43,7 @@ Once installed, you can use rs-script from the command line. rs-script uses the 
 Here are some examples:
 
 ### Evaluating an expression
-#### Quickly calculate the factorial of a number up to 34 (overflows beyond that, but see demos for bigger numbers):
+#### Concise fast factorial calculation for numbers up to 34 (overflows beyond that, but see demos for bigger numbers):
 ```bash
 rs-script -e '(1..=34).product::<u128>()'
 ```
@@ -48,7 +53,7 @@ rs-script -e '(1..=34).product::<u128>()'
 rs-script -e "$(cat demo/fizz_buzz.rs)"
 ```
 
-#### Run a script quietly except for timings
+#### Run a script in quiet mode but show timings
 ```bash
 rs-script -tq demo/fizz_buzz.rs
 1
@@ -78,8 +83,8 @@ rs_script completed processing script fizz_buzz.rs in 0.15s
 ```bash
 rs-script -l
 ```
-This will start an interactive REPL session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally modify and expression from history.
-Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano...) and rerun it. The REPL also offers a few houskeeping functions for the temporary files generated, otherwise being in temporary space they will be housekept by the operating system in due course.
+This will start an interactive REPL session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally edit an expression from history.
+Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano...) and rerun it. The REPL also offers basic housekeeping functions for the temporary files generated, otherwise being in temporary space they will be housekept by the operating system in due course.
 
 #### Revisiting a REPL expression from a previous session
 ```bash
@@ -87,12 +92,12 @@ rs-script -l repl_nnnnnn.rs
 ```
 will return to edit and run a named generated script from a previous REPL session.
 
-More informally, the last 25 previous REPL expressions can be accessed from within the REPL function just by using the up and down arrow keys to navigate history from the `eval` command.
+More informally, you can access the last 25 previous REPL expressions from within the REPL function just by using the up and down arrow keys to navigate history from the `eval` command.
 
 #### General notes on REPL
 All REPL files are created under the rs_repl subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust) so as not to clog up your system. Before they are harvested by the OS you can display the locations and copy the files if desired.
 
-The REPL feature, in particular the most convenient `eval` mode, is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. These limitations can be overcome by using the `edit` mode instead, but by this point it is probably more convenient just to use the --stdin / -s feature instead, or save the source in a .rs file and run it from the command line.
+The REPL feature, in particular the most convenient `eval` mode, is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. You can overcome these limitations by using the `edit` mode instead, but by this point it's probably more convenient just to use the --stdin / -s feature instead, or save the source in a .rs file and run it from the command line.
 
 ## Features
 
@@ -111,7 +116,7 @@ _— The Rust Reference_
     * the classic script mode runs any .rs file consisting of a valid Rust script or program.
 * You may develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from rs-script.
 * You can use a shebang to write scripts in Rust.
-* Supports a personal library of code samples for reuse. The starter set provided includes multiple examples from popular crates, as well as original examples including fast factorial and Fibonacci calculation with big-integer support, light-dark theme detection, TUI editing and colour support.
+* Supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast factorial and Fibonacci calculation with big-integer support, light-dark theme detection, TUI editing and colour support.
 * Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. `rs-script` defaults to basic ANSI-16 colours and dark mode support on Windows for reasons beyond my control, but the dark mode colours it uses should also work well with most light modes.
 
 ## Platform Support
@@ -133,7 +138,7 @@ This crate is designed to be cross-platform and supports:
 * cargo-eval - maintained fork of cargo-script.
 * cargo-play - local Rust playground.
 * irust - limited Rust REPL.
-* runner - experimental tool for running Rust snippets without Cargo, exploring dynamic vs static linking for speed. I have an extensively modified fork of this crate on Github, but I highly recommend using `rs-script` crate rather than that fork.
+* runner - experimental tool for running Rust snippets without Cargo, exploring dynamic vs static linking for speed. I have an extensively modified fork of this crate on GitHub, but I highly recommend using `rs-script` crate rather than that fork.
 * cargo-script-mvs - RFC demo.
 
 ## Contributing
@@ -142,12 +147,12 @@ Contributions will be given due consideration if they fit the goals of the proje
 
 ## Of possible interest: AI
 
-I made extensive use of free versions of LLMs - mostly ChatGPT and to a lesser extent Gemini - for three aspects of this project:
+I made extensive use of free versions of LLMs - mainly ChatGPT and to a lesser extent Gemini - for three aspects of this project:
 * problem solving
 * guidance on best practices
 * grunt work of generating "first-approximation" code and boilerplate to spec.
 
-Although these LLMs could be very hit-and-miss or clichéd when it comes to specifics and to received wisdom, my experience has been that intensive dialogues with the LLMs have generally either led them to produce worthwhile solutions, or at least led me to see that there were sometimes deeper-seated issues that AI couldn't solve and to dig deeper researching on my own.
+Although these LLMs could be hit-and-miss or clichéd when it comes to specifics and to received wisdom, my experience has been that intensive dialogues with the LLMs have generally either led them to produce worthwhile solutions, or at least led me to see that there were sometimes deeper-seated issues that AI couldn't solve and to dig deeper researching on my own.
 
 I short I found using AI hugely beneficial in terms not only of productivity but of extending the scope of work that I could comfortably take on. I didn't use any licensed or integrated features and at this stage I'm not feeling the lack of same.
 

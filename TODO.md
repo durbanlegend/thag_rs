@@ -9,6 +9,7 @@
 - [ ]  More unit and integration tests
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
+- [ ]  Simple demo https server
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

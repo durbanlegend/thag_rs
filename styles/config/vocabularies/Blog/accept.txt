@@ -1,0 +1,12 @@
+LLMs
+Sonoma
+Zorin
+evcxr
+housekept
+irust
+nano
+parens
+precompiled
+rs_repl
+stdin
+toml

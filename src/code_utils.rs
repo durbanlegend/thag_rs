@@ -247,7 +247,6 @@ fn filter_deps_source(
     modules: &[String],
     dependencies: &mut Vec<String>,
 ) {
-    if let Some((dep, _)) = crate_name.split_once(':') {
     debug_log!("crate_name={crate_name}");
     let dep = if crate_name.contains(':') {
         crate_name.split_once(':').unwrap().0

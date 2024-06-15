@@ -39,8 +39,6 @@ pub fn set_global_verbosity(verbosity: Verbosity) {
     logger.set_verbosity(verbosity);
 }
 
-// src/logging.rs
-
 #[macro_export]
 macro_rules! log {
     ($verbosity:expr, $($arg:tt)*) => {

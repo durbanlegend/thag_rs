@@ -10,6 +10,7 @@
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
+- [ ]  Rename term_colors.rs to colors.rs
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

@@ -11,6 +11,8 @@
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
 - [ ]  Rename term_colors.rs to colors.rs
+- [ ]  Don't call regex versions of methods, but panic instead
+       as a first step to removing them as redundant.
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

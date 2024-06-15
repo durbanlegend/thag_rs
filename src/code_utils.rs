@@ -537,10 +537,11 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
+        panic!("Error parsing syntax tree. If this is legit, consider removing this statement to use the regex instead");
         // TODO: redundant?
-        debug_log!("Error parsing syntax tree, using regex instead");
-        debug_timings(&start_ast, "Completed unsuccessful AST parse");
-        None
+        // debug_log!("Error parsing syntax tree, using regex instead");
+        // debug_timings(&start_ast, "Completed unsuccessful AST parse");
+        // None
     }
 }
 

@@ -527,16 +527,17 @@ pub(crate) fn count_main_methods(syntax_tree: &Ast) -> usize {
 }
 
 /// Parse the code into an abstract syntax tree for inspection
-/// if possible. Otherwise don't give up - it may yet compile.
+/// if possible. TODO: I suspect AST is always possible
 pub fn to_ast(source_code: &str) -> Option<Ast> {
     let start_ast = Instant::now();
     if let Ok(tree) = syn::parse_file(source_code) {
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))
-    } else if let Ok(tree) = syn::parse_str::<Expr>(source_code) {
+    } else if let Ok(tree) = extract_ast(source_code) {
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
+        // TODO: redundant?
         debug_log!("Error parsing syntax tree, using regex instead");
         debug_timings(&start_ast, "Completed unsuccessful AST parse");
         None

@@ -1179,6 +1179,7 @@ dependencies = [
  "strum",
  "supports-color",
  "syn 2.0.66",
+ "tempfile",
  "termbg",
  "toml",
  "tui-textarea",

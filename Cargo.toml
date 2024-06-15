@@ -63,3 +63,7 @@ path = "src/bin/rs_script.rs"
 
 [features]
 debug-logs = []
+
+[dev-dependencies]
+env_logger = "0.11.3"
+tempfile = "3.10.1"

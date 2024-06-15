@@ -248,14 +248,20 @@ fn filter_deps_source(
     dependencies: &mut Vec<String>,
 ) {
     if let Some((dep, _)) = crate_name.split_once(':') {
-        let dep_string = dep.to_owned();
-        debug_log!("dep_string={dep_string}, built_in_crates={built_in_crates:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
-        if !built_in_crates.contains(&dep)
-            && !use_renames.contains(&dep_string)
-            && !modules.contains(&dep_string)
-        {
-            dependencies.push(dep_string);
-        }
+    debug_log!("crate_name={crate_name}");
+    let dep = if crate_name.contains(':') {
+        crate_name.split_once(':').unwrap().0
+    } else {
+        crate_name
+    };
+
+    let dep_string = dep.to_owned();
+    debug_log!("dep_string={dep_string}, built_in_crates={built_in_crates:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
+    if !built_in_crates.contains(&dep)
+        && !use_renames.contains(&dep_string)
+        && !modules.contains(&dep_string)
+    {
+        dependencies.push(dep_string);
     }
 }
 

@@ -15,7 +15,7 @@ use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::{debug_timings, Ast, BuildState, CargoManifest, Dependency, Feature};
 use crate::term_colors::{nu_resolve_style, MessageLevel};
-pub(crate) fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
+pub fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();
 
     let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(dep_crate);
@@ -89,7 +89,7 @@ as shown if you don't need special features:
     Ok((name, version))
 }
 
-pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
+pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
     debug_log!("first_line={first_line}");
     lazy_static! {
         static ref RE: Regex =
@@ -111,7 +111,7 @@ pub(crate) fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn 
     Ok((name, version))
 }
 
-pub(crate) fn default_manifest(build_state: &BuildState) -> Result<CargoManifest, BuildRunError> {
+pub fn default_manifest(build_state: &BuildState) -> Result<CargoManifest, BuildRunError> {
     let source_stem = &build_state.source_stem;
     let source_name = &build_state.source_name;
     let binding = build_state.target_dir_path.join(source_name);
@@ -142,7 +142,7 @@ path = "{gen_src_path}"
     CargoManifest::from_str(&cargo_manifest)
 }
 
-fn escape_path_for_windows(path: &str) -> String {
+pub fn escape_path_for_windows(path: &str) -> String {
     #[cfg(windows)]
     {
         path.replace('\\', "\\\\")
@@ -153,7 +153,7 @@ fn escape_path_for_windows(path: &str) -> String {
     }
 }
 
-pub(crate) fn merge_manifest(
+pub fn merge_manifest(
     build_state: &mut BuildState,
     rs_source: &str,
     syntax_tree: &Option<Ast>,

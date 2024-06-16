@@ -51,7 +51,7 @@ mod tests {
         // Test if TERM_THEME is set correctly
         // Example test using the manual comparison function
         // let theme =
-        //     termbg::theme(std::time::Duration::from_millis(00)).expect("Error getting theme");
+        //     termbg::theme(std::time::Duration::from_millis(100)).expect("Error getting theme");
         for theme in &[Theme::Light, Theme::Dark] {
             match theme {
                 Theme::Light => assert_eq!(convert_theme(theme), TermTheme::Light),
@@ -81,18 +81,33 @@ mod tests {
     #[test]
     fn test_nu_resolve_style() {
         // Test the nu_resolve_style function
+        let theme = termbg::theme(std::time::Duration::from_millis(100));
+
         let style = nu_resolve_style(MessageLevel::Warning);
         if let Some(color_support) = COLOR_SUPPORT.as_ref() {
-            match color_support {
-                ColorSupport::Xterm256 => {
-                    let expected_style = XtermColor::DarkPurplePizzazz.get_color().bold();
-                    assert_eq!(style, expected_style);
-                }
-                ColorSupport::Ansi16 => {
-                    let expected_style = Color::Magenta.bold();
-                    assert_eq!(style, expected_style);
-                }
-                ColorSupport::None => assert_eq!(style, nu_ansi_term::Style::default()),
+            match theme {
+                Ok(Theme::Light) => match color_support {
+                    ColorSupport::Xterm256 => {
+                        let expected_style = XtermColor::DarkPurplePizzazz.get_color().bold();
+                        assert_eq!(style, expected_style);
+                    }
+                    ColorSupport::Ansi16 => {
+                        let expected_style = Color::Magenta.bold();
+                        assert_eq!(style, expected_style);
+                    }
+                    ColorSupport::None => assert_eq!(style, nu_ansi_term::Style::default()),
+                },
+                Ok(Theme::Dark) | Err(_) => match color_support {
+                    ColorSupport::Xterm256 => {
+                        let expected_style = XtermColor::DarkViolet.get_color().bold();
+                        assert_eq!(style, expected_style);
+                    }
+                    ColorSupport::Ansi16 => {
+                        let expected_style = Color::Magenta.bold();
+                        assert_eq!(style, expected_style);
+                    }
+                    ColorSupport::None => assert_eq!(style, nu_ansi_term::Style::default()),
+                },
             }
         } else {
             assert_eq!(style, nu_ansi_term::Style::default());

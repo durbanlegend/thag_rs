@@ -61,16 +61,28 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
 
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
-    enable_raw_mode()?;
+    // enable_raw_mode()?;
+    enable_raw_mode().map_err(|e| {
+        println!("Error enabling raw mode: {:?}", e);
+        e
+    })?;
     crossterm::execute!(
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
         EnableBracketedPaste
-    )?;
+    )
+    .map_err(|e| {
+        println!("Error executing terminal commands: {:?}", e);
+        e
+    })?;
     let backend = CrosstermBackend::new(stdout);
-    let mut term = Terminal::new(backend)?;
+    let mut term = Terminal::new(backend).map_err(|e| {
+        println!("Error creating terminal: {:?}", e);
+        e
+    })?;
     let mut textarea = TextArea::from(initial_content.lines());
+    dbg!(&textarea);
 
     textarea.set_block(
         Block::default()
@@ -92,12 +104,20 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
                 show_popup(f);
             }
             apply_highlights(alt_highlights, &mut textarea);
+        })
+        .map_err(|e| {
+            println!("Error drawing terminal: {:?}", e);
+            e
         })?;
-        let event = event_reader.read_event()?;
+        let event = event_reader.read_event().map_err(|e| {
+            println!("Error reading event: {:?}", e);
+            e
+        })?;
         if let Paste(data) = event {
             textarea.insert_str(normalize_newlines(&data));
         } else {
             let input = Input::from(event.clone());
+            dbg!(&input);
             match input {
                 Input {
                     key: Key::Char('q'),
@@ -134,7 +154,10 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
             }
         }
     }
-    reset_term(term)?;
+    reset_term(term).map_err(|e| {
+        println!("Error resetting terminal: {:?}", e);
+        e
+    })?;
 
     Ok(textarea.lines().to_vec())
 }

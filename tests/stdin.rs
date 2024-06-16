@@ -5,11 +5,12 @@ use rs_script::stdin::MockEventReader;
 use rs_script::{
     edit_stdin,
     stdin::{apply_highlights, normalize_newlines, read_to_string},
+    BuildRunError,
 };
 use tui_textarea::TextArea;
 
 #[test]
-fn test_edit_stdin() {
+fn test_edit_stdin_submit() {
     let mut mock_reader = MockEventReader::new();
 
     mock_reader.expect_read_event().return_once(|| {
@@ -21,11 +22,33 @@ fn test_edit_stdin() {
 
     let result = edit_stdin(mock_reader);
 
+    println!("test_edit_stdin_submit result={result:#?}");
     assert!(result.is_ok());
     let lines = result.unwrap();
     println!("\nlines={lines:#?}");
     assert_eq!(lines.len(), 1);
     assert_eq!(lines[0].len(), 0);
+}
+
+#[test]
+fn test_edit_stdin_quit() {
+    let mut mock_reader = MockEventReader::new();
+
+    mock_reader.expect_read_event().return_once(|| {
+        Ok(Event::Key(KeyEvent::new(
+            KeyCode::Char('q'),
+            KeyModifiers::CONTROL,
+        )))
+    });
+
+    let result = edit_stdin(mock_reader);
+    println!("test_edit_stdin_quit result={result:#?}");
+
+    assert!(result.is_err());
+    assert!(matches!(
+        result.err().unwrap().downcast_ref::<BuildRunError>(),
+        Some(&BuildRunError::Cancelled)
+    ));
 }
 
 fn init_logger() {
@@ -131,6 +154,7 @@ fn test_apply_highlights() {
 //         Some(&BuildRunError::Cancelled)
 //     ));
 // }
+//
 // #[test]
 // fn test_edit_stdin_submit() {
 //     let stdin_mock = Arc::new(Mutex::new(vec![KeyEvent::new(

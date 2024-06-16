@@ -1,5 +1,6 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 
+use crossterm::tty::IsTty;
 use ratatui::style::{Color, Style, Stylize};
 use rs_script::stdin::MockEventReader;
 use rs_script::{
@@ -11,6 +12,11 @@ use tui_textarea::TextArea;
 
 #[test]
 fn test_edit_stdin_submit() {
+    // Check if the test is running in a terminal
+    if !stdout().is_tty() {
+        println!("Skipping test_edit_stdin_submit as it is not running in a terminal.");
+        return;
+    }
     let mut mock_reader = MockEventReader::new();
 
     mock_reader.expect_read_event().return_once(|| {
@@ -22,16 +28,20 @@ fn test_edit_stdin_submit() {
 
     let result = edit_stdin(mock_reader);
 
-    println!("test_edit_stdin_submit result={result:#?}");
     assert!(result.is_ok());
     let lines = result.unwrap();
-    println!("\nlines={lines:#?}");
+    // Expecting a Vec with one entry: an empty string
     assert_eq!(lines.len(), 1);
     assert_eq!(lines[0].len(), 0);
 }
 
 #[test]
 fn test_edit_stdin_quit() {
+    // Check if the test is running in a terminal
+    if !stdout().is_tty() {
+        println!("Skipping test_edit_stdin_submit as it is not running in a terminal.");
+        return;
+    }
     let mut mock_reader = MockEventReader::new();
 
     mock_reader.expect_read_event().return_once(|| {
@@ -42,7 +52,6 @@ fn test_edit_stdin_quit() {
     });
 
     let result = edit_stdin(mock_reader);
-    println!("test_edit_stdin_quit result={result:#?}");
 
     assert!(result.is_err());
     assert!(matches!(
@@ -64,7 +73,7 @@ fn test_read_to_string() {
     assert_eq!(result, string);
 }
 
-use std::io::Write;
+use std::io::{stdout, Write};
 use std::process::{Command, Stdio};
 
 #[test]

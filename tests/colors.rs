@@ -133,10 +133,6 @@ mod tests {
         nu_color_println!(style, "{}", content);
 
         // Ensure the macro output is correctly styled
-        if cfg!(windows) {
-            assert_eq!(output, format!("{}\r", style.paint(content)));
-        } else {
-            assert_eq!(output, format!("{}", style.paint(content)));
-        }
+        assert_eq!(output, format!("{}", style.paint(content)));
     }
 }

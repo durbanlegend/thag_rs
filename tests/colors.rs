@@ -2,7 +2,7 @@
 mod tests {
     use nu_ansi_term::Color;
     use rs_script::colors::{
-        ColorSupport, MessageStyle, NuColor, NuThemeStyle, TermTheme, XtermColor, COLOR_SUPPORT,
+        ColorSupport, MessageStyle, NuColor, NuThemeStyle, TermTheme, XtermColor,
     };
     use rs_script::logging::Verbosity;
     use rs_script::{log, nu_color_println, nu_resolve_style, MessageLevel};

@@ -2,7 +2,7 @@
 [dependencies]
 bitflags = "2.5.0"
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
-rs_script = { path = "/Users/donf/projects/rs-script" }
+rs-script = { path = "/Users/donf/projects/rs-script" }
 */
 
 /// E.g. cargo run -- -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world

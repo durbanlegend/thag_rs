@@ -6,7 +6,7 @@
 
 ## Medium Priority
 - [ ]  Document public APIs
-- [ ]  More unit and integration tests
+- [ ]  More unit and integration tests - mock crossterm::event
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server

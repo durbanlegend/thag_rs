@@ -1,24 +1,17 @@
-/*[toml]
-[dependencies]
-rs_script = { path = "/Users/donf/projects/rs-script" }
-crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
-lazy_static = "1.4.0"
-regex = "1.10.4"
-ratatui = "0.26.3"
-tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
-*/
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
 
 use crossterm::event::{
-    DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, Event::Paste,
+    DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+    Event::{self, Paste},
 };
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 // use log::debug;
 use lazy_static::lazy_static;
+use mockall::{automock, predicate::*};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
@@ -28,18 +21,32 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use regex::Regex;
 use std::error::Error;
-use std::io::{self, IsTerminal};
+use std::io::{self, BufRead, IsTerminal};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
+
+#[automock]
+pub trait EventReader {
+    fn read_event(&self) -> Result<Event, std::io::Error>;
+}
+
+pub struct CrosstermEventReader;
+
+impl EventReader for CrosstermEventReader {
+    fn read_event(&self) -> Result<Event, std::io::Error> {
+        crossterm::event::read()
+    }
+}
 
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {
-    for line in &edit_stdin()? {
+    let event_reader = CrosstermEventReader;
+    for line in &edit_stdin(event_reader)? {
         log!(Verbosity::Normal, "{line}");
     }
     Ok(())
 }
 
-pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
+pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dyn Error>> {
     let input = std::io::stdin();
 
     let initial_content = if input.is_terminal() {
@@ -86,7 +93,7 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
             }
             apply_highlights(alt_highlights, &mut textarea);
         })?;
-        let event = crossterm::event::read()?;
+        let event = event_reader.read_event()?;
         if let Paste(data) = event {
             textarea.insert_str(normalize_newlines(&data));
         } else {
@@ -137,20 +144,25 @@ pub fn read_stdin() -> Result<String, std::io::Error> {
     log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
         if cfg!(windows) { 'Z' } else { 'D' }
     );
-    use std::io::Read;
-    let mut buffer = String::new();
-    std::io::stdin().lock().read_to_string(&mut buffer)?;
+    let input = &mut std::io::stdin().lock();
+    let buffer = read_to_string(input)?;
     Ok(buffer)
 }
 
-fn normalize_newlines(input: &str) -> String {
+pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
+    let mut buffer = String::new();
+    input.read_to_string(&mut buffer)?;
+    Ok(buffer)
+}
+
+pub fn normalize_newlines(input: &str) -> String {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"\r\n?").unwrap();
     }
     RE.replace_all(input, "\n").to_string()
 }
 
-fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
+pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     if alt_highlights {
         textarea.set_selection_style(Style::default().bg(Color::LightRed));
         textarea.set_cursor_style(Style::default().on_yellow());

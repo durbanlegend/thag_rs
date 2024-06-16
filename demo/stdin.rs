@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-rs_script = { path = "/Users/donf/projects/rs-script" }
+rs-script = { path = "/Users/donf/projects/rs-script" }
 crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 lazy_static = "1.4.0"
 regex = "1.10.4"

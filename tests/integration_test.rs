@@ -23,7 +23,7 @@ fn test_script_runner_with_dependencies() -> Result<(), Box<dyn std::error::Erro
 nu-ansi-term = "0.50.0"
 rs-script = {{ path = {rs_script_path:#?} }}
 */
-use rs_script::term_colors::{{nu_resolve_style, MessageLevel}};
+use rs_script::colors::{{nu_resolve_style, MessageLevel}};
 use rs_script::log;
 use rs_script::logging::Verbosity;
 fn main() {{

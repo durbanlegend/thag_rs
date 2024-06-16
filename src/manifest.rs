@@ -9,12 +9,12 @@ use std::str::FromStr;
 use std::time::Instant;
 
 use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
+use crate::colors::{nu_resolve_style, MessageLevel};
 use crate::debug_log;
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::{debug_timings, Ast, BuildState, CargoManifest, Dependency, Feature};
-use crate::term_colors::{nu_resolve_style, MessageLevel};
 pub fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();
 

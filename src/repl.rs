@@ -6,9 +6,9 @@ use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::Ast;
 use crate::{
+    colors::{nu_resolve_style, MessageLevel},
     gen_build_run, nu_color_println,
     shared::BuildState,
-    term_colors::{nu_resolve_style, MessageLevel},
 };
 
 use clap::ArgMatches;

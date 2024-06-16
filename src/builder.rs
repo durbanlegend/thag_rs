@@ -2,6 +2,7 @@ use crate::code_utils::{
     self, create_next_repl_file, create_temp_source_file, extract_ast, extract_manifest,
     process_expr, read_file_contents, rustfmt, strip_curly_braces, wrap_snippet, write_source,
 };
+use crate::colors::{nu_resolve_style, MessageLevel};
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
@@ -12,7 +13,6 @@ use crate::shared::debug_timings;
 use crate::shared::CargoManifest;
 use crate::shared::{display_timings, Ast, BuildState};
 use crate::stdin::{edit_stdin, read_stdin};
-use crate::term_colors::{nu_resolve_style, MessageLevel};
 #[cfg(debug_assertions)]
 use crate::VERSION;
 use crate::{

@@ -126,7 +126,7 @@ _— The Rust Reference_
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from rs-script. Failing that, you can always work on a minimally modified copy in another location. An example is the demo version of colors.rs.
 * You can use a shebang to write scripts in Rust.
 * `rs-script` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast factorial and Fibonacci calculation with big-integer support, light-dark theme detection, TUI editing and colour support.
-* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. `rs-script` defaults to basic ANSI-16 colours and dark mode support on Windows for reasons beyond my control, but the dark mode colours it uses should also work well with most light modes.
+* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. `rs-script` defaults to basic ANSI-16 colours and dark mode support on Windows for reasons beyond my control, but the dark mode colours it uses have been chosen to work well with most light modes.
 
 ## Platform Support
 This crate is designed to be cross-platform and supports:

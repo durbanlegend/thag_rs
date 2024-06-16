@@ -56,10 +56,8 @@ fn test_read_stdin() {
 
     let mut child = Command::new("cargo")
         .arg("run")
-        // .arg("--bin")
-        // .arg("rs_script")
+        .arg("--features=debug-logs")
         .arg("--")
-        // .arg("--features=debug-logs")
         .arg("-q")
         .arg("-s")
         .stdin(Stdio::piped())

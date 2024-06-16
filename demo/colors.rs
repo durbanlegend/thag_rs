@@ -19,7 +19,7 @@ use supports_color::Stream;
 use termbg::Theme;
 
 lazy_static! {
-    static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
+    pub static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
         Some(color_support) => {
             if color_support.has_16m || color_support.has_256 {
                 Some(ColorSupport::Xterm256)

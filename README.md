@@ -158,9 +158,10 @@ Contributions will be given due consideration if they fit the goals of the proje
 
 ## Of possible interest: AI
 
-I made extensive use of free versions of LLMs - mainly ChatGPT and to a lesser extent Gemini - for three aspects of this project:
+I made extensive use of free versions of LLMs - mainly ChatGPT and to a lesser extent Gemini - for four aspects of this project:
 * problem solving
 * guidance on best practices
+* generation of unit and intergration tests
 * grunt work of generating "first-approximation" code and boilerplate to spec.
 
 Although these LLMs could be hit-and-miss or clichéd when it comes to specifics and to received wisdom, my experience has been that intensive dialogues with the LLMs have generally either led them to produce worthwhile solutions, or at least led me to see that there were sometimes deeper-seated issues that AI couldn't solve and to dig deeper researching on my own.

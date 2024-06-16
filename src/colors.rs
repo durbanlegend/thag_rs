@@ -9,9 +9,9 @@ use supports_color::Stream;
 use termbg::Theme;
 
 lazy_static! {
-    static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
-        Some(color_support) => {
-            if color_support.has_16m || color_support.has_256 {
+    pub static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
+        Some(color_level) => {
+            if color_level.has_16m || color_level.has_256 {
                 Some(ColorSupport::Xterm256)
             } else {
                 Some(ColorSupport::Ansi16)
@@ -57,7 +57,7 @@ pub enum ColorSupport {
     None,
 }
 
-#[derive(EnumString, Display, PartialEq)]
+#[derive(Debug, EnumString, Display, PartialEq)]
 pub enum TermTheme {
     Light,
     Dark,
@@ -194,8 +194,8 @@ fn main() {
     debug_log!("  Term : {:?}", term);
 
     let color_support = match supports_color::on(Stream::Stdout) {
-        Some(color_support) => {
-            if color_support.has_16m || color_support.has_256 {
+        Some(color_level) => {
+            if color_level.has_16m || color_level.has_256 {
                 Some(ColorSupport::Xterm256)
             } else {
                 Some(ColorSupport::Ansi16)

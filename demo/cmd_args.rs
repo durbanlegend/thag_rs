@@ -5,7 +5,8 @@ clap = { version = "4.5.7", features = ["cargo", "derive"] }
 rs-script = { path = "/Users/donf/projects/rs-script" }
 */
 
-/// E.g. cargo run -- -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+/// A prototype of the cmd_args module of rs-script itself.
+/// E.g. rs_script -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world
 use rs_script::errors::BuildRunError;
 use rs_script::log;
 use rs_script::logging::{self, Verbosity};

@@ -24,7 +24,7 @@ enum Mode {
 }
 
 /// Published example from clap tutorial (derive), with added displays.
-/// E.g. rs-script demo/clap_tut_04.rs -ddd -c dummy.cfg test -l
+/// E.g. rs_script demo/clap_tut_04.rs -ddd -c dummy.cfg test -l
 fn main() {
     let cli = Cli::parse();
 

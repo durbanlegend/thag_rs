@@ -65,7 +65,7 @@ mod tests {
     #[test]
     fn test_cargo_search_success() {
         // This is a mocked test. In a real test environment, you should mock Command to simulate Cargo behavior.
-        let output = r#"serde = "1.0.104""#;
+        let output = r#"serde = "1.0.203""#;
         let mut search_command = NamedTempFile::new().unwrap();
         writeln!(search_command, "{}", output).unwrap();
         search_command.flush().unwrap();

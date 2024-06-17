@@ -1,13 +1,11 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 
 use crossterm::tty::IsTty;
+use mockall::Sequence;
 use ratatui::style::{Color, Style, Stylize};
-use rs_script::stdin::MockEventReader;
-use rs_script::{
-    edit_stdin,
-    stdin::{apply_highlights, normalize_newlines, read_to_string},
-    BuildRunError,
-};
+use rs_script::logging::Verbosity;
+use rs_script::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
+use rs_script::{edit_stdin, log, BuildRunError};
 use tui_textarea::TextArea;
 
 #[test]
@@ -17,22 +15,50 @@ fn test_edit_stdin_submit() {
         println!("Skipping test_edit_stdin_submit as it is not running in a terminal.");
         return;
     }
+
+    let mut seq = Sequence::new();
     let mut mock_reader = MockEventReader::new();
 
-    mock_reader.expect_read_event().return_once(|| {
-        Ok(Event::Key(KeyEvent::new(
-            KeyCode::Char('d'),
-            KeyModifiers::CONTROL,
-        )))
-    });
+    mock_reader
+        .expect_read_event()
+        .times(1)
+        .in_sequence(&mut seq)
+        .return_once(|| Ok(Event::Paste("Hello,\nworld".to_string())));
+
+    mock_reader
+        .expect_read_event()
+        .times(1)
+        .in_sequence(&mut seq)
+        .return_once(|| {
+            Ok(Event::Key(KeyEvent::new(
+                KeyCode::Char('!'),
+                KeyModifiers::NONE,
+            )))
+        });
+
+    mock_reader
+        .expect_read_event()
+        .times(1)
+        .in_sequence(&mut seq)
+        .return_once(|| {
+            Ok(Event::Key(KeyEvent::new(
+                KeyCode::Char('d'),
+                KeyModifiers::CONTROL,
+            )))
+        });
 
     let result = edit_stdin(mock_reader);
 
+    log!(
+        Verbosity::Normal,
+        "\ntest_edit_stdin_submit result={result:#?}"
+    );
     assert!(result.is_ok());
     let lines = result.unwrap();
     // Expecting a Vec with one entry: an empty string
-    assert_eq!(lines.len(), 1);
-    assert_eq!(lines[0].len(), 0);
+    assert_eq!(lines.len(), 2);
+    assert_eq!(lines[0], "Hello,");
+    assert_eq!(lines[1], "world!");
 }
 
 #[test]

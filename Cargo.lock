@@ -1241,6 +1241,7 @@ dependencies = [
  "ratatui",
  "reedline",
  "regex",
+ "scopeguard",
  "serde",
  "strum",
  "supports-color",

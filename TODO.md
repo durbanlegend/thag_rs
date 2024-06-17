@@ -6,7 +6,7 @@
 
 ## Medium Priority
 - [ ]  Document public APIs
-- [ ]  More unit and integration tests - mock crossterm::event
+- [ ]  More unit and integration tests
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
@@ -18,8 +18,6 @@
 - [ ]  Decide if it's worth passing the wrapped syntax tree to gen_build_run from eval just to avoid re-parsing it for that specific use case.
 - [ ]  "edit" crate - how to reconfigure editors dynamically - instructions unclear.
 - [ ]  Clap aliases not working in REPL.
-- [ ]  Get rid of date and time in RHS of REPL? - doesn't seem to be an option.
-- [ ]  Help command in eval, same as quit and q
 - [ ]  Work on demo/reedline_clap_repl_gemini.rs
 - [ ]  Consider other Rust gui packages.
 - [ ]  How to navigate reedline history entry by entry instead of line by line.

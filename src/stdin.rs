@@ -61,7 +61,6 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
 
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
-    // enable_raw_mode()?;
     enable_raw_mode().map_err(|e| {
         println!("Error enabling raw mode: {:?}", e);
         e
@@ -77,10 +76,14 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
         e
     })?;
     let backend = CrosstermBackend::new(stdout);
-    let mut term = Terminal::new(backend).map_err(|e| {
+    let terminal = Terminal::new(backend).map_err(|e| {
         println!("Error creating terminal: {:?}", e);
         e
     })?;
+    // Ensure terminal will get reset when it goes out of scope.
+    let mut term = scopeguard::guard(terminal, |term| {
+        reset_term(term).expect("Error resetting terminal")
+    });
     let mut textarea = TextArea::from(initial_content.lines());
     dbg!(&textarea);
 
@@ -124,7 +127,6 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
                     ctrl: true,
                     ..
                 } => {
-                    reset_term(term)?;
                     return Err(Box::new(BuildRunError::Cancelled));
                 }
                 Input {
@@ -154,10 +156,6 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
             }
         }
     }
-    reset_term(term).map_err(|e| {
-        println!("Error resetting terminal: {:?}", e);
-        e
-    })?;
 
     Ok(textarea.lines().to_vec())
 }

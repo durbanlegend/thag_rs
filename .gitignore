@@ -9,7 +9,6 @@ colors.sh
 demo/._in_place-YlxBQC
 demo/cargo_toml_stuff
 demo/clap_default_value_ifs.rs
-demo/code_compl2.rs
 demo/code_completion.rs
 demo/codegen.rs
 demo/default_cargo.toml

@@ -85,7 +85,6 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
         reset_term(term).expect("Error resetting terminal")
     });
     let mut textarea = TextArea::from(initial_content.lines());
-    dbg!(&textarea);
 
     textarea.set_block(
         Block::default()
@@ -120,7 +119,6 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
             textarea.insert_str(normalize_newlines(&data));
         } else {
             let input = Input::from(event.clone());
-            dbg!(&input);
             match input {
                 Input {
                     key: Key::Char('q'),

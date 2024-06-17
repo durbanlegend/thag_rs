@@ -10,6 +10,7 @@
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
+- [ ]  Remove deleted files from .gitignore
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

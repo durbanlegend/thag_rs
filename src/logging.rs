@@ -1,5 +1,3 @@
-// src/logging.rs
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Verbosity {
     Quiet,
@@ -8,7 +6,7 @@ pub enum Verbosity {
 }
 
 pub struct Logger {
-    verbosity: Verbosity,
+    pub verbosity: Verbosity,
 }
 
 impl Logger {

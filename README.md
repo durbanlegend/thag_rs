@@ -8,13 +8,15 @@
 
 `rs-script` is a simple and serious script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner.
 
-`rs-script` leverages the reliability and comprehensiveness of Cargo to build and compile a reliable Rust program from the input code. Rather than rely on superficial source code analysis by means of regular expressions and string parsing, it behaves more like a compiler, using the `syn` crate to parse the code into an abstract syntax tree (AST). It then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code and to determine well-formedness by counting the genuine main methods (as opposed to comments or program code embedded in string literals). These are then filtered to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
+`rs-script` leverages the reliability and comprehensiveness of Cargo to build and compile a reliable Rust program from the input code. Rather than rely on superficial source code analysis by means of regular expressions and string parsing, it behaves more like a compiler, using the `syn` crate to parse valid code into an abstract syntax tree (AST). It then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code and to determine well-formedness by counting the genuine main methods (as opposed to comments or program code embedded in string literals). These are then filtered to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
+
+(If your code does not successfully parse into an AST because of a coding error, `rs-script` will fall back to using source code analysis to prepare your code for the Rust compiler, which can then show you error messages to help you find the issues.)
 
 `rs-script` then uses the `toml` crate to parse the optional metadata supplied in a toml block (as described below) into a manifest struct, merges in the dependencies inferred from the AST and uses `toml` to write out the dedicated Cargo.toml file that Cargo needs to build the script. Finally, in the case of snippets and expressions, it uses the `quote` crate to embed the logic in a well-formed program template, which it then hands off to Cargo to build.
 
 All of this is quite fast: the real bottleneck will be the Cargo build process downloading and compiling your dependencies on the initial build, which is unfortunately inevitable and will be displayed as it happens in the normal way so that there are no mystery delays. If you rerun the compiled script it should be lightning fast.
 
-In this way `rs-script` attempts to handle any valid Rust script, be it a program, snippet or expression. It will try to generate a dedicated Cargo.toml for your script from `use` statements in your code, although for speed and precision I recommend that you embed your own in a toml block:
+In this way `rs-script` attempts to handle any valid (or invalid) Rust script, be it a program, snippet or expression. It will try to generate a dedicated Cargo.toml for your script from `use` statements in your code, although for speed and precision I recommend that you embed your own in a toml block:
 ```/*
 [toml]
 [dependencies]

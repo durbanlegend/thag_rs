@@ -1,14 +1,57 @@
 #[cfg(test)]
 mod tests {
+    use mockall::predicate::*;
     use rs_script::manifest::{
         capture_dep, cargo_search, default_manifest, escape_path_for_windows, merge_manifest,
+        MockCommandRunner,
     };
     use rs_script::BuildState;
-    use std::io::Write;
-    use tempfile::NamedTempFile;
+    use std::process::Output;
 
     fn init_logger() {
         let _ = env_logger::builder().is_test(true).try_init();
+    }
+
+    fn successful_exit_status() -> std::process::ExitStatus {
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::ExitStatusExt;
+            std::process::ExitStatus::from_raw(0)
+        }
+
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::ExitStatusExt;
+            std::process::ExitStatus::from_raw(0)
+        }
+    }
+
+    #[test]
+    fn test_cargo_search_success() {
+        let output = Output {
+            status: successful_exit_status(),
+            stdout: b"serde = \"1.0.203\"".to_vec(),
+            stderr: Vec::new(),
+        };
+
+        let mut mock_runner = MockCommandRunner::new();
+        let args: Vec<String> = vec![
+            "search".to_string(),
+            "serde".to_string(),
+            "--limit".to_string(),
+            "1".to_string(),
+        ];
+
+        mock_runner
+            .expect_run_command()
+            .with(eq("cargo"), eq(args))
+            .returning(move |_, _| Ok(output.clone()));
+
+        let result = cargo_search(&mock_runner, "serde");
+        assert!(result.is_ok());
+        let (name, version) = result.unwrap();
+        assert_eq!(name, "serde");
+        assert_eq!(version, "1.0.203");
     }
 
     #[test]
@@ -62,21 +105,21 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_cargo_search_success() {
-        // This is a mocked test. In a real test environment, you should mock Command to simulate Cargo behavior.
-        let output = r#"serde = "1.0.203""#;
-        let mut search_command = NamedTempFile::new().unwrap();
-        writeln!(search_command, "{}", output).unwrap();
-        search_command.flush().unwrap();
+    // #[test]
+    // fn test_cargo_search_success() {
+    //     // This is a mocked test. In a real test environment, you should mock Command to simulate Cargo behavior.
+    //     let output = r#"serde = "1.0.203""#;
+    //     let mut search_command = NamedTempFile::new().unwrap();
+    //     writeln!(search_command, "{}", output).unwrap();
+    //     search_command.flush().unwrap();
 
-        // Mocking Command::output
-        let result = cargo_search("serde");
-        assert!(result.is_ok());
-        let (name, version) = result.unwrap();
-        assert_eq!(name, "serde");
-        assert_eq!(version, "1.0.203");
-    }
+    //     // Mocking Command::output
+    //     let result = cargo_search("serde");
+    //     assert!(result.is_ok());
+    //     let (name, version) = result.unwrap();
+    //     assert_eq!(name, "serde");
+    //     assert_eq!(version, "1.0.203");
+    // }
 
     #[test]
     fn test_merge_manifest() {

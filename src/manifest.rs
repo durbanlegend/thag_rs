@@ -1,10 +1,11 @@
 #![allow(clippy::uninlined_format_args)]
 use lazy_static::lazy_static;
+use mockall::automock;
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::error::Error;
-use std::io::BufRead;
-use std::process::Command;
+use std::io::{self, BufRead};
+use std::process::{Command, Output};
 use std::str::FromStr;
 use std::time::Instant;
 
@@ -15,7 +16,24 @@ use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::{debug_timings, Ast, BuildState, CargoManifest, Dependency, Feature};
-pub fn cargo_search(dep_crate: &str) -> Result<(String, String), Box<dyn Error>> {
+
+#[automock]
+pub trait CommandRunner {
+    fn run_command(&self, program: &str, args: &[String]) -> io::Result<Output>;
+}
+
+pub struct RealCommandRunner;
+
+impl CommandRunner for RealCommandRunner {
+    fn run_command(&self, program: &str, args: &[String]) -> io::Result<Output> {
+        Command::new(program).args(args).output()
+    }
+}
+
+pub fn cargo_search<R: CommandRunner>(
+    runner: &R,
+    dep_crate: &str,
+) -> Result<(String, String), Box<dyn Error>> {
     let start_search = Instant::now();
 
     let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(dep_crate);
@@ -26,10 +44,13 @@ See below for how to avoid this and speed up future builds.
 "#,
     );
 
-    let mut search_command = Command::new("cargo");
-    search_command.args(["search", dep_crate, "--limit", "1"]);
-    debug_log!("\nCargo search command={search_command:#?}\n");
-    let search_output = search_command.output()?;
+    let args = vec![
+        "search".to_string(),
+        dep_crate.to_string(),
+        "--limit".to_string(),
+        "1".to_string(),
+    ];
+    let search_output = runner.run_command("cargo", &args)?;
 
     let first_line = if search_output.status.success() {
         search_output
@@ -205,7 +226,8 @@ pub fn merge_manifest(
                 continue;
             }
             debug_log!("Starting Cargo search for key dep_name [{dep_name}]");
-            let cargo_search_result = cargo_search(&dep_name);
+            let command_runner = RealCommandRunner;
+            let cargo_search_result = cargo_search(&command_runner, &dep_name);
             // If the crate name is hyphenated, Cargo search will nicely search for underscore version and return the correct
             // hyphenated name. So we must replace the incorrect underscored version we searched on with the corrected
             // hyphenated version that the Cargo search returned.

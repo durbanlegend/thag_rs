@@ -5,6 +5,7 @@ colors.sh
 demo/clap_default_value_ifs.rs
 demo/code_completion.rs
 demo/default_cargo.toml
+demo/doc
 demo/eval.rs
 demo/gpt_clap.rs
 demo/lsp_compl2.rs
@@ -18,3 +19,4 @@ sample_bg.html
 temp.txt
 term_colors.ast
 xterm_colors.txt
+demo/README.md

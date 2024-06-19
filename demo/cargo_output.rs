@@ -4,6 +4,11 @@ env_logger = "0.11.3"
 log = "0.4.21"
 */
 
+//# Purpose: Demo process::Command with output capture.
+//# Crates: `env_logger`, `log`, `std::process`
+//# Target: all
+//# Type: program
+
 use env_logger::Builder;
 use log::debug;
 use std::env;
@@ -22,7 +27,7 @@ fn prog() -> Option<String> {
         .map(String::from)
 }
 
-/// Run a command (in this case a cargo search for the log crate),
+/// Run a command (in this case a cargo search for the `log` crate),
 /// and capture and print its stdout and stderr concurrently in a
 /// separate thread.
 fn main() {

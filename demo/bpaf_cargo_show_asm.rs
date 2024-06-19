@@ -4,7 +4,8 @@
  bpaf_derive = "0.5.10"
 */
 
-/// Parsing snippet from cargo-show-asm
+/// Parsing snippet from cargo-show-asm.
+///
 /// Derive + typed fallback + external both with and without name
 use bpaf::{construct, long, Bpaf, Parser, ShellComp};
 use std::{convert::Infallible, path::PathBuf};
@@ -40,7 +41,7 @@ pub struct Options {
 }
 
 #[derive(Debug, Clone, Bpaf)]
-/// Item to pick from the output
+// Item to pick from the output
 pub struct SelectedFunction {
     /// Complete or partial function name to filter
     #[bpaf(positional("FUNCTION"))]
@@ -71,7 +72,7 @@ fn parse_manifest_path() -> impl Parser<PathBuf> {
 }
 
 #[derive(Debug, Clone, Bpaf)]
-/// How to render output
+// How to render output
 pub struct Format {
     /// Print interleaved Rust code
     pub rust: bool,
@@ -84,12 +85,6 @@ pub struct Format {
 }
 
 #[derive(Debug, Clone, Bpaf)]
-/// Pick output type
-///
-/// included help
-///
-///
-/// Extended help
 pub enum Syntax {
     /// Generate assembly using Intel style
     Intel,

@@ -4,8 +4,14 @@
  bpaf_derive = "0.5.10"
 */
 
-/// Example from bpaf crate docs2/src/adjacent_command/derive.rs
-/// E.g. rs_script demo/bpaf_cmd-chain.rs -- eat Fastfood drink --coffee sleep --time=5
+//# Purpose: Demo CLI alternative to clap crate
+//# Crates: `bpaf`, `bpaf_derive`
+//# Target: all
+//# Type: program
+
+/// Example from bpaf crate docs2/src/adjacent_command/derive.rs.
+///
+/// E.g. `rs_script demo/bpaf_cmd-chain.rs -- eat Fastfood drink --coffee sleep --time=5`
 use bpaf_derive::Bpaf;
 
 #[derive(Debug, Clone, Bpaf)]

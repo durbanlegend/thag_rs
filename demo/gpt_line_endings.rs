@@ -9,7 +9,7 @@ use regex::Regex;
 use std::error::Error;
 
 /// Prompt for and read Rust source code from stdin.
-/// TOFO Still haven't got to the bottom of why even dynamic \n
+/// TODO Still haven't got to the bottom of why even dynamic \n
 /// may be stubborn or not. Curreently in testing the normalize_newlines
 /// method is not even needed.
 pub fn read_stdin() -> Result<String, std::io::Error> {

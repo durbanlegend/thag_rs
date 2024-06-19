@@ -4,6 +4,11 @@ bpaf = { version = "0.9.11", features = ["derive"] }
 bpaf_derive = "0.5.10"
 */
 
+//# Purpose: Demo CLI alternative to clap crate
+//# Crates: `bpaf`, `bpaf_derive`
+//# Target: all
+//# Type: program
+
 use bpaf_derive::Bpaf;
 
 #[derive(Debug, Clone, Bpaf)]
@@ -11,7 +16,7 @@ use bpaf_derive::Bpaf;
 // but you can override it using something like #[bpaf(command("my_command"))]
 // you can chain more short and long names here to serve as aliases
 #[bpaf(command("cmd"), short('c'))]
-/// Command to do something
+// Command to do something
 pub struct Cmd {
     /// This flag is specific to command
     flag: bool,
@@ -27,7 +32,9 @@ pub struct Options {
     cmd: Cmd,
 }
 
-/// E.g. demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6
+/// Example from bpaf crate docs2/src/command/derive.rs.
+///
+/// E.g. `demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6`
 fn main() {
     println!("{:?}", options().run())
 }

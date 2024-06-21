@@ -1,8 +1,16 @@
-//# Purpose: Collect script metadata
-//# Crates: std::collections, std::fs, std::io, std::path
-//# Target: all
-//# Type: program
+/*[toml]
+[dependencies]
+lazy_static = "1.4.0"
+regex = "1.10.5"
+rs-script = { path = "/Users/donf/projects/rs-script" }
+*/
 
+/// Collect demo script metadata and generate as demo/README.md.
+/// Strategy and grunt work thanks to ChatGPT.
+//# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
+use lazy_static::lazy_static;
+use regex::Regex;
+use rs_script::{code_utils, debug_log};
 use std::collections::HashMap;
 use std::fs::{self, read_dir, File};
 use std::io::Write;
@@ -12,18 +20,27 @@ use std::path::Path;
 struct ScriptMetadata {
     script: String,
     purpose: Option<String>,
-    crates: Option<String>,
-    target: Option<String>,
+    crates: Vec<String>,
     script_type: Option<String>,
     description: Option<String>,
 }
 
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
-    let content = fs::read_to_string(file_path).ok()?;
+    let mut content = fs::read_to_string(file_path).ok()?;
+
+    content = if content.starts_with("#!") {
+        let split_once = content.split_once('\n');
+        let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
+        debug_log!("Successfully stripped shebang {shebang}");
+        rust_code.to_string()
+    } else {
+        content
+    };
+
     let mut metadata = HashMap::new();
     let mut lines = Vec::<String>::new();
 
-    for line in content.lines() {
+    for line in content.clone().lines() {
         if line.starts_with("//#") {
             let parts: Vec<&str> = line[3..].splitn(2, ':').collect();
             if parts.len() == 2 {
@@ -35,24 +52,46 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     }
     metadata.insert("description".to_string(), lines.join(""));
 
+    let maybe_syntax_tree = code_utils::to_ast(&content);
+
+    let crates = match maybe_syntax_tree {
+        Some(ref ast) => code_utils::infer_deps_from_ast(&ast),
+        None => code_utils::infer_deps_from_source(&content),
+    };
+
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
+    }
+    let main_methods = match maybe_syntax_tree {
+        Some(ref ast) => code_utils::count_main_methods(ast),
+        None => RE.find_iter(&content).count(),
+    };
+
+    let script_type = if main_methods >= 1 {
+        "Program"
+    } else {
+        "Snippet"
+    };
+
     let script = file_path
         .file_name()
         .expect("Error accessing filename")
         .to_string_lossy()
         .to_string();
 
+    eprintln!(
+        "{script} maybe_syntax_tree.is_some(): {}",
+        maybe_syntax_tree.is_some()
+    );
+
     let purpose = metadata.get("purpose");
-    let crates = metadata.get("crates");
-    let target = metadata.get("target");
-    let script_type = metadata.get("type");
     let description = metadata.get("description");
 
     Some(ScriptMetadata {
         script,
         purpose: purpose.cloned(),
-        crates: crates.cloned(),
-        target: target.cloned(),
-        script_type: script_type.cloned(),
+        crates: crates,
+        script_type: Some(script_type.to_string()),
         description: description.cloned(),
     })
 }
@@ -95,18 +134,12 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path) {
             metadata.purpose.as_ref().unwrap_or(&String::new())
         )
         .unwrap();
-        writeln!(
-            file,
-            "**Crates:** {}\n",
-            metadata.crates.as_ref().unwrap_or(&String::new())
-        )
-        .unwrap();
-        writeln!(
-            file,
-            "**Target:** {}\n",
-            metadata.target.as_ref().unwrap_or(&String::new())
-        )
-        .unwrap();
+        let crates = metadata
+            .crates
+            .iter()
+            .map(|v| format!("`{v}`"))
+            .collect::<Vec<String>>();
+        writeln!(file, "**Crates:** {}\n", crates.join(", ")).unwrap();
         writeln!(
             file,
             "**Type:** {}\n",
@@ -117,8 +150,6 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path) {
     }
 }
 
-/// Collect demo script metadata and generate as demo/README.md.
-/// Strategy and grunt work thanks to ChatGPT.
 fn main() {
     let scripts_dir = Path::new("demo");
     let output_path = Path::new("demo/README.md");

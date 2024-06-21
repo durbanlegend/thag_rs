@@ -3,11 +3,8 @@
 bitflags = "2.5.0"
 */
 
+/// Try out the `bitflags` crate.
 //# Purpose: Explore use of `bitflags` to control processing.
-//# Crates: `bitflags`
-//# Target: all
-//# Type: program
-
 use bitflags::bitflags;
 use std::error::Error;
 use std::fmt;
@@ -31,7 +28,6 @@ fn print_flag(proc_flag: ProcFlags) {
     println!("proc_flag={proc_flag}");
 }
 
-/// Try out the `bitflags` crate.
 fn main() -> Result<(), Box<dyn Error>> {
     print_flag(ProcFlags::from_bits(5).unwrap());
 

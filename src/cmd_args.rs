@@ -39,6 +39,9 @@ pub struct Cli {
     /// Run without rebuilding if already compiled
     #[arg(short, long)]
     pub run: bool,
+    /// Don't run the script
+    #[arg(short, long, conflicts_with_all(["all", "expression", "repl", "run", "stdin"]))]
+    pub norun: bool,
     /// REPL mode (read–eval–print loop) for Rust expressions. Option: existing script name.
     #[arg(short = 'l', long, conflicts_with_all(["all", "generate", "build", "run"]))]
     pub repl: bool,
@@ -87,7 +90,7 @@ bitflags! {
     // You can `#[derive]` the `Debug` trait, but implementing it manually
     // can produce output like `A | B` instead of `Flags(A | B)`.
     // #[derive(Debug)]
-    #[derive(Clone, PartialEq, Eq)]
+    #[derive(Clone, Default, PartialEq, Eq)]
     /// Processing flags for ease of handling command-line options
     pub struct ProcFlags: u32 {
         const GENERATE = 1;
@@ -103,6 +106,7 @@ bitflags! {
         const EDIT = 1024;
         const QUIET = 2048;
         const MULTI = 4096;
+        const NORUN = 8192;
     }
 }
 
@@ -152,8 +156,9 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::MULTI, args.multimain);
         proc_flags.set(ProcFlags::VERBOSE, args.verbose);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
-        proc_flags.set(ProcFlags::RUN, args.run | args.all);
-        proc_flags.set(ProcFlags::ALL, args.all);
+        proc_flags.set(ProcFlags::NORUN, args.norun);
+        proc_flags.set(ProcFlags::RUN, !args.norun);
+        proc_flags.set(ProcFlags::ALL, !args.norun);
         if !(proc_flags.contains(ProcFlags::ALL)) {
             proc_flags.set(ProcFlags::ALL, args.generate & args.build & args.run);
         }
@@ -210,6 +215,10 @@ fn main() {
 
     if opt.run {
         log!(Verbosity::Normal, "Run option selected");
+    }
+
+    if opt.norun {
+        log!(Verbosity::Normal, "No-run option selected");
     }
 
     log!(Verbosity::Normal, "Script to run: {:?}", opt.script);

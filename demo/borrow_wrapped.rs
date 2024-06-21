@@ -2,10 +2,8 @@
 /// Snippet demonstrating how to reference or clone a wrapped value without
 /// falling foul of the borrow checker.
 
-//# Purpose: Demo a borrow-checker-friendly technique for accessing a wrapped value..
+//# Purpose: Demo a borrow-checker-friendly technique for accessing a wrapped value.
 //# Crates:
-//# Target: all
-//# Type: snippet
 
 #[derive(Clone, Debug)]
 struct MyStruct {

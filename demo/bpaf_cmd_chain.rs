@@ -5,9 +5,6 @@
 */
 
 //# Purpose: Demo CLI alternative to clap crate
-//# Crates: `bpaf`, `bpaf_derive`
-//# Target: all
-//# Type: program
 
 /// Example from bpaf crate docs2/src/adjacent_command/derive.rs.
 ///

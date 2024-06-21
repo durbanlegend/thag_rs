@@ -1,11 +1,12 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
-
 use crossterm::tty::IsTty;
 use mockall::Sequence;
 use ratatui::style::{Color, Style, Stylize};
 use rs_script::logging::Verbosity;
 use rs_script::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
 use rs_script::{edit_stdin, log, BuildRunError};
+use std::io::{stdout, Write};
+use std::process::{Command, Stdio};
 use tui_textarea::TextArea;
 
 #[test]
@@ -93,14 +94,10 @@ fn init_logger() {
 #[test]
 fn test_read_to_string() {
     let string = r#"fn main() {{ println!("Hello, world!"); }}\n"#;
-    let input = string.as_bytes();
-    let mut input = &input[..];
+    let mut input = string.as_bytes();
     let result = read_to_string(&mut input).unwrap();
     assert_eq!(result, string);
 }
-
-use std::io::{stdout, Write};
-use std::process::{Command, Stdio};
 
 #[test]
 fn test_read_stdin() {

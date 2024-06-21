@@ -4,11 +4,10 @@ bpaf = { version = "0.9.11", features = ["derive"] }
 bpaf_derive = "0.5.10"
 */
 
-//# Purpose: Demo CLI alternative to clap crate
-//# Crates: `bpaf`, `bpaf_derive`
-//# Target: all
-//# Type: program
-
+/// Example from bpaf crate docs2/src/command/derive.rs.
+///
+/// E.g. `demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6`
+/// Purpose: Demo CLI alternative to clap crate
 use bpaf_derive::Bpaf;
 
 #[derive(Debug, Clone, Bpaf)]
@@ -32,9 +31,6 @@ pub struct Options {
     cmd: Cmd,
 }
 
-/// Example from bpaf crate docs2/src/command/derive.rs.
-///
-/// E.g. `demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6`
 fn main() {
     println!("{:?}", options().run())
 }

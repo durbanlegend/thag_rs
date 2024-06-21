@@ -1,7 +1,5 @@
 //# Purpose: Choose black or white as a contrasting colour for a given colour.
 //# Crates:
-//# Target: all
-//# Type: program
 
 // Calculate luminance from RGB components
 fn luminance(r: u8, g: u8, b: u8) -> f64 {

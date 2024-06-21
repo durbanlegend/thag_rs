@@ -10,7 +10,8 @@
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
-- [ ]  Remove deleted files from .gitignore
+- [ ]  Get builder ignored tests working
+- [ ]  Debug egui_code_editor.rss only showing env_logger if use egui::*; is included.
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

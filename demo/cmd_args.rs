@@ -6,7 +6,8 @@ rs-script = { path = "/Users/donf/projects/rs-script" }
 */
 
 /// A prototype of the cmd_args module of rs-script itself.
-/// E.g. rs_script -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+///
+/// E.g. `rs_script -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 use rs_script::errors::BuildRunError;
 use rs_script::log;
 use rs_script::logging::{self, Verbosity};
@@ -17,7 +18,7 @@ use clap::Parser;
 use core::{fmt, str};
 use std::error::Error;
 
-/// rs-script script runner and REPL
+// rs-script script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Parser, Debug)]
 #[command(name = "rs_script")]
@@ -65,7 +66,7 @@ pub struct Cli {
     pub quiet: bool,
 }
 
-/// Getter for clap command-line arguments
+// Getter for clap command-line arguments
 pub fn get_args() -> Cli {
     Cli::parse()
 }
@@ -131,14 +132,14 @@ impl str::FromStr for ProcFlags {
     }
 }
 
-/// Set up the processing flags from the command line arguments and pass them back.
-/// # Errors
-///
-/// Will return `Err` if there is an error parsing the flags to set up and internal
-/// correctness chack.
-/// # Panics
-///
-/// Will panic if the internal correctness check fails.
+// Set up the processing flags from the command line arguments and pass them back.
+// # Errors
+//
+// Will return `Err` if there is an error parsing the flags to set up and internal
+// correctness chack.
+// # Panics
+//
+// Will panic if the internal correctness check fails.
 pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
     let is_expr = args.expression.is_some();
     let proc_flags = {

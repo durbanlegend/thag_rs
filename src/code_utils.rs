@@ -340,7 +340,7 @@ pub fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
         // Try putting the expression in braces.
         let string = format!(r"{{{rs_source}}}");
         let str = string.as_str();
-        log!(Verbosity::Normal, "str={str}");
+        // log!(Verbosity::Normal, "str={str}");
 
         expr = syn::parse_str::<Expr>(str);
     }
@@ -502,7 +502,7 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
 }
 
 /// Count the number of `main()` methods in an abstract syntax tree.
-pub(crate) fn count_main_methods(syntax_tree: &Ast) -> usize {
+pub fn count_main_methods(syntax_tree: &Ast) -> usize {
     #[derive(Default)]
     struct FindMainFns {
         main_method_count: usize,
@@ -527,7 +527,7 @@ pub(crate) fn count_main_methods(syntax_tree: &Ast) -> usize {
 }
 
 /// Parse the code into an abstract syntax tree for inspection
-/// if possible. TODO: I suspect AST is always possible
+/// if possible (should work if the code will compike)
 pub fn to_ast(source_code: &str) -> Option<Ast> {
     let start_ast = Instant::now();
     if let Ok(tree) = syn::parse_file(source_code) {

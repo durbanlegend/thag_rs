@@ -87,15 +87,14 @@ impl ReplCommand {
 }
 
 #[derive(Debug)]
-struct Context<'a> {
-    options: &'a mut Cli,
-    proc_flags: &'a ProcFlags,
-    // cmd_list: String,
-    build_state: &'a mut BuildState,
-    start: &'a Instant,
+pub struct Context<'a> {
+    pub options: &'a mut Cli,
+    pub proc_flags: &'a ProcFlags,
+    pub build_state: &'a mut BuildState,
+    pub start: Instant,
 }
 
-pub struct ReplPrompt(&'static str);
+pub struct ReplPrompt(pub &'static str);
 impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
         Cow::Owned(self.0.to_string())
@@ -156,7 +155,7 @@ pub fn run_repl(
         options,
         proc_flags,
         build_state,
-        start: &start,
+        start,
     };
     let context: &mut Context = &mut context;
     let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
@@ -291,7 +290,7 @@ pub fn run_repl(
                 rs_source,
                 context.options,
                 context.proc_flags,
-                context.start,
+                &context.start,
             )
             .map_err(|_err| BuildRunError::Command("Error processing expression".to_string()))?;
         } else {
@@ -359,7 +358,7 @@ fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
     );
 
     debug_log!("In run_expr: build_state={build_state:#?}");
-    let result = gen_build_run(options, proc_flags, build_state, None::<Ast>, start);
+    let result = gen_build_run(options, proc_flags, build_state, None::<Ast>, &start);
     if result.is_err() {
         log!(Verbosity::Quiet, "{result:?}");
     }

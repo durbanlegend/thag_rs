@@ -210,7 +210,7 @@ fn configure_log() {
     let mut binding = Builder::new();
     let builder = binding.parse_env(env);
     builder.write_style(WriteStyle::Always);
-    builder.init();
+    let _ = builder.try_init();
 
     // Builder::new().filter_level(log::LevelFilter::Debug).init();
 }
@@ -270,10 +270,9 @@ pub fn gen_build_run(
         lazy_static! {
             static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
         }
-        let main_methods = if let Some(ref syntax_tree_ref) = syntax_tree {
-            code_utils::count_main_methods(syntax_tree_ref)
-        } else {
-            RE.find_iter(&rs_source).count()
+        let main_methods = match syntax_tree {
+            Some(ref ast) => code_utils::count_main_methods(ast),
+            None => RE.find_iter(&rs_source).count(),
         };
         let has_main = match main_methods {
             0 => false,

@@ -9,7 +9,8 @@ use clap::Parser;
 use core::{fmt, str};
 
 /// Basic CLI example using clap.
-/// E.g. rs_script -t demo/cmd_args_clap.rs -- -atv hello.sh
+///
+/// E.g. `rs_script -t demo/cmd_args_clap.rs -- -atv hello.sh`
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Parser, Debug)]
 #[clap(version = "1.0", author = "Your Name")]

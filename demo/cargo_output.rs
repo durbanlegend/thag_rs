@@ -5,9 +5,6 @@ log = "0.4.21"
 */
 
 //# Purpose: Demo process::Command with output capture.
-//# Crates: `env_logger`, `log`, `std::process`
-//# Target: all
-//# Type: program
 
 use env_logger::Builder;
 use log::debug;

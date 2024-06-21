@@ -5,8 +5,8 @@
 */
 
 /// Parsing snippet from cargo-show-asm.
-///
-/// Derive + typed fallback + external both with and without name
+//
+// Derive + typed fallback + external both with and without name
 use bpaf::{construct, long, Bpaf, Parser, ShellComp};
 use std::{convert::Infallible, path::PathBuf};
 
@@ -121,9 +121,9 @@ fn comp_examples(prefix: &String) -> Vec<(String, Option<String>)> {
 }
 
 #[derive(Debug, Clone, Bpaf)]
-/// Select artifact to use for analysis
-///
-/// Only one is valid
+// Select artifact to use for analysis
+//
+// Only one is valid
 pub enum Focus {
     /// Show results from library code
     Lib,

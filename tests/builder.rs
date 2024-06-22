@@ -4,6 +4,7 @@ mod tests {
     use rs_script::cmd_args::Cli;
     use rs_script::{execute, TMPDIR};
     use rs_script::{BuildState, ProcFlags};
+    use sequential_test::sequential;
     use std::path::PathBuf;
 
     // Helper function to create a sample Cli structure
@@ -18,6 +19,7 @@ mod tests {
     }
 
     #[test]
+    #[sequential]
     fn test_execute_dynamic_script() {
         let mut args = create_sample_cli(Some(
             "tests/assets/determine_if_known_type_trait.rs".to_string(),
@@ -55,6 +57,7 @@ mod tests {
     }
 
     #[test]
+    #[sequential]
     fn test_build_cargo_project() {
         let build_state = BuildState {
             working_dir_path: "/Users/donf/projects/rs-script".into(),
@@ -78,6 +81,7 @@ mod tests {
     }
 
     #[test]
+    #[sequential]
     fn test_run_script() {
         let mut cli = create_sample_cli(Some("tests/assets/test_run_script.rs".to_string()));
         cli.run = true;

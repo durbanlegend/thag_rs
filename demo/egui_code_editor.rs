@@ -28,7 +28,8 @@ syntect = ["egui_extras/syntect"]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use env_logger;
-use egui::*;
+use eframe;
+use egui;
 
 // We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]

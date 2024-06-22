@@ -1,5 +1,3 @@
-// tests/integration_test.rs
-
 use clap::Parser;
 use rs_script::{execute, Cli, DYNAMIC_SUBDIR, TMPDIR};
 use std::env;
@@ -33,7 +31,7 @@ fn main() {{
 
     // Simulate command-line arguments
     let args = vec![
-        "rs-script", // Typically, this would be the binary name
+        "rs_script", // Typically, this would be the binary name
         source_path.to_str().unwrap(),
         "--",
         "2>&1",

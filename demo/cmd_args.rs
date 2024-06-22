@@ -8,6 +8,7 @@ rs-script = { path = "/Users/donf/projects/rs-script" }
 /// A prototype of the cmd_args module of rs-script itself.
 ///
 /// E.g. `rs_script -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
+//# Purpose: Prototype CLI.
 use rs_script::errors::BuildRunError;
 use rs_script::log;
 use rs_script::logging::{self, Verbosity};

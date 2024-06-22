@@ -3,6 +3,10 @@
 crossterm = "0.27.0"
 */
 
+/// Published example from crossterm crate.
+///
+/// Url: [https://github.com/crossterm-rs/crossterm/blob/master/README.md](https://github.com/crossterm-rs/crossterm/blob/master/README.md)
+//# Purpose: Demo crossterm terminal manipulation.
 use std::io::stdout;
 
 use crossterm::{

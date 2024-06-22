@@ -5,7 +5,7 @@ mod tests {
     use rs_script::cmd_args::Cli;
     use rs_script::{execute, TMPDIR};
     use rs_script::{BuildState, ProcFlags};
-    use sequential_test::sequential;
+    // use sequential_test::sequential;
     use std::env::current_dir;
     use std::fs::{self, OpenOptions};
     use std::io::Write;
@@ -23,7 +23,7 @@ mod tests {
     }
 
     #[test]
-    #[sequential]
+    // #[sequential]
     fn test_execute_dynamic_script() {
         let mut args = create_sample_cli(Some(
             "tests/assets/determine_if_known_type_trait.rs".to_string(),
@@ -61,7 +61,7 @@ mod tests {
     }
 
     #[test]
-    #[sequential]
+    // #[sequential]
     fn test_build_cargo_project() {
         let current_dir = current_dir().expect("Could not get current dir");
         let cargo_home = home::cargo_home().expect("Could not get Cargo home");
@@ -124,7 +124,7 @@ name = "fizz_buzz"
     }
 
     #[test]
-    #[sequential]
+    // #[sequential]
     fn test_run_script() {
         let mut cli = create_sample_cli(Some("tests/assets/test_run_script.rs".to_string()));
         cli.run = true;

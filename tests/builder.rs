@@ -1,12 +1,14 @@
 #[cfg(test)]
 mod tests {
-    
+
     use rs_script::builder::{build, generate, run};
     use rs_script::cmd_args::Cli;
     use rs_script::{execute, TMPDIR};
     use rs_script::{BuildState, ProcFlags};
     use sequential_test::sequential;
     use std::env::current_dir;
+    use std::fs::{self, OpenOptions};
+    use std::io::Write;
     use std::path::PathBuf;
 
     // Helper function to create a sample Cli structure
@@ -61,20 +63,59 @@ mod tests {
     #[test]
     #[sequential]
     fn test_build_cargo_project() {
+        let current_dir = current_dir().expect("Could not get current dir");
+        let cargo_home = home::cargo_home().expect("Could not get Cargo home");
+        let target_dir_path = TMPDIR.join("rs-script/fizz_buzz");
+        fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
+        let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");
+        let cargo_toml = r#"[package]
+name = "fizz_buzz"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+
+[features]
+
+[workspace]
+
+[[bin]]
+path = "/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/rs-script/fizz_buzz/fizz_buzz.rs"
+name = "fizz_buzz"
+"#;
+
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(cargo_toml_path.clone())
+            .expect("Error creating Cargo.toml");
+
+        let mut cargo_toml_file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(cargo_toml_path.clone())
+            .expect("Error opening Cargo.toml");
+
+        cargo_toml_file
+            .write_all(cargo_toml.as_bytes())
+            .expect("error writing Cargo.toml");
+
         let build_state = BuildState {
-            working_dir_path: "/Users/donf/projects/rs-script".into(),
-            source_stem: "determine_if_known_type_trait".into(),
-                    source_name: "determine_if_known_type_trait.rs".into(),
-                    source_dir_path: "/Users/donf/projects/rs-script/tests/assets".into(),
-                    source_path: "/Users/donf/projects/rs-script/tests/assets/determine_if_known_type_trait.rs".into(),
-                    cargo_home: "/Users/donf/.cargo".into(),
-                    target_dir_path: TMPDIR.join("rs-script/determine_if_known_type_trait"),
-                    target_path: TMPDIR.join("rs-script/determine_if_known_type_trait/target/debug/determine_if_known_type_trait"),
-                    cargo_toml_path: TMPDIR.join("rs-script/determine_if_known_type_trait/Cargo.toml"),
-                    rs_manifest: None,
-                    cargo_manifest: None,
-                    must_gen: true,
-                    must_build: true,
+            working_dir_path: current_dir.clone(),
+            source_stem: "fizz_buzz".into(),
+            source_name: "fizz_buzz.rs".into(),
+            source_dir_path: current_dir.join("tests/assets"),
+            source_path: current_dir.join("tests/assets/fizz_buzz.rs"),
+            cargo_home,
+            target_path: target_dir_path.clone().join("target/debug/fizz_buzz"),
+            cargo_toml_path,
+            target_dir_path,
+            rs_manifest: None,
+            cargo_manifest: None,
+            must_gen: true,
+            must_build: true,
         };
         dbg!(&build_state);
         let proc_flags = ProcFlags::empty();
@@ -83,20 +124,22 @@ mod tests {
     }
 
     #[test]
-    // #[sequential]
+    #[sequential]
     fn test_run_script() {
         let mut cli = create_sample_cli(Some("tests/assets/test_run_script.rs".to_string()));
         cli.run = true;
         let current_dir = current_dir().expect("Could not get current dir");
         let cargo_home = home::cargo_home().expect("Could not get Cargo home");
+        let target_dir_path = TMPDIR.join("rs-script/test_run_script");
+        fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
         let build_state = BuildState {
             working_dir_path: current_dir.clone(),
             source_stem: "test_run_script".into(),
             source_name: "test_run_script.rs".into(),
-            source_dir_path: current_dir.join("tests/assets").into(),
-            source_path: current_dir.join("tests/assets/test_run_script.rs").into(),
-            cargo_home: cargo_home,
-            target_dir_path: TMPDIR.join("rs-script/test_run_script"),
+            source_dir_path: current_dir.join("tests/assets"),
+            source_path: current_dir.join("tests/assets/test_run_script.rs"),
+            cargo_home,
+            target_dir_path,
             target_path: TMPDIR.join("rs-script/test_run_script/target/debug/test_run_script"),
             cargo_toml_path: TMPDIR.join("rs-script/test_run_script/Cargo.toml"),
             rs_manifest: None,

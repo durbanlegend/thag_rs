@@ -23,24 +23,24 @@ mod tests {
 
     // Helper function to create a sample VuildState structure.
     // Requires the sample script to be in tests/assets.
-    fn create_sample_build_state(script_name: &str) -> BuildState {
-        let script_stem: &str = script_name
+    fn create_sample_build_state(source_name: &str) -> BuildState {
+        let source_stem: &str = source_name
             .strip_suffix(rs_script::RS_SUFFIX)
             .expect("Problem stripping Rust suffix");
         let current_dir = current_dir().expect("Could not get current dir");
         let cargo_home = home::cargo_home().expect("Could not get Cargo home");
-        let target_dir_path = TMPDIR.join("rs-script").join(script_stem);
+        let target_dir_path = TMPDIR.join("rs-script").join(source_stem);
         fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
         BuildState {
             working_dir_path: current_dir.clone(),
-            source_stem: "test_run_script".into(),
-            source_name: "test_run_script.rs".into(),
+            source_stem: source_stem.into(),
+            source_name: source_name.into(),
             source_dir_path: current_dir.join("tests/assets"),
-            source_path: current_dir.join("tests/assets/test_run_script.rs"),
+            source_path: current_dir.join("tests/assets").join(source_name),
             cargo_home,
             target_dir_path,
-            target_path: TMPDIR.join("rs-script/test_run_script/target/debug/test_run_script"),
-            cargo_toml_path: TMPDIR.join("rs-script/test_run_script/Cargo.toml"),
+            target_path: TMPDIR.join("rs-script/test_run_script/target/debug").join(source_stem),
+            cargo_toml_path: TMPDIR.join("rs-script").join(source_stem).join("Cargo.toml"),
             rs_manifest: None,
             cargo_manifest: None,
             must_gen: true,

@@ -48,6 +48,15 @@ mod tests {
         }
     }
 
+    // Helper function to sort out using the escape character as the file separator.
+    pub fn escape_path_for_windows(path: &str) -> String {
+        if cfg!(windows) {
+            path.replace('\\', "/")
+        } else {
+            path.to_string()
+        }
+    }
+
     #[test]
     // #[sequential]
     fn test_execute_dynamic_script() {
@@ -93,7 +102,7 @@ mod tests {
         path = "{}/rs-script/fib_fac_lite/fib_fac_lite.rs"
         name = "fib_fac_lite"
 "#,
-            TMPDIR.display()
+            escape_path_for_windows(TMPDIR.display().to_string().as_str())
         );
         let cargo_manifest =
             CargoManifest::from_str(&cargo_toml).expect("Could not parse manifest string");
@@ -132,7 +141,7 @@ edition = "2021"
 path = "{}/rs-script/fizz_buzz/fizz_buzz.rs"
 name = "fizz_buzz"
 "#,
-            TMPDIR.display()
+            escape_path_for_windows(TMPDIR.display().to_string().as_str())
         );
 
         std::fs::OpenOptions::new()

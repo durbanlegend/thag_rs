@@ -1,10 +1,12 @@
 #[cfg(test)]
 mod tests {
+    
     use rs_script::builder::{build, generate, run};
     use rs_script::cmd_args::Cli;
     use rs_script::{execute, TMPDIR};
     use rs_script::{BuildState, ProcFlags};
     use sequential_test::sequential;
+    use std::env::current_dir;
     use std::path::PathBuf;
 
     // Helper function to create a sample Cli structure
@@ -81,17 +83,19 @@ mod tests {
     }
 
     #[test]
-    #[sequential]
+    // #[sequential]
     fn test_run_script() {
         let mut cli = create_sample_cli(Some("tests/assets/test_run_script.rs".to_string()));
         cli.run = true;
+        let current_dir = current_dir().expect("Could not get current dir");
+        let cargo_home = home::cargo_home().expect("Could not get Cargo home");
         let build_state = BuildState {
-            working_dir_path: "/Users/donf/projects/rs-script".into(),
+            working_dir_path: current_dir.clone(),
             source_stem: "test_run_script".into(),
             source_name: "test_run_script.rs".into(),
-            source_dir_path: "/Users/donf/projects/rs-script/tests/assets".into(),
-            source_path: "/Users/donf/projects/rs-script/tests/assets/test_run_script.rs".into(),
-            cargo_home: "/Users/donf/.cargo".into(),
+            source_dir_path: current_dir.join("tests/assets").into(),
+            source_path: current_dir.join("tests/assets/test_run_script.rs").into(),
+            cargo_home: cargo_home,
             target_dir_path: TMPDIR.join("rs-script/test_run_script"),
             target_path: TMPDIR.join("rs-script/test_run_script/target/debug/test_run_script"),
             cargo_toml_path: TMPDIR.join("rs-script/test_run_script/Cargo.toml"),

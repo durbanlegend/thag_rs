@@ -380,8 +380,10 @@ pub fn generate(
         fs::create_dir_all(&build_state.target_dir_path)?;
     }
 
-    let target_rs_path = build_state.target_dir_path.clone();
-    let target_rs_path = target_rs_path.join(&build_state.source_name);
+    let target_rs_path = build_state
+        .target_dir_path
+        .clone()
+        .join(&build_state.source_name);
     // let is_repl = proc_flags.contains(ProcFlags::REPL);
     log!(
         Verbosity::Verbose,

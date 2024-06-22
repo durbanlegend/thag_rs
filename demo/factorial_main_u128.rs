@@ -1,5 +1,3 @@
-//: -s
-
 use std::io::*;
 
 fn main() -> Result<()> {

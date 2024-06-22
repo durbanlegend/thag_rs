@@ -39,8 +39,13 @@ mod tests {
             source_path: current_dir.join("tests/assets").join(source_name),
             cargo_home,
             target_dir_path,
-            target_path: TMPDIR.join("rs-script/test_run_script/target/debug").join(source_stem),
-            cargo_toml_path: TMPDIR.join("rs-script").join(source_stem).join("Cargo.toml"),
+            target_path: TMPDIR
+                .join("rs-script/test_run_script/target/debug")
+                .join(source_stem),
+            cargo_toml_path: TMPDIR
+                .join("rs-script")
+                .join(source_stem)
+                .join("Cargo.toml"),
             rs_manifest: None,
             cargo_manifest: None,
             must_gen: true,
@@ -120,26 +125,33 @@ mod tests {
     #[test]
     // #[sequential]
     fn test_build_cargo_project() {
+        let source_name = "bitflags.rs";
+        let source_stem: &str = source_name
+            .strip_suffix(rs_script::RS_SUFFIX)
+            .expect("Problem stripping Rust suffix");
+
         let current_dir = current_dir().expect("Could not get current dir");
+        let source_path = current_dir.join("tests/assets").join(source_name);
         let cargo_home = home::cargo_home().expect("Could not get Cargo home");
-        let target_dir_path = TMPDIR.join("rs-script/fizz_buzz");
+        let target_dir_path = TMPDIR.join("rs-script").join(source_stem);
         fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
         let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");
         let cargo_toml = format!(
             r#"[package]
-name = "fizz_buzz"
+name = "bitflags"
 version = "0.0.1"
 edition = "2021"
 
 [dependencies]
+bitflags = "2.5.0"
 
 [features]
 
 [workspace]
 
 [[bin]]
-path = "{}/rs-script/fizz_buzz/fizz_buzz.rs"
-name = "fizz_buzz"
+path = "{}/rs-script/bitflags/bitflags.rs"
+name = "bitflags"
 "#,
             escape_path_for_windows(TMPDIR.display().to_string().as_str())
         );
@@ -162,14 +174,24 @@ name = "fizz_buzz"
             .write_all(cargo_toml.as_bytes())
             .expect("error writing Cargo.toml");
 
+        let target_rs_path = target_dir_path.clone().join(source_stem);
+
+        let rs_source =
+            code_utils::read_file_contents(&source_path).expect("Error reading script contents");
+        code_utils::write_source(&target_rs_path, &rs_source)
+            .expect("Problem writing source to target path");
+
         let build_state = BuildState {
             working_dir_path: current_dir.clone(),
-            source_stem: "fizz_buzz".into(),
-            source_name: "fizz_buzz.rs".into(),
+            source_stem: source_stem.into(),
+            source_name: source_name.into(),
             source_dir_path: current_dir.join("tests/assets"),
-            source_path: current_dir.join("tests/assets/fizz_buzz.rs"),
+            source_path,
             cargo_home,
-            target_path: target_dir_path.clone().join("target/debug/fizz_buzz"),
+            target_path: target_dir_path
+                .clone()
+                .join("target/debug")
+                .join(source_stem),
             cargo_toml_path,
             target_dir_path,
             rs_manifest: None,

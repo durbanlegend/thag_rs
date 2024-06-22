@@ -1,11 +1,11 @@
 /*[toml]
 [dependencies]
 clap = { version = "4.5.3", features = ["derive"] }
-rug = { version = "1.24.0", features = ["integer"] }
+dashu = "0.4.2"
 */
 
 /// Fast Fibonacci with big integers, no recursion.
-/// Won't work with default Windows 11
+/// Should work with default Windows.
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
@@ -13,10 +13,10 @@ rug = { version = "1.24.0", features = ["integer"] }
 /// Limited to Rust u128 types, thus it supports a maximum of fib(92) and fac(34).
 ///
 /// The `fib` and `fac` closures could equally be implemented as functions here.
-//# Purpose: Demonstrate snippets and a fast non-recursive fibonacci algorithms.
+//# Purpose: Demonstrate snippets and a fast non-recursive fibonacci algorithm.
 
 use clap::{Arg, Command};
-use rug::Integer;
+use dashu::integer::IBig;
 use std::iter::successors;
 
 let matches = Command::new("fib_big_clap")
@@ -36,13 +36,13 @@ let n: usize = matches
     .unwrap();
 
 // Snippet accepts function or closure
-let fib = |n: usize| -> Integer {
+let fib = |n: usize| -> IBig {
     match n {
-        0 => Integer::from(0),
-       1 => Integer::from(1),
+        0 => IBig::from(0),
+       1 => IBig::from(1),
        _ =>
        {
-        successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| Some((b.clone(), (a + b).into())))
+        successors(Some((IBig::from(0), IBig::from(1))), |(a, b)| Some((b.clone(), (a + b).into())))
                .take(n)
                .last()
                .unwrap()

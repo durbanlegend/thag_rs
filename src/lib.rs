@@ -24,7 +24,7 @@ pub use code_utils::{
 pub use colors::{nu_resolve_style, MessageLevel};
 pub use errors::BuildRunError;
 pub use repl::run_repl;
-pub use shared::{debug_timings, Ast, BuildState, ScriptState};
+pub use shared::{debug_timings, Ast, BuildState, CargoManifest, ScriptState};
 pub use stdin::{edit_stdin, read_stdin};
 
 // Re-export specific items if they are defined in the respective modules

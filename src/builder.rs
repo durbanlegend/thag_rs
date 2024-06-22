@@ -400,7 +400,11 @@ pub fn generate(
     }
     // debug_log!("cargo_toml: {cargo_toml:?}");
 
-    let cargo_manifest_str: &str = &build_state.cargo_manifest.as_ref().unwrap().to_string();
+    let cargo_manifest_str: &str = &build_state
+        .cargo_manifest
+        .as_ref()
+        .expect("Could not unwrap BuildState.cargo_manifest")
+        .to_string();
 
     debug_log!(
         "cargo_manifest_str: {}",

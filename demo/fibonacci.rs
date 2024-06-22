@@ -3,17 +3,23 @@
 [dependencies]
 itertools = "0.12.1"
 */
-use itertools::Itertools;
+use itertools::iterate;
 
 let fib = |n: usize| -> usize {
-    itertools::iterate((0, 1), |&(a, b)| (b, a + b))
-        .take(n)
-        .last()
-        .unwrap()
-        .0
+    match n {
+        0 => 0_usize,
+        1 => 1_usize,
+        _ => {
+            iterate((0, 1), |&(a, b)| (b, a + b))
+                .take(n)
+                .last()
+                .unwrap()
+                .1
+        }
+    }
 };
 
-println!("Enter a number from 0 to 91");
+println!("Enter a number from 0 to 92");
 println!("Type lines of text at the prompt and hit Ctrl-{} on a new line when done", if cfg!(windows) {'Z'} else {'D'});
 
 let mut buffer = String::new();

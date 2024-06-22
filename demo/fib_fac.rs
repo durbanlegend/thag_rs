@@ -26,7 +26,7 @@ fn main() {
                     .take(n)
                     .last()
                     .unwrap()
-                    .0
+                    .1
             }
         }
     };
@@ -41,23 +41,24 @@ fn main() {
                     .take(n)
                     .last()
                     .unwrap()
-                    .0
+                    .1
             }
         }
     };
 
-    let limit = 50_usize;
+    let limit = 9_usize;
     (0..=limit).for_each(|n| {
+        assert_eq!(fibonacci(n), fib1(n));
+        assert_eq!(fib1(n), fib2(n));
         println!("fibonacci({n})={}", fibonacci(n));
-        println!("fib1({n})={}", fib1(n));
-        println!("fib2({n})={}", fib2(n));
     });
+
+    println!();
 
     let mut prev = Integer::from(1);
 
     for n in 0..=limit {
         let factorial_n = factorial(n);
-        // println!(\"factorial({n})={}\", factorial_n);
         let fac_n = fac(n);
         println!("fac({n})={fac_n}");
         assert_eq!(fac_n, factorial_n);
@@ -88,7 +89,7 @@ fn fibonacci(n: usize) -> usize {
         1 => 1_usize,
         _ => {
             let (mut a, mut b) = (0, 1);
-            for _ in 1..n - 1 {
+            for _ in 1..n {
                 (a, b) = (b, a + b);
             }
             b

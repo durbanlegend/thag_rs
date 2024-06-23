@@ -85,14 +85,14 @@ mod tests {
 
     #[test]
     fn test_generate_source_file() {
-        let script_name = "fib_fac_lite.rs";
+        let script_name = "fib_fac_lite_t.rs";
         let mut build_state = create_sample_build_state(script_name);
         build_state.must_gen = true;
         build_state.must_build = true;
         build_state.cargo_toml_path = build_state.target_dir_path.clone().join("Cargo.toml");
         let cargo_toml = format!(
             r#"[package]
-        name = "fib_fac_lite"
+        name = "fib_fac_lite_t"
         version = "0.0.1"
         edition = "2021"
 
@@ -104,8 +104,8 @@ mod tests {
         [workspace]
 
         [[bin]]
-        path = "{}/rs-script/fib_fac_lite/fib_fac_lite.rs"
-        name = "fib_fac_lite"
+        path = "{}/rs-script/fib_fac_lite_t/fib_fac_lite_t.rs"
+        name = "fib_fac_lite_t"
 "#,
             escape_path_for_windows(TMPDIR.display().to_string().as_str())
         );
@@ -174,12 +174,13 @@ name = "bitflags"
             .write_all(cargo_toml.as_bytes())
             .expect("error writing Cargo.toml");
 
-        let target_rs_path = target_dir_path.clone().join(source_stem);
+        let target_rs_path = target_dir_path.clone().join(source_name);
 
         let rs_source =
             code_utils::read_file_contents(&source_path).expect("Error reading script contents");
-        code_utils::write_source(&target_rs_path, &rs_source)
+        let _source_file = code_utils::write_source(&target_rs_path, &rs_source)
             .expect("Problem writing source to target path");
+        // println!("source_file={source_file:#?}");
 
         let build_state = BuildState {
             working_dir_path: current_dir.clone(),

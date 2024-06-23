@@ -5,8 +5,8 @@ use std::time::Instant;
 
 use rs_script::cmd_args::{Cli, ProcFlags};
 use rs_script::shared::{
-    debug_timings, display_timings, Ast, BuildState, CargoManifest, Dependency, Feature, Package,
-    Product, ScriptState, Workspace,
+    debug_timings, display_timings, escape_path_for_windows, Ast, BuildState, CargoManifest,
+    Dependency, Feature, Package, Product, ScriptState, Workspace,
 };
 
 #[test]
@@ -201,4 +201,21 @@ fn test_display_timings() {
     let proc_flags = ProcFlags::empty();
     display_timings(&start, "test_process", &proc_flags);
     // No direct assertion, this just ensures the function runs without panic
+}
+
+#[test]
+fn test_escape_path_for_windows() {
+    #[cfg(windows)]
+    {
+        let path = r"C:\path\to\file";
+        let escaped_path = escape_path_for_windows(path);
+        assert_eq!(escaped_path, r"C:\\path\\to\\file");
+    }
+
+    #[cfg(not(windows))]
+    {
+        let path = "/path/to/file";
+        let escaped_path = escape_path_for_windows(path);
+        assert_eq!(escaped_path, path);
+    }
 }

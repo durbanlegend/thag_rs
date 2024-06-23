@@ -4,7 +4,7 @@ mod tests {
     use rs_script::manifest::{
         capture_dep, cargo_search, default_manifest, merge_manifest, MockCommandRunner,
     };
-    use rs_script::{escape_path_for_windows, BuildState};
+    use rs_script::BuildState;
     use std::process::Output;
 
     fn init_logger() {
@@ -85,23 +85,6 @@ mod tests {
         assert_eq!(manifest.package.name, "example");
         assert_eq!(manifest.package.version, "0.0.1");
         assert_eq!(manifest.package.edition, "2021");
-    }
-
-    #[test]
-    fn test_escape_path_for_windows() {
-        #[cfg(windows)]
-        {
-            let path = r"C:\path\to\file";
-            let escaped_path = escape_path_for_windows(path);
-            assert_eq!(escaped_path, r"C:\\path\\to\\file");
-        }
-
-        #[cfg(not(windows))]
-        {
-            let path = "/path/to/file";
-            let escaped_path = escape_path_for_windows(path);
-            assert_eq!(escaped_path, path);
-        }
     }
 
     // #[test]

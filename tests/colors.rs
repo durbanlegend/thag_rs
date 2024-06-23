@@ -82,6 +82,8 @@ mod tests {
     fn test_nu_resolve_style() {
         // Test the nu_resolve_style function
         let theme = termbg::theme(std::time::Duration::from_millis(100));
+        // Seems to prevent subsequent rightward drift of the test result printouts.
+        println!("\r");
 
         let style = nu_resolve_style(MessageLevel::Warning);
         if let Some(color_support) = COLOR_SUPPORT.as_ref() {

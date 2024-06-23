@@ -12,6 +12,7 @@
 - [ ]  Simple demo https server
 - [ ]  Get builder ignored tests working
 - [ ]  Debug egui_code_editor.rss only showing env_logger if use egui::*; is included.
+- [ ]  Test of test_build_state_pre_configure failing, also repl does not accept -- --nocapture.
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

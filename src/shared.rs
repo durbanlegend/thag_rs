@@ -462,6 +462,15 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
     }
 }
 
+// Helper function to sort out using the escape character as the file separator.
+pub fn escape_path_for_windows(path: &str) -> String {
+    if cfg!(windows) {
+        path.replace('\\', "/")
+    } else {
+        path.to_string()
+    }
+}
+
 /// Control debug logging
 #[macro_export]
 macro_rules! debug_log {
@@ -479,18 +488,3 @@ macro_rules! debug_log {
         }
     };
 }
-// #[cfg(feature = "debug-logs")]
-// #[macro_export]
-// macro_rules! debug_log {
-//     ($($arg:tt)*) => {
-//         log::debug!($($arg)*);
-//     };
-// }
-
-// #[cfg(not(feature = "debug-logs"))]
-// #[macro_export]
-// macro_rules! debug_log {
-//     ($($arg:tt)*) => {};
-// }
-
-// Add other shared functions and types here

@@ -2,10 +2,9 @@
 mod tests {
     use mockall::predicate::*;
     use rs_script::manifest::{
-        capture_dep, cargo_search, default_manifest, escape_path_for_windows, merge_manifest,
-        MockCommandRunner,
+        capture_dep, cargo_search, default_manifest, merge_manifest, MockCommandRunner,
     };
-    use rs_script::BuildState;
+    use rs_script::{escape_path_for_windows, BuildState};
     use std::process::Output;
 
     fn init_logger() {

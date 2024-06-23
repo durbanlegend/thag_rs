@@ -15,7 +15,9 @@ use crate::debug_log;
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
-use crate::shared::{debug_timings, Ast, BuildState, CargoManifest, Dependency, Feature};
+use crate::shared::{
+    debug_timings, escape_path_for_windows, Ast, BuildState, CargoManifest, Dependency, Feature,
+};
 
 #[automock]
 pub trait CommandRunner {
@@ -161,17 +163,6 @@ path = "{gen_src_path}"
     // log!(Verbosity::Normal, "cargo_manifest=\n{cargo_manifest}");
 
     CargoManifest::from_str(&cargo_manifest)
-}
-
-pub fn escape_path_for_windows(path: &str) -> String {
-    #[cfg(windows)]
-    {
-        path.replace('\\', "\\\\")
-    }
-    #[cfg(not(windows))]
-    {
-        path.to_string()
-    }
 }
 
 pub fn merge_manifest(

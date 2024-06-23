@@ -3,7 +3,7 @@ mod tests {
 
     use rs_script::builder::{build, generate, run};
     use rs_script::cmd_args::Cli;
-    use rs_script::{code_utils, execute, TMPDIR};
+    use rs_script::{code_utils, escape_path_for_windows, execute, TMPDIR};
     use rs_script::{BuildState, CargoManifest, ProcFlags};
     // use sequential_test::sequential;
     use std::env::current_dir;
@@ -28,24 +28,27 @@ mod tests {
             .strip_suffix(rs_script::RS_SUFFIX)
             .expect("Problem stripping Rust suffix");
         let current_dir = current_dir().expect("Could not get current dir");
+        let working_dir_path = current_dir.clone();
         let cargo_home = home::cargo_home().expect("Could not get Cargo home");
         let target_dir_path = TMPDIR.join("rs-script").join(source_stem);
         fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
+        let target_path = target_dir_path
+            .clone()
+            .join("target/debug")
+            .join(source_stem);
+        let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");
+        let source_dir_path = current_dir.clone().join("tests/assets");
+        let source_path = current_dir.clone().join("tests/assets").join(source_name);
         BuildState {
-            working_dir_path: current_dir.clone(),
+            working_dir_path,
             source_stem: source_stem.into(),
             source_name: source_name.into(),
-            source_dir_path: current_dir.join("tests/assets"),
-            source_path: current_dir.join("tests/assets").join(source_name),
+            source_dir_path,
+            source_path,
             cargo_home,
             target_dir_path,
-            target_path: TMPDIR
-                .join("rs-script/test_run_script/target/debug")
-                .join(source_stem),
-            cargo_toml_path: TMPDIR
-                .join("rs-script")
-                .join(source_stem)
-                .join("Cargo.toml"),
+            target_path,
+            cargo_toml_path,
             rs_manifest: None,
             cargo_manifest: None,
             must_gen: true,
@@ -53,20 +56,11 @@ mod tests {
         }
     }
 
-    // Helper function to sort out using the escape character as the file separator.
-    pub fn escape_path_for_windows(path: &str) -> String {
-        if cfg!(windows) {
-            path.replace('\\', "/")
-        } else {
-            path.to_string()
-        }
-    }
-
     #[test]
     // #[sequential]
     fn test_execute_dynamic_script() {
         let mut args = create_sample_cli(Some(
-            "tests/assets/determine_if_known_type_trait.rs".to_string(),
+            "tests/assets/determine_if_known_type_trait_t.rs".to_string(),
         ));
         args.force = true;
         let result = execute(args);
@@ -125,7 +119,7 @@ mod tests {
     #[test]
     // #[sequential]
     fn test_build_cargo_project() {
-        let source_name = "bitflags.rs";
+        let source_name = "bitflags_t.rs";
         let source_stem: &str = source_name
             .strip_suffix(rs_script::RS_SUFFIX)
             .expect("Problem stripping Rust suffix");
@@ -138,7 +132,7 @@ mod tests {
         let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");
         let cargo_toml = format!(
             r#"[package]
-name = "bitflags"
+name = "bitflags_t"
 version = "0.0.1"
 edition = "2021"
 
@@ -150,8 +144,8 @@ bitflags = "2.5.0"
 [workspace]
 
 [[bin]]
-path = "{}/rs-script/bitflags/bitflags.rs"
-name = "bitflags"
+path = "{}/rs-script/bitflags_t/bitflags_t.rs"
+name = "bitflags_t"
 "#,
             escape_path_for_windows(TMPDIR.display().to_string().as_str())
         );
@@ -209,13 +203,34 @@ name = "bitflags"
     #[test]
     // #[sequential]
     fn test_run_script() {
-        let mut cli = create_sample_cli(Some("tests/assets/test_run_script.rs".to_string()));
+        let source_name = "test_run_script_t.rs";
+        let source_stem: &str = source_name
+            .strip_suffix(rs_script::RS_SUFFIX)
+            .expect("Problem stripping Rust suffix");
+        let target_path = TMPDIR
+            .join("rs-script")
+            .join(source_stem)
+            .join("target/debug")
+            .join(source_stem);
+
+        // Remove executable if it exists, and check
+        let _ = fs::remove_file(&target_path);
+        assert!(!target_path.exists());
+
+        // Generate and build executable, and check it exists.
+        let mut args = create_sample_cli(Some("tests/assets/test_run_script_t.rs".to_string()));
+        args.generate = true;
+        args.build = true;
+        let result = execute(args);
+        assert!(result.is_ok());
+        assert!(target_path.exists());
+
+        // Finally, run it
+        let mut cli = create_sample_cli(Some(format!("tests/assets/{source_name}")));
         cli.run = true;
-        let script_name = "test_run_script.rs";
-        let build_state = create_sample_build_state(script_name);
+        let build_state = create_sample_build_state(source_name);
         dbg!(&build_state);
         let proc_flags = ProcFlags::empty();
-        // let result = execute(args);
         let result = run(&proc_flags, &cli.args, &build_state);
         assert!(result.is_ok());
     }

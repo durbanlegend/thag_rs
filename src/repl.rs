@@ -306,7 +306,7 @@ pub fn run_repl(
 /// Delete our temporary files
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let build_state = &context.build_state;
     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
     if clean_up.is_ok()
@@ -324,7 +324,10 @@ fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Bu
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn edit_history(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn edit_history(
+    _args: ArgMatches,
+    context: &mut Context,
+) -> Result<Option<String>, BuildRunError> {
     let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
     edit::edit_file(history_file)?;
     Ok(Some(String::from("End of history file edit")))
@@ -332,7 +335,7 @@ fn edit_history(_args: ArgMatches, context: &mut Context) -> Result<Option<Strin
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let (build_state, _start) = (&mut context.build_state, context.start);
 
     edit::edit_file(&build_state.source_path)?;
@@ -342,14 +345,14 @@ fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn toml(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn toml(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     edit::edit_file(&context.build_state.cargo_toml_path)?;
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let (options, proc_flags, build_state, start) = (
         &mut context.options,
         context.proc_flags,
@@ -366,7 +369,7 @@ fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
 }
 
 // Borrowed from clap-repl crate.
-fn parse_line(line: &str) -> (String, Vec<String>) {
+pub fn parse_line(line: &str) -> (String, Vec<String>) {
     lazy_static! {
         static ref RE: Regex = Regex::new(r#"("[^"\n]+"|[\S]+)"#).unwrap();
     }
@@ -378,7 +381,7 @@ fn parse_line(line: &str) -> (String, Vec<String>) {
     (command, args)
 }
 
-fn disp_repl_banner(cmd_list: &str) {
+pub fn disp_repl_banner(cmd_list: &str) {
     nu_color_println!(
         nu_resolve_style(MessageLevel::OuterPrompt),
         r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#
@@ -395,7 +398,7 @@ Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: 
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let build_state = &context.build_state;
     let source_path = &build_state.source_path;
     if source_path.exists() {
@@ -414,7 +417,7 @@ fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, Buil
 
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-fn quit(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn quit(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
     log!(Verbosity::Quiet, "Done");
     std::process::exit(0);
 }

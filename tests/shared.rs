@@ -133,8 +133,7 @@ fn test_build_state_pre_configure() {
 
     let proc_flags = ProcFlags::empty();
     let cli = Cli::default();
-    let path_to_script = "tests/assets/test_script.rs";
-    let script = path_to_script;
+    let script = "tests/assets/fizz_buzz_t.rs";
     let script_state = ScriptState::Named {
         script: script.to_string(),
         script_dir_path: PathBuf::from(script),
@@ -142,11 +141,11 @@ fn test_build_state_pre_configure() {
 
     let build_state = BuildState::pre_configure(&proc_flags, &cli, &script_state).unwrap();
 
-    assert_eq!(build_state.source_stem, "test_script");
-    assert_eq!(build_state.source_name, "test_script.rs");
+    assert_eq!(build_state.source_stem, "fizz_buzz_t");
+    assert_eq!(build_state.source_name, "fizz_buzz_t.rs");
     assert_eq!(
         build_state.source_dir_path,
-        PathBuf::from(path_to_script)
+        PathBuf::from(script)
             .parent()
             .unwrap()
             .canonicalize()

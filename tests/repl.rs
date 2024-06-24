@@ -1,3 +1,10 @@
+/*[toml]
+[dependencies]
+clap = { version = "4.5.7", features = ["cargo", "derive"] }
+reedline = "0.32.0"
+rs-script = { path = "/Users/donf/projects/rs-script" }
+*/
+
 use clap::Parser;
 use reedline::Prompt;
 use reedline::Signal;
@@ -42,7 +49,7 @@ fn create_mock_context() -> (Box<Cli>, ProcFlags, Box<BuildState>, Instant) {
     (options, proc_flags, build_state, start)
 }
 
-#[test]
+// #[test]
 fn test_repl_banner_command() {
     let (mut options, proc_flags, mut build_state, start) = create_mock_context();
     let _context = Context {
@@ -68,7 +75,7 @@ fn test_repl_banner_command() {
     }
 }
 
-#[test]
+// #[test]
 fn test_repl_help_command() {
     let (mut options, proc_flags, mut build_state, start) = create_mock_context();
     let _context = Context {

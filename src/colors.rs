@@ -12,9 +12,6 @@ use termbg::Theme;
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
-        // if std::env::var("TEST_ENV").is_ok() {
-        //     return Some(ColorSupport::Ansi16);
-        // }
         match supports_color::on(Stream::Stdout) {
         Some(color_level) => {
             if color_level.has_16m || color_level.has_256 {
@@ -28,9 +25,6 @@ lazy_static! {
 
     #[derive(Debug)]
     pub static ref TERM_THEME: TermTheme = {
-        // if std::env::var("TEST_ENV").is_ok() {
-        //     return TermTheme::Dark;
-        // }
         let timeout = std::time::Duration::from_millis(100);
         debug_log!("Check terminal background color");
         let theme = termbg::theme(timeout);

@@ -1,5 +1,6 @@
 /*[toml]
 [dependencies]
+
 lazy_static = "1.4.0"
 log = "0.4.21"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
@@ -8,9 +9,7 @@ strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
 termbg = "0.5.0"
 */
-use rs_script::debug_log;
-use rs_script::log;
-use rs_script::logging::Verbosity;
+use rs_script::{clear_screen, debug_log, log, logging::Verbosity};
 
 use lazy_static::lazy_static;
 use std::{fmt::Display, str::FromStr};
@@ -34,7 +33,9 @@ lazy_static! {
     pub static ref TERM_THEME: TermTheme = {
         let timeout = std::time::Duration::from_millis(100);
         debug_log!("Check terminal background color");
-        match termbg::theme(timeout) {
+        let theme = termbg::theme(timeout);
+        clear_screen();
+        match theme {
             Ok(Theme::Light) => TermTheme::Light,
             Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
         }
@@ -205,6 +206,7 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
 #[allow(dead_code)]
 fn main() {
     let term = termbg::terminal();
+    clear_screen();
     debug_log!("  Term : {:?}", term);
 
     let color_support = match supports_color::on(Stream::Stdout) {

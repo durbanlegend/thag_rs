@@ -92,6 +92,10 @@ fn test_cargo_manifest_display() {
             "default".to_string(),
             vec![Feature::Simple("serde".to_string())],
         )])),
+        patch: Some(BTreeMap::from([(
+            "a".to_string(),
+            BTreeMap::from([("b".to_string(), Dependency::Simple("1.0".to_string()))]),
+        )])),
         workspace: Workspace::default(),
         bin: Vec::new(),
         lib: Some(Product {
@@ -114,6 +118,9 @@ fn test_cargo_manifest_display() {
 
         [features]
         default = ["serde"]
+
+        [patch.a]
+        b="1.0"
 
         [workspace]
 

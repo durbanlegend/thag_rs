@@ -1,5 +1,6 @@
 /*[toml]
 [dependencies]
+crossterm = "0.27.0"
 log = "0.4.21"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 rs-script = { path = "/Users/donf/projects/rs-script" }
@@ -14,7 +15,7 @@ use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
 use owo_colors::colors::{self as owo_ansi, Magenta};
 use owo_colors::{AnsiColors, Style, XtermColors};
 use owo_xterm::Black;
-use rs_script::debug_log;
+use rs_script::{clear_screen, debug_log};
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use supports_color::Stream;
 use termbg::{Error, Theme};
@@ -110,6 +111,7 @@ impl ThemeStyle for YinYangStyle {
 #[allow(dead_code)]
 fn main() {
     let term = termbg::terminal();
+    clear_screen();
     debug!("  Term : {:?}", term);
 
     let theme = get_theme();
@@ -468,5 +470,6 @@ fn get_theme() -> Result<Theme, Error> {
 
     debug_log!("Check terminal background color");
     let theme: Result<Theme, Error> = termbg::theme(timeout);
+    clear_screen();
     theme
 }

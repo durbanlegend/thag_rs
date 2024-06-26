@@ -11,17 +11,32 @@ use crate::TMPDIR;
 use crate::TOML_NAME;
 use crate::{log, PACKAGE_NAME};
 
+use crossterm::cursor::{MoveTo, Show};
+use crossterm::terminal::{Clear, ClearType};
+use crossterm::ExecutableCommand;
 use home::home_dir;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::error::Error;
-use std::path::Path;
-use std::str::FromStr;
-use std::{path::PathBuf, time::Instant};
+use std::io::{stdout, Write};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+    time::Instant,
+};
 use strum::Display;
 use toml::Value;
+
+pub fn clear_screen() {
+    let mut out = stdout();
+    // out.execute(Hide).unwrap();
+    out.execute(Clear(ClearType::All)).unwrap();
+    out.execute(MoveTo(0, 0)).unwrap();
+    out.execute(Show).unwrap();
+    out.flush().unwrap();
+}
 
 #[derive(Clone, Debug, Display)]
 /// Abstract syntax tree wrapper for use with syn.
@@ -41,13 +56,16 @@ impl ToTokens for Ast {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub type Patches = BTreeMap<String, Dependencies>;
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct CargoManifest {
     #[serde(default = "default_package")]
     pub package: Package,
     pub dependencies: Option<Dependencies>,
     pub features: Option<Features>,
+    pub patch: Option<Patches>,
     #[serde(default)]
     pub workspace: Workspace,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

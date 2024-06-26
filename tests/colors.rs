@@ -1,17 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use crossterm::{
-        cursor::{Hide, MoveTo, Show},
-        terminal::{Clear, ClearType},
-        ExecutableCommand,
-    };
     use nu_ansi_term::Color;
     use rs_script::colors::{
         ColorSupport, MessageStyle, NuColor, NuThemeStyle, TermTheme, XtermColor, COLOR_SUPPORT,
     };
     use rs_script::logging::Verbosity;
     use rs_script::{log, nu_color_println, nu_resolve_style, MessageLevel};
-    use std::io::{stdout, Write};
     use supports_color::Stream;
     use termbg::Theme;
 
@@ -21,15 +15,6 @@ mod tests {
             Theme::Light => TermTheme::Light,
             Theme::Dark => TermTheme::Dark,
         }
-    }
-
-    pub fn clear_screen() {
-        let mut out = stdout();
-        // out.execute(Hide).unwrap();
-        // out.execute(Clear(ClearType::All)).unwrap();
-        out.execute(MoveTo(0, 0)).unwrap();
-        out.execute(Show).unwrap();
-        out.flush().unwrap();
     }
 
     #[test]
@@ -99,7 +84,7 @@ mod tests {
         // Causes rightward drift of the test result printouts.
         let theme = termbg::theme(std::time::Duration::from_millis(100));
         // print!("{}[2J", 27 as char);
-        clear_screen();
+        rs_script::clear_screen();
 
         let style = nu_resolve_style(MessageLevel::Warning);
         if let Some(color_support) = COLOR_SUPPORT.as_ref() {

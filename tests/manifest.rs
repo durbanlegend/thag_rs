@@ -4,7 +4,9 @@ mod tests {
     use rs_script::manifest::{
         capture_dep, cargo_search, default_manifest, merge_manifest, MockCommandRunner,
     };
-    use rs_script::BuildState;
+    use rs_script::shared::{Dependency, Feature, Package, Product, Workspace};
+    use rs_script::{BuildState, CargoManifest};
+    use std::collections::BTreeMap;
     use std::process::Output;
 
     fn init_logger() {
@@ -106,12 +108,41 @@ mod tests {
     #[test]
     fn test_merge_manifest() {
         init_logger();
+
+        let rs_manifest = Some(CargoManifest {
+            package: Package {
+                name: "example".to_string(),
+                version: "0.1.0".to_string(),
+                edition: "2021".to_string(),
+            },
+            dependencies: Some(BTreeMap::from([(
+                "serde".to_string(),
+                Dependency::Simple("1.0".to_string()),
+            )])),
+            features: Some(BTreeMap::from([(
+                "default".to_string(),
+                vec![Feature::Simple("serde".to_string())],
+            )])),
+            patch: Some(BTreeMap::from([(
+                "a".to_string(),
+                BTreeMap::from([("b".to_string(), Dependency::Simple("1.0".to_string()))]),
+            )])),
+            workspace: Workspace::default(),
+            bin: Vec::new(),
+            lib: Some(Product {
+                path: None,
+                name: None,
+                required_features: None,
+                crate_type: vec!["cdylib".to_string()].into(),
+            }),
+        });
+
         let mut build_state = BuildState {
             source_stem: "example".to_string(),
             source_name: "example.rs".to_string(),
             target_dir_path: std::path::PathBuf::from("/tmp"),
             cargo_manifest: None,
-            rs_manifest: None,
+            rs_manifest,
             ..Default::default()
         };
 

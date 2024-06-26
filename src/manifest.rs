@@ -17,6 +17,7 @@ use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::{
     debug_timings, escape_path_for_windows, Ast, BuildState, CargoManifest, Dependency, Feature,
+    Patches,
 };
 
 #[automock]
@@ -152,6 +153,8 @@ edition = "2021"
 
 [features]
 
+[patch]
+
 [workspace]
 
 [[bin]]
@@ -196,54 +199,88 @@ pub fn merge_manifest(
     //     );
     // }
 
-    let mut rs_dep_map: BTreeMap<std::string::String, Dependency> =
-        if let Some(ref rs_manifest) = &build_state.rs_manifest {
-            if let Some(ref rs_dep_map) = rs_manifest.dependencies {
-                rs_dep_map.clone()
-            } else {
-                BTreeMap::new()
-            }
-        } else {
-            BTreeMap::new()
-        };
+    debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
+
+    // let mut manifest = CargoManifest::default();
+    let rs_manifest = if let Some(rs_manifest) = build_state.rs_manifest.as_mut() {
+        rs_manifest.clone()
+    } else {
+        CargoManifest::default()
+    };
+
+    let btree_map = BTreeMap::<std::string::String, Dependency>::new();
+    let mut rs_dep_map = if let Some(ref rs_dep_map) = rs_manifest.dependencies {
+        rs_dep_map.clone()
+    } else {
+        btree_map
+    };
+
+    // let mut rs_dep_map: BTreeMap<std::string::String, Dependency> =
+    //     if let Some(ref rs_dep_map) = rs_manifest.dependencies {
+    //         rs_dep_map.clone()
+    //     } else {
+    //         BTreeMap::new()
+    //     };
 
     if !rs_inferred_deps.is_empty() {
         debug_log!("rs_dep_map (before inferred) {rs_dep_map:#?}");
-        for dep_name in rs_inferred_deps {
-            if rs_dep_map.contains_key(&dep_name)
-                || rs_dep_map.contains_key(&dep_name.replace('_', "-"))
-                || ["crate", "macro_rules"].contains(&dep_name.as_str())
-            {
-                continue;
-            }
-            debug_log!("Starting Cargo search for key dep_name [{dep_name}]");
-            let command_runner = RealCommandRunner;
-            let cargo_search_result = cargo_search(&command_runner, &dep_name);
-            // If the crate name is hyphenated, Cargo search will nicely search for underscore version and return the correct
-            // hyphenated name. So we must replace the incorrect underscored version we searched on with the corrected
-            // hyphenated version that the Cargo search returned.
-            let (dep_name, dep) = if let Ok((dep_name, version)) = cargo_search_result {
-                (dep_name, Dependency::Simple(version))
-            } else {
-                // return Err(Box::new(BuildRunError::Command(format!(
-                //     "Cargo search couldn't find crate [{dep_name}]"
-                // ))));
-                log!(
-                    Verbosity::Quiet,
-                    "Cargo search couldn't find crate [{dep_name}]"
-                );
-                continue;
-            };
-            rs_dep_map.insert(dep_name, dep);
-        }
-        debug_log!("rs_dep_map (after inferred) = {rs_dep_map:#?}");
+        search_deps(rs_inferred_deps, &mut rs_dep_map);
+        debug_log!("rs_dep_map (after inferred) {rs_dep_map:#?}");
     }
 
-    // Clone and merge dependencies
-    let manifest_deps = cargo_manifest.dependencies.as_ref().unwrap();
+    // Clone and merge dependencies specified in toml block or inferred from code.
+    if let Some(manifest_deps) = cargo_manifest.dependencies.as_ref() {
+        if !rs_dep_map.is_empty() {
+            cargo_manifest.dependencies = Some(merge_deps(manifest_deps, &rs_dep_map));
+            debug_log!(
+                "cargo_manifest.dependencies (after merge) {:#?}",
+                cargo_manifest.dependencies
+            );
+        }
+    }
 
+    if let Some(rs_manifest) = build_state.rs_manifest.as_mut() {
+        // Clone and merge features specified in toml block
+        if let Some(manifest_features) = rs_manifest.features.as_ref() {
+            if let Some(ref rs_feat_map) = rs_manifest.features {
+                if !rs_feat_map.is_empty() {
+                    cargo_manifest.features = Some(merge_features(manifest_features, rs_feat_map));
+
+                    debug_log!(
+                        "cargo_manifest.features (after merge) {:#?}",
+                        cargo_manifest.features
+                    );
+                }
+            }
+        }
+
+        // Clone and merge patches specified in toml block
+        if let Some(manifest_patch) = rs_manifest.patch.as_ref() {
+            if let Some(ref rs_patch_map) = rs_manifest.patch {
+                if !rs_patch_map.is_empty() {
+                    cargo_manifest.patch = Some(merge_patch(manifest_patch, rs_patch_map));
+
+                    debug_log!(
+                        "cargo_manifest.patches (after merge) {:#?}",
+                        cargo_manifest.patch
+                    );
+                }
+            }
+        }
+    }
+
+    debug_timings(&start_merge_manifest, "Processed features");
+    debug_log!("cargo_manifest (after merge) {:#?}", cargo_manifest);
+
+    Ok(cargo_manifest.clone())
+}
+
+fn merge_deps(
+    manifest_deps: &BTreeMap<String, Dependency>,
+    rs_dep_map: &BTreeMap<String, Dependency>,
+) -> BTreeMap<String, Dependency> {
     let mut manifest_deps_clone: BTreeMap<std::string::String, Dependency> = manifest_deps.clone();
-    debug_log!("manifest_deps  (before merge) {manifest_deps_clone:?}");
+    debug_log!("manifest_deps  (before merge) {manifest_deps_clone:#?}");
 
     // Insert any entries from source and inferred deps that are not already in default manifest
     rs_dep_map
@@ -252,44 +289,68 @@ pub fn merge_manifest(
         .for_each(|(key, value)| {
             manifest_deps_clone.insert(key.to_string(), value.clone());
         });
-    cargo_manifest.dependencies = Some(manifest_deps_clone);
-    debug_log!(
-        "cargo_manifest.dependencies (after merge) {:#?}",
-        cargo_manifest.dependencies
-    );
+    manifest_deps_clone
+}
 
-    // Clone and merge features
-    let manifest_feats = cargo_manifest.features.as_ref().unwrap();
-
-    let rs_feat_map: BTreeMap<std::string::String, Vec<Feature>> =
-        if let Some(ref mut rs_manifest) = build_state.rs_manifest {
-            if let Some(ref mut rs_feat_map) = rs_manifest.features {
-                rs_feat_map.clone()
-            } else {
-                BTreeMap::new()
-            }
-        } else {
-            BTreeMap::new()
-        };
-
+fn merge_features(
+    manifest_features: &BTreeMap<String, Vec<Feature>>,
+    rs_feat_map: &BTreeMap<String, Vec<Feature>>,
+) -> BTreeMap<String, Vec<Feature>> {
     let mut manifest_features_clone: BTreeMap<std::string::String, Vec<Feature>> =
-        manifest_feats.clone();
+        manifest_features.clone();
     debug_log!("manifest_features (before merge) {manifest_features_clone:?}");
 
     // Insert any entries from source features that are not already in default manifest
     rs_feat_map
         .iter()
-        .filter(|&(name, _dep)| !(manifest_feats.contains_key(name)))
+        .filter(|&(name, _feat)| !(manifest_features.contains_key(name)))
         .for_each(|(key, value)| {
             manifest_features_clone.insert(key.to_string(), value.clone());
         });
-    cargo_manifest.features = Some(manifest_features_clone);
-    debug_log!(
-        "cargo_manifest.features (after merge) {:#?}",
-        cargo_manifest.features
-    );
+    manifest_features_clone
+}
 
-    debug_timings(&start_merge_manifest, "Processed features");
+fn merge_patch(manifest_patches: &Patches, rs_patch_map: &Patches) -> Patches {
+    let mut manifest_patches_clone = manifest_patches.clone();
+    debug_log!("manifest_patches (before merge) {manifest_patches:?}");
 
-    Ok(cargo_manifest.clone())
+    // Insert any entries from source features that are not already in default manifest
+    rs_patch_map
+        .iter()
+        .filter(|&(name, _feat)| !(manifest_patches.contains_key(name)))
+        .for_each(|(key, value)| {
+            manifest_patches_clone.insert(key.to_string(), value.clone());
+        });
+    manifest_patches_clone
+}
+
+fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
+    for dep_name in rs_inferred_deps {
+        if rs_dep_map.contains_key(&dep_name)
+            || rs_dep_map.contains_key(&dep_name.replace('_', "-"))
+            || ["crate", "macro_rules"].contains(&dep_name.as_str())
+        {
+            continue;
+        }
+        debug_log!("Starting Cargo search for key dep_name [{dep_name}]");
+        let command_runner = RealCommandRunner;
+        let cargo_search_result = cargo_search(&command_runner, &dep_name);
+        // If the crate name is hyphenated, Cargo search will nicely search for underscore version and return the correct
+        // hyphenated name. So we must replace the incorrect underscored version we searched on with the corrected
+        // hyphenated version that the Cargo search returned.
+        let (dep_name, dep) = if let Ok((dep_name, version)) = cargo_search_result {
+            (dep_name, Dependency::Simple(version))
+        } else {
+            // return Err(Box::new(BuildRunError::Command(format!(
+            //     "Cargo search couldn't find crate [{dep_name}]"
+            // ))));
+            log!(
+                Verbosity::Quiet,
+                "Cargo search couldn't find crate [{dep_name}]"
+            );
+            continue;
+        };
+        rs_dep_map.insert(dep_name, dep);
+    }
+    debug_log!("rs_dep_map (after inferred) = {rs_dep_map:#?}");
 }

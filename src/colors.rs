@@ -1,10 +1,9 @@
 use crate::debug_log;
 use crate::log;
 use crate::logging::Verbosity;
+use crate::shared;
 
-use crossterm::{cursor::MoveTo, QueueableCommand};
 use lazy_static::lazy_static;
-use std::io::{stdout, Write};
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
@@ -28,11 +27,7 @@ lazy_static! {
         let timeout = std::time::Duration::from_millis(100);
         debug_log!("Check terminal background color");
         let theme = termbg::theme(timeout);
-        let mut out = stdout();
-        // out.queue(Hide).unwrap();
-        // out.queue(Clear(ClearType::All)).unwrap();
-        out.queue(MoveTo(0, 0)).unwrap();
-        out.flush().unwrap();
+        shared::clear_screen();
         match theme {
             Ok(Theme::Light) => TermTheme::Light,
             Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
@@ -200,6 +195,7 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
 #[allow(dead_code)]
 fn main() {
     let term = termbg::terminal();
+    shared::clear_screen();
     debug_log!("  Term : {:?}", term);
 
     let color_support = match supports_color::on(Stream::Stdout) {

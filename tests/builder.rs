@@ -95,6 +95,8 @@ mod tests {
 
         [features]
 
+        [patch]
+
         [workspace]
 
         [[bin]]
@@ -140,6 +142,8 @@ edition = "2021"
 bitflags = "2.5.0"
 
 [features]
+
+[patch]
 
 [workspace]
 
@@ -203,7 +207,7 @@ name = "bitflags_t"
     #[test]
     // #[sequential]
     fn test_run_script() {
-        let source_name = "test_run_script_t.rs";
+        let source_name = "fib_fac_dashu_t.rs";
         let source_stem: &str = source_name
             .strip_suffix(rs_script::RS_SUFFIX)
             .expect("Problem stripping Rust suffix");
@@ -218,7 +222,7 @@ name = "bitflags_t"
         assert!(!target_path.exists());
 
         // Generate and build executable, and check it exists.
-        let mut args = create_sample_cli(Some("tests/assets/test_run_script_t.rs".to_string()));
+        let mut args = create_sample_cli(Some("tests/assets/fib_fac_dashu_t.rs".to_string()));
         args.generate = true;
         args.build = true;
         let result = execute(args);

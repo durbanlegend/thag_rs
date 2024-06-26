@@ -1,11 +1,27 @@
 /*[toml]
 [dependencies]
+crossterm = "0.27.0"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 termbg = "0.5.0"
 */
 
+use crossterm::{
+    cursor::{MoveTo, Show},
+    terminal::{Clear, ClearType},
+    ExecutableCommand,
+};
 use owo_colors::OwoColorize;
+use std::io::{stdout, Write};
 use termbg::Theme;
+
+pub fn clear_screen() {
+    let mut out = stdout();
+    // out.execute(Hide).unwrap();
+    out.execute(Clear(ClearType::All)).unwrap();
+    out.execute(MoveTo(0, 0)).unwrap();
+    out.execute(Show).unwrap();
+    out.flush().unwrap();
+}
 
 #[derive(Debug, Clone, Copy)]
 enum MessageType {
@@ -48,6 +64,7 @@ fn main() {
 
     // debug!("Check terminal background color");
     let theme = termbg::theme(timeout).expect("Failed to detect terminal theme");
+    clear_screen();
 
     // Example: Print messages with different colors based on message type and terminal theme
     println!(

@@ -322,13 +322,14 @@ pub fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>
     Ok(Some(String::from("End of delete")))
 }
 
-#[allow(clippy::needless_pass_by_value)]
-#[allow(clippy::unnecessary_wraps)]
+// #[allow(clippy::needless_pass_by_value)]
+// #[allow(clippy::unnecessary_wraps)]
 pub fn edit_history(
     _args: ArgMatches,
     context: &mut Context,
 ) -> Result<Option<String>, BuildRunError> {
     let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
+    println!("history_file={history_file:#?}");
     edit::edit_file(history_file)?;
     Ok(Some(String::from("End of history file edit")))
 }
@@ -381,6 +382,7 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
     (command, args)
 }
 
+/// Function to display the REPL banner
 pub fn disp_repl_banner(cmd_list: &str) {
     nu_color_println!(
         nu_resolve_style(MessageLevel::OuterPrompt),

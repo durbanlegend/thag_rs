@@ -2,14 +2,20 @@ use crate::debug_log;
 use crate::log;
 use crate::logging::Verbosity;
 
+use crossterm::{cursor::MoveTo, QueueableCommand};
 use lazy_static::lazy_static;
+use std::io::{stdout, Write};
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
 
 lazy_static! {
-    pub static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
+    pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
+        // if std::env::var("TEST_ENV").is_ok() {
+        //     return Some(ColorSupport::Ansi16);
+        // }
+        match supports_color::on(Stream::Stdout) {
         Some(color_level) => {
             if color_level.has_16m || color_level.has_256 {
                 Some(ColorSupport::Xterm256)
@@ -17,14 +23,23 @@ lazy_static! {
                 Some(ColorSupport::Ansi16)
             }
         }
-        None => None,
+        None => None,}
     };
 
     #[derive(Debug)]
     pub static ref TERM_THEME: TermTheme = {
+        // if std::env::var("TEST_ENV").is_ok() {
+        //     return TermTheme::Dark;
+        // }
         let timeout = std::time::Duration::from_millis(100);
         debug_log!("Check terminal background color");
-        match termbg::theme(timeout) {
+        let theme = termbg::theme(timeout);
+        let mut out = stdout();
+        // out.queue(Hide).unwrap();
+        // out.queue(Clear(ClearType::All)).unwrap();
+        out.queue(MoveTo(0, 0)).unwrap();
+        out.flush().unwrap();
+        match theme {
             Ok(Theme::Light) => TermTheme::Light,
             Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
         }
@@ -43,9 +58,9 @@ pub trait NuColor: Display {
 macro_rules! nu_color_println {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
-     let style = $style;
-    // Qualified form to avoid imports in calling code.
-    if cfg!(windows) {log!(Verbosity::Quiet, "{}\r", style.paint(content));} else {log!(Verbosity::Quiet, "{}", style.paint(content)); }
+        let style = $style;
+        // Qualified form to avoid imports in calling code.
+        log!(Verbosity::Quiet, "{}\n", style.paint(content));
     }};
 }
 

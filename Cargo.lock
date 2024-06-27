@@ -282,6 +282,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "79296716171880943b8470b5f8d03aa55eb2e645a4874bdbb28adb49162e012c"
 
 [[package]]
+name = "cargo_toml"
+version = "0.20.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4895c018bb228aa6b3ba1a0285543fcb4b704734c3fb1f72afaa75aa769500c1"
+dependencies = [
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "cassowary"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1206,6 +1216,7 @@ name = "rs-script"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.6.0",
+ "cargo_toml",
  "clap",
  "crossterm",
  "edit",

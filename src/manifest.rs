@@ -1,4 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
+use cargo_toml::{Dependency, Manifest, PatchSet as Patches};
 use lazy_static::lazy_static;
 use mockall::automock;
 use regex::Regex;
@@ -6,7 +7,6 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::io::{self, BufRead};
 use std::process::{Command, Output};
-use std::str::FromStr;
 use std::time::Instant;
 
 use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
@@ -15,10 +15,7 @@ use crate::debug_log;
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
-use crate::shared::{
-    debug_timings, escape_path_for_windows, Ast, BuildState, CargoManifest, Dependency, Feature,
-    Patches,
-};
+use crate::shared::{debug_timings, escape_path_for_windows, Ast, BuildState};
 
 #[automock]
 pub trait CommandRunner {
@@ -135,7 +132,9 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>>
     Ok((name, version))
 }
 
-pub fn default_manifest(build_state: &BuildState) -> Result<CargoManifest, BuildRunError> {
+pub fn default_manifest_from_build_state(
+    build_state: &BuildState,
+) -> Result<Manifest, BuildRunError> {
     let source_stem = &build_state.source_stem;
     let source_name = &build_state.source_name;
     let binding = build_state.target_dir_path.join(source_name);
@@ -143,9 +142,16 @@ pub fn default_manifest(build_state: &BuildState) -> Result<CargoManifest, Build
 
     let gen_src_path = escape_path_for_windows(gen_src_path);
 
+    default_manifest(source_stem, gen_src_path)
+}
+
+pub fn default_manifest(
+    source_stem: &String,
+    gen_src_path: String,
+) -> Result<Manifest, BuildRunError> {
     let cargo_manifest = format!(
         r##"[package]
-name = "{source_stem}"
+name = "{}"
 version = "0.0.1"
 edition = "2021"
 
@@ -158,30 +164,32 @@ edition = "2021"
 [workspace]
 
 [[bin]]
-name = "{source_stem}"
-path = "{gen_src_path}"
-"##
+name = "{}"
+path = "{}"
+"##,
+        source_stem, source_stem, gen_src_path
     );
 
     // log!(Verbosity::Normal, "cargo_manifest=\n{cargo_manifest}");
 
-    CargoManifest::from_str(&cargo_manifest)
+    Ok(Manifest::from_str(&cargo_manifest)?)
 }
 
 pub fn merge_manifest(
     build_state: &mut BuildState,
     rs_source: &str,
     syntax_tree: &Option<Ast>,
-) -> Result<CargoManifest, Box<dyn Error>> {
+) -> Result<Manifest, Box<dyn Error>> {
     let start_merge_manifest = Instant::now();
 
-    let mut default_manifest = default_manifest(build_state)?;
-    let cargo_manifest: &mut CargoManifest =
-        if let Some(ref mut manifest) = build_state.cargo_manifest {
-            manifest
-        } else {
-            &mut default_manifest
-        };
+    let mut default_cargo_manifest = default_manifest_from_build_state(build_state)?;
+    let default_rs_manifest = default_cargo_manifest.clone();
+
+    let cargo_manifest: &mut Manifest = if let Some(ref mut manifest) = build_state.cargo_manifest {
+        manifest
+    } else {
+        &mut default_cargo_manifest
+    };
 
     debug_log!("cargo_manifest (before deps)={cargo_manifest:#?}");
 
@@ -205,15 +213,15 @@ pub fn merge_manifest(
     let rs_manifest = if let Some(rs_manifest) = build_state.rs_manifest.as_mut() {
         rs_manifest.clone()
     } else {
-        CargoManifest::default()
+        default_rs_manifest
     };
 
-    let btree_map = BTreeMap::<std::string::String, Dependency>::new();
-    let mut rs_dep_map = if let Some(ref rs_dep_map) = rs_manifest.dependencies {
-        rs_dep_map.clone()
-    } else {
-        btree_map
-    };
+    // let btree_map = BTreeMap::<std::string::String, Dependency>::new();
+    let mut rs_dep_map = rs_manifest.dependencies;
+    //     rs_dep_map.clone()
+    // } else {
+    //     btree_map
+    // };
 
     // let mut rs_dep_map: BTreeMap<std::string::String, Dependency> =
     //     if let Some(ref rs_dep_map) = rs_manifest.dependencies {
@@ -229,43 +237,36 @@ pub fn merge_manifest(
     }
 
     // Clone and merge dependencies specified in toml block or inferred from code.
-    if let Some(manifest_deps) = cargo_manifest.dependencies.as_ref() {
-        if !rs_dep_map.is_empty() {
-            cargo_manifest.dependencies = Some(merge_deps(manifest_deps, &rs_dep_map));
-            debug_log!(
-                "cargo_manifest.dependencies (after merge) {:#?}",
-                cargo_manifest.dependencies
-            );
-        }
+    let manifest_deps = cargo_manifest.dependencies.clone();
+    if !rs_dep_map.is_empty() {
+        cargo_manifest.dependencies = merge_deps(&manifest_deps, &rs_dep_map);
+        debug_log!(
+            "cargo_manifest.dependencies (after merge) {:#?}",
+            cargo_manifest.dependencies
+        );
     }
 
     if let Some(rs_manifest) = build_state.rs_manifest.as_mut() {
         // Clone and merge features specified in toml block
-        if let Some(manifest_features) = rs_manifest.features.as_ref() {
-            if let Some(ref rs_feat_map) = rs_manifest.features {
-                if !rs_feat_map.is_empty() {
-                    cargo_manifest.features = Some(merge_features(manifest_features, rs_feat_map));
+        let manifest_features = cargo_manifest.features.clone();
+        if !rs_manifest.features.is_empty() {
+            cargo_manifest.features = merge_features(&manifest_features, &rs_manifest.features);
 
-                    debug_log!(
-                        "cargo_manifest.features (after merge) {:#?}",
-                        cargo_manifest.features
-                    );
-                }
-            }
+            debug_log!(
+                "cargo_manifest.features (after merge) {:#?}",
+                cargo_manifest.features
+            );
         }
 
         // Clone and merge patches specified in toml block
-        if let Some(manifest_patch) = rs_manifest.patch.as_ref() {
-            if let Some(ref rs_patch_map) = rs_manifest.patch {
-                if !rs_patch_map.is_empty() {
-                    cargo_manifest.patch = Some(merge_patch(manifest_patch, rs_patch_map));
+        let manifest_patch = cargo_manifest.patch.clone();
+        if !rs_manifest.patch.is_empty() {
+            cargo_manifest.patch = merge_patch(&manifest_patch, &rs_manifest.patch);
 
-                    debug_log!(
-                        "cargo_manifest.patches (after merge) {:#?}",
-                        cargo_manifest.patch
-                    );
-                }
-            }
+            debug_log!(
+                "cargo_manifest.patches (after merge) {:#?}",
+                cargo_manifest.patch
+            );
         }
     }
 
@@ -293,10 +294,10 @@ fn merge_deps(
 }
 
 fn merge_features(
-    manifest_features: &BTreeMap<String, Vec<Feature>>,
-    rs_feat_map: &BTreeMap<String, Vec<Feature>>,
-) -> BTreeMap<String, Vec<Feature>> {
-    let mut manifest_features_clone: BTreeMap<std::string::String, Vec<Feature>> =
+    manifest_features: &BTreeMap<String, Vec<String>>,
+    rs_feat_map: &BTreeMap<String, Vec<String>>,
+) -> BTreeMap<String, Vec<String>> {
+    let mut manifest_features_clone: BTreeMap<std::string::String, Vec<String>> =
         manifest_features.clone();
     debug_log!("manifest_features (before merge) {manifest_features_clone:?}");
 

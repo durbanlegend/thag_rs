@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
+    use cargo_toml::{Edition, Manifest};
     use mockall::predicate::*;
     use rs_script::manifest::{
-        capture_dep, cargo_search, default_manifest, merge_manifest, MockCommandRunner,
+        capture_dep, cargo_search, default_manifest_from_build_state, merge_manifest,
+        MockCommandRunner,
     };
-    use rs_script::shared::{Dependency, Feature, Package, Product, Workspace};
-    use rs_script::{BuildState, CargoManifest};
-    use std::collections::BTreeMap;
+    use rs_script::BuildState;
     use std::process::Output;
 
     fn init_logger() {
@@ -83,10 +83,11 @@ mod tests {
             ..Default::default()
         };
 
-        let manifest = default_manifest(&build_state).unwrap();
-        assert_eq!(manifest.package.name, "example");
-        assert_eq!(manifest.package.version, "0.0.1");
-        assert_eq!(manifest.package.edition, "2021");
+        let manifest = default_manifest_from_build_state(&build_state).unwrap();
+        let package = manifest.package.expect("Problem unwrapping package");
+        assert_eq!(package.name, "example");
+        assert_eq!(package.version.get().unwrap(), &"0.0.1".to_string());
+        assert!(matches!(package.edition.get().unwrap(), Edition::E2021));
     }
 
     // #[test]
@@ -109,33 +110,33 @@ mod tests {
     fn test_merge_manifest() {
         init_logger();
 
-        let rs_manifest = Some(CargoManifest {
-            package: Package {
-                name: "example".to_string(),
-                version: "0.1.0".to_string(),
-                edition: "2021".to_string(),
-            },
-            dependencies: Some(BTreeMap::from([(
-                "serde".to_string(),
-                Dependency::Simple("1.0".to_string()),
-            )])),
-            features: Some(BTreeMap::from([(
-                "default".to_string(),
-                vec![Feature::Simple("serde".to_string())],
-            )])),
-            patch: Some(BTreeMap::from([(
-                "a".to_string(),
-                BTreeMap::from([("b".to_string(), Dependency::Simple("1.0".to_string()))]),
-            )])),
-            workspace: Workspace::default(),
-            bin: Vec::new(),
-            lib: Some(Product {
-                path: None,
-                name: None,
-                required_features: None,
-                crate_type: vec!["cdylib".to_string()].into(),
-            }),
-        });
+        let rs_manifest = Some(
+            Manifest::from_str(
+                r##"[package]
+name = "example"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+serde = "1.0"
+
+[features]
+default = ["serde"]
+
+[patch.crates-io]
+foo = { git = 'https://github.com/example/foo.git' }
+bar = { path = 'my/local/bar' }
+
+[workspace]
+
+[[bin]]
+
+[lib]
+crate_type = ["cdylib"]
+"##,
+            )
+            .unwrap(),
+        );
 
         let mut build_state = BuildState {
             source_stem: "example".to_string(),
@@ -155,11 +156,6 @@ mod tests {
 
         let manifest = merge_manifest(&mut build_state, rs_source, &syntax_tree).unwrap();
         eprintln!("manifest.dependencies={:#?}", manifest.dependencies);
-        assert!(manifest.dependencies.is_some());
-        assert!(manifest
-            .dependencies
-            .as_ref()
-            .unwrap()
-            .contains_key("serde_derive"));
+        assert!(manifest.dependencies.contains_key("serde_derive"));
     }
 }

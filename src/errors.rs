@@ -16,6 +16,7 @@ pub enum BuildRunError {
     StrumParse(strum::ParseError), // For strum parse enum
     TomlDe(TomlDeError),           // For TOML deserialization errors
     TomlSer(TomlSerError),         // For TOML serialization errors
+    Toml(cargo_toml::Error),       // For cargo_toml errors
 }
 
 impl BuildRunError {}
@@ -50,6 +51,12 @@ impl From<TomlSerError> for BuildRunError {
     }
 }
 
+impl From<cargo_toml::Error> for BuildRunError {
+    fn from(err: cargo_toml::Error) -> Self {
+        BuildRunError::Toml(err)
+    }
+}
+
 impl From<String> for BuildRunError {
     fn from(err_msg: String) -> Self {
         BuildRunError::FromStr(err_msg)
@@ -77,6 +84,7 @@ impl std::fmt::Display for BuildRunError {
             BuildRunError::StrumParse(e) => write!(f, "{e:?}"),
             BuildRunError::TomlDe(e) => write!(f, "{e:?}"),
             BuildRunError::TomlSer(e) => write!(f, "{e:?}"),
+            BuildRunError::Toml(e) => write!(f, "{e:?}"),
         }
     }
 }
@@ -96,6 +104,7 @@ impl Error for BuildRunError {
             BuildRunError::StrumParse(ref e) => Some(e),
             BuildRunError::TomlDe(ref e) => Some(e),
             BuildRunError::TomlSer(ref e) => Some(e),
+            BuildRunError::Toml(ref e) => Some(e),
             BuildRunError::Cancelled => Some(self),
         }
     }

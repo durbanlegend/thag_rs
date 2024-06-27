@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+regex = "1.10.5"
+*/
+
 use regex::Regex;
 use std::io::{self, Read};
 

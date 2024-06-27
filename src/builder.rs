@@ -10,7 +10,6 @@ use crate::manifest;
 use crate::repl::run_repl;
 #[cfg(debug_assertions)]
 use crate::shared::debug_timings;
-use crate::shared::CargoManifest;
 use crate::shared::{display_timings, Ast, BuildState};
 use crate::stdin::CrosstermEventReader;
 use crate::stdin::{edit_stdin, read_stdin};
@@ -25,6 +24,7 @@ use crate::{
     RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR,
 };
 
+use cargo_toml::Manifest;
 #[cfg(debug_assertions)]
 use env_logger::{Builder, Env, WriteStyle};
 use lazy_static::lazy_static;
@@ -241,7 +241,7 @@ pub fn gen_build_run(
         } else {
             rs_source
         };
-        let rs_manifest: CargoManifest = {
+        let rs_manifest: Manifest = {
             // debug_timings(&start_parsing_rs, "Parsed source");
             extract_manifest(&rs_source, start_parsing_rs)
         }?;
@@ -402,11 +402,11 @@ pub fn generate(
     }
     // debug_log!("cargo_toml: {cargo_toml:?}");
 
-    let cargo_manifest_str: &str = &build_state
+    let manifest = &build_state
         .cargo_manifest
         .as_ref()
-        .expect("Could not unwrap BuildState.cargo_manifest")
-        .to_string();
+        .expect("Could not unwrap BuildState.cargo_manifest");
+    let cargo_manifest_str: &str = &toml::to_string(manifest)?;
 
     debug_log!(
         "cargo_manifest_str: {}",

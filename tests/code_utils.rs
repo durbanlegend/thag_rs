@@ -72,9 +72,7 @@ mod tests {
         let start_time = Instant::now();
         let manifest = extract_manifest(source_code, start_time).unwrap();
 
-        let dependencies = manifest
-            .dependencies
-            .expect("Could not unwrap manifest.dependencies");
+        let dependencies = manifest.dependencies;
         assert!(dependencies.contains_key("foo"));
         assert!(dependencies.contains_key("bar"));
     }

@@ -47,6 +47,7 @@ tui-textarea = { path = "/Users/donf/projects/tui-textarea/" }
 mockall = "0.12.1"
 scopeguard = "1.2.0"
 ratatui = "=0.26.3"
+cargo_toml = "0.20.3"
 
 [profile.dev]
 opt-level = 1 # Use slightly better optimizations.

@@ -4,9 +4,10 @@ use crate::debug_log;
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
-use crate::shared::{debug_timings, Ast, BuildState, CargoManifest};
+use crate::shared::{debug_timings, Ast, BuildState};
 use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
+use cargo_toml::Manifest;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::error::Error;
@@ -16,7 +17,6 @@ use std::io::{self, BufRead, Write};
 use std::option::Option;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output};
-use std::str::FromStr;
 use std::time::{Instant, SystemTime};
 use syn::{visit::Visit, UseRename};
 use syn::{Expr, ItemExternCrate, ItemMod, UsePath};
@@ -310,14 +310,14 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
 pub fn extract_manifest(
     rs_full_source: &str,
     start_parsing_rs: Instant,
-) -> Result<CargoManifest, Box<dyn Error>> {
+) -> Result<Manifest, Box<dyn Error>> {
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     let rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
         debug_log!("rs_toml_str={rs_toml_str}");
-        CargoManifest::from_str(&rs_toml_str)?
+        Manifest::from_str(&rs_toml_str)?
     } else {
-        CargoManifest::from_str("")?
+        Manifest::from_str("")?
     };
 
     debug_log!("rs_manifest={rs_manifest:#?}");

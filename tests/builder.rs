@@ -1,15 +1,15 @@
 #[cfg(test)]
 mod tests {
 
+    use cargo_toml::Manifest;
     use rs_script::builder::{build, generate, run};
     use rs_script::cmd_args::Cli;
     use rs_script::{code_utils, escape_path_for_windows, execute, TMPDIR};
-    use rs_script::{BuildState, CargoManifest, ProcFlags};
+    use rs_script::{BuildState, ProcFlags};
     // use sequential_test::sequential;
     use std::env::current_dir;
     use std::fs::{self, OpenOptions};
     use std::io::Write;
-    use std::str::FromStr;
 
     // Helper function to create a sample Cli structure
     fn create_sample_cli(script: Option<String>) -> Cli {
@@ -106,7 +106,7 @@ mod tests {
             escape_path_for_windows(TMPDIR.display().to_string().as_str())
         );
         let cargo_manifest =
-            CargoManifest::from_str(&cargo_toml).expect("Could not parse manifest string");
+            Manifest::from_str(&cargo_toml).expect("Could not parse manifest string");
         build_state.cargo_manifest = Some(cargo_manifest);
 
         let rs_source = code_utils::read_file_contents(&build_state.source_path)

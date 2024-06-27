@@ -11,6 +11,7 @@ use crate::TMPDIR;
 use crate::TOML_NAME;
 use crate::{log, PACKAGE_NAME};
 
+use cargo_toml::Manifest;
 use crossterm::cursor::{MoveTo, Show};
 use crossterm::terminal::{Clear, ClearType};
 use crossterm::ExecutableCommand;
@@ -281,8 +282,8 @@ pub struct BuildState {
     pub target_dir_path: PathBuf,
     pub target_path: PathBuf,
     pub cargo_toml_path: PathBuf,
-    pub rs_manifest: Option<CargoManifest>,
-    pub cargo_manifest: Option<CargoManifest>,
+    pub rs_manifest: Option<Manifest>,
+    pub cargo_manifest: Option<Manifest>,
     pub must_gen: bool,
     pub must_build: bool,
 }

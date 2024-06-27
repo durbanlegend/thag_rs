@@ -27,6 +27,7 @@ mod tests {
 
     // Set environment variables before running tests
     fn setup() {
+        std::env::set_var("TEST_ENV", "1");
         std::env::set_var("VISUAL", "cat");
         std::env::set_var("EDITOR", "cat");
     }

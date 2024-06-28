@@ -217,7 +217,7 @@ fn reset_term(
 #[allow(clippy::cast_possible_truncation)]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
     let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
-    let inner = area.inner(&Margin {
+    let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
     });

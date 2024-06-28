@@ -1,5 +1,7 @@
-//! [dependencies]
-//! crossterm = "0.27.0"
+/*[toml]
+[dependencies]
+crossterm = "0.27.0"
+*/
 
 // Demonstrates how to block read events.
 //

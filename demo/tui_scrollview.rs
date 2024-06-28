@@ -2,17 +2,16 @@
 [dependencies]
 color-eyre = "0.6.3"
 constraint = "0.1.0"
-crossterm = "0.27.0"
 keycode = "0.4.0"
 lipsum = "0.9.1"
-ratatui = "0.26.2"
+ratatui = "0.27.0"
 tui-scrollview = "0.3.4"
 */
 
 use std::io::{self, stdout};
 
 use color_eyre::{config::HookBuilder, Result};
-use crossterm::{
+use ratatui::crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,

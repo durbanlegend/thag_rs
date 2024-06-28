@@ -12,9 +12,7 @@
 - [ ]  Simple demo https server
 - [ ]  Get builder ignored tests working
 - [ ]  Debug egui_code_editor.rss only showing env_logger if use egui::*; is included.
-- [ ]  Test of test_build_state_pre_configure failing, also repl does not accept -- --nocapture.
-- [ ]  Test all occurrences of termbg:: calls with clear_screen() or equiv and crossterm imports.
-- [ ]  Investigate replacing shared::CargoManifest with cargo_toml crate.
+- [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

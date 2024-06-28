@@ -138,17 +138,12 @@ pub fn default_manifest_from_build_state(
     let source_stem = &build_state.source_stem;
     let source_name = &build_state.source_name;
     let binding = build_state.target_dir_path.join(source_name);
-    let gen_src_path = &binding.to_string_lossy();
+    let gen_src_path = escape_path_for_windows(binding.to_string_lossy().as_ref());
 
-    let gen_src_path = escape_path_for_windows(gen_src_path);
-
-    default_manifest(source_stem, gen_src_path)
+    default_manifest(source_stem, &gen_src_path)
 }
 
-pub fn default_manifest(
-    source_stem: &String,
-    gen_src_path: String,
-) -> Result<Manifest, BuildRunError> {
+pub fn default_manifest(source_stem: &str, gen_src_path: &str) -> Result<Manifest, BuildRunError> {
     let cargo_manifest = format!(
         r##"[package]
 name = "{}"

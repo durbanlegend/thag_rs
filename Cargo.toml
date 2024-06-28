@@ -43,10 +43,10 @@ supports-color = "3.0.0"
 syn = { version = "2.0.68", features = ["extra-traits", "full", "visit"] }
 termbg = "0.5.0"
 toml = "0.8.14"
-tui-textarea = { path = "/Users/donf/projects/tui-textarea/" }
+tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0" }
 mockall = "0.12.1"
 scopeguard = "1.2.0"
-ratatui = "=0.26.3"
+ratatui = "0.27.0"
 cargo_toml = "0.20.3"
 
 [profile.dev]

@@ -1,17 +1,16 @@
 /*[toml]
 [dependencies]
 rs-script = { path = "/Users/donf/projects/rs-script" }
-crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 lazy_static = "1.4.0"
 regex = "1.10.4"
-ratatui = "0.26.3"
-tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
+ratatui = "0.27.0"
+tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0" }
 */
 
-use crossterm::event::{
+use ratatui::crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, Event::Paste,
 };
-use crossterm::terminal::{
+use ratatui::crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 // use log::debug;
@@ -54,7 +53,7 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
     enable_raw_mode()?;
-    crossterm::execute!(
+    ratatui::crossterm::execute!(
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
@@ -85,7 +84,7 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
             }
             apply_highlights(alt_highlights, &mut textarea);
         })?;
-        let event = crossterm::event::read()?;
+        let event = ratatui::crossterm::event::read()?;
         if let Paste(data) = event {
             textarea.insert_str(normalize_newlines(&data));
         } else {
@@ -173,7 +172,7 @@ fn reset_term(
     mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,
 ) -> Result<(), Box<dyn Error>> {
     disable_raw_mode()?;
-    crossterm::execute!(
+    ratatui::crossterm::execute!(
         term.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
@@ -185,7 +184,7 @@ fn reset_term(
 #[allow(clippy::cast_possible_truncation)]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
     let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
-    let inner = area.inner(&Margin {
+    let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
     });

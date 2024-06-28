@@ -1,5 +1,7 @@
-//! [dependencies]
-//! crossterm = "0.27.0"
+/*[toml]
+[dependencies]
+crossterm = "0.27.0"
+*/
 
 use crossterm::event::{read, Event, KeyCode, KeyEventKind};
 use std::io::{stdout, Write};

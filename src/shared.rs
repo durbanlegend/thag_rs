@@ -12,12 +12,12 @@ use crate::TOML_NAME;
 use crate::{log, PACKAGE_NAME};
 
 use cargo_toml::Manifest;
-use crossterm::cursor::{MoveTo, Show};
-use crossterm::terminal::{Clear, ClearType};
-use crossterm::ExecutableCommand;
 use home::home_dir;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
+use ratatui::crossterm::cursor::{MoveTo, Show};
+use ratatui::crossterm::terminal::{Clear, ClearType};
+use ratatui::crossterm::ExecutableCommand;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::error::Error;

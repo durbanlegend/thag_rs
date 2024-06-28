@@ -1,19 +1,14 @@
 /*[toml]
 [dependencies]
-crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
-ratatui = "0.26.3"
+ratatui = "0.27.0"
 tokio = { version = "1", features = ["full"] }
-tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
+tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0" }
 */
 
-use crossterm::{
-    event::{
-        self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
-    },
+use ratatui::crossterm::{
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
-    terminal::{
-        self, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
-    },
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
     backend::CrosstermBackend,

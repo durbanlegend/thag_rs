@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
-ratatui = "0.26.2"
+ratatui = "0.27.0"
 */
 
 // # [Ratatui] User Input example
@@ -35,7 +34,7 @@ ratatui = "0.26.2"
 
 use std::{error::Error, io};
 
-use crossterm::{
+use ratatui::crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},

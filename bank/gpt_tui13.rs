@@ -1,17 +1,17 @@
 /*[toml]
 [dependencies]
-crossterm = { version = "0.27.0", features = ["use-dev-tty", "event-stream"] }
+#crossterm = { version = "0.27.0", features = ["use-dev-tty", "event-stream"] }
 libc = "0.2.80"
-ratatui = "0.26.3"
+ratatui = "0.27.0"
 tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
 */
 
-use crossterm::{
+use libc;
+use ratatui::crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute, terminal,
     terminal::{disable_raw_mode, enable_raw_mode},
 };
-use libc;
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},

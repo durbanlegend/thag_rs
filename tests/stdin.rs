@@ -1,6 +1,6 @@
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
-use crossterm::tty::IsTty;
 use mockall::Sequence;
+use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+use ratatui::crossterm::tty::IsTty;
 use ratatui::style::{Color, Style, Stylize};
 use rs_script::logging::Verbosity;
 use rs_script::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};

@@ -4,6 +4,7 @@ use crate::logging::Verbosity;
 use crate::shared;
 
 use lazy_static::lazy_static;
+use ratatui::crossterm::tty::IsTty;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
@@ -11,7 +12,7 @@ use termbg::Theme;
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
-        if std::env::var("TEST_ENV").is_ok() {
+        if std::env::var("TEST_ENV").is_ok() || !std::io::stdout().is_tty() {
             return Some(ColorSupport::Ansi16);
         }
         match supports_color::on(Stream::Stdout) {
@@ -27,7 +28,7 @@ lazy_static! {
 
     #[derive(Debug)]
     pub static ref TERM_THEME: TermTheme = {
-        if std::env::var("TEST_ENV").is_ok() {
+        if std::env::var("TEST_ENV").is_ok() || !std::io::stdout().is_tty() {
             return TermTheme::Dark;
         }
         let timeout = std::time::Duration::from_millis(100);

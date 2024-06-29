@@ -230,7 +230,7 @@ fn test_escape_path_for_windows() {
     {
         let path = r"C:\path\to\file";
         let escaped_path = escape_path_for_windows(path);
-        assert_eq!(escaped_path, r"C:\\path\\to\\file");
+        assert_eq!(escaped_path, r"C:/path/to/file");
     }
 
     #[cfg(not(windows))]

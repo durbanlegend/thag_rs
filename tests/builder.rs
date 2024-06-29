@@ -21,7 +21,7 @@ mod tests {
         }
     }
 
-    // Helper function to create a sample VuildState structure.
+    // Helper function to create a sample BuildState structure.
     // Requires the sample script to be in tests/assets.
     fn create_sample_build_state(source_name: &str) -> BuildState {
         let source_stem: &str = source_name
@@ -211,11 +211,15 @@ name = "bitflags_t"
         let source_stem: &str = source_name
             .strip_suffix(rs_script::RS_SUFFIX)
             .expect("Problem stripping Rust suffix");
-        let target_path = TMPDIR
+        let target_dir_path = TMPDIR
             .join("rs-script")
             .join(source_stem)
-            .join("target/debug")
-            .join(source_stem);
+            .join("target/debug");
+        let target_path = if cfg!(windows) {
+            target_dir_path.join(source_stem.to_string() + ".exe")
+        } else {
+            target_dir_path.join(&source_stem)
+        };
 
         // Remove executable if it exists, and check
         let _ = fs::remove_file(&target_path);

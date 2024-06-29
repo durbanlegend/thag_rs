@@ -10,17 +10,11 @@
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
-- [ ]  Get builder ignored tests working
 - [ ]  Debug egui_code_editor.rss only showing env_logger if use egui::*; is included.
 - [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
-- [ ]  Cargo config in [toml] block to exclude Windows for rug files?
+- [ ]  Consider replacing rug crate with dashu since rug not Windows-friendly?
+- [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
 - [ ]  Demo scripts not compiling:
-  demo/code_completion.rs
-  demo/clap_default_value_ifs.rs
-  demo/create_next_file.rs
-  demo/edit.rs
-  demo/egui_code_editor.rs
-  demo/filter_lines.rs
   demo/flume_async.rs
   demo/flume_select.rs
   demo/gpt_clap_derive.rs

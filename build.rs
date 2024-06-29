@@ -16,7 +16,9 @@ fn main() {
     );
 
     let skip_files_on_windows = vec![
-        "file1.rs", "file2.rs", // Add filenames that should be skipped on Windows
+        "factorial_main_rug.rs",
+        "fib_big_clap_rug.rs",
+        "fib_fac_rug.rs", // Add filenames that should be skipped on Windows
     ];
 
     for entry in fs::read_dir(demo_dir).expect("Failed to read demo directory") {

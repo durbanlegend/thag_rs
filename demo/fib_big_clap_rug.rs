@@ -5,12 +5,10 @@ rug = { version = "1.24.0", features = ["integer"] }
 */
 
 /// Fast Fibonacci with big integers, no recursion.
-/// Won't work with default Windows 11
+/// Won't work with default Windows 11 because of rug crate
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
-///
-/// Limited to Rust u128 types, thus it supports a maximum of fib(92) and fac(34).
 ///
 /// The `fib` and `fac` closures could equally be implemented as functions here.
 //# Purpose: Demonstrate snippets and a fast non-recursive fibonacci algorithms.

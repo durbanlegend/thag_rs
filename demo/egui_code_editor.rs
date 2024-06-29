@@ -22,15 +22,15 @@ default = ["syntect"]
 syntect = ["egui_extras/syntect"]
 */
 
-/// A prototype GUI editor with saved state.
-
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use env_logger;
 use eframe;
 use egui;
+use env_logger;
 
+/// A prototype GUI editor with saved state and syntax highlighting.
+//# Purpose: Prototype a native-mode editor using the egui crate.
 // We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state

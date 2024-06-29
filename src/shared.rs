@@ -16,7 +16,6 @@ use home::home_dir;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use ratatui::crossterm::cursor::{MoveToColumn, Show};
-use ratatui::crossterm::terminal::{Clear, ClearType};
 use ratatui::crossterm::ExecutableCommand;
 use std::error::Error;
 use std::io::{stdout, Write};
@@ -28,7 +27,7 @@ use strum::Display;
 
 pub fn clear_screen() {
     let mut out = stdout();
-    out.execute(Clear(ClearType::FromCursorUp)).unwrap();
+    // out.execute(Clear(ClearType::FromCursorUp)).unwrap();
     out.execute(MoveToColumn(0)).unwrap();
     out.execute(Show).unwrap();
     out.flush().unwrap();

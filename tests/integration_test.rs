@@ -56,49 +56,4 @@ fn main() {{
     Ok(())
 }
 
-// #[test]
-// fn test_demo_files_build() {
-//     let demo_dir = Path::new("demo");
-//     assert!(
-//         demo_dir.exists() && demo_dir.is_dir(),
-//         "demo directory does not exist"
-//     );
-
-//     // Read all files in the demo directory
-//     for entry in fs::read_dir(demo_dir).expect("Failed to read demo directory") {
-//         let entry = entry.expect("Failed to get directory entry");
-//         let path = entry.path();
-
-//         // Filter .rs files
-//         if path.extension().and_then(|s| s.to_str()) == Some("rs") {
-//             let file_name = path
-//                 .file_name()
-//                 .and_then(|s| s.to_str())
-//                 .expect("Failed to get file name");
-//             let file_path = path.to_str().expect("Failed to get file path");
-
-//             println!("Building file: {}", file_name);
-
-//             // Execute the command for each .rs file
-//             let output = Command::new("cargo")
-//                 .arg("run")
-//                 .arg("--")
-//                 .arg("-bgnq")
-//                 .arg(file_path)
-//                 .output()
-//                 .expect("Failed to execute command");
-
-//             // Check if the command was successful
-//             if !output.status.success() {
-//                 panic!(
-//                     "Failed to build file: {}\nstdout: {}\nstderr: {}",
-//                     file_name,
-//                     String::from_utf8_lossy(&output.stdout),
-//                     String::from_utf8_lossy(&output.stderr)
-//                 );
-//             }
-//         }
-//     }
-// }
-
 include!(concat!(env!("OUT_DIR"), "/generated_tests.rs"));

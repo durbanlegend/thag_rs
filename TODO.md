@@ -15,31 +15,30 @@
 - [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
 - [ ]  Cargo config in [toml] block to exclude Windows for rug files?
 - [ ]  Demo scripts not compiling:
-    test_clap_default_value_ifs_rs
-    test_code_completion_rs
-    test_create_next_file_rs
-    test_edit_rs
-    test_egui_code_editor_rs
-    test_filter_lines_rs
-    test_flume_async_rs
-    test_flume_select_rs
-    test_gpt_clap_derive_rs
-    test_gpt_tui_no_ast_rs
-    test_inline_colorization_rs
-    test_json_rs
-    test_msg_colors_gpt_rs
-    test_msg_colors_rs
-    test_owo_styles_rs
-    test_parse_script_rs_toml_rs
-    test_parse_toml_rs
-    test_path_dependency_rs
-    test_pomprt_completion_rs
-    test_puffin_debug_rs
-    test_syn_visit_path_exprs_rs
-    test_tokio_hello_world_rs
-    test_tui_editor_rs
-    test_tui_ta_minimal_rs
-
+  demo/code_completion.rs
+  demo/clap_default_value_ifs.rs
+  demo/create_next_file.rs
+  demo/edit.rs
+  demo/egui_code_editor.rs
+  demo/filter_lines.rs
+  demo/flume_async.rs
+  demo/flume_select.rs
+  demo/gpt_clap_derive.rs
+  demo/gpt_tui_no_ast.rs
+  demo/inline_colorization.rs
+  demo/json.rs
+  demo/msg_colors_gpt.rs
+  demo/msg_colors.rs
+  demo/owo_styles.rs
+  demo/parse_script.rs_toml.rs
+  demo/parse_toml.rs
+  demo/path_dependency.rs
+  demo/pomprt_completion.rs
+  demo/puffin_debug.rs
+  demo/syn_visit_path_exprs.rs
+  demo/tokio_hello_world.rs
+  demo/tui_editor.rs
+  demo/tui_ta_minimal.rs
 
 
 ## Low Priority

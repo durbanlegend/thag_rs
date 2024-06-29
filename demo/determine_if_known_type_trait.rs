@@ -1,12 +1,12 @@
 /*[toml]
 [dependencies]
-rug = { version = "1.24.1", features = ["integer", "std"] }
+dashu = "0.4.2"
 */
 
 /// Most upvoted and recommended answer on Stack Overflow page:
 /// https://stackoverflow.com/questions/34214136/how-do-i-match-the-type-of-an-expression-in-a-rust-macro/34214916#34214916
 /// seems to work very well provided all the types encountered are anticipated.
-use rug::Integer;
+use dashu::integer::IBig;
 
 trait Attribute {
     fn process(&self);
@@ -86,9 +86,9 @@ impl<T: std::fmt::Debug, E: std::fmt::Debug> Attribute for Result<T, E> {
     }
 }
 
-impl Attribute for Integer {
+impl Attribute for IBig {
     fn process(&self) {
-        println!("{} is a rug::Integer type", self);
+        println!("{} is a dashu::integer::IBig type", self);
     }
 }
 
@@ -113,5 +113,5 @@ fn main() {
     attribute!(Ok::<&str, &str>("Hello World!"));
     attribute!(Err::<&str, &str>("Bad thing happened"));
     attribute!(Ok::<Option<&str>, &str>(Some("Hello World!")));
-    attribute!(Integer::from(0_usize));
+    attribute!(IBig::from(0_usize));
 }

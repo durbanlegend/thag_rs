@@ -13,6 +13,34 @@
 - [ ]  Get builder ignored tests working
 - [ ]  Debug egui_code_editor.rss only showing env_logger if use egui::*; is included.
 - [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
+- [ ]  Cargo config in [toml] block to exclude Windows for rug files?
+- [ ]  Demo scripts not compiling:
+    test_clap_default_value_ifs_rs
+    test_code_completion_rs
+    test_create_next_file_rs
+    test_edit_rs
+    test_egui_code_editor_rs
+    test_filter_lines_rs
+    test_flume_async_rs
+    test_flume_select_rs
+    test_gpt_clap_derive_rs
+    test_gpt_tui_no_ast_rs
+    test_inline_colorization_rs
+    test_json_rs
+    test_msg_colors_gpt_rs
+    test_msg_colors_rs
+    test_owo_styles_rs
+    test_parse_script_rs_toml_rs
+    test_parse_toml_rs
+    test_path_dependency_rs
+    test_pomprt_completion_rs
+    test_puffin_debug_rs
+    test_syn_visit_path_exprs_rs
+    test_tokio_hello_world_rs
+    test_tui_editor_rs
+    test_tui_ta_minimal_rs
+
+
 
 ## Low Priority
 - [ ]  Consider history support for stdin.

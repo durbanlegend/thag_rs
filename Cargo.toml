@@ -70,3 +70,4 @@ debug-logs = []
 env_logger = "0.11.3"
 sequential-test = "0.2.4"
 tempfile = "3.10.1"
+test-generator = "0.3.1"

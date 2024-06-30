@@ -15,11 +15,13 @@ fn main() {
         "demo directory does not exist"
     );
 
-    let skip_files_on_windows = vec![
+    let skip_files_on_windows = [
         "factorial_main_rug.rs",
         "fib_big_clap_rug.rs",
-        "fib_fac_rug.rs", // Add filenames that should be skipped on Windows
+        "fib_fac_rug.rs",
     ];
+
+    let multimain = ["flume_async.rs", "flume_select.rs"];
 
     for entry in fs::read_dir(demo_dir).expect("Failed to read demo directory") {
         let entry = entry.expect("Failed to get directory entry");
@@ -43,13 +45,12 @@ fn main() {
                 r#"
 #[test]
 fn test_{test_name}() {{
-    #[cfg(not(target_os = "windows"))]
     {{
         use std::process::Command;
         let output = Command::new("cargo")
             .arg("run")
             .arg("--")
-            .arg("-bgnq")
+            .arg("-bgnq{more_options}")
             .arg("{file_path}")
             .output()
             .expect("Failed to execute command");
@@ -67,6 +68,11 @@ fn test_{test_name}() {{
                 test_name = test_name,
                 file_name = file_name,
                 file_path = path.to_str().expect("Failed to get file path"),
+                more_options = if multimain.contains(&file_name) {
+                    "m"
+                } else {
+                    ""
+                }
             )
             .expect("Failed to write test function");
         }

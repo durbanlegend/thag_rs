@@ -15,8 +15,6 @@
 - [ ]  Consider replacing rug crate with dashu since rug not Windows-friendly?
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
 - [ ]  Demo scripts not compiling:
-  demo/flume_async.rs
-  demo/flume_select.rs
   demo/gpt_clap_derive.rs
   demo/gpt_tui_no_ast.rs
   demo/inline_colorization.rs

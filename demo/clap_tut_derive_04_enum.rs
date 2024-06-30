@@ -23,8 +23,10 @@ enum Mode {
     Slow,
 }
 
-/// Published example from clap tutorial (derive), with added displays.
+/// Published example from `clap` tutorial (derive), with added displays.
+///
 /// E.g. rs_script demo/clap_tut_04.rs -ddd -c dummy.cfg test -l
+//# Purpose: Demonstrate `clap` CLI using the derive option
 fn main() {
     let cli = Cli::parse();
 

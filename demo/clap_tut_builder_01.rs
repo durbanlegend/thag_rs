@@ -7,8 +7,10 @@ use std::path::PathBuf;
 
 use clap::{arg, command, value_parser, ArgAction, Command};
 
-/// Published example from clap tutorial (builder)
+/// Published example from `clap` tutorial (builder)
+///
 /// E.g.  demo/clap_tut_01.rs -ddd -c dummy.cfg test -l
+//# Purpose: Demonstrate `clap` CLI using the builder option
 fn main() {
     let matches = command!() // requires `cargo` feature
         .arg(arg!([name] "Optional name to operate on"))

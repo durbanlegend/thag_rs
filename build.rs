@@ -7,7 +7,7 @@ fn main() {
     // Get the OUT_DIR environment variable
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
     let dest_path = Path::new(&out_dir).join("generated_tests.rs");
-    let mut file = fs::File::create(&dest_path).expect("Failed to create generated_tests.rs");
+    let mut file = fs::File::create(dest_path).expect("Failed to create generated_tests.rs");
 
     let demo_dir = Path::new("demo");
     assert!(

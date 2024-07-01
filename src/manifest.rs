@@ -186,7 +186,7 @@ pub fn merge_manifest(
         &mut default_cargo_manifest
     };
 
-    debug_log!("cargo_manifest (before deps)={cargo_manifest:#?}");
+    // debug_log!("cargo_manifest (before deps)={cargo_manifest:#?}");
 
     let rs_inferred_deps = if let Some(ref syntax_tree) = syntax_tree {
         infer_deps_from_ast(syntax_tree)
@@ -194,7 +194,7 @@ pub fn merge_manifest(
         infer_deps_from_source(rs_source)
     };
 
-    debug_log!("rs_inferred_deps={rs_inferred_deps:#?}\n");
+    // debug_log!("rs_inferred_deps={rs_inferred_deps:#?}\n");
     // if let Some(rs_manifest) = &build_state.rs_manifest {
     //     debug_log!(
     //         "build_state.rs_manifest.dependencies={:#?}",
@@ -266,7 +266,7 @@ pub fn merge_manifest(
     }
 
     debug_timings(&start_merge_manifest, "Processed features");
-    debug_log!("cargo_manifest (after merge) {:#?}", cargo_manifest);
+    // debug_log!("cargo_manifest (after merge)={:#?}", cargo_manifest);
 
     Ok(cargo_manifest.clone())
 }

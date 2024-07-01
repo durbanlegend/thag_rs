@@ -1,14 +1,15 @@
 use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
-use crate::debug_log;
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::{debug_timings, Ast, BuildState};
+use crate::{debug_log, nu_color_println, nu_resolve_style};
 use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use cargo_toml::Manifest;
 use lazy_static::lazy_static;
+use quote::quote;
 use regex::Regex;
 use std::error::Error;
 use std::fs;
@@ -18,8 +19,8 @@ use std::option::Option;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output};
 use std::time::{Instant, SystemTime};
-use syn::{visit::Visit, UseRename};
-use syn::{Expr, ItemExternCrate, ItemMod, UsePath};
+use syn::visit::Visit;
+use syn::{parse_str, Expr, File, Item, ItemExternCrate, ItemMod, Stmt, UsePath, UseRename};
 
 /// Read the contents of a file. For reading the Rust script.
 pub fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
@@ -314,13 +315,13 @@ pub fn extract_manifest(
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     let rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
-        debug_log!("rs_toml_str={rs_toml_str}");
+        // debug_log!("rs_toml_str={rs_toml_str}");
         Manifest::from_str(&rs_toml_str)?
     } else {
         Manifest::from_str("")?
     };
 
-    debug_log!("rs_manifest={rs_manifest:#?}");
+    // debug_log!("rs_manifest={rs_manifest:#?}");
 
     debug_timings(&start_parsing_rs, "Parsed source");
     Ok(rs_manifest)
@@ -530,12 +531,17 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
 /// if possible (should work if the code will compike)
 pub fn to_ast(source_code: &str) -> Option<Ast> {
     let start_ast = Instant::now();
-    if let Ok(tree) = syn::parse_file(source_code) {
-        debug_timings(&start_ast, "Completed successful AST parse to syn::File");
-        Some(Ast::File(tree))
-    } else if let Ok(tree) = extract_ast(source_code) {
+    if let Ok(tree) = extract_ast(source_code) {
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
+    } else if let Ok(tree) = syn::parse_file(source_code) {
+        // Temp: highlight the unexpected
+        nu_color_println!(
+            nu_resolve_style(crate::MessageLevel::Warning),
+            "Parsed to syn::File"
+        );
+        debug_timings(&start_ast, "Completed successful AST parse to syn::File");
+        Some(Ast::File(tree))
     } else {
         log!(
             Verbosity::Quiet,
@@ -831,4 +837,112 @@ fn compare(mismatched_lines: &[(String, String)], expected_rust_code: &str, rust
             rust_code
         );
     }
+}
+
+pub fn is_last_stmt_unit(expr: &Expr) -> bool {
+    debug_log!("expr={expr:#?}");
+    match expr {
+        Expr::ForLoop(_) => {
+            debug_log!("%%%%%%%% Expr::ForLoop(_))");
+            true
+        }
+        Expr::While(_) => {
+            debug_log!("%%%%%%%% Expr::While(_))");
+            true
+        }
+        Expr::Loop(_) => {
+            debug_log!("%%%%%%%% Expr::While(_))");
+            true
+        }
+        Expr::If(expr_if) => {
+            let is_none = expr_if.else_branch.is_none();
+            debug_log!("%%%%%%%%  Expr::If(expr_if) with expr_if.else_branch.is_none()={is_none}",);
+            is_none
+        }
+        Expr::Block(expr_block) => {
+            if let Some(last_stmt) = expr_block.block.stmts.last() {
+                match last_stmt {
+                    Stmt::Expr(ex, None) => {
+                        debug_log!("%%%%%%%% ex={ex:#?}");
+                        debug_log!("%%%%%%%% Stmt::Expr(_, None)");
+                        false
+                    } // Expression without semicolon
+                    Stmt::Expr(_, Some(_)) => {
+                        debug_log!("%%%%%%%% Stmt::Expr(_, Some(_))");
+                        true
+                    } // Expression with semicolon returns unit
+                    Stmt::Macro(m) => {
+                        let is_some = m.semi_token.is_some();
+                        debug_log!(
+                            "%%%%%%%% Stmt::Macro({m:#?}), m.semi_token.is_some()={is_some}"
+                        );
+                        is_some
+                    } // Macro with a semicolon returns unit
+                    _ => {
+                        debug_log!("%%%%%%%% Something else, returning false");
+                        false
+                    }
+                }
+            } else {
+                debug_log!("%%%%%%%% Not if let Some(last_stmt) = expr_block.block.stmts.last()");
+                false
+            }
+        }
+        _ => {
+            debug_log!("%%%%%%%% Matches something else");
+            false
+        }
+    }
+}
+
+pub fn returns_unit(expr: &Expr) -> bool {
+    // Check if the expression returns a unit value
+    let is_unit_type = matches!(expr, Expr::Tuple(tuple) if tuple.elems.is_empty());
+    nu_color_println!(
+        nu_resolve_style(crate::MessageLevel::Emphasis),
+        "is_unit_type={is_unit_type}"
+    );
+    is_unit_type
+}
+
+// I don't trust this from GPT
+pub fn extract_expr_from_file(file: &File) -> Option<Expr> {
+    // Traverse the file to find the main function and extract expressions from it
+    for item in &file.items {
+        if let Item::Fn(func) = item {
+            if func.sig.ident == "main" {
+                let stmts = &func.block.stmts;
+                // Collect expressions from the statements
+                let exprs: Vec<Expr> = stmts
+                    .iter()
+                    .filter_map(|stmt| match stmt {
+                        Stmt::Expr(expr, _) => Some(expr.clone()),
+                        Stmt::Macro(macro_stmt) => {
+                            let mac = &macro_stmt.mac;
+                            let macro_expr = quote! {
+                                #mac
+                            };
+                            Some(
+                                parse_str(&macro_expr.to_string())
+                                    .expect("Unable to parse macro expression"),
+                            )
+                        }
+                        _ => None,
+                    })
+                    .collect();
+
+                // Combine the expressions into a single expression if needed
+                if !exprs.is_empty() {
+                    let combined_expr = quote! {
+                        { #(#exprs);* }
+                    };
+                    return Some(
+                        parse_str(&combined_expr.to_string())
+                            .expect("Unable to parse combined expression"),
+                    );
+                }
+            }
+        }
+    }
+    None
 }

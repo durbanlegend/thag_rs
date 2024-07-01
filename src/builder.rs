@@ -302,18 +302,25 @@ pub fn gen_build_run(
         } else {
             // let start_quote = Instant::now();
             let rust_code = if let Some(ref syntax_tree_ref) = syntax_tree {
-                quote::quote!(
-                    // fn type_of<T>(_: T) -> &'static str {
-                    //     std::any::type_name::<T>()
-                    // }
-                    //     println!("Type of expression is {}", type_of(#syntax_tree_ref));)
-                    // .to_string()
-                    // println!("Expression returned {:#?}", #syntax_tree_ref);)
-                    // .to_string()
-                    // dbg!(#syntax_tree_ref);
-                    println!("{:#?}", #syntax_tree_ref);
-                )
-                .to_string()
+                let returns_unit = match syntax_tree_ref {
+                    Ast::Expr(expr) => code_utils::is_last_stmt_unit(expr),
+                    Ast::File(file) => {
+                        let expr = code_utils::extract_expr_from_file(file)
+                            .expect("Error extracting syn::Expr from syn::File");
+                        code_utils::returns_unit(&expr)
+                    }
+                };
+                if returns_unit {
+                    quote::quote!(
+                        #syntax_tree_ref
+                    )
+                    .to_string()
+                } else {
+                    quote::quote!(
+                        println!("{:#?}", #syntax_tree_ref);
+                    )
+                    .to_string()
+                }
             } else {
                 // demo/fizz_buzz.rs broke this: not an expression but still a valid snippet.
                 // format!(r#"println!("Expression returned {{}}", {rs_source});"#)

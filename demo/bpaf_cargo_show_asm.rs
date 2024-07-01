@@ -4,9 +4,11 @@
  bpaf_derive = "0.5.10"
 */
 
-/// Parsing snippet from cargo-show-asm.
-//
-// Derive + typed fallback + external both with and without name
+/// Published example from `https://github.com/pacak/bpaf/src/docs2/derive_show_asm.md`
+///
+///
+/// E.g. `rs-script demo/bpaf_cargo_show_asm.rs -- -h`
+//# Purpose: Demo CLI alternative to clap crate
 use bpaf::{construct, long, Bpaf, Parser, ShellComp};
 use std::{convert::Infallible, path::PathBuf};
 

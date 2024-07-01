@@ -37,16 +37,16 @@ let limit = 25_usize;
 
 println!();
 
-// let fac = |n: u128| -> u128 {
-//     if n == 0 {
-//         0
-//     } else {
-//         (1..=n).product()
-//     }
-// };
+let fac = |n: u128| -> u128 {
+    if n == 0 {
+        0
+    } else {
+        (1..=n).product()
+    }
+};
 
-// let limit = limit as u128;
+let limit = limit as u128;
 
-// for n in 0..=limit {
-//     println!("factorial({n})={}", fac(n));
-// }
+for n in 0..=limit {
+    println!("factorial({n})={}", fac(n));
+}

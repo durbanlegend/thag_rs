@@ -627,10 +627,10 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, B
         .create(true)
         .truncate(true)
         .open(to_rs_path)?;
-    debug_log!("Writing out source to {to_rs_path:#?}:\n{}", {
-        let lines = rs_source.lines();
-        reassemble(lines)
-    });
+    // debug_log!("Writing out source to {to_rs_path:#?}:\n{}", {
+    //     let lines = rs_source.lines();
+    //     reassemble(lines)
+    // });
     to_rs_file.write_all(rs_source.as_bytes())?;
     debug_log!("Done!");
 
@@ -841,10 +841,16 @@ fn compare(mismatched_lines: &[(String, String)], expected_rust_code: &str, rust
 
 pub fn is_last_stmt_unit(expr: &Expr) -> bool {
     debug_log!("expr={expr:#?}");
+    // loop {
     match expr {
-        Expr::ForLoop(_) => {
-            debug_log!("%%%%%%%% Expr::ForLoop(_))");
-            true
+        Expr::ForLoop(for_loop) => {
+            debug_log!("%%%%%%%% Expr::ForLoop(for_loop))");
+            if let Some(last_stmt) = for_loop.body.stmts.last() {
+                is_stmt_unit_type(last_stmt)
+            } else {
+                debug_log!("%%%%%%%% Not if let Some(last_stmt) = for_loop.body.stmts.last()");
+                false
+            }
         }
         Expr::While(_) => {
             debug_log!("%%%%%%%% Expr::While(_))");
@@ -855,34 +861,21 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
             true
         }
         Expr::If(expr_if) => {
-            let is_none = expr_if.else_branch.is_none();
-            debug_log!("%%%%%%%%  Expr::If(expr_if) with expr_if.else_branch.is_none()={is_none}",);
-            is_none
+            // let is_none = expr_if.else_branch.is_none();
+            // debug_log!("%%%%%%%%  Expr::If(expr_if) with expr_if.else_branch.is_none()={is_none}",);
+            // is_none
+            if let Some(last_stmt) = expr_if.then_branch.stmts.last() {
+                is_stmt_unit_type(last_stmt)
+            } else {
+                debug_log!(
+                    "%%%%%%%% Not if let Some(last_stmt) = expr_if.then_branch.stmts.last()"
+                );
+                false
+            }
         }
         Expr::Block(expr_block) => {
             if let Some(last_stmt) = expr_block.block.stmts.last() {
-                match last_stmt {
-                    Stmt::Expr(ex, None) => {
-                        debug_log!("%%%%%%%% ex={ex:#?}");
-                        debug_log!("%%%%%%%% Stmt::Expr(_, None)");
-                        false
-                    } // Expression without semicolon
-                    Stmt::Expr(_, Some(_)) => {
-                        debug_log!("%%%%%%%% Stmt::Expr(_, Some(_))");
-                        true
-                    } // Expression with semicolon returns unit
-                    Stmt::Macro(m) => {
-                        let is_some = m.semi_token.is_some();
-                        debug_log!(
-                            "%%%%%%%% Stmt::Macro({m:#?}), m.semi_token.is_some()={is_some}"
-                        );
-                        is_some
-                    } // Macro with a semicolon returns unit
-                    _ => {
-                        debug_log!("%%%%%%%% Something else, returning false");
-                        false
-                    }
-                }
+                is_stmt_unit_type(last_stmt)
             } else {
                 debug_log!("%%%%%%%% Not if let Some(last_stmt) = expr_block.block.stmts.last()");
                 false
@@ -890,6 +883,32 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
         }
         _ => {
             debug_log!("%%%%%%%% Matches something else");
+            false
+        }
+    }
+    // return is_unit_type;
+    // }
+}
+
+fn is_stmt_unit_type(last_stmt: &Stmt) -> bool {
+    debug_log!("last_stmt={last_stmt:#?}");
+    match last_stmt {
+        Stmt::Expr(expr, None) => {
+            debug_log!("%%%%%%%% ex={expr:#?}");
+            debug_log!("%%%%%%%% Stmt::Expr(_, None)");
+            is_last_stmt_unit(expr)
+        } // Expression without semicolon
+        Stmt::Expr(_, Some(_)) => {
+            debug_log!("%%%%%%%% Stmt::Expr(_, Some(_))");
+            true
+        } // Expression with semicolon returns unit
+        Stmt::Macro(m) => {
+            let is_some = m.semi_token.is_some();
+            debug_log!("%%%%%%%% Stmt::Macro({m:#?}), m.semi_token.is_some()={is_some}");
+            is_some
+        } // Macro with a semicolon returns unit
+        _ => {
+            debug_log!("%%%%%%%% Something else, returning false");
             false
         }
     }

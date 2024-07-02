@@ -912,6 +912,18 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
                 false
             }
         }
+        Expr::Match(expr_match) => {
+            for arm in &expr_match.arms {
+                println!("arm.body={:#?}", arm.body);
+                let expr = &*arm.body;
+                if is_last_stmt_unit(expr) {
+                    continue;
+                } else {
+                    return false;
+                }
+            }
+            true
+        }
         _ => {
             debug_log!("%%%%%%%% Matches something else");
             false

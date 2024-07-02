@@ -311,11 +311,13 @@ pub fn gen_build_run(
                     }
                 };
                 if returns_unit {
+                    debug_log!("Option B: returns unit type");
                     quote::quote!(
                         #syntax_tree_ref
                     )
                     .to_string()
                 } else {
+                    debug_log!("Option A: returns a substantive type");
                     quote::quote!(
                         println!("{:#?}", #syntax_tree_ref);
                     )

@@ -50,7 +50,7 @@ fn test_{test_name}() {{
         let output = Command::new("cargo")
             .arg("run")
             .arg("--")
-            .arg("-bgnq{more_options}")
+            .arg("-bfgnq{more_options}")
             .arg("{file_path}")
             .output()
             .expect("Failed to execute command");

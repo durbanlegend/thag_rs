@@ -3,13 +3,14 @@
 crossbeam-channel = "0.5.13"
 */
 
-/// crossbeam-channel published example
+/// crossbeam-channel published example.
+///
 /// An asynchronous fibonacci sequence generator.
 use std::thread;
 
 use crossbeam_channel::{bounded, Sender};
 
-/// Sends the Fibonacci sequence into the channel until it becomes disconnected.
+// Sends the Fibonacci sequence into the channel until it becomes disconnected.
 fn fibonacci(sender: Sender<u64>) {
     let (mut x, mut y) = (0, 1);
     while sender.send(x).is_ok() {

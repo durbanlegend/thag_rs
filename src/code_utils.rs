@@ -839,9 +839,14 @@ fn compare(mismatched_lines: &[(String, String)], expected_rust_code: &str, rust
     }
 }
 
+/// Recursively alternate with function `is_stmt_unit_type` until we drill down through
+/// all the blocks, loops and if-conditions to find the last executable statement and
+/// determine if it returns a unit type or a value worth printing.
+///
+/// This function finds the last statement in a given expression and determines if it
+/// returns a unit type
 pub fn is_last_stmt_unit(expr: &Expr) -> bool {
-    debug_log!("expr={expr:#?}");
-    // loop {
+    debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
         Expr::ForLoop(for_loop) => {
             debug_log!("%%%%%%%% Expr::ForLoop(for_loop))");
@@ -865,7 +870,33 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
             // debug_log!("%%%%%%%%  Expr::If(expr_if) with expr_if.else_branch.is_none()={is_none}",);
             // is_none
             if let Some(last_stmt) = expr_if.then_branch.stmts.last() {
-                is_stmt_unit_type(last_stmt)
+                let mut then_is_unit_type = is_stmt_unit_type(last_stmt);
+                while then_is_unit_type {
+                    if let Some(ref stmt) = expr_if.else_branch {
+                        let expr1 = &*stmt.1;
+                        // The else branch expression may only be an If or Block expression,
+                        // not any of the other types of expression.
+                        match expr1 {
+                            Expr::Block(expr_block) => {
+                                then_is_unit_type = if let Some(last_stmt) =
+                                    expr_block.block.stmts.last()
+                                {
+                                    is_stmt_unit_type(last_stmt)
+                                } else {
+                                    debug_log!("%%%%%%%% Not if let Some(last_stmt) = expr_block.block.stmts.last()");
+                                    false
+                                };
+                            }
+                            Expr::If(expr_if) => {
+                                if let Some(last_stmt) = expr_if.then_branch.stmts.last() {
+                                    then_is_unit_type = is_stmt_unit_type(last_stmt);
+                                }
+                            }
+                            _ => panic!("Expected else branch expression to be If or Block"),
+                        }
+                    }
+                }
+                then_is_unit_type
             } else {
                 debug_log!(
                     "%%%%%%%% Not if let Some(last_stmt) = expr_if.then_branch.stmts.last()"
@@ -886,15 +917,16 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
             false
         }
     }
-    // return is_unit_type;
-    // }
 }
 
+/// Recursively alternate with function `is_last_stmt_unit` until we drill down through
+/// all the blocks, loops and if-conditions to find the last executable statement and
+/// determine if it returns a unit type or a value worth printing.
 fn is_stmt_unit_type(last_stmt: &Stmt) -> bool {
-    debug_log!("last_stmt={last_stmt:#?}");
+    debug_log!("%%%%%%%% last_stmt={last_stmt:#?}");
     match last_stmt {
         Stmt::Expr(expr, None) => {
-            debug_log!("%%%%%%%% ex={expr:#?}");
+            debug_log!("%%%%%%%% expr={expr:#?}");
             debug_log!("%%%%%%%% Stmt::Expr(_, None)");
             is_last_stmt_unit(expr)
         } // Expression without semicolon

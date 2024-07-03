@@ -8,21 +8,22 @@ strum = { version = "0.26.3", features = ["derive", "phf"] }
 
 use quote::ToTokens;
 use std::collections::HashMap;
-use syn::{parse_str, Expr, Item, ReturnType, Stmt};
+use syn::{parse_str, Expr, ReturnType, Stmt};
 
 fn main() {
     let code = r#"
-        // fn foo() -> bool {
-        //     true
-        // }
-        let foo() = || -> bool {
+        fn foo() -> bool {
             true
-        };
+        }
+        // let foo() = || -> bool {
+        //     true
+        // };
 
         foo();
     "#;
 
     let ast = parse_str::<syn::Block>(&format!("{{ {} }}", code)).expect("Unable to parse block");
+    println!("ast={ast:#?}");
 
     let function_map = extract_functions(&ast);
 
@@ -39,15 +40,35 @@ fn main() {
 }
 
 fn extract_functions(block: &syn::Block) -> HashMap<String, ReturnType> {
-    let mut function_map = HashMap::new();
+    // let mut function_map = HashMap::new();
 
-    for stmt in &block.stmts {
-        if let Stmt::Item(Item::Fn(func)) = stmt {
-            function_map.insert(func.sig.ident.to_string(), func.sig.output.clone());
+    use syn::visit::*;
+
+    #[derive(Default)]
+    struct FindFns {
+        function_map: HashMap<String, ReturnType>,
+    }
+
+    impl<'ast> Visit<'ast> for FindFns {
+        fn visit_item_fn(&mut self, node: &'ast syn::ItemFn) {
+            println!("Node={:#?}", node);
+            println!("Ident={}", node.sig.ident.to_string());
+            println!("Output={:#?}", node.sig.output.clone());
+            self.function_map
+                .insert(node.sig.ident.to_string(), node.sig.output.clone());
         }
     }
 
-    function_map
+    let mut finder = FindFns::default();
+    finder.visit_block(&block);
+
+    // for stmt in &block.stmts {
+    //     if let Stmt::Item(Item::Fn(func)) = stmt {
+    //         function_map.insert(func.sig.ident.to_string(), func.sig.output.clone());
+    //     }
+    // }
+
+    finder.function_map
 }
 
 fn is_last_expr_unit(expr: &Expr, function_map: &HashMap<String, ReturnType>) -> bool {

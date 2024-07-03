@@ -866,9 +866,9 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
             true
         }
         Expr::If(expr_if) => {
-            // let is_none = expr_if.else_branch.is_none();
-            // debug_log!("%%%%%%%%  Expr::If(expr_if) with expr_if.else_branch.is_none()={is_none}",);
-            // is_none
+            if expr_if.else_branch.is_none() {
+                return true;
+            };
             if let Some(last_stmt) = expr_if.then_branch.stmts.last() {
                 let mut then_is_unit_type = is_stmt_unit_type(last_stmt);
                 while then_is_unit_type {

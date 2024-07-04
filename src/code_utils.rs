@@ -614,6 +614,7 @@ use std::io;
 use std::io::prelude::*;
 
 {prelude}
+// Wrapped snippet in main method to make it a program
 fn main() -> Result<(), Box<dyn Error>> {{
 {body}
 Ok(())
@@ -1001,6 +1002,9 @@ fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType
                 }
             }
         },
+        Expr::MethodCall(expr_method_call) => {
+            is_last_stmt_unit_type(&expr_method_call.receiver, function_map)
+        }
         _ => {
             panic!("%%%%%%%% Expression not catered for: {expr:#?}");
             // false

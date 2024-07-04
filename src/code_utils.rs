@@ -11,6 +11,7 @@ use cargo_toml::Manifest;
 use lazy_static::lazy_static;
 use quote::quote;
 use regex::Regex;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::fs::{remove_dir_all, remove_file, OpenOptions};
@@ -20,7 +21,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output};
 use std::time::{Instant, SystemTime};
 use syn::visit::Visit;
-use syn::{parse_str, Expr, File, Item, ItemExternCrate, ItemMod, Stmt, UsePath, UseRename};
+use syn::{
+    parse_str, Expr, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt, UsePath, UseRename,
+};
 
 /// Read the contents of a file. For reading the Rust script.
 pub fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
@@ -839,19 +842,53 @@ fn compare(mismatched_lines: &[(String, String)], expected_rust_code: &str, rust
     }
 }
 
+/// Cache any functions that we may find in a snippet expression in a Hashmap, so
+/// that if the last statement in the expression is a function call, we can look
+/// up its return type and determine whether to wrap it in a println! statement.
+fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
+    #[derive(Default)]
+    struct FindFns {
+        function_map: HashMap<String, ReturnType>,
+    }
+
+    impl<'ast> Visit<'ast> for FindFns {
+        fn visit_item_fn(&mut self, node: &'ast syn::ItemFn) {
+            println!("Node={:#?}", node);
+            println!("Ident={}", node.sig.ident);
+            println!("Output={:#?}", node.sig.output.clone());
+            self.function_map
+                .insert(node.sig.ident.to_string(), node.sig.output.clone());
+        }
+    }
+
+    let mut finder = FindFns::default();
+    finder.visit_expr(expr);
+
+    finder.function_map
+}
+
+/// Determine if the return type of the expression is unit (the empty tuple `()`),
+/// otherwise we wrap it in a println! statement.
+pub fn is_unit_return_type(expr: &Expr) -> bool {
+    let function_map = extract_functions(expr);
+    println!("function_map={function_map:#?}");
+
+    is_last_stmt_unit(expr, &function_map)
+}
+
 /// Recursively alternate with function `is_stmt_unit_type` until we drill down through
 /// all the blocks, loops and if-conditions to find the last executable statement and
 /// determine if it returns a unit type or a value worth printing.
 ///
 /// This function finds the last statement in a given expression and determines if it
-/// returns a unit type
-pub fn is_last_stmt_unit(expr: &Expr) -> bool {
+/// returns a unit type.
+fn is_last_stmt_unit(expr: &Expr, function_map: &HashMap<String, ReturnType>) -> bool {
     debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
         Expr::ForLoop(for_loop) => {
             debug_log!("%%%%%%%% Expr::ForLoop(for_loop))");
             if let Some(last_stmt) = for_loop.body.stmts.last() {
-                is_stmt_unit_type(last_stmt)
+                is_stmt_unit_type(last_stmt, function_map)
             } else {
                 debug_log!("%%%%%%%% Not if let Some(last_stmt) = for_loop.body.stmts.last()");
                 false
@@ -870,7 +907,7 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
                 return true;
             };
             if let Some(last_stmt) = expr_if.then_branch.stmts.last() {
-                let mut then_is_unit_type = is_stmt_unit_type(last_stmt);
+                let mut then_is_unit_type = is_stmt_unit_type(last_stmt, function_map);
                 while then_is_unit_type {
                     if let Some(ref stmt) = expr_if.else_branch {
                         let expr1 = &*stmt.1;
@@ -881,7 +918,7 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
                                 then_is_unit_type = if let Some(last_stmt) =
                                     expr_block.block.stmts.last()
                                 {
-                                    is_stmt_unit_type(last_stmt)
+                                    is_stmt_unit_type(last_stmt, function_map)
                                 } else {
                                     debug_log!("%%%%%%%% Not if let Some(last_stmt) = expr_block.block.stmts.last()");
                                     false
@@ -889,7 +926,7 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
                             }
                             Expr::If(expr_if) => {
                                 if let Some(last_stmt) = expr_if.then_branch.stmts.last() {
-                                    then_is_unit_type = is_stmt_unit_type(last_stmt);
+                                    then_is_unit_type = is_stmt_unit_type(last_stmt, function_map);
                                 }
                             }
                             _ => panic!("Expected else branch expression to be If or Block"),
@@ -906,7 +943,7 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
         }
         Expr::Block(expr_block) => {
             if let Some(last_stmt) = expr_block.block.stmts.last() {
-                is_stmt_unit_type(last_stmt)
+                is_stmt_unit_type(last_stmt, function_map)
             } else {
                 debug_log!("%%%%%%%% Not if let Some(last_stmt) = expr_block.block.stmts.last()");
                 false
@@ -914,19 +951,56 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
         }
         Expr::Match(expr_match) => {
             for arm in &expr_match.arms {
-                println!("arm.body={:#?}", arm.body);
+                // println!("arm.body={:#?}", arm.body);
                 let expr = &*arm.body;
-                if is_last_stmt_unit(expr) {
+                if is_last_stmt_unit(expr, function_map) {
                     continue;
                 } else {
+                    debug_log!("%%%%%%%% Match arm returns unit type");
                     return false;
                 }
             }
+            debug_log!("%%%%%%%% Match arm returns non-unit type");
             true
         }
-        _ => {
-            debug_log!("%%%%%%%% Matches something else");
+        Expr::Call(expr_call) => {
+            if let Expr::Path(path) = &*expr_call.func {
+                if let Some(ident) = path.path.get_ident() {
+                    if let Some(return_type) = function_map.get(&ident.to_string()) {
+                        return match return_type {
+                            ReturnType::Default => {
+                                debug_log!("%%%%%%%% ReturnType::Default");
+                                true
+                            }
+                            ReturnType::Type(_, ty) => {
+                                if let syn::Type::Tuple(tuple) = &**ty {
+                                    debug_log!("%%%%%%%% Tuple ReturnType");
+                                    tuple.elems.is_empty()
+                                } else {
+                                    debug_log!("%%%%%%%% Non-unit return type");
+                                    false
+                                }
+                            }
+                        };
+                    }
+                }
+            }
+
             false
+        }
+        Expr::Closure(expr_closure) => match &expr_closure.output {
+            ReturnType::Default => true,
+            ReturnType::Type(_, ty) => {
+                if let syn::Type::Tuple(tuple) = &**ty {
+                    tuple.elems.is_empty()
+                } else {
+                    false
+                }
+            }
+        },
+        _ => {
+            panic!("%%%%%%%% Expression not catered for: {expr:#?}");
+            // false
         }
     }
 }
@@ -934,13 +1008,13 @@ pub fn is_last_stmt_unit(expr: &Expr) -> bool {
 /// Recursively alternate with function `is_last_stmt_unit` until we drill down through
 /// all the blocks, loops and if-conditions to find the last executable statement and
 /// determine if it returns a unit type or a value worth printing.
-fn is_stmt_unit_type(last_stmt: &Stmt) -> bool {
+fn is_stmt_unit_type(last_stmt: &Stmt, function_map: &HashMap<String, ReturnType>) -> bool {
     debug_log!("%%%%%%%% last_stmt={last_stmt:#?}");
     match last_stmt {
         Stmt::Expr(expr, None) => {
             debug_log!("%%%%%%%% expr={expr:#?}");
             debug_log!("%%%%%%%% Stmt::Expr(_, None)");
-            is_last_stmt_unit(expr)
+            is_last_stmt_unit(expr, function_map)
         } // Expression without semicolon
         Stmt::Expr(_, Some(_)) => {
             debug_log!("%%%%%%%% Stmt::Expr(_, Some(_))");
@@ -952,8 +1026,8 @@ fn is_stmt_unit_type(last_stmt: &Stmt) -> bool {
             is_some
         } // Macro with a semicolon returns unit
         _ => {
-            debug_log!("%%%%%%%% Something else, returning false");
-            false
+            panic!("%%%%%%%% Statement not catered for: {last_stmt:#?}");
+            // false
         }
     }
 }

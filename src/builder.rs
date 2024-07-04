@@ -303,7 +303,7 @@ pub fn gen_build_run(
             // let start_quote = Instant::now();
             let rust_code = if let Some(ref syntax_tree_ref) = syntax_tree {
                 let returns_unit = match syntax_tree_ref {
-                    Ast::Expr(expr) => code_utils::is_last_stmt_unit(expr),
+                    Ast::Expr(expr) => code_utils::is_unit_return_type(expr),
                     Ast::File(file) => {
                         let expr = code_utils::extract_expr_from_file(file)
                             .expect("Error extracting syn::Expr from syn::File");

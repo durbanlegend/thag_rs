@@ -38,7 +38,7 @@ fn main() {
                 continue;
             }
 
-            let test_name = file_name.replace(".", "_");
+            let test_name = file_name.replace('.', "_");
 
             writeln!(
                 file,

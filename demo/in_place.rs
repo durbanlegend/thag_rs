@@ -1,9 +1,13 @@
-//! [dependencies]
-//! in-place = "0.2.0"
+/*[toml]
+[dependencies]
+in-place = "0.2.0"
+*/
 
 use in_place::InPlace;
 use std::io::{BufRead, BufReader, Write};
 
+/// Published example from `in-place crate` disemvowels the file somefile.txt.
+//# Purpose: Demo editing a file in place.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let inp = InPlace::new("somefile.txt")
         .backup(in_place::Backup::Append("~".into()))

@@ -1,34 +1,39 @@
 /*[toml]
 [dependencies]
+crossterm = "0.27.0"
 enum-assoc = "1.1.0"
 log = "0.4.21"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.2", features = ["derive", "strum_macros"] }
+strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
 termbg = "0.5.0"
 */
 
-use std::str::FromStr;
-
+use crossterm::{
+    cursor::{MoveToColumn, Show},
+    ExecutableCommand,
+};
+use enum_assoc::Assoc;
+use log::debug;
+use owo_ansi::xterm as owo_xterm;
 use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
 use owo_colors::colors::{self as owo_ansi, Magenta};
-
-use owo_ansi::xterm as owo_xterm;
+use owo_colors::Style;
 use owo_xterm::{
     Black, BondiBlue, Copperfield, DarkMalibuBlue, DarkPurplePizzazz, DarkViolet, GuardsmanRed,
     LightCaribbeanGreen, LochmaraBlue, Silver,
 };
-
-use log::debug;
-use owo_colors::Style;
+use std::io::{stdout, Write};
+use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
 
-use enum_assoc::Assoc;
+//# Purpose: Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, and the use of the featured crates.
 
-/// A version of println that prints an entire message in colour or otherwise styled.
-/// Format: `color_println`!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);
+// A version of println that prints an entire message in colour or otherwise styled.
+//
+// Format: `color_println`!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);
 #[macro_export]
 macro_rules! color_println {
     ($style:expr, $($arg:tt)*) => {{
@@ -66,9 +71,10 @@ enum MessageType {
     Debug,
 }
 
-#[derive(Debug, Assoc, Display, EnumIter, EnumString, PartialEq)]
+#[derive(Assoc, Clone, Debug, Display, EnumIter, EnumString, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 #[strum(use_phf)]
+#[func(pub fn value(&self) -> Style)]
 enum MessageStyle {
     // Use Assoc to associate owo-colors::Style with each variant
     #[assoc(value = Style::new().fg::<Red>().bold())]
@@ -132,16 +138,29 @@ enum MessageStyle {
     Xterm256DarkDebug,
 }
 
+// termbg sends an operating system command (OSC) to interrogate the screen
+// but with side effects which we undo here.
+fn clear_screen() {
+    let mut out = stdout();
+    out.execute(MoveToColumn(0)).unwrap();
+    out.execute(Show).unwrap();
+    out.flush().unwrap();
+}
+
 fn get_theme() -> Result<Theme, termbg::Error> {
     let timeout = std::time::Duration::from_millis(100);
 
-    debug_log!("Check terminal background color");
+    println!("Checking terminal background color");
     let theme: Result<Theme, termbg::Error> = termbg::theme(timeout);
+    clear_screen();
     theme
 }
 
+/// Fully worked-out demonstration of colouring and styling display messages according
+/// to message level.
 fn main() {
     let term = termbg::terminal();
+    clear_screen();
     debug!("  Term : {:?}", term);
 
     let maybe_theme = get_theme();
@@ -173,7 +192,7 @@ fn main() {
         let color_qual = color_level.unwrap().to_string().to_lowercase();
         let theme_qual = term_theme.to_string().to_lowercase();
         let msg_level_qual = msg_level.to_string().to_lowercase();
-        // eprintln!("Calling from_str on {}_{}_{}", &color_qual, &theme_qual, &msg_level_qual);
+        // debug!("Calling from_str on {}_{}_{}", &color_qual, &theme_qual, &msg_level_qual);
         let style = MessageStyle::from_str(&format!(
             "{}_{}_{}",
             &color_qual, &theme_qual, &msg_level_qual

@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-proc-macro2 = "1.0.83"
 quote = "1.0.36"
 syn = { version = "2.0.60", features = ["full"] }
 */
@@ -11,6 +10,9 @@ fn print_type_of<T>(_x: &T) {
     println!("Type is {}", std::any::type_name::<T>())
 }
 
+/// Typical basic (runtime) solution to expression type identification. See also `demo/determine_if_known_type_trait.rs`
+/// for what may be a better (compile-time) solution depending on your use case.
+//# Purpose: Demo of runtime type identification.
 fn main() {
     let s = "Hello";
     let i = 42;

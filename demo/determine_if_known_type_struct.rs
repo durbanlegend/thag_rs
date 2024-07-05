@@ -1,6 +1,7 @@
+/// Use a struct to determine the type of an expression at compile time, provided all cases are known in advance.
 /// This works well, but author recommends trait alternative
 /// https://stackoverflow.com/questions/34214136/how-do-i-match-the-type-of-an-expression-in-a-rust-macro/34214916#34214916
-
+//# Purpose: Demo expression type deteermination for static dispatch.
 struct Attribute<T> {
     value: T,
 }
@@ -53,6 +54,7 @@ fn main() {
 
     Attribute { value: 6.5 }.call();
 
+    attribute!(255_u8);
     attribute!(5_u32);
     attribute!(6.5);
     attribute!("Hello World!".to_string());

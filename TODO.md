@@ -15,7 +15,6 @@
 - [ ]  Consider replacing rug crate with dashu since rug not Windows-friendly?
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
 - [ ]  Demo scripts not compiling:
-  demo/msg_colors.rs
   demo/owo_styles.rs
   demo/parse_script.rs_toml.rs
   demo/parse_toml.rs

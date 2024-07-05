@@ -34,7 +34,7 @@ fn get_github_files(repo: &str, path: &str) -> Result<Vec<GitHubFile>, Box<dyn s
 }
 
 fn download_demo_files(repo: &str, path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    // Display file chooser dialog to select the destination directory
+    // Display file chooser dialogue to select the destination directory
     let dest_dir = FileDialog::new()
         .set_directory(".")
         .pick_folder()

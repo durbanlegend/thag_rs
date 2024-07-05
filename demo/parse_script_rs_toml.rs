@@ -1,3 +1,8 @@
+/// Prototype of extracting Cargo manifest metadata from source code using
+/// basic line-by-line comparison as opposed to a regular expression. I eventually
+/// decided to use a regular expression as I found it less problematic (see
+/// `demo/regex_capture_toml.rs`).
+//# Purpose: Prototype
 fn separate_rust_and_toml(source_code: &str) -> (String, String) {
     let mut rust_code = String::new();
     let mut toml_metadata = String::new();
@@ -5,21 +10,17 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
 
     for line in source_code.lines() {
         // Check if the line contains the start of the metadata block
-        if line.trim().starts_with("/*[toml]") {
+        let ltrim = line.trim();
+        // Using the dodge of interpolating the toml literal here so as not to
+        // break the script runner when it parses the source code for /*[t0ml].
+        if ltrim.starts_with(&format!("/*[{}]", "toml")) {
             is_metadata_block = true;
             continue;
         }
 
         // Check if the line contains the end of the metadata block
-        if line.trim() == "*/" {
+        if ltrim == "*/" {
             is_metadata_block = false;
-            continue;
-        }
-
-        // Check if the line is a TOML comment
-        if line.trim().starts_with("//!") {
-            toml_metadata.push_str(line.trim_start_matches("//!"));
-            toml_metadata.push('\n');
             continue;
         }
 
@@ -41,22 +42,25 @@ fn separate_rust_and_toml(source_code: &str) -> (String, String) {
 }
 
 fn main() {
-    let source_code = r#"
-        // Some comments
-        /*[toml]
-        [dependencies]
-        syn = { version = "2.0.60", features = ["extra-traits"] }
-        */
-        // More comments or start of Rust code
+    // Using the same interpolation dodge here.
+    let source_code = format!(
+        r##"// Some comments
+/*[{}]
+[dependencies]
+syn = {{ version = "2.0.60", features = ["extra-traits"] }}
+*/
+// More comments or start of Rust code
 
-        // Rust code continues here
-        fn main() {
-            println!("Hello, world!");
-        }
-    "#;
+// Rust code continues here
+fn main() {{
+    println!("Hello, world!");
+}}
+"##,
+        "toml"
+    );
 
-    let (rust_code, toml_metadata) = separate_rust_and_toml(source_code);
+    let (rust_code, toml_metadata) = separate_rust_and_toml(&source_code);
 
     println!("Rust code:\n{}", rust_code);
-    println!("TOML metadata:\n{}", toml_metadata);
+    println!("\nTOML metadata:\n{}", toml_metadata);
 }

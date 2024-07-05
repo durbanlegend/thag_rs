@@ -15,8 +15,6 @@
 - [ ]  Consider replacing rug crate with dashu since rug not Windows-friendly?
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
 - [ ]  Demo scripts not compiling:
-  demo/owo_styles.rs
-  demo/parse_script.rs_toml.rs
   demo/parse_toml.rs
   demo/path_dependency.rs
   demo/pomprt_completion.rs
@@ -40,6 +38,6 @@
 
 
 ## Ideas / Future Enhancements
-- [ ]  Consider supporting alternative TOML embedding keywords so we can run demo/regex_capture_toml.rs.
+- [ ]  Consider supporting alternative TOML embedding keywords so we can run demo/regex_capture_toml.rs and demo/parse_script.rs_toml.rs.
 - [ ]  Option to cat files before delete.
 - [ ]  WASM - is there a worthwhile one? - maybe Leptos if it doesn't need Node.js.

@@ -1,6 +1,7 @@
-// Add the required dependencies in your Cargo.toml:
-// [dependencies]
-// structopt = "0.3"
+/*[toml]
+[dependencies]
+structopt = "0.3.26"
+*/
 
 use structopt::StructOpt;
 

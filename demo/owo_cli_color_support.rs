@@ -4,7 +4,9 @@ clap = { version = "4.5.7", features = ["cargo", "derive"] }
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 */
 
-// The owo-colors "supports-colors" feature must be enabled.
+/// Demo the use of a command-line interface to override the colour support to be provided.
+/// The owo-colors "supports-colors" feature must be enabled.
+//# Purpose: Demo setting colour support via a very simple CLI.
 use clap::{Parser, ValueEnum};
 use owo_colors::{OwoColorize, Stream};
 
@@ -38,6 +40,6 @@ fn main() {
 
     println!(
         "My number is {}",
-        42.if_supports_color(Stream::Stdout, |text| text.bright_blue())
+        42.if_supports_color(Stream::Stdout, |text| text.cyan())
     );
 }

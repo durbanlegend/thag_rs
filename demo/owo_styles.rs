@@ -1,23 +1,30 @@
 /*[toml]
 [dependencies]
+crossterm = "0.27.0"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 strum = { version = "0.26.2", features = ["derive"] }
 termbg = "0.5.0"
 */
 
+use crossterm::cursor::{MoveToColumn, Show};
+use crossterm::ExecutableCommand;
 use owo_colors::colors::css::{Black, DarkOrange, Orange};
 use owo_colors::colors::{Blue, Cyan, Green, Red, White};
 use owo_colors::{OwoColorize, Style};
-use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
+use std::io::{stdout, Write};
+use strum::{Display, EnumIter, IntoEnumIterator};
 use termbg::Theme;
 
+/// An early exploration of the idea of adaptive message colouring according to the terminal theme.
+
+//# Purpose: Demo a simple example of adaptive message colouring, and the featured crates.
 pub trait ThemeStyle {
     fn get_style(&self) -> Style;
 }
 
 // Enum for light theme styles
-#[derive(Clone, Copy, EnumIter, IntoStaticStr)]
-#[strum(serialize_all = "kebab-case")]
+#[derive(Clone, Copy, Display, EnumIter)]
+#[strum(serialize_all = "snake_case")]
 pub enum LightStyle {
     Error,
     Warning,
@@ -27,7 +34,7 @@ pub enum LightStyle {
 }
 
 // Enum for dark theme styles
-#[derive(Clone, Copy, EnumIter, IntoStaticStr)]
+#[derive(Clone, Copy, Display, EnumIter)]
 pub enum DarkStyle {
     Error,
     Warning,
@@ -62,7 +69,16 @@ impl ThemeStyle for DarkStyle {
     }
 }
 
-#[allow(dead_code)]
+// termbg sends an operating system command (OSC) to interrogate the screen
+// but with side effects which we undo here.
+pub fn clear_screen() {
+    let mut out = stdout();
+    // out.execute(Clear(ClearType::FromCursorUp)).unwrap();
+    out.execute(MoveToColumn(0)).unwrap();
+    out.execute(Show).unwrap();
+    out.flush().unwrap();
+}
+
 fn main() {
     let timeout = std::time::Duration::from_millis(100);
 
@@ -82,18 +98,14 @@ fn main() {
         match theme.unwrap() {
             Theme::Light => {
                 for variant in LightStyle::iter() {
-                    let level: &str = &<LightStyle as Into<&str>>::into(variant);
-                    let msg = &format!("My {} message", level);
+                    let msg = &format!("My light theme {variant} message");
                     println!("{}", msg.style(variant.get_style()));
                 }
             }
 
-            // <Opt as Into<&'static str>>::into(option).to_case(Case::Kebab)
             Theme::Dark => {
                 for variant in DarkStyle::iter() {
-                    let level: &str =
-                        &<DarkStyle as Into<&str>>::into(variant).to_case(Case::Kebab);
-                    let msg = &format!("My {} message", level);
+                    let msg = &format!("My dark theme {variant} message");
                     println!("{}", msg.style(variant.get_style()));
                 }
             }

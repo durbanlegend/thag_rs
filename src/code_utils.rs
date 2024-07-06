@@ -1031,9 +1031,8 @@ fn is_stmt_unit_type(stmt: &Stmt, function_map: &HashMap<String, ReturnType>) ->
             true
         } // Expression with semicolon returns unit
         Stmt::Macro(m) => {
-            let is_some = m.semi_token.is_some();
             // debug_log!("%%%%%%%% Stmt::Macro({m:#?}), m.semi_token.is_some()={is_some}");
-            is_some
+            m.semi_token.is_some()
         } // Macro with a semicolon returns unit
         _ => {
             panic!("%%%%%%%% Statement not catered for: {stmt:#?}");

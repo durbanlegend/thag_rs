@@ -15,8 +15,6 @@
 - [ ]  Consider replacing rug crate with dashu since rug not Windows-friendly?
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
 - [ ]  Demo scripts not compiling:
-  demo/pomprt_completion.rs
-  demo/puffin_debug.rs
   demo/syn_visit_path_exprs.rs
   demo/tokio_hello_world.rs
   demo/tui_editor.rs

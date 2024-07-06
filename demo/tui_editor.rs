@@ -1,20 +1,26 @@
 /*[toml]
 [dependencies]
-crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
+#crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 ratatui = "0.27.0"
-#tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
-tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0" }
+# tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
+tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
 */
 
-use crossterm::event::read;
-use crossterm::event::{
+use ratatui::backend::CrosstermBackend;
+/// Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
+/// down to two files at a time, because it was developed to allow editing of generated code and
+/// cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
+/// or default to a standard editor. A more minimalist version is used to edit stdin input in
+/// the `--edit (-d)` option of `rs-script`.
+//# Purpose: Demo TUI editor and featured crates, including `crossterm`.
+use ratatui::crossterm::event::read;
+use ratatui::crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::Paste,
 };
-use crossterm::terminal::{
+use ratatui::crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
-use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
@@ -175,8 +181,8 @@ impl<'a> Buffer<'a> {
         textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
         textarea.set_selection_style(Style::default().bg(Color::LightCyan));
         textarea.set_line_number_style(Style::default());
-        textarea.set_cursor_style(Style::default().on_yellow());
-        textarea.set_cursor_line_style(Style::default().on_light_yellow());
+        textarea.set_cursor_style(Style::default().white().on_blue());
+        textarea.set_cursor_line_style(Style::default().white().on_magenta());
         textarea.set_block(
             Block::default().borders(Borders::TOP).title("Editor"), // .add_modifier(Modifier::BOLD),
         );
@@ -250,7 +256,7 @@ impl<'a> Editor<'a> {
         }
         let mut stdout = io::stdout();
         enable_raw_mode()?;
-        crossterm::execute!(
+        ratatui::crossterm::execute!(
             stdout,
             EnterAlternateScreen,
             EnableBracketedPaste,
@@ -363,7 +369,7 @@ impl<'a> Editor<'a> {
                         Span::styled(
                             &other_filename,
                             Style::default()
-                                .fg(Color::Blue)
+                                .fg(Color::LightCyan)
                                 .bg(Color::Black)
                                 .add_modifier(Modifier::REVERSED), // .bg(Color::Blue),
                         ),
@@ -527,7 +533,7 @@ impl<'a> Editor<'a> {
 
 fn show_popup(f: &mut ratatui::prelude::Frame) {
     let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
-    let inner = area.inner(&Margin {
+    let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
     });
@@ -572,7 +578,7 @@ impl<'a> Drop for Editor<'a> {
     fn drop(&mut self) {
         self.term.show_cursor().unwrap();
         disable_raw_mode().unwrap();
-        crossterm::execute!(
+        ratatui::crossterm::execute!(
             self.term.backend_mut(),
             LeaveAlternateScreen,
             DisableBracketedPaste,

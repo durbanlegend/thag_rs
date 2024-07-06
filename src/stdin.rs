@@ -83,6 +83,7 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
     let mut term = scopeguard::guard(terminal, |term| {
         reset_term(term).expect("Error resetting terminal")
     });
+
     let mut textarea = TextArea::from(initial_content.lines());
 
     textarea.set_block(

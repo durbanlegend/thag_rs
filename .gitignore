@@ -12,7 +12,6 @@ demo/lsp_compl2.rs
 demo/lsp_completion.rs
 demo/msg_colors_gpt.rs
 demo/syn_ast_deps.rs
-demo/tui_ta_minimal.rs
 history.txt
 obsolete/
 sample_bg.html

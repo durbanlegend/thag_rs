@@ -1,10 +1,11 @@
-//! [dependencies]
-//! tokio = { version = "1.37.0", features = ["full"] }
+/*[toml]
+[dependencies]
+tokio = { version = "1.38.0", features = ["full"] }
+*/
 
 // A simple client that opens a TCP stream, writes "hello world\n", and closes
 // the connection.
 //
-// To start a server that this client can talk to on port 6142, you can use this command:
 //
 //     ncat -l 6142
 //
@@ -19,7 +20,11 @@ use tokio::net::TcpStream;
 
 use std::error::Error;
 
+/// Published example from `tokio` crate. Before running, start a server: `ncat -l 6142`
+/// in another terminal.
+//# Purpose: Demo running `tokio` from `rs-script`.
 #[tokio::main]
+// To start a server that this client can talk to on port 6142, you can use this command:
 pub async fn main() -> Result<(), Box<dyn Error>> {
     // Open a TCP stream to the socket address.
     //

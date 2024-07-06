@@ -15,25 +15,26 @@ use syn::{parse_str, Expr, Item, ReturnType, Stmt};
 /// Part 2: ChatGPT responds to feedback with an improved algorithm.
 //# Purpose: Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.
 fn main() {
-    let code = r#"
-        fn foo() -> bool {
-            true
-        }
+    let code = r#"{
+    fn foo() -> bool {
+        true
+    }
 
-        foo();
-    "#;
+    foo()
+}"#;
 
     let ast = parse_str::<syn::File>(code).expect("Unable to parse file");
+    // let ast = syn::parse_file(code).expect("Unable to parse file");
 
     let function_map = extract_functions(&ast);
 
     match parse_str::<Expr>("foo()") {
         Ok(expr) => {
             if is_last_expr_unit(&expr, &function_map) {
-                println!("Option B: unit return type \n{}\n{}", wrap_in_main(&expr));
+                println!("Option B: unit return type \n{}", wrap_in_main(&expr));
             } else {
                 println!(
-                    "Option A: non-unit return type \n{} \n{}",
+                    "Option A: non-unit return type \n{}",
                     wrap_in_main_with_println(&expr)
                 );
             }

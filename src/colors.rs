@@ -200,7 +200,7 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
 }
 
 #[allow(dead_code)]
-fn main() {
+pub fn main() {
     let term = termbg::terminal();
     shared::clear_screen();
     debug_log!("  Term : {:?}", term);

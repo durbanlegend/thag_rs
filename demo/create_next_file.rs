@@ -1,14 +1,20 @@
+use std::env;
 use std::fs;
 use std::path::Path;
 
+/// Prototype of creating files named sequentially from repl_000000.rs to
+/// repl_999999.rs in a rs_script/demo subdirectory of the OS's temporary
+/// directory. The need is to generate well-behaved and consistent human-readable
+/// names for temporary programs generated from REPL expressions.
+//# Purpose: Demo sequential file creation and the kind of code that is well suited to generation by an LLM.
 fn main() {
-    let demo_dir = Path::new("demo");
+    let demo_dir = env::temp_dir().join("rs_script").join("demo");
 
     // Ensure demo subdirectory exists
-    fs::create_dir_all(demo_dir).expect("Failed to create demo directory");
+    fs::create_dir_all(&demo_dir).expect("Failed to create demo directory");
 
     // Find existing files with the pattern repl_<nnnnnn>.rs
-    let existing_files: Vec<_> = fs::read_dir(demo_dir)
+    let existing_files: Vec<_> = fs::read_dir(&demo_dir)
         .unwrap()
         .filter_map(|entry| {
             let path = entry.unwrap().path();
@@ -39,7 +45,7 @@ fn main() {
             // Wrap around and find the first gap
             for i in 0..999999 {
                 if !existing_files.contains(&i) {
-                    return create_file(demo_dir, i);
+                    return create_file(&demo_dir, i);
                 }
             }
             panic!("Cannot create new file: all possible filenames already exist in the demo directory.");
@@ -47,7 +53,7 @@ fn main() {
         _ => existing_files.iter().max().unwrap() + 1, // Increment from highest existing number
     };
 
-    create_file(demo_dir, next_file_num);
+    create_file(&demo_dir, next_file_num);
 }
 
 fn create_file(demo_dir: &Path, num: u32) {

@@ -15,9 +15,6 @@
 - [ ]  Consider replacing rug crate with dashu since rug not Windows-friendly?
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
 - [ ]  Demo scripts not commented:
-demo/clap_num_arg.rs
-demo/count_main_methods.rs
-demo/create_next_file.rs
 demo/crossbeam_epoch_sanitize.rs
 demo/crossterm_direct_macro.rs
 demo/crossterm_key_events.rs

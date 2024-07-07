@@ -4,6 +4,8 @@ env_logger = "0.11.3"
 rustyline = { version = "14.0.0", features=["with-file-history", "default", "derive", "rustyline-derive"] }
 */
 
+/// Published example from the `rustyline` crate.
+//# Purpose: Demo using `rs-script` to run a basic REPL as a script.
 use std::borrow::Cow::{self, Borrowed, Owned};
 
 use rustyline::completion::FilenameCompleter;
@@ -52,7 +54,6 @@ impl Highlighter for MyHelper {
     }
 }
 
-/// rustyline crate published example
 fn main() -> rustyline::Result<()> {
     env_logger::init();
     let config = Config::builder()

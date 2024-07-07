@@ -4,7 +4,7 @@ env_logger = "0.11.3"
 rustyline = { version = "14.0.0", features=["with-file-history", "default", "derive"] }
 */
 
-/// Example from rustyline crate readme.
+/// Example from `rustyline` crate readme.
 /// MatchingBracketValidator uses matching brackets to decide between single- annd multi-line
 /// inpit.
 use std::borrow::Cow::{self, Borrowed, Owned};

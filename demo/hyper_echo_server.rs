@@ -15,9 +15,6 @@ pin-project-lite = "0.2.14"
 
 #![deny(warnings)]
 
-// // A simple type alias so as to DRY.
-// type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
-
 use bytes::Bytes;
 use http_body_util::{combinators::BoxBody, BodyExt, Empty, Full};
 use hyper::body::Frame;
@@ -29,8 +26,10 @@ use tokio::net::TcpListener;
 
 use crate::support::TokioIo;
 
-/// This is our service handler. It receives a Request, routes on its
-/// path, and returns a Future of a Response.
+/// Published example from the `hyper` crate.
+///
+/// "This is our service handler. It receives a Request, routes on its
+/// path, and returns a Future of a Response."
 async fn echo(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {

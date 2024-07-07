@@ -3,7 +3,10 @@
 reedline-repl-rs = "1.1.1"
 */
 
-// Example using Repl with Context
+/// Published example from `reedline-repl-rs` crate. This one uses the
+/// `clap` builder pattern; there is also one using the`clap`derive pattern.
+///
+/// Example using Repl with Context
 use reedline_repl_rs::clap::{Arg, ArgMatches, Command};
 use reedline_repl_rs::{Repl, Result};
 use std::collections::VecDeque;
@@ -13,7 +16,7 @@ struct Context {
     list: VecDeque<String>,
 }
 
-/// Append name to list
+// Append name to list
 fn append(args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
     let name: String = args.get_one::<String>("name").unwrap().to_string();
     context.list.push_back(name);
@@ -22,7 +25,7 @@ fn append(args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
     Ok(Some(list.join(", ")))
 }
 
-/// Prepend name to list
+// Prepend name to list
 fn prepend(args: ArgMatches, context: &mut Context) -> Result<Option<String>> {
     let name: String = args.get_one::<String>("name").unwrap().to_string();
     context.list.push_front(name);

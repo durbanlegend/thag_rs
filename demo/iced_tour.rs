@@ -4,7 +4,7 @@ iced = { version = "0.12.1", features = ["image", "debug"] }
 tracing-subscriber = "0.3.18"
 */
 
-/// The full tour of the iced crate published in the iced examples.
+/// The full tour of the `iced` crate published in the `iced` examples.
 use iced::alignment::{self, Alignment};
 use iced::theme;
 use iced::widget::{

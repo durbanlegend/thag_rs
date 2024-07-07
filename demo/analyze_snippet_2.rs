@@ -1,12 +1,14 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.68", features = ["extra-traits", "full", "visit"] }
+syn = { version = "2.0.69", features = ["extra-traits", "full", "visit"] }
+proc-macro2 = "1.0.86"
 quote = "1.0.36"
+strum = { version = "0.26.3", features = ["derive", "phf"] }
 */
 
 use quote::ToTokens;
 use std::collections::HashMap;
-use syn::{parse_str, Expr, Item, ReturnType, Stmt};
+use syn::{parse_str, Expr, ReturnType, Stmt};
 
 /// Guided ChatGPT-generated prototype of using a `syn` abstract syntax tree (AST)
 /// to detect whether a snippet returns a value that we should print out, or whether
@@ -15,44 +17,64 @@ use syn::{parse_str, Expr, Item, ReturnType, Stmt};
 /// Part 2: ChatGPT responds to feedback with an improved algorithm.
 //# Purpose: Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.
 fn main() {
-    let code = r#"{
-    fn foo() -> bool {
-        true
-    }
+    let code = r#"
+        fn foo() -> bool {
+            true
+        }
+        // let foo() = || -> bool {
+        //     true
+        // };
 
-    foo()
-}"#;
+        foo();
+    "#;
 
-    let ast = parse_str::<syn::File>(code).expect("Unable to parse file");
-    // let ast = syn::parse_file(code).expect("Unable to parse file");
+    let ast = parse_str::<syn::Block>(&format!("{{ {} }}", code)).expect("Unable to parse block");
+    println!("ast={ast:#?}");
 
     let function_map = extract_functions(&ast);
 
     match parse_str::<Expr>("foo()") {
         Ok(expr) => {
             if is_last_expr_unit(&expr, &function_map) {
-                println!("Option B: unit return type \n{}", wrap_in_main(&expr));
+                println!("Option B: \n{}", wrap_in_main(&expr));
             } else {
-                println!(
-                    "Option A: non-unit return type \n{}",
-                    wrap_in_main_with_println(&expr)
-                );
+                println!("Option A: \n{}", wrap_in_main_with_println(&expr));
             }
         }
         Err(e) => eprintln!("Failed to parse expression: {:?}", e),
     }
 }
 
-fn extract_functions(ast: &syn::File) -> HashMap<String, ReturnType> {
-    let mut function_map = HashMap::new();
+fn extract_functions(block: &syn::Block) -> HashMap<String, ReturnType> {
+    // let mut function_map = HashMap::new();
 
-    for item in &ast.items {
-        if let Item::Fn(func) = item {
-            function_map.insert(func.sig.ident.to_string(), func.sig.output.clone());
+    use syn::visit::*;
+
+    #[derive(Default)]
+    struct FindFns {
+        function_map: HashMap<String, ReturnType>,
+    }
+
+    impl<'ast> Visit<'ast> for FindFns {
+        fn visit_item_fn(&mut self, node: &'ast syn::ItemFn) {
+            println!("Node={:#?}", node);
+            println!("Ident={}", node.sig.ident.to_string());
+            println!("Output={:#?}", node.sig.output.clone());
+            self.function_map
+                .insert(node.sig.ident.to_string(), node.sig.output.clone());
         }
     }
 
-    function_map
+    let mut finder = FindFns::default();
+    finder.visit_block(&block);
+
+    // for stmt in &block.stmts {
+    //     if let Stmt::Item(Item::Fn(func)) = stmt {
+    //         function_map.insert(func.sig.ident.to_string(), func.sig.output.clone());
+    //     }
+    // }
+
+    finder.function_map
 }
 
 fn is_last_expr_unit(expr: &Expr, function_map: &HashMap<String, ReturnType>) -> bool {

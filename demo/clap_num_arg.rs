@@ -5,8 +5,10 @@ clap = "4.5.7"
 
 use clap::{Arg, Command};
 
-// Clap with a numeric option.
-// E.g. rs_script demo/clap_num_arg.rs -- 45
+/// `clap` with a numeric option.
+///
+/// E.g. `rs_script demo/clap_num_arg.rs -- 45`
+//# Purpose: Basic demo of `clap` parsing a numeric argument
 fn main() {
     let matches = Command::new("clap_num_arg")
         .arg(

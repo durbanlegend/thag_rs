@@ -14,8 +14,86 @@
 - [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
 - [ ]  Consider replacing rug crate with dashu since rug not Windows-friendly?
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
-- [ ]  Demo scripts not compiling:
-  demo/analyze_snippet_2.rs
+- [ ]  Demo scripts not commented:
+demo/clap_num_arg.rs
+demo/count_main_methods.rs
+demo/create_next_file.rs
+demo/crossbeam_epoch_sanitize.rs
+demo/crossterm_direct_macro.rs
+demo/crossterm_key_events.rs
+demo/crossterm_mouse_select.rs
+demo/ctrlc_demo.rs
+demo/enum_select.rs
+demo/event_read.rs
+demo/factorial_ibig.rs
+demo/factorial_main_u128.rs
+demo/fib_fac_rug.rs
+demo/fibonacci.rs
+demo/fibonacci_fn.rs
+demo/fizz_buzz.rs
+demo/gen_names.rs
+demo/gpt_lazy_static_theme1.rs
+demo/gpt_lazy_static_theme2.rs
+demo/gpt_tui_tokio.rs
+demo/hello.rs
+demo/hello_main.rs
+demo/ibig_big_integers.rs
+demo/infer_deps.rs
+demo/inline_colorization.rs
+demo/iter.rs
+demo/list_files.rs
+demo/message_colors_gpt.rs
+demo/multiline_err.rs
+demo/newest.rs
+demo/newline_test.rs
+demo/prettyplease.rs
+demo/puffin_profiler_egui.rs
+demo/rc1.rs
+demo/reedline_basic_keybindings.rs
+demo/reedline_completions.rs
+demo/reedline_custom_prompt.rs
+demo/reedline_cwd_aware_hinter.rs
+demo/reedline_highlighter.rs
+demo/reedline_hinter.rs
+demo/reedline_history.rs
+demo/reedline_ide_completions.rs
+demo/reedline_multiline.rs
+demo/reedline_read_stdin.rs
+demo/reedline_repl.rs
+demo/reedline_stdin.rs
+demo/reedline_transient_prompt.rs
+demo/rug_arbitrary_precision_nums.rs
+demo/rustfmt.rs
+demo/rustyline.rs
+demo/slog_expressions.rs
+demo/supports_color.rs
+demo/syn_ast_deps.rs
+demo/syn_ast_deps2.rs
+demo/syn_ast_deps_file.rs
+demo/syn_dump_syntax.rs
+demo/syn_file_debug.rs
+demo/syn_file_debug2.rs
+demo/syn_file_to_expr.rs
+demo/syn_parse_str.rs
+demo/syn_quote.rs
+demo/syn_visit_extern_crate_expr.rs
+demo/syn_visit_extern_crate_file.rs
+demo/syn_visit_node_type.rs
+demo/syn_visit_use_path_expr.rs
+demo/syn_visit_use_path_file.rs
+demo/syn_visit_use_rename.rs
+demo/tempfile.rs
+demo/term_color_contrast.rs
+demo/term_detection_pack.rs
+demo/termbg.rs
+demo/termbg_bug.rs
+demo/terminal_light.rs
+demo/time_snippet.rs
+demo/tui_scrollview.rs
+demo/type_info.rs
+demo/unzip.rs
+demo/verbosity.rs
+demo/windows_cr_issue.rs
 
 
 ## Low Priority

@@ -1,11 +1,6 @@
 /*[toml]
 [dependencies]
-#syn = { version = "2.0.69", features = ["extra-traits", "full", "visit"] }
-syn = { path = "/Users/donf/projects/syn", features = [
-    "extra-traits",
-    "full",
-    "visit",
-] }
+syn = { version = "2.0.69", features = ["extra-traits", "full", "visit"] }
 quote = "1.0.36"
 */
 

@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 quote = "1.0.36"
-syn = { version = "2.0.60", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
+syn = { version = "2.0.69", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
 */
 
 const INPUT_CODE: &str = stringify! {

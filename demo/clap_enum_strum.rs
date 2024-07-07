@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
-serde = { version = "1.0.198", features = ["derive"] }
+serde = { version = "1.0.204", features = ["derive"] }
 strum = { version = "0.26.2", features = ["derive"] }
 */
 

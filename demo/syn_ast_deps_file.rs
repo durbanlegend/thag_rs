@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-serde = { version = "1.0.98", features = ["derive"] }
-syn = { version = "2.0.60", features = ["extra-traits", "full", "parsing"] }
+serde = { version = "1.0.204", features = ["derive"] }
+syn = { version = "2.0.69", features = ["extra-traits", "full", "parsing"] }
 */
 
 use std::env;

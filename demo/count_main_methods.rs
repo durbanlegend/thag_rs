@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.60", features = ["full"] }
+syn = { version = "2.0.69", features = ["full"] }
 */
 
 use syn::{File, Item};

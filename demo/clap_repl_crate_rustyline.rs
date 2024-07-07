@@ -5,7 +5,7 @@ clap-repl = "0.1.1"
 console = "0.15.8"
 rustyline = "14.0.0"
 quote = "1.0.36"
-syn = { version = "2.0.60", features = ["full"] }
+syn = { version = "2.0.69", features = ["full"] }
 */
 
 // REPL based on clap-repl package

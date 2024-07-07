@@ -2,8 +2,7 @@
 [dependencies]
 ratatui = "0.27.0"
 scopeguard = "1.2.0"
-#tui-textarea = { version = "0.4.0", features = ["crossterm", "search"] }
-tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
+tui-textarea = { version = "0.5.0", features = ["crossterm", "search"] }
 */
 
 /// Demo a very minimal and not very useful TUI (text user interface) editor based on the featured crates.

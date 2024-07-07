@@ -1,13 +1,8 @@
 /*[toml]
 [dependencies]
 syn = { version = "2.0.69", features = ["extra-traits", "full", "visit"] }
-quote = "1.0.36"
 */
 
-extern crate quote;
-extern crate syn;
-
-use quote::ToTokens;
 use syn::{parse_str, Expr, Stmt};
 
 /// Guided ChatGPT-generated prototype of using a `syn` abstract syntax tree (AST)
@@ -17,87 +12,70 @@ use syn::{parse_str, Expr, Stmt};
 /// Part 1: After some back and forth with ChatGPT suggesting solutions it finally generates essentially this.
 //# Purpose: Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.
 fn main() {
-    let code = r#"
-        for i in 1..=5 {
-            println!("{}", i);
-        }
+    let snippet = r#"
+        use inline_colorization::{color_red, color_reset, style_reset, style_underline};
+        println!("Lets the user {color_red}colorize{color_reset} and {style_underline}style the output{style_reset} text using inline variables");
     "#;
 
-    match parse_str::<Expr>(code) {
-        Ok(expr) => {
-            if is_last_stmt_unit(&expr) {
-                println!("Option B: unit return type \n{}", wrap_in_main(&expr));
-            } else {
-                println!(
-                    "Option A: non-unit return type\n{}",
-                    wrap_in_main_with_println(&expr)
-                );
-            }
-        }
-        Err(e) => eprintln!("Failed to parse expression: {:?}", e),
+    if should_wrap_with_println(snippet) {
+        println!("Option A: Wrap with println!");
+    } else {
+        println!("Option B: Do not wrap with println!");
     }
 }
 
-fn is_last_stmt_unit(expr: &Expr) -> bool {
-    println!("expr={expr:#?}");
-    match expr {
-        Expr::ForLoop(_) => true,
-        Expr::While(_) => true,
-        Expr::Loop(_) => true,
-        Expr::If(expr_if) => expr_if.else_branch.is_none(),
-        Expr::Block(expr_block) => {
-            if let Some(last_stmt) = expr_block.block.stmts.last() {
-                match last_stmt {
-                    Stmt::Expr(_, None) => {
-                        println!("Stmt::Expr(_, None)");
-                        false
-                    } // Expression without semicolon
-                    Stmt::Expr(_, Some(_)) => {
-                        println!("Stmt::Expr(_, Some(_))");
-                        true
-                    } // Expression with semicolon returns unit
-                    Stmt::Macro(m) => {
-                        let is_some = m.semi_token.is_some();
-                        println!("Stmt::Macro({m:#?}), m.semi_token.is_some()={is_some}");
-                        is_some
-                    } // Macro with a semicolon returns unit
-                    _ => {
-                        println!("Something else, returning false");
-                        false
+fn should_wrap_with_println(snippet: &str) -> bool {
+    // Parse the snippet into an expression
+    match parse_str::<Expr>(snippet) {
+        Ok(expr) => {
+            // Check if the expression returns a non-unit value
+            !returns_unit(&expr)
+        }
+        Err(_) => {
+            // If parsing as an expression fails, parse as statements
+            match syn::parse_file(&format!("fn main() {{ {} }}", snippet)) {
+                Ok(file) => {
+                    // Check the last statement in the function block
+                    if let Some(last_stmt) = file.items.iter().find_map(|item| {
+                        if let syn::Item::Fn(func) = item {
+                            func.block.stmts.last()
+                        } else {
+                            None
+                        }
+                    }) {
+                        !is_println_macro(last_stmt)
+                    } else {
+                        true // Default to wrapping if we can't determine
                     }
                 }
-            } else {
-                println!("Not if let Some(last_stmt) = expr_block.block.stmts.last()");
-                false
+                Err(_) => true, // Default to wrapping if parsing fails
             }
-        }
-        _ => {
-            println!("Not if let Expr::Block(expr_block) = expr");
-            false
         }
     }
 }
 
-fn wrap_in_main(expr: &Expr) -> String {
-    format!(
-        r#"
-fn main() {{
-    {expr}
-}}
-"#,
-        expr = expr.to_token_stream()
-    )
+fn returns_unit(expr: &Expr) -> bool {
+    // Check if the expression returns a unit value
+    matches!(expr, Expr::Tuple(tuple) if tuple.elems.is_empty())
 }
 
-fn wrap_in_main_with_println(expr: &Expr) -> String {
-    format!(
-        r#"
-fn main() {{
-    println!("{{expr:?}}", {{
-        {expr}
-    }});
-}}
-"#,
-        expr = expr.to_token_stream()
-    )
+fn is_println_macro(stmt: &Stmt) -> bool {
+    match stmt {
+        // Check if the statement is a macro
+        Stmt::Macro(mac_stmt) => {
+            if mac_stmt.mac.path.is_ident("println") {
+                return true;
+            }
+        }
+        // Check if the statement is an expression with an optional semi-colon
+        Stmt::Expr(expr, _) => {
+            if let Expr::Macro(expr_macro) = expr {
+                if expr_macro.mac.path.is_ident("println") {
+                    return true;
+                }
+            }
+        }
+        _ => {}
+    }
+    false
 }

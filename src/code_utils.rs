@@ -972,24 +972,8 @@ fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType
         }
         Expr::Call(expr_call) => {
             if let Expr::Path(path) = &*expr_call.func {
-                if let Some(ident) = path.path.get_ident() {
-                    if let Some(return_type) = function_map.get(&ident.to_string()) {
-                        return match return_type {
-                            ReturnType::Default => {
-                                // debug_log!("%%%%%%%% ReturnType::Default");
-                                true
-                            }
-                            ReturnType::Type(_, ty) => {
-                                if let syn::Type::Tuple(tuple) = &**ty {
-                                    // debug_log!("%%%%%%%% Tuple ReturnType");
-                                    tuple.elems.is_empty()
-                                } else {
-                                    // debug_log!("%%%%%%%% Non-unit return type");
-                                    false
-                                }
-                            }
-                        };
-                    }
+                if let Some(value) = is_path_unit_type(path, function_map) {
+                    return value;
                 }
             }
 
@@ -1025,7 +1009,12 @@ fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType
         Expr::Lit(_) => false,
         Expr::Macro(_) => false, // default because no way of knowing?
         Expr::Paren(_) => false,
-        Expr::Path(_) => true,
+        Expr::Path(path) => {
+            if let Some(value) = is_path_unit_type(path, function_map) {
+                return value;
+            }
+            false
+        }
         Expr::Range(_) => false,
         Expr::Reference(_) => false,
         Expr::Repeat(_) => false,
@@ -1048,6 +1037,32 @@ fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType
             false
         }
     }
+}
+
+fn is_path_unit_type(
+    path: &syn::PatPath,
+    function_map: &HashMap<String, ReturnType>,
+) -> Option<bool> {
+    if let Some(ident) = path.path.get_ident() {
+        if let Some(return_type) = function_map.get(&ident.to_string()) {
+            return Some(match return_type {
+                ReturnType::Default => {
+                    // debug_log!("%%%%%%%% ReturnType::Default");
+                    true
+                }
+                ReturnType::Type(_, ty) => {
+                    if let syn::Type::Tuple(tuple) = &**ty {
+                        // debug_log!("%%%%%%%% Tuple ReturnType");
+                        tuple.elems.is_empty()
+                    } else {
+                        // debug_log!("%%%%%%%% Non-unit return type");
+                        false
+                    }
+                }
+            });
+        }
+    }
+    None
 }
 
 /// Recursively alternate with function `is_last_stmt_unit` until we drill down through

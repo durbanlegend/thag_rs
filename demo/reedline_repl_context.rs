@@ -4,7 +4,7 @@ reedline-repl-rs = "1.1.1"
 */
 
 /// Published example from `reedline-repl-rs` crate. This one uses the
-/// `clap` builder pattern; there is also one using the`clap`derive pattern.
+/// `clap` builder pattern; there is also one using the`clap` derive pattern.
 ///
 /// Example using Repl with Context
 use reedline_repl_rs::clap::{Arg, ArgMatches, Command};

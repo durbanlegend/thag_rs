@@ -3,9 +3,10 @@
 rfd = "0.14.1"
 */
 
-/// Demo calling the Rust formatter progammatically, as well as using a
-/// file chooser from the `rfd` crate.
-//# Purpose: Demo prototyping features to be incorporated into an app, in this case with the aid of AI.
+/// Prototype of invoking the Rust formatter programmatically, with the addition of an `rfd`
+/// (`Rusty File Dialogs`) cross-platform file chooser to select the file to format. The code
+/// for both was AI-generated because I find AI very handy for this kind of grunt work.
+//# Purpose: Demo file chooser and calling an external program, in this case the Rust formatter.
 use rfd::FileDialog;
 use std::error::Error;
 use std::process::Command;

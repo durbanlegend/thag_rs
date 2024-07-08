@@ -1,5 +1,6 @@
 /*[toml]
 [dependencies]
+crossbeam-epoch = "0.9.18"
 rand = "0.8"
 */
 use std::sync::atomic::AtomicUsize;
@@ -8,6 +9,11 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
+/// The `crossbeam-epoch` crate provides epoch-based lock-free memory reclamation.
+/// TODO: flesh out and provide Canary example.
+///
+/// This is the published example from the `crossbeam-epoch` crate.
+//# Purpose: Demo featured crate.
 use crossbeam_epoch::{self as epoch, Atomic, Collector, LocalHandle, Owned, Shared};
 use rand::Rng;
 

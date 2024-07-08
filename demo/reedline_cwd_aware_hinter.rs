@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-nu-ansi-term = "0.50.0"
 reedline = "0.32.0"
 */
 

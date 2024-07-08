@@ -888,7 +888,7 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
 /// This function finds the last statement in a given expression and determines if it
 /// returns a unit type.
 fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType>) -> bool {
-    // debug_log!("%%%%%%%% expr={expr:#?}");
+    debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
         Expr::ForLoop(for_loop) => {
             // debug_log!("%%%%%%%% Expr::ForLoop(for_loop))");
@@ -1008,9 +1008,44 @@ fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType
         Expr::MethodCall(expr_method_call) => {
             is_last_stmt_unit_type(&expr_method_call.receiver, function_map)
         }
+        Expr::Array(_) => false,
+        Expr::Assign(_) => true,
+        Expr::Async(_) => false,
+        Expr::Await(_) => false,
+        Expr::Binary(_) => false,
+        Expr::Break(_) => true,
+        Expr::Cast(_) => false,
+        Expr::Const(_) => false,
+        Expr::Continue(_) => true,
+        Expr::Field(_) => false,
+        Expr::Group(_) => false,
+        Expr::Index(_) => false,
+        Expr::Infer(_) => true,
+        Expr::Let(_) => true,
+        Expr::Lit(_) => false,
+        Expr::Macro(_) => false, // default because no way of knowing?
+        Expr::Paren(_) => false,
+        Expr::Path(_) => true,
+        Expr::Range(_) => false,
+        Expr::Reference(_) => false,
+        Expr::Repeat(_) => false,
+        Expr::Return(expr_return) => {
+            debug_log!("%%%%%%%% expr_return={expr_return:#?}");
+            expr_return.expr.is_none()
+        }
+        Expr::Struct(_) => false,
+        Expr::Try(_) => false,
+        Expr::TryBlock(_) => false,
+        Expr::Tuple(_) => false,
+        Expr::Unary(_) => false,
+        Expr::Unsafe(_) => false,
+        Expr::Verbatim(_) => false,
+        Expr::Yield(_) => false,
         _ => {
-            panic!("%%%%%%%% Expression not catered for: {expr:#?}");
-            // false
+            println!(
+                "%%%%%%%% Expression not catered for: {expr:#?}, wrapping expression in println!()"
+            );
+            false
         }
     }
 }
@@ -1019,25 +1054,54 @@ fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType
 /// all the blocks, loops and if-conditions to find the last executable statement and
 /// determine if it returns a unit type or a value worth printing.
 fn is_stmt_unit_type(stmt: &Stmt, function_map: &HashMap<String, ReturnType>) -> bool {
-    // debug_log!("%%%%%%%% last_stmt={last_stmt:#?}");
+    debug_log!("%%%%%%%% stmt={stmt:#?}");
     match stmt {
         Stmt::Expr(expr, None) => {
             // debug_log!("%%%%%%%% expr={expr:#?}");
             // debug_log!("%%%%%%%% Stmt::Expr(_, None)");
             is_last_stmt_unit_type(expr, function_map)
         } // Expression without semicolon
-        Stmt::Expr(_, Some(_)) => {
+        Stmt::Expr(expr, Some(_)) => {
             // debug_log!("%%%%%%%% Stmt::Expr(_, Some(_))");
-            true
+            match expr {
+                Expr::Return(expr_return) => {
+                    debug_log!("%%%%%%%% expr_return={expr_return:#?}");
+                    expr_return.expr.is_none()
+                }
+                Expr::Yield(expr_yield) => {
+                    debug_log!("%%%%%%%% expr_yield={expr_yield:#?}");
+                    expr_yield.expr.is_none()
+                }
+                _ => true,
+            }
         } // Expression with semicolon returns unit
         Stmt::Macro(m) => {
             // debug_log!("%%%%%%%% Stmt::Macro({m:#?}), m.semi_token.is_some()={is_some}");
             m.semi_token.is_some()
-        } // Macro with a semicolon returns unit
-        _ => {
-            panic!("%%%%%%%% Statement not catered for: {stmt:#?}");
-            // false
         }
+        Stmt::Local(_) => true,
+        Stmt::Item(item) => match item {
+            Item::Const(_) => false,
+            Item::Enum(_) => false,
+            Item::ExternCrate(_) => todo!(),
+            Item::Fn(_) => todo!(),
+            Item::ForeignMod(_) => todo!(),
+            Item::Impl(_) => todo!(),
+            Item::Macro(m) => {
+                // debug_log!("%%%%%%%% Item::Macro({m:#?}), m.semi_token.is_some()={is_some}");
+                m.semi_token.is_some()
+            }
+            Item::Mod(_) => true,
+            Item::Static(_) => false,
+            Item::Struct(_) => true,
+            Item::Trait(_) => true,
+            Item::TraitAlias(_) => true,
+            Item::Type(_) => true,
+            Item::Union(_) => true,
+            Item::Use(_) => true,
+            Item::Verbatim(_) => false,
+            _ => false, // default
+        },
     }
 }
 

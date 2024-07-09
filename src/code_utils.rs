@@ -1007,7 +1007,15 @@ fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType
         Expr::Infer(_) => true,
         Expr::Let(_) => true,
         Expr::Lit(_) => false,
-        Expr::Macro(_) => false, // default because no way of knowing?
+        Expr::Macro(expr_macro) => {
+            if let Some(segment) = expr_macro.mac.path.segments.last() {
+                let ident = &segment.ident.to_string();
+                return ident.starts_with("print")
+                    || ident.starts_with("write")
+                    || ident.starts_with("debug");
+            }
+            false // default - because no intrinsic way of knowing?
+        }
         Expr::Paren(_) => false,
         Expr::Path(path) => {
             if let Some(value) = is_path_unit_type(path, function_map) {

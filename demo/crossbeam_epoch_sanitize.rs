@@ -9,10 +9,14 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-/// The `crossbeam-epoch` crate provides epoch-based lock-free memory reclamation.
-/// TODO: flesh out and provide Canary example.
+/// The `crossbeam-epoch` crate provides epoch-based _lock-free_ memory reclamation,
+/// an alternative to garbage collection.
 ///
-/// This is the published example from the `crossbeam-epoch` crate.
+/// This is the published example from the `crossbeam-epoch` crate. For a more intuitive
+/// example, you can try the "Canary" example from https://github.com/ericseppanen/epoch_playground.
+/// and the associated blog post https://codeandbitters.com/learning-rust-crossbeam-epoch/".
+/// (Not included here due to implicit copyright).
+///
 //# Purpose: Demo featured crate.
 use crossbeam_epoch::{self as epoch, Atomic, Collector, LocalHandle, Owned, Shared};
 use rand::Rng;

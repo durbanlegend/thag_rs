@@ -5,6 +5,9 @@ itertools = "0.12.1"
 */
 use itertools::iterate;
 
+/// Fast non-recursive fibonacci sequence calculation. Can't recall the exact source
+/// but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
+/// for a variety of alternative approaches.
 let fib = |n: usize| -> usize {
     match n {
         0 => 0_usize,

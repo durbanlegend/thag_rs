@@ -1047,6 +1047,8 @@ fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType
     }
 }
 
+/// Check if a path represents a function, and if so, whether it has a unit or non-unit
+/// return type.
 fn is_path_unit_type(
     path: &syn::PatPath,
     function_map: &HashMap<String, ReturnType>,
@@ -1097,7 +1099,7 @@ fn is_stmt_unit_type(stmt: &Stmt, function_map: &HashMap<String, ReturnType>) ->
                 }
                 _ => true,
             }
-        } // Expression with semicolon returns unit
+        } // Expression with semicolon usually returns unit, except sometimes return or yield.
         Stmt::Macro(m) => {
             // debug_log!("%%%%%%%% Stmt::Macro({m:#?}), m.semi_token.is_some()={is_some}");
             m.semi_token.is_some()
@@ -1136,46 +1138,4 @@ pub fn returns_unit(expr: &Expr) -> bool {
         "is_unit_type={is_unit_type}"
     );
     is_unit_type
-}
-
-// I don't trust this from GPT
-pub fn extract_expr_from_file(file: &File) -> Option<Expr> {
-    // Traverse the file to find the main function and extract expressions from it
-    for item in &file.items {
-        if let Item::Fn(func) = item {
-            if func.sig.ident == "main" {
-                let stmts = &func.block.stmts;
-                // Collect expressions from the statements
-                let exprs: Vec<Expr> = stmts
-                    .iter()
-                    .filter_map(|stmt| match stmt {
-                        Stmt::Expr(expr, _) => Some(expr.clone()),
-                        Stmt::Macro(macro_stmt) => {
-                            let mac = &macro_stmt.mac;
-                            let macro_expr = quote! {
-                                #mac
-                            };
-                            Some(
-                                parse_str(&macro_expr.to_string())
-                                    .expect("Unable to parse macro expression"),
-                            )
-                        }
-                        _ => None,
-                    })
-                    .collect();
-
-                // Combine the expressions into a single expression if needed
-                if !exprs.is_empty() {
-                    let combined_expr = quote! {
-                        { #(#exprs);* }
-                    };
-                    return Some(
-                        parse_str(&combined_expr.to_string())
-                            .expect("Unable to parse combined expression"),
-                    );
-                }
-            }
-        }
-    }
-    None
 }

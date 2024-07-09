@@ -1,14 +1,8 @@
-use std::iter::{once, repeat};
-
-let fizzes = repeat("").take(2).chain(once("fizz")).cycle();
-let buzzes = repeat("").take(4).chain(once("buzz")).cycle();
-let fizzes_buzzes = fizzes.zip(buzzes);
-
-let fizz_buzz = (1..100).zip(fizzes_buzzes).map(|tuple| match tuple {
-    (i, ("", "")) => i.to_string(),
-    (_, (fizz, buzz)) => format!("{}{}", fizz, buzz),
-});
-
-for line in fizz_buzz {
-    println!("{}", line);
+for i in 1..=100 {
+    match (i % 3 == 0, i % 5 == 0) {
+        (true, true) => println!("FizzBuzz"),
+        (true, false) => println!("Fizz"),
+        (false, true) => println!("Buzz"),
+        (false, false) => println!("{}", i),
+    }
 }

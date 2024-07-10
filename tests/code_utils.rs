@@ -4,6 +4,9 @@ mod tests {
     use rs_script::code_utils::find_use_renames_source;
     use rs_script::code_utils::infer_deps_from_ast;
     use rs_script::code_utils::infer_deps_from_source;
+    use rs_script::code_utils::is_last_stmt_unit_type;
+    use rs_script::code_utils::is_path_unit_type;
+    use rs_script::code_utils::is_stmt_unit_type;
     use rs_script::code_utils::path_to_str;
     use rs_script::code_utils::read_file_contents;
     use rs_script::code_utils::wrap_snippet;
@@ -117,5 +120,172 @@ mod tests {
 
         let modules = find_modules_source(source_code);
         assert_eq!(modules, vec!["foo", "bar"]);
+    }
+
+    use std::collections::HashMap;
+    use syn::{parse_quote, Expr, ReturnType, Stmt};
+
+    fn setup_function_map() -> HashMap<String, ReturnType> {
+        let mut function_map = HashMap::new();
+        function_map.insert("unit_fn".to_string(), ReturnType::Default);
+        function_map.insert(
+            "non_unit_fn".to_string(),
+            ReturnType::Type(Default::default(), Box::new(syn::parse_quote!(i32))),
+        );
+        function_map
+    }
+
+    #[test]
+    fn test_for_loop_expr() {
+        let expr: Expr = parse_quote! {
+            for i in 0..10 { println!("{}", i); }
+        };
+        let function_map = setup_function_map();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_while_expr() {
+        let expr: Expr = parse_quote! {
+            while true { break; }
+        };
+        let function_map = setup_function_map();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_if_expr() {
+        let expr: Expr = parse_quote! {
+            if true { 1 } else { 0 }
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_block_expr() {
+        let expr: Expr = parse_quote! {
+            { let x = 1; x + 1 }
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_match_expr() {
+        let expr: Expr = parse_quote! {
+            match x {
+                1 => 2,
+                _ => 3,
+            }
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_call_expr() {
+        let expr: Expr = parse_quote! {
+            unit_fn()
+        };
+        let function_map = setup_function_map();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_array_expr() {
+        let expr: Expr = parse_quote! {
+            [0, 1, 2]
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_return_unit_stmt() {
+        let stmt: Stmt = parse_quote! {
+            return;
+        };
+        let function_map = setup_function_map();
+        assert!(is_stmt_unit_type(&stmt, &function_map));
+    }
+
+    #[test]
+    fn test_return_non_unit_stmt() {
+        let stmt: Stmt = parse_quote! {
+            return 5;
+        };
+        let function_map = setup_function_map();
+        assert!(!is_stmt_unit_type(&stmt, &function_map));
+    }
+
+    #[test]
+    fn test_local_stmt() {
+        let stmt: Stmt = parse_quote! {
+            let x = 5;
+        };
+        let function_map = setup_function_map();
+        assert!(is_stmt_unit_type(&stmt, &function_map));
+    }
+
+    #[test]
+    fn test_item_const_stmt() {
+        let stmt: Stmt = parse_quote! {
+            const X: i32 = 5;
+        };
+        let function_map = setup_function_map();
+        assert!(!is_stmt_unit_type(&stmt, &function_map));
+    }
+
+    #[test]
+    fn test_expr_stmt_with_semicolon() {
+        let stmt: Stmt = parse_quote! {
+            42;
+        };
+        let function_map = setup_function_map();
+        assert!(is_stmt_unit_type(&stmt, &function_map));
+    }
+
+    #[test]
+    fn test_expr_without_semicolon() {
+        let stmt: Expr = parse_quote! {
+            42
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&stmt, &function_map));
+    }
+
+    #[test]
+    fn test_path_unit_type() {
+        let expr: Expr = parse_quote! {
+            unit_fn()
+        };
+        let function_map = setup_function_map();
+        if let Expr::Call(call) = expr {
+            if let Expr::Path(path) = *call.func {
+                assert_eq!(is_path_unit_type(&path, &function_map), Some(true));
+            } else {
+                panic!("Expected Expr::Path");
+            }
+        } else {
+            panic!("Expected Expr::Call");
+        }
+    }
+
+    #[test]
+    fn test_path_non_unit_type() {
+        let expr: Expr = parse_quote! {
+            non_unit_fn()
+        };
+        let function_map = setup_function_map();
+        if let Expr::Call(call) = expr {
+            if let Expr::Path(path) = *call.func {
+                assert_eq!(is_path_unit_type(&path, &function_map), Some(false));
+            } else {
+                panic!("Expected Expr::Path");
+            }
+        } else {
+            panic!("Expected Expr::Call");
+        }
     }
 }

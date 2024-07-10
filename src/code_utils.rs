@@ -874,7 +874,7 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
     let start = Instant::now();
 
     let function_map = extract_functions(expr);
-    // debug_log!("function_map={function_map:#?}");
+    debug_log!("function_map={function_map:#?}");
 
     let is_last_stmt_unit_type = is_last_stmt_unit_type(expr, &function_map);
     debug_timings(&start, "Determined probable snippet return type");
@@ -887,7 +887,7 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
 ///
 /// This function finds the last statement in a given expression and determines if it
 /// returns a unit type.
-fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType>) -> bool {
+pub fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType>) -> bool {
     debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
         Expr::ForLoop(for_loop) => {
@@ -1049,7 +1049,7 @@ fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType
 
 /// Check if a path represents a function, and if so, whether it has a unit or non-unit
 /// return type.
-fn is_path_unit_type(
+pub fn is_path_unit_type(
     path: &syn::PatPath,
     function_map: &HashMap<String, ReturnType>,
 ) -> Option<bool> {
@@ -1078,7 +1078,7 @@ fn is_path_unit_type(
 /// Recursively alternate with function `is_last_stmt_unit` until we drill down through
 /// all the blocks, loops and if-conditions to find the last executable statement and
 /// determine if it returns a unit type or a value worth printing.
-fn is_stmt_unit_type(stmt: &Stmt, function_map: &HashMap<String, ReturnType>) -> bool {
+pub fn is_stmt_unit_type(stmt: &Stmt, function_map: &HashMap<String, ReturnType>) -> bool {
     debug_log!("%%%%%%%% stmt={stmt:#?}");
     match stmt {
         Stmt::Expr(expr, None) => {
@@ -1138,4 +1138,46 @@ pub fn returns_unit(expr: &Expr) -> bool {
         "is_unit_type={is_unit_type}"
     );
     is_unit_type
+}
+
+// I don't altogether trust this from GPT
+pub fn extract_expr_from_file(file: &File) -> Option<Expr> {
+    // Traverse the file to find the main function and extract expressions from it
+    for item in &file.items {
+        if let Item::Fn(func) = item {
+            if func.sig.ident == "main" {
+                let stmts = &func.block.stmts;
+                // Collect expressions from the statements
+                let exprs: Vec<Expr> = stmts
+                    .iter()
+                    .filter_map(|stmt| match stmt {
+                        Stmt::Expr(expr, _) => Some(expr.clone()),
+                        Stmt::Macro(macro_stmt) => {
+                            let mac = &macro_stmt.mac;
+                            let macro_expr = quote! {
+                                #mac
+                            };
+                            Some(
+                                parse_str(&macro_expr.to_string())
+                                    .expect("Unable to parse macro expression"),
+                            )
+                        }
+                        _ => None,
+                    })
+                    .collect();
+
+                // Combine the expressions into a single expression if needed
+                if !exprs.is_empty() {
+                    let combined_expr = quote! {
+                        { #(#exprs);* }
+                    };
+                    return Some(
+                        parse_str(&combined_expr.to_string())
+                            .expect("Unable to parse combined expression"),
+                    );
+                }
+            }
+        }
+    }
+    None
 }

@@ -6,8 +6,6 @@ curl = "0.4.46"
 ///
 /// This example is a Rust adaptation of the [C example of the same
 /// name](https://curl.se/libcurl/c/https.html).
-extern crate curl;
-
 use curl::easy::Easy;
 use std::io::{stdout, Write};
 

@@ -948,6 +948,9 @@ pub fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, Return
             }
         }
         Expr::Block(expr_block) => {
+            if expr_block.block.stmts.is_empty() {
+                return true;
+            }
             if let Some(last_stmt) = expr_block.block.stmts.last() {
                 // debug_log!("%%%%%%%% if let Some(last_stmt) = expr_block.block.stmts.last()");
                 is_stmt_unit_type(last_stmt, function_map)
@@ -980,7 +983,7 @@ pub fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, Return
             false
         }
         Expr::Closure(expr_closure) => match &expr_closure.output {
-            ReturnType::Default => true,
+            ReturnType::Default => is_last_stmt_unit_type(&expr_closure.body, function_map),
             ReturnType::Type(_, ty) => {
                 if let syn::Type::Tuple(tuple) = &**ty {
                     tuple.elems.is_empty()
@@ -993,10 +996,40 @@ pub fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, Return
             is_last_stmt_unit_type(&expr_method_call.receiver, function_map)
         }
         Expr::Array(_) => false,
-        Expr::Assign(_) => true,
+        Expr::Assign(_) => false,
         Expr::Async(_) => false,
         Expr::Await(_) => false,
-        Expr::Binary(_) => false,
+        Expr::Binary(expr_binary) => match expr_binary.op {
+            syn::BinOp::Add(_) => false,
+            syn::BinOp::Sub(_) => false,
+            syn::BinOp::Mul(_) => false,
+            syn::BinOp::Div(_) => false,
+            syn::BinOp::Rem(_) => false,
+            syn::BinOp::And(_) => false,
+            syn::BinOp::Or(_) => false,
+            syn::BinOp::BitXor(_) => false,
+            syn::BinOp::BitAnd(_) => false,
+            syn::BinOp::BitOr(_) => false,
+            syn::BinOp::Shl(_) => false,
+            syn::BinOp::Shr(_) => false,
+            syn::BinOp::Eq(_) => false,
+            syn::BinOp::Lt(_) => false,
+            syn::BinOp::Le(_) => false,
+            syn::BinOp::Ne(_) => false,
+            syn::BinOp::Ge(_) => false,
+            syn::BinOp::Gt(_) => false,
+            syn::BinOp::AddAssign(_) => true,
+            syn::BinOp::SubAssign(_) => true,
+            syn::BinOp::MulAssign(_) => true,
+            syn::BinOp::DivAssign(_) => true,
+            syn::BinOp::RemAssign(_) => true,
+            syn::BinOp::BitXorAssign(_) => true,
+            syn::BinOp::BitAndAssign(_) => true,
+            syn::BinOp::BitOrAssign(_) => true,
+            syn::BinOp::ShlAssign(_) => true,
+            syn::BinOp::ShrAssign(_) => true,
+            _ => false,
+        },
         Expr::Break(_) => true,
         Expr::Cast(_) => false,
         Expr::Const(_) => false,
@@ -1108,10 +1141,10 @@ pub fn is_stmt_unit_type(stmt: &Stmt, function_map: &HashMap<String, ReturnType>
         Stmt::Item(item) => match item {
             Item::Const(_) => false,
             Item::Enum(_) => false,
-            Item::ExternCrate(_) => todo!(),
-            Item::Fn(_) => todo!(),
-            Item::ForeignMod(_) => todo!(),
-            Item::Impl(_) => todo!(),
+            Item::ExternCrate(_) => true,
+            Item::Fn(_) => true,
+            Item::ForeignMod(_) => true,
+            Item::Impl(_) => true,
             Item::Macro(m) => {
                 // debug_log!("%%%%%%%% Item::Macro({m:#?}), m.semi_token.is_some()={is_some}");
                 m.semi_token.is_some()

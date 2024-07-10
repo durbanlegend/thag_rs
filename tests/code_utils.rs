@@ -154,6 +154,15 @@ mod tests {
     }
 
     #[test]
+    fn test_loop_expr() {
+        let expr: Expr = parse_quote! {
+            loop { break; }
+        };
+        let function_map = setup_function_map();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
     fn test_if_expr() {
         let expr: Expr = parse_quote! {
             if true { 1 } else { 0 }
@@ -193,6 +202,24 @@ mod tests {
     }
 
     #[test]
+    fn test_closure_expr() {
+        let expr: Expr = parse_quote! {
+            || { 42 }
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_method_call_expr() {
+        let expr: Expr = parse_quote! {
+            foo.bar()
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
     fn test_array_expr() {
         let expr: Expr = parse_quote! {
             [0, 1, 2]
@@ -217,6 +244,15 @@ mod tests {
         };
         let function_map = setup_function_map();
         assert!(!is_stmt_unit_type(&stmt, &function_map));
+    }
+
+    #[test]
+    fn test_yield_expr() {
+        let stmt: Stmt = parse_quote! {
+            yield;
+        };
+        let function_map = setup_function_map();
+        assert!(is_stmt_unit_type(&stmt, &function_map));
     }
 
     #[test]
@@ -247,12 +283,12 @@ mod tests {
     }
 
     #[test]
-    fn test_expr_without_semicolon() {
-        let stmt: Expr = parse_quote! {
+    fn test_expr_stmt_without_semicolon() {
+        let expr: Expr = parse_quote! {
             42
         };
         let function_map = setup_function_map();
-        assert!(!is_last_stmt_unit_type(&stmt, &function_map));
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
     }
 
     #[test]
@@ -263,7 +299,7 @@ mod tests {
         let function_map = setup_function_map();
         if let Expr::Call(call) = expr {
             if let Expr::Path(path) = *call.func {
-                assert_eq!(is_path_unit_type(&path, &function_map), Some(true));
+                assert!(is_path_unit_type(&path, &function_map).unwrap());
             } else {
                 panic!("Expected Expr::Path");
             }
@@ -280,12 +316,309 @@ mod tests {
         let function_map = setup_function_map();
         if let Expr::Call(call) = expr {
             if let Expr::Path(path) = *call.func {
-                assert_eq!(is_path_unit_type(&path, &function_map), Some(false));
+                assert!(!is_path_unit_type(&path, &function_map).unwrap());
             } else {
                 panic!("Expected Expr::Path");
             }
         } else {
             panic!("Expected Expr::Call");
         }
+    }
+
+    #[test]
+    fn test_macro_expr() {
+        let stmt: Stmt = parse_quote! {
+            println!("Hello, world!");
+        };
+        let function_map = setup_function_map();
+        assert!(is_stmt_unit_type(&stmt, &function_map));
+    }
+
+    #[test]
+    fn test_async_expr() {
+        let expr: Expr = parse_quote! {
+            async { 42 }
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_await_expr() {
+        let expr: Expr = parse_quote! {
+            foo.await
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_binary_expr() {
+        let expr: Expr = parse_quote! {
+            1 + 2
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_cast_expr() {
+        let expr: Expr = parse_quote! {
+            1 as f64
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_index_expr() {
+        let expr: Expr = parse_quote! {
+            arr[0]
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_tuple_expr() {
+        let expr: Expr = parse_quote! {
+            (1, 2, 3)
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_unary_expr() {
+        let expr: Expr = parse_quote! {
+            -42
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_paren_expr() {
+        let expr: Expr = parse_quote! {
+            (42)
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_reference_expr() {
+        let expr: Expr = parse_quote! {
+            &42
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_field_expr() {
+        let expr: Expr = parse_quote! {
+            foo.bar
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_infer_expr() {
+        let expr: Expr = parse_quote! {
+            _
+        };
+        let function_map = setup_function_map();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_continue_expr() {
+        let expr: Expr = parse_quote! {
+            continue
+        };
+        let function_map = setup_function_map();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_break_expr() {
+        let expr: Expr = parse_quote! {
+            break
+        };
+        let function_map = setup_function_map();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_assign_expr() {
+        let expr: Expr = parse_quote! {
+            x = 1
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_struct_expr() {
+        let expr: Expr = parse_quote! {
+            Struct { field: 1 }
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_range_expr() {
+        let expr: Expr = parse_quote! {
+            1..10
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_try_expr() {
+        let expr: Expr = parse_quote! {
+            some_result?
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_verbatim_expr() {
+        let expr: Expr = parse_quote! {
+            ver
+        };
+        let function_map = setup_function_map();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_assign_op_expr() {
+        let expr: Expr = parse_quote!(a += 1);
+        let function_map = HashMap::new();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_block_with_return_expr() {
+        let expr: Expr = parse_quote!({
+            let x = 5;
+            x
+        });
+        let function_map = HashMap::new();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_closure_non_unit_expr() {
+        let expr: Expr = parse_quote!(|x| x + 1);
+        let function_map = HashMap::new();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_closure_unit_expr() {
+        let expr: Expr = parse_quote!(|| {});
+        let function_map = HashMap::new();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    // #[test]
+    // fn test_continue_stmt() {
+    //     let stmt: Stmt = parse_quote!(continue);
+    //     let function_map = HashMap::new();
+    //     assert!(is_stmt_unit_type(&stmt, &function_map));
+    // }
+
+    #[test]
+    fn test_if_let_expr() {
+        let expr: Expr = parse_quote!(if let Some(x) = y { x } else { 0 });
+        let function_map = HashMap::new();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_let_expr() {
+        let expr: Expr = parse_quote!(let x = 5);
+        let function_map = HashMap::new();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_literal_expr() {
+        let expr: Expr = parse_quote!(42);
+        let function_map = HashMap::new();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_loop_break_expr() {
+        let expr: Expr = parse_quote!(break);
+        let function_map = HashMap::new();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_macro_expr_with_semi() {
+        let stmt: Stmt = parse_quote!(println!("Hello"););
+        let function_map = HashMap::new();
+        assert!(is_stmt_unit_type(&stmt, &function_map));
+    }
+
+    #[test]
+    fn test_macro_expr_without_semi() {
+        let expr: Expr = parse_quote!(println!("Hello"));
+        let function_map = HashMap::new();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_macro_with_debug() {
+        let expr: Expr = parse_quote!(debug!("debug message"));
+        let function_map = HashMap::new();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_macro_with_print() {
+        let expr: Expr = parse_quote!(print!("printed message"));
+        let function_map = HashMap::new();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_macro_with_write() {
+        let expr: Expr = parse_quote!(write!(std::io::stdout(), "written message"));
+        let function_map = HashMap::new();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_path_expr() {
+        let expr: Expr = parse_quote!(some_function());
+        let function_map = {
+            let mut map = HashMap::new();
+            map.insert("some_function".to_string(), ReturnType::Default);
+            map
+        };
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_return_expr() {
+        let expr: Expr = parse_quote!(return);
+        let function_map = HashMap::new();
+        assert!(is_last_stmt_unit_type(&expr, &function_map));
+    }
+
+    #[test]
+    fn test_stmt_expr() {
+        let expr: Expr = parse_quote!(5);
+        let function_map = HashMap::new();
+        assert!(!is_last_stmt_unit_type(&expr, &function_map));
     }
 }

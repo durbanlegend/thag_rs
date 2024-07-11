@@ -15,7 +15,7 @@ use std::io::{self, Write};
 /// Direct execution with `execute` and lazy execution with `queue`.
 ///
 /// Url: https://docs.rs/crossterm/latest/crossterm/
-//# Purpose: Demo crossterm command API.
+//# Purpose: Demo `crossterm` command API.
 use std::io::stdout;
 fn main() -> io::Result<()> {
     let mut stdout = io::stdout();

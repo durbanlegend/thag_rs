@@ -3,10 +3,11 @@
 crossterm = "0.27.0"
 */
 
-// Demonstrates how to block read events.
-//
-// cargo run --example event-read
-
+/// Published example from crossterm crate.
+///
+/// Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read.rs
+/// "Demonstrates how to block read events."
+//# Purpose: Demo running crate example code, `crossterm` events.
 use std::io;
 
 use crossterm::event::{

@@ -127,10 +127,11 @@ _— The Rust Reference_
     * stdin mode accepts larger scripts or programs on the fly, which need not be expressions as such. Being stdin it can be used with piped input.
     * edit mode is stdin mode with the addition of basic TUI (terminal user interface) in-place editing.
     * the classic script mode runs any .rs file consisting of a valid Rust script or program.
-* In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from rs-script. Failing that, you can always work on a minimally modified copy in another location. An example is the demo version of colors.rs.
 * You can use a shebang to write scripts in Rust.
+* You can compile a script (even a valid snippet) to an executable command in the Cargo bin directory `<home>/.cargo/bin`.
 * `rs-script` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast factorial and Fibonacci calculation with big-integer support, light-dark theme detection, TUI editing and colour support.
-* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. `rs-script` defaults to basic ANSI-16 colours and dark mode support on Windows for reasons beyond my control, but the dark mode colours it uses have been chosen to work well with most light modes.
+* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. On Windows, `rs-script` defaults to basic ANSI-16 colours and dark mode support for reasons beyond my control, but the dark mode colours it uses have been chosen to work well with most light modes.
+* In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from rs-script. Failing that, you can always work on a minimally modified copy in another location. An example is the demo version of colors.rs.
 
 ## Platform Support
 This crate is designed to be cross-platform and supports:
@@ -164,7 +165,7 @@ Contributions will be given due consideration if they fit the goals of the proje
 
 I made extensive use of free versions of LLMs - mainly ChatGPT and to a lesser extent Gemini - for four aspects of this project:
 * problem solving
-* guidance on best practices
+* suggestions and guidance on best practices
 * generation of unit and integration tests
 * grunt work of generating "first-approximation" code and boilerplate to spec.
 

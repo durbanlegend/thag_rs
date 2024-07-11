@@ -440,6 +440,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     let start_build = Instant::now();
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let quiet = proc_flags.contains(ProcFlags::QUIET);
+    let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
 
     debug_log!("BBBBBBBB In build");
 
@@ -448,6 +449,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
             build_state.cargo_toml_path.clone().into_os_string(),
         ));
     };
+
     let mut build_command = Command::new("cargo");
     // Rustc writes to std
     let mut args = vec!["build", "--manifest-path", &cargo_toml_path_str];
@@ -456,6 +458,9 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     // };
     if quiet {
         args.push("--quiet");
+    }
+    if executable {
+        args.push("--release");
     }
 
     build_command.args(&args); // .current_dir(build_dir);
@@ -491,6 +496,49 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
 
     if exit_status.status.success() {
         debug_log!("Build succeeded");
+        if executable {
+            // Determine the output directory
+            let mut cargo_bin_path = home::home_dir().expect("Could not find home directory");
+            let cargo_bin_subdir = ".cargo/bin";
+            cargo_bin_path.push(cargo_bin_subdir);
+
+            // Create the target directory if it doesn't exist
+            if !cargo_bin_path.exists() {
+                fs::create_dir_all(&cargo_bin_path).expect("Failed to create target directory");
+            }
+
+            let mut executable_name = build_state.source_stem.to_string();
+            if cfg!(windows) {
+                executable_name += ".exe";
+            }
+
+            let executable_path = build_state
+                .target_dir_path
+                .clone()
+                .join("target/release")
+                .join(&executable_name);
+            let output_path = cargo_bin_path.join(&build_state.source_stem);
+
+            fs::rename(executable_path, output_path).expect("Failed to move the executable");
+
+            let dash_line = "-".repeat(FLOWER_BOX_LEN);
+            log!(
+                Verbosity::Normal,
+                "{}",
+                nu_ansi_term::Color::Yellow.paint(&dash_line)
+            );
+
+            log!(
+                Verbosity::Normal,
+                "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
+            );
+
+            log!(
+                Verbosity::Normal,
+                "{}",
+                nu_ansi_term::Color::Yellow.paint(&dash_line)
+            );
+        }
     } else {
         return Err(BuildRunError::Command(String::from("Build failed")));
     };
@@ -525,20 +573,18 @@ pub fn run(
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    // println!("{}", nu_ansi_term::Color::Yellow.paint(dash_line.clone()));
     log!(
         Verbosity::Normal,
         "{}",
-        nu_ansi_term::Color::Yellow.paint(dash_line.clone())
+        nu_ansi_term::Color::Yellow.paint(&dash_line)
     );
 
     let _exit_status = run_command.spawn()?.wait()?;
 
-    // println!("{}", nu_ansi_term::Color::Yellow.paint(dash_line.clone()));
     log!(
         Verbosity::Normal,
         "{}",
-        nu_ansi_term::Color::Yellow.paint(dash_line.clone())
+        nu_ansi_term::Color::Yellow.paint(&dash_line)
     );
 
     // debug_log!("Exit status={exit_status:#?}");

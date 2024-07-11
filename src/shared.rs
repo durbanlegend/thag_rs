@@ -84,6 +84,7 @@ impl BuildState {
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
         let is_edit = proc_flags.contains(ProcFlags::EDIT);
         let is_dynamic = is_expr | is_stdin | is_edit;
+        let build_exe = proc_flags.contains(ProcFlags::EXECUTABLE);
         let maybe_script = script_state.get_script();
         if maybe_script.is_none() {
             return Err(Box::new(BuildRunError::NoneOption(
@@ -196,7 +197,7 @@ impl BuildState {
             let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
             let build_requested = proc_flags.contains(ProcFlags::BUILD);
             let must_gen = force || is_repl || (gen_requested && stale_executable);
-            let must_build = force || is_repl || (build_requested && stale_executable);
+            let must_build = force || is_repl || build_exe || (build_requested && stale_executable);
             (must_gen, must_build)
         };
 

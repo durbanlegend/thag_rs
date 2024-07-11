@@ -13,7 +13,7 @@ use std::error::Error;
 #[derive(Clone, Default, Parser, Debug)]
 #[command(name = "rs_script")]
 pub struct Cli {
-    /// Optional name of a script to run
+    /// Optional name of a script to run (<stem>.rs)
     pub script: Option<String>,
     /// Set the arguments for the script
     #[arg(last = true)]
@@ -60,6 +60,9 @@ pub struct Cli {
     /// Allow multiple main methods
     #[arg(short, long)]
     pub multimain: bool,
+    /// Build executable <home_dir>/.cargo/bin/<stem> from script <stem>.rs using `cargo build --release`.
+    #[arg(short = 'x', long, conflicts_with_all(["all", "edit", "expression", "run", "repl", "stdin"]))]
+    pub executable: bool,
 }
 
 /// Getter for clap command-line arguments
@@ -107,6 +110,7 @@ bitflags! {
         const QUIET = 2048;
         const MULTI = 4096;
         const NORUN = 8192;
+        const EXECUTABLE = 16384;
     }
 }
 
@@ -145,20 +149,20 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         // TODO: out? once clap default_value_ifs is working
         proc_flags.set(
             ProcFlags::GENERATE,
-            args.generate | args.force | args.all | is_expr,
+            args.generate | args.force | args.all | is_expr | args.executable,
         );
         proc_flags.set(
             ProcFlags::BUILD,
-            args.build | args.force | args.all | is_expr,
+            args.build | args.force | args.all | is_expr | args.executable,
         );
         proc_flags.set(ProcFlags::FORCE, args.force);
         proc_flags.set(ProcFlags::QUIET, args.quiet);
         proc_flags.set(ProcFlags::MULTI, args.multimain);
         proc_flags.set(ProcFlags::VERBOSE, args.verbose);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
-        proc_flags.set(ProcFlags::NORUN, args.norun);
-        proc_flags.set(ProcFlags::RUN, !args.norun);
-        proc_flags.set(ProcFlags::ALL, !args.norun);
+        proc_flags.set(ProcFlags::NORUN, args.norun | args.executable);
+        proc_flags.set(ProcFlags::RUN, !args.norun & !args.executable);
+        proc_flags.set(ProcFlags::ALL, !args.norun & !args.executable);
         if !(proc_flags.contains(ProcFlags::ALL)) {
             proc_flags.set(ProcFlags::ALL, args.generate & args.build & args.run);
         }
@@ -166,6 +170,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::EXPR, is_expr);
         proc_flags.set(ProcFlags::STDIN, args.stdin);
         proc_flags.set(ProcFlags::EDIT, args.edit);
+        proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
 
         let verbosity = if args.verbose {
             Verbosity::Verbose

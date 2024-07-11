@@ -15,19 +15,10 @@
 - [ ]  Consider replacing rug crate with dashu since rug not Windows-friendly?
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
 - [ ]  Demo scripts not commented:
-demo/crossbeam_epoch_sanitize.rs
-demo/crossterm_direct_macro.rs
-demo/crossterm_key_events.rs
-demo/crossterm_mouse_select.rs
-demo/ctrlc_demo.rs
-demo/enum_select.rs
 demo/event_read.rs
 demo/factorial_ibig.rs
 demo/factorial_main_u128.rs
-demo/fib_fac_rug.rs
-demo/fibonacci.rs
 demo/fibonacci_fn.rs
-demo/fizz_buzz.rs
 demo/gen_names.rs
 demo/gpt_lazy_static_theme1.rs
 demo/gpt_lazy_static_theme2.rs
@@ -47,6 +38,7 @@ demo/prettyplease.rs
 demo/puffin_profiler_egui.rs
 demo/rc1.rs
 demo/reedline_basic_keybindings.rs
+demo/reedline_colored_text.rs
 demo/reedline_completions.rs
 demo/reedline_custom_prompt.rs
 demo/reedline_cwd_aware_hinter.rs
@@ -60,7 +52,6 @@ demo/reedline_repl.rs
 demo/reedline_stdin.rs
 demo/reedline_transient_prompt.rs
 demo/rug_arbitrary_precision_nums.rs
-demo/rustfmt.rs
 demo/rustyline.rs
 demo/slog_expressions.rs
 demo/supports_color.rs
@@ -71,6 +62,7 @@ demo/syn_dump_syntax.rs
 demo/syn_file_debug.rs
 demo/syn_file_debug2.rs
 demo/syn_file_to_expr.rs
+demo/syn_parse_quote.rs
 demo/syn_parse_str.rs
 demo/syn_quote.rs
 demo/syn_visit_extern_crate_expr.rs

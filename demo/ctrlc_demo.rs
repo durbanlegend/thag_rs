@@ -1,23 +1,20 @@
 /*[toml]
 [dependencies]
-#crossterm = "*"
-ctrlc = "3.3"
-#reedline = "0.32.0"
+ctrlc = { version = "3.4.4" }
 */
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use ctrlc;
+use std::sync::mpsc::channel;
 
+/// Published example from `ctrlc` crate: "Cross platform handling of Ctrl-C signals."
+//# Purpose: Demo one option for intercepting Ctrl-C.
 fn main() {
-    let running = Arc::new(AtomicBool::new(true));
-    let r = running.clone();
+    let (tx, rx) = channel();
 
-    ctrlc::set_handler(move || {
-        r.store(false, Ordering::SeqCst);
-    })
-    .expect("Error setting Ctrl-C handler");
+    ctrlc::set_handler(move || tx.send(()).expect("Could not send signal on channel."))
+        .expect("Error setting Ctrl-C handler");
 
     println!("Waiting for Ctrl-C...");
-    while running.load(Ordering::SeqCst) {}
+    rx.recv().expect("Could not receive from channel.");
     println!("Got it! Exiting...");
 }

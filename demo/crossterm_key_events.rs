@@ -3,30 +3,53 @@
 crossterm = "0.27.0"
 */
 
-use crossterm::event::{read, Event, KeyCode, KeyEventKind};
-use std::io::{stdout, Write};
+/// Published example from crossterm crate.
+///
+/// Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs
+/// "Demonstrates the display format of key events.
+///
+/// This example demonstrates the display format of key events, which is useful for displaying in
+/// the help section of a terminal application."
+//# Purpose: Demo running crate example code, `crossterm` events.
+use std::io;
 
-fn main() {
-    // Enable raw mode for reading key events
-    let mut stdout = stdout();
-    crossterm::terminal::disable_raw_mode().unwrap();
-    crossterm::terminal::enable_raw_mode().unwrap();
+use crossterm::event::{KeyEventKind, KeyModifiers};
+use crossterm::{
+    event::{read, Event, KeyCode},
+    terminal::{disable_raw_mode, enable_raw_mode},
+};
 
+const HELP: &str = r#"Key display
+ - Press any key to see its display format
+ - Use Esc to quit
+"#;
+
+fn main() -> io::Result<()> {
+    println!("{}", HELP);
+    enable_raw_mode()?;
+    if let Err(e) = print_events() {
+        println!("Error: {:?}\r", e);
+    }
+    disable_raw_mode()?;
+    Ok(())
+}
+
+fn print_events() -> io::Result<()> {
     loop {
-        // Read the next event
-        match read() {
-            Ok(Event::Key(key_event)) => {
-                // Check for key press events (some terminals might fire release events)
-                if key_event.kind == KeyEventKind::Press {
-                    print!(
-                        "Key: {:?}, Modifiers: {:?}\n",
-                        key_event.code, key_event.modifiers
-                    );
-                    stdout.flush().unwrap();
+        let event = read()?;
+        match event {
+            Event::Key(event) if event.kind == KeyEventKind::Press => {
+                print!("Key pressed: ");
+                if event.modifiers != KeyModifiers::NONE {
+                    print!("{:?}+", event.modifiers);
+                }
+                println!("{:?}\r", event.code);
+                if event.code == KeyCode::Esc {
+                    break;
                 }
             }
-            // Ok(Event::Resize(_)) => {} // Ignore resize events
-            _ => {} // Handle other events if needed
+            _ => {}
         }
     }
+    Ok(())
 }

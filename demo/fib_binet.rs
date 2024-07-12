@@ -1,18 +1,4 @@
-/*[toml]
-[dependencies]
-num-traits = "0.2.19"
-*/
-
-use num_traits::Float;
 use std::env;
-
-fn fib_closed<T: Float>(n: T) -> T {
-    let sqrt_5 = T::from(5.0).unwrap().sqrt();
-    let phi = (T::from(1.0).unwrap() + sqrt_5) / T::from(2.0).unwrap();
-    let psi = (T::from(1.0).unwrap() - sqrt_5) / T::from(2.0).unwrap();
-
-    (phi.powf(n) - psi.powf(n)) / sqrt_5
-}
 
 // Some simple CLI args requirements...
 let n = if let Some(arg) = env::args().nth(1) {
@@ -21,18 +7,19 @@ let n = if let Some(arg) = env::args().nth(1) {
         n
     } else {
         println!("Usage: {} <n>", env::args().nth(0).unwrap());
-        return Ok(());
+        std::process::exit(1);
     }
-}
-else {
+} else {
     println!("Usage: {} <n>", env::args().nth(0).unwrap());
-    return Ok(());
+    std::process::exit(1);
 };
 
-println!("F{n} = {}", fib_closed(n as f64) as i64);
-// fn main() {
-//     let seq: Vec<f64> = (0..30).map(|i| fib_closed(i as f64)).collect();
-//     for fib in seq {
-//         println!("{}", fib as i64);
-//     }
-// }
+let sqrt_5 = f64::from(5.0).sqrt();
+let phi = (f64::from(1.0) + sqrt_5) / 2.0_f64;
+let psi = (f64::from(1.0) - sqrt_5) / 2.0_f64;
+// println!("sqrt_5={}, phi={:?}, psi={:?}", sqrt_5, phi, psi);
+
+for i in 0..=n {
+    let f = i as f64;
+    println!("F{i} = {}", ((phi.powf(f) - psi.powf(f)) / sqrt_5).round());
+}

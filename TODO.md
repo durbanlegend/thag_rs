@@ -14,6 +14,7 @@
 - [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
 - [ ]  Consider replacing rug crate with dashu since rug not Windows-friendly?
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
+- [ ]  Put snippet doc comments above a use stmt?
 - [ ]  Demo scripts not commented:
 demo/event_read.rs
 demo/factorial_ibig.rs

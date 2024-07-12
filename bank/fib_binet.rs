@@ -3,6 +3,8 @@
 num-traits = "0.2.19"
 */
 
+// Inefficient version provided by ChatGPT recalculates sqrt_5, phi and psi unnecessarily.
+//
 /// Purely academic example of a closed-form (direct) calculation of any given
 /// number in the Fibonacci sequence using Binet's formula. This is imprecise
 /// above about F70, and the `dashu` crate can't help us because it refuses to

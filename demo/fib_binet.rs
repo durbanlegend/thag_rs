@@ -1,18 +1,13 @@
 use std::env;
 
 // Some simple CLI args requirements...
-let n = if let Some(arg) = env::args().nth(1) {
-    // usize::from(arg)
-    if let Ok(n) = arg.parse::<usize>() {
-        n
-    } else {
-        println!("Usage: {} <n>", env::args().nth(0).unwrap());
-        std::process::exit(1);
-    }
-} else {
-    println!("Usage: {} <n>", env::args().nth(0).unwrap());
+let args: Vec<String> = env::args().collect();
+if args.len() != 2 {
+    eprintln!("Usage: {} <n>", args[0]);
     std::process::exit(1);
-};
+}
+
+let n: usize = args[1].parse().expect("Please provide a valid number");
 
 let sqrt_5 = f64::from(5.0).sqrt();
 let phi = (f64::from(1.0) + sqrt_5) / 2.0_f64;

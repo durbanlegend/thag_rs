@@ -1,10 +1,11 @@
 /// Example of a matrix calculation of any given number in the Fibonacci sequence
-/// using a matrix calculation. This example is by courtesy of Gemini AI.
+/// using a matrix calculation. This example is by courtesy of Gemini AI. Gemini
+/// says it's more efficient than the iterative method for large Fibonacci numbers.
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
-//# Purpose: Demo an alternative approach to Fibonacci computation
+//# Purpose: Demo an alternative to iterative computation for Fibonacci numbers.
 use std::env;
 
 fn fibonacci_matrix(n: u128) -> u128 {

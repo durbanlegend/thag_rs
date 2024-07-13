@@ -25,9 +25,9 @@ let fac2 = |n: usize| -> UBig {
     successors(Some((ubig!(1), ubig!(1))), |(i, acc)| {
         Some((i + 1, acc * (i + 1)))
     })
+    .map(|(a, b)| b)
     .nth(n - 1)
     .unwrap()
-    .1
 };
 
 let args: Vec<String> = env::args().collect();

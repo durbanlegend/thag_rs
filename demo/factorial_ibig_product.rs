@@ -65,18 +65,13 @@ fn fac(n: usize) -> UBig {
 }
 
 // Function example using successors
-// Can't substitute this in initial values (which hardly matter anyway)
-// without getting further down a deferencing rabbit hole and ending up cloning.
-let ubig_1 = ubig!(1);
-
-// Using successors is possible, but turns out pretty inscrutable
 let fac3 = |n: usize| -> UBig {
-    successors(Some((ubig!(1), ubig!(1))), |(a, b)| {
-        Some(((*&a + &ubig_1), (*&a + &ubig_1) * b))
+    successors(Some((ubig!(1), ubig!(1))), |(i, acc)| {
+        Some((i + 1, acc * (i + 1)))
     })
-        .nth(n - 1)
-        .unwrap()
-        .1
+    .map(|(a, b)| b)
+    .nth(n - 1)
+    .unwrap()
 };
 
 let args: Vec<String> = env::args().collect();

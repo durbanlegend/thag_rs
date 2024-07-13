@@ -3,17 +3,20 @@
 astro-float = "0.9.4"
 */
 
-/// Purely academic example of a closed-form (direct) calculation of any given
-/// number in the Fibonacci sequence using Binet's formula. This is imprecise
+/// Academic / recreational example of a closed-form (direct) calculation of any
+/// given number in the Fibonacci sequence using Binet's formula. This is imprecise
 /// above about F70, and the `dashu` crate can't help us because it refuses to
 /// compute powers of a negative number because they may result in a complex
 /// number. Regardless, relying on approximations of irrational numbers lends
 /// itself to inaccuracy.
 ///
+/// Shout-out to the `expr!` macro of the `astro-float` crate, which reduces very
+/// complex representations back to familiar expressions.
+///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
-//# Purpose: Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers.
+//# Purpose: Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers, , also `astro-float` crate..
 use astro_float::{expr, BigFloat, Consts, RoundingMode};
 use astro_float::ctx::Context;
 use std::env;
@@ -46,6 +49,5 @@ for i in 0..=n {
     let fib_big_float = expr!((pow(phi, f) - pow(psi, f)) / sqrt_5, &mut ctx);
     let fib_str = format!("{fib_big_float}");
     let fib = f64::from_str(&fib_str).expect("Failed to parse number into f64") as u128;
-    // println!("F{i} = {}", ((phi.powf(f) - psi.powf(f)) / sqrt_5).round());
     println!("F{i} = {}", fib);
 }

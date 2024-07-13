@@ -61,7 +61,6 @@ let (mut x, mut y) = (Integer::from(0), Integer::from(1));
 
 let mut i = 0;
 let mut fib_series_n = Integer::from(0);
-// for (a: Integer, b: Integer) in fib_series(n) {
 for a in fib_series(n) {
     #[cfg(debug_assertions)]
     {

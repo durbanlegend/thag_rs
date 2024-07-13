@@ -1,6 +1,13 @@
+/// Example of a matrix calculation of any given number in the Fibonacci sequence
+/// using a matrix calculation. This example is by courtesy of Gemini AI.
+///
+/// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
+/// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
+///
+//# Purpose: Demo an alternative approach to Fibonacci computation
 use std::env;
 
-fn fibonacci_matrix(n: u32) -> u32 {
+fn fibonacci_matrix(n: u128) -> u128 {
   if n <= 1 {
     return n;
   }
@@ -21,8 +28,8 @@ fn fibonacci_matrix(n: u32) -> u32 {
   return result[0][0];
 }
 
-fn multiply_matrices(a: [[u32; 2]; 2], b: [[u32; 2]; 2]) -> [[u32; 2]; 2] {
-  let mut result: [[u32; 2]; 2] = [[0; 2]; 2];
+fn multiply_matrices(a: [[u128; 2]; 2], b: [[u128; 2]; 2]) -> [[u128; 2]; 2] {
+  let mut result: [[u128; 2]; 2] = [[0; 2]; 2];
   for i in 0..2 {
     for j in 0..2 {
       for k in 0..2 {
@@ -35,10 +42,16 @@ fn multiply_matrices(a: [[u32; 2]; 2], b: [[u32; 2]; 2]) -> [[u32; 2]; 2] {
 
 let args: Vec<String> = env::args().collect();
 if args.len() != 2 {
-    eprintln!("Usage: {} <n>", args[0]);
+    eprintln!("Usage: {} <n>, where 0 <= n <= 128", args[0]);
     std::process::exit(1);
 }
-let n: usize = args[1].parse().expect("Please provide a valid number");
+
+let msg = "Please provide a valid integer between 0 and 128";
+let n: usize = args[1].parse().expect(msg);
+if n > 128 {
+    println!("{msg}");
+    std::process::exit(1);
+}
 
 for i in 0..=n {
   println!("F{} = {}", i, fibonacci_matrix(i.try_into().unwrap()));

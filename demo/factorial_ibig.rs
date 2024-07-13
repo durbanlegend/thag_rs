@@ -3,11 +3,17 @@
 ibig = "0.3.6"
 */
 
+/// Fast factorial algorithms with arbitrary precision and avoiding inefficient recursion.
+/// Closures and functions are effectively interchangeable.
+///
+/// `let foo = |args| -> T {};` is equivalent to `fn foo(args) -> T {}`
+//# Demo snippets with functions and closures, featured cross-platform big-number crate.
+
 use ibig::{ubig, UBig};
+use std::env;
 use std::io::Read;
 use std::iter::successors;
-
-// Closures could just as well be methods
+// Closure example using fold.
 let fac1 = |n: usize| -> UBig {
     if n == 0 {
         ubig!(0)
@@ -16,6 +22,7 @@ let fac1 = |n: usize| -> UBig {
     }
 };
 
+// Function example using successors
 // Can't substitute this in initial values (which hardly matter anyway)
 // without getting further down a deferencing rabbit hole and ending up cloning.
 let ubig_1 = ubig!(1);
@@ -31,19 +38,13 @@ let fac2 = |n: usize| -> UBig {
         .1
 };
 
-println!("Enter a positive integer to calculate its factorial");
-println!(
-    "Type lines of text at the prompt and hit Ctrl-{} on a new line when done",
-    if cfg!(windows) { 'Z' } else { 'D' }
-);
+let args: Vec<String> = env::args().collect();
+if args.len() != 2 {
+    eprintln!("Usage: {} <n>", args[0]);
+    std::process::exit(1);
+}
 
-let mut buffer = String::new();
-io::stdin().lock().read_to_string(&mut buffer)?;
-
-let n: usize = buffer
-    .trim_end()
-    .parse()
-    .expect("Can't parse input into a positive integer");
+let n: usize = args[1].parse().expect("Please provide a valid number");
 
 let fac1_n = fac1(n);
 

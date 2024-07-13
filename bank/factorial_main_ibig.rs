@@ -8,7 +8,7 @@ use std::error::Error;
 use std::io;
 use std::io::Read;
 
-/// Fast factorial algorithm avoiding inefficient recursion.
+/// Fast factorial algorithms avoiding inefficient recursion.
 fn main() -> Result<(), Box<dyn Error>> {
     let fac = |n: usize| -> UBig {
         if n == 0 {

@@ -6,8 +6,7 @@ fn fib(n: usize) -> usize {
         1 => 1_usize,
         _ => {
             iterate((0, 1), |&(a, b)| (b, a + b))
-                .take(n)
-                .last()
+                .nth(n - 1)
                 .unwrap()
                 .1
         }

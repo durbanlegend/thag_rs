@@ -7,8 +7,7 @@ ibig = "0.3.6"
 /// Closures and functions are effectively interchangeable.
 ///
 /// `let foo = |args| -> T {};` is equivalent to `fn foo(args) -> T {}`
-//# Demo snippets with functions and closures, featured cross-platform big-number crate.
-
+//# Demo snippets with functions and closures, `ibig` cross-platform big-number crate.
 use ibig::{ubig, UBig};
 use std::env;
 use std::io::Read;
@@ -22,20 +21,13 @@ let fac1 = |n: usize| -> UBig {
     }
 };
 
-// Function example using successors
-// Can't substitute this in initial values (which hardly matter anyway)
-// without getting further down a deferencing rabbit hole and ending up cloning.
-let ubig_1 = ubig!(1);
-
-// Using successors is possible, but turns out pretty inscrutable
 let fac2 = |n: usize| -> UBig {
-    successors(Some((ubig!(1), ubig!(1))), |(a, b)| {
-        Some(((*&a + &ubig_1), (*&a + &ubig_1) * b))
+    successors(Some((ubig!(1), ubig!(1))), |(i, acc)| {
+        Some((i + 1, acc * (i + 1)))
     })
-        .take(n)
-        .last()
-        .unwrap()
-        .1
+    .nth(n - 1)
+    .unwrap()
+    .1
 };
 
 let args: Vec<String> = env::args().collect();

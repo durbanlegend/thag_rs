@@ -61,7 +61,6 @@ fn fac(n: usize) -> UBig {
         UBig::from(0_usize)
     } else {
         (1..=n).map(|i| UBigWrapper(UBig::from(i))).product::<UBigWrapper>().0
-            // .map(|product| product.0)
     }
 }
 
@@ -75,8 +74,7 @@ let fac3 = |n: usize| -> UBig {
     successors(Some((ubig!(1), ubig!(1))), |(a, b)| {
         Some(((*&a + &ubig_1), (*&a + &ubig_1) * b))
     })
-        .take(n)
-        .last()
+        .nth(n - 1)
         .unwrap()
         .1
 };

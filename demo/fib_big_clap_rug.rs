@@ -4,7 +4,7 @@ clap = { version = "4.5.3", features = ["derive"] }
 rug = { version = "1.24.0", features = ["integer"] }
 */
 
-/// Fast Fibonacci with big integers, no recursion.
+/// Fast non-recursive Fibonacci series and individual calculation with big integers.
 /// Won't work with default Windows 11 because of `rug` crate.
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.

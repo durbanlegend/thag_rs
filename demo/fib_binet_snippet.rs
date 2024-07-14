@@ -1,6 +1,5 @@
-/// Purely academic example of a closed-form (direct) calculation of any given
-/// number in the Fibonacci sequence using Binet's formula. This is imprecise
-/// above about F70, and the `dashu` crate can't help us because it refuses to
+/// Purely academic example of a closed-form (direct) calculation of an individual
+/// Fibonacci number using Binet's formula. This is imprecise above about F70, and the `dashu` crate can't help us because it refuses to
 /// compute powers of a negative number because they may result in a complex
 /// number. Regardless, relying on approximations of irrational numbers lends
 /// itself to inaccuracy.

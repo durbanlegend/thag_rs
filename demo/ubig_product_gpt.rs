@@ -2,8 +2,7 @@
 [dependencies]
 ibig = "0.3.6"
 */
-
-use ibig::UBig;
+use ibig::{ubig, UBig};
 use std::iter::Product;
 use std::ops::{Deref, DerefMut};
 
@@ -28,15 +27,13 @@ impl DerefMut for UBigWrapper {
 // Step 3: Implement the Product Trait
 impl Product for UBigWrapper {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(UBigWrapper(UBig::from(1u32)), |acc, x| {
-            UBigWrapper(acc.0 * x.0)
-        })
+        iter.fold(UBigWrapper(ubig!(1)), |acc, x| UBigWrapper(acc.0 * x.0))
     }
 }
 
 impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(UBigWrapper(UBig::from(1u32)), |acc, x| {
+        iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
             UBigWrapper(acc.0.clone() * x.0.clone())
         })
     }
@@ -45,9 +42,9 @@ impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
 // Example Usage
 fn main() {
     let nums: Vec<UBigWrapper> = vec![
-        UBigWrapper(UBig::from(2u32)),
-        UBigWrapper(UBig::from(3u32)),
-        UBigWrapper(UBig::from(4u32)),
+        UBigWrapper(ubig!(2)),
+        UBigWrapper(ubig!(3)),
+        UBigWrapper(ubig!(4)),
     ];
 
     let product: UBigWrapper = nums.iter().product();

@@ -41,7 +41,7 @@ impl DerefMut for UBigWrapper {
 // Step 3: Implement the Product Trait
 impl Product for UBigWrapper {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(UBigWrapper(UBig::from(1u32)), |acc, x| {
+        iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
             UBigWrapper(acc.0 * x.0)
         })
     }
@@ -49,7 +49,7 @@ impl Product for UBigWrapper {
 
 impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(UBigWrapper(UBig::from(1u32)), |acc, x| {
+        iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
             UBigWrapper(acc.0.clone() * x.0.clone())
         })
     }
@@ -58,9 +58,9 @@ impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
 // Function example using product
 fn fac(n: usize) -> UBig {
     if n == 0 {
-        UBig::from(0_usize)
+        ubig!(0)
     } else {
-        (1..=n).map(|i| UBigWrapper(UBig::from(i))).product::<UBigWrapper>().0
+        (1..=n).map(|i| UBigWrapper(ubig!(1))).product::<UBigWrapper>().0
     }
 }
 

@@ -3,7 +3,7 @@
 [dependencies]
 itertools = "0.12.1"
 */
-/// Fast non-recursive fibonacci sequence calculation. Can't recall the exact source
+/// Fast non-recursive Fibonacci sequence calculation. Can't recall the exact source
 /// but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
 /// for a variety of alternative approaches.
 //# Purpose: Demo fast limited-scale fibonacci using Rust primitives and `itertools` crate.

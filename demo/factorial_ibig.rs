@@ -12,6 +12,7 @@ use ibig::{ubig, UBig};
 use std::env;
 use std::io::Read;
 use std::iter::successors;
+
 // Closure example using fold.
 let fac1 = |n: usize| -> UBig {
     if n == 0 {

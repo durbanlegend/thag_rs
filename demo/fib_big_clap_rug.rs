@@ -39,9 +39,9 @@ let n: usize = matches
 // Snippet accepts function or closure. This closure returns only the last value Fn.
 fn fib_value_n(n: usize) -> Integer {
     successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| Some((b.clone(), (a + b).into())))
+        .map(|(a, b): (usize, usize)| a)
         .nth(n)
         .unwrap()
-        .0
 }
 
 // Same formula, but we return the whole series from F0 to Fn. Using a closure is
@@ -52,8 +52,8 @@ fn fib_value_n(n: usize) -> Integer {
 // than repeatedly calling fn `fib_value_n`. Obvious maybe, but easily overlooked.
 let fib_series = |n: usize|
     successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| Some((b.clone(), (a + b).into())))
-   .take(n + 1)
-   .map(|(a, b)| a);
+        .map(|(a, b)| a)
+        .take(n + 1);
 
 // Manually working out the series in debug mode to check our work
 #[cfg(debug_assertions)]

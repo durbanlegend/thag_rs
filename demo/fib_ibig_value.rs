@@ -18,9 +18,9 @@ fn fib_value_n(n: usize) -> UBig {
     successors(Some((ubig!(0), ubig!(1))), |(a, b)| {
         Some((b.clone(), (a + b).into()))
     })
+    .map(|(a, b)| a)
     .nth(n)
     .unwrap()
-    .0
 }
 
 let args: Vec<String> = env::args().collect();

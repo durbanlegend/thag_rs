@@ -3,7 +3,7 @@
 ibig = "0.3.6"
 */
 
-/// Very fast tail-recursive calculation of an individual Fibonacci number using the
+/// Very fast recursive calculation of an individual Fibonacci number using the
 /// Fibonacci doubling identity.
 ///
 /// I'm not sure of the theory and I'm sure this is well known, but I stumbled
@@ -29,11 +29,11 @@ use std::collections::HashMap;
 
 fn fib(n: usize, memo: &mut HashMap<usize, UBig>) -> UBig {
     if let Some(result) = memo.get(&n) {
-        // eprintln!("Entered fib but found n={n}");
+        eprintln!("Entered fib but found n={n}");
         return result.clone();
     }
 
-    // eprintln!("Entered fib with new n={n}");
+    eprintln!("Entered fib with new n={n}");
     let result = if n % 2 == 0 {
         // F_{2n} = F_n \cdot (F_{n-1} + F_{n+1})
         let k = n / 2;

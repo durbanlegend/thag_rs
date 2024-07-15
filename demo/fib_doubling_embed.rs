@@ -16,7 +16,7 @@ tailcall = "1.0.1"
 /// expressing it in terms of Fn-1, Fn and Fn+1
 ///
 ///
-//# Purpose: Demo fast limited-scale fibonacci using Rust primitives and `itertools` crate.
+//# Purpose: An attempt to see if we could avoid implement tail-call recursion or remove it by embedding a method. Ran out of talent so far .
 use ibig::{ubig, UBig};
 use std::env;
 

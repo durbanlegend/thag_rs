@@ -4,7 +4,8 @@ ibig = "0.3.6"
 */
 
 /// Very fast recursive calculation of an individual Fibonacci number using the
-/// Fibonacci doubling identity.
+/// Fibonacci doubling identity. See also `demo/fib_doubling_iterative.rs` for
+/// a non-recursive variation.
 ///
 /// I'm not sure of the theory and I'm sure this is well known, but I stumbled
 /// across an apparent pattern in the Fibonacci sequence:
@@ -16,14 +17,15 @@ ibig = "0.3.6"
 /// For even indices: `F2n = Fn x (Fn-1 + Fn+1)`.
 /// For odd indices: `F2n+1 = Fn^2 + Fn+1^2`.
 ///
-/// So we should be able to compute a given Fibonacci number F2n or F2n+1 recursively
+/// So we should be able to compute a given Fibonacci number F2n or F2n+1 by recursively
 /// expressing it in terms of Fn-1, Fn and Fn+1.
 ///
-/// I suggested this and memoizing the first 10 or 100 Fibonacci numbers to ChatGPT,
-/// which went one better by memoizing all computed numbers. As there is a great deal
-/// of repetition and fanning out of calls to fib() the memoization drastically cuts down recursion
+/// I suggested this to ChatGPT, as well as the idea of pre-computing and storing the
+/// first 10 or 100 Fibonacci numbers to save repeated recalculation. ChatGPT went
+/// one better by memoizing all computed numbers. As there is a great deal of repetition
+/// and fanning out of calls to fib(), the memoization drastically cuts down recursion.
 ///
-//# Purpose: Demo fast efficient Fibonacci with big numbers and limited recursion, and a good job by ChatGPT.
+//# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and memoization, and a good job by ChatGPT.
 use ibig::{ubig, UBig};
 use std::collections::HashMap;
 

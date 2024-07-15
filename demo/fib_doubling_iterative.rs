@@ -4,26 +4,9 @@ ibig = "0.3.6"
 */
 
 /// Very fast non-recursive calculation of an individual Fibonacci number using the
-/// Fibonacci doubling identity.
-///
-/// I'm not sure of the theory and I'm sure this is well known, but I stumbled
-/// across an apparent pattern in the Fibonacci sequence:
-/// `For m > n: Fm = Fn-1.Fm-n + Fn.Fm-n+1.`
-///
-/// I noticed a special case when m = 2n or 2n+1, which ChatGPT tells me are the
-/// well-known "doubling identities":
-///
-/// For even indices: `F2n = Fn x (Fn-1 + Fn+1)`.
-/// For odd indices: `F2n+1 = Fn^2 + Fn+1^2`.
-///
-/// So we should be able to compute a given Fibonacci number F2n or F2n+1 recursively
-/// expressing it in terms of Fn-1, Fn and Fn+1.
-///
-/// I suggested this and memoizing the first 10 or 100 Fibonacci numbers to ChatGPT,
-/// which went one better by memoizing all computed numbers. As there is a great deal
-/// of repetition and fanning out of calls to fib() the memoization drastically cuts down recursion
-///
-//# Purpose: Demo fast efficient Fibonacci with big numbers and no recursion, and a good job by ChatGPT.
+/// Fibonacci doubling identity. See also `demo/fib_doubling_recursive.rs` for the
+/// original recursive implementation and the back story.
+//# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 use ibig::ubig;
 use std::collections::{HashMap, HashSet};
 use std::env;
@@ -66,9 +49,6 @@ fn main() {
             }
         }
     }
-    // required_indices.insert(0);
-    // required_indices.insert(1);
-    // required_indices.insert(2);
 
     eprintln!("stack={stack:#?}");
 

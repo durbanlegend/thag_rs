@@ -3,32 +3,24 @@
 ibig = "0.3.6"
 */
 
-/// Fast recursive calculation of an individual Fibonacci number using the
-/// Fibonacci doubling identity.
-/// I'm not sure of the theory and I'm sure this is well known, but I stumbled
-/// across an apparent pattern in the Fibonacci sequence:
-/// For m > n: Fm = Fn-1.Fm-n + Fn.Fm-n+1.
-/// This led straight to what ChatGPT tells me are the well-known "doubling identities":
-/// For even indices: `F2n = Fn x (Fn-1 + Fn+1)`.
-/// For odd indices: `F2n+1 = Fn^2 + Fn+1^2`.
-/// So we should be able to compute a given Fibonacci number F2n or F2n+1 recursively
-/// expressing it in terms of Fn-1, Fn and Fn+1
+/// A version of `demo/fib_doubling_recursive.rs`, minus the memoization.
+/// This serves to prove that the memoization is significantly faster, although
+/// not dramatically so.
 ///
-///
-//# Purpose: Demo fast limited-scale fibonacci using Rust primitives and `itertools` crate.
+//# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.
 use ibig::{ubig, UBig};
 use std::env;
 
 fn fib(n: usize) -> UBig {
     if n == 0 {
-        eprintln!("Entered fib but returning n={n}");
+        // eprintln!("Entered fib but returning n={n}");
         return ubig!(0);
     } else if n == 1 {
-        eprintln!("Entered fib but returning n={n}");
+        // eprintln!("Entered fib but returning n={n}");
         return ubig!(1);
     }
 
-    eprintln!("Entered fib with n={n}");
+    // eprintln!("Entered fib with n={n}");
     if n % 2 == 0 {
         let k = n / 2;
         let fk = fib(k);

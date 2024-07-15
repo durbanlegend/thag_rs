@@ -6,6 +6,8 @@ itertools = "0.12.1"
 /// Fast non-recursive Fibonacci sequence calculation. Can't recall the exact source
 /// but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
 /// for a variety of alternative approaches.
+///
+/// As the number of Fibonacci examples here shows, this took me down a Fibonacci rabbit hole.
 //# Purpose: Demo fast limited-scale fibonacci using Rust primitives and `itertools` crate.
 use itertools::iterate;
 use std::env;

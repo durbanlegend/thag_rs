@@ -9,10 +9,16 @@ ibig = "0.3.6"
 /// method, and about 10 times faster than the classic iteration. These
 /// are not formal benchmarks and your mileage may vary.
 ///
+/// Aside from the imports, this is interchangeable with `demo/fib_matrix_dashu.rs`
+/// and performance on my setup was very similar. However, `dashu` is
+/// not confined to integers but also supports floating point and rational
+/// numbers.
+///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
-//# Purpose: Demo an alternative to the standard computation for Fibonacci numbers.
+//# Purpose: Demo a very fast precise computation for large individual Fibonacci numbers.
+
 use ibig::{ubig, UBig};
 use std::env;
 

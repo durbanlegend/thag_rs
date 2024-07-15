@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 quote = "1.0.36"
-syn = { version = "2.0.69", features = ["full"] }
+syn = { version = "2.0.71", features = ["full"] }
 */
 use quote::quote;
 use syn::Expr;

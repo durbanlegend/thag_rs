@@ -2,7 +2,7 @@
 [dependencies]
 ratatui = "0.27.0"
 scopeguard = "1.2.0"
-tui-textarea = { version = "0.5.0", features = ["crossterm", "search"] }
+tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 */
 
 /// Demo a very minimal and not very useful TUI (text user interface) editor based on the featured crates.

@@ -4,7 +4,7 @@ rs-script = { path = "/Users/donf/projects/rs-script" }
 lazy_static = "1.4.0"
 regex = "1.10.4"
 ratatui = "0.27.0"
-tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0" }
+tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 */
 
 use ratatui::crossterm::event::{

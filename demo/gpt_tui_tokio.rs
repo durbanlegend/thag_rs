@@ -2,7 +2,7 @@
 [dependencies]
 ratatui = "0.27.0"
 tokio = { version = "1", features = ["full"] }
-tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0" }
+tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 */
 
 use ratatui::crossterm::{

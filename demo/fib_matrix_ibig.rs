@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-dashu = "0.4.2"
+ibig = "0.3.6"
 */
 
 /// Example of a matrix calculation of an individual Fibonacci number.
@@ -13,8 +13,7 @@ dashu = "0.4.2"
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo an alternative to the standard computation for Fibonacci numbers.
-use dashu::ubig;
-use dashu::integer::UBig;
+use ibig::{ubig, UBig};
 use std::env;
 
 fn fibonacci_matrix(n: u128) -> UBig {

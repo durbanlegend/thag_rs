@@ -11,7 +11,6 @@ ibig = "0.3.6"
 //# Purpose: Demonstrate snippets a fast non-recursive fibonacci algorithm using the `successors`.
 use ibig::{ubig, UBig};
 use std::env;
-use std::io::Read;
 use std::iter::{successors, Successors, Take};
 
 // Snippet accepts function or closure. This closure returns only the last value Fn.

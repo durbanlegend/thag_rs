@@ -7,7 +7,6 @@ use std::io::{self, Read};
 #[inline]
 pub(crate) fn disentangle(text_wall: &str) -> String {
     use std::fmt::Write;
-    // let re = Regex::new(r"(?m)^(runner [\-]{1,2}(?:add|doc|crates)(?:[\\]n|$))").unwrap();
     text_wall
         .lines()
         .map(|b| b.trim_matches('"'))

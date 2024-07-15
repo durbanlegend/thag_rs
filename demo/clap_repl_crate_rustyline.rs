@@ -43,6 +43,7 @@ enum SampleCommand {
 
 /// Older version of published clap_repl crate example, modified to prototype a
 /// (dummy) Rust REPL.
+//# Purpose: Yet another REPL demo, this time using `rustyline`.
 fn main() {
     // Use `ClapEditor` instead of the `rustyline::DefaultEditor`.
     let mut editor = ClapEditor::<SampleCommand>::new();

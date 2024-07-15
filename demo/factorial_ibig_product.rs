@@ -3,21 +3,18 @@
 ibig = "0.3.6"
 */
 
-/// Fast factorial algorithm with arbitrary precision and avoiding inefficient recursion.
+/// Fast factorial algorithm with arbitrary precision and avoiding recursion.
 /// Closures and functions are effectively interchangeable.
 ///
-/// Using the `std::iter::Product` trait is probably the most concise implementation,
-/// but if you want to use it, but unlike the `rug` crate, `ibig` does not implement
-/// the Product trait, so we have to wrap the `UBig`. Which of course is pretty verbose
-/// in the context of a snippet, but could be useful in an app.
-///
+/// Using the `std::iter::Product` trait - if implemented - is the most concise factorial
+/// implementation. Unfortunately, but unlike the `dashu` and `rug` crates, `ibig` does
+/// not implement the Product trait, so we have to wrap the `UBig`. Which of course
+/// is pretty verbose in the context of a snippet, but could be useful in an app.
 //# Demo snippet, `ibig` crate, factorial using `std::iter::Product` trait, workaround for implementing an external trait on an external crate.
 
 use ibig::{ubig, UBig};
 use std::env;
-use std::io::Read;
-use std::iter::successors;
-use std::iter::Product;
+use std::iter::{successors, Product};
 use std::ops::{Deref, DerefMut};
 
 // Step 1: Define the Wrapper Type
@@ -55,21 +52,21 @@ impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
     }
 }
 
-// Function example using product
-fn fac(n: usize) -> UBig {
+// Function example using Product
+fn fac_product(n: usize) -> UBig {
     if n == 0 {
         ubig!(0)
     } else {
-        (1..=n).map(|i| UBigWrapper(ubig!(1))).product::<UBigWrapper>().0
+        (1..=n).map(|i| UBigWrapper(UBig::from(i))).product::<UBigWrapper>().0
     }
 }
 
 // Function example using successors
-let fac3 = |n: usize| -> UBig {
+let fac_successors = |n: usize| -> UBig {
     successors(Some((ubig!(1), ubig!(1))), |(i, acc)| {
         Some((i + 1, acc * (i + 1)))
     })
-    .map(|(a, b)| b)
+    .map(|(_a, b)| b)
     .nth(n - 1)
     .unwrap()
 };
@@ -82,7 +79,7 @@ if args.len() != 2 {
 
 let n: usize = args[1].parse().expect("Please provide a valid number");
 
-let fac_n = fac(n);
+let fac_prod_n = fac_product(n);
 
-assert_eq!(fac_n, fac3(n));
-println!("factorial({n}) = {:#?}", fac_n);
+assert_eq!(fac_prod_n, fac_successors(n));
+println!("factorial({n}) = {fac_prod_n}");

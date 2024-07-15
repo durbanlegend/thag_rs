@@ -6,7 +6,7 @@ fn main() {
         std::env::current_dir().unwrap()
     );
     println!("{}", formatted_string);
-    let path = path::PathBuf::from("/Users/donf/projects/runner/demo");
+    let path = path::PathBuf::from("/Users/donf/projects/rs-script/demo");
     std::env::set_current_dir(path);
     println!(
         "Current directory changed to {:#?}",

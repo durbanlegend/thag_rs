@@ -22,15 +22,17 @@
 */
 
 use rug::Integer;
+use std::env;
 use std::error::Error;
-use std::io;
-use std::io::Read;
+// use std::io;
+// use std::io::Read;
 
-/// Fast factorial algorithm avoiding inefficient recursion.
+/// Fast factorial algorithm avoiding recursion.
 /// Unfortunately Windows 11 won't currently run this natively.
 /// Supposedly you can run it by installing MSYS2, but I haven't tested this.
+//# Purpose: Demo fast factorial using `rug` crate and `std::iter::Product` trait.
 fn main() -> Result<(), Box<dyn Error>> {
-    let fac = |n: usize| -> Integer {
+    let fac = |n: u128| -> Integer {
         if n == 0 {
             Integer::from(0_usize)
         } else {
@@ -38,19 +40,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    println!("Enter a positive integer to calculate its factorial");
-    println!(
-        "Type lines of text at the prompt and hit Ctrl-{} on a new line when done",
-        if cfg!(windows) { 'Z' } else { 'D' }
-    );
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        eprintln!("Usage: {} <n>, where 0 <= n", args[0]);
+        std::process::exit(1);
+    }
 
-    let mut buffer = String::new();
-    io::stdin().lock().read_to_string(&mut buffer)?;
-
-    let n: usize = buffer
-        .trim_end()
+    let n: u128 = args[1]
         .parse()
-        .expect("Can't parse input into a positive integer");
+        .expect("Please provide a valid integer > 0s");
 
     println!("fac({n}) = {}", fac(n));
     Ok(())

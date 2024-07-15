@@ -18,10 +18,7 @@
 - [ ]  Try vi edit mode with reedline in repl.rs?
 - [ ]  Fibonacci matrix with big integers (ibig::UBig?)
 - [ ]  Demo scripts not commented:
-demo/event_read.rs
-demo/factorial_ibig.rs
 demo/factorial_main_u128.rs
-demo/fibonacci_fn.rs
 demo/gen_names.rs
 demo/gpt_lazy_static_theme1.rs
 demo/gpt_lazy_static_theme2.rs

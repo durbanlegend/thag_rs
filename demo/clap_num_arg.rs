@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = "4.5.7"
+clap = "4.5.9"
 */
 
 use clap::{Arg, Command};

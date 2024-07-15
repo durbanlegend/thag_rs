@@ -4,7 +4,7 @@ clapcmd = "0.3.3"
 */
 use clapcmd::{Arg, ArgMatches, ClapCmd, ClapCmdResult, Command, ValueHint};
 
-/// One example from the clapcmd crate
+/// One example from the `clapcmd` crate
 fn do_ls(cmd: &mut ClapCmd, matches: ArgMatches) -> ClapCmdResult {
     let empty = String::from("");
     let file: &String = matches.get_one("file").unwrap_or(&empty);

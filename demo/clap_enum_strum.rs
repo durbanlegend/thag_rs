@@ -35,7 +35,8 @@ enum Opt {
 }
 
 /// Exploring using clap with an enum, in conjunction with strum.
-/// E.g. rs_script demo/clap_enum_strum.rs -- variant-num2
+/// E.g. `rs_script demo/clap_enum_strum.rs -- variant-num2`
+//# Purpose: Simple demo of featured crates, contrasting how they expose variants.
 fn main() {
     let cli = Cli::parse();
 

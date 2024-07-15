@@ -25,8 +25,9 @@ ibig = "0.3.6"
 ///
 //# Purpose: Demo fast efficient Fibonacci with big numbers and no recursion, and a good job by ChatGPT.
 use ibig::ubig;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::env;
+use std::iter::successors;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -37,73 +38,37 @@ fn main() {
 
     let n: usize = args[1].parse().expect("Please provide a valid number");
 
-    // let mut required_indices = HashSet::new();
-    // let earmark = |i: usize| {
-    //     : HashSet<T>
-    //         required_indices.insert(i);
-    //     }
-    // };
-
-    // let mut stack = vec![n];
-
-    // // Identify all necessary indices
-    // let mut i = n;
-    // while i > 0 {
-    //     earmark(i);
-    //     if i % 2 == 0 {
-    //         let k = i / 2;
-    //         for j in k - 1..k + 1 {
-    //             earmark(j);
-    //         }
-    //     } else {
-    //         let k = (i - 1) / 2;
-    //         for j in k..k + 1 {
-    //             earmark(j);
-    //         }
-    //     }
-    //     i = k;
-    // }
-    // // required_indices.insert(0);
-    // // required_indices.insert(1);
-
     let mut required_indices: HashSet<usize> = HashSet::new();
     let mut stack = vec![n];
+    let cached = 100;
 
     // Identify all necessary indices
     while let Some(i) = stack.pop() {
         eprintln!("Popped i={i}");
-        if i > 10 {
+        if i > cached {
             required_indices.insert(i);
             if i % 2 == 0 {
                 let k = i / 2;
-                if k - 1 > 10 && !required_indices.contains(&(k - 1)) {
-                    stack.push(k - 1);
-                    eprintln!("Pushed {}", k - 1);
-                }
-                if k > 10 && !required_indices.contains(&k) {
-                    stack.push(k);
-                    eprintln!("Pushed {k}");
-                }
-                if k + 1 > 10 && !required_indices.contains(&(k + 1)) {
-                    stack.push(k + 1);
-                    eprintln!("Pushed {}", k + 1);
+                for j in (k - 1)..=(k + 1) {
+                    if j > cached && !required_indices.contains(&j) {
+                        stack.push(j);
+                        eprintln!("Pushed {j}");
+                    }
                 }
             } else {
                 let k = (i - 1) / 2;
-                if k > 10 && !required_indices.contains(&k) {
-                    stack.push(k);
-                    eprintln!("Pushed {k}");
-                }
-                if k + 1 > 10 && !required_indices.contains(&(k + 1)) {
-                    stack.push(k + 1);
-                    eprintln!("Pushed {}", k + 1);
+                for j in k..=(k + 1) {
+                    if j > cached && !required_indices.contains(&j) {
+                        stack.push(j);
+                        eprintln!("Pushed {j}");
+                    }
                 }
             }
         }
     }
-    required_indices.insert(0);
-    required_indices.insert(1);
-    required_indices.insert(2);
+    // required_indices.insert(0);
+    // required_indices.insert(1);
+    // required_indices.insert(2);
 
     eprintln!("stack={stack:#?}");
 
@@ -112,18 +77,20 @@ fn main() {
     sorted_indices.sort();
     eprintln!("sorted_indices={sorted_indices:#?}");
 
-    let mut memo = std::collections::HashMap::new();
-    memo.insert(0, ubig!(0));
-    memo.insert(1, ubig!(1));
-    memo.insert(2, ubig!(1));
-    memo.insert(3, ubig!(2));
-    memo.insert(4, ubig!(3));
-    memo.insert(5, ubig!(5));
-    memo.insert(6, ubig!(8));
-    memo.insert(7, ubig!(13));
-    memo.insert(8, ubig!(21));
-    memo.insert(9, ubig!(34));
-    memo.insert(10, ubig!(55));
+    let mut memo = HashMap::new();
+    let fib_series = |n: usize| {
+        successors(Some((ubig!(0), ubig!(1))), |(a, b)| {
+            Some((b.clone(), (a + b).into()))
+        })
+        .map(|(a, _b)| a)
+        .take(n + 1)
+    };
+
+    let mut i = 0;
+    for a in fib_series(cached) {
+        memo.insert(i, a);
+        i += 1;
+    }
 
     // Compute and memoize Fibonacci numbers
     for &i in &sorted_indices {
@@ -135,7 +102,8 @@ fn main() {
             let k = i / 2;
             let fk = &memo[&k];
             let fk_1 = &memo[&(k - 1)];
-            memo.insert(i, fk * (fk_1 + fk));
+            let fk_2 = &memo[&(k + 1)];
+            memo.insert(i, fk * (fk_1 + fk_2));
         } else {
             let k = (i - 1) / 2;
             let fk = &memo[&k];

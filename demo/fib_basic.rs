@@ -20,7 +20,7 @@ let fib_value_n = |n: usize|
 
 let fib_series = |n: usize|
     iterate((0, 1), |&(a, b)| (b, a + b))
-        .map(|(a, b)| a)
+        .map(|(a, _b)| a)
         .take(n + 1);
 
 let args: Vec<String> = env::args().collect();

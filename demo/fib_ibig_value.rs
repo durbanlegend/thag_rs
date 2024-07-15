@@ -18,7 +18,7 @@ fn fib_value_n(n: usize) -> UBig {
     successors(Some((ubig!(0), ubig!(1))), |(a, b)| {
         Some((b.clone(), (a + b).into()))
     })
-    .map(|(a, b)| a)
+    .map(|(a, _b)| a)
     .nth(n)
     .unwrap()
 }

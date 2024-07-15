@@ -52,7 +52,7 @@ fn fib_value_n(n: usize) -> Integer {
 // than repeatedly calling fn `fib_value_n`. Obvious maybe, but easily overlooked.
 let fib_series = |n: usize|
     successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| Some((b.clone(), (a + b).into())))
-        .map(|(a, b)| a)
+        .map(|(a, _b)| a)
         .take(n + 1);
 
 // Manually working out the series in debug mode to check our work

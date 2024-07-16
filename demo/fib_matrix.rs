@@ -1,7 +1,6 @@
 /// Example of a matrix calculation of an individual Fibonacci number.
-/// This example is by courtesy of Gemini AI. Gemini claims it's more efficient
-/// than the simple iterative method for large Fibonacci numbers, but I am finding
-/// the iterative method faster up to F10,000.
+/// This example is by courtesy of Gemini AI. See big-number versions
+/// `demo/fib_matrix_dashu.rs` and `demo/fib_matrix_ibig.rs`.
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.

@@ -8,7 +8,7 @@ ibig = "0.3.6"
 /// original recursive implementation and the back story.
 ///
 /// This version is derived from `demo/fib_doubling_iterative.rs` with the following
-/// change: that we try to reduce bloat by purging redundant entries from the memo
+/// change: that we reduce bloat as best we can  by purging redundant entries from the memo
 /// cache as soon as it's safe to do so.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 use ibig::ubig;
@@ -81,6 +81,7 @@ fn main() {
         // If the 2 prior numbers are in the list, simply create this one
         // by adding them according to the definition of F(i).
         if index > 1 && sorted_indices[index - 2] == i - 2 && sorted_indices[index - 1] == i - 1 {
+            // F_n = F_{n-2} + F_{n-1})
             let fi_2 = &memo[&(i - 2)];
             let fi_1 = &memo[&(i - 1)];
             memo.insert(i, fi_2 + fi_1);
@@ -88,11 +89,13 @@ fn main() {
             if i % 2 == 0 {
                 let k = i / 2;
                 eprintln!("i={i}, need {}, {k} and {}", k - 1, k + 1);
+                // F_{2k} = F_k x (F_{k-1} + F_{k+1})
                 let fk = &memo[&k];
                 let fk_1 = &memo[&(k - 1)];
                 let fk_2 = &memo[&(k + 1)];
                 memo.insert(i, fk * (fk_1 + fk_2));
             } else {
+                // F_{2k+1} = F_k^2 + F_{k+1}^2
                 let k = (i - 1) / 2;
                 eprintln!("i={i}, need {k} and {}", k + 1);
                 let fk = &memo[&k];
@@ -136,5 +139,5 @@ fn main() {
     });
 
     eprintln!("memo.keys()={:#?}", memo.keys());
-    // println!("F{} = {}", n, memo[&n]);
+    println!("F{} = {}", n, memo[&n]);
 }

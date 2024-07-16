@@ -4,21 +4,21 @@ ibig = "0.3.6"
 */
 
 /// Very fast recursive calculation of an individual Fibonacci number using the
-/// Fibonacci doubling identity. See also `demo/fib_doubling_iterative.rs` for
-/// a non-recursive variation.
+/// Fibonacci doubling identity. See also `demo/fib_doubling_iterative.rs` and
+/// `demo/fib_doubling_iterative_purge.rs` for non-recursive variations.
 ///
-/// I'm not sure of the theory and I'm sure this is well known, but I stumbled
+/// I'm not sure of the theory and I'm sure this is old hat, but I stumbled
 /// across an apparent pattern in the Fibonacci sequence:
 /// `For m > n: Fm = Fn-1.Fm-n + Fn.Fm-n+1.`
 ///
-/// I noticed a special case when m = 2n or 2n+1, which ChatGPT tells me are
-/// well known as the "doubling identities":
+/// This has a special case when m = 2n or 2n+1, which ChatGPT tells me are
+/// well-known "doubling identities":
 ///
 /// For even indices: `F2n = Fn x (Fn-1 + Fn+1)`.
 /// For odd indices: `F2n+1 = Fn^2 + Fn+1^2`.
 ///
-/// So we should be able to compute a given Fibonacci number F2n or F2n+1 by recursively
-/// expressing it in terms of Fn-1, Fn and Fn+1.
+/// This allows us to compute a given Fibonacci number F2n or F2n+1 by recursively
+/// or indeed iteratively expressing it in terms of Fn-1, Fn and Fn+1.
 ///
 /// I suggested this to ChatGPT, as well as the idea of pre-computing and storing the
 /// first 10 or 100 Fibonacci numbers to save repeated recalculation. ChatGPT went
@@ -37,14 +37,14 @@ fn fib(n: usize, memo: &mut HashMap<usize, UBig>) -> UBig {
 
     // eprintln!("Entered fib with new n={n}");
     let result = if n % 2 == 0 {
-        // F_{2n} = F_n \cdot (F_{n-1} + F_{n+1})
+        // F_{2k} = F_k x (F_{k-1} + F_{k+1})
         let k = n / 2;
         let fk = fib(k, memo);
         let fk1 = fib(k - 1, memo);
         let fk2 = fib(k + 1, memo);
         &fk * (&fk1 + &fk2)
     } else {
-        // F_{2n+1} = F_n^2 + F_{n+1}^2
+        // F_{2k+1} = F_k^2 + F_{k+1}^2
         let k = n / 2;
         let fk = fib(k, memo);
         let fk1 = fib(k + 1, memo);
@@ -79,5 +79,5 @@ fn main() {
     memo.insert(10, ubig!(55));
 
     let result = fib(n, &mut memo);
-    // println!("Fibonacci number F({}) is {}", n, result);
+    println!("Fibonacci number F({}) is {}", n, result);
 }

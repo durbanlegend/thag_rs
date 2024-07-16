@@ -5,8 +5,8 @@ astro-float = "0.9.4"
 
 /// Academic / recreational example of a closed-form (direct) calculation of a
 /// given number in the Fibonacci sequence using Binet's formula. This is imprecise
-/// above about F70, and the `dashu` crate can't help us because it refuses to
-/// compute powers of a negative number because they may result in a complex
+/// above about F70, and the `dashu` crate can't help us because it declines to
+/// compute powers of a negative number since they may result in a complex
 /// number. Regardless, relying on approximations of irrational numbers lends
 /// itself to inaccuracy.
 ///

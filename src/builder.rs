@@ -283,7 +283,7 @@ pub fn gen_build_run(
                 } else {
                     writeln!(
                     &mut std::io::stderr(),
-                    "{main_methods} main methods found, only one allowed by default. Specify --multimain option to allow more"
+                    "{main_methods} main methods found, only one allowed by default. Specify --multimain (-m) option to allow more"
                 )
                 .unwrap();
                     std::process::exit(1);

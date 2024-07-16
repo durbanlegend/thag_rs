@@ -6,10 +6,12 @@ ibig = "0.3.6"
 /// Example of a matrix calculation of an individual Fibonacci number.
 /// This example is by courtesy of Gemini AI. For F100,000 this is the
 /// fastest individual calculation, 3-4 times faster than the doubling
-/// method, and about 10 times faster than the classic iteration. These
-/// are not formal benchmarks and your mileage may vary.
+/// method, and about 10 times faster than the classic iteration. For
+/// F1,000,000 to F10,000,000 it's overtaken by the doubling method.
+/// These are are not formal benchmarks and your mileage may vary. Besides,
+/// these are only demo scripts and come with no guarantees.
 ///
-/// Aside from the imports, this is interchangeable with `demo/fib_matrix_dashu.rs`
+/// Aside from the imports, this script is interchangeable with `demo/fib_matrix_dashu.rs`
 /// and performance on my setup was very similar. However, `dashu` is
 /// not confined to integers but also supports floating point and rational
 /// numbers.

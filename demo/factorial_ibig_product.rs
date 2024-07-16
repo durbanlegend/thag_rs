@@ -4,12 +4,13 @@ ibig = "0.3.6"
 */
 
 /// Fast factorial algorithm with arbitrary precision and avoiding recursion.
-/// Closures and functions are effectively interchangeable.
+/// Closures and functions are effectively interchangeable here.
 ///
 /// Using the `std::iter::Product` trait - if implemented - is the most concise factorial
 /// implementation. Unfortunately, but unlike the `dashu` and `rug` crates, `ibig` does
 /// not implement the Product trait, so we have to wrap the `UBig`. Which of course
 /// is pretty verbose in the context of a snippet, but could be useful in an app.
+/// The implementation is thanks to GPT-4.
 //# Demo snippet, `ibig` crate, factorial using `std::iter::Product` trait, workaround for implementing an external trait on an external crate.
 
 use ibig::{ubig, UBig};

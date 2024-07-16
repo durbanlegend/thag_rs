@@ -4,7 +4,7 @@ dashu = "0.4.2"
 */
 
 /// Fast factorial algorithm with arbitrary precision and avoiding recursion.
-/// Closures and functions are effectively interchangeable.
+/// Closures and functions are effectively interchangeable here.
 ///
 ///  Using the `std::iter::Product` trait - if implemented - is the most concise
 /// factorial implementation. `dashu` implements it, so it's straightforward to use.

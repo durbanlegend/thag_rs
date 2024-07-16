@@ -9,16 +9,17 @@ ibig = "0.3.6"
 ///
 /// I'm not sure of the theory and I'm sure this is well known, but I stumbled
 /// across an apparent pattern in the Fibonacci sequence:
-/// `For m > n: Fm = Fn-1.Fm-n + Fn.Fm-n+1.`
+/// `For n > k: Fn = Fk-1.Fn-k + Fk.Fn-k+1.`
 ///
-/// I noticed a special case when m = 2n or 2n+1, which ChatGPT tells me are
-/// well known as the "doubling identities":
+/// I noticed a special case when n = 2k or 2k+1, which ChatGPT tells me are the
+/// well-known "doubling identities":
 ///
-/// For even indices: `F2n = Fn x (Fn-1 + Fn+1)`.
-/// For odd indices: `F2n+1 = Fn^2 + Fn+1^2`.
+/// For even indices: `Fn = F2k = Fk x (Fk-1 + Fk+1)` = `2Fk-1.Fk + Fk^2`.
+/// For odd indices: `Fn = F2k+1 = Fk^2 + Fk+1^2` = `Fk-1^2 + 2Fk-1.Fk + 2Fk^2`.
+/// So we can always express Fn in terms of Fk-1 and Fk.
 ///
-/// So we should be able to compute a given Fibonacci number F2n or F2n+1 by recursively
-/// expressing it in terms of Fn-1, Fn and Fn+1.
+/// So we should be able to compute a given Fibonacci number F2k or F2k+1 by recursively
+/// expressing it in terms of Fk-1, Fk and Fk+1.
 ///
 /// I suggested this to ChatGPT, as well as the idea of pre-computing and storing the
 /// first 10 or 100 Fibonacci numbers to save repeated recalculation. ChatGPT went
@@ -31,24 +32,23 @@ use std::collections::HashMap;
 
 fn fib(n: usize, memo: &mut HashMap<usize, UBig>) -> UBig {
     if let Some(result) = memo.get(&n) {
-        // eprintln!("Entered fib but found n={n}");
+        eprintln!("Entered fib but found n={n}");
         return result.clone();
     }
 
-    // eprintln!("Entered fib with new n={n}");
-    let result = if n % 2 == 0 {
-        // F_{2n} = F_n \cdot (F_{n-1} + F_{n+1})
+    eprintln!("Entered fib with new n={n}");
+    let result: UBig = if n % 2 == 0 {
+        // F2k = 2Fk-1.Fk + Fk^2 = Fk(2Fk-1 + Fk)
         let k = n / 2;
         let fk = fib(k, memo);
         let fk1 = fib(k - 1, memo);
-        let fk2 = fib(k + 1, memo);
-        &fk * (&fk1 + &fk2)
+        &fk * (2 * &fk1 + &fk)
     } else {
-        // F_{2n+1} = F_n^2 + F_{n+1}^2
+        // F2k+1 = Fk-1^2 + 2Fk-1.Fk + 2Fk^2
         let k = n / 2;
         let fk = fib(k, memo);
-        let fk1 = fib(k + 1, memo);
-        &fk * &fk + &fk1 * &fk1
+        let fk1 = fib(k - 1, memo);
+        &fk1 * &fk1 + 2 * &fk1 * (&fk1 + &fk)
     };
 
     memo.insert(n, result.clone());
@@ -79,5 +79,5 @@ fn main() {
     memo.insert(10, ubig!(55));
 
     let result = fib(n, &mut memo);
-    // println!("Fibonacci number F({}) is {}", n, result);
+    println!("Fibonacci number F({}) is {}", n, result);
 }

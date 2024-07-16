@@ -16,7 +16,6 @@
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
 - [ ]  Put snippet doc comments above a use stmt?
 - [ ]  Try vi edit mode with reedline in repl.rs?
-- [ ]  Fibonacci matrix with big integers (ibig::UBig?)
 - [ ]  Demo scripts not commented:
 demo/factorial_main_u128.rs
 demo/gen_names.rs

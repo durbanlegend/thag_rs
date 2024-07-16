@@ -7,18 +7,9 @@ ibig = "0.3.6"
 /// Fibonacci doubling identity. See also `demo/fib_doubling_recursive.rs` for the
 /// original recursive implementation and the back story.
 ///
-/// This version is derived from `demo/fib_doubling_recursive.rs` with the following
-/// changes:
-///
-/// 1. Instead of calculating the `Fi` values in descending order as soon as they are
-/// identified, add them to a list and then calculate them from the list in ascending
-/// order.
-///
-/// 2. The list tends to end up containing strings of 3 or more commonly 4 consecutive
-/// `i` values for which `Fi` must be calculated. For any `i` that is the 3rd or
-/// subsequent entry in such a consecutive run, that is, for which Fi-2 and Fi-1 have
-/// already been calculated, compute Fi cheaply as Fi-2 + Fi-1 instead of using the
-/// normal multiplication formula.
+/// This version is derived from `demo/fib_doubling_iterative.rs` with the following
+/// change: that we try to reduce bloat by purging redundant entries from the memo
+/// cache as soon as it's safe to do so.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 use ibig::ubig;
 use std::collections::{HashMap, HashSet};
@@ -82,42 +73,68 @@ fn main() {
         i += 1;
     }
 
-    for &i in &sorted_indices {
-        if i > 1 {
-            let result = if i % 2 == 0 {
+    let mut purged_cache = false;
+
+    sorted_indices.iter().enumerate().for_each(|(index, &i)| {
+        if i == 0 || i == 1 {}
+
+        // If the 2 prior numbers are in the list, simply create this one
+        // by adding them according to the definition of F(i).
+        if index > 1 && sorted_indices[index - 2] == i - 2 && sorted_indices[index - 1] == i - 1 {
+            let fi_2 = &memo[&(i - 2)];
+            let fi_1 = &memo[&(i - 1)];
+            memo.insert(i, fi_2 + fi_1);
+        } else {
+            if i % 2 == 0 {
                 let k = i / 2;
-                eprintln!("i={i}, need k={k} and k - 1={}", k - 1);
-                let fk = memo[&k].clone();
-                let fk_1 = memo[&(k - 1)].clone();
-                &fk * (fk_1 + &fk)
+                eprintln!("i={i}, need {}, {k} and {}", k - 1, k + 1);
+                let fk = &memo[&k];
+                let fk_1 = &memo[&(k - 1)];
+                let fk_2 = &memo[&(k + 1)];
+                memo.insert(i, fk * (fk_1 + fk_2));
             } else {
                 let k = (i - 1) / 2;
-                let fk = memo[&k].clone();
-                let fk_1 = memo[&(k + 1)].clone();
-                &fk * &fk + &fk_1 * &fk_1
-            };
-
-            memo.insert(i, result.clone());
-            eprintln!("Memoised {i}");
-
-            // Purge unnecessary values
-            if i % 2 == 1 {
-                let k = (i - 1) / 2;
-                // memo.remove(&k);
-                // eprintln!("Removed k={k}");
-                if k > 0 {
-                    memo.remove(&(k - 1));
-                    eprintln!("Removed k - 1={}", k - 1);
-                }
-            } else {
-                let k = i / 2;
-                if k > 1 {
-                    memo.remove(&(k - 2));
-                    eprintln!("Removed k - 2={}", k - 2);
-                }
+                eprintln!("i={i}, need {k} and {}", k + 1);
+                let fk = &memo[&k];
+                let fk_1 = &memo[&(k + 1)];
+                memo.insert(i, fk * fk + fk_1 * fk_1);
             }
         }
-    }
 
+        // Purge unnecessary values
+        if i % 2 == 1 {
+            let k = (i - 1) / 2;
+            if !(index + 1 < sorted_indices.len() && sorted_indices[index + 1] == i + 1) {
+                memo.remove(&k);
+                memo.remove(&(k + 1));
+                // eprintln!("Removed k={k} and k+1={}", k + 1);
+            }
+        } else {
+            let k = i / 2;
+            if !(index + 1 < sorted_indices.len() && sorted_indices[index + 1] == i + 1) {
+                memo.remove(&k);
+                memo.remove(&(k + 1));
+                // eprintln!("Removed k={k} and k+1={}", k + 1);
+            }
+            memo.remove(&(k - 1));
+            // eprintln!("Removed k-1={}", k - 1);
+            if k > 1 && memo.contains_key(&(k - 2)) {
+                memo.remove(&(k - 2));
+                // eprintln!("Removed k-2={}", k - 2);
+            }
+        }
+
+        if !purged_cache && i > &cached * 2 + 2 {
+            for j in 0..=cached {
+                if memo.contains_key(&j) {
+                    memo.remove(&j);
+                    // eprintln!("Removed j={}", j);
+                }
+            }
+            purged_cache = true;
+        }
+    });
+
+    eprintln!("memo.keys()={:#?}", memo.keys());
     // println!("F{} = {}", n, memo[&n]);
 }

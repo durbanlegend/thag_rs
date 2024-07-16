@@ -6,6 +6,19 @@ ibig = "0.3.6"
 /// Very fast non-recursive calculation of an individual Fibonacci number using the
 /// Fibonacci doubling identity. See also `demo/fib_doubling_recursive.rs` for the
 /// original recursive implementation and the back story.
+///
+/// This version is derived from `demo/fib_doubling_recursive.rs` with the following
+/// changes:
+///
+/// 1. Instead of calculating the `Fi` values in descending order as soon as they are
+/// identified, add them to a list and then calculate them from the list in ascending
+/// order.
+///
+/// 2. The list tends to end up containing strings of 3 or more commonly 4 consecutive
+/// `i` values for which `Fi` must be calculated. For any `i` that is the 3rd or
+/// subsequent entry in such a consecutive run, that is, for which Fi-2 and Fi-1 have
+/// already been calculated, compute Fi cheaply as Fi-2 + Fi-1 instead of using the
+/// normal multiplication formula.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 use ibig::ubig;
 use std::collections::{HashMap, HashSet};
@@ -27,7 +40,7 @@ fn main() {
 
     // Identify all necessary indices
     while let Some(i) = stack.pop() {
-        eprintln!("Popped i={i}");
+        // eprintln!("Popped i={i}");
         if i > cached {
             required_indices.insert(i);
             if i % 2 == 0 {
@@ -35,7 +48,7 @@ fn main() {
                 for j in (k - 1)..=(k + 1) {
                     if j > cached && !required_indices.contains(&j) {
                         stack.push(j);
-                        eprintln!("Pushed {j}");
+                        // eprintln!("Pushed {j}");
                     }
                 }
             } else {
@@ -43,19 +56,19 @@ fn main() {
                 for j in k..=(k + 1) {
                     if j > cached && !required_indices.contains(&j) {
                         stack.push(j);
-                        eprintln!("Pushed {j}");
+                        // eprintln!("Pushed {j}");
                     }
                 }
             }
         }
     }
 
-    eprintln!("stack={stack:#?}");
+    // eprintln!("stack={stack:#?}");
 
     // Sort indices in ascending order
     let mut sorted_indices: Vec<_> = required_indices.into_iter().collect();
     sorted_indices.sort();
-    eprintln!("sorted_indices={sorted_indices:#?}");
+    // eprintln!("sorted_indices={sorted_indices:#?}");
 
     let mut memo = HashMap::new();
     let fib_series = |n: usize| {
@@ -72,25 +85,30 @@ fn main() {
         i += 1;
     }
 
-    // Compute and memoize Fibonacci numbers
-    for &i in &sorted_indices {
-        if i == 0 || i == 1 {
-            continue;
-        }
+    sorted_indices.iter().enumerate().for_each(|(index, &i)| {
+        if i == 0 || i == 1 {}
 
-        if i % 2 == 0 {
-            let k = i / 2;
-            let fk = &memo[&k];
-            let fk_1 = &memo[&(k - 1)];
-            let fk_2 = &memo[&(k + 1)];
-            memo.insert(i, fk * (fk_1 + fk_2));
+        // If the 2 prior numbers are in the list, simply create this one
+        // by adding them according to the definition of F(i).
+        if index > 1 && sorted_indices[index - 2] == i - 2 && sorted_indices[index - 1] == i - 1 {
+            let fi_2 = &memo[&(i - 2)];
+            let fi_1 = &memo[&(i - 1)];
+            memo.insert(i, fi_2 + fi_1);
         } else {
-            let k = (i - 1) / 2;
-            let fk = &memo[&k];
-            let fk_1 = &memo[&(k + 1)];
-            memo.insert(i, fk * fk + fk_1 * fk_1);
+            if i % 2 == 0 {
+                let k = i / 2;
+                let fk = &memo[&k];
+                let fk_1 = &memo[&(k - 1)];
+                let fk_2 = &memo[&(k + 1)];
+                memo.insert(i, fk * (fk_1 + fk_2));
+            } else {
+                let k = (i - 1) / 2;
+                let fk = &memo[&k];
+                let fk_1 = &memo[&(k + 1)];
+                memo.insert(i, fk * fk + fk_1 * fk_1);
+            }
         }
-    }
+    });
 
-    println!("F{} = {}", n, memo[&n]);
+    // println!("F{} = {}", n, memo[&n]);
 }

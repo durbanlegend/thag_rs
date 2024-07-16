@@ -548,7 +548,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     } else {
         log!(
             Verbosity::Quiet,
-            "Error parsing syntax tree. Using regex to help you debug the script"
+            "Error parsing syntax tree. Using regex to help you debug the script."
         );
         // debug_log!("Error parsing syntax tree, using regex instead");
         debug_timings(&start_ast, "Completed unsuccessful AST parse");

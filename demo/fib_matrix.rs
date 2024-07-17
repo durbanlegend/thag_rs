@@ -1,4 +1,5 @@
-/// Example of a matrix calculation of an individual Fibonacci number.
+/// Very fast recursive calculation of an individual Fibonacci number
+/// using the matrix squaring technique.
 /// This example is by courtesy of Gemini AI. See big-number versions
 /// `demo/fib_matrix_dashu.rs` and `demo/fib_matrix_ibig.rs`.
 ///

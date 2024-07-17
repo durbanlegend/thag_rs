@@ -3,7 +3,8 @@
 ibig = "0.3.6"
 */
 
-/// Example of a matrix calculation of an individual Fibonacci number.
+/// Very fast recursive calculation of an individual Fibonacci number
+/// using the matrix squaring technique.
 /// This example is by courtesy of Gemini AI. For F100,000 this is the
 /// fastest individual calculation, 3-4 times faster than the doubling
 /// method, and about 10 times faster than the classic iteration. For

@@ -10,9 +10,7 @@
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
-- [ ]  Debug egui_code_editor.rss only showing env_logger if use egui::*; is included.
-- [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
-- [ ]  Consider replacing rug crate with dashu since rug not Windows-friendly?
+- [ ]  Debug egui_code_editor.rss only showing env_logger if "use egui::\*;" is included - DONE: Nothing to do with "use" statement, need to append ",egui_code_editor=debug" to $RUST_LOG
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
 - [ ]  Put snippet doc comments above a use stmt?
 - [ ]  Demo scripts not commented:
@@ -91,6 +89,8 @@ demo/windows_cr_issue.rs
 - [ ]  Work on demo/reedline_clap_repl_gemini.rs
 - [ ]  Consider other Rust gui packages.
 - [ ]  How to navigate reedline history entry by entry instead of line by line.
+- [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
+
 
 
 ## Ideas / Future Enhancements

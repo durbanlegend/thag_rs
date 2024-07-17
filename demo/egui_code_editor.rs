@@ -26,7 +26,6 @@ syntect = ["egui_extras/syntect"]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use eframe;
-use egui;
 use env_logger;
 
 /// A prototype GUI editor with saved state and syntax highlighting.

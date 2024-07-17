@@ -13,7 +13,7 @@ use std::error::Error;
 #[derive(Clone, Default, Parser, Debug)]
 #[command(name = "rs_script")]
 pub struct Cli {
-    /// Optional name of a script to run (<stem>.rs)
+    /// Optional name of a script to run (`stem`.rs)
     pub script: Option<String>,
     /// Set the arguments for the script
     #[arg(last = true)]
@@ -60,7 +60,7 @@ pub struct Cli {
     /// Allow multiple main methods
     #[arg(short, long)]
     pub multimain: bool,
-    /// Build executable <home_dir>/.cargo/bin/<stem> from script <stem>.rs using `cargo build --release`.
+    /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`.
     #[arg(short = 'x', long, conflicts_with_all(["all", "edit", "expression", "run", "repl", "stdin"]))]
     pub executable: bool,
 }

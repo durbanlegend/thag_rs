@@ -11,7 +11,7 @@ ibig = "0.3.6"
 /// change: that we reduce bloat as best we can  by purging redundant entries from the memo
 /// cache as soon as it's safe to do so.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
-use ibig::{ubig, UBig};
+use ibig::ubig;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::iter::successors;
@@ -58,7 +58,7 @@ fn main() {
 
     let mut sorted_indices: Vec<_> = required_indices.into_iter().collect();
     sorted_indices.sort();
-    eprintln!("sorted_indices={sorted_indices:#?}");
+    // eprintln!("sorted_indices={sorted_indices:#?}");
 
     let mut memo = HashMap::new();
     let fib_series = |n: usize| {
@@ -91,7 +91,7 @@ fn main() {
         } else {
             if i % 2 == 0 {
                 let k = i / 2;
-                eprintln!("i={i}, need {}, {k} and {}", k - 1, k + 1);
+                // eprintln!("i={i}, need {}, {k} and {}", k - 1, k + 1);
                 // F_{2k} = F_k x (F_{k-1} + F_{k+1})
                 let fk = &memo[&k];
                 let fk_1 = &memo[&(k - 1)];
@@ -99,7 +99,7 @@ fn main() {
                 let fib = fk * (fk_1 + fk_2);
                 if index == len - 1 {
                     fib_n = fib;
-                    let dur = start.elapsed();
+                    // let dur = start.elapsed();
                     // println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
                 } else {
                     memo.insert(i, fib);
@@ -107,13 +107,13 @@ fn main() {
             } else {
                 // F_{2k+1} = F_k^2 + F_{k+1}^2
                 let k = (i - 1) / 2;
-                eprintln!("i={i}, need {k} and {}", k + 1);
+                // eprintln!("i={i}, need {k} and {}", k + 1);
                 let fk = &memo[&k];
                 let fk_1 = &memo[&(k + 1)];
                 let fib = fk * fk + fk_1 * fk_1;
                 if index == len - 1 {
                     fib_n = fib;
-                    let dur = start.elapsed();
+                    // let dur = start.elapsed();
                     // println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
                 } else {
                     memo.insert(i, fib);
@@ -161,7 +161,11 @@ fn main() {
     let dur = start.elapsed();
     println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
-    let fib_n = fib_n.to_string();
-    let l = fib_n.len();
-    println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+    if n <= 1000 {
+        println!("F({n})={fib_n}");
+    } else {
+        let fib_n = fib_n.to_string();
+        let l = fib_n.len();
+        println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+    }
 }

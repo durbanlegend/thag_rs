@@ -66,6 +66,10 @@ let fib_n = fast_fibonacci(n);
 let dur = start.elapsed();
 println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
-let fib_n = fib_n.to_string();
-let l = fib_n.len();
-println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l-20..l-1]);
+if n <= 1000 {
+    println!("F({n})={fib_n}");
+} else {
+    let fib_n = fib_n.to_string();
+    let l = fib_n.len();
+    println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+}

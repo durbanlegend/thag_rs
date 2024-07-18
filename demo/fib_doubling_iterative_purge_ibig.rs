@@ -25,6 +25,15 @@ fn main() {
     }
 
     let n: usize = args[1].parse().expect("Please provide a valid number");
+    let n_disp = n
+        .to_string()
+        .as_bytes()
+        .rchunks(3)
+        .rev()
+        .map(std::str::from_utf8)
+        .collect::<Result<Vec<&str>, _>>()
+        .unwrap()
+        .join(",");
 
     let start = Instant::now();
     let mut required_indices = HashSet::new();
@@ -167,11 +176,19 @@ fn main() {
     let dur = start.elapsed();
     println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
+    let fib_n_str = fib_n.to_string();
+
     if n <= 1000 {
         println!("F({n})={fib_n}");
+    } else if n >= 1000000 {
+        println!("F({n_disp}) ends in ...{}", fib_n % ubig!(1000000000));
     } else {
-        let fib_n = fib_n.to_string();
-        let l = fib_n.len();
-        println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+        let l = fib_n_str.len();
+        println!(
+            "F({}) = {}...{}",
+            n_disp,
+            &fib_n_str[0..20],
+            &fib_n_str[l - 20..l - 1]
+        );
     }
 }

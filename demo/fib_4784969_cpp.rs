@@ -131,6 +131,15 @@ fn main() {
     }
 
     let n: usize = args[1].parse().expect("Please provide a valid number");
+    let n_disp = n
+        .to_string()
+        .as_bytes()
+        .rchunks(3)
+        .rev()
+        .map(std::str::from_utf8)
+        .collect::<Result<Vec<&str>, _>>()
+        .unwrap()
+        .join(",");
 
     let start = Instant::now();
 

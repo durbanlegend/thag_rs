@@ -7,10 +7,7 @@ use ibig::{ubig, UBig};
 use std::env;
 use std::time::Instant;
 
-fn add_tuples(
-    (a1, b1, c1): (UBig, UBig, UBig),
-    (_a2, b2, c2): (UBig, UBig, UBig),
-) -> (UBig, UBig, UBig) {
+fn add_tuples((a1, b1, c1): (UBig, UBig, UBig), (b2, c2): (UBig, UBig)) -> (UBig, UBig, UBig) {
     let v = &a1 * &b2 + &b1 * &c2;
     let w = &b1 * &b2 + &c1 * &c2;
     (w.clone() - v.clone(), v, w)
@@ -24,9 +21,9 @@ fn dijkstra_fib(n: usize) -> UBig {
 
     while k > 0 {
         if k % 2 == 1 {
-            r = add_tuples(r, p.clone());
+            r = add_tuples(r, (p.1.clone(), p.2.clone()));
         }
-        p = add_tuples(p.clone(), p);
+        p = add_tuples(p.clone(), (p.1.clone(), p.2.clone()));
         k /= 2;
     }
 

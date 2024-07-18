@@ -3,39 +3,35 @@
 ibig = "0.3.6"
 */
 
-/// Very fast recursive calculation of an individual Fibonacci number
-/// using the fast doubling technique.
-/// https://www.geeksforgeeks.org/fast-doubling-method-to-find-the-nth-fibonacci-number/
+/// Very fast recursive calculation of an individual Fibonacci number using the "fast doubling""
+/// technique found at
+/// https://www.geeksforgeeks.org/fast-doubling-method-to-find-the-nth-fibonacci-number/.
+/// Based on the two formulae: F(2n) = F(n)[2F(n+1) – F(n)] and F(2n + 1) = F(n)2+F(n+1)2
 use ibig::{ubig, UBig};
 use std::env;
 use std::time::Instant;
 
-fn fast_doubling(n: usize, res: &mut [UBig; 2]) {
+fn fast_doubling(n: usize, results: &(UBig, UBig)) -> (UBig, UBig) {
     if n == 0 {
-        res[0] = ubig!(0);
-        res[1] = ubig!(1);
-        return;
+        return (ubig!(0), ubig!(1));
     }
 
-    let a = &res[0];
-    let b = &res[1];
+    let (f_n, f_n_1) = &results; // (F(n), F(n+1))
 
-    let mut c = 2 * b - a;
-    if c < ubig!(0) {
-        c = c + ubig!(1);
-    }
-    c = a * &c;
+    let temp = 2 * f_n_1 - f_n;
+    // if temp < ubig!(0) {
+    //     temp += ubig!(1);
+    // }
+    let f_2n = f_n * &temp;
 
-    let d = a * a + b * b;
+    let f_2n_1 = f_n * f_n + f_n_1 * f_n_1; // F(2n + 1)
 
-    // eprintln!("n={n}, a={a}, b={b}, c={c}, d={d}");
+    // eprintln!("n={n}, f_n={f_n}, f_n_1={f_n_1}, f_2n={f_2n}, f_2n_1={f_2n_1}");
 
     if n % 2 == 0 {
-        res[0] = c;
-        res[1] = d;
+        (f_2n, f_2n_1)
     } else {
-        res[0] = d.clone();
-        res[1] = c + d;
+        (f_2n_1.clone(), f_2n + f_2n_1)
     }
 }
 
@@ -47,33 +43,50 @@ fn main() {
     }
 
     let msg = "Please provide a positive integer";
-    let mut n: usize = args[1].parse().expect(msg);
+    let n: usize = args[1].parse().expect(msg);
+    let n_disp = n
+        .to_string()
+        .as_bytes()
+        .rchunks(3)
+        .rev()
+        .map(std::str::from_utf8)
+        .collect::<Result<Vec<&str>, _>>()
+        .unwrap()
+        .join(",");
 
     let start = Instant::now();
-    let mut res = [ubig!(0), ubig!(1)];
     let mut chain = Vec::<usize>::new();
-    while n > 0 {
-        chain.push(n);
-        n = n / 2;
+    let mut temp_n = n;
+
+    while temp_n > 0 {
+        chain.push(temp_n);
+        temp_n /= 2;
     }
 
     chain.sort();
+    let mut results = (ubig!(0), ubig!(1));
     for i in chain.iter() {
-        fast_doubling(*i, &mut res);
+        results = fast_doubling(*i, &results);
     }
 
-    // println!("F({}) = {}", n, res[0]);
+    let (fib_n, _) = &results;
 
     let dur = start.elapsed();
     println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
-    let fib_n = res[0].to_string();
+    let fib_n_str = fib_n.to_string();
 
     if n <= 1000 {
         println!("F({n})={fib_n}");
+    } else if n >= 1000000 {
+        println!("F({n_disp}) ends in ...{}", fib_n % ubig!(1000000000));
     } else {
-        let fib_n = fib_n.to_string();
-        let l = fib_n.len();
-        println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+        let l = fib_n_str.len();
+        println!(
+            "F({}) = {}...{}",
+            n_disp,
+            &fib_n_str[0..20],
+            &fib_n_str[l - 20..l - 1]
+        );
     }
 }

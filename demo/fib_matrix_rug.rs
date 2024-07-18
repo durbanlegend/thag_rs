@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-ibig = "0.3.6"
+rug = "1.24.1"
 */
 
 /// Very fast recursive calculation of an individual Fibonacci number
@@ -22,17 +22,18 @@ ibig = "0.3.6"
 ///
 //# Purpose: Demo a very fast precise computation for large individual Fibonacci numbers.
 
-use ibig::{ubig, UBig};
+use rug::ops::Pow;
+use rug::Integer;
 use std::env;
 use std::time::Instant;
 
-fn fibonacci_matrix(n: u128) -> UBig {
+fn fibonacci_matrix(n: u128) -> Integer {
   if n <= 1 {
-    return UBig::from(n);
+    return Integer::from(n);
   }
 
-  let mut a = [[ubig!(1), ubig!(1)], [ubig!(1), ubig!(0)]];
-  let mut result = [[ubig!(1), ubig!(0)], [ubig!(0), ubig!(1)]];
+  let mut a = [[Integer::from(1), Integer::from(1)], [Integer::from(1), Integer::from(0)]];
+  let mut result = [[Integer::from(1), Integer::from(0)], [Integer::from(0), Integer::from(1)]];
 
   // Efficient exponentiation using repeated squaring
   let mut power = n - 1;
@@ -47,8 +48,8 @@ fn fibonacci_matrix(n: u128) -> UBig {
   return result[0][0].clone();
 }
 
-fn multiply_matrices(a: [[UBig; 2]; 2], b: [[UBig; 2]; 2]) -> [[UBig; 2]; 2] {
-  let mut result: [[UBig; 2]; 2] = [[ubig!(0), ubig!(0)], [ubig!(0), ubig!(0)]];
+fn multiply_matrices(a: [[Integer; 2]; 2], b: [[Integer; 2]; 2]) -> [[Integer; 2]; 2] {
+  let mut result: [[Integer; 2]; 2] = [[Integer::from(0), Integer::from(0)], [Integer::from(0), Integer::from(0)]];
   for i in 0..2 {
     for j in 0..2 {
       for k in 0..2 {

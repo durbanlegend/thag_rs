@@ -1,34 +1,33 @@
 /*[toml]
 [dependencies]
-ibig = "0.3.6"
+rug = "1.24.1"
 */
 
+use rug::ops::Pow;
 /// Very fast recursive calculation of an individual Fibonacci number
 /// using the fast doubling technique.
 /// https://www.geeksforgeeks.org/fast-doubling-method-to-find-the-nth-fibonacci-number/
-use ibig::{ubig, UBig};
+use rug::{Complete, Integer};
 use std::env;
 use std::time::Instant;
 
-fn fast_doubling(n: usize, res: &mut [UBig; 2]) {
+fn fast_doubling(n: usize, res: &mut [Integer; 2]) {
     if n == 0 {
-        res[0] = ubig!(0);
-        res[1] = ubig!(1);
+        res[0] = Integer::from(0);
+        res[1] = Integer::from(1);
         return;
     }
 
     let a = &res[0];
     let b = &res[1];
 
-    let mut c = 2 * b - a;
-    if c < ubig!(0) {
-        c = c + ubig!(1);
+    let mut c = Integer::from(2) * b - a;
+    if c < Integer::from(0) {
+        c += Integer::from(1);
     }
-    c = a * &c;
+    c = (a * &c).into();
 
-    let d = a * a + b * b;
-
-    // eprintln!("n={n}, a={a}, b={b}, c={c}, d={d}");
+    let d = a.pow(2).complete() + b.pow(2).complete();
 
     if n % 2 == 0 {
         res[0] = c;
@@ -47,14 +46,16 @@ fn main() {
     }
 
     let msg = "Please provide a positive integer";
-    let mut n: usize = args[1].parse().expect(msg);
+    let n: usize = args[1].parse().expect(msg);
 
     let start = Instant::now();
-    let mut res = [ubig!(0), ubig!(1)];
+    let mut res = [Integer::from(0), Integer::from(1)];
     let mut chain = Vec::<usize>::new();
-    while n > 0 {
-        chain.push(n);
-        n = n / 2;
+    let mut temp_n = n;
+
+    while temp_n > 0 {
+        chain.push(temp_n);
+        temp_n /= 2;
     }
 
     chain.sort();
@@ -62,12 +63,15 @@ fn main() {
         fast_doubling(*i, &mut res);
     }
 
-    // println!("F({}) = {}", n, res[0]);
-
     let dur = start.elapsed();
     println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
     let fib_n = res[0].to_string();
-    let l = fib_n.len();
-    println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+
+    if n <= 1000 {
+        println!("F({n})={fib_n}");
+    } else {
+        let l = fib_n.len();
+        println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+    }
 }

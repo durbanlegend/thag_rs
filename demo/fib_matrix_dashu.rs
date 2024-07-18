@@ -24,6 +24,7 @@ dashu = "0.4.2"
 use dashu::ubig;
 use dashu::integer::UBig;
 use std::env;
+use std::time::Instant;
 
 fn fibonacci_matrix(n: u128) -> UBig {
   if n <= 1 {
@@ -65,9 +66,18 @@ if args.len() != 2 {
 }
 
 let msg = "Please provide a positive integer";
-let n: usize = args[1].parse().expect(msg);
+let n: u128 = args[1].parse().expect(msg);
 
-// for i in 0..=n {
-//   println!("F{} = {}", i, fibonacci_matrix(i.try_into().unwrap()));
-// }
-println!("F{} = {}", n, fibonacci_matrix(n.try_into().unwrap()));
+let start = Instant::now();
+let fib_n = fibonacci_matrix(n);
+
+let dur = start.elapsed();
+println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
+
+if n <= 1000 {
+    println!("F({n})={fib_n}");
+} else {
+    let fib_n = fib_n.to_string();
+    let l = fib_n.len();
+    println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+}

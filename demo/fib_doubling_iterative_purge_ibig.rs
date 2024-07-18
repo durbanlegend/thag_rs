@@ -8,7 +8,7 @@ ibig = "0.3.6"
 /// original recursive implementation and the back story.
 ///
 /// This version is derived from `demo/fib_doubling_iterative.rs` with the following
-/// change: that we reduce bloat as best we can  by purging redundant entries from the memo
+/// change: that we reduce bloat as best we can by purging redundant entries from the memo
 /// cache as soon as it's safe to do so.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 use ibig::ubig;
@@ -30,6 +30,12 @@ fn main() {
     let mut required_indices = HashSet::new();
     let mut stack = vec![n];
     let cached = 100;
+    let dur = start.elapsed();
+    println!(
+        "Cached {cached} in {}.{}s",
+        dur.as_secs(),
+        dur.subsec_millis()
+    );
 
     // Identify all necessary indices
     while let Some(i) = stack.pop() {

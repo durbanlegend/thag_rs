@@ -13,6 +13,7 @@
 - [ ]  Debug egui_code_editor.rss only showing env_logger if "use egui::\*;" is included - DONE: Nothing to do with "use" statement, need to append ",egui_code_editor=debug" to $RUST_LOG
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
 - [ ]  Put snippet doc comments above a use stmt?
+- [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
 - [ ]  Demo scripts not commented:
 demo/gpt_lazy_static_theme1.rs
 demo/gpt_lazy_static_theme2.rs

@@ -12,18 +12,9 @@ use std::env;
 use std::time::Instant;
 
 fn fast_doubling(n: usize, results: &(UBig, UBig)) -> (UBig, UBig) {
-    if n == 0 {
-        return (ubig!(0), ubig!(1));
-    }
-
     let (f_n, f_n_1) = &results; // (F(n), F(n+1))
 
-    let temp = 2 * f_n_1 - f_n;
-    // if temp < ubig!(0) {
-    //     temp += ubig!(1);
-    // }
-    let f_2n = f_n * &temp;
-
+    let f_2n = f_n * &(2 * f_n_1 - f_n);
     let f_2n_1 = f_n * f_n + f_n_1 * f_n_1; // F(2n + 1)
 
     // eprintln!("n={n}, f_n={f_n}, f_n_1={f_n_1}, f_2n={f_2n}, f_2n_1={f_2n_1}");
@@ -31,7 +22,9 @@ fn fast_doubling(n: usize, results: &(UBig, UBig)) -> (UBig, UBig) {
     if n % 2 == 0 {
         (f_2n, f_2n_1)
     } else {
-        (f_2n_1.clone(), f_2n + f_2n_1)
+        // temp as sum of references avoids cloning f_2n_1
+        let temp = &f_2n + &f_2n_1;
+        (f_2n_1, temp)
     }
 }
 

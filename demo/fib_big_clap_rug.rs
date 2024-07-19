@@ -39,7 +39,7 @@ let n: usize = matches
 // Snippet accepts function or closure. This closure returns only the last value Fn.
 fn fib_value_n(n: usize) -> Integer {
     successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| Some((b.clone(), (a + b).into())))
-        .map(|(a, b): (usize, usize)| a)
+        .map(|(a, b): (Integer, Integer)| a)
         .nth(n)
         .unwrap()
 }

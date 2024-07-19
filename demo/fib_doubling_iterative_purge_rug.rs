@@ -11,6 +11,7 @@ rug = "1.24.1"
 /// change: that we reduce bloat as best we can  by purging redundant entries from the memo
 /// cache as soon as it's safe to do so.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
+use rug::ops::Pow;
 use rug::{Assign, Integer};
 use std::collections::{HashMap, HashSet};
 use std::env;
@@ -69,10 +70,21 @@ fn main() {
     sorted_indices.sort();
     // eprintln!("sorted_indices={sorted_indices:#?}");
 
+    if n < cached {
+        let fib_n = successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| {
+            Some((b.clone(), (a + b).into()))
+        })
+        .map(|(a, _b)| a)
+        .nth(n)
+        .expect("Fib failed");
+        println!("F({n})={fib_n}");
+        return;
+    }
+
     let mut memo = HashMap::new();
     let fib_series = |n: usize| {
         successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| {
-            Some((b.clone(), a.clone() + b))
+            Some((b.clone(), (a + b).into()))
         })
         .map(|(a, _b)| a)
         .take(n + 1)
@@ -159,7 +171,7 @@ fn main() {
             }
         }
 
-        if !purged_cache && i > &cached * 2 + 2 {
+        if n > cached && !purged_cache && i > &cached * 2 + 2 {
             for j in 0..=cached {
                 if memo.contains_key(&j) {
                     memo.remove(&j);
@@ -177,18 +189,14 @@ fn main() {
     println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
     let fib_n_str = fib_n.to_string();
-
-    if n <= 1000 {
-        println!("F({n})={fib_n}");
-    } else if n > 1000000000 {
-        println!("F({n}) ends in ...{}", fib_n % Integer::from(1000000000));
+    let l = fib_n_str.len();
+    if l <= 100 {
+        println!("F({n_disp}) len = {l}, value = {fib_n_str}");
     } else {
-        let l = fib_n_str.len();
         println!(
-            "F({}) = {}...{}",
-            n,
+            "F({n_disp}) len = {l}, value = {} ... {}",
             &fib_n_str[0..20],
-            &fib_n_str[l - 20..l - 1]
+            fib_n % (Integer::from(10).pow(20))
         );
     }
 }

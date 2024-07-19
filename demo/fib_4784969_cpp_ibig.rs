@@ -30,9 +30,8 @@ fn fibo_ej_olson(n: usize, a: &mut UBig, b: &mut UBig) {
         *b = one();
         return;
     }
-    let mut ta = zero();
     fibo_ej_olson(n / 2, a, b);
-    ta = a.clone();
+    let ta = a.clone();
     if is_even(n) {
         *a = &ta * (&(b.clone() * 2) - &ta);
         *b = &ta.pow(2) + &(b.pow(2));
@@ -151,10 +150,16 @@ fn main() {
 
     if n <= 1000 {
         println!("F({n})={fib_n}");
+    } else if n > 1000000000 {
+        println!("F({n}) ends in {}", fib_n / ubig!(1000000000));
     } else {
-        let fib_n = fib_n.to_string();
-        let l = fib_n.len();
-        println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+        let fib_n_str = fib_n.to_string();
+        let l = fib_n_str.len();
+        println!(
+            "F({n_disp}) len = {l}, value = {}...{}",
+            &fib_n_str[0..20],
+            &fib_n_str[l - 20..l - 1]
+        );
     }
 
     let start = Instant::now();
@@ -172,17 +177,23 @@ fn main() {
 
     if n <= 1000 {
         println!("F({n})={fib_n}");
+    } else if n > 1000000000 {
+        println!("F({n}) ends in {}", fib_n / ubig!(1000000000));
     } else {
-        let fib_n = fib_n.to_string();
-        let l = fib_n.len();
-        println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+        let fib_n_str = fib_n.to_string();
+        let l = fib_n_str.len();
+        println!(
+            "F({n_disp}) len = {l}, value = {}...{}",
+            &fib_n_str[0..20],
+            &fib_n_str[l - 20..l - 1]
+        );
     }
 
-    let start = Instant::now();
+    // let start = Instant::now();
 
-    let (mut a, mut b) = (ubig!(0), ubig!(1));
-    fibo_new_work(n, &mut a, &mut b);
-    let fib_n = a;
+    // let (mut a, mut b) = (ubig!(0), ubig!(1));
+    // fibo_new_work(n, &mut a, &mut b);
+    // let fib_n = a;
 
     let start = Instant::now();
 
@@ -199,9 +210,15 @@ fn main() {
 
     if n <= 1000 {
         println!("F({n})={fib_n}");
+    } else if n > 1000000000 {
+        println!("F({n}) ends in {}", fib_n / ubig!(1000000000));
     } else {
-        let fib_n = fib_n.to_string();
-        let l = fib_n.len();
-        println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l - 20..l - 1]);
+        let fib_n_str = fib_n.to_string();
+        let l = fib_n_str.len();
+        println!(
+            "F({n_disp}) len = {l}, value = {}...{}",
+            &fib_n_str[0..20],
+            &fib_n_str[l - 20..l - 1]
+        );
     }
 }

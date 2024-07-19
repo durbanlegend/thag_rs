@@ -28,6 +28,7 @@ ibig = "0.3.6"
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and memoization, and a good job by ChatGPT.
 use ibig::{ubig, UBig};
 use std::collections::HashMap;
+use std::time::Instant;
 
 fn fib(n: usize, memo: &mut HashMap<usize, UBig>) -> UBig {
     if let Some(result) = memo.get(&n) {
@@ -63,6 +64,17 @@ fn main() {
     }
 
     let n: usize = args[1].parse().expect("Please provide a valid number");
+    let n_disp = n
+        .to_string()
+        .as_bytes()
+        .rchunks(3)
+        .rev()
+        .map(std::str::from_utf8)
+        .collect::<Result<Vec<&str>, _>>()
+        .unwrap()
+        .join(",");
+
+    let start = Instant::now();
 
     // Precompute and store base Fibonacci numbers
     let mut memo: HashMap<usize, UBig> = HashMap::new();
@@ -78,6 +90,22 @@ fn main() {
     memo.insert(9, ubig!(34));
     memo.insert(10, ubig!(55));
 
-    let result = fib(n, &mut memo);
-    println!("Fibonacci number F({}) is {}", n, result);
+    let fib_n = fib(n, &mut memo);
+
+    let dur = start.elapsed();
+    println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
+
+    if n <= 1000 {
+        println!("F({n})={fib_n}");
+    } else if n >= 1000000 {
+        println!("F({n_disp}) ends in ...{}", fib_n % ubig!(1000000000));
+    } else {
+        let fib_n_str = fib_n.to_string();
+        let l = fib_n_str.len();
+        println!(
+            "F({n_disp}) len = {l}, value = {}...{}",
+            &fib_n_str[0..20],
+            &fib_n_str[l - 20..l - 1]
+        );
+    }
 }

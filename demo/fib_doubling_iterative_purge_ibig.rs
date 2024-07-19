@@ -36,6 +36,7 @@ fn main() {
         .join(",");
 
     let start = Instant::now();
+
     let mut required_indices = HashSet::new();
     let mut stack = vec![n];
     let cached = 100;
@@ -159,7 +160,7 @@ fn main() {
             }
         }
 
-        if !purged_cache && i > &cached * 2 + 2 {
+        if n > cached && !purged_cache && i > &cached * 2 + 2 {
             for j in 0..=cached {
                 if memo.contains_key(&j) {
                     memo.remove(&j);
@@ -176,17 +177,15 @@ fn main() {
     let dur = start.elapsed();
     println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
-    let fib_n_str = fib_n.to_string();
-
     if n <= 1000 {
         println!("F({n})={fib_n}");
     } else if n >= 1000000 {
         println!("F({n_disp}) ends in ...{}", fib_n % ubig!(1000000000));
     } else {
+        let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();
         println!(
-            "F({}) = {}...{}",
-            n_disp,
+            "F({n_disp}) len = {l}, value = {}...{}",
             &fib_n_str[0..20],
             &fib_n_str[l - 20..l - 1]
         );

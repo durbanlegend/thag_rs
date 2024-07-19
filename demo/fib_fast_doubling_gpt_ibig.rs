@@ -1,33 +1,30 @@
 /*[toml]
 [dependencies]
-rug = "1.24.1"
+ibig = "0.3.6"
 */
 
-use rug::ops::Pow;
 /// Very fast recursive calculation of an individual Fibonacci number
 /// using the fast doubling technique.
-/// https://www.geeksforgeeks.org/fast-doubling-method-to-find-the-nth-fibonacci-number/
-use rug::{Complete, Integer};
-use std::env;
-use std::time::Instant;
+use ibig::{ubig, UBig};
 
-fn fast_doubling(n: usize, res: &mut [Integer; 2]) {
+/// Recursive function for calculating Fibonacci numbers using the fast doubling method.
+fn fast_doubling(n: usize, res: &mut [UBig; 2]) {
     if n == 0 {
-        res[0] = Integer::from(0);
-        res[1] = Integer::from(1);
+        res[0] = ubig!(0);
+        res[1] = ubig!(1);
         return;
     }
 
     let a = &res[0];
     let b = &res[1];
 
-    let mut c = Integer::from(2) * b - a;
-    if c < Integer::from(0) {
-        c += Integer::from(1);
+    let mut c = ubig!(2) * b - a;
+    if c < ubig!(0) {
+        c += ubig!(1);
     }
-    c = (a * &c).into();
+    c = a * &c;
 
-    let d = a.pow(2).complete() + b.pow(2).complete();
+    let d = a * a + b * b;
 
     if n % 2 == 0 {
         res[0] = c;
@@ -39,7 +36,7 @@ fn fast_doubling(n: usize, res: &mut [Integer; 2]) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
         eprintln!("Usage: {} <n>, where 0 <= n", args[0]);
         std::process::exit(1);
@@ -57,8 +54,8 @@ fn main() {
         .unwrap()
         .join(",");
 
-    let start = Instant::now();
-    let mut res = [Integer::from(0), Integer::from(1)];
+    let start = std::time::Instant::now();
+    let mut res = [ubig!(0), ubig!(1)];
     let mut chain = Vec::<usize>::new();
     let mut temp_n = n;
 
@@ -80,7 +77,7 @@ fn main() {
     if n <= 1000 {
         println!("F({n})={fib_n}");
     } else if n > 1000000000 {
-        println!("F({n}) ends in {}", fib_n % Integer::from(1000000000));
+        println!("F({n}) ends in ...{}", fib_n % ubig!(1000000000));
     } else {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();

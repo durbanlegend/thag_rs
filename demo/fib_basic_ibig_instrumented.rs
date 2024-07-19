@@ -3,12 +3,16 @@
 ibig = "0.3.6"
 */
 
-/// Fast non-recursive Fibonacci individual calculation with big integers.
+/// Same script as `demo/fib_basic_ibig.rs` with basic instrumentation added for benchmarking
+/// against other fibonacci scripts.
+/// Scripts can then be selected and run sequentially.
+/// E.g. an apples-with-apples comparison of diferent algorithms implemented using the ``ibig` crate:
+/// `ls -1 demo/fib*ibig*.rs | grep -v fib_basic_ibig.rs | while read f; do echo $f; rs_script -t $f -- 10000000; done`
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
-//# Purpose: Demonstrate snippets a fast non-recursive fibonacci algorithm using the `successors`.
+//# Purpose: Demonstrate instrumenting scripts for benchmarking.
 use ibig::{ubig, UBig};
 use std::env;
 use std::iter::{successors, Successors, Take};
@@ -49,17 +53,15 @@ let fib_n = fib_value_n(n);
 let dur = start.elapsed();
 println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
-let fib_n_str = fib_n.to_string();
-
 if n <= 1000 {
     println!("F({n})={fib_n}");
 } else if n >= 1000000 {
     println!("F({n_disp}) ends in ...{}", fib_n % ubig!(1000000000));
 } else {
+    let fib_n_str = fib_n.to_string();
     let l = fib_n_str.len();
     println!(
-        "F({}) = {}...{}",
-        n_disp,
+        "F({n_disp}) len = {l}, value = {}...{}",
         &fib_n_str[0..20],
         &fib_n_str[l - 20..l - 1]
     );

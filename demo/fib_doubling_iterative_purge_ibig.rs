@@ -4,7 +4,7 @@ ibig = "0.3.6"
 */
 
 /// Very fast non-recursive calculation of an individual Fibonacci number using the
-/// Fibonacci doubling identity. See also `demo/fib_doubling_recursive.rs` for the
+/// Fibonacci doubling identity. See also `demo/fib_doubling_recursive_ibig.rs` for the
 /// original recursive implementation and the back story.
 ///
 /// This version is derived from `demo/fib_doubling_iterative.rs` with the following

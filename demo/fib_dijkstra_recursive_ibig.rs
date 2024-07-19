@@ -3,8 +3,7 @@
 ibig = "0.3.6"
 */
 
-/// When implemented using ibig, this loses to `demo/fib_doubling_iterative*.rs`.
-/// `rug` version is by far the fastest, but `rug` is based on GNU C libs GMP, MPFR and MPC.
+/// Converted from `rug` version.
 /// https://users.rust-lang.org/t/optimizing-fast-fibonacci-computation/56933/23
 use ibig::{ubig, UBig};
 use std::collections::HashMap;

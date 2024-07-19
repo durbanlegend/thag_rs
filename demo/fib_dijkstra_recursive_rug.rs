@@ -3,7 +3,7 @@
 rug = "1.24.1"
 */
 
-/// Speed demon using `rug` crate.
+/// Found on forum:
 /// https://users.rust-lang.org/t/optimizing-fast-fibonacci-computation/56933/23
 use rug::ops::Pow;
 use rug::Integer;

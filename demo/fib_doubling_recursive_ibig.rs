@@ -11,14 +11,16 @@ ibig = "0.3.6"
 /// across an apparent pattern in the Fibonacci sequence:
 /// `For m > n: Fm = Fn-1.Fm-n + Fn.Fm-n+1.`
 ///
-/// This has a special case when m = 2n or 2n+1, which ChatGPT tells me are
-/// well-known "doubling identities":
+/// This has a special case when m = 2n or 2n+1, which not surprisingly turn out
+/// to be well-known "doubling identities". The related technique is known as
+/// "fast doubling".
 ///
 /// For even indices: `F2n = Fn x (Fn-1 + Fn+1)`.
 /// For odd indices: `F2n+1 = Fn^2 + Fn+1^2`.
 ///
 /// This allows us to compute a given Fibonacci number F2n or F2n+1 by recursively
-/// or indeed iteratively expressing it in terms of Fn-1, Fn and Fn+1.
+/// or indeed iteratively expressing it in terms of Fn-1, Fn and Fn+1, or any two
+/// of these since Fn+1 = Fn-1 + Fn.
 ///
 /// I suggested this to ChatGPT, as well as the idea of pre-computing and storing the
 /// first 10 or 100 Fibonacci numbers to save repeated recalculation. ChatGPT went

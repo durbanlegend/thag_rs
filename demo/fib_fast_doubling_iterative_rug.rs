@@ -88,3 +88,4 @@ fn main() {
             fib_n % (Integer::from(10).pow(20))
         );
     }
+}

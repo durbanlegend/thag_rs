@@ -6,6 +6,7 @@ ibig = "0.3.6"
 /// Very fast recursive calculation of an individual Fibonacci number
 /// using the fast doubling technique.
 use ibig::{ubig, UBig};
+use std::time::Instant;
 
 /// Recursive function for calculating Fibonacci numbers using the fast doubling method.
 fn fast_doubling(n: usize, res: &mut [UBig; 2]) {
@@ -74,17 +75,15 @@ fn main() {
 
     let fib_n = &res[0];
 
-    if n <= 1000 {
-        println!("F({n})={fib_n}");
-    } else if n > 1000000000 {
-        println!("F({n}) ends in ...{}", fib_n % ubig!(1000000000));
+    let fib_n_str = fib_n.to_string();
+    let l = fib_n_str.len();
+    if l <= 100 {
+        println!("F({n_disp}) len = {l}, value = {fib_n_str}");
     } else {
-        let fib_n_str = fib_n.to_string();
-        let l = fib_n_str.len();
         println!(
-            "F({n_disp}) len = {l}, value = {}...{}",
+            "F({n_disp}) len = {l}, value = {} ... {}",
             &fib_n_str[0..20],
-            &fib_n_str[l - 20..l - 1]
+            fib_n % (ubig!(10).pow(20))
         );
     }
 }

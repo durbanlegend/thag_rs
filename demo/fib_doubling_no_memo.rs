@@ -60,17 +60,15 @@ fn main() {
     let dur = start.elapsed();
     println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
-    if n <= 1000 {
-        println!("F({n})={fib_n}");
-    } else if n >= 1000000 {
-        println!("F({n_disp}) ends in ...{}", fib_n % ubig!(1000000000));
+    let fib_n_str = fib_n.to_string();
+    let l = fib_n_str.len();
+    if l <= 100 {
+        println!("F({n_disp}) len = {l}, value = {fib_n_str}");
     } else {
-        let fib_n_str = fib_n.to_string();
-        let l = fib_n_str.len();
         println!(
-            "F({n_disp}) len = {l}, value = {}...{}",
+            "F({n_disp}) len = {l}, value = {} ... {}",
             &fib_n_str[0..20],
-            &fib_n_str[l - 20..l - 1]
+            fib_n % (ubig!(10).pow(20))
         );
     }
 }

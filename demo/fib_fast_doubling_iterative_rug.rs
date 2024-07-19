@@ -87,7 +87,7 @@ fn main() {
         println!(
             "F({n_disp}) len = {l}, value = {}...{}",
             &fib_n_str[0..20],
-            &fib_n_str[l - 20..l - 1]
+            &fib_n_str[l - 20..l]
         );
     }
 }

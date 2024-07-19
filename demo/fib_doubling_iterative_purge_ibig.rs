@@ -126,7 +126,7 @@ fn main() {
                 // eprintln!("i={i}, need {k} and {}", k + 1);
                 let fk = &memo[&k];
                 let fk_1 = &memo[&(k + 1)];
-                let fib = fk * fk + fk_1 * fk_1;
+                let fib = fk.pow(2) + fk_1.pow(2);
                 if index == len - 1 {
                     fib_n = fib;
                     // let dur = start.elapsed();
@@ -138,36 +138,38 @@ fn main() {
         }
 
         // Purge unnecessary values
-        if i % 2 == 1 {
-            let k = (i - 1) / 2;
-            if !(index + 1 < sorted_indices.len() && sorted_indices[index + 1] == i + 1) {
-                memo.remove(&k);
-                memo.remove(&(k + 1));
-                // eprintln!("Removed k={k} and k+1={}", k + 1);
-            }
-        } else {
-            let k = i / 2;
-            if !(index + 1 < sorted_indices.len() && sorted_indices[index + 1] == i + 1) {
-                memo.remove(&k);
-                memo.remove(&(k + 1));
-                // eprintln!("Removed k={k} and k+1={}", k + 1);
-            }
-            memo.remove(&(k - 1));
-            // eprintln!("Removed k-1={}", k - 1);
-            if k > 1 && memo.contains_key(&(k - 2)) {
-                memo.remove(&(k - 2));
-                // eprintln!("Removed k-2={}", k - 2);
-            }
-        }
-
-        if n > cached && !purged_cache && i > &cached * 2 + 2 {
-            for j in 0..=cached {
-                if memo.contains_key(&j) {
-                    memo.remove(&j);
-                    // eprintln!("Removed j={}", j);
+        if index == len - 1 {
+            if i % 2 == 1 {
+                let k = (i - 1) / 2;
+                if !(index + 1 < sorted_indices.len() && sorted_indices[index + 1] == i + 1) {
+                    memo.remove(&k);
+                    memo.remove(&(k + 1));
+                    // eprintln!("Removed k={k} and k+1={}", k + 1);
+                }
+            } else {
+                let k = i / 2;
+                if !(index + 1 < sorted_indices.len() && sorted_indices[index + 1] == i + 1) {
+                    memo.remove(&k);
+                    memo.remove(&(k + 1));
+                    // eprintln!("Removed k={k} and k+1={}", k + 1);
+                }
+                memo.remove(&(k - 1));
+                // eprintln!("Removed k-1={}", k - 1);
+                if k > 1 && memo.contains_key(&(k - 2)) {
+                    memo.remove(&(k - 2));
+                    // eprintln!("Removed k-2={}", k - 2);
                 }
             }
-            purged_cache = true;
+
+            if n > cached && !purged_cache && i > &cached * 2 + 2 {
+                for j in 0..=cached {
+                    if memo.contains_key(&j) {
+                        memo.remove(&j);
+                        // eprintln!("Removed j={}", j);
+                    }
+                }
+                purged_cache = true;
+            }
         }
     });
 

@@ -18,28 +18,9 @@ use std::env;
 use std::iter::successors;
 use std::time::Instant;
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} <n>", args[0]);
-        std::process::exit(1);
-    }
-
-    let n: usize = args[1].parse().expect("Please provide a valid number");
-    let n_disp = n
-        .to_string()
-        .as_bytes()
-        .rchunks(3)
-        .rev()
-        .map(std::str::from_utf8)
-        .collect::<Result<Vec<&str>, _>>()
-        .unwrap()
-        .join(",");
-
-    let start = Instant::now();
+fn invert_order(n: usize, cached: usize) -> Vec<usize> {
     let mut required_indices = HashSet::new();
     let mut stack = vec![n];
-    let cached = 100;
 
     // Identify all necessary indices
     while let Some(i) = stack.pop() {
@@ -68,17 +49,17 @@ fn main() {
 
     let mut sorted_indices: Vec<_> = required_indices.into_iter().collect();
     sorted_indices.sort();
-    // eprintln!("sorted_indices={sorted_indices:#?}");
+    sorted_indices
+}
 
+fn fib(n: usize, cached: usize, sorted_indices: &[usize]) -> Integer {
     if n < cached {
-        let fib_n = successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| {
+        return successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| {
             Some((b.clone(), (a + b).into()))
         })
         .map(|(a, _b)| a)
         .nth(n)
         .expect("Fib failed");
-        println!("F({n})={fib_n}");
-        return;
     }
 
     let mut memo = HashMap::new();
@@ -149,6 +130,7 @@ fn main() {
         }
 
         // Purge unnecessary values
+        // let start_purge = Instant::now();
         if i % 2 == 1 {
             let k = (i - 1) / 2;
             if !(index + 1 < sorted_indices.len() && sorted_indices[index + 1] == i + 1) {
@@ -180,10 +162,37 @@ fn main() {
             }
             purged_cache = true;
         }
+        // let dur = start_purge.elapsed();
+        // println!("Purged in {}.{}s", dur.as_secs(), dur.subsec_millis());
     });
+    fib_n
+}
 
-    // eprintln!("memo.keys()={:#?}", memo.keys());
-    // println!("F{} = {}", n, memo[&n]);
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        eprintln!("Usage: {} <n>", args[0]);
+        std::process::exit(1);
+    }
+
+    let n: usize = args[1].parse().expect("Please provide a valid number");
+    let n_disp = n
+        .to_string()
+        .as_bytes()
+        .rchunks(3)
+        .rev()
+        .map(std::str::from_utf8)
+        .collect::<Result<Vec<&str>, _>>()
+        .unwrap()
+        .join(",");
+
+    let start = Instant::now();
+    let cached: usize = 100;
+
+    let sorted_indices = invert_order(n, cached);
+    // eprintln!("sorted_indices={sorted_indices:#?}");
+
+    let fib_n = fib(n, cached, &sorted_indices);
 
     let dur = start.elapsed();
     println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());

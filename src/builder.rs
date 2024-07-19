@@ -361,7 +361,8 @@ pub fn gen_build_run(
     }
     let process = &format!(
         "{} completed processing script {}",
-        PACKAGE_NAME, build_state.source_name
+        PACKAGE_NAME,
+        nu_resolve_style(MessageLevel::Emphasis).paint(&build_state.source_name)
     );
     display_timings(start, process, proc_flags);
     Ok(())

@@ -5,7 +5,7 @@ regex = "1.10.5"
 rs-script = { path = "/Users/donf/projects/rs-script" }
 */
 
-/// Collect demo script metadata and generate as demo/README.md.
+/// Collect demo script metadata and generate demo/README.md.
 /// Strategy and grunt work thanks to ChatGPT.
 //# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
 use lazy_static::lazy_static;

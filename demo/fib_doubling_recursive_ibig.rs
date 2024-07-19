@@ -38,12 +38,11 @@ fn fib(n: usize, memo: &mut HashMap<usize, UBig>) -> UBig {
 
     // eprintln!("Entered fib with new n={n}");
     let result = if n % 2 == 0 {
-        // F_{2k} = F_k x (F_{k-1} + F_{k+1})
+        // F_{2k} = F_k x (2F_{k-1} + F_{k})
         let k = n / 2;
         let fk = fib(k, memo);
         let fk1 = fib(k - 1, memo);
-        let fk2 = fib(k + 1, memo);
-        &fk * (&fk1 + &fk2)
+        &fk * (&2 * fk1 + &fk)
     } else {
         // F_{2k+1} = F_k^2 + F_{k+1}^2
         let k = n / 2;

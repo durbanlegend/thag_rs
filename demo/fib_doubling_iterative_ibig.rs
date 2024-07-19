@@ -7,7 +7,7 @@ ibig = "0.3.6"
 /// Fibonacci doubling identity. See also `demo/fib_doubling_recursive.rs` for the
 /// original recursive implementation and the back story.
 ///
-/// This version is derived from `demo/fib_doubling_recursive.rs` with the following
+/// This version is derived from `demo/fib_doubling_recursive_ibig.rs` with the following
 /// changes:
 ///
 /// 1. Instead of calculating the `Fi` values in descending order as soon as they are

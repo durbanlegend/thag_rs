@@ -12,12 +12,7 @@ ibig = "0.3.6"
 // fib(2n+1) = fib(n)^2 + fib(n+1)^2
 // fib(2n+2) = fib(2n) + fib(2n+1)
 
-/// Fibonacci(n) in decimal
-pub(crate) fn calculate_decimal<T: Number>(n: u32) -> String {
-    calculate::<T>(n).to_string()
-}
-
-use ibig::UBig;
+use ibig::{ubig, UBig};
 use std::{
     env,
     fmt::Display,
@@ -57,6 +52,10 @@ impl Number for ibig::UBig {
     }
 }
 
+/// Fibonacci(n) in decimal
+pub(crate) fn calculate_decimal<T: Number>(n: u32) -> String {
+    calculate::<T>(n).to_string()
+}
 
 /// Fibonacci(n) in hexadecimal
 pub(crate) fn calculate_hex<T: Number>(n: u32) -> String {
@@ -97,12 +96,30 @@ if args.len() != 2 {
 
 let msg = "Please provide a positive integer";
 let n: u32 = args[1].parse().expect(msg);
+let n_disp = n
+    .to_string()
+    .as_bytes()
+    .rchunks(3)
+    .rev()
+    .map(std::str::from_utf8)
+    .collect::<Result<Vec<&str>, _>>()
+    .unwrap()
+    .join(",");
 
 let start = Instant::now();
-let fib_n: String = calculate_decimal::<UBig>(n);
+let fib_n: UBig = calculate::<UBig>(n);
 
 let dur = start.elapsed();
 println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
-let l = fib_n.len();
-println!("F({}) = {}...{}", n, &fib_n[0..20], &fib_n[l-20..l-1]);
+let fib_n_str = fib_n.to_string();
+let l = fib_n_str.len();
+if l <= 100 {
+    println!("F({n_disp}) len = {l}, value = {fib_n_str}");
+} else {
+    println!(
+        "F({n_disp}) len = {l}, value = {} ... {}",
+        &fib_n_str[0..20],
+        fib_n % (ubig!(10).pow(20))
+    );
+}

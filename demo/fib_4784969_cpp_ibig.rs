@@ -156,7 +156,7 @@ fn main() {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();
         println!(
-            "F({n_disp}) len = {l}, value = {}...{}",
+            "F({n_disp}) len = {l}, value = {} ... {}",
             &fib_n_str[0..20],
             &fib_n_str[l - 20..l]
         );
@@ -183,7 +183,7 @@ fn main() {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();
         println!(
-            "F({n_disp}) len = {l}, value = {}...{}",
+            "F({n_disp}) len = {l}, value = {} ... {}",
             &fib_n_str[0..20],
             &fib_n_str[l - 20..l]
         );
@@ -216,7 +216,7 @@ fn main() {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();
         println!(
-            "F({n_disp}) len = {l}, value = {}...{}",
+            "F({n_disp}) len = {l}, value = {} ... {}",
             &fib_n_str[0..20],
             &fib_n_str[l - 20..l]
         );

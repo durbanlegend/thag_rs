@@ -3,15 +3,22 @@
 [dependencies]
 itertools = "0.12.1"
 */
-/// Fast non-recursive Fibonacci sequence calculation. Can't recall the exact source
-/// but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
-/// for a variety of alternative approaches.
+/// Fast non-recursive Fibonacci calculations for a specific value or an entire sequence.
+/// I can't recall the exact source, but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
+/// for a variety of alternative approaches. The various Fibnonacci scripts here in the demo
+/// directory also show a number of approaches. `demo/fib_basic_ibig.rs` shows the use of
+/// the `std::iter::Successors` iterator as well as removing the limitations of Rust
+/// primitives. Most of the other examples explore different strategies for rapid computation of
+/// large Fibonacci values, and hopefully demonstrate the usefulness of `rs-script` as a tool
+/// for trying out and comparing new ideas.
 ///
 /// As the number of Fibonacci examples here shows, this took me down a Fibonacci rabbit hole.
-//# Purpose: Demo fast limited-scale fibonacci using Rust primitives and `itertools` crate.
+//# Purpose: Demo fast small-scale fibonacci using Rust primitives and `itertools` crate.
 use itertools::iterate;
 use std::env;
 
+// Closure that uses `itertools` to return a single Fibonacci value. We could just as well
+// use a function.
 let fib_value_n = |n: usize|
     iterate((0, 1), |&(a, b)| (b, a + b))
         .map(|(a, b): (usize, usize)| a)

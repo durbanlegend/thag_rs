@@ -3,7 +3,7 @@
 [dependencies]
 itertools = "0.12.1"
 */
-/// Fast non-recursive Fibonacci calculations for a specific value or an entire sequence.
+/// Fast non-recursive classic Fibonacci calculations for a specific value or an entire sequence.
 /// I can't recall the exact source, but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
 /// for a variety of alternative approaches. The various Fibnonacci scripts here in the demo
 /// directory also show a number of approaches. `demo/fib_basic_ibig.rs` shows the use of

@@ -68,7 +68,7 @@ fn fibo_new_work(n: usize, a: &mut UBig, b: &mut UBig) {
         }
     }
 }
-
+// This uses Cassini's identity
 fn fibo_new(n: usize, b: &mut UBig) {
     if n == 0 {
         *b = zero();

@@ -1,8 +1,8 @@
 /// Purely academic example of a closed-form (direct) calculation of an individual
-/// Fibonacci number using Binet's formula. This is imprecise above about F70, and the `dashu` crate can't help us because it refuses to
-/// compute powers of a negative number because they may result in a complex
-/// number. Regardless, relying on approximations of irrational numbers lends
-/// itself to inaccuracy.
+/// Fibonacci number using Binet's formula. This is imprecise above about F70, and
+/// the `dashu` crate can't help us because it does not support computing powers
+/// of a negative number because they may result in a complex number. Regardless,
+/// relying on approximations of irrational numbers lends itself to inaccuracy.
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.

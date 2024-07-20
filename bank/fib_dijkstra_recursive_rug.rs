@@ -1,17 +1,20 @@
 /*[toml]
 [dependencies]
-ibig = "0.3.6"
+rug = "1.24.1"
 */
 
-/// Converted from `rug` version.
+/// Converted from `rug` version. Not sure if this is Dijkstra, looks as though it may be Cassini,
+/// but while fast it's not the fastest anyway.
+/// Found on forum:
 /// https://users.rust-lang.org/t/optimizing-fast-fibonacci-computation/56933/23
-use ibig::{ubig, UBig};
+use rug::ops::Pow;
+use rug::Integer;
 use std::collections::HashMap;
 use std::env;
 use std::time::Instant;
 
-pub fn fast_fibonacci(target_n: usize) -> UBig {
-    let cache: HashMap<usize, UBig> = HashMap::new();
+pub fn fast_fibonacci(target_n: usize) -> Integer {
+    let cache: HashMap<usize, Integer> = HashMap::new();
     let (result, _) = fib_dijk(target_n, cache);
     return result;
 }
@@ -22,14 +25,14 @@ fn is_even(n: usize) -> bool {
 
 fn fib_dijk_helper(
     target_n: usize,
-    cache: HashMap<usize, UBig>,
-) -> (UBig, HashMap<usize, UBig>) {
+    cache: HashMap<usize, Integer>,
+) -> (Integer, HashMap<usize, Integer>) {
     if target_n <= 1 {
-        return (UBig::from(target_n), cache);
+        return (Integer::from(target_n), cache);
     } else {
         let half_n = target_n >> 1;
         let (x, cache) = fib_dijk(half_n, cache);
-        let x_2 = UBig::from((&x).pow(2));
+        let x_2 = Integer::from((&x).pow(2));
         if is_even(target_n) {
             let (y, cache) = fib_dijk(half_n - 1, cache);
             let result = 2 * x * y + x_2;
@@ -41,7 +44,7 @@ fn fib_dijk_helper(
     }
 }
 
-fn fib_dijk(target_n: usize, cache: HashMap<usize, UBig>) -> (UBig, HashMap<usize, UBig>) {
+fn fib_dijk(target_n: usize, cache: HashMap<usize, Integer>) -> (Integer, HashMap<usize, Integer>) {
     if cache.contains_key(&target_n) {
         return (cache.get(&target_n).unwrap().clone(), cache);
     } else {
@@ -81,6 +84,6 @@ if l <= 100 {
     println!(
         "F({n_disp}) len = {l}, value = {} ... {}",
         &fib_n_str[0..20],
-        fib_n % (ubig!(10).pow(20))
+        fib_n % (Integer::from(10).pow(20))
     );
 }

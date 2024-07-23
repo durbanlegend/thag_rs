@@ -16,13 +16,8 @@
 - [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
 - [ ]  Debug demo/fib_fast_doubling_iterative_rug.rs!
 - [ ]  Store a fib value and compare benchmark results against it for correctness.
-- [ ]  Use Cassini's identity to calculate F(n).
-- [ ]  Try a version of demo/fib_doubling_no_memo_ibig_1.rs with mut a and b.
-- [ ]  Try a version of demo/fib_doubling_iterative_purge_ibig.rs with mut a and b.
+- [ ]  Flesh out command meanings for repl keys from reedline::ReedlineEvent docs
 - [ ]  Demo scripts not commented:
-demo/reedline_basic_keybindings.rs
-demo/reedline_colored_text.rs
-demo/reedline_completions.rs
 demo/reedline_custom_prompt.rs
 demo/reedline_cwd_aware_hinter.rs
 demo/reedline_highlighter.rs

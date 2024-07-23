@@ -20,6 +20,7 @@ use reedline::{
     PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent,
     ReedlineMenu, Signal,
 };
+
 use regex::Regex;
 use std::borrow::Cow;
 use std::error::Error;
@@ -72,6 +73,8 @@ enum ReplCommand {
     History,
     /// Show help information
     Help,
+    /// Show key bindings
+    Keys,
     /// Exit the REPL
     Quit,
 }
@@ -79,10 +82,10 @@ enum ReplCommand {
 impl ReplCommand {
     fn print_help() {
         let mut command = ReplCommand::command();
-        let mut buf = Vec::new();
-        command.write_help(&mut buf).unwrap();
-        let help_message = String::from_utf8(buf).unwrap();
-        println!("{}", help_message);
+        // let mut buf = Vec::new();
+        // command.write_help(&mut buf).unwrap();
+        // let help_message = String::from_utf8(buf).unwrap();
+        println!("{}", command.render_long_help());
     }
 }
 
@@ -144,6 +147,16 @@ fn add_menu_keybindings(keybindings: &mut Keybindings) {
     );
 }
 
+// fn get_emacs_keybindings() {
+//     println!("\n--Default Keybindings--");
+//     for (mode, modifier, code, event) in get_reedline_default_keybindings() {
+//         if mode == "emacs" {
+//             println!("mode: {mode}, keymodifiers: {modifier}, keycode: {code}, event: {event}");
+//         }
+//     }
+//     println!();
+// }
+
 pub fn run_repl(
     options: &mut Cli,
     proc_flags: &ProcFlags,
@@ -157,6 +170,7 @@ pub fn run_repl(
         build_state,
         start,
     };
+    // get_emacs_keybindings();
     let context: &mut Context = &mut context;
     let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
     let history = Box::new(
@@ -181,9 +195,15 @@ pub fn run_repl(
     let completion_menu = Box::new(columnar_menu);
 
     let mut keybindings = default_emacs_keybindings();
+    // keybindings.add_binding(
+    //     KeyModifiers::CONTROL,
+    //     KeyCode::Char('b'),
+    //     ReedlineEvent::Edit(vec![EditCommand::SwapWords]),
+    // );
     add_menu_keybindings(&mut keybindings);
+    // println!("{:#?}", keybindings.get_keybindings());
 
-    let edit_mode = Box::new(Emacs::new(keybindings));
+    let edit_mode = Box::new(Emacs::new(keybindings.clone()));
 
     // TODO implement a highlighter?
     // let highlighter = Box::<ExampleHighlighter>::default();
@@ -197,6 +217,8 @@ pub fn run_repl(
         .with_completer(completer)
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
+
+    let bindings = keybindings.bindings;
 
     let prompt = ReplPrompt("repl");
 
@@ -272,6 +294,37 @@ pub fn run_repl(
                     ReplCommand::History => {
                         edit_history(args.clone(), context)?;
                     }
+                    ReplCommand::Keys => {
+                        // Can't extract this to a method because for some reason KeyCmmbination is not exposed.
+                        // Collect and format key bindings
+                        let mut formatted_bindings = Vec::new();
+                        for (key_combination, reedline_event) in &bindings {
+                            let key_modifiers = key_combination.modifier;
+                            let key_code = key_combination.key_code;
+                            let modifier = format_key_modifier(key_modifiers);
+                            let key = format_key_code(key_code);
+                            let key_desc = format!("{}{}", modifier, key);
+                            if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                                let cmd_desc = format_edit_commands(edit_cmds);
+                                formatted_bindings.push((key_desc, cmd_desc));
+                            }
+                        }
+
+                        // Sort the formatted bindings alphabetically by key combination description
+                        formatted_bindings.sort_by(|a, b| a.0.cmp(&b.0));
+
+                        // Determine the length of the longest key description for padding
+                        let max_key_len = formatted_bindings
+                            .iter()
+                            .map(|(key, _)| key.len())
+                            .max()
+                            .unwrap_or(0);
+
+                        // Print the formatted and sorted key bindings
+                        for (key_desc, cmd_desc) in formatted_bindings {
+                            println!("{:<width$}    {}", key_desc, cmd_desc, width = max_key_len);
+                        }
+                    }
                 }
                 continue;
             }
@@ -303,6 +356,74 @@ pub fn run_repl(
     Ok(())
 }
 
+// Helper function to convert KeyModifiers to string
+fn format_key_modifier(modifier: KeyModifiers) -> String {
+    let mut modifiers = Vec::new();
+    if modifier.contains(KeyModifiers::CONTROL) {
+        modifiers.push("CONTROL");
+    }
+    if modifier.contains(KeyModifiers::SHIFT) {
+        modifiers.push("SHIFT");
+    }
+    if modifier.contains(KeyModifiers::ALT) {
+        modifiers.push("ALT");
+    }
+    let mods_str = modifiers.join("+");
+    if modifiers.is_empty() {
+        mods_str + "-"
+    } else {
+        mods_str
+    }
+}
+
+// Helper function to convert KeyCode to string
+fn format_key_code(key_code: KeyCode) -> String {
+    match key_code {
+        KeyCode::Backspace => "Backspace".to_string(),
+        KeyCode::Enter => "Enter".to_string(),
+        KeyCode::Left => "Left".to_string(),
+        KeyCode::Right => "Right".to_string(),
+        KeyCode::Up => "Up".to_string(),
+        KeyCode::Down => "Down".to_string(),
+        KeyCode::Home => "Home".to_string(),
+        KeyCode::End => "End".to_string(),
+        KeyCode::PageUp => "PageUp".to_string(),
+        KeyCode::PageDown => "PageDown".to_string(),
+        KeyCode::Tab => "Tab".to_string(),
+        KeyCode::BackTab => "BackTab".to_string(),
+        KeyCode::Delete => "Delete".to_string(),
+        KeyCode::Insert => "Insert".to_string(),
+        KeyCode::F(num) => format!("F{}", num),
+        KeyCode::Char(c) => format!("{}", c.to_uppercase()),
+        KeyCode::Null => "Null".to_string(),
+        KeyCode::Esc => "Esc".to_string(),
+        KeyCode::CapsLock => "CapsLock".to_string(),
+        KeyCode::ScrollLock => "ScrollLock".to_string(),
+        KeyCode::NumLock => "NumLock".to_string(),
+        KeyCode::PrintScreen => "PrintScreen".to_string(),
+        KeyCode::Pause => "Pause".to_string(),
+        KeyCode::Menu => "Menu".to_string(),
+        KeyCode::KeypadBegin => "KeypadBegin".to_string(),
+        KeyCode::Media(media) => format!("Media({:?})", media),
+        KeyCode::Modifier(modifier) => format!("Modifier({:?})", modifier),
+    }
+}
+
+// Helper function to format EditCommand and include its doc comments
+fn format_edit_commands(edit_cmds: &Vec<EditCommand>) -> String {
+    let mut cmd_descriptions = Vec::new();
+    for cmd in edit_cmds {
+        let cmd_desc = match cmd {
+            EditCommand::InsertNewline => {
+                "InsertNewline: Inserts the system specific new line character/s".to_string()
+            }
+            // Add other EditCommand variants and their descriptions here
+            _ => format!("{:?}", cmd),
+        };
+        cmd_descriptions.push(cmd_desc);
+    }
+    cmd_descriptions.join(", ")
+}
 /// Delete our temporary files
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]

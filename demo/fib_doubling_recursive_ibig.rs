@@ -7,8 +7,8 @@ ibig = "0.3.6"
 /// Fibonacci doubling identity. See also `demo/fib_doubling_iterative.rs` and
 /// `demo/fib_doubling_iterative_purge.rs` for non-recursive variations.
 ///
-/// I'm not sure of the theory and I'm sure this is old hat, but I stumbled
-/// across an apparent pattern in the Fibonacci sequence:
+/// I'm sure this is old hat, but I stumbled across an apparent pattern in the
+/// Fibonacci sequence:
 /// `For m > n: Fm = Fn-1.Fm-n + Fn.Fm-n+1.`
 ///
 /// This has a special case when m = 2n or 2n+1, which not surprisingly turn out

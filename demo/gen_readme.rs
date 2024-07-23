@@ -46,7 +46,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
             if parts.len() == 2 {
                 metadata.insert(parts[0].trim().to_lowercase(), parts[1].trim().to_string());
             }
-        } else if line.starts_with("///") {
+        } else if line.starts_with("///") || line.starts_with("//:") {
             lines.push(line[3..].to_string() + "\n");
         }
     }

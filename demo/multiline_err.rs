@@ -1,3 +1,5 @@
+/// LLM-provided formatting for error messages
+//# Purpose: Demo of formatting
 use std::fmt;
 
 pub struct PrettyError<T>(pub T);

@@ -5,6 +5,10 @@ owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 termbg = "0.5.0"
 */
 
+/// An early exploration of message colouring, GPT-generated.
+/// This one uses basic Ansi 16 colours. Try it on dark vs light
+/// backgrounds to see how some of the colours change.
+//# Purpose: May be of use to some. Demo featured crates.
 use crossterm::{
     cursor::{MoveTo, Show},
     terminal::{Clear, ClearType},
@@ -40,19 +44,20 @@ impl MessageType {
             (MessageType::Error, Theme::Dark) => owo_colors::Style::new().red().bold(),
             (MessageType::Error, Theme::Light) => owo_colors::Style::new().red().bold(),
 
-            (MessageType::Warning, Theme::Dark) => owo_colors::Style::new().yellow().bold(),
+            (MessageType::Warning, Theme::Dark) => owo_colors::Style::new().magenta().bold(),
             (MessageType::Warning, Theme::Light) => owo_colors::Style::new().yellow().bold(),
 
             (MessageType::Emphasis, Theme::Dark) => owo_colors::Style::new().cyan().bold(),
             (MessageType::Emphasis, Theme::Light) => owo_colors::Style::new().cyan().bold(),
 
-            (MessageType::OuterPrompt, _) => owo_colors::Style::new().white(),
+            (MessageType::OuterPrompt, Theme::Dark) => owo_colors::Style::new().white(),
+            (MessageType::OuterPrompt, Theme::Light) => owo_colors::Style::new().blue(),
 
             (MessageType::InnerPrompt, _) => owo_colors::Style::new().purple(),
 
             (MessageType::Normal, _) => owo_colors::Style::new().green(),
 
-            (MessageType::Debug, _) => owo_colors::Style::new().cyan().dimmed(),
+            (MessageType::Debug, _) => owo_colors::Style::new().cyan(),
         }
     }
 }

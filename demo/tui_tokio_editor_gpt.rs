@@ -5,6 +5,11 @@ tokio = { version = "1", features = ["full"] }
 tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 */
 
+/// GPT-provided demo of a very basic TUI (terminal user interface) editor using
+/// `tokio` and the `crossterm` / `ratatui` / `tui-textarea` stack. provides a blank editor
+/// screen on which you can capture lines of data. `Ctrl-D` closes the editor and simply
+/// prints the captured data.
+//# Purpose: Exploring options for editing input. e.g. for a REPL.
 use ratatui::crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
@@ -51,14 +56,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Introduce a small delay to ensure stdin reading is complete
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    // Step 2: Setup Crossterm terminal
+    // Step 2: Set up Crossterm terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    // Step 3: Setup the TUI editor with the initial content
+    // Step 3: Set up the TUI editor with the initial content
     let mut textarea = TextArea::default();
     if let Some(content) = initial_content {
         textarea.insert_str(&content);

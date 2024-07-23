@@ -49,7 +49,7 @@ fn fibo_new_work(n: usize, a: &mut UBig, b: &mut UBig) {
     }
     fibo_new_work(n / 2, a, b);
     if n % 2 == 0 {
-        let t = two() * b.clone() - a.clone();
+        let t = two() * &*b - &*a;
         *a = &*a * &t;
         *b = &*b * &t;
         if n % 4 == 0 {
@@ -58,7 +58,7 @@ fn fibo_new_work(n: usize, a: &mut UBig, b: &mut UBig) {
             *b = &*b + &one();
         }
     } else {
-        let t = two() * a.clone() + b.clone();
+        let t = two() * &*a + &*b;
         *b = &*b * &t;
         *a = &*a * &t;
         if n % 4 == 1 {
@@ -68,7 +68,7 @@ fn fibo_new_work(n: usize, a: &mut UBig, b: &mut UBig) {
         }
     }
 }
-// This uses Cassini's identity
+
 fn fibo_new(n: usize, b: &mut UBig) {
     if n == 0 {
         *b = zero();
@@ -81,9 +81,9 @@ fn fibo_new(n: usize, b: &mut UBig) {
     let mut a = zero();
     fibo_new_work((n - 1) / 2, &mut a, b);
     if n % 2 == 0 {
-        *b = &*b * (&a + &a + b.clone());
+        *b = &*b * (&a + &a + &*b);
     } else {
-        let t = &*b * (&(b.clone() * 2) - &a);
+        let t = &*b * (&(&*b * 2) - &a);
         if n % 4 == 1 {
             *b = &t - &one();
         } else {

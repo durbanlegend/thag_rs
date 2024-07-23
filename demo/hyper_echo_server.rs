@@ -26,10 +26,14 @@ use tokio::net::TcpListener;
 
 use crate::support::TokioIo;
 
-/// Published example from the `hyper` crate.
+/// Published simple echo HTTP server example from the client crate,
+/// with the referenced modules `support` and `tokiort` refactored
+/// into the script, while respecting their original structure and
+/// redundancies.
 ///
 /// "This is our service handler. It receives a Request, routes on its
 /// path, and returns a Future of a Response."
+//# Purpose: Demo `hyper` HTTP echo server, and incorporating separate modules into the script.
 async fn echo(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
@@ -102,10 +106,6 @@ fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, hyper::Error> {
         .boxed()
 }
 
-/// Published simple echo HTTP server example from the client crate,
-/// with the referenced modules "support" and "tokiort" refactored
-/// into the script, while respecting their original structure and
-/// redundancies.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));

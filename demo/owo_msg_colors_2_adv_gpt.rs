@@ -9,6 +9,12 @@ supports-color= "3.0.0"
 termbg = "0.5.0"
 */
 
+/// More fully worked-out prototype of colouring and styling messages based on the level of
+/// colour support of the current terminal and whether a light or dark theme is currently
+/// selected. This was the result of good deal of exploration and dialog with ChatGPT.  Try it on dark vs light
+/// backgrounds to see how some of the same colours "pop" when shown against a light or dark theme
+/// and how some virtually or literally disappear when when not well matched to the theme.
+//# Purpose: Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
 use crossterm::{
     cursor::{MoveToColumn, Show},
     ExecutableCommand,
@@ -28,8 +34,6 @@ use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
-
-//# Purpose: Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, and the use of the featured crates.
 
 // A version of println that prints an entire message in colour or otherwise styled.
 //
@@ -200,7 +204,7 @@ fn main() {
         let actual_style = Some(style.unwrap().value());
 
         // Use actual_style for displaying the message
-        color_println!(actual_style, "{}", "Colored Warning message\n");
+        color_println!(actual_style, "{}", "Colorized Warning message\n");
 
         for variant in MessageStyle::iter() {
             let variant_string: &str = &variant.to_string();

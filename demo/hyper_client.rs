@@ -27,14 +27,15 @@ use crate::support::TokioIo;
 // A simple type alias so as to DRY.
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-/// Published simple HTTP client example from the `hyper` crate,
-/// with the referenced modules "support" and "tokiort" refactored
+/// Published echo-server HTTP client example from the `hyper` crate,
+/// with the referenced modules `support` and `tokiort` refactored
 /// into the script, while respecting their original structure and
 /// redundancies.
 /// You can run the `hyper_echo_server.rs` demo as the HTTP server on
 /// another command line and connect to it on port 3000:
 /// `rs_script demo/hyper_client.rs -- http://127.0.0.1:3000`.
 /// Or use any other available HTTP server.
+//# Purpose: Demo `hyper` HTTP client, and incorporating separate modules into the script.
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();

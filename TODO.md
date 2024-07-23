@@ -17,18 +17,9 @@
 - [ ]  Debug demo/fib_fast_doubling_iterative_rug.rs!
 - [ ]  Store a fib value and compare benchmark results against it for correctness.
 - [ ]  Use Cassini's identity to calculate F(n).
+- [ ]  Try a version of demo/fib_doubling_no_memo_ibig_1.rs with mut a and b.
+- [ ]  Try a version of demo/fib_doubling_iterative_purge_ibig.rs with mut a and b.
 - [ ]  Demo scripts not commented:
-demo/gpt_lazy_static_theme1.rs
-demo/gpt_lazy_static_theme2.rs
-demo/gpt_tui_tokio.rs
-demo/hello.rs
-demo/hello_main.rs
-demo/ibig_big_integers.rs
-demo/infer_deps.rs
-demo/inline_colorization.rs
-demo/iter.rs
-demo/list_files.rs
-demo/message_colors_gpt.rs
 demo/multiline_err.rs
 demo/newest.rs
 demo/newline_test.rs

@@ -4,13 +4,13 @@ profiling = { version = "1.0.15", features = ["profile-with-puffin"] }
 puffin = "0.19.0"
 puffin_egui = "0.26.0"
 egui = "0.26.2"
-# wgpu also works fine here
 eframe = { version = "0.26.2", default-features = false, features = ["glow"] }
 log = "0.4"
 env_logger = "0.11"
 */
 
-/// Published demo of the profiling crate using the puffin profiler.
+/// Published demo from the `profiling` crate using the `puffin` profiler.
+//# Purpose: Demo featured crates.
 
 //
 // Example of marking up all functions on an impl block

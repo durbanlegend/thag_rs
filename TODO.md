@@ -20,12 +20,6 @@
 - [ ]  Try a version of demo/fib_doubling_no_memo_ibig_1.rs with mut a and b.
 - [ ]  Try a version of demo/fib_doubling_iterative_purge_ibig.rs with mut a and b.
 - [ ]  Demo scripts not commented:
-demo/multiline_err.rs
-demo/newest.rs
-demo/newline_test.rs
-demo/prettyplease.rs
-demo/puffin_profiler_egui.rs
-demo/rc1.rs
 demo/reedline_basic_keybindings.rs
 demo/reedline_colored_text.rs
 demo/reedline_completions.rs

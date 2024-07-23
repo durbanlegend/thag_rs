@@ -3,6 +3,8 @@
 ratatui = "0.27.0"
 */
 
+/// Published example from the `ratatui` crate.
+//# Purpose: demo the featured crate.
 // # [Ratatui] User Input example
 //
 // The latest version of this example is available in the [examples] folder in the repository.
@@ -31,7 +33,6 @@ ratatui = "0.27.0"
 // result in undefined behaviour.
 //
 // See also https://github.com/rhysd/tui-textarea and https://github.com/sayanarijit/tui-input/
-
 use std::{error::Error, io};
 
 use ratatui::crossterm::{
@@ -50,15 +51,15 @@ enum InputMode {
     Editing,
 }
 
-/// App holds the state of the application
+// App holds the state of the application
 struct App {
     /// Current value of the input box
     input: String,
-    /// Position of cursor in the editor area.
+    // Position of cursor in the editor area.
     cursor_position: usize,
-    /// Current input mode
+    // Current input mode
     input_mode: InputMode,
-    /// History of recorded messages
+    // History of recorded messages
     messages: Vec<String>,
 }
 

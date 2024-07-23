@@ -5,6 +5,8 @@ puffin = "0.19.0"
 puffin_egui = "0.27.0"
 */
 
+/// Published demo from the `puffin` crate.
+//# Purpose: Demo featured crate.
 use eframe::egui;
 
 fn main() -> eframe::Result<()> {

@@ -295,20 +295,54 @@ pub fn run_repl(
                         edit_history(args.clone(), context)?;
                     }
                     ReplCommand::Keys => {
+                        // Calculate max command len for padding
                         // Can't extract this to a method because for some reason KeyCmmbination is not exposed.
+                        let max_cmd_len = {
+                            let bindings = &bindings;
+                            // Determine the length of the longest command for padding
+                            let max_cmd_len = bindings
+                                .values()
+                                .map(|reedline_event| {
+                                    if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                                        edit_cmds
+                                            .iter()
+                                            .map(|cmd| {
+                                                let key_desc =
+                                                    nu_resolve_style(MessageLevel::InnerPrompt)
+                                                        .paint(format!("{cmd:?}"));
+                                                let key_desc = format!("{key_desc}");
+                                                key_desc.len()
+                                            })
+                                            .max()
+                                            .unwrap_or(0)
+                                    } else {
+                                        0
+                                    }
+                                })
+                                .max()
+                                .unwrap_or(0);
+                            // Add 2 bytes of padding
+                            max_cmd_len + 2
+                        };
+
                         // Collect and format key bindings
-                        let mut formatted_bindings = Vec::new();
-                        for (key_combination, reedline_event) in &bindings {
-                            let key_modifiers = key_combination.modifier;
-                            let key_code = key_combination.key_code;
-                            let modifier = format_key_modifier(key_modifiers);
-                            let key = format_key_code(key_code);
-                            let key_desc = format!("{}{}", modifier, key);
-                            if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
-                                let cmd_desc = format_edit_commands(edit_cmds);
-                                formatted_bindings.push((key_desc, cmd_desc));
+                        // Can't extract this to a method either, because KeyCmmbination is not exposed.
+                        let mut formatted_bindings = {
+                            let bindings = &bindings;
+                            let mut formatted_bindings = Vec::new();
+                            for (key_combination, reedline_event) in bindings {
+                                let key_modifiers = key_combination.modifier;
+                                let key_code = key_combination.key_code;
+                                let modifier = format_key_modifier(key_modifiers);
+                                let key = format_key_code(key_code);
+                                let key_desc = format!("{}{}", modifier, key);
+                                if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                                    let cmd_desc = format_edit_commands(edit_cmds, max_cmd_len);
+                                    formatted_bindings.push((key_desc, cmd_desc));
+                                }
                             }
-                        }
+                            formatted_bindings
+                        };
 
                         // Sort the formatted bindings alphabetically by key combination description
                         formatted_bindings.sort_by(|a, b| a.0.cmp(&b.0));
@@ -316,25 +350,17 @@ pub fn run_repl(
                         // Determine the length of the longest key description for padding
                         let max_key_len = formatted_bindings
                             .iter()
-                            .map(|(key, _)| key.len())
+                            .map(|(key_desc, _)| {
+                                let key_desc =
+                                    nu_resolve_style(MessageLevel::OuterPrompt).paint(key_desc);
+                                let key_desc = format!("{key_desc}");
+                                key_desc.len()
+                            })
                             .max()
                             .unwrap_or(0);
+                        // eprintln!("max_key_len={max_key_len}");
 
-                        nu_color_println!(
-                            nu_resolve_style(crate::MessageLevel::Emphasis),
-                            "Key bindings - subject to your terminal settings"
-                        );
-
-                        // Print the formatted and sorted key bindings
-                        for (key_desc, cmd_desc) in formatted_bindings {
-                            println!(
-                                "{:<width$}    {}",
-                                nu_resolve_style(MessageLevel::OuterPrompt).paint(key_desc),
-                                cmd_desc,
-                                width = max_key_len
-                            );
-                        }
-                        println!();
+                        show_key_bindings(formatted_bindings, max_key_len);
                     }
                 }
                 continue;
@@ -365,6 +391,22 @@ pub fn run_repl(
         }
     }
     Ok(())
+}
+
+fn show_key_bindings(formatted_bindings: Vec<(String, String)>, max_key_len: usize) {
+    println!();
+    nu_color_println!(
+        nu_resolve_style(crate::MessageLevel::Emphasis),
+        "Key bindings - subject to your terminal settings"
+    );
+
+    // Print the formatted and sorted key bindings
+    for (key_desc, cmd_desc) in formatted_bindings {
+        let key_desc = nu_resolve_style(MessageLevel::OuterPrompt).paint(key_desc);
+        let key_desc = format!("{key_desc}");
+        println!("{:<width$}    {}", key_desc, cmd_desc, width = max_key_len);
+    }
+    println!();
 }
 
 // Helper function to convert KeyModifiers to string
@@ -421,239 +463,247 @@ fn format_key_code(key_code: KeyCode) -> String {
 }
 
 // Helper function to format EditCommand and include its doc comments
-fn format_edit_commands(edit_cmds: &Vec<EditCommand>) -> String {
-    let mut cmd_desc_map: HashMap<String, String> = HashMap::new();
-
-    cmd_desc_map.insert(
-        "MoveToStart".to_string(),
-        "Move to the start of the buffer".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveToLineStart".to_string(),
-        "Move to the start of the current line".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveToEnd".to_string(),
-        "Move to the end of the buffer".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveToLineEnd".to_string(),
-        "Move to the end of the current line".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveLeft".to_string(),
-        "Move one character to the left".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveRight".to_string(),
-        "Move one character to the right".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveWordLeft".to_string(),
-        "Move one word to the left".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveBigWordLeft".to_string(),
-        "Move one WORD to the left".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveWordRight".to_string(),
-        "Move one word to the right".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveWordRightStart".to_string(),
-        "Move one word to the right, stop at start of word".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveBigWordRightStart".to_string(),
-        "Move one WORD to the right, stop at start of WORD".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveWordRightEnd".to_string(),
-        "Move one word to the right, stop at end of word".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveBigWordRightEnd".to_string(),
-        "Move one WORD to the right, stop at end of WORD".to_string(),
-    );
-    cmd_desc_map.insert("MoveToPosition".to_string(), "Move to position".to_string());
-    cmd_desc_map.insert(
-        "InsertChar".to_string(),
-        "Insert a character at the current insertion point".to_string(),
-    ); // Example for `InsertChar`
-    cmd_desc_map.insert(
-        "InsertString".to_string(),
-        "Insert a string at the current insertion point".to_string(),
-    ); // Example for `InsertString`
-    cmd_desc_map.insert(
-        "InsertNewline".to_string(),
-        "Inserts the system specific new line character".to_string(),
-    );
-    cmd_desc_map.insert(
-        "ReplaceChars".to_string(),
-        "Replace characters with string".to_string(),
-    ); // Example for `ReplaceChars`
-    cmd_desc_map.insert(
-        "Backspace".to_string(),
-        "Backspace delete from the current insertion point".to_string(),
-    );
-    cmd_desc_map.insert(
-        "Delete".to_string(),
-        "Delete in-place from the current insertion point".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutChar".to_string(),
-        "Cut the grapheme right from the current insertion point".to_string(),
-    );
-    cmd_desc_map.insert(
-        "BackspaceWord".to_string(),
-        "Backspace delete a word from the current insertion point".to_string(),
-    );
-    cmd_desc_map.insert(
-        "DeleteWord".to_string(),
-        "Delete in-place a word from the current insertion point".to_string(),
-    );
-    cmd_desc_map.insert("Clear".to_string(), "Clear the current buffer".to_string());
-    cmd_desc_map.insert(
-        "ClearToLineEnd".to_string(),
-        "Clear to the end of the current line".to_string(),
-    );
-    cmd_desc_map.insert("Complete".to_string(), "Insert completion: entire completion if there is only one possibility, or else up to shared prefix.".to_string());
-    cmd_desc_map.insert(
-        "CutCurrentLine".to_string(),
-        "Cut the current line".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutFromStart".to_string(),
-        "Cut from the start of the buffer to the insertion point".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutFromLineStart".to_string(),
-        "Cut from the start of the current line to the insertion point".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutToEnd".to_string(),
-        "Cut from the insertion point to the end of the buffer".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutToLineEnd".to_string(),
-        "Cut from the insertion point to the end of the current line".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutWordLeft".to_string(),
-        "Cut the word left of the insertion point".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutBigWordLeft".to_string(),
-        "Cut the WORD left of the insertion point".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutWordRight".to_string(),
-        "Cut the word right of the insertion point".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutBigWordRight".to_string(),
-        "Cut the WORD right of the insertion point".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutWordRightToNext".to_string(),
-        "Cut the word right of the insertion point and any following space".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutBigWordRightToNext".to_string(),
-        "Cut the WORD right of the insertion point and any following space".to_string(),
-    );
-    cmd_desc_map.insert(
-        "PasteCutBufferBefore".to_string(),
-        "Paste the cut buffer in front of the insertion point (Emacs, vi P)".to_string(),
-    );
-    cmd_desc_map.insert(
-        "PasteCutBufferAfter".to_string(),
-        "Paste the cut buffer in front of the insertion point (vi p)".to_string(),
-    );
-    cmd_desc_map.insert(
-        "UppercaseWord".to_string(),
-        "Upper case the current word".to_string(),
-    );
-    cmd_desc_map.insert(
-        "LowercaseWord".to_string(),
-        "Lower case the current word".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CapitalizeChar".to_string(),
-        "Capitalize the current character".to_string(),
-    );
-    cmd_desc_map.insert(
-        "SwitchcaseChar".to_string(),
-        "Switch the case of the current character".to_string(),
-    );
-    cmd_desc_map.insert(
-        "SwapWords".to_string(),
-        "Swap the current word with the word to the right".to_string(),
-    );
-    cmd_desc_map.insert(
-        "SwapGraphemes".to_string(),
-        "Swap the current grapheme/character with the one to the right".to_string(),
-    );
-    cmd_desc_map.insert(
-        "Undo".to_string(),
-        "Undo the previous edit command".to_string(),
-    );
-    cmd_desc_map.insert(
-        "Redo".to_string(),
-        "Redo an edit command from the undo history".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutRightUntil".to_string(),
-        "CutUntil right until char".to_string(),
-    ); // Example for `CutRightUntil`
-    cmd_desc_map.insert(
-        "CutRightBefore".to_string(),
-        "CutUntil right before char".to_string(),
-    ); // Example for `CutRightBefore`
-    cmd_desc_map.insert(
-        "MoveRightUntil".to_string(),
-        "MoveUntil right until char".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveRightBefore".to_string(),
-        "MoveUntil right before char".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutLeftUntil".to_string(),
-        "CutUntil left until char".to_string(),
-    ); // Example for `CutLeftUntil`
-    cmd_desc_map.insert(
-        "CutLeftBefore".to_string(),
-        "CutUntil left before char".to_string(),
-    ); // Example for `CutLeftBefore`
-    cmd_desc_map.insert(
-        "MoveLeftUntil".to_string(),
-        "MoveUntil left until char".to_string(),
-    );
-    cmd_desc_map.insert(
-        "MoveLeftBefore".to_string(),
-        "MoveUntil left before char".to_string(),
-    );
-    cmd_desc_map.insert(
-        "SelectAll".to_string(),
-        "Select whole input buffer".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CutSelection".to_string(),
-        "Cut selection to local buffer".to_string(),
-    );
-    cmd_desc_map.insert(
-        "CopySelection".to_string(),
-        "Copy selection to local buffer".to_string(),
-    );
-    cmd_desc_map.insert(
-        "Paste".to_string(),
-        "Paste content from local buffer at the current cursor position".to_string(),
-    );
+fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> String {
+    lazy_static! {
+        pub static ref CMD_DESC_MAP: HashMap<String, String> = {
+            let mut m = HashMap::new();
+            m.insert(
+                "MoveToStart".to_string(),
+                "Move to the start of the buffer".to_string(),
+            );
+            m.insert(
+                "MoveToLineStart".to_string(),
+                "Move to the start of the current line".to_string(),
+            );
+            m.insert(
+                "MoveToEnd".to_string(),
+                "Move to the end of the buffer".to_string(),
+            );
+            m.insert(
+                "MoveToLineEnd".to_string(),
+                "Move to the end of the current line".to_string(),
+            );
+            m.insert(
+                "MoveLeft".to_string(),
+                "Move one character to the left".to_string(),
+            );
+            m.insert(
+                "MoveRight".to_string(),
+                "Move one character to the right".to_string(),
+            );
+            m.insert(
+                "MoveWordLeft".to_string(),
+                "Move one word to the left".to_string(),
+            );
+            m.insert(
+                "MoveBigWordLeft".to_string(),
+                "Move one WORD to the left".to_string(),
+            );
+            m.insert(
+                "MoveWordRight".to_string(),
+                "Move one word to the right".to_string(),
+            );
+            m.insert(
+                "MoveWordRightStart".to_string(),
+                "Move one word to the right, stop at start of word".to_string(),
+            );
+            m.insert(
+                "MoveBigWordRightStart".to_string(),
+                "Move one WORD to the right, stop at start of WORD".to_string(),
+            );
+            m.insert(
+                "MoveWordRightEnd".to_string(),
+                "Move one word to the right, stop at end of word".to_string(),
+            );
+            m.insert(
+                "MoveBigWordRightEnd".to_string(),
+                "Move one WORD to the right, stop at end of WORD".to_string(),
+            );
+            m.insert("MoveToPosition".to_string(), "Move to position".to_string());
+            m.insert(
+                "InsertChar".to_string(),
+                "Insert a character at the current insertion point".to_string(),
+            );
+            m.insert(
+                "InsertString".to_string(),
+                "Insert a string at the current insertion point".to_string(),
+            );
+            m.insert(
+                "InsertNewline".to_string(),
+                "Inserts the system specific new line character".to_string(),
+            );
+            m.insert(
+                "ReplaceChars".to_string(),
+                "Replace characters with string".to_string(),
+            );
+            m.insert(
+                "Backspace".to_string(),
+                "Backspace delete from the current insertion point".to_string(),
+            );
+            m.insert(
+                "Delete".to_string(),
+                "Delete in-place from the current insertion point".to_string(),
+            );
+            m.insert(
+                "CutChar".to_string(),
+                "Cut the grapheme right from the current insertion point".to_string(),
+            );
+            m.insert(
+                "BackspaceWord".to_string(),
+                "Backspace delete a word from the current insertion point".to_string(),
+            );
+            m.insert(
+                "DeleteWord".to_string(),
+                "Delete in-place a word from the current insertion point".to_string(),
+            );
+            m.insert("Clear".to_string(), "Clear the current buffer".to_string());
+            m.insert(
+                "ClearToLineEnd".to_string(),
+                "Clear to the end of the current line".to_string(),
+            );
+            m.insert("Complete".to_string(), "Insert completion: entire completion if there is only one possibility, or else up to shared prefix.".to_string());
+            m.insert(
+                "CutCurrentLine".to_string(),
+                "Cut the current line".to_string(),
+            );
+            m.insert(
+                "CutFromStart".to_string(),
+                "Cut from the start of the buffer to the insertion point".to_string(),
+            );
+            m.insert(
+                "CutFromLineStart".to_string(),
+                "Cut from the start of the current line to the insertion point".to_string(),
+            );
+            m.insert(
+                "CutToEnd".to_string(),
+                "Cut from the insertion point to the end of the buffer".to_string(),
+            );
+            m.insert(
+                "CutToLineEnd".to_string(),
+                "Cut from the insertion point to the end of the current line".to_string(),
+            );
+            m.insert(
+                "CutWordLeft".to_string(),
+                "Cut the word left of the insertion point".to_string(),
+            );
+            m.insert(
+                "CutBigWordLeft".to_string(),
+                "Cut the WORD left of the insertion point".to_string(),
+            );
+            m.insert(
+                "CutWordRight".to_string(),
+                "Cut the word right of the insertion point".to_string(),
+            );
+            m.insert(
+                "CutBigWordRight".to_string(),
+                "Cut the WORD right of the insertion point".to_string(),
+            );
+            m.insert(
+                "CutWordRightToNext".to_string(),
+                "Cut the word right of the insertion point and any following space".to_string(),
+            );
+            m.insert(
+                "CutBigWordRightToNext".to_string(),
+                "Cut the WORD right of the insertion point and any following space".to_string(),
+            );
+            m.insert(
+                "PasteCutBufferBefore".to_string(),
+                "Paste the cut buffer in front of the insertion point (Emacs, vi P)".to_string(),
+            );
+            m.insert(
+                "PasteCutBufferAfter".to_string(),
+                "Paste the cut buffer in front of the insertion point (vi p)".to_string(),
+            );
+            m.insert(
+                "UppercaseWord".to_string(),
+                "Upper case the current word".to_string(),
+            );
+            m.insert(
+                "LowercaseWord".to_string(),
+                "Lower case the current word".to_string(),
+            );
+            m.insert(
+                "CapitalizeChar".to_string(),
+                "Capitalize the current character".to_string(),
+            );
+            m.insert(
+                "SwitchcaseChar".to_string(),
+                "Switch the case of the current character".to_string(),
+            );
+            m.insert(
+                "SwapWords".to_string(),
+                "Swap the current word with the word to the right".to_string(),
+            );
+            m.insert(
+                "SwapGraphemes".to_string(),
+                "Swap the current grapheme/character with the one to the right".to_string(),
+            );
+            m.insert(
+                "Undo".to_string(),
+                "Undo the previous edit command".to_string(),
+            );
+            m.insert(
+                "Redo".to_string(),
+                "Redo an edit command from the undo history".to_string(),
+            );
+            m.insert(
+                "CutRightUntil".to_string(),
+                "CutUntil right until char".to_string(),
+            );
+            m.insert(
+                "CutRightBefore".to_string(),
+                "CutUntil right before char".to_string(),
+            );
+            m.insert(
+                "MoveRightUntil".to_string(),
+                "MoveUntil right until char".to_string(),
+            );
+            m.insert(
+                "MoveRightBefore".to_string(),
+                "MoveUntil right before char".to_string(),
+            );
+            m.insert(
+                "CutLeftUntil".to_string(),
+                "CutUntil left until char".to_string(),
+            );
+            m.insert(
+                "CutLeftBefore".to_string(),
+                "CutUntil left before char".to_string(),
+            );
+            m.insert(
+                "MoveLeftUntil".to_string(),
+                "MoveUntil left until char".to_string(),
+            );
+            m.insert(
+                "MoveLeftBefore".to_string(),
+                "MoveUntil left before char".to_string(),
+            );
+            m.insert(
+                "SelectAll".to_string(),
+                "Select whole input buffer".to_string(),
+            );
+            m.insert(
+                "CutSelection".to_string(),
+                "Cut selection to local buffer".to_string(),
+            );
+            m.insert(
+                "CopySelection".to_string(),
+                "Copy selection to local buffer".to_string(),
+            );
+            m.insert(
+                "Paste".to_string(),
+                "Paste content from local buffer at the current cursor position".to_string(),
+            );
+            m
+        };
+    };
 
     let mut cmd_descriptions = Vec::new();
+    // eprintln!("edit_cmds={edit_cmds:?}");
+
     for cmd in edit_cmds {
+        let cmd_highlight = nu_resolve_style(MessageLevel::InnerPrompt).paint(format!("{cmd:?}"));
+        let cmd_highlight = format!("{cmd_highlight}");
         let cmd_desc = match cmd {
             EditCommand::MoveToStart { select }
             | EditCommand::MoveToLineStart { select }
@@ -668,14 +718,15 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>) -> String {
             | EditCommand::MoveBigWordRightStart { select }
             | EditCommand::MoveWordRightEnd { select }
             | EditCommand::MoveBigWordRightEnd { select } => format!(
-                "{cmd:?}: {}. {}",
-                cmd_desc_map
+                "{:<max_cmd_len$} {}{}",
+                cmd_highlight,
+                CMD_DESC_MAP
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
                     .unwrap_or(&"".to_string()),
                 if *select {
-                    "Select the text between the current cursor position and destination"
+                    ". Select the text between the current cursor position and destination"
                 } else {
-                    "without selecting"
+                    ", without selecting"
                 }
             ),
             EditCommand::InsertString(_)
@@ -720,17 +771,19 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>) -> String {
             | EditCommand::Paste
             | EditCommand::SelectAll
             | EditCommand::LowercaseWord => format!(
-                "{cmd:?}: {}",
-                cmd_desc_map
+                "{:<max_cmd_len$} {}",
+                cmd_highlight,
+                CMD_DESC_MAP
                     .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
+                    .unwrap_or(&"".to_string())
             ),
             EditCommand::MoveRightUntil { c: _, select }
             | EditCommand::MoveRightBefore { c: _, select }
             | EditCommand::MoveLeftUntil { c: _, select }
             | EditCommand::MoveLeftBefore { c: _, select } => format!(
-                "{cmd:?}: {}. {}",
-                cmd_desc_map
+                "{:<max_cmd_len$} {}. {}",
+                cmd_highlight,
+                CMD_DESC_MAP
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
                     .unwrap_or(&"".to_string()),
                 if *select {
@@ -739,20 +792,10 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>) -> String {
                     "without selecting"
                 }
             ),
-            // EditCommand::SelectAll => format!(
-            //     "{cmd:?}: {}",
-            //     command_descriptions
-            //         .get(
-            //             format!("{cmd:?}")
-            //                 .split_once(' ')
-            //                 .unwrap_or(("SelectAll", ""))
-            //                 .0
-            //         )
-            //         .unwrap_or(&"".to_string()),
-            // ),
             EditCommand::MoveToPosition { position, select } => format!(
-                "{cmd:?}: {} {} {}",
-                cmd_desc_map
+                "{:<max_cmd_len$} {} {} {}",
+                cmd_highlight,
+                CMD_DESC_MAP
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
                     .unwrap_or(&"".to_string()),
                 position,
@@ -763,12 +806,13 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>) -> String {
                 }
             ),
             // Add other EditCommand variants and their descriptions here
-            _ => format!("{:?}", cmd),
+            _ => format!("{:<width$}", cmd_highlight, width = max_cmd_len + 2),
         };
         cmd_descriptions.push(cmd_desc);
     }
     cmd_descriptions.join(", ")
 }
+
 /// Delete our temporary files
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]

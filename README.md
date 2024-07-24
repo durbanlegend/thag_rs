@@ -6,7 +6,7 @@
 
 ## Overview
 
-`rs-script` is a simple and serious script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner.
+`rs-script` is a simple but serious script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner.
 
 `rs-script` leverages the reliability and comprehensiveness of Cargo, `syn`, `quote` and `cargo_toml` to build and compile a reliable Rust program from the input code, rather than rely on superficial source code analysis by means of regular expressions and string parsing.
 

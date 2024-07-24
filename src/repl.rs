@@ -327,7 +327,12 @@ pub fn run_repl(
 
                         // Print the formatted and sorted key bindings
                         for (key_desc, cmd_desc) in formatted_bindings {
-                            println!("{:<width$}    {}", key_desc, cmd_desc, width = max_key_len);
+                            println!(
+                                "{:<width$}    {}",
+                                nu_resolve_style(MessageLevel::OuterPrompt).paint(key_desc),
+                                cmd_desc,
+                                width = max_key_len
+                            );
                         }
                         println!();
                     }
@@ -417,232 +422,232 @@ fn format_key_code(key_code: KeyCode) -> String {
 
 // Helper function to format EditCommand and include its doc comments
 fn format_edit_commands(edit_cmds: &Vec<EditCommand>) -> String {
-    let mut command_descriptions: HashMap<String, String> = HashMap::new();
+    let mut cmd_desc_map: HashMap<String, String> = HashMap::new();
 
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveToStart".to_string(),
         "Move to the start of the buffer".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveToLineStart".to_string(),
         "Move to the start of the current line".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveToEnd".to_string(),
         "Move to the end of the buffer".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveToLineEnd".to_string(),
         "Move to the end of the current line".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveLeft".to_string(),
         "Move one character to the left".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveRight".to_string(),
         "Move one character to the right".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveWordLeft".to_string(),
         "Move one word to the left".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveBigWordLeft".to_string(),
         "Move one WORD to the left".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveWordRight".to_string(),
         "Move one word to the right".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveWordRightStart".to_string(),
         "Move one word to the right, stop at start of word".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveBigWordRightStart".to_string(),
         "Move one WORD to the right, stop at start of WORD".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveWordRightEnd".to_string(),
         "Move one word to the right, stop at end of word".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveBigWordRightEnd".to_string(),
         "Move one WORD to the right, stop at end of WORD".to_string(),
     );
-    command_descriptions.insert("MoveToPosition".to_string(), "Move to position".to_string());
-    command_descriptions.insert(
+    cmd_desc_map.insert("MoveToPosition".to_string(), "Move to position".to_string());
+    cmd_desc_map.insert(
         "InsertChar".to_string(),
         "Insert a character at the current insertion point".to_string(),
     ); // Example for `InsertChar`
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "InsertString".to_string(),
         "Insert a string at the current insertion point".to_string(),
     ); // Example for `InsertString`
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "InsertNewline".to_string(),
         "Inserts the system specific new line character".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "ReplaceChars".to_string(),
         "Replace characters with string".to_string(),
     ); // Example for `ReplaceChars`
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "Backspace".to_string(),
         "Backspace delete from the current insertion point".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "Delete".to_string(),
         "Delete in-place from the current insertion point".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutChar".to_string(),
         "Cut the grapheme right from the current insertion point".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "BackspaceWord".to_string(),
         "Backspace delete a word from the current insertion point".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "DeleteWord".to_string(),
         "Delete in-place a word from the current insertion point".to_string(),
     );
-    command_descriptions.insert("Clear".to_string(), "Clear the current buffer".to_string());
-    command_descriptions.insert(
+    cmd_desc_map.insert("Clear".to_string(), "Clear the current buffer".to_string());
+    cmd_desc_map.insert(
         "ClearToLineEnd".to_string(),
         "Clear to the end of the current line".to_string(),
     );
-    command_descriptions.insert("Complete".to_string(), "Insert completion: entire completion if there is only one possibility, or else up to shared prefix.".to_string());
-    command_descriptions.insert(
+    cmd_desc_map.insert("Complete".to_string(), "Insert completion: entire completion if there is only one possibility, or else up to shared prefix.".to_string());
+    cmd_desc_map.insert(
         "CutCurrentLine".to_string(),
         "Cut the current line".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutFromStart".to_string(),
         "Cut from the start of the buffer to the insertion point".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutFromLineStart".to_string(),
         "Cut from the start of the current line to the insertion point".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutToEnd".to_string(),
         "Cut from the insertion point to the end of the buffer".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutToLineEnd".to_string(),
         "Cut from the insertion point to the end of the current line".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutWordLeft".to_string(),
         "Cut the word left of the insertion point".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutBigWordLeft".to_string(),
         "Cut the WORD left of the insertion point".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutWordRight".to_string(),
         "Cut the word right of the insertion point".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutBigWordRight".to_string(),
         "Cut the WORD right of the insertion point".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutWordRightToNext".to_string(),
         "Cut the word right of the insertion point and any following space".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutBigWordRightToNext".to_string(),
         "Cut the WORD right of the insertion point and any following space".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "PasteCutBufferBefore".to_string(),
         "Paste the cut buffer in front of the insertion point (Emacs, vi P)".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "PasteCutBufferAfter".to_string(),
         "Paste the cut buffer in front of the insertion point (vi p)".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "UppercaseWord".to_string(),
         "Upper case the current word".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "LowercaseWord".to_string(),
         "Lower case the current word".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CapitalizeChar".to_string(),
         "Capitalize the current character".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "SwitchcaseChar".to_string(),
         "Switch the case of the current character".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "SwapWords".to_string(),
         "Swap the current word with the word to the right".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "SwapGraphemes".to_string(),
         "Swap the current grapheme/character with the one to the right".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "Undo".to_string(),
         "Undo the previous edit command".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "Redo".to_string(),
         "Redo an edit command from the undo history".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutRightUntil".to_string(),
         "CutUntil right until char".to_string(),
     ); // Example for `CutRightUntil`
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutRightBefore".to_string(),
         "CutUntil right before char".to_string(),
     ); // Example for `CutRightBefore`
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveRightUntil".to_string(),
         "MoveUntil right until char".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveRightBefore".to_string(),
         "MoveUntil right before char".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutLeftUntil".to_string(),
         "CutUntil left until char".to_string(),
     ); // Example for `CutLeftUntil`
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutLeftBefore".to_string(),
         "CutUntil left before char".to_string(),
     ); // Example for `CutLeftBefore`
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveLeftUntil".to_string(),
         "MoveUntil left until char".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "MoveLeftBefore".to_string(),
         "MoveUntil left before char".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "SelectAll".to_string(),
         "Select whole input buffer".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CutSelection".to_string(),
         "Cut selection to local buffer".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "CopySelection".to_string(),
         "Copy selection to local buffer".to_string(),
     );
-    command_descriptions.insert(
+    cmd_desc_map.insert(
         "Paste".to_string(),
         "Paste content from local buffer at the current cursor position".to_string(),
     );
@@ -650,28 +655,82 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>) -> String {
     let mut cmd_descriptions = Vec::new();
     for cmd in edit_cmds {
         let cmd_desc = match cmd {
-            EditCommand::InsertNewline => format!(
+            EditCommand::MoveToStart { select }
+            | EditCommand::MoveToLineStart { select }
+            | EditCommand::MoveToEnd { select }
+            | EditCommand::MoveToLineEnd { select }
+            | EditCommand::MoveLeft { select }
+            | EditCommand::MoveRight { select }
+            | EditCommand::MoveWordLeft { select }
+            | EditCommand::MoveBigWordLeft { select }
+            | EditCommand::MoveWordRight { select }
+            | EditCommand::MoveWordRightStart { select }
+            | EditCommand::MoveBigWordRightStart { select }
+            | EditCommand::MoveWordRightEnd { select }
+            | EditCommand::MoveBigWordRightEnd { select } => format!(
+                "{cmd:?}: {}. {}",
+                cmd_desc_map
+                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
+                    .unwrap_or(&"".to_string()),
+                if *select {
+                    "Select the text between the current cursor position and destination"
+                } else {
+                    "without selecting"
+                }
+            ),
+            EditCommand::InsertString(_)
+            | EditCommand::InsertNewline
+            | EditCommand::ReplaceChar(_)
+            | EditCommand::ReplaceChars(_, _)
+            | EditCommand::Backspace
+            | EditCommand::Delete
+            | EditCommand::CutChar
+            | EditCommand::BackspaceWord
+            | EditCommand::DeleteWord
+            | EditCommand::Clear
+            | EditCommand::ClearToLineEnd
+            | EditCommand::Complete
+            | EditCommand::CutCurrentLine
+            | EditCommand::CutFromStart
+            | EditCommand::CutFromLineStart
+            | EditCommand::CutToEnd
+            | EditCommand::CutToLineEnd
+            | EditCommand::CutWordLeft
+            | EditCommand::CutBigWordLeft
+            | EditCommand::CutWordRight
+            | EditCommand::CutBigWordRight
+            | EditCommand::CutWordRightToNext
+            | EditCommand::CutBigWordRightToNext
+            | EditCommand::PasteCutBufferBefore
+            | EditCommand::PasteCutBufferAfter
+            | EditCommand::UppercaseWord
+            | EditCommand::InsertChar(_)
+            | EditCommand::CapitalizeChar
+            | EditCommand::SwitchcaseChar
+            | EditCommand::SwapWords
+            | EditCommand::SwapGraphemes
+            | EditCommand::Undo
+            | EditCommand::Redo
+            | EditCommand::CutRightUntil(_)
+            | EditCommand::CutRightBefore(_)
+            | EditCommand::CutLeftUntil(_)
+            | EditCommand::CutLeftBefore(_)
+            | EditCommand::CutSelection
+            | EditCommand::CopySelection
+            | EditCommand::Paste
+            | EditCommand::SelectAll
+            | EditCommand::LowercaseWord => format!(
                 "{cmd:?}: {}",
-                command_descriptions
+                cmd_desc_map
                     .get(&format!("{cmd:?}"))
                     .unwrap_or(&"".to_string()),
             ),
-            EditCommand::MoveToStart { select } => {
-                format!(
-                    "{cmd:?}: {}. {}",
-                    command_descriptions
-                        .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                        .unwrap_or(&"".to_string()),
-                    if *select {
-                        "Select the text between the current cursor position and destination"
-                    } else {
-                        "without selecting"
-                    }
-                )
-            }
-            EditCommand::MoveToLineStart { select } => format!(
+            EditCommand::MoveRightUntil { c: _, select }
+            | EditCommand::MoveRightBefore { c: _, select }
+            | EditCommand::MoveLeftUntil { c: _, select }
+            | EditCommand::MoveLeftBefore { c: _, select } => format!(
                 "{cmd:?}: {}. {}",
-                command_descriptions
+                cmd_desc_map
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
                     .unwrap_or(&"".to_string()),
                 if *select {
@@ -680,130 +739,20 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>) -> String {
                     "without selecting"
                 }
             ),
-            EditCommand::MoveToEnd { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveToLineEnd { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveLeft { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveRight { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveWordLeft { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveBigWordLeft { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveWordRight { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveWordRightStart { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveBigWordRightStart { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveWordRightEnd { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveBigWordRightEnd { select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
+            // EditCommand::SelectAll => format!(
+            //     "{cmd:?}: {}",
+            //     command_descriptions
+            //         .get(
+            //             format!("{cmd:?}")
+            //                 .split_once(' ')
+            //                 .unwrap_or(("SelectAll", ""))
+            //                 .0
+            //         )
+            //         .unwrap_or(&"".to_string()),
+            // ),
             EditCommand::MoveToPosition { position, select } => format!(
                 "{cmd:?}: {} {} {}",
-                command_descriptions
+                cmd_desc_map
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
                     .unwrap_or(&"".to_string()),
                 position,
@@ -812,306 +761,6 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>) -> String {
                 } else {
                     "without selecting"
                 }
-            ),
-            EditCommand::InsertChar(_) => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::InsertString(_) => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::ReplaceChar(_) => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::ReplaceChars(_, _) => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::Backspace => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::Delete => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutChar => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::BackspaceWord => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::DeleteWord => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::Clear => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::ClearToLineEnd => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::Complete => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutCurrentLine => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutFromStart => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutFromLineStart => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutToEnd => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutToLineEnd => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutWordLeft => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutBigWordLeft => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutWordRight => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutBigWordRight => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutWordRightToNext => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutBigWordRightToNext => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::PasteCutBufferBefore => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::PasteCutBufferAfter => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::UppercaseWord => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::LowercaseWord => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(
-                        format!("{cmd:?}")
-                            .split_once(' ')
-                            .unwrap_or(("LowercaseWord", ""))
-                            .0
-                    )
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CapitalizeChar => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::SwitchcaseChar => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::SwapWords => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::SwapGraphemes => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::Undo => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::Redo => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutRightUntil(_) => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutRightBefore(_) => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::MoveRightUntil { c: _, select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveRightBefore { c: _, select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::CutLeftUntil(_) => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutLeftBefore(_) => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::MoveLeftUntil { c: _, select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveLeftBefore { c: _, select } => format!(
-                "{cmd:?}: {}. {}",
-                command_descriptions
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::SelectAll => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(
-                        format!("{cmd:?}")
-                            .split_once(' ')
-                            .unwrap_or(("LowercaseWord", ""))
-                            .0
-                    )
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CutSelection => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::CopySelection => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
-            ),
-            EditCommand::Paste => format!(
-                "{cmd:?}: {}",
-                command_descriptions
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string()),
             ),
             // Add other EditCommand variants and their descriptions here
             _ => format!("{:?}", cmd),

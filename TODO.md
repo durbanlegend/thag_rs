@@ -16,7 +16,7 @@
 - [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
 - [ ]  Debug demo/fib_fast_doubling_iterative_rug.rs!
 - [ ]  Store a fib value and compare benchmark results against it for correctness.
-- [ ]  Flesh out command meanings for repl keys from reedline::ReedlineEvent docs
+- [ ]  Debug Ctrl-R search missing from REPL, and repls not being saved to file history
 - [ ]  Demo scripts not commented:
 demo/reedline_custom_prompt.rs
 demo/reedline_cwd_aware_hinter.rs

@@ -274,7 +274,7 @@ pub fn run_repl(
                         ReplCommand::print_help();
                     }
                     ReplCommand::Quit => {
-                        quit(args.clone(), context)?;
+                        break;
                     }
                     ReplCommand::Edit => {
                         edit(args.clone(), context)?;
@@ -283,6 +283,7 @@ pub fn run_repl(
                         toml(args.clone(), context)?;
                     }
                     ReplCommand::Run => {
+                        // &history.sync();
                         run_expr(args.clone(), context)?;
                     }
                     ReplCommand::Delete => {
@@ -925,11 +926,4 @@ pub fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
         log!(Verbosity::Quiet, "No temporary files found");
     }
     Ok(Some(String::from("End of list")))
-}
-
-#[allow(clippy::needless_pass_by_value)]
-#[allow(clippy::unnecessary_wraps)]
-pub fn quit(_args: ArgMatches, _context: &mut Context) -> Result<Option<String>, BuildRunError> {
-    log!(Verbosity::Quiet, "Done");
-    std::process::exit(0);
 }

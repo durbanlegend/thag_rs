@@ -218,7 +218,7 @@ pub fn run_repl(
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
 
-    let bindings = keybindings.bindings;
+    let bindings = keybindings.get_keybindings();
 
     let prompt = ReplPrompt("repl");
 
@@ -299,7 +299,6 @@ pub fn run_repl(
                         // Calculate max command len for padding
                         // Can't extract this to a method because for some reason KeyCmmbination is not exposed.
                         let max_cmd_len = {
-                            let bindings = &bindings;
                             // Determine the length of the longest command for padding
                             let max_cmd_len = bindings
                                 .values()
@@ -316,6 +315,13 @@ pub fn run_repl(
                                             })
                                             .max()
                                             .unwrap_or(0)
+                                    } else if !format!("{reedline_event}").starts_with("UntilFound")
+                                    {
+                                        let event_desc =
+                                            nu_resolve_style(MessageLevel::InnerPrompt)
+                                                .paint(format!("{reedline_event:?}"));
+                                        let event_desc = format!("{event_desc}");
+                                        event_desc.len()
                                     } else {
                                         0
                                     }
@@ -329,7 +335,6 @@ pub fn run_repl(
                         // Collect and format key bindings
                         // Can't extract this to a method either, because KeyCmmbination is not exposed.
                         let mut formatted_bindings = {
-                            let bindings = &bindings;
                             let mut formatted_bindings = Vec::new();
                             for (key_combination, reedline_event) in bindings {
                                 let key_modifiers = key_combination.modifier;
@@ -339,7 +344,14 @@ pub fn run_repl(
                                 let key_desc = format!("{}{}", modifier, key);
                                 if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
                                     let cmd_desc = format_edit_commands(edit_cmds, max_cmd_len);
-                                    formatted_bindings.push((key_desc, cmd_desc));
+                                    formatted_bindings.push((key_desc.clone(), cmd_desc));
+                                } else {
+                                    let event_name = format!("{reedline_event:?}");
+                                    if !event_name.starts_with("UntilFound") {
+                                        let event_desc =
+                                            format_non_edit_events(&event_name, max_cmd_len);
+                                        formatted_bindings.push((key_desc.clone(), event_desc));
+                                    }
                                 }
                             }
                             formatted_bindings
@@ -461,6 +473,126 @@ fn format_key_code(key_code: KeyCode) -> String {
         KeyCode::Media(media) => format!("Media({:?})", media),
         KeyCode::Modifier(modifier) => format!("Modifier({:?})", modifier),
     }
+}
+
+// Helper function to format ReedlineEvents other than Edit, and their doc comments
+fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
+    lazy_static! {
+        pub static ref EVENT_DESC_MAP: HashMap<String, String> = {
+            let mut m = HashMap::new();
+            m.insert(
+                "HistoryHintComplete".to_string(),
+                "Complete history hint (default in full)".to_string(),
+            );
+            m.insert(
+                "HistoryHintWordComplete".to_string(),
+                "Complete a single token/word of the history hint".to_string(),
+            );
+            m.insert("CtrlD".to_string(), "Handle EndOfLine event".to_string());
+            m.insert("CtrlC".to_string(), "Handle SIGTERM key input".to_string());
+            m.insert(
+                "ClearScreen".to_string(),
+                "Clears the screen and sets prompt to first line".to_string(),
+            );
+            m.insert("ClearScrollback".to_string(),"Clears the screen and the scrollback buffer, sets the prompt back to the first line".to_string());
+            m.insert("Enter".to_string(), "Handle enter event".to_string());
+            m.insert(
+                "Submit".to_string(),
+                "Handle unconditional submit event".to_string(),
+            );
+            m.insert(
+                "SubmitOrNewline".to_string(),
+                "Submit at the end of the *complete* text, otherwise newline".to_string(),
+            );
+            m.insert("Esc".to_string(), "Esc event".to_string());
+            m.insert("Mouse".to_string(), "Mouse".to_string());
+            m.insert(
+                "Resize(u16, u16)".to_string(),
+                "trigger terminal resize".to_string(),
+            );
+            m.insert(
+                "Edit(Vec<EditCommand>)".to_string(),
+                "Run these commands in the editor".to_string(),
+            );
+            m.insert("Repaint".to_string(), "Trigger full repaint".to_string());
+            m.insert(
+                "PreviousHistory".to_string(),
+                "Navigate to the previous historic buffer".to_string(),
+            );
+            m.insert(
+                "Up".to_string(),
+                "Move up to the previous line, if multiline, or up into the historic buffers"
+                    .to_string(),
+            );
+            m.insert(
+                "Down".to_string(),
+                "Move down to the next line, if multiline, or down through the historic buffers"
+                    .to_string(),
+            );
+            m.insert(
+                "Right".to_string(),
+                "Move right to the next column, completion entry, or complete hint".to_string(),
+            );
+            m.insert(
+                "Left".to_string(),
+                "Move left to the next column, or completion entry".to_string(),
+            );
+            m.insert(
+                "NextHistory".to_string(),
+                "Navigate to the next historic buffer".to_string(),
+            );
+            m.insert(
+                "SearchHistory".to_string(),
+                "Search the history for a string".to_string(),
+            );
+            m.insert(
+                "Multiple(Vec<ReedlineEvent>)".to_string(),
+                "Multiple chained (Vi)".to_string(),
+            );
+            m.insert(
+                "UntilFound(Vec<ReedlineEvent>)".to_string(),
+                "Test".to_string(),
+            );
+            m.insert(
+                "Menu(String)".to_string(),
+                "Trigger a menu event. It activates a menu with the event name".to_string(),
+            );
+            m.insert(
+                "MenuNext".to_string(),
+                "Next element in the menu".to_string(),
+            );
+            m.insert(
+                "MenuPrevious".to_string(),
+                "Previous element in the menu".to_string(),
+            );
+            m.insert("MenuUp".to_string(), "Moves up in the menu".to_string());
+            m.insert("MenuDown".to_string(), "Moves down in the menu".to_string());
+            m.insert("MenuLeft".to_string(), "Moves left in the menu".to_string());
+            m.insert(
+                "MenuRight".to_string(),
+                "Moves right in the menu".to_string(),
+            );
+            m.insert(
+                "MenuPageNext".to_string(),
+                "Move to the next history page".to_string(),
+            );
+            m.insert(
+                "MenuPagePrevious".to_string(),
+                "Move to the previous history page".to_string(),
+            );
+            m.insert("OpenEditor".to_string(), "Open text editor".to_string());
+            m
+        };
+    };
+
+    let event_highlight = nu_resolve_style(MessageLevel::InnerPrompt).paint(event_name);
+    let event_highlight = format!("{event_highlight}");
+    let event_desc = format!(
+        "{:<max_cmd_len$} {}",
+        event_highlight,
+        EVENT_DESC_MAP.get(event_name).unwrap_or(&"".to_string())
+    );
+    event_desc
 }
 
 // Helper function to format EditCommand and include its doc comments

@@ -2,11 +2,10 @@
 [dependencies]
 #crossterm = "0.27.0"
 nu-ansi-term = "0.50.0"
-reedline = "0.32.0"
+reedline = "0.33.0"
 */
 
 // Pressing [Enter] will in other cases give you a multi-line prompt.
-
 use nu_ansi_term::{Color, Style};
 use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,

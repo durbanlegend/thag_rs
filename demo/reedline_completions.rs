@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-reedline = "0.32.0"
+reedline = "0.33.0"
 */
 
 // Create a reedline object with tab completions support

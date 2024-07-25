@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
-reedline = "0.32.0"
+nu-ansi-term = "0.50.1"
+reedline = "0.33.0"
 */
 
 // Create a reedline object with in-line hint support.

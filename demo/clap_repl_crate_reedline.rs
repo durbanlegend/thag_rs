@@ -7,7 +7,7 @@ clap-repl = "0.2.0"
 version = "0.50.0"
 
 [dependencies.reedline]
-version = "0.32.0"
+version = "0.33.0"
 */
 
 // REPL based on clap-repl crate

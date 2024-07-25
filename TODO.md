@@ -17,12 +17,6 @@
 - [ ]  Debug demo/fib_fast_doubling_iterative_rug.rs!
 - [ ]  Store a fib value and compare benchmark results against it for correctness?
 - [ ]  Demo scripts not commented:
-demo/reedline_custom_prompt.rs
-demo/reedline_cwd_aware_hinter.rs
-demo/reedline_highlighter.rs
-demo/reedline_hinter.rs
-demo/reedline_history.rs
-demo/reedline_ide_completions.rs
 demo/reedline_multiline.rs
 demo/reedline_read_stdin.rs
 demo/reedline_repl.rs

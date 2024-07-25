@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 crossterm = "*"
-reedline = "0.32.0"
+reedline = "0.33.0"
 */
 use {
     crossterm::{

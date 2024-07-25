@@ -1,8 +1,10 @@
 /*[toml]
 [dependencies]
-reedline = "0.32.0"
+reedline = "0.33.0"
 */
 
+/// Published example from `reedline` crate.
+//# Purpose: Explore featured crate.
 // Create a reedline object with highlighter support.
 // cargo run --example highlighter
 //

@@ -16,14 +16,8 @@
 - [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
 - [ ]  Debug demo/fib_fast_doubling_iterative_rug.rs!
 - [ ]  Store a fib value and compare benchmark results against it for correctness?
+- [ ]  Add link to each demo file on Github into generated demo README.md?
 - [ ]  Demo scripts not commented:
-demo/reedline_multiline.rs
-demo/reedline_read_stdin.rs
-demo/reedline_repl.rs
-demo/reedline_stdin.rs
-demo/reedline_transient_prompt.rs
-demo/rug_arbitrary_precision_nums.rs
-demo/rustyline.rs
 demo/slog_expressions.rs
 demo/supports_color.rs
 demo/syn_ast_deps.rs

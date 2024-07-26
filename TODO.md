@@ -2,20 +2,16 @@
 
 ## High Priority
 - [ ]  Clean up demos
-- [ ]  Add additional popular crates
+- [ ]  Document public APIs
 
 ## Medium Priority
-- [ ]  Document public APIs
+- [ ]  Add additional popular crates
 - [ ]  More unit and integration tests
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
-- [ ]  Debug egui_code_editor.rss only showing env_logger if "use egui::\*;" is included - DONE: Nothing to do with "use" statement, need to append ",egui_code_editor=debug" to $RUST_LOG
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
-- [ ]  Put snippet doc comments above a use stmt?
 - [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
-- [ ]  Debug demo/fib_fast_doubling_iterative_rug.rs!
-- [ ]  Store a fib value and compare benchmark results against it for correctness?
 - [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Demo scripts not commented:
@@ -29,7 +25,6 @@ demo/unzip.rs
 demo/verbosity.rs
 demo/windows_cr_issue.rs
 
-
 ## Low Priority
 - [ ]  Consider history support for stdin.
 - [ ]  Paste event in Windows slow or not happening?
@@ -41,8 +36,6 @@ demo/windows_cr_issue.rs
 - [ ]  Consider other Rust gui packages.
 - [ ]  How to navigate reedline history entry by entry instead of line by line.
 - [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
-
-
 
 ## Ideas / Future Enhancements
 - [ ]  Consider supporting alternative TOML embedding keywords so we can run demo/regex_capture_toml.rs and demo/parse_script.rs_toml.rs.

@@ -16,29 +16,9 @@
 - [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
 - [ ]  Debug demo/fib_fast_doubling_iterative_rug.rs!
 - [ ]  Store a fib value and compare benchmark results against it for correctness?
-- [ ]  Add instructions for linking scripts and pasting into rs_script -d (with [ OPTIONS ] -d [ -- args] into generated demo README.md?
-= [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
+- [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
+- [ ]  Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Demo scripts not commented:
-demo/supports_color.rs
-demo/syn_ast_deps.rs
-demo/syn_ast_deps2.rs
-demo/syn_ast_deps_file.rs
-demo/syn_dump_syntax.rs
-demo/syn_file_debug.rs
-demo/syn_file_debug2.rs
-demo/syn_file_to_expr.rs
-demo/syn_parse_quote.rs
-demo/syn_parse_str.rs
-demo/syn_quote.rs
-demo/syn_visit_extern_crate_expr.rs
-demo/syn_visit_extern_crate_file.rs
-demo/syn_visit_node_type.rs
-demo/syn_visit_use_path_expr.rs
-demo/syn_visit_use_path_file.rs
-demo/syn_visit_use_rename.rs
-demo/tempfile.rs
-demo/term_color_contrast.rs
-demo/term_detection_pack.rs
 demo/termbg.rs
 demo/termbg_bug.rs
 demo/terminal_light.rs

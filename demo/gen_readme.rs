@@ -119,13 +119,23 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
 fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path) {
     let mut file = File::create(output_path).unwrap();
     writeln!(file, r#"## Running the scripts
+### In its simplest form:
 
+```
+rs_script <path to script>
+```
+*E.g.*:
+```
+rs_script demo/hello.rs
+```
+
+### Full syntax:
 
 ```
 rs_script [RS-SCRIPT OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
 ```
 
-**E.g.**:
+*E.g.*:
 ```
 rs_script -t demo/clap_tut_builder_01.rs -- -ddd -c /dummy/dummy.rs test -l
 ```
@@ -150,7 +160,7 @@ rs_script [OPTIONS] --edit|-d [-- [SCRIPT_OPTIONS] script_args]
 ```
 then paste the script into the editor and press Ctrl-D to execute it. The source is available at the script's link.
 
-**E.g.**:
+*E.g.*:
 ```
 rs_script -d -- 100
 ```

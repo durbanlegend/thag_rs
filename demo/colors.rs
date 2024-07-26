@@ -48,7 +48,8 @@ pub trait NuColor: Display {
     fn get_fixed_code(&self) -> u8;
 }
 
-/// A version of `rs-script`'s `color` module to style messages according to their type.
+/// A version of `rs-script`'s `colors` module to style messages according to their type. Like the `stdin`
+/// module, `colors` was originally developed here as a separate script and integrated as a module later.
 ///
 /// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]

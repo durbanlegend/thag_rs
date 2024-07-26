@@ -4,7 +4,7 @@ prettyplease = "0.2"
 syn = { version = "2", default-features = false, features = ["full", "parsing"] }
 */
 
-/// Published example from `prettyplease` READMe.md.
+/// Published example from `prettyplease` Readme.
 //# Purpose: Demo featured crate.
 const INPUT: &str = stringify! {
     use crate::{

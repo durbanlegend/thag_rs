@@ -20,8 +20,8 @@ use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use supports_color::Stream;
 use termbg::{Error, Theme};
 
-/// Prototype of `rs-script`'s `color` module to style messages according to
-/// their type. I only dropped `owo-colors` because I switched from `rustyline` to
+/// Original prototype of `rs-script`'s `colors` module to style messages according
+/// to their type. I only dropped `owo-colors` because I switched from `rustyline` to
 /// `reedline`, which was already using `nu_ansi_term`.
 ///
 /// Format: `color_println`!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);

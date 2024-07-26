@@ -2,9 +2,15 @@
 [dependencies]
 colored = "2.1.0"
 quote = "1.0.36"
-syn = {vesrion = "2.0.71", features = ["extra-traits", "full", "parsing"] }
+syn = {version = "2.0.71", features = ["extra-traits", "full", "parsing"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 */
+
+/// Published example from the `syn` crate. Description "Parse a Rust source file
+/// into a `syn::File` and print out a debug representation of the syntax tree."
+/// Pass it the absolute or relative path of any Rust source file, e.g. its own
+/// path that you passed to the script runner to invoke it.
+//# Purpose: show off the power of `syn`.
 
 // Parse a Rust source file into a `syn::File` and print out a debug
 // representation of the syntax tree.
@@ -24,7 +30,6 @@ proc-macro2 = { version = "1", features = ["span-locations"] }
 //                 style: AttrStyle::Inner(
 //         ...
 //     }
-
 use colored::Colorize;
 use std::borrow::Cow;
 use std::env;

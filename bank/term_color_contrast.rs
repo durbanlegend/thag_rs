@@ -41,3 +41,4 @@ let contrast_color = find_contrast_color((0, 255, 0));
 let mut stdout = StandardStream::stdout(ColorChoice::Always);
 stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(0, 255, 0))).set_bg(Some(Color::Rgb(contrast_color.0, contrast_color.1, contrast_color.2))))?;
 writeln!(&mut stdout, "green text!")?;
+stdout.reset()?; // Added as instructed

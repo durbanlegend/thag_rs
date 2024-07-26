@@ -7,7 +7,7 @@ use std::io::{self, Read};
 
 /// Unescape \n markers in a string to convert the wall of text to readable lines.
 /// This version using regex seems to work where the original approach using .lines() fails.
-/// Tip: Regex tested using https://rustexp.lpil.uk/.
+/// Tip: I pre-test regular expressions using the very useful https://rustexp.lpil.uk/.
 #[inline]
 pub(crate) fn disentangle(text_wall: &str) -> String {
     use std::fmt::Write;

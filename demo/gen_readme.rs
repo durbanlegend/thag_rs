@@ -90,7 +90,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     Some(ScriptMetadata {
         script,
         purpose: purpose.cloned(),
-        crates: crates,
+        crates,
         script_type: Some(script_type.to_string()),
         description: description.cloned(),
     })
@@ -119,9 +119,79 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
 fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path) {
     let mut file = File::create(output_path).unwrap();
     writeln!(file, "# Demo Scripts\n").unwrap();
+    writeln!(file, "## Running the scripts\n").unwrap();
+    writeln!(
+        file,
+        r#"
+```
+        rs_script [RS-SCRIPT OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
+```
+"#
+    )
+    .unwrap();
+    writeln!(
+        file,
+        r#"**E.g.**:
+```
+rs_script -t demo/clap_tut_builder_01.rs -- -ddd -c /dummy/dummy.rs test -l
+```
+```
+Completed generation in 0.143s
+Building clap_tut_builder_01.rs ...
+   Compiling clap_tut_builder_01 v0.0.1 (/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/rs-script/clap_tut_builder_01)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.69s
+Completed build in 0.766s
+----------------------------------------------------------------------
+Value for config: /dummy/dummy.rs
+Don't be crazy
+Printing testing lists...
+----------------------------------------------------------------------
+Completed run in 1.182s
+rs-script completed processing script clap_tut_builder_01.rs in 2.130s
+```
+"#
+    )
+    .unwrap();
+
+    writeln!(
+        file,
+        r#"**Alternatively**, you can run:
+```
+rs_script [OPTIONS] --edit|-d [-- [SCRIPT_OPTIONS] script_args]
+```
+then paste the script into the editor and press Ctrl-D to execute it. The source is available at the script's link.
+"#
+    )
+    .unwrap();
+    writeln!(
+        file,
+        r#"**E.g.**:
+```
+        rs_script -d -- 100
+```
+then paste the source of `demo/fib_classic_ibig.rs` or similar into the editor and press Ctrl-D to execute it.
+
+
+This will compute and print F(100) in the Fibonacci sequence.
+
+Since `rs-script` is parsing with `clap` you can have other options alongside or combined with the -d in any order, e.g.:
+```
+rs_script --quiet -d -t -- 100
+OR
+rs_script -qdt -- 100
+... etc.
+```
+
+Remember to use `--` to separate options and arguments that are intended for `rs_script` from those intended for the target scriot.
+
+***
+## Detailed script listing
+"#
+    )
+    .unwrap();
 
     for metadata in metadata_list {
-        writeln!(file, "## Script: {}\n", metadata.script).unwrap();
+        writeln!(file, "### Script: {}\n", metadata.script).unwrap();
         writeln!(
             file,
             "**Description:** {}\n",

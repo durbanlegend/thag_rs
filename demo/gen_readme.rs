@@ -146,6 +146,12 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path) {
             metadata.script_type.as_ref().unwrap_or(&String::new())
         )
         .unwrap();
+        writeln!(
+            file,
+            "**Link:** [{}](https://github.com/durbanlegend/rs-script/blob/master/demo/{})\n",
+            metadata.script, metadata.script
+        )
+        .unwrap();
         writeln!(file, "---\n").unwrap();
     }
 }

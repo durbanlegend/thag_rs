@@ -20,7 +20,10 @@ use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use supports_color::Stream;
 use termbg::{Error, Theme};
 
-/// A version of println that prints an entire message in colour or otherwise styled.
+/// Prototype of `rs-script`'s `color` module to style messages according to
+/// their type. I only dropped `owo-colors` because I switched from `rustyline` to
+/// `reedline`, which was already using `nu_ansi_term`.
+///
 /// Format: `color_println`!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);
 #[macro_export]
 macro_rules! color_println {

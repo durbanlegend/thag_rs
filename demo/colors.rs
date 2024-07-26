@@ -48,7 +48,8 @@ pub trait NuColor: Display {
     fn get_fixed_code(&self) -> u8;
 }
 
-/// A version of `println!` that prints an entire message in colour or otherwise styled.
+/// A version of `rs-script`'s `color` module to style messages according to their type.
+///
 /// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! nu_color_println {

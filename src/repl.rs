@@ -308,7 +308,7 @@ pub fn run_repl(
                                             .iter()
                                             .map(|cmd| {
                                                 let key_desc =
-                                                    nu_resolve_style(MessageLevel::InnerPrompt)
+                                                    nu_resolve_style(MessageLevel::Subheading)
                                                         .paint(format!("{cmd:?}"));
                                                 let key_desc = format!("{key_desc}");
                                                 key_desc.len()
@@ -317,9 +317,8 @@ pub fn run_repl(
                                             .unwrap_or(0)
                                     } else if !format!("{reedline_event}").starts_with("UntilFound")
                                     {
-                                        let event_desc =
-                                            nu_resolve_style(MessageLevel::InnerPrompt)
-                                                .paint(format!("{reedline_event:?}"));
+                                        let event_desc = nu_resolve_style(MessageLevel::Subheading)
+                                            .paint(format!("{reedline_event:?}"));
                                         let event_desc = format!("{event_desc}");
                                         event_desc.len()
                                     } else {
@@ -365,7 +364,7 @@ pub fn run_repl(
                             .iter()
                             .map(|(key_desc, _)| {
                                 let key_desc =
-                                    nu_resolve_style(MessageLevel::OuterPrompt).paint(key_desc);
+                                    nu_resolve_style(MessageLevel::Heading).paint(key_desc);
                                 let key_desc = format!("{key_desc}");
                                 key_desc.len()
                             })
@@ -415,7 +414,7 @@ fn show_key_bindings(formatted_bindings: Vec<(String, String)>, max_key_len: usi
 
     // Print the formatted and sorted key bindings
     for (key_desc, cmd_desc) in formatted_bindings {
-        let key_desc = nu_resolve_style(MessageLevel::OuterPrompt).paint(key_desc);
+        let key_desc = nu_resolve_style(MessageLevel::Heading).paint(key_desc);
         let key_desc = format!("{key_desc}");
         println!("{:<width$}    {}", key_desc, cmd_desc, width = max_key_len);
     }
@@ -585,7 +584,7 @@ fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
         };
     };
 
-    let event_highlight = nu_resolve_style(MessageLevel::InnerPrompt).paint(event_name);
+    let event_highlight = nu_resolve_style(MessageLevel::Subheading).paint(event_name);
     let event_highlight = format!("{event_highlight}");
     let event_desc = format!(
         "{:<max_cmd_len$} {}",
@@ -835,7 +834,7 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> Str
     // eprintln!("edit_cmds={edit_cmds:?}");
 
     for cmd in edit_cmds {
-        let cmd_highlight = nu_resolve_style(MessageLevel::InnerPrompt).paint(format!("{cmd:?}"));
+        let cmd_highlight = nu_resolve_style(MessageLevel::Subheading).paint(format!("{cmd:?}"));
         let cmd_highlight = format!("{cmd_highlight}");
         let cmd_desc = match cmd {
             EditCommand::MoveToStart { select }
@@ -1028,12 +1027,12 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
 /// Function to display the REPL banner
 pub fn disp_repl_banner(cmd_list: &str) {
     nu_color_println!(
-        nu_resolve_style(MessageLevel::OuterPrompt),
+        nu_resolve_style(MessageLevel::Heading),
         r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#
     );
 
     nu_color_println!(
-        nu_resolve_style(MessageLevel::InnerPrompt),
+        nu_resolve_style(MessageLevel::Subheading),
         r"Expressions in matching braces, brackets or quotes may span multiple lines.
 Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
     );

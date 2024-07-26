@@ -16,9 +16,9 @@
 - [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
 - [ ]  Debug demo/fib_fast_doubling_iterative_rug.rs!
 - [ ]  Store a fib value and compare benchmark results against it for correctness?
-- [ ]  Add link to each demo file on Github into generated demo README.md?
+- [ ]  Add instructions for linking scripts and pasting into rs_script -d (with [ OPTIONS ] -d [ -- args] into generated demo README.md?
+= [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
 - [ ]  Demo scripts not commented:
-demo/slog_expressions.rs
 demo/supports_color.rs
 demo/syn_ast_deps.rs
 demo/syn_ast_deps2.rs

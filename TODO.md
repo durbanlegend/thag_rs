@@ -14,6 +14,10 @@
 - [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
 - [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
+- [ ]  Raise clear_screen as an issue on termbg crate?
+- [ ]  Add FAQ
+- [ ]  Find a punchy name - rs-thagomizer | rs-bolt | rs-volt ?
+
 - [ ]  Demo scripts not commented:
 demo/termbg.rs
 demo/termbg_bug.rs

@@ -1,3 +1,4 @@
+#![allow(clippy::uninlined_format_args)]
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
@@ -39,20 +40,20 @@ impl EventReader for CrosstermEventReader {
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {
     let event_reader = CrosstermEventReader;
-    for line in &edit_stdin(event_reader)? {
+    for line in &edit(&event_reader)? {
         log!(Verbosity::Normal, "{line}");
     }
     Ok(())
 }
 
-pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dyn Error>> {
+pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Error>> {
     let input = std::io::stdin();
 
     let initial_content = if input.is_terminal() {
         // No input available
         String::new()
     } else {
-        read_stdin()?
+        read()?
     };
 
     let mut popup = false;
@@ -81,7 +82,7 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
     })?;
     // Ensure terminal will get reset when it goes out of scope.
     let mut term = scopeguard::guard(terminal, |term| {
-        reset_term(term).expect("Error resetting terminal")
+        reset_term(term).expect("Error resetting terminal");
     });
 
     let mut textarea = TextArea::from(initial_content.lines());
@@ -159,7 +160,7 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
 }
 
 /// Prompt for and read Rust source code from stdin.
-pub fn read_stdin() -> Result<String, std::io::Error> {
+pub fn read() -> Result<String, std::io::Error> {
     log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
         if cfg!(windows) { 'Z' } else { 'D' }
     );
@@ -168,12 +169,27 @@ pub fn read_stdin() -> Result<String, std::io::Error> {
     Ok(buffer)
 }
 
+///
+///
+/// # Examples
+///
+/// ```
+/// use rs_script::stdin::read_to_string;
+///
+/// let mut input = ;
+/// assert_eq!(read_to_string(&mut input), );
+/// assert_eq!(input, );
+/// # Errors
+///
+/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+/// ```
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)
 }
 
+#[must_use]
 pub fn normalize_newlines(input: &str) -> String {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"\r\n?").unwrap();

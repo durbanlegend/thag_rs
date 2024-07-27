@@ -27,7 +27,7 @@ pub use repl::run_repl;
 pub use shared::{
     clear_screen, debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState,
 };
-pub use stdin::{edit_stdin, read_stdin};
+pub use stdin::{edit, read};
 
 // Re-export specific items if they are defined in the respective modules
 // pub use crate::{gen_build_run, BuildState, DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};

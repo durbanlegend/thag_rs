@@ -4,7 +4,7 @@ use ratatui::crossterm::tty::IsTty;
 use ratatui::style::{Color, Style, Stylize};
 use rs_script::logging::Verbosity;
 use rs_script::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
-use rs_script::{edit_stdin, log, BuildRunError};
+use rs_script::{edit, log, BuildRunError};
 use std::io::{stdout, Write};
 use std::process::{Command, Stdio};
 use tui_textarea::TextArea;
@@ -48,7 +48,7 @@ fn test_edit_stdin_submit() {
             )))
         });
 
-    let result = edit_stdin(mock_reader);
+    let result = edit(&mock_reader);
 
     log!(
         Verbosity::Normal,
@@ -78,7 +78,7 @@ fn test_edit_stdin_quit() {
         )))
     });
 
-    let result = edit_stdin(mock_reader);
+    let result = edit(&mock_reader);
 
     assert!(result.is_err());
     assert!(matches!(

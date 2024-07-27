@@ -12,7 +12,7 @@ use crate::repl::run_repl;
 use crate::shared::debug_timings;
 use crate::shared::{display_timings, Ast, BuildState};
 use crate::stdin::CrosstermEventReader;
-use crate::stdin::{edit_stdin, read_stdin};
+use crate::stdin::{edit, read};
 #[cfg(debug_assertions)]
 use crate::VERSION;
 use crate::{
@@ -150,13 +150,13 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
         } else if is_edit {
             debug_log!("About to call edit_stdin()");
             let event_reader = CrosstermEventReader;
-            let vec = edit_stdin(event_reader)?;
+            let vec = edit(&event_reader)?;
             debug_log!("vec={vec:#?}");
             vec.join("\n")
         } else {
             assert!(is_stdin);
             debug_log!("About to call read_stdin()");
-            let str = read_stdin()? + "\n";
+            let str = read()? + "\n";
             debug_log!("str={str}");
             str
         };

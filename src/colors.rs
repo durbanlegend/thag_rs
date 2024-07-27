@@ -172,6 +172,7 @@ impl NuThemeStyle for MessageStyle {
     }
 }
 
+#[must_use]
 pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
     let maybe_color_support = COLOR_SUPPORT.as_ref();
     if let Some(color_support) = maybe_color_support {

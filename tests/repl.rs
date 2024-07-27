@@ -4,8 +4,8 @@ mod tests {
     use home::home_dir;
     use rs_script::cmd_args::{Cli, ProcFlags};
     use rs_script::repl::{
-        delete, disp_repl_banner, edit, edit_history, list, parse_line, quit, run_expr, run_repl,
-        toml, Context,
+        delete, disp_repl_banner, edit, edit_history, list, parse_line, run_expr, run_repl, toml,
+        Context,
     };
     use rs_script::shared::BuildState;
     use std::time::Instant;
@@ -115,17 +115,6 @@ mod tests {
         let mut build_state = BuildState::default();
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
         let result = list(ArgMatches::default(), &mut context);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_quit() {
-        setup();
-        let mut options = Cli::parse_from(&["test"]);
-        let proc_flags = ProcFlags::default();
-        let mut build_state = BuildState::default();
-        let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
-        let result = quit(ArgMatches::default(), &mut context);
         assert!(result.is_ok());
     }
 

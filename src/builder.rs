@@ -260,11 +260,8 @@ pub fn gen_build_run(
         // debug_log!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
-            build_state.cargo_manifest = Some(manifest::merge_manifest(
-                build_state,
-                &rs_source,
-                &syntax_tree,
-            )?);
+            build_state.cargo_manifest =
+                Some(manifest::merge(build_state, &rs_source, &syntax_tree)?);
         }
 
         lazy_static! {
@@ -368,10 +365,13 @@ pub fn gen_build_run(
     Ok(())
 }
 
+/// Generate the source code and Cargo.toml file for the script.
 /// # Errors
 ///
 /// Will return `Err` if there is an error creating the directory path, writing to the
 /// target source or `Cargo.toml` file or formatting the source file with rustfmt.
+/// # Panics
+/// Will panic if it fails to unwrap the `BuildState.cargo_manifest`.
 pub fn generate(
     build_state: &BuildState,
     rs_source: &str,
@@ -434,9 +434,10 @@ pub fn generate(
 }
 
 /// Build the Rust program using Cargo (with manifest path)
+/// # Errors
+/// Will return `Err` if there is an error composing the Cargo TOML path or running the Cargo build command.
 /// # Panics
-///
-/// Will panic if the cargo build process fails to spawn.
+/// Will panic if the cargo build process fails to spawn or if it can't move the executable.
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRunError> {
     let start_build = Instant::now();
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);

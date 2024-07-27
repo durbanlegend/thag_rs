@@ -3,8 +3,7 @@ mod tests {
     use cargo_toml::{Edition, Manifest};
     use mockall::predicate::*;
     use rs_script::manifest::{
-        capture_dep, cargo_search, default_manifest_from_build_state, merge_manifest,
-        MockCommandRunner,
+        capture_dep, cargo_search, default_manifest_from_build_state, merge, MockCommandRunner,
     };
     use rs_script::BuildState;
     use std::process::Output;
@@ -154,7 +153,7 @@ crate_type = ["cdylib"]
 
         let syntax_tree = None;
 
-        let manifest = merge_manifest(&mut build_state, rs_source, &syntax_tree).unwrap();
+        let manifest = merge(&mut build_state, rs_source, &syntax_tree).unwrap();
         eprintln!("manifest.dependencies={:#?}", manifest.dependencies);
         assert!(manifest.dependencies.contains_key("serde_derive"));
     }

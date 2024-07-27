@@ -1,3 +1,4 @@
+#![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast, extract_manifest};
 use crate::debug_log;
@@ -97,6 +98,7 @@ pub struct Context<'a> {
     pub start: Instant,
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct ReplPrompt(pub &'static str);
 impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
@@ -157,6 +159,12 @@ fn add_menu_keybindings(keybindings: &mut Keybindings) {
 //     println!();
 // }
 
+/// Run the repl
+/// # Errors
+/// Will return `Err` if there is any error in running the REPL.
+/// # Panics
+/// Will panic if there is a problem configuring the `reedline` history file.
+#[allow(clippy::module_name_repetitions)]
 pub fn run_repl(
     options: &mut Cli,
     proc_flags: &ProcFlags,
@@ -245,7 +253,7 @@ pub fn run_repl(
         let maybe_cmd = {
             let mut matches = 0;
             let mut cmd = String::new();
-            for key in cmd_vec.iter() {
+            for key in &cmd_vec {
                 if key.starts_with(&first_word) {
                     matches += 1;
                     // Selects last match
@@ -277,23 +285,23 @@ pub fn run_repl(
                         break;
                     }
                     ReplCommand::Edit => {
-                        edit(args.clone(), context)?;
+                        edit(&args, context)?;
                     }
                     ReplCommand::Toml => {
-                        toml(args.clone(), context)?;
+                        toml(&args, context)?;
                     }
                     ReplCommand::Run => {
                         // &history.sync();
-                        run_expr(args.clone(), context)?;
+                        run_expr(&args, context)?;
                     }
                     ReplCommand::Delete => {
-                        delete(args.clone(), context)?;
+                        delete(&args, context)?;
                     }
                     ReplCommand::List => {
-                        list(args.clone(), context)?;
+                        list(&args, context)?;
                     }
                     ReplCommand::History => {
-                        edit_history(args.clone(), context)?;
+                        edit_history(&args, context)?;
                     }
                     ReplCommand::Keys => {
                         // Calculate max command len for padding
@@ -475,6 +483,7 @@ fn format_key_code(key_code: KeyCode) -> String {
 }
 
 // Helper function to format ReedlineEvents other than Edit, and their doc comments
+#[allow(clippy::too_many_lines)]
 fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     lazy_static! {
         pub static ref EVENT_DESC_MAP: HashMap<String, String> = {
@@ -589,12 +598,13 @@ fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     let event_desc = format!(
         "{:<max_cmd_len$} {}",
         event_highlight,
-        EVENT_DESC_MAP.get(event_name).unwrap_or(&"".to_string())
+        EVENT_DESC_MAP.get(event_name).unwrap_or(&String::new())
     );
     event_desc
 }
 
-// Helper function to format EditCommand and include its doc comments
+/// Helper function to format EditCommand and include its doc comments
+#[allow(clippy::too_many_lines)]
 fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> String {
     lazy_static! {
         pub static ref CMD_DESC_MAP: HashMap<String, String> = {
@@ -854,7 +864,7 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> Str
                 cmd_highlight,
                 CMD_DESC_MAP
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
+                    .unwrap_or(&String::new()),
                 if *select {
                     ". Select the text between the current cursor position and destination"
                 } else {
@@ -907,7 +917,7 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> Str
                 cmd_highlight,
                 CMD_DESC_MAP
                     .get(&format!("{cmd:?}"))
-                    .unwrap_or(&"".to_string())
+                    .unwrap_or(&String::new())
             ),
             EditCommand::MoveRightUntil { c: _, select }
             | EditCommand::MoveRightBefore { c: _, select }
@@ -917,7 +927,7 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> Str
                 cmd_highlight,
                 CMD_DESC_MAP
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
+                    .unwrap_or(&String::new()),
                 if *select {
                     "Select the text between the current cursor position and destination"
                 } else {
@@ -929,7 +939,7 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> Str
                 cmd_highlight,
                 CMD_DESC_MAP
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&"".to_string()),
+                    .unwrap_or(&String::new()),
                 position,
                 if *select {
                     "Select the text between the current cursor position and destination"
@@ -946,9 +956,10 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> Str
 }
 
 /// Delete our temporary files
-#[allow(clippy::needless_pass_by_value)]
+/// # Errors
+/// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
-pub fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn delete(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let build_state = &context.build_state;
     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
     if clean_up.is_ok()
@@ -964,10 +975,12 @@ pub fn delete(_args: ArgMatches, context: &mut Context) -> Result<Option<String>
     Ok(Some(String::from("End of delete")))
 }
 
-// #[allow(clippy::needless_pass_by_value)]
-// #[allow(clippy::unnecessary_wraps)]
+/// Opens the history file in an editor.
+/// # Errors
+/// Will return `Err` if there is an error editing the file.
+#[allow(clippy::unnecessary_wraps)]
 pub fn edit_history(
-    _args: ArgMatches,
+    _args: &ArgMatches,
     context: &mut Context,
 ) -> Result<Option<String>, BuildRunError> {
     let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
@@ -976,9 +989,11 @@ pub fn edit_history(
     Ok(Some(String::from("End of history file edit")))
 }
 
-#[allow(clippy::needless_pass_by_value)]
+/// Opens the generated destination Rust source-code file in an editor.
+/// # Errors
+/// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn edit(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let (build_state, _start) = (&mut context.build_state, context.start);
 
     edit::edit_file(&build_state.source_path)?;
@@ -986,16 +1001,23 @@ pub fn edit(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, 
     Ok(Some(String::from("End of source edit")))
 }
 
-#[allow(clippy::needless_pass_by_value)]
+/// Opens the generated Cargo.toml file in an editor.
+/// # Errors
+/// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn toml(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn toml(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     edit::edit_file(&context.build_state.cargo_toml_path)?;
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
-#[allow(clippy::needless_pass_by_value)]
+/// Runs an expression.
+/// # Errors
+/// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
-pub fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn run_expr(
+    _args: &ArgMatches,
+    context: &mut Context,
+) -> Result<Option<String>, BuildRunError> {
     let (options, proc_flags, build_state, start) = (
         &mut context.options,
         context.proc_flags,
@@ -1011,7 +1033,8 @@ pub fn run_expr(_args: ArgMatches, context: &mut Context) -> Result<Option<Strin
     Ok(Some(String::from("End of run")))
 }
 
-// Borrowed from clap-repl crate.
+/// Borrowed from clap-repl crate.
+#[must_use]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
     lazy_static! {
         static ref RE: Regex = Regex::new(r#"("[^"\n]+"|[\S]+)"#).unwrap();
@@ -1039,10 +1062,13 @@ Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: 
 }
 
 /// Display file listing
-
-#[allow(clippy::needless_pass_by_value)]
+/// # Errors
+/// This function will return an error in the following situations, but is not limited to just these cases:
+/// The provided path doesn't exist.
+/// The process lacks permissions to view the contents.
+/// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn list(_args: ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn list(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
     let build_state = &context.build_state;
     let source_path = &build_state.source_path;
     if source_path.exists() {

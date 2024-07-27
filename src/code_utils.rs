@@ -1,3 +1,4 @@
+#![allow(clippy::uninlined_format_args)]
 use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::errors::BuildRunError;
@@ -18,7 +19,7 @@ use std::fs::{remove_dir_all, remove_file, OpenOptions};
 use std::io::{self, BufRead, Write};
 use std::option::Option;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus, Output};
+use std::process::{Command, Output};
 use std::time::{Instant, SystemTime};
 use syn::visit::Visit;
 use syn::{
@@ -26,12 +27,15 @@ use syn::{
 };
 
 /// Read the contents of a file. For reading the Rust script.
+/// # Errors
+/// Will return `Err` if there is any file system error reading from the file path.
 pub fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
     debug_log!("Reading from {path:?}");
     Ok(fs::read_to_string(path)?)
 }
 
 /// Infer dependencies from the abstract syntax tree to put in a Cargo.toml.
+#[must_use]
 pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     let use_crates = find_use_crates_ast(syntax_tree);
     let extern_crates = find_extern_crates_ast(syntax_tree);
@@ -184,6 +188,7 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
 
 /// Infer dependencies from source code to put in a Cargo.toml.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
+#[must_use]
 pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     lazy_static! {
         static ref USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
@@ -270,6 +275,7 @@ fn filter_deps_source(
 
 /// Identify use ... as statements for exclusion from Cargo.toml metadata.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
+#[must_use]
 pub fn find_use_renames_source(code: &str) -> Vec<String> {
     lazy_static! {
         static ref USE_AS_REGEX: Regex = Regex::new(r"(?m)^\s*use\s+.+as\s+(\w+)").unwrap();
@@ -291,6 +297,7 @@ pub fn find_use_renames_source(code: &str) -> Vec<String> {
 
 /// Identify mod statements for exclusion from Cargo.toml metadata.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
+#[must_use]
 pub fn find_modules_source(code: &str) -> Vec<String> {
     lazy_static! {
         static ref MODULE_REGEX: Regex = Regex::new(r"(?m)^[\s]*mod\s+([^;{\s]+)").unwrap();
@@ -311,6 +318,8 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
 }
 
 /// Extract embedded Cargo.toml metadata from a Rust source string.
+/// # Errors
+/// Will return `Err` if there is any error in parsing the toml data into a manifest.
 pub fn extract_manifest(
     rs_full_source: &str,
     start_parsing_rs: Instant,
@@ -337,7 +346,9 @@ fn extract_toml_block(input: &str) -> Option<String> {
 }
 
 /// Parse a Rust expression source string into a syntax tree.
-/// We are not primarily catering for programs with a main method (`syn::File`),
+/// We are not primarily catering for programs with a main method (`syn::File`).
+/// # Errors
+/// Will return `Err` if there is any error encountered by the `syn` crate trying to parse the source string into an AST.
 pub fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
     let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
     if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
@@ -352,6 +363,8 @@ pub fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
 }
 
 /// Process a Rust expression
+/// # Errors
+/// Will return `Err` if there is any errors encountered opening or writing to the file.
 pub fn process_expr(
     expr_ast: &Expr,
     build_state: &mut BuildState,
@@ -368,6 +381,8 @@ pub fn process_expr(
 }
 
 /// Convert a Path to a string value, assuming the path contains only valid characters.
+/// # Errors
+/// Will return `Err` if there is any error caused by invalid characters in the path name.
 pub fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
     let string = path
         .to_path_buf()
@@ -391,11 +406,16 @@ pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
 
 /// Unescape \n markers to convert a string of raw text to readable lines.
 #[inline]
+#[must_use]
 pub fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
 
+/// Currently unused disentangling method.
+/// # Panics
+/// Will panic if the regular expression used is not well formed.
 #[allow(dead_code)]
+#[must_use]
 pub fn re_disentangle(text_wall: &str) -> String {
     use std::fmt::Write;
     lazy_static! {
@@ -413,6 +433,8 @@ pub fn re_disentangle(text_wall: &str) -> String {
 
 #[allow(dead_code)]
 /// Display output captured to `std::process::Output`.
+/// # Errors
+/// Will return `Err` if the stdout or stderr is not found captured as expected.
 pub fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     // Read the captured output from the pipe
     // let stdout = output.stdout;
@@ -431,36 +453,11 @@ pub fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// TODO wait to see if redundant and get rid of it.
-/// Handle the outcome of a process and optionally display its stdout and/or stderr
-#[allow(dead_code)]
-pub fn handle_outcome(
-    exit_status: ExitStatus,
-    display_stdout: bool,
-    display_stderr: bool,
-    output: &std::process::Output,
-    process: &str,
-) -> Result<(), BuildRunError> {
-    if exit_status.success() {
-        if display_stdout {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            debug_log!("{} succeeded!", process);
-            stdout.lines().for_each(|line| {
-                debug_log!("{}", line);
-            });
-        }
-    } else if display_stderr {
-        let error_msg = String::from_utf8_lossy(&output.stderr);
-        error_msg.lines().for_each(|line| {
-            debug_log!("{line}");
-        });
-        return Err(BuildRunError::Command(format!("{process} failed")));
-    };
-    Ok(())
-}
-
 /// Check if executable is stale, i.e. if raw source script or individual Cargo.toml
 /// has a more recent modification date and time
+/// # Panics
+/// Will panic if either the executable or the Cargo.toml for the script is missing.
+#[must_use]
 pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, SystemTime)> {
     let executable = &build_state.target_path;
     assert!(executable.exists(), "Missing executable");
@@ -506,6 +503,7 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
 }
 
 /// Count the number of `main()` methods in an abstract syntax tree.
+#[must_use]
 pub fn count_main_methods(syntax_tree: &Ast) -> usize {
     #[derive(Default)]
     struct FindMainFns {
@@ -531,7 +529,8 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
 }
 
 /// Parse the code into an abstract syntax tree for inspection
-/// if possible (should work if the code will compike)
+/// if possible (should work if the code will compile)
+#[must_use]
 pub fn to_ast(source_code: &str) -> Option<Ast> {
     let start_ast = Instant::now();
     if let Ok(tree) = extract_ast(source_code) {
@@ -558,6 +557,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
 }
 
 /// Convert a Rust code snippet into a program by wrapping it in a main method and other scaffolding.
+#[must_use]
 pub fn wrap_snippet(rs_source: &str) -> String {
     use std::fmt::Write;
 
@@ -626,6 +626,9 @@ Ok(())
     wrapped_snippet
 }
 
+/// Writes the source to the destination soruce-code path.
+/// # Errors
+/// Will return `Err` if there is any error encountered opening or writing to the file.
 pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, BuildRunError> {
     let mut to_rs_file = OpenOptions::new()
         .write(true)
@@ -643,6 +646,9 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, B
 }
 
 /// Create the next sequential REPL file according to the `repl_nnnnnn.rs` standard used by this crate.
+/// # Panics
+/// Will panic if it fails to create the `rs_repl` subdirectory.
+#[must_use]
 pub fn create_next_repl_file() -> PathBuf {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
@@ -693,7 +699,9 @@ pub fn create_next_repl_file() -> PathBuf {
     create_repl_file(&gen_repl_temp_dir_path, next_file_num)
 }
 
-// Create a REPL file on disk, given the path and sequence number.
+/// Create a REPL file on disk, given the path and sequence number.
+/// # Panics
+/// Will panic if if fails to create the repl subdirectory.
 pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
     let padded_num = format!("{:06}", num);
     let dir_name = format!("repl_{padded_num}");
@@ -709,12 +717,14 @@ pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
 
 /// Create empty script file `temp.rs` to hold expression for --expr or --stdin options,
 /// and open it for writing.
+/// # Panics
+/// Will panic if it can't create the `rs_dyn` directory.
 pub fn create_temp_source_file() -> PathBuf {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
-    // Ensure EXPR subdirectory exists
-    fs::create_dir_all(gen_expr_temp_dir_path.clone()).expect("Failed to create REPL directory");
+    // Ensure REPL subdirectory exists
+    fs::create_dir_all(gen_expr_temp_dir_path.clone()).expect("Failed to create EXPR directory");
 
     let filename = TEMP_SCRIPT_NAME;
     let path = gen_expr_temp_dir_path.join(filename);
@@ -730,6 +740,8 @@ pub fn create_temp_source_file() -> PathBuf {
 }
 
 /// Clean up temporary files.
+/// # Errors
+/// Will return `Err` if there is any error deleting the file.
 pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<()> {
     // Delete the file
     remove_file(source_path)?;
@@ -739,6 +751,8 @@ pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<
 }
 
 /// Display the contents of a given directory.
+/// # Errors
+/// Will return `Err` if there is any error reading the directory.
 pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
@@ -763,6 +777,10 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 }
 
 /// Format a Rust source file in situ using rustfmt.
+/// # Errors
+/// Will return `Err` if there is any error accessing path to source file
+/// # Panics
+/// Will panic if the `rustfmt` failed.
 pub fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
     let target_rs_path = build_state.target_dir_path.clone();
     let target_rs_path = target_rs_path.join(&build_state.source_name);
@@ -805,6 +823,7 @@ pub fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
 /// Strip a set of curly braces off a Rust script, if present. This is intended to
 /// undo the effect of adding them to create an expression that can be parsed into
 /// an abstract syntax tree.
+#[must_use]
 pub fn strip_curly_braces(haystack: &str) -> Option<String> {
     // Define the regex pattern
     lazy_static! {
@@ -871,6 +890,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 
 /// Determine if the return type of the expression is unit (the empty tuple `()`),
 /// otherwise we wrap it in a println! statement.
+#[must_use]
 pub fn is_unit_return_type(expr: &Expr) -> bool {
     let start = Instant::now();
 
@@ -888,7 +908,14 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
 ///
 /// This function finds the last statement in a given expression and determines if it
 /// returns a unit type.
-pub fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, ReturnType>) -> bool {
+/// # Panics
+/// Will panic if an unexpected expression type is found in the elso branch of an if-statement.
+#[allow(clippy::too_many_lines)]
+#[must_use]
+pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
+    expr: &Expr,
+    function_map: &HashMap<String, ReturnType, S>,
+) -> bool {
     debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
         Expr::ForLoop(for_loop) => {
@@ -899,14 +926,6 @@ pub fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, Return
                 // debug_log!("%%%%%%%% Not if let Some(last_stmt) = for_loop.body.stmts.last()");
                 false
             }
-        }
-        Expr::While(_) => {
-            // debug_log!("%%%%%%%% Expr::While(_))");
-            true
-        }
-        Expr::Loop(_) => {
-            // debug_log!("%%%%%%%% Expr::While(_))");
-            true
         }
         Expr::If(expr_if) => {
             // Cycle through if-else statements and return false if any one is found returning
@@ -966,10 +985,8 @@ pub fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, Return
                 let expr = &*arm.body;
                 if is_last_stmt_unit_type(expr, function_map) {
                     continue;
-                } else {
-                    // debug_log!("%%%%%%%% Match arm returns unit type");
-                    return false;
                 }
+                return false;
             }
             // debug_log!("%%%%%%%% Match arm returns non-unit type");
             true
@@ -996,51 +1013,65 @@ pub fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, Return
         Expr::MethodCall(expr_method_call) => {
             is_last_stmt_unit_type(&expr_method_call.receiver, function_map)
         }
-        Expr::Array(_) => false,
-        Expr::Assign(_) => false,
-        Expr::Async(_) => false,
-        Expr::Await(_) => false,
         Expr::Binary(expr_binary) => match expr_binary.op {
-            syn::BinOp::Add(_) => false,
-            syn::BinOp::Sub(_) => false,
-            syn::BinOp::Mul(_) => false,
-            syn::BinOp::Div(_) => false,
-            syn::BinOp::Rem(_) => false,
-            syn::BinOp::And(_) => false,
-            syn::BinOp::Or(_) => false,
-            syn::BinOp::BitXor(_) => false,
-            syn::BinOp::BitAnd(_) => false,
-            syn::BinOp::BitOr(_) => false,
-            syn::BinOp::Shl(_) => false,
-            syn::BinOp::Shr(_) => false,
-            syn::BinOp::Eq(_) => false,
-            syn::BinOp::Lt(_) => false,
-            syn::BinOp::Le(_) => false,
-            syn::BinOp::Ne(_) => false,
-            syn::BinOp::Ge(_) => false,
-            syn::BinOp::Gt(_) => false,
-            syn::BinOp::AddAssign(_) => true,
-            syn::BinOp::SubAssign(_) => true,
-            syn::BinOp::MulAssign(_) => true,
-            syn::BinOp::DivAssign(_) => true,
-            syn::BinOp::RemAssign(_) => true,
-            syn::BinOp::BitXorAssign(_) => true,
-            syn::BinOp::BitAndAssign(_) => true,
-            syn::BinOp::BitOrAssign(_) => true,
-            syn::BinOp::ShlAssign(_) => true,
-            syn::BinOp::ShrAssign(_) => true,
-            _ => false,
+            syn::BinOp::AddAssign(_)
+            | syn::BinOp::SubAssign(_)
+            | syn::BinOp::MulAssign(_)
+            | syn::BinOp::DivAssign(_)
+            | syn::BinOp::RemAssign(_)
+            | syn::BinOp::BitXorAssign(_)
+            | syn::BinOp::BitAndAssign(_)
+            | syn::BinOp::BitOrAssign(_)
+            | syn::BinOp::ShlAssign(_)
+            | syn::BinOp::ShrAssign(_) => true,
+            syn::BinOp::Add(_)
+            | syn::BinOp::Sub(_)
+            | syn::BinOp::Mul(_)
+            | syn::BinOp::Div(_)
+            | syn::BinOp::Rem(_)
+            | syn::BinOp::And(_)
+            | syn::BinOp::Or(_)
+            | syn::BinOp::BitXor(_)
+            | syn::BinOp::BitAnd(_)
+            | syn::BinOp::BitOr(_)
+            | syn::BinOp::Shl(_)
+            | syn::BinOp::Shr(_)
+            | syn::BinOp::Eq(_)
+            | syn::BinOp::Lt(_)
+            | syn::BinOp::Le(_)
+            | syn::BinOp::Ne(_)
+            | syn::BinOp::Ge(_)
+            | syn::BinOp::Gt(_)
+            | _ => false,
         },
-        Expr::Break(_) => true,
-        Expr::Cast(_) => false,
-        Expr::Const(_) => false,
-        Expr::Continue(_) => true,
-        Expr::Field(_) => false,
-        Expr::Group(_) => false,
-        Expr::Index(_) => false,
-        Expr::Infer(_) => true,
-        Expr::Let(_) => true,
-        Expr::Lit(_) => false,
+        Expr::While(_)
+        | Expr::Loop(_)
+        | Expr::Break(_)
+        | Expr::Continue(_)
+        | Expr::Infer(_)
+        | Expr::Let(_) => true,
+        Expr::Array(_)
+        | Expr::Assign(_)
+        | Expr::Async(_)
+        | Expr::Await(_)
+        | Expr::Cast(_)
+        | Expr::Const(_)
+        | Expr::Field(_)
+        | Expr::Group(_)
+        | Expr::Index(_)
+        | Expr::Lit(_)
+        | Expr::Paren(_)
+        | Expr::Range(_)
+        | Expr::Reference(_)
+        | Expr::Repeat(_)
+        | Expr::Struct(_)
+        | Expr::Try(_)
+        | Expr::TryBlock(_)
+        | Expr::Tuple(_)
+        | Expr::Unary(_)
+        | Expr::Unsafe(_)
+        | Expr::Verbatim(_)
+        | Expr::Yield(_) => false,
         Expr::Macro(expr_macro) => {
             if let Some(segment) = expr_macro.mac.path.segments.last() {
                 let ident = &segment.ident.to_string();
@@ -1050,28 +1081,16 @@ pub fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, Return
             }
             false // default - because no intrinsic way of knowing?
         }
-        Expr::Paren(_) => false,
         Expr::Path(path) => {
             if let Some(value) = is_path_unit_type(path, function_map) {
                 return value;
             }
             false
         }
-        Expr::Range(_) => false,
-        Expr::Reference(_) => false,
-        Expr::Repeat(_) => false,
         Expr::Return(expr_return) => {
             debug_log!("%%%%%%%% expr_return={expr_return:#?}");
             expr_return.expr.is_none()
         }
-        Expr::Struct(_) => false,
-        Expr::Try(_) => false,
-        Expr::TryBlock(_) => false,
-        Expr::Tuple(_) => false,
-        Expr::Unary(_) => false,
-        Expr::Unsafe(_) => false,
-        Expr::Verbatim(_) => false,
-        Expr::Yield(_) => false,
         _ => {
             println!(
                 "%%%%%%%% Expression not catered for: {expr:#?}, wrapping expression in println!()"
@@ -1083,9 +1102,10 @@ pub fn is_last_stmt_unit_type(expr: &Expr, function_map: &HashMap<String, Return
 
 /// Check if a path represents a function, and if so, whether it has a unit or non-unit
 /// return type.
-pub fn is_path_unit_type(
+#[must_use]
+pub fn is_path_unit_type<S: ::std::hash::BuildHasher>(
     path: &syn::PatPath,
-    function_map: &HashMap<String, ReturnType>,
+    function_map: &HashMap<String, ReturnType, S>,
 ) -> Option<bool> {
     if let Some(ident) = path.path.get_ident() {
         if let Some(return_type) = function_map.get(&ident.to_string()) {
@@ -1112,7 +1132,10 @@ pub fn is_path_unit_type(
 /// Recursively alternate with function `is_last_stmt_unit` until we drill down through
 /// all the blocks, loops and if-conditions to find the last executable statement and
 /// determine if it returns a unit type or a value worth printing.
-pub fn is_stmt_unit_type(stmt: &Stmt, function_map: &HashMap<String, ReturnType>) -> bool {
+pub fn is_stmt_unit_type<S: ::std::hash::BuildHasher>(
+    stmt: &Stmt,
+    function_map: &HashMap<String, ReturnType, S>,
+) -> bool {
     debug_log!("%%%%%%%% stmt={stmt:#?}");
     match stmt {
         Stmt::Expr(expr, None) => {
@@ -1140,30 +1163,27 @@ pub fn is_stmt_unit_type(stmt: &Stmt, function_map: &HashMap<String, ReturnType>
         }
         Stmt::Local(_) => true,
         Stmt::Item(item) => match item {
-            Item::Const(_) => false,
-            Item::Enum(_) => false,
-            Item::ExternCrate(_) => true,
-            Item::Fn(_) => true,
-            Item::ForeignMod(_) => true,
-            Item::Impl(_) => true,
+            Item::ExternCrate(_)
+            | Item::Fn(_)
+            | Item::ForeignMod(_)
+            | Item::Impl(_)
+            | Item::Struct(_)
+            | Item::Trait(_)
+            | Item::TraitAlias(_)
+            | Item::Type(_)
+            | Item::Union(_)
+            | Item::Use(_)
+            | Item::Mod(_) => true,
             Item::Macro(m) => {
                 // debug_log!("%%%%%%%% Item::Macro({m:#?}), m.semi_token.is_some()={is_some}");
                 m.semi_token.is_some()
             }
-            Item::Mod(_) => true,
-            Item::Static(_) => false,
-            Item::Struct(_) => true,
-            Item::Trait(_) => true,
-            Item::TraitAlias(_) => true,
-            Item::Type(_) => true,
-            Item::Union(_) => true,
-            Item::Use(_) => true,
-            Item::Verbatim(_) => false,
-            _ => false, // default
+            Item::Const(_) | Item::Enum(_) | Item::Static(_) | Item::Verbatim(_) | _ => false, // default
         },
     }
 }
 
+#[must_use]
 pub fn returns_unit(expr: &Expr) -> bool {
     // Check if the expression returns a unit value
     let is_unit_type = matches!(expr, Expr::Tuple(tuple) if tuple.elems.is_empty());
@@ -1175,6 +1195,10 @@ pub fn returns_unit(expr: &Expr) -> bool {
 }
 
 // I don't altogether trust this from GPT
+/// Converts a `syn::File` to a `syn::Expr`
+/// # Panics
+/// Will panic if a macro expression can't be parsed.
+#[must_use]
 pub fn extract_expr_from_file(file: &File) -> Option<Expr> {
     // Traverse the file to find the main function and extract expressions from it
     for item in &file.items {

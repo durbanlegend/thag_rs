@@ -19,17 +19,27 @@ use crate::shared::{debug_timings, escape_path_for_windows, Ast, BuildState};
 
 #[automock]
 pub trait CommandRunner {
+    /// Run the Cargo search, real or mocked.
+    /// # Errors
+    /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
     fn run_command(&self, program: &str, args: &[String]) -> io::Result<Output>;
 }
 
 pub struct RealCommandRunner;
 
 impl CommandRunner for RealCommandRunner {
+    /// Run the Cargo search, real or mocked.
+    /// # Errors
+    /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
     fn run_command(&self, program: &str, args: &[String]) -> io::Result<Output> {
         Command::new(program).args(args).output()
     }
 }
 
+/// Attempts to find a matching dependency name and version from Cargo by searching by
+/// crate name and inspecting the first line of Cargo's response.
+/// # Errors
+/// Will return `Err` if the first line does not match the expected crate name and a valid version number.
 pub fn cargo_search<R: CommandRunner>(
     runner: &R,
     dep_crate: &str,
@@ -110,6 +120,12 @@ as shown if you don't need special features:
     Ok((name, version))
 }
 
+/// Attempts to capture the dependency name and version from the first line returned by
+/// Cargo from the search by dependency name.
+/// # Errors
+/// Will return `Err` if the first line does not match the expected crate name and a valid version number.
+/// # Panics
+/// Will panic if the regular expression is malformed.
 pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
     debug_log!("first_line={first_line}");
     lazy_static! {
@@ -132,6 +148,8 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>>
     Ok((name, version))
 }
 
+/// # Errors
+/// Will return `Err` if there is any error parsing the default manifest.
 pub fn default_manifest_from_build_state(
     build_state: &BuildState,
 ) -> Result<Manifest, BuildRunError> {
@@ -140,10 +158,13 @@ pub fn default_manifest_from_build_state(
     let binding = build_state.target_dir_path.join(source_name);
     let gen_src_path = escape_path_for_windows(binding.to_string_lossy().as_ref());
 
-    default_manifest(source_stem, &gen_src_path)
+    default(source_stem, &gen_src_path)
 }
 
-pub fn default_manifest(source_stem: &str, gen_src_path: &str) -> Result<Manifest, BuildRunError> {
+/// Parse the default manifest from a string template.
+/// # Errors
+/// Will return `Err` if there is any error parsing the default manifest.
+pub fn default(source_stem: &str, gen_src_path: &str) -> Result<Manifest, BuildRunError> {
     let cargo_manifest = format!(
         r##"[package]
 name = "{}"
@@ -170,7 +191,11 @@ path = "{}"
     Ok(Manifest::from_str(&cargo_manifest)?)
 }
 
-pub fn merge_manifest(
+/// Merge manifest data gleaned from the source script and its optional embedded toml block
+/// into the default manifest.
+/// # Errors
+/// Will return `Err` if there is any error parsing the default manifest.
+pub fn merge(
     build_state: &mut BuildState,
     rs_source: &str,
     syntax_tree: &Option<Ast>,

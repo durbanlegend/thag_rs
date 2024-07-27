@@ -83,7 +83,7 @@ fn test_cargo_manifest_from_str() {
 
 #[test]
 fn test_cargo_manifest_display() {
-    let mut manifest = manifest::default_manifest("example", "path/to/script").unwrap();
+    let mut manifest = manifest::default("example", "path/to/script").unwrap();
 
     manifest
         .dependencies

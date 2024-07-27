@@ -16,7 +16,9 @@
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Raise clear_screen as an issue on termbg crate?
 - [ ]  Add FAQ
-- [ ]  Find a punchy name - rs-thagomizer | rs-bolt | rs-volt ?
+- [ ]  Punchy intro in readme, per Zands.
+- [ ]  Find a punchy name - rs-thagomizer | rs-bolt | rs-volt | rs-ares
+                            rs_traction | rs_about-face | rs-backwards lol ?
 
 - [ ]  Demo scripts not commented:
 demo/termbg.rs

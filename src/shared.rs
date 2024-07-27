@@ -1,3 +1,4 @@
+#![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::debug_log;
 use crate::errors::BuildRunError;
@@ -25,11 +26,12 @@ use std::{
 };
 use strum::Display;
 
-// termbg sends an operating system command (OSC) to interrogate the screen
-// but with side effects which we undo here.
+/// termbg sends an operating system command (OSC) to interrogate the screen
+/// but with side effects which we undo here.
+/// # Panics
+/// Will panic if a crossterm execute command fails.
 pub fn clear_screen() {
     let mut out = stdout();
-    // out.execute(Clear(ClearType::FromCursorUp)).unwrap();
     out.execute(MoveToColumn(0)).unwrap();
     out.execute(Show).unwrap();
     out.flush().unwrap();
@@ -74,6 +76,9 @@ pub struct BuildState {
 
 impl BuildState {
     #[allow(clippy::too_many_lines)]
+    /// # Errors
+    /// Any errors in the pre-configuration
+    /// # Panics
     pub fn pre_configure(
         proc_flags: &ProcFlags,
         options: &Cli,
@@ -86,16 +91,26 @@ impl BuildState {
         let is_dynamic = is_expr | is_stdin | is_edit;
         let build_exe = proc_flags.contains(ProcFlags::EXECUTABLE);
         let maybe_script = script_state.get_script();
-        if maybe_script.is_none() {
+        let Some(script) = maybe_script.clone() else {
             return Err(Box::new(BuildRunError::NoneOption(
                 "No script specified".to_string(),
             )));
-        }
-        let script = (maybe_script).clone().unwrap();
+        };
         debug_log!("script={script}");
         let path = Path::new(&script);
         debug_log!("path={path:#?}");
-        let source_name: String = path.file_name().unwrap().to_str().unwrap().to_string();
+        let Some(filename) = path.file_name() else {
+            return Err(Box::new(BuildRunError::NoneOption(
+                "No filename specified".to_string(),
+            )));
+        };
+        let Some(source_name) = filename.to_str() else {
+            return Err(Box::new(BuildRunError::NoneOption(
+                "Error converting filename to a string".to_string(),
+            )));
+        };
+
+        let source_name = source_name.to_string();
         debug_log!("source_name={source_name}");
         let source_stem = {
             let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
@@ -225,6 +240,7 @@ pub enum ScriptState {
 }
 
 impl ScriptState {
+    #[must_use]
     pub fn get_script(&self) -> Option<String> {
         match self {
             ScriptState::Anonymous => None,
@@ -233,6 +249,7 @@ impl ScriptState {
             }
         }
     }
+    #[must_use]
     pub fn get_script_dir_path(&self) -> Option<PathBuf> {
         match self {
             ScriptState::Anonymous => None,
@@ -267,6 +284,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
 }
 
 // Helper function to sort out using the escape character as the file separator.
+#[must_use]
 pub fn escape_path_for_windows(path: &str) -> String {
     if cfg!(windows) {
         path.replace('\\', "/")

@@ -67,7 +67,7 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    // Any test of the REPL is roblematic because reedline will panic
+    // Any test of the REPL is problematic because reedline will panic
     // with a message that the current cursor position can't be found.
     // #[test]
     // fn test_execute_repl_script() {

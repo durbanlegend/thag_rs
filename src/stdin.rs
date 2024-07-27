@@ -4,7 +4,7 @@ use crate::log;
 use crate::logging::Verbosity;
 
 use lazy_static::lazy_static;
-use mockall::{automock, predicate::*};
+use mockall::{automock, predicate::str};
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
@@ -26,6 +26,10 @@ use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 #[automock]
 pub trait EventReader {
+    /// Read a `crossterm` event.
+    /// # Errors
+    ///
+    /// If the timeout expires then an error is returned and buf is unchanged.
     fn read_event(&self) -> Result<Event, std::io::Error>;
 }
 
@@ -46,6 +50,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// Edit the stdin stream.
+///
+///
+/// # Examples
+///
+/// ```
+/// use rs_script::stdin::edit;
+///
+/// assert_eq!(edit(event_reader), );
+/// ```
+/// # Errors
+///
+/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+/// # Panics
+///
+/// If the terminal cannot be reset.
 pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Error>> {
     let input = std::io::stdin();
 
@@ -160,6 +180,17 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
 }
 
 /// Prompt for and read Rust source code from stdin.
+///
+/// # Examples
+///
+/// ```
+/// use rs_script::stdin::read;
+///
+/// assert_eq!(read(), );
+/// ```
+/// # Errors
+///
+/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
     log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
         if cfg!(windows) { 'Z' } else { 'D' }
@@ -179,10 +210,11 @@ pub fn read() -> Result<String, std::io::Error> {
 /// let mut input = ;
 /// assert_eq!(read_to_string(&mut input), );
 /// assert_eq!(input, );
+/// ```
+///
 /// # Errors
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
-/// ```
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;

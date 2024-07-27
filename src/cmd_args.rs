@@ -66,10 +66,14 @@ pub struct Cli {
 }
 
 /// Getter for clap command-line arguments
+#[must_use]
 pub fn get_args() -> Cli {
     Cli::parse()
 }
 
+/// Validates the command-line arguments
+/// # Errors
+/// Will return `Err` if there is a missing script name or missing .rs suffix.
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
@@ -161,8 +165,8 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::VERBOSE, args.verbose);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
         proc_flags.set(ProcFlags::NORUN, args.norun | args.executable);
-        proc_flags.set(ProcFlags::RUN, !args.norun & !args.executable);
-        proc_flags.set(ProcFlags::ALL, !args.norun & !args.executable);
+        proc_flags.set(ProcFlags::RUN, !args.norun && !args.executable);
+        proc_flags.set(ProcFlags::ALL, !args.norun && !args.executable);
         if !(proc_flags.contains(ProcFlags::ALL)) {
             proc_flags.set(ProcFlags::ALL, args.generate & args.build & args.run);
         }

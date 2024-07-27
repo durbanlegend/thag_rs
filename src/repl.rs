@@ -165,6 +165,7 @@ fn add_menu_keybindings(keybindings: &mut Keybindings) {
 /// # Panics
 /// Will panic if there is a problem configuring the `reedline` history file.
 #[allow(clippy::module_name_repetitions)]
+#[allow(clippy::too_many_lines)]
 pub fn run_repl(
     options: &mut Cli,
     proc_flags: &ProcFlags,
@@ -603,7 +604,7 @@ fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     event_desc
 }
 
-/// Helper function to format EditCommand and include its doc comments
+/// Helper function to format `EditCommand` and include its doc comments
 #[allow(clippy::too_many_lines)]
 fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> String {
     lazy_static! {

@@ -40,6 +40,12 @@ use std::{
     time::Instant,
 };
 
+/// Executes the script runner
+/// # Errors
+///
+/// Will return `Err` if there is an error returned by any of the subordinate functions.
+/// # Panics
+/// Will panic if it fails to strip a .rs extension off the script name,
 #[allow(clippy::too_many_lines)]
 pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
@@ -76,7 +82,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
     let is_dynamic = is_expr | is_stdin | is_edit;
     if is_dynamic {
-        create_temp_source_file();
+        let _ = create_temp_source_file();
     }
     let script_dir_path = if is_repl {
         if let Some(ref script) = args.script {
@@ -215,6 +221,14 @@ fn configure_log() {
     // Builder::new().filter_level(log::LevelFilter::Debug).init();
 }
 
+/// Generate, build and run the script or expression.
+/// # Errors
+///
+/// Will return `Err` if there is an error returned by any of the generate, build or run functions.
+///
+/// # Panics
+/// Will panic if it fails to parse the shebang, if any.
+#[allow(clippy::too_many_lines)]
 pub fn gen_build_run(
     options: &mut Cli,
     proc_flags: &ProcFlags,
@@ -370,7 +384,9 @@ pub fn gen_build_run(
 ///
 /// Will return `Err` if there is an error creating the directory path, writing to the
 /// target source or `Cargo.toml` file or formatting the source file with rustfmt.
+///
 /// # Panics
+///
 /// Will panic if it fails to unwrap the `BuildState.cargo_manifest`.
 pub fn generate(
     build_state: &BuildState,

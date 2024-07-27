@@ -702,6 +702,7 @@ pub fn create_next_repl_file() -> PathBuf {
 /// Create a REPL file on disk, given the path and sequence number.
 /// # Panics
 /// Will panic if if fails to create the repl subdirectory.
+#[must_use]
 pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
     let padded_num = format!("{:06}", num);
     let dir_name = format!("repl_{padded_num}");
@@ -719,6 +720,7 @@ pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
 /// and open it for writing.
 /// # Panics
 /// Will panic if it can't create the `rs_dyn` directory.
+#[must_use]
 pub fn create_temp_source_file() -> PathBuf {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
@@ -1013,37 +1015,19 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
         Expr::MethodCall(expr_method_call) => {
             is_last_stmt_unit_type(&expr_method_call.receiver, function_map)
         }
-        Expr::Binary(expr_binary) => match expr_binary.op {
+        Expr::Binary(expr_binary) => matches!(
+            expr_binary.op,
             syn::BinOp::AddAssign(_)
-            | syn::BinOp::SubAssign(_)
-            | syn::BinOp::MulAssign(_)
-            | syn::BinOp::DivAssign(_)
-            | syn::BinOp::RemAssign(_)
-            | syn::BinOp::BitXorAssign(_)
-            | syn::BinOp::BitAndAssign(_)
-            | syn::BinOp::BitOrAssign(_)
-            | syn::BinOp::ShlAssign(_)
-            | syn::BinOp::ShrAssign(_) => true,
-            syn::BinOp::Add(_)
-            | syn::BinOp::Sub(_)
-            | syn::BinOp::Mul(_)
-            | syn::BinOp::Div(_)
-            | syn::BinOp::Rem(_)
-            | syn::BinOp::And(_)
-            | syn::BinOp::Or(_)
-            | syn::BinOp::BitXor(_)
-            | syn::BinOp::BitAnd(_)
-            | syn::BinOp::BitOr(_)
-            | syn::BinOp::Shl(_)
-            | syn::BinOp::Shr(_)
-            | syn::BinOp::Eq(_)
-            | syn::BinOp::Lt(_)
-            | syn::BinOp::Le(_)
-            | syn::BinOp::Ne(_)
-            | syn::BinOp::Ge(_)
-            | syn::BinOp::Gt(_)
-            | _ => false,
-        },
+                | syn::BinOp::SubAssign(_)
+                | syn::BinOp::MulAssign(_)
+                | syn::BinOp::DivAssign(_)
+                | syn::BinOp::RemAssign(_)
+                | syn::BinOp::BitXorAssign(_)
+                | syn::BinOp::BitAndAssign(_)
+                | syn::BinOp::BitOrAssign(_)
+                | syn::BinOp::ShlAssign(_)
+                | syn::BinOp::ShrAssign(_)
+        ),
         Expr::While(_)
         | Expr::Loop(_)
         | Expr::Break(_)
@@ -1178,7 +1162,7 @@ pub fn is_stmt_unit_type<S: ::std::hash::BuildHasher>(
                 // debug_log!("%%%%%%%% Item::Macro({m:#?}), m.semi_token.is_some()={is_some}");
                 m.semi_token.is_some()
             }
-            Item::Const(_) | Item::Enum(_) | Item::Static(_) | Item::Verbatim(_) | _ => false, // default
+            _ => false, // default
         },
     }
 }

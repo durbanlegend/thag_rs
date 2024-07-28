@@ -78,7 +78,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn E
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(Box::new(BuildRunError::Command(format!(
-                "Script name must end in {RS_SUFFIX}"
+                "Script name {script} must end in {RS_SUFFIX}"
             ))));
         }
     } else if !proc_flags.contains(ProcFlags::EXPR)

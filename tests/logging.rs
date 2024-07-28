@@ -55,6 +55,7 @@ mod tests {
     #[test]
     #[sequential]
     fn test_logger_log() {
+        set_up()();
         init_logger();
         let rs_script_path = env::current_dir().expect("Error getting current directory");
 
@@ -87,6 +88,7 @@ fn main() {{
     #[test]
     #[parallel]
     fn test_global_logger() {
+        set_up()();
         reset_global_logger();
 
         set_global_verbosity(Verbosity::Verbose);

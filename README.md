@@ -4,10 +4,41 @@
 [![Documentation](https://docs.rs/rs-script/badge.svg)](https://docs.rs/\n)
 [![Build Status](https://github.com/durbanlegend/rs-script/workflows/CI/badge.svg)](https://github.com/durbanlegend/rs-script/actions)
 
+## Intro
+
+`rs-script` is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner.
+
+## Quick start: ways to run `rs-script`
+
+1. With an expression argument:
+```bash
+rs_script --expr '"Hello world!"'                     # Short form: -e
+```
+
+2. With a script:
+```bash
+rs_script demo/hello.rs
+```
+
+3. As a REPL:
+```bash
+rs_script --repl        # Short form: -l
+```
+![rs_script --repl        # Short form: -l](repl.png)
+
+4. With standard input:
+```bash
+echo "(1..=10).product::<u32>()" | rs_script --stdin              # Short form: -s
+```
+5. With a TUI (Text User Interface) editor
+```
+rs_script --edit        # Short form: -d
+```
+
+
 ## Overview
 
-`rs-script` is a simple but serious script runner and REPL for Rust expressions, snippets, and programs. This tool allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner.
-
+```
 `rs-script` leverages the reliability and comprehensiveness of Cargo, `syn`, `quote` and `cargo_toml` to build and compile a reliable Rust program from the input code, rather than rely on superficial source code analysis by means of regular expressions and string parsing.
 
 `rs-script` uses the `syn` crate to parse valid code into an abstract syntax tree (AST). It then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code and to determine well-formedness by counting the genuine main methods (as opposed to comments or program code embedded in string literals). These are then filtered to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.

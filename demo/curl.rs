@@ -6,6 +6,8 @@ curl = "0.4.46"
 ///
 /// This example is a Rust adaptation of the [C example of the same
 /// name](https://curl.se/libcurl/c/https.html).
+/// On Linux you may need to install `pkg-config` and `libssl-dev`.
+//# Purpose: Demo `curl` implementation.
 use curl::easy::Easy;
 use std::io::{stdout, Write};
 

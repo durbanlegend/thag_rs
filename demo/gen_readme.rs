@@ -2,7 +2,8 @@
 [dependencies]
 lazy_static = "1.4.0"
 regex = "1.10.5"
-rs-script = { path = "/Users/donf/projects/rs-script" }
+rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+
 */
 
 /// Collect demo script metadata and generate demo/README.md.

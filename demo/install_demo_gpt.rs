@@ -3,7 +3,8 @@
 log = "0.4.21"
 reqwest = { version = "0.12.4", features = ["blocking", "json"] }
 rfd = "0.14.1"
-rs-script = { path = "/Users/donf/projects/rs-script" }
+rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 */

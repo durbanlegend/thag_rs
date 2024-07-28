@@ -30,6 +30,7 @@ use std::error::Error;
 /// Fast factorial algorithm avoiding recursion.
 /// Unfortunately Windows 11 won't currently run this natively.
 /// Supposedly you can run it by installing MSYS2, but I haven't tested this.
+/// On Linux you may need to install the m4 package.
 //# Purpose: Demo fast factorial using `rug` crate and `std::iter::Product` trait.
 fn main() -> Result<(), Box<dyn Error>> {
     let fac = |n: u128| -> Integer {

@@ -6,7 +6,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 // Set environment variables before running tests
-fn set_up()() {
+fn set_up() {
     std::env::set_var("TEST_ENV", "1");
     std::env::set_var("VISUAL", "cat");
     std::env::set_var("EDITOR", "cat");
@@ -14,7 +14,7 @@ fn set_up()() {
 
 #[test]
 fn test_script_runner_with_dependencies() -> Result<(), Box<dyn std::error::Error>> {
-    set_up()();
+    set_up();
     // Create a temporary directory for the test project
     let temp_dir: PathBuf = TMPDIR.join(DYNAMIC_SUBDIR);
     fs::create_dir_all(&temp_dir).expect("Failed to create temp_dir directory");

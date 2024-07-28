@@ -25,7 +25,7 @@ mod tests {
     }
 
     // Set environment variables before running tests
-    fn set_up()() {
+    fn set_up() {
         std::env::set_var("TEST_ENV", "1");
         std::env::set_var("VISUAL", "cat");
         std::env::set_var("EDITOR", "cat");
@@ -33,7 +33,7 @@ mod tests {
 
     #[test]
     fn test_parse_line() {
-        set_up()();
+        set_up();
         let input = r#"command "arg 1" arg2"#;
         let (command, args) = parse_line(input);
         println!("\r");
@@ -43,7 +43,7 @@ mod tests {
 
     #[test]
     fn test_disp_repl_banner() {
-        set_up()();
+        set_up();
         let cmd_list = "command1, command2";
         disp_repl_banner(cmd_list);
         // As this function prints to stdout, there's no direct return value to assert.
@@ -52,7 +52,7 @@ mod tests {
 
     #[test]
     fn test_delete() {
-        set_up()();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
@@ -63,7 +63,7 @@ mod tests {
 
     #[test]
     fn test_edit_history() {
-        set_up()();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = rs_script::BuildState {
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_edit() {
-        set_up()();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_toml() {
-        set_up()();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
@@ -99,7 +99,7 @@ mod tests {
 
     #[test]
     fn test_run_expr() {
-        set_up()();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn test_list() {
-        set_up()();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
@@ -121,7 +121,7 @@ mod tests {
 
     // #[test]
     // fn test_run_repl() {
-    //     set_up()();
+    //     set_up();
     //     let mut options = Cli::parse_from(&["test"]);
     //     let proc_flags = ProcFlags::default();
     //     let mut build_state = BuildState::default();

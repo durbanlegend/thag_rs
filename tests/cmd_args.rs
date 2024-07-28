@@ -2,7 +2,7 @@ use clap::Parser;
 use rs_script::{get_proc_flags, Cli, ProcFlags};
 
 // Set environment variables before running tests
-fn set_up()() {
+fn set_up() {
     std::env::set_var("TEST_ENV", "1");
     std::env::set_var("VISUAL", "cat");
     std::env::set_var("EDITOR", "cat");
@@ -10,7 +10,7 @@ fn set_up()() {
 
 #[test]
 fn test_get_args_script() {
-    set_up()();
+    set_up();
     let args = vec!["rs_script", "demo_script", "--", "arg1", "arg2"];
     let cli = Cli::parse_from(args);
     assert!(Some("demo_script") == cli.script.as_deref());
@@ -20,7 +20,7 @@ fn test_get_args_script() {
 
 #[test]
 fn test_get_args_expr() {
-    set_up()();
+    set_up();
     let args = vec!["rs_script", "--expr", "'2 + 5'"];
     let cli = Cli::parse_from(args);
     // println!("cli.script.as_deref()={}", cli.script.as_deref());
@@ -30,7 +30,7 @@ fn test_get_args_expr() {
 
 #[test]
 fn test_get_args_stdin() {
-    set_up()();
+    set_up();
     let args = vec!["rs_script", "-s"];
     let cli = Cli::parse_from(args);
     // println!("cli.script.as_deref()={}", cli.script.as_deref());
@@ -40,7 +40,7 @@ fn test_get_args_stdin() {
 
 #[test]
 fn test_get_proc_flags() {
-    set_up()();
+    set_up();
     let args = vec!["rs_script", "--expr", "'2 + 5'"];
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
@@ -61,7 +61,7 @@ fn test_get_proc_flags() {
 
 #[test]
 fn test_conflicts_with_all() {
-    set_up()();
+    set_up();
     let args = vec!["rs_script", "--expr", "--edit"];
     let result = Cli::try_parse_from(args);
     // println!("result={result:#?}");

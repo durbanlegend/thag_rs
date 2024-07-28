@@ -10,14 +10,14 @@ mod tests {
     use termbg::Theme;
 
     // Set environment variables before running tests
-    fn set_up()() {
+    fn set_up() {
         std::env::set_var("TEST_ENV", "1");
         std::env::set_var("VISUAL", "cat");
         std::env::set_var("EDITOR", "cat");
     }
 
     fn convert_theme(theme1: &Theme) -> TermTheme {
-        set_up()();
+        set_up();
         // Define how the equality is determined for `Theme`
         match theme1 {
             Theme::Light => TermTheme::Light,
@@ -29,7 +29,7 @@ mod tests {
     #[test]
     // supports_color::on(Stream) causes rightward drift
     fn test_color_support() {
-        set_up()();
+        set_up();
         let color_level = supports_color::on(Stream::Stdout);
 
         let color_support = match color_level {
@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn test_term_theme() {
         // Test if TERM_THEME is set correctly
-        set_up()();
+        set_up();
         // Example test using the manual comparison function
         // let theme =
         //     termbg::theme(std::time::Duration::from_millis(100)).expect("Error getting theme");
@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn test_message_style_display() {
         // Test the Display trait for MessageStyle
-        set_up()();
+        set_up();
         let style = MessageStyle::Ansi16LightError;
         assert_eq!(style.to_string(), "ansi16_light_error");
 
@@ -87,14 +87,14 @@ mod tests {
     #[test]
     fn test_nu_color_get_color() {
         // Test the get_color method for XtermColor
-        set_up()();
+        set_up();
         let color = XtermColor::GuardsmanRed;
         assert_eq!(color.get_color(), Color::Fixed(160));
     }
 
     #[test]
     fn test_nu_resolve_style() {
-        set_up()();
+        set_up();
         // Test the nu_resolve_style function
         // Causes rightward drift of the test result printouts.
         let theme = termbg::theme(std::time::Duration::from_millis(100));
@@ -135,7 +135,7 @@ mod tests {
     #[test]
     fn test_message_style_get_style() {
         // Test the get_style method for MessageStyle
-        set_up()();
+        set_up();
         let style = MessageStyle::Ansi16LightError.get_style();
         assert_eq!(style, Color::Red.bold());
 
@@ -146,7 +146,7 @@ mod tests {
     #[test]
     fn test_nu_color_println_macro() {
         // Test the nu_color_println macro
-        set_up()();
+        set_up();
         let content = "Test message";
         let output = format!("\u{1b}[1m{content}\u{1b}[0m");
         let style = nu_ansi_term::Style::new().bold();

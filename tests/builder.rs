@@ -12,7 +12,7 @@ mod tests {
     use std::io::Write;
 
     // Set environment variables before running tests
-    fn set_up()() {
+    fn set_up() {
         std::env::set_var("TEST_ENV", "1");
         std::env::set_var("VISUAL", "cat");
         std::env::set_var("EDITOR", "cat");
@@ -31,7 +31,7 @@ mod tests {
     // Helper function to create a sample BuildState structure.
     // Requires the sample script to be in tests/assets.
     fn create_sample_build_state(source_name: &str) -> BuildState {
-        set_up()();
+        set_up();
         let source_stem: &str = source_name
             .strip_suffix(rs_script::RS_SUFFIX)
             .expect("Problem stripping Rust suffix");
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     // #[sequential]
     fn test_execute_dynamic_script() {
-        set_up()();
+        set_up();
         let mut args = create_sample_cli(Some(
             "tests/assets/determine_if_known_type_trait_t.rs".to_string(),
         ));
@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_generate_source_file() {
-        set_up()();
+        set_up();
         let script_name = "fib_fac_lite_t.rs";
         let mut build_state = create_sample_build_state(script_name);
         build_state.must_gen = true;
@@ -131,7 +131,7 @@ mod tests {
     #[test]
     // #[sequential]
     fn test_build_cargo_project() {
-        set_up()();
+        set_up();
         let source_name = "bitflags_t.rs";
         let source_stem: &str = source_name
             .strip_suffix(rs_script::RS_SUFFIX)
@@ -218,7 +218,7 @@ name = "bitflags_t"
     #[test]
     // #[sequential]
     fn test_run_script() {
-        set_up()();
+        set_up();
         let source_name = "fib_fac_dashu_t.rs";
         let source_stem: &str = source_name
             .strip_suffix(rs_script::RS_SUFFIX)

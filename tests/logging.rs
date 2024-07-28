@@ -8,6 +8,13 @@ mod tests {
     use std::process::{Command, Stdio};
     use std::sync::Once;
 
+    // Set environment variables before running tests
+    fn set_up()() {
+        std::env::set_var("TEST_ENV", "1");
+        std::env::set_var("VISUAL", "cat");
+        std::env::set_var("EDITOR", "cat");
+    }
+
     fn init_logger() {
         let _ = env_logger::builder().is_test(true).try_init();
     }
@@ -23,6 +30,7 @@ mod tests {
     #[test]
     #[parallel]
     fn test_logger_new() {
+        set_up()();
         let logger = Logger::new(Verbosity::Quiet);
         assert_eq!(logger.verbosity, Verbosity::Quiet);
 
@@ -36,6 +44,7 @@ mod tests {
     #[test]
     #[parallel]
     fn test_logger_set_verbosity() {
+        set_up()();
         let mut logger = Logger::new(Verbosity::Quiet);
         assert_eq!(logger.verbosity, Verbosity::Quiet);
 
@@ -96,6 +105,7 @@ fn main() {{
     #[test]
     #[sequential]
     fn test_macro_log() {
+        set_up()();
         init_logger();
         let rs_script_path = env::current_dir().expect("Error getting current directory");
 

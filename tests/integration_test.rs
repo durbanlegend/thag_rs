@@ -5,8 +5,16 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
 
+// Set environment variables before running tests
+fn set_up()() {
+    std::env::set_var("TEST_ENV", "1");
+    std::env::set_var("VISUAL", "cat");
+    std::env::set_var("EDITOR", "cat");
+}
+
 #[test]
 fn test_script_runner_with_dependencies() -> Result<(), Box<dyn std::error::Error>> {
+    set_up()();
     // Create a temporary directory for the test project
     let temp_dir: PathBuf = TMPDIR.join(DYNAMIC_SUBDIR);
     fs::create_dir_all(&temp_dir).expect("Failed to create temp_dir directory");
@@ -56,4 +64,7 @@ fn main() {{
     Ok(())
 }
 
+// Include tests to ensure that every single script in the demo directory will
+// compile (not run, since we would have to pass many of them different arguments).
+// These tests are built by rs-script/build.rs.
 include!(concat!(env!("OUT_DIR"), "/generated_tests.rs"));

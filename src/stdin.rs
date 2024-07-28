@@ -111,7 +111,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
         Block::default()
             .borders(Borders::NONE)
             .title("Enter / paste / edit Rust script. Ctrl+D: submit  Ctrl+Q: quit  Ctrl+L: keys")
-            .title_style(Style::default().italic()),
+            .title_style(Style::default().fg(Color::Yellow).bold().italic()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::Blue));
@@ -231,13 +231,13 @@ pub fn normalize_newlines(input: &str) -> String {
 
 pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     if alt_highlights {
-        textarea.set_selection_style(Style::default().bg(Color::LightRed));
-        textarea.set_cursor_style(Style::default().on_yellow());
-        textarea.set_cursor_line_style(Style::default().on_light_yellow());
-    } else {
         textarea.set_selection_style(Style::default().bg(Color::Green));
         textarea.set_cursor_style(Style::default().on_magenta());
         textarea.set_cursor_line_style(Style::default().on_dark_gray());
+    } else {
+        textarea.set_selection_style(Style::default().bg(Color::LightRed));
+        textarea.set_cursor_style(Style::default().on_yellow());
+        textarea.set_cursor_line_style(Style::default().on_light_yellow());
     }
 }
 

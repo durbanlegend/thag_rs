@@ -15,41 +15,9 @@
 - [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Raise clear_screen as an issue on termbg crate?
-- [ ]  Regression of rightward drift in testing
-running 7 tests
-test tests::test_color_support ... ok
-                                     test tests::test_message_style_display ... ok
-                                                                                  test tests::test_nu_color_get_color ... ok
-                                                                                                                            test tests::test_message_style_get_style ... ok
-                                                                                                                                                                           test tests::test_term_theme ... ok
-                    test tests::test_nu_color_println_macro ... ok
-test tests::test_nu_resolve_style ... ok
-test tests::test_list ... ok
-repl> test tests::test_parse_line ... ok
-                                        cat: : No such file or directory
-                                                                        cat: : No such file or directory
-                                                                                                        q
-                                                                                                         keys
-                                                                                                             {<\n>use ibig::{ubig, UBig};<\n>use std::env;<\n>use std::iter::{successors, Successors, Take};<\n><\n>// Snippet accepts function or closure. This closure returns only the last value Fn.<\n>fn fib_value_n(n: usize) -> UBig {<\n>    successors(Some((ubig!(0), ubig!(1))), |(a, b)| {<\n>        Some((b.clone(), (a + b).into()))<\n>    })<\n>    .map(|(a, _b)| a)<\n>    .nth(n)<\n>    .unwrap()<\n>}<\n>fib_value_n(1000)<\n>}
-                                                                                                                                                                    help
-                                                                                                                                                                        history
-                                                                                                                                                                               q
-                                                                                                                                                                                keys
-                                                                                                                                                                                    {<\n>use ibig::{ubig, UBig};<\n>use std::env;<\n>use std::iter::{successors, Successors, Take};<\n><\n>// Snippet accepts function or closure. This closure returns only the last value Fn.<\n>fn fib_value_n(n: usize) -> UBig {<\n>    successors(Some((ubig!(0), ubig!(1))), |(a, b)| {<\n>        Some((b.clone(), (a + b).into()))<\n>    })<\n>    .map(|(a, _b)| a)<\n>    .nth(n)<\n>    .unwrap()<\n>}<\n>fib_value_n(1000)<\n>}
-                                                  keys
-                                                      {<\n>use ibig::{ubig, UBig};<\n>use std::env;<\n>use std::iter::{successors, Successors, Take};<\n><\n>// Snippet accepts function or closure. This closure returns only the last value Fn.<\n>fn fib_value_n(n: usize) -> UBig {<\n>    successors(Some((ubig!(0), ubig!(1))), |(a, b)| {<\n>        Some((b.clone(), (a + b).into()))<\n>    })<\n>    .map(|(a, _b)| a)<\n>    .nth(n)<\n>    .unwrap():q<\n>}<\n>fib_value_n(1000)<\n>}
-                                                                                                               q
-                                                                                                                println ! ("result={}" , 5 + 8) ;
-                                                                                                                                                 5 + 8
-                                                                                                                                                      q
-                                                                                                                                                       test tests::test_edit_history ... ok
-  test tests::test_toml ... FAILED
-                                  test tests::test_edit ... FAILED
-
-
-Suspect termbg needs to be locked for single access.
-
-clear; RUST_LOG=rs_script=debug cargo test --features=debug-logs -- --nocapture --test-threads=3
+- [ ]  donf@MacBook-Air rs-script % echo "(1..=10).product::<u32>()" | rs_script -d
+Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done
+Error: Custom { kind: Other, error: "Failed to initialize input reader" }
 
 - [ ]  Add FAQ
 - [ ]  Punchy intro in readme, per Zands.

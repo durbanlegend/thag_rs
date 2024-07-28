@@ -6,48 +6,76 @@
 
 ## Intro
 
-`rs-script` is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner.
+`rs-script` is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner. I try to put myself in the developer's shoes and make things as easy and convenient as possible for him or her.
+
+`rs-script` includes a demo library of over 150 sample scripts. If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
 ## Quick start: ways to run `rs-script`
 
-1. With an expression argument:
+### * With an expression argument:
+
 ```bash
-rs_script --expr '"Hello world!"'                     # Short form: -e
+rs_script --expr ' {
+use jiff::{Zoned, Unit};
+Zoned::now().round(Unit::Second)?
+}'                                                                  # Short form: -e
 ```
 
-2. With a script:
+### * With a script:
+
 ```bash
-rs_script demo/hello.rs
+rs_script demo/iced_tour.rs
 ```
 
-3. As a REPL:
-```bash
-rs_script --repl        # Short form: -l
-```
-![rs_script --repl        # Short form: -l](repl.png)
+### * As a REPL:
 
-4. With standard input:
 ```bash
-echo "(1..=10).product::<u32>()" | rs_script --stdin              # Short form: -s
+rs_script --repl                                                    # Short form: -l
 ```
-5. With a TUI (Text User Interface) editor
-```
-rs_script --edit        # Short form: -d
+![Repl](repl.png)
+
+The REPL has file-backed history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, Nano etc. if its `reedline` editor falls short for a particular task.
+
+### * With standard input:
+
+```bash
+echo "(1..=10).product::<u32>()" | rs_script --stdin                # Short form: -s
 ```
 
+### * With a TUI (Terminal User Interface) editor
+
+```bash
+rs_script --edit                                                    # Short form: -d
+```
+![Editor](edit1.png)
+
+![Edit run](edit2.png)
+
+TODO: FIXME:
+### * With standard input into the TUI editor:
+
+```bash
+cat my_file.rs | rs_script --edit                                   # Short form: -d
+```
+
+This allows you to edit or append to the stdin input before submitting it to `rs-script`.
+
+You have the choice of installing `rs-script` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run`.
+
+* Installing gives you speed out of the box and a simpler command-line interface without Cargo. You can download the demo library separately.
+* Cloning gives you easy access to the demo scripts library and the opportunity to make local changes or a fork.
 
 ## Overview
 
-```
-`rs-script` leverages the reliability and comprehensiveness of Cargo, `syn`, `quote` and `cargo_toml` to build and compile a reliable Rust program from the input code, rather than rely on superficial source code analysis by means of regular expressions and string parsing.
+`rs-script` leverages the reliability and comprehensiveness of Cargo, `syn`, `quote` and `cargo_toml` to build and compile a reliable Rust program from the input code, rather than relying on superficial source code analysis by means of regular expressions and string parsing.
 
 `rs-script` uses the `syn` crate to parse valid code into an abstract syntax tree (AST). It then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code and to determine well-formedness by counting the genuine main methods (as opposed to comments or program code embedded in string literals). These are then filtered to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
 
 (If your code does not successfully parse into an AST because of a coding error, `rs-script` will fall back to using source code analysis to prepare your code for the Rust compiler, which can then show you error messages to help you find the issues.)
 
-`rs-script` then uses the `cargo_toml` crate to parse the optional metadata supplied in a toml block (as described below) into a manifest struct, merges in the dependencies inferred from the AST and then uses the `toml` crate to write out the dedicated Cargo.toml file that Cargo needs to build the script. Finally, in the case of snippets and expressions, it uses the `quote` crate to embed the logic in a well-formed program template, which it then hands off to Cargo to build.
+You may provide optional metadata in a toml block as described below. `rs-script` uses the `cargo_toml` crate to parse any metadata into a manifest struct, merges in any dependencies inferred from the AST, and then uses the `toml` crate to write out the dedicated Cargo.toml file that Cargo needs to build the script. Finally, in the case of snippets and expressions, it uses the `quote` crate to embed the logic in a well-formed program template, which it then invokes Cargo to build.
 
-All of this is quite fast: the real bottleneck will be the Cargo build process downloading and compiling your dependencies on the initial build, which is unfortunately inevitable and will be displayed as it happens in the normal way so that there are no mystery delays. If you rerun the compiled script it should be lightning fast.
+All of this is quite fast: the real bottleneck will be the familiar Cargo build process downloading and compiling your dependencies on the initial build. It will be displayed as it happens in the normal way so that there are no mystery delays. If you rerun the compiled script it should be lightning fast.
 
 In this way `rs-script` attempts to handle any valid (or invalid) Rust script, be it a program, snippet or expression. It will try to generate a dedicated Cargo.toml for your script from `use` statements in your code, although for speed and precision I recommend that you embed your own in a toml block:
 ```/*
@@ -56,12 +84,12 @@ In this way `rs-script` attempts to handle any valid (or invalid) Rust script, b
 ...
 */
 ```
-at the start of the script, as you will see done in most of the demos. To assist with this, after each successful Cargo search `rs-script `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste if you want to. It does not print a combined block, so it's up to you to merge all the dependencies into the same toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` you can add other Cargo-compliant dependencies sections if you choose to do so.
+at the start of the script, as you will see done in most of the demos. To assist with this, after each successful Cargo search `rs-script `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` you can add other Cargo-compliant dependencies sections if you choose to do so.
 
 `rs-script` aims to be as comprehensive as possible without sacrificing speed and simplicity. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
 
 ### Why `rs-script`?
-As so often happens, this project arose out of need. Initially I was looking for a hosted version of the Rust playground to allow me to try out new ideas as easily as possible. This soon led me to the various script runners, but I found that what they ran more than anything was "out of steam". Honorable mention to the idiosyncratic but versatile `runner` crate, which I ended up forking with some extensive modifications to bring it up to date and attempt to resolve some tricky dependency issues. However, issues such as conflicting dependencies affecting the `regex` crate made me realise that by staying in the Cargo mainstream I could easily overcome these issues and leverage Cargo to do most of the hard work, so I started `rs-script` from scratch.
+It's the old familiar story: I didn't find what I wanted so I built it myself. Initially I was looking for a hosted version of the Rust playground to allow me to try out new ideas as easily as possible. This soon led me to the various script runners, but I found that what they ran more than anything was "out of steam". Honorable mention to the idiosyncratic but versatile `runner` crate, which I ended up forking with some extensive modifications to bring it up to date and attempt to resolve some tricky dependency issues. However, issues such as conflicting dependencies affecting the `regex` crate made me realise that I could build something closer to my own mission without too much difficulty. `runner`'s premise of alternatives to Cargo was a worthy project in its own right, but all I wanted was a good script runner, and by staying in the Cargo mainstream I could easily overcome the issues I was encountering and leverage Cargo to do most of the hard work. So I started `rs-script` from scratch`.
 
 Quite soon I found that `rs-script` started to "write itself", by allowing me to experiment with promising crates before incorporating them as dependencies.
 
@@ -70,7 +98,7 @@ I don't know what the level of interest may be for a tool like this, but I hope 
 ## Installation
 
 ### Minimum Supported Rust Version
-The minimum supported Rust version (MSRV) for `rs_script` is 1.74.1.
+The minimum supported Rust version (MSRV) for `rs-script` is 1.74.1.
 
 ### TODO >>>
 You can install `rs-script` using `cargo install`:
@@ -82,7 +110,7 @@ cargo install rs-script
 
 
 ## Usage
-Once installed, you can use `rs_script` from the command line. `rs_script` uses the clap crate to process command-line arguments including --help.
+Once installed, you can use the `rs_script` command (with underscore) from the command line. `rs-script` uses the clap crate to process command-line arguments including --help.
 
 ### TODO >>>
 Here are some examples:
@@ -120,7 +148,7 @@ fizz
 98
 fizz
 Completed run in 0.14s
-rs_script completed processing script fizz_buzz.rs in 0.15s
+rs-script completed processing script fizz_buzz.rs in 0.15s
 
 ```
 

@@ -6,7 +6,7 @@
 
 ## Intro
 
-`rs-script` is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner. I try to put myself in the developer's shoes and make things as easy and convenient as possible for him or her.
+`rs-script` is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while hopefully being simple and convenient to use.
 
 `rs-script` includes a demo library of over 150 sample scripts. If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
@@ -71,7 +71,7 @@ You have the choice of installing `rs-script` (recommended), or you may prefer t
 
 ## Overview
 
-`rs-script` leverages the reliability and comprehensiveness of Cargo, `syn`, `quote` and `cargo_toml` to build and compile a reliable Rust program from the input code, rather than relying on superficial source code analysis by means of regular expressions and string parsing.
+`rs-script` leverages the reliability and comprehensiveness of Cargo, `syn`, `quote` and `cargo_toml` to build and compile a reliable Rust program from the input code, rather than relying on superficial source code analysis using regular expressions and string parsing.
 
 `rs-script` uses the `syn` crate to parse valid code into an abstract syntax tree (AST). It then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code and to determine well-formedness by counting the genuine main methods (as opposed to comments or program code embedded in string literals). These are then filtered to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
 
@@ -172,7 +172,7 @@ will return to edit and run a named generated script from a previous REPL sessio
 More informally, you can access the last 25 previous REPL commands or expressions from within the REPL function just by using the up and down arrow keys to navigate history.
 
 #### General notes on REPL
-All REPL files are created under the rs_repl subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust) so as not to clog up your system. Before they are harvested by the OS you can display the locations and copy the files if desired.
+All REPL files are created under the `rs_repl` subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust) so as not to clog up your system. Until such time as they are harvested by the OS you can display the locations and copy the files if desired.
 
 The REPL feature is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. You can overcome these limitations by using the `edit` mode instead, but by this point it's probably more convenient just to use the --stdin / -s feature instead, or save the source in a .rs file and run it from the command line.
 
@@ -182,7 +182,7 @@ _Rust is primarily an expression language.... In contrast, statements serve most
 _— The Rust Reference_
 
 * Runs serious Rust scripts (not just the "Hello, world!" variety) with no need to create a project.
-* Aims to be the most capable and reliable script runner.
+* Aims to be the most capable and reliable script runner for Rust code.
 * Crucially, specific features of dependencies may be specified, giving your scripts access to advanced functionality. Local path and git dependencies may also be specified, allowing you to access your unpublished crates.
 * A choice of modes - bearing in mind the importance of expressions in Rust:
     * expression mode for small, basic expressions on the fly.
@@ -191,10 +191,10 @@ _— The Rust Reference_
     * edit mode is stdin mode with the addition of basic TUI (terminal user interface) in-place editing.
     * the classic script mode runs any .rs file consisting of a valid Rust script or program.
 * You can use a shebang to write scripts in Rust.
-* You can compile a script (even a valid snippet) to an executable command in the Cargo bin directory `<home>/.cargo/bin`.
-* `rs-script` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast factorial and Fibonacci calculation with big-integer support, light-dark theme detection, TUI editing and colour support.
+* You can even build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to an executable command in the Cargo bin directory `<home>/.cargo/bin`.
+* `rs-script` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast big-integer factorial and Fibonacci calculation and prototypes of TUI editing and of the adaptive colour palettes described below.
 * Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. On Windows, `rs-script` defaults to basic ANSI-16 colours and dark mode support for reasons beyond my control, but the dark mode colours it uses have been chosen to work well with most light modes.
-* In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from rs-script. Failing that, you can always work on a minimally modified copy in another location. An example is the demo version of colors.rs.
+* In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from rs-script. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug this functionality without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `rs-script` project.
 
 ## Platform Support
 This crate is designed to be cross-platform and supports:

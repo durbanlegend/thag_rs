@@ -3,16 +3,16 @@ use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
 
-use lazy_static::lazy_static;
-use mockall::{automock, predicate::str};
-use ratatui::backend::CrosstermBackend;
-use ratatui::crossterm::event::{
+use crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
 };
-use ratatui::crossterm::terminal::{
+use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
+use lazy_static::lazy_static;
+use mockall::{automock, predicate::str};
+use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
@@ -37,7 +37,7 @@ pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
     fn read_event(&self) -> Result<Event, std::io::Error> {
-        ratatui::crossterm::event::read()
+        crossterm::event::read()
     }
 }
 
@@ -85,7 +85,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
         println!("Error enabling raw mode: {:?}", e);
         e
     })?;
-    ratatui::crossterm::execute!(
+    crossterm::execute!(
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
@@ -253,7 +253,7 @@ fn reset_term(
     mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,
 ) -> Result<(), Box<dyn Error>> {
     disable_raw_mode()?;
-    ratatui::crossterm::execute!(
+    crossterm::execute!(
         term.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture

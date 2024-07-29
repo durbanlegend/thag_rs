@@ -54,7 +54,6 @@ rs_script --edit                                                    # Short form
 
 ![Edit run](edit2.png)
 
-TODO: FIXME:
 ### * With standard input into the TUI editor:
 
 ```bash

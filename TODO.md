@@ -14,16 +14,8 @@
 - [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
 - [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
-- [ ]  Raise clear_screen as an issue on termbg crate?
-- [ ]  donf@MacBook-Air rs-script % echo "(1..=10).product::<u32>()" | rs_script -d
-Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done
-Error: Custom { kind: Other, error: "Failed to initialize input reader" }
-stdin_59ab2be_20240628 is bad  Finally remove RYO CargoManifest
-stdin_9cdf84c_20240628 is good Update to Ratatui 0.27.0 ...
-stdin_7d030e5_20240628 is bad  replace crossterm with ratatui::crossterm.
-stdin_219c2e8_20240627 is good Initial conversion to cargo_toml::Manifest
-stdin_1996dd4_20240627 is good Fix persistent rightward drift
-
+- [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
+- [ ]  Make TUI highlight defaults depend on light or dark theme.
 - [ ]  Add FAQ
 - [ ]  Punchy intro in readme, per Zands.
 - [ ]  Find a punchy name - rs-thagomizer | rs-bolt | rs-volt | rs-ares

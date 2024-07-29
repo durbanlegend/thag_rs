@@ -15,10 +15,13 @@
 ### * With an expression argument:
 
 ```bash
-rs_script --expr ' {
+rs_script --expr '"Hello world!"'                                   # Short form: -e
+```
+```bash
+rs_script -e ' {
 use jiff::{Zoned, Unit};
 Zoned::now().round(Unit::Second)?
-}'                                                                  # Short form: -e
+}'                                                                  # Long form: --expr
 ```
 
 ### * With a script:
@@ -59,6 +62,8 @@ cat my_file.rs | rs_script --edit                                   # Short form
 ```
 
 This allows you to edit or append to the stdin input before submitting it to `rs-script`.
+
+### * Getting started:
 
 You have the choice of installing `rs-script` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run`.
 

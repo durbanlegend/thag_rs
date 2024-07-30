@@ -21,10 +21,33 @@ use std::option::Option;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::time::{Instant, SystemTime};
-use syn::visit::Visit;
 use syn::{
     parse_str, Expr, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt, UsePath, UseRename,
 };
+use syn::{
+    visit::Visit,
+    visit_mut::{self, VisitMut},
+};
+use syn::{AttrStyle, ExprBlock};
+
+// To move inner attributes out of a syn AST for a snippet.
+struct RemoveInnerAttributes;
+
+impl VisitMut for RemoveInnerAttributes {
+    fn visit_expr_block_mut(&mut self, expr_block: &mut ExprBlock) {
+        // Filter out inner attributes
+        expr_block
+            .attrs
+            .retain(|attr| attr.style != AttrStyle::Inner(syn::token::Not::default()));
+
+        // Continue visiting the rest of the expression block
+        visit_mut::visit_expr_block_mut(self, expr_block);
+    }
+}
+
+pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) {
+    RemoveInnerAttributes.visit_expr_block_mut(expr);
+}
 
 /// Read the contents of a file. For reading the Rust script.
 /// # Errors
@@ -556,20 +579,18 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     }
 }
 
-/// Convert a Rust code snippet into a program by wrapping it in a main method and other scaffolding.
 #[must_use]
-pub fn wrap_snippet(rs_source: &str) -> String {
+pub fn prep_snippet(rs_source: &str) -> (String, String, String) {
     use std::fmt::Write;
 
     lazy_static! {
-        static ref USE_REGEX: Regex = Regex::new(r"(?i)^[\s]*use\s+([^;{]+)").unwrap();
+        static ref USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
         static ref MACRO_USE_REGEX: Regex =
-            Regex::new(r"(?i)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
+            Regex::new(r"(?m)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
         static ref EXTERN_CRATE_REGEX: Regex =
-            Regex::new(r"(?i)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
+            Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
+        static ref INNER_ATTRIB_REGEX: Regex = Regex::new(r"(?m)^[\s]*#!\[.+\]").unwrap();
     }
-
-    debug_log!("In wrap_snippet");
 
     // // Workaround: strip off any enclosing braces.
     // let rs_source = if rs_source.starts_with('{') && rs_source.ends_with('}') {
@@ -580,21 +601,33 @@ pub fn wrap_snippet(rs_source: &str) -> String {
     //     rs_source
     // };
 
-    let (prelude, body): (Vec<Option<&str>>, Vec<Option<&str>>) = rs_source
+    debug_log!("rs_source={rs_source}");
+    let (meta, body): ((Vec<Option<&str>>, Vec<Option<&str>>), Vec<Option<&str>>) = rs_source
         .lines()
-        .map(|line| -> (Option<&str>, Option<&str>) {
-            if USE_REGEX.is_match(line)
+        .map(|line| -> ((Option<&str>, Option<&str>), Option<&str>) {
+            if INNER_ATTRIB_REGEX.is_match(line) {
+                ((Some(line), None), None)
+            } else if USE_REGEX.is_match(line)
                 || MACRO_USE_REGEX.is_match(line)
                 || EXTERN_CRATE_REGEX.is_match(line)
             {
-                (Some(line), None)
+                ((None, Some(line)), None)
             } else {
-                (None, Some(line))
+                ((None, None), Some(line))
             }
         })
         .unzip();
 
-    debug_log!("prelude={prelude:#?}\nbody={body:#?}");
+    let (inner_attrib, prelude) = meta;
+    debug_log!("inner_attrib={inner_attrib:#?}, prelude={prelude:#?}\nbody={body:#?}");
+    let inner_attrib = inner_attrib
+        .iter()
+        .flatten()
+        .fold(String::new(), |mut output, &b| {
+            let _ = writeln!(output, "{b}");
+            output
+        });
+
     let prelude = prelude
         .iter()
         .flatten()
@@ -607,9 +640,17 @@ pub fn wrap_snippet(rs_source: &str) -> String {
         let _ = writeln!(output, "    {b}");
         output
     });
+    (inner_attrib, prelude, body)
+}
+
+/// Convert a Rust code snippet into a program by wrapping it in a main method and other scaffolding.
+#[must_use]
+pub fn wrap_snippet(inner_attrib: &str, prelude: &str, body: &str) -> String {
+    debug_log!("In wrap_snippet");
 
     let wrapped_snippet = format!(
         r"#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
+{inner_attrib}
 use std::error::Error;
 use std::io;
 use std::io::prelude::*;
@@ -626,7 +667,7 @@ Ok(())
     wrapped_snippet
 }
 
-/// Writes the source to the destination soruce-code path.
+/// Writes the source to the destination source-code path.
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
 pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, BuildRunError> {

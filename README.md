@@ -67,7 +67,7 @@ This allows you to edit or append to the stdin input before submitting it to `rs
 You have the choice of installing `rs-script` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run`.
 
 * Installing gives you speed out of the box and a simpler command-line interface without Cargo. You can download the demo library separately.
-* Cloning gives you easy access to the demo scripts library and the opportunity to make local changes or a fork.
+  * Cloning gives you easy access to the demo scripts library and the opportunity to make local changes or a fork. You can also use the flag `--features=debug-logs` with the environment variable `RUST_LOG=rs_script=debug` to get debug logging.
 
 ## Overview
 
@@ -91,13 +91,6 @@ In this way `rs-script` attempts to handle any valid (or invalid) Rust script, b
 at the start of the script, as you will see done in most of the demos. To assist with this, after each successful Cargo search `rs-script `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` you can add other Cargo-compliant dependencies sections if you choose to do so.
 
 `rs-script` aims to be as comprehensive as possible without sacrificing speed and simplicity. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
-
-### Why `rs-script`?
-It's the old familiar story: I didn't find what I wanted so I built it myself. Initially I was looking for a hosted version of the Rust playground to allow me to try out new ideas as easily as possible. This soon led me to the various script runners, but I found that what they ran more than anything was "out of steam". Honorable mention to the idiosyncratic but versatile `runner` crate, which I ended up forking with some extensive modifications to bring it up to date and attempt to resolve some tricky dependency issues. However, issues such as conflicting dependencies affecting the `regex` crate made me realise that I could build something closer to my own mission without too much difficulty. `runner`'s premise of alternatives to Cargo was a worthy project in its own right, but all I wanted was a good script runner, and by staying in the Cargo mainstream I could easily overcome the issues I was encountering and leverage Cargo to do most of the hard work. So I started `rs-script` from scratch`.
-
-Quite soon I found that `rs-script` started to "write itself", by allowing me to experiment with promising crates before incorporating them as dependencies.
-
-I don't know what the level of interest may be for a tool like this, but I hope you may find it as useful as I do.
 
 ## Installation
 

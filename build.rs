@@ -3,12 +3,14 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
+#[allow(clippy::doc_markdown)]
 /// Create a separate test for each individual script in demo/, to ensure that it builds
 /// successfully. We don't try to run them for logistical reasons, but at least we
 /// identify abandoned scripts. Given that there are so many of these scripts, avoid
 /// Cargo's default behaviour of running all tests in parallel. --test-threads=3 seems
 /// to work best on my MacBook Air M1.
-/// Suggested comand: RUST_LOG=rs_script=debug cargo test --features=debug-logs -- --nocapture --test-threads=3
+/// Suggested command: `RUST_LOG=rs_script=debug cargo test --features=debug-logs -- --nocapture --test-threads=3
+/// You may want to adjust the test-threads value further depending on your hardware.
 fn main() {
     // Get the OUT_DIR environment variable
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
@@ -78,7 +80,7 @@ fn build_{test_name}() {{
 "#,
                 test_name = test_name,
                 file_name = file_name,
-                file_path = demo_dir.join(&file_name),
+                file_path = demo_dir.join(file_name),
                 more_options = if multimain.contains(&file_name) {
                     "m"
                 } else {

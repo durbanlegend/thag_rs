@@ -25,7 +25,10 @@ use syn::{self, Expr};
 
 fn main() {
     loop {
-        println!("Enter an expression (e.g., 2 + 3): ");
+        println!("Enter an expression (e.g., 2 + 3)");
+        println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
+            if cfg!(windows) { 'Z' } else { 'D' }
+        );
         let mut input = Vec::<u8>::new();
         std::io::stdin()
             .read_to_end(&mut input)

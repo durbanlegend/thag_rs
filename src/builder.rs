@@ -1,6 +1,7 @@
 use crate::code_utils::{
     self, create_next_repl_file, create_temp_source_file, extract_ast, extract_manifest,
-    process_expr, read_file_contents, rustfmt, strip_curly_braces, wrap_snippet, write_source,
+    process_expr, read_file_contents, remove_inner_attributes, rustfmt, strip_curly_braces,
+    wrap_snippet, write_source,
 };
 use crate::colors::{nu_resolve_style, MessageLevel};
 use crate::errors::BuildRunError;
@@ -173,6 +174,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
         let maybe_ast = extract_ast(&rs_source);
 
         if let Ok(expr_ast) = maybe_ast {
+            debug_log!("expr_ast={expr_ast:#?}");
             process_expr(
                 &expr_ast,
                 &mut build_state,
@@ -247,14 +249,17 @@ pub fn gen_build_run(
 
         // Strip off any shebang: it may have got us here but we don't need it
         // in the gen_build_run process.
-        rs_source = if rs_source.starts_with("#!") {
+        rs_source = if rs_source.starts_with("#!") && !rs_source.starts_with("#![") {
+            // debug_log!("rs_source (before)={rs_source}");
             let split_once = rs_source.split_once('\n');
             let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
             debug_log!("Successfully stripped shebang {shebang}");
+            // debug_log!("rs_source (after)={rust_code}");
             rust_code.to_string()
         } else {
             rs_source
         };
+
         let rs_manifest: Manifest = {
             // debug_timings(&start_parsing_rs, "Parsed source");
             extract_manifest(&rs_source, start_parsing_rs)
@@ -265,7 +270,7 @@ pub fn gen_build_run(
             build_state.rs_manifest = Some(rs_manifest);
         }
         // let mut rs_source = read_file_contents(&build_state.source_path)?;
-        let syntax_tree: Option<Ast> = if syntax_tree.is_none() {
+        let mut syntax_tree: Option<Ast> = if syntax_tree.is_none() {
             code_utils::to_ast(&rs_source)
         } else {
             syntax_tree
@@ -312,6 +317,14 @@ pub fn gen_build_run(
             }
         } else {
             // let start_quote = Instant::now();
+
+            if let Some(Ast::Expr(syn::Expr::Block(ref mut expr_block))) = syntax_tree {
+                // Apply the RemoveInnerAttributes visitor to the expression block
+                remove_inner_attributes(expr_block);
+            };
+
+            let (inner_attrib, prelude, body) = code_utils::prep_snippet(&rs_source);
+
             let rust_code = if let Some(ref syntax_tree_ref) = syntax_tree {
                 let returns_unit = match syntax_tree_ref {
                     Ast::Expr(expr) => code_utils::is_unit_return_type(expr),
@@ -339,10 +352,10 @@ pub fn gen_build_run(
                 // format!(r#"println!("Expression returned {{}}", {rs_source});"#)
                 // debug_log!("dbg!(rs_source)={}", dbg!(rs_source.clone()));
                 // dbg!(rs_source)
-                rs_source
+                body
             };
             // display_timings(&start_quote, "Completed quote", proc_flags);
-            wrap_snippet(&rust_code.to_string())
+            wrap_snippet(&inner_attrib, &prelude, &rust_code)
         };
         generate(build_state, &rs_source, proc_flags)?;
     } else {

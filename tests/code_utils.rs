@@ -8,6 +8,7 @@ mod tests {
     use rs_script::code_utils::is_path_unit_type;
     use rs_script::code_utils::is_stmt_unit_type;
     use rs_script::code_utils::path_to_str;
+    use rs_script::code_utils::prep_snippet;
     use rs_script::code_utils::read_file_contents;
     use rs_script::code_utils::wrap_snippet;
     use rs_script::extract_manifest;
@@ -110,7 +111,8 @@ mod tests {
             }
             "#;
 
-        let wrapped = wrap_snippet(source_code);
+        let (inner_attrib, prelude, body) = prep_snippet(&source_code);
+        let wrapped = wrap_snippet(&inner_attrib, &prelude, &body);
         assert!(wrapped.contains("fn main() -> Result<(), Box<dyn Error>>"));
     }
 

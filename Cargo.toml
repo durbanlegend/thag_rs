@@ -44,7 +44,7 @@ syn = { version = "2.0.68", features = ["extra-traits", "full", "visit"] }
 termbg = "0.5.0"
 toml = "0.8.14"
 tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
-mockall = "0.12.1"
+mockall = "0.13.0"
 scopeguard = "1.2.0"
 ratatui = "0.27.0"
 cargo_toml = "0.20.4"

@@ -14,11 +14,8 @@
 - [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
 - [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
-- [ ]  Raise clear_screen as an issue on termbg crate?
-- [ ]  donf@MacBook-Air rs-script % echo "(1..=10).product::<u32>()" | rs_script -d
-Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done
-Error: Custom { kind: Other, error: "Failed to initialize input reader" }
-
+- [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
+- [ ]  Make TUI highlight defaults depend on light or dark theme.
 - [ ]  Add FAQ
 - [ ]  Punchy intro in readme, per Zands.
 - [ ]  Find a punchy name - rs-thagomizer | rs-bolt | rs-volt | rs-ares

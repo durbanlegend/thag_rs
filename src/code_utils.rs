@@ -579,6 +579,10 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     }
 }
 
+type DoubleZipped<'a> = (
+    (Vec<Option<&'a str>>, Vec<Option<&'a str>>),
+    Vec<Option<&'a str>>,
+);
 #[must_use]
 pub fn prep_snippet(rs_source: &str) -> (String, String, String) {
     use std::fmt::Write;
@@ -602,7 +606,7 @@ pub fn prep_snippet(rs_source: &str) -> (String, String, String) {
     // };
 
     debug_log!("rs_source={rs_source}");
-    let (meta, body): ((Vec<Option<&str>>, Vec<Option<&str>>), Vec<Option<&str>>) = rs_source
+    let (meta, body): DoubleZipped = rs_source
         .lines()
         .map(|line| -> ((Option<&str>, Option<&str>), Option<&str>) {
             if INNER_ATTRIB_REGEX.is_match(line) {

@@ -2,11 +2,12 @@
 [dependencies]
 #crossterm = "0.27.0"
 nu-ansi-term = "0.50.0"
-reedline = "0.32.0"
+reedline = "0.33.0"
 */
 
-// Pressing [Enter] will in other cases give you a multi-line prompt.
-
+/// Exploratory prototype of REPL support for multi-line expressions. Based on published example
+/// `custom_prompt.rs` in `reedline` crate.
+//# Purpose: Explore options for handling multi-line expressions in a REPL.
 use nu_ansi_term::{Color, Style};
 use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
@@ -62,14 +63,6 @@ fn main() -> io::Result<()> {
         FileBackedHistory::with_file(20, "history.txt".into())
             .expect("Error configuring history with file"),
     );
-
-    // let mut keybindings = default_emacs_keybindings();
-    // keybindings.add_binding(
-    //     KeyModifiers::CONTROL,
-    //     KeyCode::Char('m'),
-    //     ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
-    // );
-    // let edit_mode = Box::new(Emacs::new(keybindings));
 
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))

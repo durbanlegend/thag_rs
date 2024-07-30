@@ -8,10 +8,12 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::error::Error;
 
-/// Prompt for and read Rust source code from stdin.
-/// TODO Still haven't got to the bottom of why even dynamic \n
-/// may be stubborn or not. Curreently in testing the normalize_newlines
-/// method is not even needed.
+/// Prompt for and read Rust source code from stdin. Significantly modified from original
+/// GPT-generated version.
+/// Caveat: I'm not sure that this is foolproof. Note also that a compiled Rust string
+/// literal represents the newline character differently from one that is input at
+/// runtime.
+//# Purpose: Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
 pub fn read_stdin() -> Result<String, std::io::Error> {
     println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
         if cfg!(windows) { 'Z' } else { 'D' }
@@ -24,10 +26,15 @@ pub fn read_stdin() -> Result<String, std::io::Error> {
 
 fn normalize_newlines(input: &str) -> String {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"(\\r\\n|\\r|\\n)").unwrap();
+        static ref RE1: Regex = Regex::new(r"(\\r\\n|\\r|\\n)").unwrap();
+        static ref RE2: Regex = Regex::new(r#"(\\")"#).unwrap();
     }
     let lf = std::str::from_utf8(&[10_u8]).unwrap();
-    RE.replace_all(input, lf).to_string()
+    let s = RE1.replace_all(input, lf);
+    // Remove backslash escapes from double quotes.
+    let dq = r#"""#;
+
+    RE2.replace_all(&s, dq).to_string()
 }
 
 fn main() -> Result<(), Box<dyn Error>> {

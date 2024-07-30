@@ -1,8 +1,10 @@
 /*[toml]
 [dependencies]
-reedline = "0.32.0"
+reedline = "0.33.0"
 */
 
+/// Published example from `reedline` crate.
+//# Purpose: Demo `reedline` file-backed history.
 // Create a reedline object with history support, including history size limits.
 // cargo run --example history
 //
@@ -10,7 +12,6 @@ reedline = "0.32.0"
 // Allows for persistent loading of previous session.
 //
 // Browse history by Up/Down arrows or Ctrl-n/p
-
 use reedline::{DefaultPrompt, FileBackedHistory, Reedline, Signal};
 use std::io;
 

@@ -6,6 +6,8 @@ rug = "1.24.1"
 /// Very fast non-recursive calculation of an individual Fibonacci number using the
 /// Fibonacci doubling identity. See also `demo/fib_doubling_recursive.ibig.rs` for the
 /// original recursive implementation and the back story.
+/// Won't work with default Windows 11 because of `rug` crate.
+/// On Linux you may need to install the m4 package.
 ///
 /// This version is derived from `demo/fib_doubling_iterative.rs` with the following
 /// change: that we reduce bloat as best we can  by purging redundant entries from the memo

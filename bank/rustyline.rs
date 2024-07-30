@@ -3,7 +3,8 @@
 rustyline = { version = "14.0.0", features=["with-file-history", "default"] }
 */
 
-// Example from rustyline crate readme.
+/// Published example from `rustyline` crate README.md.
+//# Purpose: Explore capabilities of the featured crate.
 // TODO debug history writing.
 use rustyline::error::ReadlineError;
 use rustyline::{DefaultEditor, Result};

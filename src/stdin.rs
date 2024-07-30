@@ -1,17 +1,18 @@
+#![allow(clippy::uninlined_format_args)]
 use crate::errors::BuildRunError;
 use crate::log;
 use crate::logging::Verbosity;
 
-use lazy_static::lazy_static;
-use mockall::{automock, predicate::*};
-use ratatui::backend::CrosstermBackend;
-use ratatui::crossterm::event::{
+use crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
 };
-use ratatui::crossterm::terminal::{
+use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
+use lazy_static::lazy_static;
+use mockall::{automock, predicate::str};
+use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
@@ -25,6 +26,10 @@ use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 #[automock]
 pub trait EventReader {
+    /// Read a `crossterm` event.
+    /// # Errors
+    ///
+    /// If the timeout expires then an error is returned and buf is unchanged.
     fn read_event(&self) -> Result<Event, std::io::Error>;
 }
 
@@ -32,27 +37,43 @@ pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
     fn read_event(&self) -> Result<Event, std::io::Error> {
-        ratatui::crossterm::event::read()
+        crossterm::event::read()
     }
 }
 
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {
     let event_reader = CrosstermEventReader;
-    for line in &edit_stdin(event_reader)? {
+    for line in &edit(&event_reader)? {
         log!(Verbosity::Normal, "{line}");
     }
     Ok(())
 }
 
-pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dyn Error>> {
+/// Edit the stdin stream.
+///
+///
+/// # Examples
+///
+/// ```
+/// use rs_script::stdin::edit;
+///
+/// assert_eq!(edit(event_reader), );
+/// ```
+/// # Errors
+///
+/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+/// # Panics
+///
+/// If the terminal cannot be reset.
+pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Error>> {
     let input = std::io::stdin();
 
     let initial_content = if input.is_terminal() {
         // No input available
         String::new()
     } else {
-        read_stdin()?
+        read()?
     };
 
     let mut popup = false;
@@ -64,7 +85,7 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
         println!("Error enabling raw mode: {:?}", e);
         e
     })?;
-    ratatui::crossterm::execute!(
+    crossterm::execute!(
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
@@ -81,7 +102,7 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
     })?;
     // Ensure terminal will get reset when it goes out of scope.
     let mut term = scopeguard::guard(terminal, |term| {
-        reset_term(term).expect("Error resetting terminal")
+        reset_term(term).expect("Error resetting terminal");
     });
 
     let mut textarea = TextArea::from(initial_content.lines());
@@ -90,7 +111,7 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
         Block::default()
             .borders(Borders::NONE)
             .title("Enter / paste / edit Rust script. Ctrl+D: submit  Ctrl+Q: quit  Ctrl+L: keys")
-            .title_style(Style::default().italic()),
+            .title_style(Style::default().fg(Color::Yellow).bold().italic()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::Blue));
@@ -159,7 +180,18 @@ pub fn edit_stdin<R: EventReader>(event_reader: R) -> Result<Vec<String>, Box<dy
 }
 
 /// Prompt for and read Rust source code from stdin.
-pub fn read_stdin() -> Result<String, std::io::Error> {
+///
+/// # Examples
+///
+/// ```
+/// use rs_script::stdin::read;
+///
+/// assert_eq!(read(), );
+/// ```
+/// # Errors
+///
+/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+pub fn read() -> Result<String, std::io::Error> {
     log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
         if cfg!(windows) { 'Z' } else { 'D' }
     );
@@ -168,12 +200,28 @@ pub fn read_stdin() -> Result<String, std::io::Error> {
     Ok(buffer)
 }
 
+///
+///
+/// # Examples
+///
+/// ```
+/// use rs_script::stdin::read_to_string;
+///
+/// let mut input = ;
+/// assert_eq!(read_to_string(&mut input), );
+/// assert_eq!(input, );
+/// ```
+///
+/// # Errors
+///
+/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)
 }
 
+#[must_use]
 pub fn normalize_newlines(input: &str) -> String {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"\r\n?").unwrap();
@@ -183,13 +231,13 @@ pub fn normalize_newlines(input: &str) -> String {
 
 pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     if alt_highlights {
-        textarea.set_selection_style(Style::default().bg(Color::LightRed));
-        textarea.set_cursor_style(Style::default().on_yellow());
-        textarea.set_cursor_line_style(Style::default().on_light_yellow());
-    } else {
         textarea.set_selection_style(Style::default().bg(Color::Green));
         textarea.set_cursor_style(Style::default().on_magenta());
         textarea.set_cursor_line_style(Style::default().on_dark_gray());
+    } else {
+        textarea.set_selection_style(Style::default().bg(Color::LightRed));
+        textarea.set_cursor_style(Style::default().on_yellow());
+        textarea.set_cursor_line_style(Style::default().on_light_yellow());
     }
 }
 
@@ -205,7 +253,7 @@ fn reset_term(
     mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,
 ) -> Result<(), Box<dyn Error>> {
     disable_raw_mode()?;
-    ratatui::crossterm::execute!(
+    crossterm::execute!(
         term.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture

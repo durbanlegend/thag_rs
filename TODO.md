@@ -2,76 +2,26 @@
 
 ## High Priority
 - [ ]  Clean up demos
-- [ ]  Add additional popular crates
+- [ ]  Document public APIs
 
 ## Medium Priority
-- [ ]  Document public APIs
+- [ ]  Add additional popular crates
 - [ ]  More unit and integration tests
 - [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
-- [ ]  Debug egui_code_editor.rss only showing env_logger if "use egui::\*;" is included - DONE: Nothing to do with "use" statement, need to append ",egui_code_editor=debug" to $RUST_LOG
 - [ ]  Exclude multimain demo scripts from integration_test or how do I selectively choose parms?
-- [ ]  Put snippet doc comments above a use stmt?
 - [ ]  Modify demo/fib_fast_doubling_iterative_rug.rs as per demo/fib_fast_doubling_iterative_ibig.rs
-- [ ]  Debug demo/fib_fast_doubling_iterative_rug.rs!
-- [ ]  Store a fib value and compare benchmark results against it for correctness.
-- [ ]  Use Cassini's identity to calculate F(n).
+- [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
+- [ ]  Consider releasing a copy of repl.rs as a demo script.
+- [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
+- [ ]  Make TUI highlight defaults depend on light or dark theme.
+- [ ]  Add FAQ
+- [ ]  Punchy intro in readme, per Zands.
+- [ ]  Find a punchy name - rs-thagomizer | rs-bolt | rs-volt | rs-ares
+                            rs_traction | rs_about-face | rs-backwards lol ?
+
 - [ ]  Demo scripts not commented:
-demo/gpt_lazy_static_theme1.rs
-demo/gpt_lazy_static_theme2.rs
-demo/gpt_tui_tokio.rs
-demo/hello.rs
-demo/hello_main.rs
-demo/ibig_big_integers.rs
-demo/infer_deps.rs
-demo/inline_colorization.rs
-demo/iter.rs
-demo/list_files.rs
-demo/message_colors_gpt.rs
-demo/multiline_err.rs
-demo/newest.rs
-demo/newline_test.rs
-demo/prettyplease.rs
-demo/puffin_profiler_egui.rs
-demo/rc1.rs
-demo/reedline_basic_keybindings.rs
-demo/reedline_colored_text.rs
-demo/reedline_completions.rs
-demo/reedline_custom_prompt.rs
-demo/reedline_cwd_aware_hinter.rs
-demo/reedline_highlighter.rs
-demo/reedline_hinter.rs
-demo/reedline_history.rs
-demo/reedline_ide_completions.rs
-demo/reedline_multiline.rs
-demo/reedline_read_stdin.rs
-demo/reedline_repl.rs
-demo/reedline_stdin.rs
-demo/reedline_transient_prompt.rs
-demo/rug_arbitrary_precision_nums.rs
-demo/rustyline.rs
-demo/slog_expressions.rs
-demo/supports_color.rs
-demo/syn_ast_deps.rs
-demo/syn_ast_deps2.rs
-demo/syn_ast_deps_file.rs
-demo/syn_dump_syntax.rs
-demo/syn_file_debug.rs
-demo/syn_file_debug2.rs
-demo/syn_file_to_expr.rs
-demo/syn_parse_quote.rs
-demo/syn_parse_str.rs
-demo/syn_quote.rs
-demo/syn_visit_extern_crate_expr.rs
-demo/syn_visit_extern_crate_file.rs
-demo/syn_visit_node_type.rs
-demo/syn_visit_use_path_expr.rs
-demo/syn_visit_use_path_file.rs
-demo/syn_visit_use_rename.rs
-demo/tempfile.rs
-demo/term_color_contrast.rs
-demo/term_detection_pack.rs
 demo/termbg.rs
 demo/termbg_bug.rs
 demo/terminal_light.rs
@@ -81,7 +31,6 @@ demo/type_info.rs
 demo/unzip.rs
 demo/verbosity.rs
 demo/windows_cr_issue.rs
-
 
 ## Low Priority
 - [ ]  Consider history support for stdin.
@@ -94,8 +43,6 @@ demo/windows_cr_issue.rs
 - [ ]  Consider other Rust gui packages.
 - [ ]  How to navigate reedline history entry by entry instead of line by line.
 - [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
-
-
 
 ## Ideas / Future Enhancements
 - [ ]  Consider supporting alternative TOML embedding keywords so we can run demo/regex_capture_toml.rs and demo/parse_script.rs_toml.rs.

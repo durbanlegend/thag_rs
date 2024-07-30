@@ -1,13 +1,15 @@
 /*[toml]
 [dependencies]
-reedline = "0.32.0"
+nu-ansi-term = "0.50.1"
+reedline = "0.33.0"
 */
 
+/// Published demo from `reedline` crate.
+//# Purpose: Demo the use of a transient minimal prompt `! ` for returned history.
 // Create a reedline object with a transient prompt.
 // cargo run --example transient_prompt
 //
 // Prompts for previous lines will be replaced with a shorter prompt
-
 use nu_ansi_term::{Color, Style};
 #[cfg(any(feature = "sqlite", feature = "sqlite-dynlib"))]
 use reedline::SqliteBackedHistory;

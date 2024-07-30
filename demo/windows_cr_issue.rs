@@ -2,7 +2,7 @@
 [dependencies]
 # nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 nu-ansi-term = "0.50.0"
-reedline = "0.32.0"
+reedline = "0.33.0"
 reedline-repl-rs = "1.1.1"
 */
 

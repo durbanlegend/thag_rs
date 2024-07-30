@@ -20,4 +20,3 @@ term_colors.ast
 xterm_colors.txt
 demo/README.md
 demo/repl_test_bad.rs
-src/manifest_new.rs

@@ -1,20 +1,23 @@
 /*[toml]
 [dependencies]
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
-clap-repl = "0.2.0"
+clap-repl = { path = "/Users/donf/projects/clap-repl" }
 
 [dependencies.nu-ansi-term]
 version = "0.50.0"
 
 [dependencies.reedline]
-version = "0.32.0"
+version = "0.33.0"
 */
 
+// >>>> Appears to be broken
+
 // REPL based on clap-repl crate
+use std::path::PathBuf;
+
 use clap::{Parser, ValueEnum};
 use clap_repl::ClapEditor;
 use reedline::{DefaultPrompt, DefaultPromptSegment, FileBackedHistory, Reedline, Signal};
-use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
 #[command(name = "")] // This name will show up in clap's error messages, so it is important to set it to "".
@@ -37,8 +40,6 @@ enum SampleCommand {
         #[arg(short, long, value_enum, default_value_t = Mode::Secure)]
         mode: Mode,
     },
-    Exit,
-    Quit,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -81,7 +82,6 @@ fn main() {
                 let password = read_line_with_reedline(&mut rl, "What is your password? ");
                 println!("Logged in with {username} and {password} in mode {mode:?}");
             }
-            SampleCommand::Exit | SampleCommand::Quit => return,
         }
     }
 }

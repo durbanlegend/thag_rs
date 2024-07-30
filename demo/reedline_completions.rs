@@ -1,12 +1,8 @@
 /*[toml]
 [dependencies]
-reedline = "0.32.0"
+reedline = "0.33.0"
 */
 
-// Create a default reedline object to handle user input
-// cargo run --example basic
-//
-// You can browse the local (non persistent) history using Up/Down or Ctrl n/p.
 // Create a reedline object with tab completions support
 // cargo run --example completions
 //

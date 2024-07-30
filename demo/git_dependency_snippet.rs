@@ -2,7 +2,7 @@
 [dependencies]
 # rev may be necessary to force cargo to update to the latest commit, see
 # https://github.com/rust-lang/cargo/issues/8555
-rs-script = { git = "https://github.com/durbanlegend/rs-script", rev = "80dbcd8a03cc0dee98026fad67120ca59254ffc2"}
+rs-script = { git = "https://github.com/durbanlegend/rs-script" }
 */
 
 /// `demo/git_dependency.rs` done as a snippet, just because.

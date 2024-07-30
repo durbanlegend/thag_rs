@@ -25,7 +25,8 @@ include = ["src/**", "Cargo.toml", "README.md", "demo/**"]
 
 [dependencies]
 bitflags = "2.5.0"
-clap = { version = "4.5.8", features = ["cargo", "derive"] }
+clap = { version = "4.5.11", features = ["cargo", "derive"] }
+crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 edit = "0.1.5"
 env_logger = "0.11.3"
 home = "0.5.9"
@@ -34,7 +35,7 @@ log = "0.4.21"
 nu-ansi-term = "0.50.0"
 proc-macro2 = "1.0.86"
 quote = "1.0.36"
-reedline = "0.32.0"
+reedline = "0.33.0"
 regex = "1.10.5"
 serde = { version = "1.0.98", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive", "phf"] }
@@ -42,11 +43,11 @@ supports-color = "3.0.0"
 syn = { version = "2.0.68", features = ["extra-traits", "full", "visit"] }
 termbg = "0.5.0"
 toml = "0.8.14"
-tui-textarea = { version = "0.5.0", features = ["crossterm", "search"] }
+tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 mockall = "0.13.0"
 scopeguard = "1.2.0"
 ratatui = "0.27.0"
-cargo_toml = "0.20.3"
+cargo_toml = "0.20.4"
 
 [profile.dev]
 opt-level = 1 # Use slightly better optimizations.

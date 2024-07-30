@@ -2,6 +2,9 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
+/// Demo listing files on disk. If you want a sorted list, you will need to amend the
+/// program to collect the entries into a Vec and sort that.
+//# Purpose: Simple demonstration.
 fn display_file_if_exists(path: &PathBuf) -> io::Result<()> {
     if path.exists() {
         println!("File: {:?}", path);
@@ -33,8 +36,8 @@ fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
-    let source_path = PathBuf::from("demo/repl_000012.rs");
-    let target_dir_path = PathBuf::from(".cargo/repl_000012");
+    let source_path = PathBuf::from("demo/list_files.rs");
+    let target_dir_path = PathBuf::from("demo");
 
     // Display file listing
     display_file_if_exists(&source_path)?;
@@ -44,7 +47,7 @@ fn main() -> io::Result<()> {
 
     // Check if neither file nor directory exist
     if !source_path.exists() && !target_dir_path.exists() {
-        println!("No temporary files found");
+        println!("No files found. You may want to edit the paths and try again");
     }
 
     Ok(())

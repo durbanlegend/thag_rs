@@ -1,9 +1,11 @@
 /*[toml]
 [dependencies]
 nu-ansi-term = "0.50.0"
-reedline = "0.32.0"
+reedline = "0.33.0"
 */
 
+/// Published example from `reedline` crate.
+//# Purpose: Explore featured crate.
 // Create a reedline object with in-line hint support.
 // cargo run --example hinter
 //
@@ -11,7 +13,6 @@ reedline = "0.32.0"
 // assuming history ["abc", "ade"]
 // pressing "a" hints to abc.
 // Up/Down or Ctrl p/n, to select next/previous match
-
 use nu_ansi_term::{Color, Style};
 use reedline::{DefaultHinter, DefaultPrompt, Reedline, Signal};
 use std::io;

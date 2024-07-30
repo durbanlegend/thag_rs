@@ -4,13 +4,21 @@ use ratatui::crossterm::tty::IsTty;
 use ratatui::style::{Color, Style, Stylize};
 use rs_script::logging::Verbosity;
 use rs_script::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
-use rs_script::{edit_stdin, log, BuildRunError};
+use rs_script::{edit, log, BuildRunError};
 use std::io::{stdout, Write};
 use std::process::{Command, Stdio};
 use tui_textarea::TextArea;
 
+// Set environment variables before running tests
+fn set_up() {
+    std::env::set_var("TEST_ENV", "1");
+    std::env::set_var("VISUAL", "cat");
+    std::env::set_var("EDITOR", "cat");
+}
+
 #[test]
 fn test_edit_stdin_submit() {
+    set_up();
     // Check if the test is running in a terminal
     if !stdout().is_tty() {
         println!("Skipping test_edit_stdin_submit as it is not running in a terminal.");
@@ -48,7 +56,7 @@ fn test_edit_stdin_submit() {
             )))
         });
 
-    let result = edit_stdin(mock_reader);
+    let result = edit(&mock_reader);
 
     log!(
         Verbosity::Normal,
@@ -64,6 +72,7 @@ fn test_edit_stdin_submit() {
 
 #[test]
 fn test_edit_stdin_quit() {
+    set_up();
     // Check if the test is running in a terminal
     if !stdout().is_tty() {
         println!("Skipping test_edit_stdin_submit as it is not running in a terminal.");
@@ -78,7 +87,7 @@ fn test_edit_stdin_quit() {
         )))
     });
 
-    let result = edit_stdin(mock_reader);
+    let result = edit(&mock_reader);
 
     assert!(result.is_err());
     assert!(matches!(
@@ -93,6 +102,7 @@ fn init_logger() {
 
 #[test]
 fn test_read_to_string() {
+    set_up();
     let string = r#"fn main() {{ println!("Hello, world!"); }}\n"#;
     let mut input = string.as_bytes();
     let result = read_to_string(&mut input).unwrap();
@@ -101,6 +111,7 @@ fn test_read_to_string() {
 
 #[test]
 fn test_read_stdin() {
+    set_up();
     init_logger();
     let string = "Hello, world!";
     let input = format!(
@@ -137,6 +148,7 @@ fn test_read_stdin() {
 
 #[test]
 fn test_normalize_newlines() {
+    set_up();
     let input = "Hello\r\nWorld\r!";
     let expected_output = "Hello\nWorld\n!";
     assert_eq!(normalize_newlines(input), expected_output);
@@ -144,6 +156,7 @@ fn test_normalize_newlines() {
 
 #[test]
 fn test_apply_highlights() {
+    set_up();
     let mut textarea = TextArea::default();
 
     apply_highlights(true, &mut textarea);

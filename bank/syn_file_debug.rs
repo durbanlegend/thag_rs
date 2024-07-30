@@ -1,10 +1,7 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.71", features = ["extra-traits", "full", "visit"] }
-quote = "1.0.36"
-*/
+syn = { version = "2.0.71", features = ["extra-traits", "full", "visit"] }*/
 
-use quote::ToTokens;
 use syn::{parse_file, Item};
 
 fn main() {

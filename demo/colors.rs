@@ -4,7 +4,8 @@
 lazy_static = "1.4.0"
 log = "0.4.21"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-rs-script = { path = "/Users/donf/projects/rs-script" }
+rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
 termbg = "0.5.0"
@@ -48,7 +49,9 @@ pub trait NuColor: Display {
     fn get_fixed_code(&self) -> u8;
 }
 
-/// A version of `println!` that prints an entire message in colour or otherwise styled.
+/// A version of `rs-script`'s `colors` module to style messages according to their type. Like the `stdin`
+/// module, `colors` was originally developed here as a separate script and integrated as a module later.
+///
 /// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! nu_color_println {

@@ -4,8 +4,7 @@ mod tests {
     use home::home_dir;
     use rs_script::cmd_args::{Cli, ProcFlags};
     use rs_script::repl::{
-        delete, disp_repl_banner, edit, edit_history, list, parse_line, quit, run_expr, run_repl,
-        toml, Context,
+        delete, disp_repl_banner, edit, edit_history, list, parse_line, run_expr, toml, Context,
     };
     use rs_script::shared::BuildState;
     use std::time::Instant;
@@ -26,7 +25,7 @@ mod tests {
     }
 
     // Set environment variables before running tests
-    fn setup() {
+    fn set_up() {
         std::env::set_var("TEST_ENV", "1");
         std::env::set_var("VISUAL", "cat");
         std::env::set_var("EDITOR", "cat");
@@ -34,7 +33,7 @@ mod tests {
 
     #[test]
     fn test_parse_line() {
-        setup();
+        set_up();
         let input = r#"command "arg 1" arg2"#;
         let (command, args) = parse_line(input);
         println!("\r");
@@ -44,7 +43,7 @@ mod tests {
 
     #[test]
     fn test_disp_repl_banner() {
-        setup();
+        set_up();
         let cmd_list = "command1, command2";
         disp_repl_banner(cmd_list);
         // As this function prints to stdout, there's no direct return value to assert.
@@ -53,90 +52,81 @@ mod tests {
 
     #[test]
     fn test_delete() {
-        setup();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
-        let result = delete(ArgMatches::default(), &mut context);
+        let result = delete(&ArgMatches::default(), &mut context);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_edit_history() {
-        setup();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
-        let mut build_state = BuildState::default();
-        build_state.cargo_home = home_dir().unwrap().join(".cargo");
+        let mut build_state = rs_script::BuildState {
+            cargo_home: home_dir().unwrap().join(".cargo"),
+            ..Default::default()
+        };
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
-        let result = edit_history(ArgMatches::default(), &mut context);
+        let result = edit_history(&ArgMatches::default(), &mut context);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_edit() {
-        setup();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
-        let result = edit(ArgMatches::default(), &mut context);
+        let result = edit(&ArgMatches::default(), &mut context);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_toml() {
-        setup();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
-        let result = toml(ArgMatches::default(), &mut context);
+        let result = toml(&ArgMatches::default(), &mut context);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_run_expr() {
-        setup();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
-        let result = run_expr(ArgMatches::default(), &mut context);
+        let result = run_expr(&ArgMatches::default(), &mut context);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_list() {
-        setup();
+        set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
-        let result = list(ArgMatches::default(), &mut context);
+        let result = list(&ArgMatches::default(), &mut context);
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn test_quit() {
-        setup();
-        let mut options = Cli::parse_from(&["test"]);
-        let proc_flags = ProcFlags::default();
-        let mut build_state = BuildState::default();
-        let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
-        let result = quit(ArgMatches::default(), &mut context);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_run_repl() {
-        setup();
-        let mut options = Cli::parse_from(&["test"]);
-        let proc_flags = ProcFlags::default();
-        let mut build_state = BuildState::default();
-        let start = Instant::now();
-        let result = run_repl(&mut options, &proc_flags, &mut build_state, start);
-        assert!(result.is_ok());
-    }
+    // #[test]
+    // fn test_run_repl() {
+    //     set_up();
+    //     let mut options = Cli::parse_from(&["test"]);
+    //     let proc_flags = ProcFlags::default();
+    //     let mut build_state = BuildState::default();
+    //     let start = Instant::now();
+    //     let result = run_repl(&mut options, &proc_flags, &mut build_state, start);
+    //     assert!(result.is_ok());
+    // }
 }

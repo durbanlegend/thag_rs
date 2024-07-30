@@ -3,7 +3,8 @@
 crossterm = "0.27.0"
 log = "0.4.21"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-rs-script = { path = "/Users/donf/projects/rs-script" }
+rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+
 strum = { version = "0.26.2", features = ["derive"] }
 supports-color= "3.0.0"
 termbg = "0.5.0"
@@ -20,7 +21,10 @@ use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use supports_color::Stream;
 use termbg::{Error, Theme};
 
-/// A version of println that prints an entire message in colour or otherwise styled.
+/// Original prototype of `rs-script`'s `colors` module to style messages according
+/// to their type. I only dropped `owo-colors` because I switched from `rustyline` to
+/// `reedline`, which was already using `nu_ansi_term`.
+///
 /// Format: `color_println`!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);
 #[macro_export]
 macro_rules! color_println {

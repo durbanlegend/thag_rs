@@ -3,11 +3,17 @@ mod tests {
     use cargo_toml::{Edition, Manifest};
     use mockall::predicate::*;
     use rs_script::manifest::{
-        capture_dep, cargo_search, default_manifest_from_build_state, merge_manifest,
-        MockCommandRunner,
+        capture_dep, cargo_search, default_manifest_from_build_state, merge, MockCommandRunner,
     };
     use rs_script::BuildState;
     use std::process::Output;
+
+    // Set environment variables before running tests
+    fn set_up() {
+        std::env::set_var("TEST_ENV", "1");
+        std::env::set_var("VISUAL", "cat");
+        std::env::set_var("EDITOR", "cat");
+    }
 
     fn init_logger() {
         let _ = env_logger::builder().is_test(true).try_init();
@@ -29,6 +35,7 @@ mod tests {
 
     #[test]
     fn test_cargo_search_success() {
+        set_up();
         let output = Output {
             status: successful_exit_status(),
             stdout: b"serde = \"1.0.203\"".to_vec(),
@@ -57,6 +64,7 @@ mod tests {
 
     #[test]
     fn test_capture_dep_valid() {
+        set_up();
         let line = r#"serde = "1.0.104""#;
         let result = capture_dep(line);
         assert!(result.is_ok());
@@ -67,6 +75,7 @@ mod tests {
 
     #[test]
     fn test_capture_dep_invalid() {
+        set_up();
         let line = r#"invalid format"#;
         let result = capture_dep(line);
         assert!(result.is_err());
@@ -74,6 +83,7 @@ mod tests {
 
     #[test]
     fn test_default_manifest() {
+        set_up();
         let build_state = BuildState {
             source_stem: "example".to_string(),
             source_name: "example.rs".to_string(),
@@ -108,6 +118,7 @@ mod tests {
 
     #[test]
     fn test_merge_manifest() {
+        set_up();
         init_logger();
 
         let rs_manifest = Some(
@@ -154,7 +165,7 @@ crate_type = ["cdylib"]
 
         let syntax_tree = None;
 
-        let manifest = merge_manifest(&mut build_state, rs_source, &syntax_tree).unwrap();
+        let manifest = merge(&mut build_state, rs_source, &syntax_tree).unwrap();
         eprintln!("manifest.dependencies={:#?}", manifest.dependencies);
         assert!(manifest.dependencies.contains_key("serde_derive"));
     }

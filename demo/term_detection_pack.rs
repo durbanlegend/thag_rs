@@ -1,17 +1,41 @@
 /*[toml]
 [dependencies]
+crossterm = "0.27.0"
 supports-color= "3.0.0"
 termbg = "0.5.0"
 terminal-light = "1.4.0"
 */
 
+/// A basic tool I cobbled together that uses different crates to a) test terminal
+/// types on different platforms, b) determine and cross-check if a light or dark
+/// theme is in use and c) determine the level of colour supported reported by
+/// the terminal.
+//# Purpose: Allow checking of terminals on platforms to be supported, also test reliability of different crates.
+use crossterm::{
+    cursor::{MoveTo, Show},
+    terminal::{Clear, ClearType},
+    ExecutableCommand,
+};
+use std::io::stdout;
 use supports_color::Stream;
+use termbg;
+
+// termbg sends an operating system command (OSC) to interrogate the screen
+// but with side effects which we undo here.
+pub fn clear_screen() {
+    let mut out = stdout();
+    out.execute(Clear(ClearType::All)).unwrap();
+    out.execute(MoveTo(0, 0)).unwrap();
+    out.execute(Show).unwrap();
+    out.flush().unwrap();
+}
 
 let timeout = std::time::Duration::from_millis(100);
 
 let term = termbg::terminal();
 let rgb = termbg::rgb(timeout);
 let theme = termbg::theme(timeout);
+clear_screen();
 
 println!("  Term : {:?}", term);
 

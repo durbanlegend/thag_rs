@@ -1,14 +1,18 @@
 /*[toml]
 [dependencies]
-reedline = "0.32.0"
+reedline = "0.33.0"
 */
 
+/// Published example from `reedline` crate. See the Vec of commands in the main method standing in for
+/// history. Enter a letter, e.g. "h" and press Tab to see the magic happen: all the commands starting
+/// with that letter will be displayed for selection with a tab, up and down arrows or Enter. Or you can
+/// enter subsequent letters to narrow the search. Noice.
+//# Purpose: Demo `reedline` tab completions.
 // Create a reedline object with tab completions support
 // cargo run --example completions
 //
 // "t" [Tab] will allow you to select the completions "test" and "this is the reedline crate"
 // [Enter] to select the chosen alternative
-
 use reedline::{
     default_emacs_keybindings, DefaultCompleter, DefaultPrompt, DescriptionMode, EditCommand,
     Emacs, IdeMenu, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Reedline, ReedlineEvent,

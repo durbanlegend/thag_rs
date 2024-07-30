@@ -5,6 +5,8 @@ tempfile = "3.10.1"
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
+/// Published example from the `tempfile` readme.
+//# Purpose: Demo featured crate.
 fn main() {
     // Write
     let mut tmpfile: File = tempfile::tempfile().unwrap();

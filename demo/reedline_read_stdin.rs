@@ -1,8 +1,10 @@
 /*[toml]
 [dependencies]
-reedline = "0.32.0"
+reedline = "0.33.0"
 */
 
+/// Basic exploration of reading a line from stdin with `reedline`.
+//# Purpose: Exploring how to render prompts and read lines of input.
 use reedline::{Prompt, Reedline, Signal};
 use std::borrow::Cow;
 use std::io;

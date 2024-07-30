@@ -3,6 +3,12 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
+/// Create a separate test for each individual script in demo/, to ensure that it builds
+/// successfully. We don't try to run them for logistical reasons, but at least we
+/// identify abandoned scripts. Given that there are so many of these scripts, avoid
+/// Cargo's default behaviour of running all tests in parallel. --test-threads=3 seems
+/// to work best on my MacBook Air M1.
+/// Suggested comand: RUST_LOG=rs_script=debug cargo test --features=debug-logs -- --nocapture --test-threads=3
 fn main() {
     // Get the OUT_DIR environment variable
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
@@ -16,9 +22,14 @@ fn main() {
     );
 
     let skip_files_on_windows = [
+        "crossbeam_channel_stopwatch.rs",
         "factorial_main_rug.rs",
+        "factorial_main_rug_product.rs",
         "fib_big_clap_rug.rs",
+        "fib_doubling_iterative_purge_rug.rs",
         "fib_fac_rug.rs",
+        "fib_matrix_rug.rs",
+        "rug_arbitrary_precision_nums.rs",
     ];
 
     let multimain = ["flume_async.rs", "flume_select.rs"];
@@ -44,14 +55,14 @@ fn main() {
                 file,
                 r#"
 #[test]
-fn test_{test_name}() {{
+fn build_{test_name}() {{
     {{
         use std::process::Command;
         let output = Command::new("cargo")
             .arg("run")
             .arg("--")
             .arg("-bfgnq{more_options}")
-            .arg("{file_path}")
+            .arg({file_path:?})
             .output()
             .expect("Failed to execute command");
 
@@ -67,7 +78,7 @@ fn test_{test_name}() {{
 "#,
                 test_name = test_name,
                 file_name = file_name,
-                file_path = path.to_str().expect("Failed to get file path"),
+                file_path = demo_dir.join(&file_name),
                 more_options = if multimain.contains(&file_name) {
                     "m"
                 } else {

@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = "0.27.0"
 */
-/// Published crossterm example
+/// Published crossterm example.
 /// Demonstrates how to block read characters or a full line.
 /// Just note that crossterm is not required to do this and can be done with `io::stdin()`.
 //# Purpose Demo crossterm reading key events as a line or a single char.

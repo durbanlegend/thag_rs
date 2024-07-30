@@ -1,15 +1,15 @@
 /*[toml]
 [dependencies]
 crossterm = "*"
-reedline = "0.32.0"
-#reedline-repl-rs = "1.1.1"
+reedline = "0.33.0"
 */
 
+/// Published example `basic.rs` from `reedline` crate.
+/// Purpose: demo featured crates.
 // Create a default reedline object to handle user input
 // cargo run --example basic
 //
 // You can browse the local (non persistent) history using Up/Down or Ctrl n/p.
-
 use std::io;
 use {
     crossterm::event::{KeyCode, KeyModifiers},
@@ -27,7 +27,7 @@ fn main() -> io::Result<()> {
     keybindings.add_binding(
         KeyModifiers::CONTROL,
         KeyCode::Char('m'),
-        ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
+        ReedlineEvent::Edit(vec![EditCommand::SwapWords]),
     );
     let edit_mode = Box::new(Emacs::new(keybindings));
 

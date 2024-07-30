@@ -3,7 +3,7 @@
 async-std = "1.12.0"
 crossterm = "0.27.0"
 is-terminal = "0.4.12"
-syn = "2.0.669"
+syn = "2.0.72"
 termbg = "0.5.0"
 thiserror = "1.0.61"
 */

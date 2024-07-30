@@ -579,10 +579,9 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     }
 }
 
-type DoubleZipped<'a> = (
-    (Vec<Option<&'a str>>, Vec<Option<&'a str>>),
-    Vec<Option<&'a str>>,
-);
+type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
+type DoubleZipped<'a> = (Zipped<'a>, Vec<Option<&'a str>>);
+
 #[must_use]
 pub fn prep_snippet(rs_source: &str) -> (String, String, String) {
     use std::fmt::Write;

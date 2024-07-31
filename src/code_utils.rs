@@ -31,22 +31,35 @@ use syn::{
 use syn::{AttrStyle, ExprBlock};
 
 // To move inner attributes out of a syn AST for a snippet.
-struct RemoveInnerAttributes;
+struct RemoveInnerAttributes {
+    found: bool,
+}
 
 impl VisitMut for RemoveInnerAttributes {
     fn visit_expr_block_mut(&mut self, expr_block: &mut ExprBlock) {
-        // Filter out inner attributes
-        expr_block
+        // Count inner attributes
+        self.found = expr_block
             .attrs
-            .retain(|attr| attr.style != AttrStyle::Inner(syn::token::Not::default()));
+            .iter()
+            .filter(|attr| attr.style == AttrStyle::Inner(syn::token::Not::default()))
+            .count()
+            > 0;
+        if self.found {
+            // Filter out inner attributes
+            expr_block
+                .attrs
+                .retain(|attr| attr.style != AttrStyle::Inner(syn::token::Not::default()));
+        };
 
-        // Continue visiting the rest of the expression block
+        // Delegate to the default impl to visit nested expressions.
         visit_mut::visit_expr_block_mut(self, expr_block);
     }
 }
 
-pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) {
-    RemoveInnerAttributes.visit_expr_block_mut(expr);
+pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
+    let remove_inner_attributes = &mut RemoveInnerAttributes { found: false };
+    remove_inner_attributes.visit_expr_block_mut(expr);
+    remove_inner_attributes.found
 }
 
 /// Read the contents of a file. For reading the Rust script.
@@ -580,50 +593,30 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
 }
 
 type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
-type DoubleZipped<'a> = (Zipped<'a>, Vec<Option<&'a str>>);
 
 #[must_use]
-pub fn prep_snippet(rs_source: &str) -> (String, String, String) {
+pub fn prep_snippet(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
 
     lazy_static! {
-        static ref USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
-        static ref MACRO_USE_REGEX: Regex =
-            Regex::new(r"(?m)^[\s]*#\[macro_use\]\s+::\s+([^;{]+)").unwrap();
-        static ref EXTERN_CRATE_REGEX: Regex =
-            Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
         static ref INNER_ATTRIB_REGEX: Regex = Regex::new(r"(?m)^[\s]*#!\[.+\]").unwrap();
     }
 
-    // // Workaround: strip off any enclosing braces.
-    // let rs_source = if rs_source.starts_with('{') && rs_source.ends_with('}') {
-    //     let rs_source = rs_source.trim_start_matches('{');
-    //     let rs_source = rs_source.trim_end_matches('}');
-    //     rs_source
-    // } else {
-    //     rs_source
-    // };
-
     debug_log!("rs_source={rs_source}");
-    let (meta, body): DoubleZipped = rs_source
+
+    let (inner_attribs, rest): Zipped = rs_source
         .lines()
-        .map(|line| -> ((Option<&str>, Option<&str>), Option<&str>) {
+        .map(|line| -> (Option<&str>, Option<&str>) {
             if INNER_ATTRIB_REGEX.is_match(line) {
-                ((Some(line), None), None)
-            } else if USE_REGEX.is_match(line)
-                || MACRO_USE_REGEX.is_match(line)
-                || EXTERN_CRATE_REGEX.is_match(line)
-            {
-                ((None, Some(line)), None)
+                (Some(line), None)
             } else {
-                ((None, None), Some(line))
+                (None, Some(line))
             }
         })
         .unzip();
 
-    let (inner_attrib, prelude) = meta;
-    debug_log!("inner_attrib={inner_attrib:#?}, prelude={prelude:#?}\nbody={body:#?}");
-    let inner_attrib = inner_attrib
+    // eprintln!("inner_attribs={inner_attribs:#?}\nrest={rest:#?}");
+    let inner_attribs = inner_attribs
         .iter()
         .flatten()
         .fold(String::new(), |mut output, &b| {
@@ -631,34 +624,26 @@ pub fn prep_snippet(rs_source: &str) -> (String, String, String) {
             output
         });
 
-    let prelude = prelude
-        .iter()
-        .flatten()
-        .fold(String::new(), |mut output, &b| {
-            let _ = writeln!(output, "{b}");
-            output
-        });
-
-    let body = body.iter().flatten().fold(String::new(), |mut output, &b| {
+    let rest = rest.iter().flatten().fold(String::new(), |mut output, &b| {
         let _ = writeln!(output, "    {b}");
         output
     });
-    (inner_attrib, prelude, body)
+    (inner_attribs, rest)
 }
 
 /// Convert a Rust code snippet into a program by wrapping it in a main method and other scaffolding.
 #[must_use]
-pub fn wrap_snippet(inner_attrib: &str, prelude: &str, body: &str) -> String {
+pub fn wrap_snippet(inner_attribs: &str, body: &str) -> String {
     debug_log!("In wrap_snippet");
 
+    eprintln!("In wrap_snippet: inner_attribs={inner_attribs:#?}");
     let wrapped_snippet = format!(
         r"#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
-{inner_attrib}
+{inner_attribs}
 use std::error::Error;
 use std::io;
 use std::io::prelude::*;
 
-{prelude}
 // Wrapped snippet in main method to make it a program
 fn main() -> Result<(), Box<dyn Error>> {{
 {body}

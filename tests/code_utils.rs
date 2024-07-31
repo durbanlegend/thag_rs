@@ -111,8 +111,8 @@ mod tests {
             }
             "#;
 
-        let (inner_attrib, prelude, body) = prep_snippet(&source_code);
-        let wrapped = wrap_snippet(&inner_attrib, &prelude, &body);
+        let (inner_attribs, body) = prep_snippet(&source_code);
+        let wrapped = wrap_snippet(&inner_attribs, &body);
         assert!(wrapped.contains("fn main() -> Result<(), Box<dyn Error>>"));
     }
 

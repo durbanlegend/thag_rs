@@ -318,12 +318,19 @@ pub fn gen_build_run(
         } else {
             // let start_quote = Instant::now();
 
-            if let Some(Ast::Expr(syn::Expr::Block(ref mut expr_block))) = syntax_tree {
+            // Remove any inner attributes from the syntax tree
+            let found = if let Some(Ast::Expr(syn::Expr::Block(ref mut expr_block))) = syntax_tree {
                 // Apply the RemoveInnerAttributes visitor to the expression block
-                remove_inner_attributes(expr_block);
+                remove_inner_attributes(expr_block)
+            } else {
+                false
             };
 
-            let (inner_attrib, prelude, body) = code_utils::prep_snippet(&rs_source);
+            let (inner_attribs, body) = if found {
+                code_utils::prep_snippet(&rs_source)
+            } else {
+                (String::new(), rs_source)
+            };
 
             let rust_code = if let Some(ref syntax_tree_ref) = syntax_tree {
                 let returns_unit = match syntax_tree_ref {
@@ -355,7 +362,7 @@ pub fn gen_build_run(
                 body
             };
             // display_timings(&start_quote, "Completed quote", proc_flags);
-            wrap_snippet(&inner_attrib, &prelude, &rust_code)
+            wrap_snippet(&inner_attribs, &rust_code)
         };
         generate(build_state, &rs_source, proc_flags)?;
     } else {

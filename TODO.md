@@ -18,6 +18,7 @@
 - [ ]  Make TUI highlight defaults depend on light or dark theme.
 - [ ]  Add FAQ
 - [ ]  Punchy intro in readme, per Zands.
+- [ ]  Conversions both ways for rust-script and maybe runner?
 - [ ]  Find a punchy name - rs-thagomizer | rs-bolt | rs-volt | rs-ares
                             rs_traction | rs_about-face | rs-backwards lol ?
 

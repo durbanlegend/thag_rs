@@ -1,0 +1,12 @@
+[package]
+name = "hello"
+version = "0.0.1"
+edition = "2021"
+
+[workspace]
+members = []
+
+[[bin]]
+path = "/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/rs-script/hello/hello.rs"
+name = "hello"
+required-features = []

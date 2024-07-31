@@ -7,6 +7,7 @@ mod tests {
         delete, disp_repl_banner, edit, edit_history, list, parse_line, run_expr, toml, Context,
     };
     use rs_script::shared::BuildState;
+    use std::path::PathBuf;
     use std::time::Instant;
 
     // Helper function to create a mock context
@@ -80,7 +81,11 @@ mod tests {
         set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
-        let mut build_state = BuildState::default();
+        let mut build_state = BuildState {
+            source_path: PathBuf::from("tests/assets/hello_t.rs"),
+            ..Default::default()
+        };
+        // build_state.source_path = std::path::PathBuf::from("tests/assets/hello_t.rs");
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
         let result = edit(&ArgMatches::default(), &mut context);
         assert!(result.is_ok());
@@ -91,7 +96,10 @@ mod tests {
         set_up();
         let mut options = Cli::parse_from(&["test"]);
         let proc_flags = ProcFlags::default();
-        let mut build_state = BuildState::default();
+        let mut build_state = BuildState {
+            cargo_toml_path: PathBuf::from("tests/assets/Cargo_t.toml"),
+            ..Default::default()
+        };
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
         let result = toml(&ArgMatches::default(), &mut context);
         assert!(result.is_ok());

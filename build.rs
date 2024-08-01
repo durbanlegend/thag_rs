@@ -23,7 +23,7 @@ fn main() {
         "demo directory does not exist"
     );
 
-    let skip_files_on_windows = [
+    let skip_scripts_on_windows = [
         "crossbeam_channel_stopwatch.rs",
         "factorial_main_rug.rs",
         "factorial_main_rug_product.rs",
@@ -36,6 +36,8 @@ fn main() {
 
     let multimain = ["flume_async.rs", "flume_select.rs"];
 
+    let stable_only = ["duration_main.rs", "duration_snippet.rs"];
+
     for entry in fs::read_dir(demo_dir).expect("Failed to read demo directory") {
         let entry = entry.expect("Failed to get directory entry");
         let path = entry.path();
@@ -46,8 +48,14 @@ fn main() {
                 .and_then(|s| s.to_str())
                 .expect("Failed to get file name");
 
-            // Skip files on Windows
-            if cfg!(target_os = "windows") && skip_files_on_windows.contains(&file_name) {
+            // Skip scripts on Windows
+            if cfg!(target_os = "windows") && skip_scripts_on_windows.contains(&file_name) {
+                continue;
+            }
+
+            // Skip nightly-only scripts if on stable config
+            if cfg!(not(feature = "nightly")) && stable_only.contains(&file_name) {
+                eprintln!("Skipping nightly-only test {file_name}");
                 continue;
             }
 

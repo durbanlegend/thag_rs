@@ -155,14 +155,14 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
             };
             rs_source
         } else if is_edit {
-            debug_log!("About to call edit_stdin()");
+            debug_log!("About to call stdin::edit()");
             let event_reader = CrosstermEventReader;
             let vec = edit(&event_reader)?;
             debug_log!("vec={vec:#?}");
             vec.join("\n")
         } else {
             assert!(is_stdin);
-            debug_log!("About to call read_stdin()");
+            debug_log!("About to call stdin::read())");
             let str = read()? + "\n";
             debug_log!("str={str}");
             str

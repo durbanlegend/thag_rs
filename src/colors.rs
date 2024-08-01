@@ -44,7 +44,7 @@ lazy_static! {
             "About to call termbg"
         );
         let timeout = std::time::Duration::from_millis(100);
-        debug_log!("Check terminal background color");
+        // debug_log!("Check terminal background color");
         let theme = termbg::theme(timeout);
         shared::clear_screen();
         match theme {
@@ -52,6 +52,10 @@ lazy_static! {
             Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
         }
     };
+}
+
+pub fn get_term_theme() -> &'static TermTheme {
+    &TERM_THEME
 }
 
 pub trait NuColor: Display {

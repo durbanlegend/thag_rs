@@ -2,6 +2,7 @@ use mockall::Sequence;
 use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::crossterm::tty::IsTty;
 use ratatui::style::{Color, Style, Stylize};
+use rs_script::colors::get_term_theme;
 use rs_script::logging::Verbosity;
 use rs_script::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
 use rs_script::{edit, log, BuildRunError};
@@ -158,6 +159,8 @@ fn test_normalize_newlines() {
 fn test_apply_highlights() {
     set_up();
     let mut textarea = TextArea::default();
+
+    eprintln!("Theme={}", get_term_theme());
 
     apply_highlights(true, &mut textarea);
     assert_eq!(

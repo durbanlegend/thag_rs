@@ -19,6 +19,7 @@
 - [ ]  Punchy intro in readme, per Zands.
 - [ ]  Conversions both ways for rust-script and maybe runner?
 - [ ]  Find a punchy name - rs-thagomizer or thagomizer-rs (thag)| rs-bolt | rs-volt | rs-ares
+- [ ]  Mocks not working in Windows?
 - [ ]  Demo scripts not commented:
 demo/termbg.rs
 demo/termbg_bug.rs

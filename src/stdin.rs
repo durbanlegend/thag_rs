@@ -1,6 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::errors::BuildRunError;
-use crate::log;
 use crate::logging::Verbosity;
 
 use crossterm::event::{
@@ -58,7 +57,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 /// ```
 /// use rs_script::stdin::edit;
 ///
-/// assert_eq!(edit(event_reader), );
+/// let buf = vec!["Hello", "world"];
+/// assert_eq!(edit(event_reader), Ok(buf));
 /// ```
 /// # Errors
 ///
@@ -119,6 +119,8 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
     textarea.set_cursor_line_style(Style::default().on_dark_gray());
 
     textarea.move_cursor(CursorMove::Bottom);
+
+    apply_highlights(alt_highlights, &mut textarea);
 
     loop {
         term.draw(|f| {
@@ -186,7 +188,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
 /// ```
 /// use rs_script::stdin::read;
 ///
-/// assert_eq!(read(), );
+/// assert_eq!(read(), Ok("Hello world!"));
 /// ```
 /// # Errors
 ///
@@ -207,7 +209,8 @@ pub fn read() -> Result<String, std::io::Error> {
 /// ```
 /// use rs_script::stdin::read_to_string;
 ///
-/// let mut input = ;
+/// let stdin = std::io::stdin();
+/// let mut input = stdin.lock();
 /// assert_eq!(read_to_string(&mut input), );
 /// assert_eq!(input, );
 /// ```
@@ -235,6 +238,10 @@ pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
         textarea.set_cursor_style(Style::default().on_magenta());
         textarea.set_cursor_line_style(Style::default().on_dark_gray());
     } else {
+        debug_log!(
+            "alt_highlights={alt_highlights}, theme={}, applying LightRed",
+            get_term_theme()
+        );
         textarea.set_selection_style(Style::default().bg(Color::LightRed));
         textarea.set_cursor_style(Style::default().on_yellow());
         textarea.set_cursor_line_style(Style::default().on_light_yellow());

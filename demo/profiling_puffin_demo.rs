@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 profiling = { version = "1.0.15", features = ["profile-with-puffin"] }
-puffin = "0.19.0"
+puffin = "=0.19.0"
 puffin_egui = "0.26.0"
 egui = "0.26.2"
 eframe = { version = "0.26.2", default-features = false, features = ["glow"] }

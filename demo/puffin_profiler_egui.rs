@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 eframe = "0.27.2"
-puffin = "0.19.0"
+puffin = "=0.19.0"
 puffin_egui = "0.27.0"
 */
 

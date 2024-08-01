@@ -9,7 +9,9 @@ log = "0.4"
 env_logger = "0.11"
 
 [features]
-profile-with-puffin = []
+default = ["profile-with-puffin"]
+profile-with-puffin = ["profiling/profile-with-puffin"]
+profile-with-optick = ["profiling/profile-with-optick"]
 */
 
 /// Published demo from the `profiling` crate using the `puffin` profiler.

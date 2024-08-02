@@ -37,9 +37,7 @@ impl Prompt for EmptyPrompt {
 }
 
 pub(crate) fn read_stdin() -> Result<String, io::Error> {
-    println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-{} on a new line when done",
-        if cfg!(windows) { 'Z' } else { 'D' }
-    );
+    println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
 
     let mut editor = Reedline::create();
     let prompt = EmptyPrompt;
@@ -52,7 +50,7 @@ pub(crate) fn read_stdin() -> Result<String, io::Error> {
                 buffer.push('\n');
             }
             Ok(Signal::CtrlD) => {
-                // End on Ctrl-D (Unix) or Ctrl-Z (Windows)
+                // End on Ctrl-D
                 break;
             }
             Ok(Signal::CtrlC) => {

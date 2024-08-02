@@ -1,9 +1,12 @@
 /*[toml]
 [dependencies]
-crokey = "1.0.1"H
+crokey = "1.0.1"
 serde = { version = "1.0.130", features = ["derive"] }
 toml = "0.5"
 */
+
+/// Published example of serde deserialisation from `crokey` crate.
+//# Purpose: Demo loading keybindings from a file.
 use {
     crokey::{
         crossterm::{

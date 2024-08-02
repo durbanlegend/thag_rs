@@ -62,6 +62,10 @@ cat my_file.rs | rs_script --edit                                   # Short form
 
 This allows you to edit or append to the stdin input before submitting it to `rs-script`.
 
+#### A note on the TUI editor
+In order for the Shift-Up and Shift-Down key combinations to work on Apple Terminal, you may need to add the following to your Apple Terminal Settings | Profiles | Keyboard settings:
+Shift-Up: `\033;[2A` and `Shift-Down`: \033;[2B. Use the Esc key to generate \033. This is not necessary on Iterm2 or WezTerm.
+
 ### * Getting started:
 
 You have the choice of installing `rs-script` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run`.

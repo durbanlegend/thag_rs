@@ -15,7 +15,7 @@ use std::io::{self, Read, Write};
 use std::time::Duration;
 use thiserror::Error;
 
-/// Terminal
+// Terminal
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Terminal {
     Screen,
@@ -25,7 +25,7 @@ pub enum Terminal {
     Emacs,
 }
 
-/// Error
+// Error
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("io error")]
@@ -39,7 +39,7 @@ pub enum Error {
     Unsupported,
 }
 
-/// get detected termnial
+// get detected terminal
 #[cfg(not(target_os = "windows"))]
 pub fn terminal() -> Terminal {
     if env::var("INSIDE_EMACS").is_ok() {
@@ -62,7 +62,7 @@ pub fn terminal() -> Terminal {
     }
 }
 
-/// get detected termnial
+// get detected terminal
 #[cfg(target_os = "windows")]
 pub fn terminal() -> Terminal {
     if let Ok(term_program) = env::var("TERM_PROGRAM") {

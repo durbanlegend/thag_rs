@@ -1,5 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::errors::BuildRunError;
+use crate::log;
 use crate::logging::Verbosity;
 
 use crossterm::event::{
@@ -234,17 +235,15 @@ pub fn normalize_newlines(input: &str) -> String {
 
 pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     if alt_highlights {
-        textarea.set_selection_style(Style::default().bg(Color::Green));
-        textarea.set_cursor_style(Style::default().on_magenta());
-        textarea.set_cursor_line_style(Style::default().on_dark_gray());
+        // Dark theme-friendly colors
+        textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
+        textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
+        textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
     } else {
-        debug_log!(
-            "alt_highlights={alt_highlights}, theme={}, applying LightRed",
-            get_term_theme()
-        );
-        textarea.set_selection_style(Style::default().bg(Color::LightRed));
-        textarea.set_cursor_style(Style::default().on_yellow());
-        textarea.set_cursor_line_style(Style::default().on_light_yellow());
+        // Light theme-friendly colors
+        textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
+        textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
+        textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
     }
 }
 

@@ -4,7 +4,7 @@ ratatui = "0.27.0"
 */
 
 /// Published example from the `ratatui` crate.
-//# Purpose: demo the featured crate.
+//# Purpose: Demo the featured crate.
 // # [Ratatui] User Input example
 //
 // The latest version of this example is available in the [examples] folder in the repository.

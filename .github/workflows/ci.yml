@@ -40,4 +40,4 @@ jobs:
       run: cargo build
 
     - name: Run tests
-      run: cargo test --test repl
+      run: cargo test

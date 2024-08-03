@@ -25,6 +25,7 @@ use regex::Regex;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::error::Error;
+use std::fs::OpenOptions;
 use std::str::FromStr;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
@@ -986,7 +987,12 @@ pub fn edit_history(
 ) -> Result<Option<String>, BuildRunError> {
     let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
     println!("history_file={history_file:#?}");
-    edit::edit_file(history_file)?;
+    OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&history_file)?;
+    edit::edit_file(&history_file)?;
     Ok(Some(String::from("End of history file edit")))
 }
 

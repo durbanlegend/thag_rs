@@ -119,50 +119,60 @@ Here are some examples:
 ### Evaluating an expression
 #### Concise fast factorial calculation for numbers up to 34 (it overflows beyond that, but see demos for bigger numbers):
 ```bash
-rs-script -e '(1..=34).product::<u128>()'
+rs_script -e '(1..=34).product::<u128>()'
 ```
 
 #### Shoehorn a script into an expression, should the need ever arise!:
 ```bash
-rs-script -e "$(cat demo/fizz_buzz.rs)"
+rs_script -e "$(cat demo/fizz_buzz_gpt.rs)"
 ```
 
 #### Run a script in quiet mode but show timings
 ```bash
-rs-script -tq demo/fizz_buzz.rs
+rs_script -tq demo/fizz_buzz_gpt.rs
 1
 2
-fizz
+Fizz
 4
-buzz
-fizz
+Buzz
+Fizz
 7
 8
-fizz
-buzz
+Fizz
+Buzz
+11
+Fizz
+13
+14
+FizzBuzz
+16
 ...
-fizz
+89
+FizzBuzz
+91
+92
+Fizz
 94
-buzz
-fizz
+Buzz
+Fizz
 97
 98
-fizz
-Completed run in 0.14s
-rs-script completed processing script fizz_buzz.rs in 0.15s
-
+Fizz
+Buzz
+Completed run in 0.11s
+rs-script completed processing script fizz_buzz_gpt.rs in 0.20s
 ```
 
 ### Using the REPL
 ```bash
-rs-script -l
+rs_script -l
 ```
 This will start an interactive REPL session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally edit an expression from history.
 Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano...) and rerun it. The REPL also offers basic housekeeping functions for the temporary files generated, otherwise being in temporary space they will be cleaned up by the operating system in due course.
 
 #### Revisiting a REPL expression from a previous session
 ```bash
-rs-script -l repl_<nnnnnn>.rs
+rs_script -l repl_<nnnnnn>.rs
 ```
 will return to edit and run a named generated script from a previous REPL session.
 

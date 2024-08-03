@@ -1,7 +1,7 @@
 use mockall::Sequence;
 use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::crossterm::tty::IsTty;
-use ratatui::style::{Color, Style, Stylize};
+use ratatui::style::{Color, Style};
 use rs_script::colors::get_term_theme;
 use rs_script::logging::Verbosity;
 use rs_script::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
@@ -165,22 +165,28 @@ fn test_apply_highlights() {
     apply_highlights(true, &mut textarea);
     assert_eq!(
         textarea.selection_style(),
-        Style::default().bg(Color::LightRed)
+        Style::default().fg(Color::Black).bg(Color::Cyan)
     );
-    assert_eq!(textarea.cursor_style(), Style::default().on_yellow());
+    assert_eq!(
+        textarea.cursor_style(),
+        Style::default().fg(Color::Black).bg(Color::LightYellow)
+    );
     assert_eq!(
         textarea.cursor_line_style(),
-        Style::default().on_light_yellow()
+        Style::default().fg(Color::White).bg(Color::DarkGray)
     );
 
     apply_highlights(false, &mut textarea);
     assert_eq!(
         textarea.selection_style(),
-        Style::default().bg(Color::Green)
+        Style::default().fg(Color::White).bg(Color::Blue)
     );
-    assert_eq!(textarea.cursor_style(), Style::default().on_magenta());
+    assert_eq!(
+        textarea.cursor_style(),
+        Style::default().fg(Color::White).bg(Color::LightRed)
+    );
     assert_eq!(
         textarea.cursor_line_style(),
-        Style::default().on_dark_gray()
+        Style::default().fg(Color::Black).bg(Color::Gray)
     );
 }

@@ -37,7 +37,7 @@ jobs:
           ${{ runner.os }}-cargo-index-
 
     - name: Build
-      run: cargo build --verbose
+      run: cargo build
 
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --test edit_history

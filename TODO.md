@@ -14,7 +14,6 @@
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
        - make demo scripts to replicate issues.
-- [ ]  Make TUI highlight defaults depend on light or dark theme.
 - [ ]  Add FAQ
 - [ ]  Punchy intro in readme, per Zands.
 - [ ]  Conversions both ways for rust-script and maybe runner?

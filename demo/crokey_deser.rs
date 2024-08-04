@@ -38,7 +38,11 @@ h = "hexapode"
 shift-h = "HEXAPODE"
 - = "mandrill"
 alt-- = "nasalis" # some terminals don't distinguish between - and alt--
+alt-up = "alt-up (native)"
 "#;
+// esc-[-shift-a
+// \[-shift-a
+// esc-\[-shift-a
 
 pub fn main() {
     print!("Application configuration:\n{}", CONFIG_TOML.blue());

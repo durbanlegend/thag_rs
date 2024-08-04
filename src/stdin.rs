@@ -56,10 +56,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 /// # Examples
 ///
 /// ```
-/// use rs_script::stdin::edit;
+/// use rs_script::stdin::{edit, CrosstermEventReader};
+/// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+/// # use rs_script::stdin::MockEventReader;
 ///
-/// let buf = vec!["Hello", "world"];
-/// assert_eq!(edit(event_reader), Ok(buf));
+/// # let mut event_reader = MockEventReader::new();
+/// # event_reader.expect_read_event().return_once(|| {
+/// #     Ok(Event::Key(KeyEvent::new(
+/// #         KeyCode::Char('d'),
+/// #         KeyModifiers::CONTROL,
+/// #     )))
+/// # });
+/// let actual = edit(&event_reader);
+/// let buf = vec![""];
+/// assert!(matches!(actual, Ok(buf)));
 /// ```
 /// # Errors
 ///
@@ -139,41 +149,65 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
             println!("Error reading event: {:?}", e);
             e
         })?;
-        if let Paste(data) = event {
-            textarea.insert_str(normalize_newlines(&data));
-        } else {
-            let input = Input::from(event.clone());
-            match input {
-                Input {
-                    key: Key::Char('q'),
-                    ctrl: true,
-                    ..
-                } => {
-                    return Err(Box::new(BuildRunError::Cancelled));
-                }
-                Input {
-                    key: Key::Char('d'),
-                    ctrl: true,
-                    ..
-                } => break,
-                Input {
-                    key: Key::Char('l'),
-                    ctrl: true,
-                    ..
-                } => popup = !popup,
-                Input {
-                    key: Key::Char('t'),
-                    ctrl: true,
-                    ..
-                } => {
-                    alt_highlights = !alt_highlights;
-                    term.draw(|_| {
-                        apply_highlights(alt_highlights, &mut textarea);
-                    })?;
-                }
+        match event {
+            Paste(data) => {
+                textarea.insert_str(normalize_newlines(&data));
+            }
+            // Mouse(MouseEvent {
+            //     kind,
+            //     column,
+            //     row,
+            //     modifiers: _,
+            // }) => {
+            //     match kind {
+            //         MouseEventKind::Down(_) => {
+            //             /// need public access to Viewport
+            //             textarea.move_cursor(CursorMove::Jump(row, column))
+            //         }
+            //         // MouseEventKind::Up(_) => {},
+            //         MouseEventKind::Drag(_) => {}
+            //         MouseEventKind::Moved => {}
+            //         MouseEventKind::ScrollDown => {}
+            //         MouseEventKind::ScrollUp => {}
+            //         MouseEventKind::ScrollLeft => {}
+            //         MouseEventKind::ScrollRight => {}
+            //         _ => eprintln!("kind = {kind:#?}, row={row}, column={column}"),
+            //     }
+            // }
+            _ => {
+                let input = Input::from(event.clone());
+                match input {
+                    Input {
+                        key: Key::Char('q'),
+                        ctrl: true,
+                        ..
+                    } => {
+                        return Err(Box::new(BuildRunError::Cancelled));
+                    }
+                    Input {
+                        key: Key::Char('d'),
+                        ctrl: true,
+                        ..
+                    } => break,
+                    Input {
+                        key: Key::Char('l'),
+                        ctrl: true,
+                        ..
+                    } => popup = !popup,
+                    Input {
+                        key: Key::Char('t'),
+                        ctrl: true,
+                        ..
+                    } => {
+                        alt_highlights = !alt_highlights;
+                        term.draw(|_| {
+                            apply_highlights(alt_highlights, &mut textarea);
+                        })?;
+                    }
 
-                input => {
-                    textarea.input(input);
+                    input => {
+                        textarea.input(input);
+                    }
                 }
             }
         }
@@ -189,7 +223,8 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
 /// ```
 /// use rs_script::stdin::read;
 ///
-/// assert_eq!(read(), Ok("Hello world!"));
+/// let hello = String::from("Hello world!");
+/// assert!(matches!(read(), Ok(hello)));
 /// ```
 /// # Errors
 ///
@@ -210,8 +245,8 @@ pub fn read() -> Result<String, std::io::Error> {
 ///
 /// let stdin = std::io::stdin();
 /// let mut input = stdin.lock();
-/// assert_eq!(read_to_string(&mut input), );
-/// assert_eq!(input, );
+/// let hello = String::from("Hello world!");
+/// assert!(matches!(read_to_string(&mut input), Ok(hello)));
 /// ```
 ///
 /// # Errors

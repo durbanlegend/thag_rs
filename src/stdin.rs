@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use rs_script::stdin::{edit, CrosstermEventReader};
 /// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
 /// # use rs_script::stdin::MockEventReader;

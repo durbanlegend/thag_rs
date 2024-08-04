@@ -1,4 +1,4 @@
-/// GPT-generated fizz-buzz example.
+//: GPT-generated fizz-buzz example.
 //# Purpose: Demo running random snippets in rs-script, also AI and the art of delegation ;)
 for i in 1..=100 {
     match (i % 3 == 0, i % 5 == 0) {

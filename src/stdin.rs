@@ -4,8 +4,11 @@ use crate::log;
 use crate::logging::Verbosity;
 
 use crossterm::event::{
-    DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+    DisableMouseCapture,
+    EnableBracketedPaste,
+    EnableMouseCapture,
     Event::{self, Paste},
+    // KeyCode, KeyEvent, KeyModifiers,
 };
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -20,9 +23,74 @@ use ratatui::widgets::block::Title;
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
+use serde_json;
 use std::error::Error;
 use std::io::{self, BufRead, IsTerminal};
+use std::{collections::VecDeque, fs, path::PathBuf};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
+
+#[derive(Serialize, Deserialize)]
+struct History {
+    entries: VecDeque<String>,
+    current_index: Option<usize>,
+}
+
+impl History {
+    fn new() -> Self {
+        History {
+            entries: VecDeque::with_capacity(20),
+            current_index: None,
+        }
+    }
+
+    fn load_from_file(path: &PathBuf) -> Self {
+        if let Ok(data) = fs::read_to_string(path) {
+            serde_json::from_str(&data).unwrap_or_else(|_| History::new())
+        } else {
+            History::new()
+        }
+    }
+
+    fn save_to_file(&self, path: &PathBuf) {
+        if let Ok(data) = serde_json::to_string(self) {
+            let _ = fs::write(path, data);
+        }
+    }
+
+    fn add_entry(&mut self, entry: String) {
+        // Remove prior duplicates
+        self.entries.retain(|f| f != &entry);
+        self.entries.push_back(entry);
+    }
+
+    fn get_previous(&mut self) -> Option<&String> {
+        if self.entries.is_empty() {
+            return None;
+        }
+
+        self.current_index = match self.current_index {
+            Some(index) => Some((index + 1) % self.entries.len()),
+            _ => Some(0),
+        };
+
+        self.current_index.and_then(|index| self.entries.get(index))
+    }
+
+    fn get_next(&mut self) -> Option<&String> {
+        if self.entries.is_empty() {
+            return None;
+        }
+
+        self.current_index = match self.current_index {
+            Some(index) if index > 0 => Some(index - 1),
+            Some(index) if index == 0 => Some(index + self.entries.len() - 1),
+            _ => None,
+        };
+
+        self.current_index.and_then(|index| self.entries.get(index))
+    }
+}
 
 #[automock]
 pub trait EventReader {
@@ -77,11 +145,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 /// # Panics
 ///
 /// If the terminal cannot be reset.
+
+#[allow(clippy::too_many_lines)]
 pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Error>> {
     let input = std::io::stdin();
+    let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
+    let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
+
+    let mut history = History::load_from_file(&history_path);
+
+    let mut saved_to_history = false;
 
     let initial_content = if input.is_terminal() {
-        // No input available
         String::new()
     } else {
         read()?
@@ -149,65 +224,67 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
             println!("Error reading event: {:?}", e);
             e
         })?;
-        match event {
-            Paste(data) => {
-                textarea.insert_str(normalize_newlines(&data));
-            }
-            // Mouse(MouseEvent {
-            //     kind,
-            //     column,
-            //     row,
-            //     modifiers: _,
-            // }) => {
-            //     match kind {
-            //         MouseEventKind::Down(_) => {
-            //             /// need public access to Viewport
-            //             textarea.move_cursor(CursorMove::Jump(row, column))
-            //         }
-            //         // MouseEventKind::Up(_) => {},
-            //         MouseEventKind::Drag(_) => {}
-            //         MouseEventKind::Moved => {}
-            //         MouseEventKind::ScrollDown => {}
-            //         MouseEventKind::ScrollUp => {}
-            //         MouseEventKind::ScrollLeft => {}
-            //         MouseEventKind::ScrollRight => {}
-            //         _ => eprintln!("kind = {kind:#?}, row={row}, column={column}"),
-            //     }
-            // }
-            _ => {
-                let input = Input::from(event.clone());
-                match input {
-                    Input {
-                        key: Key::Char('q'),
-                        ctrl: true,
-                        ..
-                    } => {
-                        return Err(Box::new(BuildRunError::Cancelled));
+        if let Paste(data) = event {
+            textarea.insert_str(normalize_newlines(&data));
+        } else {
+            let input = Input::from(event.clone());
+            match input {
+                Input {
+                    key: Key::Char('q'),
+                    ctrl: true,
+                    ..
+                } => {
+                    return Err(Box::new(BuildRunError::Cancelled));
+                }
+                Input {
+                    key: Key::Char('d'),
+                    ctrl: true,
+                    ..
+                } => {
+                    history.add_entry(textarea.lines().to_vec().join("\n"));
+                    history.entries.rotate_right(1);
+                    history.current_index = Some(0);
+                    history.save_to_file(&history_path);
+                    break;
+                }
+                Input {
+                    key: Key::Char('l'),
+                    ctrl: true,
+                    ..
+                } => popup = !popup,
+                Input {
+                    key: Key::Char('t'),
+                    ctrl: true,
+                    ..
+                } => {
+                    alt_highlights = !alt_highlights;
+                    term.draw(|_| {
+                        apply_highlights(alt_highlights, &mut textarea);
+                    })?;
+                }
+                Input { key: Key::F(1), .. } => {
+                    let mut found = false;
+                    if let Some(entry) = history.get_previous() {
+                        found = true;
+                        textarea.select_all();
+                        textarea.cut();
+                        textarea.insert_str(entry);
                     }
-                    Input {
-                        key: Key::Char('d'),
-                        ctrl: true,
-                        ..
-                    } => break,
-                    Input {
-                        key: Key::Char('l'),
-                        ctrl: true,
-                        ..
-                    } => popup = !popup,
-                    Input {
-                        key: Key::Char('t'),
-                        ctrl: true,
-                        ..
-                    } => {
-                        alt_highlights = !alt_highlights;
-                        term.draw(|_| {
-                            apply_highlights(alt_highlights, &mut textarea);
-                        })?;
+                    if found && !saved_to_history && !textarea.yank_text().is_empty() {
+                        history
+                            .add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
+                        saved_to_history = true;
                     }
-
-                    input => {
-                        textarea.input(input);
+                }
+                Input { key: Key::F(2), .. } => {
+                    if let Some(entry) = history.get_next() {
+                        textarea.select_all();
+                        textarea.cut();
+                        textarea.insert_str(entry);
                     }
+                }
+                input => {
+                    textarea.input(input);
                 }
             }
         }

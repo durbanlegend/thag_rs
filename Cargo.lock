@@ -1267,6 +1267,7 @@ dependencies = [
  "scopeguard",
  "sequential-test",
  "serde",
+ "serde_json",
  "strum",
  "supports-color",
  "syn 2.0.72",
@@ -1355,6 +1356,18 @@ dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
  "syn 2.0.72",
+]
+
+[[package]]
+name = "serde_json"
+version = "1.0.122"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "784b6203951c57ff748476b126ccb5e8e2959a5c19e5c617ab1956be3dbc68da"
+dependencies = [
+ "itoa",
+ "memchr",
+ "ryu",
+ "serde",
 ]
 
 [[package]]

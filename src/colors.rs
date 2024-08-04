@@ -54,6 +54,7 @@ lazy_static! {
     };
 }
 
+#[must_use]
 pub fn get_term_theme() -> &'static TermTheme {
     &TERM_THEME
 }

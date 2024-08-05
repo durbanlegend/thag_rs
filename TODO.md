@@ -19,8 +19,8 @@
 - [ ]  Conversions both ways for rust-script and maybe runner?
 - [ ]  Find a punchy name - rs-thagomizer or thagomizer-rs (thag)| rs-bolt | rs-volt | rs-ares
 - [ ]  Mocks not working in Windows?
+- [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Readme: Document that stdin where temp saves file to. Maybe change code to print this location out when it fails.
-
 - [ ]  Demo scripts not commented:
 demo/termbg.rs
 demo/termbg_bug.rs

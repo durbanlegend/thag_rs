@@ -210,7 +210,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
 
     loop {
         term.draw(|f| {
-            f.render_widget(textarea.widget(), f.size());
+            f.render_widget(&textarea, f.size());
             if popup {
                 show_popup(f);
             }

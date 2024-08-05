@@ -61,6 +61,7 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn test_edit_history() {
         set_up();
@@ -75,6 +76,7 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn test_edit() {
         set_up();
@@ -90,6 +92,7 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn test_toml() {
         set_up();

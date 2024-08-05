@@ -1,13 +1,13 @@
 name: CI
 
-on: [push, pull_request]
+on: [push,]
 
 jobs:
   build:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 

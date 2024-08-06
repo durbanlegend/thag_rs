@@ -802,9 +802,11 @@ use std::io::{{self, BufRead}};
 fn main() -> Result<(), Box<dyn std::error::Error>> {{
     {}
     // Read from stdin and execute main loop for each line
+    let mut i = 0;
     let stdin = io::stdin();
     for line in stdin.lock().lines() {{
         let line = line?;
+        i += 1;
         {filter}
     }}
     {}

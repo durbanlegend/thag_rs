@@ -802,6 +802,7 @@ use std::io::{{self, BufRead}};
 fn main() -> Result<(), Box<dyn std::error::Error>> {{
     {}
     // Read from stdin and execute main loop for each line
+    #[allow(unused_variables)]
     let mut i = 0;
     let stdin = io::stdin();
     for line in stdin.lock().lines() {{

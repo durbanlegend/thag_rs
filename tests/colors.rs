@@ -25,13 +25,13 @@ mod tests {
         }
     }
 
-    #[ignore]
+    // #[ignore]
     #[test]
     // supports_color::on(Stream) causes rightward drift
     fn test_color_support() {
         set_up();
         let color_level = supports_color::on(Stream::Stdout);
-
+        rs_script::clear_screen();
         let color_support = match color_level {
             Some(color_level) => {
                 if color_level.has_16m || color_level.has_256 {
@@ -151,6 +151,7 @@ mod tests {
         let output = format!("\u{1b}[1m{content}\u{1b}[0m");
         let style = nu_ansi_term::Style::new().bold();
         nu_color_println!(style, "{}", content);
+        rs_script::clear_screen();
 
         // Ensure the macro output is correctly styled
         assert_eq!(output, format!("{}", style.paint(content)));

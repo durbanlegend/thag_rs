@@ -53,7 +53,7 @@ mod tests {
     #[test]
     fn test_delete() {
         set_up();
-        let mut options = Cli::parse_from(["test"]);
+        let mut options = Cli::parse_from(["test", "repl"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
@@ -65,7 +65,7 @@ mod tests {
     #[test]
     fn test_edit_history() {
         set_up();
-        let mut options = Cli::parse_from(["test"]);
+        let mut options = Cli::parse_from(["test", "repl"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = rs_script::BuildState {
             cargo_home: PathBuf::from("tests/assets/"),
@@ -80,7 +80,7 @@ mod tests {
     #[test]
     fn test_edit() {
         set_up();
-        let mut options = Cli::parse_from(["test"]);
+        let mut options = Cli::parse_from(["test", "repl"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState {
             source_path: PathBuf::from("tests/assets/hello_t.rs"),
@@ -96,7 +96,7 @@ mod tests {
     #[test]
     fn test_toml() {
         set_up();
-        let mut options = Cli::parse_from(["test"]);
+        let mut options = Cli::parse_from(["test", "repl"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState {
             cargo_toml_path: PathBuf::from("tests/assets/Cargo_t.toml"),
@@ -110,9 +110,12 @@ mod tests {
     #[test]
     fn test_run_expr() {
         set_up();
-        let mut options = Cli::parse_from(["test"]);
+        let mut options = Cli::parse_from(["test", "--repl"]);
         let proc_flags = ProcFlags::default();
-        let mut build_state = BuildState::default();
+        let mut build_state = BuildState {
+            must_gen: true,
+            ..Default::default()
+        };
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
         let result = run_expr(&ArgMatches::default(), &mut context);
         assert!(result.is_ok());
@@ -121,7 +124,7 @@ mod tests {
     #[test]
     fn test_list() {
         set_up();
-        let mut options = Cli::parse_from(["test"]);
+        let mut options = Cli::parse_from(["test", "repl"]);
         let proc_flags = ProcFlags::default();
         let mut build_state = BuildState::default();
         let mut context = create_mock_context(&mut options, &proc_flags, &mut build_state);
@@ -132,7 +135,7 @@ mod tests {
     // #[test]
     // fn test_run_repl() {
     //     set_up();
-    //     let mut options = Cli::parse_from(["test"]);
+    //     let mut options = Cli::parse_from(["test", "repl"]);
     //     let proc_flags = ProcFlags::default();
     //     let mut build_state = BuildState::default();
     //     let start = Instant::now();

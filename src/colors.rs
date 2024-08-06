@@ -21,7 +21,10 @@ lazy_static! {
         debug_log!(
             "About to call supports_color"
         );
-        match supports_color::on(Stream::Stdout) {
+        let color_support  = supports_color::on(Stream::Stdout);
+        shared::clear_screen();
+
+        match color_support {
         Some(color_level) => {
             if color_level.has_16m || color_level.has_256 {
                 Some(ColorSupport::Xterm256)

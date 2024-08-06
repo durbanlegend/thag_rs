@@ -69,6 +69,7 @@ use rs_script::log;
 use rs_script::logging::Verbosity;
 
 fn main() {{
+    log!(Verbosity::Quieter, "Quieter message");
     log!(Verbosity::Quiet, "Quiet message");
     log!(Verbosity::Normal, "Normal message");
     log!(Verbosity::Verbose, "Verbose message");
@@ -81,7 +82,7 @@ fn main() {{
 
         assert_eq!(
             String::from_utf8_lossy(&output.stdout),
-            "Quiet message\nNormal message\n"
+            "Quieter message\nQuiet message\nNormal message\n"
         );
     }
 
@@ -121,6 +122,7 @@ use rs_script::log;
 use rs_script::logging::Verbosity;
 
 fn main() {{
+    log!(Verbosity::Quieter, "Macro quieter message");
     log!(Verbosity::Quiet, "Macro quiet message");
     log!(Verbosity::Normal, "Macro normal message");
     log!(Verbosity::Verbose, "Macro verbose message");
@@ -133,7 +135,7 @@ fn main() {{
 
         assert_eq!(
             String::from_utf8_lossy(&output.stdout),
-            "Macro quiet message\nMacro normal message\n"
+            "Macro quieter message\nMacro quiet message\nMacro normal message\n"
         );
     }
 
@@ -142,7 +144,7 @@ fn main() {{
             .arg("run")
             .arg("--features=debug-logs")
             .arg("--")
-            .arg("-q")
+            .arg("-qq")
             .arg("-s")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

@@ -246,8 +246,7 @@ name = "bitflags_t"
         assert!(target_path.exists());
 
         // Finally, run it
-        let mut cli = create_sample_cli(Some(format!("tests/assets/{source_name}")));
-        cli.run = true;
+        let cli = create_sample_cli(Some(format!("tests/assets/{source_name}")));
         let build_state = create_sample_build_state(source_name);
         dbg!(&build_state);
         let proc_flags = ProcFlags::empty();

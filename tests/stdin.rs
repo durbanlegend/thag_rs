@@ -125,7 +125,7 @@ fn test_read_stdin() {
         .arg("run")
         .arg("--features=debug-logs")
         .arg("--")
-        .arg("-q")
+        .arg("-qq")
         .arg("-s")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

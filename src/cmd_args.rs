@@ -9,7 +9,7 @@ use std::error::Error;
 
 /// rs-script script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Clone, Parser, Debug)]
+#[derive(Clone, Default, Parser, Debug)]
 #[command(name = "rs_script", version, about, long_about)]
 #[command(group(
             ArgGroup::new("commands")

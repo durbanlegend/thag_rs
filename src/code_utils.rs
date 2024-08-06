@@ -240,7 +240,15 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 
     let mut dependencies = Vec::new();
 
-    let built_in_crates = ["std", "core", "alloc", "collections", "fmt", "crate"];
+    let built_in_crates = [
+        "std",
+        "core",
+        "alloc",
+        "collections",
+        "fmt",
+        "crate",
+        "super",
+    ];
 
     for cap in USE_REGEX.captures_iter(code) {
         let crate_name = cap[1].to_string();
@@ -288,7 +296,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 /// Filter out crates that don't need to be added as dependencies: fallback version using regex on source code.
 fn filter_deps_source(
     crate_name: &str,
-    built_in_crates: &[&str; 6],
+    built_in_crates: &[&str; 7],
     use_renames: &[String],
     modules: &[String],
     dependencies: &mut Vec<String>,

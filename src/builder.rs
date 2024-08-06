@@ -32,6 +32,7 @@ use lazy_static::lazy_static;
 #[cfg(debug_assertions)]
 use log::{log_enabled, Level::Debug};
 use regex::Regex;
+use std::any::Any;
 use std::{
     error::Error,
     fs::{self, OpenOptions},
@@ -81,7 +82,8 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
-    let is_dynamic = is_expr | is_stdin | is_edit;
+    let is_loop = proc_flags.contains(ProcFlags::LOOP);
+    let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
     if is_dynamic {
         let _ = create_temp_source_file();
     }
@@ -118,6 +120,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
             .canonicalize()
             .expect("Problem resolving script dir path")
     };
+
     let script_state: ScriptState = if let Some(ref script) = args.script {
         let script = script.to_owned();
         ScriptState::Named {
@@ -143,8 +146,6 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     let mut build_state = BuildState::pre_configure(&proc_flags, &args, &script_state)?;
     if is_repl {
         debug_log!("build_state.source_path={:?}", build_state.source_path);
-    }
-    if is_repl {
         run_repl(&mut args, &proc_flags, &mut build_state, start)
     } else if is_dynamic {
         let rs_source = if is_expr {
@@ -154,6 +155,51 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
                 )));
             };
             rs_source
+        } else if is_loop {
+            let Some(filter) = args.filter.clone() else {
+                return Err(Box::new(BuildRunError::Command(
+                    "Missing expression for --loop option".to_string(),
+                )));
+            };
+            let loop_begin = &args.begin;
+            let loop_end = &args.end;
+            let display = {
+                let expr_any: &dyn Any = &filter;
+                dbg!(expr_any);
+                !expr_any.is::<()>()
+            };
+            let filter = if display {
+                format!(r#"println!("{{}}", {});"#, filter)
+            } else {
+                filter
+            };
+            dbg!(&filter);
+
+            format!(
+                r#"use std::io::{{self, BufRead}};
+fn main() -> Result<(), Box<dyn std::error::Error>> {{
+    {}
+    // Read from stdin and execute main loop for each line
+    let stdin = io::stdin();
+    for line in stdin.lock().lines() {{
+        let line = line?;
+        {filter}
+    }}
+    {}
+    Ok(())
+}}
+"#,
+                if let Some(prelude) = loop_begin {
+                    prelude
+                } else {
+                    ""
+                },
+                if let Some(postlude) = loop_end {
+                    postlude
+                } else {
+                    ""
+                }
+            )
         } else if is_edit {
             debug_log!("About to call stdin::edit()");
             let event_reader = CrosstermEventReader;
@@ -167,6 +213,9 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
             debug_log!("str={str}");
             str
         };
+
+        debug_log!("rs_source={rs_source}");
+
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
             .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
         build_state.rs_manifest = Some(rs_manifest);

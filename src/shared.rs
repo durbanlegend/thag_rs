@@ -88,7 +88,8 @@ impl BuildState {
         let is_expr = options.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
         let is_edit = proc_flags.contains(ProcFlags::EDIT);
-        let is_dynamic = is_expr | is_stdin | is_edit;
+        let is_loop = proc_flags.contains(ProcFlags::LOOP);
+        let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
         let build_exe = proc_flags.contains(ProcFlags::EXECUTABLE);
         let maybe_script = script_state.get_script();
         let Some(script) = maybe_script.clone() else {
@@ -211,8 +212,9 @@ impl BuildState {
                 || modified_since_compiled(&build_state).is_some();
             let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
             let build_requested = proc_flags.contains(ProcFlags::BUILD);
-            let must_gen = force || is_repl || (gen_requested && stale_executable);
-            let must_build = force || is_repl || build_exe || (build_requested && stale_executable);
+            let must_gen = force || is_repl || is_loop || (gen_requested && stale_executable);
+            let must_build =
+                force || is_repl || is_loop || build_exe || (build_requested && stale_executable);
             (must_gen, must_build)
         };
 

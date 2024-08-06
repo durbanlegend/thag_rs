@@ -281,7 +281,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
 
     debug_log!("{msg}");
     if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        log!(Verbosity::Quiet, "{msg}");
+        log!(Verbosity::Quieter, "{msg}");
     }
 }
 

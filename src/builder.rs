@@ -1,7 +1,7 @@
 use crate::code_utils::{
-    self, create_next_repl_file, create_temp_source_file, extract_ast, extract_manifest,
-    process_expr, read_file_contents, remove_inner_attributes, rustfmt, strip_curly_braces,
-    wrap_snippet, write_source,
+    self, build_loop, create_next_repl_file, create_temp_source_file, extract_ast,
+    extract_manifest, process_expr, read_file_contents, remove_inner_attributes, rustfmt,
+    strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::colors::{nu_resolve_style, MessageLevel};
 use crate::errors::BuildRunError;
@@ -32,7 +32,6 @@ use lazy_static::lazy_static;
 #[cfg(debug_assertions)]
 use log::{log_enabled, Level::Debug};
 use regex::Regex;
-use std::any::Any;
 use std::{
     error::Error,
     fs::{self, OpenOptions},
@@ -161,45 +160,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
                     "Missing expression for --loop option".to_string(),
                 )));
             };
-            let loop_begin = &args.begin;
-            let loop_end = &args.end;
-            let display = {
-                let expr_any: &dyn Any = &filter;
-                dbg!(expr_any);
-                !expr_any.is::<()>()
-            };
-            let filter = if display {
-                format!(r#"println!("{{}}", {});"#, filter)
-            } else {
-                filter
-            };
-            dbg!(&filter);
-
-            format!(
-                r#"use std::io::{{self, BufRead}};
-fn main() -> Result<(), Box<dyn std::error::Error>> {{
-    {}
-    // Read from stdin and execute main loop for each line
-    let stdin = io::stdin();
-    for line in stdin.lock().lines() {{
-        let line = line?;
-        {filter}
-    }}
-    {}
-    Ok(())
-}}
-"#,
-                if let Some(prelude) = loop_begin {
-                    prelude
-                } else {
-                    ""
-                },
-                if let Some(postlude) = loop_end {
-                    postlude
-                } else {
-                    ""
-                }
-            )
+            build_loop(&args, filter)
         } else if is_edit {
             debug_log!("About to call stdin::edit()");
             let event_reader = CrosstermEventReader;
@@ -527,6 +488,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     let start_build = Instant::now();
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let quiet = proc_flags.contains(ProcFlags::QUIET);
+    let quieter = proc_flags.contains(ProcFlags::QUIETER);
     let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
 
     debug_log!("BBBBBBBB In build");
@@ -543,7 +505,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     // if verbose {
     //     args.push("--verbose");
     // };
-    if quiet {
+    if quiet || quieter {
         args.push("--quiet");
     }
     if executable {
@@ -559,7 +521,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
         nu_resolve_style(MessageLevel::Emphasis).paint(&build_state.source_name)
     );
 
-    if quiet {
+    if quieter {
         // Pipe output: TODO: debug
         build_command
             .stdout(std::process::Stdio::piped())
@@ -610,18 +572,18 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
 
             let dash_line = "-".repeat(FLOWER_BOX_LEN);
             log!(
-                Verbosity::Normal,
+                Verbosity::Quiet,
                 "{}",
                 nu_ansi_term::Color::Yellow.paint(&dash_line)
             );
 
             log!(
-                Verbosity::Normal,
+                Verbosity::Quieter,
                 "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
             );
 
             log!(
-                Verbosity::Normal,
+                Verbosity::Quiet,
                 "{}",
                 nu_ansi_term::Color::Yellow.paint(&dash_line)
             );
@@ -661,7 +623,7 @@ pub fn run(
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
     log!(
-        Verbosity::Normal,
+        Verbosity::Quiet,
         "{}",
         nu_ansi_term::Color::Yellow.paint(&dash_line)
     );
@@ -669,7 +631,7 @@ pub fn run(
     let _exit_status = run_command.spawn()?.wait()?;
 
     log!(
-        Verbosity::Normal,
+        Verbosity::Quiet,
         "{}",
         nu_ansi_term::Color::Yellow.paint(&dash_line)
     );

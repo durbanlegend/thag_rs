@@ -12,6 +12,7 @@ use cargo_toml::Manifest;
 use lazy_static::lazy_static;
 use quote::quote;
 use regex::Regex;
+use std::any::Any;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
@@ -582,7 +583,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
         Some(Ast::File(tree))
     } else {
         log!(
-            Verbosity::Quiet,
+            Verbosity::Quieter,
             "{}",
             nu_resolve_style(crate::MessageLevel::Warning)
                 .paint("Error parsing syntax tree. Using regex to help you debug the script.")
@@ -636,7 +637,7 @@ pub fn prep_snippet(rs_source: &str) -> (String, String) {
 pub fn wrap_snippet(inner_attribs: &str, body: &str) -> String {
     debug_log!("In wrap_snippet");
 
-    eprintln!("In wrap_snippet: inner_attribs={inner_attribs:#?}");
+    debug_log!("In wrap_snippet: inner_attribs={inner_attribs:#?}");
     let wrapped_snippet = format!(
         r"#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
 {inner_attribs}
@@ -770,6 +771,60 @@ pub fn create_temp_source_file() -> PathBuf {
     path
 }
 
+#[must_use]
+pub fn build_loop(args: &Cli, filter: String) -> String {
+    let loop_toml = &args.cargo;
+    let loop_begin = &args.begin;
+    let loop_end = &args.end;
+    let display = {
+        let expr_any: &dyn Any = &filter;
+        // dbg!(expr_any);
+        !expr_any.is::<()>()
+    };
+    let filter = if display {
+        format!(r#"println!("{{}}", {});"#, filter)
+    } else {
+        filter
+    };
+    // dbg!(&filter);
+
+    format!(
+        r#"{}
+use std::io::{{self, BufRead}};
+fn main() -> Result<(), Box<dyn std::error::Error>> {{
+    {}
+    // Read from stdin and execute main loop for each line
+    let stdin = io::stdin();
+    for line in stdin.lock().lines() {{
+        let line = line?;
+        {filter}
+    }}
+    {}
+    Ok(())
+}}
+"#,
+        if let Some(ref toml) = &loop_toml {
+            format!(
+                r#"/*[toml]
+{toml}
+*/"#
+            )
+        } else {
+            String::new()
+        },
+        if let Some(prelude) = loop_begin {
+            prelude
+        } else {
+            ""
+        },
+        if let Some(postlude) = loop_end {
+            postlude
+        } else {
+            ""
+        }
+    )
+}
+
 /// Clean up temporary files.
 /// # Errors
 /// Will return `Err` if there is any error deleting the file.
@@ -794,7 +849,7 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
             let file_type = entry.file_type()?;
             let file_name = entry.file_name();
             log!(
-                Verbosity::Quiet,
+                Verbosity::Quieter,
                 "  {file_name:?} ({})",
                 if file_type.is_dir() {
                     "Directory"
@@ -844,7 +899,7 @@ pub fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
         }
     } else {
         log!(
-            Verbosity::Quiet,
+            Verbosity::Quieter,
             "`rustfmt` not found. Please install it to use this script."
         );
     }

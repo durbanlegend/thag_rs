@@ -140,7 +140,7 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>>
         // log!(Verbosity::Normal, "Dependency version: {}", version);
         (String::from(name), String::from(version))
     } else {
-        log!(Verbosity::Quiet, "Not a valid Cargo dependency format.");
+        log!(Verbosity::Quieter, "Not a valid Cargo dependency format.");
         return Err(Box::new(BuildRunError::Command(
             "Not a valid Cargo dependency format".to_string(),
         )));
@@ -366,7 +366,7 @@ fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, 
             //     "Cargo search couldn't find crate [{dep_name}]"
             // ))));
             log!(
-                Verbosity::Quiet,
+                Verbosity::Quieter,
                 "Cargo search couldn't find crate [{dep_name}]"
             );
             continue;

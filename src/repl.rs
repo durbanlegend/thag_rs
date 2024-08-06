@@ -674,7 +674,7 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> Str
             );
             m.insert(
                 "InsertNewline".to_string(),
-                "Inserts the system specific new line character".to_string(),
+                "Insert the system specific new line character".to_string(),
             );
             m.insert(
                 "ReplaceChars".to_string(),
@@ -967,10 +967,10 @@ pub fn delete(_args: &ArgMatches, context: &mut Context) -> Result<Option<String
     if clean_up.is_ok()
         || (!&build_state.source_path.exists() && !&build_state.target_dir_path.exists())
     {
-        log!(Verbosity::Quiet, "Deleted");
+        log!(Verbosity::Quieter, "Deleted");
     } else {
         log!(
-            Verbosity::Quiet,
+            Verbosity::Quieter,
             "Failed to delete all files - enter l(ist) to list remaining files"
         );
     }
@@ -1035,7 +1035,7 @@ pub fn run_expr(
     debug_log!("In run_expr: build_state={build_state:#?}");
     let result = gen_build_run(options, proc_flags, build_state, None::<Ast>, &start);
     if result.is_err() {
-        log!(Verbosity::Quiet, "{result:?}");
+        log!(Verbosity::Quieter, "{result:?}");
     }
     Ok(Some(String::from("End of run")))
 }
@@ -1079,7 +1079,7 @@ pub fn list(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>,
     let build_state = &context.build_state;
     let source_path = &build_state.source_path;
     if source_path.exists() {
-        log!(Verbosity::Quiet, "File: {:?}", &source_path);
+        log!(Verbosity::Quieter, "File: {:?}", &source_path);
     }
 
     // Display directory contents
@@ -1087,7 +1087,7 @@ pub fn list(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>,
 
     // Check if neither file nor directory exist
     if !&source_path.exists() && !&build_state.target_dir_path.exists() {
-        log!(Verbosity::Quiet, "No temporary files found");
+        log!(Verbosity::Quieter, "No temporary files found");
     }
     Ok(Some(String::from("End of list")))
 }

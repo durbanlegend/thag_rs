@@ -1,6 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Verbosity {
+    Quieter,
     Quiet,
     Normal,
     Verbose,

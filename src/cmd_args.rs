@@ -49,6 +49,9 @@ pub struct Cli {
     /// Filter expression to be run in a loop against every line in stdin, with optional pre- and post-loop logic.
     #[arg(short = 'l', long = "loop", conflicts_with_all(["generate", "build"]))]
     pub filter: Option<String>,
+    /// Optional manifesto info in format ready for Cargo.toml
+    #[arg(short, long, requires = "filter", value_name = "CARGO-TOML")]
+    pub cargo: Option<String>,
     /// Optional awk-style pre-loop logic for --loop, somewhat like awk BEGIN
     #[arg(short = 'B', long, requires = "filter", value_name = "PRE-LOOP")]
     pub begin: Option<String>,
@@ -64,9 +67,9 @@ pub struct Cli {
     /// Set verbose mode
     #[arg(short, long)]
     pub verbose: bool,
-    /// Suppress unnecessary output
-    #[arg(short, long, conflicts_with("verbose"))]
-    pub quiet: bool,
+    /// Suppress unnecessary output, double up to show only errors
+    #[arg(short, long, action = clap::ArgAction::Count, conflicts_with("verbose"))]
+    pub quiet: u8,
     /// Display timings
     #[arg(short, long)]
     pub timings: bool,
@@ -120,12 +123,11 @@ bitflags! {
         const STDIN = 512;
         const EDIT = 1024;
         const QUIET = 2048;
-        const MULTI = 4096;
-        const NORUN = 8192;
-        const EXECUTABLE = 16384;
-        const LOOP = 32768;
-        const BEGIN = 65536;
-        const END = 131_072;
+        const QUIETER = 4096;
+        const MULTI = 8192;
+        const NORUN = 16384;
+        const EXECUTABLE = 32768;
+        const LOOP = 65536;
     }
 }
 
@@ -161,8 +163,6 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();
-    let is_begin = args.begin.is_some();
-    let is_end = args.end.is_some();
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
         // TODO: out? once clap default_value_ifs is working
@@ -175,7 +175,8 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
             args.build | args.force | is_expr | args.executable,
         );
         proc_flags.set(ProcFlags::FORCE, args.force);
-        proc_flags.set(ProcFlags::QUIET, args.quiet);
+        proc_flags.set(ProcFlags::QUIET, args.quiet == 1);
+        proc_flags.set(ProcFlags::QUIETER, args.quiet >= 2);
         proc_flags.set(ProcFlags::MULTI, args.multimain);
         proc_flags.set(ProcFlags::VERBOSE, args.verbose);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
@@ -190,14 +191,17 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::STDIN, args.stdin);
         proc_flags.set(ProcFlags::EDIT, args.edit);
         proc_flags.set(ProcFlags::LOOP, is_loop);
-        proc_flags.set(ProcFlags::BEGIN, is_begin);
-        proc_flags.set(ProcFlags::END, is_end);
+        // proc_flags.set(ProcFlags::TOML, is_toml);
+        // proc_flags.set(ProcFlags::BEGIN, is_begin);
+        // proc_flags.set(ProcFlags::END, is_end);
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
 
         let verbosity = if args.verbose {
             Verbosity::Verbose
-        } else if args.quiet {
+        } else if args.quiet == 1 {
             Verbosity::Quiet
+        } else if args.quiet == 2 {
+            Verbosity::Quieter
         } else {
             Verbosity::Normal
         };

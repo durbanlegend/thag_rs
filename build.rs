@@ -96,6 +96,19 @@ fn build_{test_name}() {{
                 }
             )
             .expect("Failed to write test function");
+
+            // Get the file stem
+            let file_stem = file_name.trim_end_matches(".rs");
+
+            // Construct the destination directory path
+            let mut dest_dir = env::temp_dir();
+            dest_dir.push("rs-script");
+            dest_dir.push(file_stem);
+
+            // Delete the destination directory after building the file
+            if let Err(e) = fs::remove_dir_all(&dest_dir) {
+                eprintln!("Failed to remove directory {}: {}", dest_dir.display(), e);
+            }
         }
     }
 }

@@ -1,5 +1,0 @@
-- name: Cleanup old artifacts
-  run: |
-    gh run list --limit 100 --json databaseId,status,conclusion \
-    | jq -r '.[] | select(.conclusion == "success") | .databaseId' \
-    | xargs -I{} gh run delete {}

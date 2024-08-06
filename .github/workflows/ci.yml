@@ -40,4 +40,4 @@ jobs:
       run: cargo build
 
     - name: Run tests
-      run: cargo test --features=debug-logs --no-fail-fast --no-capture --test-threads 3
+      run: cargo test --verbose --no-fail-fast

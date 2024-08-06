@@ -39,7 +39,8 @@ jobs:
     - name: Check disk usage
       run: |
         df -h
-        du -sh /*
+        du -sh /* 2>/dev/null || true
+        du -sh /usr/* 2>/dev/null || true
 
     - name: Build
       run: cargo build

@@ -21,6 +21,7 @@
 - [ ]  Mocks not working in Windows? repl::test_edit, test_edit_history and test_toml all bring up VS Code and get stuck.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Readme: Document that stdin where temp saves file to. Maybe change code to print this location out when it fails.
+- [ ]  ./delete-logs.sh durbanlegend/rs-script ci.yml
 - [ ]  Demo scripts not commented:
 demo/termbg.rs
 demo/termbg_bug.rs

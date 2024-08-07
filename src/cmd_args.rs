@@ -61,7 +61,8 @@ pub struct Cli {
     /// Allow multiple main methods
     #[arg(short, long)]
     pub multimain: bool,
-    /// Cargo check script if compiled file is stale
+    /// Cargo check script if compiled file is stale. Less thorough than build.
+    /// Used by by integration test suite for mass sanity check.
     #[arg(short, long, conflicts_with_all(["build", "executable"]))]
     pub check: bool,
     /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`.

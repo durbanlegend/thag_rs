@@ -20,7 +20,7 @@
 - [ ]  Find a punchy name - rs-thagomizer or thagomizer-rs (thag)| rs-bolt | rs-volt | rs-ares
 - [ ]  Mocks not working in Windows? repl::test_edit, test_edit_history and test_toml all bring up VS Code and get stuck.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
-- [ ]  Readme: Document that stdin where temp saves file to. Maybe change code to print this location out when it fails.
+- [ ]  Readme: Document where stdin saves temp file to. Maybe change code to print this location out when it fails. - Superseded by history feature.
 - [ ]  ./delete-logs.sh durbanlegend/rs-script ci.yml
 - [ ]
 #[cfg(target_os = "windows")]

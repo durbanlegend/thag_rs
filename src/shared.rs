@@ -212,12 +212,13 @@ impl BuildState {
                 || !target_path_clone.exists()
                 || modified_since_compiled(&build_state).is_some();
             let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
-            let build_requested =
-                proc_flags.contains(ProcFlags::BUILD) || proc_flags.contains(ProcFlags::CHECK);
-            debug_log!(
-                "proc_flags={proc_flags:?}, build_requested={build_requested}, target_path={:?}, try_exists: {:?}, exists: {}, proc_flags.contains(ProcFlags::BUILD)?: {}, proc_flags.contains(ProcFlags::CHECK)? :{}, proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK)?: {}",
-                target_path_clone, &target_path_clone.try_exists(), &target_path_clone.exists(), proc_flags.contains(ProcFlags::BUILD), proc_flags.contains(ProcFlags::CHECK), proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK)
-            );
+            let build_requested = proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK);
+            //            debug_log!(
+            //                "proc_flags={proc_flags:?}, build_requested={build_requested}, target_path={:?},
+            // try_exists: {:?}, exists: {}, proc_flags.contains(ProcFlags::BUILD)?: {},
+            // proc_flags.contains(ProcFlags::CHECK)? :{}, proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK)?: {}",
+            //                target_path_clone, &target_path_clone.try_exists(), &target_path_clone.exists(), proc_flags.contains(ProcFlags::BUILD), proc_flags.contains(ProcFlags::CHECK), proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK)
+            //            );
             let must_gen =
                 force || is_repl || is_loop || is_check || (gen_requested && stale_executable);
             let must_build = force

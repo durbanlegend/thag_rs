@@ -230,7 +230,7 @@ name = "bitflags_t"
         let target_path = if cfg!(windows) {
             target_dir_path.join(source_stem.to_string() + ".exe")
         } else {
-            target_dir_path.join(&source_stem)
+            target_dir_path.join(source_stem)
         };
 
         // Remove executable if it exists, and check

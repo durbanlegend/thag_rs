@@ -90,6 +90,7 @@ impl BuildState {
         let is_edit = proc_flags.contains(ProcFlags::EDIT);
         let is_loop = proc_flags.contains(ProcFlags::LOOP);
         let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
+        let is_check = proc_flags.contains(ProcFlags::CHECK);
         let build_exe = proc_flags.contains(ProcFlags::EXECUTABLE);
         let maybe_script = script_state.get_script();
         let Some(script) = maybe_script.clone() else {
@@ -211,10 +212,20 @@ impl BuildState {
                 || !target_path_clone.exists()
                 || modified_since_compiled(&build_state).is_some();
             let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
-            let build_requested = proc_flags.contains(ProcFlags::BUILD);
-            let must_gen = force || is_repl || is_loop || (gen_requested && stale_executable);
-            let must_build =
-                force || is_repl || is_loop || build_exe || (build_requested && stale_executable);
+            let build_requested =
+                proc_flags.contains(ProcFlags::BUILD) || proc_flags.contains(ProcFlags::CHECK);
+            debug_log!(
+                "proc_flags={proc_flags:?}, build_requested={build_requested}, target_path={:?}, try_exists: {:?}, exists: {}, proc_flags.contains(ProcFlags::BUILD)?: {}, proc_flags.contains(ProcFlags::CHECK)? :{}, proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK)?: {}",
+                target_path_clone, &target_path_clone.try_exists(), &target_path_clone.exists(), proc_flags.contains(ProcFlags::BUILD), proc_flags.contains(ProcFlags::CHECK), proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK)
+            );
+            let must_gen =
+                force || is_repl || is_loop || is_check || (gen_requested && stale_executable);
+            let must_build = force
+                || is_repl
+                || is_loop
+                || build_exe
+                || is_check
+                || (build_requested && stale_executable);
             (must_gen, must_build)
         };
 

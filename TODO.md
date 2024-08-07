@@ -22,6 +22,13 @@
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Readme: Document that stdin where temp saves file to. Maybe change code to print this location out when it fails.
 - [ ]  ./delete-logs.sh durbanlegend/rs-script ci.yml
+- [ ]
+#[cfg(target_os = "windows")]
+let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into());
+
+#[cfg(not(target_os = "windows"))]
+let temp_dir = std::env::var("TMPDIR").unwrap_or_else(|_| "/tmp".into());
+
 - [ ]  Demo scripts not commented:
 demo/termbg.rs
 demo/termbg_bug.rs

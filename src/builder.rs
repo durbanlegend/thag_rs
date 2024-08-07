@@ -275,7 +275,7 @@ pub fn gen_build_run(
             extract_manifest(&rs_source, start_parsing_rs)
         }?;
         // debug_log!("rs_manifest={rs_manifest:#?}");
-        // debug_log!("rs_source={rs_source}");
+        debug_log!("rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
             build_state.rs_manifest = Some(rs_manifest);
         }
@@ -490,6 +490,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     let quiet = proc_flags.contains(ProcFlags::QUIET);
     let quieter = proc_flags.contains(ProcFlags::QUIETER);
     let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
+    let check = proc_flags.contains(ProcFlags::CHECK);
 
     debug_log!("BBBBBBBB In build");
 
@@ -499,9 +500,10 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
         ));
     };
 
-    let mut build_command = Command::new("cargo");
+    let mut cargo_command = Command::new("cargo");
+    let cargo_subcommand = if check { "check" } else { "build" };
     // Rustc writes to std
-    let mut args = vec!["build", "--manifest-path", &cargo_toml_path_str];
+    let mut args = vec![cargo_subcommand, "--manifest-path", &cargo_toml_path_str];
     // if verbose {
     //     args.push("--verbose");
     // };
@@ -512,29 +514,30 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
         args.push("--release");
     }
 
-    build_command.args(&args); // .current_dir(build_dir);
+    cargo_command.args(&args); // .current_dir(build_dir);
 
     // Show sign of life in case build takes a while
     log!(
         Verbosity::Normal,
-        "Building {} ...",
+        "{} {} ...",
+        if check { "Checking" } else { "Building" },
         nu_resolve_style(MessageLevel::Emphasis).paint(&build_state.source_name)
     );
 
     if quieter {
         // Pipe output: TODO: debug
-        build_command
+        cargo_command
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped());
     } else {
         // Redirect stdout and stderr to inherit from the parent process (terminal)
-        build_command
+        cargo_command
             .stdout(std::process::Stdio::inherit())
             .stderr(std::process::Stdio::inherit());
     }
 
     // Execute the command and handle the result
-    let output = build_command
+    let output = cargo_command
         .spawn()
         .expect("failed to spawn cargo build process");
 

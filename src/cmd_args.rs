@@ -50,7 +50,7 @@ pub struct Cli {
     #[arg(short = 'l', long = "loop", conflicts_with_all(["generate", "build"]))]
     pub filter: Option<String>,
     /// Optional manifesto info in format ready for Cargo.toml
-    #[arg(short, long, requires = "filter", value_name = "CARGO-TOML")]
+    #[arg(short = 'C', long, requires = "filter", value_name = "CARGO-TOML")]
     pub cargo: Option<String>,
     /// Optional awk-style pre-loop logic for --loop, somewhat like awk BEGIN
     #[arg(short = 'B', long, requires = "filter", value_name = "PRE-LOOP")]
@@ -61,6 +61,9 @@ pub struct Cli {
     /// Allow multiple main methods
     #[arg(short, long)]
     pub multimain: bool,
+    /// Cargo check script if compiled file is stale
+    #[arg(short, long, conflicts_with_all(["build", "executable"]))]
+    pub check: bool,
     /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`.
     #[arg(short = 'x', long)]
     pub executable: bool,
@@ -128,6 +131,7 @@ bitflags! {
         const NORUN = 16384;
         const EXECUTABLE = 32768;
         const LOOP = 65536;
+        const CHECK = 131_072;
     }
 }
 
@@ -168,21 +172,28 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         // TODO: out? once clap default_value_ifs is working
         proc_flags.set(
             ProcFlags::GENERATE,
-            args.generate | args.force | is_expr | args.executable,
+            args.generate | args.force | is_expr | args.executable | args.check,
         );
         proc_flags.set(
             ProcFlags::BUILD,
             args.build | args.force | is_expr | args.executable,
         );
+        proc_flags.set(ProcFlags::CHECK, args.check);
         proc_flags.set(ProcFlags::FORCE, args.force);
         proc_flags.set(ProcFlags::QUIET, args.quiet == 1);
         proc_flags.set(ProcFlags::QUIETER, args.quiet >= 2);
         proc_flags.set(ProcFlags::MULTI, args.multimain);
         proc_flags.set(ProcFlags::VERBOSE, args.verbose);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
-        proc_flags.set(ProcFlags::NORUN, args.norun | args.executable);
-        proc_flags.set(ProcFlags::RUN, !args.norun && !args.executable);
-        proc_flags.set(ProcFlags::ALL, !args.norun && !args.executable);
+        proc_flags.set(ProcFlags::NORUN, args.norun | args.check | args.executable);
+        proc_flags.set(
+            ProcFlags::RUN,
+            !args.norun && !args.build && !args.executable && !args.check,
+        );
+        proc_flags.set(
+            ProcFlags::ALL,
+            !args.norun && !args.build && !args.executable && !args.check,
+        );
         if proc_flags.contains(ProcFlags::ALL) {
             proc_flags.set(ProcFlags::GENERATE, true);
             proc_flags.set(ProcFlags::BUILD, true);

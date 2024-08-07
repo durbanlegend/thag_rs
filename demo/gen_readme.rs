@@ -78,7 +78,8 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
         .file_name()
         .expect("Error accessing filename")
         .to_string_lossy()
-        .to_string();
+        .to_string()
+        .replace('_', "\\_");
 
     eprintln!(
         "{script} maybe_syntax_tree.is_some(): {}",
@@ -125,10 +126,9 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path) {
 ```
 rs_script <path to script>
 ```
-*E.g.*:
-```
-rs_script demo/hello.rs
-```
+##### E.g.
+
+    rs_script demo/hello.rs
 
 ### Full syntax:
 
@@ -136,49 +136,50 @@ rs_script demo/hello.rs
 rs_script [RS-SCRIPT OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
 ```
 
-*E.g.*:
-```
-rs_script -t demo/clap_tut_builder_01.rs -- -ddd -c /dummy/dummy.rs test -l
-```
-```
-Completed generation in 0.143s
-Building clap_tut_builder_01.rs ...
-    Compiling clap_tut_builder_01 v0.0.1 (/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/rs-script/clap_tut_builder_01)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.69s
-Completed build in 0.766s
-----------------------------------------------------------------------
-Value for config: /dummy/dummy.rs
-Don't be crazy
-Printing testing lists...
-----------------------------------------------------------------------
-Completed run in 1.182s
-rs-script completed processing script clap_tut_builder_01.rs in 2.130s
-```
+##### E.g.
+
+    rs_script -t demo/clap_tut_builder_01.rs -- -ddd -c /dummy/dummy.rs test -l
+
+    Completed generation in 0.143s
+    Building clap_tut_builder_01.rs ...
+        Compiling clap_tut_builder_01 v0.0.1 (/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/rs-script/clap_tut_builder_01)
+        Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.69s
+    Completed build in 0.766s
+    ----------------------------------------------------------------------
+    Value for config: /dummy/dummy.rs
+    Don't be crazy
+    Printing testing lists...
+    ----------------------------------------------------------------------
+    Completed run in 1.182s
+    rs-script completed processing script clap_tut_builder_01.rs in 2.130s
 
 **Alternatively**, you can run:
-```
-rs_script [OPTIONS] --edit|-d [-- [SCRIPT_OPTIONS] script_args]
-```
-then paste the script into the editor and press Ctrl-D to execute it. The source is available at the script's link.
 
-*E.g.*:
-```
-rs_script -d -- 100
-```
-then paste the source of `demo/fib_classic_ibig.rs` or similar into the editor and press Ctrl-D to execute it.
+    rs_script [OPTIONS] --edit|-d [-- [SCRIPT_OPTIONS] script_args]
+
+then paste the script into the editor that appears, and press Ctrl-d to execute it. The source is available at the link in the entry for the script below..
+
+##### E.g.
+
+    rs_script -d -- 100
+
+then paste the source of `demo/fib_classic_ibig.rs` or similar into the editor and press Ctrl-d to execute it.
 
 
 This will compute and print F(100) in the Fibonacci sequence.
 
 Since `rs-script` is parsing with `clap` you can have other options alongside or combined with the -d in any order, e.g.:
-```
-rs_script --quiet -d -t -- 100
-OR
-rs_script -qdt -- 100
-... etc.
-```
 
-Remember to use `--` to separate options and arguments that are intended for `rs_script` from those intended for the target scriot.
+        rs_script --quiet -d -t -- 100
+
+OR
+
+        rs_script -qdt -- 100
+
+... etc.
+
+
+Remember to use `--` to separate options and arguments that are intended for `rs_script` from those intended for the target script.
 
 ***
 ## Detailed script listing

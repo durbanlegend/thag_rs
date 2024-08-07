@@ -22,3 +22,4 @@ demo/README.md
 demo/repl_test_bad.rs
 src/stdin copy.rs
 numbers.txt
+rs_stdin_history.json

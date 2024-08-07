@@ -21,7 +21,6 @@
 - [ ]  Mocks not working in Windows? repl::test_edit, test_edit_history and test_toml all bring up VS Code and get stuck.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Readme: Document where stdin saves temp file to. Maybe change code to print this location out when it fails. - Superseded by history feature.
-- [ ]  ./delete-logs.sh durbanlegend/rs-script ci.yml
 - [ ]
 #[cfg(target_os = "windows")]
 let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into());
@@ -30,9 +29,6 @@ let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into
 let temp_dir = std::env::var("TMPDIR").unwrap_or_else(|_| "/tmp".into());
 
 - [ ]  Demo scripts not commented:
-demo/termbg.rs
-demo/termbg_bug.rs
-demo/terminal_light.rs
 demo/time_snippet.rs
 demo/tui_scrollview.rs
 demo/type_info.rs

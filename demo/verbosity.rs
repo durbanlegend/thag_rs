@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-rs-script = { path = "/Users/donf/projects/rs-script" }
+rs-script = { git = "https://github.com/durbanlegend/rs-script" }
 
 ratatui = "=0.26.3"
 # [patch.crates-io]

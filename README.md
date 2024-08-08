@@ -17,12 +17,19 @@
 ```bash
 rs_script --expr '"Hello world!"'                                   # Short form: -e
 ```
+![Repl](hellow.png)
+
+Invoking quiet mode `(--quiet (-q)` suppresses feedback.
+
+By default, `rs-script` and Cargo will feed back to you:
+
 ```bash
 rs_script -e ' {
 use jiff::{Zoned, Unit};
 Zoned::now().round(Unit::Second)?
 }'                                                                  # Long form: --expr
 ```
+![Repl](jiffw.png)
 
 ### * With a script:
 
@@ -30,12 +37,12 @@ Zoned::now().round(Unit::Second)?
 rs_script demo/iced_tour.rs
 ```
 
-### * As a REPL:
+### * As a REPL (Read-Evaluate-Print Loop):
 
 ```bash
 rs_script --repl                                                    # Short form: -l
 ```
-![Repl](repl.png)
+![Repl](replw.png)
 
 The REPL has file-backed history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, Nano etc. if its `reedline` editor falls short for a particular task.
 
@@ -50,9 +57,9 @@ echo "(1..=10).product::<u32>()" | rs_script --stdin                # Short form
 ```bash
 rs_script --edit                                                    # Short form: -d
 ```
-![Editor](edit1.png)
+![Editor](edit1w.png)
 
-![Edit run](edit2.png)
+![Edit run](edit2w.png)
 
 ### * With standard input into the TUI editor:
 
@@ -66,24 +73,51 @@ This allows you to edit or append to the stdin input before submitting it to `rs
 In order for the Shift-Up and Shift-Down key combinations to work on Apple Terminal, you may need to add the following to your Apple Terminal Settings | Profiles | Keyboard settings:
 Shift-Up: `\033;[2A` and `Shift-Down`: \033;[2B. Use the Esc key to generate \033. This is not necessary on Iterm2 or WezTerm.
 
+### * As a filter on standard input (loop mode):
+
+At a minimum, loops though `stdin` running the `--loop` expression against every line. The line number and content are made available to the expression as `i` and `line` respectively.
+
+```bash
+cat demo/hello.rs | rs_script --loop 'format!("{i}.\t{line}")'      # Short form: -l
+```
+![Loop](loopw.png)
+
+Note the use of the `--quiet (-q)` option above to suppress messages from Cargo build.
+For a true filter that you can pipe to another process, you can use `-qq` (or `--quiet --quiet`) to suppress all non-error output.
+
+Alternatively:
+
+```bash
+rs_script -l 'format!("{i}.\t{line}")' < demo/hello.rs              # Long form: --loop
+```
+Loop mode also accepts the following optional arguments supplying surrounding code, along the lines of AWK:
+
+```bash
+--cargo (-C)    for specifying dependencies etc. in Cargo.toml format.
+--begin (-B)    for specifying any imports, functions/closures, declarations etc. to be run before the loop.
+--end   (-E)    for specifying any summary or final logic to run after the loop.
+```
+
 ### * Getting started:
 
 You have the choice of installing `rs-script` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run`.
 
-* Installing gives you speed out of the box and a simpler command-line interface without Cargo. You can download the demo library separately.
-  * Cloning gives you easy access to the demo scripts library and the opportunity to make local changes or a fork. You can also use the flag `--features=debug-logs` with the environment variable `RUST_LOG=rs_script=debug` to get debug logging.
+* Installing gives you speed out of the box and a simpler command-line interface without invoking Cargo yourself. You can download the demo library separately.
+* Cloning gives you easy access to the demo scripts library and the opportunity to make local changes or a fork. You can also use the flag `--features=debug-logs` with the environment variable `RUST_LOG=rs_script=debug` to get debug logging.
 
 ## Overview
 
-`rs-script` leverages the reliability and comprehensiveness of Cargo, `syn`, `quote` and `cargo_toml` to build and compile a reliable Rust program from the input code, rather than relying on superficial source code analysis using regular expressions and string parsing.
+`rs-script` uses Cargo, `syn`, `quote` and `cargo_toml` to analyse and wrap well-formed snippets and expressions into working programs. Well-formed input programs are identified as such and passed unchanged to `cargo build`.
 
-`rs-script` uses the `syn` crate to parse valid code into an abstract syntax tree (AST). It then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code and to determine well-formedness by counting the genuine main methods (as opposed to comments or program code embedded in string literals). These are then filtered to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
+`rs-script` uses the `syn` crate to parse valid code into an abstract syntax tree (AST). This sidesteps any confusion due to source code embedded in comments or string literals, which are the bugbear of more superficial source code analysis techniques such as regular expressions and string parsing. `rs-script` then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code so as to generate a `Cargo.toml`. These are then filtered to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
 
-(If your code does not successfully parse into an AST because of a coding error, `rs-script` will fall back to using source code analysis to prepare your code for the Rust compiler, which can then show you error messages to help you find the issues.)
+Well-formedness is determined by counting any occurrences of a `main` function in the AST. The lack of a `fn main` signifies a snippet or expression, whereas more than one `fn main` may be valid but must be actively flagged as such by the user with the `--multimain (-m)` option.
+
+If your code does not successfully parse into an AST because of a coding error, `rs-script` will fall back to using source code analysis to prepare your code for the Rust compiler, which can then show you error messages to help you find the issues.
 
 You may provide optional metadata in a toml block as described below. `rs-script` uses the `cargo_toml` crate to parse any metadata into a manifest struct, merges in any dependencies inferred from the AST, and then uses the `toml` crate to write out the dedicated Cargo.toml file that Cargo needs to build the script. Finally, in the case of snippets and expressions, it uses the `quote` crate to embed the logic in a well-formed program template, which it then invokes Cargo to build.
 
-All of this is quite fast: the real bottleneck will be the familiar Cargo build process downloading and compiling your dependencies on the initial build. It will be displayed as it happens in the normal way so that there are no mystery delays. If you rerun the compiled script it should be lightning fast.
+All of this is quite fast: the real bottleneck will be the familiar Cargo build process downloading and compiling your dependencies on the initial build. Cargo build output will be displayed in real time so that there are no mystery delays. If you rerun the compiled script it should be lightning fast.
 
 In this way `rs-script` attempts to handle any valid (or invalid) Rust script, be it a program, snippet or expression. It will try to generate a dedicated Cargo.toml for your script from `use` statements in your code, although for speed and precision I recommend that you embed your own in a toml block:
 ```/*
@@ -92,7 +126,7 @@ In this way `rs-script` attempts to handle any valid (or invalid) Rust script, b
 ...
 */
 ```
-at the start of the script, as you will see done in most of the demos. To assist with this, after each successful Cargo search `rs-script `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` you can add other Cargo-compliant dependencies sections if you choose to do so.
+at the start of the script, as you will see done in most of the demos. To assist with this, after each successful Cargo search `rs-script `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` there is no specific limit on what valid Cargo code you can place in the toml block.
 
 `rs-script` aims to be as comprehensive as possible without sacrificing speed and simplicity. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
 

@@ -219,7 +219,7 @@ The REPL feature is not suited to scripts of over about 1K characters, due to th
 
 ## Features
 
-_Rust is primarily an expression language.... In contrast, statements serve mostly to contain and explicitly sequence expression evaluation._\
+_Rust is primarily an expression language.... In contrast, statements serve mostly to contain and explicitly sequence expression evaluation._
 _— The Rust Reference_
 
 * Runs serious Rust scripts (not just the "Hello, world!" variety) with no need to create a project.

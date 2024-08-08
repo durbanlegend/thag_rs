@@ -74,17 +74,18 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
         "Snippet"
     };
 
-    let script = file_path
-        .file_name()
-        .expect("Error accessing filename")
-        .to_string_lossy()
-        .to_string()
-        .replace('_', "\\_");
-
-    eprintln!(
-        "{script} maybe_syntax_tree.is_some(): {}",
-        maybe_syntax_tree.is_some()
+    let script = format!(
+        "{}",
+        file_path
+            .file_name()
+            .expect("Error accessing filename")
+            .to_string_lossy()
     );
+
+    // eprintln!(
+    //     "{script} maybe_syntax_tree.is_some(): {}",
+    //     maybe_syntax_tree.is_some()
+    // );
 
     let purpose = metadata.get("purpose");
     let description = metadata.get("description");

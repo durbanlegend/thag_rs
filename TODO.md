@@ -17,7 +17,7 @@
 - [ ]  Add FAQ
 - [ ]  Punchy intro in readme, per Zands.
 - [ ]  Conversions both ways for rust-script and maybe runner?
-- [ ]  Find a punchy name - rs-thagomizer or thagomizer-rs (thag)| rs-bolt | rs-volt | rs-ares
+- [ ]  Find a punchy name - rs-thagomizer or thagomizer-rs (thag-rs, rs-thag)| rs-bolt | rs-volt | rs-ares
 - [ ]  Mocks not working in Windows? repl::test_edit, test_edit_history and test_toml all bring up VS Code and get stuck.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Readme: Document where stdin saves temp file to. Maybe change code to print this location out when it fails. - Superseded by history feature.
@@ -37,7 +37,6 @@ demo/verbosity.rs
 demo/windows_cr_issue.rs
 
 ## Low Priority
-- [ ]  Consider history support for stdin.
 - [ ]  Paste event in Windows slow or not happening?
 - [ ]  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 - [ ]  Decide if it's worth passing the wrapped syntax tree to gen_build_run from eval just to avoid re-parsing it for that specific use case.

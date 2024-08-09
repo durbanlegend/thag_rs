@@ -45,7 +45,7 @@ if displayable(&expr) {
 let expr = Some("Hello world!");
 eprintln!("displayable(expr)={}", displayable(&expr));
 if displayable(&expr) {
-    let disp = expr.as_ref::<&dyn Display>();
+    let disp = expr.as_ref();
     println!("{disp}");
 }
 if debuggable(&expr) {

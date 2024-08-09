@@ -359,21 +359,8 @@ pub fn gen_build_run(
                     .to_string()
                 } else {
                     debug_log!("Option A: returns a substantive type");
-                    quote::quote!(#[macro_export]
-                    macro_rules! println_trimmed {
-                        ($val:expr) => {{
-                                // Format the value using Debug
-                                let formatted = format!("{:?}", $val);
-
-                                // Trim surrounding double quotes if present
-                                let trimmed = formatted.trim_matches('"');
-
-                                // Print the result using Display
-                                println!("{}", trimmed);
-                            }};
-                        }
-
-                        println_trimmed!(#syntax_tree_ref);
+                    quote::quote!(
+                    println!("{}", format!("{:#?}", #syntax_tree_ref).trim_matches('"'));
                     )
                     .to_string()
                 }

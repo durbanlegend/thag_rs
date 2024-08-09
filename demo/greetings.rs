@@ -1,8 +1,7 @@
 #![feature(format_args_nl)]
 //: Demo how snippet processing's use of debug print ({:?}) leaves final string in double quotes.
 //: If this is not happening it means I fixed it.
-let who = "world";
-println!("Hello {who}!");
-println!("format_args_nl: {}", format_args_nl!("Greeted {who}"));
-format!("Greeted {who}")
+let user = std::env::var("USER")?;
+println!("Hello {user}!");
+format!("Greeted {user}")
 // 42

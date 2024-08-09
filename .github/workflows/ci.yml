@@ -20,13 +20,6 @@ jobs:
       with:
         toolchain: stable
 
-    - name: Clear /tmp directories
-    - run: |
-    -   rm -rf /tmp/rs-script
-    -   # df -h
-    -   # du -sh /* 2>/dev/null || true
-    -   # du -sh /usr/* 2>/dev/null || true
-
     - name: Cache Cargo registry
       uses: actions/cache@v4
       with:

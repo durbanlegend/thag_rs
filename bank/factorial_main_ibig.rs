@@ -19,10 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     println!("Enter a positive integer to calculate its factorial");
-    println!(
-        "Type lines of text at the prompt and hit Ctrl-{} on a new line when done",
-        if cfg!(windows) { 'Z' } else { 'D' }
-    );
+    println!("Type lines of text at the prompt and hit Ctrl-D on a new line when done");
 
     let mut buffer = String::new();
     io::stdin().lock().read_to_string(&mut buffer)?;

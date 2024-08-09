@@ -158,13 +158,13 @@ rs_script [RS-SCRIPT OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args
 
     rs_script [OPTIONS] --edit|-d [-- [SCRIPT_OPTIONS] script_args]
 
-then paste the script into the editor that appears, and press Ctrl-d to execute it. The source is available at the link in the entry for the script below..
+then paste the script into the editor that appears, and press Ctrl-D to execute it. The source is available at the link in the entry for the script below..
 
 ##### E.g.
 
     rs_script -d -- 100
 
-then paste the source of `demo/fib_classic_ibig.rs` or similar into the editor and press Ctrl-d to execute it.
+then paste the source of `demo/fib_classic_ibig.rs` or similar into the editor and press Ctrl-D to execute it.
 
 
 This will compute and print F(100) in the Fibonacci sequence.

@@ -14,7 +14,7 @@ fn fib(n: usize) -> usize {
 }
 
 println!("Enter a number from 0 to 92");
-println!("Type lines of text at the prompt and hit Ctrl-{} on a new line when done", if cfg!(windows) {'Z'} else {'D'});
+println!("Type lines of text at the prompt and hit Ctrl-D on a new line when done");
 
 let mut buffer = String::new();
 io::stdin().lock().read_to_string(&mut buffer)?;

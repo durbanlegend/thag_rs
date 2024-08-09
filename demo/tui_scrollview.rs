@@ -2,21 +2,26 @@
 [dependencies]
 color-eyre = "0.6.3"
 constraint = "0.1.0"
-keycode = "0.4.0"
+# keycode = "0.4.0"
 lipsum = "0.9.1"
-ratatui = "0.27.0"
-tui-scrollview = "0.3.4"
+ratatui = { version = "0.28", default-features = false, features = ["crossterm"] }
+tui-scrollview = "0.3.13"
 */
 
 use std::io::{self, stdout};
 
 use color_eyre::{config::HookBuilder, Result};
-use ratatui::crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind},
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    ExecutableCommand,
+use ratatui::{
+    crossterm::{
+        event::{self, Event, KeyCode, KeyEventKind},
+        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+        ExecutableCommand,
+    },
+    layout::Size,
+    prelude::*,
+    style::palette::tailwind,
+    widgets::*,
 };
-use ratatui::{layout::Size, prelude::*, style::palette::tailwind, widgets::*};
 use tui_scrollview::{ScrollView, ScrollViewState};
 
 fn main() -> Result<()> {
@@ -67,7 +72,7 @@ impl App {
     }
 
     fn draw(&mut self, terminal: &mut Terminal<impl Backend>) -> io::Result<()> {
-        terminal.draw(|frame| frame.render_widget(self, frame.size()))?;
+        terminal.draw(|frame| frame.render_widget(self, frame.area()))?;
         Ok(())
     }
 
@@ -94,14 +99,20 @@ impl App {
     }
 }
 
+const SCROLLVIEW_HEIGHT: u16 = 100;
+
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let layout = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]);
         let [title, body] = layout.areas(area);
 
         self.title().render(title, buf);
-
-        let mut scroll_view = ScrollView::new(Size::new(area.width, 100));
+        let width = if buf.area.height < SCROLLVIEW_HEIGHT {
+            buf.area.width - 1
+        } else {
+            buf.area.width
+        };
+        let mut scroll_view = ScrollView::new(Size::new(width, SCROLLVIEW_HEIGHT));
         self.render_widgets_into_scrollview(scroll_view.buf_mut());
         scroll_view.render(body, buf, &mut self.scroll_view_state)
     }
@@ -128,11 +139,7 @@ impl App {
     fn render_widgets_into_scrollview(&self, buf: &mut Buffer) {
         use Constraint::*;
         let area = buf.area;
-        // the scrollview (currently) allocates the full width of the buffer, but overwrites the
-        // last column with a scrollbar. This means that we need to account for this when laying
-        // out the widgets
-        let [numbers, widgets, _scrollbar] =
-            Layout::horizontal([Length(5), Fill(1), Length(1)]).areas(area);
+        let [numbers, widgets] = Layout::horizontal([Length(5), Fill(1)]).areas(area);
         let [bar_charts, text_0, text_1, text_2] =
             Layout::vertical([Length(7), Fill(1), Fill(2), Fill(4)]).areas(widgets);
         let [left_bar, right_bar] = Layout::horizontal([Length(20), Fill(1)]).areas(bar_charts);
@@ -146,9 +153,11 @@ impl App {
     }
 
     fn line_numbers(&self, height: u16) -> impl Widget {
-        let line_numbers = (1..=height)
-            .map(|n| format!("{n:>4} \n"))
-            .collect::<String>();
+        use std::fmt::Write;
+        let line_numbers = (1..=height).fold(String::new(), |mut output, n| {
+            let _ = writeln!(output, "{n:>4} ");
+            output
+        });
         Text::from(line_numbers).dim()
     }
 
@@ -180,7 +189,7 @@ impl App {
     }
 }
 
-const CHART_DATA: [(&'static str, u64, Color); 3] = [
+const CHART_DATA: [(&str, u64, Color); 3] = [
     ("Red", 2, Color::Red),
     ("Green", 7, Color::Green),
     ("Blue", 11, Color::Blue),

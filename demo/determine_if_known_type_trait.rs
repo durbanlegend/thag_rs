@@ -50,6 +50,12 @@ impl Attribute for String {
     }
 }
 
+impl Attribute for &String {
+    fn process(&self) {
+        println!("{:?} is an &String", self);
+    }
+}
+
 impl Attribute for &str {
     fn process(&self) {
         println!("{:?} is an &str", self);
@@ -107,7 +113,8 @@ fn main() {
     attribute!(-127);
     attribute!(5_u32);
     attribute!(6.5);
-    attribute!(String::from("Hello World!"));
+    attribute!(String::from("Hello World!").as_str());
+    attribute!(&String::from("Hello World!"));
     attribute!("Hello World!");
     attribute!(());
     attribute!(Some("Hello World!"));

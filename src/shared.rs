@@ -324,3 +324,18 @@ macro_rules! debug_log {
         }
     };
 }
+
+/// Trim any double quotes off a debug display
+#[macro_export]
+macro_rules! println_trimmed {
+    ($val:expr) => {{
+        // Format the value using Debug
+        let formatted = format!("{:?}", $val);
+
+        // Trim surrounding double quotes if present
+        let trimmed = formatted.trim_matches('"');
+
+        // Print the result using Display
+        println!("{}", trimmed);
+    }};
+}

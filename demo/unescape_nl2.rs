@@ -31,7 +31,7 @@ fn read_stdin() -> Result<String, io::Error> {
 }
 
 fn main() {
-    println!("Type text wall at the prompt and hit Ctrl-D when done");
+    println!("Type text wall at the prompt and hit Ctrl-D on a new line when done");
     let content = read_stdin().expect("Problem reading input");
-    println!("Disentangled:\n{}", disentangle(&content));
+    println!("\n\nDisentangled:\n\n{}", disentangle(&content));
 }

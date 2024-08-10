@@ -36,10 +36,12 @@ fn normalize_newlines(input: &str) -> String {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    println!("Type text wall at the prompt and hit Ctrl-D on a new line when done");
+
     let input = read_stdin()?;
 
     let normalized = normalize_newlines(&input);
-    println!("input={input}");
-    println!("{}", normalized);
+    // println!("input={input}");
+    println!("\n\n{}", normalized);
     Ok(())
 }

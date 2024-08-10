@@ -19,6 +19,7 @@
 - [ ]  Conversions both ways for rust-script and maybe runner?
 - [ ]  Find a punchy name - rs-thagomizer or thagomizer-rs (thag-rs) | rs-doodle | rs-noodle | rs-sketch | sketch-rs | rs-bolt | rs-volt | rs-ares
 - [ ]  Mocks not working in Windows? repl::test_edit, test_edit_history and test_toml all bring up VS Code and get stuck.
+- [ ]  Consider creating useful tools that can be split off into a tools/ directory. Currently only dethagomizer.rs.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Readme: Document where stdin saves temp file to. Maybe change code to print this location out when it fails. - Superseded by history feature.
 - [ ]

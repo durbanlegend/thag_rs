@@ -8,11 +8,12 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::error::Error;
 
-/// Prompt for and read Rust source code from stdin. Significantly modified from original
-/// GPT-generated version.
-/// Caveat: I'm not sure that this is foolproof. Note also that a compiled Rust string
-/// literal represents the newline character differently from one that is input at
-/// runtime.
+/// Unescape \n and \" markers in a string to convert the wall of text to readable lines.
+/// This version using regex may be more reliable than the classic approach using .lines().
+/// However, at time of writing, `regex` is a 248kB crate, which makes the binary of this
+/// module more than 5 time larger than that of `thagomizer`.
+///
+/// Tip: Regex tested using https://rustexp.lpil.uk/.
 //# Purpose: Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
 pub fn read_stdin() -> Result<String, std::io::Error> {
     println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
@@ -42,6 +43,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let normalized = normalize_newlines(&input);
     // println!("input={input}");
-    println!("\n\n{}", normalized);
+    println!("\n\nDethagomized:\n\n{normalized}");
     Ok(())
 }

@@ -14,7 +14,7 @@ use std::error::Error;
 #[command(group(
             ArgGroup::new("commands")
                 .required(true)
-                .args(&["script", "expression", "repl", "filter", "stdin", "edit", "executable"]),
+                .args(&["script", "expression", "repl", "filter", "stdin", "edit"]),
         ))]
 pub struct Cli {
     /// Optional name of a script to run (`stem`.rs)

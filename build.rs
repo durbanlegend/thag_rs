@@ -17,7 +17,7 @@ fn main() {
     eprintln!("OUT_DIR={out_dir}");
     fs::create_dir_all(&out_dir).expect("Failed to create destination directory");
     let dest_path = Path::new(&out_dir).join("generated_tests.rs");
-    let mut file = fs::File::create(&dest_path).expect("Failed to create generated_tests.rs");
+    let mut file = fs::File::create(dest_path).expect("Failed to create generated_tests.rs");
 
     let demo_dir = Path::new("demo");
     assert!(

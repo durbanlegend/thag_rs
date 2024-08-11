@@ -18,10 +18,20 @@ lazy_static! {
             );
             return Some(ColorSupport::Ansi16);
         }
+        if cfg!(windows) { 
+            return match std::env::var("TERM") {
+                Ok(s) => match s.as_str() {
+                    "xterm-256color" | "xterm-direct" | "xterm" =>
+                    Some(ColorSupport::Xterm256),
+                    _ => Some(ColorSupport::Ansi16),
+                },
+                Err(_) => None,
+             };
+            }
         debug_log!(
             "About to call supports_color"
         );
-        let color_support  = supports_color::on(Stream::Stdout);
+        let color_support = supports_color::on(Stream::Stdout);
         shared::clear_screen();
 
         match color_support {
@@ -43,6 +53,8 @@ lazy_static! {
             );
             return TermTheme::Dark;
         }
+        if cfg!(windows) { return TermTheme::Dark; }
+
         debug_log!(
             "About to call termbg"
         );

@@ -3,6 +3,7 @@
 termbg = "0.5.0"
 */
 
+/// This seems to "reliably" swallow the very first character entered in Windows.
 use std::io::{self, Read};
 
 fn main() {
@@ -12,7 +13,7 @@ fn main() {
     let rgb = termbg::rgb(timeout);
     // let theme = termbg::theme(timeout);
 
-    println!("Type in something and see if first character gets swallowed in Windows Terminal");
+    println!("Run with -qq in Windows Terminal to suppress colored lines, type in something and see if first character gets swallowed");
     let mut buffer = String::new();
     io::stdin().lock().read_to_string(&mut buffer).unwrap();
     println!("buffer={buffer:?}");

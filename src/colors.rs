@@ -1,15 +1,14 @@
 use crate::debug_log;
-use crate::log;
-use crate::logging::Verbosity;
-use crate::shared;
+#[cfg(not(windows))]
+use {crate::log, crate::logging::Verbosity, crate::shared};
 
 use lazy_static::lazy_static;
 #[cfg(windows)]
 use std::env;
 use std::{fmt::Display, str::FromStr};
-use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
+use strum::{Display, EnumIter, EnumString};
 #[cfg(not(windows))]
-use {supports_color::Stream, termbg::Theme};
+use {strum::IntoEnumIterator, supports_color::Stream, termbg::Theme};
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
@@ -19,33 +18,28 @@ lazy_static! {
             );
             return Some(ColorSupport::Ansi16);
         }
-        #[cfg(windows)] {
-            return match std::env::var("TERM") {
-                Ok(s) => match s.as_str() {
-                    "xterm-256color" | "xterm-direct" | "xterm" =>
-                    Some(ColorSupport::Xterm256),
-                    _ => Some(ColorSupport::Ansi16),
-                },
-                Err(_) => None,
-             };
-            }
-        debug_log!(
-            "About to call supports_color"
-        );
-        #[cfg(not(windows))] {
-            let color_support = supports_color::on(Stream::Stdout);
-            shared::clear_screen();
 
-            match color_support {
-            Some(color_level) => {
-                if color_level.has_16m || color_level.has_256 {
-                    Some(ColorSupport::Xterm256)
-                } else {
-                    Some(ColorSupport::Ansi16)
-                }
+        let color_support;
+        #[cfg(windows)] {
+            color_support = translate_level(supports_color());
             }
-            None => None,}
+        #[cfg(not(windows))] {
+            debug_log!(
+                "About to call supports_color"
+            );
+            color_support = supports_color::on(Stream::Stdout);
+            shared::clear_screen();
         }
+
+        match color_support {
+        Some(color_level) => {
+            if color_level.has_16m || color_level.has_256 {
+                Some(ColorSupport::Xterm256)
+            } else {
+                Some(ColorSupport::Ansi16)
+            }
+        }
+        None => None,}
     };
 
 
@@ -101,11 +95,7 @@ fn env_force_color() -> usize {
             f => std::cmp::min(f.parse().unwrap_or(1), 3),
         }
     } else if let Ok(cli_clr_force) = env::var("CLICOLOR_FORCE") {
-        if cli_clr_force != "0" {
-            1
-        } else {
-            0
-        }
+        usize::from(cli_clr_force != "0")
     } else {
         0
     }
@@ -161,14 +151,13 @@ fn supports_color() -> usize {
         || env::var("TERM").map(|term| check_256_color(&term)) == Ok(true)
     {
         2
-    } else if env::var("COLORTERM").is_ok()
-        || env::var("TERM").map(|term| check_ansi_color(&term)) == Ok(true)
-        || env::consts::OS == "windows"
-        || env::var("CLICOLOR").map_or(false, |v| v != "0")
-    {
-        1
     } else {
-        0
+        usize::from(
+            env::var("COLORTERM").is_ok()
+                || env::var("TERM").map(|term| check_ansi_color(&term)) == Ok(true)
+                || env::consts::OS == "windows"
+                || env::var("CLICOLOR").map_or(false, |v| v != "0"),
+        )
     }
 }
 
@@ -362,6 +351,7 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
 }
 
 #[allow(dead_code)]
+#[cfg(not(windows))]
 pub fn main() {
     let term = termbg::terminal();
     shared::clear_screen();

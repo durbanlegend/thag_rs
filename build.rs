@@ -38,7 +38,12 @@ fn main() {
 
     let multimain = ["flume_async.rs", "flume_select.rs"];
 
-    let stable_only = ["duration_main.rs", "duration_snippet.rs"];
+    let stable_only = [
+        "duration_main.rs",
+        "duration_snippet.rs",
+        "displayable_nightly.rs",
+        "displayable_nightly1.rs",
+    ];
 
     /*
     let source_stem: &str = source_name

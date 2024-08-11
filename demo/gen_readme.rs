@@ -6,7 +6,9 @@ rs-script = { git = "https://github.com/durbanlegend/rs-script" }
 
 */
 
-/// Collect demo script metadata and generate demo/README.md.
+/// This is the actual script used to collect demo script metadata and generate
+/// demo/README.md.
+///
 /// Strategy and grunt work thanks to ChatGPT.
 //# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
 use lazy_static::lazy_static;
@@ -158,13 +160,13 @@ rs_script [RS-SCRIPT OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args
 
     rs_script [OPTIONS] --edit|-d [-- [SCRIPT_OPTIONS] script_args]
 
-then paste the script into the editor that appears, and press Ctrl-D to execute it. The source is available at the link in the entry for the script below..
+then at the prompt, paste the script into the editor that appears, and press Ctrl-D to execute it. The source is available at the link in the entry for the script below..
 
 ##### E.g.
 
     rs_script -d -- 100
 
-then paste the source of `demo/fib_classic_ibig.rs` or similar into the editor and press Ctrl-D to execute it.
+then at the prompt, paste the source of `demo/fib_classic_ibig.rs` or similar into the editor and press Ctrl-D to execute it.
 
 
 This will compute and print F(100) in the Fibonacci sequence.

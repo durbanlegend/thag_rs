@@ -7,7 +7,10 @@ ibig = "0.3.6"
 /// This approach passes the pair `Fn, Fn+1` `(a, b)` and applies some funky calculations. I'll pay my dues here by doing
 /// the derivation.
 ///
-/// Starting with the usual formulae used by doubling methods. For even indices:
+/// This version uses immutable arguments to the `fib` method.
+///
+/// Starting with the usual formulae used by doubling methods.
+/// For even indices:
 ///
 ///     F2n  = 2Fn.Fn+1 - Fn^2
 ///
@@ -33,11 +36,11 @@ ibig = "0.3.6"
 ///
 ///     F2n+2 = F2m where m = n+1 = Fm(2Fm+1 - Fm)
 ///
-///            = Fn+1(2F(n+2) - Fn+1)
+///           = Fn+1(2F(n+2) - Fn+1)
 ///
-///            = Fn+1(2Fn+1 + 2Fn - Fn+1)            // Since Fn+2 = Fn + Fn+1
+///           = Fn+1(2Fn+1 + 2Fn - Fn+1)            // Since Fn+2 = Fn + Fn+1
 ///
-///            = Fn+1(Fn+1 + 2Fn)                    // i.e. b(b+2a)
+///           = Fn+1(Fn+1 + 2Fn)                    // i.e. b(b+2a)
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.
 use ibig::{ubig, UBig};
 use std::env;

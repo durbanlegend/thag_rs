@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 ///
 /// This is the published example from the `crossbeam-epoch` crate. For a more intuitive
 /// example, you can try the "Canary" example from https://github.com/ericseppanen/epoch_playground.
-/// and the associated blog post https://codeandbitters.com/learning-rust-crossbeam-epoch/".
+/// and the associated blog post https://codeandbitters.com/learning-rust-crossbeam-epoch/.
 /// (Not included here due to implicit copyright).
 ///
 //# Purpose: Demo featured crate.

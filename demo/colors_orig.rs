@@ -25,7 +25,7 @@ use termbg::{Error, Theme};
 /// to their type. I only dropped `owo-colors` because I switched from `rustyline` to
 /// `reedline`, which was already using `nu_ansi_term`.
 ///
-/// Format: `color_println`!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);
+/// Format: `color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! color_println {
     ($style:expr, $($arg:tt)*) => {{

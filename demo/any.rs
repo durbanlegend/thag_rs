@@ -1,8 +1,8 @@
 /// Demo determining at run-time whether an expression returns a unit value
-/// so that it can be handled appropriately. When a code template this is
-/// short and sweet but it has to be included in the templated and thus the
+/// so that it can be handled appropriately. When using a code template this is
+/// short and sweet, but it has to be included in the template and thus the
 /// generated code, whereas using an AST is quite a mission but works with
-/// any arbitrary snippet.
+/// any arbitrary snippet and doesn't pollute the generated source code.
 //# Purpose: Demo Rust's answer to dynamic typing.
 use std::any::Any;
 

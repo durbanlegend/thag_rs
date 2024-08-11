@@ -7,6 +7,8 @@ ibig = "0.3.6"
 /// This approach passes the pair `Fn, Fn+1` `(a, b)` and applies some funky calculations. I'll pay my dues here by doing
 /// the derivation.
 ///
+/// This version uses mutable arguments to the `fib` method.
+///
 /// Starting with the usual formulae used by doubling methods:
 ///     For even indices:
 ///

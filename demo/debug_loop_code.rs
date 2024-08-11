@@ -14,10 +14,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         i += 1;
         println!(
             "{}",
-            if let Some(mat) = re.find(&line) {
-                let num: i32 = mat.as_str().parse().unwrap();
+            if let Some(m) = re.find(&line) {
+                let num: i32 = m.as_str().parse().unwrap();
                 let incremented = num + 10;
-                let new_line = line.replace(mat.as_str(), &incremented.to_string());
+                let new_line = line.replace(m.as_str(), &incremented.to_string());
                 new_line
             } else {
                 line

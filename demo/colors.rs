@@ -10,6 +10,10 @@ strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
 termbg = "0.5.0"
 */
+/// A version of `rs-script`'s `colors` module to style messages according to their type. Like the `stdin`
+/// module, `colors` was originally developed here as a separate script and integrated as a module later.
+///
+/// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 use rs_script::{clear_screen, debug_log, log, logging::Verbosity};
 
 use lazy_static::lazy_static;
@@ -45,14 +49,10 @@ lazy_static! {
 
 pub trait NuColor: Display {
     fn get_color(&self) -> nu_ansi_term::Color;
-    /// Protection in case enum gets out of order, otherwise I think we could cast the variant to a number.
+    // Protection in case enum gets out of order, otherwise I think we could cast the variant to a number.
     fn get_fixed_code(&self) -> u8;
 }
 
-/// A version of `rs-script`'s `colors` module to style messages according to their type. Like the `stdin`
-/// module, `colors` was originally developed here as a separate script and integrated as a module later.
-///
-/// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! nu_color_println {
     ($style:expr, $($arg:tt)*) => {{
@@ -64,7 +64,7 @@ macro_rules! nu_color_println {
 }
 
 #[derive(Clone, EnumString, Display, PartialEq)]
-/// We include `TrueColor` in Xterm256 as we're not interested in more than 256 colours just for messages.
+// We include `TrueColor` in Xterm256 as we're not interested in more than 256 colours just for messages.
 pub enum ColorSupport {
     Xterm256,
     Ansi16,

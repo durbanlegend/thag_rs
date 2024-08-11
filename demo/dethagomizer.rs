@@ -1,4 +1,4 @@
-/// Unescape \n and \ markers in a string to convert the wall of text to readable lines.
+/// Unescape \n and \\" markers in a string to convert the wall of text to readable lines.
 /// This is trickier than it seems because in a compile-time literal, \n compiles to the
 /// true line feed character 10 (x0A), whereas a \n generated or captured as a literal
 /// at run time is encoded as '\', 'n' = 92, 110 = 0x5c6e. Not surprisingly, the two
@@ -26,7 +26,7 @@ pub(crate) fn reassemble<'a>(iter: impl Iterator<Item = &'a str>) -> String {
     })
 }
 
-/// Unescape \n markers in a string to convert the wall of text to readable lines.
+// Unescape \n markers in a string to convert the wall of text to readable lines.
 #[inline]
 pub(crate) fn dethagomize(text_wall: &str) -> String {
     reassemble(text_wall.lines())

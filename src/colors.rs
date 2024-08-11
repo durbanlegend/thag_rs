@@ -4,21 +4,22 @@ use crate::logging::Verbosity;
 use crate::shared;
 
 use lazy_static::lazy_static;
-use ratatui::crossterm::tty::IsTty;
+#[cfg(windows)]
+use std::env;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
-use supports_color::Stream;
-use termbg::Theme;
+#[cfg(not(windows))]
+use {supports_color::Stream, termbg::Theme};
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
-        if std::env::var("TEST_ENV").is_ok() || !std::io::stdout().is_tty() {
+        if std::env::var("TEST_ENV").is_ok() {
             debug_log!(
                 "Avoiding supports_color for testing"
             );
             return Some(ColorSupport::Ansi16);
         }
-        if cfg!(windows) { 
+        #[cfg(windows)] {
             return match std::env::var("TERM") {
                 Ok(s) => match s.as_str() {
                     "xterm-256color" | "xterm-direct" | "xterm" =>
@@ -31,42 +32,172 @@ lazy_static! {
         debug_log!(
             "About to call supports_color"
         );
-        let color_support = supports_color::on(Stream::Stdout);
-        shared::clear_screen();
+        #[cfg(not(windows))] {
+            let color_support = supports_color::on(Stream::Stdout);
+            shared::clear_screen();
 
-        match color_support {
-        Some(color_level) => {
-            if color_level.has_16m || color_level.has_256 {
-                Some(ColorSupport::Xterm256)
-            } else {
-                Some(ColorSupport::Ansi16)
+            match color_support {
+            Some(color_level) => {
+                if color_level.has_16m || color_level.has_256 {
+                    Some(ColorSupport::Xterm256)
+                } else {
+                    Some(ColorSupport::Ansi16)
+                }
             }
+            None => None,}
         }
-        None => None,}
     };
+
 
     #[derive(Debug)]
     pub static ref TERM_THEME: TermTheme = {
-        if std::env::var("TEST_ENV").is_ok() || !std::io::stdout().is_tty() {
+        if std::env::var("TEST_ENV").is_ok() {
             debug_log!(
                 "Avoiding termbg for testing"
             );
             return TermTheme::Dark;
         }
-        if cfg!(windows) { return TermTheme::Dark; }
+        #[cfg(windows)] {
+        TermTheme::Dark }
 
-        debug_log!(
-            "About to call termbg"
-        );
-        let timeout = std::time::Duration::from_millis(100);
-        // debug_log!("Check terminal background color");
-        let theme = termbg::theme(timeout);
-        shared::clear_screen();
-        match theme {
-            Ok(Theme::Light) => TermTheme::Light,
-            Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+        #[cfg(not(windows))] {
+            debug_log!(
+                "About to call termbg"
+            );
+            let timeout = std::time::Duration::from_millis(100);
+            // debug_log!("Check terminal background color");
+            let theme = termbg::theme(timeout);
+            shared::clear_screen();
+            match theme {
+                Ok(Theme::Light) => TermTheme::Light,
+                Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+            }
         }
     };
+}
+
+/**
+Color level support details.
+This type is returned from [on]. See documentation for its fields for more details.
+*/
+#[cfg(windows)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub struct ColorLevel {
+    level: usize,
+    /// Basic ANSI colors are supported.
+    pub has_basic: bool,
+    /// 256-bit colors are supported.
+    pub has_256: bool,
+    /// 16 million (RGB) colors are supported.
+    pub has_16m: bool,
+}
+
+#[cfg(windows)]
+fn env_force_color() -> usize {
+    if let Ok(force) = env::var("FORCE_COLOR") {
+        match force.as_ref() {
+            "true" | "" => 1,
+            "false" => 0,
+            f => std::cmp::min(f.parse().unwrap_or(1), 3),
+        }
+    } else if let Ok(cli_clr_force) = env::var("CLICOLOR_FORCE") {
+        if cli_clr_force != "0" {
+            1
+        } else {
+            0
+        }
+    } else {
+        0
+    }
+}
+
+#[cfg(windows)]
+fn env_no_color() -> bool {
+    match as_str(&env::var("NO_COLOR")) {
+        Ok("0") | Err(_) => false,
+        Ok(_) => true,
+    }
+}
+
+// same as Option::as_deref
+#[cfg(windows)]
+fn as_str<E>(option: &Result<String, E>) -> Result<&str, &E> {
+    match option {
+        Ok(inner) => Ok(inner),
+        Err(e) => Err(e),
+    }
+}
+
+#[cfg(windows)]
+fn translate_level(level: usize) -> Option<ColorLevel> {
+    if level == 0 {
+        None
+    } else {
+        Some(ColorLevel {
+            level,
+            has_basic: true,
+            has_256: level >= 2,
+            has_16m: level >= 3,
+        })
+    }
+}
+
+#[cfg(windows)]
+fn supports_color() -> usize {
+    let force_color = env_force_color();
+    if force_color > 0 {
+        force_color
+    } else if env_no_color()
+        || as_str(&env::var("TERM")) == Ok("dumb")
+        || env::var("IGNORE_IS_TERMINAL").map_or(false, |v| v != "0")
+    {
+        0
+    } else if env::var("COLORTERM").map(|colorterm| check_colorterm_16m(&colorterm)) == Ok(true)
+        || env::var("TERM").map(|term| check_term_16m(&term)) == Ok(true)
+        || as_str(&env::var("TERM_PROGRAM")) == Ok("iTerm.app")
+    {
+        3
+    } else if as_str(&env::var("TERM_PROGRAM")) == Ok("Apple_Terminal")
+        || env::var("TERM").map(|term| check_256_color(&term)) == Ok(true)
+    {
+        2
+    } else if env::var("COLORTERM").is_ok()
+        || env::var("TERM").map(|term| check_ansi_color(&term)) == Ok(true)
+        || env::consts::OS == "windows"
+        || env::var("CLICOLOR").map_or(false, |v| v != "0")
+    {
+        1
+    } else {
+        0
+    }
+}
+
+#[cfg(windows)]
+fn check_ansi_color(term: &str) -> bool {
+    term.starts_with("screen")
+        || term.starts_with("xterm")
+        || term.starts_with("vt100")
+        || term.starts_with("vt220")
+        || term.starts_with("rxvt")
+        || term.contains("color")
+        || term.contains("ansi")
+        || term.contains("cygwin")
+        || term.contains("linux")
+}
+
+#[cfg(windows)]
+fn check_colorterm_16m(colorterm: &str) -> bool {
+    colorterm == "truecolor" || colorterm == "24bit"
+}
+
+#[cfg(windows)]
+fn check_term_16m(term: &str) -> bool {
+    term.ends_with("direct") || term.ends_with("truecolor")
+}
+
+#[cfg(windows)]
+fn check_256_color(term: &str) -> bool {
+    term.ends_with("256") || term.ends_with("256color")
 }
 
 #[must_use]

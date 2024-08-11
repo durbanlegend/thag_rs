@@ -14,7 +14,8 @@ signal-hook = "0.3.17"
 use std::process;
 
 fn main() {
-    if cfg!(windows) {
+    #[cfg(windows)]
+    {
         println!("This example does not work on Windows");
         process::exit(1);
     }

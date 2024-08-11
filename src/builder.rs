@@ -559,9 +559,14 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
                 fs::create_dir_all(&cargo_bin_path).expect("Failed to create target directory");
             }
 
-            let mut executable_name = build_state.source_stem.to_string();
-            if cfg!(windows) {
-                executable_name += ".exe";
+            let executable_name: String;
+            #[cfg(windows)]
+            {
+                executable_name = format!("{}.exe", build_state.source_stem);
+            }
+            #[cfg(not(windows))]
+            {
+                executable_name = build_state.source_stem.to_string();
             }
 
             let executable_path = build_state

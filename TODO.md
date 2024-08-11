@@ -21,7 +21,7 @@
 - [ ]  Mocks not working in Windows? repl::test_edit, test_edit_history and test_toml all bring up VS Code and get stuck.
 - [ ]  Consider creating useful tools that can be split off into a tools/ directory. Currently only dethagomizer.rs.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
-- [ ]  Readme: Document where stdin saves temp file to. Maybe change code to print this location out when it fails. - Superseded by history feature.
+- [ ]  Replace if cfg! by #[cfg] to reduce code.
 - [ ]
 #[cfg(target_os = "windows")]
 let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into());

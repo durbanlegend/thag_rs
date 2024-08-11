@@ -53,9 +53,9 @@ fn main() {
         .join("rs-script")
         .join(source_stem)
         .join("target/debug");
-    let target_path = if cfg!(windows) {
+    let target_path = #[cfg(windows) {
         target_dir_path.join(source_stem.to_string() + ".exe")
-    } else {
+    } #[cfg(Not(windows)) {
         target_dir_path.join(&source_stem)
     };
     */

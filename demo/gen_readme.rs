@@ -3,7 +3,6 @@
 lazy_static = "1.4.0"
 regex = "1.10.5"
 rs-script = { git = "https://github.com/durbanlegend/rs-script" }
-
 */
 
 /// This is the actual script used to collect demo script metadata and generate

@@ -359,7 +359,7 @@ pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
 
 // fn insert_line(textarea: &mut TextArea, line: &str) {
 //     textarea.insert_str(line);
-//     if cfg!(windows) {
+//     #[cfg(windows)] {
 //         textarea.insert_str("\r");
 //     }
 //     textarea.insert_newline();

@@ -59,7 +59,7 @@ macro_rules! nu_color_println {
         let content = format!("{}", format_args!($($arg)*));
      let style = $style;
     // Qualified form to avoid imports in calling code.
-    if cfg!(windows) {log!(Verbosity::Quiet, "{}\r", style.paint(content));} else {log!(Verbosity::Quiet, "{}", style.paint(content)); }
+    #[cfg(windows)] {log!(Verbosity::Quiet, "{}\r", style.paint(content));} else {log!(Verbosity::Quiet, "{}", style.paint(content)); }
     }};
 }
 

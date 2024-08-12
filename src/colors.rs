@@ -351,22 +351,15 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
 }
 
 #[allow(dead_code)]
-#[cfg(not(windows))]
 pub fn main() {
-    let term = termbg::terminal();
-    shared::clear_screen();
-    debug_log!("  Term : {:?}", term);
+    #[cfg(not(windows))]
+    {
+        let term = termbg::terminal();
+        shared::clear_screen();
+        debug_log!("  Term : {:?}", term);
+    }
 
-    let color_support = match supports_color::on(Stream::Stdout) {
-        Some(color_level) => {
-            if color_level.has_16m || color_level.has_256 {
-                Some(ColorSupport::Xterm256)
-            } else {
-                Some(ColorSupport::Ansi16)
-            }
-        }
-        None => None,
-    };
+    let color_support = &*COLOR_SUPPORT;
 
     match color_support {
         None => {

@@ -19,7 +19,7 @@
 - [ ]  Conversions both ways for rust-script and maybe runner?
 - [ ]  Find a punchy name - rs-thagomizer or thagomizer-rs (thag-rs) | rs-doodle | rs-noodle | rs-sketch | sketch-rs | rs-bolt | rs-volt | rs-ares
 - [ ]  Mocks not working in Windows? repl::test_edit, test_edit_history and test_toml all bring up VS Code and get stuck.
-- [ ]  Consider creating useful tools that can be split off into a tools/ directory. Currently only dethagomizer.rs.
+- [ ]  README for Windows: set $Env:TERM = "xterm-256color". Or consider prompting for it if only basic found. Or a config file.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Replace if cfg! by #[cfg] to reduce code.
 - [ ]

@@ -40,7 +40,7 @@ regex = "1.10.5"
 serde = { version = "1.0.98", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive", "phf"] }
 supports-color = "3.0.0"
-syn = { version = "2.0.72", features = [
+syn = { version = "2.0.74", features = [
     "extra-traits",
     "full",
     "visit",

@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = "0.28"
 mockall = "0.13.0"
-rs-script = { path = "/Users/donf/projects/rs-script" }
+rs-script = { git = "https://github.com/durbanlegend/rs-script" }
 */
 
 /// Used to debug a doctest.

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-coolor = "0.9.0"
+coolor = "1.0.0"
 terminal-light = "1.4.0"
 crossterm = "0.28.1"
 */

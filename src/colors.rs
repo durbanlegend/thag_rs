@@ -1,6 +1,7 @@
 use crate::debug_log;
 #[cfg(not(windows))]
-use {crate::log, crate::logging::Verbosity, crate::shared};
+use crate::shared;
+use {crate::log, crate::logging::Verbosity};
 
 use lazy_static::lazy_static;
 #[cfg(windows)]

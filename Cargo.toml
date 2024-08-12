@@ -28,7 +28,7 @@ bitflags = "2.5.0"
 clap = { version = "4.5.11", features = ["cargo", "derive"] }
 crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 edit = "0.1.5"
-env_logger = "0.11.3"
+env_logger = "0.11.5"
 home = "0.5.9"
 lazy_static = "1.5.0"
 log = "0.4.21"
@@ -75,7 +75,7 @@ debug-logs = []
 nightly = []
 
 [dev-dependencies]
-env_logger = "0.11.3"
+env_logger = "0.11.5"
 sequential-test = "0.2.4"
 tempfile = "3.12.0"
 test-generator = "0.3.1"

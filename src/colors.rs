@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 use std::env;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString};
-#[cfg(not(windows))]
+// #[cfg(not(windows))]
 use {strum::IntoEnumIterator, supports_color::Stream, termbg::Theme};
 
 lazy_static! {

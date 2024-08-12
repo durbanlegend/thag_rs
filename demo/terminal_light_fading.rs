@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-coolor = "0.9.0"
-terminal-light = "1.4.0"
+coolor = "1.00"
+terminal-light = "1.5.0"
 crossterm = "0.28.1"
 */
 

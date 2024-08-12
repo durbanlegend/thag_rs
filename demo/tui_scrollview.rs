@@ -1,11 +1,9 @@
 /*[toml]
 [dependencies]
 color-eyre = "0.6.3"
-constraint = "0.1.0"
-# keycode = "0.4.0"
 lipsum = "0.9.1"
 ratatui = { version = "0.28", default-features = false, features = ["crossterm"] }
-tui-scrollview = "0.3.13"
+tui-scrollview = "0.4"
 */
 
 use std::io::{self, stdout};

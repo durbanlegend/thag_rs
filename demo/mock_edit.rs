@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
+crossterm = "0.28"
 mockall = "0.13.0"
-rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+rs-script = { path = "/Users/donf/projects/rs-script" }
 */
 
 /// Used to debug a doctest.

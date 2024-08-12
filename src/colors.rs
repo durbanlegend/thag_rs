@@ -4,11 +4,11 @@ use crate::shared;
 use {crate::log, crate::logging::Verbosity};
 
 use lazy_static::lazy_static;
+use serde::Deserialize;
 #[cfg(windows)]
 use std::env;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString};
-// #[cfg(not(windows))]
 use {strum::IntoEnumIterator, supports_color::Stream, termbg::Theme};
 
 lazy_static! {
@@ -213,7 +213,7 @@ macro_rules! nu_color_println {
     }};
 }
 
-#[derive(Clone, EnumString, Display, PartialEq)]
+#[derive(Clone, Deserialize, EnumString, Display, PartialEq)]
 /// We include `TrueColor` in Xterm256 as we're not interested in more than 256 colours just for messages.
 pub enum ColorSupport {
     Xterm256,
@@ -221,7 +221,7 @@ pub enum ColorSupport {
     None,
 }
 
-#[derive(Debug, EnumString, Display, PartialEq)]
+#[derive(Debug, Deserialize, EnumString, Display, PartialEq)]
 pub enum TermTheme {
     Light,
     Dark,

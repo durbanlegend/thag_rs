@@ -19,8 +19,8 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::widgets::block::Title;
-use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::widgets::block::{Block, Title};
+use ratatui::widgets::{Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -210,7 +210,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
 
     loop {
         term.draw(|f| {
-            f.render_widget(&textarea, f.size());
+            f.render_widget(&textarea, f.area());
             if popup {
                 show_popup(f);
             }
@@ -380,7 +380,7 @@ fn reset_term(
 
 #[allow(clippy::cast_possible_truncation)]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
-    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
+    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.area());
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,

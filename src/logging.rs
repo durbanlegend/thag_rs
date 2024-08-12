@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
 pub enum Verbosity {
     Quieter,
     Quiet,
@@ -29,6 +29,7 @@ impl Logger {
 }
 
 use lazy_static::lazy_static;
+use serde::Deserialize;
 use std::sync::Mutex;
 
 lazy_static! {

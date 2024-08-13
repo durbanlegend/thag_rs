@@ -123,65 +123,73 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
 fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path) {
     let mut file = File::create(output_path).unwrap();
     writeln!(file, r#"## Running the scripts
+
+`rs-script` uses `clap` for a standard command-line interface. Try `rs-script --help` (or -h) if
+you get stuck.
+
 ### In its simplest form:
 
-```
-rs_script <path to script>
-```
-##### E.g.
+
+    rs_script <path to script>
+
+###### E.g.:
 
     rs_script demo/hello.rs
 
+### Passing options and arguments to a script:
+
+Use `--` to separate options and arguments meant for the script from those meant for `rs_script` itself.
+
+###### E.g.:
+
+demo/fib_dashu_snippet.rs expects to be passed an integer _n_ and will compute the _nth_ number in the
+Fibonacci sequence.
+
+     rs_script demo/fib_dashu_snippet.rs -- 100
+
 ### Full syntax:
 
-```
-rs_script [RS-SCRIPT OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
-```
+    rs_script [RS-SCRIPT OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
 
-##### E.g.
+###### E.g.:
 
-    rs_script -t demo/clap_tut_builder_01.rs -- -ddd -c /dummy/dummy.rs test -l
+`demo/clap_tut_builder_01.rs` is a published example from the `clap` crate.
+Its command-line signature looks like this:
 
-    Completed generation in 0.143s
-    Building clap_tut_builder_01.rs ...
-        Compiling clap_tut_builder_01 v0.0.1 (/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/rs-script/clap_tut_builder_01)
-        Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.69s
-    Completed build in 0.766s
-    ----------------------------------------------------------------------
-    Value for config: /dummy/dummy.rs
-    Don't be crazy
+    clap_tut_builder_01 [OPTIONS] [name] [COMMAND]
+
+The arguments in their short form are:
+
+    `-c <config_file>`      an optional configuration file
+    `-d` / `-dd` / `ddd`    debug, at increasing levels of verbosity
+    [name]                  an optional filename
+    [COMMAND]               a command (e.g. test) to run
+
+If we were to compile `clap_tut_builder_01` as an executable (`-x` option) and then run it, we might pass
+it some parameters like this:
+
+    clap_tut_builder_01 -dd -c my.cfg my_file test -l
+
+and get outuput like this:
+
+    Value for name: my_file
+    Value for config: my.cfg
+    Debug mode is on
     Printing testing lists...
-    ----------------------------------------------------------------------
-    Completed run in 1.182s
-    rs-script completed processing script clap_tut_builder_01.rs in 2.130s
 
-**Alternatively**, you can run:
+Running the source from rs-script looks similar, we just replace `clap_tut_builder_01` by `rs_script demo/clap_tut_builder_01.rs --`:
 
-    rs_script [OPTIONS] --edit|-d [-- [SCRIPT_OPTIONS] script_args]
+*rs_script demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
 
-then at the prompt, paste the script into the editor that appears, and press Ctrl-D to execute it. The source is available at the link in the entry for the script below..
+Any parameters for `rs_script` should go before the `--`, e.g. we may choose use -qq to suppress `rs-script` messages:
 
-##### E.g.
+    rs_script demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
 
-    rs_script -d -- 100
-
-then at the prompt, paste the source of `demo/fib_classic_ibig.rs` or similar into the editor and press Ctrl-D to execute it.
+which will give identical output to the above.
 
 
-This will compute and print F(100) in the Fibonacci sequence.
 
-Since `rs-script` is parsing with `clap` you can have other options alongside or combined with the -d in any order, e.g.:
-
-        rs_script --quiet -d -t -- 100
-
-OR
-
-        rs_script -qdt -- 100
-
-... etc.
-
-
-Remember to use `--` to separate options and arguments that are intended for `rs_script` from those intended for the target script.
+##### Remember to use `--` to separate options and arguments that are intended for `rs_script` from those intended for the target script.
 
 ***
 ## Detailed script listing

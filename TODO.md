@@ -15,13 +15,14 @@
 - [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
        - make demo scripts to replicate issues.
 - [ ]  Add FAQ
-- [ ]  Punchy intro in readme, per Zands.
 - [ ]  Conversions both ways for rust-script and maybe runner?
-- [ ]  Find a punchy name - rs-thagomizer or thagomizer-rs (thag-rs) | rs-doodle | rs-noodle | rs-sketch | sketch-rs | rs-bolt | rs-volt | rs-ares
+- [ ]  Find a punchy name - rs_thagomizer or thagomizer_rs (thag_rs) | rs_doodle | rs_noodle | rs_sketch | sketch_rs | rs_bolt | rs_volt | rs_ares
+       NB use underscore as hyphen causes too many hassles.
 - [ ]  Mocks not working in Windows? repl::test_edit, test_edit_history and test_toml all bring up VS Code and get stuck.
 - [ ]  README for Windows: set $Env:TERM = "xterm-256color". Or consider prompting for it if only basic found. Or a config file.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
-- [ ]  Replace if cfg! by #[cfg] to reduce code.
+- [ ]  Add config-file support to cmd_args based on demo/config.rs. Include an option to include or exclude quotes on returned strings.
+       Maybe make it a command-line option too.
 - [ ]
 #[cfg(target_os = "windows")]
 let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into());

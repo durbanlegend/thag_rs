@@ -2,6 +2,9 @@
 [dependencies]
 ibig = "0.3.6"
 */
+
+/// Implement trait std::iter::Product for `ibig::UBig`. Example provided by GPT.
+//# Purpose: Educational / reference.
 use ibig::{ubig, UBig};
 use std::iter::Product;
 use std::ops::{Deref, DerefMut};

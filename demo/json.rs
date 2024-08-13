@@ -4,6 +4,8 @@ serde = "1.0.204"
 serde_json = "1.0.116"
 */
 
+/// Demo of using deserializing JSON with the featured crates.
+//# Purpose: Demo featured crates.
 use serde::de::Deserialize;
 use serde_json::Value;
 
@@ -15,7 +17,7 @@ println!(
             "method": "textDocument/completion",
             "params": {
                 "textDocument": {
-                    "uri": "file://Users/donf/projects/rs-script/demo/fib_big_clap.rs"
+                    "uri": "file://Users/thag/projects/rs-script/demo/see_what_zog_do.rs"
                 },
                 "position": {
                     "line": 15,
@@ -32,7 +34,7 @@ println!(
 println!(
     "{:#?}",
     serde_json::from_str::<Value>(
-        "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"textDocument/completion\",\"params\":{\"position\":{\"character\":26,\"line\":171},\"textDocument\":{\"uri\":\"file:///Users/donf/projects/rs-script/src/main.rs\"}}}"
+        "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"textDocument/completion\",\"params\":{\"position\":{\"character\":26,\"line\":171},\"textDocument\":{\"uri\":\"file:///Users/thag/projects/rs-script/src/see_what_zog_do.rs\"}}}"
     )
     .unwrap()
 );

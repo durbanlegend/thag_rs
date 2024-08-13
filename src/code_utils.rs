@@ -184,7 +184,15 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
 
     impl<'a> Visit<'a> for FindCrates {
         fn visit_use_path(&mut self, node: &'a UsePath) {
-            self.use_crates.push(node.ident.to_string());
+            let node_name = node.ident.to_string();
+            // See for instance Constraint and Keyword in demo/tui_scrollview.rs.
+            if let Some(c) = node_name.chars().nth(0) {
+                if c.is_uppercase() {
+                    debug_log!("Assuming capitalised use name {} is not a crate", node_name);
+                    return;
+                }
+            }
+            self.use_crates.push(node_name);
         }
     }
 

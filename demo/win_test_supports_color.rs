@@ -3,6 +3,8 @@
 supports-color = "3.0.0"
 */
 
+//# Purpose: Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
+
 use std::io::{self, Read};
 use supports_color::Stream;
 

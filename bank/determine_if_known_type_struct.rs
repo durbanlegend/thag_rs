@@ -2,7 +2,7 @@
 /// This works well, but author recommends trait alternative.
 ///
 /// https://stackoverflow.com/questions/34214136/how-do-i-match-the-type-of-an-expression-in-a-rust-macro/34214916#34214916
-//# Purpose: Demo expression type deteermination for static dispatch.
+//# Purpose: Demo expression type determination for static dispatch.
 struct Attribute<T> {
     value: T,
 }

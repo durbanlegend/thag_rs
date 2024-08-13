@@ -359,8 +359,8 @@ pub fn gen_build_run(
                     .to_string()
                 } else {
                     debug_log!("Option A: returns a substantive type");
-                    quote::quote!(
-                    println!("{}", format!("{:#?}", #syntax_tree_ref).trim_matches('"'));
+                    quote::quote!(use unquoteln::unquoteln;
+                    unquoteln!(#syntax_tree_ref);
                     )
                     .to_string()
                 }

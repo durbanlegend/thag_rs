@@ -7,14 +7,18 @@ termbg = "0.5.0"
 /// This still seems to "reliably" swallow the very first character entered in Windows.
 /// The `crossterm` reset doesn't seem to help. My disappointment is immeasurable and
 /// my day is ruined.
-use crossterm::{cursor::{MoveToColumn, Show}, ExecutableCommand};
+//# Purpose: Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
+use crossterm::{
+    cursor::{MoveToColumn, Show},
+    ExecutableCommand,
+};
 
 use std::io::{self, stdout, Read, Write};
 
-/// termbg sends an operating system command (OSC) to interrogate the screen
-/// but with side effects which we undo here.
-/// # Panics
-/// Will panic if a crossterm execute command fails.
+// termbg sends an operating system command (OSC) to interrogate the screen
+// but with side effects which we undo here.
+// # Panics
+// Will panic if a crossterm execute command fails.
 pub fn clear_screen() {
     let mut out = stdout();
     out.execute(MoveToColumn(0)).unwrap();

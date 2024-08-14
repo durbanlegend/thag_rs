@@ -6,9 +6,11 @@
 
 ## Intro
 
-`rs-script` is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration. It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while hopefully being simple and convenient to use.
+`rs-script` is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
+It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while hopefully being simple and convenient to use.
+It also supports scripting via shebangs, building executables from your snippets, a loop-filter mode and plain or edited standard input.
 
-`rs-script` includes a demo library of over 150 sample scripts. If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
+`rs-script` includes a demo library of over 170 sample scripts. If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
 ## Quick start: ways to run `rs-script`
 
@@ -19,7 +21,7 @@ rs_script --expr '"Hello world!"'                                   # Short form
 ```
 ![Repl](hellow.png)
 
-Invoking quiet mode `(--quiet (-q)` suppresses feedback.
+Invoking quiet mode (`--quiet (-q)`) suppresses most feedback except for Cargo and the flowerbox. Invoking it twice (`-qq` for short) suppresses all non-error feedback including the flowerbox.
 
 By default, `rs-script` and Cargo will feed back to you:
 
@@ -67,7 +69,7 @@ rs_script --edit                                                    # Short form
 cat my_file.rs | rs_script --edit                                   # Short form: -d
 ```
 
-This allows you to edit or append to the stdin input before submitting it to `rs-script`.
+This allows you to edit or append to the stdin input before submitting it to `rs-script`. It has file-backed history so you don't lose your edits.
 
 #### A note on the TUI editor
 In order for the Shift-Up and Shift-Down key combinations to work on Apple Terminal, you may need to add the following to your Apple Terminal Settings | Profiles | Keyboard settings:

@@ -135,9 +135,6 @@ edition = "2021"
 [dependencies]
 serde = "1.0"
 
-[dependencies.unquoteln]
-git="https://github.com/durbanlegend/rs-script/crates/unquoteln"
-
 [features]
 default = ["serde"]
 

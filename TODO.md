@@ -22,6 +22,7 @@
 - [ ]  README for Windows: set $Env:TERM = "xterm-256color". Or consider prompting for it if only basic found. Or a config file.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Add config-file support to cmd_args based on demo/config.rs. Include an option to include or exclude quotes on returned strings.
+- [ ]  Debug history getting out of sequence in -d option.
        Maybe make it a command-line option too.
 - [ ]
 #[cfg(target_os = "windows")]

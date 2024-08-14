@@ -3,6 +3,9 @@
 crossterm = "0.27.0"
 reedline = "0.33.0"
 */
+
+/// Published example from `reedline` crate.
+//# Purpose: demo featured crates.
 use {
     crossterm::{
         event::{poll, Event, KeyCode, KeyEvent},
@@ -21,7 +24,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-/// **For debugging purposes only:** Track the terminal events observed by [`Reedline`] and print them.
+// **For debugging purposes only:** Track the terminal events observed by [`Reedline`] and print them.
 pub fn print_events() -> std::io::Result<()> {
     stdout().flush()?;
     terminal::enable_raw_mode()?;

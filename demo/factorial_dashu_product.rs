@@ -9,7 +9,7 @@ dashu = "0.4.2"
 ///  Using the `std::iter::Product` trait - if implemented - is the most concise
 /// factorial implementation. `dashu` implements it, so it's straightforward to use.
 ///
-//# Demo snippet, `dashu` crate, factorial using `std::iter::Product` trait.
+//# Purpose: Demo snippet, `dashu` crate, factorial using `std::iter::Product` trait.
 
 use dashu::ubig;
 use dashu::integer::UBig;

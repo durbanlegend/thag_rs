@@ -21,7 +21,9 @@ rs_script --expr '"Hello world!"'                                   # Short form
 ```
 ![Repl](hellow.png)
 
-Invoking quiet mode (`--quiet (-q)`) suppresses most feedback except for Cargo and the flowerbox. Invoking it twice (`-qq` for short) suppresses all non-error feedback including the flowerbox.
+Invoking quiet mode (`--quiet (-q)`) suppresses most feedback except for the flowerbox to highlight the output.
+Invoking it twice (`-qq` for short) suppresses all non-error feedback including the flowerbox, allowing the
+output to be used as a filter.
 
 By default, `rs-script` and Cargo will feed back to you:
 

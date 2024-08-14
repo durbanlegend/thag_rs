@@ -8,6 +8,9 @@ rs-script = { git = "https://github.com/durbanlegend/rs-script" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 */
+
+/// Prototype downloader for the demo/ directory.
+//# Purpose: Prototype a possible solution.
 use reqwest::blocking::get;
 use rfd::FileDialog;
 use serde::Deserialize;
@@ -62,7 +65,6 @@ fn download_demo_files(repo: &str, path: &str) -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
-/// This may seem bit of a catch-22 place to keep this program, but it's just a prototype.
 fn main() {
     let repo = "durbanlegend/rs-script";
     let path = "demo";

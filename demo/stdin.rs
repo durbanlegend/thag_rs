@@ -8,6 +8,11 @@ ratatui = "0.27.0"
 tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 */
 
+/// A version of `rs-script`'s `stdin` module to handle standard input editor input. Like the `colors`
+/// module, `stdin` was originally developed here as a separate script and integrated as a module later.
+//////
+/// E.g. `rs_script demo/stdin.rs`
+//# Purpose: Demo using `rs-script` to develop a module outside of the project.
 use ratatui::crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, Event::Paste,
 };
@@ -79,7 +84,7 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
 
     loop {
         term.draw(|f| {
-            f.render_widget(textarea.widget(), f.size());
+            f.render_widget(&textarea, f.size());
             if popup {
                 show_popup(f);
             }
@@ -131,7 +136,7 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
     Ok(textarea.lines().to_vec())
 }
 
-/// Prompt for and read Rust source code from stdin.
+// Prompt for and read Rust source code from stdin.
 pub fn read_stdin() -> Result<String, std::io::Error> {
     println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     use std::io::Read;

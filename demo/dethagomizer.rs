@@ -1,7 +1,7 @@
 /// Unescape \n and \\" markers in a string to convert the wall of text to readable lines.
 /// This is trickier than it seems because in a compile-time literal, \n compiles to the
 /// true line feed character 10 (x0A), whereas a \n generated or captured as a literal
-/// at run time is encoded as '\', 'n' = 92, 110 = 0x5c6e. Not surprisingly, the two
+/// at run time is encoded as ('\', 'n'() = (92, 110) = 0x5c6e. Not surprisingly, the two
 /// representations, while they look identical to the programmer, don't always behave
 /// the same.
 ///

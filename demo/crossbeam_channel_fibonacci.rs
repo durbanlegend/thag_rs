@@ -6,6 +6,7 @@ crossbeam-channel = "0.5.13"
 /// `crossbeam-channel` published example.
 ///
 /// An asynchronous fibonacci sequence generator.
+//# Purpose: Demo featured crate.
 use std::thread;
 
 use crossbeam_channel::{bounded, Sender};

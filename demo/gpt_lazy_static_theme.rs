@@ -10,7 +10,7 @@ termbg = "0.5.0"
 /// an LLM to generate a prototype to a simple spec. The `clear_screen` function
 /// was added manually later. This prototype is one of many that was incorporated
 /// into `rs_script`.
-//# Demo theme detection with `termbg`, clearing terminal state with `crossterm` and setting it as a static enum value using `lazy_static`.
+//# Purpose: Demo theme detection with `termbg`, clearing terminal state with `crossterm` and setting it as a static enum value using `lazy_static`.
 use crossterm::{
     cursor::{MoveTo, Show},
     terminal::{Clear, ClearType},

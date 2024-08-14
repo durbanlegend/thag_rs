@@ -1,38 +1,40 @@
 /*[toml]
 [dependencies]
-ibig = "0.3.6"
+rug = "1.24.1"
 */
 
-/// Rust port of C++ example from `https://github.com/ZiCog/fibo_4784969` - so named because
+/// Rust of C++ example from `https://github.com/ZiCog/fibo_4784969` - so named because
 /// F(4784969) is the first number in the Fibonacci sequence that has one million decimal
-/// digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
-/// edging out `fibo` at this scale.
+/// digits. This contains 3 alternative algorithms to compare their speed, the clear
+/// winner being `fibo_new`.
 ///
-/// E.g.: `rs_script demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
+/// E.g.:   `rs_script demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 ///
-//# Purpose: Demo 3 very fast Fibonacci algorithms, though still 7-11 times slower than `rug`.
-use ibig::{ubig, UBig};
+//# Purpose: Demo 3 very fast Fibonacci algorithms (2.6 to 6 sec for me). Indications are that
+//# the `rug` crate would be at least 5 times as fast.
+use rug::ops::Pow;
+use rug::{Complete, Integer};
 use std::collections::HashMap;
 use std::env;
 use std::time::Instant;
 
-fn zero() -> UBig {
-    ubig!(0)
+fn zero() -> Integer {
+    Integer::from(0)
 }
 
-fn one() -> UBig {
-    ubig!(1)
+fn one() -> Integer {
+    Integer::from(1)
 }
 
-fn two() -> UBig {
-    ubig!(2)
+fn two() -> Integer {
+    Integer::from(2)
 }
 
 fn is_even(n: usize) -> bool {
     n % 2 == 0
 }
 
-fn fibo_ej_olson(n: usize, a: &mut UBig, b: &mut UBig) {
+fn fibo_ej_olson(n: usize, a: &mut Integer, b: &mut Integer) {
     if n == 0 {
         *a = zero();
         *b = one();
@@ -41,15 +43,15 @@ fn fibo_ej_olson(n: usize, a: &mut UBig, b: &mut UBig) {
     fibo_ej_olson(n / 2, a, b);
     let ta = a.clone();
     if is_even(n) {
-        *a = &ta * (&(b.clone() * 2) - &ta);
-        *b = &ta.pow(2) + &(b.pow(2));
+        *a = &ta * (&(b.clone() * 2).complete() - &ta);
+        *b = (&ta.pow(2) + &(b.pow(2))).into();
     } else {
         *a = a.pow(2) + &(b.pow(2));
-        *b = &*b * (&ta + &ta + b.clone());
+        *b = &*b * ((&ta + &ta).complete() + b.clone());
     }
 }
 
-fn fibo_new_work(n: usize, a: &mut UBig, b: &mut UBig) {
+fn fibo_new_work(n: usize, a: &mut Integer, b: &mut Integer) {
     if n == 0 {
         *a = zero();
         *b = one();
@@ -58,26 +60,26 @@ fn fibo_new_work(n: usize, a: &mut UBig, b: &mut UBig) {
     fibo_new_work(n / 2, a, b);
     if n % 2 == 0 {
         let t = two() * &*b - &*a;
-        *a = &*a * &t;
-        *b = &*b * &t;
+        *a = (&*a * &t).into();
+        *b = (&*b * &t).into();
         if n % 4 == 0 {
-            *b = &*b - &one();
+            *b = (&*b - &one()).into();
         } else {
-            *b = &*b + &one();
+            *b = (&*b + &one()).into();
         }
     } else {
         let t = two() * &*a + &*b;
-        *b = &*b * &t;
-        *a = &*a * &t;
+        *b = (&*b * &t).into();
+        *a = (&*a * &t).into();
         if n % 4 == 1 {
-            *a = &*a + &one();
+            *a = (&*a + &one()).into();
         } else {
-            *a = &*a - &one();
+            *a = (&*a - &one()).into();
         }
     }
 }
 
-fn fibo_new(n: usize, b: &mut UBig) {
+fn fibo_new(n: usize, b: &mut Integer) {
     if n == 0 {
         *b = zero();
         return;
@@ -89,18 +91,22 @@ fn fibo_new(n: usize, b: &mut UBig) {
     let mut a = zero();
     fibo_new_work((n - 1) / 2, &mut a, b);
     if n % 2 == 0 {
-        *b = &*b * (&a + &a + &*b);
+        let two_a = &a * 2;
+        let bee: &Integer = &*b;
+        let two_a_plus_b = (two_a + bee).complete();
+        *b = bee * two_a_plus_b;
     } else {
-        let t = &*b * (&(&*b * 2) - &a);
+        let two_b = *b * 2;
+        let t: Integer = &*b * two_b - &a;
         if n % 4 == 1 {
-            *b = &t - &one();
+            *b = (&t - &one()).into();
         } else {
-            *b = &t + &one();
+            *b = (&t + &one()).into();
         }
     }
 }
 
-fn fibo_init() -> HashMap<usize, UBig> {
+fn fibo_init() -> HashMap<usize, Integer> {
     let mut memo = HashMap::new();
     memo.insert(0, zero());
     memo.insert(1, one());
@@ -108,7 +114,7 @@ fn fibo_init() -> HashMap<usize, UBig> {
     memo
 }
 
-fn fibo(n: usize, memo: &mut HashMap<usize, UBig>) -> UBig {
+fn fibo(n: usize, memo: &mut HashMap<usize, Integer>) -> Integer {
     if let Some(res) = memo.get(&n) {
         return res.clone();
     }
@@ -116,14 +122,14 @@ fn fibo(n: usize, memo: &mut HashMap<usize, UBig>) -> UBig {
     let k = n / 2;
     let a = fibo(k, memo);
     let b = fibo(k - 1, memo);
-    let res = if is_even(n) {
-        &a * (&two() * &b + &a)
+    let res: Integer = if is_even(n) {
+        &a * (&two() * (&b + &a).complete())
     } else {
-        let twoa = &two() * &a;
+        let twoa = (&two() * &a).complete();
         if n % 4 == 1 {
-            (&twoa + &b) * (&twoa - &b) + &two()
+            (&twoa + &b).complete() * (&twoa - &b).complete() + &two()
         } else {
-            (&twoa + &b) * (&twoa - &b) - &two()
+            (&twoa + &b).complete() * (&twoa - &b).complete() - &two()
         }
     };
     memo.insert(n, res.clone());
@@ -159,7 +165,7 @@ fn main() {
     if n <= 1000 {
         println!("F({n})={fib_n}");
     } else if n > 1000000000 {
-        println!("F({n}) ends in {}", fib_n / ubig!(1000000000));
+        println!("F({n}) ends in {}", fib_n / Integer::from(1000000000));
     } else {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();
@@ -172,7 +178,7 @@ fn main() {
 
     let start = Instant::now();
 
-    let (mut a, mut b) = (ubig!(0), ubig!(1));
+    let (mut a, mut b) = (Integer::from(0), Integer::from(1));
     fibo_ej_olson(n, &mut a, &mut b);
     let fib_n = a;
 
@@ -186,7 +192,7 @@ fn main() {
     if n <= 1000 {
         println!("F({n})={fib_n}");
     } else if n > 1000000000 {
-        println!("F({n}) ends in {}", fib_n / ubig!(1000000000));
+        println!("F({n}) ends in {}", fib_n / Integer::from(1000000000));
     } else {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();
@@ -199,7 +205,7 @@ fn main() {
 
     let start = Instant::now();
 
-    let mut b = ubig!(1);
+    let mut b = Integer::from(1);
     fibo_new(n, &mut b);
     let fib_n = b;
 
@@ -213,7 +219,7 @@ fn main() {
     if n <= 1000 {
         println!("F({n})={fib_n}");
     } else if n > 1000000000 {
-        println!("F({n}) ends in {}", fib_n / ubig!(1000000000));
+        println!("F({n}) ends in {}", fib_n / Integer::from(1000000000));
     } else {
         let fib_n_str = fib_n.to_string();
         let l = fib_n_str.len();

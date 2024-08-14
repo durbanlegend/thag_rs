@@ -10,6 +10,12 @@ supports-color= "3.0.0"
 termbg = "0.5.0"
 */
 
+/// Original prototype of `rs-script`'s `colors` module to style messages according
+/// to their type. I only dropped `owo-colors` because I switched from `rustyline` to
+/// `reedline`, which was already using `nu_ansi_term`.
+///
+/// Format: `color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
+//# Purpose: Demo older alternative implementation of `colors` module using `owo-colors`.
 use log::debug;
 use owo_ansi::xterm as owo_xterm;
 use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
@@ -21,11 +27,6 @@ use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use supports_color::Stream;
 use termbg::{Error, Theme};
 
-/// Original prototype of `rs-script`'s `colors` module to style messages according
-/// to their type. I only dropped `owo-colors` because I switched from `rustyline` to
-/// `reedline`, which was already using `nu_ansi_term`.
-///
-/// Format: `color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! color_println {
     ($style:expr, $($arg:tt)*) => {{

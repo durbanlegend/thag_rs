@@ -3,13 +3,14 @@
 clap = { version = "4.5.7", features = ["cargo"] }
 */
 
+/// Published example from `clap` tutorial (builder)
+///
+/// E.g.  `rs_script demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
+//# Purpose: Demonstrate `clap` CLI using the builder option
 use std::path::PathBuf;
 
 use clap::{arg, command, value_parser, ArgAction, Command};
 
-/// Published example from `clap` tutorial (builder)
-///
-/// E.g.  demo/clap_tut_01.rs -ddd -c dummy.cfg test -l
 //# Purpose: Demonstrate `clap` CLI using the builder option
 fn main() {
     let matches = command!() // requires `cargo` feature

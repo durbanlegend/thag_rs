@@ -1,25 +1,25 @@
-//! Demo of deriving Pythagorean triples.
-//!
-//! Pythagorean triples are integer tuples (a, b, c) such that a^2 + b^2 = c^2).
-//! They represent right-angled triangles with all sides having integer length in a given unit of measure.
-//!
-//! They form a tree with the root at (3, 4, 5), with each triple having 3 child triples.
-//!
-//! Per the Wikipedia page, the standard derivation is based on the formulae:
-//!
-//!     1. a = m^2 - n^2
-//!     2. b = 2mn
-//!     3. c = m^2 + n^2
-//!     where m > n > 0 and one is always even, the other always odd.
-//!
-//! The next 3 values of m and n, corresponding to the 3 child triples of (3, 4, 5) are
-//! derived by the following 3 formulae:
-//!
-//!     (m1, n1) = (2m - n, m)
-//!     (m2, n2) = (2m + n, m)
-//!     (m3, n3) = (m + 2n, n)
-//!
-//! So let's work out the 3 child triples of (3, 4, 5).
+//: Demo of deriving Pythagorean triples.
+//:
+//: Pythagorean triples are integer tuples (a, b, c) such that a^2 + b^2 = c^2).
+//: They represent right-angled triangles with all sides having integer length in a given unit of measure.
+//:
+//: They form a tree with the root at (3, 4, 5), with each triple having 3 child triples.
+//:
+//: Per the Wikipedia page, the standard derivation is based on the formulae:
+//:
+//:     1. a = m^2 - n^2
+//:     2. b = 2mn
+//:     3. c = m^2 + n^2
+//:     where m > n > 0 and one is always even, the other always odd.
+//:
+//: The next 3 values of m and n, corresponding to the 3 child triples of (3, 4, 5) are
+//: derived by the following 3 formulae:
+//:
+//:     (m1, n1) = (2m - n, m)
+//:     (m2, n2) = (2m + n, m)
+//:     (m3, n3) = (m + 2n, n)
+//:
+//: So let's work out the 3 child triples of (3, 4, 5).
 //# Purpose: Recreational, educational.
 
 println!("Pythagorean triples are sets of 3 integers a, b and c that correspond to the dimensions of a right-angled triangle.");

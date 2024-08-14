@@ -12,6 +12,8 @@ supports-color = "3.0.0"
 toml = "0.8"
 */
 
+/// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
+//# Purpose: Develop a configuration file implementation for `rs-script`.
 use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;

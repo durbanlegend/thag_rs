@@ -3,6 +3,8 @@
 reedline = "0.33.0"
 */
 
+/// Published example from `reedline` crate.
+//# Purpose: Explore featured crate.
 use reedline::{
     get_reedline_default_keybindings, get_reedline_edit_commands,
     get_reedline_keybinding_modifiers, get_reedline_keycodes, get_reedline_prompt_edit_modes,

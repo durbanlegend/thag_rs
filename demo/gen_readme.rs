@@ -16,7 +16,7 @@ use rs_script::{code_utils, debug_log};
 use std::collections::HashMap;
 use std::fs::{self, read_dir, File};
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 struct ScriptMetadata {
@@ -41,18 +41,40 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
 
     let mut metadata = HashMap::new();
     let mut lines = Vec::<String>::new();
+    let mut doc = false;
+    let mut purpose = false;
 
     for line in content.clone().lines() {
         if line.starts_with("//#") {
             let parts: Vec<&str> = line[3..].splitn(2, ':').collect();
             if parts.len() == 2 {
-                metadata.insert(parts[0].trim().to_lowercase(), parts[1].trim().to_string());
+                let keyword = parts[0].trim();
+                metadata.insert(keyword.to_lowercase(), parts[1].trim().to_string());
+                if !purpose && keyword == "Purpose" {
+                    purpose = true;
+                }
             }
         } else if line.starts_with("///") || line.starts_with("//:") {
             lines.push(line[3..].to_string() + "\n");
+            if !doc {
+                doc = true;
+            }
         }
     }
-    metadata.insert("description".to_string(), lines.join(""));
+
+    if !doc || !purpose {
+        let filename = &file_path.to_string_lossy();
+        if !doc {
+            println!("{filename} has no docs");
+        }
+        if !purpose {
+            println!("{filename} has no purpose");
+        }
+    }
+
+    if doc {
+        metadata.insert("description".to_string(), lines.join(""));
+    }
 
     let maybe_syntax_tree = code_utils::to_ast(&content);
 
@@ -103,10 +125,17 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
 fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
     let mut all_metadata = Vec::new();
 
-    for entry in read_dir(scripts_dir).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        println!("Parsing {:#?}", path.display());
+    let scripts = read_dir(scripts_dir).expect("Error reading scripts");
+    let mut scripts = scripts
+        .flatten()
+        .map(|dir_entry| dir_entry.path())
+        .collect::<Vec<PathBuf>>();
+
+    scripts.sort();
+
+    for entry in scripts.iter() {
+        let path = entry.as_path();
+        // println!("Parsing {:#?}", path.display());
 
         if path.extension().and_then(|s| s.to_str()) == Some("rs") {
             if let Some(metadata) = parse_metadata(&path) {

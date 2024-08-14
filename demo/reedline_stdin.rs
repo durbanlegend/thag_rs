@@ -2,15 +2,13 @@
 [dependencies]
 reedline = "0.33.0"
 */
-use reedline::DefaultHinter;
-use reedline::DefaultValidator;
-use reedline::FileBackedHistory;
-use reedline::Prompt;
-use reedline::PromptEditMode;
-use reedline::PromptHistorySearch;
-use reedline::PromptHistorySearchStatus;
-use reedline::Reedline;
-use reedline::Signal;
+
+/// Exploring `reedline` crate.
+//# Purpose: explore featured crate.
+use reedline::{
+    DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
+    PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
+};
 use std::borrow::Cow;
 use std::error::Error;
 

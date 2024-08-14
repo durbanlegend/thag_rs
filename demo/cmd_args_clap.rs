@@ -4,13 +4,14 @@ bitflags = "2.5.0"
 clap = { version = "4.5.3", features = ["derive"] }
 */
 
+/// Basic CLI example using clap.
+///
+/// E.g. `rs_script -t demo/cmd_args_clap.rs -- -atv hello.sh`
+//# Purpose: For comparison with `demo/cmd_args_bpaf_gpt.rs`.
 use bitflags::bitflags;
 use clap::Parser;
 use core::{fmt, str};
 
-/// Basic CLI example using clap.
-///
-/// E.g. `rs_script -t demo/cmd_args_clap.rs -- -atv hello.sh`
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Parser, Debug)]
 #[clap(version = "1.0", author = "Your Name")]

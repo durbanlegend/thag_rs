@@ -8,7 +8,9 @@ quote = "1.0.36"
 syn = { version = "2.0.71", features = ["full"] }
 */
 
-// REPL based on clap-repl package
+/// Older version of published clap_repl crate example, modified to prototype a
+/// (dummy) Rust REPL.
+//# Purpose: Yet another REPL demo, this time using `rustyline`.
 use clap::Parser;
 use clap_repl::ClapEditor;
 use console::style;
@@ -41,9 +43,6 @@ enum SampleCommand {
     Quit,
 }
 
-/// Older version of published clap_repl crate example, modified to prototype a
-/// (dummy) Rust REPL.
-//# Purpose: Yet another REPL demo, this time using `rustyline`.
 fn main() {
     // Use `ClapEditor` instead of the `rustyline::DefaultEditor`.
     let mut editor = ClapEditor::<SampleCommand>::new();

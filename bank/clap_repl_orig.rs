@@ -10,6 +10,7 @@ syn = { version = "2.0.71", features = ["full"] }
 
 /// Original published example from clap-repl crate, before change
 /// from rustyline to reedline.
+//# Purpose: Demo building a repl using `clap_repl` with `rustyline`.
 use clap::Parser;
 use clap_repl::ClapEditor;
 use console::style;

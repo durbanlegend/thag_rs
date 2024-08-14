@@ -29,6 +29,7 @@ fn main() {
         "crossbeam_channel_stopwatch.rs",
         "factorial_main_rug.rs",
         "factorial_main_rug_product.rs",
+        "fib_4784969_cpp_rug.rs",
         "fib_big_clap_rug.rs",
         "fib_doubling_iterative_purge_rug.rs",
         "fib_fac_rug.rs",

@@ -7,6 +7,7 @@ rustyline = { version = "14.0.0", features=["with-file-history", "default", "der
 /// Example from `rustyline` crate readme.
 /// MatchingBracketValidator uses matching brackets to decide between single- and multi-line
 /// input.
+//# Purpose: Explore `rustyline` crate.
 use std::borrow::Cow::{self, Borrowed, Owned};
 
 use rustyline::completion::FilenameCompleter;

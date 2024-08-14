@@ -11,6 +11,8 @@
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
 - [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
+- [ ]  Add download demos option, see prototype demo/install_demo_gpt.rs
+- [ ]  Add unquote string return values option and add to config.toml.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
        - make demo scripts to replicate issues.

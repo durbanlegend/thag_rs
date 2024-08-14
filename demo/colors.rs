@@ -14,6 +14,9 @@ termbg = "0.5.0"
 /// module, `colors` was originally developed here as a separate script and integrated as a module later.
 ///
 /// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
+///
+/// E.g. `rs_script demo/colors.rs`
+//# Purpose: Demo using `rs-script` to develop a module outside of the project.
 use rs_script::{clear_screen, debug_log, log, logging::Verbosity};
 
 use lazy_static::lazy_static;

@@ -12,7 +12,7 @@ termbg = "0.5.0"
 /// I think it's important to make it a habit.
 ///
 /// Detects the light or dark theme in use, as well as the colours in use.
-//# Demo theme detection with `termbg` and clearing terminal state with `crossterm`.
+//# Purpose: Demo theme detection with `termbg` and clearing terminal state with `crossterm`.
 use crossterm::{
     cursor::{MoveTo, Show},
     terminal::{Clear, ClearType},

@@ -3,6 +3,10 @@
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
 */
 
+/// Published example from `clap` tutorial (derive), with added displays.
+///
+/// E.g. `rs_script demo/clap_tut_derive_04_01_enum.rs -- fast`
+//# Purpose: Demonstrate `clap` CLI using the derive option
 use clap::{Parser, ValueEnum};
 
 #[derive(Parser)]
@@ -23,10 +27,6 @@ enum Mode {
     Slow,
 }
 
-/// Published example from `clap` tutorial (derive), with added displays.
-///
-/// E.g. rs_script demo/clap_tut_04.rs -ddd -c dummy.cfg test -l
-//# Purpose: Demonstrate `clap` CLI using the derive option
 fn main() {
     let cli = Cli::parse();
 
@@ -39,9 +39,9 @@ fn main() {
         }
     }
 
-    println!();
+    // ** The original clap tutorial example ends here. **
 
-    // println!("{}", cli.long_version(crate_version!()));
+    println!();
 
     // Print summary of enum variants
     println!("Enum Variants:");

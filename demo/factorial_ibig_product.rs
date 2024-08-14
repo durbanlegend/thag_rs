@@ -11,7 +11,7 @@ ibig = "0.3.6"
 /// not implement the Product trait, so we have to wrap the `UBig`. Which of course
 /// is pretty verbose in the context of a snippet, but could be useful in an app.
 /// The implementation is thanks to GPT-4.
-//# Demo snippet, `ibig` crate, factorial using `std::iter::Product` trait, workaround for implementing an external trait on an external crate.
+//# Purpose: Demo snippet, `ibig` crate, factorial using `std::iter::Product` trait, workaround for implementing an external trait on an external crate.
 
 use ibig::{ubig, UBig};
 use std::env;

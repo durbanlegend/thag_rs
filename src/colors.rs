@@ -8,8 +8,12 @@ use serde::Deserialize;
 #[cfg(windows)]
 use std::env;
 use std::{fmt::Display, str::FromStr};
+use strum::IntoEnumIterator;
 use strum::{Display, EnumIter, EnumString};
-use {strum::IntoEnumIterator, supports_color::Stream, termbg::Theme};
+#[cfg(not(windows))]
+use supports_color::Stream;
+#[cfg(not(windows))]
+use termbg::Theme;
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = {

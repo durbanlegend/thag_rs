@@ -2,8 +2,7 @@
 [dependencies]
 bitflags = "2.5.0"
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
-rs-script = { git = "https://github.com/durbanlegend/rs-script/crates/unquoteln" }
-
+rs-script = { git = "https://github.com/durbanlegend/rs-script" }
 */
 
 /// A prototype of the cmd_args module of rs-script itself.

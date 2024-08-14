@@ -124,7 +124,7 @@ fn test_cargo_manifest_display() {
         crate_type: vec!["cdylib".to_string()],
         required_features: Vec::<String>::new(),
     });
-    // println!("manifest={manifest:#?}");
+    println!("manifest={manifest:#?}");
 
     let toml_str = toml::to_string(&manifest).unwrap();
     let expected_toml_str = r#"[package]
@@ -134,6 +134,9 @@ edition = "2021"
 
 [dependencies]
 serde = "1.0"
+
+[dependencies.unquoteln]
+git="https://github.com/durbanlegend/rs-script/crates/unquoteln"
 
 [features]
 default = ["serde"]

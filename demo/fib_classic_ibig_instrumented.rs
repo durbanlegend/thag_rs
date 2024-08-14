@@ -6,7 +6,7 @@ ibig = "0.3.6"
 /// Same script as `demo/fib_basic_ibig.rs` with basic instrumentation added for benchmarking
 /// against other fibonacci scripts.
 /// Scripts can then be selected and run sequentially.
-/// E.g. an apples-with-apples comparison of diferent algorithms implemented using the ``ibig` crate:
+/// E.g. an apples-with-apples comparison of different algorithms implemented using the ``ibig` crate:
 /// `ls -1 demo/fib*ibig*.rs | grep -v fib_basic_ibig.rs | while read f; do echo $f; rs_script -t $f -- 10000000; done`
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.

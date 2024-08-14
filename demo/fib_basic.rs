@@ -5,7 +5,7 @@ itertools = "0.12.1"
 */
 /// Fast non-recursive classic Fibonacci calculations for a specific value or an entire sequence.
 /// I can't recall the exact source, but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
-/// for a variety of alternative approaches. The various Fibnonacci scripts here in the demo
+/// for a variety of alternative approaches. The various Fibonacci scripts here in the demo
 /// directory also show a number of approaches. `demo/fib_basic_ibig.rs` shows the use of
 /// the `std::iter::Successors` iterator as well as removing the limitations of Rust
 /// primitives. Most of the other examples explore different strategies for rapid computation of

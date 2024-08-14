@@ -10,7 +10,7 @@ dashu = "0.4.2"
 ///
 /// Credit to Stack Overflow user `Francis Gagné`.
 ///
-/// See also `demo/type_of_at_compile_time_1.rs` for an alternatve implementation.
+/// See also `demo/type_of_at_compile_time_1.rs` for an alternative implementation.
 ///
 /// Seems to work very well provided all the types encountered are anticipated.
 //# Purpose: Demo expression type determination for static dispatch.

@@ -170,7 +170,7 @@ it some parameters like this:
 
     clap_tut_builder_01 -dd -c my.cfg my_file test -l
 
-and get outuput like this:
+and get output like this:
 
     Value for name: my_file
     Value for config: my.cfg

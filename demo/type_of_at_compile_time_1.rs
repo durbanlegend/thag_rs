@@ -2,7 +2,7 @@
 ///
 /// This is a slightly embellished version of user `phicr`'s answer on `https://stackoverflow.com/questions/21747136/how-do-i-print-the-type-of-a-variable-in-rust`.
 ///
-/// See also `demo/type_of_at_compile_time_2.rs` for an alternatve implementation.
+/// See also `demo/type_of_at_compile_time_2.rs` for an alternative implementation.
 //# Purpose: Demo expression type determination for static dispatch.
 use std::stringify;
 

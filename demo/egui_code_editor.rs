@@ -150,7 +150,7 @@ fn main() -> eframe::Result<()> {
         // .with_icon(
         //     // NOTE: Adding an icon is optional
         //     eframe::icon_data::from_png_bytes(
-        //         &include_bytes!("/Users/donf/projects/rs-script/assets/icon-256.png")[..],
+        //         &include_bytes!("path_to_icon/icon-256.png")[..],
         //     )
         //     .unwrap(),
         // ),

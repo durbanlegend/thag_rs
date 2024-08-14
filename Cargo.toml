@@ -54,7 +54,7 @@ scopeguard = "1.2.0"
 ratatui = "0.28.0"
 cargo_toml = "0.20.4"
 serde_json = "1.0.124"
-unquoteln = { path = "crates/unquoteln" }
+unquoteln = { git = "https://github.com/durbanlegend/rs-script/crates/unquoteln" }
 
 [profile.dev]
 opt-level = 1 # Use slightly better optimizations.

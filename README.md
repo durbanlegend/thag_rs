@@ -6,18 +6,18 @@
 
 ## Intro
 
-`thag_rs` is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
+`thag_rs` (command `thag`) is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
 It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while hopefully being simple and convenient to use.
 It also supports scripting via shebangs, building executables from your snippets, a loop-filter mode and plain or edited standard input.
 
 `thag_rs` includes a demo library of over 170 sample scripts. If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
-## Quick start: ways to run `thag_rs`
+## Quick start: ways to run the `thag` command
 
 ### * With an expression argument:
 
 ```bash
-thag_rs --expr '"Hello world!"'                                   # Short form: -e
+thag --expr '"Hello world!"'                                   # Short form: -e
 ```
 ![Repl](hellow.png)
 
@@ -25,10 +25,10 @@ Invoking quiet mode (`--quiet (-q)`) suppresses most feedback except for the flo
 Invoking it twice (`-qq` for short) suppresses all non-error feedback including the flowerbox, allowing the
 output to be used as a filter.
 
-By default, `thag_rs` and Cargo will feed back to you:
+By default, `thag` and Cargo will feed back to you:
 
 ```bash
-thag_rs -e ' {
+thag -e ' {
 use jiff::{Zoned, Unit};
 Zoned::now().round(Unit::Second)?
 }'                                                                  # Long form: --expr
@@ -38,13 +38,13 @@ Zoned::now().round(Unit::Second)?
 ### * With a script:
 
 ```bash
-thag_rs demo/iced_tour.rs
+thag demo/iced_tour.rs
 ```
 
 ### * As a REPL (Read-Evaluate-Print Loop):
 
 ```bash
-thag_rs --repl                                                    # Short form: -l
+thag --repl                                                    # Short form: -l
 ```
 ![Repl](replw.png)
 
@@ -53,13 +53,13 @@ The REPL has file-backed history and access to graphical and text-based editors 
 ### * With standard input:
 
 ```bash
-echo "(1..=10).product::<u32>()" | thag_rs --stdin                # Short form: -s
+echo "(1..=10).product::<u32>()" | thag --stdin                # Short form: -s
 ```
 
 ### * With a TUI (Terminal User Interface) editor
 
 ```bash
-thag_rs --edit                                                    # Short form: -d
+thag --edit                                                    # Short form: -d
 ```
 ![Editor](edit1w.png)
 
@@ -68,7 +68,7 @@ thag_rs --edit                                                    # Short form: 
 ### * With standard input into the TUI editor:
 
 ```bash
-cat my_file.rs | thag_rs --edit                                   # Short form: -d
+cat my_file.rs | thag --edit                                   # Short form: -d
 ```
 
 This allows you to edit or append to the stdin input before submitting it to `thag_rs`. It has file-backed history so you don't lose your edits.
@@ -82,7 +82,7 @@ Shift-Up: `\033;[2A` and `Shift-Down`: \033;[2B. Use the Esc key to generate \03
 At a minimum, loops though `stdin` running the `--loop` expression against every line. The line number and content are made available to the expression as `i` and `line` respectively.
 
 ```bash
-cat demo/hello.rs | thag_rs --loop 'format!("{i}.\t{line}")'      # Short form: -l
+cat demo/hello.rs | thag --loop 'format!("{i}.\t{line}")'      # Short form: -l
 ```
 ![Loop](loopw.png)
 
@@ -92,7 +92,7 @@ For a true filter that you can pipe to another process, you can use `-qq` (or `-
 Alternatively:
 
 ```bash
-thag_rs -l 'format!("{i}.\t{line}")' < demo/hello.rs              # Long form: --loop
+thag -l 'format!("{i}.\t{line}")' < demo/hello.rs              # Long form: --loop
 ```
 Loop mode also accepts the following optional arguments supplying surrounding code, along the lines of AWK:
 
@@ -103,9 +103,16 @@ Loop mode also accepts the following optional arguments supplying surrounding co
 ```
 
 ### * As an executable:
+The --executable (-x) option builds your script in release mode and moves it to ~/.cargo/bin/, which is recommended to be in your path.
 
 ```bash
-thag_rs -x my_script.rs                                           # Long form: --executable
+thag -x my_script.rs                                           # Long form: --executable
+Building my_script.rs ...
+...
+----------------------------------------------------------------------
+Executable built and moved to ~/.cargo/bin/my_script
+----------------------------------------------------------------------
+You can use an OS command to rename the
 ```
 >>> TODO
 
@@ -166,17 +173,17 @@ Here are some examples:
 This panics beyond 34! due to using Rust primitives, but see demos for arbitrarily big numbers:
 
 ```bash
-thag_rs -e '(1..=34).product::<u128>()'
+thag -e '(1..=34).product::<u128>()'
 ```
 
 #### Shoehorn a script into an expression, should the need ever arise!:
 ```bash
-thag_rs -e "$(cat demo/fizz_buzz_gpt.rs)"
+thag -e "$(cat demo/fizz_buzz_gpt.rs)"
 ```
 
 #### Run a script in quiet mode but show timings
 ```bash
-thag_rs -tq demo/fizz_buzz_gpt.rs
+thag -tq demo/fizz_buzz_gpt.rs
 1
 2
 Fizz
@@ -212,14 +219,14 @@ thag_rs completed processing script fizz_buzz_gpt.rs in 0.20s
 
 ### Using the REPL
 ```bash
-thag_rs -l
+thag -l
 ```
 This will start an interactive REPL session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally edit an expression from history.
 Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano...) and rerun it. The REPL also offers basic housekeeping functions for the temporary files generated, otherwise being in temporary space they will be cleaned up by the operating system in due course.
 
 #### Revisiting a REPL expression from a previous session
 ```bash
-thag_rs -l repl_<nnnnnn>.rs
+thag -l repl_<nnnnnn>.rs
 ```
 will return to edit and run a named generated script from a previous REPL session.
 
@@ -237,13 +244,13 @@ _— The Rust Reference_
 
 * Runs serious Rust scripts (not just the "Hello, world!" variety) with no need to create a project.
 * Aims to be the most capable and reliable script runner for Rust code.
-* Crucially, specific features of dependencies may be specified, giving your scripts access to advanced functionality. Local path and git dependencies may also be specified, allowing you to access your unpublished crates.
+* Specific features of dependencies may be specified, giving your scripts access to advanced functionality. Local path and git dependencies may also be specified, allowing you to access your unpublished crates.
 * A choice of modes - bearing in mind the importance of expressions in Rust:
     * expression mode for small, basic expressions on the fly.
     * REPL mode offers interactivity, and accepts multi-line expressions since it respects matching braces, brackets, parens and quotes.
-    * stdin mode accepts larger scripts or programs on the fly, which need not be expressions as such. Being stdin it can be used with piped input.
-    * edit mode is stdin mode with the addition of basic TUI (terminal user interface) in-place editing.
-    * the classic script mode runs any .rs file consisting of a valid Rust script or program.
+    * stdin mode accepts larger scripts or programs on the fly, as typed, pasted or piped input.
+    * edit mode is stdin mode with the addition of basic TUI (terminal user interface) in-place editing, with or without piped input.
+    * the classic script mode runs any .rs file consisting of a valid Rust snippet or program.
 * You can use a shebang to write scripts in Rust.
 * You can even build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to an executable command in the Cargo bin directory `<home>/.cargo/bin`.
 * `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast big-integer factorial and Fibonacci calculation and prototypes of TUI editing and of the adaptive colour palettes described below.
@@ -251,19 +258,19 @@ _— The Rust Reference_
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from thag_rs. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug this functionality without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
 
 ## Platform Support
-This crate is designed to be cross-platform and supports:
+This crate is designed to be cross-platform and supports MacOS, Linux and Windows.
 
-* MacOS: Tested on MacOS (M1) Sonoma.
-* Linux: Tested on Zorin and (WSL2) Ubuntu.
-* Windows: Tested on Windows 11:
-    - PowerShell 5 and CMD under Windows Terminal and Windows Console
-    - WSL2
+Currently tested on MacOS (M1) Sonoma, Zorin and (WSL2) Ubuntu, and Windows 11 PowerShell 5, CMD under Windows Terminal and Windows Console, and WSL2.
 
-GitHub actions test each commit on `ubuntu-latest`, `macos-latest` and `windows-latest`.
+GitHub Actions test each commit on `ubuntu-latest`, `macos-latest` and `windows-latest`.
+
+## Why "thag"?
+
+After the late Thag Simmons. Short, sharp, and it gets the job done.
 
 ## Related projects
 
-(With acknowledgements to the author of `rust-script`)
+(Hat-tip to the author of `rust-script`)
 
 * `evcxr` - Perhaps the most well-known Rust REPL.
 * `cargo-script` - Rust script runner (unmaintained project).
@@ -273,22 +280,6 @@ GitHub actions test each commit on `ubuntu-latest`, `macos-latest` and `windows-
 * `irust` - limited Rust REPL.
 * `runner` - experimental tool for running Rust snippets without Cargo, exploring dynamic vs static linking for speed. I have an extensively modified fork of this crate on GitHub, but I highly recommend using the current `thag_rs` crate rather than that fork.
 * `cargo-script-mvs` - RFC demo.
-
-## Contributing
-
-Contributions will be given due consideration if they fit the goals of the project. Please see CONTRIBUTING.md for more details.
-
-## Of possible interest: AI
-
-I made extensive use of free versions of LLMs - mainly ChatGPT and to a lesser extent Gemini - for four aspects of this project:
-* problem solving
-* suggestions and guidance on best practices
-* generation of unit and integration tests
-* grunt work of generating "first-approximation" code and boilerplate to spec.
-
-Although these LLMs could be hit-and-miss or clichéd when it comes to specifics and to received wisdom, my experience has been that intensive dialogues with the LLMs have generally either led them to produce worthwhile solutions, or at least led me to see that there were sometimes deeper-seated issues that AI couldn't solve and to dig deeper researching on my own.
-
-I short I found using AI hugely beneficial in terms not only of productivity but of extending the scope of work that I could comfortably take on. I didn't use any licensed or integrated features and at this stage I'm not feeling the lack of same.
 
 ## License
 
@@ -304,5 +295,8 @@ or
 
 at your option.
 
-## Contribution
+## Contributing
+
+Contributions will be considered if they fit the goals of the project.
+
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you will be dual-licensed as above, without any additional terms or conditions.

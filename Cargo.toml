@@ -67,7 +67,7 @@ name = "thag_rs"
 path = "src/lib.rs"
 
 [[bin]]
-name = "thag_rs"
+name = "thag"
 path = "src/bin/thag_rs.rs"
 
 [features]

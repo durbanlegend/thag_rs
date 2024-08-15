@@ -6,6 +6,8 @@ ratatui = { version = "0.28", default-features = false, features = ["crossterm"]
 tui-scrollview = "0.4"
 */
 
+/// Published example from `tui-scrollview` crate. Toml entries from crate's Cargo.toml.
+//# Purpose: Explore TUI editing
 use std::io::{self, stdout};
 
 use color_eyre::{config::HookBuilder, Result};

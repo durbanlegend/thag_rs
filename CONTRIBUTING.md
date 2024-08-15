@@ -1,4 +1,4 @@
-# Contributing to rs-script
+# Contributing to thag_rs
 
 I welcome all kinds of contributions including bug reports, feature requests, documentation improvements, as well as code contributions that I find to be a good fit with the project.
 You are obviously welcome to fork the project in terms of the Apache 2 and MIT licences if you don't get satisfaction.
@@ -7,7 +7,7 @@ You are obviously welcome to fork the project in terms of the Apache 2 and MIT l
 
 ### Reporting Bugs
 
-If you find a bug, please report it by opening an issue on [GitHub Issues](https://github.com/durbanlegend/rs-script/issues). When reporting a bug, please include:
+If you find a bug, please report it by opening an issue on [GitHub Issues](https://github.com/durbanlegend/thag_rs/issues). When reporting a bug, please include:
 
 - A clear and descriptive title.
 - A detailed description of the problem.
@@ -17,7 +17,7 @@ If you find a bug, please report it by opening an issue on [GitHub Issues](https
 
 ### Suggesting Features
 
-If you have a feature request, please open an issue on [GitHub Issues](https://github.com/durbanlegend/rs-script/issues) and provide:
+If you have a feature request, please open an issue on [GitHub Issues](https://github.com/durbanlegend/thag_rs/issues) and provide:
 
 - A clear and descriptive title.
 - A detailed description of the proposed feature.
@@ -32,8 +32,8 @@ If you find any part of the documentation unclear or incomplete, feel free to op
 1. **Fork the Repository**: Click the "Fork" button at the top right corner of the repository page.
 2. **Clone Your Fork**: Clone your forked repository to your local machine.
     ```bash
-    git clone https://github.com/durbanlegend/rs-script.git
-    cd rs-script
+    git clone https://github.com/durbanlegend/thag_rs.git
+    cd thag_rs
     ```
 3. **Create a Branch**: Create a new branch for your changes.
     ```bash

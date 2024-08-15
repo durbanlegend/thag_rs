@@ -2,11 +2,11 @@
 mod tests {
     use cargo_toml::{Edition, Manifest};
     use mockall::predicate::*;
-    use rs_script::manifest::{
+    use std::process::Output;
+    use thag_rs::manifest::{
         capture_dep, cargo_search, default_manifest_from_build_state, merge, MockCommandRunner,
     };
-    use rs_script::BuildState;
-    use std::process::Output;
+    use thag_rs::BuildState;
 
     // Set environment variables before running tests
     fn set_up() {

@@ -8,7 +8,7 @@ rug = "1.24.1"
 /// digits. This contains 3 alternative algorithms to compare their speed, the clear
 /// winner being `fibo_new`.
 ///
-/// E.g.:   `rs_script demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
+/// E.g.:   `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 ///
 //# Purpose: Demo 3 very fast Fibonacci algorithms (2.6 to 6 sec for me). Indications are that
 //# the `rug` crate would be at least 5 times as fast.

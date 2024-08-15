@@ -124,9 +124,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 /// # Examples
 ///
 /// ```no_run
-/// use rs_script::stdin::{edit, CrosstermEventReader};
+/// use thag_rs::stdin::{edit, CrosstermEventReader};
 /// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
-/// # use rs_script::stdin::MockEventReader;
+/// # use thag_rs::stdin::MockEventReader;
 ///
 /// # let mut event_reader = MockEventReader::new();
 /// # event_reader.expect_read_event().return_once(|| {
@@ -298,7 +298,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
 /// # Examples
 ///
 /// ```
-/// use rs_script::stdin::read;
+/// use thag_rs::stdin::read;
 ///
 /// let hello = String::from("Hello world!");
 /// assert!(matches!(read(), Ok(hello)));
@@ -318,7 +318,7 @@ pub fn read() -> Result<String, std::io::Error> {
 /// # Examples
 ///
 /// ```
-/// use rs_script::stdin::read_to_string;
+/// use thag_rs::stdin::read_to_string;
 ///
 /// let stdin = std::io::stdin();
 /// let mut input = stdin.lock();

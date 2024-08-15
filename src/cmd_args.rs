@@ -7,10 +7,10 @@ use clap::{ArgGroup, Parser};
 use core::{fmt, str};
 use std::error::Error;
 
-/// rs-script script runner and REPL
+/// thag_rs script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Default, Parser, Debug)]
-#[command(name = "rs_script", version, about, long_about)]
+#[command(name = "thag_rs", version, about, long_about)]
 #[command(group(
             ArgGroup::new("commands")
                 .required(true)

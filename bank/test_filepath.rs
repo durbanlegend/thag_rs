@@ -22,7 +22,7 @@ pub(crate) fn disentangle(text_wall: &str) -> String {
 }
 
 fn main() -> std::io::Result<()> {
-    let path = "/Users/donf/projects/rs-script/demo/test_filepath.rs";
+    let path = "/Users/donf/projects/thag_rs/demo/test_filepath.rs";
     let contents = std::fs::read_to_string(path)?;
     println!("contents={}", disentangle(&contents));
 

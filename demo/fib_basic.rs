@@ -1,4 +1,4 @@
-#! /usr/bin/env rs_script
+#! /usr/bin/env thag_rs
 /*[toml]
 [dependencies]
 itertools = "0.12.1"
@@ -9,7 +9,7 @@ itertools = "0.12.1"
 /// directory also show a number of approaches. `demo/fib_basic_ibig.rs` shows the use of
 /// the `std::iter::Successors` iterator as well as removing the limitations of Rust
 /// primitives. Most of the other examples explore different strategies for rapid computation of
-/// large Fibonacci values, and hopefully demonstrate the usefulness of `rs-script` as a tool
+/// large Fibonacci values, and hopefully demonstrate the usefulness of `thag_rs` as a tool
 /// for trying out and comparing new ideas.
 ///
 /// As the number of Fibonacci examples here shows, this took me down a Fibonacci rabbit hole.

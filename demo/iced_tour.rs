@@ -5,7 +5,7 @@ tracing-subscriber = "0.3.18"
 */
 
 /// The full tour of the `iced` crate published in the `iced` examples.
-//# Purpose: Show that `rs-script` can handle product demos.
+//# Purpose: Show that `thag_rs` can handle product demos.
 use iced::alignment::{self, Alignment};
 use iced::theme;
 use iced::widget::{

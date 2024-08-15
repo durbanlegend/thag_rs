@@ -1,5 +1,5 @@
 use clap::Parser;
-use rs_script::{get_proc_flags, Cli, ProcFlags};
+use thag_rs::{get_proc_flags, Cli, ProcFlags};
 
 // Set environment variables before running tests
 fn set_up() {
@@ -11,7 +11,7 @@ fn set_up() {
 #[test]
 fn test_get_args_script() {
     set_up();
-    let args = vec!["rs_script", "demo_script", "--", "arg1", "arg2"];
+    let args = vec!["thag_rs", "demo_script", "--", "arg1", "arg2"];
     let cli = Cli::parse_from(args);
     assert!(Some("demo_script") == cli.script.as_deref());
     // println!("cli.args={:#?}", cli.args);
@@ -21,7 +21,7 @@ fn test_get_args_script() {
 #[test]
 fn test_get_args_expr() {
     set_up();
-    let args = vec!["rs_script", "--expr", "'2 + 5'"];
+    let args = vec!["thag_rs", "--expr", "'2 + 5'"];
     let cli = Cli::parse_from(args);
     // println!("cli.script.as_deref()={}", cli.script.as_deref());
     assert!(cli.script.as_deref().is_none());
@@ -31,7 +31,7 @@ fn test_get_args_expr() {
 #[test]
 fn test_get_args_stdin() {
     set_up();
-    let args = vec!["rs_script", "-s"];
+    let args = vec!["thag_rs", "-s"];
     let cli = Cli::parse_from(args);
     // println!("cli.script.as_deref()={}", cli.script.as_deref());
     assert!(cli.script.as_deref().is_none());
@@ -41,7 +41,7 @@ fn test_get_args_stdin() {
 #[test]
 fn test_get_proc_flags() {
     set_up();
-    let args = vec!["rs_script", "--expr", "'2 + 5'"];
+    let args = vec!["thag_rs", "--expr", "'2 + 5'"];
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
@@ -62,7 +62,7 @@ fn test_get_proc_flags() {
 #[test]
 fn test_conflicts_with_all() {
     set_up();
-    let args = vec!["rs_script", "--expr", "--edit"];
+    let args = vec!["thag_rs", "--expr", "--edit"];
     let result = Cli::try_parse_from(args);
     // println!("result={result:#?}");
     assert!(result.is_err()); // or check for specific error

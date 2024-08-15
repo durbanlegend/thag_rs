@@ -5,7 +5,7 @@ clap = { version = "4.5.7", features = ["cargo", "derive"] }
 
 /// Published example from `clap` tutorial (derive), with added displays.
 ///
-/// E.g. `rs_script demo/clap_tut_derive_04_01_enum.rs -- fast`
+/// E.g. `thag_rs demo/clap_tut_derive_04_01_enum.rs -- fast`
 //# Purpose: Demonstrate `clap` CLI using the derive option
 use clap::{Parser, ValueEnum};
 

@@ -1,19 +1,19 @@
 #[cfg(test)]
 mod tests {
-    use rs_script::code_utils::find_modules_source;
-    use rs_script::code_utils::find_use_renames_source;
-    use rs_script::code_utils::infer_deps_from_ast;
-    use rs_script::code_utils::infer_deps_from_source;
-    use rs_script::code_utils::is_last_stmt_unit_type;
-    use rs_script::code_utils::is_path_unit_type;
-    use rs_script::code_utils::is_stmt_unit_type;
-    use rs_script::code_utils::path_to_str;
-    use rs_script::code_utils::prep_snippet;
-    use rs_script::code_utils::read_file_contents;
-    use rs_script::code_utils::wrap_snippet;
-    use rs_script::extract_manifest;
+    use thag_rs::code_utils::find_modules_source;
+    use thag_rs::code_utils::find_use_renames_source;
+    use thag_rs::code_utils::infer_deps_from_ast;
+    use thag_rs::code_utils::infer_deps_from_source;
+    use thag_rs::code_utils::is_last_stmt_unit_type;
+    use thag_rs::code_utils::is_path_unit_type;
+    use thag_rs::code_utils::is_stmt_unit_type;
+    use thag_rs::code_utils::path_to_str;
+    use thag_rs::code_utils::prep_snippet;
+    use thag_rs::code_utils::read_file_contents;
+    use thag_rs::code_utils::wrap_snippet;
+    use thag_rs::extract_manifest;
 
-    use rs_script::Ast;
+    use thag_rs::Ast;
     use std::io::Write;
     use std::path::Path;
     use std::time::Instant;

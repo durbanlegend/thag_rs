@@ -7,7 +7,6 @@
 ## Medium Priority
 - [ ]  Add additional popular crates
 - [ ]  More unit and integration tests
-- [ ]  Ensure hyphens vs underscores are used correctly in rs-script command
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
 - [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
@@ -18,11 +17,9 @@
        - make demo scripts to replicate issues.
 - [ ]  Add FAQ
 - [ ]  Conversions both ways for rust-script and maybe runner?
-- [ ]  Find a punchy name - rs_thagomizer or thagomizer_rs (thag_rs) | rs_doodle | rs_noodle | rs_sketch | sketch_rs | rs_bolt | rs_volt | rs_ares
-       NB use underscore as hyphen causes too many hassles.
 - [ ]  Mocks not working in Windows? repl::test_edit, test_edit_history and test_toml all bring up VS Code and get stuck.
 - [ ]  README for Windows: set $Env:TERM = "xterm-256color". Or consider prompting for it if only basic found. Or a config file.
-- [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do rs_script -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
+- [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Add config-file support to cmd_args based on demo/config.rs. Include an option to include or exclude quotes on returned strings.
 - [ ]  Debug history getting out of sequence in -d option.
        Maybe make it a command-line option too.

@@ -1,14 +1,14 @@
 /*[toml]
 [dependencies]
-rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 
 ratatui = "=0.26.3"
 # [patch.crates-io]
 # ratatui = { version = "=0.26.3" }
 */
 
-use rs_script::log;
-use rs_script::logging::Verbosity;
+use thag_rs::log;
+use thag_rs::logging::Verbosity;
 
 fn main() {
     log!(Verbosity::Quiet, "Quiet message");

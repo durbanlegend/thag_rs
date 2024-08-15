@@ -6,11 +6,11 @@ syn = { version = "2.0.71", features = ["full", "visit"] }
 use syn::visit::Visit;
 use syn::Expr;
 
-/// Prototype of a function required by rs_script to count the main methods
+/// Prototype of a function required by thag_rs to count the main methods
 /// in a script to decide if it's a program or a snippet. Uses the `syn`
 /// visitor pattern. This is more reliable than a simple source code search
 /// which tends to find false positives in string literals and comments.
-//# Purpose: Demo prototyping with rs-script and use of the `syn` visitor pattern to visit nodes of interest
+//# Purpose: Demo prototyping with thag_rs and use of the `syn` visitor pattern to visit nodes of interest
 fn count_main_methods(rs_source: &str) -> usize {
     // Parse the source code into a syntax tree
     let mut maybe_ast: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);

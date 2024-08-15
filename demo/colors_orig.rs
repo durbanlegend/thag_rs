@@ -3,14 +3,14 @@
 crossterm = "0.27.0"
 log = "0.4.21"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 
 strum = { version = "0.26.2", features = ["derive"] }
 supports-color= "3.0.0"
 termbg = "0.5.0"
 */
 
-/// Original prototype of `rs-script`'s `colors` module to style messages according
+/// Original prototype of `thag_rs`'s `colors` module to style messages according
 /// to their type. I only dropped `owo-colors` because I switched from `rustyline` to
 /// `reedline`, which was already using `nu_ansi_term`.
 ///
@@ -22,10 +22,10 @@ use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
 use owo_colors::colors::{self as owo_ansi, Magenta};
 use owo_colors::{AnsiColors, Style, XtermColors};
 use owo_xterm::Black;
-use rs_script::{clear_screen, debug_log};
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use supports_color::Stream;
 use termbg::{Error, Theme};
+use thag_rs::{clear_screen, debug_log};
 
 #[macro_export]
 macro_rules! color_println {

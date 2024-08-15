@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 
 lazy_static = "1.4.0"
 regex = "1.10.4"
@@ -8,11 +8,11 @@ ratatui = "0.27.0"
 tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 */
 
-/// A version of `rs-script`'s `stdin` module to handle standard input editor input. Like the `colors`
+/// A version of `thag_rs`'s `stdin` module to handle standard input editor input. Like the `colors`
 /// module, `stdin` was originally developed here as a separate script and integrated as a module later.
 //////
-/// E.g. `rs_script demo/stdin.rs`
-//# Purpose: Demo using `rs-script` to develop a module outside of the project.
+/// E.g. `thag_rs demo/stdin.rs`
+//# Purpose: Demo using `thag_rs` to develop a module outside of the project.
 use ratatui::crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, Event::Paste,
 };
@@ -33,7 +33,7 @@ use std::error::Error;
 use std::io::{self, IsTerminal};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
-use rs_script::errors::BuildRunError;
+use thag_rs::errors::BuildRunError;
 
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {

@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
     use clap::{ArgMatches, Parser};
-    use rs_script::cmd_args::{Cli, ProcFlags};
-    use rs_script::repl::{
+    use thag_rs::cmd_args::{Cli, ProcFlags};
+    use thag_rs::repl::{
         delete, disp_repl_banner, edit, edit_history, list, parse_line, run_expr, toml, Context,
     };
-    use rs_script::shared::BuildState;
+    use thag_rs::shared::BuildState;
     use std::path::PathBuf;
     use std::time::Instant;
 
@@ -67,7 +67,7 @@ mod tests {
         set_up();
         let mut options = Cli::parse_from(["test", "repl"]);
         let proc_flags = ProcFlags::default();
-        let mut build_state = rs_script::BuildState {
+        let mut build_state = thag_rs::BuildState {
             cargo_home: PathBuf::from("tests/assets/"),
             ..Default::default()
         };

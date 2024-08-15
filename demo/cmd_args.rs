@@ -2,27 +2,27 @@
 [dependencies]
 bitflags = "2.5.0"
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
-rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 */
 
-/// A prototype of the cmd_args module of rs-script itself.
+/// A prototype of the cmd_args module of thag_rs itself.
 ///
-/// E.g. `rs_script -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
+/// E.g. `thag_rs -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 //# Purpose: Prototype CLI.
-use rs_script::errors::BuildRunError;
-use rs_script::log;
-use rs_script::logging::{self, Verbosity};
-use rs_script::RS_SUFFIX;
+use thag_rs::errors::BuildRunError;
+use thag_rs::log;
+use thag_rs::logging::{self, Verbosity};
+use thag_rs::RS_SUFFIX;
 
 use bitflags::bitflags;
 use clap::Parser;
 use core::{fmt, str};
 use std::error::Error;
 
-// rs-script script runner and REPL
+// thag_rs script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Parser, Debug)]
-#[command(name = "rs_script")]
+#[command(name = "thag_rs")]
 pub struct Cli {
     /// Optional name of a script to run
     pub script: Option<String>,

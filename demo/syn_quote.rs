@@ -14,9 +14,9 @@ syn = { version = "2.0.71", features = ["full"] }
 /// rust_code=println ! ("result={}" , 5 + 8) ;
 /// ```
 /// Fun fact: you can paste the output into any of the `expr`, `edit`, `repl` or `stdin`
-/// modes of `rs-script`, or even into a .rs file, and it will print out the value of the
+/// modes of `thag_rs`, or even into a .rs file, and it will print out the value of the
 /// expression (in this case 13). Or you can do the same with the input (5 + 8) and it
-/// will do the same because `rs-script` will detect and evaluate an expression in
+/// will do the same because `thag_rs` will detect and evaluate an expression in
 /// essentially the same way as this script does.
 //# Purpose: demo expression evaluation (excluding compilation and execution) using the `syn` and `quote` crates.
 use quote::quote;

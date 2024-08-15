@@ -2,7 +2,7 @@
 [dependencies]
 lazy_static = "1.4.0"
 regex = "1.10.5"
-rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 */
 
 /// This is the actual script used to collect demo script metadata and generate
@@ -12,11 +12,11 @@ rs-script = { git = "https://github.com/durbanlegend/rs-script" }
 //# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
 use lazy_static::lazy_static;
 use regex::Regex;
-use rs_script::{code_utils, debug_log};
 use std::collections::HashMap;
 use std::fs::{self, read_dir, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use thag_rs::{code_utils, debug_log};
 
 #[derive(Debug)]
 struct ScriptMetadata {
@@ -153,32 +153,32 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path) {
     let mut file = File::create(output_path).unwrap();
     writeln!(file, r#"## Running the scripts
 
-`rs-script` uses `clap` for a standard command-line interface. Try `rs-script --help` (or -h) if
+`thag_rs` uses `clap` for a standard command-line interface. Try `thag_rs --help` (or -h) if
 you get stuck.
 
 ### In its simplest form:
 
 
-    rs_script <path to script>
+    thag_rs <path to script>
 
 ###### E.g.:
 
-    rs_script demo/hello.rs
+    thag_rs demo/hello.rs
 
 ### Passing options and arguments to a script:
 
-Use `--` to separate options and arguments meant for the script from those meant for `rs_script` itself.
+Use `--` to separate options and arguments meant for the script from those meant for `thag_rs` itself.
 
 ###### E.g.:
 
 demo/fib_dashu_snippet.rs expects to be passed an integer _n_ and will compute the _nth_ number in the
 Fibonacci sequence.
 
-     rs_script demo/fib_dashu_snippet.rs -- 100
+     thag_rs demo/fib_dashu_snippet.rs -- 100
 
 ### Full syntax:
 
-    rs_script [RS-SCRIPT OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
+    thag_rs [THAG_RS OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
 
 ###### E.g.:
 
@@ -206,19 +206,19 @@ and get output like this:
     Debug mode is on
     Printing testing lists...
 
-Running the source from rs-script looks similar, we just replace `clap_tut_builder_01` by `rs_script demo/clap_tut_builder_01.rs --`:
+Running the source from thag_rs looks similar, we just replace `clap_tut_builder_01` by `thag_rs demo/clap_tut_builder_01.rs --`:
 
-*rs_script demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
+*thag_rs demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
 
-Any parameters for `rs_script` should go before the `--`, e.g. we may choose use -qq to suppress `rs-script` messages:
+Any parameters for `thag_rs` should go before the `--`, e.g. we may choose use -qq to suppress `thag_rs` messages:
 
-    rs_script demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
+    thag_rs demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
 
 which will give identical output to the above.
 
 
 
-##### Remember to use `--` to separate options and arguments that are intended for `rs_script` from those intended for the target script.
+##### Remember to use `--` to separate options and arguments that are intended for `thag_rs` from those intended for the target script.
 
 ***
 ## Detailed script listing
@@ -255,7 +255,7 @@ which will give identical output to the above.
         .unwrap();
         writeln!(
             file,
-            "**Link:** [{}](https://github.com/durbanlegend/rs-script/blob/master/demo/{})\n",
+            "**Link:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/demo/{})\n",
             metadata.script, metadata.script
         )
         .unwrap();

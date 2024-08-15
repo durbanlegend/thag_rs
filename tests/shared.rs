@@ -1,12 +1,12 @@
 use cargo_toml::{Dependency, Edition, Manifest, Product};
 use quote::ToTokens;
-use rs_script::manifest;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::time::Instant;
+use thag_rs::manifest;
 
-use rs_script::cmd_args::{Cli, ProcFlags};
-use rs_script::shared::{
+use thag_rs::cmd_args::{Cli, ProcFlags};
+use thag_rs::shared::{
     debug_timings, display_timings, escape_path_for_windows, Ast, BuildState, ScriptState,
 };
 

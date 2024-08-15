@@ -1,9 +1,9 @@
 use clap::Parser;
-use rs_script::{execute, Cli, DYNAMIC_SUBDIR, TMPDIR};
 use std::env;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
+use thag_rs::{execute, Cli, DYNAMIC_SUBDIR, TMPDIR};
 
 // Set environment variables before running tests
 fn set_up() {
@@ -21,17 +21,17 @@ fn test_script_runner_with_dependencies() -> Result<(), Box<dyn std::error::Erro
     // Create a sample script file with a dependency
     let source_path = temp_dir.join("script.rs");
     let mut script_file = File::create(&source_path)?;
-    let rs_script_path = env::current_dir()?;
+    let thag_rs_path = env::current_dir()?;
     write!(
         script_file,
         r#"/*[toml]
 [dependencies]
 nu-ansi-term = "0.50.0"
-rs-script = {{ path = {rs_script_path:#?} }}
+thag_rs = {{ path = {thag_rs_path:#?} }}
 */
-use rs_script::colors::{{nu_resolve_style, MessageLevel}};
-use rs_script::log;
-use rs_script::logging::Verbosity;
+use thag_rs::colors::{{nu_resolve_style, MessageLevel}};
+use thag_rs::log;
+use thag_rs::logging::Verbosity;
 fn main() {{
     log!(Verbosity::Normal, "nu_resolve_style(MessageLevel::Emphasis)={{:#?}}", nu_resolve_style(MessageLevel::Emphasis));
 }}"#
@@ -39,7 +39,7 @@ fn main() {{
 
     // Simulate command-line arguments
     let args = vec![
-        "rs_script", // Typically, this would be the binary name
+        "thag_rs", // Typically, this would be the binary name
         source_path.to_str().unwrap(),
         "--",
         "2>&1",
@@ -53,7 +53,7 @@ fn main() {{
     let cli = Cli::parse_from(&args);
 
     println!("cli={:#?}", cli);
-    // rs_script::Cli = cli;
+    // thag_rs::Cli = cli;
 
     // Call the execute function directly
     execute(cli)?;
@@ -66,5 +66,5 @@ fn main() {{
 
 // Include tests to ensure that every single script in the demo directory will
 // compile (not run, since we would have to pass many of them different arguments).
-// These tests are built by rs-script/build.rs.
+// These tests are built by thag_rs/build.rs.
 include!(concat!(env!("OUT_DIR"), "/generated_tests.rs"));

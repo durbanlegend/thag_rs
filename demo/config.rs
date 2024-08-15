@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 dirs = "5.0"
-#rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+#thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_json = "1.0"
@@ -13,7 +13,7 @@ toml = "0.8"
 */
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
-//# Purpose: Develop a configuration file implementation for `rs-script`.
+//# Purpose: Develop a configuration file implementation for `thag_rs`.
 use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
@@ -70,13 +70,13 @@ fn get_config_path() -> PathBuf {
     if cfg!(target_os = "windows") {
         dirs::config_dir()
             .unwrap()
-            .join("rs-script")
+            .join("thag_rs")
             .join("config.toml")
     } else {
         dirs::home_dir()
             .unwrap()
             .join(".config")
-            .join("rs-script")
+            .join("thag_rs")
             .join("config.toml")
     }
 }

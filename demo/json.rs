@@ -17,7 +17,7 @@ println!(
             "method": "textDocument/completion",
             "params": {
                 "textDocument": {
-                    "uri": "file://Users/thag/projects/rs-script/demo/see_what_zog_do.rs"
+                    "uri": "file://Users/thag/projects/thag_rs/demo/see_what_zog_do.rs"
                 },
                 "position": {
                     "line": 15,
@@ -34,7 +34,7 @@ println!(
 println!(
     "{:#?}",
     serde_json::from_str::<Value>(
-        "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"textDocument/completion\",\"params\":{\"position\":{\"character\":26,\"line\":171},\"textDocument\":{\"uri\":\"file:///Users/thag/projects/rs-script/src/see_what_zog_do.rs\"}}}"
+        "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"textDocument/completion\",\"params\":{\"position\":{\"character\":26,\"line\":171},\"textDocument\":{\"uri\":\"file:///Users/thag/projects/thag_rs/src/see_what_zog_do.rs\"}}}"
     )
     .unwrap()
 );

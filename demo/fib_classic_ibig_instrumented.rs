@@ -7,7 +7,7 @@ ibig = "0.3.6"
 /// against other fibonacci scripts.
 /// Scripts can then be selected and run sequentially.
 /// E.g. an apples-with-apples comparison of different algorithms implemented using the ``ibig` crate:
-/// `ls -1 demo/fib*ibig*.rs | grep -v fib_basic_ibig.rs | while read f; do echo $f; rs_script -t $f -- 10000000; done`
+/// `ls -1 demo/fib*ibig*.rs | grep -v fib_basic_ibig.rs | while read f; do echo $f; thag_rs -t $f -- 10000000; done`
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.

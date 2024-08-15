@@ -1285,40 +1285,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
 
 [[package]]
-name = "rs-script"
-version = "0.1.0"
-dependencies = [
- "bitflags 2.6.0",
- "cargo_toml",
- "clap",
- "crossterm 0.28.1",
- "edit",
- "env_logger",
- "home",
- "lazy_static",
- "log",
- "mockall",
- "nu-ansi-term",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
- "ratatui",
- "reedline",
- "regex",
- "scopeguard",
- "sequential-test",
- "serde",
- "serde_json",
- "strum",
- "supports-color",
- "syn 2.0.74",
- "tempfile",
- "termbg",
- "test-generator",
- "toml",
- "tui-textarea",
-]
-
-[[package]]
 name = "rustix"
 version = "0.37.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1609,6 +1575,40 @@ dependencies = [
  "proc-macro2 0.4.30",
  "quote 0.6.13",
  "syn 0.15.44",
+]
+
+[[package]]
+name = "thag_rs"
+version = "0.1.0"
+dependencies = [
+ "bitflags 2.6.0",
+ "cargo_toml",
+ "clap",
+ "crossterm 0.28.1",
+ "edit",
+ "env_logger",
+ "home",
+ "lazy_static",
+ "log",
+ "mockall",
+ "nu-ansi-term",
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "ratatui",
+ "reedline",
+ "regex",
+ "scopeguard",
+ "sequential-test",
+ "serde",
+ "serde_json",
+ "strum",
+ "supports-color",
+ "syn 2.0.74",
+ "tempfile",
+ "termbg",
+ "test-generator",
+ "toml",
+ "tui-textarea",
 ]
 
 [[package]]

@@ -8,7 +8,7 @@ ibig = "0.3.6"
 /// digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
 /// edging out `fibo` at this scale.
 ///
-/// E.g.: `rs_script demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
+/// E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 ///
 //# Purpose: Demo 3 very fast Fibonacci algorithms, though still 7-11 times slower than `rug`.
 use ibig::{ubig, UBig};

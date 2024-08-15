@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 4 {
-        eprintln!("Usage: rs_script <prelude_code> <main_code> <post_code>");
+        eprintln!("Usage: thag_rs <prelude_code> <main_code> <post_code>");
         return Ok(());
     }
 

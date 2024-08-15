@@ -2,10 +2,10 @@
 mod tests {
 
     use cargo_toml::Manifest;
-    use rs_script::builder::{build, generate, run};
-    use rs_script::cmd_args::Cli;
-    use rs_script::{code_utils, escape_path_for_windows, execute, TMPDIR};
-    use rs_script::{BuildState, ProcFlags};
+    use thag_rs::builder::{build, generate, run};
+    use thag_rs::cmd_args::Cli;
+    use thag_rs::{code_utils, escape_path_for_windows, execute, TMPDIR};
+    use thag_rs::{BuildState, ProcFlags};
     // use sequential_test::sequential;
     use std::env::current_dir;
     use std::fs::{self, OpenOptions};
@@ -33,12 +33,12 @@ mod tests {
     fn create_sample_build_state(source_name: &str) -> BuildState {
         set_up();
         let source_stem: &str = source_name
-            .strip_suffix(rs_script::RS_SUFFIX)
+            .strip_suffix(thag_rs::RS_SUFFIX)
             .expect("Problem stripping Rust suffix");
         let current_dir = current_dir().expect("Could not get current dir");
         let working_dir_path = current_dir.clone();
         let cargo_home = home::cargo_home().expect("Could not get Cargo home");
-        let target_dir_path = TMPDIR.join("rs-script").join(source_stem);
+        let target_dir_path = TMPDIR.join("thag_rs").join(source_stem);
         fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
         let target_path = target_dir_path
             .clone()
@@ -110,7 +110,7 @@ mod tests {
         [workspace]
 
         [[bin]]
-        path = "{}/rs-script/fib_fac_lite_t/fib_fac_lite_t.rs"
+        path = "{}/thag_rs/fib_fac_lite_t/fib_fac_lite_t.rs"
         name = "fib_fac_lite_t"
 "#,
             escape_path_for_windows(TMPDIR.display().to_string().as_str())
@@ -134,13 +134,13 @@ mod tests {
         set_up();
         let source_name = "bitflags_t.rs";
         let source_stem: &str = source_name
-            .strip_suffix(rs_script::RS_SUFFIX)
+            .strip_suffix(thag_rs::RS_SUFFIX)
             .expect("Problem stripping Rust suffix");
 
         let current_dir = current_dir().expect("Could not get current dir");
         let source_path = current_dir.join("tests/assets").join(source_name);
         let cargo_home = home::cargo_home().expect("Could not get Cargo home");
-        let target_dir_path = TMPDIR.join("rs-script").join(source_stem);
+        let target_dir_path = TMPDIR.join("thag_rs").join(source_stem);
         fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
         let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");
         let cargo_toml = format!(
@@ -159,7 +159,7 @@ bitflags = "2.5.0"
 [workspace]
 
 [[bin]]
-path = "{}/rs-script/bitflags_t/bitflags_t.rs"
+path = "{}/thag_rs/bitflags_t/bitflags_t.rs"
 name = "bitflags_t"
 "#,
             escape_path_for_windows(TMPDIR.display().to_string().as_str())
@@ -221,10 +221,10 @@ name = "bitflags_t"
         set_up();
         let source_name = "fib_fac_dashu_t.rs";
         let source_stem: &str = source_name
-            .strip_suffix(rs_script::RS_SUFFIX)
+            .strip_suffix(thag_rs::RS_SUFFIX)
             .expect("Problem stripping Rust suffix");
         let target_dir_path = TMPDIR
-            .join("rs-script")
+            .join("thag_rs")
             .join(source_stem)
             .join("target/debug");
         let target_path = if cfg!(windows) {

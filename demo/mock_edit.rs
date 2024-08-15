@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = "0.28"
 mockall = "0.13.0"
-rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 */
 
 /// Used to debug a doctest.
@@ -10,7 +10,7 @@ rs-script = { git = "https://github.com/durbanlegend/rs-script" }
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crossterm::event::Event;
 use mockall::{automock, predicate::str};
-use rs_script::stdin::{edit, EventReader, MockEventReader};
+use thag_rs::stdin::{edit, EventReader, MockEventReader};
 
 pub struct CrosstermEventReader;
 

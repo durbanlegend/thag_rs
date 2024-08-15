@@ -5,7 +5,7 @@ clap = { version = "4.5.13", features = ["cargo", "derive"] }
 
 /// Published example from `clap` tutorial (derive), with added displays.
 ///
-/// E.g. rs_script demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+/// E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
 //# Purpose: Demonstrate `clap` CLI using the derive option
 use clap::{Parser, Subcommand};
 

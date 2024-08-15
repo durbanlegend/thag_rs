@@ -5,7 +5,7 @@ clap = { version = "4.5.7", features = ["cargo"] }
 
 /// Published example from `clap` tutorial (builder)
 ///
-/// E.g.  `rs_script demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
+/// E.g.  `thag_rs demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
 //# Purpose: Demonstrate `clap` CLI using the builder option
 use std::path::PathBuf;
 

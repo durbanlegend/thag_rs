@@ -3,12 +3,12 @@ use std::fs;
 use std::path::Path;
 
 /// Prototype of creating files named sequentially from repl_000000.rs to
-/// repl_999999.rs in a rs_script/demo subdirectory of the OS's temporary
+/// repl_999999.rs in a thag_rs/demo subdirectory of the OS's temporary
 /// directory. The need is to generate well-behaved and consistent human-readable
 /// names for temporary programs generated from REPL expressions.
 //# Purpose: Demo sequential file creation and the kind of code that is well suited to generation by an LLM.
 fn main() {
-    let demo_dir = env::temp_dir().join("rs_script").join("demo");
+    let demo_dir = env::temp_dir().join("thag_rs").join("demo");
 
     // Ensure demo subdirectory exists
     fs::create_dir_all(&demo_dir).expect("Failed to create demo directory");

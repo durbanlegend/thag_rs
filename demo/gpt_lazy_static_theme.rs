@@ -9,7 +9,7 @@ termbg = "0.5.0"
 /// as a static enum value for use in message style selection. Example of using
 /// an LLM to generate a prototype to a simple spec. The `clear_screen` function
 /// was added manually later. This prototype is one of many that was incorporated
-/// into `rs_script`.
+/// into `thag_rs`.
 //# Purpose: Demo theme detection with `termbg`, clearing terminal state with `crossterm` and setting it as a static enum value using `lazy_static`.
 use crossterm::{
     cursor::{MoveTo, Show},

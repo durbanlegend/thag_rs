@@ -8,7 +8,7 @@ use strum::ParseError as StrumParseError;
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
 
-use rs_script::errors::BuildRunError;
+use thag_rs::errors::BuildRunError;
 
 // Set environment variables before running tests
 fn set_up() {

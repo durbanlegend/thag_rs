@@ -6,7 +6,7 @@ reedline = "0.33.0"
 /// Prototype of key binding display function for `reedline` REPL. This was developed
 /// by giving ChatGPT a simple spec which it flubbed, then repeatedly feeding back errors,
 /// manually corrected code and requests for changes until a nice simple display was
-/// achieved. This was then refined into the `keys` display of the `rs-script` REPL, with
+/// achieved. This was then refined into the `keys` display of the `thag_rs` REPL, with
 /// the addition of command descriptions, non-edit commands such as SearchHistory, and colour-
 /// coding.
 //# Purpose: Demo the end result of development dialog with ChatGPT.

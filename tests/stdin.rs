@@ -2,12 +2,12 @@ use mockall::Sequence;
 use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::crossterm::tty::IsTty;
 use ratatui::style::{Color, Style};
-use rs_script::colors::get_term_theme;
-use rs_script::logging::Verbosity;
-use rs_script::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
-use rs_script::{edit, log, BuildRunError};
 use std::io::{stdout, Write};
 use std::process::{Command, Stdio};
+use thag_rs::colors::get_term_theme;
+use thag_rs::logging::Verbosity;
+use thag_rs::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
+use thag_rs::{edit, log, BuildRunError};
 use tui_textarea::TextArea;
 
 // Set environment variables before running tests

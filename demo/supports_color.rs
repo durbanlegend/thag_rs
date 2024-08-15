@@ -3,7 +3,7 @@
 supports-color= "3.0.0"
 */
 
-/// Demo of crate `supports-color` that `rs-script` uses to detect the level of
+/// Demo of crate `supports-color` that `thag_rs` uses to detect the level of
 /// colour support of the terminal in use. I've added the `clear_screen` method
 /// because from testing I suspect that `supports-color` may mess with the terminal
 /// settings. Obviously that doesn't matter in a demo that exists before doing

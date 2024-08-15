@@ -3,7 +3,7 @@
 log = "0.4.21"
 reqwest = { version = "0.12.4", features = ["blocking", "json"] }
 rfd = "0.14.1"
-rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -66,7 +66,7 @@ fn download_demo_files(repo: &str, path: &str) -> Result<(), Box<dyn std::error:
 }
 
 fn main() {
-    let repo = "durbanlegend/rs-script";
+    let repo = "durbanlegend/thag_rs";
     let path = "demo";
 
     match download_demo_files(repo, path) {

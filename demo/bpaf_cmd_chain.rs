@@ -8,7 +8,7 @@
 
 /// Example from bpaf crate docs2/src/adjacent_command/derive.rs.
 ///
-/// E.g. `rs_script demo/bpaf_cmd-chain.rs -- eat Fastfood drink --coffee sleep --time=5`
+/// E.g. `thag_rs demo/bpaf_cmd-chain.rs -- eat Fastfood drink --coffee sleep --time=5`
 use bpaf_derive::Bpaf;
 
 #[derive(Debug, Clone, Bpaf)]

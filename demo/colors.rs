@@ -4,20 +4,20 @@
 lazy_static = "1.4.0"
 log = "0.4.21"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-rs-script = { git = "https://github.com/durbanlegend/rs-script" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
 termbg = "0.5.0"
 */
-/// A version of `rs-script`'s `colors` module to style messages according to their type. Like the `stdin`
+/// A version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
 /// module, `colors` was originally developed here as a separate script and integrated as a module later.
 ///
 /// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 ///
-/// E.g. `rs_script demo/colors.rs`
-//# Purpose: Demo using `rs-script` to develop a module outside of the project.
-use rs_script::{clear_screen, debug_log, log, logging::Verbosity};
+/// E.g. `thag_rs demo/colors.rs`
+//# Purpose: Demo using `thag_rs` to develop a module outside of the project.
+use thag_rs::{clear_screen, debug_log, log, logging::Verbosity};
 
 use lazy_static::lazy_static;
 use std::{fmt::Display, str::FromStr};

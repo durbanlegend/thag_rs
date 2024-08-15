@@ -9,7 +9,7 @@ use std::path::Path;
 /// identify abandoned scripts. Given that there are so many of these scripts, avoid
 /// Cargo's default behaviour of running all tests in parallel. --test-threads=3 seems
 /// to work best on my MacBook Air M1.
-/// Suggested command: `RUST_LOG=rs_script=debug cargo test --features=debug-logs -- --nocapture --test-threads=3
+/// Suggested command: `RUST_LOG=thag_rs=debug cargo test --features=debug-logs -- --nocapture --test-threads=3
 /// You may want to adjust the test-threads value further depending on your hardware.
 fn main() {
     // Get the OUT_DIR environment variable
@@ -48,10 +48,10 @@ fn main() {
 
     /*
     let source_stem: &str = source_name
-        .strip_suffix(rs_script::RS_SUFFIX)
+        .strip_suffix(thag_rs::RS_SUFFIX)
         .expect("Problem stripping Rust suffix");
     let target_dir_path = TMPDIR
-        .join("rs-script")
+        .join("thag_rs")
         .join(source_stem)
         .join("target/debug");
     let target_path = #[cfg(windows) {
@@ -112,7 +112,7 @@ fn check_{test_name}() {{
 
         // // Construct the destination directory path
         // let mut dest_dir = env::temp_dir();
-        // dest_dir.push("rs-script");
+        // dest_dir.push("thag_rs");
         // dest_dir.push(file_stem);
 
         // let target_dir = &dest_dir.join("target/debug");

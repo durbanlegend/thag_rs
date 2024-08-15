@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use rs_script::debug_log;
-    use rs_script::logging::{set_global_verbosity, Logger, Verbosity, LOGGER};
     use sequential_test::{parallel, sequential};
     use std::env;
     use std::io::Write;
     use std::process::{Command, Stdio};
     use std::sync::Once;
+    use thag_rs::debug_log;
+    use thag_rs::logging::{set_global_verbosity, Logger, Verbosity, LOGGER};
 
     // Set environment variables before running tests
     fn set_up() {
@@ -57,16 +57,16 @@ mod tests {
     fn test_logger_log() {
         set_up();
         init_logger();
-        let rs_script_path = env::current_dir().expect("Error getting current directory");
+        let thag_rs_path = env::current_dir().expect("Error getting current directory");
 
         let input = format!(
             r#"/*[toml]
 [dependencies]
-rs-script = {{ path = {rs_script_path:#?} }}
+thag_rs = {{ path = {thag_rs_path:#?} }}
 */
 
-use rs_script::log;
-use rs_script::logging::Verbosity;
+use thag_rs::log;
+use thag_rs::logging::Verbosity;
 
 fn main() {{
     log!(Verbosity::Quieter, "Quieter message");
@@ -110,16 +110,16 @@ fn main() {{
     fn test_macro_log() {
         set_up();
         init_logger();
-        let rs_script_path = env::current_dir().expect("Error getting current directory");
+        let thag_rs_path = env::current_dir().expect("Error getting current directory");
 
         let input = format!(
             r#"/*[toml]
 [dependencies]
-rs-script = {{ path = {rs_script_path:#?} }}
+thag_rs = {{ path = {thag_rs_path:#?} }}
 */
 
-use rs_script::log;
-use rs_script::logging::Verbosity;
+use thag_rs::log;
+use thag_rs::logging::Verbosity;
 
 fn main() {{
     log!(Verbosity::Quieter, "Macro quieter message");

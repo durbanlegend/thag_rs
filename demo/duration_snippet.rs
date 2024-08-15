@@ -1,4 +1,4 @@
-#! /usr/bin/env rs_script
+#! /usr/bin/env thag_rs
 #![feature(duration_constructors)]
 
 //: Minimal snippet showing how to add nice additional constructors such as `from_weeks` (and days, hours and
@@ -7,7 +7,7 @@
 //: These are enabled by adding the inner attribute `#![feature(duration_constructors)]` to the script.
 //: I've used a snippet to illustrate that this is possible: an inner attribute (i.e. an attribute prefixed
 //: with `#!` (`#![...]`)) must be placed at the top of the crate it applies to, so when wrapping the snippet
-//: in a fn main, rs_script pulls any inner attributes out to the top of the program.
+//: in a fn main, thag_rs pulls any inner attributes out to the top of the program.
 //:
 //: Notice we also have a shebang so that this script may be run as `demo/duration_snippet.rs` with execute
 //: permission. The shebang must be on the very first line but coexists peacefulyl with the inner attribute.

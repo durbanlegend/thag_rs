@@ -7,7 +7,7 @@
 /// Published example from `https://github.com/pacak/bpaf/src/docs2/derive_show_asm.md`
 ///
 ///
-/// E.g. `rs-script demo/bpaf_cargo_show_asm.rs -- -h`
+/// E.g. `thag_rs demo/bpaf_cargo_show_asm.rs -- -h`
 //# Purpose: Demo CLI alternative to clap crate
 use bpaf::{construct, long, Bpaf, Parser, ShellComp};
 use std::{convert::Infallible, path::PathBuf};

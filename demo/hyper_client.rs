@@ -33,7 +33,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 /// redundancies.
 /// You can run the `hyper_echo_server.rs` demo as the HTTP server on
 /// another command line and connect to it on port 3000:
-/// `rs_script demo/hyper_client.rs -- http://127.0.0.1:3000`.
+/// `thag_rs demo/hyper_client.rs -- http://127.0.0.1:3000`.
 /// Or use any other available HTTP server.
 //# Purpose: Demo `hyper` HTTP client, and incorporating separate modules into the script.
 #[tokio::main]

@@ -102,6 +102,14 @@ Loop mode also accepts the following optional arguments supplying surrounding co
 --end   (-E)    for specifying any summary or final logic to run after the loop.
 ```
 
+### * As an executable:
+
+```bash
+thag_rs -x my_script.rs                                           # Long form: --executable
+```
+>>> TODO
+
+
 ### * Getting started:
 
 You have the choice of installing `thag_rs` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run`.
@@ -139,7 +147,6 @@ at the start of the script, as you will see done in most of the demos. To assist
 ### Minimum Supported Rust Version
 The minimum supported Rust version (MSRV) for `thag_rs` is 1.74.1.
 
-### TODO >>>
 You can install `thag_rs` using `cargo install`:
 
 ```bash
@@ -151,11 +158,13 @@ cargo install thag_rs
 ## Usage
 Once installed, you can use the `thag_rs` command (with underscore) from the command line. `thag_rs` uses the clap crate to process command-line arguments including --help.
 
-### TODO >>>
 Here are some examples:
 
 ### Evaluating an expression
-#### Concise fast factorial calculation for numbers up to 34 (it overflows beyond that, but see demos for bigger numbers):
+#### Concise fast factorial calculation
+
+This panics beyond 34! due to using Rust primitives, but see demos for arbitrarily big numbers:
+
 ```bash
 thag_rs -e '(1..=34).product::<u128>()'
 ```

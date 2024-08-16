@@ -21,10 +21,10 @@
 - [ ]  README for Windows: set $Env:TERM = "xterm-256color". Or consider prompting for it if only basic found. Or a config file.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Add config-file support to cmd_args based on demo/config.rs. Include an option to include or exclude quotes on returned strings.
+        Maybe make it a command-line option too.
 - [ ]  Debug history getting out of sequence in -d option.
 - [ ]  Rename thag_rs commands to thag in docs.
-       Maybe make it a command-line option too.
-- [ ]
+- [ ]  Publish to crates.io.
 #[cfg(target_os = "windows")]
 let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into());
 
@@ -32,21 +32,12 @@ let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into
 let temp_dir = std::env::var("TMPDIR").unwrap_or_else(|_| "/tmp".into());
 
 - [ ]  Demo scripts not commented:
-demo/time_snippet.rs
-demo/tui_scrollview.rs
-demo/type_info.rs
-demo/unzip.rs
-demo/verbosity.rs
-demo/windows_cr_issue.rs
 
 ## Low Priority
 - [ ]  Paste event in Windows slow or not happening?
 - [ ]  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
-- [ ]  Decide if it's worth passing the wrapped syntax tree to gen_build_run from eval just to avoid re-parsing it for that specific use case.
 - [ ]  "edit" crate - how to reconfigure editors dynamically - instructions unclear.
 - [ ]  Clap aliases not working in REPL.
-- [ ]  Work on demo/reedline_clap_repl_gemini.rs
-- [ ]  Consider other Rust gui packages.
 - [ ]  How to navigate reedline history entry by entry instead of line by line.
 - [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
 

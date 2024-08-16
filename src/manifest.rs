@@ -101,6 +101,7 @@ See below for how to avoid this and speed up future builds.
                 Verbosity::Normal,
                 r#"Cargo found the following dependency, which you can copy into the toml block
 as shown if you don't need special features:
+
 /*[toml]
 [dependencies]
 {dep_crate_styled} = "{dep_version_styled}"

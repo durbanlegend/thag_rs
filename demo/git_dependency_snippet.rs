@@ -1,7 +1,5 @@
 /*[toml]
 [dependencies]
-# rev may be necessary to force cargo to update to the latest commit, see
-# https://github.com/rust-lang/cargo/issues/8555
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 */
 

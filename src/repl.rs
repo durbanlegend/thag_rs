@@ -30,7 +30,7 @@ use std::str::FromStr;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 
-const HISTORY_FILE: &str = "rs_eval_hist.txt";
+const HISTORY_FILE: &str = "thag_repl_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]

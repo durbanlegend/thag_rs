@@ -49,7 +49,7 @@ pub struct Cli {
     /// Filter expression to be run in a loop against every line in stdin, with optional pre- and post-loop logic.
     #[arg(short = 'l', long = "loop", conflicts_with_all(["generate", "build"]))]
     pub filter: Option<String>,
-    /// Optional manifesto info in format ready for Cargo.toml
+    /// Optional manifest info in format ready for Cargo.toml
     #[arg(short = 'C', long, requires = "filter", value_name = "CARGO-TOML")]
     pub cargo: Option<String>,
     /// Optional awk-style pre-loop logic for --loop, somewhat like awk BEGIN

@@ -17,7 +17,7 @@ It also supports scripting via shebangs, building executables from your snippets
 ### * With an expression argument:
 
 ```bash
-thag --expr '"Hello world!"' -q                                 # Short form: -e
+thag --expr '"Hello world!"'                                    # Short form: -e
 ```
 ![Repl](hellot.png)
 
@@ -38,8 +38,14 @@ Zoned::now().round(Unit::Second)?
 ### * With a script:
 
 ```bash
+thag demo/py_thag.rs
+```
+![Script](script1t.png)
+
+```bash
 thag demo/iced_tour.rs
 ```
+This will `cargo build` and run the tour of the `iced` cross-platform GUI library. The script is taken from the published examples in the `iced` crate.
 
 ### * As a REPL (Read-Evaluate-Print Loop):
 
@@ -48,7 +54,7 @@ thag --repl                                                     # Short form: -l
 ```
 ![Repl](replt.png)
 
-The REPL has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, Nano etc. if its `reedline` editor falls short for a particular task.
+The REPL has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, Nano etc. via the VISUAL or EDITOR environment variables, in case its `reedline` editor falls short for a particular task. The key bindings in the latter will depend on your terminal settings and you should probably not expect too much in the way of navigation shortcuts.
 
 ### * With standard input:
 
@@ -76,6 +82,8 @@ This allows you to edit or append to the stdin input before submitting it to `th
 #### A note on the TUI editor
 In order for the Shift-Up and Shift-Down key combinations to work on Apple Terminal, you may need to add the following to your Apple Terminal Settings | Profiles | Keyboard settings:
 Shift-Up: `\033;[2A` and `Shift-Down`: \033;[2B. Use the Esc key to generate \033. This is not necessary on Iterm2 or WezTerm.
+
+In general, if you don't experience the key bindings you want, it is probably because your terminal has intercepted them and you may be able to resolve the issue by adjusting your terminal settings. The same applies to the REPL.
 
 ### * As a filter on standard input (loop mode):
 
@@ -118,6 +126,11 @@ Putting it to use:
 
 ![XBuild](xuset.png)
 
+### * Command-line options
+
+Hopefully the help screen is self-explanatory:
+
+![Help](helpt.png)
 
 ### * Getting started:
 
@@ -147,9 +160,9 @@ In this way `thag_rs` attempts to handle any valid (or invalid) Rust script, be 
 ...
 */
 ```
-at the start of the script, as you will see done in most of the demos. To assist with this, after each successful Cargo search `thag_rs `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` there is no specific limit on what valid Cargo code you can place in the toml block.
+at the start of the script, as you will see done in most of the demos. To assist with this, after each successful Cargo search `thag_rs `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. (As in the second `--expr` example above.) It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` there is no specific limit on what valid Cargo code you can place in the toml block.
 
-`thag_rs` aims to be as comprehensive as possible without sacrificing speed and simplicity. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
+`thag_rs` aims to be as comprehensive as possible without sacrificing speed and transparency. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
 
 ## Installation
 

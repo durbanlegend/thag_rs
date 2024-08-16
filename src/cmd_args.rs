@@ -52,20 +52,20 @@ pub struct Cli {
     /// Optional manifest info in format ready for Cargo.toml
     #[arg(short = 'C', long, requires = "filter", value_name = "CARGO-TOML")]
     pub cargo: Option<String>,
-    /// Optional awk-style pre-loop logic for --loop, somewhat like awk BEGIN
+    /// Optional pre-loop logic for --loop, somewhat like awk BEGIN
     #[arg(short = 'B', long, requires = "filter", value_name = "PRE-LOOP")]
     pub begin: Option<String>,
     /// Optional post-loop logic for --loop, somewhat like awk END
     #[arg(short = 'E', long, requires = "filter", value_name = "POST-LOOP")]
     pub end: Option<String>,
-    /// Allow multiple main methods
+    /// Confirm that multiple main methods are valid for this script
     #[arg(short, long)]
     pub multimain: bool,
     /// Cargo check script if compiled file is stale. Less thorough than build.
-    /// Used by by integration test suite for mass sanity check.
+    /// Used by integration test to check all demo scripts
     #[arg(short, long, conflicts_with_all(["build", "executable"]))]
     pub check: bool,
-    /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`.
+    /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`
     #[arg(short = 'x', long)]
     pub executable: bool,
     /// Set verbose mode

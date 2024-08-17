@@ -246,7 +246,9 @@ which will give identical output to the above.
             .iter()
             .map(|v| format!("`{v}`"))
             .collect::<Vec<String>>();
-        writeln!(file, "**Crates:** {}\n", crates.join(", ")).unwrap();
+        if !crates.is_empty() {
+            writeln!(file, "**Crates:** {}\n", crates.join(", ")).unwrap();
+        }
         writeln!(
             file,
             "**Type:** {}\n",

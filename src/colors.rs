@@ -1,4 +1,6 @@
 use crate::debug_log;
+#[cfg(not(windows))]
+use crate::shared;
 use {crate::log, crate::logging::Verbosity};
 
 use lazy_static::lazy_static;
@@ -8,8 +10,6 @@ use std::env;
 use std::{fmt::Display, str::FromStr};
 use strum::IntoEnumIterator;
 use strum::{Display, EnumIter, EnumString};
-#[cfg(windows)]
-use supports_color::ColorLevel;
 #[cfg(not(windows))]
 use supports_color::Stream;
 #[cfg(not(windows))]
@@ -66,7 +66,7 @@ lazy_static! {
             let timeout = std::time::Duration::from_millis(100);
             // debug_log!("Check terminal background color");
             let theme = termbg::theme(timeout);
-            // shared::clear_screen();
+            shared::clear_screen();
             match theme {
                 Ok(Theme::Light) => TermTheme::Light,
                 Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
@@ -75,19 +75,21 @@ lazy_static! {
     };
 }
 
-// /// A struct of the color support details, borrowed from crate `supports-color`.
-// /// This type is returned from [on]. See documentation for its fields for more details.
-// #[cfg(windows)]
-// #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-// pub struct ColorLevel {
-//     level: usize,
-//     /// Basic ANSI colors are supported.
-//     pub has_basic: bool,
-//     /// 256-bit colors are supported.
-//     pub has_256: bool,
-//     /// 16 million (RGB) colors are supported.
-//     pub has_16m: bool,
-// }
+/// A struct of the color support details, borrowed from crate `supports-color` since we
+/// can't import it because the `level` field is indispensable but private.
+/// This type is returned from `supports_color::on`. See documentation for its fields for
+/// more details.
+#[cfg(windows)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub struct ColorLevel {
+    level: usize,
+    /// Basic ANSI colors are supported.
+    pub has_basic: bool,
+    /// 256-bit colors are supported.
+    pub has_256: bool,
+    /// 16 million (RGB) colors are supported.
+    pub has_16m: bool,
+}
 
 #[cfg(windows)]
 fn env_force_color() -> usize {
@@ -127,7 +129,7 @@ fn translate_level(level: usize) -> Option<ColorLevel> {
         None
     } else {
         Some(ColorLevel {
-            // level,
+            level,
             has_basic: true,
             has_256: level >= 2,
             has_16m: level >= 3,
@@ -222,6 +224,7 @@ macro_rules! nu_color_println {
 /// (TODO) or defaulted. We include `TrueColor` in Xterm256 as we're not interested in more
 /// than 256 colours just for messages.
 #[derive(Clone, Deserialize, EnumString, Display, PartialEq)]
+/// We include `TrueColor` in Xterm256 as we're not interested in more than 256 colours just for messages.
 pub enum ColorSupport {
     Xterm256,
     Ansi16,

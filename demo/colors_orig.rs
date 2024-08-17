@@ -25,7 +25,7 @@ use owo_xterm::Black;
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 use supports_color::Stream;
 use termbg::{Error, Theme};
-use thag_rs::{clear_screen, debug_log};
+use thag_rs::debug_log;
 
 #[macro_export]
 macro_rules! color_println {
@@ -116,7 +116,7 @@ impl ThemeStyle for YinYangStyle {
 #[allow(dead_code)]
 fn main() {
     let term = termbg::terminal();
-    clear_screen();
+    // clear_screen();
     debug!("  Term : {:?}", term);
 
     let theme = get_theme();
@@ -475,6 +475,6 @@ fn get_theme() -> Result<Theme, Error> {
 
     debug_log!("Check terminal background color");
     let theme: Result<Theme, Error> = termbg::theme(timeout);
-    clear_screen();
+    // clear_screen();
     theme
 }

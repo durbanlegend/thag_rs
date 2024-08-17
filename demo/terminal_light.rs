@@ -5,9 +5,7 @@ terminal-light = "1.4.0"
 */
 
 /// Demo of `terminal_light`, a crate that "answers the question "Is the terminal dark
-/// or light?". I've added the `clear_screen` method because as is common, `terminal_light`
-/// interrogates the terminal with an escape sequence which may mess with its settings
-/// and compromise the program's output.
+/// or light?".
 //# Purpose: Demo terminal-light interrogating the background color. Results will vary with OS and terminal type.
 use crossterm::{
     cursor::{MoveTo, Show},
@@ -19,15 +17,15 @@ use std::io::{stdout, Write};
 // terminal-light sends an operating system command (OSC) to interrogate the screen
 // but with side effects which we undo here.
 pub fn clear_screen() {
-    let mut out = stdout();
-    out.execute(Clear(ClearType::All)).unwrap();
-    out.execute(MoveTo(0, 0)).unwrap();
-    out.execute(Show).unwrap();
-    out.flush().unwrap();
+    // let mut out = stdout();
+    // out.execute(Clear(ClearType::All)).unwrap();
+    // out.execute(MoveTo(0, 0)).unwrap();
+    // out.execute(Show).unwrap();
+    // out.flush().unwrap();
 }
 
 let maybe_luma = terminal_light::luma();
-clear_screen();
+// clear_screen();
 match maybe_luma {
     Ok(luma) if luma > 0.5 => {
         // Use a "light mode" skin.

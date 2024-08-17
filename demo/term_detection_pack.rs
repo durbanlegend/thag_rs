@@ -23,11 +23,11 @@ use termbg;
 // termbg sends an operating system command (OSC) to interrogate the screen
 // but with side effects which we undo here.
 pub fn clear_screen() {
-    let mut out = stdout();
-    out.execute(Clear(ClearType::All)).unwrap();
-    out.execute(MoveTo(0, 0)).unwrap();
-    out.execute(Show).unwrap();
-    out.flush().unwrap();
+    // let mut out = stdout();
+    // out.execute(Clear(ClearType::All)).unwrap();
+    // out.execute(MoveTo(0, 0)).unwrap();
+    // out.execute(Show).unwrap();
+    // out.flush().unwrap();
 }
 
 let timeout = std::time::Duration::from_millis(100);

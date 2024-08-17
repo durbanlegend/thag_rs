@@ -17,7 +17,7 @@ termbg = "0.5.0"
 ///
 /// E.g. `thag_rs demo/colors.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
-use thag_rs::{clear_screen, debug_log, log, logging::Verbosity};
+use thag_rs::{debug_log, log, logging::Verbosity};
 
 use lazy_static::lazy_static;
 use std::{fmt::Display, str::FromStr};
@@ -42,7 +42,7 @@ lazy_static! {
         let timeout = std::time::Duration::from_millis(100);
         debug_log!("Check terminal background color");
         let theme = termbg::theme(timeout);
-        clear_screen();
+        // clear_screen();
         match theme {
             Ok(Theme::Light) => TermTheme::Light,
             Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
@@ -212,7 +212,7 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
 #[allow(dead_code)]
 fn main() {
     let term = termbg::terminal();
-    clear_screen();
+    // clear_screen();
     debug_log!("  Term : {:?}", term);
 
     let color_support = match supports_color::on(Stream::Stdout) {

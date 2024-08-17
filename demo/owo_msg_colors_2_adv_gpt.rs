@@ -15,10 +15,6 @@ termbg = "0.5.0"
 /// backgrounds to see how some of the same colours "pop" when shown against a light or dark theme
 /// and how some virtually or literally disappear when when not well matched to the theme.
 //# Purpose: Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
-use crossterm::{
-    cursor::{MoveToColumn, Show},
-    ExecutableCommand,
-};
 use enum_assoc::Assoc;
 use log::debug;
 use owo_ansi::xterm as owo_xterm;
@@ -29,7 +25,6 @@ use owo_xterm::{
     Black, BondiBlue, Copperfield, DarkMalibuBlue, DarkPurplePizzazz, DarkViolet, GuardsmanRed,
     LightCaribbeanGreen, LochmaraBlue, Silver,
 };
-use std::io::{stdout, Write};
 use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
@@ -145,10 +140,10 @@ enum MessageStyle {
 // termbg sends an operating system command (OSC) to interrogate the screen
 // but with side effects which we undo here.
 fn clear_screen() {
-    let mut out = stdout();
-    out.execute(MoveToColumn(0)).unwrap();
-    out.execute(Show).unwrap();
-    out.flush().unwrap();
+//     let mut out = stdout();
+//     out.execute(MoveToColumn(0)).unwrap();
+//     out.execute(Show).unwrap();
+//     out.flush().unwrap();
 }
 
 fn get_theme() -> Result<Theme, termbg::Error> {
@@ -156,7 +151,7 @@ fn get_theme() -> Result<Theme, termbg::Error> {
 
     println!("Checking terminal background color");
     let theme: Result<Theme, termbg::Error> = termbg::theme(timeout);
-    clear_screen();
+    // clear_screen();
     theme
 }
 
@@ -164,7 +159,7 @@ fn get_theme() -> Result<Theme, termbg::Error> {
 /// to message level.
 fn main() {
     let term = termbg::terminal();
-    clear_screen();
+    // clear_screen();
     debug!("  Term : {:?}", term);
 
     let maybe_theme = get_theme();

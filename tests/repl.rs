@@ -3,10 +3,10 @@ mod tests {
     use clap::{ArgMatches, Parser};
     use thag_rs::cmd_args::{Cli, ProcFlags};
     use thag_rs::repl::{
-        delete, disp_repl_banner, edit, edit_history, list, parse_line, run_expr, toml, Context,
+        delete, disp_repl_banner, list, parse_line, run_expr, Context,
     };
     use thag_rs::shared::BuildState;
-    use std::path::PathBuf;
+    
     use std::time::Instant;
 
     // Helper function to create a mock context

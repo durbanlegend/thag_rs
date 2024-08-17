@@ -20,10 +20,10 @@ use std::io::{self, stdout, Read, Write};
 // # Panics
 // Will panic if a crossterm execute command fails.
 pub fn clear_screen() {
-    let mut out = stdout();
-    out.execute(MoveToColumn(0)).unwrap();
-    out.execute(Show).unwrap();
-    out.flush().unwrap();
+    // let mut out = stdout();
+    // out.execute(MoveToColumn(0)).unwrap();
+    // out.execute(Show).unwrap();
+    // out.flush().unwrap();
 }
 
 fn main() {
@@ -32,7 +32,7 @@ fn main() {
     // let term = termbg::terminal();
     let _ = termbg::rgb(timeout);
     // let theme = termbg::theme(timeout);
-    clear_screen();
+    // clear_screen();
 
     println!("Run with -qq in Windows Terminal to suppress colored lines, type in something and see if first character gets swallowed");
     let mut buffer = String::new();

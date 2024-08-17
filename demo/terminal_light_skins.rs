@@ -29,16 +29,16 @@ struct Skin {
 // terminal-light sends an operating system command (OSC) to interrogate the screen
 // but with side effects which we undo here.
 pub fn clear_screen() {
-    let mut out = stdout();
-    out.execute(Clear(ClearType::All)).unwrap();
-    out.execute(MoveTo(0, 0)).unwrap();
-    out.execute(Show).unwrap();
-    out.flush().unwrap();
+    // let mut out = stdout();
+    // out.execute(Clear(ClearType::All)).unwrap();
+    // out.execute(MoveTo(0, 0)).unwrap();
+    // out.execute(Show).unwrap();
+    // out.flush().unwrap();
 }
 
 fn main() {
     let maybe_luma = terminal_light::luma();
-    clear_screen();
+    // clear_screen();
     let skin = match maybe_luma {
         Ok(luma) if luma > 0.6 => {
             // light theme

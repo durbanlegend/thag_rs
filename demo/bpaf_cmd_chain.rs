@@ -15,7 +15,7 @@ use bpaf_derive::Bpaf;
 #[bpaf(options)]
 pub struct Options {
     #[bpaf(short, long)]
-    /// Opt in for premium serivces
+    /// Opt in for premium services
     pub premium: bool,
     #[bpaf(external(cmd), many)]
     pub commands: Vec<Cmd>,

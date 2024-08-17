@@ -16,7 +16,7 @@
 //:
 //: E.g. `(*nix)`:
 //:
-//:     chmod u+g demo/duration_snippet.rs      // Only requied the first time of course
+//:     chmod u+g demo/duration_snippet.rs      // Only required the first time of course
 //:     demo/duration_snippet.rs -qq
 //:     1209600s
 //:

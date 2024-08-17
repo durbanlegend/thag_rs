@@ -141,8 +141,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo Rust's answer to dynamic typing.
 
-**Crates:** 
-
 **Type:** Snippet
 
 **Link:** [any.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs)
@@ -171,8 +169,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Demo a borrow-checker-friendly technique for accessing a wrapped value.
-
-**Crates:** 
 
 **Type:** Snippet
 
@@ -461,8 +457,6 @@ which will give identical output to the above.
 
 **Purpose:** Choose black or white as a contrasting colour for a given colour.
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [color_contrast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast.rs)
@@ -550,8 +544,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Demo sequential file creation and the kind of code that is well suited to generation by an LLM.
-
-**Crates:** 
 
 **Type:** Program
 
@@ -748,8 +740,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo one option for intercepting Ctrl-C.
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [ctrlc_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs)
@@ -809,8 +799,6 @@ which will give identical output to the above.
 
 **Purpose:** Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [dethagomizer.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs)
@@ -834,7 +822,7 @@ which will give identical output to the above.
 
  E.g. `(*nix)`:
 
-     chmod u+g demo/duration_snippet.rs      // Only requied the first time of course
+     chmod u+g demo/duration_snippet.rs      // Only required the first time of course
      demo/duration_snippet.rs -qq
      1209600s
 
@@ -846,8 +834,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Demonstrate that some fairly subtle moves are possible even with the simplest of snippets.
-
-**Crates:** 
 
 **Type:** Snippet
 
@@ -866,8 +852,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo of edit crate to invoke preferred editor.
 
-**Crates:** 
-
 **Type:** Snippet
 
 **Link:** [edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs)
@@ -880,8 +864,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Prototype a native-mode editor using the `egui` crate.
-
-**Crates:** 
 
 **Type:** Program
 
@@ -990,8 +972,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Demo fast limited-scale factorial using Rust primitives and std::iter::Product trait.
-
-**Crates:** 
 
 **Type:** Program
 
@@ -1150,8 +1130,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers..
-
-**Crates:** 
 
 **Type:** Snippet
 
@@ -1472,8 +1450,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo an alternative to the standard computation for Fibonacci numbers.
 
-**Crates:** 
-
 **Type:** Snippet
 
 **Link:** [fib_matrix.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs)
@@ -1547,7 +1523,7 @@ which will give identical output to the above.
 **Description:**  Very fast recursive calculation of an individual Fibonacci number
  using the matrix squaring technique.
 
- Won't work with default Windows 11 because of the `rug` crate, which is a pity becaue
+ Won't work with default Windows 11 because of the `rug` crate, which is a pity because
  `rug` is a beast due to its access to powerful GNU libraries.
 
  See https://en.wikipedia.org/wiki/Fibonacci_sequence.
@@ -1593,8 +1569,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo using `thag_rs` to try out random code snippets ... also iterators.
 
-**Crates:** 
-
 **Type:** Snippet
 
 **Link:** [fizz_buzz_blandy_orendorff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs)
@@ -1607,8 +1581,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Demo running random snippets in thag_rs, also AI and the art of delegation ;)
-
-**Crates:** 
 
 **Type:** Snippet
 
@@ -1624,8 +1596,6 @@ which will give identical output to the above.
 
 **Purpose:** demo of async and channel programming and of `flume` in particular.
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [flume_async.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs)
@@ -1638,8 +1608,6 @@ which will give identical output to the above.
 
 
 **Purpose:** demo of channel programming and of `flume` in particular.
-
-**Crates:** 
 
 **Type:** Program
 
@@ -1770,8 +1738,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo Hello World snippet
 
-**Crates:** 
-
 **Type:** Snippet
 
 **Link:** [hello.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs)
@@ -1785,8 +1751,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo Hello World as a program
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [hello_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs)
@@ -1799,8 +1763,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Demo Hello World reduced to an expression
-
-**Crates:** 
 
 **Type:** Snippet
 
@@ -1934,8 +1896,6 @@ which will give identical output to the above.
 
 **Purpose:** Show how basic a snippet can be.
 
-**Crates:** 
-
 **Type:** Snippet
 
 **Link:** [iter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs)
@@ -1965,8 +1925,6 @@ which will give identical output to the above.
 
 **Purpose:** Simple demonstration.
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [list_files.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs)
@@ -1982,8 +1940,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Evaluate closure logic for line processing.
-
-**Crates:** 
 
 **Type:** Snippet
 
@@ -2001,8 +1957,6 @@ which will give identical output to the above.
 
 **Purpose:** Evaluate expression logic for line processing.
 
-**Crates:** 
-
 **Type:** Snippet
 
 **Link:** [loop_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs)
@@ -2019,8 +1973,6 @@ which will give identical output to the above.
 
 **Purpose:** Evaluate expression logic for line processing.
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [loop_pre_post.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs)
@@ -2035,8 +1987,6 @@ which will give identical output to the above.
 
 
 **Purpose:** May be interesting or useful.
-
-**Crates:** 
 
 **Type:** Program
 
@@ -2065,8 +2015,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Demo of formatting error messages
-
-**Crates:** 
 
 **Type:** Program
 
@@ -2153,8 +2101,6 @@ which will give identical output to the above.
 
 **Purpose:** Prototype
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [parse_script_rs_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_rs_toml.rs)
@@ -2170,8 +2116,6 @@ which will give identical output to the above.
 
 **Purpose:** Prototype
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [parse_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs)
@@ -2184,8 +2128,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Demo of `pomprt` readline implementation.
-
-**Crates:** 
 
 **Type:** Program
 
@@ -2200,8 +2142,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo featured crate.
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [prettyplease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.rs)
@@ -2215,8 +2155,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Demo featured crates.
-
-**Crates:** 
 
 **Type:** Program
 
@@ -2266,8 +2204,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Recreational, educational.
-
-**Crates:** 
 
 **Type:** Snippet
 
@@ -2685,8 +2621,6 @@ which will give identical output to the above.
 
 **Purpose:** Prototype to confirm leaving imports in situ when wrapping snippets.
 
-**Crates:** 
-
 **Type:** Snippet
 
 **Link:** [snippet_name_clash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs)
@@ -2754,8 +2688,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Proof of concept for Windows environment
-
-**Crates:** 
 
 **Type:** Snippet
 
@@ -2941,8 +2873,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo featured crate.
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [tempfile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs)
@@ -3049,8 +2979,6 @@ which will give identical output to the above.
 
 **Purpose:** Convenience for any `rust-script` user who wants to try out `thag`.
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [thag_from_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust_script.rs)
@@ -3063,8 +2991,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Convenience for any `thag` user who wants to try out `rust-script`.
-
-**Crates:** 
 
 **Type:** Program
 
@@ -3218,8 +3144,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo expression type determination for static dispatch.
 
-**Crates:** 
-
 **Type:** Program
 
 **Link:** [type_of_at_compile_time_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_1.rs)
@@ -3288,8 +3212,6 @@ which will give identical output to the above.
 
 **Purpose:** Demo
 
-**Crates:** 
-
 **Type:** Snippet
 
 **Link:** [unzip.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs)
@@ -3302,8 +3224,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Show how crates *not* sending an OSC to the terminal in Windows will *not* the first character you enter to be swallowed.
-
-**Crates:** 
 
 **Type:** Program
 
@@ -3332,8 +3252,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
-
-**Crates:** 
 
 **Type:** Program
 
@@ -3364,8 +3282,6 @@ which will give identical output to the above.
 
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
-
-**Crates:** 
 
 **Type:** Program
 

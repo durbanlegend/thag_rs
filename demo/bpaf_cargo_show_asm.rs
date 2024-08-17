@@ -21,7 +21,7 @@ pub struct Options {
     /// Custom target directory for generated artifacts
     #[bpaf(argument("DIR"))]
     pub target_dir: Option<PathBuf>,
-    /// Package to use if ambigous
+    /// Package to use if ambiguous
     #[bpaf(long, short, argument("SPEC"))]
     pub package: Option<String>,
     #[bpaf(external, optional)]

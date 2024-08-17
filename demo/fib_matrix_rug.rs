@@ -6,7 +6,7 @@ rug = "1.24.1"
 /// Very fast recursive calculation of an individual Fibonacci number
 /// using the matrix squaring technique.
 ///
-/// Won't work with default Windows 11 because of the `rug` crate, which is a pity becaue
+/// Won't work with default Windows 11 because of the `rug` crate, which is a pity because
 /// `rug` is a beast due to its access to powerful GNU libraries.
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.

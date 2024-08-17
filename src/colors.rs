@@ -127,7 +127,7 @@ fn translate_level(level: usize) -> Option<ColorLevel> {
         None
     } else {
         Some(ColorLevel {
-            level,
+            // level,
             has_basic: true,
             has_256: level >= 2,
             has_16m: level >= 3,

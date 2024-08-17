@@ -1,31 +1,31 @@
 ## Running the scripts
 
-`rs-script` uses `clap` for a standard command-line interface. Try `rs-script --help` (or -h) if
+`thag_rs` uses `clap` for a standard command-line interface. Try `thag_rs --help` (or -h) if
 you get stuck.
 
 ### In its simplest form:
 
 
-    rs_script <path to script>
+    thag_rs <path to script>
 
 ###### E.g.:
 
-    rs_script demo/hello.rs
+    thag_rs demo/hello.rs
 
 ### Passing options and arguments to a script:
 
-Use `--` to separate options and arguments meant for the script from those meant for `rs_script` itself.
+Use `--` to separate options and arguments meant for the script from those meant for `thag_rs` itself.
 
 ###### E.g.:
 
 demo/fib_dashu_snippet.rs expects to be passed an integer _n_ and will compute the _nth_ number in the
 Fibonacci sequence.
 
-     rs_script demo/fib_dashu_snippet.rs -- 100
+     thag_rs demo/fib_dashu_snippet.rs -- 100
 
 ### Full syntax:
 
-    rs_script [RS-SCRIPT OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
+    thag_rs [THAG_RS OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
 
 ###### E.g.:
 
@@ -53,19 +53,19 @@ and get output like this:
     Debug mode is on
     Printing testing lists...
 
-Running the source from rs-script looks similar, we just replace `clap_tut_builder_01` by `rs_script demo/clap_tut_builder_01.rs --`:
+Running the source from thag_rs looks similar, we just replace `clap_tut_builder_01` by `thag_rs demo/clap_tut_builder_01.rs --`:
 
-*rs_script demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
+*thag_rs demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
 
-Any parameters for `rs_script` should go before the `--`, e.g. we may choose use -qq to suppress `rs-script` messages:
+Any parameters for `thag_rs` should go before the `--`, e.g. we may choose use -qq to suppress `thag_rs` messages:
 
-    rs_script demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
+    thag_rs demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
 
 which will give identical output to the above.
 
 
 
-##### Remember to use `--` to separate options and arguments that are intended for `rs_script` from those intended for the target script.
+##### Remember to use `--` to separate options and arguments that are intended for `thag_rs` from those intended for the target script.
 
 ***
 ## Detailed script listing
@@ -86,7 +86,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [analyze_snippet_1.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/analyze_snippet_1.rs)
+**Link:** [analyze_snippet_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_1.rs)
 
 ---
 
@@ -105,7 +105,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [analyze_snippet_2.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/analyze_snippet_2.rs)
+**Link:** [analyze_snippet_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_2.rs)
 
 ---
 
@@ -126,7 +126,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [analyze_snippet_3.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/analyze_snippet_3.rs)
+**Link:** [analyze_snippet_3.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_3.rs)
 
 ---
 
@@ -145,7 +145,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [any.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/any.rs)
+**Link:** [any.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs)
 
 ---
 
@@ -160,7 +160,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [bitflags.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/bitflags.rs)
+**Link:** [bitflags.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs)
 
 ---
 
@@ -176,7 +176,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [borrow_wrapped.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/borrow_wrapped.rs)
+**Link:** [borrow_wrapped.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped.rs)
 
 ---
 
@@ -185,7 +185,7 @@ which will give identical output to the above.
 **Description:**  Published example from `https://github.com/pacak/bpaf/src/docs2/derive_show_asm.md`
 
 
- E.g. `rs-script demo/bpaf_cargo_show_asm.rs -- -h`
+ E.g. `thag_rs demo/bpaf_cargo_show_asm.rs -- -h`
 
 
 **Purpose:** Demo CLI alternative to clap crate
@@ -194,7 +194,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [bpaf_cargo_show_asm.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/bpaf_cargo_show_asm.rs)
+**Link:** [bpaf_cargo_show_asm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_show_asm.rs)
 
 ---
 
@@ -202,7 +202,7 @@ which will give identical output to the above.
 
 **Description:**  Example from bpaf crate docs2/src/adjacent_command/derive.rs.
 
- E.g. `rs_script demo/bpaf_cmd-chain.rs -- eat Fastfood drink --coffee sleep --time=5`
+ E.g. `thag_rs demo/bpaf_cmd-chain.rs -- eat Fastfood drink --coffee sleep --time=5`
 
 
 **Purpose:** Demo CLI alternative to clap crate
@@ -211,7 +211,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [bpaf_cmd_chain.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/bpaf_cmd_chain.rs)
+**Link:** [bpaf_cmd_chain.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain.rs)
 
 ---
 
@@ -228,7 +228,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [bpaf_derive.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/bpaf_derive.rs)
+**Link:** [bpaf_derive.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs)
 
 ---
 
@@ -245,14 +245,14 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [cargo_output.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/cargo_output.rs)
+**Link:** [cargo_output.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.rs)
 
 ---
 
 ### Script: clap_enum_strum.rs
 
 **Description:**  Exploring using clap with an enum, in conjunction with strum.
- E.g. `rs_script demo/clap_enum_strum.rs -- variant-num2`
+ E.g. `thag_rs demo/clap_enum_strum.rs -- variant-num2`
 
 
 **Purpose:** Simple demo of featured crates, contrasting how they expose variants.
@@ -261,7 +261,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [clap_enum_strum.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/clap_enum_strum.rs)
+**Link:** [clap_enum_strum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_strum.rs)
 
 ---
 
@@ -269,7 +269,7 @@ which will give identical output to the above.
 
 **Description:**  `clap` with a numeric option.
 
- E.g. `rs_script demo/clap_num_arg.rs -- 45`
+ E.g. `thag_rs demo/clap_num_arg.rs -- 45`
 
 
 **Purpose:** Basic demo of `clap` parsing a numeric argument
@@ -278,7 +278,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [clap_num_arg.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/clap_num_arg.rs)
+**Link:** [clap_num_arg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.rs)
 
 ---
 
@@ -294,7 +294,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [clap_repl_crate_rustyline.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/clap_repl_crate_rustyline.rs)
+**Link:** [clap_repl_crate_rustyline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crate_rustyline.rs)
 
 ---
 
@@ -311,7 +311,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [clap_repl_diy.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/clap_repl_diy.rs)
+**Link:** [clap_repl_diy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.rs)
 
 ---
 
@@ -319,7 +319,7 @@ which will give identical output to the above.
 
 **Description:**  Published example from `clap` tutorial (builder)
 
- E.g.  `rs_script demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
+ E.g.  `thag_rs demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
 
 
 **Purpose:** Demonstrate `clap` CLI using the builder option
@@ -328,7 +328,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [clap_tut_builder_01_quick.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/clap_tut_builder_01_quick.rs)
+**Link:** [clap_tut_builder_01_quick.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_builder_01_quick.rs)
 
 ---
 
@@ -336,7 +336,7 @@ which will give identical output to the above.
 
 **Description:**  Published example from `clap` tutorial (derive), with added displays.
 
- E.g. rs_script demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+ E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
 
 
 **Purpose:** Demonstrate `clap` CLI using the derive option
@@ -345,7 +345,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [clap_tut_derive_03_04_subcommands.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/clap_tut_derive_03_04_subcommands.rs)
+**Link:** [clap_tut_derive_03_04_subcommands.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_03_04_subcommands.rs)
 
 ---
 
@@ -353,7 +353,7 @@ which will give identical output to the above.
 
 **Description:**  Published example from `clap` tutorial (derive), with added displays.
 
- E.g. `rs_script demo/clap_tut_derive_04_01_enum.rs -- fast`
+ E.g. `thag_rs demo/clap_tut_derive_04_01_enum.rs -- fast`
 
 
 **Purpose:** Demonstrate `clap` CLI using the derive option
@@ -362,7 +362,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [clap_tut_derive_04_01_enum.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/clap_tut_derive_04_01_enum.rs)
+**Link:** [clap_tut_derive_04_01_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_01_enum.rs)
 
 ---
 
@@ -370,7 +370,7 @@ which will give identical output to the above.
 
 **Description:**  Published example from `clap` tutorial (derive), with added displays.
 
- E.g. `rs_script demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt`
+ E.g. `thag_rs demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt`
 
 
 **Purpose:** Demonstrate `clap` CLI using the derive option
@@ -379,7 +379,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [clap_tut_derive_04_03_relations.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/clap_tut_derive_04_03_relations.rs)
+**Link:** [clap_tut_derive_04_03_relations.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_03_relations.rs)
 
 ---
 
@@ -394,24 +394,24 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [cli_partial_match.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/cli_partial_match.rs)
+**Link:** [cli_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cli_partial_match.rs)
 
 ---
 
 ### Script: cmd_args.rs
 
-**Description:**  A prototype of the cmd_args module of rs-script itself.
+**Description:**  A prototype of the cmd_args module of thag_rs itself.
 
- E.g. `rs_script -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
+ E.g. `thag_rs -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 
 
 **Purpose:** Prototype CLI.
 
-**Crates:** `bitflags`, `clap`, `rs_script`
+**Crates:** `bitflags`, `clap`, `thag_rs`
 
 **Type:** Program
 
-**Link:** [cmd_args.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/cmd_args.rs)
+**Link:** [cmd_args.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs)
 
 ---
 
@@ -420,7 +420,7 @@ which will give identical output to the above.
 **Description:**  Example of a CLI using the bpaf crate instead of clap, originally generated by ChatGPT.
  See `demo/cmd_args_clap.rs` for comparison.
 
- E.g. `rs_script -tv demo/cmd_args_bpaf_gpt.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
+ E.g. `thag_rs -tv demo/cmd_args_bpaf_gpt.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 
 
 **Purpose:** Demo one lighter-weight alternative to clap.
@@ -429,7 +429,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [cmd_args_bpaf_gpt.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/cmd_args_bpaf_gpt.rs)
+**Link:** [cmd_args_bpaf_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_gpt.rs)
 
 ---
 
@@ -437,7 +437,7 @@ which will give identical output to the above.
 
 **Description:**  Basic CLI example using clap.
 
- E.g. `rs_script -t demo/cmd_args_clap.rs -- -atv hello.sh`
+ E.g. `thag_rs -t demo/cmd_args_clap.rs -- -atv hello.sh`
 
 
 **Purpose:** For comparison with `demo/cmd_args_bpaf_gpt.rs`.
@@ -446,7 +446,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [cmd_args_clap.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/cmd_args_clap.rs)
+**Link:** [cmd_args_clap.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.rs)
 
 ---
 
@@ -465,33 +465,33 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [color_contrast.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/color_contrast.rs)
+**Link:** [color_contrast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast.rs)
 
 ---
 
 ### Script: colors.rs
 
-**Description:**  A version of `rs-script`'s `colors` module to style messages according to their type. Like the `stdin`
+**Description:**  A version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
  module, `colors` was originally developed here as a separate script and integrated as a module later.
 
  Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 
- E.g. `rs_script demo/colors.rs`
+ E.g. `thag_rs demo/colors.rs`
 
 
-**Purpose:** Demo using `rs-script` to develop a module outside of the project.
+**Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
-**Crates:** `lazy_static`, `rs_script`, `strum`, `supports_color`, `termbg`
+**Crates:** `lazy_static`, `strum`, `supports_color`, `termbg`, `thag_rs`
 
 **Type:** Program
 
-**Link:** [colors.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/colors.rs)
+**Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
 
 ---
 
 ### Script: colors_orig.rs
 
-**Description:**  Original prototype of `rs-script`'s `colors` module to style messages according
+**Description:**  Original prototype of `thag_rs`'s `colors` module to style messages according
  to their type. I only dropped `owo-colors` because I switched from `rustyline` to
  `reedline`, which was already using `nu_ansi_term`.
 
@@ -500,11 +500,11 @@ which will give identical output to the above.
 
 **Purpose:** Demo older alternative implementation of `colors` module using `owo-colors`.
 
-**Crates:** `log`, `owo_colors`, `rs_script`, `strum`, `supports_color`, `termbg`
+**Crates:** `log`, `owo_colors`, `strum`, `supports_color`, `termbg`, `thag_rs`
 
 **Type:** Program
 
-**Link:** [colors_orig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/colors_orig.rs)
+**Link:** [colors_orig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_orig.rs)
 
 ---
 
@@ -513,38 +513,38 @@ which will give identical output to the above.
 **Description:**  Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
 
 
-**Purpose:** Develop a configuration file implementation for `rs-script`.
+**Purpose:** Develop a configuration file implementation for `thag_rs`.
 
 **Crates:** `serde`, `strum_macros`
 
 **Type:** Program
 
-**Link:** [config.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/config.rs)
+**Link:** [config.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs)
 
 ---
 
 ### Script: count_main_methods.rs
 
-**Description:**  Prototype of a function required by rs_script to count the main methods
+**Description:**  Prototype of a function required by thag_rs to count the main methods
  in a script to decide if it's a program or a snippet. Uses the `syn`
  visitor pattern. This is more reliable than a simple source code search
  which tends to find false positives in string literals and comments.
 
 
-**Purpose:** Demo prototyping with rs-script and use of the `syn` visitor pattern to visit nodes of interest
+**Purpose:** Demo prototyping with thag_rs and use of the `syn` visitor pattern to visit nodes of interest
 
 **Crates:** `syn`
 
 **Type:** Program
 
-**Link:** [count_main_methods.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/count_main_methods.rs)
+**Link:** [count_main_methods.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_methods.rs)
 
 ---
 
 ### Script: create_next_file.rs
 
 **Description:**  Prototype of creating files named sequentially from repl_000000.rs to
- repl_999999.rs in a rs_script/demo subdirectory of the OS's temporary
+ repl_999999.rs in a thag_rs/demo subdirectory of the OS's temporary
  directory. The need is to generate well-behaved and consistent human-readable
  names for temporary programs generated from REPL expressions.
 
@@ -555,7 +555,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [create_next_file.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/create_next_file.rs)
+**Link:** [create_next_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_file.rs)
 
 ---
 
@@ -573,7 +573,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [crokey_deser.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/crokey_deser.rs)
+**Link:** [crokey_deser.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.rs)
 
 ---
 
@@ -588,7 +588,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [crokey_print_key.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/crokey_print_key.rs)
+**Link:** [crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key.rs)
 
 ---
 
@@ -605,7 +605,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [crossbeam_channel_fibonacci.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/crossbeam_channel_fibonacci.rs)
+**Link:** [crossbeam_channel_fibonacci.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_fibonacci.rs)
 
 ---
 
@@ -621,7 +621,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [crossbeam_channel_matching.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/crossbeam_channel_matching.rs)
+**Link:** [crossbeam_channel_matching.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_matching.rs)
 
 ---
 
@@ -640,7 +640,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [crossbeam_channel_stopwatch.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/crossbeam_channel_stopwatch.rs)
+**Link:** [crossbeam_channel_stopwatch.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_stopwatch.rs)
 
 ---
 
@@ -662,7 +662,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [crossbeam_epoch_sanitize.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/crossbeam_epoch_sanitize.rs)
+**Link:** [crossbeam_epoch_sanitize.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoch_sanitize.rs)
 
 ---
 
@@ -679,7 +679,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [crossterm.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/crossterm.rs)
+**Link:** [crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs)
 
 ---
 
@@ -698,7 +698,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [crossterm_command_macro.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/crossterm_command_macro.rs)
+**Link:** [crossterm_command_macro.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_command_macro.rs)
 
 ---
 
@@ -716,7 +716,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [crossterm_event_read.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/crossterm_event_read.rs)
+**Link:** [crossterm_event_read.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_event_read.rs)
 
 ---
 
@@ -737,7 +737,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [crossterm_key_events.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/crossterm_key_events.rs)
+**Link:** [crossterm_key_events.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_events.rs)
 
 ---
 
@@ -752,7 +752,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [ctrlc_demo.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/ctrlc_demo.rs)
+**Link:** [ctrlc_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs)
 
 ---
 
@@ -771,7 +771,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [curl.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/curl.rs)
+**Link:** [curl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs)
 
 ---
 
@@ -791,7 +791,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [dethag_re.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/dethag_re.rs)
+**Link:** [dethag_re.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs)
 
 ---
 
@@ -813,7 +813,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [dethagomizer.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/dethagomizer.rs)
+**Link:** [dethagomizer.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs)
 
 ---
 
@@ -825,7 +825,7 @@ which will give identical output to the above.
  These are enabled by adding the inner attribute `#![feature(duration_constructors)]` to the script.
  I've used a snippet to illustrate that this is possible: an inner attribute (i.e. an attribute prefixed
  with `#!` (`#![...]`)) must be placed at the top of the crate it applies to, so when wrapping the snippet
- in a fn main, rs_script pulls any inner attributes out to the top of the program.
+ in a fn main, thag_rs pulls any inner attributes out to the top of the program.
 
  Notice we also have a shebang so that this script may be run as `demo/duration_snippet.rs` with execute
  permission. The shebang must be on the very first line but coexists peacefulyl with the inner attribute.
@@ -851,7 +851,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [duration_snippet.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/duration_snippet.rs)
+**Link:** [duration_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snippet.rs)
 
 ---
 
@@ -861,7 +861,7 @@ which will give identical output to the above.
 
  Will use the editor specified in VISUAL or EDITOR environment variable.
 
- E.g. `EDITOR=vim rs_script demo/edit.rs`
+ E.g. `EDITOR=vim thag_rs demo/edit.rs`
 
 
 **Purpose:** Demo of edit crate to invoke preferred editor.
@@ -870,7 +870,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [edit.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/edit.rs)
+**Link:** [edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs)
 
 ---
 
@@ -885,7 +885,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [egui_code_editor.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/egui_code_editor.rs)
+**Link:** [egui_code_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_editor.rs)
 
 ---
 
@@ -905,7 +905,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [enum_select.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/enum_select.rs)
+**Link:** [enum_select.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs)
 
 ---
 
@@ -925,7 +925,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [factorial_dashu_product.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/factorial_dashu_product.rs)
+**Link:** [factorial_dashu_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dashu_product.rs)
 
 ---
 
@@ -957,7 +957,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [factorial_ibig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/factorial_ibig.rs)
+**Link:** [factorial_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig.rs)
 
 ---
 
@@ -979,7 +979,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [factorial_ibig_product.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/factorial_ibig_product.rs)
+**Link:** [factorial_ibig_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs)
 
 ---
 
@@ -995,7 +995,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [factorial_main_u128_product.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/factorial_main_u128_product.rs)
+**Link:** [factorial_main_u128_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main_u128_product.rs)
 
 ---
 
@@ -1006,7 +1006,7 @@ which will give identical output to the above.
  digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
  edging out `fibo` at this scale.
 
- E.g.: `rs_script demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
+ E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 
 
 
@@ -1016,7 +1016,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [fib_4784969_cpp_ibig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_4784969_cpp_ibig.rs)
+**Link:** [fib_4784969_cpp_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_ibig.rs)
 
 ---
 
@@ -1029,7 +1029,7 @@ which will give identical output to the above.
 
  The `rug` crate runs blindingly fast, but I for one found it very difficult to get this to compile.
 
- E.g.: `rs_script demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
+ E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 
 
 
@@ -1039,7 +1039,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [fib_4784969_cpp_rug.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_4784969_cpp_rug.rs)
+**Link:** [fib_4784969_cpp_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_rug.rs)
 
 ---
 
@@ -1051,7 +1051,7 @@ which will give identical output to the above.
  directory also show a number of approaches. `demo/fib_basic_ibig.rs` shows the use of
  the `std::iter::Successors` iterator as well as removing the limitations of Rust
  primitives. Most of the other examples explore different strategies for rapid computation of
- large Fibonacci values, and hopefully demonstrate the usefulness of `rs-script` as a tool
+ large Fibonacci values, and hopefully demonstrate the usefulness of `thag_rs` as a tool
  for trying out and comparing new ideas.
 
  As the number of Fibonacci examples here shows, this took me down a Fibonacci rabbit hole.
@@ -1063,7 +1063,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_basic.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_basic.rs)
+**Link:** [fib_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs)
 
 ---
 
@@ -1079,7 +1079,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_basic_ibig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_basic_ibig.rs)
+**Link:** [fib_basic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig.rs)
 
 ---
 
@@ -1105,7 +1105,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_big_clap_rug.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_big_clap_rug.rs)
+**Link:** [fib_big_clap_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_rug.rs)
 
 ---
 
@@ -1132,7 +1132,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_binet_astro_snippet.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_binet_astro_snippet.rs)
+**Link:** [fib_binet_astro_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astro_snippet.rs)
 
 ---
 
@@ -1155,7 +1155,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_binet_snippet.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_binet_snippet.rs)
+**Link:** [fib_binet_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snippet.rs)
 
 ---
 
@@ -1174,7 +1174,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_classic_ibig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_classic_ibig.rs)
+**Link:** [fib_classic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig.rs)
 
 ---
 
@@ -1184,7 +1184,7 @@ which will give identical output to the above.
  against other fibonacci scripts.
  Scripts can then be selected and run sequentially.
  E.g. an apples-with-apples comparison of different algorithms implemented using the ``ibig` crate:
- `ls -1 demo/fib*ibig*.rs | grep -v fib_basic_ibig.rs | while read f; do echo $f; rs_script -t $f -- 10000000; done`
+ `ls -1 demo/fib*ibig*.rs | grep -v fib_basic_ibig.rs | while read f; do echo $f; thag_rs -t $f -- 10000000; done`
 
  See https://en.wikipedia.org/wiki/Fibonacci_sequence.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
@@ -1197,7 +1197,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_classic_ibig_instrumented.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_classic_ibig_instrumented.rs)
+**Link:** [fib_classic_ibig_instrumented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig_instrumented.rs)
 
 ---
 
@@ -1219,7 +1219,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_dashu_snippet.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_dashu_snippet.rs)
+**Link:** [fib_dashu_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snippet.rs)
 
 ---
 
@@ -1249,7 +1249,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [fib_doubling_iterative_ibig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_doubling_iterative_ibig.rs)
+**Link:** [fib_doubling_iterative_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_ibig.rs)
 
 ---
 
@@ -1270,7 +1270,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [fib_doubling_iterative_purge_ibig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_doubling_iterative_purge_ibig.rs)
+**Link:** [fib_doubling_iterative_purge_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_ibig.rs)
 
 ---
 
@@ -1293,7 +1293,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [fib_doubling_iterative_purge_rug.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_doubling_iterative_purge_rug.rs)
+**Link:** [fib_doubling_iterative_purge_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_rug.rs)
 
 ---
 
@@ -1311,7 +1311,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [fib_doubling_no_memo_ibig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_doubling_no_memo_ibig.rs)
+**Link:** [fib_doubling_no_memo_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig.rs)
 
 ---
 
@@ -1363,7 +1363,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [fib_doubling_no_memo_ibig_1.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_doubling_no_memo_ibig_1.rs)
+**Link:** [fib_doubling_no_memo_ibig_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_1.rs)
 
 ---
 
@@ -1416,7 +1416,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [fib_doubling_no_memo_ibig_2.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_doubling_no_memo_ibig_2.rs)
+**Link:** [fib_doubling_no_memo_ibig_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_2.rs)
 
 ---
 
@@ -1454,7 +1454,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [fib_doubling_recursive_ibig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_doubling_recursive_ibig.rs)
+**Link:** [fib_doubling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_recursive_ibig.rs)
 
 ---
 
@@ -1476,7 +1476,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_matrix.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_matrix.rs)
+**Link:** [fib_matrix.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs)
 
 ---
 
@@ -1507,7 +1507,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_matrix_dashu.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_matrix_dashu.rs)
+**Link:** [fib_matrix_dashu.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_dashu.rs)
 
 ---
 
@@ -1538,7 +1538,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_matrix_ibig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_matrix_ibig.rs)
+**Link:** [fib_matrix_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibig.rs)
 
 ---
 
@@ -1561,7 +1561,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [fib_matrix_rug.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_matrix_rug.rs)
+**Link:** [fib_matrix_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug.rs)
 
 ---
 
@@ -1580,7 +1580,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [fib_quadrupling_recursive_ibig.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fib_quadrupling_recursive_ibig.rs)
+**Link:** [fib_quadrupling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadrupling_recursive_ibig.rs)
 
 ---
 
@@ -1591,13 +1591,13 @@ which will give identical output to the above.
  Described by the authors as "a really gratuitous use of iterators".
 
 
-**Purpose:** Demo using `rs-script` to try out random code snippets ... also iterators.
+**Purpose:** Demo using `thag_rs` to try out random code snippets ... also iterators.
 
 **Crates:** 
 
 **Type:** Snippet
 
-**Link:** [fizz_buzz_blandy_orendorff.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fizz_buzz_blandy_orendorff.rs)
+**Link:** [fizz_buzz_blandy_orendorff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs)
 
 ---
 
@@ -1606,13 +1606,13 @@ which will give identical output to the above.
 **Description:**  GPT-generated fizz-buzz example.
 
 
-**Purpose:** Demo running random snippets in rs-script, also AI and the art of delegation ;)
+**Purpose:** Demo running random snippets in thag_rs, also AI and the art of delegation ;)
 
 **Crates:** 
 
 **Type:** Snippet
 
-**Link:** [fizz_buzz_gpt.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/fizz_buzz_gpt.rs)
+**Link:** [fizz_buzz_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.rs)
 
 ---
 
@@ -1628,7 +1628,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [flume_async.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/flume_async.rs)
+**Link:** [flume_async.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs)
 
 ---
 
@@ -1643,7 +1643,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [flume_perf.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/flume_perf.rs)
+**Link:** [flume_perf.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs)
 
 ---
 
@@ -1659,7 +1659,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [flume_select.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/flume_select.rs)
+**Link:** [flume_select.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.rs)
 
 ---
 
@@ -1675,7 +1675,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [gen_names.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/gen_names.rs)
+**Link:** [gen_names.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs)
 
 ---
 
@@ -1689,28 +1689,28 @@ which will give identical output to the above.
 
 **Purpose:** Document demo scripts in a demo/README.md as a guide to the user.
 
-**Crates:** `lazy_static`, `regex`, `rs_script`
+**Crates:** `lazy_static`, `regex`, `thag_rs`
 
 **Type:** Program
 
-**Link:** [gen_readme.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/gen_readme.rs)
+**Link:** [gen_readme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme.rs)
 
 ---
 
 ### Script: git_dependency.rs
 
 **Description:**  Demo the use of git dependencies in the toml block. Local path dependencies
- work the same way, e.g. `rs-script = { git = "https://github.com/durbanlegend/rs-script" },
+ work the same way, e.g. `thag_rs = { git = "https://github.com/durbanlegend/thag_rs" },
  but obviously the path literal will be specific to your environment.
 
 
 **Purpose:** Demo `git` dependencies, explain `path` dependencies.
 
-**Crates:** `rs_script`
+**Crates:** `thag_rs`
 
 **Type:** Program
 
-**Link:** [git_dependency.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/git_dependency.rs)
+**Link:** [git_dependency.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency.rs)
 
 ---
 
@@ -1721,11 +1721,11 @@ which will give identical output to the above.
 
 **Purpose:** Demo `git` dependencies as a snippet.
 
-**Crates:** `rs_script`
+**Crates:** `thag_rs`
 
 **Type:** Snippet
 
-**Link:** [git_dependency_snippet.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/git_dependency_snippet.rs)
+**Link:** [git_dependency_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency_snippet.rs)
 
 ---
 
@@ -1740,7 +1740,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [gpt_clap_derive.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/gpt_clap_derive.rs)
+**Link:** [gpt_clap_derive.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_derive.rs)
 
 ---
 
@@ -1750,7 +1750,7 @@ which will give identical output to the above.
  as a static enum value for use in message style selection. Example of using
  an LLM to generate a prototype to a simple spec. The `clear_screen` function
  was added manually later. This prototype is one of many that was incorporated
- into `rs_script`.
+ into `thag_rs`.
 
 
 **Purpose:** Demo theme detection with `termbg`, clearing terminal state with `crossterm` and setting it as a static enum value using `lazy_static`.
@@ -1759,7 +1759,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [gpt_lazy_static_theme.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/gpt_lazy_static_theme.rs)
+**Link:** [gpt_lazy_static_theme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_lazy_static_theme.rs)
 
 ---
 
@@ -1774,7 +1774,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [hello.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/hello.rs)
+**Link:** [hello.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs)
 
 ---
 
@@ -1789,7 +1789,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [hello_main.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/hello_main.rs)
+**Link:** [hello_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs)
 
 ---
 
@@ -1804,7 +1804,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [hello_minimal.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/hello_minimal.rs)
+**Link:** [hello_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.rs)
 
 ---
 
@@ -1816,7 +1816,7 @@ which will give identical output to the above.
  redundancies.
  You can run the `hyper_echo_server.rs` demo as the HTTP server on
  another command line and connect to it on port 3000:
- `rs_script demo/hyper_client.rs -- http://127.0.0.1:3000`.
+ `thag_rs demo/hyper_client.rs -- http://127.0.0.1:3000`.
  Or use any other available HTTP server.
 
 
@@ -1826,7 +1826,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [hyper_client.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/hyper_client.rs)
+**Link:** [hyper_client.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.rs)
 
 ---
 
@@ -1847,7 +1847,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [hyper_echo_server.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/hyper_echo_server.rs)
+**Link:** [hyper_echo_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_server.rs)
 
 ---
 
@@ -1862,7 +1862,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [ibig_big_integers.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/ibig_big_integers.rs)
+**Link:** [ibig_big_integers.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integers.rs)
 
 ---
 
@@ -1871,13 +1871,13 @@ which will give identical output to the above.
 **Description:**  The full tour of the `iced` crate published in the `iced` examples.
 
 
-**Purpose:** Show that `rs-script` can handle product demos.
+**Purpose:** Show that `thag_rs` can handle product demos.
 
 **Crates:** `iced`
 
 **Type:** Program
 
-**Link:** [iced_tour.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/iced_tour.rs)
+**Link:** [iced_tour.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs)
 
 ---
 
@@ -1892,7 +1892,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [in_place.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/in_place.rs)
+**Link:** [in_place.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs)
 
 ---
 
@@ -1908,7 +1908,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [inline_colorization.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/inline_colorization.rs)
+**Link:** [inline_colorization.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_colorization.rs)
 
 ---
 
@@ -1923,7 +1923,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [install_demo_gpt.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/install_demo_gpt.rs)
+**Link:** [install_demo_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/install_demo_gpt.rs)
 
 ---
 
@@ -1938,7 +1938,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [iter.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/iter.rs)
+**Link:** [iter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs)
 
 ---
 
@@ -1953,7 +1953,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [json.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/json.rs)
+**Link:** [json.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs)
 
 ---
 
@@ -1969,7 +1969,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [list_files.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/list_files.rs)
+**Link:** [list_files.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs)
 
 ---
 
@@ -1987,7 +1987,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [loop_closure.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/loop_closure.rs)
+**Link:** [loop_closure.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.rs)
 
 ---
 
@@ -2005,7 +2005,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [loop_expr.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/loop_expr.rs)
+**Link:** [loop_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs)
 
 ---
 
@@ -2023,7 +2023,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [loop_pre_post.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/loop_pre_post.rs)
+**Link:** [loop_pre_post.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs)
 
 ---
 
@@ -2040,7 +2040,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [macro_print.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/macro_print.rs)
+**Link:** [macro_print.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs)
 
 ---
 
@@ -2051,11 +2051,11 @@ which will give identical output to the above.
 
 **Purpose:** Debugging script.
 
-**Crates:** `crossterm`, `mockall`, `rs_script`
+**Crates:** `crossterm`, `mockall`, `thag_rs`
 
 **Type:** Snippet
 
-**Link:** [mock_edit.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/mock_edit.rs)
+**Link:** [mock_edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs)
 
 ---
 
@@ -2070,7 +2070,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [multiline_err.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/multiline_err.rs)
+**Link:** [multiline_err.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.rs)
 
 ---
 
@@ -2086,7 +2086,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [owo_cli_color_support.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/owo_cli_color_support.rs)
+**Link:** [owo_cli_color_support.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_support.rs)
 
 ---
 
@@ -2103,7 +2103,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [owo_msg_colors_1_basic_gpt.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/owo_msg_colors_1_basic_gpt.rs)
+**Link:** [owo_msg_colors_1_basic_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_1_basic_gpt.rs)
 
 ---
 
@@ -2124,7 +2124,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [owo_msg_colors_2_adv_gpt.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/owo_msg_colors_2_adv_gpt.rs)
+**Link:** [owo_msg_colors_2_adv_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_2_adv_gpt.rs)
 
 ---
 
@@ -2139,7 +2139,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [owo_styles.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/owo_styles.rs)
+**Link:** [owo_styles.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_styles.rs)
 
 ---
 
@@ -2157,7 +2157,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [parse_script_rs_toml.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/parse_script_rs_toml.rs)
+**Link:** [parse_script_rs_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_rs_toml.rs)
 
 ---
 
@@ -2174,7 +2174,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [parse_toml.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/parse_toml.rs)
+**Link:** [parse_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs)
 
 ---
 
@@ -2189,7 +2189,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [pomprt_completion.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/pomprt_completion.rs)
+**Link:** [pomprt_completion.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/pomprt_completion.rs)
 
 ---
 
@@ -2204,7 +2204,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [prettyplease.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/prettyplease.rs)
+**Link:** [prettyplease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.rs)
 
 ---
 
@@ -2220,7 +2220,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [profiling_puffin_demo.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/profiling_puffin_demo.rs)
+**Link:** [profiling_puffin_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puffin_demo.rs)
 
 ---
 
@@ -2235,7 +2235,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [puffin_profiler_egui.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/puffin_profiler_egui.rs)
+**Link:** [puffin_profiler_egui.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profiler_egui.rs)
 
 ---
 
@@ -2271,7 +2271,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [py_thag.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/py_thag.rs)
+**Link:** [py_thag.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs)
 
 ---
 
@@ -2286,7 +2286,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [ratatui_user_input.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/ratatui_user_input.rs)
+**Link:** [ratatui_user_input.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input.rs)
 
 ---
 
@@ -2303,7 +2303,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [readline_crossterm.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/readline_crossterm.rs)
+**Link:** [readline_crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_crossterm.rs)
 
 ---
 
@@ -2318,7 +2318,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_basic_keybindings.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_basic_keybindings.rs)
+**Link:** [reedline_basic_keybindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic_keybindings.rs)
 
 ---
 
@@ -2333,7 +2333,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_completions.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_completions.rs)
+**Link:** [reedline_completions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_completions.rs)
 
 ---
 
@@ -2348,7 +2348,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_event_listener.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_event_listener.rs)
+**Link:** [reedline_event_listener.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event_listener.rs)
 
 ---
 
@@ -2363,7 +2363,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_highlighter.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_highlighter.rs)
+**Link:** [reedline_highlighter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highlighter.rs)
 
 ---
 
@@ -2378,7 +2378,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_hinter.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_hinter.rs)
+**Link:** [reedline_hinter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinter.rs)
 
 ---
 
@@ -2393,7 +2393,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_history.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_history.rs)
+**Link:** [reedline_history.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_history.rs)
 
 ---
 
@@ -2411,7 +2411,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_ide_completions.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_ide_completions.rs)
+**Link:** [reedline_ide_completions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_completions.rs)
 
 ---
 
@@ -2427,7 +2427,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_list_bindings.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_list_bindings.rs)
+**Link:** [reedline_list_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_bindings.rs)
 
 ---
 
@@ -2443,7 +2443,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_multiline.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_multiline.rs)
+**Link:** [reedline_multiline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multiline.rs)
 
 ---
 
@@ -2458,7 +2458,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_read_stdin.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_read_stdin.rs)
+**Link:** [reedline_read_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_stdin.rs)
 
 ---
 
@@ -2473,7 +2473,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_repl.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_repl.rs)
+**Link:** [reedline_repl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.rs)
 
 ---
 
@@ -2489,7 +2489,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_repl_context.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_repl_context.rs)
+**Link:** [reedline_repl_context.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_context.rs)
 
 ---
 
@@ -2498,7 +2498,7 @@ which will give identical output to the above.
 **Description:**  Prototype of key binding display function for `reedline` REPL. This was developed
  by giving ChatGPT a simple spec which it flubbed, then repeatedly feeding back errors,
  manually corrected code and requests for changes until a nice simple display was
- achieved. This was then refined into the `keys` display of the `rs-script` REPL, with
+ achieved. This was then refined into the `keys` display of the `thag_rs` REPL, with
  the addition of command descriptions, non-edit commands such as SearchHistory, and colour-
  coding.
 
@@ -2509,7 +2509,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_show_bindings.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_show_bindings.rs)
+**Link:** [reedline_show_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_bindings.rs)
 
 ---
 
@@ -2524,7 +2524,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_stdin.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_stdin.rs)
+**Link:** [reedline_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin.rs)
 
 ---
 
@@ -2539,7 +2539,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [reedline_transient_prompt.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/reedline_transient_prompt.rs)
+**Link:** [reedline_transient_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_transient_prompt.rs)
 
 ---
 
@@ -2557,7 +2557,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [regex_capture_toml.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/regex_capture_toml.rs)
+**Link:** [regex_capture_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_toml.rs)
 
 ---
 
@@ -2578,7 +2578,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [rug_arbitrary_precision_nums.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/rug_arbitrary_precision_nums.rs)
+**Link:** [rug_arbitrary_precision_nums.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rug_arbitrary_precision_nums.rs)
 
 ---
 
@@ -2595,7 +2595,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [rustfmt.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/rustfmt.rs)
+**Link:** [rustfmt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs)
 
 ---
 
@@ -2610,7 +2610,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [rustlings_smart_pointers_rc1.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/rustlings_smart_pointers_rc1.rs)
+**Link:** [rustlings_smart_pointers_rc1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smart_pointers_rc1.rs)
 
 ---
 
@@ -2619,13 +2619,13 @@ which will give identical output to the above.
 **Description:**  Published example from the `rustyline` crate.
 
 
-**Purpose:** Demo using `rs-script` to run a basic REPL as a script.
+**Purpose:** Demo using `thag_rs` to run a basic REPL as a script.
 
 **Crates:** `rustyline`
 
 **Type:** Program
 
-**Link:** [rustyline_compl.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/rustyline_compl.rs)
+**Link:** [rustyline_compl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_compl.rs)
 
 ---
 
@@ -2642,7 +2642,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [rustyline_full.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/rustyline_full.rs)
+**Link:** [rustyline_full.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full.rs)
 
 ---
 
@@ -2657,7 +2657,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [slog_expressions.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/slog_expressions.rs)
+**Link:** [slog_expressions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressions.rs)
 
 ---
 
@@ -2672,7 +2672,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [snippet_import_scope.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/snippet_import_scope.rs)
+**Link:** [snippet_import_scope.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import_scope.rs)
 
 ---
 
@@ -2689,25 +2689,25 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [snippet_name_clash.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/snippet_name_clash.rs)
+**Link:** [snippet_name_clash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs)
 
 ---
 
 ### Script: stdin.rs
 
-**Description:**  A version of `rs-script`'s `stdin` module to handle standard input editor input. Like the `colors`
+**Description:**  A version of `thag_rs`'s `stdin` module to handle standard input editor input. Like the `colors`
  module, `stdin` was originally developed here as a separate script and integrated as a module later.
 ///
- E.g. `rs_script demo/stdin.rs`
+ E.g. `thag_rs demo/stdin.rs`
 
 
-**Purpose:** Demo using `rs-script` to develop a module outside of the project.
+**Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
-**Crates:** `lazy_static`, `ratatui`, `regex`, `rs_script`, `tui_textarea`
+**Crates:** `lazy_static`, `ratatui`, `regex`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 
-**Link:** [stdin.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/stdin.rs)
+**Link:** [stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs)
 
 ---
 
@@ -2724,13 +2724,13 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [structopt_cli_gpt.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/structopt_cli_gpt.rs)
+**Link:** [structopt_cli_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_gpt.rs)
 
 ---
 
 ### Script: supports_color.rs
 
-**Description:**  Demo of crate `supports-color` that `rs-script` uses to detect the level of
+**Description:**  Demo of crate `supports-color` that `thag_rs` uses to detect the level of
  colour support of the terminal in use. I've added the `clear_screen` method
  because from testing I suspect that `supports-color` may mess with the terminal
  settings. Obviously that doesn't matter in a demo that exists before doing
@@ -2743,7 +2743,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [supports_color.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/supports_color.rs)
+**Link:** [supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color.rs)
 
 ---
 
@@ -2759,7 +2759,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [supports_color_win.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/supports_color_win.rs)
+**Link:** [supports_color_win.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color_win.rs)
 
 ---
 
@@ -2777,7 +2777,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [syn_dump_syntax.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/syn_dump_syntax.rs)
+**Link:** [syn_dump_syntax.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax.rs)
 
 ---
 
@@ -2793,9 +2793,9 @@ which will give identical output to the above.
  rust_code=println ! ("result={}" , 5 + 8) ;
  ```
  Fun fact: you can paste the output into any of the `expr`, `edit`, `repl` or `stdin`
- modes of `rs-script`, or even into a .rs file, and it will print out the value of the
+ modes of `thag_rs`, or even into a .rs file, and it will print out the value of the
  expression (in this case 13). Or you can do the same with the input (5 + 8) and it
- will do the same because `rs-script` will detect and evaluate an expression in
+ will do the same because `thag_rs` will detect and evaluate an expression in
  essentially the same way as this script does.
 
 
@@ -2805,7 +2805,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [syn_quote.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/syn_quote.rs)
+**Link:** [syn_quote.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs)
 
 ---
 
@@ -2821,7 +2821,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [syn_remove_attributes.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/syn_remove_attributes.rs)
+**Link:** [syn_remove_attributes.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_attributes.rs)
 
 ---
 
@@ -2839,7 +2839,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [syn_visit_extern_crate_expr.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/syn_visit_extern_crate_expr.rs)
+**Link:** [syn_visit_extern_crate_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_expr.rs)
 
 ---
 
@@ -2857,7 +2857,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [syn_visit_extern_crate_file.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/syn_visit_extern_crate_file.rs)
+**Link:** [syn_visit_extern_crate_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_file.rs)
 
 ---
 
@@ -2875,7 +2875,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [syn_visit_node_type.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/syn_visit_node_type.rs)
+**Link:** [syn_visit_node_type.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node_type.rs)
 
 ---
 
@@ -2893,7 +2893,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [syn_visit_use_path_expr.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/syn_visit_use_path_expr.rs)
+**Link:** [syn_visit_use_path_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_expr.rs)
 
 ---
 
@@ -2911,7 +2911,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [syn_visit_use_path_file.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/syn_visit_use_path_file.rs)
+**Link:** [syn_visit_use_path_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_file.rs)
 
 ---
 
@@ -2930,7 +2930,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/syn_visit_use_rename.rs)
+**Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs)
 
 ---
 
@@ -2945,7 +2945,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [tempfile.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/tempfile.rs)
+**Link:** [tempfile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs)
 
 ---
 
@@ -2963,7 +2963,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [term_detection_pack.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/term_detection_pack.rs)
+**Link:** [term_detection_pack.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/term_detection_pack.rs)
 
 ---
 
@@ -2985,7 +2985,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [termbg.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/termbg.rs)
+**Link:** [termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/termbg.rs)
 
 ---
 
@@ -3003,7 +3003,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [terminal_light.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/terminal_light.rs)
+**Link:** [terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light.rs)
 
 ---
 
@@ -3022,7 +3022,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [terminal_light_fading.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/terminal_light_fading.rs)
+**Link:** [terminal_light_fading.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_fading.rs)
 
 ---
 
@@ -3038,14 +3038,44 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [terminal_light_skins.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/terminal_light_skins.rs)
+**Link:** [terminal_light_skins.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_skins.rs)
+
+---
+
+### Script: thag_from_rust_script.rs
+
+**Description:**  Converts embedded manifest format from `rust-script` to `thag`.
+
+
+**Purpose:** Convenience for any `rust-script` user who wants to try out `thag`.
+
+**Crates:** 
+
+**Type:** Program
+
+**Link:** [thag_from_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust_script.rs)
+
+---
+
+### Script: thag_to_rust_script.rs
+
+**Description:**  Converts embedded manifest format from `thag` to `rust-script`.
+
+
+**Purpose:** Convenience for any `thag` user who wants to try out `rust-script`.
+
+**Crates:** 
+
+**Type:** Program
+
+**Link:** [thag_to_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_script.rs)
 
 ---
 
 ### Script: time_cookbook.rs
 
 **Description:**  Simple time demo pasted directly from Rust cookbook. Run without -q to show how
- `rs-script` will find the missing chrono manifest entry and display a specimen
+ `thag_rs` will find the missing chrono manifest entry and display a specimen
  toml block you can paste in at the top of the script.
 
 
@@ -3055,23 +3085,23 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [time_cookbook.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/time_cookbook.rs)
+**Link:** [time_cookbook.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.rs)
 
 ---
 
 ### Script: tokio_hello_short.rs
 
-**Description:**  Published example from `tokio` crate, with comments removed to work with `rs-script` `repl` feature.
+**Description:**  Published example from `tokio` crate, with comments removed to work with `thag_rs` `repl` feature.
  Before running, start a server: `ncat -l 6142` in another terminal.
 
 
-**Purpose:** Demo running `tokio` from `rs-script`.
+**Purpose:** Demo running `tokio` from `thag_rs`.
 
 **Crates:** `tokio`
 
 **Type:** Program
 
-**Link:** [tokio_hello_short.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/tokio_hello_short.rs)
+**Link:** [tokio_hello_short.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_short.rs)
 
 ---
 
@@ -3081,13 +3111,13 @@ which will give identical output to the above.
  in another terminal.
 
 
-**Purpose:** Demo running `tokio` from `rs-script`.
+**Purpose:** Demo running `tokio` from `thag_rs`.
 
 **Crates:** `tokio`
 
 **Type:** Program
 
-**Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/tokio_hello_world.rs)
+**Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs)
 
 ---
 
@@ -3097,7 +3127,7 @@ which will give identical output to the above.
  down to two files at a time, because it was developed to allow editing of generated code and
  cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
  or default to a standard editor. A more minimalist version is used to edit stdin input in
- the `--edit (-d)` option of `rs-script`.
+ the `--edit (-d)` option of `thag_rs`.
 
 
 **Purpose:** Demo TUI editor and featured crates, including `crossterm`.
@@ -3106,7 +3136,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [tui_editor.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/tui_editor.rs)
+**Link:** [tui_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_editor.rs)
 
 ---
 
@@ -3117,11 +3147,11 @@ which will give identical output to the above.
 
 **Purpose:** Explore TUI editing
 
-**Crates:** `Constraint`, `KeyCode`, `color_eyre`, `ratatui`, `tui_scrollview`
+**Crates:** `color_eyre`, `ratatui`, `tui_scrollview`
 
 **Type:** Program
 
-**Link:** [tui_scrollview.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/tui_scrollview.rs)
+**Link:** [tui_scrollview.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_scrollview.rs)
 
 ---
 
@@ -3131,7 +3161,7 @@ which will give identical output to the above.
  down to two files at a time, because it was developed to allow editing of generated code and
  cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
  or default to a standard editor. A more minimalist version is used to edit stdin input in
- the `--edit (-d)` option of `rs-script`.
+ the `--edit (-d)` option of `thag_rs`.
 
 
 **Purpose:** Demo TUI editor and featured crates, including `crossterm`.
@@ -3140,7 +3170,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/tui_ta_editor.rs)
+**Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.rs)
 
 ---
 
@@ -3155,7 +3185,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/tui_ta_minimal.rs)
+**Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs)
 
 ---
 
@@ -3173,7 +3203,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/tui_tokio_editor_gpt.rs)
+**Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_tokio_editor_gpt.rs)
 
 ---
 
@@ -3192,7 +3222,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [type_of_at_compile_time_1.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/type_of_at_compile_time_1.rs)
+**Link:** [type_of_at_compile_time_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_1.rs)
 
 ---
 
@@ -3216,7 +3246,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [type_of_at_compile_time_2.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/type_of_at_compile_time_2.rs)
+**Link:** [type_of_at_compile_time_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_2.rs)
 
 ---
 
@@ -3232,7 +3262,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [type_of_at_run_time.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/type_of_at_run_time.rs)
+**Link:** [type_of_at_run_time.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run_time.rs)
 
 ---
 
@@ -3247,7 +3277,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [ubig_product_gpt.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/ubig_product_gpt.rs)
+**Link:** [ubig_product_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_gpt.rs)
 
 ---
 
@@ -3262,7 +3292,7 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
-**Link:** [unzip.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/unzip.rs)
+**Link:** [unzip.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs)
 
 ---
 
@@ -3277,7 +3307,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [win_test_control.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/win_test_control.rs)
+**Link:** [win_test_control.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_control.rs)
 
 ---
 
@@ -3292,7 +3322,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [win_test_supports_color.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/win_test_supports_color.rs)
+**Link:** [win_test_supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_supports_color.rs)
 
 ---
 
@@ -3307,7 +3337,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [win_test_termbg.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/win_test_termbg.rs)
+**Link:** [win_test_termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg.rs)
 
 ---
 
@@ -3324,7 +3354,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [win_test_termbg_reset.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/win_test_termbg_reset.rs)
+**Link:** [win_test_termbg_reset.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_reset.rs)
 
 ---
 
@@ -3339,7 +3369,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/rs-script/blob/master/demo/win_test_terminal_light.rs)
+**Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs)
 
 ---
 

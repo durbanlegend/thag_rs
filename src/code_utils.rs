@@ -57,6 +57,8 @@ impl VisitMut for RemoveInnerAttributes {
     }
 }
 
+/// Remove inner attributes (`#![...]`) from the part of the AST that will be wrapped in
+/// `fn main`, as they need to be promoted to the crate level.
 pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
     let remove_inner_attributes = &mut RemoveInnerAttributes { found: false };
     remove_inner_attributes.visit_expr_block_mut(expr);
@@ -611,6 +613,8 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
 
 type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
 
+/// Prepare a snippet for wrapping in `fn main` by separating out any inner attributes,
+/// as they need to be promoted to crate level.
 #[must_use]
 pub fn prep_snippet(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
@@ -672,7 +676,7 @@ Ok(())
     wrapped_snippet
 }
 
-/// Writes the source to the destination source-code path.
+/// Write the source to the destination source-code path.
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
 pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, BuildRunError> {
@@ -787,6 +791,7 @@ pub fn create_temp_source_file() -> PathBuf {
     path
 }
 
+/// Combine the elements of a loop filter into a well-formed program.
 #[must_use]
 pub fn build_loop(args: &Cli, filter: String) -> String {
     let loop_toml = &args.cargo;
@@ -1270,9 +1275,9 @@ pub fn is_stmt_unit_type<S: ::std::hash::BuildHasher>(
     }
 }
 
+/// Check if an expression returns a unit value, so that we can avoid trying to print it out.
 #[must_use]
 pub fn returns_unit(expr: &Expr) -> bool {
-    // Check if the expression returns a unit value
     let is_unit_type = matches!(expr, Expr::Tuple(tuple) if tuple.elems.is_empty());
     nu_color_println!(
         nu_resolve_style(crate::MessageLevel::Emphasis),
@@ -1282,7 +1287,8 @@ pub fn returns_unit(expr: &Expr) -> bool {
 }
 
 // I don't altogether trust this from GPT
-/// Converts a `syn::File` to a `syn::Expr`
+/// Convert a `syn::File` to a `syn::Expr`.
+///
 /// # Panics
 /// Will panic if a macro expression can't be parsed.
 #[must_use]

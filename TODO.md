@@ -23,7 +23,8 @@
 - [ ]  Add config-file support to cmd_args based on demo/config.rs. Include an option to include or exclude quotes on returned strings.
         Maybe make it a command-line option too.
 - [ ]  Debug history getting out of sequence in -d option.
-- [ ]  Rename thag_rs commands to thag in docs.
+- [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
+- [ ]  Flesh out ci.yml - as per ratatui?
 - [ ]  Publish to crates.io.
 #[cfg(target_os = "windows")]
 let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into());

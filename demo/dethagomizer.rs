@@ -17,8 +17,7 @@ fn read_stdin() -> Result<String, io::Error> {
     Ok(buffer)
 }
 
-#[inline]
-pub(crate) fn reassemble<'a>(iter: impl Iterator<Item = &'a str>) -> String {
+fn reassemble<'a>(iter: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
     iter.fold(String::new(), |mut output, b| {
         let _ = writeln!(output, "{b}");
@@ -27,8 +26,7 @@ pub(crate) fn reassemble<'a>(iter: impl Iterator<Item = &'a str>) -> String {
 }
 
 // Unescape \n markers in a string to convert the wall of text to readable lines.
-#[inline]
-pub(crate) fn dethagomize(text_wall: &str) -> String {
+fn dethagomize(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
 

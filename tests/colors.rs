@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
     use nu_ansi_term::Color;
+    use supports_color::Stream;
+    use termbg::Theme;
     use thag_rs::colors::{
         ColorSupport, MessageStyle, NuColor, NuThemeStyle, TermTheme, XtermColor, COLOR_SUPPORT,
     };
     use thag_rs::logging::Verbosity;
     use thag_rs::{log, nu_color_println, nu_resolve_style, MessageLevel};
-    use supports_color::Stream;
-    use termbg::Theme;
 
     // Set environment variables before running tests
     fn set_up() {
@@ -31,7 +31,7 @@ mod tests {
     fn test_color_support() {
         set_up();
         let color_level = supports_color::on(Stream::Stdout);
-        thag_rs::clear_screen();
+        // thag_rs::clear_screen();
         let color_support = match color_level {
             Some(color_level) => {
                 if color_level.has_16m || color_level.has_256 {
@@ -99,7 +99,7 @@ mod tests {
         // Causes rightward drift of the test result printouts.
         let theme = termbg::theme(std::time::Duration::from_millis(100));
         // print!("{}[2J", 27 as char);
-        thag_rs::clear_screen();
+        // thag_rs::clear_screen();
 
         let style = nu_resolve_style(MessageLevel::Warning);
         if let Some(color_support) = COLOR_SUPPORT.as_ref() {
@@ -151,7 +151,7 @@ mod tests {
         let output = format!("\u{1b}[1m{content}\u{1b}[0m");
         let style = nu_ansi_term::Style::new().bold();
         nu_color_println!(style, "{}", content);
-        thag_rs::clear_screen();
+        // thag_rs::clear_screen();
 
         // Ensure the macro output is correctly styled
         assert_eq!(output, format!("{}", style.paint(content)));

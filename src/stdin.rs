@@ -92,6 +92,7 @@ impl History {
     }
 }
 
+/// A trait to allow mocking of the event reader for testing purposes.
 #[automock]
 pub trait EventReader {
     /// Read a `crossterm` event.
@@ -101,6 +102,7 @@ pub trait EventReader {
     fn read_event(&self) -> Result<Event, std::io::Error>;
 }
 
+/// A struct to implement real-world use of the event reader, as opposed to use in testing.
 pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
@@ -145,7 +147,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 /// # Panics
 ///
 /// If the terminal cannot be reset.
-
 #[allow(clippy::too_many_lines)]
 pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Error>> {
     let input = std::io::stdin();
@@ -313,7 +314,7 @@ pub fn read() -> Result<String, std::io::Error> {
     Ok(buffer)
 }
 
-///
+/// Read the input from a `BufRead` implementing item into a String.
 ///
 /// # Examples
 ///
@@ -335,6 +336,9 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     Ok(buffer)
 }
 
+/// Convert the different newline sequences for Windows and other platforms into the common
+/// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
+/// it stands).
 #[must_use]
 pub fn normalize_newlines(input: &str) -> String {
     lazy_static! {
@@ -343,6 +347,8 @@ pub fn normalize_newlines(input: &str) -> String {
     RE.replace_all(input, "\n").to_string()
 }
 
+/// Apply highlights to the text depending on the light or dark theme as detected, configured (TODO)
+/// or defaulted, or as toggled by the user with Ctrl-t.
 pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     if alt_highlights {
         // Dark theme-friendly colors
@@ -356,14 +362,6 @@ pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
         textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
     }
 }
-
-// fn insert_line(textarea: &mut TextArea, line: &str) {
-//     textarea.insert_str(line);
-//     #[cfg(windows)] {
-//         textarea.insert_str("\r");
-//     }
-//     textarea.insert_newline();
-// }
 
 fn reset_term(
     mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,

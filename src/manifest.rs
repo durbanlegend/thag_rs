@@ -17,6 +17,7 @@ use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::{debug_timings, escape_path_for_windows, Ast, BuildState};
 
+/// A trait to allow mocking of the command for testing purposes.
 #[automock]
 pub trait CommandRunner {
     /// Run the Cargo search, real or mocked.
@@ -25,6 +26,7 @@ pub trait CommandRunner {
     fn run_command(&self, program: &str, args: &[String]) -> io::Result<Output>;
 }
 
+/// A struct for use in actual running of the command, as opposed to use in testing.
 pub struct RealCommandRunner;
 
 impl CommandRunner for RealCommandRunner {
@@ -36,7 +38,7 @@ impl CommandRunner for RealCommandRunner {
     }
 }
 
-/// Attempts to find a matching dependency name and version from Cargo by searching by
+/// Attempt to find a matching dependency name and version from Cargo by searching by
 /// crate name and inspecting the first line of Cargo's response.
 /// # Errors
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
@@ -121,7 +123,7 @@ as shown if you don't need special features:
     Ok((name, version))
 }
 
-/// Attempts to capture the dependency name and version from the first line returned by
+/// Attempt to capture the dependency name and version from the first line returned by
 /// Cargo from the search by dependency name.
 /// # Errors
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
@@ -149,6 +151,7 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>>
     Ok((name, version))
 }
 
+/// Retrieve the default manifest from the `BuildState` instance.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
 pub fn default_manifest_from_build_state(
@@ -192,7 +195,7 @@ path = "{}"
     Ok(Manifest::from_str(&cargo_manifest)?)
 }
 
-/// Merge manifest data gleaned from the source script and its optional embedded toml block
+/// Merge manifest data harvested from the source script and its optional embedded toml block
 /// into the default manifest.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.

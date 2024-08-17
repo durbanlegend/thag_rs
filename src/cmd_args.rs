@@ -7,7 +7,7 @@ use clap::{ArgGroup, Parser};
 use core::{fmt, str};
 use std::error::Error;
 
-/// thag_rs script runner and REPL
+/// the `clap` command-line interface for the `thag_rs` script runner and REPL.
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Default, Parser, Debug)]
 #[command(name = "thag_rs", version, about, long_about)]
@@ -109,11 +109,11 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn E
 }
 
 bitflags! {
+    /// Processing flags for ease of handling command-line options.
     // You can `#[derive]` the `Debug` trait, but implementing it manually
     // can produce output like `A | B` instead of `Flags(A | B)`.
     // #[derive(Debug)]
     #[derive(Clone, Default, PartialEq, Eq)]
-    /// Processing flags for ease of handling command-line options
     pub struct ProcFlags: u32 {
         const GENERATE = 1;
         const BUILD = 2;

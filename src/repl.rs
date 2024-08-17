@@ -91,6 +91,7 @@ impl ReplCommand {
     }
 }
 
+/// A struct to allow sharing of necessary context between functions
 #[derive(Debug)]
 pub struct Context<'a> {
     pub options: &'a mut Cli,
@@ -99,6 +100,7 @@ pub struct Context<'a> {
     pub start: Instant,
 }
 
+/// A struct to implement the Prompt trait.
 #[allow(clippy::module_name_repetitions)]
 pub struct ReplPrompt(pub &'static str);
 impl Prompt for ReplPrompt {
@@ -160,7 +162,7 @@ fn add_menu_keybindings(keybindings: &mut Keybindings) {
 //     println!();
 // }
 
-/// Run the repl
+/// Run the REPL.
 /// # Errors
 /// Will return `Err` if there is any error in running the REPL.
 /// # Panics
@@ -957,7 +959,7 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> Str
     cmd_descriptions.join(", ")
 }
 
-/// Delete our temporary files
+/// Delete the temporary files used by the current REPL instance.
 /// # Errors
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
@@ -977,7 +979,7 @@ pub fn delete(_args: &ArgMatches, context: &mut Context) -> Result<Option<String
     Ok(Some(String::from("End of delete")))
 }
 
-/// Opens the history file in an editor.
+/// Open the history file in an editor.
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
@@ -996,7 +998,7 @@ pub fn edit_history(
     Ok(Some(String::from("End of history file edit")))
 }
 
-/// Opens the generated destination Rust source-code file in an editor.
+/// Open the generated destination Rust source code file in an editor.
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
@@ -1008,7 +1010,7 @@ pub fn edit(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>,
     Ok(Some(String::from("End of source edit")))
 }
 
-/// Opens the generated Cargo.toml file in an editor.
+/// Open the generated Cargo.toml file in an editor.
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
@@ -1017,7 +1019,7 @@ pub fn toml(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>,
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
-/// Runs an expression.
+/// Run an expression.
 /// # Errors
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
@@ -1040,7 +1042,7 @@ pub fn run_expr(
     Ok(Some(String::from("End of run")))
 }
 
-/// Borrowed from clap-repl crate.
+/// Parse the current line. Borrowed from clap-repl crate.
 #[must_use]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
     lazy_static! {
@@ -1054,7 +1056,7 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
     (command, args)
 }
 
-/// Function to display the REPL banner
+/// Display the REPL banner.
 pub fn disp_repl_banner(cmd_list: &str) {
     nu_color_println!(
         nu_resolve_style(MessageLevel::Heading),
@@ -1068,7 +1070,7 @@ Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: 
     );
 }
 
-/// Display file listing
+/// Display a list of the temporary files used by the current REPL instance.
 /// # Errors
 /// This function will return an error in the following situations, but is not limited to just these cases:
 /// The provided path doesn't exist.

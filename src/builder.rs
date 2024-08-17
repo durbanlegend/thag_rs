@@ -41,7 +41,7 @@ use std::{
     time::Instant,
 };
 
-/// Executes the script runner
+/// Execute the script runner.
 /// # Errors
 ///
 /// Will return `Err` if there is an error returned by any of the subordinate functions.

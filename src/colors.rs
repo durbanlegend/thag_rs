@@ -1,6 +1,4 @@
 use crate::debug_log;
-#[cfg(not(windows))]
-use crate::shared;
 use {crate::log, crate::logging::Verbosity};
 
 use lazy_static::lazy_static;
@@ -10,6 +8,8 @@ use std::env;
 use std::{fmt::Display, str::FromStr};
 use strum::IntoEnumIterator;
 use strum::{Display, EnumIter, EnumString};
+#[cfg(windows)]
+use supports_color::ColorLevel;
 #[cfg(not(windows))]
 use supports_color::Stream;
 #[cfg(not(windows))]
@@ -33,7 +33,7 @@ lazy_static! {
                 "About to call supports_color"
             );
             color_support = supports_color::on(Stream::Stdout);
-            shared::clear_screen();
+            // shared::clear_screen();
         }
 
         match color_support {
@@ -66,7 +66,7 @@ lazy_static! {
             let timeout = std::time::Duration::from_millis(100);
             // debug_log!("Check terminal background color");
             let theme = termbg::theme(timeout);
-            shared::clear_screen();
+            // shared::clear_screen();
             match theme {
                 Ok(Theme::Light) => TermTheme::Light,
                 Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
@@ -75,21 +75,19 @@ lazy_static! {
     };
 }
 
-/**
-Color level support details.
-This type is returned from [on]. See documentation for its fields for more details.
-*/
-#[cfg(windows)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct ColorLevel {
-    level: usize,
-    /// Basic ANSI colors are supported.
-    pub has_basic: bool,
-    /// 256-bit colors are supported.
-    pub has_256: bool,
-    /// 16 million (RGB) colors are supported.
-    pub has_16m: bool,
-}
+// /// A struct of the color support details, borrowed from crate `supports-color`.
+// /// This type is returned from [on]. See documentation for its fields for more details.
+// #[cfg(windows)]
+// #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+// pub struct ColorLevel {
+//     level: usize,
+//     /// Basic ANSI colors are supported.
+//     pub has_basic: bool,
+//     /// 256-bit colors are supported.
+//     pub has_256: bool,
+//     /// 16 million (RGB) colors are supported.
+//     pub has_16m: bool,
+// }
 
 #[cfg(windows)]
 fn env_force_color() -> usize {
@@ -194,11 +192,14 @@ fn check_256_color(term: &str) -> bool {
     term.ends_with("256") || term.ends_with("256color")
 }
 
+/// Retrieve whether the terminal theme is light or dark, to allow an appropriate colour
+/// palette to be chosen.
 #[must_use]
 pub fn get_term_theme() -> &'static TermTheme {
     &TERM_THEME
 }
 
+/// A trait for common handling of the different colour palettes.
 pub trait NuColor: Display {
     fn get_color(&self) -> nu_ansi_term::Color;
     /// Protection in case enum gets out of order, otherwise I think we could cast the variant to a number.
@@ -217,20 +218,25 @@ macro_rules! nu_color_println {
     }};
 }
 
+/// An enum to categorise the current terminal's level of colour support as detected, configured
+/// (TODO) or defaulted. We include `TrueColor` in Xterm256 as we're not interested in more
+/// than 256 colours just for messages.
 #[derive(Clone, Deserialize, EnumString, Display, PartialEq)]
-/// We include `TrueColor` in Xterm256 as we're not interested in more than 256 colours just for messages.
 pub enum ColorSupport {
     Xterm256,
     Ansi16,
     None,
 }
 
+/// An enum to categorise the current terminal's light or dark theme as detected, configured
+/// (TODO) or defaulted.
 #[derive(Debug, Deserialize, EnumString, Display, PartialEq)]
 pub enum TermTheme {
     Light,
     Dark,
 }
 
+/// An enum to categorise the supported message types for display.
 #[derive(Debug, Clone, Copy, EnumString, Display, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 pub enum MessageLevel {
@@ -244,10 +250,12 @@ pub enum MessageLevel {
     Ghost,
 }
 
+/// A trait to map a `MessageStyle` to a `nu_ansi_term::Style`.
 pub trait NuThemeStyle: Display {
     fn get_style(&self) -> nu_ansi_term::Style;
 }
 
+/// An enum of all the supported message styles for different levels of terminal colour support.
 #[derive(Clone, Debug, Display, EnumIter, EnumString, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 #[strum(use_phf)]
@@ -289,6 +297,8 @@ pub enum MessageStyle {
     Xterm256DarkGhost,
 }
 
+/// Define the implementation of the NuThemeStyle trait for `MessageStyle` to facilitate
+/// resolution of the `MessageStyle` variant to an `nu_ansi_term::Style`.
 #[allow(clippy::match_same_arms)]
 impl NuThemeStyle for MessageStyle {
     fn get_style(&self) -> nu_ansi_term::Style {
@@ -329,6 +339,8 @@ impl NuThemeStyle for MessageStyle {
     }
 }
 
+/// Determine what message colour and style to use based on the current terminal's level of
+/// colour support and light or dark theme, and the category of message to be displayed.
 #[must_use]
 pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
     let maybe_color_support = COLOR_SUPPORT.as_ref();
@@ -355,12 +367,13 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
     }
 }
 
+/// Main function for use by testing or the script runner.
 #[allow(dead_code)]
 pub fn main() {
     #[cfg(not(windows))]
     {
         let term = termbg::terminal();
-        shared::clear_screen();
+        // shared::clear_screen();
         debug_log!("  Term : {:?}", term);
     }
 
@@ -397,6 +410,7 @@ pub fn main() {
     }
 }
 
+/// An enum of the colours in a 256-colour palette.
 #[allow(dead_code)]
 #[derive(Display, EnumIter)]
 pub enum XtermColor {

@@ -16,29 +16,36 @@ use cargo_toml::Manifest;
 use home::home_dir;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
-use ratatui::crossterm::cursor::{MoveToColumn, Show};
-use ratatui::crossterm::ExecutableCommand;
 use std::error::Error;
-use std::io::{stdout, Write};
 use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
 use strum::Display;
 
-/// termbg sends an operating system command (OSC) to interrogate the screen
-/// but with side effects which we undo here.
+/// Reset the display by moving the cursor to the first column and showing it.
+/// Crates like `termbg` and `supports-color` send an operating system command (OSC)
+/// to interrogate the screen but with side effects which we attempt(ed) to undo here.
+/// Unfortunately this appends the MoveToColumn and Show command sequences to the
+/// program's output, which prevents it being used as a filter in a pipeline. On
+/// Windows we resort to defaults and (TODO) configuration; on other platforms any
+/// lingering effects of disabling this remain to be seen.
 /// # Panics
 /// Will panic if a crossterm execute command fails.
+#[deprecated(
+    since = "0.1.0",
+    note = "Redundant and pollutes piped output. Alternatives already in place."
+)]
 pub fn clear_screen() {
-    let mut out = stdout();
-    out.execute(MoveToColumn(0)).unwrap();
-    out.execute(Show).unwrap();
-    out.flush().unwrap();
+    // Commented out because this turns up at the end of the output
+    // let mut out = stdout();
+    // out.execute(MoveToColumn(0)).unwrap();
+    // out.execute(Show).unwrap();
+    // out.flush().unwrap();
 }
 
+/// An abstract syntax tree wrapper for use with syn.
 #[derive(Clone, Debug, Display)]
-/// Abstract syntax tree wrapper for use with syn.
 pub enum Ast {
     File(syn::File),
     Expr(syn::Expr),
@@ -55,6 +62,8 @@ impl ToTokens for Ast {
     }
 }
 
+/// A struct to encapsulate the attributes of the current build as needed by the various
+/// functions co-operating in the generation, build and execution of the code.
 #[derive(Clone, Debug, Default)]
 pub struct BuildState {
     #[allow(dead_code)]
@@ -76,6 +85,8 @@ pub struct BuildState {
 
 impl BuildState {
     #[allow(clippy::too_many_lines)]
+    /// Sets up the `BuildState` instance from the constants, the environment, the processing
+    /// flags and in some cases directly from the command-line arguments.
     /// # Errors
     /// Any errors in the pre-configuration
     /// # Panics
@@ -236,6 +247,7 @@ impl BuildState {
     }
 }
 
+/// An enum to encapsulate the type of script in play.
 #[derive(Debug)]
 pub enum ScriptState {
     /// Repl with no script name provided by user
@@ -254,6 +266,7 @@ pub enum ScriptState {
 }
 
 impl ScriptState {
+    /// Return the script name wrapped in an Option.
     #[must_use]
     pub fn get_script(&self) -> Option<String> {
         match self {
@@ -263,6 +276,7 @@ impl ScriptState {
             }
         }
     }
+    /// Return the script's directory path wrapped in an Option.
     #[must_use]
     pub fn get_script_dir_path(&self) -> Option<PathBuf> {
         match self {
@@ -297,7 +311,8 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
     }
 }
 
-// Helper function to sort out using the escape character as the file separator.
+// Helper function to sort out the issues caused by Windows using the escape character as
+// the file separator.
 #[must_use]
 pub fn escape_path_for_windows(path: &str) -> String {
     if cfg!(windows) {
@@ -323,19 +338,4 @@ macro_rules! debug_log {
             let _ = format_args!($($arg)*);
         }
     };
-}
-
-/// Trim any double quotes off a debug display
-#[macro_export]
-macro_rules! println_trimmed {
-    ($val:expr) => {{
-        // Format the value using Debug
-        let formatted = format!("{:?}", $val);
-
-        // Trim surrounding double quotes if present
-        let trimmed = formatted.trim_matches('"');
-
-        // Print the result using Display
-        println!("{}", trimmed);
-    }};
 }

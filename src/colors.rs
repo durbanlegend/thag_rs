@@ -66,7 +66,7 @@ lazy_static! {
             let timeout = std::time::Duration::from_millis(100);
             // debug_log!("Check terminal background color");
             let theme = termbg::theme(timeout);
-            shared::clear_screen();
+            // shared::clear_screen();
             match theme {
                 Ok(Theme::Light) => TermTheme::Light,
                 Ok(Theme::Dark) | Err(_) => TermTheme::Dark,

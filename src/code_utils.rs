@@ -794,18 +794,21 @@ pub fn create_temp_source_file() -> PathBuf {
 /// Combine the elements of a loop filter into a well-formed program.
 #[must_use]
 pub fn build_loop(args: &Cli, filter: String) -> String {
+    let maybe_ast = extract_ast(&filter);
+    let returns_unit = if let Ok(expr) = maybe_ast {
+        is_unit_return_type(&expr)
+    } else {
+        let expr_any: &dyn Any = &filter;
+        dbg!(&filter);
+        !expr_any.is::<()>()
+    };
     let loop_toml = &args.cargo;
     let loop_begin = &args.begin;
     let loop_end = &args.end;
-    let display = {
-        let expr_any: &dyn Any = &filter;
-        // dbg!(expr_any);
-        !expr_any.is::<()>()
-    };
-    let filter = if display {
-        format!(r#"println!("{{}}", {});"#, filter)
-    } else {
+    let filter = if returns_unit {
         filter
+    } else {
+        format!(r#"println!("{{:?}}", {});"#, filter)
     };
     // dbg!(&filter);
 

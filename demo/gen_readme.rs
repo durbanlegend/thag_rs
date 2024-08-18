@@ -229,7 +229,7 @@ which will give identical output to the above.
 
     for metadata in metadata_list {
         writeln!(file, "### Script: {}\n", metadata.script).unwrap();
-        writeln!(
+        write!(
             file,
             "**Description:** {}\n",
             metadata.description.as_ref().unwrap_or(&String::new())

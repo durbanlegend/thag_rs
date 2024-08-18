@@ -9,7 +9,7 @@
 - [ ]  More unit and integration tests
 - [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
-- [ ]  Decide how to distribute demo readme without demo dir, maybe in main under another name.
+- [ ]  >>> Decide how to distribute demo readme without demo dir, maybe in main under another name.
 - [ ]  Add download demos option, see prototype demo/install_demo_gpt.rs
 - [ ]  Add unquote string return values option and add to config.toml.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
@@ -22,7 +22,6 @@
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Add config-file support to cmd_args based on demo/config.rs. Include an option to include or exclude quotes on returned strings.
         Maybe make it a command-line option too.
-- [ ]  Debug history getting out of sequence in -d option.
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Flesh out ci.yml - as per ratatui?
 - [ ]  Publish to crates.io.

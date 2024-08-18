@@ -59,7 +59,16 @@ The REPL has file-backed searchable history and access to graphical and text-bas
 ### * With standard input:
 
 ```bash
-echo "(1..=10).product::<u32>()" | thag --stdin                 # Short form: -s
+echo '(1..=10).product::<u32>()' | thag --stdin                 # Short form: -s
+```
+
+Place any arguments after `--` to separate them from `thag` arguments:
+```bash
+echo 'println!("Hello {}", std::env::args().nth(1).unwrap());' | thag -s -- Ferris
+```
+This is equivalent to:
+```bash
+thag -e 'println!("Hello {}", std::env::args().nth(1).unwrap());' -- Ferris
 ```
 
 ### * With a TUI (Terminal User Interface) editor
@@ -109,6 +118,12 @@ Loop mode also accepts the following optional arguments supplying surrounding co
 --begin (-B)    for specifying any imports, functions/closures, declarations etc. to be run before the loop.
 --end   (-E)    for specifying any summary or final logic to run after the loop.
 ```
+
+Note: In general if you are planning to pipe Rust output, it's probably a good idea to use `writeln!(io::stdout())`,
+rather than `println!`, since at time of writing `println!` panics if it encounters an error, and this
+includes the broken pipe error from a head command. See `https://github.com/BurntSushi/advent-of-code/issues/17`.
+For an example of tolerating a broken pipe, see
+demo/thag_from_rust_script.rs.
 
 ### * As an executable:
 The --executable (-x) option builds your script in release mode and moves it to ~/.cargo/bin/, which is recommended to be in your path.

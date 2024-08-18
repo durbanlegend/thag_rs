@@ -10,6 +10,19 @@ fn read_stdin() -> Result<String, io::Error> {
     Ok(buffer)
 }
 
+// Tolerate a broken pipe caused by e.g. piping to `head`.
+// See https://github.com/BurntSushi/advent-of-code/issues/17
+fn safe_println(line: &str) {
+    let _ = writeln!(io::stdout(), "{line}").map_err(|e| {
+        if let io::ErrorKind::BrokenPipe = e.kind() {
+            // eprintln!("{e}");
+            return Ok(());
+        } else {
+            return Err(e);
+        }
+    });
+}
+
 fn main() {
     let content = read_stdin().expect("Problem reading input");
     let mut is_cargo = false;

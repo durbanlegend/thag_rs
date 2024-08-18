@@ -79,7 +79,6 @@ which will give identical output to the above.
 
  Part 1: After some back and forth with ChatGPT suggesting solutions it finally generates essentially this.
 
-
 **Purpose:** Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.
 
 **Crates:** `syn`
@@ -97,7 +96,6 @@ which will give identical output to the above.
  it does its own printing.
 
  Part 2: ChatGPT responds to feedback with an improved algorithm.
-
 
 **Purpose:** Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.
 
@@ -119,7 +117,6 @@ which will give identical output to the above.
  I've commented out ChatGPT's brute-force parse of &block.stmts and replaced it with a syn::Visit
  implementation that can handle embedded functions.
 
-
 **Purpose:** Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.
 
 **Crates:** `quote`, `syn`
@@ -138,7 +135,6 @@ which will give identical output to the above.
  generated code, whereas using an AST is quite a mission but works with
  any arbitrary snippet and doesn't pollute the generated source code.
 
-
 **Purpose:** Demo Rust's answer to dynamic typing.
 
 **Type:** Snippet
@@ -150,7 +146,6 @@ which will give identical output to the above.
 ### Script: bitflags.rs
 
 **Description:**  Try out the `bitflags` crate.
-
 
 **Purpose:** Explore use of `bitflags` to control processing.
 
@@ -167,7 +162,6 @@ which will give identical output to the above.
 **Description:**  Snippet demonstrating how to reference or clone a wrapped value without
  falling foul of the borrow checker.
 
-
 **Purpose:** Demo a borrow-checker-friendly technique for accessing a wrapped value.
 
 **Type:** Snippet
@@ -182,7 +176,6 @@ which will give identical output to the above.
 
 
  E.g. `thag_rs demo/bpaf_cargo_show_asm.rs -- -h`
-
 
 **Purpose:** Demo CLI alternative to clap crate
 
@@ -200,7 +193,6 @@ which will give identical output to the above.
 
  E.g. `thag_rs demo/bpaf_cmd-chain.rs -- eat Fastfood drink --coffee sleep --time=5`
 
-
 **Purpose:** Demo CLI alternative to clap crate
 
 **Crates:** `bpaf_derive`
@@ -216,7 +208,6 @@ which will give identical output to the above.
 **Description:**  Example from bpaf crate docs2/src/command/derive.rs.
 
  E.g. `demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6`
-
 
 **Purpose:** Demo CLI alternative to clap crate
 
@@ -234,7 +225,6 @@ which will give identical output to the above.
  and capture and print its stdout and stderr concurrently in a
  separate thread.
 
-
 **Purpose:** Demo process::Command with output capture.
 
 **Crates:** `env_logger`, `log`
@@ -249,7 +239,6 @@ which will give identical output to the above.
 
 **Description:**  Exploring using clap with an enum, in conjunction with strum.
  E.g. `thag_rs demo/clap_enum_strum.rs -- variant-num2`
-
 
 **Purpose:** Simple demo of featured crates, contrasting how they expose variants.
 
@@ -267,7 +256,6 @@ which will give identical output to the above.
 
  E.g. `thag_rs demo/clap_num_arg.rs -- 45`
 
-
 **Purpose:** Basic demo of `clap` parsing a numeric argument
 
 **Crates:** `clap`
@@ -282,7 +270,6 @@ which will give identical output to the above.
 
 **Description:**  Older version of published clap_repl crate example, modified to prototype a
  (dummy) Rust REPL.
-
 
 **Purpose:** Yet another REPL demo, this time using `rustyline`.
 
@@ -300,7 +287,6 @@ which will give identical output to the above.
  Can't find a keybinding to navigate history, unlike
  clap_repl_rustyline.rs and unlike clap_repl_reedline.rs.
 
-
 **Purpose:** Demo building a repl using `clap` directly.
 
 **Crates:** `clap`
@@ -316,7 +302,6 @@ which will give identical output to the above.
 **Description:**  Published example from `clap` tutorial (builder)
 
  E.g.  `thag_rs demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
-
 
 **Purpose:** Demonstrate `clap` CLI using the builder option
 
@@ -334,7 +319,6 @@ which will give identical output to the above.
 
  E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
 
-
 **Purpose:** Demonstrate `clap` CLI using the derive option
 
 **Crates:** `clap`
@@ -350,7 +334,6 @@ which will give identical output to the above.
 **Description:**  Published example from `clap` tutorial (derive), with added displays.
 
  E.g. `thag_rs demo/clap_tut_derive_04_01_enum.rs -- fast`
-
 
 **Purpose:** Demonstrate `clap` CLI using the derive option
 
@@ -368,7 +351,6 @@ which will give identical output to the above.
 
  E.g. `thag_rs demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt`
 
-
 **Purpose:** Demonstrate `clap` CLI using the derive option
 
 **Crates:** `clap`
@@ -382,7 +364,6 @@ which will give identical output to the above.
 ### Script: cli_partial_match.rs
 
 **Description:**  Experiment with matching REPL commands with a partial match of any length.
-
 
 **Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
 
@@ -399,7 +380,6 @@ which will give identical output to the above.
 **Description:**  A prototype of the cmd_args module of thag_rs itself.
 
  E.g. `thag_rs -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
-
 
 **Purpose:** Prototype CLI.
 
@@ -418,7 +398,6 @@ which will give identical output to the above.
 
  E.g. `thag_rs -tv demo/cmd_args_bpaf_gpt.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 
-
 **Purpose:** Demo one lighter-weight alternative to clap.
 
 **Crates:** `bitflags`, `bpaf_derive`
@@ -434,7 +413,6 @@ which will give identical output to the above.
 **Description:**  Basic CLI example using clap.
 
  E.g. `thag_rs -t demo/cmd_args_clap.rs -- -atv hello.sh`
-
 
 **Purpose:** For comparison with `demo/cmd_args_bpaf_gpt.rs`.
 
@@ -454,7 +432,6 @@ which will give identical output to the above.
  many discussed here:
  https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color
 
-
 **Purpose:** Choose black or white as a contrasting colour for a given colour.
 
 **Type:** Program
@@ -471,7 +448,6 @@ which will give identical output to the above.
  Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 
  E.g. `thag_rs demo/colors.rs`
-
 
 **Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
@@ -491,7 +467,6 @@ which will give identical output to the above.
 
  Format: `color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 
-
 **Purpose:** Demo older alternative implementation of `colors` module using `owo-colors`.
 
 **Crates:** `log`, `owo_colors`, `strum`, `supports_color`, `termbg`, `thag_rs`
@@ -505,7 +480,6 @@ which will give identical output to the above.
 ### Script: config.rs
 
 **Description:**  Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
-
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
@@ -524,7 +498,6 @@ which will give identical output to the above.
  visitor pattern. This is more reliable than a simple source code search
  which tends to find false positives in string literals and comments.
 
-
 **Purpose:** Demo prototyping with thag_rs and use of the `syn` visitor pattern to visit nodes of interest
 
 **Crates:** `syn`
@@ -542,7 +515,6 @@ which will give identical output to the above.
  directory. The need is to generate well-behaved and consistent human-readable
  names for temporary programs generated from REPL expressions.
 
-
 **Purpose:** Demo sequential file creation and the kind of code that is well suited to generation by an LLM.
 
 **Type:** Program
@@ -558,7 +530,6 @@ which will give identical output to the above.
  a map from KeyEvent to String.
  An example of what could be a configuration file
 
-
 **Purpose:** Demo loading keybindings from a file.
 
 **Crates:** `crokey`, `serde`
@@ -572,7 +543,6 @@ which will give identical output to the above.
 ### Script: crokey_print_key.rs
 
 **Description:**  Published example of combiner from `crokey` crate.
-
 
 **Purpose:** Demo key combiner.
 
@@ -590,7 +560,6 @@ which will give identical output to the above.
 
  An asynchronous fibonacci sequence generator.
 
-
 **Purpose:** Demo featured crate.
 
 **Crates:** `crossbeam_channel`
@@ -605,7 +574,6 @@ which will give identical output to the above.
 
 **Description:**  `crossbeam-channel` published example
  Using `select!` to send and receive on the same channel at the same time.
-
 
 **Purpose:** Demo featured crates.
 
@@ -624,7 +592,6 @@ which will give identical output to the above.
  Prints the elapsed time every 1 second and quits on `Ctrl+C`.
  You can reinstate the separate main method for Windows provided you
  run the script with the `--multimain (-m)` option.
-
 
 **Purpose:** showcase featured crates.
 
@@ -647,7 +614,6 @@ which will give identical output to the above.
  (Not included here due to implicit copyright).
 
 
-
 **Purpose:** Demo featured crate.
 
 **Crates:** `crossbeam_epoch`, `rand`
@@ -663,7 +629,6 @@ which will give identical output to the above.
 **Description:**  Published example from crossterm crate.
 
  Url: https://github.com/crossterm-rs/crossterm/blob/master/README.md
-
 
 **Purpose:** Demo crossterm terminal manipulation.
 
@@ -683,7 +648,6 @@ which will give identical output to the above.
 
  Url: https://docs.rs/crossterm/latest/crossterm/
 
-
 **Purpose:** Demo `crossterm` command API.
 
 **Crates:** `crossterm`
@@ -700,7 +664,6 @@ which will give identical output to the above.
 
  Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read.rs
  "Demonstrates how to block read events."
-
 
 **Purpose:** Demo running crate example code, `crossterm` events.
 
@@ -722,7 +685,6 @@ which will give identical output to the above.
  This example demonstrates the display format of key events, which is useful for displaying in
  the help section of a terminal application."
 
-
 **Purpose:** Demo running crate example code, `crossterm` events.
 
 **Crates:** `crossterm`
@@ -736,7 +698,6 @@ which will give identical output to the above.
 ### Script: ctrlc_demo.rs
 
 **Description:**  Published example from `ctrlc` crate: "Cross platform handling of Ctrl-C signals."
-
 
 **Purpose:** Demo one option for intercepting Ctrl-C.
 
@@ -753,7 +714,6 @@ which will give identical output to the above.
  This example is a Rust adaptation of the [C example of the same
  name](https://curl.se/libcurl/c/https.html).
  On Linux you may need to install `pkg-config` and `libssl-dev`.
-
 
 **Purpose:** Demo `curl` implementation.
 
@@ -773,7 +733,6 @@ which will give identical output to the above.
  module more than 5 time larger than that of `thagomizer`.
 
  Tip: Regex tested using https://rustexp.lpil.uk/.
-
 
 **Purpose:** Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
 
@@ -795,7 +754,6 @@ which will give identical output to the above.
  the same.
 
  See `demo/dethagomizer.rs` for a Regex version.
-
 
 **Purpose:** Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
 
@@ -832,7 +790,6 @@ which will give identical output to the above.
      1209600s
 
 
-
 **Purpose:** Demonstrate that some fairly subtle moves are possible even with the simplest of snippets.
 
 **Type:** Snippet
@@ -849,7 +806,6 @@ which will give identical output to the above.
 
  E.g. `EDITOR=vim thag_rs demo/edit.rs`
 
-
 **Purpose:** Demo of edit crate to invoke preferred editor.
 
 **Type:** Snippet
@@ -861,7 +817,6 @@ which will give identical output to the above.
 ### Script: egui_code_editor.rs
 
 **Description:**  A prototype GUI editor with saved state and syntax highlighting.
-
 
 **Purpose:** Prototype a native-mode editor using the `egui` crate.
 
@@ -880,7 +835,6 @@ which will give identical output to the above.
  use the `strum` crate's `EnumString` derive macro to select the required
  variant from a composite string of the colour support, theme and message level.
 
-
 **Purpose:** Demo prototyping different solutions using AI to provide the sample implementations.
 
 **Crates:** `owo_colors`
@@ -898,7 +852,6 @@ which will give identical output to the above.
 
   Using the `std::iter::Product` trait - if implemented - is the most concise
  factorial implementation. `dashu` implements it, so it's straightforward to use.
-
 
 
 **Purpose:** Demo snippet, `dashu` crate, factorial using `std::iter::Product` trait.
@@ -932,7 +885,6 @@ which will give identical output to the above.
  only run one algorithm while others are slowed down by running and comparing two different
  algorithms.
 
-
 **Purpose:** Demo snippets with functions and closures, `ibig` cross-platform big-number crate.
 
 **Crates:** `ibig`
@@ -954,7 +906,6 @@ which will give identical output to the above.
  is pretty verbose in the context of a snippet, but could be useful in an app.
  The implementation is thanks to GPT-4.
 
-
 **Purpose:** Demo snippet, `ibig` crate, factorial using `std::iter::Product` trait, workaround for implementing an external trait on an external crate.
 
 **Crates:** `ibig`
@@ -969,7 +920,6 @@ which will give identical output to the above.
 
 **Description:**  Fast factorial algorithm avoiding recursion, but limited to a maximum of `34!` by using only
  Rust primitives.
-
 
 **Purpose:** Demo fast limited-scale factorial using Rust primitives and std::iter::Product trait.
 
@@ -987,7 +937,6 @@ which will give identical output to the above.
  edging out `fibo` at this scale.
 
  E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
-
 
 
 **Purpose:** Demo 3 very fast Fibonacci algorithms, though still 7-11 times slower than `rug`.
@@ -1010,7 +959,6 @@ which will give identical output to the above.
  The `rug` crate runs blindingly fast, but I for one found it very difficult to get this to compile.
 
  E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
-
 
 
 **Purpose:** Demo 3 very fast Fibonacci algorithms (F(4784969) in 0.33 to 0.58 sec for me).
@@ -1036,7 +984,6 @@ which will give identical output to the above.
 
  As the number of Fibonacci examples here shows, this took me down a Fibonacci rabbit hole.
 
-
 **Purpose:** Demo fast small-scale fibonacci using Rust primitives and `itertools` crate.
 
 **Crates:** `itertools`
@@ -1050,7 +997,6 @@ which will give identical output to the above.
 ### Script: fib_basic_ibig.rs
 
 **Description:**  Big-number (and thus more practical) version of `demo/fib_basic.rs`.
-
 
 
 **Purpose:** Demo using a big-number crate to avoid the size limitations of primitive integers.
@@ -1078,7 +1024,6 @@ which will give identical output to the above.
  Using `clap` here is complete overkill, but this is just a demo.
  On Linux you may need to install the m4 package.
 
-
 **Purpose:** Demonstrate snippets, closures, `clap` builder and a fast non-recursive fibonacci algorithm using the `successors`.
 
 **Crates:** `clap`, `rug`
@@ -1105,7 +1050,6 @@ which will give identical output to the above.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
-
 **Purpose:** Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers, also `astro-float` crate..
 
 **Crates:** `astro_float`
@@ -1128,7 +1072,6 @@ which will give identical output to the above.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
-
 **Purpose:** Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers..
 
 **Type:** Snippet
@@ -1143,7 +1086,6 @@ which will give identical output to the above.
 
  See https://en.wikipedia.org/wiki/Fibonacci_sequence.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
-
 
 
 **Purpose:** Demonstrate snippets and a fast non-recursive fibonacci algorithm using the `successors` iterator.
@@ -1168,7 +1110,6 @@ which will give identical output to the above.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
-
 **Purpose:** Demonstrate instrumenting scripts for benchmarking.
 
 **Crates:** `ibig`
@@ -1188,7 +1129,6 @@ which will give identical output to the above.
 
  See https://en.wikipedia.org/wiki/Fibonacci_sequence.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
-
 
 
 **Purpose:** Demonstrate snippets, a fast non-recursive fibonacci algorithm using `successors`, and zipping 2 iterators together.
@@ -1220,7 +1160,6 @@ which will give identical output to the above.
  already been calculated, compute Fi cheaply as Fi-2 + Fi-1 instead of using the
  normal multiplication formula.
 
-
 **Purpose:** Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 
 **Crates:** `ibig`
@@ -1240,7 +1179,6 @@ which will give identical output to the above.
  This version is derived from `demo/fib_doubling_iterative.rs` with the following
  change: that we reduce bloat as best we can by purging redundant entries from the memo
  cache as soon as it's safe to do so.
-
 
 **Purpose:** Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 
@@ -1264,7 +1202,6 @@ which will give identical output to the above.
  change: that we reduce bloat as best we can  by purging redundant entries from the memo
  cache as soon as it's safe to do so.
 
-
 **Purpose:** Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 
 **Crates:** `rug`
@@ -1280,7 +1217,6 @@ which will give identical output to the above.
 **Description:**  A version of `demo/fib_doubling_recursive.rs`, minus the memoization.
  This serves to prove that the memoization is significantly faster, although
  not dramatically so.
-
 
 
 **Purpose:** Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.
@@ -1334,7 +1270,6 @@ which will give identical output to the above.
 
            = Fn+1(Fn+1 + 2Fn)                    // i.e. b(b+2a)
 
-
 **Purpose:** Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.
 
 **Crates:** `ibig`
@@ -1387,7 +1322,6 @@ which will give identical output to the above.
 
            = Fn+1(Fn+1 + 2Fn)                    // i.e. b(b+2a)
 
-
 **Purpose:** Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.
 
 **Crates:** `ibig`
@@ -1425,7 +1359,6 @@ which will give identical output to the above.
  and fanning out of calls to fib(), the memoization drastically cuts down recursion.
 
 
-
 **Purpose:** Demo fast efficient Fibonacci with big numbers, limited recursion, and memoization, and a good job by ChatGPT.
 
 **Crates:** `ibig`
@@ -1445,7 +1378,6 @@ which will give identical output to the above.
 
  See https://en.wikipedia.org/wiki/Fibonacci_sequence.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
-
 
 
 **Purpose:** Demo an alternative to the standard computation for Fibonacci numbers.
@@ -1474,7 +1406,6 @@ which will give identical output to the above.
 
  See https://en.wikipedia.org/wiki/Fibonacci_sequence.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
-
 
 
 **Purpose:** Demo a very fast precise computation for large individual Fibonacci numbers.
@@ -1507,7 +1438,6 @@ which will give identical output to the above.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
-
 **Purpose:** Demo a very fast precise computation for large individual Fibonacci numbers.
 
 **Crates:** `ibig`
@@ -1530,7 +1460,6 @@ which will give identical output to the above.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
 
-
 **Purpose:** Demo a very fast precise computation for large individual Fibonacci numbers.
 
 **Crates:** `rug`
@@ -1549,7 +1478,6 @@ which will give identical output to the above.
  purposes stick to the doubling algorithm.
 
 
-
 **Purpose:** Demo fast efficient Fibonacci with big numbers, limited recursion, and memoization.
 
 **Crates:** `ibig`
@@ -1566,7 +1494,6 @@ which will give identical output to the above.
  Copyright 2018 Jim Blandy and Jason Orendorff, 978-1-491-92728-1.
  Described by the authors as "a really gratuitous use of iterators".
 
-
 **Purpose:** Demo using `thag_rs` to try out random code snippets ... also iterators.
 
 **Type:** Snippet
@@ -1578,7 +1505,6 @@ which will give identical output to the above.
 ### Script: fizz_buzz_gpt.rs
 
 **Description:**  GPT-generated fizz-buzz example.
-
 
 **Purpose:** Demo running random snippets in thag_rs, also AI and the art of delegation ;)
 
@@ -1593,7 +1519,6 @@ which will give identical output to the above.
 **Description:**  Published example from the `flume` channel crate.
  Must be run with --multimain (-m) option to allow multiple main methods.
 
-
 **Purpose:** demo of async and channel programming and of `flume` in particular.
 
 **Type:** Program
@@ -1605,7 +1530,6 @@ which will give identical output to the above.
 ### Script: flume_perf.rs
 
 **Description:**  Published example from the `flume` channel crate.
-
 
 **Purpose:** demo of channel programming and of `flume` in particular.
 
@@ -1619,7 +1543,6 @@ which will give identical output to the above.
 
 **Description:**  Published example from the `flume` channel crate.
  Must be run with --multimain (-m) option to allow multiple main methods.
-
 
 **Purpose:** demo of async and channel programming and of `flume` in particular.
 
@@ -1635,7 +1558,6 @@ which will give identical output to the above.
 
 **Description:**  A very simple published example from the random name generator
  `names`.
-
 
 **Purpose:** Demo a simple snippet and featured crate.
 
@@ -1654,7 +1576,6 @@ which will give identical output to the above.
 
  Strategy and grunt work thanks to ChatGPT.
 
-
 **Purpose:** Document demo scripts in a demo/README.md as a guide to the user.
 
 **Crates:** `lazy_static`, `regex`, `thag_rs`
@@ -1671,7 +1592,6 @@ which will give identical output to the above.
  work the same way, e.g. `thag_rs = { git = "https://github.com/durbanlegend/thag_rs" },
  but obviously the path literal will be specific to your environment.
 
-
 **Purpose:** Demo `git` dependencies, explain `path` dependencies.
 
 **Crates:** `thag_rs`
@@ -1686,7 +1606,6 @@ which will give identical output to the above.
 
 **Description:**  `demo/git_dependency.rs` done as a snippet, just because.
 
-
 **Purpose:** Demo `git` dependencies as a snippet.
 
 **Crates:** `thag_rs`
@@ -1700,7 +1619,6 @@ which will give identical output to the above.
 ### Script: gpt_clap_derive.rs
 
 **Description:**  GPT-generated CLI using the `clap` crate.
-
 
 **Purpose:** Demonstrate `clap` CLI using the derive option.
 
@@ -1720,7 +1638,6 @@ which will give identical output to the above.
  was added manually later. This prototype is one of many that was incorporated
  into `thag_rs`.
 
-
 **Purpose:** Demo theme detection with `termbg`, clearing terminal state with `crossterm` and setting it as a static enum value using `lazy_static`.
 
 **Crates:** `crossterm`, `lazy_static`, `termbg`
@@ -1735,7 +1652,6 @@ which will give identical output to the above.
 
 **Description:**  Obligatory Hello World as a snippet
 
-
 **Purpose:** Demo Hello World snippet
 
 **Type:** Snippet
@@ -1747,7 +1663,6 @@ which will give identical output to the above.
 ### Script: hello_main.rs
 
 **Description:**  Hello World as a program (posh Winnie-the-Pooh version)
-
 
 **Purpose:** Demo Hello World as a program
 
@@ -1761,12 +1676,26 @@ which will give identical output to the above.
 
 **Description:**  Minimalist Hello World snippet (poor Winnie-the-Pooh version)
 
-
 **Purpose:** Demo Hello World reduced to an expression
 
 **Type:** Snippet
 
 **Link:** [hello_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.rs)
+
+---
+
+### Script: history_debug.rs
+
+**Description:**  Debug the history handling logic of the `stdin` module and display the effects.
+ Using this abstraction because displays don't work nicely in a TUI editor.
+
+**Purpose:** Debug and demo history ordering.
+
+**Crates:** `regex`, `serde`
+
+**Type:** Snippet
+
+**Link:** [history_debug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.rs)
 
 ---
 
@@ -1780,7 +1709,6 @@ which will give identical output to the above.
  another command line and connect to it on port 3000:
  `thag_rs demo/hyper_client.rs -- http://127.0.0.1:3000`.
  Or use any other available HTTP server.
-
 
 **Purpose:** Demo `hyper` HTTP client, and incorporating separate modules into the script.
 
@@ -1802,7 +1730,6 @@ which will give identical output to the above.
  "This is our service handler. It receives a Request, routes on its
  path, and returns a Future of a Response."
 
-
 **Purpose:** Demo `hyper` HTTP echo server, and incorporating separate modules into the script.
 
 **Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
@@ -1816,7 +1743,6 @@ which will give identical output to the above.
 ### Script: ibig_big_integers.rs
 
 **Description:**  Published example from the `ibig` crate, showcasing the use of the crate.
-
 
 **Purpose:** Demo featured crate, also how we can often run an incomplete snippet "as is".
 
@@ -1832,7 +1758,6 @@ which will give identical output to the above.
 
 **Description:**  The full tour of the `iced` crate published in the `iced` examples.
 
-
 **Purpose:** Show that `thag_rs` can handle product demos.
 
 **Crates:** `iced`
@@ -1846,7 +1771,6 @@ which will give identical output to the above.
 ### Script: in_place.rs
 
 **Description:**  Published example from `in-place crate` disemvowels the file somefile.txt.
-
 
 **Purpose:** Demo editing a file in place.
 
@@ -1863,7 +1787,6 @@ which will give identical output to the above.
 **Description:**  Published simple example from `inline_colorization` crate. Simple effective inline
  styling option for text messages.
 
-
 **Purpose:** Demo featured crate, also how we can often run an incomplete snippet "as is".
 
 **Crates:** `inline_colorization`
@@ -1874,10 +1797,21 @@ which will give identical output to the above.
 
 ---
 
+### Script: input_to_ast.rs
+
+**Description:**  Tries to convert input to a `syn` abstract syntax tree.
+
+**Purpose:** Debugging
+
+**Type:** Snippet
+
+**Link:** [input_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_to_ast.rs)
+
+---
+
 ### Script: install_demo_gpt.rs
 
 **Description:**  Prototype downloader for the demo/ directory.
-
 
 **Purpose:** Prototype a possible solution.
 
@@ -1893,7 +1827,6 @@ which will give identical output to the above.
 
 **Description:**  Demo a simple iterator
 
-
 **Purpose:** Show how basic a snippet can be.
 
 **Type:** Snippet
@@ -1905,7 +1838,6 @@ which will give identical output to the above.
 ### Script: json.rs
 
 **Description:**  Demo of using deserializing JSON with the featured crates.
-
 
 **Purpose:** Demo featured crates.
 
@@ -1922,7 +1854,6 @@ which will give identical output to the above.
 **Description:**  Demo listing files on disk. If you want a sorted list, you will need to amend the
  program to collect the entries into a Vec and sort that.
 
-
 **Purpose:** Simple demonstration.
 
 **Type:** Program
@@ -1937,7 +1868,6 @@ which will give identical output to the above.
  to `rust-script`'s `--loop` or `runner`'s `--lines`. Might go with
  the latter since I'm not sure what the closure logic buys us. It's
  going to be checked by the compiler anyway. Compare with `demo/loop_expr.rs`.
-
 
 **Purpose:** Evaluate closure logic for line processing.
 
@@ -1954,7 +1884,6 @@ which will give identical output to the above.
  the latter since I'm not sure what the closure logic buys us. It's
  going to be checked by the compiler anyway. Compare with `demo/loop_closure.rs`.
 
-
 **Purpose:** Evaluate expression logic for line processing.
 
 **Type:** Snippet
@@ -1970,7 +1899,6 @@ which will give identical output to the above.
  and post-loop logic analogous to `awk`. I got GPT to do me this
  mock-up.
 
-
 **Purpose:** Evaluate expression logic for line processing.
 
 **Type:** Program
@@ -1985,7 +1913,6 @@ which will give identical output to the above.
  Debug, and printing using the Display or Debug trait accordingly. Worked out with recourse
  to ChatGPT for suggestions and macro authoring.
 
-
 **Purpose:** May be interesting or useful.
 
 **Type:** Program
@@ -1997,7 +1924,6 @@ which will give identical output to the above.
 ### Script: mock_edit.rs
 
 **Description:**  Used to debug a doctest.
-
 
 **Purpose:** Debugging script.
 
@@ -2013,7 +1939,6 @@ which will give identical output to the above.
 
 **Description:**  LLM-provided formatting for error messages
 
-
 **Purpose:** Demo of formatting error messages
 
 **Type:** Program
@@ -2026,7 +1951,6 @@ which will give identical output to the above.
 
 **Description:**  Demo the use of a command-line interface to override the colour support to be provided.
  The owo-colors "supports-colors" feature must be enabled.
-
 
 **Purpose:** Demo setting colour support via a very simple CLI.
 
@@ -2043,7 +1967,6 @@ which will give identical output to the above.
 **Description:**  An early exploration of message colouring, GPT-generated.
  This one uses basic Ansi 16 colours. Try it on dark vs light
  backgrounds to see how some of the colours change.
-
 
 **Purpose:** May be of use to some. Demo featured crates.
 
@@ -2065,10 +1988,9 @@ which will give identical output to the above.
  Fully worked-out demonstration of colouring and styling display messages according
  to message level.
 
-
 **Purpose:** Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
 
-**Crates:** `crossterm`, `enum_assoc`, `log`, `owo_colors`, `strum`, `supports_color`, `termbg`
+**Crates:** `enum_assoc`, `log`, `owo_colors`, `strum`, `supports_color`, `termbg`
 
 **Type:** Program
 
@@ -2079,7 +2001,6 @@ which will give identical output to the above.
 ### Script: owo_styles.rs
 
 **Description:**  An early exploration of the idea of adaptive message colouring according to the terminal theme.
-
 
 **Purpose:** Demo a simple example of adaptive message colouring, and the featured crates.
 
@@ -2098,7 +2019,6 @@ which will give identical output to the above.
  decided to use a regular expression as I found it less problematic (see
  `demo/regex_capture_toml.rs`).
 
-
 **Purpose:** Prototype
 
 **Type:** Program
@@ -2113,7 +2033,6 @@ which will give identical output to the above.
  the start and end of the toml block. I eventually decided to use a regular
  expression as I found it less problematic (see `demo/regex_capture_toml.rs`).
 
-
 **Purpose:** Prototype
 
 **Type:** Program
@@ -2126,7 +2045,6 @@ which will give identical output to the above.
 
 **Description:**  Published example from `pomprt` crate.
 
-
 **Purpose:** Demo of `pomprt` readline implementation.
 
 **Type:** Program
@@ -2138,7 +2056,6 @@ which will give identical output to the above.
 ### Script: prettyplease.rs
 
 **Description:**  Published example from `prettyplease` Readme.
-
 
 **Purpose:** Demo featured crate.
 
@@ -2153,7 +2070,6 @@ which will give identical output to the above.
 **Description:**  Published demo from the `profiling` crate using the `puffin` profiler.
  We derive Deserialize/Serialize so we can persist app state on shutdown.
 
-
 **Purpose:** Demo featured crates.
 
 **Type:** Program
@@ -2165,7 +2081,6 @@ which will give identical output to the above.
 ### Script: puffin_profiler_egui.rs
 
 **Description:**  Published demo from the `puffin` crate.
-
 
 **Purpose:** Demo featured crate.
 
@@ -2202,7 +2117,6 @@ which will give identical output to the above.
 
  So let's work out the 3 child triples of (3, 4, 5).
 
-
 **Purpose:** Recreational, educational.
 
 **Type:** Snippet
@@ -2214,7 +2128,6 @@ which will give identical output to the above.
 ### Script: ratatui_user_input.rs
 
 **Description:**  Published example from the `ratatui` crate.
-
 
 **Purpose:** Demo the featured crate.
 
@@ -2232,7 +2145,6 @@ which will give identical output to the above.
  Demonstrates how to block read characters or a full line.
  Just note that crossterm is not required to do this and can be done with `io::stdin()`.
 
-
 **Purpose:** Demo crossterm reading key events as a line or a single char.
 
 **Crates:** `crossterm`
@@ -2246,7 +2158,6 @@ which will give identical output to the above.
 ### Script: reedline_basic_keybindings.rs
 
 **Description:**  Published example `basic.rs` from `reedline` crate.
-
 
 **Purpose:** demo featured crates.
 
@@ -2262,7 +2173,6 @@ which will give identical output to the above.
 
 **Description:**  Published example from `reedline` crate.
 
-
 **Purpose:** demo featured crates.
 
 **Crates:** `reedline`
@@ -2276,7 +2186,6 @@ which will give identical output to the above.
 ### Script: reedline_event_listener.rs
 
 **Description:**  Published example from `reedline` crate.
-
 
 **Purpose:** demo featured crates.
 
@@ -2292,7 +2201,6 @@ which will give identical output to the above.
 
 **Description:**  Published example from `reedline` crate.
 
-
 **Purpose:** Explore featured crate.
 
 **Crates:** `reedline`
@@ -2307,7 +2215,6 @@ which will give identical output to the above.
 
 **Description:**  Published example from `reedline` crate.
 
-
 **Purpose:** Explore featured crate.
 
 **Crates:** `nu_ansi_term`, `reedline`
@@ -2321,7 +2228,6 @@ which will give identical output to the above.
 ### Script: reedline_history.rs
 
 **Description:**  Published example from `reedline` crate.
-
 
 **Purpose:** Demo `reedline` file-backed history.
 
@@ -2340,7 +2246,6 @@ which will give identical output to the above.
  with that letter will be displayed for selection with a tab, up and down arrows or Enter. Or you can
  enter subsequent letters to narrow the search. Noice.
 
-
 **Purpose:** Demo `reedline` tab completions.
 
 **Crates:** `reedline`
@@ -2355,7 +2260,6 @@ which will give identical output to the above.
 
 **Description:**  Published example from `reedline` crate.
  List all keybinding information
-
 
 **Purpose:** Explore featured crate.
 
@@ -2372,7 +2276,6 @@ which will give identical output to the above.
 **Description:**  Exploratory prototype of REPL support for multi-line expressions. Based on published example
  `custom_prompt.rs` in `reedline` crate.
 
-
 **Purpose:** Explore options for handling multi-line expressions in a REPL.
 
 **Crates:** `nu_ansi_term`, `reedline`
@@ -2386,7 +2289,6 @@ which will give identical output to the above.
 ### Script: reedline_read_stdin.rs
 
 **Description:**  Basic exploration of reading a line from stdin with `reedline`.
-
 
 **Purpose:** Exploring how to render prompts and read lines of input.
 
@@ -2402,7 +2304,6 @@ which will give identical output to the above.
 
 **Description:**  Published example from `reedline-repl-rs` crate.
 
-
 **Purpose:** Explore the suitability of this crate for a Rust REPL. Conclusion: it's more geared to commands.
 
 **Crates:** `reedline_repl_rs`
@@ -2417,7 +2318,6 @@ which will give identical output to the above.
 
 **Description:**  Published example from `reedline-repl-rs` crate. This one uses the
  `clap` builder pattern; there is also one using the`clap` derive pattern.
-
 
 **Purpose:** Evaluation of featured crate and of using clap to structure command input.
 
@@ -2438,7 +2338,6 @@ which will give identical output to the above.
  the addition of command descriptions, non-edit commands such as SearchHistory, and colour-
  coding.
 
-
 **Purpose:** Demo the end result of development dialog with ChatGPT.
 
 **Crates:** `reedline`
@@ -2453,7 +2352,6 @@ which will give identical output to the above.
 
 **Description:**  Exploring `reedline` crate.
 
-
 **Purpose:** explore featured crate.
 
 **Crates:** `reedline`
@@ -2467,7 +2365,6 @@ which will give identical output to the above.
 ### Script: reedline_transient_prompt.rs
 
 **Description:**  Published demo from `reedline` crate.
-
 
 **Purpose:** Demo the use of a transient minimal prompt `! ` for returned history.
 
@@ -2485,7 +2382,6 @@ which will give identical output to the above.
  a regular expression. I ended up choosing this approach as being less
  problematic than line-by-line parsing (see `demo/parse_script_rs_toml.rs`)
  See also `demo/regex_capture_toml.rs`.
-
 
 **Purpose:** Prototype
 
@@ -2507,7 +2403,6 @@ which will give identical output to the above.
  On Linux you may need to install the m4 package.
 
 
-
 **Purpose:** Demo featured crate, also how we can often run an incomplete snippet "as is".
 
 **Crates:** `rug`
@@ -2524,7 +2419,6 @@ which will give identical output to the above.
  (`Rusty File Dialogs`) cross-platform file chooser to select the file to format. The code
  for both was AI-generated because I find AI very handy for this kind of grunt work.
 
-
 **Purpose:** Demo file chooser and calling an external program, in this case the Rust formatter.
 
 **Crates:** `rfd`
@@ -2539,7 +2433,6 @@ which will give identical output to the above.
 
 **Description:**  Published exercise solution from the `rustlings` crate.
 
-
 **Purpose:** Demo one way to preserve your `rustlings` solutions, for reference or as katas.
 
 **Crates:** `super`
@@ -2553,7 +2446,6 @@ which will give identical output to the above.
 ### Script: rustyline_compl.rs
 
 **Description:**  Published example from the `rustyline` crate.
-
 
 **Purpose:** Demo using `thag_rs` to run a basic REPL as a script.
 
@@ -2571,7 +2463,6 @@ which will give identical output to the above.
  MatchingBracketValidator uses matching brackets to decide between single- and multi-line
  input.
 
-
 **Purpose:** Explore `rustyline` crate.
 
 **Crates:** `rustyline`
@@ -2586,7 +2477,6 @@ which will give identical output to the above.
 
 **Description:**  Published example from `slog` crate (misc/examples/expressions.rs).
 
-
 **Purpose:** Demo a popular logging crate.
 
 **Crates:** `slog`
@@ -2600,7 +2490,6 @@ which will give identical output to the above.
 ### Script: snippet_import_scope.rs
 
 **Description:**  Demo scope of import statements.
-
 
 **Purpose:** Prototype to confirm leaving imports in situ when wrapping snippets.
 
@@ -2618,7 +2507,6 @@ which will give identical output to the above.
  coexisting in the same println! invocation. Demonstrates that when wrapping
  a snippet we can't assume it's OK to pull the imports up to the top level.
 
-
 **Purpose:** Prototype to confirm leaving imports in situ when wrapping snippets.
 
 **Type:** Snippet
@@ -2633,7 +2521,6 @@ which will give identical output to the above.
  module, `stdin` was originally developed here as a separate script and integrated as a module later.
 ///
  E.g. `thag_rs demo/stdin.rs`
-
 
 **Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
@@ -2650,7 +2537,6 @@ which will give identical output to the above.
 **Description:**  Basic demo of GPT-generated CLI using the `structopt` crate. This
  crate is in maintenance mode, its features having been integrated
  into `clap`.
-
 
 **Purpose:** Demonstrate `structopt` CLI.
 
@@ -2670,7 +2556,6 @@ which will give identical output to the above.
  settings. Obviously that doesn't matter in a demo that exists before doing
  serious work, but it can wreak havoc with your program's output.
 
-
 **Purpose:** Demo featured crate doing its job.
 
 **Crates:** `crossterm`, `supports_color`
@@ -2684,7 +2569,6 @@ which will give identical output to the above.
 ### Script: supports_color_win.rs
 
 **Description:**  Windows-friendly logic extracted from crate `supports-color`.
-
 
 
 **Purpose:** Proof of concept for Windows environment
@@ -2701,7 +2585,6 @@ which will give identical output to the above.
  into a `syn::File` and print out a debug representation of the syntax tree."
  Pass it the absolute or relative path of any Rust source file, e.g. its own
  path that you passed to the script runner to invoke it.
-
 
 **Purpose:** show off the power of `syn`.
 
@@ -2730,7 +2613,6 @@ which will give identical output to the above.
  will do the same because `thag_rs` will detect and evaluate an expression in
  essentially the same way as this script does.
 
-
 **Purpose:** demo expression evaluation (excluding compilation and execution) using the `syn` and `quote` crates.
 
 **Crates:** `quote`, `syn`
@@ -2745,7 +2627,6 @@ which will give identical output to the above.
 
 **Description:**  Prototype of removing an inner attribute (`#![...]`) from a syntax tree. Requires the `visit-mut'
  feature of `syn`.
-
 
 **Purpose:** Demonstrate making changes to a `syn` AST.
 
@@ -2764,7 +2645,6 @@ which will give identical output to the above.
  to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
  traversal. This version expects the script contents to consist of a Rust expression.
 
-
 **Purpose:** Demo featured crate.
 
 **Crates:** `syn`
@@ -2781,7 +2661,6 @@ which will give identical output to the above.
  Rust source program passed to the script. Specifically the combination of fn `visit_item_extern_crate`
  to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
-
 
 **Purpose:** Demo featured crate.
 
@@ -2800,7 +2679,6 @@ which will give identical output to the above.
  https://users.rust-lang.org/t/writing-proc-macros-with-syn-is-there-a-way-to-visit-parts-of-the-ast-that-match-a-given-format/54733/4
  (This content is dual-licensed under the MIT and Apache 2.0 licenses according to the Rust forum terms of service.)
 
-
 **Purpose:** Demo programmatically modifying Rust source code using `syn` and `quote`.
 
 **Crates:** `quote`, `syn`
@@ -2818,7 +2696,6 @@ which will give identical output to the above.
  to process the nodes representing `use` statements and fn `visit_expr` to initiate the tree
  traversal. This version expects the script contents to consist of a Rust expression.
 
-
 **Purpose:** Demo featured crate.
 
 **Crates:** `syn`
@@ -2835,7 +2712,6 @@ which will give identical output to the above.
  Rust source program passed to the script. Specifically the combination of fn `visit_use_path`
  to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
-
 
 **Purpose:** Demo featured crate.
 
@@ -2855,7 +2731,6 @@ which will give identical output to the above.
  statements and fn `visit_expr` to initiate the tree traversal. This version expects the script contents
  to consist of a full-fledged Rust program.
 
-
 **Purpose:** Demo featured crate.
 
 **Crates:** `syn`
@@ -2869,7 +2744,6 @@ which will give identical output to the above.
 ### Script: tempfile.rs
 
 **Description:**  Published example from the `tempfile` readme.
-
 
 **Purpose:** Demo featured crate.
 
@@ -2886,7 +2760,6 @@ which will give identical output to the above.
  theme is in use and c) determine the level of colour supported reported by
  the terminal.
 
-
 **Purpose:** Allow checking of terminals on platforms to be supported, also test reliability of different crates.
 
 **Crates:** `crossterm`, `supports_color`
@@ -2899,15 +2772,9 @@ which will give identical output to the above.
 
 ### Script: termbg.rs
 
-**Description:**  Published example from `termbg` readme, only I've added the `clear_screen` method
- because `termbg` messes with the terminal settings. Obviously that doesn't matter
- in a demo that exists before doing serious work, but having struggled with a
- persistent issue of rightward drift in println! output that turned out to be
- caused by an overlooked termbg call buried in the message colour resolution logic,
- I think it's important to make it a habit.
+**Description:**  Published example from `termbg` readme.
 
  Detects the light or dark theme in use, as well as the colours in use.
-
 
 **Purpose:** Demo theme detection with `termbg` and clearing terminal state with `crossterm`.
 
@@ -2922,10 +2789,7 @@ which will give identical output to the above.
 ### Script: terminal_light.rs
 
 **Description:**  Demo of `terminal_light`, a crate that "answers the question "Is the terminal dark
- or light?". I've added the `clear_screen` method because as is common, `terminal_light`
- interrogates the terminal with an escape sequence which may mess with its settings
- and compromise the program's output.
-
+ or light?".
 
 **Purpose:** Demo terminal-light interrogating the background color. Results will vary with OS and terminal type.
 
@@ -2940,11 +2804,7 @@ which will give identical output to the above.
 ### Script: terminal_light_fading.rs
 
 **Description:**  A fun published example from the `terminal-light` crate. "Demonstrate mixing
- any ANSI color with the background." I've added the `clear_screen` method
- because as is common, `terminal_light` interrogates the terminal with an
- escape sequence which may mess with its settings and compromise the
- program's output.
-
+ any ANSI color with the background."
 
 **Purpose:** Mostly recreational.
 
@@ -2961,7 +2821,6 @@ which will give identical output to the above.
 **Description:**  A published example from the `terminal-light` crate. A simple example of
  choosing an appropriate skin based on the terminal theme.
 
-
 **Purpose:** Demo of the `terminal-light` crate.
 
 **Crates:** `coolor`, `crossterm`
@@ -2976,6 +2835,7 @@ which will give identical output to the above.
 
 **Description:**  Converts embedded manifest format from `rust-script` to `thag`.
 
+ E.g. `cat <path_to_rust_script_file> | thag -qq demo/thag_from_rust_script.rs | thag -s`
 
 **Purpose:** Convenience for any `rust-script` user who wants to try out `thag`.
 
@@ -2988,7 +2848,6 @@ which will give identical output to the above.
 ### Script: thag_to_rust_script.rs
 
 **Description:**  Converts embedded manifest format from `thag` to `rust-script`.
-
 
 **Purpose:** Convenience for any `thag` user who wants to try out `rust-script`.
 
@@ -3003,7 +2862,6 @@ which will give identical output to the above.
 **Description:**  Simple time demo pasted directly from Rust cookbook. Run without -q to show how
  `thag_rs` will find the missing chrono manifest entry and display a specimen
  toml block you can paste in at the top of the script.
-
 
 **Purpose:** Demo cut and paste from a web source with Cargo search and specimen toml block generation.
 
@@ -3020,7 +2878,6 @@ which will give identical output to the above.
 **Description:**  Published example from `tokio` crate, with comments removed to work with `thag_rs` `repl` feature.
  Before running, start a server: `ncat -l 6142` in another terminal.
 
-
 **Purpose:** Demo running `tokio` from `thag_rs`.
 
 **Crates:** `tokio`
@@ -3035,7 +2892,6 @@ which will give identical output to the above.
 
 **Description:**  Published example from `tokio` crate. Before running, start a server: `ncat -l 6142`
  in another terminal.
-
 
 **Purpose:** Demo running `tokio` from `thag_rs`.
 
@@ -3055,7 +2911,6 @@ which will give identical output to the above.
  or default to a standard editor. A more minimalist version is used to edit stdin input in
  the `--edit (-d)` option of `thag_rs`.
 
-
 **Purpose:** Demo TUI editor and featured crates, including `crossterm`.
 
 **Crates:** `ratatui`, `tui_textarea`
@@ -3069,7 +2924,6 @@ which will give identical output to the above.
 ### Script: tui_scrollview.rs
 
 **Description:**  Published example from `tui-scrollview` crate. Toml entries from crate's Cargo.toml.
-
 
 **Purpose:** Explore TUI editing
 
@@ -3089,7 +2943,6 @@ which will give identical output to the above.
  or default to a standard editor. A more minimalist version is used to edit stdin input in
  the `--edit (-d)` option of `thag_rs`.
 
-
 **Purpose:** Demo TUI editor and featured crates, including `crossterm`.
 
 **Crates:** `ratatui`, `tui_textarea`
@@ -3103,7 +2956,6 @@ which will give identical output to the above.
 ### Script: tui_ta_minimal.rs
 
 **Description:**  Demo a very minimal and not very useful TUI (text user interface) editor based on the featured crates.
-
 
 **Purpose:** Demo TUI editor and featured crates, including `crossterm`, and the use of the `scopeguard` crate to reset the terminal when it goes out of scope.
 
@@ -3122,7 +2974,6 @@ which will give identical output to the above.
  screen on which you can capture lines of data. `Ctrl-D` closes the editor and simply
  prints the captured data.
 
-
 **Purpose:** Exploring options for editing input. e.g. for a REPL.
 
 **Crates:** `ratatui`, `tokio`, `tui_textarea`
@@ -3140,7 +2991,6 @@ which will give identical output to the above.
  This is a slightly embellished version of user `phicr`'s answer on `https://stackoverflow.com/questions/21747136/how-do-i-print-the-type-of-a-variable-in-rust`.
 
  See also `demo/type_of_at_compile_time_2.rs` for an alternative implementation.
-
 
 **Purpose:** Demo expression type determination for static dispatch.
 
@@ -3163,7 +3013,6 @@ which will give identical output to the above.
 
  Seems to work very well provided all the types encountered are anticipated.
 
-
 **Purpose:** Demo expression type determination for static dispatch.
 
 **Crates:** `dashu`
@@ -3179,7 +3028,6 @@ which will give identical output to the above.
 **Description:**  Typical basic (runtime) solution to expression type identification. See also `demo/determine_if_known_type_trait.rs`
  for what may be a better (compile-time) solution depending on your use case.
 
-
 **Purpose:** Demo of runtime type identification.
 
 **Crates:** `quote`, `syn`
@@ -3193,7 +3041,6 @@ which will give identical output to the above.
 ### Script: ubig_product_gpt.rs
 
 **Description:**  Implement trait std::iter::Product for `ibig::UBig`. Example provided by GPT.
-
 
 **Purpose:** Educational / reference.
 
@@ -3209,7 +3056,6 @@ which will give identical output to the above.
 
 **Description:**  Very simple demo of the `unzip` iterator function.
 
-
 **Purpose:** Demo
 
 **Type:** Snippet
@@ -3222,7 +3068,6 @@ which will give identical output to the above.
 
 **Description:**  This is the "control" test for the `demo/win_test_*.rs` scripts. It seems to reliably NOT swallow the first character.
 
-
 **Purpose:** Show how crates *not* sending an OSC to the terminal in Windows will *not* the first character you enter to be swallowed.
 
 **Type:** Program
@@ -3234,7 +3079,6 @@ which will give identical output to the above.
 ### Script: win_test_supports_color.rs
 
 **Description:**  This seems to intermittently swallow the very first character entered in Windows.
-
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
@@ -3250,7 +3094,6 @@ which will give identical output to the above.
 
 **Description:**  This seems to "reliably" swallow the very first character entered in Windows.
 
-
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
 **Type:** Program
@@ -3264,7 +3107,6 @@ which will give identical output to the above.
 **Description:**  This still seems to "reliably" swallow the very first character entered in Windows.
  The `crossterm` reset doesn't seem to help. My disappointment is immeasurable and
  my day is ruined.
-
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
@@ -3280,12 +3122,33 @@ which will give identical output to the above.
 
 **Description:**  This seems to "reliably" swallow the very first character entered in Windows.
 
-
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
 **Type:** Program
 
 **Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs)
+
+---
+
+### Script: x.rs
+
+**Description:**  Rust port of C++ example from `https://github.com/ZiCog/fibo_4784969` - so named because
+ F(4784969) is the first number in the Fibonacci sequence that has one million decimal
+ digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
+ edging out `fibo` at this scale.
+
+ The `rug` crate runs blindingly fast, but I for one found it very difficult to get this to compile.
+
+ E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
+
+
+**Purpose:** Demo 3 very fast Fibonacci algorithms (F(4784969) in 0.33 to 0.58 sec for me).
+
+**Crates:** `rug`
+
+**Type:** Program
+
+**Link:** [x.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/x.rs)
 
 ---
 

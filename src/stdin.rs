@@ -30,7 +30,7 @@ use std::io::{self, BufRead, IsTerminal};
 use std::{collections::VecDeque, fs, path::PathBuf};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 struct History {
     entries: VecDeque<String>,
     current_index: Option<usize>,
@@ -48,7 +48,7 @@ impl History {
         if let Ok(data) = fs::read_to_string(path) {
             serde_json::from_str(&data).unwrap_or_else(|_| History::new())
         } else {
-            History::new()
+            History::default()
         }
     }
 
@@ -61,7 +61,22 @@ impl History {
     fn add_entry(&mut self, entry: String) {
         // Remove prior duplicates
         self.entries.retain(|f| f != &entry);
-        self.entries.push_back(entry);
+        self.entries.push_front(entry);
+    }
+
+    fn get_current(&mut self) -> Option<&String> {
+        if self.entries.is_empty() {
+            return None;
+        }
+
+        self.current_index = match self.current_index {
+            Some(index) => {
+                println!("index={index}, index + 1 = {}", index + 1);
+                Some(index + 1)
+            }
+            _ => Some(0),
+        };
+        self.entries.front()
     }
 
     fn get_previous(&mut self) -> Option<&String> {
@@ -70,7 +85,7 @@ impl History {
         }
 
         self.current_index = match self.current_index {
-            Some(index) => Some((index + 1) % self.entries.len()),
+            Some(index) => Some(index + 1),
             _ => Some(0),
         };
 
@@ -85,7 +100,7 @@ impl History {
         self.current_index = match self.current_index {
             Some(index) if index > 0 => Some(index - 1),
             Some(index) if index == 0 => Some(index + self.entries.len() - 1),
-            _ => None,
+            _ => Some(self.entries.len() - 1),
         };
 
         self.current_index.and_then(|index| self.entries.get(index))
@@ -242,8 +257,8 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
                     ctrl: true,
                     ..
                 } => {
+                    // 6 >5,4,3,2,1 -> 6 >6,5,4,3,2,1
                     history.add_entry(textarea.lines().to_vec().join("\n"));
-                    history.entries.rotate_right(1);
                     history.current_index = Some(0);
                     history.save_to_file(&history_path);
                     break;
@@ -265,19 +280,33 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
                 }
                 Input { key: Key::F(1), .. } => {
                     let mut found = false;
-                    if let Some(entry) = history.get_previous() {
-                        found = true;
-                        textarea.select_all();
-                        textarea.cut();
-                        textarea.insert_str(entry);
+                    // 6 5,4,3,2,1 -> >5,4,3,2,1
+                    if saved_to_history {
+                        if let Some(entry) = history.get_previous() {
+                            // 5
+                            found = true;
+                            textarea.select_all();
+                            textarea.cut(); // 6
+                            textarea.insert_str(entry); // 5
+                        }
+                    } else {
+                        println!("Not already saved to history: calling history.get_current()");
+                        if let Some(entry) = history.get_current() {
+                            found = true;
+                            textarea.select_all();
+                            textarea.cut(); // 6
+                            textarea.insert_str(entry); // 5
+                        }
                     }
                     if found && !saved_to_history && !textarea.yank_text().is_empty() {
+                        // 5 >5,4,3,2,1 -> 5 6,>5,4,3,2,1
                         history
                             .add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
                         saved_to_history = true;
                     }
                 }
                 Input { key: Key::F(2), .. } => {
+                    // 5 >6,5,4,3,2,1 ->
                     if let Some(entry) = history.get_next() {
                         textarea.select_all();
                         textarea.cut();
@@ -436,7 +465,7 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     .split(popup_layout[1])[1]
 }
 
-const MAPPINGS: &[[&str; 2]; 33] = &[
+const MAPPINGS: &[[&str; 2]; 35] = &[
     ["Key Bindings", "Description"],
     ["Shift+arrow keys", "Select/deselect ← chars→  / ↑ lines↓"],
     [
@@ -479,5 +508,7 @@ const MAPPINGS: &[[&str; 2]; 33] = &[
     ["PageDown, Cmd+↓", "Page down"],
     ["Alt+V, PageUp, Cmd+↑", "Page up"],
     ["Ctrl+T", "Toggle highlight colours"],
+    ["F1", "Previous in history"],
+    ["F2", "Next in history"],
 ];
 const NUM_ROWS: usize = MAPPINGS.len();

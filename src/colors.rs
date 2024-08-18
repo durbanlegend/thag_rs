@@ -1,6 +1,4 @@
 use crate::debug_log;
-#[cfg(not(windows))]
-use crate::shared;
 use {crate::log, crate::logging::Verbosity};
 
 use lazy_static::lazy_static;
@@ -300,7 +298,7 @@ pub enum MessageStyle {
     Xterm256DarkGhost,
 }
 
-/// Define the implementation of the NuThemeStyle trait for `MessageStyle` to facilitate
+/// Define the implementation of the `NuThemeStyle` trait for `MessageStyle` to facilitate
 /// resolution of the `MessageStyle` variant to an `nu_ansi_term::Style`.
 #[allow(clippy::match_same_arms)]
 impl NuThemeStyle for MessageStyle {

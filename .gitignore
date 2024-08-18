@@ -23,3 +23,4 @@ rs_stdin_history.json
 LICENSE.md
 script1t_alt.png
 tests/assets/thag_repl_hist.txt
+hist_debug.json

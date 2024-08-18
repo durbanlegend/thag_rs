@@ -26,7 +26,7 @@ use strum::Display;
 /// Reset the display by moving the cursor to the first column and showing it.
 /// Crates like `termbg` and `supports-color` send an operating system command (OSC)
 /// to interrogate the screen but with side effects which we attempt(ed) to undo here.
-/// Unfortunately this appends the MoveToColumn and Show command sequences to the
+/// Unfortunately this appends the `MoveToColumn` and Show command sequences to the
 /// program's output, which prevents it being used as a filter in a pipeline. On
 /// Windows we resort to defaults and (TODO) configuration; on other platforms any
 /// lingering effects of disabling this remain to be seen.

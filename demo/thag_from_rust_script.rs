@@ -17,15 +17,19 @@ fn read_stdin() -> Result<String, io::Error> {
 
 // Tolerate a broken pipe caused by e.g. piping to `head`.
 // See https://github.com/BurntSushi/advent-of-code/issues/17
-fn safe_println(line: &str) {
-    let _ = writeln!(io::stdout(), "{line}").map_err(|e| {
-        if let io::ErrorKind::BrokenPipe = e.kind() {
-            // eprintln!("{e}");
+fn safe_println(line: &str) -> Result<(), io::Error> {
+    let stdout = io::stdout();
+    let mut handle = stdout.lock();
+
+    if let Err(e) = writeln!(handle, "{}", line) {
+        if e.kind() == io::ErrorKind::BrokenPipe {
+            // eprintln!("Broken pipe error: {}", e);
             return Ok(());
         } else {
             return Err(e);
         }
-    });
+    }
+    Ok(())
 }
 
 fn main() -> Result<(), io::Error> {
@@ -37,7 +41,7 @@ fn main() -> Result<(), io::Error> {
             if line.contains("```cargo") {
                 // Flag cargo section
                 is_cargo = true;
-                safe_println("/*[toml]");
+                safe_println("/*[toml]")?;
                 // writeln!(io::stdout(), "{:?}", "/*[toml]".as_bytes());
                 continue;
             }
@@ -45,7 +49,7 @@ fn main() -> Result<(), io::Error> {
                 // Flag end of cargo section
                 is_cargo = false;
                 // writeln!(io::stdout(), "{}/", '*')?;
-                safe_println(&format!("{}/", '*'));
+                safe_println(&format!("{}/", '*'))?;
                 continue;
             }
             if !is_cargo {
@@ -54,21 +58,9 @@ fn main() -> Result<(), io::Error> {
             }
             // Preserve toml
             let line = line.trim_start_matches("//!").trim_start();
-            safe_println(&line);
+            safe_println(&line)?;
         } else {
-            // Preserve Rust source
-            // let result = writeln!(io::stdout(), "{line}");
-            // match result {
-            //     Ok(()) => {}
-            //     Err(e) => match e.kind() {
-            //         io::ErrorKind::BrokenPipe => {
-            //             // eprintln!("{e}");
-            //             return Ok(());
-            //         }
-            //         _ => return Err(e),
-            //     },
-            // }
-            safe_println(&line);
+            safe_println(&line)?;
         }
     }
     Ok(())

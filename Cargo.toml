@@ -39,7 +39,7 @@ proc-macro2 = "1.0.86"
 quote = "1.0.36"
 reedline = "0.33.0"
 regex = "1.10.6"
-serde = { version = "1.0.206", features = ["derive"] }
+serde = { version = "1.0.208", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive", "phf"] }
 supports-color = "3.0.0"
 syn = { version = "2.0.74", features = [

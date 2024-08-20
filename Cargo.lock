@@ -482,7 +482,7 @@ dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
  "strsim",
- "syn 2.0.74",
+ "syn 2.0.75",
 ]
 
 [[package]]
@@ -493,7 +493,7 @@ checksum = "d336a2a514f6ccccaa3e09b02d41d35330c07ddf03a62165fcec10bb561c7806"
 dependencies = [
  "darling_core",
  "quote 1.0.36",
- "syn 2.0.74",
+ "syn 2.0.75",
 ]
 
 [[package]]
@@ -1511,7 +1511,7 @@ dependencies = [
  "darling",
  "proc-macro2 1.0.86",
  "quote 1.0.36",
- "syn 2.0.74",
+ "syn 2.0.75",
 ]
 
 [[package]]

@@ -70,7 +70,7 @@ pub struct Colors {
 
 fn get_config_path() -> PathBuf {
     if cfg!(target_os = "windows") {
-        PathBuf::from(env::var("FOLDERID_RoamingAppData").unwrap())
+        PathBuf::from(env::var("APPDATA").unwrap())
             .join("thag_rs")
             .join("config.toml")
     } else {

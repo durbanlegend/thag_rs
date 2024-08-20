@@ -193,7 +193,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
             str
         };
 
-        debug_log!("rs_source={rs_source}");
+        log!(Verbosity::Verbose, "rs_source={rs_source}");
 
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
             .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;

@@ -26,6 +26,8 @@
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Flesh out ci.yml - as per ratatui?
 - [ ]  Publish to crates.io.
+- [ ]  grep png README.md | cargo run --features=debug-logs -- -v -B 'use regex::Regex; let re = Regex::new(r"\w+.png").unwrap();' -l 'println!("{}", re.find(&line).unwrap().as_str())' | sort
+       grep -Eo '[a-zA-Z0-9_]+\.png' README.md
 #[cfg(target_os = "windows")]
 let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into());
 

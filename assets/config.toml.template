@@ -1,0 +1,18 @@
+[logging]
+# User default verbosity. Overrides system default of "normal".
+# Valid values are "verbose", "normal", "quiet" and "quieter".
+# default_verbosity = "quiet"
+
+[colors]
+# Color support override. Sets the desired color support level, instead of letting
+# thag_rs interrogate the terminal, which may cause misbehaviour, or choose a default,
+# which might not take advantage of the full capabilities of the terminal. If the
+# terminal can't handle the chosen level, this may cause unwanted control strings to
+# be interleaved with the messages. Valid values are "xterm256", "ansi16" and "none".
+# color_support = "xterm256"
+
+# Terminal light/dark override. Tells thag_rs whether you are using a light or dark theme,
+# instead of letting thag_rs interrogate the terminal, which may cause misbehaviour, or
+# choose a default, which if incorrect might compromise the legibility of text. Valid
+# values are "dark" and "light".
+# term_theme = "dark"

@@ -19,7 +19,7 @@ It also supports scripting via shebangs, building executables from your snippets
 ```bash
 thag --expr '"Hello world!"'                                    # Short form: -e
 ```
-![Repl](hellot.png)
+![Expr](assets/hellot.png)
 
 Invoking quiet mode (`--quiet (-q)`) suppresses most feedback except for the flowerbox to highlight the output.
 Invoking it twice (`-qq` for short) suppresses all non-error feedback including the flowerbox, allowing the
@@ -33,14 +33,14 @@ use jiff::{Zoned, Unit};
 Zoned::now().round(Unit::Second)?
 }'                                                              # Long form: --expr
 ```
-![Repl](jifft.png)
+![Expr](assets/jifft.png)
 
 ### * With a script:
 
 ```bash
 thag demo/py_thag.rs
 ```
-![Script](script1t.png)
+![Script](assets/script1t.png)
 
 ```bash
 thag demo/iced_tour.rs
@@ -76,7 +76,7 @@ thag -e 'println!("Hello {}", std::env::args().nth(1).unwrap());' -- Ferris
 ```bash
 thag --edit                                                     # Short form: -d
 ```
-![Editor](edit1t.png)
+![Edit](edit1t.png)
 
 ![Edit run](edit2t.png)
 
@@ -104,13 +104,14 @@ cat demo/iter.rs | thag --loop 'format!("{i}.\t{line}")' -q    # Short form: -l
 ![Loop](loopt.png)
 
 Note the use of the `--quiet (-q)` option above to suppress messages from Cargo build.
-For a true filter that you can pipe to another process, you can use `-qq` (or `--quiet --quiet`) to suppress all non-error output.
 
 Alternatively:
 
 ```bash
 thag -l 'format!("{i}.\t{line}")' < demo/hello.rs               # Long form: --loop
 ```
+For a true filter that you can pipe to another process, you can use `-qq` (or `--quiet --quiet`) to suppress all non-error output.
+
 Loop mode also accepts the following optional arguments supplying surrounding code, along the lines of AWK:
 
 ```bash
@@ -131,21 +132,21 @@ The --executable (-x) option builds your script in release mode and moves it to 
 ```bash
 thag -x my_script.rs                                            # Long form: --executable
 ```
-![XBuild](xbuildt.png)
+![XBuild](assets/xbuildt.png)
 
-You can use an OS command to rename the executable if you so desire.
+You can of course use an OS command to rename the executable if you so desire.
 
-![XBuild](xrenamet.png)
+![XBuild](assets/xrenamet.png)
 
 Putting it to use:
 
-![XBuild](xuset.png)
+![XBuild](assets/xuset.png)
 
 ### * Command-line options
 
 Hopefully the help screen is self-explanatory:
 
-![Help](helpt.png)
+![Help](assets/helpt.png)
 
 ### * Getting started:
 
@@ -193,7 +194,7 @@ cargo install thag_rs
 
 
 ## Usage
-Once installed, you can use the `thag_rs` command (with underscore) from the command line. `thag_rs` uses the clap crate to process command-line arguments including --help.
+Once installed, you can use the `thag` command from the command line. `thag_rs` uses the clap crate to process command-line arguments including --help.
 
 Here are some examples:
 
@@ -296,7 +297,7 @@ GitHub Actions test each commit on `ubuntu-latest`, `macos-latest` and `windows-
 
 ## Why "thag"?
 
-After the late Thag Simmons. Short, sharp, and it gets the job done.
+After the late Thag Simmons. A stone-age power tool for the grug brained developer. Short, sharp, and it gets the job done.
 
 ## Related projects
 

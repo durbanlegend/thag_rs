@@ -831,6 +831,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 }}
 "#,
         if let Some(ref toml) = &loop_toml {
+            log!(Verbosity::Verbose, "toml={toml}");
             format!(
                 r#"/*[toml]
 {toml}
@@ -840,11 +841,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
             String::new()
         },
         if let Some(prelude) = loop_begin {
+            log!(Verbosity::Verbose, "prelude={prelude}");
             prelude
         } else {
             ""
         },
         if let Some(postlude) = loop_end {
+            log!(Verbosity::Verbose, "postlude={postlude}");
             postlude
         } else {
             ""

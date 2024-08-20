@@ -22,9 +22,22 @@ lazy_static! {
             return Some(ColorSupport::Ansi16);
         }
 
-        let color_support;
-        #[cfg(windows)] {
-            color_support = translate_level(supports_color());
+        let color_support: Option<ColorSupport> = if let Some(config) = &*config::MAYBE_CONFIG {
+            Some(config.colors.color_support.clone())
+        } else {
+            let color_level;
+            #[cfg(windows)] {
+                color_level = translate_level(supports_color());
+                match color_level {
+                    Some(color_level) => {
+                        if color_level.has_16m || color_level.has_256 {
+                            Some(ColorSupport::Xterm256)
+                        } else {
+                            Some(ColorSupport::Ansi16)
+                        }
+                    }
+                    None => None,
+                }
             }
             #[cfg(not(windows))] {
                 debug_log!(

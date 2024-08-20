@@ -8,6 +8,8 @@ ratatui = "0.27.0"
 tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 */
 
+use lazy_static::lazy_static;
+use ratatui::backend::CrosstermBackend;
 /// A version of `thag_rs`'s `stdin` module to handle standard input editor input. Like the `colors`
 /// module, `stdin` was originally developed here as a separate script and integrated as a module later.
 //////
@@ -19,9 +21,6 @@ use ratatui::crossterm::event::{
 use ratatui::crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
-// use log::debug;
-use lazy_static::lazy_static;
-use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};

@@ -1,10 +1,18 @@
 #![allow(clippy::uninlined_format_args)]
+use lazy_static::lazy_static;
+use serde::Deserialize;
+use std::sync::Mutex;
+use strum::EnumString;
+
+use crate::debug_log;
 
 /// An enum of the supported verbosity levels.
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, EnumString, PartialEq, Eq)]
+#[strum(serialize_all = "snake_case")]
 pub enum Verbosity {
     Quieter,
     Quiet,
+    #[default]
     Normal,
     Verbose,
 }
@@ -31,12 +39,9 @@ impl Logger {
     /// Set the verbosity level.
     pub fn set_verbosity(&mut self, verbosity: Verbosity) {
         self.verbosity = verbosity;
+        debug_log!("Verbosity set to {verbosity:?}");
     }
 }
-
-use lazy_static::lazy_static;
-use serde::Deserialize;
-use std::sync::Mutex;
 
 lazy_static! {
     /// The common Logger instance to use.
@@ -45,7 +50,7 @@ lazy_static! {
 
 /// Set the logging verbosity for the current execution.
 /// # Panics
-/// Will panic if the logger mutex cannot be unlocked..
+/// Will panic if the logger mutex cannot be unlocked.
 pub fn set_global_verbosity(verbosity: Verbosity) {
     let mut logger = LOGGER.lock().unwrap();
     logger.set_verbosity(verbosity);

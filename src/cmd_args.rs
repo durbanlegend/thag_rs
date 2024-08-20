@@ -1,5 +1,4 @@
 use crate::errors::BuildRunError;
-use crate::logging::{self, Verbosity};
 use crate::RS_SUFFIX;
 
 use bitflags::bitflags;
@@ -15,6 +14,11 @@ use std::error::Error;
             ArgGroup::new("commands")
                 .required(true)
                 .args(&["script", "expression", "repl", "filter", "stdin", "edit"]),
+        ))]
+#[command(group(
+            ArgGroup::new("volume")
+                .required(false)
+                .args(&["quiet", "normal", "verbose"]),
         ))]
 pub struct Cli {
     /// Optional name of a script to run (`stem`.rs)
@@ -74,6 +78,9 @@ pub struct Cli {
     /// Suppress unnecessary output, double up to show only errors
     #[arg(short, long, action = clap::ArgAction::Count, conflicts_with("verbose"))]
     pub quiet: u8,
+    /// Set normal verbosity, only needed to override config value
+    #[arg(short = 'N', long = "normal verbosity")]
+    pub normal: bool,
     /// Display timings
     #[arg(short, long)]
     pub timings: bool,
@@ -133,6 +140,7 @@ bitflags! {
         const EXECUTABLE = 32768;
         const LOOP = 65536;
         const CHECK = 131_072;
+        const NORMAL = 262_144;
     }
 }
 
@@ -187,6 +195,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::VERBOSE, args.verbose);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
         proc_flags.set(ProcFlags::NORUN, args.norun | args.check | args.executable);
+        proc_flags.set(ProcFlags::NORMAL, args.normal);
         proc_flags.set(
             ProcFlags::RUN,
             !args.norun && !args.build && !args.executable && !args.check,
@@ -210,17 +219,6 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         // proc_flags.set(ProcFlags::BEGIN, is_begin);
         // proc_flags.set(ProcFlags::END, is_end);
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
-
-        let verbosity = if args.verbose {
-            Verbosity::Verbose
-        } else if args.quiet == 1 {
-            Verbosity::Quiet
-        } else if args.quiet == 2 {
-            Verbosity::Quieter
-        } else {
-            Verbosity::Normal
-        };
-        logging::set_global_verbosity(verbosity);
 
         // Check all good
         let formatted = proc_flags.to_string();

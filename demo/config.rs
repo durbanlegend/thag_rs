@@ -1,11 +1,10 @@
 /*[toml]
 [dependencies]
 dirs = "5.0"
-#thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_json = "1.0"
-serde_with = "1.0"
+serde_with = "3.9"
 strum = "0.26"
 strum_macros = "0.26"
 supports-color = "3.0.0"
@@ -15,11 +14,12 @@ toml = "0.8"
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
 //# Purpose: Develop a configuration file implementation for `thag_rs`.
 use serde::Deserialize;
+use serde_with::{serde_as, DisplayFromStr};
 use std::fs;
 use std::path::PathBuf;
 use strum_macros::EnumString;
 
-#[derive(Debug, Deserialize, EnumString)]
+#[derive(Clone, Copy, Debug, Deserialize, EnumString)]
 #[strum(serialize_all = "snake_case")]
 pub enum Verbosity {
     Quieter,
@@ -51,18 +51,20 @@ struct Config {
 }
 
 #[allow(dead_code)]
+#[serde_as]
 #[derive(Debug, Deserialize)]
 struct LoggingConfig {
-    #[serde(with = "serde_with::rust::display_fromstr")]
-    verbosity: Verbosity,
+    #[serde_as(as = "DisplayFromStr")]
+    default_verbosity: Verbosity,
 }
 
 #[allow(dead_code)]
+#[serde_as]
 #[derive(Debug, Deserialize)]
 struct ColorsConfig {
-    #[serde(with = "serde_with::rust::display_fromstr")]
+    #[serde_as(as = "DisplayFromStr")]
     color_support: ColorSupport,
-    #[serde(with = "serde_with::rust::display_fromstr")]
+    #[serde_as(as = "DisplayFromStr")]
     term_theme: TermTheme,
 }
 
@@ -87,9 +89,9 @@ fn load_config() -> Option<Config> {
 
     if config_path.exists() {
         let config_str = fs::read_to_string(config_path).ok()?;
-        // println!("config_str={config_str}");
-        // let config: Result<Config, toml::de::Error> = toml::from_str(&config_str);
-        // println!("config={config:#?}");
+        eprintln!("config_str={config_str}");
+        let config: Result<Config, toml::de::Error> = toml::from_str(&config_str);
+        eprintln!("config={config:#?}");
         let config: Config = toml::from_str(&config_str).ok()?;
         Some(config)
     } else {
@@ -101,10 +103,10 @@ fn main() {
     if let Some(config) = load_config() {
         println!("Loaded config: {:?}", config);
         println!(
-            "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
-            config.logging.verbosity, config.colors.color_support, config.colors.term_theme
+            "default_verbosity={:?}, color_support={:?}, term_theme={:?}",
+            config.logging.default_verbosity, config.colors.color_support, config.colors.term_theme
         );
     } else {
-        println!("No configuration file found.");
+        eprintln!("Configuration file not found or not valid.");
     }
 }

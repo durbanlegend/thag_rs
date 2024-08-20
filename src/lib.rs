@@ -7,6 +7,7 @@ pub mod builder;
 pub mod cmd_args;
 pub mod code_utils;
 pub mod colors;
+pub mod config;
 pub mod errors;
 pub mod logging;
 pub mod manifest;

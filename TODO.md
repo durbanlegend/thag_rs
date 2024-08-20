@@ -14,14 +14,15 @@
 - [ ]  Add unquote string return values option and add to config.toml.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
-       - make demo scripts to replicate issues.
 - [ ]  Add FAQ
 - [ ]  Conversions both ways for rust-script and maybe runner?
-- [ ]  Mocks not working in Windows? repl::test_edit, test_edit_history and test_toml all bring up VS Code and get stuck.
 - [ ]  README for Windows: set $Env:TERM = "xterm-256color". Or consider prompting for it if only basic found. Or a config file.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
-- [ ]  Add config-file support to cmd_args based on demo/config.rs. Include an option to include or exclude quotes on returned strings.
+- [ ]  Add an option --config / -C to edit the config and change current --cargo / -C to --toml / -T
+        or --manifest / -M
+        Include an option to include or exclude quotes on returned strings.
         Maybe make it a command-line option too.
+        Add download demos option, see prototype demo/install_demo_gpt.rs
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Flesh out ci.yml - as per ratatui?
 - [ ]  Publish to crates.io.

@@ -1,4 +1,4 @@
-use crate::debug_log;
+use crate::{config, debug_log};
 use {crate::log, crate::logging::Verbosity};
 
 use lazy_static::lazy_static;
@@ -26,25 +26,25 @@ lazy_static! {
         #[cfg(windows)] {
             color_support = translate_level(supports_color());
             }
-        #[cfg(not(windows))] {
-            debug_log!(
-                "About to call supports_color"
-            );
-            color_support = supports_color::on(Stream::Stdout);
-            // shared::clear_screen();
-        }
-
-        match color_support {
-        Some(color_level) => {
-            if color_level.has_16m || color_level.has_256 {
-                Some(ColorSupport::Xterm256)
-            } else {
-                Some(ColorSupport::Ansi16)
+            #[cfg(not(windows))] {
+                debug_log!(
+                    "About to call supports_color"
+                );
+                color_level = supports_color::on(Stream::Stdout);
+                match color_level {
+                    Some(color_level) => {
+                        if color_level.has_16m || color_level.has_256 {
+                            Some(ColorSupport::Xterm256)
+                        } else {
+                            Some(ColorSupport::Ansi16)
+                        }
+                    }
+                    None => None,
+                }
             }
-        }
-        None => None,}
+        };
+        color_support
     };
-
 
     #[derive(Debug)]
     pub static ref TERM_THEME: TermTheme = {
@@ -54,22 +54,27 @@ lazy_static! {
             );
             return TermTheme::Dark;
         }
-        #[cfg(windows)] {
-        TermTheme::Dark }
+        let term_theme: TermTheme = if let Some(config) = &*config::MAYBE_CONFIG {
+            config.colors.term_theme.clone()
+        } else {
+            #[cfg(windows)] {
+            TermTheme::Dark }
 
-        #[cfg(not(windows))] {
-            debug_log!(
-                "About to call termbg"
-            );
-            let timeout = std::time::Duration::from_millis(100);
-            // debug_log!("Check terminal background color");
-            let theme = termbg::theme(timeout);
-            // shared::clear_screen();
-            match theme {
-                Ok(Theme::Light) => TermTheme::Light,
-                Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+            #[cfg(not(windows))] {
+                debug_log!(
+                    "About to call termbg"
+                );
+                let timeout = std::time::Duration::from_millis(100);
+                // debug_log!("Check terminal background color");
+                let theme = termbg::theme(timeout);
+                // shared::clear_screen();
+                match theme {
+                    Ok(Theme::Light) => TermTheme::Light,
+                    Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+                }
             }
-        }
+        };
+        term_theme
     };
 }
 
@@ -88,6 +93,18 @@ pub struct ColorLevel {
     /// 16 million (RGB) colors are supported.
     pub has_16m: bool,
 }
+
+// // Assuming the external ColorLevel provides these methods: has_basic(), has_256(), has_16m().
+// impl From<supports_color::ColorLevel> for ColorLevel {
+//     fn from(external: supports_color::ColorLevel) -> Self {
+//         ColorLevel {
+//             // level: external.level(), // or map it as needed
+//             has_basic: external.has_basic,
+//             has_256: external.has_256,
+//             has_16m: external.has_16m,
+//         }
+//     }
+// }
 
 #[cfg(windows)]
 fn env_force_color() -> usize {
@@ -221,19 +238,23 @@ macro_rules! nu_color_println {
 /// An enum to categorise the current terminal's level of colour support as detected, configured
 /// (TODO) or defaulted. We include `TrueColor` in Xterm256 as we're not interested in more
 /// than 256 colours just for messages.
-#[derive(Clone, Deserialize, EnumString, Display, PartialEq)]
 /// We include `TrueColor` in Xterm256 as we're not interested in more than 256 colours just for messages.
+#[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq)]
+#[strum(serialize_all = "snake_case")]
 pub enum ColorSupport {
     Xterm256,
+    #[default]
     Ansi16,
     None,
 }
 
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
 /// (TODO) or defaulted.
-#[derive(Debug, Deserialize, EnumString, Display, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq)]
+#[strum(serialize_all = "snake_case")]
 pub enum TermTheme {
     Light,
+    #[default]
     Dark,
 }
 

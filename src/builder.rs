@@ -4,8 +4,10 @@ use crate::code_utils::{
     strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::colors::{nu_resolve_style, MessageLevel};
+use crate::config::MAYBE_CONFIG;
 use crate::errors::BuildRunError;
 use crate::log;
+use crate::logging;
 use crate::logging::Verbosity;
 use crate::manifest;
 use crate::repl::run_repl;
@@ -66,6 +68,22 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
             }
         }
     }
+
+    let verbosity = if args.verbose {
+        Verbosity::Verbose
+    } else if args.quiet == 1 {
+        Verbosity::Quiet
+    } else if args.quiet == 2 {
+        Verbosity::Quieter
+    } else if args.normal {
+        Verbosity::Normal
+    } else if let Some(config) = &*MAYBE_CONFIG {
+        config.logging.default_verbosity
+    } else {
+        Verbosity::Normal
+    };
+    logging::set_global_verbosity(verbosity);
+
     let is_repl = proc_flags.contains(ProcFlags::REPL);
     let working_dir_path = if is_repl {
         TMPDIR.join(REPL_SUBDIR)

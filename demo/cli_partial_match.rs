@@ -75,9 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let command = match shlex::split(&line) {
             Some(split) => {
                 // eprintln!("split={split:?}");
-                // TODO look up in command vector
                 let mut matches = 0;
-                // let mut matching_key = String::new();
                 let first_word = split[0].as_str();
                 let mut cmd = String::new();
                 for key in cmd_vec.iter() {

@@ -11,7 +11,7 @@ fn set_up() {
 #[test]
 fn test_get_args_script() {
     set_up();
-    let args = vec!["thag_rs", "demo_script", "--", "arg1", "arg2"];
+    let args = vec!["thag", "demo_script", "--", "arg1", "arg2"];
     let cli = Cli::parse_from(args);
     assert!(Some("demo_script") == cli.script.as_deref());
     // println!("cli.args={:#?}", cli.args);
@@ -21,7 +21,7 @@ fn test_get_args_script() {
 #[test]
 fn test_get_args_expr() {
     set_up();
-    let args = vec!["thag_rs", "--expr", "'2 + 5'"];
+    let args = vec!["thag", "--expr", "'2 + 5'"];
     let cli = Cli::parse_from(args);
     // println!("cli.script.as_deref()={}", cli.script.as_deref());
     assert!(cli.script.as_deref().is_none());
@@ -31,7 +31,7 @@ fn test_get_args_expr() {
 #[test]
 fn test_get_args_stdin() {
     set_up();
-    let args = vec!["thag_rs", "-s"];
+    let args = vec!["thag", "-s"];
     let cli = Cli::parse_from(args);
     // println!("cli.script.as_deref()={}", cli.script.as_deref());
     assert!(cli.script.as_deref().is_none());
@@ -41,7 +41,7 @@ fn test_get_args_stdin() {
 #[test]
 fn test_get_proc_flags() {
     set_up();
-    let args = vec!["thag_rs", "--expr", "'2 + 5'"];
+    let args = vec!["thag", "--expr", "'2 + 5'"];
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
@@ -62,8 +62,116 @@ fn test_get_proc_flags() {
 #[test]
 fn test_conflicts_with_all() {
     set_up();
-    let args = vec!["thag_rs", "--expr", "--edit"];
+    let args = vec!["thag", "--expr", "--edit"];
     let result = Cli::try_parse_from(args);
     // println!("result={result:#?}");
     assert!(result.is_err()); // or check for specific error
+}
+
+#[test]
+fn test_proc_flags_generate_build_force_run() {
+    set_up();
+    let args = vec!["thag", "/demo/hello.rs", "-f"];
+    let cli = Cli::parse_from(args);
+    let result = get_proc_flags(&cli);
+    let proc_flags = result.expect("Couldn't access ProcFlags");
+    assert!(proc_flags
+        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::FORCE | ProcFlags::RUN));
+}
+
+#[test]
+fn test_proc_flags_generate_build_run() {
+    set_up();
+    let args = vec!["thag", "/demo/hello.rs", "-g"];
+    let cli = Cli::parse_from(args);
+    let result = get_proc_flags(&cli);
+    let proc_flags = result.expect("Couldn't access ProcFlags");
+    assert!(proc_flags.contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN));
+}
+
+#[test]
+fn test_proc_flags_build_run() {
+    set_up();
+    let args = vec!["thag", "/demo/hello.rs", "-b"];
+    let cli = Cli::parse_from(args);
+    let result = get_proc_flags(&cli);
+    let proc_flags = result.expect("Couldn't access ProcFlags");
+    assert!(proc_flags.contains(ProcFlags::BUILD | ProcFlags::RUN));
+}
+
+#[test]
+fn test_proc_flags_norun() {
+    set_up();
+    let args = vec!["thag", "/demo/hello.rs", "-n"];
+    let cli = Cli::parse_from(args);
+    let result = get_proc_flags(&cli);
+    let proc_flags = result.expect("Couldn't access ProcFlags");
+    assert!(proc_flags.contains(ProcFlags::NORUN));
+}
+
+#[test]
+fn test_proc_flags_expr() {
+    set_up();
+    let args = vec!["thag", "-e", "Hi"];
+    let cli = Cli::parse_from(args);
+    let result = get_proc_flags(&cli);
+    let proc_flags = result.expect("Couldn't access ProcFlags");
+    assert!(proc_flags
+        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::EXPR));
+}
+
+#[test]
+fn test_proc_flags_edit() {
+    set_up();
+    let args = vec!["thag", "-d"];
+    let cli = Cli::parse_from(args);
+    let result = get_proc_flags(&cli);
+    let proc_flags = result.expect("Couldn't access ProcFlags");
+    assert!(proc_flags
+        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::EDIT));
+}
+
+#[test]
+fn test_proc_flags_stdin() {
+    set_up();
+    let args = vec!["thag", "-s"];
+    let cli = Cli::parse_from(args);
+    let result = get_proc_flags(&cli);
+    let proc_flags = result.expect("Couldn't access ProcFlags");
+    assert!(proc_flags
+        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::STDIN));
+}
+
+#[test]
+fn test_proc_flags_loop() {
+    set_up();
+    let args = vec!["thag", "-l", "&line"];
+    let cli = Cli::parse_from(args);
+    let result = get_proc_flags(&cli);
+    let proc_flags = result.expect("Couldn't access ProcFlags");
+    assert!(proc_flags
+        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::LOOP));
+}
+
+#[test]
+fn test_proc_flags_repl() {
+    set_up();
+    let args = vec!["thag", "-r"];
+    let cli = Cli::parse_from(args);
+    let result = get_proc_flags(&cli);
+    let proc_flags = result.expect("Couldn't access ProcFlags");
+    assert!(proc_flags
+        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::REPL));
+}
+
+#[test]
+fn test_proc_flags_executable() {
+    set_up();
+    let args = vec!["thag", "/demo/hello.rs", "-x"];
+    let cli = Cli::parse_from(args);
+    let result = get_proc_flags(&cli);
+    let proc_flags = result.expect("Couldn't access ProcFlags");
+    assert!(proc_flags.contains(
+        ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::NORUN | ProcFlags::EXECUTABLE
+    ));
 }

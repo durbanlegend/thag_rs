@@ -11,60 +11,101 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 //# Purpose: Prototype CLI.
 use thag_rs::errors::BuildRunError;
 use thag_rs::log;
-use thag_rs::logging::{self, Verbosity};
+use thag_rs::logging::Verbosity;
 use thag_rs::RS_SUFFIX;
 
 use bitflags::bitflags;
-use clap::Parser;
+use clap::{ArgGroup, Parser};
 use core::{fmt, str};
 use std::error::Error;
 
 // thag_rs script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Clone, Parser, Debug)]
-#[command(name = "thag_rs")]
+#[derive(Clone, Default, Parser, Debug)]
+#[command(name = "thag_rs", version, about, long_about)]
+#[command(group(
+            ArgGroup::new("commands")
+                .required(true)
+                .args(&["script", "expression", "repl", "filter", "stdin", "edit"]),
+        ))]
+#[command(group(
+            ArgGroup::new("volume")
+                .required(false)
+                .args(&["quiet", "normal", "verbose"]),
+        ))]
 pub struct Cli {
-    /// Optional name of a script to run
+    /// Optional name of a script to run (`stem`.rs)
     pub script: Option<String>,
     /// Set the arguments for the script
-    #[arg(last = true)]
+    #[arg(last = true, requires = "script")]
     pub args: Vec<String>,
-    /// Set verbose mode
-    #[arg(short, long)]
-    pub verbose: bool,
-    /// Display timings
-    #[arg(short, long)]
-    pub timings: bool,
     /// Generate Rust source and individual cargo .toml if compiled file is stale
-    #[arg(short = 'g', long = "gen")]
+    #[arg(short, long = "gen", default_value_ifs([
+        ("force", "true", "true"),
+        ("expression", "_", "true"),
+        ("executable", "true", "true"),
+        ("check", "true", "true"),
+    ]))]
     pub generate: bool,
     /// Build script if compiled file is stale
-    #[arg(short, long)]
+    #[arg(short, long, default_value_ifs([
+        ("force", "true", "true"),
+        ("expression", "_", "true"),
+        ("executable", "true", "true"),
+    ]))]
     pub build: bool,
     /// Force generation of Rust source and individual Cargo.toml, and build, even if compiled file is not stale
     #[arg(short, long)]
     pub force: bool,
-    ///  (Default) Carry out generation and build steps (if necessary or forced) and run the compiled script
-    #[arg(short, long, default_value = "true")]
-    pub all: bool,
-    /// Run without rebuilding if already compiled
-    #[arg(short, long)]
-    pub run: bool,
-    /// REPL mode (read–eval–print loop) for Rust expressions. Option: existing script name.
-    #[arg(short = 'l', long, conflicts_with_all(["all", "generate", "build", "run"]))]
-    pub repl: bool,
+    /// Don't run the script after generating and building
+    #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin"]))]
+    pub norun: bool,
     /// Evaluate a quoted expression on the fly
-    #[arg(short, long = "expr", conflicts_with_all(["all", "generate", "build", "run", "repl", "script", "stdin"]))]
+    #[arg(short, long = "expr", conflicts_with_all(["generate", "build"]))]
     pub expression: Option<String>,
-    /// Read script from stdin.
-    #[arg(short, long, conflicts_with_all(["all", "expression", "generate", "build", "run", "repl", "script"]))]
+    /// REPL mode (read–eval–print loop) for Rust expressions. Option: existing script name
+    #[arg(short = 'r', long, conflicts_with_all(["generate", "build"]))]
+    pub repl: bool,
+    /// Read script from stdin
+    #[arg(short, long, conflicts_with_all(["generate", "build"]))]
     pub stdin: bool,
-    /// Read script from stdin with edit.
-    #[arg(short = 'd', long, conflicts_with_all(["all", "expression", "generate", "build", "run", "repl", "script"]))]
+    /// Simple TUI edit-submit with history; editor will also capture any stdin input
+    #[arg(short = 'd', long, conflicts_with_all(["generate", "build"]))]
     pub edit: bool,
-    /// Suppress unnecessary output
-    #[arg(short, long, conflicts_with("verbose"))]
-    pub quiet: bool,
+    /// Filter expression to be run in a loop against every line in stdin, with optional pre- and post-loop logic.
+    #[arg(short = 'l', long = "loop", conflicts_with_all(["generate", "build"]))]
+    pub filter: Option<String>,
+    /// Optional manifest info in format ready for Cargo.toml
+    #[arg(short = 'C', long, requires = "filter", value_name = "CARGO-TOML")]
+    pub cargo: Option<String>,
+    /// Optional pre-loop logic for --loop, somewhat like awk BEGIN
+    #[arg(short = 'B', long, requires = "filter", value_name = "PRE-LOOP")]
+    pub begin: Option<String>,
+    /// Optional post-loop logic for --loop, somewhat like awk END
+    #[arg(short = 'E', long, requires = "filter", value_name = "POST-LOOP")]
+    pub end: Option<String>,
+    /// Confirm that multiple main methods are valid for this script
+    #[arg(short, long)]
+    pub multimain: bool,
+    /// Cargo check script if compiled file is stale. Less thorough than build
+    /// Used by integration test to check all demo scripts
+    #[arg(short, long, conflicts_with_all(["build", "executable"]))]
+    pub check: bool,
+    /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`
+    #[arg(short = 'x', long)]
+    pub executable: bool,
+    /// Set verbose mode
+    #[arg(short, long)]
+    pub verbose: bool,
+    /// Suppress unnecessary output, double up to show only errors
+    #[arg(short, long, action = clap::ArgAction::Count, conflicts_with("verbose"))]
+    pub quiet: u8,
+    /// Set normal verbosity, only needed to override config value
+    #[arg(short = 'N', long = "normal verbosity")]
+    pub normal: bool,
+    /// Display timings
+    #[arg(short, long)]
+    pub timings: bool,
 }
 
 // Getter for clap command-line arguments
@@ -110,6 +151,13 @@ bitflags! {
         const STDIN = 512;
         const EDIT = 1024;
         const QUIET = 2048;
+        const QUIETER = 4096;
+        const MULTI = 8192;
+        const NORUN = 16384;
+        const EXECUTABLE = 32768;
+        const LOOP = 65536;
+        const CHECK = 131_072;
+        const NORMAL = 262_144;
     }
 }
 
@@ -143,39 +191,49 @@ impl str::FromStr for ProcFlags {
 // Will panic if the internal correctness check fails.
 pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
     let is_expr = args.expression.is_some();
+    let is_loop = args.filter.is_some();
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
-        // TODO: out? once clap default_value_ifs is working
-        proc_flags.set(
-            ProcFlags::GENERATE,
-            args.generate | args.force | args.all | is_expr,
-        );
-        proc_flags.set(
-            ProcFlags::BUILD,
-            args.build | args.force | args.all | is_expr,
-        );
+        eprintln!("args={args:#?}");
+        proc_flags.set(ProcFlags::GENERATE, args.generate);
+        // eprintln!(
+        //     "After set(ProcFlags::GENERATE, args.generate), ProcFlags::GENERATE = {:#?}",
+        //     ProcFlags::GENERATE
+        // );
+
+        proc_flags.set(ProcFlags::BUILD, args.build);
+        proc_flags.set(ProcFlags::CHECK, args.check);
         proc_flags.set(ProcFlags::FORCE, args.force);
-        proc_flags.set(ProcFlags::QUIET, args.quiet);
+        proc_flags.set(ProcFlags::QUIET, args.quiet == 1);
+        proc_flags.set(ProcFlags::QUIETER, args.quiet >= 2);
+        proc_flags.set(ProcFlags::MULTI, args.multimain);
         proc_flags.set(ProcFlags::VERBOSE, args.verbose);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
-        proc_flags.set(ProcFlags::RUN, args.run | args.all);
-        proc_flags.set(ProcFlags::ALL, args.all);
-        if !(proc_flags.contains(ProcFlags::ALL)) {
-            proc_flags.set(ProcFlags::ALL, args.generate & args.build & args.run);
-        }
+        proc_flags.set(ProcFlags::NORUN, args.norun | args.check | args.executable);
+        proc_flags.set(ProcFlags::NORMAL, args.normal);
+        let gen_build = !args.norun && !args.executable && !args.check;
+        eprintln!("gen_build={gen_build}");
+        if gen_build {
+            proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true)
+        };
+        proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
+        // eprintln!("Before processing ALL, proc_flags={proc_flags:#?}");
+        // if proc_flags.contains(ProcFlags::ALL) {
+        //     proc_flags.set(ProcFlags::GENERATE, true);
+        //     proc_flags.set(ProcFlags::BUILD, true);
+        // } else {
+        //     proc_flags.set(ProcFlags::ALL, args.generate & args.build);
+        // }
+        eprintln!("After processing ALL, proc_flags={proc_flags:#?}");
         proc_flags.set(ProcFlags::REPL, args.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);
         proc_flags.set(ProcFlags::STDIN, args.stdin);
         proc_flags.set(ProcFlags::EDIT, args.edit);
-
-        let verbosity = if args.verbose {
-            Verbosity::Verbose
-        } else if args.quiet {
-            Verbosity::Quiet
-        } else {
-            Verbosity::Normal
-        };
-        logging::set_global_verbosity(verbosity);
+        proc_flags.set(ProcFlags::LOOP, is_loop);
+        // proc_flags.set(ProcFlags::TOML, is_toml);
+        // proc_flags.set(ProcFlags::BEGIN, is_begin);
+        // proc_flags.set(ProcFlags::END, is_end);
+        proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
 
         // Check all good
         let formatted = proc_flags.to_string();
@@ -203,7 +261,7 @@ fn main() {
     }
 
     if opt.generate {
-        log!(Verbosity::Normal, "Generating source and cargo .toml file");
+        log!(Verbosity::Normal, "Generate option selected");
     }
 
     if opt.build {
@@ -214,8 +272,8 @@ fn main() {
         log!(Verbosity::Normal, "Force option selected");
     }
 
-    if opt.run {
-        log!(Verbosity::Normal, "Run option selected");
+    if opt.executable {
+        log!(Verbosity::Normal, "Executable option selected");
     }
 
     log!(Verbosity::Normal, "Script to run: {:?}", opt.script);
@@ -225,4 +283,7 @@ fn main() {
             log!(Verbosity::Normal, "{arg}");
         }
     }
+
+    let proc_flags = get_proc_flags(&opt);
+    println!("proc_flags={proc_flags:#?}");
 }

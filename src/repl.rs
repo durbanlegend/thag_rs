@@ -217,7 +217,6 @@ pub fn run_repl(
 
     let edit_mode = Box::new(Emacs::new(keybindings.clone()));
 
-    // TODO implement a highlighter?
     // let highlighter = Box::<ExampleHighlighter>::default();
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))

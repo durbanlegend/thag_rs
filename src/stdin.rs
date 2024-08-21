@@ -376,7 +376,7 @@ pub fn normalize_newlines(input: &str) -> String {
     RE.replace_all(input, "\n").to_string()
 }
 
-/// Apply highlights to the text depending on the light or dark theme as detected, configured (TODO)
+/// Apply highlights to the text depending on the light or dark theme as detected, configured
 /// or defaulted, or as toggled by the user with Ctrl-t.
 pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     if alt_highlights {

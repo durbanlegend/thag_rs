@@ -236,7 +236,7 @@ name = "bitflags_t"
         // Remove executable if it exists, and check
         let result = fs::remove_file(&target_path);
         eprintln!("Result of fs::remove_file({target_path:?}): {result:?}");
-        // assert!(!target_path.exists());
+        assert!(!target_path.exists());
 
         // Generate and build executable, and check it exists.
         let mut args = create_sample_cli(Some("tests/assets/fib_fac_dashu_t.rs".to_string()));
@@ -244,6 +244,7 @@ name = "bitflags_t"
         args.build = true;
         let result = execute(args);
         assert!(result.is_ok());
+        println!("target_path={target_path:#?}");
         assert!(target_path.exists());
 
         // Finally, run it

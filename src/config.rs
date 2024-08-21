@@ -89,9 +89,9 @@ pub fn load() -> Option<Config> {
 
     if config_path.exists() {
         let config_str = fs::read_to_string(config_path).ok()?;
-        println!("config_str={config_str}");
-        let config: Result<Config, toml::de::Error> = toml::from_str(&config_str);
-        println!("config={config:#?}");
+        // println!("config_str={config_str}");
+        // let config: Result<Config, toml::de::Error> = toml::from_str(&config_str);
+        // println!("config={config:#?}");
         let config: Config = toml::from_str(&config_str).ok()?;
         Some(config)
     } else {

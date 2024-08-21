@@ -543,7 +543,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     );
 
     if quieter {
-        // Pipe output: TODO: debug
+        // Pipe output
         cargo_command
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped());

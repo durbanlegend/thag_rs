@@ -52,7 +52,7 @@ This will `cargo build` and run the tour of the `iced` cross-platform GUI librar
 ```bash
 thag --repl                                                     # Short form: -l
 ```
-![Repl](replt.png)
+![Repl](assets/replt.png)
 
 The REPL has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, Nano etc. via the VISUAL or EDITOR environment variables, in case its `reedline` editor falls short for a particular task. The key bindings in the latter will depend on your terminal settings and you should probably not expect too much in the way of navigation shortcuts.
 
@@ -62,7 +62,7 @@ The REPL has file-backed searchable history and access to graphical and text-bas
 echo '(1..=10).product::<u32>()' | thag --stdin                 # Short form: -s
 ```
 
-Place any arguments after `--` to separate them from `thag` arguments:
+Place any arguments for the script after `--` to separate them from `thag` arguments:
 ```bash
 echo 'println!("Hello {}", std::env::args().nth(1).unwrap());' | thag -s -- Ferris
 ```
@@ -76,9 +76,9 @@ thag -e 'println!("Hello {}", std::env::args().nth(1).unwrap());' -- Ferris
 ```bash
 thag --edit                                                     # Short form: -d
 ```
-![Edit](edit1t.png)
+![Edit](assets/edit1t.png)
 
-![Edit run](edit2t.png)
+![Edit run](assets/edit2t.png)
 
 ### * With standard input into the TUI editor:
 
@@ -101,7 +101,7 @@ At a minimum, loops though `stdin` running the `--loop` expression against every
 ```bash
 cat demo/iter.rs | thag --loop 'format!("{i}.\t{line}")' -q    # Short form: -l
 ```
-![Loop](loopt.png)
+![Loop](assets/loopt.png)
 
 Note the use of the `--quiet (-q)` option above to suppress messages from Cargo build.
 
@@ -161,7 +161,7 @@ You have the choice of installing `thag_rs` (recommended), or you may prefer to 
 
 `thag_rs` uses the `syn` crate to parse valid code into an abstract syntax tree (AST). Among other benefits this prevents it being fooled by code embedded in comments or string literals, which is the curse of regular expressions and string parsing. `thag_rs` then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code so as to generate a `Cargo.toml`. It filters these to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
 
-Well-formedness is determined by counting any occurrences of a `main` function in the AST. The lack of a `fn main` signifies a snippet or expression, whereas more than one `fn main` may be valid but must be actively flagged as such by the user with the `--multimain (-m)` option.
+Well-formedness is determined by counting any occurrences of a `main` function in the AST. The lack of a `fn main` signifies a snippet or expression, whereas more than one `fn main` is sometimes valid but must be actively flagged as such by the user with the `--multimain (-m)` option.
 
 If your code does not successfully parse into an AST because of a coding error, `thag_rs` will fall back to using source code analysis to prepare your code for the Rust compiler, which can then show you error messages to help you find the issues.
 
@@ -190,31 +190,47 @@ You can install `thag_rs` using `cargo install`:
 ```bash
 cargo install thag_rs
 ```
-### TODO >>> Installing the starter kit (demo directory)
+### Downloading the starter kit (demo directory)
+Use the following link and click on the button to download the directory as a zip file: [Download demo](https://test.ssgithub.com/?url=https://github.com/durbanlegend/thag_rs/tree/master/demo).
 
+If for any reason the link above doesn't work for you, try the following: [download-directory](https://download-directory.github.io/)
+and paste in the link [thag_rs/demo](https://github.com/durbanlegend/thag_rs/tree/master/demo).
+
+Since we're relying on the kindness of strangers, we need a fallback. First that we can always link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
+One of the `rs_thag` demo files is [install_demo_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/install_demo_gpt.rs) which can download the whole directory.
+Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/install_demo_gpt.rs`, or just copy it and paste it into the `thag -d` editor and choose Ctrl-d to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
+
+Github doesn't make downloading parts of a project easy, so if you still have issues, check out the many other solutions offered in this
+[Stack Overflow discussion](https://stackoverflow.com/questions/7106012/download-a-single-folder-or-directory-from-a-github-repository).
+
+If all else fails, you can always clone the repo to get hold of the `demo` directory. And raise an issue on this repo.
 
 ## Usage
-Once installed, you can use the `thag` command from the command line. `thag_rs` uses the clap crate to process command-line arguments including --help.
+Once installed, you can use the `thag` command from the command line. `thag` uses the clap crate to process command-line arguments including --help.
 
 Here are some examples:
 
 ### Evaluating an expression
 #### Concise fast factorial calculation
 
-This panics beyond 34! due to using Rust primitives, but see demos for arbitrarily big numbers:
+This panics beyond 34! due to using Rust primitives, but see `demo/factorial_dashu_product.rs` for arbitrarily big numbers:
 
 ```bash
 thag -e '(1..=34).product::<u128>()'
 ```
 
-#### Shoehorn a script into an expression, just because!:
+#### Shoehorn a script into an expression, just because!
 ```bash
 thag -e "$(cat demo/fizz_buzz_gpt.rs)"
 ```
+This shows that the `--expr` flag will not only evaluate an expression, it will also accept a valid Rust program or set of statements.
 
 #### Run a script in quiet mode but show timings
 ```bash
 thag -tq demo/fizz_buzz_gpt.rs
+Completed generation in 0.276s
+Completed build in 1.171s
+----------------------------------------------------------------------
 1
 2
 Fizz
@@ -244,8 +260,9 @@ Fizz
 98
 Fizz
 Buzz
-Completed run in 0.11s
-thag_rs completed processing script fizz_buzz_gpt.rs in 0.20s
+----------------------------------------------------------------------
+Completed run in 0.558s
+thag_rs completed processing script fizz_buzz_gpt.rs in 2.43s
 ```
 
 ### Using the REPL
@@ -278,15 +295,15 @@ _— The Rust Reference_
 * Specific features of dependencies may be specified, giving your scripts access to advanced functionality. Local path and git dependencies may also be specified, allowing you to access your unpublished crates.
 * A choice of modes - bearing in mind the importance of expressions in Rust:
     * expression mode for small, basic expressions on the fly.
-    * REPL mode offers interactivity, and accepts multi-line expressions since it respects matching braces, brackets, parens and quotes.
+    * REPL mode offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
     * stdin mode accepts larger scripts or programs on the fly, as typed, pasted or piped input.
     * edit mode is stdin mode with the addition of basic TUI (terminal user interface) in-place editing, with or without piped input.
     * the classic script mode runs an .rs file consisting of a valid Rust snippet or program.
 * You can use a shebang to write scripts in Rust.
-* You can even build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to an executable command in the Cargo bin directory `<home>/.cargo/bin`.
+* For more speed you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
 * `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast big-integer factorial and Fibonacci calculation and prototypes of TUI editing and of the adaptive colour palettes described below.
-* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. On Windows, `thag_rs` defaults to basic ANSI-16 colours and dark mode support for reasons beyond my control, but the dark mode colours it uses have been chosen to work well with most light modes.
-* In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from thag_rs. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug this functionality without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
+* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows, interrogating the terminal is not well supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` defaults to basic ANSI-16 colours and dark mode support. However, the dark mode colours it uses have been chosen to work well with most light modes.
+* In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from thag_rs. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
 
 ## Platform Support
 This crate is designed to be cross-platform and supports MacOS, Linux and Windows.
@@ -297,20 +314,23 @@ GitHub Actions test each commit on `ubuntu-latest`, `macos-latest` and `windows-
 
 ## Why "thag"?
 
-After the late Thag Simmons. A stone-age power tool for the grug brained developer. Short, sharp, and it gets the job done.
+After the late Thag Simmons. A stone-age power tool for the grug brained developer to beat Rust code into submission. Short, sharp, and it gets the job done.
 
 ## Related projects
 
 (Hat-tip to the author of `rust-script`)
 
+* `cargo-script` - The Rust RFC Book `https://rust-lang.github.io/rfcs/3424-cargo-script.html`
 * `evcxr` - Perhaps the most well-known Rust REPL.
-* `cargo-script` - Rust script runner (unmaintained project).
-* `rust-script` - maintained fork of cargo-script.
-* `cargo-eval` - maintained fork of cargo-script.
+* `cargo-script` - (Unrelated to the Rust RFC one). Rust script runner (unmaintained project).
+* `rust-script` - maintained fork of the preceding cargo-script.
+* `cargo-eval` - maintained fork of the preceding cargo-script.
 * `cargo-play` - local Rust playground.
 * `irust` - limited Rust REPL.
 * `runner` - experimental tool for running Rust snippets without Cargo, exploring dynamic vs static linking for speed. I have an extensively modified fork of this crate on GitHub, but I highly recommend using the current `thag_rs` crate rather than that fork.
 * `cargo-script-mvs` - RFC demo.
+
+There is more discussion of prior art at the Rust RFC link.
 
 ## License
 

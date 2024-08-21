@@ -249,9 +249,8 @@ macro_rules! nu_color_println {
 }
 
 /// An enum to categorise the current terminal's level of colour support as detected, configured
-/// (TODO) or defaulted. We include `TrueColor` in Xterm256 as we're not interested in more
-/// than 256 colours just for messages.
-/// We include `TrueColor` in Xterm256 as we're not interested in more than 256 colours just for messages.
+/// or defaulted. We fold `TrueColor` into Xterm256 as we're not interested in more than 256
+/// colours just for messages.
 #[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 pub enum ColorSupport {
@@ -262,7 +261,7 @@ pub enum ColorSupport {
 }
 
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
-/// (TODO) or defaulted.
+/// or defaulted.
 #[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 pub enum TermTheme {

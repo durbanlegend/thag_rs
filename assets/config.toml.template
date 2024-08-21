@@ -1,18 +1,26 @@
 [logging]
-# User default verbosity. Overrides system default of "normal".
+# User's preferred default verbosity. Overrides system default of "normal".
 # Valid values are "verbose", "normal", "quiet" and "quieter".
 # default_verbosity = "quiet"
 
 [colors]
-# Color support override. Sets the desired color support level, instead of letting
-# thag_rs interrogate the terminal, which may cause misbehaviour, or choose a default,
-# which might not take advantage of the full capabilities of the terminal. If the
-# terminal can't handle the chosen level, this may cause unwanted control strings to
-# be interleaved with the messages. Valid values are "xterm256", "ansi16" and "none".
-# color_support = "xterm256"
+# Color support override. Sets the terminal's color support level. The alternative is
+# to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
+# to interrogate the terminal, which could cause misbehaviour, or may choose a default,
+# which might not take advantage of the full capabilities of the terminal.
+# If the terminal can't handle your chosen level, this may cause unwanted control strings
+# to be interleaved with the messages.
+# If your terminal can handle 16m colors, choose xterm256
+# Valid values are:
+# "xterm256" for 256 or more colors (including 16m)
+# "ansi16"   for basic color support
+# "none"     no color support or no color desired
+# color_support = "ansi16"
 
 # Terminal light/dark override. Tells thag_rs whether you are using a light or dark theme,
-# instead of letting thag_rs interrogate the terminal, which may cause misbehaviour, or
-# choose a default, which if incorrect might compromise the legibility of text. Valid
-# values are "dark" and "light".
+# instead of letting thag_rs interrogate the terminal, which could cause misbehaviour
+# on Windows in particular, or choose a default, which if incorrect could compromise the
+# legibility of text.
+# Valid values are: "dark" or "light".
+# "dark" is generally a safe choice as the colors should be legible even for a light theme
 # term_theme = "dark"

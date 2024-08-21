@@ -15,8 +15,6 @@
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
 - [ ]  Add FAQ
-- [ ]  Conversions both ways for rust-script and maybe runner?
-- [ ]  README for Windows: set $Env:TERM = "xterm-256color". Or consider prompting for it if only basic found. Or a config file.
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Add an option --config / -C to edit the config and change current --cargo / -C to --toml / -T
         or --manifest / -M
@@ -24,16 +22,19 @@
         Maybe make it a command-line option too.
         Add download demos option, see prototype demo/install_demo_gpt.rs
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
-- [ ]  Flesh out ci.yml - as per ratatui?
 - [ ]  Publish to crates.io.
+- [ ]  Try cargo-dist
 - [ ]  grep png README.md | cargo run --features=debug-logs -- -v -B 'use regex::Regex; let re = Regex::new(r"\w+.png").unwrap();' -l 'println!("{}", re.find(&line).unwrap().as_str())' | sort
        grep -Eo '[a-zA-Z0-9_]+\.png' README.md
+       https://download-directory.github.io/?url=https://github.com/durbanlegend/thag_rs/tree/14d31159c42249f6aa0486f500de209438b06b8f/demo
+https://stackoverflow.com/questions/7106012/download-a-single-folder-or-directory-from-a-github-repository
+https://test.ssgithub.com/?url=https://github.com/durbanlegend/thag_rs/tree/master/demo
 #[cfg(target_os = "windows")]
 let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into());
 
 #[cfg(not(target_os = "windows"))]
 let temp_dir = std::env::var("TMPDIR").unwrap_or_else(|_| "/tmp".into());
-
+- [ ]  Apply changes from demo/cmd_args.rs.
 - [ ]  Demo scripts not commented:
 
 ## Low Priority

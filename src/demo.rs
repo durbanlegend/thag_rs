@@ -1,23 +1,12 @@
-/*[toml]
-[dependencies]
-log = "0.4.21"
-nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-reqwest = { version = "0.12.4", features = ["blocking", "json"] }
-rfd = "0.14.1"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
-
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-*/
-
-/// Prototype downloader for the demo/ directory.
-//# Purpose: Prototype a possible solution.
 use reqwest::blocking::get;
 use rfd::FileDialog;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::copy;
-// use std::path::PathBuf;
+use std::path::PathBuf;
+
+use crate::logging::Verbosity;
+use crate::{log, nu_color_println, nu_resolve_style, BuildRunError};
 
 #[derive(Deserialize)]
 struct GitHubFile {
@@ -40,6 +29,16 @@ fn get_github_files(repo: &str, path: &str) -> Result<Vec<GitHubFile>, Box<dyn s
 }
 
 fn download_demo_files(repo: &str, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let dest_dir = PathBuf::from(path);
+    if !dest_dir.exists() {
+        nu_color_println!(
+            nu_resolve_style(crate::MessageLevel::Warning),
+            "No such directory"
+        );
+        return Err(Box::new(BuildRunError::Command(
+            "No such directory".to_string(),
+        )));
+    }
     let mut chosen = false;
     while !chosen {
         // Display file chooser dialogue to select the destination directory

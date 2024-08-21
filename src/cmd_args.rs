@@ -198,11 +198,11 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::NORMAL, args.normal);
         proc_flags.set(
             ProcFlags::RUN,
-            !args.norun && !args.build && !args.executable && !args.check,
+            !args.norun && !args.executable && !args.check,
         );
         proc_flags.set(
             ProcFlags::ALL,
-            !args.norun && !args.build && !args.executable && !args.check,
+            !args.norun && !args.executable && !args.check,
         );
         if proc_flags.contains(ProcFlags::ALL) {
             proc_flags.set(ProcFlags::GENERATE, true);

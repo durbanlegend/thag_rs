@@ -28,8 +28,8 @@ use strum::Display;
 /// to interrogate the screen but with side effects which we attempt(ed) to undo here.
 /// Unfortunately this appends the `MoveToColumn` and Show command sequences to the
 /// program's output, which prevents it being used as a filter in a pipeline. On
-/// Windows we resort to defaults and (TODO) configuration; on other platforms any
-/// lingering effects of disabling this remain to be seen.
+/// Windows we resort to defaults and configuration; on other platforms any lingering
+/// effects of disabling this remain to be seen.
 /// # Panics
 /// Will panic if a crossterm execute command fails.
 #[deprecated(

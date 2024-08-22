@@ -14,24 +14,10 @@ include = [
     "demo/**",
     "tests/**",
 ]
-exclude = [".DS_Store"]
 readme = "README.md"
 repository = "https://github.com/durbanlegend/thag_rs"
 categories = ["command-line-utilities", "development-tools::build-utils"]
-keywords = [
-    "REPL",
-    "command-line",
-    "development",
-    "eval",
-    "expression-evaluator",
-    "filter",
-    "playground",
-    "prototyping",
-    "rapid",
-    "runner",
-    "script",
-    "tool",
-]
+keywords = ["REPL", "command-line", "eval", "runner", "script"]
 
 [dependencies]
 bitflags = "2.6.0"

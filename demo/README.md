@@ -483,7 +483,7 @@ which will give identical output to the above.
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
-**Crates:** `serde`, `strum_macros`
+**Crates:** `serde`, `serde_with`, `strum_macros`
 
 **Type:** Program
 
@@ -760,6 +760,20 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [dethagomizer.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs)
+
+---
+
+### Script: download_demo_dir.rs
+
+**Description:**  Downloader for the `demo` directory. Basics courtesy of GPT.
+
+**Purpose:** Download the demo directory from Github main.
+
+**Crates:** `reqwest`, `rfd`, `serde`
+
+**Type:** Program
+
+**Link:** [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_dir.rs)
 
 ---
 
@@ -1589,7 +1603,7 @@ which will give identical output to the above.
 ### Script: git_dependency.rs
 
 **Description:**  Demo the use of git dependencies in the toml block. Local path dependencies
- work the same way, e.g. `thag_rs = { git = "https://github.com/durbanlegend/thag_rs" },
+ work the same way, e.g. `thag_rs = { path = "<path/to-project>/thag_rs" },
  but obviously the path literal will be specific to your environment.
 
 **Purpose:** Demo `git` dependencies, explain `path` dependencies.
@@ -1806,20 +1820,6 @@ which will give identical output to the above.
 **Type:** Snippet
 
 **Link:** [input_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_to_ast.rs)
-
----
-
-### Script: install_demo_gpt.rs
-
-**Description:**  Prototype downloader for the demo/ directory.
-
-**Purpose:** Prototype a possible solution.
-
-**Crates:** `reqwest`, `rfd`, `serde`
-
-**Type:** Program
-
-**Link:** [install_demo_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/install_demo_gpt.rs)
 
 ---
 
@@ -2835,7 +2835,10 @@ which will give identical output to the above.
 
 **Description:**  Converts embedded manifest format from `rust-script` to `thag`.
 
- E.g. `cat <path_to_rust_script_file> | thag -qq demo/thag_from_rust_script.rs | thag -s`
+ E.g. `cat <path_to_rust_script_file> | thag -qq demo/thag_from_rust_script.rs | thag -s [-- [options] [args] ...]`
+
+ Place any command-line options and/or arguments for the script at the end after a -- as shown.
+
 
 **Purpose:** Convenience for any `rust-script` user who wants to try out `thag`.
 
@@ -3127,28 +3130,6 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs)
-
----
-
-### Script: x.rs
-
-**Description:**  Rust port of C++ example from `https://github.com/ZiCog/fibo_4784969` - so named because
- F(4784969) is the first number in the Fibonacci sequence that has one million decimal
- digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
- edging out `fibo` at this scale.
-
- The `rug` crate runs blindingly fast, but I for one found it very difficult to get this to compile.
-
- E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
-
-
-**Purpose:** Demo 3 very fast Fibonacci algorithms (F(4784969) in 0.33 to 0.58 sec for me).
-
-**Crates:** `rug`
-
-**Type:** Program
-
-**Link:** [x.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/x.rs)
 
 ---
 

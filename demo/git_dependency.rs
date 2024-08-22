@@ -6,7 +6,7 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs"}
 */
 
 /// Demo the use of git dependencies in the toml block. Local path dependencies
-/// work the same way, e.g. `thag_rs = { git = "https://github.com/durbanlegend/thag_rs" },
+/// work the same way, e.g. `thag_rs = { path = "<path/to-project>/thag_rs" },
 /// but obviously the path literal will be specific to your environment.
 //# Purpose: Demo `git` dependencies, explain `path` dependencies.
 use thag_rs::colors;

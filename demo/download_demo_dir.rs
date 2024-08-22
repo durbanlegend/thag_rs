@@ -4,14 +4,18 @@ log = "0.4.21"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 reqwest = { version = "0.12.4", features = ["blocking", "json"] }
 rfd = "0.14.1"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
+thag_rs = "0.1.0"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+[[bin]]
+name = "thag"
+
 */
 
-/// Prototype downloader for the demo/ directory.
-//# Purpose: Prototype a possible solution.
+/// Downloader for the `demo` directory. Basics courtesy of GPT.
+//# Purpose: Download the demo directory from Github main.
 use reqwest::blocking::get;
 use rfd::FileDialog;
 use serde::Deserialize;
@@ -61,6 +65,8 @@ Are you sure you want to proceed? Y/n",
             std::io::stdin()
                 .read_line(&mut input)
                 .expect("error: unable to read user input");
+            // eprintln!("input=[{input}]");
+            let input = input.trim();
             chosen = input == "y" || input == "Y";
         }
         if chosen {

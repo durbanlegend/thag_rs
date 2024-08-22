@@ -16,7 +16,8 @@ fn main() {
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
     eprintln!("OUT_DIR={out_dir}");
     fs::create_dir_all(&out_dir).expect("Failed to create destination directory");
-    let dest_path = Path::new(&out_dir).join("generated_tests.rs");
+    let out_dir_path = &Path::new(&out_dir);
+    let dest_path = out_dir_path.join("generated_tests.rs");
     let mut file = fs::File::create(dest_path).expect("Failed to create generated_tests.rs");
 
     let demo_dir = Path::new("demo");
@@ -24,6 +25,12 @@ fn main() {
         demo_dir.exists() && demo_dir.is_dir(),
         "demo directory does not exist"
     );
+
+    // Define the source and destination paths
+    let dest_dir = &out_dir_path.join("../../../..").join("demo");
+
+    // Create the destination directory if it doesn't exist
+    fs::create_dir_all(dest_dir).expect("Failed to create demo directory");
 
     let skip_scripts_on_windows = [
         "crossbeam_channel_stopwatch.rs",

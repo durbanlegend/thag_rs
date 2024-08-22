@@ -114,7 +114,3 @@ dispatch-releases = false
 [[workspace.metadata.dist.extra-artifacts]]
 artifacts = ["demo.zip"]
 build = ["sh", "-c", "zip demo.zip demo/*"]
-#
-[[workspace.metadata.dist.extra-artifacts]]
-artifacts = ["cwd.txt"]
-build = ["sh", "-c", "pwd > cwd.txt"]

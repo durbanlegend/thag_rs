@@ -147,7 +147,7 @@ mod tests {
     fn test_nu_color_println_macro() {
         // Test the nu_color_println macro
         set_up();
-        let content = "Test message";
+        let content = "Test message from test_nu_color_println_macro";
         let output = format!("\u{1b}[1m{content}\u{1b}[0m");
         let style = nu_ansi_term::Style::new().bold();
         nu_color_println!(style, "{}", content);

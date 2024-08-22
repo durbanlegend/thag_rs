@@ -9,11 +9,16 @@ use std::path::Path;
 /// identify abandoned scripts. Given that there are so many of these scripts, avoid
 /// Cargo's default behaviour of running all tests in parallel. --test-threads=3 seems
 /// to work best on my MacBook Air M1.
-/// Suggested command: `RUST_LOG=thag_rs=debug cargo test --features=debug-logs -- --nocapture --test-threads=3
+/// Suggested command: `RUST_LOG=thag=debug cargo test --features=debug-logs -- --nocapture --test-threads=3
 /// You may want to adjust the test-threads value further depending on your hardware.
 fn main() {
     // Get the OUT_DIR environment variable
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
+    // Note: Cargo suppresses build output. I've tried log and env_logger, ChatGPT, Gemini, Stack Overflow etc.
+    // The only way it seems that it will display is looking in a *output file for
+    // println! and a *stderr file for eprintln! afterwards. -vv is suggested but
+    // doesn't seem to work. `find . -mtime 0 -name "*output" (or "*stderr") -ls`.
+    // https://doc.rust-lang.org/cargo/reference/build-scripts.html#outputs-of-the-build-script
     eprintln!("OUT_DIR={out_dir}");
     fs::create_dir_all(&out_dir).expect("Failed to create destination directory");
     let out_dir_path = &Path::new(&out_dir);
@@ -21,13 +26,15 @@ fn main() {
     let mut file = fs::File::create(dest_path).expect("Failed to create generated_tests.rs");
 
     let demo_dir = Path::new("demo");
+    eprintln!("source_path = demo_dir = {:#?}", demo_dir.canonicalize());
+
     assert!(
         demo_dir.exists() && demo_dir.is_dir(),
         "demo directory does not exist"
     );
 
     // Define the source and destination paths
-    let dest_dir = &out_dir_path.join("../../../..").join("demo");
+    let dest_dir = &out_dir_path.join("demo");
 
     // Create the destination directory if it doesn't exist
     fs::create_dir_all(dest_dir).expect("Failed to create demo directory");

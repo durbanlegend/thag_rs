@@ -5,5 +5,4 @@ history.txt
 obsolete/
 numbers.txt
 rs_stdin_history.json
-tests/assets/thag_repl_hist.txt
 hist_debug.json

@@ -19,6 +19,12 @@ repository = "https://github.com/durbanlegend/thag_rs"
 categories = ["command-line-utilities", "development-tools::build-utils"]
 keywords = ["REPL", "command-line", "eval", "runner", "script"]
 
+[package.metadata.wix]
+upgrade-guid = "FA5CCD40-AB09-488D-817D-867B69E10F7B"
+path-guid = "CCDE9D5F-06C2-42C2-8BF7-6EB41E46A496"
+license = false
+eula = false
+
 [dependencies]
 bitflags = "2.6.0"
 clap = { version = "4.5.16", features = ["cargo", "derive"] }
@@ -59,6 +65,11 @@ debug = true
 [profile.release]
 debug = false
 
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
 [lib]
 name = "thag_rs"
 path = "src/lib.rs"
@@ -76,3 +87,32 @@ env_logger = "0.11.5"
 sequential-test = "0.2.4"
 tempfile = "3.12.0"
 test-generator = "0.3.1"
+
+# Config for 'cargo dist'
+[workspace.metadata.dist]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.21.1"
+# CI backends to support
+ci = "github"
+# The installers to generate for each app
+installers = ["shell", "powershell", "msi"]
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+    "x86_64-pc-windows-msvc",
+]
+# Path that installers should place binaries in
+install-path = "CARGO_HOME"
+# Whether to install an updater program
+install-updater = false
+#
+[[workspace.metadata.dist.extra-artifacts]]
+artifacts = ["demo.zip"]
+build = ["sh", "-c", "zip demo.zip demo/*"]
+#
+[[workspace.metadata.dist.extra-artifacts]]
+artifacts = ["cwd.txt"]
+build = ["sh", "-c", "pwd > cwd.txt"]

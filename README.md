@@ -191,7 +191,9 @@ You can install `thag_rs` using `cargo install`:
 cargo install thag_rs
 ```
 ### Downloading the starter kit (demo directory)
-Use the following link and click on the button to download the directory as a zip file: [Download demo](https://test.ssgithub.com/?url=https://github.com/durbanlegend/thag_rs/tree/master/demo).
+You should be able to download `demo.zip` from Github. (I am new to `cargo-dist` which I'm  using to enable this feature in the same release as this update to the Readme, so if it doesn't work I'll make  corrections.)
+
+Failing that, use the following link and click on the button to download the directory as a zip file: [Download demo](https://test.ssgithub.com/?url=https://github.com/durbanlegend/thag_rs/tree/master/demo).
 
 If for any reason the link above doesn't work for you, try the following: [download-directory](https://download-directory.github.io/)
 and paste in the link [thag_rs/demo](https://github.com/durbanlegend/thag_rs/tree/master/demo).

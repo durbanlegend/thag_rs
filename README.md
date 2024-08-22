@@ -152,8 +152,16 @@ Hopefully the help screen is self-explanatory:
 
 You have the choice of installing `thag_rs` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run -- `.
 
-* Installing gives you speed out of the box and a simpler command-line interface without invoking Cargo yourself. You can download the demo library separately.
-* Cloning gives you easy access to the demo scripts library and the opportunity to make local changes or a fork. You can also use the flag `--features=debug-logs` with the environment variable `RUST_LOG=thag_rs=debug` to get debug logging.
+* Installing gives you speed out of the box and a simpler command-line interface without invoking Cargo yourself. You have a choice:
+```bash
+cargo install thag_rs
+```
+or choose an appropriate installer for your environment from the Github releases page `https://github.com/durbanlegend/thag_rs/releases`, as from `v0.1.1`.
+
+You can also download the starter kit of demo scripts as `demo.zip`
+from the same page.
+
+* Cloning gives you immediate access to the demo scripts library and the opportunity to make local changes or a fork. You can also use the flag `--features=debug-logs` with the environment variable `RUST_LOG=thag_rs=debug` to get debug logging.
 
 ## Overview
 
@@ -191,21 +199,11 @@ You can install `thag_rs` using `cargo install`:
 cargo install thag_rs
 ```
 ### Downloading the starter kit (demo directory)
-You should be able to download `demo.zip` from Github. (I am new to `cargo-dist` which I'm  using to enable this feature in the same release as this update to the Readme, so if it doesn't work I'll make  corrections.)
+As from `v0.1.1` can download `demo.zip` from `https://github.com/durbanlegend/thag_rs/releases`.
 
-Failing that, use the following link and click on the button to download the directory as a zip file: [Download demo](https://test.ssgithub.com/?url=https://github.com/durbanlegend/thag_rs/tree/master/demo).
-
-If for any reason the link above doesn't work for you, try the following: [download-directory](https://download-directory.github.io/)
-and paste in the link [thag_rs/demo](https://github.com/durbanlegend/thag_rs/tree/master/demo).
-
-Since we're relying on the kindness of strangers, we need a fallback. First that we can always link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
-One of the `rs_thag` demo files is [install_demo_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/install_demo_gpt.rs) which can download the whole directory.
-Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/install_demo_gpt.rs`, or just copy it and paste it into the `thag -d` editor and choose Ctrl-d to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
-
-Github doesn't make downloading parts of a project easy, so if you still have issues, check out the many other solutions offered in this
-[Stack Overflow discussion](https://stackoverflow.com/questions/7106012/download-a-single-folder-or-directory-from-a-github-repository).
-
-If all else fails, you can always clone the repo to get hold of the `demo` directory. And raise an issue on this repo.
+Note that you can also link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
+As a matter of interest, the `rs_thag` demo file [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/download_demo_dir.rs) can download the whole demo directory from Github.
+Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/download_demo_dir.rs`, or just copy it and paste it into the `thag -d` editor and choose Ctrl-d to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
 
 ## Usage
 Once installed, you can use the `thag` command from the command line. `thag` uses the clap crate to process command-line arguments including --help.
@@ -215,11 +213,10 @@ Here are some examples:
 ### Evaluating an expression
 #### Concise fast factorial calculation
 
-This panics beyond 34! due to using Rust primitives, but see `demo/factorial_dashu_product.rs` for arbitrarily big numbers:
-
 ```bash
 thag -e '(1..=34).product::<u128>()'
 ```
+This panics beyond 34! due to using Rust primitives, but see `demo/factorial_dashu_product.rs` for arbitrarily big numbers:
 
 #### Shoehorn a script into an expression, just because!
 ```bash
@@ -285,7 +282,7 @@ More informally, you can access the last 25 previous REPL commands or expression
 #### General notes on REPL
 All REPL files are created under the `rs_repl` subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust) so as not to clog up your system. Until such time as they are harvested by the OS you can display the locations and copy the files if desired.
 
-The REPL feature is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. You can overcome these limitations by using the `edit` mode instead, but by this point it's probably more convenient just to use the --stdin / -s feature instead, or save the source in a .rs file and run it from the command line.
+The REPL feature is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. You can overcome these limitations by using the REPL's `edit` mode instead, but by this point it's probably more convenient just to use the --stdin / -s feature or the --edit / -d feature instead, or save the source in a .rs file and run it from the command line.
 
 ## Features
 
@@ -316,7 +313,7 @@ GitHub Actions test each commit on `ubuntu-latest`, `macos-latest` and `windows-
 
 ## Why "thag"?
 
-After the late Thag Simmons. A stone-age power tool for the grug brained developer to beat Rust code into submission. Short, sharp, and it gets the job done.
+After the late Thag Simmons. A stone-age power tool for the grug brained developer to beat Rust code into submission. A short, sharp name, and it gets the job done.
 
 ## Related projects
 

@@ -109,7 +109,7 @@ install-path = "CARGO_HOME"
 # Whether to install an updater program
 install-updater = false
 # Trigger releases manually instead of on tag-push (DHF temp)
-dispatch-releases = true
+dispatch-releases = false
 #
 [[workspace.metadata.dist.extra-artifacts]]
 artifacts = ["demo.zip"]

@@ -1708,7 +1708,7 @@ dependencies = [
 
 [[package]]
 name = "thag_rs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bitflags 2.6.0",
  "cargo_toml",

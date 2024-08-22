@@ -1,6 +1,6 @@
 [package]
 name = "thag_rs"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 description = "A versatile script runner and REPL for Rust snippets, expressions and programs"
 edition = "2021"
@@ -109,7 +109,7 @@ install-path = "CARGO_HOME"
 # Whether to install an updater program
 install-updater = false
 # Trigger releases manually instead of on tag-push (DHF temp)
-dispatch-releases = false
+# dispatch-releases = false
 #
 [[workspace.metadata.dist.extra-artifacts]]
 artifacts = ["demo.zip"]

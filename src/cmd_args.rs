@@ -1,4 +1,4 @@
-use crate::errors::BuildRunError;
+use crate::errors::ThagError;
 use crate::RS_SUFFIX;
 
 use bitflags::bitflags;
@@ -98,7 +98,7 @@ pub fn get_args() -> Cli {
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
-            return Err(Box::new(BuildRunError::Command(format!(
+            return Err(Box::new(ThagError::Command(format!(
                 "Script name {script} must end in {RS_SUFFIX}"
             ))));
         }
@@ -108,7 +108,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn E
         && !proc_flags.contains(ProcFlags::EDIT)
         && !proc_flags.contains(ProcFlags::LOOP)
     {
-        return Err(Box::new(BuildRunError::Command(
+        return Err(Box::new(ThagError::Command(
             "Missing script name".to_string(),
         )));
     }
@@ -224,11 +224,11 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         let formatted = proc_flags.to_string();
         let parsed = formatted
             .parse::<ProcFlags>()
-            .map_err(|e| BuildRunError::FromStr(e.to_string()))?;
+            .map_err(|e| ThagError::FromStr(e.to_string()))?;
 
         assert_eq!(proc_flags, parsed);
 
-        Ok::<ProcFlags, BuildRunError>(proc_flags)
+        Ok::<ProcFlags, ThagError>(proc_flags)
     }?;
     Ok(proc_flags)
 }

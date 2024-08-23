@@ -8,7 +8,7 @@ use strum::ParseError as StrumParseError;
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
 
-use thag_rs::errors::BuildRunError;
+use thag_rs::errors::ThagError;
 
 // Set environment variables before running tests
 fn set_up() {
@@ -21,10 +21,10 @@ fn set_up() {
 fn test_io_error() {
     set_up();
     let io_err = io::Error::new(io::ErrorKind::Other, "I/O error occurred");
-    let build_run_err: BuildRunError = io_err.into();
+    let build_run_err: ThagError = io_err.into();
     match build_run_err {
-        BuildRunError::Io(_) => (),
-        _ => panic!("Expected BuildRunError::Io variant"),
+        ThagError::Io(_) => (),
+        _ => panic!("Expected ThagError::Io variant"),
     }
 }
 
@@ -35,10 +35,10 @@ fn test_clap_error() {
         .arg(Arg::new("arg").required(true))
         .try_get_matches_from(vec!["test"])
         .unwrap_err();
-    let build_run_err: BuildRunError = clap_err.into();
+    let build_run_err: ThagError = clap_err.into();
     match build_run_err {
-        BuildRunError::ClapError(_) => (),
-        _ => panic!("Expected BuildRunError::ClapError variant"),
+        ThagError::ClapError(_) => (),
+        _ => panic!("Expected ThagError::ClapError variant"),
     }
 }
 
@@ -46,10 +46,10 @@ fn test_clap_error() {
 fn test_strum_parse_error() {
     set_up();
     let strum_err = StrumParseError::VariantNotFound;
-    let build_run_err: BuildRunError = strum_err.into();
+    let build_run_err: ThagError = strum_err.into();
     match build_run_err {
-        BuildRunError::StrumParse(_) => (),
-        _ => panic!("Expected BuildRunError::StrumParse variant"),
+        ThagError::StrumParse(_) => (),
+        _ => panic!("Expected ThagError::StrumParse variant"),
     }
 }
 
@@ -58,10 +58,10 @@ fn test_toml_de_error() {
     set_up();
     let toml_str = "invalid = toml";
     let toml_err: Result<toml::Value, TomlDeError> = toml::from_str(toml_str);
-    let build_run_err: BuildRunError = toml_err.unwrap_err().into();
+    let build_run_err: ThagError = toml_err.unwrap_err().into();
     match build_run_err {
-        BuildRunError::TomlDe(_) => (),
-        _ => panic!("Expected BuildRunError::TomlDe variant"),
+        ThagError::TomlDe(_) => (),
+        _ => panic!("Expected ThagError::TomlDe variant"),
     }
 }
 
@@ -70,10 +70,10 @@ fn test_toml_ser_error() {
     set_up();
     let value = toml::Value::String("test".to_string());
     let toml_err: Result<String, TomlSerError> = toml::to_string(&value);
-    let build_run_err: BuildRunError = toml_err.unwrap_err().into();
+    let build_run_err: ThagError = toml_err.unwrap_err().into();
     match build_run_err {
-        BuildRunError::TomlSer(_) => (),
-        _ => panic!("Expected BuildRunError::TomlSer variant"),
+        ThagError::TomlSer(_) => (),
+        _ => panic!("Expected ThagError::TomlSer variant"),
     }
 }
 
@@ -81,10 +81,10 @@ fn test_toml_ser_error() {
 fn test_from_string() {
     set_up();
     let error_message = String::from("This is a string error");
-    let build_run_err: BuildRunError = error_message.into();
+    let build_run_err: ThagError = error_message.into();
     match build_run_err {
-        BuildRunError::FromStr(_) => (),
-        _ => panic!("Expected BuildRunError::FromStr variant"),
+        ThagError::FromStr(_) => (),
+        _ => panic!("Expected ThagError::FromStr variant"),
     }
 }
 
@@ -92,19 +92,19 @@ fn test_from_string() {
 fn test_os_string() {
     set_up();
     let os_string = OsString::from("This is an OsString error");
-    let build_run_err = BuildRunError::OsString(os_string.clone());
+    let build_run_err = ThagError::OsString(os_string.clone());
     match build_run_err {
-        BuildRunError::OsString(os_str) => {
+        ThagError::OsString(os_str) => {
             assert_eq!(os_str, os_string);
         }
-        _ => panic!("Expected BuildRunError::OsString variant"),
+        _ => panic!("Expected ThagError::OsString variant"),
     }
 }
 
 #[test]
 fn test_display() {
     set_up();
-    let build_run_err = BuildRunError::Command(String::from("Command error occurred"));
+    let build_run_err = ThagError::Command(String::from("Command error occurred"));
     assert_eq!(format!("{}", build_run_err), "Command error occurred\n");
 }
 
@@ -112,16 +112,16 @@ fn test_display() {
 fn test_source() {
     set_up();
     let io_err = io::Error::new(io::ErrorKind::Other, "I/O error occurred");
-    let build_run_err: BuildRunError = io_err.into();
+    let build_run_err: ThagError = io_err.into();
     assert!(build_run_err.source().is_some());
 }
 
 #[test]
 fn test_cancelled() {
     set_up();
-    let build_run_err = BuildRunError::Cancelled;
+    let build_run_err = ThagError::Cancelled;
     match build_run_err {
-        BuildRunError::Cancelled => (),
-        _ => panic!("Expected BuildRunError::Cancelled variant"),
+        ThagError::Cancelled => (),
+        _ => panic!("Expected ThagError::Cancelled variant"),
     }
 }

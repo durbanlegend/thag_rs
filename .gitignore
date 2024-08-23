@@ -6,3 +6,6 @@ obsolete/
 numbers.txt
 rs_stdin_history.json
 hist_debug.json
+*.svg
+flames/firestorm.html
+profile.json

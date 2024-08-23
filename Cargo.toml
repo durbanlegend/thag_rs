@@ -57,6 +57,7 @@ ratatui = "0.28.0"
 cargo_toml = "0.20.4"
 serde_json = "1.0.125"
 serde_with = "3.9.0"
+firestorm = { version = "0.5.1", features = ["enable_system_time"] }
 
 [profile.dev]
 opt-level = 1 # Use slightly better optimizations.

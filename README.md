@@ -47,6 +47,15 @@ thag demo/iced_tour.rs
 ```
 This will `cargo build` and run the tour of the `iced` cross-platform GUI library. The script is taken from the published examples in the `iced` crate.
 
+To run the script directly, you can add a shebang of the form `#! /usr/bin/env thag` on line 1. You need to give the script execute permissions in order to run it. E.g. (*nix):
+
+```bash
+chmod ug+x demo/fib_basic.rs
+demo/fib_basic.rs -- 10
+```
+
+But why bother to build a script via a shebang when you can make it a command as Rust intended? See `As an executable` below.
+
 ### * As a REPL (Read-Evaluate-Print Loop):
 
 ```bash
@@ -138,6 +147,17 @@ You can of course use an OS command to rename the executable if you so desire.
 
 ![XBuild](assets/xrenamet.png)
 
+However, it's probably best to rename your source in the first place so you don't lose track of where the command came from if you want to update it.
+
+I recommend building an executable over using a shebang because it will be faster on several counts:
+
+- It cuts out the middleman (`thag`)
+- You only incur the build overhead once up front
+- It will build in release mode, making it much faster to run
+- You can use a tool like `llvm-strip` to strip sections from the executable
+
+and more convenient on one count: it dispenses with the need for the `--` argument separator because `thag` is no longer being invoked first, so we don't need to separate two sets of arguments.
+
 Putting it to use:
 
 ![XBuild](assets/xuset.png)
@@ -147,6 +167,8 @@ Putting it to use:
 Hopefully the help screen is self-explanatory:
 
 ![Help](assets/helpt.png)
+
+You can enter `thag` arguments and options in any order, as long as you separate them from any script arguments with a `--` separator.
 
 ### * Getting started:
 
@@ -222,7 +244,8 @@ This panics beyond 34! due to using Rust primitives, but see `demo/factorial_das
 ```bash
 thag -e "$(cat demo/fizz_buzz_gpt.rs)"
 ```
-This shows that the `--expr` flag will not only evaluate an expression, it will also accept a valid Rust program or set of statements.
+The `--expr` flag will not only evaluate an expression, it will also accept a valid Rust program or set of statements.
+The different ways `thag` accepts code are as far as posssible "orthagonal" to the common way it processes them.
 
 #### Run a script in quiet mode but show timings
 ```bash
@@ -313,7 +336,7 @@ GitHub Actions test each commit on `ubuntu-latest`, `macos-latest` and `windows-
 
 ## Why "thag"?
 
-After the late Thag Simmons. A stone-age power tool for the grug brained developer to beat Rust code into submission. A short, sharp name, and it gets the job done.
+After the late Thag Simmons. A stone-age power tool for the grug brained developer to beat Rust code into submission. Why type long name when short sharp name do trick?
 
 ## Related projects
 

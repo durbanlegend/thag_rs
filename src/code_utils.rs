@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
-use crate::errors::BuildRunError;
+use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::{debug_timings, Ast, BuildState};
@@ -9,6 +9,7 @@ use crate::{debug_log, nu_color_println, nu_resolve_style};
 use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use cargo_toml::Manifest;
+use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use quote::quote;
 use regex::Regex;
@@ -68,7 +69,7 @@ pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
 /// Read the contents of a file. For reading the Rust script.
 /// # Errors
 /// Will return `Err` if there is any file system error reading from the file path.
-pub fn read_file_contents(path: &Path) -> Result<String, BuildRunError> {
+pub fn read_file_contents(path: &Path) -> Result<String, ThagError> {
     debug_log!("Reading from {path:?}");
     Ok(fs::read_to_string(path)?)
 }
@@ -444,7 +445,7 @@ pub fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
         .clone()
         .into_os_string()
         .into_string()
-        .map_err(BuildRunError::OsString)?;
+        .map_err(ThagError::OsString)?;
     debug_log!("path_to_str={string}");
     Ok(string)
 }
@@ -679,7 +680,7 @@ Ok(())
 /// Write the source to the destination source-code path.
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
-pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, BuildRunError> {
+pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, ThagError> {
     let mut to_rs_file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -897,7 +898,8 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 /// Will return `Err` if there is any error accessing path to source file
 /// # Panics
 /// Will panic if the `rustfmt` failed.
-pub fn rustfmt(build_state: &BuildState) -> Result<(), BuildRunError> {
+pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
+    profile_fn!(rustfmt);
     let target_rs_path = build_state.target_dir_path.clone();
     let target_rs_path = target_rs_path.join(&build_state.source_name);
     let source_path_str = target_rs_path

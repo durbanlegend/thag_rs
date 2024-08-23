@@ -4,7 +4,7 @@ use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
 
 #[derive(Debug)]
-pub enum BuildRunError {
+pub enum ThagError {
     Cancelled,                     // For user electing to cancel
     ClapError(clap::error::Error), // For clap errors
     Command(String),               // For errors during Cargo build or program execution
@@ -19,93 +19,91 @@ pub enum BuildRunError {
     Toml(cargo_toml::Error),       // For cargo_toml errors
 }
 
-impl BuildRunError {}
+impl ThagError {}
 
-impl From<io::Error> for BuildRunError {
+impl From<io::Error> for ThagError {
     fn from(err: io::Error) -> Self {
-        BuildRunError::Io(err)
+        ThagError::Io(err)
     }
 }
 
-impl From<clap::error::Error> for BuildRunError {
+impl From<clap::error::Error> for ThagError {
     fn from(err: clap::error::Error) -> Self {
-        BuildRunError::ClapError(err)
+        ThagError::ClapError(err)
     }
 }
 
-impl From<strum::ParseError> for BuildRunError {
+impl From<strum::ParseError> for ThagError {
     fn from(err: strum::ParseError) -> Self {
-        BuildRunError::StrumParse(err)
+        ThagError::StrumParse(err)
     }
 }
 
-impl From<TomlDeError> for BuildRunError {
+impl From<TomlDeError> for ThagError {
     fn from(err: TomlDeError) -> Self {
-        BuildRunError::TomlDe(err)
+        ThagError::TomlDe(err)
     }
 }
 
-impl From<TomlSerError> for BuildRunError {
+impl From<TomlSerError> for ThagError {
     fn from(err: TomlSerError) -> Self {
-        BuildRunError::TomlSer(err)
+        ThagError::TomlSer(err)
     }
 }
 
-impl From<cargo_toml::Error> for BuildRunError {
+impl From<cargo_toml::Error> for ThagError {
     fn from(err: cargo_toml::Error) -> Self {
-        BuildRunError::Toml(err)
+        ThagError::Toml(err)
     }
 }
 
-impl From<String> for BuildRunError {
+impl From<String> for ThagError {
     fn from(err_msg: String) -> Self {
-        BuildRunError::FromStr(err_msg)
+        ThagError::FromStr(err_msg)
     }
 }
 
-impl std::fmt::Display for BuildRunError {
+impl std::fmt::Display for ThagError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuildRunError::Cancelled => write!(f, "Cancelled"),
-            BuildRunError::ClapError(e) => write!(f, "{e:?}"),
-            BuildRunError::Command(s)
-            | BuildRunError::FromStr(s)
-            | BuildRunError::NoneOption(s) => {
+            ThagError::Cancelled => write!(f, "Cancelled"),
+            ThagError::ClapError(e) => write!(f, "{e:?}"),
+            ThagError::Command(s) | ThagError::FromStr(s) | ThagError::NoneOption(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
                 Ok(())
             }
-            BuildRunError::Io(e) => write!(f, "{e:?}"),
-            BuildRunError::OsString(o) => {
+            ThagError::Io(e) => write!(f, "{e:?}"),
+            ThagError::OsString(o) => {
                 writeln!(f, "{o:#?}")?;
                 Ok(())
             }
-            BuildRunError::StrumParse(e) => write!(f, "{e:?}"),
-            BuildRunError::TomlDe(e) => write!(f, "{e:?}"),
-            BuildRunError::TomlSer(e) => write!(f, "{e:?}"),
-            BuildRunError::Toml(e) => write!(f, "{e:?}"),
+            ThagError::StrumParse(e) => write!(f, "{e:?}"),
+            ThagError::TomlDe(e) => write!(f, "{e:?}"),
+            ThagError::TomlSer(e) => write!(f, "{e:?}"),
+            ThagError::Toml(e) => write!(f, "{e:?}"),
         }
     }
 }
 
-impl Error for BuildRunError {
+impl Error for ThagError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             // The cause is the underlying implementation error type. Is implicitly
             // cast to the trait object `&error::Error`. This works because the
             // underlying type already implements the `Error` trait.
-            BuildRunError::Command(ref _e)
-            | BuildRunError::FromStr(ref _e)
-            | BuildRunError::NoneOption(ref _e) => Some(self),
-            BuildRunError::ClapError(ref e) => Some(e),
-            BuildRunError::Io(ref e) => Some(e),
-            BuildRunError::OsString(ref _o) => Some(self),
-            BuildRunError::StrumParse(ref e) => Some(e),
-            BuildRunError::TomlDe(ref e) => Some(e),
-            BuildRunError::TomlSer(ref e) => Some(e),
-            BuildRunError::Toml(ref e) => Some(e),
-            BuildRunError::Cancelled => Some(self),
+            ThagError::Command(ref _e)
+            | ThagError::FromStr(ref _e)
+            | ThagError::NoneOption(ref _e) => Some(self),
+            ThagError::ClapError(ref e) => Some(e),
+            ThagError::Io(ref e) => Some(e),
+            ThagError::OsString(ref _o) => Some(self),
+            ThagError::StrumParse(ref e) => Some(e),
+            ThagError::TomlDe(ref e) => Some(e),
+            ThagError::TomlSer(ref e) => Some(e),
+            ThagError::Toml(ref e) => Some(e),
+            ThagError::Cancelled => Some(self),
         }
     }
 }

@@ -9,7 +9,7 @@ thag_rs = "0.1.0"
 ///
 /// E.g. `thag_rs -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 //# Purpose: Prototype CLI.
-use thag_rs::errors::BuildRunError;
+use thag_rs::errors::ThagError;
 use thag_rs::log;
 use thag_rs::logging::Verbosity;
 use thag_rs::RS_SUFFIX;
@@ -60,6 +60,13 @@ pub struct Cli {
     /// Don't run the script after generating and building
     #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin"]))]
     pub norun: bool,
+    /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`
+    #[arg(short = 'x', long)]
+    pub executable: bool,
+    /// Cargo check script if compiled file is stale. Less thorough than build
+    /// Used by integration test to check all demo scripts
+    #[arg(short, long, conflicts_with_all(["build", "executable"]))]
+    pub check: bool,
     /// Evaluate a quoted expression on the fly
     #[arg(short, long = "expr", conflicts_with_all(["generate", "build"]))]
     pub expression: Option<String>,
@@ -87,25 +94,41 @@ pub struct Cli {
     /// Confirm that multiple main methods are valid for this script
     #[arg(short, long)]
     pub multimain: bool,
-    /// Cargo check script if compiled file is stale. Less thorough than build
-    /// Used by integration test to check all demo scripts
-    #[arg(short, long, conflicts_with_all(["build", "executable"]))]
-    pub check: bool,
-    /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`
-    #[arg(short = 'x', long)]
-    pub executable: bool,
-    /// Set verbose mode
-    #[arg(short, long)]
-    pub verbose: bool,
-    /// Suppress unnecessary output, double up to show only errors
-    #[arg(short, long, action = clap::ArgAction::Count, conflicts_with("verbose"))]
-    pub quiet: u8,
-    /// Set normal verbosity, only needed to override config value
-    #[arg(short = 'N', long = "normal verbosity")]
-    pub normal: bool,
     /// Display timings
     #[arg(short, long)]
     pub timings: bool,
+    /// Set verbose mode
+    #[arg(short, long)]
+    pub verbose: bool,
+    /// Set normal verbosity, only needed to override config value
+    #[arg(short = 'N', long = "normal verbosity")]
+    pub normal: bool,
+    /// Suppress unnecessary output, double up to show only errors
+    #[arg(short, long, action = clap::ArgAction::Count, conflicts_with("verbose"))]
+    pub quiet: u8,
+    /// Strip double quotes from string result of expression (true/false). Default: config value / false.
+    // #[arg(
+    //     short,
+    //     long,
+    //     // require_equals = true,
+    //     action = clap::ArgAction::Set,
+    //     num_args = 0..=1,
+    //     default_missing_value = None,
+    //     default_value = "Some(true)",
+    //     // required = false,
+    //     conflicts_with("multimain")
+    // )]
+    // pub unquote: Option<bool>,
+    #[arg(
+        short,
+        long,
+        // require_equals = true,
+        action = clap::ArgAction::Set,
+        num_args = 0..=1,
+        default_missing_value = "true",  // Default to true if -u is present but no value is given
+        conflicts_with("multimain")
+    )]
+    pub unquote: Option<bool>,
 }
 
 // Getter for clap command-line arguments
@@ -116,7 +139,7 @@ pub fn get_args() -> Cli {
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
-            return Err(Box::new(BuildRunError::Command(format!(
+            return Err(Box::new(ThagError::Command(format!(
                 "Script name must end in {RS_SUFFIX}"
             ))));
         }
@@ -125,7 +148,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn E
         && !proc_flags.contains(ProcFlags::STDIN)
         && !proc_flags.contains(ProcFlags::EDIT)
     {
-        return Err(Box::new(BuildRunError::Command(
+        return Err(Box::new(ThagError::Command(
             "Missing script name".to_string(),
         )));
     }
@@ -143,21 +166,21 @@ bitflags! {
         const BUILD = 2;
         const FORCE = 4;
         const RUN = 8;
-        const ALL = 16;
-        const VERBOSE = 32;
-        const TIMINGS = 64;
+        const NORUN = 16;
+        const EXECUTABLE = 32;
+        const CHECK = 64;
         const REPL = 128;
         const EXPR = 256;
         const STDIN = 512;
         const EDIT = 1024;
-        const QUIET = 2048;
-        const QUIETER = 4096;
-        const MULTI = 8192;
-        const NORUN = 16384;
-        const EXECUTABLE = 32768;
-        const LOOP = 65536;
-        const CHECK = 131_072;
-        const NORMAL = 262_144;
+        const LOOP = 2048;
+        const MULTI = 4096;
+        const TIMINGS = 8192;
+        const VERBOSE = 16384;
+        const NORMAL = 32768;
+        const QUIET = 65536;
+        const QUIETER = 131_072;
+        const UNQUOTE = 262_144;
     }
 }
 
@@ -217,13 +240,6 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
             proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true)
         };
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
-        // eprintln!("Before processing ALL, proc_flags={proc_flags:#?}");
-        // if proc_flags.contains(ProcFlags::ALL) {
-        //     proc_flags.set(ProcFlags::GENERATE, true);
-        //     proc_flags.set(ProcFlags::BUILD, true);
-        // } else {
-        //     proc_flags.set(ProcFlags::ALL, args.generate & args.build);
-        // }
         eprintln!("After processing ALL, proc_flags={proc_flags:#?}");
         proc_flags.set(ProcFlags::REPL, args.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);
@@ -239,11 +255,11 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         let formatted = proc_flags.to_string();
         let parsed = formatted
             .parse::<ProcFlags>()
-            .map_err(|e| BuildRunError::FromStr(e.to_string()))?;
+            .map_err(|e| ThagError::FromStr(e.to_string()))?;
 
         assert_eq!(proc_flags, parsed);
 
-        Ok::<ProcFlags, BuildRunError>(proc_flags)
+        Ok::<ProcFlags, ThagError>(proc_flags)
     }?;
     Ok(proc_flags)
 }
@@ -275,6 +291,8 @@ fn main() {
     if opt.executable {
         log!(Verbosity::Normal, "Executable option selected");
     }
+
+    log!(Verbosity::Normal, "Unquote={:#?}", opt.unquote);
 
     log!(Verbosity::Normal, "Script to run: {:?}", opt.script);
     if !opt.args.is_empty() {

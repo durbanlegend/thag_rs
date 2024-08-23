@@ -20,10 +20,12 @@
         or --manifest / -M
         Include an option to include or exclude quotes on returned strings.
         Maybe make it a command-line option too.
-        Add download demos option, see prototype demo/install_demo_gpt.rs
+        Add option to strip symbols (defaut true?). LTO?
+- [ ]  Config option for formatting main
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
-- [ ]  Publish to crates.io.
-- [ ]  Try cargo-dist
+- [ ]  -vv for debug mode
+- [ ]  Firestorm example
+- [ ]  TOML merge
 - [ ]  grep png README.md | cargo run --features=debug-logs -- -v -B 'use regex::Regex; let re = Regex::new(r"\w+.png").unwrap();' -l 'println!("{}", re.find(&line).unwrap().as_str())' | sort
        grep -Eo '[a-zA-Z0-9_]+\.png' README.md
        https://download-directory.github.io/?url=https://github.com/durbanlegend/thag_rs/tree/14d31159c42249f6aa0486f500de209438b06b8f/demo

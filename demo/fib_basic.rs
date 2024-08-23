@@ -1,4 +1,4 @@
-#! /usr/bin/env thag_rs
+#! /usr/bin/env thag
 /*[toml]
 [dependencies]
 itertools = "0.12.1"

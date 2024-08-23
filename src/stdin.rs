@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::errors::BuildRunError;
+use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
 
@@ -250,7 +250,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
                     ctrl: true,
                     ..
                 } => {
-                    return Err(Box::new(BuildRunError::Cancelled));
+                    return Err(Box::new(ThagError::Cancelled));
                 }
                 Input {
                     key: Key::Char('d'),

@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::debug_log;
-use crate::errors::BuildRunError;
+use crate::errors::ThagError;
 use crate::logging::Verbosity;
 use crate::modified_since_compiled;
 use crate::DYNAMIC_SUBDIR;
@@ -13,6 +13,7 @@ use crate::TOML_NAME;
 use crate::{log, PACKAGE_NAME};
 
 use cargo_toml::Manifest;
+use firestorm::profile_fn;
 use home::home_dir;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
@@ -105,7 +106,7 @@ impl BuildState {
         let build_exe = proc_flags.contains(ProcFlags::EXECUTABLE);
         let maybe_script = script_state.get_script();
         let Some(script) = maybe_script.clone() else {
-            return Err(Box::new(BuildRunError::NoneOption(
+            return Err(Box::new(ThagError::NoneOption(
                 "No script specified".to_string(),
             )));
         };
@@ -113,12 +114,12 @@ impl BuildState {
         let path = Path::new(&script);
         debug_log!("path={path:#?}");
         let Some(filename) = path.file_name() else {
-            return Err(Box::new(BuildRunError::NoneOption(
+            return Err(Box::new(ThagError::NoneOption(
                 "No filename specified".to_string(),
             )));
         };
         let Some(source_name) = filename.to_str() else {
-            return Err(Box::new(BuildRunError::NoneOption(
+            return Err(Box::new(ThagError::NoneOption(
                 "Error converting filename to a string".to_string(),
             )));
         };
@@ -127,7 +128,7 @@ impl BuildState {
         debug_log!("source_name={source_name}");
         let source_stem = {
             let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
-                return Err(Box::new(BuildRunError::Command(format!(
+                return Err(Box::new(ThagError::Command(format!(
                     "Error stripping suffix from {}",
                     source_name
                 ))));
@@ -159,7 +160,7 @@ impl BuildState {
         let source_path = script_path.canonicalize()?;
         debug_log!("source_path={source_path:#?}");
         if !source_path.exists() {
-            return Err(Box::new(BuildRunError::Command(format!(
+            return Err(Box::new(ThagError::Command(format!(
                 "No script named {} or {} in path {source_path:?}",
                 source_stem, source_name
             ))));
@@ -302,6 +303,7 @@ pub fn debug_timings(start: &Instant, process: &str) {
 #[inline]
 /// Display method timings when either the --verbose or --timings option is chosen.
 pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
+    profile_fn!(display_timings);
     let dur = start.elapsed();
     let msg = format!("{process} in {}.{}s", dur.as_secs(), dur.subsec_millis());
 

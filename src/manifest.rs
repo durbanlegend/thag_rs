@@ -12,7 +12,7 @@ use std::time::Instant;
 use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 use crate::colors::{nu_resolve_style, MessageLevel};
 use crate::debug_log;
-use crate::errors::BuildRunError;
+use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::{debug_timings, escape_path_for_windows, Ast, BuildState};
@@ -71,7 +71,7 @@ See below for how to avoid this and speed up future builds.
             .map_while(Result::ok)
             .next()
             .ok_or_else(|| {
-                Box::new(BuildRunError::Command(format!(
+                Box::new(ThagError::Command(format!(
                     "Something went wrong with Cargo search for [{dep_crate}]"
                 )))
             })?
@@ -80,7 +80,7 @@ See below for how to avoid this and speed up future builds.
         error_msg.lines().for_each(|line| {
             debug_log!("{line}");
         });
-        return Err(Box::new(BuildRunError::Command(format!(
+        return Err(Box::new(ThagError::Command(format!(
             "Cargo search failed for [{dep_crate}]"
         ))));
     };
@@ -91,7 +91,7 @@ See below for how to avoid this and speed up future builds.
         Ok((name, version)) => {
             if name != dep_crate && name.replace('-', "_") != dep_crate {
                 debug_log!("First line of cargo search for crate {dep_crate} found non-matching crate {name}");
-                return Err(Box::new(BuildRunError::Command(format!(
+                return Err(Box::new(ThagError::Command(format!(
                     "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"
                 ))));
             }
@@ -144,7 +144,7 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>>
         (String::from(name), String::from(version))
     } else {
         log!(Verbosity::Quieter, "Not a valid Cargo dependency format.");
-        return Err(Box::new(BuildRunError::Command(
+        return Err(Box::new(ThagError::Command(
             "Not a valid Cargo dependency format".to_string(),
         )));
     };
@@ -154,9 +154,7 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>>
 /// Retrieve the default manifest from the `BuildState` instance.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
-pub fn default_manifest_from_build_state(
-    build_state: &BuildState,
-) -> Result<Manifest, BuildRunError> {
+pub fn default_manifest_from_build_state(build_state: &BuildState) -> Result<Manifest, ThagError> {
     let source_stem = &build_state.source_stem;
     let source_name = &build_state.source_name;
     let binding = build_state.target_dir_path.join(source_name);
@@ -168,7 +166,7 @@ pub fn default_manifest_from_build_state(
 /// Parse the default manifest from a string template.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
-pub fn default(source_stem: &str, gen_src_path: &str) -> Result<Manifest, BuildRunError> {
+pub fn default(source_stem: &str, gen_src_path: &str) -> Result<Manifest, ThagError> {
     let cargo_manifest = format!(
         r##"[package]
 name = "{}"
@@ -366,7 +364,7 @@ fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, 
         let (dep_name, dep) = if let Ok((dep_name, version)) = cargo_search_result {
             (dep_name, Dependency::Simple(version))
         } else {
-            // return Err(Box::new(BuildRunError::Command(format!(
+            // return Err(Box::new(ThagError::Command(format!(
             //     "Cargo search couldn't find crate [{dep_name}]"
             // ))));
             log!(

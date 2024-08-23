@@ -32,7 +32,7 @@ use std::error::Error;
 use std::io::{self, IsTerminal};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
-use thag_rs::errors::BuildRunError;
+use thag_rs::errors::ThagError;
 
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {
@@ -101,7 +101,7 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
                     ..
                 } => {
                     reset_term(term)?;
-                    return Err(Box::new(BuildRunError::Cancelled));
+                    return Err(Box::new(ThagError::Cancelled));
                 }
                 Input {
                     key: Key::Char('d'),

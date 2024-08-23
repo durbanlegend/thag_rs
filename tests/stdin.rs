@@ -7,7 +7,7 @@ use std::process::{Command, Stdio};
 use thag_rs::colors::get_term_theme;
 use thag_rs::logging::Verbosity;
 use thag_rs::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
-use thag_rs::{edit, log, BuildRunError};
+use thag_rs::{edit, log, ThagError};
 use tui_textarea::TextArea;
 
 // Set environment variables before running tests
@@ -92,8 +92,8 @@ fn test_edit_stdin_quit() {
 
     assert!(result.is_err());
     assert!(matches!(
-        result.err().unwrap().downcast_ref::<BuildRunError>(),
-        Some(&BuildRunError::Cancelled)
+        result.err().unwrap().downcast_ref::<ThagError>(),
+        Some(&ThagError::Cancelled)
     ));
 }
 

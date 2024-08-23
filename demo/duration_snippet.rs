@@ -1,4 +1,4 @@
-#! /usr/bin/env thag_rs
+#! /usr/bin/env thag
 #![feature(duration_constructors)]
 
 //: Minimal snippet showing how to add nice additional constructors such as `from_weeks` (and days, hours and

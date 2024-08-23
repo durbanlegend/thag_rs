@@ -4,7 +4,7 @@ use crate::code_utils::{
     strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::colors::{nu_resolve_style, MessageLevel};
-use crate::errors::BuildRunError;
+use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
 use crate::manifest;
@@ -149,14 +149,14 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     } else if is_dynamic {
         let rs_source = if is_expr {
             let Some(rs_source) = args.expression.clone() else {
-                return Err(Box::new(BuildRunError::Command(
+                return Err(Box::new(ThagError::Command(
                     "Missing expression for --expr option".to_string(),
                 )));
             };
             rs_source
         } else if is_loop {
             let Some(filter) = args.filter.clone() else {
-                return Err(Box::new(BuildRunError::Command(
+                return Err(Box::new(ThagError::Command(
                     "Missing expression for --loop option".to_string(),
                 )));
             };
@@ -178,7 +178,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
         debug_log!("rs_source={rs_source}");
 
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
-            .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
+            .map_err(|_err| ThagError::FromStr("Error parsing rs_source".to_string()))?;
         build_state.rs_manifest = Some(rs_manifest);
 
         let maybe_ast = extract_ast(&rs_source);
@@ -199,7 +199,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
                 "Error parsing code: {:#?}",
                 maybe_ast
             );
-            Err(Box::new(BuildRunError::Command(
+            Err(Box::new(ThagError::Command(
                 "Error parsing code".to_string(),
             )))
         }
@@ -497,7 +497,7 @@ pub fn generate(
 /// Will return `Err` if there is an error composing the Cargo TOML path or running the Cargo build command.
 /// # Panics
 /// Will panic if the cargo build process fails to spawn or if it can't move the executable.
-pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), BuildRunError> {
+pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), ThagError> {
     let start_build = Instant::now();
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let quiet = proc_flags.contains(ProcFlags::QUIET);
@@ -508,7 +508,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
     debug_log!("BBBBBBBB In build");
 
     let Ok(cargo_toml_path_str) = code_utils::path_to_str(&build_state.cargo_toml_path) else {
-        return Err(BuildRunError::OsString(
+        return Err(ThagError::OsString(
             build_state.cargo_toml_path.clone().into_os_string(),
         ));
     };
@@ -610,7 +610,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Bui
             );
         }
     } else {
-        return Err(BuildRunError::Command(String::from("Build failed")));
+        return Err(ThagError::Command(String::from("Build failed")));
     };
 
     display_timings(&start_build, "Completed build", proc_flags);
@@ -627,7 +627,7 @@ pub fn run(
     proc_flags: &ProcFlags,
     args: &[String],
     build_state: &BuildState,
-) -> Result<(), BuildRunError> {
+) -> Result<(), ThagError> {
     let start_run = Instant::now();
     debug_log!("RRRRRRRR In run");
 

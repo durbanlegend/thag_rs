@@ -2,7 +2,7 @@
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast, extract_manifest};
 use crate::debug_log;
-use crate::errors::BuildRunError;
+use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::Ast;
@@ -391,7 +391,7 @@ pub fn run_repl(
         }
 
         let rs_manifest = extract_manifest(rs_source, Instant::now())
-            .map_err(|_err| BuildRunError::FromStr("Error parsing rs_source".to_string()))?;
+            .map_err(|_err| ThagError::FromStr("Error parsing rs_source".to_string()))?;
         context.build_state.rs_manifest = Some(rs_manifest);
 
         let maybe_ast = extract_ast(rs_source);
@@ -405,7 +405,7 @@ pub fn run_repl(
                 context.proc_flags,
                 &context.start,
             )
-            .map_err(|_err| BuildRunError::Command("Error processing expression".to_string()))?;
+            .map_err(|_err| ThagError::Command("Error processing expression".to_string()))?;
         } else {
             nu_color_println!(
                 nu_resolve_style(MessageLevel::Error),
@@ -962,7 +962,7 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> Str
 /// # Errors
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
-pub fn delete(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn delete(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
     let build_state = &context.build_state;
     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
     if clean_up.is_ok()
@@ -985,7 +985,7 @@ pub fn delete(_args: &ArgMatches, context: &mut Context) -> Result<Option<String
 pub fn edit_history(
     _args: &ArgMatches,
     context: &mut Context,
-) -> Result<Option<String>, BuildRunError> {
+) -> Result<Option<String>, ThagError> {
     let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
     println!("history_file={history_file:#?}");
     OpenOptions::new()
@@ -1001,7 +1001,7 @@ pub fn edit_history(
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn edit(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
     let (build_state, _start) = (&mut context.build_state, context.start);
 
     edit::edit_file(&build_state.source_path)?;
@@ -1013,7 +1013,7 @@ pub fn edit(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>,
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn toml(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn toml(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
     edit::edit_file(&context.build_state.cargo_toml_path)?;
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
@@ -1022,10 +1022,7 @@ pub fn toml(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>,
 /// # Errors
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
-pub fn run_expr(
-    _args: &ArgMatches,
-    context: &mut Context,
-) -> Result<Option<String>, BuildRunError> {
+pub fn run_expr(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
     let (options, proc_flags, build_state, start) = (
         &mut context.options,
         context.proc_flags,
@@ -1076,7 +1073,7 @@ Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: 
 /// The process lacks permissions to view the contents.
 /// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn list(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, BuildRunError> {
+pub fn list(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
     let build_state = &context.build_state;
     let source_path = &build_state.source_path;
     if source_path.exists() {

@@ -470,7 +470,7 @@ pub fn disentangle(text_wall: &str) -> String {
 /// Currently unused disentangling method.
 /// # Panics
 /// Will panic if the regular expression used is not well formed.
-#[allow(dead_code)]
+#[warn(dead_code)]
 #[must_use]
 pub fn re_disentangle(text_wall: &str) -> String {
     use std::fmt::Write;
@@ -487,7 +487,7 @@ pub fn re_disentangle(text_wall: &str) -> String {
         })
 }
 
-#[allow(dead_code)]
+#[warn(dead_code)]
 /// Display output captured to `std::process::Output`.
 /// # Errors
 /// Will return `Err` if the stdout or stderr is not found captured as expected.
@@ -660,18 +660,18 @@ pub fn wrap_snippet(inner_attribs: &str, body: &str) -> String {
 
     debug_log!("In wrap_snippet: inner_attribs={inner_attribs:#?}");
     let wrapped_snippet = format!(
-        r"#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
+        r##"#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
 {inner_attribs}
 use std::error::Error;
 use std::io;
 use std::io::prelude::*;
 
-// Wrapped snippet in main method to make it a program
+#[doc = "Wrapped snippet in main method to make it a program."]
 fn main() -> Result<(), Box<dyn Error>> {{
 {body}
 Ok(())
 }}
-"
+"##
     );
     debug_log!("wrapped_snippet={wrapped_snippet}");
     wrapped_snippet
@@ -954,7 +954,7 @@ pub fn strip_curly_braces(haystack: &str) -> Option<String> {
 }
 
 #[cfg(test)]
-#[allow(dead_code)]
+#[warn(dead_code)]
 fn get_mismatched_lines(expected_rust_code: &str, rust_code: &str) -> Vec<(String, String)> {
     let mut mismatched_lines = Vec::new();
     for (expected_line, actual_line) in expected_rust_code.lines().zip(rust_code.lines()) {
@@ -967,7 +967,7 @@ fn get_mismatched_lines(expected_rust_code: &str, rust_code: &str) -> Vec<(Strin
 }
 
 #[cfg(test)]
-#[allow(dead_code)]
+#[warn(dead_code)]
 fn compare(mismatched_lines: &[(String, String)], expected_rust_code: &str, rust_code: &str) {
     if !mismatched_lines.is_empty() {
         debug_log!(

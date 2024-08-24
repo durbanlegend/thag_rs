@@ -58,6 +58,7 @@ cargo_toml = "0.20.4"
 serde_json = "1.0.125"
 serde_with = "3.9.0"
 firestorm = { version = "0.5.1", features = ["enable_system_time"] }
+prettyplease = "0.2.20"
 
 [profile.dev]
 opt-level = 1 # Use slightly better optimizations.

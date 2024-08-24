@@ -1,6 +1,6 @@
 use crate::code_utils::{
     self, build_loop, create_next_repl_file, create_temp_source_file, extract_ast,
-    extract_manifest, process_expr, read_file_contents, remove_inner_attributes, rustfmt,
+    extract_manifest, process_expr, read_file_contents, remove_inner_attributes,
     strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::colors::{nu_resolve_style, MessageLevel};
@@ -471,8 +471,13 @@ pub fn generate(
         "GGGGGGGG Creating source file: {target_rs_path:?}"
     );
 
-    write_source(&target_rs_path, rs_source)?;
-    rustfmt(build_state)?;
+    {
+        profile_section!(parse_file);
+        let syntax_tree = syn::parse_file(rs_source).unwrap();
+        let rs_source = prettyplease::unparse(&syntax_tree);
+        write_source(&target_rs_path, &rs_source)?;
+    }
+    // rustfmt(build_state)?;
 
     // debug_log!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {
@@ -655,7 +660,7 @@ pub fn run(
 
     // If a function is complex, profile a section.
     {
-        profile_section!(inner);
+        profile_section!(run_cmd);
         run_command.args(args);
 
         debug_log!("Run command is {run_command:?}");
@@ -671,6 +676,10 @@ pub fn run(
 
         let _exit_status = run_command.spawn()?.wait()?;
 
+        // Optional: manually drop.
+        // Section automatically drops when going out of scope.
+        drop(run_cmd);
+
         log!(
             Verbosity::Quiet,
             "{}",
@@ -680,10 +689,6 @@ pub fn run(
         // debug_log!("Exit status={exit_status:#?}");
 
         display_timings(&start_run, "Completed run", proc_flags);
-
-        // Optional: manually drop.
-        // Section automatically drops when going out of scope.
-        drop(inner);
     }
 
     Ok(())

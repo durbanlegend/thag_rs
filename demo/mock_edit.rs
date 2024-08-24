@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = "0.28"
 mockall = "0.13.0"
-thag_rs = "0.1.0"
+thag_rs = "0.1.2"
 */
 
 /// Used to debug a doctest.

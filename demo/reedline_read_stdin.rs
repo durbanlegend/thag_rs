@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-reedline = "0.33.0"
+reedline = "0.34.0"
 */
 
 /// Basic exploration of reading a line from stdin with `reedline`.

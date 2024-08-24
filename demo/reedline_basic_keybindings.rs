@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 crossterm = "0.27.0"
-reedline = "0.33.0"
+reedline = "0.34.0"
 */
 
 /// Published example `basic.rs` from `reedline` crate.

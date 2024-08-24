@@ -20,7 +20,7 @@
         or --manifest / -M
         Include an option to include or exclude quotes on returned strings.
         Maybe make it a command-line option too.
-        Add option to strip symbols (defaut true?). LTO?
+        Add option to strip symbols (default true?). LTO?
 - [ ]  Config option for formatting main
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  -vv for debug mode

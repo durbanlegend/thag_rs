@@ -2,7 +2,7 @@
 [dependencies]
 #crossterm = "0.27.0"
 nu-ansi-term = "0.50.0"
-reedline = "0.33.0"
+reedline = "0.34.0"
 */
 
 /// Exploratory prototype of REPL support for multi-line expressions. Based on published example

@@ -1921,6 +1921,20 @@ which will give identical output to the above.
 
 ---
 
+### Script: merge_toml.rs
+
+**Description:**  Prototype of comprehensive merge of script toml metadata with defaults.
+
+**Purpose:** Develop for inclusion in main project.
+
+**Crates:** `cargo_toml`, `serde_merge`
+
+**Type:** Program
+
+**Link:** [merge_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs)
+
+---
+
 ### Script: mock_edit.rs
 
 **Description:**  Used to debug a doctest.

@@ -1,8 +1,12 @@
 # thag_rs
 
 [![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://crates.io/crates/thag_rs)
+[![Crates.io size](https://img.shields.io/crates/size/thag_rs)](https://img.shields.io/crates/size/thag_rs)
 [![Documentation](https://docs.rs/thag_rs/badge.svg)](https://docs.rs/\n)
 [![Build Status](https://github.com/durbanlegend/thag_rs/workflows/CI/badge.svg)](https://github.com/durbanlegend/thag_rs/actions)
+<img src="https://img.shields.io/badge/rustc-stable+-green.svg" alt="supported rustc stable" />
+<a href="https://deps.rs/repo/github/durbanlegend/thag_rs"><img src="https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg" alt="dependency status"/></a>
+
 
 ## Intro
 
@@ -63,7 +67,7 @@ thag --repl                                                     # Short form: -l
 ```
 ![Repl](assets/replt.png)
 
-The REPL has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, Nano etc. via the VISUAL or EDITOR environment variables, in case its `reedline` editor falls short for a particular task. The key bindings in the latter will depend on your terminal settings and you should probably not expect too much in the way of navigation shortcuts.
+The REPL has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, nano etc. via the VISUAL or EDITOR environment variables, in case its `reedline` editor falls short for a particular task. The key bindings in the latter will depend on your terminal settings and you should probably not expect too much in the way of navigation shortcuts.
 
 ### * With standard input:
 
@@ -72,10 +76,13 @@ echo '(1..=10).product::<u32>()' | thag --stdin                 # Short form: -s
 ```
 
 Place any arguments for the script after `--` to separate them from `thag` arguments:
+
 ```bash
 echo 'println!("Hello {}", std::env::args().nth(1).unwrap());' | thag -s -- Ferris
 ```
+
 This is equivalent to:
+
 ```bash
 thag -e 'println!("Hello {}", std::env::args().nth(1).unwrap());' -- Ferris
 ```
@@ -189,15 +196,15 @@ from the same page.
 
 `thag_rs` uses Cargo, `syn`, `quote` and `cargo_toml` to analyse and wrap well-formed snippets and expressions into working programs. Well-formed input programs are identified by having a valid `fn main` (or more than one - see below) and passed unchanged to `cargo build`.
 
-`thag_rs` uses the `syn` crate to parse valid code into an abstract syntax tree (AST). Among other benefits this prevents it being fooled by code embedded in comments or string literals, which is the curse of regular expressions and string parsing. `thag_rs` then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code so as to generate a `Cargo.toml`. It filters these to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
+`thag_rs` uses `syn` to parse valid code into an abstract syntax tree (AST). Among other benefits this prevents it being fooled by code embedded in comments or string literals, which is the curse of regular expressions and string parsing. `thag_rs` then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code so as to generate a `Cargo.toml`. It filters these to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
 
 Well-formedness is determined by counting any occurrences of a `main` function in the AST. The lack of a `fn main` signifies a snippet or expression, whereas more than one `fn main` is sometimes valid but must be actively flagged as such by the user with the `--multimain (-m)` option.
 
 If your code does not successfully parse into an AST because of a coding error, `thag_rs` will fall back to using source code analysis to prepare your code for the Rust compiler, which can then show you error messages to help you find the issues.
 
-You may provide optional metadata in a toml block as described below. `thag_rs` uses the `cargo_toml` crate to parse any metadata into a manifest struct, merges in any dependencies inferred from the AST, and then uses the `toml` crate to write out the dedicated Cargo.toml file that Cargo needs to build the script. Finally, in the case of snippets and expressions, it uses the `quote` crate to embed the logic in a well-formed program template, which it then invokes Cargo to build.
+You may provide optional metadata in a toml block as described below. `thag_rs` uses `cargo_toml` to parse any metadata into a manifest struct, merges in any dependencies, features or patches inferred from the AST (TODO: coming soon: any toml), and then uses `toml` to write out the dedicated Cargo.toml file that Cargo needs to build the script. Finally, in the case of snippets and expressions, it uses `quote` to embed the logic in a well-formed program template and `prettyplease` to format it, and finally invokes Cargo to build it.
 
-All of this happens quite fast: the real bottleneck will be the familiar Cargo build process downloading and compiling your dependencies on the initial build. Cargo build output will be displayed in real time so that there are no mystery delays. If you rerun the compiled script it should be lightning fast.
+All of this happens quite fast: the real bottleneck will be the familiar Cargo build process downloading and compiling your dependencies on the initial build. Cargo build output will be displayed in real time by default so that there are no mystery delays. If you rerun the compiled script it should be lightning fast.
 
 In this way `thag_rs` attempts to handle any valid (or invalid) Rust script, be it a program, snippet or expression. It will try to generate a dedicated Cargo.toml for your script from `use` statements in your code, although for speed and precision I recommend that you embed your own in a toml block:
 ```/*
@@ -206,7 +213,7 @@ In this way `thag_rs` attempts to handle any valid (or invalid) Rust script, be 
 ...
 */
 ```
-at the start of the script, as you will see done in most of the demos. To assist with this, after each successful Cargo search `thag_rs `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. (As in the second `--expr` example above.) It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` there is no specific limit on what valid Cargo code you can place in the toml block.
+at the start of the script, as you will see done in most of the demos. To help with this, after each successful Cargo search `thag_rs `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. (As in the second `--expr` example above.) It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` there is no specific limit on what valid Cargo code you can place in the toml block.
 
 `thag_rs` aims to be as comprehensive as possible without sacrificing speed and transparency. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
 
@@ -221,14 +228,14 @@ You can install `thag_rs` using `cargo install`:
 cargo install thag_rs
 ```
 ### Downloading the starter kit (demo directory)
-As from `v0.1.1` can download `demo.zip` from `https://github.com/durbanlegend/thag_rs/releases`.
+As from `v0.1.1` you can download `demo.zip` from `https://github.com/durbanlegend/thag_rs/releases`.
 
 Note that you can also link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
 As a matter of interest, the `rs_thag` demo file [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/download_demo_dir.rs) can download the whole demo directory from Github.
 Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/download_demo_dir.rs`, or just copy it and paste it into the `thag -d` editor and choose Ctrl-d to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
 
 ## Usage
-Once installed, you can use the `thag` command from the command line. `thag` uses the clap crate to process command-line arguments including --help.
+Once installed, you can use the `thag` command from the command line. `thag` uses `clap` to process command-line arguments including `--help`.
 
 Here are some examples:
 
@@ -245,7 +252,7 @@ This panics beyond 34! due to using Rust primitives, but see `demo/factorial_das
 thag -e "$(cat demo/fizz_buzz_gpt.rs)"
 ```
 The `--expr` flag will not only evaluate an expression, it will also accept a valid Rust program or set of statements.
-The different ways `thag` accepts code are as far as posssible "orthagonal" to the common way it processes them.
+The different ways `thag` accepts code are as far as possible "orthagonal" to the common way it processes them.
 
 #### Run a script in quiet mode but show timings
 ```bash
@@ -300,12 +307,12 @@ thag -r repl_<nnnnnn>.rs
 ```
 will return to edit and run a named generated script from a previous REPL session.
 
-More informally, you can access the last 25 previous REPL commands or expressions from within the REPL function just by using the up and down arrow keys to navigate history.
+More informally, you can access the last 25 REPL commands or expressions from within the REPL function just by using the up and down arrow keys to navigate history.
 
 #### General notes on REPL
 All REPL files are created under the `rs_repl` subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust) so as not to clog up your system. Until such time as they are harvested by the OS you can display the locations and copy the files if desired.
 
-The REPL feature is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. You can overcome these limitations by using the REPL's `edit` mode instead, but by this point it's probably more convenient just to use the --stdin / -s feature or the --edit / -d feature instead, or save the source in a .rs file and run it from the command line.
+The REPL feature is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. You can overcome these limitations by using the REPL's `edit` mode instead, but by this point it's probably more convenient just to use `--stdin / -s` or `--edit / -d` instead of the REPL, or save the source in a .rs file and run it from the command line.
 
 ## Features
 
@@ -314,7 +321,7 @@ _— The Rust Reference_
 
 * Runs serious Rust scripts (not just the "Hello, world!" variety) with no need to create a project.
 * Aims to be the most capable and reliable script runner for Rust code.
-* Specific features of dependencies may be specified, giving your scripts access to advanced functionality. Local path and git dependencies may also be specified, allowing you to access your unpublished crates.
+* Specific features of dependencies may be specified, giving your scripts access to advanced functionality. Local path and git dependencies may also be specified, allowing you to access your unpublished crates. (TODO: Coming soon: specify any valid Cargo.toml input in the toml block, e.g. a [profile.dev] with different optimisation level.)
 * A choice of modes - bearing in mind the importance of expressions in Rust:
     * expression mode for small, basic expressions on the fly.
     * REPL mode offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
@@ -322,7 +329,7 @@ _— The Rust Reference_
     * edit mode is stdin mode with the addition of basic TUI (terminal user interface) in-place editing, with or without piped input.
     * the classic script mode runs an .rs file consisting of a valid Rust snippet or program.
 * You can use a shebang to write scripts in Rust.
-* For more speed you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
+* For more speed and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
 * `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast big-integer factorial and Fibonacci calculation and prototypes of TUI editing and of the adaptive colour palettes described below.
 * Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows, interrogating the terminal is not well supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` defaults to basic ANSI-16 colours and dark mode support. However, the dark mode colours it uses have been chosen to work well with most light modes.
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from thag_rs. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.

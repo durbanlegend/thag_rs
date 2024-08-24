@@ -4,6 +4,7 @@
 Iterm = "Iterm"
 Noice = "Noice"
 ist = "ist"
+orthagonal = "orthagonal"
 ratatui = "ratatui"
 
 [files]

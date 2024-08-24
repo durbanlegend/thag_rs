@@ -953,34 +953,6 @@ pub fn strip_curly_braces(haystack: &str) -> Option<String> {
         .map(|captures| captures[1].to_string())
 }
 
-#[cfg(test)]
-#[warn(dead_code)]
-fn get_mismatched_lines(expected_rust_code: &str, rust_code: &str) -> Vec<(String, String)> {
-    let mut mismatched_lines = Vec::new();
-    for (expected_line, actual_line) in expected_rust_code.lines().zip(rust_code.lines()) {
-        if expected_line != actual_line {
-            debug_log!("expected:{expected_line}\n  actual:{actual_line}");
-            mismatched_lines.push((expected_line.to_string(), actual_line.to_string()));
-        }
-    }
-    mismatched_lines
-}
-
-#[cfg(test)]
-#[warn(dead_code)]
-fn compare(mismatched_lines: &[(String, String)], expected_rust_code: &str, rust_code: &str) {
-    if !mismatched_lines.is_empty() {
-        debug_log!(
-            r"Found mismatched lines between expected and actual code:
-                expected:{}
-                  actual:{}",
-            // mismatched_lines
-            expected_rust_code,
-            rust_code
-        );
-    }
-}
-
 /// Cache any functions that we may find in a snippet expression in a Hashmap, so
 /// that if the last statement in the expression is a function call, we can look
 /// up its return type and determine whether to wrap it in a println! statement.

@@ -2,11 +2,14 @@
 mod tests {
     use cargo_toml::{Edition, Manifest};
     use mockall::predicate::*;
+    use serde_merge::omerge;
     use std::process::Output;
+    use thag_rs::code_utils::infer_deps_from_ast;
     use thag_rs::manifest::{
-        capture_dep, cargo_search, default_manifest_from_build_state, merge, MockCommandRunner,
+        self, capture_dep, cargo_search, default_manifest_from_build_state, merge, search_deps,
+        MockCommandRunner,
     };
-    use thag_rs::BuildState;
+    use thag_rs::{Ast, BuildState};
 
     // Set environment variables before running tests
     fn set_up() {
@@ -117,13 +120,11 @@ mod tests {
     // }
 
     #[test]
-    fn test_merge_manifest() {
+    fn test_merge_manifest() -> Result<(), Box<dyn std::error::Error>> {
         set_up();
         init_logger();
 
-        let rs_manifest = Some(
-            Manifest::from_str(
-                r##"[package]
+        let rs_toml_str = r##"[package]
 name = "example"
 version = "0.0.1"
 edition = "2021"
@@ -141,20 +142,17 @@ bar = { path = 'my/local/bar' }
 [workspace]
 
 [[bin]]
-
-[lib]
-crate_type = ["cdylib"]
-"##,
-            )
-            .unwrap(),
-        );
-
+name = "bin_name"
+path = "bin_path"
+"##;
+        let rs_manifest = Some(Manifest::from_str(rs_toml_str).unwrap());
+        // let alt_rs_manifest = Some(toml::from_str::<Manifest>(rs_toml_str).unwrap());
         let mut build_state = BuildState {
             source_stem: "example".to_string(),
             source_name: "example.rs".to_string(),
             target_dir_path: std::path::PathBuf::from("/tmp"),
             cargo_manifest: None,
-            rs_manifest,
+            rs_manifest: rs_manifest.clone(),
             ..Default::default()
         };
 
@@ -164,9 +162,102 @@ crate_type = ["cdylib"]
         "#;
 
         let syntax_tree = None;
-
         let manifest = merge(&mut build_state, rs_source, &syntax_tree).unwrap();
         eprintln!("manifest.dependencies={:#?}", manifest.dependencies);
         assert!(manifest.dependencies.contains_key("serde_derive"));
+        eprintln!("manifest.features={:#?}", manifest.features);
+        assert!(manifest.features.contains_key("default"));
+
+        // Temp compare old and new techniques
+
+        let file = syn::parse_file(
+            r#"
+            extern crate foo;
+            use bar::baz;
+            use std::fmt;
+            "#,
+        )
+        .unwrap();
+        let ast = Ast::File(file);
+
+        let default_manifest = manifest::default("example", "path/to/script").unwrap();
+        // default_manifest.lib = None;
+
+        let mut build_state = BuildState {
+            source_stem: "example".to_string(),
+            source_name: "example.rs".to_string(),
+            target_dir_path: std::path::PathBuf::from("/tmp"),
+            cargo_manifest: Some(default_manifest.clone()),
+            rs_manifest: rs_manifest.clone(),
+            ..Default::default()
+        };
+
+        let default_cargo_manifest = default_manifest_from_build_state(&build_state)?;
+
+        let mut rs_manifest = if let Some(rs_manifest) = build_state.rs_manifest.as_mut() {
+            rs_manifest.clone()
+        } else {
+            default_cargo_manifest.clone()
+        };
+
+        let rs_dep_map = &mut rs_manifest.dependencies;
+
+        let rs_inferred_deps = infer_deps_from_ast(&ast);
+        if !rs_inferred_deps.is_empty() {
+            search_deps(rs_inferred_deps, rs_dep_map);
+        }
+
+        let trad_manifest = merge(&mut build_state, rs_source, &Some(ast))?;
+
+        let rs_manifest = rs_manifest.clone();
+        let build_state = BuildState {
+            source_stem: "example".to_string(),
+            source_name: "example.rs".to_string(),
+            target_dir_path: std::path::PathBuf::from("/tmp"),
+            cargo_manifest: Some(default_manifest.clone()),
+            rs_manifest: Some(rs_manifest.clone()),
+            ..Default::default()
+        };
+
+        // Merge the manifests
+        let mut merged_manifest: Manifest =
+            omerge(build_state.rs_manifest, build_state.cargo_manifest)?;
+
+        // Ensure all `[[bin]]` sections have the edition set to E2021
+        let bins = &mut merged_manifest.bin;
+        for bin in bins {
+            // eprintln!("Found bin.edition={:#?}", bin.edition);
+            // Don't accept the default of E2015. This is the only way I can think of
+            // to stop it defaulting to E2015 and then overriding the template value.
+            if matches!(bin.edition, Edition::E2015) {
+                bin.edition = cargo_toml::Edition::E2021;
+            }
+        }
+
+        // eprintln!(
+        //     "type_of merged_manifest.lib={}",
+        //     type_of(&merged_manifest.lib.clone().unwrap())
+        // );
+        eprintln!("default_manifest={}", toml::to_string(&default_manifest)?);
+        eprintln!("rs_manifest={}", toml::to_string(&rs_manifest)?);
+        // eprintln!("alt_rs_manifest={}", toml::to_string(&alt_rs_manifest)?);
+        eprintln!("merged_manifest={}", toml::to_string(&merged_manifest)?);
+        eprintln!("trad_manifest={}", toml::to_string(&trad_manifest)?);
+        assert_eq!(merged_manifest.package(), trad_manifest.package());
+        assert_eq!(merged_manifest.workspace, trad_manifest.workspace);
+        assert_eq!(merged_manifest.dependencies, trad_manifest.dependencies);
+        assert_eq!(merged_manifest.features, trad_manifest.features);
+        eprintln!(
+            "merged_manifest.patch={:#?}",
+            toml::to_string(&merged_manifest.patch)?
+        );
+        eprintln!(
+            "trad_manifest.patch={:#?}",
+            toml::to_string(&trad_manifest.patch)?
+        );
+        assert_eq!(merged_manifest.bin, trad_manifest.bin);
+        assert_eq!(merged_manifest, trad_manifest);
+
+        Ok(())
     }
 }

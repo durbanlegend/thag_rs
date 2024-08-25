@@ -1660,9 +1660,9 @@ dependencies = [
 
 [[package]]
 name = "reedline"
-version = "0.33.0"
+version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f8c676a3f3814a23c6a0fc9dff6b6c35b2e04df8134aae6f3929cc34de21a53"
+checksum = "dc271368d0d3f395745b40fababc0c9061f3fc2978189a8bc76f889e47255b01"
 dependencies = [
  "chrono",
  "crossterm 0.27.0",
@@ -1806,6 +1806,17 @@ dependencies = [
  "memchr",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "serde_merge"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "606e91878516232ac3b16c12e063d4468d762f16d77e7aef14a1f2326c5f409b"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -2092,6 +2103,7 @@ dependencies = [
  "sequential-test",
  "serde",
  "serde_json",
+ "serde_merge",
  "serde_with",
  "strum",
  "supports-color",

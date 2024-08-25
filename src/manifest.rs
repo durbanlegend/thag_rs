@@ -184,6 +184,7 @@ edition = "2021"
 [[bin]]
 name = "{}"
 path = "{}"
+edition = "2021"
 "##,
         source_stem, source_stem, gen_src_path
     );
@@ -221,14 +222,6 @@ pub fn merge(
         infer_deps_from_source(rs_source)
     };
 
-    // debug_log!("rs_inferred_deps={rs_inferred_deps:#?}\n");
-    // if let Some(rs_manifest) = &build_state.rs_manifest {
-    //     debug_log!(
-    //         "build_state.rs_manifest.dependencies={:#?}",
-    //         rs_manifest.dependencies
-    //     );
-    // }
-
     debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
 
     // let mut manifest = CargoManifest::default();
@@ -238,19 +231,7 @@ pub fn merge(
         default_rs_manifest
     };
 
-    // let btree_map = BTreeMap::<std::string::String, Dependency>::new();
     let mut rs_dep_map = rs_manifest.dependencies;
-    //     rs_dep_map.clone()
-    // } else {
-    //     btree_map
-    // };
-
-    // let mut rs_dep_map: BTreeMap<std::string::String, Dependency> =
-    //     if let Some(ref rs_dep_map) = rs_manifest.dependencies {
-    //         rs_dep_map.clone()
-    //     } else {
-    //         BTreeMap::new()
-    //     };
 
     if !rs_inferred_deps.is_empty() {
         debug_log!("rs_dep_map (before inferred) {rs_dep_map:#?}");
@@ -347,7 +328,7 @@ fn merge_patch(manifest_patches: &Patches, rs_patch_map: &Patches) -> Patches {
     manifest_patches_clone
 }
 
-fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
+pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
     for dep_name in rs_inferred_deps {
         if rs_dep_map.contains_key(&dep_name)
             || rs_dep_map.contains_key(&dep_name.replace('_', "-"))

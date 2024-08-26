@@ -1,3 +1,8 @@
+/*[toml]
+[profile.dev]
+opt-level = 2
+*/
+
 /// Unescape \n and \\" markers in a string to convert the wall of text to readable lines.
 /// This is trickier than it seems because in a compile-time literal, \n compiles to the
 /// true line feed character 10 (x0A), whereas a \n generated or captured as a literal

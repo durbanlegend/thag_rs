@@ -11,7 +11,7 @@ use quote::quote;
 use syn::Expr;
 
 fn type_of<T>(_x: &T) -> String {
-    format!("{}", std::any::type_name::<T>())
+    std::any::type_name::<T>().to_string()
 }
 
 fn main() {

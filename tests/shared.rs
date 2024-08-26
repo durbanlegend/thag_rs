@@ -149,6 +149,7 @@ required-features = []
 [[bin]]
 path = "path/to/script"
 name = "example"
+edition = "2021"
 required-features = []
 "#;
 

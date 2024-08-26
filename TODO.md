@@ -25,7 +25,9 @@
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  -vv for debug mode
 - [ ]  Firestorm example
-- [ ]  TOML merge
+- [ ]  Test [profile.dev] optimisation level
+- [ ]  Cut down cloning
+- [ ]  Look into fuzzing the tests such as test_merge_manifest.
 - [ ]  grep png README.md | cargo run --features=debug-logs -- -v -B 'use regex::Regex; let re = Regex::new(r"\w+.png").unwrap();' -l 'println!("{}", re.find(&line).unwrap().as_str())' | sort
        grep -Eo '[a-zA-Z0-9_]+\.png' README.md
        https://download-directory.github.io/?url=https://github.com/durbanlegend/thag_rs/tree/14d31159c42249f6aa0486f500de209438b06b8f/demo
@@ -37,7 +39,17 @@ let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into
 #[cfg(not(target_os = "windows"))]
 let temp_dir = std::env::var("TMPDIR").unwrap_or_else(|_| "/tmp".into());
 - [ ]  Apply changes from demo/cmd_args.rs.
-- [ ]  Demo scripts not commented:
+- [ ]  Document:
+        /*[toml]
+        [package]
+        name = "dethagomizer"
+
+        [[bin]]
+        name = "dethag"
+        path = "/Users/donf/projects/thag_rs/demo/dethagomizer.rs"
+        */
+
+
 
 ## Low Priority
 - [ ]  Paste event in Windows slow or not happening?

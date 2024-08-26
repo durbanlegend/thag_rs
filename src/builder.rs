@@ -313,8 +313,7 @@ pub fn gen_build_run(
         // debug_log!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
-            build_state.cargo_manifest =
-                Some(manifest::merge(build_state, &rs_source, &syntax_tree)?);
+            manifest::merge(build_state, &rs_source, &syntax_tree)?;
         }
 
         lazy_static! {
@@ -591,15 +590,30 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
                 fs::create_dir_all(&cargo_bin_path).expect("Failed to create target directory");
             }
 
-            let executable_name: String;
-            #[cfg(windows)]
-            {
-                executable_name = format!("{}.exe", build_state.source_stem);
-            }
-            #[cfg(not(windows))]
-            {
-                executable_name = build_state.source_stem.to_string();
-            }
+            let name_vec = if let Some(ref manifest) = build_state.cargo_manifest {
+                manifest
+                    .bin
+                    .iter()
+                    .filter_map(|p| p.clone().name)
+                    .collect::<Vec<String>>()
+            } else {
+                vec![]
+            };
+
+            let executable_name = if name_vec.is_empty() {
+                #[cfg(windows)]
+                {
+                    format!("{}.exe", build_state.source_stem)
+                }
+                #[cfg(not(windows))]
+                {
+                    build_state.source_stem.to_string()
+                }
+            } else {
+                name_vec[0].clone()
+            };
+
+            // let executable_name: String;
 
             let executable_path = build_state
                 .target_dir_path
@@ -607,7 +621,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
                 .join("target/release")
                 .join(&executable_name);
             let output_path = cargo_bin_path.join(&build_state.source_stem);
-
+            eprintln!("executable_path={executable_path:#?}, output_path={output_path:#?}");
             fs::rename(executable_path, output_path).expect("Failed to move the executable");
 
             let dash_line = "-".repeat(FLOWER_BOX_LEN);

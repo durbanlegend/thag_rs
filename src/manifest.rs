@@ -1,8 +1,9 @@
 #![allow(clippy::uninlined_format_args)]
-use cargo_toml::{Dependency, Manifest, PatchSet as Patches};
+use cargo_toml::{Dependency, Manifest};
 use lazy_static::lazy_static;
 use mockall::automock;
 use regex::Regex;
+use serde_merge::omerge;
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::io::{self, BufRead};
@@ -202,19 +203,16 @@ pub fn merge(
     build_state: &mut BuildState,
     rs_source: &str,
     syntax_tree: &Option<Ast>,
-) -> Result<Manifest, Box<dyn Error>> {
+) -> Result<(), Box<dyn Error>> {
     let start_merge_manifest = Instant::now();
 
-    let mut default_cargo_manifest = default_manifest_from_build_state(build_state)?;
-    let default_rs_manifest = default_cargo_manifest.clone();
-
-    let cargo_manifest: &mut Manifest = if let Some(ref mut manifest) = build_state.cargo_manifest {
+    // Take ownership of the default manifest
+    let default_cargo_manifest = default_manifest_from_build_state(build_state)?;
+    let cargo_manifest = if let Some(manifest) = build_state.cargo_manifest.take() {
         manifest
     } else {
-        &mut default_cargo_manifest
+        default_cargo_manifest
     };
-
-    // debug_log!("cargo_manifest (before deps)={cargo_manifest:#?}");
 
     let rs_inferred_deps = if let Some(ref syntax_tree) = syntax_tree {
         infer_deps_from_ast(syntax_tree)
@@ -224,108 +222,30 @@ pub fn merge(
 
     debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
 
-    // let mut manifest = CargoManifest::default();
-    let rs_manifest = if let Some(rs_manifest) = build_state.rs_manifest.as_mut() {
-        rs_manifest.clone()
+    let merged_manifest = if let Some(ref mut rs_manifest) = build_state.rs_manifest {
+        if !rs_inferred_deps.is_empty() {
+            debug_log!(
+                "rs_dep_map (before inferred) {:#?}",
+                rs_manifest.dependencies
+            );
+            search_deps(rs_inferred_deps, &mut rs_manifest.dependencies);
+            debug_log!(
+                "rs_dep_map (after inferred) {:#?}",
+                rs_manifest.dependencies
+            );
+        }
+
+        // Perform the merge with ownership of both manifests
+        omerge(cargo_manifest, rs_manifest.clone())?
     } else {
-        default_rs_manifest
+        cargo_manifest
     };
 
-    let mut rs_dep_map = rs_manifest.dependencies;
-
-    if !rs_inferred_deps.is_empty() {
-        debug_log!("rs_dep_map (before inferred) {rs_dep_map:#?}");
-        search_deps(rs_inferred_deps, &mut rs_dep_map);
-        debug_log!("rs_dep_map (after inferred) {rs_dep_map:#?}");
-    }
-
-    // Clone and merge dependencies specified in toml block or inferred from code.
-    let manifest_deps = cargo_manifest.dependencies.clone();
-    if !rs_dep_map.is_empty() {
-        cargo_manifest.dependencies = merge_deps(&manifest_deps, &rs_dep_map);
-        debug_log!(
-            "cargo_manifest.dependencies (after merge) {:#?}",
-            cargo_manifest.dependencies
-        );
-    }
-
-    if let Some(rs_manifest) = build_state.rs_manifest.as_mut() {
-        // Clone and merge features specified in toml block
-        let manifest_features = cargo_manifest.features.clone();
-        if !rs_manifest.features.is_empty() {
-            cargo_manifest.features = merge_features(&manifest_features, &rs_manifest.features);
-
-            debug_log!(
-                "cargo_manifest.features (after merge) {:#?}",
-                cargo_manifest.features
-            );
-        }
-
-        // Clone and merge patches specified in toml block
-        let manifest_patch = cargo_manifest.patch.clone();
-        if !rs_manifest.patch.is_empty() {
-            cargo_manifest.patch = merge_patch(&manifest_patch, &rs_manifest.patch);
-
-            debug_log!(
-                "cargo_manifest.patches (after merge) {:#?}",
-                cargo_manifest.patch
-            );
-        }
-    }
+    // Reassign the merged manifest back to build_state
+    build_state.cargo_manifest = Some(merged_manifest);
 
     debug_timings(&start_merge_manifest, "Processed features");
-    // debug_log!("cargo_manifest (after merge)={:#?}", cargo_manifest);
-
-    Ok(cargo_manifest.clone())
-}
-
-fn merge_deps(
-    manifest_deps: &BTreeMap<String, Dependency>,
-    rs_dep_map: &BTreeMap<String, Dependency>,
-) -> BTreeMap<String, Dependency> {
-    let mut manifest_deps_clone: BTreeMap<std::string::String, Dependency> = manifest_deps.clone();
-    debug_log!("manifest_deps  (before merge) {manifest_deps_clone:#?}");
-
-    // Insert any entries from source and inferred deps that are not already in default manifest
-    rs_dep_map
-        .iter()
-        .filter(|&(name, _dep)| !(manifest_deps.contains_key(name)))
-        .for_each(|(key, value)| {
-            manifest_deps_clone.insert(key.to_string(), value.clone());
-        });
-    manifest_deps_clone
-}
-
-fn merge_features(
-    manifest_features: &BTreeMap<String, Vec<String>>,
-    rs_feat_map: &BTreeMap<String, Vec<String>>,
-) -> BTreeMap<String, Vec<String>> {
-    let mut manifest_features_clone: BTreeMap<std::string::String, Vec<String>> =
-        manifest_features.clone();
-    debug_log!("manifest_features (before merge) {manifest_features_clone:?}");
-
-    // Insert any entries from source features that are not already in default manifest
-    rs_feat_map
-        .iter()
-        .filter(|&(name, _feat)| !(manifest_features.contains_key(name)))
-        .for_each(|(key, value)| {
-            manifest_features_clone.insert(key.to_string(), value.clone());
-        });
-    manifest_features_clone
-}
-
-fn merge_patch(manifest_patches: &Patches, rs_patch_map: &Patches) -> Patches {
-    let mut manifest_patches_clone = manifest_patches.clone();
-    debug_log!("manifest_patches (before merge) {manifest_patches:?}");
-
-    // Insert any entries from source features that are not already in default manifest
-    rs_patch_map
-        .iter()
-        .filter(|&(name, _feat)| !(manifest_patches.contains_key(name)))
-        .for_each(|(key, value)| {
-            manifest_patches_clone.insert(key.to_string(), value.clone());
-        });
-    manifest_patches_clone
+    Ok(())
 }
 
 pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {

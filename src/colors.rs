@@ -1,6 +1,8 @@
 use crate::{config, debug_log};
 use {crate::log, crate::logging::Verbosity};
 
+#[cfg(feature = "profile")]
+use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 #[cfg(windows)]
@@ -167,6 +169,10 @@ fn translate_level(level: usize) -> Option<ColorLevel> {
 
 #[cfg(windows)]
 fn supports_color() -> usize {
+    #[cfg(feature = "profile")]
+    {
+        profile_fn!(supports_color);
+    }
     let force_color = env_force_color();
     if force_color > 0 {
         force_color
@@ -226,6 +232,10 @@ fn check_256_color(term: &str) -> bool {
 /// palette to be chosen.
 #[must_use]
 pub fn get_term_theme() -> &'static TermTheme {
+    #[cfg(feature = "profile")]
+    {
+        profile_fn!(get_term_theme);
+    }
     &TERM_THEME
 }
 
@@ -377,6 +387,10 @@ impl NuThemeStyle for MessageStyle {
 /// colour support and light or dark theme, and the category of message to be displayed.
 #[must_use]
 pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
+    #[cfg(feature = "profile")]
+    {
+        profile_fn!(nu_resolve_style);
+    }
     let maybe_color_support = COLOR_SUPPORT.as_ref();
     if let Some(color_support) = maybe_color_support {
         let color_qual = color_support.to_string().to_lowercase();

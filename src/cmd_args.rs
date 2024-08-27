@@ -4,6 +4,8 @@ use crate::RS_SUFFIX;
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
 use core::{fmt, str};
+#[cfg(feature = "profile")]
+use firestorm::profile_fn;
 use std::error::Error;
 
 /// the `clap` command-line interface for the `thag_rs` script runner and REPL.
@@ -109,6 +111,10 @@ pub struct Cli {
 /// Getter for clap command-line arguments
 #[must_use]
 pub fn get_args() -> Cli {
+    #[cfg(feature = "profile")]
+    {
+        profile_fn!(get_args);
+    }
     Cli::parse()
 }
 
@@ -116,6 +122,10 @@ pub fn get_args() -> Cli {
 /// # Errors
 /// Will return `Err` if there is a missing script name or missing .rs suffix.
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
+    #[cfg(feature = "profile")]
+    {
+        profile_fn!(validate_args);
+    }
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(Box::new(ThagError::Command(format!(
@@ -193,6 +203,10 @@ impl str::FromStr for ProcFlags {
 ///
 /// Will panic if the internal correctness check fails.
 pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
+    #[cfg(feature = "profile")]
+    {
+        profile_fn!(get_proc_flags);
+    }
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();
@@ -218,8 +232,8 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         let gen_build = !args.norun && !args.executable && !args.check;
         eprintln!("gen_build={gen_build}");
         if gen_build {
-            proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true)
-        };
+            proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true);
+        }
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
         proc_flags.set(ProcFlags::REPL, args.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);

@@ -45,9 +45,8 @@ fn test_get_proc_flags() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags.contains(
-        ProcFlags::EXPR & ProcFlags::ALL & ProcFlags::GENERATE & ProcFlags::BUILD & ProcFlags::RUN
-    ));
+    assert!(proc_flags
+        .contains(ProcFlags::EXPR & ProcFlags::GENERATE & ProcFlags::BUILD & ProcFlags::RUN));
     assert!(!proc_flags.contains(
         ProcFlags::FORCE
             | ProcFlags::TIMINGS

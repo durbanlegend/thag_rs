@@ -9,6 +9,7 @@ use crate::{debug_log, nu_color_println, nu_resolve_style};
 use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use cargo_toml::{Edition, Manifest};
+#[cfg(feature = "profile")]
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use quote::quote;
@@ -902,7 +903,10 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 /// # Panics
 /// Will panic if the `rustfmt` failed.
 pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
-    profile_fn!(rustfmt);
+    #[cfg(feature = "profile")]
+    {
+        profile_fn!(rustfmt);
+    }
     let target_rs_path = build_state.target_dir_path.clone();
     let target_rs_path = target_rs_path.join(&build_state.source_name);
     let source_path_str = target_rs_path

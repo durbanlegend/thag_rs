@@ -1,5 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use cargo_toml::{Dependency, Manifest};
+use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use mockall::automock;
 use regex::Regex;
@@ -35,6 +36,7 @@ impl CommandRunner for RealCommandRunner {
     /// # Errors
     /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
     fn run_command(&self, program: &str, args: &[String]) -> io::Result<Output> {
+        profile_fn!(run_command);
         Command::new(program).args(args).output()
     }
 }
@@ -47,6 +49,7 @@ pub fn cargo_search<R: CommandRunner>(
     runner: &R,
     dep_crate: &str,
 ) -> Result<(String, String), Box<dyn Error>> {
+    profile_fn!(run_command);
     let start_search = Instant::now();
 
     let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(dep_crate);
@@ -131,6 +134,7 @@ as shown if you don't need special features:
 /// # Panics
 /// Will panic if the regular expression is malformed.
 pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
+    profile_fn!(capture_dep);
     debug_log!("first_line={first_line}");
     lazy_static! {
         static ref RE: Regex =
@@ -168,6 +172,7 @@ pub fn default_manifest_from_build_state(build_state: &BuildState) -> Result<Man
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
 pub fn default(source_stem: &str, gen_src_path: &str) -> Result<Manifest, ThagError> {
+    profile_fn!(default);
     let cargo_manifest = format!(
         r##"[package]
 name = "{}"
@@ -204,6 +209,7 @@ pub fn merge(
     rs_source: &str,
     syntax_tree: &Option<Ast>,
 ) -> Result<(), Box<dyn Error>> {
+    profile_fn!(merge);
     let start_merge_manifest = Instant::now();
 
     // Take ownership of the default manifest
@@ -249,6 +255,7 @@ pub fn merge(
 }
 
 pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
+    profile_fn!(search_deps);
     for dep_name in rs_inferred_deps {
         if rs_dep_map.contains_key(&dep_name)
             || rs_dep_map.contains_key(&dep_name.replace('_', "-"))

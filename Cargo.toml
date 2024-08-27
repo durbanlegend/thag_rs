@@ -57,6 +57,8 @@ ratatui = "0.28.0"
 cargo_toml = "0.20.4"
 serde_json = "1.0.125"
 serde_with = "3.9.0"
+# To switch off, use version without features = ["enable_system_time"]
+# firestorm = "0.5.1"
 firestorm = { version = "0.5.1", features = ["enable_system_time"] }
 prettyplease = "0.2.20"
 serde_merge = "0.1.3"

@@ -56,6 +56,7 @@ pub enum Ast {
 /// Required to use quote! macro to generate code to resolve expression.
 impl ToTokens for Ast {
     fn to_tokens(&self, tokens: &mut TokenStream) {
+        profile_fn!(to_tokens);
         match self {
             Ast::File(file) => file.to_tokens(tokens),
             Ast::Expr(expr) => expr.to_tokens(tokens),
@@ -96,6 +97,7 @@ impl BuildState {
         options: &Cli,
         script_state: &ScriptState,
     ) -> Result<Self, Box<dyn Error>> {
+        profile_fn!(pre_configure);
         let is_repl = proc_flags.contains(ProcFlags::REPL);
         let is_expr = options.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
@@ -296,6 +298,7 @@ impl ScriptState {
 #[inline]
 /// Developer method to log method timings.
 pub fn debug_timings(start: &Instant, process: &str) {
+    profile_fn!(debug_timings);
     let dur = start.elapsed();
     debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
 }

@@ -15,8 +15,7 @@ use thag_rs::logging::Verbosity;
 use thag_rs::RS_SUFFIX;
 
 use bitflags::bitflags;
-use clap::CommandFactory;
-use clap::{ArgGroup, ArgMatches, Parser};
+use clap::{ArgGroup, Parser};
 use core::{fmt, str};
 use std::error::Error;
 
@@ -236,8 +235,8 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         let gen_build = !args.norun && !args.executable && !args.check;
         eprintln!("gen_build={gen_build}");
         if gen_build {
-            proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true)
-        };
+            proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true);
+        }
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
         // eprintln!("After processing ALL, proc_flags={proc_flags:#?}");
         proc_flags.set(ProcFlags::REPL, args.repl);
@@ -249,28 +248,16 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::CONFIG, args.config);
 
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
-            // let loop_options = &[&args.toml, &args.begin, &args.end];
-            // for o in loop_options {
-            //     if o.is_some() {
-            //         eprintln!(
-            //             "Option {} / {} requires --loop / -l",
-            //             o.get_long(),
-            //             o.get_short()
-            //         );
-            //     }
-            // }
             if args.toml.is_some() {
-                eprintln!("Option {} / {} requires --loop / -l", "--toml", "-T");
-                return Err("Missing --loop option".into());
+                eprintln!("Option {} ({}) requires --loop (-l)", "--toml", "-T");
             }
             if args.begin.is_some() {
-                eprintln!("Option {} / {} requires --loop / -l", "--begin", "-B");
-                return Err("Missing --loop option".into());
+                eprintln!("Option {} ({}) requires --loop (-l)", "--begin", "-B");
             }
             if args.end.is_some() {
-                eprintln!("Option {} / {} requires --loop / -l", "--end", "-E");
-                return Err("Missing --loop option".into());
+                eprintln!("Option {} ({}) requires --loop (-l)", "--end", "-E");
             }
+            return Err("Missing --loop option".into());
         }
 
         // if !is_loop && (args.toml.is_some() || args.begin.is_some()/* || args.end.is_some() */) {
@@ -301,6 +288,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
     Ok(proc_flags)
 }
 
+#[allow(dead_code)]
 fn type_of<T>(_x: &T) -> String {
     std::any::type_name::<T>().to_string()
 }

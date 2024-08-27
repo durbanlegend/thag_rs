@@ -12,8 +12,8 @@ use crate::{
     shared::BuildState,
 };
 
-use clap::ArgMatches;
-use clap::{CommandFactory, Parser};
+use clap::{ArgMatches, CommandFactory, Parser};
+use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
@@ -1041,6 +1041,7 @@ pub fn run_expr(_args: &ArgMatches, context: &mut Context) -> Result<Option<Stri
 /// Parse the current line. Borrowed from clap-repl crate.
 #[must_use]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
+    profile_fn!(parse_line);
     lazy_static! {
         static ref RE: Regex = Regex::new(r#"("[^"\n]+"|[\S]+)"#).unwrap();
     }

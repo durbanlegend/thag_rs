@@ -71,7 +71,7 @@ impl History {
 
         self.current_index = match self.current_index {
             Some(index) => {
-                println!("index={index}, index + 1 = {}", index + 1);
+                // println!("index={index}, index + 1 = {}", index + 1);
                 Some(index + 1)
             }
             _ => Some(0),
@@ -183,10 +183,8 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
 
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
-    enable_raw_mode().map_err(|e| {
-        println!("Error enabling raw mode: {:?}", e);
-        e
-    })?;
+    enable_raw_mode()?;
+
     crossterm::execute!(
         stdout,
         EnterAlternateScreen,
@@ -194,15 +192,11 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
         EnableBracketedPaste
     )
     .map_err(|e| {
-        println!("Error executing terminal commands: {:?}", e);
+        // println!("Error executing terminal commands: {:?}", e);
         e
     })?;
     let backend = CrosstermBackend::new(stdout);
-    let terminal = Terminal::new(backend).map_err(|e| {
-        println!("Error creating terminal: {:?}", e);
-        e
-    })?;
-    // Ensure terminal will get reset when it goes out of scope.
+    let terminal = Terminal::new(backend)?; // Ensure terminal will get reset when it goes out of scope.
     let mut term = scopeguard::guard(terminal, |term| {
         reset_term(term).expect("Error resetting terminal");
     });
@@ -290,7 +284,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
                             textarea.insert_str(entry); // 5
                         }
                     } else {
-                        println!("Not already saved to history: calling history.get_current()");
+                        // println!("Not already saved to history: calling history.get_current()");
                         if let Some(entry) = history.get_current() {
                             found = true;
                             textarea.select_all();

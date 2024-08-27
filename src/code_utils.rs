@@ -8,7 +8,7 @@ use crate::shared::{debug_timings, Ast, BuildState};
 use crate::{debug_log, nu_color_println, nu_resolve_style};
 use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
-use cargo_toml::Manifest;
+use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use quote::quote;
@@ -382,13 +382,16 @@ pub fn extract_manifest(
 ) -> Result<Manifest, Box<dyn Error>> {
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
-    let rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
+    let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
         // debug_log!("rs_toml_str={rs_toml_str}");
         Manifest::from_str(&rs_toml_str)?
     } else {
         Manifest::from_str("")?
     };
 
+    if let Some(package) = rs_manifest.package.as_mut() {
+        package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
+    }
     // debug_log!("rs_manifest={rs_manifest:#?}");
 
     debug_timings(&start_parsing_rs, "Parsed source");

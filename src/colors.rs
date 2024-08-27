@@ -1,6 +1,7 @@
 use crate::{config, debug_log};
 use {crate::log, crate::logging::Verbosity};
 
+use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 #[cfg(windows)]
@@ -167,6 +168,7 @@ fn translate_level(level: usize) -> Option<ColorLevel> {
 
 #[cfg(windows)]
 fn supports_color() -> usize {
+    profile_fn!(supports_color);
     let force_color = env_force_color();
     if force_color > 0 {
         force_color
@@ -226,6 +228,7 @@ fn check_256_color(term: &str) -> bool {
 /// palette to be chosen.
 #[must_use]
 pub fn get_term_theme() -> &'static TermTheme {
+    profile_fn!(get_term_theme);
     &TERM_THEME
 }
 

@@ -4,6 +4,7 @@ use crate::RS_SUFFIX;
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
 use core::{fmt, str};
+use firestorm::profile_fn;
 use std::error::Error;
 
 /// the `clap` command-line interface for the `thag_rs` script runner and REPL.
@@ -27,17 +28,33 @@ pub struct Cli {
     #[arg(last = true, requires = "script")]
     pub args: Vec<String>,
     /// Generate Rust source and individual cargo .toml if compiled file is stale
-    #[arg(short = 'g', long = "gen")]
+    #[arg(short, long = "gen", default_value_ifs([
+        ("force", "true", "true"),
+        ("expression", "_", "true"),
+        ("executable", "true", "true"),
+        ("check", "true", "true"),
+    ]))]
     pub generate: bool,
     /// Build script if compiled file is stale
-    #[arg(short, long)]
+    #[arg(short, long, default_value_ifs([
+        ("force", "true", "true"),
+        ("expression", "_", "true"),
+        ("executable", "true", "true"),
+    ]))]
     pub build: bool,
     /// Force generation of Rust source and individual Cargo.toml, and build, even if compiled file is not stale
     #[arg(short, long)]
     pub force: bool,
     /// Don't run the script after generating and building
-    #[arg(short, long, conflicts_with_all(["edit","expression", "filter", "repl", "stdin"]))]
+    #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin"]))]
     pub norun: bool,
+    /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`
+    #[arg(short = 'x', long)]
+    pub executable: bool,
+    /// Cargo check script if compiled file is stale. Less thorough than build
+    /// Used by integration test to check all demo scripts
+    #[arg(short, long, conflicts_with_all(["build", "executable"]))]
+    pub check: bool,
     /// Evaluate a quoted expression on the fly
     #[arg(short, long = "expr", conflicts_with_all(["generate", "build"]))]
     pub expression: Option<String>,
@@ -53,7 +70,7 @@ pub struct Cli {
     /// Filter expression to be run in a loop against every line in stdin, with optional pre- and post-loop logic.
     #[arg(short = 'l', long = "loop", conflicts_with_all(["generate", "build"]))]
     pub filter: Option<String>,
-    /// Optional manifest info in format ready for Cargo.toml
+    /// Optional manifest info for --loop in format ready for Cargo.toml
     #[arg(short = 'C', long, requires = "filter", value_name = "CARGO-TOML")]
     pub cargo: Option<String>,
     /// Optional pre-loop logic for --loop, somewhat like awk BEGIN
@@ -65,30 +82,35 @@ pub struct Cli {
     /// Confirm that multiple main methods are valid for this script
     #[arg(short, long)]
     pub multimain: bool,
-    /// Cargo check script if compiled file is stale. Less thorough than build.
-    /// Used by integration test to check all demo scripts
-    #[arg(short, long, conflicts_with_all(["build", "executable"]))]
-    pub check: bool,
-    /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`
-    #[arg(short = 'x', long)]
-    pub executable: bool,
-    /// Set verbose mode
-    #[arg(short, long)]
-    pub verbose: bool,
-    /// Suppress unnecessary output, double up to show only errors
-    #[arg(short, long, action = clap::ArgAction::Count, conflicts_with("verbose"))]
-    pub quiet: u8,
-    /// Set normal verbosity, only needed to override config value
-    #[arg(short = 'N', long = "normal verbosity")]
-    pub normal: bool,
     /// Display timings
     #[arg(short, long)]
     pub timings: bool,
+    /// Set verbose mode
+    #[arg(short, long)]
+    pub verbose: bool,
+    /// Set normal verbosity, only needed to override config value
+    #[arg(short = 'N', long = "normal verbosity")]
+    pub normal: bool,
+    /// Suppress unnecessary output, double up to show only errors
+    #[arg(short, long, action = clap::ArgAction::Count, conflicts_with("verbose"))]
+    pub quiet: u8,
+    /// Strip double quotes from string result of expression (true/false). Default: config value / false.
+    #[arg(
+        short,
+        long,
+        // require_equals = true,
+        action = clap::ArgAction::Set,
+        num_args = 0..=1,
+        default_missing_value = "true",  // Default to true if -u is present but no value is given
+        conflicts_with("multimain")
+    )]
+    pub unquote: Option<bool>,
 }
 
 /// Getter for clap command-line arguments
 #[must_use]
 pub fn get_args() -> Cli {
+    profile_fn!(get_args);
     Cli::parse()
 }
 
@@ -96,6 +118,7 @@ pub fn get_args() -> Cli {
 /// # Errors
 /// Will return `Err` if there is a missing script name or missing .rs suffix.
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
+    profile_fn!(validate_args);
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(Box::new(ThagError::Command(format!(
@@ -126,21 +149,21 @@ bitflags! {
         const BUILD = 2;
         const FORCE = 4;
         const RUN = 8;
-        const ALL = 16;
-        const VERBOSE = 32;
-        const TIMINGS = 64;
+        const NORUN = 16;
+        const EXECUTABLE = 32;
+        const CHECK = 64;
         const REPL = 128;
         const EXPR = 256;
         const STDIN = 512;
         const EDIT = 1024;
-        const QUIET = 2048;
-        const QUIETER = 4096;
-        const MULTI = 8192;
-        const NORUN = 16384;
-        const EXECUTABLE = 32768;
-        const LOOP = 65536;
-        const CHECK = 131_072;
-        const NORMAL = 262_144;
+        const LOOP = 2048;
+        const MULTI = 4096;
+        const TIMINGS = 8192;
+        const VERBOSE = 16384;
+        const NORMAL = 32768;
+        const QUIET = 65536;
+        const QUIETER = 131_072;
+        const UNQUOTE = 262_144;
     }
 }
 
@@ -173,20 +196,20 @@ impl str::FromStr for ProcFlags {
 ///
 /// Will panic if the internal correctness check fails.
 pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
+    profile_fn!(get_proc_flags);
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
-        // TODO: out? once clap default_value_ifs is working
-        proc_flags.set(
-            ProcFlags::GENERATE,
-            args.generate | args.force | is_expr | args.executable | args.check,
-        );
-        proc_flags.set(
-            ProcFlags::BUILD,
-            args.build | args.force | is_expr | args.executable,
-        );
+        eprintln!("args={args:#?}");
+        proc_flags.set(ProcFlags::GENERATE, args.generate);
+        // eprintln!(
+        //     "After set(ProcFlags::GENERATE, args.generate), ProcFlags::GENERATE = {:#?}",
+        //     ProcFlags::GENERATE
+        // );
+
+        proc_flags.set(ProcFlags::BUILD, args.build);
         proc_flags.set(ProcFlags::CHECK, args.check);
         proc_flags.set(ProcFlags::FORCE, args.force);
         proc_flags.set(ProcFlags::QUIET, args.quiet == 1);
@@ -196,20 +219,12 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
         proc_flags.set(ProcFlags::NORUN, args.norun | args.check | args.executable);
         proc_flags.set(ProcFlags::NORMAL, args.normal);
-        proc_flags.set(
-            ProcFlags::RUN,
-            !args.norun && !args.executable && !args.check,
-        );
-        proc_flags.set(
-            ProcFlags::ALL,
-            !args.norun && !args.executable && !args.check,
-        );
-        if proc_flags.contains(ProcFlags::ALL) {
-            proc_flags.set(ProcFlags::GENERATE, true);
-            proc_flags.set(ProcFlags::BUILD, true);
-        } else {
-            proc_flags.set(ProcFlags::ALL, args.generate & args.build);
-        }
+        let gen_build = !args.norun && !args.executable && !args.check;
+        eprintln!("gen_build={gen_build}");
+        if gen_build {
+            proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true)
+        };
+        proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
         proc_flags.set(ProcFlags::REPL, args.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);
         proc_flags.set(ProcFlags::STDIN, args.stdin);

@@ -30,7 +30,7 @@ use crate::{
 use cargo_toml::Manifest;
 #[cfg(debug_assertions)]
 use env_logger::{Builder, Env, WriteStyle};
-use firestorm::{profile_fn, profile_section};
+use firestorm::profile_fn;
 use lazy_static::lazy_static;
 #[cfg(debug_assertions)]
 use log::{log_enabled, Level::Debug};
@@ -53,7 +53,8 @@ use std::{
 #[allow(clippy::too_many_lines)]
 pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     // Instrument the entire function
-    profile_fn!(execute);
+    // profile_fn!(execute);
+
     // eprintln!("In execute()");
     let start = Instant::now();
     #[cfg(debug_assertions)]
@@ -88,6 +89,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     };
     logging::set_global_verbosity(verbosity);
 
+    // let is_config = args.co
     let is_repl = proc_flags.contains(ProcFlags::REPL);
     let working_dir_path = if is_repl {
         TMPDIR.join(REPL_SUBDIR)
@@ -271,7 +273,8 @@ pub fn gen_build_run(
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
     // Instrument the entire function
-    profile_fn!(gen_build_run);
+    // profile_fn!(gen_build_run);
+
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let proc_flags = &proc_flags;
     let options = &options;
@@ -313,8 +316,7 @@ pub fn gen_build_run(
         // debug_log!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
-            build_state.cargo_manifest =
-                Some(manifest::merge(build_state, &rs_source, &syntax_tree)?);
+            manifest::merge(build_state, &rs_source, &syntax_tree)?;
         }
 
         lazy_static! {
@@ -472,7 +474,7 @@ pub fn generate(
     );
 
     {
-        profile_section!(parse_file);
+        // profile_section!(parse_file);
         let syntax_tree = syn::parse_file(rs_source).unwrap();
         let rs_source = prettyplease::unparse(&syntax_tree);
         write_source(&target_rs_path, &rs_source)?;
@@ -515,7 +517,7 @@ pub fn generate(
 /// # Panics
 /// Will panic if the cargo build process fails to spawn or if it can't move the executable.
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), ThagError> {
-    profile_fn!(build);
+    // profile_fn!(build);
 
     let start_build = Instant::now();
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
@@ -591,15 +593,30 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
                 fs::create_dir_all(&cargo_bin_path).expect("Failed to create target directory");
             }
 
-            let executable_name: String;
-            #[cfg(windows)]
-            {
-                executable_name = format!("{}.exe", build_state.source_stem);
-            }
-            #[cfg(not(windows))]
-            {
-                executable_name = build_state.source_stem.to_string();
-            }
+            let name_vec = if let Some(ref manifest) = build_state.cargo_manifest {
+                manifest
+                    .bin
+                    .iter()
+                    .filter_map(|p| p.clone().name)
+                    .collect::<Vec<String>>()
+            } else {
+                vec![]
+            };
+
+            let executable_name = if name_vec.is_empty() {
+                #[cfg(windows)]
+                {
+                    format!("{}.exe", build_state.source_stem)
+                }
+                #[cfg(not(windows))]
+                {
+                    build_state.source_stem.to_string()
+                }
+            } else {
+                name_vec[0].clone()
+            };
+
+            // let executable_name: String;
 
             let executable_path = build_state
                 .target_dir_path
@@ -607,7 +624,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
                 .join("target/release")
                 .join(&executable_name);
             let output_path = cargo_bin_path.join(&build_state.source_stem);
-
+            eprintln!("executable_path={executable_path:#?}, output_path={output_path:#?}");
             fs::rename(executable_path, output_path).expect("Failed to move the executable");
 
             let dash_line = "-".repeat(FLOWER_BOX_LEN);
@@ -647,7 +664,7 @@ pub fn run(
     args: &[String],
     build_state: &BuildState,
 ) -> Result<(), ThagError> {
-    profile_fn!(run);
+    // profile_fn!(run);
 
     let start_run = Instant::now();
     debug_log!("RRRRRRRR In run");
@@ -658,38 +675,30 @@ pub fn run(
 
     let mut run_command = Command::new(format!("{}", target_path.display()));
 
-    // If a function is complex, profile a section.
-    {
-        profile_section!(run_cmd);
-        run_command.args(args);
+    run_command.args(args);
 
-        debug_log!("Run command is {run_command:?}");
+    debug_log!("Run command is {run_command:?}");
 
-        // Sandwich command between two lines of dashes in the terminal
+    // Sandwich command between two lines of dashes in the terminal
 
-        let dash_line = "-".repeat(FLOWER_BOX_LEN);
-        log!(
-            Verbosity::Quiet,
-            "{}",
-            nu_ansi_term::Color::Yellow.paint(&dash_line)
-        );
+    let dash_line = "-".repeat(FLOWER_BOX_LEN);
+    log!(
+        Verbosity::Quiet,
+        "{}",
+        nu_ansi_term::Color::Yellow.paint(&dash_line)
+    );
 
-        let _exit_status = run_command.spawn()?.wait()?;
+    let _exit_status = run_command.spawn()?.wait()?;
 
-        // Optional: manually drop.
-        // Section automatically drops when going out of scope.
-        drop(run_cmd);
+    log!(
+        Verbosity::Quiet,
+        "{}",
+        nu_ansi_term::Color::Yellow.paint(&dash_line)
+    );
 
-        log!(
-            Verbosity::Quiet,
-            "{}",
-            nu_ansi_term::Color::Yellow.paint(&dash_line)
-        );
+    // debug_log!("Exit status={exit_status:#?}");
 
-        // debug_log!("Exit status={exit_status:#?}");
-
-        display_timings(&start_run, "Completed run", proc_flags);
-    }
+    display_timings(&start_run, "Completed run", proc_flags);
 
     Ok(())
 }

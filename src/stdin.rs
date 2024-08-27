@@ -183,7 +183,10 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
 
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
-    enable_raw_mode()?;
+    enable_raw_mode().map_err(|e| {
+        // println!("Error enabling raw mode: {:?}", e);
+        e
+    })?;
     crossterm::execute!(
         stdout,
         EnterAlternateScreen,
@@ -195,7 +198,10 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
         e
     })?;
     let backend = CrosstermBackend::new(stdout);
-    let terminal = Terminal::new(backend)?;
+    let terminal = Terminal::new(backend).map_err(|e| {
+        // println!("Error creating terminal: {:?}", e);
+        e
+    })?;
     // Ensure terminal will get reset when it goes out of scope.
     let mut term = scopeguard::guard(terminal, |term| {
         reset_term(term).expect("Error resetting terminal");

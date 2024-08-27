@@ -30,7 +30,6 @@ use crate::{
 use cargo_toml::Manifest;
 #[cfg(debug_assertions)]
 use env_logger::{Builder, Env, WriteStyle};
-#[cfg(feature = "profile")]
 use firestorm::{profile_fn, profile_section};
 use lazy_static::lazy_static;
 #[cfg(debug_assertions)]
@@ -53,12 +52,8 @@ use std::{
 /// Will panic if it fails to strip a .rs extension off the script name,
 #[allow(clippy::too_many_lines)]
 pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
-    #[cfg(feature = "profile")]
-    {
-        // Instrument the entire function
-        profile_fn!(execute);
-    }
-
+    // Instrument the entire function
+    profile_fn!(execute);
     // eprintln!("In execute()");
     let start = Instant::now();
     #[cfg(debug_assertions)]
@@ -251,10 +246,6 @@ fn debug_print_config() {
 // Configure log level
 #[cfg(debug_assertions)]
 fn configure_log() {
-    #[cfg(feature = "profile")]
-    {
-        profile_fn!(configure_log);
-    }
     let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
     let mut binding = Builder::new();
     let builder = binding.parse_env(env);
@@ -279,12 +270,8 @@ pub fn gen_build_run(
     syntax_tree: Option<Ast>,
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
-    #[cfg(feature = "profile")]
-    {
-        // Instrument the entire function
-        profile_fn!(gen_build_run);
-    }
-
+    // Instrument the entire function
+    profile_fn!(gen_build_run);
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let proc_flags = &proc_flags;
     let options = &options;
@@ -459,10 +446,7 @@ pub fn generate(
     rs_source: &str,
     proc_flags: &ProcFlags,
 ) -> Result<(), Box<dyn Error>> {
-    #[cfg(feature = "profile")]
-    {
-        profile_fn!(generate);
-    }
+    profile_fn!(generate);
     let start_gen = Instant::now();
 
     debug_log!("In generate, proc_flags={proc_flags}");
@@ -486,15 +470,8 @@ pub fn generate(
         "GGGGGGGG Creating source file: {target_rs_path:?}"
     );
 
-    #[cfg(feature = "profile")]
     {
         profile_section!(parse_file);
-        let syntax_tree = syn::parse_file(rs_source).unwrap();
-        let rs_source = prettyplease::unparse(&syntax_tree);
-        write_source(&target_rs_path, &rs_source)?;
-    }
-    #[cfg(not(feature = "profile"))]
-    {
         let syntax_tree = syn::parse_file(rs_source).unwrap();
         let rs_source = prettyplease::unparse(&syntax_tree);
         write_source(&target_rs_path, &rs_source)?;
@@ -536,12 +513,8 @@ pub fn generate(
 /// Will return `Err` if there is an error composing the Cargo TOML path or running the Cargo build command.
 /// # Panics
 /// Will panic if the cargo build process fails to spawn or if it can't move the executable.
-#[allow(clippy::too_many_lines)]
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), ThagError> {
-    #[cfg(feature = "profile")]
-    {
-        profile_fn!(build);
-    }
+    profile_fn!(build);
 
     let start_build = Instant::now();
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
@@ -688,10 +661,7 @@ pub fn run(
     args: &[String],
     build_state: &BuildState,
 ) -> Result<(), ThagError> {
-    #[cfg(feature = "profile")]
-    {
-        profile_fn!(run);
-    }
+    profile_fn!(run);
 
     let start_run = Instant::now();
     debug_log!("RRRRRRRR In run");
@@ -702,30 +672,38 @@ pub fn run(
 
     let mut run_command = Command::new(format!("{}", target_path.display()));
 
-    run_command.args(args);
+    // If a function is complex, profile a section.
+    {
+        profile_section!(run_cmd);
+        run_command.args(args);
 
-    debug_log!("Run command is {run_command:?}");
+        debug_log!("Run command is {run_command:?}");
 
-    // Sandwich command between two lines of dashes in the terminal
+        // Sandwich command between two lines of dashes in the terminal
 
-    let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+        let dash_line = "-".repeat(FLOWER_BOX_LEN);
+        log!(
+            Verbosity::Quiet,
+            "{}",
+            nu_ansi_term::Color::Yellow.paint(&dash_line)
+        );
 
-    let _exit_status = run_command.spawn()?.wait()?;
+        let _exit_status = run_command.spawn()?.wait()?;
 
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+        // Optional: manually drop.
+        // Section automatically drops when going out of scope.
+        drop(run_cmd);
 
-    // debug_log!("Exit status={exit_status:#?}");
+        log!(
+            Verbosity::Quiet,
+            "{}",
+            nu_ansi_term::Color::Yellow.paint(&dash_line)
+        );
 
-    display_timings(&start_run, "Completed run", proc_flags);
+        // debug_log!("Exit status={exit_status:#?}");
+
+        display_timings(&start_run, "Completed run", proc_flags);
+    }
 
     Ok(())
 }

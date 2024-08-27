@@ -13,11 +13,11 @@ mod tests {
     use thag_rs::code_utils::wrap_snippet;
     use thag_rs::extract_manifest;
 
+    use thag_rs::Ast;
     use std::io::Write;
     use std::path::Path;
     use std::time::Instant;
     use tempfile::NamedTempFile;
-    use thag_rs::Ast;
 
     // Set environment variables before running tests
     fn set_up() {

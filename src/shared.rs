@@ -13,7 +13,6 @@ use crate::TOML_NAME;
 use crate::{log, PACKAGE_NAME};
 
 use cargo_toml::Manifest;
-#[cfg(feature = "profile")]
 use firestorm::profile_fn;
 use home::home_dir;
 use proc_macro2::TokenStream;
@@ -57,10 +56,6 @@ pub enum Ast {
 /// Required to use quote! macro to generate code to resolve expression.
 impl ToTokens for Ast {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        #[cfg(feature = "profile")]
-        {
-            profile_fn!(to_tokens);
-        }
         match self {
             Ast::File(file) => file.to_tokens(tokens),
             Ast::Expr(expr) => expr.to_tokens(tokens),
@@ -101,10 +96,6 @@ impl BuildState {
         options: &Cli,
         script_state: &ScriptState,
     ) -> Result<Self, Box<dyn Error>> {
-        #[cfg(feature = "profile")]
-        {
-            profile_fn!(pre_configure);
-        }
         let is_repl = proc_flags.contains(ProcFlags::REPL);
         let is_expr = options.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
@@ -312,10 +303,7 @@ pub fn debug_timings(start: &Instant, process: &str) {
 #[inline]
 /// Display method timings when either the --verbose or --timings option is chosen.
 pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
-    #[cfg(feature = "profile")]
-    {
-        profile_fn!(display_timings);
-    }
+    profile_fn!(display_timings);
     let dur = start.elapsed();
     let msg = format!("{process} in {}.{}s", dur.as_secs(), dur.subsec_millis());
 

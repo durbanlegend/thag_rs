@@ -84,7 +84,6 @@ path = "src/bin/thag_rs.rs"
 [features]
 debug-logs = []
 nightly = []
-profile = []
 
 [dev-dependencies]
 env_logger = "0.11.5"

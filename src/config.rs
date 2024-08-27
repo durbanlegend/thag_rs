@@ -1,5 +1,3 @@
-#[cfg(feature = "profile")]
-use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
@@ -86,10 +84,6 @@ fn get_config_path() -> PathBuf {
 
 #[must_use]
 pub fn load() -> Option<Config> {
-    #[cfg(feature = "profile")]
-    {
-        profile_fn!(load);
-    }
     let config_path = get_config_path();
     debug_log!("config_path={config_path:?}");
 

@@ -1,4 +1,3 @@
-#![feature(allocator_api)]
 #[cfg(test)]
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest};

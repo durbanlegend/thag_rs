@@ -15,7 +15,8 @@ use thag_rs::logging::Verbosity;
 use thag_rs::RS_SUFFIX;
 
 use bitflags::bitflags;
-use clap::{ArgGroup, Parser};
+use clap::CommandFactory;
+use clap::{ArgGroup, ArgMatches, Parser};
 use core::{fmt, str};
 use std::error::Error;
 
@@ -26,7 +27,7 @@ use std::error::Error;
 #[command(group(
             ArgGroup::new("commands")
                 .required(true)
-                .args(&["script", "expression", "repl", "filter", "stdin", "edit"]),
+                .args(&["script", "expression", "repl", "filter", "stdin", "edit", "config"]),
         ))]
 #[command(group(
             ArgGroup::new("volume")
@@ -83,12 +84,15 @@ pub struct Cli {
     #[arg(short = 'l', long = "loop", conflicts_with_all(["generate", "build"]))]
     pub filter: Option<String>,
     /// Optional manifest info for --loop in format ready for Cargo.toml
-    #[arg(short = 'C', long, requires = "filter", value_name = "CARGO-TOML")]
-    pub cargo: Option<String>,
+    //  clap issue 4707 may prevent `requires` from working, as I've experienced.
+    #[arg(short = 'T', long, requires = "filter", value_name = "CARGO-TOML")]
+    pub toml: Option<String>,
     /// Optional pre-loop logic for --loop, somewhat like awk BEGIN
+    //  clap issue 4707 may prevent `requires` from working, as I've experienced.
     #[arg(short = 'B', long, requires = "filter", value_name = "PRE-LOOP")]
     pub begin: Option<String>,
     /// Optional post-loop logic for --loop, somewhat like awk END
+    //  clap issue 4707 may prevent `requires` from working, as I've experienced.
     #[arg(short = 'E', long, requires = "filter", value_name = "POST-LOOP")]
     pub end: Option<String>,
     /// Confirm that multiple main methods are valid for this script
@@ -107,18 +111,6 @@ pub struct Cli {
     #[arg(short, long, action = clap::ArgAction::Count, conflicts_with("verbose"))]
     pub quiet: u8,
     /// Strip double quotes from string result of expression (true/false). Default: config value / false.
-    // #[arg(
-    //     short,
-    //     long,
-    //     // require_equals = true,
-    //     action = clap::ArgAction::Set,
-    //     num_args = 0..=1,
-    //     default_missing_value = None,
-    //     default_value = "Some(true)",
-    //     // required = false,
-    //     conflicts_with("multimain")
-    // )]
-    // pub unquote: Option<bool>,
     #[arg(
         short,
         long,
@@ -129,6 +121,9 @@ pub struct Cli {
         conflicts_with("multimain")
     )]
     pub unquote: Option<bool>,
+    /// Edit configuration
+    #[arg(short = 'C', long, conflicts_with_all(["generate", "build", "executable"]))]
+    pub config: bool,
 }
 
 // Getter for clap command-line arguments
@@ -140,13 +135,15 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn E
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(Box::new(ThagError::Command(format!(
-                "Script name must end in {RS_SUFFIX}"
+                "Script name {script} must end in {RS_SUFFIX}"
             ))));
         }
     } else if !proc_flags.contains(ProcFlags::EXPR)
         && !proc_flags.contains(ProcFlags::REPL)
         && !proc_flags.contains(ProcFlags::STDIN)
         && !proc_flags.contains(ProcFlags::EDIT)
+        && !proc_flags.contains(ProcFlags::LOOP)
+        && !proc_flags.contains(ProcFlags::CONFIG)
     {
         return Err(Box::new(ThagError::Command(
             "Missing script name".to_string(),
@@ -156,10 +153,11 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn E
 }
 
 bitflags! {
+    /// Processing flags for ease of handling command-line options.
     // You can `#[derive]` the `Debug` trait, but implementing it manually
     // can produce output like `A | B` instead of `Flags(A | B)`.
     // #[derive(Debug)]
-    #[derive(Clone, PartialEq, Eq)]
+    #[derive(Clone, Default, PartialEq, Eq)]
     /// Processing flags for ease of handling command-line options
     pub struct ProcFlags: u32 {
         const GENERATE = 1;
@@ -181,6 +179,7 @@ bitflags! {
         const QUIET = 65536;
         const QUIETER = 131_072;
         const UNQUOTE = 262_144;
+        const CONFIG = 524_288;
     }
 }
 
@@ -240,16 +239,54 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
             proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true)
         };
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
-        eprintln!("After processing ALL, proc_flags={proc_flags:#?}");
+        // eprintln!("After processing ALL, proc_flags={proc_flags:#?}");
         proc_flags.set(ProcFlags::REPL, args.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);
         proc_flags.set(ProcFlags::STDIN, args.stdin);
         proc_flags.set(ProcFlags::EDIT, args.edit);
         proc_flags.set(ProcFlags::LOOP, is_loop);
-        // proc_flags.set(ProcFlags::TOML, is_toml);
-        // proc_flags.set(ProcFlags::BEGIN, is_begin);
-        // proc_flags.set(ProcFlags::END, is_end);
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
+        proc_flags.set(ProcFlags::CONFIG, args.config);
+
+        if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
+            // let loop_options = &[&args.toml, &args.begin, &args.end];
+            // for o in loop_options {
+            //     if o.is_some() {
+            //         eprintln!(
+            //             "Option {} / {} requires --loop / -l",
+            //             o.get_long(),
+            //             o.get_short()
+            //         );
+            //     }
+            // }
+            if args.toml.is_some() {
+                eprintln!("Option {} / {} requires --loop / -l", "--toml", "-T");
+                return Err("Missing --loop option".into());
+            }
+            if args.begin.is_some() {
+                eprintln!("Option {} / {} requires --loop / -l", "--begin", "-B");
+                return Err("Missing --loop option".into());
+            }
+            if args.end.is_some() {
+                eprintln!("Option {} / {} requires --loop / -l", "--end", "-E");
+                return Err("Missing --loop option".into());
+            }
+        }
+
+        // if !is_loop && (args.toml.is_some() || args.begin.is_some()/* || args.end.is_some() */) {
+        //     let loop_options = vec!["--toml", "begin" /*, "end" */];
+        //     // Get the underlying `Command` instance from your `Cli`
+        //     let command = Cli::command();
+
+        //     let matches = command.clone().get_matches();
+        //     eprintln!("matches.ids().len() = {}", matches.ids().len());
+        //     for m in matches.ids() {
+        //         // eprintln!("m = {m} of type {}", type_of(m));
+        //         if
+        //     }
+        // }
+
+        // eprintln!("Type of args is {}", type_of(args));
 
         // Check all good
         let formatted = proc_flags.to_string();
@@ -262,6 +299,10 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         Ok::<ProcFlags, ThagError>(proc_flags)
     }?;
     Ok(proc_flags)
+}
+
+fn type_of<T>(_x: &T) -> String {
+    std::any::type_name::<T>().to_string()
 }
 
 #[allow(dead_code)]
@@ -293,6 +334,10 @@ fn main() {
     }
 
     log!(Verbosity::Normal, "Unquote={:#?}", opt.unquote);
+
+    if opt.executable {
+        log!(Verbosity::Normal, "Config option selected");
+    }
 
     log!(Verbosity::Normal, "Script to run: {:?}", opt.script);
     if !opt.args.is_empty() {

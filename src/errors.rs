@@ -12,7 +12,7 @@ pub enum ThagError {
     Io(io::Error),                 // For I/O errors
     NoneOption(String),            // For unwrapping Options
     OsString(OsString),            // For unconvertible OsStrings
-    // Path(String),          // For Path and PathBuf issues
+    // Path(String),               // For Path and PathBuf issues
     StrumParse(strum::ParseError), // For strum parse enum
     TomlDe(TomlDeError),           // For TOML deserialization errors
     TomlSer(TomlSerError),         // For TOML serialization errors

@@ -20,21 +20,21 @@ jobs:
       with:
         toolchain: stable
 
-    - name: Cache Cargo registry
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner1.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner1.os }}-cargo-registry-
-
-    - name: Cache Cargo index
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner1.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner1.os }}-cargo-index-
+#    - name: Cache Cargo registry
+#      uses: actions/cache@v4
+#      with:
+  #        path: ~/.cargo/registry
+  #        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+  #        restore-keys: |
+    #          ${{ runner.os }}-cargo-registry-
+    #
+    #    - name: Cache Cargo index
+#      uses: actions/cache@v4
+#      with:
+  #        path: ~/.cargo/git
+  #        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+  #        restore-keys: |
+    #          ${{ runner.os }}-cargo-index-
 
     - name: Update crates.io index
       run: cargo update

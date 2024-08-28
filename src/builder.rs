@@ -150,7 +150,7 @@ fn set_script_dir_path(
             // Normal REPL with no script name
             repl_source_path
                 .as_ref()
-                .expect("Missing path of newly created REPL souece file")
+                .expect("Missing path of newly created REPL source file")
                 .parent()
                 .expect("Could not find parent directory of repl source file")
                 .to_path_buf()
@@ -162,12 +162,11 @@ fn set_script_dir_path(
             .clone()
     } else {
         // Normal script file prepared beforehand
-        let script = args.script.clone().expect("Problem resolving script path");
+        let script = args.script.as_ref().expect("Problem resolving script path");
         let script_path = PathBuf::from(script);
         let script_dir_path = script_path
             .parent()
             .expect("Problem resolving script parent path");
-        // working_dir_path.join(PathBuf::from(script.clone()))
         script_dir_path
             .canonicalize()
             .expect("Problem resolving script dir path")

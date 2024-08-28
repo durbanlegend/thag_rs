@@ -380,6 +380,7 @@ which will give identical output to the above.
 **Description:**  A prototype of the cmd_args module of thag_rs itself.
 
  E.g. `thag_rs -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
+ Getter for clap command-line arguments
 
 **Purpose:** Prototype CLI.
 
@@ -2842,6 +2843,23 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [terminal_light_skins.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_skins.rs)
+
+---
+
+### Script: test_clap_4707.rs
+
+**Description:**  Minimal reproducible code posted by user `mkeeter` to demonstrate `clap` issue 4707
+ which we are experiencing at time of creation of this script.
+
+ To reproduce the error, run `cargo run demo/test_clap_4707.rs -- --write --show-hex`
+
+**Purpose:** test if the error exists, then periodically to see if it persists.
+
+**Crates:** `clap`
+
+**Type:** Program
+
+**Link:** [test_clap_4707.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707.rs)
 
 ---
 

@@ -52,7 +52,7 @@ use std::{
 /// Will panic if it fails to strip a .rs extension off the script name,
 pub fn execute(args: Cli) -> Result<(), Box<dyn Error>> {
     // Instrument the entire function
-    profile_fn!(execute);
+    // profile_fn!(execute);
 
     // eprintln!("In execute()");
     let start = Instant::now();
@@ -70,6 +70,7 @@ pub fn execute(args: Cli) -> Result<(), Box<dyn Error>> {
 
     if args.config {
         config::edit()?;
+        return Ok(());
     }
     let is_repl = args.repl;
     let working_dir_path = if is_repl {
@@ -215,7 +216,7 @@ fn process(
     script_state: &ScriptState,
     start: Instant,
 ) -> Result<(), Box<dyn Error>> {
-    profile_fn!(process);
+    // profile_fn!(process);
     let is_repl = args.repl;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
@@ -341,7 +342,7 @@ pub fn gen_build_run(
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
     // Instrument the entire function
-    profile_fn!(gen_build_run);
+    // profile_fn!(gen_build_run);
 
     if build_state.must_gen {
         let source_path: &Path = &build_state.source_path;
@@ -513,7 +514,7 @@ pub fn generate(
     rs_source: &str,
     proc_flags: &ProcFlags,
 ) -> Result<(), Box<dyn Error>> {
-    profile_fn!(generate);
+    // profile_fn!(generate);
     let start_gen = Instant::now();
 
     debug_log!("In generate, proc_flags={proc_flags}");
@@ -730,7 +731,7 @@ pub fn run(
     args: &[String],
     build_state: &BuildState,
 ) -> Result<(), ThagError> {
-    profile_fn!(run);
+    // profile_fn!(run);
 
     let start_run = Instant::now();
     debug_log!("RRRRRRRR In run");

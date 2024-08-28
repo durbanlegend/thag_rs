@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-iced = { version = "0.12.1", features = ["image", "debug"] }
+iced = { version = "^0.12.1", features = ["image", "debug"] }
 tracing-subscriber = "0.3"
 */
 

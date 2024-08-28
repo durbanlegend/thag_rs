@@ -428,7 +428,7 @@ pub fn gen_build_run(
             };
 
             let (inner_attribs, body) = if found {
-                code_utils::prep_snippet(&rs_source)
+                code_utils::extract_inner_attribs(&rs_source)
             } else {
                 (String::new(), rs_source)
             };

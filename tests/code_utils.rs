@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use thag_rs::code_utils::extract_inner_attribs;
     use thag_rs::code_utils::find_modules_source;
     use thag_rs::code_utils::find_use_renames_source;
     use thag_rs::code_utils::infer_deps_from_ast;
@@ -8,7 +9,6 @@ mod tests {
     use thag_rs::code_utils::is_path_unit_type;
     use thag_rs::code_utils::is_stmt_unit_type;
     use thag_rs::code_utils::path_to_str;
-    use thag_rs::code_utils::prep_snippet;
     use thag_rs::code_utils::read_file_contents;
     use thag_rs::code_utils::wrap_snippet;
     use thag_rs::extract_manifest;
@@ -111,7 +111,7 @@ mod tests {
             }
             "#;
 
-        let (inner_attribs, body) = prep_snippet(source_code);
+        let (inner_attribs, body) = extract_inner_attribs(source_code);
         let wrapped = wrap_snippet(&inner_attribs, &body);
         assert!(wrapped.contains("fn main() -> Result<(), Box<dyn Error>>"));
     }

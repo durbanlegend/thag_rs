@@ -39,6 +39,7 @@ struct RemoveInnerAttributes {
 
 impl VisitMut for RemoveInnerAttributes {
     fn visit_expr_block_mut(&mut self, expr_block: &mut ExprBlock) {
+        profile_fn!(visit_expr_block_mut);
         // Count inner attributes
         self.found = expr_block
             .attrs
@@ -61,6 +62,7 @@ impl VisitMut for RemoveInnerAttributes {
 /// Remove inner attributes (`#![...]`) from the part of the AST that will be wrapped in
 /// `fn main`, as they need to be promoted to the crate level.
 pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
+    profile_fn!(remove_inner_attributes);
     let remove_inner_attributes = &mut RemoveInnerAttributes { found: false };
     remove_inner_attributes.visit_expr_block_mut(expr);
     remove_inner_attributes.found
@@ -70,6 +72,8 @@ pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
 /// # Errors
 /// Will return `Err` if there is any file system error reading from the file path.
 pub fn read_file_contents(path: &Path) -> Result<String, ThagError> {
+    profile_fn!(read_file_contents);
+    #[cfg(debug_assertions)]
     debug_log!("Reading from {path:?}");
     Ok(fs::read_to_string(path)?)
 }
@@ -77,6 +81,7 @@ pub fn read_file_contents(path: &Path) -> Result<String, ThagError> {
 /// Infer dependencies from the abstract syntax tree to put in a Cargo.toml.
 #[must_use]
 pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
+    profile_fn!(infer_deps_from_ast);
     let use_crates = find_use_crates_ast(syntax_tree);
     let extern_crates = find_extern_crates_ast(syntax_tree);
     let use_renames = find_use_renames_ast(syntax_tree);
@@ -120,6 +125,7 @@ fn filter_deps_ast(
     modules: &[String],
     dependencies: &mut Vec<String>,
 ) {
+    profile_fn!(filter_deps_ast);
     let crate_name_string = crate_name.to_string();
     // Filter out "crate" entries
     if !built_in_crates.contains(&crate_name)
@@ -136,13 +142,14 @@ fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
     struct FindCrates {
         use_renames: Vec<String>,
     }
-
     impl<'a> Visit<'a> for FindCrates {
         fn visit_use_rename(&mut self, node: &'a UseRename) {
+            profile_fn!(visit_use_rename);
             self.use_renames.push(node.rename.to_string());
         }
     }
 
+    profile_fn!(find_use_renames_ast);
     let mut finder = FindCrates::default();
 
     match syntax_tree {
@@ -150,6 +157,7 @@ fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
+    #[cfg(debug_assertions)]
     debug_log!("use_renames from ast={:#?}", finder.use_renames);
     finder.use_renames
 }
@@ -160,13 +168,14 @@ fn find_modules_ast(syntax_tree: &Ast) -> Vec<String> {
     struct FindMods {
         modules: Vec<String>,
     }
-
     impl<'a> Visit<'a> for FindMods {
         fn visit_item_mod(&mut self, node: &'a ItemMod) {
+            profile_fn!(visit_item_mod);
             self.modules.push(node.ident.to_string());
         }
     }
 
+    profile_fn!(find_modules_ast);
     let mut finder = FindMods::default();
 
     match syntax_tree {
@@ -174,6 +183,7 @@ fn find_modules_ast(syntax_tree: &Ast) -> Vec<String> {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
+    #[cfg(debug_assertions)]
     debug_log!("modules from ast={:#?}", finder.modules);
     finder.modules
 }
@@ -184,13 +194,14 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     struct FindCrates {
         use_crates: Vec<String>,
     }
-
     impl<'a> Visit<'a> for FindCrates {
         fn visit_use_path(&mut self, node: &'a UsePath) {
+            profile_fn!(visit_use_path);
             let node_name = node.ident.to_string();
             // See for instance Constraint and Keyword in demo/tui_scrollview.rs.
             if let Some(c) = node_name.chars().nth(0) {
                 if c.is_uppercase() {
+                    #[cfg(debug_assertions)]
                     debug_log!("Assuming capitalised use name {} is not a crate", node_name);
                     return;
                 }
@@ -199,6 +210,7 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
         }
     }
 
+    profile_fn!(find_use_crates_ast);
     let mut finder = FindCrates::default();
 
     match syntax_tree {
@@ -206,6 +218,7 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
+    #[cfg(debug_assertions)]
     debug_log!("use_crates from ast={:#?}", finder.use_crates);
     finder.use_crates
 }
@@ -219,17 +232,19 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
 
     impl<'a> Visit<'a> for FindCrates {
         fn visit_item_extern_crate(&mut self, node: &'a ItemExternCrate) {
+            profile_fn!(visit_item_extern_crate);
             self.extern_crates.push(node.ident.to_string());
         }
     }
 
+    profile_fn!(find_extern_crates_ast);
     let mut finder = FindCrates::default();
 
     match syntax_tree {
         Ast::File(ast) => finder.visit_file(ast),
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
-
+    #[cfg(debug_assertions)]
     debug_log!("extern_crates from ast={:#?}", finder.extern_crates);
     finder.extern_crates
 }
@@ -244,7 +259,9 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
         static ref EXTERN_CRATE_REGEX: Regex =
             Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
     }
+    profile_fn!(infer_deps_from_source);
 
+    #[cfg(debug_assertions)]
     debug_log!("In code_utils::infer_deps_from_source");
     let use_renames = find_use_renames_source(code);
     let modules = find_modules_source(code);
@@ -263,6 +280,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 
     for cap in USE_REGEX.captures_iter(code) {
         let crate_name = cap[1].to_string();
+        #[cfg(debug_assertions)]
         debug_log!("dependency={crate_name}");
         filter_deps_source(
             &crate_name,
@@ -300,6 +318,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     dependencies.sort();
     dependencies.dedup();
 
+    #[cfg(debug_assertions)]
     debug_log!("dependencies from source={dependencies:#?}");
     dependencies
 }
@@ -312,6 +331,8 @@ fn filter_deps_source(
     modules: &[String],
     dependencies: &mut Vec<String>,
 ) {
+    profile_fn!(filter_deps_source);
+    #[cfg(debug_assertions)]
     debug_log!("crate_name={crate_name}");
     let dep = if crate_name.contains(':') {
         crate_name.split_once(':').unwrap().0
@@ -320,6 +341,7 @@ fn filter_deps_source(
     };
 
     let dep_string = dep.to_owned();
+    #[cfg(debug_assertions)]
     debug_log!("dep_string={dep_string}, built_in_crates={built_in_crates:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
     if !built_in_crates.contains(&dep)
         && !use_renames.contains(&dep_string)
@@ -333,20 +355,24 @@ fn filter_deps_source(
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn find_use_renames_source(code: &str) -> Vec<String> {
+    profile_fn!(find_use_renames_source);
     lazy_static! {
         static ref USE_AS_REGEX: Regex = Regex::new(r"(?m)^\s*use\s+.+as\s+(\w+)").unwrap();
     }
 
+    #[cfg(debug_assertions)]
     debug_log!("In code_utils::find_use_renames_source");
 
     let mut use_renames: Vec<String> = vec![];
 
     for cap in USE_AS_REGEX.captures_iter(code) {
         let use_rename = cap[1].to_string();
+        #[cfg(debug_assertions)]
         debug_log!("use_rename={use_rename}");
         use_renames.push(use_rename);
     }
 
+    #[cfg(debug_assertions)]
     debug_log!("use_renames from source={use_renames:#?}");
     use_renames
 }
@@ -359,16 +385,19 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
         static ref MODULE_REGEX: Regex = Regex::new(r"(?m)^[\s]*mod\s+([^;{\s]+)").unwrap();
     }
 
+    #[cfg(debug_assertions)]
     debug_log!("In code_utils::find_use_renames_source");
 
     let mut modules: Vec<String> = vec![];
 
     for cap in MODULE_REGEX.captures_iter(code) {
         let module = cap[1].to_string();
+        #[cfg(debug_assertions)]
         debug_log!("module={module}");
         modules.push(module);
     }
 
+    #[cfg(debug_assertions)]
     debug_log!("modules from source={modules:#?}");
     modules
 }
@@ -383,6 +412,7 @@ pub fn extract_manifest(
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
+        // #[cfg(debug_assertions)]
         // debug_log!("rs_toml_str={rs_toml_str}");
         Manifest::from_str(&rs_toml_str)?
     } else {
@@ -392,8 +422,10 @@ pub fn extract_manifest(
     if let Some(package) = rs_manifest.package.as_mut() {
         package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
     }
+    // #[cfg(debug_assertions)]
     // debug_log!("rs_manifest={rs_manifest:#?}");
 
+    #[cfg(debug_assertions)]
     debug_timings(&start_parsing_rs, "Parsed source");
     Ok(rs_manifest)
 }
@@ -449,6 +481,7 @@ pub fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
         .into_os_string()
         .into_string()
         .map_err(ThagError::OsString)?;
+    #[cfg(debug_assertions)]
     debug_log!("path_to_str={string}");
     Ok(string)
 }
@@ -518,6 +551,7 @@ pub fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
 /// Will panic if either the executable or the Cargo.toml for the script is missing.
 #[must_use]
 pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, SystemTime)> {
+    profile_fn!(modified_since_compiled);
     let executable = &build_state.target_path;
     assert!(executable.exists(), "Missing executable");
     let Ok(metadata) = fs::metadata(executable) else {
@@ -539,6 +573,7 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
         let modified_time = metadata
             .modified()
             .expect("Missing metadata for file {file:#?}"); // Handle potential errors
+        #[cfg(debug_assertions)]
         debug_log!("File: {file:?} modified time is {modified_time:#?}");
 
         if modified_time < baseline_modified {
@@ -554,8 +589,10 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
             Verbosity::Verbose,
             "The most recently modified file compared to {executable:#?} is: {file:#?}"
         );
+        #[cfg(debug_assertions)]
         debug_log!("Executable modified time is{baseline_modified:#?}");
     } else {
+        #[cfg(debug_assertions)]
         debug_log!("Neither file was modified more recently than {executable:#?}");
     }
     most_recent
@@ -571,12 +608,14 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
 
     impl<'a> Visit<'a> for FindMainFns {
         fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
+            profile_fn!(visit_item_fn);
             if node.sig.ident == "main" && node.sig.inputs.is_empty() {
                 self.main_method_count += 1;
             }
         }
     }
 
+    profile_fn!(count_main_methods);
     let mut finder = FindMainFns::default();
 
     match syntax_tree {
@@ -591,8 +630,10 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
 /// if possible (should work if the code will compile)
 #[must_use]
 pub fn to_ast(source_code: &str) -> Option<Ast> {
+    profile_fn!(to_ast);
     let start_ast = Instant::now();
     if let Ok(tree) = extract_ast(source_code) {
+        #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else if let Ok(tree) = syn::parse_file(source_code) {
@@ -601,6 +642,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
             nu_resolve_style(crate::MessageLevel::Warning),
             "Parsed to syn::File"
         );
+        #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))
     } else {
@@ -610,6 +652,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
             nu_resolve_style(crate::MessageLevel::Warning)
                 .paint("Error parsing syntax tree. Using regex to help you debug the script.")
         );
+        #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed unsuccessful AST parse");
         None
     }
@@ -620,13 +663,16 @@ type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
 /// Prepare a snippet for wrapping in `fn main` by separating out any inner attributes,
 /// as they need to be promoted to crate level.
 #[must_use]
-pub fn prep_snippet(rs_source: &str) -> (String, String) {
+pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
 
     lazy_static! {
         static ref INNER_ATTRIB_REGEX: Regex = Regex::new(r"(?m)^[\s]*#!\[.+\]").unwrap();
     }
 
+    profile_fn!(extract_inner_attribs);
+
+    #[cfg(debug_assertions)]
     debug_log!("rs_source={rs_source}");
 
     let (inner_attribs, rest): Zipped = rs_source
@@ -659,8 +705,11 @@ pub fn prep_snippet(rs_source: &str) -> (String, String) {
 /// Convert a Rust code snippet into a program by wrapping it in a main method and other scaffolding.
 #[must_use]
 pub fn wrap_snippet(inner_attribs: &str, body: &str) -> String {
+    profile_fn!(wrap_snippet);
+    #[cfg(debug_assertions)]
     debug_log!("In wrap_snippet");
 
+    #[cfg(debug_assertions)]
     debug_log!("In wrap_snippet: inner_attribs={inner_attribs:#?}");
     let wrapped_snippet = format!(
         r##"#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
@@ -676,6 +725,7 @@ Ok(())
 }}
 "##
     );
+    #[cfg(debug_assertions)]
     debug_log!("wrapped_snippet={wrapped_snippet}");
     wrapped_snippet
 }
@@ -684,16 +734,20 @@ Ok(())
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
 pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, ThagError> {
+    profile_fn!(write_source);
     let mut to_rs_file = OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
         .open(to_rs_path)?;
+    // #[cfg(debug_assertions)]
     // debug_log!("Writing out source to {to_rs_path:#?}:\n{}", {
     //     let lines = rs_source.lines();
     //     reassemble(lines)
     // });
     to_rs_file.write_all(rs_source.as_bytes())?;
+
+    #[cfg(debug_assertions)]
     debug_log!("Done!");
 
     Ok(to_rs_file)
@@ -704,9 +758,11 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, T
 /// Will panic if it fails to create the `rs_repl` subdirectory.
 #[must_use]
 pub fn create_next_repl_file() -> PathBuf {
+    profile_fn!(create_next_repl_file);
     // Create a directory inside of `std::env::temp_dir()`
     let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
 
+    #[cfg(debug_assertions)]
     debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
 
     // Ensure REPL subdirectory exists
@@ -717,6 +773,7 @@ pub fn create_next_repl_file() -> PathBuf {
         .unwrap()
         .filter_map(|entry| {
             let path = entry.unwrap().path();
+            // #[cfg(debug_assertions)]
             // debug_log!("path={path:?}, path.is_file()={}, path.extension()?.to_str()={:?}, path.file_stem()?.to_str()={:?}", path.is_file(), path.extension()?.to_str(), path.file_stem()?.to_str());
             if path.is_dir()
                 // && path.extension()?.to_str() == Some("rs")
@@ -724,6 +781,7 @@ pub fn create_next_repl_file() -> PathBuf {
             {
                 let stem = path.file_stem().unwrap();
                 let num_str = stem.to_str().unwrap().trim_start_matches("repl_");
+                // #[cfg(debug_assertions)]
                 // debug_log!("stem={stem:?}; num_str={num_str}");
                 if num_str.len() == 6 && num_str.chars().all(char::is_numeric) {
                     Some(num_str.parse::<u32>().unwrap())
@@ -758,6 +816,7 @@ pub fn create_next_repl_file() -> PathBuf {
 /// Will panic if if fails to create the repl subdirectory.
 #[must_use]
 pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
+    profile_fn!(create_repl_file);
     let padded_num = format!("{:06}", num);
     let dir_name = format!("repl_{padded_num}");
     let target_dir_path = gen_repl_temp_dir_path.join(dir_name);
@@ -766,6 +825,7 @@ pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
     let filename = format!("repl_{padded_num}.rs");
     let path = target_dir_path.join(filename);
     fs::File::create(path.clone()).expect("Failed to create file");
+    #[cfg(debug_assertions)]
     debug_log!("Created file: {path:#?}");
     path
 }
@@ -791,6 +851,7 @@ pub fn create_temp_source_file() -> PathBuf {
         .truncate(true)
         .open(path.clone())
         .expect("Failed to create file");
+    #[cfg(debug_assertions)]
     debug_log!("Created file: {path:#?}");
     path
 }
@@ -798,6 +859,7 @@ pub fn create_temp_source_file() -> PathBuf {
 /// Combine the elements of a loop filter into a well-formed program.
 #[must_use]
 pub fn build_loop(args: &Cli, filter: String) -> String {
+    profile_fn!(build_loop);
     let maybe_ast = extract_ast(&filter);
     let returns_unit = if let Ok(expr) = maybe_ast {
         is_unit_return_type(&expr)
@@ -863,6 +925,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 /// # Errors
 /// Will return `Err` if there is any error deleting the file.
 pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<()> {
+    profile_fn!(clean_up);
     // Delete the file
     remove_file(source_path)?;
 
@@ -874,6 +937,7 @@ pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<
 /// # Errors
 /// Will return `Err` if there is any error reading the directory.
 pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
+    profile_fn!(display_dir_contents);
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
@@ -918,6 +982,7 @@ pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
         command.arg(source_path_str);
         let output = command.output().expect("Failed to run rustfmt");
 
+        #[cfg(debug_assertions)]
         if output.status.success() {
             debug_log!("Successfully formatted {} with rustfmt.", source_path_str);
             debug_log!(
@@ -946,6 +1011,7 @@ pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
 /// an abstract syntax tree.
 #[must_use]
 pub fn strip_curly_braces(haystack: &str) -> Option<String> {
+    profile_fn!(strip_curly_braces);
     // Define the regex pattern
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$").unwrap();
@@ -967,9 +1033,11 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 
     impl<'ast> Visit<'ast> for FindFns {
         fn visit_item_fn(&mut self, node: &'ast syn::ItemFn) {
-            // debug_log!("Node={:#?}", node);
-            // debug_log!("Ident={}", node.sig.ident);
-            // debug_log!("Output={:#?}", node.sig.output.clone());
+            // #[cfg(debug_assertions)] {
+            //     debug_log!("Node={:#?}", node);
+            //     debug_log!("Ident={}", node.sig.ident);
+            //     debug_log!("Output={:#?}", node.sig.output.clone());
+            // }
             self.function_map
                 .insert(node.sig.ident.to_string(), node.sig.output.clone());
         }
@@ -985,12 +1053,15 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 /// otherwise we wrap it in a println! statement.
 #[must_use]
 pub fn is_unit_return_type(expr: &Expr) -> bool {
+    profile_fn!(is_unit_return_type);
     let start = Instant::now();
 
     let function_map = extract_functions(expr);
+    #[cfg(debug_assertions)]
     debug_log!("function_map={function_map:#?}");
 
     let is_last_stmt_unit_type = is_last_stmt_unit_type(expr, &function_map);
+    #[cfg(debug_assertions)]
     debug_timings(&start, "Determined probable snippet return type");
     is_last_stmt_unit_type
 }
@@ -1009,13 +1080,17 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
     expr: &Expr,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> bool {
+    profile_fn!(is_last_stmt_unit_type);
+    #[cfg(debug_assertions)]
     debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
         Expr::ForLoop(for_loop) => {
+            // #[cfg(debug_assertions)]
             // debug_log!("%%%%%%%% Expr::ForLoop(for_loop))");
             if let Some(last_stmt) = for_loop.body.stmts.last() {
                 is_stmt_unit_type(last_stmt, function_map)
             } else {
+                // #[cfg(debug_assertions)]
                 // debug_log!("%%%%%%%% Not if let Some(last_stmt) = for_loop.body.stmts.last()");
                 false
             }
@@ -1024,6 +1099,7 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
             // Cycle through if-else statements and return false if any one is found returning
             // a non-unit value;
             if let Some(last_stmt) = expr_if.then_branch.stmts.last() {
+                // #[cfg(debug_assertions)]
                 // debug_log!("%%%%%%%% Some(last_stmt) = expr_if.then_branch.stmts.last()");
                 if !is_stmt_unit_type(last_stmt, function_map) {
                     return false;
@@ -1038,9 +1114,11 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
                         Expr::Block(expr_block) => {
                             let else_is_unit_type =
                                 if let Some(last_stmt) = expr_block.block.stmts.last() {
+                                    // #[cfg(debug_assertions)]
                                     // debug_log!("%%%%%%%% If let Some(last_stmt) = expr_block.block.stmts.last()");
                                     is_stmt_unit_type(last_stmt, function_map)
                                 } else {
+                                    // #[cfg(debug_assertions)]
                                     // debug_log!("%%%%%%%% Not if let Some(last_stmt) = expr_block.block.stmts.last()");
                                     false
                                 };
@@ -1054,6 +1132,7 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
                     true
                 }
             } else {
+                // #[cfg(debug_assertions)]
                 // debug_log!(
                 //     "%%%%%%%% Not if let Some(last_stmt) = expr_if.then_branch.stmts.last()"
                 // );
@@ -1065,15 +1144,18 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
                 return true;
             }
             if let Some(last_stmt) = expr_block.block.stmts.last() {
+                // #[cfg(debug_assertions)]
                 // debug_log!("%%%%%%%% if let Some(last_stmt) = expr_block.block.stmts.last()");
                 is_stmt_unit_type(last_stmt, function_map)
             } else {
+                // #[cfg(debug_assertions)]
                 // debug_log!("%%%%%%%% Not if let Some(last_stmt) = expr_block.block.stmts.last()");
                 false
             }
         }
         Expr::Match(expr_match) => {
             for arm in &expr_match.arms {
+                // #[cfg(debug_assertions)]
                 // debug_log!("arm.body={:#?}", arm.body);
                 let expr = &*arm.body;
                 if is_last_stmt_unit_type(expr, function_map) {
@@ -1081,6 +1163,7 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
                 }
                 return false;
             }
+            // #[cfg(debug_assertions)]
             // debug_log!("%%%%%%%% Match arm returns non-unit type");
             true
         }
@@ -1163,6 +1246,7 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
             false
         }
         Expr::Return(expr_return) => {
+            #[cfg(debug_assertions)]
             debug_log!("%%%%%%%% expr_return={expr_return:#?}");
             expr_return.expr.is_none()
         }
@@ -1182,18 +1266,22 @@ pub fn is_path_unit_type<S: ::std::hash::BuildHasher>(
     path: &syn::PatPath,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> Option<bool> {
+    profile_fn!(is_path_unit_type);
     if let Some(ident) = path.path.get_ident() {
         if let Some(return_type) = function_map.get(&ident.to_string()) {
             return Some(match return_type {
                 ReturnType::Default => {
+                    // #[cfg(debug_assertions)]
                     // debug_log!("%%%%%%%% ReturnType::Default");
                     true
                 }
                 ReturnType::Type(_, ty) => {
                     if let syn::Type::Tuple(tuple) = &**ty {
+                        // #[cfg(debug_assertions)]
                         // debug_log!("%%%%%%%% Tuple ReturnType");
                         tuple.elems.is_empty()
                     } else {
+                        // #[cfg(debug_assertions)]
                         // debug_log!("%%%%%%%% Non-unit return type");
                         false
                     }
@@ -1211,21 +1299,29 @@ pub fn is_stmt_unit_type<S: ::std::hash::BuildHasher>(
     stmt: &Stmt,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> bool {
+    profile_fn!(is_stmt_unit_type);
+    #[cfg(debug_assertions)]
     debug_log!("%%%%%%%% stmt={stmt:#?}");
     match stmt {
         Stmt::Expr(expr, None) => {
-            // debug_log!("%%%%%%%% expr={expr:#?}");
-            // debug_log!("%%%%%%%% Stmt::Expr(_, None)");
+            // #[cfg(debug_assertions)]
+            // {
+            //     debug_log!("%%%%%%%% expr={expr:#?}");
+            //     debug_log!("%%%%%%%% Stmt::Expr(_, None)");
+            // }
             is_last_stmt_unit_type(expr, function_map)
         } // Expression without semicolon
         Stmt::Expr(expr, Some(_)) => {
+            // #[cfg(debug_assertions)]
             // debug_log!("%%%%%%%% Stmt::Expr(_, Some(_))");
             match expr {
                 Expr::Return(expr_return) => {
+                    #[cfg(debug_assertions)]
                     debug_log!("%%%%%%%% expr_return={expr_return:#?}");
                     expr_return.expr.is_none()
                 }
                 Expr::Yield(expr_yield) => {
+                    #[cfg(debug_assertions)]
                     debug_log!("%%%%%%%% expr_yield={expr_yield:#?}");
                     expr_yield.expr.is_none()
                 }
@@ -1233,6 +1329,7 @@ pub fn is_stmt_unit_type<S: ::std::hash::BuildHasher>(
             }
         } // Expression with semicolon usually returns unit, except sometimes return or yield.
         Stmt::Macro(m) => {
+            // #[cfg(debug_assertions)]
             // debug_log!("%%%%%%%% Stmt::Macro({m:#?}), m.semi_token.is_some()={is_some}");
             m.semi_token.is_some()
         }
@@ -1250,6 +1347,7 @@ pub fn is_stmt_unit_type<S: ::std::hash::BuildHasher>(
             | Item::Use(_)
             | Item::Mod(_) => true,
             Item::Macro(m) => {
+                // #[cfg(debug_assertions)]
                 // debug_log!("%%%%%%%% Item::Macro({m:#?}), m.semi_token.is_some()={is_some}");
                 m.semi_token.is_some()
             }
@@ -1261,6 +1359,7 @@ pub fn is_stmt_unit_type<S: ::std::hash::BuildHasher>(
 /// Check if an expression returns a unit value, so that we can avoid trying to print it out.
 #[must_use]
 pub fn returns_unit(expr: &Expr) -> bool {
+    profile_fn!(returns_unit);
     let is_unit_type = matches!(expr, Expr::Tuple(tuple) if tuple.elems.is_empty());
     nu_color_println!(
         nu_resolve_style(crate::MessageLevel::Emphasis),
@@ -1276,6 +1375,7 @@ pub fn returns_unit(expr: &Expr) -> bool {
 /// Will panic if a macro expression can't be parsed.
 #[must_use]
 pub fn extract_expr_from_file(file: &File) -> Option<Expr> {
+    profile_fn!(extract_expr_from_file);
     // Traverse the file to find the main function and extract expressions from it
     for item in &file.items {
         if let Item::Fn(func) = item {

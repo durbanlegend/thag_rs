@@ -43,4 +43,4 @@ jobs:
       run: cargo build
 
     - name: Run tests
-      run: cargo test --no-fail-fast -- --test-threads=4 --test check_iced_tour_rs check_puffin_profiler_egui_rs
+      run: cargo test --no-fail-fast -- --test-threads=4

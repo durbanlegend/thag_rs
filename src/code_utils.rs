@@ -806,7 +806,7 @@ pub fn build_loop(args: &Cli, filter: String) -> String {
         dbg!(&filter);
         !expr_any.is::<()>()
     };
-    let loop_toml = &args.cargo;
+    let loop_toml = &args.toml;
     let loop_begin = &args.begin;
     let loop_end = &args.end;
     let filter = if returns_unit {

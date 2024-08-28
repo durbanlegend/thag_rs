@@ -125,7 +125,8 @@ pub struct Cli {
     pub config: bool,
 }
 
-// Getter for clap command-line arguments
+/// Getter for clap command-line arguments
+#[must_use]
 pub fn get_args() -> Cli {
     Cli::parse()
 }
@@ -157,7 +158,6 @@ bitflags! {
     // can produce output like `A | B` instead of `Flags(A | B)`.
     // #[derive(Debug)]
     #[derive(Clone, Default, PartialEq, Eq)]
-    /// Processing flags for ease of handling command-line options
     pub struct ProcFlags: u32 {
         const GENERATE = 1;
         const BUILD = 2;
@@ -259,21 +259,6 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
             }
             return Err("Missing --loop option".into());
         }
-
-        // if !is_loop && (args.toml.is_some() || args.begin.is_some()/* || args.end.is_some() */) {
-        //     let loop_options = vec!["--toml", "begin" /*, "end" */];
-        //     // Get the underlying `Command` instance from your `Cli`
-        //     let command = Cli::command();
-
-        //     let matches = command.clone().get_matches();
-        //     eprintln!("matches.ids().len() = {}", matches.ids().len());
-        //     for m in matches.ids() {
-        //         // eprintln!("m = {m} of type {}", type_of(m));
-        //         if
-        //     }
-        // }
-
-        // eprintln!("Type of args is {}", type_of(args));
 
         // Check all good
         let formatted = proc_flags.to_string();

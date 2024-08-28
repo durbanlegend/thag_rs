@@ -4,7 +4,7 @@ use crate::code_utils::{
     strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::colors::{nu_resolve_style, MessageLevel};
-use crate::config::MAYBE_CONFIG;
+use crate::config::{self, MAYBE_CONFIG};
 use crate::errors::ThagError;
 use crate::log;
 use crate::logging;
@@ -50,47 +50,28 @@ use std::{
 /// Will return `Err` if there is an error returned by any of the subordinate functions.
 /// # Panics
 /// Will panic if it fails to strip a .rs extension off the script name,
-#[allow(clippy::too_many_lines)]
-pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
+pub fn execute(args: Cli) -> Result<(), Box<dyn Error>> {
     // Instrument the entire function
-    // profile_fn!(execute);
+    profile_fn!(execute);
 
     // eprintln!("In execute()");
     let start = Instant::now();
     #[cfg(debug_assertions)]
     configure_log();
+
     let proc_flags = get_proc_flags(&args)?;
+
     #[cfg(debug_assertions)]
     if log_enabled!(Debug) {
-        debug_print_config();
-        debug_timings(&start, "Set up processing flags");
-        debug_log!("proc_flags={proc_flags:#?}");
-
-        if !&args.args.is_empty() {
-            debug_log!("... args:");
-            for arg in &args.args {
-                debug_log!("{}", arg);
-            }
-        }
+        log_init_setup(start, &args, &proc_flags);
     }
 
-    let verbosity = if args.verbose {
-        Verbosity::Verbose
-    } else if args.quiet == 1 {
-        Verbosity::Quiet
-    } else if args.quiet == 2 {
-        Verbosity::Quieter
-    } else if args.normal {
-        Verbosity::Normal
-    } else if let Some(config) = &*MAYBE_CONFIG {
-        config.logging.default_verbosity
-    } else {
-        Verbosity::Normal
-    };
-    logging::set_global_verbosity(verbosity);
+    set_verbosity(&args);
 
-    // let is_config = args.co
-    let is_repl = proc_flags.contains(ProcFlags::REPL);
+    if args.config {
+        config::edit()?;
+    }
+    let is_repl = args.repl;
     let working_dir_path = if is_repl {
         TMPDIR.join(REPL_SUBDIR)
     } else {
@@ -110,6 +91,54 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     if is_dynamic {
         let _ = create_temp_source_file();
     }
+
+    let script_dir_path = set_script_dir_path(
+        is_repl,
+        &args,
+        &working_dir_path,
+        &repl_source_path,
+        is_dynamic,
+    );
+
+    let script_state = set_script_state(
+        &args,
+        script_dir_path,
+        is_repl,
+        repl_source_path,
+        is_dynamic,
+    );
+
+    process(&proc_flags, args, &script_state, start)
+}
+
+#[inline]
+fn set_verbosity(args: &Cli) {
+    profile_fn!(set_verbosity);
+    let verbosity = if args.verbose {
+        Verbosity::Verbose
+    } else if args.quiet == 1 {
+        Verbosity::Quiet
+    } else if args.quiet == 2 {
+        Verbosity::Quieter
+    } else if args.normal {
+        Verbosity::Normal
+    } else if let Some(config) = &*MAYBE_CONFIG {
+        config.logging.default_verbosity
+    } else {
+        Verbosity::Normal
+    };
+    logging::set_global_verbosity(verbosity);
+}
+
+#[inline]
+fn set_script_dir_path(
+    is_repl: bool,
+    args: &Cli,
+    working_dir_path: &Path,
+    repl_source_path: &Option<PathBuf>,
+    is_dynamic: bool,
+) -> PathBuf {
+    profile_fn!(set_script_dir_path);
     let script_dir_path = if is_repl {
         if let Some(ref script) = args.script {
             // REPL with repeat of named script
@@ -143,7 +172,18 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
             .canonicalize()
             .expect("Problem resolving script dir path")
     };
+    script_dir_path
+}
 
+#[inline]
+fn set_script_state(
+    args: &Cli,
+    script_dir_path: PathBuf,
+    is_repl: bool,
+    repl_source_path: Option<PathBuf>,
+    is_dynamic: bool,
+) -> ScriptState {
+    profile_fn!(set_script_state);
     let script_state: ScriptState = if let Some(ref script) = args.script {
         let script = script.to_owned();
         ScriptState::Named {
@@ -166,10 +206,28 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
             script_dir_path,
         }
     };
-    let mut build_state = BuildState::pre_configure(&proc_flags, &args, &script_state)?;
+    script_state
+}
+
+#[inline]
+fn process(
+    proc_flags: &ProcFlags,
+    mut args: Cli,
+    script_state: &ScriptState,
+    start: Instant,
+) -> Result<(), Box<dyn Error>> {
+    profile_fn!(process);
+    let is_repl = args.repl;
+    let is_expr = proc_flags.contains(ProcFlags::EXPR);
+    let is_stdin = proc_flags.contains(ProcFlags::STDIN);
+    let is_edit = proc_flags.contains(ProcFlags::EDIT);
+    let is_loop = proc_flags.contains(ProcFlags::LOOP);
+    let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
+
+    let mut build_state = BuildState::pre_configure(proc_flags, &args, script_state)?;
     if is_repl {
         debug_log!("build_state.source_path={:?}", build_state.source_path);
-        run_repl(&mut args, &proc_flags, &mut build_state, start)
+        run_repl(&mut args, proc_flags, &mut build_state, start)
     } else if is_dynamic {
         let rs_source = if is_expr {
             let Some(rs_source) = args.expression.clone() else {
@@ -214,7 +272,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
                 &mut build_state,
                 &rs_source,
                 &mut args,
-                &proc_flags,
+                proc_flags,
                 &start,
             )
         } else {
@@ -228,18 +286,28 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
             )))
         }
     } else {
-        gen_build_run(
-            &mut args,
-            &proc_flags,
-            &mut build_state,
-            None::<Ast>,
-            &start,
-        )
+        gen_build_run(&mut args, proc_flags, &mut build_state, None::<Ast>, &start)
     }
 }
 
 #[cfg(debug_assertions)]
-fn debug_print_config() {
+fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
+    profile_fn!(log_init_setup);
+    debug_log_config();
+    debug_timings(&start, "Set up processing flags");
+    debug_log!("proc_flags={proc_flags:#?}");
+
+    if !&args.args.is_empty() {
+        debug_log!("... args:");
+        for arg in &args.args {
+            debug_log!("{}", arg);
+        }
+    }
+}
+
+#[cfg(debug_assertions)]
+fn debug_log_config() {
+    profile_fn!(debug_log_config);
     debug_log!("PACKAGE_NAME={PACKAGE_NAME}");
     debug_log!("VERSION={VERSION}");
     debug_log!("REPL_SUBDIR={REPL_SUBDIR}");
@@ -248,6 +316,7 @@ fn debug_print_config() {
 // Configure log level
 #[cfg(debug_assertions)]
 fn configure_log() {
+    profile_fn!(configure_log);
     let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
     let mut binding = Builder::new();
     let builder = binding.parse_env(env);
@@ -273,11 +342,7 @@ pub fn gen_build_run(
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
     // Instrument the entire function
-    // profile_fn!(gen_build_run);
-
-    // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
-    let proc_flags = &proc_flags;
-    let options = &options;
+    profile_fn!(gen_build_run);
 
     if build_state.must_gen {
         let source_path: &Path = &build_state.source_path;
@@ -516,11 +581,11 @@ pub fn generate(
 /// Will return `Err` if there is an error composing the Cargo TOML path or running the Cargo build command.
 /// # Panics
 /// Will panic if the cargo build process fails to spawn or if it can't move the executable.
+#[allow(clippy::too_many_lines)]
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), ThagError> {
     // profile_fn!(build);
 
     let start_build = Instant::now();
-    // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let quiet = proc_flags.contains(ProcFlags::QUIET);
     let quieter = proc_flags.contains(ProcFlags::QUIETER);
     let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
@@ -538,9 +603,6 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
     let cargo_subcommand = if check { "check" } else { "build" };
     // Rustc writes to std
     let mut args = vec![cargo_subcommand, "--manifest-path", &cargo_toml_path_str];
-    // if verbose {
-    //     args.push("--verbose");
-    // };
     if quiet || quieter {
         args.push("--quiet");
     }
@@ -583,67 +645,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
     if exit_status.status.success() {
         debug_log!("Build succeeded");
         if executable {
-            // Determine the output directory
-            let mut cargo_bin_path = home::home_dir().expect("Could not find home directory");
-            let cargo_bin_subdir = ".cargo/bin";
-            cargo_bin_path.push(cargo_bin_subdir);
-
-            // Create the target directory if it doesn't exist
-            if !cargo_bin_path.exists() {
-                fs::create_dir_all(&cargo_bin_path).expect("Failed to create target directory");
-            }
-
-            let name_vec = if let Some(ref manifest) = build_state.cargo_manifest {
-                manifest
-                    .bin
-                    .iter()
-                    .filter_map(|p| p.clone().name)
-                    .collect::<Vec<String>>()
-            } else {
-                vec![]
-            };
-
-            let executable_name = if name_vec.is_empty() {
-                #[cfg(windows)]
-                {
-                    format!("{}.exe", build_state.source_stem)
-                }
-                #[cfg(not(windows))]
-                {
-                    build_state.source_stem.to_string()
-                }
-            } else {
-                name_vec[0].clone()
-            };
-
-            // let executable_name: String;
-
-            let executable_path = build_state
-                .target_dir_path
-                .clone()
-                .join("target/release")
-                .join(&executable_name);
-            let output_path = cargo_bin_path.join(&build_state.source_stem);
-            eprintln!("executable_path={executable_path:#?}, output_path={output_path:#?}");
-            fs::rename(executable_path, output_path).expect("Failed to move the executable");
-
-            let dash_line = "-".repeat(FLOWER_BOX_LEN);
-            log!(
-                Verbosity::Quiet,
-                "{}",
-                nu_ansi_term::Color::Yellow.paint(&dash_line)
-            );
-
-            log!(
-                Verbosity::Quieter,
-                "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
-            );
-
-            log!(
-                Verbosity::Quiet,
-                "{}",
-                nu_ansi_term::Color::Yellow.paint(&dash_line)
-            );
+            deploy_executable(build_state);
         }
     } else {
         return Err(ThagError::Command(String::from("Build failed")));
@@ -652,6 +654,71 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
     display_timings(&start_build, "Completed build", proc_flags);
 
     Ok(())
+}
+
+fn deploy_executable(build_state: &BuildState) {
+    profile_fn!(deploy_executable);
+    // Determine the output directory
+    let mut cargo_bin_path = home::home_dir().expect("Could not find home directory");
+    let cargo_bin_subdir = ".cargo/bin";
+    cargo_bin_path.push(cargo_bin_subdir);
+
+    // Create the target directory if it doesn't exist
+    if !cargo_bin_path.exists() {
+        fs::create_dir_all(&cargo_bin_path).expect("Failed to create target directory");
+    }
+
+    let name_vec = if let Some(ref manifest) = build_state.cargo_manifest {
+        manifest
+            .bin
+            .iter()
+            .filter_map(|p| p.clone().name)
+            .collect::<Vec<String>>()
+    } else {
+        vec![]
+    };
+
+    let executable_name = if name_vec.is_empty() {
+        #[cfg(windows)]
+        {
+            format!("{}.exe", build_state.source_stem)
+        }
+        #[cfg(not(windows))]
+        {
+            build_state.source_stem.to_string()
+        }
+    } else {
+        name_vec[0].clone()
+    };
+
+    // let executable_name: String;
+
+    let executable_path = build_state
+        .target_dir_path
+        .clone()
+        .join("target/release")
+        .join(&executable_name);
+    let output_path = cargo_bin_path.join(&build_state.source_stem);
+    eprintln!("executable_path={executable_path:#?}, output_path={output_path:#?}");
+    fs::rename(executable_path, output_path).expect("Failed to move the executable");
+
+    let dash_line = "-".repeat(FLOWER_BOX_LEN);
+    log!(
+        Verbosity::Quiet,
+        "{}",
+        nu_ansi_term::Color::Yellow.paint(&dash_line)
+    );
+
+    log!(
+        Verbosity::Quieter,
+        "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
+    );
+
+    log!(
+        Verbosity::Quiet,
+        "{}",
+        nu_ansi_term::Color::Yellow.paint(&dash_line)
+    );
 }
 
 /// Run the built program
@@ -664,7 +731,7 @@ pub fn run(
     args: &[String],
     build_state: &BuildState,
 ) -> Result<(), ThagError> {
-    // profile_fn!(run);
+    profile_fn!(run);
 
     let start_run = Instant::now();
     debug_log!("RRRRRRRR In run");

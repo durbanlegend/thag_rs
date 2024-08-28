@@ -2,12 +2,14 @@ use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::PathBuf;
 use std::{env, fs};
 
 use crate::colors::{ColorSupport, TermTheme};
-use crate::debug_log;
 use crate::logging::Verbosity;
+use crate::{debug_log, ThagError};
 
 lazy_static! {
     #[derive(Debug)]
@@ -99,6 +101,48 @@ pub fn load() -> Option<Config> {
     } else {
         None
     }
+}
+
+/// Open the configuration file in an editor.
+/// # Errors
+/// Will return `Err` if there is an error editing the file.
+/// # Panics
+/// Will panic if it can't create the parent directory for the configuration.
+#[allow(clippy::unnecessary_wraps)]
+pub fn edit() -> Result<Option<String>, ThagError> {
+    profile_fn!(edit);
+    let config_path = get_config_path();
+    debug_log!("config_path={config_path:?}");
+
+    // Create the target directory if it doesn't exist
+    let exists = config_path.exists();
+    if !exists {
+        let dir_path = &config_path.parent().expect("Can't create directory");
+        fs::create_dir_all(dir_path).unwrap_or_else(|_| panic!("Failed to create {dir_path:#?}"));
+    }
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&config_path)?;
+    //https://github.com/durbanlegend/thag_rs/blob/master/assets/config.toml.template
+    if !exists {
+        let text = r#"# Please set up the config file as follows:
+# 1. Follow the link below to the template on Github.
+# 2. Copy the config file template contents using the "Raw (Copy raw file)" icon in the viewer.
+# 3. Paste the contents in here.
+# 4. Make the configuration changes you want. Ensure you un-comment the options you want.
+# 5. Save the file.
+# 6. Exit or tab away to return.
+#
+# https://github.com/durbanlegend/thag_rs/blob/master/assets/config.toml.template
+"#;
+        file.write_all(text.as_bytes())?;
+    }
+    eprintln!("About to edit {config_path:#?}");
+    edit::edit_file(&config_path)?;
+    Ok(Some(String::from("End of history file edit")))
 }
 
 /// Main function for use by testing or the script runner.

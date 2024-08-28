@@ -49,7 +49,7 @@ pub fn cargo_search<R: CommandRunner>(
     runner: &R,
     dep_crate: &str,
 ) -> Result<(String, String), Box<dyn Error>> {
-    profile_fn!(run_command);
+    profile_fn!(cargo_search);
     let start_search = Instant::now();
 
     let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(dep_crate);
@@ -160,6 +160,7 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>>
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
 pub fn default_manifest_from_build_state(build_state: &BuildState) -> Result<Manifest, ThagError> {
+    profile_fn!(default_manifest_from_build_state);
     let source_stem = &build_state.source_stem;
     let source_name = &build_state.source_name;
     let binding = build_state.target_dir_path.join(source_name);

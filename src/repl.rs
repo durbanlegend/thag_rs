@@ -986,14 +986,14 @@ pub fn edit_history(
     _args: &ArgMatches,
     context: &mut Context,
 ) -> Result<Option<String>, ThagError> {
-    let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
-    println!("history_file={history_file:#?}");
+    let history_path = context.build_state.cargo_home.clone().join(HISTORY_FILE);
+    println!("history_path={history_path:#?}");
     OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(false)
-        .open(&history_file)?;
-    edit::edit_file(&history_file)?;
+        .open(&history_path)?;
+    edit::edit_file(&history_path)?;
     Ok(Some(String::from("End of history file edit")))
 }
 

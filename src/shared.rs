@@ -192,7 +192,7 @@ impl BuildState {
 
         #[cfg(target_os = "windows")]
         {
-            target_path = target_path.join(format!("{source_stem_str}.exe"));
+            target_path = target_path.join(format!("{source_stem}.exe"));
         }
         #[cfg(not(target_os = "windows"))]
         {

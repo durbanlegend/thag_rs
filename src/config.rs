@@ -2,10 +2,11 @@ use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
-use std::fs::OpenOptions;
+#[cfg(target_os = "windows")]
+use std::env;
+use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
-use std::{env, fs};
 
 use crate::colors::{ColorSupport, TermTheme};
 use crate::logging::Verbosity;
@@ -15,14 +16,15 @@ lazy_static! {
     #[derive(Debug)]
     pub static ref MAYBE_CONFIG: Option<Config> = {
         let maybe_config = load();
+        #[cfg(debug_assertions)]
         if let Some(ref config) = maybe_config {
-            debug_log!("Loaded config: {config:?}");
-            debug_log!(
-                "default_verbosity={:?}, color_support={:?}, term_theme={:?}",
-                config.logging.default_verbosity,
-                config.colors.color_support,
-                config.colors.term_theme
-            );
+                debug_log!("Loaded config: {config:?}");
+                debug_log!(
+                    "default_verbosity={:?}, color_support={:?}, term_theme={:?}",
+                    config.logging.default_verbosity,
+                    config.colors.color_support,
+                    config.colors.term_theme
+                );
         }
         maybe_config
     };
@@ -35,20 +37,6 @@ pub struct Config {
     pub logging: Logging,
     pub colors: Colors,
 }
-
-// impl Default for Config {
-//     fn default() -> Self {
-//         Config {
-//             logging: Logging {
-//                 default_verbosity: Verbosity::Normal,
-//             },
-//             colors: Colors {
-//                 color_support: ColorSupport::Ansi16,
-//                 term_theme: TermTheme::Dark,
-//             },
-//         }
-//     }
-// }
 
 #[allow(dead_code)]
 #[serde_as]
@@ -71,24 +59,27 @@ pub struct Colors {
     pub term_theme: TermTheme,
 }
 
+#[cfg(target_os = "windows")]
 fn get_config_path() -> PathBuf {
-    if cfg!(target_os = "windows") {
-        PathBuf::from(env::var("APPDATA").unwrap())
-            .join("thag_rs")
-            .join("config.toml")
-    } else {
-        home::home_dir()
-            .unwrap()
-            .join(".config")
-            .join("thag_rs")
-            .join("config.toml")
-    }
+    PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"))
+        .join("thag_rs")
+        .join("config.toml")
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_config_path() -> PathBuf {
+    home::home_dir()
+        .expect("Error resolving home::home_dir()")
+        .join(".config")
+        .join("thag_rs")
+        .join("config.toml")
 }
 
 #[must_use]
 pub fn load() -> Option<Config> {
     profile_fn!(load);
     let config_path = get_config_path();
+    #[cfg(debug_assertions)]
     debug_log!("config_path={config_path:?}");
 
     if config_path.exists() {
@@ -112,6 +103,7 @@ pub fn load() -> Option<Config> {
 pub fn edit() -> Result<Option<String>, ThagError> {
     profile_fn!(edit);
     let config_path = get_config_path();
+    #[cfg(debug_assertions)]
     debug_log!("config_path={config_path:?}");
 
     // Create the target directory if it doesn't exist
@@ -148,7 +140,9 @@ pub fn edit() -> Result<Option<String>, ThagError> {
 /// Main function for use by testing or the script runner.
 #[allow(dead_code)]
 fn main() {
-    if let Some(config) = load() {
+    let maybe_config = load();
+    #[cfg(debug_assertions)]
+    if let Some(config) = maybe_config {
         debug_log!("Loaded config: {config:?}");
         debug_log!(
             "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",

@@ -107,13 +107,14 @@ impl BuildState {
         let is_check = proc_flags.contains(ProcFlags::CHECK);
         let build_exe = proc_flags.contains(ProcFlags::EXECUTABLE);
         let maybe_script = script_state.get_script();
-        let Some(script) = maybe_script.clone() else {
+        let Some(ref script) = maybe_script else {
             return Err(Box::new(ThagError::NoneOption(
                 "No script specified".to_string(),
             )));
         };
+        #[cfg(debug_assertions)]
         debug_log!("script={script}");
-        let path = Path::new(&script);
+        let path = Path::new(script);
         debug_log!("path={path:#?}");
         let Some(filename) = path.file_name() else {
             return Err(Box::new(ThagError::NoneOption(
@@ -126,18 +127,12 @@ impl BuildState {
             )));
         };
 
-        let source_name = source_name.to_string();
         debug_log!("source_name={source_name}");
-        let source_stem = {
-            let Some(stem) = source_name.strip_suffix(RS_SUFFIX) else {
-                return Err(Box::new(ThagError::Command(format!(
-                    "Error stripping suffix from {}",
-                    source_name
-                ))));
-            };
-            stem.to_string()
+        let Some(source_stem) = source_name.strip_suffix(RS_SUFFIX) else {
+            return Err(Box::new(ThagError::Command(format!(
+                "Error stripping suffix from {source_name}"
+            ))));
         };
-
         let working_dir_path = if is_repl {
             TMPDIR.join(REPL_SUBDIR)
         } else {
@@ -148,14 +143,14 @@ impl BuildState {
             script_state
                 .get_script_dir_path()
                 .expect("Missing script path")
-                .join(source_name.clone())
+                .join(source_name)
         } else if is_dynamic {
             script_state
                 .get_script_dir_path()
                 .expect("Missing script path")
                 .join(TEMP_SCRIPT_NAME)
         } else {
-            working_dir_path.join(PathBuf::from(script.clone()))
+            working_dir_path.join(PathBuf::from(script))
         };
 
         debug_log!("script_path={script_path:#?}");
@@ -163,8 +158,7 @@ impl BuildState {
         debug_log!("source_path={source_path:#?}");
         if !source_path.exists() {
             return Err(Box::new(ThagError::Command(format!(
-                "No script named {} or {} in path {source_path:?}",
-                source_stem, source_name
+                "No script named {source_stem} or {source_name} in path {source_path:?}",
             ))));
         }
 
@@ -190,20 +184,26 @@ impl BuildState {
         } else if is_dynamic {
             TMPDIR.join(DYNAMIC_SUBDIR)
         } else {
-            TMPDIR.join(PACKAGE_NAME).join(&source_stem)
+            TMPDIR.join(PACKAGE_NAME).join(source_stem)
         };
 
         debug_log!("target_dir_path={}", target_dir_path.display());
         let mut target_path = target_dir_path.join("target").join("debug");
-        target_path = if cfg!(windows) {
-            target_path.join(source_stem.clone() + ".exe")
-        } else {
-            target_path.join(&source_stem)
-        };
 
-        let target_path_clone = target_path.clone();
+        #[cfg(target_os = "windows")]
+        {
+            target_path = target_path.join(format!("{source_stem_str}.exe"));
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            target_path = target_path.join(source_stem);
+        }
 
-        let cargo_toml_path = target_dir_path.join(TOML_NAME).clone();
+        let target_path_exists = target_path.exists();
+
+        let cargo_toml_path = target_dir_path.join(TOML_NAME);
+        let source_stem = { source_stem.to_string() };
+        let source_name = source_name.to_string();
 
         let mut build_state = Self {
             working_dir_path,
@@ -223,16 +223,10 @@ impl BuildState {
             (true, true)
         } else {
             let stale_executable = matches!(script_state, ScriptState::NamedEmpty { .. })
-                || !target_path_clone.exists()
+                || !target_path_exists
                 || modified_since_compiled(&build_state).is_some();
             let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
             let build_requested = proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK);
-            //            debug_log!(
-            //                "proc_flags={proc_flags:?}, build_requested={build_requested}, target_path={:?},
-            // try_exists: {:?}, exists: {}, proc_flags.contains(ProcFlags::BUILD)?: {},
-            // proc_flags.contains(ProcFlags::CHECK)? :{}, proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK)?: {}",
-            //                target_path_clone, &target_path_clone.try_exists(), &target_path_clone.exists(), proc_flags.contains(ProcFlags::BUILD), proc_flags.contains(ProcFlags::CHECK), proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK)
-            //            );
             let must_gen =
                 force || is_repl || is_loop || is_check || (gen_requested && stale_executable);
             let must_build = force
@@ -244,6 +238,7 @@ impl BuildState {
             (must_gen, must_build)
         };
 
+        #[cfg(debug_assertions)]
         debug_log!("build_state={build_state:#?}");
 
         Ok(build_state)
@@ -319,12 +314,15 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
 // Helper function to sort out the issues caused by Windows using the escape character as
 // the file separator.
 #[must_use]
-pub fn escape_path_for_windows(path: &str) -> String {
-    if cfg!(windows) {
-        path.replace('\\', "/")
-    } else {
-        path.to_string()
-    }
+#[cfg(target_os = "windows")]
+pub fn escape_path_for_windows(path_str: &str) -> String {
+    path_str.replace('\\', "/")
+}
+
+#[must_use]
+#[cfg(not(target_os = "windows"))]
+pub fn escape_path_for_windows(path_str: &str) -> String {
+    path_str.to_string()
 }
 
 /// Control debug logging

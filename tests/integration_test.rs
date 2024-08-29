@@ -50,13 +50,13 @@ fn main() {{
     env::set_var("RUST_TEST_ARGS", real_args.join(" "));
 
     // Set up clap to use the test arguments
-    let cli = Cli::parse_from(&args);
+    let mut cli = Cli::parse_from(&args);
 
     println!("cli={:#?}", cli);
     // thag_rs::Cli = cli;
 
     // Call the execute function directly
-    execute(cli)?;
+    execute(&mut cli)?;
 
     // Restore the real command-line arguments
     env::set_var("RUST_TEST_ARGS", real_args.join(" "));

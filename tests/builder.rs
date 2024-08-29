@@ -72,7 +72,7 @@ mod tests {
             "tests/assets/determine_if_known_type_trait_t.rs".to_string(),
         ));
         args.force = true;
-        let result = execute(args);
+        let result = execute(&mut args);
         assert!(result.is_ok());
     }
 
@@ -242,7 +242,7 @@ name = "bitflags_t"
         let mut args = create_sample_cli(Some("tests/assets/fib_fac_dashu_t.rs".to_string()));
         args.generate = true;
         args.build = true;
-        let result = execute(args);
+        let result = execute(&mut args);
         assert!(result.is_ok());
         println!("target_path={target_path:#?}");
         assert!(target_path.exists());

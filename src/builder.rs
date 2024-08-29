@@ -35,6 +35,7 @@ use lazy_static::lazy_static;
 #[cfg(debug_assertions)]
 use log::{log_enabled, Level::Debug};
 use regex::Regex;
+use std::string::ToString;
 use std::{
     error::Error,
     fs::{self, OpenOptions},
@@ -50,35 +51,35 @@ use std::{
 /// Will return `Err` if there is an error returned by any of the subordinate functions.
 /// # Panics
 /// Will panic if it fails to strip a .rs extension off the script name,
-pub fn execute(args: Cli) -> Result<(), Box<dyn Error>> {
+pub fn execute(args: &mut Cli) -> Result<(), Box<dyn Error>> {
     // Instrument the entire function
     // profile_fn!(execute);
 
-    // eprintln!("In execute()");
     let start = Instant::now();
     #[cfg(debug_assertions)]
     configure_log();
 
-    let proc_flags = get_proc_flags(&args)?;
+    let proc_flags = get_proc_flags(args)?;
 
     #[cfg(debug_assertions)]
     if log_enabled!(Debug) {
-        log_init_setup(start, &args, &proc_flags);
+        log_init_setup(start, args, &proc_flags);
     }
 
-    set_verbosity(&args);
+    set_verbosity(args);
 
     if args.config {
         config::edit()?;
         return Ok(());
     }
+
     let is_repl = args.repl;
     let working_dir_path = if is_repl {
         TMPDIR.join(REPL_SUBDIR)
     } else {
         std::env::current_dir()?.canonicalize()?
     };
-    validate_args(&args, &proc_flags)?;
+    validate_args(args, &proc_flags)?;
     let repl_source_path = if is_repl && args.script.is_none() {
         Some(create_next_repl_file())
     } else {
@@ -95,19 +96,14 @@ pub fn execute(args: Cli) -> Result<(), Box<dyn Error>> {
 
     let script_dir_path = set_script_dir_path(
         is_repl,
-        &args,
+        args,
         &working_dir_path,
         &repl_source_path,
         is_dynamic,
     );
 
-    let script_state = set_script_state(
-        &args,
-        script_dir_path,
-        is_repl,
-        repl_source_path,
-        is_dynamic,
-    );
+    let script_state =
+        set_script_state(args, script_dir_path, is_repl, repl_source_path, is_dynamic);
 
     process(&proc_flags, args, &script_state, start)
 }
@@ -157,10 +153,9 @@ fn set_script_dir_path(
                 .to_path_buf()
         }
     } else if is_dynamic {
+        #[cfg(debug_assertions)]
         debug_log!("is_dynamic={is_dynamic}");
-        <std::path::PathBuf as std::convert::AsRef<Path>>::as_ref(&TMPDIR)
-            .join(DYNAMIC_SUBDIR)
-            .clone()
+        TMPDIR.join(DYNAMIC_SUBDIR)
     } else {
         // Normal script file prepared beforehand
         let script = args.script.as_ref().expect("Problem resolving script path");
@@ -212,7 +207,7 @@ fn set_script_state(
 #[inline]
 fn process(
     proc_flags: &ProcFlags,
-    mut args: Cli,
+    args: &mut Cli,
     script_state: &ScriptState,
     start: Instant,
 ) -> Result<(), Box<dyn Error>> {
@@ -224,35 +219,42 @@ fn process(
     let is_loop = proc_flags.contains(ProcFlags::LOOP);
     let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
 
-    let mut build_state = BuildState::pre_configure(proc_flags, &args, script_state)?;
+    let mut build_state = BuildState::pre_configure(proc_flags, args, script_state)?;
     if is_repl {
+        #[cfg(debug_assertions)]
         debug_log!("build_state.source_path={:?}", build_state.source_path);
-        run_repl(&mut args, proc_flags, &mut build_state, start)
+        run_repl(args, proc_flags, &mut build_state, start)
     } else if is_dynamic {
         let rs_source = if is_expr {
-            let Some(rs_source) = args.expression.clone() else {
+            // Consumes the expression argument
+            let Some(rs_source) = args.expression.take() else {
                 return Err(Box::new(ThagError::Command(
                     "Missing expression for --expr option".to_string(),
                 )));
             };
             rs_source
         } else if is_loop {
-            let Some(filter) = args.filter.clone() else {
+            // Consumes the filter argument
+            let Some(filter) = args.filter.take() else {
                 return Err(Box::new(ThagError::Command(
                     "Missing expression for --loop option".to_string(),
                 )));
             };
-            build_loop(&args, filter)
+            build_loop(args, filter)
         } else if is_edit {
+            #[cfg(debug_assertions)]
             debug_log!("About to call stdin::edit()");
             let event_reader = CrosstermEventReader;
             let vec = edit(&event_reader)?;
+            #[cfg(debug_assertions)]
             debug_log!("vec={vec:#?}");
             vec.join("\n")
         } else {
             assert!(is_stdin);
+            #[cfg(debug_assertions)]
             debug_log!("About to call stdin::read())");
             let str = read()? + "\n";
+            #[cfg(debug_assertions)]
             debug_log!("str={str}");
             str
         };
@@ -266,12 +268,13 @@ fn process(
         let maybe_ast = extract_ast(&rs_source);
 
         if let Ok(expr_ast) = maybe_ast {
+            #[cfg(debug_assertions)]
             debug_log!("expr_ast={expr_ast:#?}");
             process_expr(
-                &expr_ast,
+                expr_ast,
                 &mut build_state,
                 &rs_source,
-                &mut args,
+                args,
                 proc_flags,
                 &start,
             )
@@ -286,7 +289,7 @@ fn process(
             )))
         }
     } else {
-        gen_build_run(&mut args, proc_flags, &mut build_state, None::<Ast>, &start)
+        gen_build_run(args, proc_flags, &mut build_state, None::<Ast>, &start)
     }
 }
 
@@ -294,6 +297,7 @@ fn process(
 fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
     profile_fn!(log_init_setup);
     debug_log_config();
+    #[cfg(debug_assertions)]
     debug_timings(&start, "Set up processing flags");
     debug_log!("proc_flags={proc_flags:#?}");
 
@@ -352,10 +356,13 @@ pub fn gen_build_run(
         // Strip off any shebang: it may have got us here but we don't need it
         // in the gen_build_run process.
         rs_source = if rs_source.starts_with("#!") && !rs_source.starts_with("#![") {
+            // #[cfg(debug_assertions)]
             // debug_log!("rs_source (before)={rs_source}");
             let split_once = rs_source.split_once('\n');
             let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
+            #[cfg(debug_assertions)]
             debug_log!("Successfully stripped shebang {shebang}");
+            // #[cfg(debug_assertions)]
             // debug_log!("rs_source (after)={rust_code}");
             rust_code.to_string()
         } else {
@@ -366,7 +373,9 @@ pub fn gen_build_run(
             // debug_timings(&start_parsing_rs, "Parsed source");
             extract_manifest(&rs_source, start_parsing_rs)
         }?;
+        // #[cfg(debug_assertions)]
         // debug_log!("rs_manifest={rs_manifest:#?}");
+        #[cfg(debug_assertions)]
         debug_log!("rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
             build_state.rs_manifest = Some(rs_manifest);
@@ -378,6 +387,7 @@ pub fn gen_build_run(
             syntax_tree
         };
 
+        // #[cfg(debug_assertions)]
         // debug_log!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
@@ -443,12 +453,14 @@ pub fn gen_build_run(
                     }
                 };
                 if returns_unit {
+                    #[cfg(debug_assertions)]
                     debug_log!("Option B: returns unit type");
                     quote::quote!(
                         #syntax_tree_ref
                     )
                     .to_string()
                 } else {
+                    #[cfg(debug_assertions)]
                     debug_log!("Option A: returns a substantive type");
                     quote::quote!(
                         println!("{}", format!("{:?}", #syntax_tree_ref).trim_matches('"'));
@@ -458,7 +470,6 @@ pub fn gen_build_run(
             } else {
                 // demo/fizz_buzz.rs broke this: not an expression but still a valid snippet.
                 // format!(r#"println!("Expression returned {{}}", {rs_source});"#)
-                // debug_log!("dbg!(rs_source)={}", dbg!(rs_source.clone()));
                 // dbg!(rs_source)
                 body
             };
@@ -517,21 +528,20 @@ pub fn generate(
     // profile_fn!(generate);
     let start_gen = Instant::now();
 
-    debug_log!("In generate, proc_flags={proc_flags}");
-
-    debug_log!(
-        "build_state.target_dir_path={:#?}",
-        build_state.target_dir_path
-    );
+    #[cfg(debug_assertions)]
+    {
+        debug_log!("In generate, proc_flags={proc_flags}");
+        debug_log!(
+            "build_state.target_dir_path={:#?}",
+            build_state.target_dir_path
+        );
+    }
 
     if !build_state.target_dir_path.exists() {
         fs::create_dir_all(&build_state.target_dir_path)?;
     }
 
-    let target_rs_path = build_state
-        .target_dir_path
-        .clone()
-        .join(&build_state.source_name);
+    let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
     // let is_repl = proc_flags.contains(ProcFlags::REPL);
     log!(
         Verbosity::Verbose,
@@ -546,6 +556,7 @@ pub fn generate(
     }
     // rustfmt(build_state)?;
 
+    // #[cfg(debug_assertions)]
     // debug_log!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {
         OpenOptions::new()
@@ -553,6 +564,7 @@ pub fn generate(
             .create_new(true)
             .open(&build_state.cargo_toml_path)?;
     }
+    // #[cfg(debug_assertions)]
     // debug_log!("cargo_toml: {cargo_toml:?}");
 
     let manifest = &build_state
@@ -561,6 +573,7 @@ pub fn generate(
         .expect("Could not unwrap BuildState.cargo_manifest");
     let cargo_manifest_str: &str = &toml::to_string(manifest)?;
 
+    #[cfg(debug_assertions)]
     debug_log!(
         "cargo_manifest_str: {}",
         code_utils::disentangle(cargo_manifest_str)
@@ -568,9 +581,11 @@ pub fn generate(
 
     let mut toml_file = fs::File::create(&build_state.cargo_toml_path)?;
     toml_file.write_all(cargo_manifest_str.as_bytes())?;
-    // debug_log!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
-    // debug_log!("##### Cargo.toml generation succeeded!");
-
+    // #[cfg(debug_assertions)]
+    // {
+    //     debug_log!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
+    //     debug_log!("##### Cargo.toml generation succeeded");
+    // }
     display_timings(&start_gen, "Completed generation", proc_flags);
 
     Ok(())
@@ -582,7 +597,7 @@ pub fn generate(
 /// # Panics
 /// Will panic if the cargo build process fails to spawn or if it can't move the executable.
 #[allow(clippy::too_many_lines)]
-pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), ThagError> {
+pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Box<dyn Error>> {
     // profile_fn!(build);
 
     let start_build = Instant::now();
@@ -591,13 +606,10 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
     let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
     let check = proc_flags.contains(ProcFlags::CHECK);
 
+    #[cfg(debug_assertions)]
     debug_log!("BBBBBBBB In build");
 
-    let Ok(cargo_toml_path_str) = code_utils::path_to_str(&build_state.cargo_toml_path) else {
-        return Err(ThagError::OsString(
-            build_state.cargo_toml_path.clone().into_os_string(),
-        ));
-    };
+    let cargo_toml_path_str = code_utils::path_to_str(&build_state.cargo_toml_path)?;
 
     let mut cargo_command = Command::new("cargo");
     let cargo_subcommand = if check { "check" } else { "build" };
@@ -643,12 +655,13 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
         .expect("failed to wait on cargo build");
 
     if exit_status.status.success() {
+        #[cfg(debug_assertions)]
         debug_log!("Build succeeded");
         if executable {
             deploy_executable(build_state);
         }
     } else {
-        return Err(ThagError::Command(String::from("Build failed")));
+        return Err("Build failed".into());
     };
 
     display_timings(&start_build, "Completed build", proc_flags);
@@ -668,34 +681,36 @@ fn deploy_executable(build_state: &BuildState) {
         fs::create_dir_all(&cargo_bin_path).expect("Failed to create target directory");
     }
 
-    let name_vec = if let Some(ref manifest) = build_state.cargo_manifest {
-        manifest
+    // Logic change: from accepting the first of multiple [[bin]] entries to only allowing exactly one.
+    let name_option = if let Some(ref manifest) = build_state.cargo_manifest {
+        let mut iter = manifest
             .bin
             .iter()
-            .filter_map(|p| p.clone().name)
-            .collect::<Vec<String>>()
+            .filter_map(|p: &cargo_toml::Product| p.name.as_ref().map(ToString::to_string));
+
+        match (iter.next(), iter.next()) {
+            (Some(name), None) => Some(name), // Return Some(name) if exactly one name is found
+            _ => None,                        // Return None if zero or multiple names are found
+        }
     } else {
-        vec![]
+        None
     };
 
-    let executable_name = if name_vec.is_empty() {
-        #[cfg(windows)]
+    let executable_name = if let Some(name) = name_option {
+        name
+    } else {
+        #[cfg(target_os = "windows")]
         {
             format!("{}.exe", build_state.source_stem)
         }
-        #[cfg(not(windows))]
+        #[cfg(not(target_os = "windows"))]
         {
             build_state.source_stem.to_string()
         }
-    } else {
-        name_vec[0].clone()
     };
 
-    // let executable_name: String;
-
-    let executable_path = build_state
+    let executable_path = &build_state
         .target_dir_path
-        .clone()
         .join("target/release")
         .join(&executable_name);
     let output_path = cargo_bin_path.join(&build_state.source_stem);
@@ -734,16 +749,20 @@ pub fn run(
     // profile_fn!(run);
 
     let start_run = Instant::now();
+    #[cfg(debug_assertions)]
     debug_log!("RRRRRRRR In run");
 
+    // #[cfg(debug_assertions)]
     // debug_log!("BuildState={build_state:#?}");
-    let target_path = build_state.target_path.clone();
+    let target_path: &Path = build_state.target_path.as_ref();
+    // #[cfg(debug_assertions)]
     // debug_log!("Absolute path of generated program: {absolute_path:?}");
 
     let mut run_command = Command::new(format!("{}", target_path.display()));
 
     run_command.args(args);
 
+    // #[cfg(debug_assertions)]
     debug_log!("Run command is {run_command:?}");
 
     // Sandwich command between two lines of dashes in the terminal
@@ -763,6 +782,7 @@ pub fn run(
         nu_ansi_term::Color::Yellow.paint(&dash_line)
     );
 
+    // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");
 
     display_timings(&start_run, "Completed run", proc_flags);

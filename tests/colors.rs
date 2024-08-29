@@ -50,6 +50,7 @@ mod tests {
             Some(ColorSupport::Ansi16) => {
                 assert!(!color_level.unwrap().has_16m && !color_level.unwrap().has_256);
             }
+            Some(ColorSupport::Default) => assert!(color_level.is_none()),
             Some(ColorSupport::None) => assert!(color_level.is_none()),
             None => {
                 assert!(color_level.is_none());
@@ -105,26 +106,28 @@ mod tests {
         if let Some(color_support) = COLOR_SUPPORT.as_ref() {
             match theme {
                 Ok(Theme::Light) => match color_support {
-                    ColorSupport::Xterm256 => {
+                    &ColorSupport::Xterm256 => {
                         let expected_style = XtermColor::DarkPurplePizzazz.get_color().bold();
                         assert_eq!(style, expected_style);
                     }
-                    ColorSupport::Ansi16 => {
+                    &ColorSupport::Ansi16 => {
                         let expected_style = Color::Magenta.bold();
                         assert_eq!(style, expected_style);
                     }
-                    ColorSupport::None => assert_eq!(style, nu_ansi_term::Style::default()),
+                    &ColorSupport::Default => assert_eq!(style, nu_ansi_term::Style::default()),
+                    &ColorSupport::None => assert_eq!(style, nu_ansi_term::Style::default()),
                 },
                 Ok(Theme::Dark) | Err(_) => match color_support {
-                    ColorSupport::Xterm256 => {
+                    &ColorSupport::Xterm256 => {
                         let expected_style = XtermColor::DarkViolet.get_color().bold();
                         assert_eq!(style, expected_style);
                     }
-                    ColorSupport::Ansi16 => {
+                    &ColorSupport::Ansi16 => {
                         let expected_style = Color::Magenta.bold();
                         assert_eq!(style, expected_style);
                     }
-                    ColorSupport::None => assert_eq!(style, nu_ansi_term::Style::default()),
+                    &ColorSupport::Default => assert_eq!(style, nu_ansi_term::Style::default()),
+                    &ColorSupport::None => assert_eq!(style, nu_ansi_term::Style::default()),
                 },
             }
         } else {

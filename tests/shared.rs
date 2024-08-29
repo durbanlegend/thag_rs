@@ -226,6 +226,7 @@ fn test_script_state_getters() {
 fn test_debug_timings() {
     set_up();
     let start = Instant::now();
+    #[cfg(debug_assertions)]
     debug_timings(&start, "test_process");
     // No direct assertion, this just ensures the function runs without panic
 }

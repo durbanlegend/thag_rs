@@ -12,9 +12,10 @@ default_verbosity = "normal"
 # to be interleaved with the messages.
 # If your terminal can handle 16m colors, choose xterm256
 # Valid values are:
-# "xterm256" for 256 or more colors (including 16m)
-# "ansi16"   for basic color support
-# "none"     no color support or no color desired
+# "xterm256"    for 256 or more colors (including 16m)
+# "ansi16"      for basic color support
+# "none"        color support not available or not desired
+# "default"     (default value) let thag_rs figure it out
 # color_support = "ansi16"
 
 # Terminal light/dark override. Tells thag_rs whether you are using a light or dark theme,

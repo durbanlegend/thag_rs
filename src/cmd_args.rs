@@ -210,7 +210,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
     let is_loop = args.filter.is_some();
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
-        eprintln!("args={args:#?}");
+        // eprintln!("args={args:#?}");
         proc_flags.set(ProcFlags::GENERATE, args.generate);
         // eprintln!(
         //     "After set(ProcFlags::GENERATE, args.generate), ProcFlags::GENERATE = {:#?}",

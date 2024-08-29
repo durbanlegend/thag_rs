@@ -39,6 +39,7 @@ impl Logger {
     /// Set the verbosity level.
     pub fn set_verbosity(&mut self, verbosity: Verbosity) {
         self.verbosity = verbosity;
+        #[cfg(debug_assertions)]
         debug_log!("Verbosity set to {verbosity:?}");
     }
 }

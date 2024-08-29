@@ -1,22 +1,24 @@
-use crate::{config, debug_log};
+use crate::config::{self};
+use crate::debug_log;
 use {crate::log, crate::logging::Verbosity};
 
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use serde::Deserialize;
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 use std::env;
 use std::{fmt::Display, str::FromStr};
 use strum::IntoEnumIterator;
 use strum::{Display, EnumIter, EnumString};
-#[cfg(not(windows))]
+#[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
-#[cfg(not(windows))]
+#[cfg(not(target_os = "windows"))]
 use termbg::Theme;
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
         if std::env::var("TEST_ENV").is_ok() {
+            #[cfg(debug_assertions)]
             debug_log!(
                 "Avoiding supports_color for testing"
             );
@@ -24,38 +26,12 @@ lazy_static! {
         }
 
         let color_support: Option<ColorSupport> = if let Some(config) = &*config::MAYBE_CONFIG {
-            Some(config.colors.color_support.clone())
+            match config.colors.color_support {
+                ColorSupport::Xterm256 | ColorSupport::Ansi16 | ColorSupport::None => Some(config.colors.color_support.clone()),
+                ColorSupport::Default => get_color_level(),
+            }
         } else {
-            let color_level;
-            #[cfg(windows)] {
-                color_level = translate_level(supports_color());
-                match color_level {
-                    Some(color_level) => {
-                        if color_level.has_16m || color_level.has_256 {
-                            Some(ColorSupport::Xterm256)
-                        } else {
-                            Some(ColorSupport::Ansi16)
-                        }
-                    }
-                    None => None,
-                }
-            }
-            #[cfg(not(windows))] {
-                debug_log!(
-                    "About to call supports_color"
-                );
-                color_level = supports_color::on(Stream::Stdout);
-                match color_level {
-                    Some(color_level) => {
-                        if color_level.has_16m || color_level.has_256 {
-                            Some(ColorSupport::Xterm256)
-                        } else {
-                            Some(ColorSupport::Ansi16)
-                        }
-                    }
-                    None => None,
-                }
-            }
+            get_color_level()
         };
         color_support
     };
@@ -63,6 +39,7 @@ lazy_static! {
     #[derive(Debug)]
     pub static ref TERM_THEME: TermTheme = {
         if std::env::var("TEST_ENV").is_ok() {
+            #[cfg(debug_assertions)]
             debug_log!(
                 "Avoiding termbg for testing"
             );
@@ -71,14 +48,16 @@ lazy_static! {
         let term_theme: TermTheme = if let Some(config) = &*config::MAYBE_CONFIG {
             config.colors.term_theme.clone()
         } else {
-            #[cfg(windows)] {
+            #[cfg(target_os = "windows")] {
             TermTheme::Dark }
 
-            #[cfg(not(windows))] {
+            #[cfg(not(target_os = "windows"))] {
+                #[cfg(debug_assertions)]
                 debug_log!(
                     "About to call termbg"
                 );
                 let timeout = std::time::Duration::from_millis(100);
+                // #[cfg(debug_assertions)]
                 // debug_log!("Check terminal background color");
                 let theme = termbg::theme(timeout);
                 // shared::clear_screen();
@@ -96,7 +75,7 @@ lazy_static! {
 /// can't import it because the `level` field is indispensable but private.
 /// This type is returned from `supports_color::on`. See documentation for its fields for
 /// more details.
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct ColorLevel {
     level: usize,
@@ -108,19 +87,39 @@ pub struct ColorLevel {
     pub has_16m: bool,
 }
 
-// // Assuming the external ColorLevel provides these methods: has_basic(), has_256(), has_16m().
-// impl From<supports_color::ColorLevel> for ColorLevel {
-//     fn from(external: supports_color::ColorLevel) -> Self {
-//         ColorLevel {
-//             // level: external.level(), // or map it as needed
-//             has_basic: external.has_basic,
-//             has_256: external.has_256,
-//             has_16m: external.has_16m,
-//         }
-//     }
-// }
+#[cfg(target_os = "windows")]
+fn get_color_level() -> Option<ColorSupport> {
+    color_level = translate_level(supports_color());
+    match color_level {
+        Some(color_level) => {
+            if color_level.has_16m || color_level.has_256 {
+                Some(ColorSupport::Xterm256)
+            } else {
+                Some(ColorSupport::Ansi16)
+            }
+        }
+        None => None,
+    }
+}
 
-#[cfg(windows)]
+#[cfg(not(target_os = "windows"))]
+fn get_color_level() -> Option<ColorSupport> {
+    #[cfg(debug_assertions)]
+    debug_log!("About to call supports_color");
+    let color_level = supports_color::on(Stream::Stdout);
+    match color_level {
+        Some(color_level) => {
+            if color_level.has_16m || color_level.has_256 {
+                Some(ColorSupport::Xterm256)
+            } else {
+                Some(ColorSupport::Ansi16)
+            }
+        }
+        None => None,
+    }
+}
+
+#[cfg(target_os = "windows")]
 fn env_force_color() -> usize {
     if let Ok(force) = env::var("FORCE_COLOR") {
         match force.as_ref() {
@@ -135,7 +134,7 @@ fn env_force_color() -> usize {
     }
 }
 
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn env_no_color() -> bool {
     match as_str(&env::var("NO_COLOR")) {
         Ok("0") | Err(_) => false,
@@ -144,7 +143,7 @@ fn env_no_color() -> bool {
 }
 
 // same as Option::as_deref
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn as_str<E>(option: &Result<String, E>) -> Result<&str, &E> {
     match option {
         Ok(inner) => Ok(inner),
@@ -152,7 +151,7 @@ fn as_str<E>(option: &Result<String, E>) -> Result<&str, &E> {
     }
 }
 
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn translate_level(level: usize) -> Option<ColorLevel> {
     if level == 0 {
         None
@@ -166,7 +165,7 @@ fn translate_level(level: usize) -> Option<ColorLevel> {
     }
 }
 
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn supports_color() -> usize {
     profile_fn!(supports_color);
     let force_color = env_force_color();
@@ -196,7 +195,7 @@ fn supports_color() -> usize {
     }
 }
 
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn check_ansi_color(term: &str) -> bool {
     term.starts_with("screen")
         || term.starts_with("xterm")
@@ -209,17 +208,17 @@ fn check_ansi_color(term: &str) -> bool {
         || term.contains("linux")
 }
 
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn check_colorterm_16m(colorterm: &str) -> bool {
     colorterm == "truecolor" || colorterm == "24bit"
 }
 
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn check_term_16m(term: &str) -> bool {
     term.ends_with("direct") || term.ends_with("truecolor")
 }
 
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn check_256_color(term: &str) -> bool {
     term.ends_with("256") || term.ends_with("256color")
 }
@@ -258,9 +257,10 @@ macro_rules! nu_color_println {
 #[strum(serialize_all = "snake_case")]
 pub enum ColorSupport {
     Xterm256,
-    #[default]
     Ansi16,
     None,
+    #[default]
+    Default,
 }
 
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
@@ -389,11 +389,9 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
             "{}_{}_{}",
             &color_qual, &theme_qual, &msg_level_qual
         ));
+        #[cfg(debug_assertions)]
         debug_log!(
-            "Called from_str on {}_{}_{}, found {message_style:#?}",
-            &color_qual,
-            &theme_qual,
-            &msg_level_qual,
+            "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
         );
         match message_style {
             Ok(message_style) => NuThemeStyle::get_style(&message_style),
@@ -407,11 +405,12 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
 /// Main function for use by testing or the script runner.
 #[allow(dead_code)]
 pub fn main() {
-    #[cfg(not(windows))]
+    #[cfg(not(target_os = "windows"))]
     {
         let term = termbg::terminal();
         // shared::clear_screen();
-        debug_log!("  Term : {:?}", term);
+        #[cfg(debug_assertions)]
+        debug_log!("  Term : {term:?}");
     }
 
     let color_support = &*COLOR_SUPPORT;

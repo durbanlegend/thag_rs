@@ -457,14 +457,14 @@ pub fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
 /// # Errors
 /// Will return `Err` if there is any errors encountered opening or writing to the file.
 pub fn process_expr(
-    expr_ast: &Expr,
+    expr_ast: Expr,
     build_state: &mut BuildState,
     rs_source: &str,
     options: &mut Cli,
     proc_flags: &ProcFlags,
     start: &Instant,
 ) -> Result<(), Box<dyn Error>> {
-    let syntax_tree = Some(Ast::Expr(expr_ast.clone()));
+    let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(options, proc_flags, build_state, syntax_tree, start);
     log!(Verbosity::Normal, "{result:?}");
@@ -477,7 +477,6 @@ pub fn process_expr(
 pub fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
     let string = path
         .to_path_buf()
-        .clone()
         .into_os_string()
         .into_string()
         .map_err(ThagError::OsString)?;
@@ -766,10 +765,10 @@ pub fn create_next_repl_file() -> PathBuf {
     debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
 
     // Ensure REPL subdirectory exists
-    fs::create_dir_all(gen_repl_temp_dir_path.clone()).expect("Failed to create REPL directory");
+    fs::create_dir_all(&gen_repl_temp_dir_path).expect("Failed to create REPL directory");
 
     // Find existing dirs with the pattern repl_<nnnnnn>
-    let existing_dirs: Vec<_> = fs::read_dir(gen_repl_temp_dir_path.clone())
+    let existing_dirs: Vec<_> = fs::read_dir(&gen_repl_temp_dir_path)
         .unwrap()
         .filter_map(|entry| {
             let path = entry.unwrap().path();
@@ -820,11 +819,11 @@ pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
     let padded_num = format!("{:06}", num);
     let dir_name = format!("repl_{padded_num}");
     let target_dir_path = gen_repl_temp_dir_path.join(dir_name);
-    fs::create_dir_all(target_dir_path.clone()).expect("Failed to create REPL directory");
+    fs::create_dir_all(&target_dir_path).expect("Failed to create REPL directory");
 
     let filename = format!("repl_{padded_num}.rs");
     let path = target_dir_path.join(filename);
-    fs::File::create(path.clone()).expect("Failed to create file");
+    fs::File::create(&path).expect("Failed to create file");
     #[cfg(debug_assertions)]
     debug_log!("Created file: {path:#?}");
     path
@@ -840,16 +839,15 @@ pub fn create_temp_source_file() -> PathBuf {
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
     // Ensure REPL subdirectory exists
-    fs::create_dir_all(gen_expr_temp_dir_path.clone()).expect("Failed to create EXPR directory");
+    fs::create_dir_all(&gen_expr_temp_dir_path).expect("Failed to create EXPR directory");
 
     let filename = TEMP_SCRIPT_NAME;
     let path = gen_expr_temp_dir_path.join(filename);
-    // fs::File::create(path.clone()).expect("Failed to create file");
     std::fs::OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
-        .open(path.clone())
+        .open(&path)
         .expect("Failed to create file");
     #[cfg(debug_assertions)]
     debug_log!("Created file: {path:#?}");
@@ -967,8 +965,7 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 /// Will panic if the `rustfmt` failed.
 pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
     profile_fn!(rustfmt);
-    let target_rs_path = build_state.target_dir_path.clone();
-    let target_rs_path = target_rs_path.join(&build_state.source_name);
+    let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
     let source_path_str = target_rs_path
         .to_str()
         .ok_or(String::from("Error accessing path to source file"))?;
@@ -986,14 +983,12 @@ pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
         if output.status.success() {
             debug_log!("Successfully formatted {} with rustfmt.", source_path_str);
             debug_log!(
-                "{}\n{}",
-                source_path_str,
+                "{source_path_str}\n{}",
                 String::from_utf8_lossy(&output.stdout)
             );
         } else {
             debug_log!(
-                "Failed to format {} with rustfmt\n{}",
-                source_path_str,
+                "Failed to format {source_path_str} with rustfmt\n{}",
                 String::from_utf8_lossy(&output.stderr)
             );
         }
@@ -1033,10 +1028,11 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 
     impl<'ast> Visit<'ast> for FindFns {
         fn visit_item_fn(&mut self, node: &'ast syn::ItemFn) {
-            // #[cfg(debug_assertions)] {
+            // #[cfg(debug_assertions)]
+            // {
             //     debug_log!("Node={:#?}", node);
             //     debug_log!("Ident={}", node.sig.ident);
-            //     debug_log!("Output={:#?}", node.sig.output.clone());
+            //     debug_log!("Output={:#?}", &node.sig.output);
             // }
             self.function_map
                 .insert(node.sig.ident.to_string(), node.sig.output.clone());

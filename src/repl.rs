@@ -184,7 +184,6 @@ pub fn run_repl(
     };
     // get_emacs_keybindings();
     let context: &mut Context = &mut context;
-    let history_file = context.build_state.cargo_home.clone().join(HISTORY_FILE);
     let history = Box::new(
         FileBackedHistory::with_file(25, history_file)
             .expect("Error configuring history with file"),
@@ -207,11 +206,6 @@ pub fn run_repl(
     let completion_menu = Box::new(columnar_menu);
 
     let mut keybindings = default_emacs_keybindings();
-    // keybindings.add_binding(
-    //     KeyModifiers::CONTROL,
-    //     KeyCode::Char('b'),
-    //     ReedlineEvent::Edit(vec![EditCommand::SwapWords]),
-    // );
     add_menu_keybindings(&mut keybindings);
     // println!("{:#?}", keybindings.get_keybindings());
 
@@ -232,10 +226,9 @@ pub fn run_repl(
     let bindings = keybindings.get_keybindings();
 
     let prompt = ReplPrompt("repl");
+    let cmd_list = &cmd_vec.join(", ");
 
-    let cmd_list = cmd_vec.join(", ");
-
-    disp_repl_banner(&cmd_list);
+    disp_repl_banner(cmd_list);
     loop {
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {
@@ -280,7 +273,7 @@ pub fn run_repl(
                     .no_binary_name(true)
                     .try_get_matches_from_mut(rest)?;
                 match repl_command {
-                    ReplCommand::Banner => disp_repl_banner(&cmd_list),
+                    ReplCommand::Banner => disp_repl_banner(cmd_list),
                     ReplCommand::Help => {
                         ReplCommand::print_help();
                     }
@@ -360,7 +353,7 @@ pub fn run_repl(
                                     if !event_name.starts_with("UntilFound") {
                                         let event_desc =
                                             format_non_edit_events(&event_name, max_cmd_len);
-                                        formatted_bindings.push((key_desc.clone(), event_desc));
+                                        formatted_bindings.push((key_desc, event_desc));
                                     }
                                 }
                             }
@@ -398,7 +391,7 @@ pub fn run_repl(
 
         if let Ok(expr_ast) = maybe_ast {
             code_utils::process_expr(
-                &expr_ast,
+                expr_ast,
                 context.build_state,
                 rs_source,
                 context.options,
@@ -986,14 +979,14 @@ pub fn edit_history(
     _args: &ArgMatches,
     context: &mut Context,
 ) -> Result<Option<String>, ThagError> {
-    let history_path = context.build_state.cargo_home.clone().join(HISTORY_FILE);
+    let history_path = &context.build_state.cargo_home.join(HISTORY_FILE);
     println!("history_path={history_path:#?}");
     OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(false)
-        .open(&history_path)?;
-    edit::edit_file(&history_path)?;
+        .open(history_path)?;
+    edit::edit_file(history_path)?;
     Ok(Some(String::from("End of history file edit")))
 }
 
@@ -1030,6 +1023,7 @@ pub fn run_expr(_args: &ArgMatches, context: &mut Context) -> Result<Option<Stri
         context.start,
     );
 
+    #[cfg(debug_assertions)]
     debug_log!("In run_expr: build_state={build_state:#?}");
     let result = gen_build_run(options, proc_flags, build_state, None::<Ast>, &start);
     if result.is_err() {

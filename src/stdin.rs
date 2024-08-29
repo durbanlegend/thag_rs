@@ -234,10 +234,10 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
             println!("Error reading event: {:?}", e);
             e
         })?;
-        if let Paste(data) = event {
-            textarea.insert_str(normalize_newlines(&data));
+        if let Paste(ref data) = event {
+            textarea.insert_str(normalize_newlines(data));
         } else {
-            let input = Input::from(event.clone());
+            let input = Input::from(event);
             match input {
                 Input {
                     key: Key::Char('q'),

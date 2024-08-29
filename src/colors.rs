@@ -89,7 +89,7 @@ pub struct ColorLevel {
 
 #[cfg(target_os = "windows")]
 fn get_color_level() -> Option<ColorSupport> {
-    color_level = translate_level(supports_color());
+    let color_level = translate_level(supports_color());
     match color_level {
         Some(color_level) => {
             if color_level.has_16m || color_level.has_256 {

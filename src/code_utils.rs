@@ -11,7 +11,6 @@ use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
-use quote::quote;
 use regex::Regex;
 use std::any::Any;
 use std::collections::HashMap;
@@ -24,13 +23,13 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::time::{Instant, SystemTime};
 use syn::{
-    parse_str, Expr, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt, UsePath, UseRename,
-};
-use syn::{
     visit::Visit,
     visit_mut::{self, VisitMut},
 };
-use syn::{AttrStyle, ExprBlock};
+use syn::{
+    AttrStyle, Expr, ExprBlock, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt, UsePath,
+    UseRename,
+};
 
 // To move inner attributes out of a syn AST for a snippet.
 struct RemoveInnerAttributes {
@@ -528,9 +527,8 @@ pub fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
 /// Check if executable is stale, i.e. if raw source script or individual Cargo.toml
 /// has a more recent modification date and time
 /// # Errors
-/// Will return `Err` if either the executable or the Cargo.toml for the script is missing.
-/// # Panics
-/// Will panic if there is a logic error wrapping the path and modified time.
+/// Will return `Err` if either the executable or the Cargo.toml for the script is missing,
+/// or if there is a logic error wrapping the path and modified time.
 pub fn modified_since_compiled(
     build_state: &BuildState,
 ) -> Result<Option<(&PathBuf, SystemTime)>, Box<dyn Error>> {
@@ -562,7 +560,7 @@ pub fn modified_since_compiled(
         if most_recent.is_none()
             || modified_time
                 > most_recent
-                    .expect("Logic error unwrapping what we wrapped ourselves")
+                    .ok_or("Logic error unwrapping what we wrapped ourselves")?
                     .1
         {
             most_recent = Some((file, modified_time));
@@ -781,7 +779,7 @@ pub fn create_next_repl_file() -> Result<PathBuf, Box<dyn Error>> {
                     return create_repl_file(&gen_repl_temp_dir_path, i);
                 }
             }
-            return Err(Box::new(ThagError::Command(format!("Cannot create new file: all possible subdirs `repl_nnnnnn` already exist in {TMPDIR:?}/{REPL_SUBDIR}."))));
+            return Err(format!("Cannot create new file: all possible subdirs `repl_nnnnnn` already exist in {TMPDIR:?}/{REPL_SUBDIR}.").into());
         }
         _ => {
             existing_dirs
@@ -818,15 +816,14 @@ pub fn create_repl_file(
 
 /// Create empty script file `temp.rs` to hold expression for --expr or --stdin options,
 /// and open it for writing.
-/// # Panics
-/// Will panic if it can't create the `rs_dyn` directory.
-#[must_use]
-pub fn create_temp_source_file() -> PathBuf {
+/// # Errors
+/// Will return Err if it can't create the `rs_dyn` directory.
+pub fn create_temp_source_file() -> Result<PathBuf, Box<dyn Error>> {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
     // Ensure REPL subdirectory exists
-    fs::create_dir_all(&gen_expr_temp_dir_path).expect("Failed to create EXPR directory");
+    fs::create_dir_all(&gen_expr_temp_dir_path)?;
 
     let filename = TEMP_SCRIPT_NAME;
     let path = gen_expr_temp_dir_path.join(filename);
@@ -834,11 +831,10 @@ pub fn create_temp_source_file() -> PathBuf {
         .write(true)
         .create(true)
         .truncate(true)
-        .open(&path)
-        .expect("Failed to create file");
+        .open(&path)?;
     #[cfg(debug_assertions)]
     debug_log!("Created file: {path:#?}");
-    path
+    Ok(path)
 }
 
 /// Combine the elements of a loop filter into a well-formed program.
@@ -1351,50 +1347,48 @@ pub fn returns_unit(expr: &Expr) -> bool {
     is_unit_type
 }
 
-// I don't altogether trust this from GPT
-/// Convert a `syn::File` to a `syn::Expr`.
-///
-/// # Panics
-/// Will panic if a macro expression can't be parsed.
-#[must_use]
-pub fn extract_expr_from_file(file: &File) -> Option<Expr> {
+/// Convert a `syn::File`'s `fn main` to a `syn::Expr`, for the purpose of determining the return type.
+/// # Errors
+/// Will return `Err` if there is any error parsing expressions
+#[cfg(debug_assertions)]
+#[allow(dead_code)]
+pub fn extract_expr_from_file(file: &File) -> Result<Expr, Box<dyn Error>> {
     profile_fn!(extract_expr_from_file);
-    // Traverse the file to find the main function and extract expressions from it
+
     for item in &file.items {
         if let Item::Fn(func) = item {
             if func.sig.ident == "main" {
-                let stmts = &func.block.stmts;
-                // Collect expressions from the statements
-                let exprs: Vec<Expr> = stmts
-                    .iter()
-                    .filter_map(|stmt| match stmt {
-                        Stmt::Expr(expr, _) => Some(expr.clone()),
-                        Stmt::Macro(macro_stmt) => {
-                            let mac = &macro_stmt.mac;
-                            let macro_expr = quote! {
-                                #mac
-                            };
-                            Some(
-                                parse_str(&macro_expr.to_string())
-                                    .expect("Unable to parse macro expression"),
-                            )
-                        }
-                        _ => None,
-                    })
-                    .collect();
+                // Convert the function's block into an Expr::Block
+                let expr_block = Expr::Block(ExprBlock {
+                    attrs: Vec::new(),          // Add attributes if needed
+                    label: None,                // No label for the block
+                    block: *func.block.clone(), // Clone the block from the function
+                });
 
-                // Combine the expressions into a single expression if needed
-                if !exprs.is_empty() {
-                    let combined_expr = quote! {
-                        { #(#exprs);* }
-                    };
-                    return Some(
-                        parse_str(&combined_expr.to_string())
-                            .expect("Unable to parse combined expression"),
-                    );
-                }
+                return Ok(expr_block);
             }
         }
     }
-    None
+
+    Err("No main function found".into())
+}
+
+/// # Errors
+/// Will return `Err` if there is any error parsing expressions
+pub fn is_main_fn_returning_unit(file: &File) -> Result<bool, Box<dyn Error>> {
+    profile_fn!(is_main_fn_returning_unit);
+
+    // Traverse the file to find the main function
+    for item in &file.items {
+        if let Item::Fn(func) = item {
+            if func.sig.ident == "main" {
+                // Check if the return type is the unit type
+                let is_unit_return_type = matches!(func.sig.output, ReturnType::Default);
+
+                return Ok(is_unit_return_type);
+            }
+        }
+    }
+
+    Err("No main function found".into())
 }

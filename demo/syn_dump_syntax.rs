@@ -81,7 +81,7 @@ fn try_main() -> Result<(), Error> {
     };
 
     let code = fs::read_to_string(&filepath).map_err(Error::ReadFile)?;
-    let syntax: syn::Expr = syn::parse_str(&code).map_err({
+    let syntax = syn::parse_file(&code).map_err({
         |error| Error::ParseFile {
             error,
             filepath,

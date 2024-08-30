@@ -149,16 +149,12 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
     } else if is_dynamic {
         let rs_source = if is_expr {
             let Some(rs_source) = args.expression.clone() else {
-                return Err(Box::new(ThagError::Command(
-                    "Missing expression for --expr option".to_string(),
-                )));
+                return Err("Missing expression for --expr option".into());
             };
             rs_source
         } else if is_loop {
             let Some(filter) = args.filter.clone() else {
-                return Err(Box::new(ThagError::Command(
-                    "Missing expression for --loop option".to_string(),
-                )));
+                return Err("Missing expression for --loop option".into());
             };
             build_loop(&args, filter)
         } else if is_edit {
@@ -199,9 +195,7 @@ pub fn execute(mut args: Cli) -> Result<(), Box<dyn Error>> {
                 "Error parsing code: {:#?}",
                 maybe_ast
             );
-            Err(Box::new(ThagError::Command(
-                "Error parsing code".to_string(),
-            )))
+            Err("Error parsing code".into())
         }
     } else {
         gen_build_run(

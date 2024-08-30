@@ -134,9 +134,7 @@ pub fn get_args() -> Cli {
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
-            return Err(Box::new(ThagError::Command(format!(
-                "Script name {script} must end in {RS_SUFFIX}"
-            ))));
+            return Err(format!("Script name {script} must end in {RS_SUFFIX}").into());
         }
     } else if !proc_flags.contains(ProcFlags::EXPR)
         && !proc_flags.contains(ProcFlags::REPL)
@@ -145,9 +143,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn E
         && !proc_flags.contains(ProcFlags::LOOP)
         && !proc_flags.contains(ProcFlags::CONFIG)
     {
-        return Err(Box::new(ThagError::Command(
-            "Missing script name".to_string(),
-        )));
+        return Err("Missing script name".into());
     }
     Ok(())
 }

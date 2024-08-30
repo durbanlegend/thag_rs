@@ -129,9 +129,7 @@ impl BuildState {
 
         debug_log!("source_name={source_name}");
         let Some(source_stem) = source_name.strip_suffix(RS_SUFFIX) else {
-            return Err(Box::new(ThagError::Command(format!(
-                "Error stripping suffix from {source_name}"
-            ))));
+            return Err(format!("Error stripping suffix from {source_name}").into());
         };
         let working_dir_path = if is_repl {
             TMPDIR.join(REPL_SUBDIR)
@@ -157,9 +155,10 @@ impl BuildState {
         let source_path = script_path.canonicalize()?;
         debug_log!("source_path={source_path:#?}");
         if !source_path.exists() {
-            return Err(Box::new(ThagError::Command(format!(
-                "No script named {source_stem} or {source_name} in path {source_path:?}",
-            ))));
+            return Err(format!(
+                "No script named {source_stem} or {source_name} in path {source_path:?}"
+            )
+            .into());
         }
 
         let source_dir_path = source_path

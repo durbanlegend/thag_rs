@@ -74,20 +74,14 @@ See below for how to avoid this and speed up future builds.
             .lines()
             .map_while(Result::ok)
             .next()
-            .ok_or_else(|| {
-                Box::new(ThagError::Command(format!(
-                    "Something went wrong with Cargo search for [{dep_crate}]"
-                )))
-            })?
+            .ok_or_else(|| format!("Something went wrong with Cargo search for [{dep_crate}]"))?
     } else {
         let error_msg = String::from_utf8_lossy(&search_output.stderr);
         #[cfg(debug_assertions)]
         error_msg.lines().for_each(|line| {
             debug_log!("{line}");
         });
-        return Err(Box::new(ThagError::Command(format!(
-            "Cargo search failed for [{dep_crate}]"
-        ))));
+        return Err(format!("Cargo search failed for [{dep_crate}]").into());
     };
 
     #[cfg(debug_assertions)]
@@ -98,9 +92,10 @@ See below for how to avoid this and speed up future builds.
             if name != dep_crate && name.replace('-', "_") != dep_crate {
                 #[cfg(debug_assertions)]
                 debug_log!("First line of cargo search for crate {dep_crate} found non-matching crate {name}");
-                return Err(Box::new(ThagError::Command(format!(
+                return Err(format!(
                     "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"
-                ))));
+                )
+                .into());
             }
 
             let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(&name);
@@ -154,9 +149,7 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>>
         (String::from(name), String::from(version))
     } else {
         log!(Verbosity::Quieter, "Not a valid Cargo dependency format.");
-        return Err(Box::new(ThagError::Command(
-            "Not a valid Cargo dependency format".to_string(),
-        )));
+        return Err("Not a valid Cargo dependency format".into());
     };
     Ok((name, version))
 }
@@ -280,9 +273,9 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         let (dep_name, dep) = if let Ok((dep_name, version)) = cargo_search_result {
             (dep_name, Dependency::Simple(version))
         } else {
-            // return Err(Box::new(ThagError::Command(format!(
-            //     "Cargo search couldn't find crate [{dep_name}]"
-            // ))));
+            // return Err(format!(
+            //     "Cargo search couldn't find crate [{dep_name}]").into()
+            // );
             log!(
                 Verbosity::Quieter,
                 "Cargo search couldn't find crate [{dep_name}]"

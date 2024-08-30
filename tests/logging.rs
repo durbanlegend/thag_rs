@@ -92,13 +92,13 @@ fn main() {{
         set_up();
         reset_global_logger();
 
-        set_global_verbosity(Verbosity::Verbose);
+        set_global_verbosity(Verbosity::Verbose).expect("Error setting global verbosity");
         {
             let logger = LOGGER.lock().unwrap();
             assert_eq!(logger.verbosity, Verbosity::Verbose);
         }
 
-        set_global_verbosity(Verbosity::Quiet);
+        set_global_verbosity(Verbosity::Quiet).expect("Error setting global verbosity");
         {
             let logger = LOGGER.lock().unwrap();
             assert_eq!(logger.verbosity, Verbosity::Quiet);
@@ -161,7 +161,7 @@ fn main() {{
         let output = child.wait_with_output().expect("Failed to read stdout");
 
         reset_global_logger();
-        set_global_verbosity(Verbosity::Normal);
+        set_global_verbosity(Verbosity::Normal).expect("Error setting global verbosity");
         output
     }
 }

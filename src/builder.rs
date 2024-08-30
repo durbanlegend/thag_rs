@@ -91,7 +91,7 @@ pub fn execute(args: &mut Cli) -> Result<(), Box<dyn Error>> {
     let is_loop = proc_flags.contains(ProcFlags::LOOP);
     let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
     if is_dynamic {
-        let _ = create_temp_source_file();
+        let _ = create_temp_source_file()?;
     }
 
     let script_dir_path = set_script_dir_path(
@@ -100,10 +100,10 @@ pub fn execute(args: &mut Cli) -> Result<(), Box<dyn Error>> {
         &working_dir_path,
         &repl_source_path,
         is_dynamic,
-    );
+    )?;
 
     let script_state =
-        set_script_state(args, script_dir_path, is_repl, repl_source_path, is_dynamic);
+        set_script_state(args, script_dir_path, is_repl, repl_source_path, is_dynamic)?;
 
     process(&proc_flags, args, &script_state, start)
 }
@@ -135,22 +135,23 @@ fn set_script_dir_path(
     working_dir_path: &Path,
     repl_source_path: &Option<PathBuf>,
     is_dynamic: bool,
-) -> PathBuf {
+) -> Result<PathBuf, Box<dyn Error>> {
     profile_fn!(set_script_dir_path);
+
     let script_dir_path = if is_repl {
         if let Some(ref script) = args.script {
             // REPL with repeat of named script
             let source_stem = script
                 .strip_suffix(RS_SUFFIX)
-                .expect("Failed to strip extension off the script name");
+                .ok_or("Failed to strip extension off the script name")?;
             working_dir_path.join(source_stem)
         } else {
             // Normal REPL with no script name
             repl_source_path
                 .as_ref()
-                .expect("Missing path of newly created REPL source file")
+                .ok_or("Missing path of newly created REPL source file")?
                 .parent()
-                .expect("Could not find parent directory of repl source file")
+                .ok_or("Could not find parent directory of repl source file")?
                 .to_path_buf()
         }
     } else if is_dynamic {
@@ -159,16 +160,17 @@ fn set_script_dir_path(
         TMPDIR.join(DYNAMIC_SUBDIR)
     } else {
         // Normal script file prepared beforehand
-        let script = args.script.as_ref().expect("Problem resolving script path");
+        let script = args
+            .script
+            .as_ref()
+            .ok_or("Problem resolving script path")?;
         let script_path = PathBuf::from(script);
         let script_dir_path = script_path
             .parent()
-            .expect("Problem resolving script parent path");
-        script_dir_path
-            .canonicalize()
-            .expect("Problem resolving script dir path")
+            .ok_or("Problem resolving script parent path")?;
+        script_dir_path.canonicalize()?
     };
-    script_dir_path
+    Ok(script_dir_path)
 }
 
 #[inline]
@@ -178,7 +180,7 @@ fn set_script_state(
     is_repl: bool,
     repl_source_path: Option<PathBuf>,
     is_dynamic: bool,
-) -> ScriptState {
+) -> Result<ScriptState, Box<dyn Error>> {
     profile_fn!(set_script_state);
     let script_state: ScriptState = if let Some(ref script) = args.script {
         let script = script.to_owned();
@@ -188,7 +190,7 @@ fn set_script_state(
         }
     } else if is_repl {
         let script = repl_source_path
-            .expect("Missing newly created REPL source path")
+            .ok_or("Missing newly created REPL source path")?
             .display()
             .to_string();
         ScriptState::NamedEmpty {
@@ -202,7 +204,7 @@ fn set_script_state(
             script_dir_path,
         }
     };
-    script_state
+    Ok(script_state)
 }
 
 #[inline]
@@ -229,17 +231,13 @@ fn process(
         let rs_source = if is_expr {
             // Consumes the expression argument
             let Some(rs_source) = args.expression.take() else {
-                return Err(Box::new(ThagError::Command(
-                    "Missing expression for --expr option".to_string(),
-                )));
+                return Err("Missing expression for --expr option".into());
             };
             rs_source
         } else if is_loop {
             // Consumes the filter argument
             let Some(filter) = args.filter.take() else {
-                return Err(Box::new(ThagError::Command(
-                    "Missing expression for --loop option".to_string(),
-                )));
+                return Err("Missing expression for --loop option".into());
             };
             build_loop(args, filter)
         } else if is_edit {
@@ -285,9 +283,7 @@ fn process(
                 "Error parsing code: {:#?}",
                 maybe_ast
             );
-            Err(Box::new(ThagError::Command(
-                "Error parsing code".to_string(),
-            )))
+            Err("Error parsing code".into())
         }
     } else {
         gen_build_run(args, proc_flags, &mut build_state, None::<Ast>, &start)
@@ -360,7 +356,7 @@ pub fn gen_build_run(
             // #[cfg(debug_assertions)]
             // debug_log!("rs_source (before)={rs_source}");
             let split_once = rs_source.split_once('\n');
-            let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
+            let (shebang, rust_code) = split_once.ok_or("Failed to strip shebang")?;
             #[cfg(debug_assertions)]
             debug_log!("Successfully stripped shebang {shebang}");
             // #[cfg(debug_assertions)]
@@ -447,11 +443,7 @@ pub fn gen_build_run(
             let rust_code = if let Some(ref syntax_tree_ref) = syntax_tree {
                 let returns_unit = match syntax_tree_ref {
                     Ast::Expr(expr) => code_utils::is_unit_return_type(expr),
-                    Ast::File(file) => {
-                        let expr = code_utils::extract_expr_from_file(file)
-                            .expect("Error extracting syn::Expr from syn::File");
-                        code_utils::returns_unit(&expr)
-                    }
+                    Ast::File(file) => code_utils::is_main_fn_returning_unit(file)?,
                 };
                 if returns_unit {
                     #[cfg(debug_assertions)]
@@ -571,7 +563,7 @@ pub fn generate(
     let manifest = &build_state
         .cargo_manifest
         .as_ref()
-        .expect("Could not unwrap BuildState.cargo_manifest");
+        .ok_or("Could not unwrap BuildState.cargo_manifest")?;
     let cargo_manifest_str: &str = &toml::to_string(manifest)?;
 
     #[cfg(debug_assertions)]
@@ -645,20 +637,16 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Box
     }
 
     // Execute the command and handle the result
-    let output = cargo_command
-        .spawn()
-        .expect("failed to spawn cargo build process");
+    let output = cargo_command.spawn()?;
 
     // Wait for the process to finish
-    let exit_status = output
-        .wait_with_output()
-        .expect("failed to wait on cargo build");
+    let exit_status = output.wait_with_output()?;
 
     if exit_status.status.success() {
         #[cfg(debug_assertions)]
         debug_log!("Build succeeded");
         if executable {
-            deploy_executable(build_state);
+            deploy_executable(build_state)?;
         }
     } else {
         return Err("Build failed".into());
@@ -669,16 +657,16 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Box
     Ok(())
 }
 
-fn deploy_executable(build_state: &BuildState) {
+fn deploy_executable(build_state: &BuildState) -> Result<(), Box<dyn Error>> {
     profile_fn!(deploy_executable);
     // Determine the output directory
-    let mut cargo_bin_path = home::home_dir().expect("Could not find home directory");
+    let mut cargo_bin_path = home::home_dir().ok_or("Could not find home directory")?;
     let cargo_bin_subdir = ".cargo/bin";
     cargo_bin_path.push(cargo_bin_subdir);
 
     // Create the target directory if it doesn't exist
     if !cargo_bin_path.exists() {
-        fs::create_dir_all(&cargo_bin_path).expect("Failed to create target directory");
+        fs::create_dir_all(&cargo_bin_path)?;
     }
 
     // Logic change: from accepting the first of multiple [[bin]] entries to only allowing exactly one.
@@ -715,7 +703,7 @@ fn deploy_executable(build_state: &BuildState) {
         .join(&executable_name);
     let output_path = cargo_bin_path.join(&build_state.source_stem);
     eprintln!("executable_path={executable_path:#?}, output_path={output_path:#?}");
-    fs::rename(executable_path, output_path).expect("Failed to move the executable");
+    fs::rename(executable_path, output_path)?;
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
     log!(
@@ -734,6 +722,7 @@ fn deploy_executable(build_state: &BuildState) {
         "{}",
         nu_ansi_term::Color::Yellow.paint(&dash_line)
     );
+    Ok(())
 }
 
 /// Run the built program

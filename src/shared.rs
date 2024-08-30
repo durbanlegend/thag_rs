@@ -224,7 +224,7 @@ impl BuildState {
         } else {
             let stale_executable = matches!(script_state, ScriptState::NamedEmpty { .. })
                 || !target_path_exists
-                || modified_since_compiled(&build_state).is_some();
+                || modified_since_compiled(&build_state)?.is_some();
             let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
             let build_requested = proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK);
             let must_gen =

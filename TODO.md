@@ -26,7 +26,8 @@
 - [ ]  -vv for debug mode
 - [ ]  Firestorm example
 - [ ]  Test [profile.dev] optimisation level
-- [ ]  Cut down cloning
+- [ ]  Check dead code & other #[cfg[allow(...)]; look into factoring over-long gen_build_run
+- [ ]  Look for panics and code smells
 - [ ]  Look into fuzzing the tests such as test_merge_manifest.
 - [ ]  grep png README.md | cargo run --features=debug-logs -- -v -B 'use regex::Regex; let re = Regex::new(r"\w+.png").unwrap();' -l 'println!("{}", re.find(&line).unwrap().as_str())' | sort
        grep -Eo '[a-zA-Z0-9_]+\.png' README.md

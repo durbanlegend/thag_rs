@@ -66,7 +66,7 @@ pub fn execute(args: &mut Cli) -> Result<(), Box<dyn Error>> {
         log_init_setup(start, args, &proc_flags);
     }
 
-    set_verbosity(args);
+    set_verbosity(args)?;
 
     if args.config {
         config::edit()?;
@@ -81,7 +81,7 @@ pub fn execute(args: &mut Cli) -> Result<(), Box<dyn Error>> {
     };
     validate_args(args, &proc_flags)?;
     let repl_source_path = if is_repl && args.script.is_none() {
-        Some(create_next_repl_file())
+        Some(create_next_repl_file()?)
     } else {
         None
     };
@@ -109,8 +109,9 @@ pub fn execute(args: &mut Cli) -> Result<(), Box<dyn Error>> {
 }
 
 #[inline]
-fn set_verbosity(args: &Cli) {
+fn set_verbosity(args: &Cli) -> Result<(), Box<dyn Error>> {
     profile_fn!(set_verbosity);
+
     let verbosity = if args.verbose {
         Verbosity::Verbose
     } else if args.quiet == 1 {
@@ -124,7 +125,7 @@ fn set_verbosity(args: &Cli) {
     } else {
         Verbosity::Normal
     };
-    logging::set_global_verbosity(verbosity);
+    logging::set_global_verbosity(verbosity)
 }
 
 #[inline]
@@ -369,6 +370,13 @@ pub fn gen_build_run(
             rs_source
         };
 
+        // let mut rs_source = read_file_contents(&build_state.source_path)?;
+        let mut syntax_tree: Option<Ast> = if syntax_tree.is_none() {
+            code_utils::to_ast(&rs_source)
+        } else {
+            syntax_tree
+        };
+
         let rs_manifest: Manifest = {
             // debug_timings(&start_parsing_rs, "Parsed source");
             extract_manifest(&rs_source, start_parsing_rs)
@@ -380,12 +388,6 @@ pub fn gen_build_run(
         if build_state.rs_manifest.is_none() {
             build_state.rs_manifest = Some(rs_manifest);
         }
-        // let mut rs_source = read_file_contents(&build_state.source_path)?;
-        let mut syntax_tree: Option<Ast> = if syntax_tree.is_none() {
-            code_utils::to_ast(&rs_source)
-        } else {
-            syntax_tree
-        };
 
         // #[cfg(debug_assertions)]
         // debug_log!("syntax_tree={syntax_tree:#?}");
@@ -411,8 +413,7 @@ pub fn gen_build_run(
                     writeln!(
                     &mut std::io::stderr(),
                     "{main_methods} main methods found, only one allowed by default. Specify --multimain (-m) option to allow more"
-                )
-                .unwrap();
+                )?;
                     std::process::exit(1);
                 }
             }
@@ -550,7 +551,7 @@ pub fn generate(
 
     {
         // profile_section!(parse_file);
-        let syntax_tree = syn::parse_file(rs_source).unwrap();
+        let syntax_tree = syn::parse_file(rs_source)?;
         let rs_source = prettyplease::unparse(&syntax_tree);
         write_source(&target_rs_path, &rs_source)?;
     }
@@ -596,7 +597,6 @@ pub fn generate(
 /// Will return `Err` if there is an error composing the Cargo TOML path or running the Cargo build command.
 /// # Panics
 /// Will panic if the cargo build process fails to spawn or if it can't move the executable.
-#[allow(clippy::too_many_lines)]
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Box<dyn Error>> {
     // profile_fn!(build);
 

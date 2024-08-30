@@ -40,5 +40,6 @@ pub const TEMP_SCRIPT_NAME: &str = "temp.rs";
 pub const TOML_NAME: &str = "Cargo.toml";
 
 lazy_static! {
+    #[derive(Debug)]
     pub static ref TMPDIR: PathBuf = env::temp_dir();
 }

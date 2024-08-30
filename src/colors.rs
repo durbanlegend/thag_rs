@@ -447,6 +447,7 @@ pub fn main() {
 }
 
 /// An enum of the colours in a 256-colour palette.
+#[cfg(debug_assertions)]
 #[allow(dead_code)]
 #[derive(Display, EnumIter)]
 pub enum XtermColor {

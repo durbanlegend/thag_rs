@@ -126,6 +126,7 @@ impl EventReader for CrosstermEventReader {
     }
 }
 
+#[cfg(debug_assertions)]
 #[allow(dead_code)]
 fn main() -> Result<(), Box<dyn Error>> {
     let event_reader = CrosstermEventReader;

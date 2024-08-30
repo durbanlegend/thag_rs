@@ -138,6 +138,7 @@ pub fn edit() -> Result<Option<String>, ThagError> {
 }
 
 /// Main function for use by testing or the script runner.
+#[cfg(debug_assertions)]
 #[allow(dead_code)]
 fn main() {
     let maybe_config = load();

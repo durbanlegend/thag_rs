@@ -502,26 +502,7 @@ pub fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
 
-/// Currently unused disentangling method.
-/// # Panics
-/// Will panic if the regular expression used is not well formed.
-#[warn(dead_code)]
-#[must_use]
-pub fn re_disentangle(text_wall: &str) -> String {
-    use std::fmt::Write;
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?m)(?P<line>.*?)(?:[\\]n|$)").unwrap();
-    }
-
-    // We extract the non-greedy capturing group named "line" from each capture of the multi-line mode regex..
-    RE.captures_iter(text_wall)
-        .map(|c| c.name("line").unwrap().as_str())
-        .fold(String::new(), |mut output, b| {
-            let _ = writeln!(output, "{b}");
-            output
-        })
-}
-
+#[cfg(debug_assertions)]
 #[warn(dead_code)]
 /// Display output captured to `std::process::Output`.
 /// # Errors
@@ -546,21 +527,22 @@ pub fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
 
 /// Check if executable is stale, i.e. if raw source script or individual Cargo.toml
 /// has a more recent modification date and time
+/// # Errors
+/// Will return `Err` if either the executable or the Cargo.toml for the script is missing.
 /// # Panics
-/// Will panic if either the executable or the Cargo.toml for the script is missing.
-#[must_use]
-pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, SystemTime)> {
+/// Will panic if there is a logic error wrapping the path and modified time.
+pub fn modified_since_compiled(
+    build_state: &BuildState,
+) -> Result<Option<(&PathBuf, SystemTime)>, Box<dyn Error>> {
     profile_fn!(modified_since_compiled);
+
     let executable = &build_state.target_path;
-    assert!(executable.exists(), "Missing executable");
+    executable.try_exists()?;
     let Ok(metadata) = fs::metadata(executable) else {
-        return None;
+        return Ok(None);
     };
 
-    // Panic because this shouldn't happen
-    let baseline_modified = metadata
-        .modified()
-        .expect("Missing metadata for executable file {executable:#?}");
+    let baseline_modified = metadata.modified()?;
 
     let files = [&build_state.source_path, &build_state.cargo_toml_path];
     let mut most_recent: Option<(&PathBuf, SystemTime)> = None;
@@ -569,9 +551,7 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
             continue;
         };
 
-        let modified_time = metadata
-            .modified()
-            .expect("Missing metadata for file {file:#?}"); // Handle potential errors
+        let modified_time = metadata.modified()?;
         #[cfg(debug_assertions)]
         debug_log!("File: {file:?} modified time is {modified_time:#?}");
 
@@ -579,7 +559,12 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
             continue;
         }
 
-        if most_recent.is_none() || modified_time > most_recent.unwrap().1 {
+        if most_recent.is_none()
+            || modified_time
+                > most_recent
+                    .expect("Logic error unwrapping what we wrapped ourselves")
+                    .1
+        {
             most_recent = Some((file, modified_time));
         }
     }
@@ -594,7 +579,7 @@ pub fn modified_since_compiled(build_state: &BuildState) -> Option<(&PathBuf, Sy
         #[cfg(debug_assertions)]
         debug_log!("Neither file was modified more recently than {executable:#?}");
     }
-    most_recent
+    Ok(most_recent)
 }
 
 /// Count the number of `main()` methods in an abstract syntax tree.
@@ -753,10 +738,9 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, T
 }
 
 /// Create the next sequential REPL file according to the `repl_nnnnnn.rs` standard used by this crate.
-/// # Panics
-/// Will panic if it fails to create the `rs_repl` subdirectory.
-#[must_use]
-pub fn create_next_repl_file() -> PathBuf {
+/// # Errors
+/// Will return `Err` if there is any error encountered creating the next `repl_nnnnnnn/repl_nnnnnn.rs` in `$TMPDIR/REPL_SUBDIR`.
+pub fn create_next_repl_file() -> Result<PathBuf, Box<dyn Error>> {
     profile_fn!(create_next_repl_file);
     // Create a directory inside of `std::env::temp_dir()`
     let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
@@ -765,33 +749,28 @@ pub fn create_next_repl_file() -> PathBuf {
     debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
 
     // Ensure REPL subdirectory exists
-    fs::create_dir_all(&gen_repl_temp_dir_path).expect("Failed to create REPL directory");
+    fs::create_dir_all(&gen_repl_temp_dir_path)?;
 
     // Find existing dirs with the pattern repl_<nnnnnn>
-    let existing_dirs: Vec<_> = fs::read_dir(&gen_repl_temp_dir_path)
-        .unwrap()
-        .filter_map(|entry| {
-            let path = entry.unwrap().path();
-            // #[cfg(debug_assertions)]
-            // debug_log!("path={path:?}, path.is_file()={}, path.extension()?.to_str()={:?}, path.file_stem()?.to_str()={:?}", path.is_file(), path.extension()?.to_str(), path.file_stem()?.to_str());
-            if path.is_dir()
-                // && path.extension()?.to_str() == Some("rs")
-                && path.file_stem()?.to_str()?.starts_with("repl_")
-            {
-                let stem = path.file_stem().unwrap();
-                let num_str = stem.to_str().unwrap().trim_start_matches("repl_");
-                // #[cfg(debug_assertions)]
-                // debug_log!("stem={stem:?}; num_str={num_str}");
-                if num_str.len() == 6 && num_str.chars().all(char::is_numeric) {
-                    Some(num_str.parse::<u32>().unwrap())
-                } else {
-                    None
+    let mut existing_dirs = Vec::new();
+
+    for entry in fs::read_dir(&gen_repl_temp_dir_path)? {
+        let entry = entry?; // Bubbles up I/O errors
+        let path = entry.path();
+
+        if path.is_dir() {
+            if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                if stem.starts_with("repl_") {
+                    let num_str = stem.trim_start_matches("repl_");
+                    if num_str.len() == 6 && num_str.chars().all(char::is_numeric) {
+                        if let Ok(num) = num_str.parse::<u32>() {
+                            existing_dirs.push(num);
+                        }
+                    }
                 }
-            } else {
-                None
             }
-        })
-        .collect();
+        }
+    }
 
     let next_file_num = match existing_dirs.as_slice() {
         [] => 0, // No existing files, start with 000000
@@ -802,31 +781,39 @@ pub fn create_next_repl_file() -> PathBuf {
                     return create_repl_file(&gen_repl_temp_dir_path, i);
                 }
             }
-            panic!("Cannot create new file: all possible filenames already exist in the REPL directory.");
+            return Err(Box::new(ThagError::Command(format!("Cannot create new file: all possible subdirs `repl_nnnnnn` already exist in {TMPDIR:?}/{REPL_SUBDIR}."))));
         }
-        _ => existing_dirs.iter().max().unwrap() + 1, // Increment from highest existing number
+        _ => {
+            existing_dirs
+                .iter()
+                .max()
+                .ok_or("Can't get max value iterating existing repl_nnnnnn subdirectories")?
+                + 1
+        } // Increment from highest existing number
     };
 
     create_repl_file(&gen_repl_temp_dir_path, next_file_num)
 }
 
 /// Create a REPL file on disk, given the path and sequence number.
-/// # Panics
-/// Will panic if if fails to create the repl subdirectory.
-#[must_use]
-pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> PathBuf {
+/// # Errors
+/// Will return `Err` if it fails to create the next `repl_nnnnnnn/repl_nnnnnn.rs` in `$TMPDIR/REPL_SUBDIR`.
+pub fn create_repl_file(
+    gen_repl_temp_dir_path: &Path,
+    num: u32,
+) -> Result<PathBuf, Box<dyn Error>> {
     profile_fn!(create_repl_file);
     let padded_num = format!("{:06}", num);
     let dir_name = format!("repl_{padded_num}");
     let target_dir_path = gen_repl_temp_dir_path.join(dir_name);
-    fs::create_dir_all(&target_dir_path).expect("Failed to create REPL directory");
+    fs::create_dir_all(&target_dir_path)?;
 
     let filename = format!("repl_{padded_num}.rs");
     let path = target_dir_path.join(filename);
-    fs::File::create(&path).expect("Failed to create file");
+    fs::File::create(&path)?;
     #[cfg(debug_assertions)]
     debug_log!("Created file: {path:#?}");
-    path
+    Ok(path)
 }
 
 /// Create empty script file `temp.rs` to hold expression for --expr or --stdin options,

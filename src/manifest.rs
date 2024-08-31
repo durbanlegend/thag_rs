@@ -6,7 +6,6 @@ use mockall::automock;
 use regex::Regex;
 use serde_merge::omerge;
 use std::collections::BTreeMap;
-use std::error::Error;
 use std::io::{self, BufRead};
 use std::process::{Command, Output};
 use std::time::Instant;
@@ -48,7 +47,7 @@ impl CommandRunner for RealCommandRunner {
 pub fn cargo_search<R: CommandRunner>(
     runner: &R,
     dep_crate: &str,
-) -> Result<(String, String), Box<dyn Error>> {
+) -> Result<(String, String), ThagError> {
     profile_fn!(cargo_search);
     let start_search = Instant::now();
 
@@ -132,7 +131,7 @@ as shown if you don't need special features:
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
 /// # Panics
 /// Will panic if the regular expression is malformed.
-pub fn capture_dep(first_line: &str) -> Result<(String, String), Box<dyn Error>> {
+pub fn capture_dep(first_line: &str) -> Result<(String, String), ThagError> {
     profile_fn!(capture_dep);
     #[cfg(debug_assertions)]
     debug_log!("first_line={first_line}");
@@ -207,7 +206,7 @@ pub fn merge(
     build_state: &mut BuildState,
     rs_source: &str,
     syntax_tree: &Option<Ast>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), ThagError> {
     profile_fn!(merge);
     let start_merge_manifest = Instant::now();
 

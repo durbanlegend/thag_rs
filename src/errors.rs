@@ -1,22 +1,33 @@
-use std::ffi::OsString;
+use bitflags::parser::ParseError as BitFlagsParseError;
+use cargo_toml::Error as CargoTomlError;
+use clap::error::Error as ClapError;
+use serde_merge::error::Error as SerdeMergeError;
+use std::borrow::Cow;
+use std::sync::{MutexGuard, PoisonError as LockError};
 use std::{error::Error, io};
+use strum::ParseError as StrumParseError;
+use syn::Error as SynError;
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
 
 #[derive(Debug)]
 pub enum ThagError {
-    Cancelled,                     // For user electing to cancel
-    ClapError(clap::error::Error), // For clap errors
-    Command(String),               // For errors during Cargo build or program execution
-    FromStr(String),               // For parsing CargoManifest from a string
-    Io(io::Error),                 // For I/O errors
-    NoneOption(String),            // For unwrapping Options
-    OsString(OsString),            // For unconvertible OsStrings
-    // Path(String),               // For Path and PathBuf issues
-    StrumParse(strum::ParseError), // For strum parse enum
-    TomlDe(TomlDeError),           // For TOML deserialization errors
-    TomlSer(TomlSerError),         // For TOML serialization errors
-    Toml(cargo_toml::Error),       // For cargo_toml errors
+    BitFlagsParse(BitFlagsParseError), // For bitflags parse error
+    Cancelled,                         // For user electing to cancel
+    ClapError(ClapError),              // For clap errors
+    Command(&'static str),             // For errors during Cargo build or program execution
+    Dyn(Box<dyn Error>), // For boxed dynamic errors from 3rd parties (firestorm in first instance)
+    FromStr(Cow<'static, str>), // For simple errors from a string
+    Io(std::io::Error),  // For I/O errors
+    LockMutexGuard(&'static str), // For lock errors with MutexGuard
+    NoneOption(&'static str), // For unwrapping Options
+    OsString(std::ffi::OsString), // For unconvertible OsStrings
+    SerdeMerge(SerdeMergeError), // For serde_merge errors
+    StrumParse(StrumParseError), // For strum parse enum
+    Syn(SynError),       // For syn errors
+    TomlDe(TomlDeError), // For TOML deserialization errors
+    TomlSer(TomlSerError), // For TOML serialization errors
+    Toml(CargoTomlError), // For cargo_toml errors
 }
 
 impl ThagError {}
@@ -27,14 +38,14 @@ impl From<io::Error> for ThagError {
     }
 }
 
-impl From<clap::error::Error> for ThagError {
-    fn from(err: clap::error::Error) -> Self {
+impl From<ClapError> for ThagError {
+    fn from(err: ClapError) -> Self {
         ThagError::ClapError(err)
     }
 }
 
-impl From<strum::ParseError> for ThagError {
-    fn from(err: strum::ParseError) -> Self {
+impl From<StrumParseError> for ThagError {
+    fn from(err: StrumParseError) -> Self {
         ThagError::StrumParse(err)
     }
 }
@@ -51,15 +62,51 @@ impl From<TomlSerError> for ThagError {
     }
 }
 
-impl From<cargo_toml::Error> for ThagError {
-    fn from(err: cargo_toml::Error) -> Self {
+impl From<CargoTomlError> for ThagError {
+    fn from(err: CargoTomlError) -> Self {
         ThagError::Toml(err)
     }
 }
 
 impl From<String> for ThagError {
-    fn from(err_msg: String) -> Self {
-        ThagError::FromStr(err_msg)
+    fn from(s: String) -> Self {
+        ThagError::FromStr(Cow::Owned(s))
+    }
+}
+
+impl From<&'static str> for ThagError {
+    fn from(s: &'static str) -> Self {
+        ThagError::FromStr(Cow::Borrowed(s))
+    }
+}
+
+impl From<SerdeMergeError> for ThagError {
+    fn from(err: SerdeMergeError) -> Self {
+        ThagError::SerdeMerge(err)
+    }
+}
+
+impl From<SynError> for ThagError {
+    fn from(err: SynError) -> Self {
+        ThagError::Syn(err)
+    }
+}
+
+impl<'a, T> From<LockError<MutexGuard<'a, T>>> for ThagError {
+    fn from(_err: LockError<MutexGuard<'a, T>>) -> Self {
+        ThagError::LockMutexGuard("Lock poisoned")
+    }
+}
+
+impl From<BitFlagsParseError> for ThagError {
+    fn from(err: BitFlagsParseError) -> Self {
+        ThagError::BitFlagsParse(err)
+    }
+}
+
+impl From<Box<dyn Error>> for ThagError {
+    fn from(err: Box<dyn Error>) -> Self {
+        ThagError::Dyn(err)
     }
 }
 
@@ -68,21 +115,32 @@ impl std::fmt::Display for ThagError {
         match self {
             ThagError::Cancelled => write!(f, "Cancelled"),
             ThagError::ClapError(e) => write!(f, "{e:?}"),
-            ThagError::Command(s) | ThagError::FromStr(s) | ThagError::NoneOption(s) => {
+            ThagError::Command(s) | ThagError::NoneOption(s) => {
+                for line in s.lines() {
+                    writeln!(f, "{line}")?;
+                }
+                Ok(())
+            }
+            ThagError::FromStr(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
                 Ok(())
             }
             ThagError::Io(e) => write!(f, "{e:?}"),
+            ThagError::LockMutexGuard(e) => write!(f, "{e:?}"),
             ThagError::OsString(o) => {
                 writeln!(f, "{o:#?}")?;
                 Ok(())
             }
+            ThagError::SerdeMerge(e) => write!(f, "{e:?}"),
             ThagError::StrumParse(e) => write!(f, "{e:?}"),
+            ThagError::Syn(e) => write!(f, "{e:?}"),
             ThagError::TomlDe(e) => write!(f, "{e:?}"),
             ThagError::TomlSer(e) => write!(f, "{e:?}"),
             ThagError::Toml(e) => write!(f, "{e:?}"),
+            ThagError::BitFlagsParse(e) => write!(f, "{e:?}"),
+            ThagError::Dyn(e) => write!(f, "{e:?}"),
         }
     }
 }
@@ -93,17 +151,22 @@ impl Error for ThagError {
             // The cause is the underlying implementation error type. Is implicitly
             // cast to the trait object `&error::Error`. This works because the
             // underlying type already implements the `Error` trait.
-            ThagError::Command(ref _e)
-            | ThagError::FromStr(ref _e)
-            | ThagError::NoneOption(ref _e) => Some(self),
+            ThagError::FromStr(ref _e) => Some(self),
             ThagError::ClapError(ref e) => Some(e),
             ThagError::Io(ref e) => Some(e),
+            ThagError::LockMutexGuard(_e) => Some(self),
+            ThagError::Command(_e) => Some(self),
+            ThagError::NoneOption(_e) => Some(self),
             ThagError::OsString(ref _o) => Some(self),
+            ThagError::SerdeMerge(ref e) => Some(e),
             ThagError::StrumParse(ref e) => Some(e),
+            ThagError::Syn(e) => Some(e),
             ThagError::TomlDe(ref e) => Some(e),
             ThagError::TomlSer(ref e) => Some(e),
             ThagError::Toml(ref e) => Some(e),
             ThagError::Cancelled => Some(self),
+            ThagError::BitFlagsParse(e) => Some(e),
+            ThagError::Dyn(e) => Some(&**e),
         }
     }
 }

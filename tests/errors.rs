@@ -104,7 +104,7 @@ fn test_os_string() {
 #[test]
 fn test_display() {
     set_up();
-    let build_run_err = ThagError::Command(String::from("Command error occurred"));
+    let build_run_err = ThagError::Command("Command error occurred");
     assert_eq!(format!("{}", build_run_err), "Command error occurred\n");
 }
 

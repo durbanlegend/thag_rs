@@ -24,7 +24,6 @@ use reedline::{
 use regex::Regex;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::error::Error;
 use std::fs::OpenOptions;
 use std::str::FromStr;
 use std::time::Instant;
@@ -174,7 +173,7 @@ pub fn run_repl(
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     start: Instant,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), ThagError> {
     #[allow(unused_variables)]
     let mut context = Context {
         options,
@@ -384,8 +383,7 @@ pub fn run_repl(
             }
         }
 
-        let rs_manifest = extract_manifest(rs_source, Instant::now())
-            .map_err(|_err| ThagError::FromStr("Error parsing rs_source".to_string()))?;
+        let rs_manifest = extract_manifest(rs_source, Instant::now())?;
         context.build_state.rs_manifest = Some(rs_manifest);
 
         let maybe_ast = extract_ast(rs_source);
@@ -398,8 +396,7 @@ pub fn run_repl(
                 context.options,
                 context.proc_flags,
                 &context.start,
-            )
-            .map_err(|_err| ThagError::Command("Error processing expression".to_string()))?;
+            )?;
         } else {
             nu_color_println!(
                 nu_resolve_style(MessageLevel::Error),

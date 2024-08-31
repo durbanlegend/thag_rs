@@ -5,9 +5,8 @@ use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
 use core::{fmt, str};
 use firestorm::profile_fn;
-use std::error::Error;
 
-/// the `clap` command-line interface for the `thag_rs` script runner and REPL.
+/// The `clap` command-line interface for the `thag_rs` script runner and REPL.
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Default, Parser, Debug)]
 #[command(name = "thag_rs", version, about, long_about)]
@@ -123,7 +122,7 @@ pub fn get_args() -> Cli {
 /// Validates the command-line arguments
 /// # Errors
 /// Will return `Err` if there is a missing script name or missing .rs suffix.
-pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn Error>> {
+pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), ThagError> {
     profile_fn!(validate_args);
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
@@ -199,7 +198,7 @@ impl str::FromStr for ProcFlags {
 /// # Panics
 ///
 /// Will panic if the internal correctness check fails.
-pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
+pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
     profile_fn!(get_proc_flags);
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
@@ -252,9 +251,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
 
         // Check all good
         let formatted = proc_flags.to_string();
-        let parsed = formatted
-            .parse::<ProcFlags>()
-            .map_err(|e| ThagError::FromStr(e.to_string()))?;
+        let parsed = formatted.parse::<ProcFlags>()?;
 
         assert_eq!(proc_flags, parsed);
 

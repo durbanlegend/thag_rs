@@ -17,7 +17,6 @@ use firestorm::profile_fn;
 use home::home_dir;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
-use std::error::Error;
 use std::{
     path::{Path, PathBuf},
     time::Instant,
@@ -96,7 +95,7 @@ impl BuildState {
         proc_flags: &ProcFlags,
         options: &Cli,
         script_state: &ScriptState,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<Self, ThagError> {
         profile_fn!(pre_configure);
         let is_repl = proc_flags.contains(ProcFlags::REPL);
         let is_expr = options.expression.is_some();
@@ -108,23 +107,19 @@ impl BuildState {
         let build_exe = proc_flags.contains(ProcFlags::EXECUTABLE);
         let maybe_script = script_state.get_script();
         let Some(ref script) = maybe_script else {
-            return Err(Box::new(ThagError::NoneOption(
-                "No script specified".to_string(),
-            )));
+            return Err(ThagError::NoneOption("No script specified"));
         };
         #[cfg(debug_assertions)]
         debug_log!("script={script}");
         let path = Path::new(script);
         debug_log!("path={path:#?}");
         let Some(filename) = path.file_name() else {
-            return Err(Box::new(ThagError::NoneOption(
-                "No filename specified".to_string(),
-            )));
+            return Err(ThagError::NoneOption("No filename specified"));
         };
         let Some(source_name) = filename.to_str() else {
-            return Err(Box::new(ThagError::NoneOption(
-                "Error converting filename to a string".to_string(),
-            )));
+            return Err(ThagError::NoneOption(
+                "Error converting filename to a string",
+            ));
         };
 
         debug_log!("source_name={source_name}");

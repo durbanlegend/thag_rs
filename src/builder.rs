@@ -37,7 +37,6 @@ use log::{log_enabled, Level::Debug};
 use regex::Regex;
 use std::string::ToString;
 use std::{
-    error::Error,
     fs::{self, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
@@ -51,7 +50,7 @@ use std::{
 /// Will return `Err` if there is an error returned by any of the subordinate functions.
 /// # Panics
 /// Will panic if it fails to strip a .rs extension off the script name,
-pub fn execute(args: &mut Cli) -> Result<(), Box<dyn Error>> {
+pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
     // Instrument the entire function
     // profile_fn!(execute);
 
@@ -109,7 +108,7 @@ pub fn execute(args: &mut Cli) -> Result<(), Box<dyn Error>> {
 }
 
 #[inline]
-fn set_verbosity(args: &Cli) -> Result<(), Box<dyn Error>> {
+fn set_verbosity(args: &Cli) -> Result<(), ThagError> {
     profile_fn!(set_verbosity);
 
     let verbosity = if args.verbose {
@@ -135,7 +134,7 @@ fn set_script_dir_path(
     working_dir_path: &Path,
     repl_source_path: &Option<PathBuf>,
     is_dynamic: bool,
-) -> Result<PathBuf, Box<dyn Error>> {
+) -> Result<PathBuf, ThagError> {
     profile_fn!(set_script_dir_path);
 
     let script_dir_path = if is_repl {
@@ -180,7 +179,7 @@ fn set_script_state(
     is_repl: bool,
     repl_source_path: Option<PathBuf>,
     is_dynamic: bool,
-) -> Result<ScriptState, Box<dyn Error>> {
+) -> Result<ScriptState, ThagError> {
     profile_fn!(set_script_state);
     let script_state: ScriptState = if let Some(ref script) = args.script {
         let script = script.to_owned();
@@ -213,7 +212,7 @@ fn process(
     args: &mut Cli,
     script_state: &ScriptState,
     start: Instant,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), ThagError> {
     // profile_fn!(process);
     let is_repl = args.repl;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
@@ -261,7 +260,8 @@ fn process(
         log!(Verbosity::Verbose, "rs_source={rs_source}");
 
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
-            .map_err(|_err| ThagError::FromStr("Error parsing rs_source".to_string()))?;
+            // .map_err(|_err| ThagError::FromStr("Error parsing rs_source"))
+            ?;
         build_state.rs_manifest = Some(rs_manifest);
 
         let maybe_ast = extract_ast(&rs_source);
@@ -341,7 +341,7 @@ pub fn gen_build_run(
     build_state: &mut BuildState,
     syntax_tree: Option<Ast>,
     start: &Instant,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), ThagError> {
     // Instrument the entire function
     // profile_fn!(gen_build_run);
 
@@ -517,7 +517,7 @@ pub fn generate(
     build_state: &BuildState,
     rs_source: &str,
     proc_flags: &ProcFlags,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), ThagError> {
     // profile_fn!(generate);
     let start_gen = Instant::now();
 
@@ -589,7 +589,7 @@ pub fn generate(
 /// Will return `Err` if there is an error composing the Cargo TOML path or running the Cargo build command.
 /// # Panics
 /// Will panic if the cargo build process fails to spawn or if it can't move the executable.
-pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Box<dyn Error>> {
+pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), ThagError> {
     // profile_fn!(build);
 
     let start_build = Instant::now();
@@ -657,7 +657,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Box
     Ok(())
 }
 
-fn deploy_executable(build_state: &BuildState) -> Result<(), Box<dyn Error>> {
+fn deploy_executable(build_state: &BuildState) -> Result<(), ThagError> {
     profile_fn!(deploy_executable);
     // Determine the output directory
     let mut cargo_bin_path = home::home_dir().ok_or("Could not find home directory")?;

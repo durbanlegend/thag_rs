@@ -14,7 +14,6 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::any::Any;
 use std::collections::HashMap;
-use std::error::Error;
 use std::fs;
 use std::fs::{remove_dir_all, remove_file, OpenOptions};
 use std::io::{self, BufRead, Write};
@@ -407,7 +406,7 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
 pub fn extract_manifest(
     rs_full_source: &str,
     start_parsing_rs: Instant,
-) -> Result<Manifest, Box<dyn Error>> {
+) -> Result<Manifest, ThagError> {
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
@@ -462,7 +461,7 @@ pub fn process_expr(
     options: &mut Cli,
     proc_flags: &ProcFlags,
     start: &Instant,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), ThagError> {
     let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(options, proc_flags, build_state, syntax_tree, start);
@@ -473,7 +472,7 @@ pub fn process_expr(
 /// Convert a Path to a string value, assuming the path contains only valid characters.
 /// # Errors
 /// Will return `Err` if there is any error caused by invalid characters in the path name.
-pub fn path_to_str(path: &Path) -> Result<String, Box<dyn Error>> {
+pub fn path_to_str(path: &Path) -> Result<String, ThagError> {
     let string = path
         .to_path_buf()
         .into_os_string()
@@ -506,7 +505,7 @@ pub fn disentangle(text_wall: &str) -> String {
 /// Display output captured to `std::process::Output`.
 /// # Errors
 /// Will return `Err` if the stdout or stderr is not found captured as expected.
-pub fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
+pub fn display_output(output: &Output) -> Result<(), ThagError> {
     // Read the captured output from the pipe
     // let stdout = output.stdout;
 
@@ -531,7 +530,7 @@ pub fn display_output(output: &Output) -> Result<(), Box<dyn Error>> {
 /// or if there is a logic error wrapping the path and modified time.
 pub fn modified_since_compiled(
     build_state: &BuildState,
-) -> Result<Option<(&PathBuf, SystemTime)>, Box<dyn Error>> {
+) -> Result<Option<(&PathBuf, SystemTime)>, ThagError> {
     profile_fn!(modified_since_compiled);
 
     let executable = &build_state.target_path;
@@ -738,7 +737,7 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, T
 /// Create the next sequential REPL file according to the `repl_nnnnnn.rs` standard used by this crate.
 /// # Errors
 /// Will return `Err` if there is any error encountered creating the next `repl_nnnnnnn/repl_nnnnnn.rs` in `$TMPDIR/REPL_SUBDIR`.
-pub fn create_next_repl_file() -> Result<PathBuf, Box<dyn Error>> {
+pub fn create_next_repl_file() -> Result<PathBuf, ThagError> {
     profile_fn!(create_next_repl_file);
     // Create a directory inside of `std::env::temp_dir()`
     let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
@@ -796,10 +795,7 @@ pub fn create_next_repl_file() -> Result<PathBuf, Box<dyn Error>> {
 /// Create a REPL file on disk, given the path and sequence number.
 /// # Errors
 /// Will return `Err` if it fails to create the next `repl_nnnnnnn/repl_nnnnnn.rs` in `$TMPDIR/REPL_SUBDIR`.
-pub fn create_repl_file(
-    gen_repl_temp_dir_path: &Path,
-    num: u32,
-) -> Result<PathBuf, Box<dyn Error>> {
+pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> Result<PathBuf, ThagError> {
     profile_fn!(create_repl_file);
     let padded_num = format!("{:06}", num);
     let dir_name = format!("repl_{padded_num}");
@@ -818,7 +814,7 @@ pub fn create_repl_file(
 /// and open it for writing.
 /// # Errors
 /// Will return Err if it can't create the `rs_dyn` directory.
-pub fn create_temp_source_file() -> Result<PathBuf, Box<dyn Error>> {
+pub fn create_temp_source_file() -> Result<PathBuf, ThagError> {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
@@ -960,7 +956,7 @@ pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
         command.arg("--edition");
         command.arg("2021");
         command.arg(source_path_str);
-        let output = command.output().expect("Failed to run rustfmt");
+        let output = command.output()?;
 
         #[cfg(debug_assertions)]
         if output.status.success() {
@@ -1352,7 +1348,7 @@ pub fn returns_unit(expr: &Expr) -> bool {
 /// Will return `Err` if there is any error parsing expressions
 #[cfg(debug_assertions)]
 #[allow(dead_code)]
-pub fn extract_expr_from_file(file: &File) -> Result<Expr, Box<dyn Error>> {
+pub fn extract_expr_from_file(file: &File) -> Result<Expr, ThagError> {
     profile_fn!(extract_expr_from_file);
 
     for item in &file.items {
@@ -1375,7 +1371,7 @@ pub fn extract_expr_from_file(file: &File) -> Result<Expr, Box<dyn Error>> {
 
 /// # Errors
 /// Will return `Err` if there is any error parsing expressions
-pub fn is_main_fn_returning_unit(file: &File) -> Result<bool, Box<dyn Error>> {
+pub fn is_main_fn_returning_unit(file: &File) -> Result<bool, ThagError> {
     profile_fn!(is_main_fn_returning_unit);
 
     // Traverse the file to find the main function

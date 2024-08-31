@@ -25,7 +25,6 @@ use ratatui::Terminal;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::error::Error;
 use std::io::{self, BufRead, IsTerminal};
 use std::{collections::VecDeque, fs, path::PathBuf};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
@@ -128,7 +127,7 @@ impl EventReader for CrosstermEventReader {
 
 #[cfg(debug_assertions)]
 #[allow(dead_code)]
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), ThagError> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
         log!(Verbosity::Normal, "{line}");
@@ -164,7 +163,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 ///
 /// If the terminal cannot be reset.
 #[allow(clippy::too_many_lines)]
-pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Error>> {
+pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> {
     let input = std::io::stdin();
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
@@ -245,7 +244,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, Box<dyn Err
                     ctrl: true,
                     ..
                 } => {
-                    return Err(Box::new(ThagError::Cancelled));
+                    return Err(ThagError::Cancelled);
                 }
                 Input {
                     key: Key::Char('d'),
@@ -387,9 +386,7 @@ pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     }
 }
 
-fn reset_term(
-    mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,
-) -> Result<(), Box<dyn Error>> {
+fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> Result<(), ThagError> {
     disable_raw_mode()?;
     crossterm::execute!(
         term.backend_mut(),

@@ -91,10 +91,7 @@ fn test_edit_stdin_quit() {
     let result = edit(&mock_reader);
 
     assert!(result.is_err());
-    assert!(matches!(
-        result.err().unwrap().downcast_ref::<ThagError>(),
-        Some(&ThagError::Cancelled)
-    ));
+    assert!(matches!(result.err().unwrap(), ThagError::Cancelled));
 }
 
 fn init_logger() {

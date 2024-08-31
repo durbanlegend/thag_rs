@@ -36,11 +36,6 @@
        https://download-directory.github.io/?url=https://github.com/durbanlegend/thag_rs/tree/14d31159c42249f6aa0486f500de209438b06b8f/demo
 https://stackoverflow.com/questions/7106012/download-a-single-folder-or-directory-from-a-github-repository
 https://test.ssgithub.com/?url=https://github.com/durbanlegend/thag_rs/tree/master/demo
-#[cfg(target_os = "windows")]
-let temp_dir = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".into());
-
-#[cfg(not(target_os = "windows"))]
-let temp_dir = std::env::var("TMPDIR").unwrap_or_else(|_| "/tmp".into());
 - [ ]  Apply changes from demo/cmd_args.rs.
 - [ ]  Document:
         /*[toml]

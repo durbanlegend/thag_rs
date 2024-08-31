@@ -1,10 +1,10 @@
 #![allow(clippy::uninlined_format_args)]
 use lazy_static::lazy_static;
 use serde::Deserialize;
-use std::{error::Error, sync::Mutex};
+use std::sync::Mutex;
 use strum::EnumString;
 
-use crate::debug_log;
+use crate::{debug_log, ThagError};
 
 /// An enum of the supported verbosity levels.
 #[derive(Clone, Copy, Debug, Default, Deserialize, EnumString, PartialEq, Eq)]
@@ -52,7 +52,7 @@ lazy_static! {
 /// Set the logging verbosity for the current execution.
 /// # Errors
 /// Will return `Err` if the logger mutex cannot be locked.
-pub fn set_global_verbosity(verbosity: Verbosity) -> Result<(), Box<dyn Error>> {
+pub fn set_global_verbosity(verbosity: Verbosity) -> Result<(), ThagError> {
     let mut logger = LOGGER.lock()?;
     logger.set_verbosity(verbosity);
     Ok(())

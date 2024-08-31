@@ -1,11 +1,11 @@
 #![allow(clippy::uninlined_format_args)]
 
-use std::error::Error;
+use thag_rs::ThagError;
 use thag_rs::{execute, get_args};
 
 use std::cell::RefCell;
 
-pub fn main() -> Result<(), Box<dyn Error>> {
+pub fn main() -> Result<(), ThagError> {
     let args = RefCell::new(get_args()); // Wrap args in a RefCell
 
     // Check if firestorm profiling is enabled

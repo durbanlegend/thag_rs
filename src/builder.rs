@@ -4,7 +4,7 @@ use crate::code_utils::{
     strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::colors::{nu_resolve_style, MessageLevel};
-use crate::config::{self, MAYBE_CONFIG};
+use crate::config::{self, RealContext, MAYBE_CONFIG};
 use crate::errors::ThagError;
 use crate::log;
 use crate::logging;
@@ -68,7 +68,7 @@ pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
     set_verbosity(args)?;
 
     if args.config {
-        config::edit()?;
+        config::edit(&RealContext::new())?;
         return Ok(());
     }
 
@@ -441,9 +441,11 @@ pub fn gen_build_run(
             };
 
             let rust_code = if let Some(ref syntax_tree_ref) = syntax_tree {
+                // Test with a view to eliminating Ast::File option below
                 let returns_unit = match syntax_tree_ref {
                     Ast::Expr(expr) => code_utils::is_unit_return_type(expr),
-                    Ast::File(file) => code_utils::is_main_fn_returning_unit(file)?,
+                    // Ast::File(file) => code_utils::is_main_fn_returning_unit(file)?,
+                    Ast::File(_file) => panic!("Not expecting syn::File if no main method"),
                 };
                 if returns_unit {
                     #[cfg(debug_assertions)]

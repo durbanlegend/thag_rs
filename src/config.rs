@@ -1,5 +1,6 @@
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
+use mockall::{automock, predicate::str};
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
 #[cfg(target_os = "windows")]
@@ -15,7 +16,7 @@ use crate::{debug_log, ThagError};
 lazy_static! {
     #[derive(Debug)]
     pub static ref MAYBE_CONFIG: Option<Config> = {
-        let maybe_config = load();
+        let maybe_config = load(&RealContext::new());
         #[cfg(debug_assertions)]
         if let Some(ref config) = maybe_config {
                 debug_log!("Loaded config: {config:?}");
@@ -59,34 +60,64 @@ pub struct Colors {
     pub term_theme: TermTheme,
 }
 
-#[cfg(target_os = "windows")]
-fn get_config_path() -> PathBuf {
-    PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"))
-        .join("thag_rs")
-        .join("config.toml")
+#[automock]
+pub trait Context {
+    fn get_config_path(&self) -> PathBuf;
+    fn is_real(&self) -> bool;
 }
 
-#[cfg(not(target_os = "windows"))]
-fn get_config_path() -> PathBuf {
-    home::home_dir()
-        .expect("Error resolving home::home_dir()")
-        .join(".config")
-        .join("thag_rs")
-        .join("config.toml")
+/// A struct for use in normal execution, as opposed to use in testing.
+#[derive(Debug, Default)]
+pub struct RealContext {
+    pub base_dir: PathBuf,
+}
+
+impl RealContext {
+    /// Creates a new [`RealContext`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if it fails to resolve the $APPDATA path.
+    #[cfg(target_os = "windows")]
+    #[must_use]
+    pub fn new() -> Self {
+        let base_dir =
+            PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"));
+        Self { base_dir }
+    }
+
+    /// Creates a new [`RealContext`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if it fails to resolve the home directory.
+    #[cfg(not(target_os = "windows"))]
+    #[must_use]
+    pub fn new() -> Self {
+        let base_dir = home::home_dir().expect("Error resolving home::home_dir()");
+        Self { base_dir }
+    }
+}
+
+impl Context for RealContext {
+    fn get_config_path(&self) -> PathBuf {
+        self.base_dir.join("thag_rs").join("config.toml")
+    }
+
+    fn is_real(&self) -> bool {
+        true
+    }
 }
 
 #[must_use]
-pub fn load() -> Option<Config> {
+pub fn load(context: &dyn Context) -> Option<Config> {
     profile_fn!(load);
-    let config_path = get_config_path();
+    let config_path = context.get_config_path();
     #[cfg(debug_assertions)]
     debug_log!("config_path={config_path:?}");
 
     if config_path.exists() {
         let config_str = fs::read_to_string(config_path).ok()?;
-        // println!("config_str={config_str}");
-        // let config: Result<Config, toml::de::Error> = toml::from_str(&config_str);
-        // println!("config={config:#?}");
         let config: Config = toml::from_str(&config_str).ok()?;
         Some(config)
     } else {
@@ -100,17 +131,16 @@ pub fn load() -> Option<Config> {
 /// # Panics
 /// Will panic if it can't create the parent directory for the configuration.
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit() -> Result<Option<String>, ThagError> {
+pub fn edit(context: &dyn Context) -> Result<Option<String>, ThagError> {
     profile_fn!(edit);
-    let config_path = get_config_path();
+    let config_path = context.get_config_path();
     #[cfg(debug_assertions)]
     debug_log!("config_path={config_path:?}");
 
-    // Create the target directory if it doesn't exist
     let exists = config_path.exists();
     if !exists {
-        let dir_path = &config_path.parent().expect("Can't create directory");
-        fs::create_dir_all(dir_path).unwrap_or_else(|_| panic!("Failed to create {dir_path:#?}"));
+        let dir_path = &config_path.parent().ok_or("Can't create directory")?;
+        fs::create_dir_all(dir_path)?;
     }
 
     let mut file = OpenOptions::new()
@@ -118,7 +148,6 @@ pub fn edit() -> Result<Option<String>, ThagError> {
         .create(true)
         .truncate(false)
         .open(&config_path)?;
-    //https://github.com/durbanlegend/thag_rs/blob/master/assets/config.toml.template
     if !exists {
         let text = r#"# Please set up the config file as follows:
 # 1. Follow the link below to the template on Github.
@@ -133,15 +162,17 @@ pub fn edit() -> Result<Option<String>, ThagError> {
         file.write_all(text.as_bytes())?;
     }
     eprintln!("About to edit {config_path:#?}");
-    edit::edit_file(&config_path)?;
-    Ok(Some(String::from("End of history file edit")))
+    if context.is_real() {
+        edit::edit_file(&config_path)?;
+    }
+    Ok(Some(String::from("End of edit")))
 }
 
 /// Main function for use by testing or the script runner.
 #[cfg(debug_assertions)]
 #[allow(dead_code)]
 fn main() {
-    let maybe_config = load();
+    let maybe_config = load(&RealContext::new());
     #[cfg(debug_assertions)]
     if let Some(config) = maybe_config {
         debug_log!("Loaded config: {config:?}");

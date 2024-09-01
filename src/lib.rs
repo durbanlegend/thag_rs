@@ -23,6 +23,7 @@ pub use code_utils::{
     modified_since_compiled, process_expr,
 };
 pub use colors::{nu_resolve_style, MessageLevel};
+pub use config::load;
 pub use errors::ThagError;
 pub use repl::run_repl;
 pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};

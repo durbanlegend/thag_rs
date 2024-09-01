@@ -1,6 +1,7 @@
 use bitflags::parser::ParseError as BitFlagsParseError;
 use cargo_toml::Error as CargoTomlError;
 use clap::error::Error as ClapError;
+use reedline::ReedlineError;
 use serde_merge::error::Error as SerdeMergeError;
 use std::borrow::Cow;
 use std::sync::{MutexGuard, PoisonError as LockError};
@@ -22,6 +23,7 @@ pub enum ThagError {
     LockMutexGuard(&'static str), // For lock errors with MutexGuard
     NoneOption(&'static str), // For unwrapping Options
     OsString(std::ffi::OsString), // For unconvertible OsStrings
+    Reedline(ReedlineError), // For reedline errors
     SerdeMerge(SerdeMergeError), // For serde_merge errors
     StrumParse(StrumParseError), // For strum parse enum
     Syn(SynError),       // For syn errors
@@ -80,6 +82,12 @@ impl From<&'static str> for ThagError {
     }
 }
 
+impl From<ReedlineError> for ThagError {
+    fn from(err: ReedlineError) -> Self {
+        ThagError::Reedline(err)
+    }
+}
+
 impl From<SerdeMergeError> for ThagError {
     fn from(err: SerdeMergeError) -> Self {
         ThagError::SerdeMerge(err)
@@ -113,6 +121,7 @@ impl From<Box<dyn Error>> for ThagError {
 impl std::fmt::Display for ThagError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            ThagError::BitFlagsParse(e) => write!(f, "{e:?}"),
             ThagError::Cancelled => write!(f, "Cancelled"),
             ThagError::ClapError(e) => write!(f, "{e:?}"),
             ThagError::Command(s) | ThagError::NoneOption(s) => {
@@ -121,6 +130,7 @@ impl std::fmt::Display for ThagError {
                 }
                 Ok(())
             }
+            ThagError::Dyn(e) => write!(f, "{e:?}"),
             ThagError::FromStr(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
@@ -133,14 +143,13 @@ impl std::fmt::Display for ThagError {
                 writeln!(f, "{o:#?}")?;
                 Ok(())
             }
+            ThagError::Reedline(e) => write!(f, "{e:?}"),
             ThagError::SerdeMerge(e) => write!(f, "{e:?}"),
             ThagError::StrumParse(e) => write!(f, "{e:?}"),
             ThagError::Syn(e) => write!(f, "{e:?}"),
             ThagError::TomlDe(e) => write!(f, "{e:?}"),
             ThagError::TomlSer(e) => write!(f, "{e:?}"),
             ThagError::Toml(e) => write!(f, "{e:?}"),
-            ThagError::BitFlagsParse(e) => write!(f, "{e:?}"),
-            ThagError::Dyn(e) => write!(f, "{e:?}"),
         }
     }
 }
@@ -151,22 +160,23 @@ impl Error for ThagError {
             // The cause is the underlying implementation error type. Is implicitly
             // cast to the trait object `&error::Error`. This works because the
             // underlying type already implements the `Error` trait.
-            ThagError::FromStr(ref _e) => Some(self),
+            ThagError::BitFlagsParse(e) => Some(e),
+            ThagError::Cancelled => Some(self),
             ThagError::ClapError(ref e) => Some(e),
+            ThagError::Command(_e) => Some(self),
+            ThagError::Dyn(e) => Some(&**e),
+            ThagError::FromStr(ref _e) => Some(self),
             ThagError::Io(ref e) => Some(e),
             ThagError::LockMutexGuard(_e) => Some(self),
-            ThagError::Command(_e) => Some(self),
             ThagError::NoneOption(_e) => Some(self),
             ThagError::OsString(ref _o) => Some(self),
+            ThagError::Reedline(e) => Some(e),
             ThagError::SerdeMerge(ref e) => Some(e),
             ThagError::StrumParse(ref e) => Some(e),
             ThagError::Syn(e) => Some(e),
             ThagError::TomlDe(ref e) => Some(e),
             ThagError::TomlSer(ref e) => Some(e),
             ThagError::Toml(ref e) => Some(e),
-            ThagError::Cancelled => Some(self),
-            ThagError::BitFlagsParse(e) => Some(e),
-            ThagError::Dyn(e) => Some(&**e),
         }
     }
 }

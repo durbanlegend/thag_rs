@@ -135,12 +135,12 @@ impl BuildState {
         let script_path = if is_repl {
             script_state
                 .get_script_dir_path()
-                .expect("Missing script path")
+                .ok_or("Missing script path")?
                 .join(source_name)
         } else if is_dynamic {
             script_state
                 .get_script_dir_path()
-                .expect("Missing script path")
+                .ok_or("Missing script path")?
                 .join(TEMP_SCRIPT_NAME)
         } else {
             working_dir_path.join(PathBuf::from(script))
@@ -158,7 +158,7 @@ impl BuildState {
 
         let source_dir_path = source_path
             .parent()
-            .expect("Problem resolving to parent directory")
+            .ok_or("Problem resolving to parent directory")?
             .to_path_buf();
         let cargo_home = PathBuf::from(match std::env::var("CARGO_HOME") {
             Ok(string) if string != String::new() => string,
@@ -173,7 +173,7 @@ impl BuildState {
         let target_dir_path = if is_repl {
             script_state
                 .get_script_dir_path()
-                .expect("Missing ScriptState::NamedEmpty.repl_path")
+                .ok_or("Missing ScriptState::NamedEmpty.repl_path")?
                 .join(TEMP_SCRIPT_NAME)
         } else if is_dynamic {
             TMPDIR.join(DYNAMIC_SUBDIR)

@@ -29,7 +29,6 @@
 - [ ]  Check dead code & other #[cfg[allow(...)]; look into factoring over-long gen_build_run
 - [ ]  Look for panics and code smells
 - [ ]  Look into fuzzing the tests such as test_merge_manifest.
-- [ ]  Eliminate ThagError from demos/bank where returning Result<..., Box<dyn error>>.
 - [ ]  src/builder.rs:446 Why would syn be of type File if it has main? We don't need to know as it's not a snipper.
 - [ ]  grep png README.md | cargo run --features=debug-logs -- -v -B 'use regex::Regex; let re = Regex::new(r"\w+.png").unwrap();' -l 'println!("{}", re.find(&line).unwrap().as_str())' | sort
        grep -Eo '[a-zA-Z0-9_]+\.png' README.md

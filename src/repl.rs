@@ -184,10 +184,7 @@ pub fn run_repl(
     // get_emacs_keybindings();
     let context: &mut Context = &mut context;
     let history_file = context.build_state.cargo_home.join(HISTORY_FILE);
-    let history = Box::new(
-        FileBackedHistory::with_file(25, history_file)
-            .expect("Error configuring history with file"),
-    );
+    let history = Box::new(FileBackedHistory::with_file(25, history_file)?);
 
     let cmd_vec = ReplCommand::iter()
         .map(<ReplCommand as Into<&'static str>>::into)

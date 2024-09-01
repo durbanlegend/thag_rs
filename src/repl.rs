@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
-use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast, extract_manifest};
+use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
 use crate::debug_log;
 use crate::errors::ThagError;
 use crate::log;
@@ -93,7 +93,7 @@ impl ReplCommand {
 /// A struct to allow sharing of necessary context between functions
 #[derive(Debug)]
 pub struct Context<'a> {
-    pub options: &'a mut Cli,
+    pub args: &'a mut Cli,
     pub proc_flags: &'a ProcFlags,
     pub build_state: &'a mut BuildState,
     pub start: Instant,
@@ -169,14 +169,14 @@ fn add_menu_keybindings(keybindings: &mut Keybindings) {
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::too_many_lines)]
 pub fn run_repl(
-    options: &mut Cli,
+    args: &mut Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     start: Instant,
 ) -> Result<(), ThagError> {
     #[allow(unused_variables)]
     let mut context = Context {
-        options,
+        args,
         proc_flags,
         build_state,
         start,
@@ -383,14 +383,14 @@ pub fn run_repl(
         let rs_manifest = extract_manifest(rs_source, Instant::now())?;
         context.build_state.rs_manifest = Some(rs_manifest);
 
-        let maybe_ast = extract_ast(rs_source);
+        let maybe_ast = extract_ast_expr(rs_source);
 
         if let Ok(expr_ast) = maybe_ast {
             code_utils::process_expr(
                 expr_ast,
                 context.build_state,
                 rs_source,
-                context.options,
+                context.args,
                 context.proc_flags,
                 &context.start,
             )?;
@@ -1011,8 +1011,8 @@ pub fn toml(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>,
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
 pub fn run_expr(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
-    let (options, proc_flags, build_state, start) = (
-        &mut context.options,
+    let (args, proc_flags, build_state, start) = (
+        &mut context.args,
         context.proc_flags,
         &mut context.build_state,
         context.start,
@@ -1020,7 +1020,7 @@ pub fn run_expr(_args: &ArgMatches, context: &mut Context) -> Result<Option<Stri
 
     #[cfg(debug_assertions)]
     debug_log!("In run_expr: build_state={build_state:#?}");
-    let result = gen_build_run(options, proc_flags, build_state, None::<Ast>, &start);
+    let result = gen_build_run(args, proc_flags, build_state, None::<Ast>, &start);
     if result.is_err() {
         log!(Verbosity::Quieter, "{result:?}");
     }

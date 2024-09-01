@@ -19,7 +19,7 @@ pub mod stdin;
 pub use builder::{execute, gen_build_run};
 pub use cmd_args::{get_args, get_proc_flags, validate_args, Cli, ProcFlags};
 pub use code_utils::{
-    create_next_repl_file, create_temp_source_file, extract_ast, extract_manifest,
+    create_next_repl_file, create_temp_source_file, extract_ast_expr, extract_manifest,
     modified_since_compiled, process_expr,
 };
 pub use colors::{nu_resolve_style, MessageLevel};
@@ -37,6 +37,7 @@ pub const RS_SUFFIX: &str = ".rs";
 pub const FLOWER_BOX_LEN: usize = 70;
 pub const REPL_SUBDIR: &str = "rs_repl";
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
+pub const TEMP_DIR_NAME: &str = "temp";
 pub const TEMP_SCRIPT_NAME: &str = "temp.rs";
 pub const TOML_NAME: &str = "Cargo.toml";
 

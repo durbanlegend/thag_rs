@@ -7,6 +7,7 @@ use regex::Regex;
 use serde_merge::omerge;
 use std::collections::BTreeMap;
 use std::io::{self, BufRead};
+use std::path::PathBuf;
 use std::process::{Command, Output};
 use std::time::Instant;
 
@@ -16,7 +17,9 @@ use crate::debug_log;
 use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
-use crate::shared::{debug_timings, escape_path_for_windows, Ast, BuildState};
+#[cfg(target_os = "windows")]
+use crate::shared::escape_path_for_windows;
+use crate::shared::{debug_timings, Ast, BuildState};
 
 /// A trait to allow mocking of the command for testing purposes.
 #[automock]
@@ -153,15 +156,30 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), ThagError> {
     Ok((name, version))
 }
 
-/// Retrieve the default manifest from the `BuildState` instance.
+/// Configure the default manifest from the `BuildState` instance.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
-pub fn default_manifest_from_build_state(build_state: &BuildState) -> Result<Manifest, ThagError> {
-    profile_fn!(default_manifest_from_build_state);
+pub fn configure_default(build_state: &BuildState) -> Result<Manifest, ThagError> {
+    profile_fn!(configure_default);
     let source_stem = &build_state.source_stem;
-    let source_name = &build_state.source_name;
-    let binding = build_state.target_dir_path.join(source_name);
+
+    let binding: &PathBuf = if build_state.build_from_orig_source {
+        &build_state.source_path
+    } else {
+        &build_state.target_dir_path.join(&build_state.source_name)
+    };
+
+    #[cfg(target_os = "windows")]
     let gen_src_path = escape_path_for_windows(binding.to_string_lossy().as_ref());
+
+    #[cfg(not(target_os = "windows"))]
+    let gen_src_path = binding.to_string_lossy().into_owned();
+
+    debug_log!(
+        r"build_state.build_from_orig_source={}
+gen_src_path={gen_src_path}",
+        build_state.build_from_orig_source
+    );
 
     default(source_stem, &gen_src_path)
 }
@@ -211,7 +229,7 @@ pub fn merge(
     let start_merge_manifest = Instant::now();
 
     // Take ownership of the default manifest
-    let default_cargo_manifest = default_manifest_from_build_state(build_state)?;
+    let default_cargo_manifest = configure_default(build_state)?;
     let cargo_manifest = if let Some(manifest) = build_state.cargo_manifest.take() {
         manifest
     } else {

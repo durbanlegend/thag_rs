@@ -1,6 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
-use crate::debug_log;
 use crate::errors::ThagError;
 use crate::logging::Verbosity;
 use crate::modified_since_compiled;
@@ -10,6 +9,7 @@ use crate::RS_SUFFIX;
 use crate::TEMP_SCRIPT_NAME;
 use crate::TMPDIR;
 use crate::TOML_NAME;
+use crate::{debug_log, TEMP_DIR_NAME};
 use crate::{log, PACKAGE_NAME};
 
 use cargo_toml::Manifest;
@@ -52,6 +52,16 @@ pub enum Ast {
     // None,
 }
 
+impl Ast {
+    #[must_use]
+    pub fn is_file(&self) -> bool {
+        match self {
+            Ast::File(_) => true,
+            Ast::Expr(_) => false,
+        }
+    }
+}
+
 /// Required to use quote! macro to generate code to resolve expression.
 impl ToTokens for Ast {
     fn to_tokens(&self, tokens: &mut TokenStream) {
@@ -82,6 +92,7 @@ pub struct BuildState {
     pub cargo_manifest: Option<Manifest>,
     pub must_gen: bool,
     pub must_build: bool,
+    pub build_from_orig_source: bool,
 }
 
 impl BuildState {
@@ -93,12 +104,12 @@ impl BuildState {
     /// # Panics
     pub fn pre_configure(
         proc_flags: &ProcFlags,
-        options: &Cli,
+        args: &Cli,
         script_state: &ScriptState,
     ) -> Result<Self, ThagError> {
         profile_fn!(pre_configure);
         let is_repl = proc_flags.contains(ProcFlags::REPL);
-        let is_expr = options.expression.is_some();
+        let is_expr = args.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
         let is_edit = proc_flags.contains(ProcFlags::EDIT);
         let is_loop = proc_flags.contains(ProcFlags::LOOP);
@@ -174,7 +185,7 @@ impl BuildState {
             script_state
                 .get_script_dir_path()
                 .ok_or("Missing ScriptState::NamedEmpty.repl_path")?
-                .join(TEMP_SCRIPT_NAME)
+                .join(TEMP_DIR_NAME)
         } else if is_dynamic {
             TMPDIR.join(DYNAMIC_SUBDIR)
         } else {
@@ -308,6 +319,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
 // Helper function to sort out the issues caused by Windows using the escape character as
 // the file separator.
 #[must_use]
+#[inline]
 #[cfg(target_os = "windows")]
 pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.replace('\\', "/")

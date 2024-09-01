@@ -19,7 +19,7 @@ mod tests {
     ) -> Context<'a> {
         let start = Instant::now();
         Context {
-            options,
+            args: options,
             proc_flags,
             build_state,
             start,

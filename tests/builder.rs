@@ -61,6 +61,7 @@ mod tests {
             cargo_manifest: None,
             must_gen: true,
             must_build: true,
+            build_from_orig_source: false,
         }
     }
 
@@ -122,7 +123,7 @@ mod tests {
         let rs_source = code_utils::read_file_contents(&build_state.source_path)
             .expect("Error reading script contents");
         let proc_flags = ProcFlags::empty();
-        let result = generate(&build_state, &rs_source, &proc_flags);
+        let result = generate(&build_state, Some(&rs_source), &proc_flags);
         assert!(result.is_ok());
         assert!(build_state.target_dir_path.join(script_name).exists());
         assert!(build_state.cargo_toml_path.exists());
@@ -208,6 +209,7 @@ name = "bitflags_t"
             cargo_manifest: None,
             must_gen: true,
             must_build: true,
+            build_from_orig_source: false,
         };
         dbg!(&build_state);
         let proc_flags = ProcFlags::empty();

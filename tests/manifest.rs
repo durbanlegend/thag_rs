@@ -4,7 +4,7 @@ mod tests {
     use mockall::predicate::*;
     use std::process::Output;
     use thag_rs::manifest::{
-        capture_dep, cargo_search, default_manifest_from_build_state, merge, MockCommandRunner,
+        capture_dep, cargo_search, configure_default, merge, MockCommandRunner,
     };
     use thag_rs::BuildState;
 
@@ -93,7 +93,7 @@ mod tests {
             ..Default::default()
         };
 
-        let manifest = default_manifest_from_build_state(&build_state).unwrap();
+        let manifest = configure_default(&build_state).unwrap();
         let package = manifest.package.expect("Problem unwrapping package");
         assert_eq!(package.name, "example");
         assert_eq!(package.version.get().unwrap(), &"0.0.1".to_string());

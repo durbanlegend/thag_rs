@@ -5,7 +5,7 @@ use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::{debug_timings, Ast, BuildState};
-use crate::{debug_log, nu_color_println, nu_resolve_style};
+use crate::{debug_log, nu_resolve_style};
 use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use cargo_toml::{Edition, Manifest};
@@ -424,7 +424,7 @@ pub fn extract_manifest(
     // debug_log!("rs_manifest={rs_manifest:#?}");
 
     #[cfg(debug_assertions)]
-    debug_timings(&start_parsing_rs, "Parsed source");
+    debug_timings(&start_parsing_rs, "extract_manifest parsed source");
     Ok(rs_manifest)
 }
 
@@ -435,10 +435,12 @@ fn extract_toml_block(input: &str) -> Option<String> {
 }
 
 /// Parse a Rust expression source string into a syntax tree.
-/// We are not primarily catering for programs with a main method (`syn::File`).
+/// Although this is primarily intended for incomplete snippets and expressions, if it finds a fully-fledged program that
+/// could equally be parsed with `syn::parse_file`, it should succeed anyway by wrapping it in braces. However that is the
+/// snippet path and is not encouraged as it is likely to process and wrap the code unnecessarily.
 /// # Errors
 /// Will return `Err` if there is any error encountered by the `syn` crate trying to parse the source string into an AST.
-pub fn extract_ast(rs_source: &str) -> Result<Expr, syn::Error> {
+pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
     let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
     if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
         // Try putting the expression in braces.
@@ -458,13 +460,13 @@ pub fn process_expr(
     expr_ast: Expr,
     build_state: &mut BuildState,
     rs_source: &str,
-    options: &mut Cli,
+    args: &mut Cli,
     proc_flags: &ProcFlags,
     start: &Instant,
 ) -> Result<(), ThagError> {
     let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
-    let result = gen_build_run(options, proc_flags, build_state, syntax_tree, start);
+    let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
     log!(Verbosity::Normal, "{result:?}");
     Ok(())
 }
@@ -604,6 +606,11 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
+    debug_log!(
+        "In count_main_methods: finder.main_method_count={}",
+        finder.main_method_count
+    );
+
     finder.main_method_count
 }
 
@@ -613,19 +620,25 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
 pub fn to_ast(source_code: &str) -> Option<Ast> {
     profile_fn!(to_ast);
     let start_ast = Instant::now();
-    if let Ok(tree) = extract_ast(source_code) {
-        #[cfg(debug_assertions)]
-        debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
-        Some(Ast::Expr(tree))
-    } else if let Ok(tree) = syn::parse_file(source_code) {
-        // Temp: highlight the unexpected
-        nu_color_println!(
-            nu_resolve_style(crate::MessageLevel::Warning),
-            "Parsed to syn::File"
+    if let Ok(tree) = syn::parse_file(source_code) {
+        // Highlight the unexpected
+        log!(
+            Verbosity::Quiet,
+            "{}",
+            nu_resolve_style(crate::MessageLevel::Warning).paint("Parsed to syn::File")
         );
         #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))
+    } else if let Ok(tree) = extract_ast_expr(source_code) {
+        #[cfg(debug_assertions)]
+        debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
+        log!(
+            Verbosity::Quiet,
+            "{}",
+            nu_resolve_style(crate::MessageLevel::Emphasis).paint("Parsed to syn::Expr")
+        );
+        Some(Ast::Expr(tree))
     } else {
         log!(
             Verbosity::Quieter,
@@ -837,7 +850,7 @@ pub fn create_temp_source_file() -> Result<PathBuf, ThagError> {
 #[must_use]
 pub fn build_loop(args: &Cli, filter: String) -> String {
     profile_fn!(build_loop);
-    let maybe_ast = extract_ast(&filter);
+    let maybe_ast = extract_ast_expr(&filter);
     let returns_unit = if let Ok(expr) = maybe_ast {
         is_unit_return_type(&expr)
     } else {
@@ -1033,8 +1046,7 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
 
     let function_map = extract_functions(expr);
     #[cfg(debug_assertions)]
-    debug_log!("function_map={function_map:#?}");
-
+    // debug_log!("function_map={function_map:#?}");
     let is_last_stmt_unit_type = is_last_stmt_unit_type(expr, &function_map);
     #[cfg(debug_assertions)]
     debug_timings(&start, "Determined probable snippet return type");
@@ -1331,43 +1343,43 @@ pub fn is_stmt_unit_type<S: ::std::hash::BuildHasher>(
     }
 }
 
-/// Check if an expression returns a unit value, so that we can avoid trying to print it out.
-#[must_use]
-pub fn returns_unit(expr: &Expr) -> bool {
-    profile_fn!(returns_unit);
-    let is_unit_type = matches!(expr, Expr::Tuple(tuple) if tuple.elems.is_empty());
-    nu_color_println!(
-        nu_resolve_style(crate::MessageLevel::Emphasis),
-        "is_unit_type={is_unit_type}"
-    );
-    is_unit_type
-}
+// /// Check if an expression returns a unit value, so that we can avoid trying to print it out.
+// #[must_use]
+// pub fn returns_unit(expr: &Expr) -> bool {
+//     profile_fn!(returns_unit);
+//     let is_unit_type = matches!(expr, Expr::Tuple(tuple) if tuple.elems.is_empty());
+//     nu_color_println!(
+//         nu_resolve_style(crate::MessageLevel::Emphasis),
+//         "is_unit_type={is_unit_type}"
+//     );
+//     is_unit_type
+// }
 
 /// Convert a `syn::File`'s `fn main` to a `syn::Expr`, for the purpose of determining the return type.
 /// # Errors
 /// Will return `Err` if there is any error parsing expressions
-#[cfg(debug_assertions)]
-#[allow(dead_code)]
-pub fn extract_expr_from_file(file: &File) -> Result<Expr, ThagError> {
-    profile_fn!(extract_expr_from_file);
+// #[cfg(debug_assertions)]
+// #[allow(dead_code)]
+// pub fn extract_expr_from_file(file: &File) -> Result<Expr, ThagError> {
+//     profile_fn!(extract_expr_from_file);
 
-    for item in &file.items {
-        if let Item::Fn(func) = item {
-            if func.sig.ident == "main" {
-                // Convert the function's block into an Expr::Block
-                let expr_block = Expr::Block(ExprBlock {
-                    attrs: Vec::new(),          // Add attributes if needed
-                    label: None,                // No label for the block
-                    block: *func.block.clone(), // Clone the block from the function
-                });
+//     for item in &file.items {
+//         if let Item::Fn(func) = item {
+//             if func.sig.ident == "main" {
+//                 // Convert the function's block into an Expr::Block
+//                 let expr_block = Expr::Block(ExprBlock {
+//                     attrs: Vec::new(),          // Add attributes if needed
+//                     label: None,                // No label for the block
+//                     block: *func.block.clone(), // Clone the block from the function
+//                 });
 
-                return Ok(expr_block);
-            }
-        }
-    }
+//                 return Ok(expr_block);
+//             }
+//         }
+//     }
 
-    Err("No main function found".into())
-}
+//     Err("No main function found".into())
+// }
 
 /// # Errors
 /// Will return `Err` if there is any error parsing expressions

@@ -1,5 +1,5 @@
 use crate::code_utils::{
-    self, build_loop, create_next_repl_file, create_temp_source_file, extract_ast,
+    self, build_loop, create_next_repl_file, create_temp_source_file, extract_ast_expr,
     extract_manifest, process_expr, read_file_contents, remove_inner_attributes,
     strip_curly_braces, wrap_snippet, write_source,
 };
@@ -23,8 +23,8 @@ use crate::{
     ScriptState,
 };
 use crate::{
-    debug_log, nu_color_println, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SUBDIR,
-    RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR,
+    debug_log, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
+    TEMP_SCRIPT_NAME, TMPDIR,
 };
 
 use cargo_toml::Manifest;
@@ -264,27 +264,23 @@ fn process(
             ?;
         build_state.rs_manifest = Some(rs_manifest);
 
-        let maybe_ast = extract_ast(&rs_source);
+        debug_log!(
+            r"About to try to parse following source to syn::Expr:
+{rs_source}"
+        );
 
-        if let Ok(expr_ast) = maybe_ast {
-            #[cfg(debug_assertions)]
-            debug_log!("expr_ast={expr_ast:#?}");
-            process_expr(
-                expr_ast,
-                &mut build_state,
-                &rs_source,
-                args,
-                proc_flags,
-                &start,
-            )
-        } else {
-            nu_color_println!(
-                nu_resolve_style(MessageLevel::Error),
-                "Error parsing code: {:#?}",
-                maybe_ast
-            );
-            Err("Error parsing code".into())
-        }
+        let expr_ast = extract_ast_expr(&rs_source)?;
+
+        #[cfg(debug_assertions)]
+        debug_log!("expr_ast={expr_ast:#?}");
+        process_expr(
+            expr_ast,
+            &mut build_state,
+            &rs_source,
+            args,
+            proc_flags,
+            &start,
+        )
     } else {
         gen_build_run(args, proc_flags, &mut build_state, None::<Ast>, &start)
     }
@@ -336,7 +332,7 @@ fn configure_log() {
 /// Will panic if it fails to parse the shebang, if any.
 #[allow(clippy::too_many_lines)]
 pub fn gen_build_run(
-    options: &mut Cli,
+    args: &mut Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     syntax_tree: Option<Ast>,
@@ -350,7 +346,7 @@ pub fn gen_build_run(
         let start_parsing_rs = Instant::now();
         let mut rs_source = read_file_contents(source_path)?;
 
-        // Strip off any shebang: it may have got us here but we don't need it
+        // Strip off any shebang: it may have got us here but we don't want or need it
         // in the gen_build_run process.
         rs_source = if rs_source.starts_with("#!") && !rs_source.starts_with("#![") {
             // #[cfg(debug_assertions)]
@@ -373,10 +369,45 @@ pub fn gen_build_run(
             syntax_tree
         };
 
-        let rs_manifest: Manifest = {
-            // debug_timings(&start_parsing_rs, "Parsed source");
-            extract_manifest(&rs_source, start_parsing_rs)
-        }?;
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
+        }
+        let main_methods = match syntax_tree {
+            Some(ref ast) => code_utils::count_main_methods(ast),
+            None => RE.find_iter(&rs_source).count(),
+        };
+        let has_main = match main_methods {
+            0 => false,
+            1 => true,
+            _ => {
+                if args.multimain {
+                    true
+                } else {
+                    writeln!(
+                    &mut std::io::stderr(),
+                    "{main_methods} main methods found, only one allowed by default. Specify --multimain (-m) option to allow more"
+                )?;
+                    std::process::exit(1);
+                }
+            }
+        };
+
+        // NB build scripts that are well-formed programs from the original source.
+        // Fun fact: Rust compiler will ignore shebangs:
+        // https://neosmart.net/blog/self-compiling-rust-code/
+        let is_file = if let Some(ref v) = syntax_tree {
+            v.is_file()
+        } else {
+            false
+        };
+        build_state.build_from_orig_source = has_main && args.script.is_some() && is_file;
+
+        debug_log!(
+            "has_main={has_main}; build_state.build_from_orig_source={}",
+            build_state.build_from_orig_source
+        );
+
+        let rs_manifest: Manifest = { extract_manifest(&rs_source, start_parsing_rs) }?;
         // #[cfg(debug_assertions)]
         // debug_log!("rs_manifest={rs_manifest:#?}");
         #[cfg(debug_assertions)]
@@ -392,32 +423,9 @@ pub fn gen_build_run(
             manifest::merge(build_state, &rs_source, &syntax_tree)?;
         }
 
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
-        }
-        let main_methods = match syntax_tree {
-            Some(ref ast) => code_utils::count_main_methods(ast),
-            None => RE.find_iter(&rs_source).count(),
-        };
-        let has_main = match main_methods {
-            0 => false,
-            1 => true,
-            _ => {
-                if options.multimain {
-                    true
-                } else {
-                    writeln!(
-                    &mut std::io::stderr(),
-                    "{main_methods} main methods found, only one allowed by default. Specify --multimain (-m) option to allow more"
-                )?;
-                    std::process::exit(1);
-                }
-            }
-        };
-
         // println!("build_state={build_state:#?}");
         rs_source = if has_main {
-            // Strip off any enclosing braces we may have added
+            // Strip off any enclosing braces, e.g.
             if rs_source.starts_with('{') {
                 strip_curly_braces(&rs_source).unwrap_or(rs_source)
             } else {
@@ -441,11 +449,9 @@ pub fn gen_build_run(
             };
 
             let rust_code = if let Some(ref syntax_tree_ref) = syntax_tree {
-                // Test with a view to eliminating Ast::File option below
                 let returns_unit = match syntax_tree_ref {
                     Ast::Expr(expr) => code_utils::is_unit_return_type(expr),
-                    // Ast::File(file) => code_utils::is_main_fn_returning_unit(file)?,
-                    Ast::File(_file) => panic!("Not expecting syn::File if no main method"),
+                    Ast::File(_) => true, // Trivially true since we're here because there's no main
                 };
                 if returns_unit {
                     #[cfg(debug_assertions)]
@@ -471,7 +477,12 @@ pub fn gen_build_run(
             // display_timings(&start_quote, "Completed quote", proc_flags);
             wrap_snippet(&inner_attribs, &rust_code)
         };
-        generate(build_state, &rs_source, proc_flags)?;
+        let maybe_rs_source = if has_main && build_state.build_from_orig_source {
+            None
+        } else {
+            Some(rs_source.as_str())
+        };
+        generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
         log!(
             Verbosity::Normal,
@@ -495,7 +506,7 @@ pub fn gen_build_run(
         );
     }
     if proc_flags.contains(ProcFlags::RUN) {
-        run(proc_flags, &options.args, build_state)?;
+        run(proc_flags, &args.args, build_state)?;
     }
     let process = &format!(
         "{} completed processing script {}",
@@ -517,7 +528,7 @@ pub fn gen_build_run(
 /// Will panic if it fails to unwrap the `BuildState.cargo_manifest`.
 pub fn generate(
     build_state: &BuildState,
-    rs_source: &str,
+    rs_source: Option<&str>,
     proc_flags: &ProcFlags,
 ) -> Result<(), ThagError> {
     // profile_fn!(generate);
@@ -543,9 +554,9 @@ pub fn generate(
         "GGGGGGGG Creating source file: {target_rs_path:?}"
     );
 
-    {
+    if !build_state.build_from_orig_source {
         // profile_section!(parse_file);
-        let syntax_tree = syn::parse_file(rs_source)?;
+        let syntax_tree = syn::parse_file(rs_source.ok_or("Logic error retrieving rs_source")?)?;
         let rs_source = prettyplease::unparse(&syntax_tree);
         write_source(&target_rs_path, &rs_source)?;
     }

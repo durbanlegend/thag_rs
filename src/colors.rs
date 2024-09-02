@@ -46,23 +46,23 @@ lazy_static! {
         let term_theme: TermTheme = if let Some(config) = &*config::MAYBE_CONFIG {
             config.colors.term_theme.clone()
         } else {
-            #[cfg(target_os = "windows")]
-            TermTheme::Dark
+            #[cfg(target_os = "windows")] {
+            TermTheme::Dark }
 
             #[cfg(not(target_os = "windows"))] {
-                #[cfg(debug_assertions)]
-                debug_log!(
-                    "About to call termbg"
-                );
-                let timeout = std::time::Duration::from_millis(100);
-                // #[cfg(debug_assertions)]
-                // debug_log!("Check terminal background color");
-                let theme = termbg::theme(timeout);
-                // shared::clear_screen();
-                match theme {
-                    Ok(Theme::Light) => TermTheme::Light,
-                    Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
-                }
+            #[cfg(debug_assertions)]
+            debug_log!(
+                "About to call termbg"
+            );
+            let timeout = std::time::Duration::from_millis(100);
+            // #[cfg(debug_assertions)]
+            // debug_log!("Check terminal background color");
+            let theme = termbg::theme(timeout);
+            // shared::clear_screen();
+            match theme {
+                Ok(Theme::Light) => TermTheme::Light,
+                Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+            }
             }
         };
         term_theme

@@ -37,7 +37,7 @@ struct History {
 
 impl History {
     fn new() -> Self {
-        History {
+        Self {
             entries: VecDeque::with_capacity(20),
             current_index: None,
         }
@@ -45,9 +45,9 @@ impl History {
 
     fn load_from_file(path: &PathBuf) -> Self {
         if let Ok(data) = fs::read_to_string(path) {
-            serde_json::from_str(&data).unwrap_or_else(|_| History::new())
+            serde_json::from_str(&data).unwrap_or_else(|_| Self::new())
         } else {
-            History::default()
+            Self::default()
         }
     }
 
@@ -68,13 +68,7 @@ impl History {
             return None;
         }
 
-        self.current_index = match self.current_index {
-            Some(index) => {
-                // println!("index={index}, index + 1 = {}", index + 1);
-                Some(index + 1)
-            }
-            _ => Some(0),
-        };
+        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
         self.entries.front()
     }
 
@@ -83,11 +77,7 @@ impl History {
             return None;
         }
 
-        self.current_index = match self.current_index {
-            Some(index) => Some(index + 1),
-            _ => Some(0),
-        };
-
+        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
         self.current_index.and_then(|index| self.entries.get(index))
     }
 
@@ -332,8 +322,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
     log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
-    let input = &mut std::io::stdin().lock();
-    let buffer = read_to_string(input)?;
+    let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
 }
 
@@ -417,11 +406,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
     f.render_widget(block, area);
     let row_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints::<Vec<Constraint>>(
-            std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32))
-                .take(NUM_ROWS)
-                .collect::<Vec<Constraint>>(),
-        );
+        .constraints(std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32)).take(NUM_ROWS));
     let rows = row_layout.split(inner);
 
     for (i, row) in rows.iter().enumerate() {

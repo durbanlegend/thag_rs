@@ -332,7 +332,7 @@ fn configure_log() {
 /// Will panic if it fails to parse the shebang, if any.
 #[allow(clippy::too_many_lines)]
 pub fn gen_build_run(
-    args: &mut Cli,
+    args: &Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     syntax_tree: Option<Ast>,
@@ -372,10 +372,10 @@ pub fn gen_build_run(
         lazy_static! {
             static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
         }
-        let main_methods = match syntax_tree {
-            Some(ref ast) => code_utils::count_main_methods(ast),
-            None => RE.find_iter(&rs_source).count(),
-        };
+        let main_methods = syntax_tree.as_ref().map_or_else(
+            || RE.find_iter(&rs_source).count(),
+            code_utils::count_main_methods,
+        );
         let has_main = match main_methods {
             0 => false,
             1 => true,
@@ -395,11 +395,7 @@ pub fn gen_build_run(
         // NB build scripts that are well-formed programs from the original source.
         // Fun fact: Rust compiler will ignore shebangs:
         // https://neosmart.net/blog/self-compiling-rust-code/
-        let is_file = if let Some(ref v) = syntax_tree {
-            v.is_file()
-        } else {
-            false
-        };
+        let is_file = syntax_tree.as_ref().map_or(false, Ast::is_file);
         build_state.build_from_orig_source = has_main && args.script.is_some() && is_file;
 
         debug_log!(
@@ -448,7 +444,7 @@ pub fn gen_build_run(
                 (String::new(), rs_source)
             };
 
-            let rust_code = if let Some(ref syntax_tree_ref) = syntax_tree {
+            let rust_code = syntax_tree.as_ref().map_or(body, |syntax_tree_ref| {
                 let returns_unit = match syntax_tree_ref {
                     Ast::Expr(expr) => code_utils::is_unit_return_type(expr),
                     Ast::File(_) => true, // Trivially true since we're here because there's no main
@@ -468,15 +464,12 @@ pub fn gen_build_run(
                     )
                     .to_string()
                 }
-            } else {
-                // demo/fizz_buzz.rs broke this: not an expression but still a valid snippet.
-                // format!(r#"println!("Expression returned {{}}", {rs_source});"#)
-                // dbg!(rs_source)
-                body
-            };
+            });
+
             // display_timings(&start_quote, "Completed quote", proc_flags);
             wrap_snippet(&inner_attribs, &rust_code)
         };
+
         let maybe_rs_source = if has_main && build_state.build_from_orig_source {
             None
         } else {
@@ -560,7 +553,6 @@ pub fn generate(
         let rs_source = prettyplease::unparse(&syntax_tree);
         write_source(&target_rs_path, &rs_source)?;
     }
-    // rustfmt(build_state)?;
 
     // #[cfg(debug_assertions)]
     // debug_log!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
@@ -683,7 +675,7 @@ fn deploy_executable(build_state: &BuildState) -> Result<(), ThagError> {
     }
 
     // Logic change: from accepting the first of multiple [[bin]] entries to only allowing exactly one.
-    let name_option = if let Some(ref manifest) = build_state.cargo_manifest {
+    let name_option = build_state.cargo_manifest.as_ref().and_then(|manifest| {
         let mut iter = manifest
             .bin
             .iter()
@@ -693,10 +685,9 @@ fn deploy_executable(build_state: &BuildState) -> Result<(), ThagError> {
             (Some(name), None) => Some(name), // Return Some(name) if exactly one name is found
             _ => None,                        // Return None if zero or multiple names are found
         }
-    } else {
-        None
-    };
+    });
 
+    #[allow(clippy::option_if_let_else)]
     let executable_name = if let Some(name) = name_option {
         name
     } else {

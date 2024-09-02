@@ -14,7 +14,7 @@
 It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while hopefully being simple and convenient to use.
 It also supports scripting via shebangs, building executables from your snippets, a loop-filter mode and plain or edited standard input.
 
-`thag_rs` includes a demo library of over 170 sample scripts. If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
+`thag_rs` includes a demo library of over 170 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
 ## Quick start: ways to run the `thag` command
 
@@ -40,6 +40,8 @@ Zoned::now().round(Unit::Second)?
 ![Expr](assets/jifft.png)
 
 ### * With a script:
+
+Here's a sample interactive script for discovering Pythagorean triangles:
 
 ```bash
 thag demo/py_thag.rs
@@ -136,7 +138,7 @@ Loop mode also accepts the following optional arguments supplying surrounding co
 --end   (-E)    for specifying any summary or final logic to run after the loop.
 ```
 
-Note: In general if you are planning to pipe Rust output, it's probably a good idea to use `writeln!(io::stdout())`,
+Note: This is a Rust issue not a `thag_rs` issue, but in general if you are planning to pipe Rust output, it's probably a good idea to use `writeln!(io::stdout())`,
 rather than `println!`, since at time of writing `println!` panics if it encounters an error, and this
 includes the broken pipe error from a head command. See `https://github.com/BurntSushi/advent-of-code/issues/17`.
 For an example of tolerating a broken pipe, see
@@ -161,7 +163,7 @@ I recommend building an executable over using a shebang because it will be faste
 - It cuts out the middleman (`thag`)
 - You only incur the build overhead once up front
 - It will build in release mode, making it much faster to run
-- You can use a tool like `llvm-strip` to strip sections from the executable
+- You can use a tool like `llvm-strip` to strip sections from the executable to make it smaller
 
 and more convenient on one count: it dispenses with the need for the `--` argument separator because `thag` is no longer being invoked first, so we don't need to separate two sets of arguments.
 

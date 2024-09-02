@@ -36,7 +36,7 @@ use strum::Display;
     since = "0.1.0",
     note = "Redundant and pollutes piped output. Alternatives already in place."
 )]
-pub fn clear_screen() {
+pub const fn clear_screen() {
     // Commented out because this turns up at the end of the output
     // let mut out = stdout();
     // out.execute(MoveToColumn(0)).unwrap();
@@ -54,10 +54,10 @@ pub enum Ast {
 
 impl Ast {
     #[must_use]
-    pub fn is_file(&self) -> bool {
+    pub const fn is_file(&self) -> bool {
         match self {
-            Ast::File(_) => true,
-            Ast::Expr(_) => false,
+            Self::File(_) => true,
+            Self::Expr(_) => false,
         }
     }
 }
@@ -67,8 +67,8 @@ impl ToTokens for Ast {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         profile_fn!(to_tokens);
         match self {
-            Ast::File(file) => file.to_tokens(tokens),
-            Ast::Expr(expr) => expr.to_tokens(tokens),
+            Self::File(file) => file.to_tokens(tokens),
+            Self::Expr(expr) => expr.to_tokens(tokens),
         }
     }
 }
@@ -273,8 +273,8 @@ impl ScriptState {
     #[must_use]
     pub fn get_script(&self) -> Option<String> {
         match self {
-            ScriptState::Anonymous => None,
-            ScriptState::NamedEmpty { script, .. } | ScriptState::Named { script, .. } => {
+            Self::Anonymous => None,
+            Self::NamedEmpty { script, .. } | Self::Named { script, .. } => {
                 Some(script.to_string())
             }
         }
@@ -283,11 +283,11 @@ impl ScriptState {
     #[must_use]
     pub fn get_script_dir_path(&self) -> Option<PathBuf> {
         match self {
-            ScriptState::Anonymous => None,
-            ScriptState::Named {
+            Self::Anonymous => None,
+            Self::Named {
                 script_dir_path, ..
             } => Some(script_dir_path.clone()),
-            ScriptState::NamedEmpty {
+            Self::NamedEmpty {
                 script_dir_path: script_path,
                 ..
             } => Some(script_path.clone()),

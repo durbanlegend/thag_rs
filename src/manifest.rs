@@ -230,17 +230,14 @@ pub fn merge(
 
     // Take ownership of the default manifest
     let default_cargo_manifest = configure_default(build_state)?;
-    let cargo_manifest = if let Some(manifest) = build_state.cargo_manifest.take() {
-        manifest
-    } else {
-        default_cargo_manifest
-    };
+    let cargo_manifest = build_state
+        .cargo_manifest
+        .take()
+        .map_or(default_cargo_manifest, |manifest| manifest);
 
-    let rs_inferred_deps = if let Some(ref syntax_tree) = syntax_tree {
-        infer_deps_from_ast(syntax_tree)
-    } else {
-        infer_deps_from_source(rs_source)
-    };
+    let rs_inferred_deps = syntax_tree
+        .as_ref()
+        .map_or_else(|| infer_deps_from_source(rs_source), infer_deps_from_ast);
 
     #[cfg(debug_assertions)]
     debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);

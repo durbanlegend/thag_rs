@@ -34,7 +34,7 @@
        https://download-directory.github.io/?url=https://github.com/durbanlegend/thag_rs/tree/14d31159c42249f6aa0486f500de209438b06b8f/demo
 https://stackoverflow.com/questions/7106012/download-a-single-folder-or-directory-from-a-github-repository
 https://test.ssgithub.com/?url=https://github.com/durbanlegend/thag_rs/tree/master/demo
-- [ ]  Apply changes from demo/cmd_args.rs.
+- [ ]  Identify new functions requiring unit tests.
 - [ ]  Document:
         /*[toml]
         [package]

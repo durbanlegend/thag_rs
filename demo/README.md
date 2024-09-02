@@ -1,31 +1,31 @@
 ## Running the scripts
 
-`thag_rs` uses `clap` for a standard command-line interface. Try `thag_rs --help` (or -h) if
+`thag_rs` uses `clap` for a standard command-line interface. Try `thag --help` (or -h) if
 you get stuck.
 
 ### In its simplest form:
 
 
-    thag_rs <path to script>
+    thag <path to script>
 
 ###### E.g.:
 
-    thag_rs demo/hello.rs
+    thag demo/hello.rs
 
 ### Passing options and arguments to a script:
 
-Use `--` to separate options and arguments meant for the script from those meant for `thag_rs` itself.
+Use `--` to separate options and arguments meant for the script from those meant for `thag` itself.
 
 ###### E.g.:
 
 demo/fib_dashu_snippet.rs expects to be passed an integer _n_ and will compute the _nth_ number in the
 Fibonacci sequence.
 
-     thag_rs demo/fib_dashu_snippet.rs -- 100
+     thag demo/fib_dashu_snippet.rs -- 100
 
 ### Full syntax:
 
-    thag_rs [THAG_RS OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
+    thag [THAG OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
 
 ###### E.g.:
 
@@ -53,19 +53,19 @@ and get output like this:
     Debug mode is on
     Printing testing lists...
 
-Running the source from thag_rs looks similar, we just replace `clap_tut_builder_01` by `thag_rs demo/clap_tut_builder_01.rs --`:
+Running the source from `thag` looks similar, we just replace `clap_tut_builder_01` by `thag demo/clap_tut_builder_01.rs --`:
 
-*thag_rs demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
+*thag demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
 
-Any parameters for `thag_rs` should go before the `--`, e.g. we may choose use -qq to suppress `thag_rs` messages:
+Any parameters for `thag` should go before the `--`, e.g. we may choose use -qq to suppress `thag` messages:
 
-    thag_rs demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
+    thag demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
 
 which will give identical output to the above.
 
 
 
-##### Remember to use `--` to separate options and arguments that are intended for `thag_rs` from those intended for the target script.
+##### Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.
 
 ***
 ## Detailed script listing

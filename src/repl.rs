@@ -82,7 +82,7 @@ enum ReplCommand {
 
 impl ReplCommand {
     fn print_help() {
-        let mut command = ReplCommand::command();
+        let mut command = Self::command();
         // let mut buf = Vec::new();
         // command.write_help(&mut buf).unwrap();
         // let help_message = String::from_utf8(buf).unwrap();

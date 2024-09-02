@@ -36,120 +36,120 @@ impl ThagError {}
 
 impl From<io::Error> for ThagError {
     fn from(err: io::Error) -> Self {
-        ThagError::Io(err)
+        Self::Io(err)
     }
 }
 
 impl From<ClapError> for ThagError {
     fn from(err: ClapError) -> Self {
-        ThagError::ClapError(err)
+        Self::ClapError(err)
     }
 }
 
 impl From<StrumParseError> for ThagError {
     fn from(err: StrumParseError) -> Self {
-        ThagError::StrumParse(err)
+        Self::StrumParse(err)
     }
 }
 
 impl From<TomlDeError> for ThagError {
     fn from(err: TomlDeError) -> Self {
-        ThagError::TomlDe(err)
+        Self::TomlDe(err)
     }
 }
 
 impl From<TomlSerError> for ThagError {
     fn from(err: TomlSerError) -> Self {
-        ThagError::TomlSer(err)
+        Self::TomlSer(err)
     }
 }
 
 impl From<CargoTomlError> for ThagError {
     fn from(err: CargoTomlError) -> Self {
-        ThagError::Toml(err)
+        Self::Toml(err)
     }
 }
 
 impl From<String> for ThagError {
     fn from(s: String) -> Self {
-        ThagError::FromStr(Cow::Owned(s))
+        Self::FromStr(Cow::Owned(s))
     }
 }
 
 impl From<&'static str> for ThagError {
     fn from(s: &'static str) -> Self {
-        ThagError::FromStr(Cow::Borrowed(s))
+        Self::FromStr(Cow::Borrowed(s))
     }
 }
 
 impl From<ReedlineError> for ThagError {
     fn from(err: ReedlineError) -> Self {
-        ThagError::Reedline(err)
+        Self::Reedline(err)
     }
 }
 
 impl From<SerdeMergeError> for ThagError {
     fn from(err: SerdeMergeError) -> Self {
-        ThagError::SerdeMerge(err)
+        Self::SerdeMerge(err)
     }
 }
 
 impl From<SynError> for ThagError {
     fn from(err: SynError) -> Self {
-        ThagError::Syn(err)
+        Self::Syn(err)
     }
 }
 
 impl<'a, T> From<LockError<MutexGuard<'a, T>>> for ThagError {
     fn from(_err: LockError<MutexGuard<'a, T>>) -> Self {
-        ThagError::LockMutexGuard("Lock poisoned")
+        Self::LockMutexGuard("Lock poisoned")
     }
 }
 
 impl From<BitFlagsParseError> for ThagError {
     fn from(err: BitFlagsParseError) -> Self {
-        ThagError::BitFlagsParse(err)
+        Self::BitFlagsParse(err)
     }
 }
 
 impl From<Box<dyn Error>> for ThagError {
     fn from(err: Box<dyn Error>) -> Self {
-        ThagError::Dyn(err)
+        Self::Dyn(err)
     }
 }
 
 impl std::fmt::Display for ThagError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ThagError::BitFlagsParse(e) => write!(f, "{e:?}"),
-            ThagError::Cancelled => write!(f, "Cancelled"),
-            ThagError::ClapError(e) => write!(f, "{e:?}"),
-            ThagError::Command(s) | ThagError::NoneOption(s) => {
+            Self::BitFlagsParse(e) => write!(f, "{e:?}"),
+            Self::Cancelled => write!(f, "Cancelled"),
+            Self::ClapError(e) => write!(f, "{e:?}"),
+            Self::Command(s) | Self::NoneOption(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
                 Ok(())
             }
-            ThagError::Dyn(e) => write!(f, "{e:?}"),
-            ThagError::FromStr(s) => {
+            Self::Dyn(e) => write!(f, "{e:?}"),
+            Self::FromStr(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
                 Ok(())
             }
-            ThagError::Io(e) => write!(f, "{e:?}"),
-            ThagError::LockMutexGuard(e) => write!(f, "{e:?}"),
-            ThagError::OsString(o) => {
+            Self::Io(e) => write!(f, "{e:?}"),
+            Self::LockMutexGuard(e) => write!(f, "{e:?}"),
+            Self::OsString(o) => {
                 writeln!(f, "{o:#?}")?;
                 Ok(())
             }
-            ThagError::Reedline(e) => write!(f, "{e:?}"),
-            ThagError::SerdeMerge(e) => write!(f, "{e:?}"),
-            ThagError::StrumParse(e) => write!(f, "{e:?}"),
-            ThagError::Syn(e) => write!(f, "{e:?}"),
-            ThagError::TomlDe(e) => write!(f, "{e:?}"),
-            ThagError::TomlSer(e) => write!(f, "{e:?}"),
-            ThagError::Toml(e) => write!(f, "{e:?}"),
+            Self::Reedline(e) => write!(f, "{e:?}"),
+            Self::SerdeMerge(e) => write!(f, "{e:?}"),
+            Self::StrumParse(e) => write!(f, "{e:?}"),
+            Self::Syn(e) => write!(f, "{e:?}"),
+            Self::TomlDe(e) => write!(f, "{e:?}"),
+            Self::TomlSer(e) => write!(f, "{e:?}"),
+            Self::Toml(e) => write!(f, "{e:?}"),
         }
     }
 }
@@ -160,23 +160,23 @@ impl Error for ThagError {
             // The cause is the underlying implementation error type. Is implicitly
             // cast to the trait object `&error::Error`. This works because the
             // underlying type already implements the `Error` trait.
-            ThagError::BitFlagsParse(e) => Some(e),
-            ThagError::Cancelled => Some(self),
-            ThagError::ClapError(ref e) => Some(e),
-            ThagError::Command(_e) => Some(self),
-            ThagError::Dyn(e) => Some(&**e),
-            ThagError::FromStr(ref _e) => Some(self),
-            ThagError::Io(ref e) => Some(e),
-            ThagError::LockMutexGuard(_e) => Some(self),
-            ThagError::NoneOption(_e) => Some(self),
-            ThagError::OsString(ref _o) => Some(self),
-            ThagError::Reedline(e) => Some(e),
-            ThagError::SerdeMerge(ref e) => Some(e),
-            ThagError::StrumParse(ref e) => Some(e),
-            ThagError::Syn(e) => Some(e),
-            ThagError::TomlDe(ref e) => Some(e),
-            ThagError::TomlSer(ref e) => Some(e),
-            ThagError::Toml(ref e) => Some(e),
+            Self::BitFlagsParse(e) => Some(e),
+            Self::Cancelled => Some(self),
+            Self::ClapError(ref e) => Some(e),
+            Self::Command(_e) => Some(self),
+            Self::Dyn(e) => Some(&**e),
+            Self::FromStr(ref _e) => Some(self),
+            Self::Io(ref e) => Some(e),
+            Self::LockMutexGuard(_e) => Some(self),
+            Self::NoneOption(_e) => Some(self),
+            Self::OsString(ref _o) => Some(self),
+            Self::Reedline(e) => Some(e),
+            Self::SerdeMerge(ref e) => Some(e),
+            Self::StrumParse(ref e) => Some(e),
+            Self::Syn(e) => Some(e),
+            Self::TomlDe(ref e) => Some(e),
+            Self::TomlSer(ref e) => Some(e),
+            Self::Toml(ref e) => Some(e),
         }
     }
 }

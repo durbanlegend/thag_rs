@@ -1,11 +1,15 @@
-#![allow(clippy::uninlined_format_args)]
+#![allow(
+    clippy::uninlined_format_args,
+    clippy::implicit_return,
+    clippy::missing_trait_methods
+)]
 use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::errors::ThagError;
-use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::{debug_timings, Ast, BuildState};
 use crate::{debug_log, nu_resolve_style};
+use crate::{log, MessageLevel};
 use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use cargo_toml::{Edition, Manifest};
@@ -14,16 +18,22 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::any::Any;
 use std::collections::HashMap;
-use std::fs;
 use std::fs::{remove_dir_all, remove_file, OpenOptions};
+use std::hash::BuildHasher;
 use std::io::{self, BufRead, Write};
 use std::option::Option;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::time::{Instant, SystemTime};
+use std::{fs, process};
+use syn::Type::Tuple;
 use syn::{
     visit::Visit,
     visit_mut::{self, VisitMut},
+    BinOp::{
+        AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, DivAssign, MulAssign, RemAssign,
+        ShlAssign, ShrAssign, SubAssign,
+    },
 };
 use syn::{
     AttrStyle, Expr, ExprBlock, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt, UsePath,
@@ -460,7 +470,7 @@ pub fn process_expr(
     expr_ast: Expr,
     build_state: &mut BuildState,
     rs_source: &str,
-    args: &mut Cli,
+    args: &Cli,
     proc_flags: &ProcFlags,
     start: &Instant,
 ) -> Result<(), ThagError> {
@@ -620,6 +630,7 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
 pub fn to_ast(source_code: &str) -> Option<Ast> {
     profile_fn!(to_ast);
     let start_ast = Instant::now();
+    #[allow(clippy::option_if_let_else)]
     if let Ok(tree) = syn::parse_file(source_code) {
         // Highlight the unexpected
         log!(
@@ -851,13 +862,14 @@ pub fn create_temp_source_file() -> Result<PathBuf, ThagError> {
 pub fn build_loop(args: &Cli, filter: String) -> String {
     profile_fn!(build_loop);
     let maybe_ast = extract_ast_expr(&filter);
-    let returns_unit = if let Ok(expr) = maybe_ast {
-        is_unit_return_type(&expr)
-    } else {
-        let expr_any: &dyn Any = &filter;
-        dbg!(&filter);
-        !expr_any.is::<()>()
-    };
+    let returns_unit = maybe_ast.map_or_else(
+        |_| {
+            let expr_any: &dyn Any = &filter;
+            dbg!(&filter);
+            !expr_any.is::<()>()
+        },
+        |expr| is_unit_return_type(&expr),
+    );
     let loop_toml = &args.toml;
     let loop_begin = &args.begin;
     let loop_end = &args.end;
@@ -886,28 +898,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
     Ok(())
 }}
 "#,
-        if let Some(ref toml) = &loop_toml {
+        loop_toml.as_ref().map_or_else(String::new, |toml| {
             log!(Verbosity::Verbose, "toml={toml}");
             format!(
                 r#"/*[toml]
 {toml}
 */"#
             )
-        } else {
-            String::new()
-        },
-        if let Some(prelude) = loop_begin {
+        }),
+        loop_begin.as_ref().map_or("", |prelude| {
             log!(Verbosity::Verbose, "prelude={prelude}");
             prelude
-        } else {
-            ""
-        },
-        if let Some(postlude) = loop_end {
+        }),
+        loop_end.as_ref().map_or("", |postlude| {
             log!(Verbosity::Verbose, "postlude={postlude}");
             postlude
-        } else {
-            ""
-        }
+        })
     )
 }
 
@@ -955,12 +961,13 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 /// Will return `Err` if there is any error accessing path to source file
 /// # Panics
 /// Will panic if the `rustfmt` failed.
+#[allow(dead_code)]
 pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
     profile_fn!(rustfmt);
     let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
     let source_path_str = target_rs_path
         .to_str()
-        .ok_or(String::from("Error accessing path to source file"))?;
+        .ok_or_else(|| String::from("Error accessing path to source file"))?;
 
     if Command::new("rustfmt").arg("--version").output().is_ok() {
         // Run rustfmt on the source file
@@ -1019,7 +1026,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
     }
 
     impl<'ast> Visit<'ast> for FindFns {
-        fn visit_item_fn(&mut self, node: &'ast syn::ItemFn) {
+        fn visit_item_fn(&mut self, i: &'ast syn::ItemFn) {
             // #[cfg(debug_assertions)]
             // {
             //     debug_log!("Node={:#?}", node);
@@ -1027,7 +1034,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
             //     debug_log!("Output={:#?}", &node.sig.output);
             // }
             self.function_map
-                .insert(node.sig.ident.to_string(), node.sig.output.clone());
+                .insert(i.sig.ident.to_string(), i.sig.output.clone());
         }
     }
 
@@ -1040,6 +1047,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 /// Determine if the return type of the expression is unit (the empty tuple `()`),
 /// otherwise we wrap it in a println! statement.
 #[must_use]
+#[inline]
 pub fn is_unit_return_type(expr: &Expr) -> bool {
     profile_fn!(is_unit_return_type);
     let start = Instant::now();
@@ -1063,7 +1071,8 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
 /// Will panic if an unexpected expression type is found in the elso branch of an if-statement.
 #[allow(clippy::too_many_lines)]
 #[must_use]
-pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
+#[inline]
+pub fn is_last_stmt_unit_type<S: BuildHasher>(
     expr: &Expr,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> bool {
@@ -1074,24 +1083,20 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
         Expr::ForLoop(for_loop) => {
             // #[cfg(debug_assertions)]
             // debug_log!("%%%%%%%% Expr::ForLoop(for_loop))");
-            if let Some(last_stmt) = for_loop.body.stmts.last() {
+            for_loop.body.stmts.last().map_or(false, |last_stmt| {
                 is_stmt_unit_type(last_stmt, function_map)
-            } else {
-                // #[cfg(debug_assertions)]
-                // debug_log!("%%%%%%%% Not if let Some(last_stmt) = for_loop.body.stmts.last()");
-                false
-            }
+            })
         }
         Expr::If(expr_if) => {
             // Cycle through if-else statements and return false if any one is found returning
             // a non-unit value;
-            if let Some(last_stmt) = expr_if.then_branch.stmts.last() {
+            if let Some(last_stmt_in_then_branch) = expr_if.then_branch.stmts.last() {
                 // #[cfg(debug_assertions)]
                 // debug_log!("%%%%%%%% Some(last_stmt) = expr_if.then_branch.stmts.last()");
-                if !is_stmt_unit_type(last_stmt, function_map) {
+                if !is_stmt_unit_type(last_stmt_in_then_branch, function_map) {
                     return false;
                 };
-                if let Some(ref stmt) = expr_if.else_branch {
+                expr_if.else_branch.as_ref().map_or(true, |stmt| {
                     let expr_else = &*stmt.1;
                     // The else branch expression may only be an If or Block expression,
                     // not any of the other types of expression.
@@ -1100,24 +1105,17 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
                         // decide according to the return type of the last statement in the block.
                         Expr::Block(expr_block) => {
                             let else_is_unit_type =
-                                if let Some(last_stmt) = expr_block.block.stmts.last() {
-                                    // #[cfg(debug_assertions)]
-                                    // debug_log!("%%%%%%%% If let Some(last_stmt) = expr_block.block.stmts.last()");
-                                    is_stmt_unit_type(last_stmt, function_map)
-                                } else {
-                                    // #[cfg(debug_assertions)]
-                                    // debug_log!("%%%%%%%% Not if let Some(last_stmt) = expr_block.block.stmts.last()");
-                                    false
-                                };
+                                expr_block.block.stmts.last().map_or(false, |last_stmt_in_block| is_stmt_unit_type(last_stmt_in_block, function_map));
                             else_is_unit_type
                         }
                         // If it's another if-statement, simply recurse through this method.
                         Expr::If(_) => is_last_stmt_unit_type(expr_else, function_map),
-                        _ => panic!("Expected else branch expression to be If or Block"),
+                        expr => {
+                            eprintln!("Possible logic error: expected else branch expression to be If or Block, found {:?}", expr);
+                            process::exit(1);
+                        }
                     }
-                } else {
-                    true
-                }
+                })
             } else {
                 // #[cfg(debug_assertions)]
                 // debug_log!(
@@ -1130,15 +1128,9 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
             if expr_block.block.stmts.is_empty() {
                 return true;
             }
-            if let Some(last_stmt) = expr_block.block.stmts.last() {
-                // #[cfg(debug_assertions)]
-                // debug_log!("%%%%%%%% if let Some(last_stmt) = expr_block.block.stmts.last()");
+            expr_block.block.stmts.last().map_or(false, |last_stmt| {
                 is_stmt_unit_type(last_stmt, function_map)
-            } else {
-                // #[cfg(debug_assertions)]
-                // debug_log!("%%%%%%%% Not if let Some(last_stmt) = expr_block.block.stmts.last()");
-                false
-            }
+            })
         }
         Expr::Match(expr_match) => {
             for arm in &expr_match.arms {
@@ -1163,10 +1155,10 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
 
             false
         }
-        Expr::Closure(expr_closure) => match &expr_closure.output {
+        Expr::Closure(ref expr_closure) => match &expr_closure.output {
             ReturnType::Default => is_last_stmt_unit_type(&expr_closure.body, function_map),
             ReturnType::Type(_, ty) => {
-                if let syn::Type::Tuple(tuple) = &**ty {
+                if let Tuple(tuple) = &**ty {
                     tuple.elems.is_empty()
                 } else {
                     false
@@ -1178,16 +1170,16 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
         }
         Expr::Binary(expr_binary) => matches!(
             expr_binary.op,
-            syn::BinOp::AddAssign(_)
-                | syn::BinOp::SubAssign(_)
-                | syn::BinOp::MulAssign(_)
-                | syn::BinOp::DivAssign(_)
-                | syn::BinOp::RemAssign(_)
-                | syn::BinOp::BitXorAssign(_)
-                | syn::BinOp::BitAndAssign(_)
-                | syn::BinOp::BitOrAssign(_)
-                | syn::BinOp::ShlAssign(_)
-                | syn::BinOp::ShrAssign(_)
+            AddAssign(_)
+                | SubAssign(_)
+                | MulAssign(_)
+                | DivAssign(_)
+                | RemAssign(_)
+                | BitXorAssign(_)
+                | BitAndAssign(_)
+                | BitOrAssign(_)
+                | ShlAssign(_)
+                | ShrAssign(_)
         ),
         Expr::While(_)
         | Expr::Loop(_)
@@ -1217,7 +1209,7 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
         | Expr::Unsafe(_)
         | Expr::Verbatim(_)
         | Expr::Yield(_) => false,
-        Expr::Macro(expr_macro) => {
+        Expr::Macro(ref expr_macro) => {
             if let Some(segment) = expr_macro.mac.path.segments.last() {
                 let ident = &segment.ident.to_string();
                 return ident.starts_with("print")
@@ -1226,20 +1218,24 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
             }
             false // default - because no intrinsic way of knowing?
         }
-        Expr::Path(path) => {
+        Expr::Path(ref path) => {
             if let Some(value) = is_path_unit_type(path, function_map) {
                 return value;
             }
             false
         }
-        Expr::Return(expr_return) => {
+        Expr::Return(ref expr_return) => {
             #[cfg(debug_assertions)]
             debug_log!("%%%%%%%% expr_return={expr_return:#?}");
             expr_return.expr.is_none()
         }
         _ => {
-            println!(
-                "%%%%%%%% Expression not catered for: {expr:#?}, wrapping expression in println!()"
+            log!(
+                Verbosity::Quiet,
+                "{}",
+                nu_resolve_style(MessageLevel::Warning).paint(format!(
+                    "Expression not catered for: {expr:#?}, wrapping expression in println!()"
+                ))
             );
             false
         }
@@ -1249,7 +1245,8 @@ pub fn is_last_stmt_unit_type<S: ::std::hash::BuildHasher>(
 /// Check if a path represents a function, and if so, whether it has a unit or non-unit
 /// return type.
 #[must_use]
-pub fn is_path_unit_type<S: ::std::hash::BuildHasher>(
+#[inline]
+pub fn is_path_unit_type<S: BuildHasher>(
     path: &syn::PatPath,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> Option<bool> {
@@ -1263,7 +1260,7 @@ pub fn is_path_unit_type<S: ::std::hash::BuildHasher>(
                     true
                 }
                 ReturnType::Type(_, ty) => {
-                    if let syn::Type::Tuple(tuple) = &**ty {
+                    if let Tuple(tuple) = &**ty {
                         // #[cfg(debug_assertions)]
                         // debug_log!("%%%%%%%% Tuple ReturnType");
                         tuple.elems.is_empty()
@@ -1282,7 +1279,7 @@ pub fn is_path_unit_type<S: ::std::hash::BuildHasher>(
 /// Recursively alternate with function `is_last_stmt_unit` until we drill down through
 /// all the blocks, loops and if-conditions to find the last executable statement and
 /// determine if it returns a unit type or a value worth printing.
-pub fn is_stmt_unit_type<S: ::std::hash::BuildHasher>(
+pub fn is_stmt_unit_type<S: BuildHasher>(
     stmt: &Stmt,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> bool {
@@ -1342,44 +1339,6 @@ pub fn is_stmt_unit_type<S: ::std::hash::BuildHasher>(
         },
     }
 }
-
-// /// Check if an expression returns a unit value, so that we can avoid trying to print it out.
-// #[must_use]
-// pub fn returns_unit(expr: &Expr) -> bool {
-//     profile_fn!(returns_unit);
-//     let is_unit_type = matches!(expr, Expr::Tuple(tuple) if tuple.elems.is_empty());
-//     nu_color_println!(
-//         nu_resolve_style(crate::MessageLevel::Emphasis),
-//         "is_unit_type={is_unit_type}"
-//     );
-//     is_unit_type
-// }
-
-/// Convert a `syn::File`'s `fn main` to a `syn::Expr`, for the purpose of determining the return type.
-/// # Errors
-/// Will return `Err` if there is any error parsing expressions
-// #[cfg(debug_assertions)]
-// #[allow(dead_code)]
-// pub fn extract_expr_from_file(file: &File) -> Result<Expr, ThagError> {
-//     profile_fn!(extract_expr_from_file);
-
-//     for item in &file.items {
-//         if let Item::Fn(func) = item {
-//             if func.sig.ident == "main" {
-//                 // Convert the function's block into an Expr::Block
-//                 let expr_block = Expr::Block(ExprBlock {
-//                     attrs: Vec::new(),          // Add attributes if needed
-//                     label: None,                // No label for the block
-//                     block: *func.block.clone(), // Clone the block from the function
-//                 });
-
-//                 return Ok(expr_block);
-//             }
-//         }
-//     }
-
-//     Err("No main function found".into())
-// }
 
 /// # Errors
 /// Will return `Err` if there is any error parsing expressions

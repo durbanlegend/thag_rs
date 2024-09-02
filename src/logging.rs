@@ -25,8 +25,8 @@ pub struct Logger {
 impl Logger {
     /// Construct a new Logger with the given Verbosity level.
     #[must_use]
-    pub fn new(verbosity: Verbosity) -> Self {
-        Logger { verbosity }
+    pub const fn new(verbosity: Verbosity) -> Self {
+        Self { verbosity }
     }
 
     /// Log a message if it passes the verbosity filter.
@@ -53,8 +53,7 @@ lazy_static! {
 /// # Errors
 /// Will return `Err` if the logger mutex cannot be locked.
 pub fn set_global_verbosity(verbosity: Verbosity) -> Result<(), ThagError> {
-    let mut logger = LOGGER.lock()?;
-    logger.set_verbosity(verbosity);
+    LOGGER.lock()?.set_verbosity(verbosity);
     Ok(())
 }
 
@@ -62,8 +61,7 @@ pub fn set_global_verbosity(verbosity: Verbosity) -> Result<(), ThagError> {
 macro_rules! log {
     ($verbosity:expr, $($arg:tt)*) => {
         {
-            let logger = $crate::logging::LOGGER.lock().unwrap();
-            logger.log($verbosity, &format!($($arg)*));
+            $crate::logging::LOGGER.lock().unwrap().log($verbosity, &format!($($arg)*))
         }
     };
 }

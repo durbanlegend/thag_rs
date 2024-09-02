@@ -15,7 +15,7 @@ termbg = "0.5.0"
 ///
 /// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 ///
-/// E.g. `thag_rs demo/colors.rs`
+/// E.g. `thag demo/colors.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
 use thag_rs::{debug_log, log, logging::Verbosity};
 

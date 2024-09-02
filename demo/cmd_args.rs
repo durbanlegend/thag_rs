@@ -7,7 +7,7 @@ thag_rs = "0.1.2"
 
 /// A prototype of the cmd_args module of thag_rs itself.
 ///
-/// E.g. `thag_rs -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
+/// E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 //# Purpose: Prototype CLI.
 use thag_rs::errors::ThagError;
 use thag_rs::log;

@@ -5,7 +5,7 @@ clap = { version = "4.5.7", features = ["cargo", "derive"] }
 
 /// Published example from `clap` tutorial (derive), with added displays.
 ///
-/// E.g. `thag_rs demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt`
+/// E.g. `thag demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt`
 //# Purpose: Demonstrate `clap` CLI using the derive option
 use clap::{ArgGroup, Parser};
 

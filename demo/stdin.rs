@@ -12,8 +12,8 @@ use lazy_static::lazy_static;
 use ratatui::backend::CrosstermBackend;
 /// A version of `thag_rs`'s `stdin` module to handle standard input editor input. Like the `colors`
 /// module, `stdin` was originally developed here as a separate script and integrated as a module later.
-//////
-/// E.g. `thag_rs demo/stdin.rs`
+///
+/// E.g. `thag demo/stdin.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
 use ratatui::crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, Event::Paste,

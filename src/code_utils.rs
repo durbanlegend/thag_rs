@@ -1055,10 +1055,10 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
     let function_map = extract_functions(expr);
     #[cfg(debug_assertions)]
     // debug_log!("function_map={function_map:#?}");
-    let is_last_stmt_unit_type = is_last_stmt_unit_type(expr, &function_map);
+    let is_unit_type = is_last_stmt_unit_type(expr, &function_map);
     #[cfg(debug_assertions)]
     debug_timings(&start, "Determined probable snippet return type");
-    is_last_stmt_unit_type
+    is_unit_type
 }
 
 /// Recursively alternate with function `is_stmt_unit_type` until we drill down through

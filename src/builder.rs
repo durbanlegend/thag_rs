@@ -30,7 +30,7 @@ use crate::{
 use cargo_toml::Manifest;
 #[cfg(debug_assertions)]
 use env_logger::{Builder, Env, WriteStyle};
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_section};
 use lazy_static::lazy_static;
 #[cfg(debug_assertions)]
 use log::{log_enabled, Level::Debug};
@@ -459,10 +459,24 @@ pub fn gen_build_run(
                 } else {
                     #[cfg(debug_assertions)]
                     debug_log!("Option A: returns a substantive type");
-                    quote::quote!(
-                        println!("{}", format!("{:?}", #syntax_tree_ref).trim_matches('"'));
-                    )
-                    .to_string()
+                    eprintln!(
+                        "args.unquote={:?}, MAYBE_CONFIG={:?}",
+                        args.unquote, MAYBE_CONFIG
+                    );
+
+                    if proc_flags.contains(ProcFlags::UNQUOTE) {
+                        eprintln!("\nIn unquote leg\n");
+                        quote::quote!(
+                            println!("{}", format!("{:?}", #syntax_tree_ref).trim_matches('"'));
+                        )
+                        .to_string()
+                    } else {
+                        eprintln!("\nIn quote leg\n");
+                        quote::quote!(
+                            println!("{}", format!("{:?}", #syntax_tree_ref));
+                        )
+                        .to_string()
+                    }
                 }
             });
 
@@ -548,9 +562,9 @@ pub fn generate(
     );
 
     if !build_state.build_from_orig_source {
-        // profile_section!(parse_file);
-        let syntax_tree = syn::parse_file(rs_source.ok_or("Logic error retrieving rs_source")?)?;
-        let rs_source = prettyplease::unparse(&syntax_tree);
+        profile_section!(transform);
+        let syntax_tree = syn_parse_file(rs_source)?;
+        let rs_source = prettyplease_unparse(syntax_tree);
         write_source(&target_rs_path, &rs_source)?;
     }
 
@@ -587,6 +601,19 @@ pub fn generate(
     display_timings(&start_gen, "Completed generation", proc_flags);
 
     Ok(())
+}
+
+#[inline]
+fn syn_parse_file(rs_source: Option<&str>) -> Result<syn::File, ThagError> {
+    profile_fn!(syn_parse_file);
+    let syntax_tree = syn::parse_file(rs_source.ok_or("Logic error retrieving rs_source")?)?;
+    Ok(syntax_tree)
+}
+
+#[inline]
+fn prettyplease_unparse(syntax_tree: syn::File) -> String {
+    profile_fn!(prettyplease_unparse);
+    prettyplease::unparse(&syntax_tree)
 }
 
 /// Build the Rust program using Cargo (with manifest path)

@@ -60,7 +60,7 @@ chmod ug+x demo/fib_basic.rs
 demo/fib_basic.rs -- 10
 ```
 
-But why bother to build a script via a shebang when you can make it a command as Rust intended? See `As an executable` below.
+But why build a script via a shebang each time you use it when you can simply make it a command as Rust intended? See `As an executable` below.
 
 ### * As a REPL (Read-Evaluate-Print Loop):
 
@@ -218,6 +218,34 @@ In this way `thag_rs` attempts to handle any valid (or invalid) Rust script, be 
 at the start of the script, as you will see done in most of the demos. To help with this, after each successful Cargo search `thag_rs `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. (As in the second `--expr` example above.) It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` there is no specific limit on what valid Cargo code you can place in the toml block.
 
 `thag_rs` aims to be as comprehensive as possible without sacrificing speed and transparency. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
+
+### Example of using a toml block (`demo/prettyplease.rs`)
+
+    /*[toml]
+    [dependencies]
+    prettyplease = "0.2.20"
+    syn = { version = "2", default-features = false, features = ["full", "parsing"] }
+    */
+
+    /// Published example from `prettyplease` Readme.
+    //# Purpose: Demo featured crate.
+    const INPUT: &str = stringify! {
+        use crate::{
+              lazy::{Lazy, SyncLazy, SyncOnceCell}, panic,
+            sync::{ atomic::{AtomicUsize, Ordering::SeqCst},
+                mpsc::channel, Mutex, },
+          thread,
+        };
+        impl<T, U> Into<U> for T where U: From<T> {
+            fn into(self) -> U { U::from(self) }
+        }
+    };
+
+    fn main() {
+        let syntax_tree = syn::parse_file(INPUT).unwrap();
+        let formatted = prettyplease::unparse(&syntax_tree);
+        print!("{}", formatted);
+    }
 
 ## Installation
 

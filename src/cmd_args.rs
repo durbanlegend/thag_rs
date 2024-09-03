@@ -1,5 +1,5 @@
-use crate::errors::ThagError;
 use crate::RS_SUFFIX;
+use crate::{errors::ThagError, MAYBE_CONFIG};
 
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
@@ -234,6 +234,22 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
         proc_flags.set(ProcFlags::EDIT, args.edit);
         proc_flags.set(ProcFlags::LOOP, is_loop);
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
+
+        let unquote = args.unquote.map_or_else(||  (*MAYBE_CONFIG).as_ref().map_or_else(|| {
+                eprintln!("Found nothing, returning default of false");
+                false
+            }, |config| {
+                eprintln!(
+                    "MAYBE_CONFIG={:?}, returning config.misc.unquote={}",
+                    MAYBE_CONFIG, config.misc.unquote
+                );
+                config.misc.unquote
+            }), |unquote| {
+                eprintln!("args.unquote={:?}", args.unquote);
+                unquote
+            });
+        proc_flags.set(ProcFlags::UNQUOTE, unquote);
+
         proc_flags.set(ProcFlags::CONFIG, args.config);
 
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {

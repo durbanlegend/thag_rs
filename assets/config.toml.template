@@ -25,3 +25,13 @@ default_verbosity = "normal"
 # Valid values are: "dark" or "light".
 # "dark" is generally a safe choice as the colors should be legible even for a light theme
 # term_theme = "dark"
+
+[misc]
+# User's preferred text unquote behaviour. By default, thag_rs will not strip double quotes
+# from text values returned by snippets. Setting this to true will override this behaviour.
+# In turn, this user default may be overridden on the command line by specifying --unquote
+# (-u) true/false (default true).
+# This behaviour only applies to snippets that explicitly or implicitly return a string
+# value. It does not affect well-formed programs or println! statements in snippets.
+# Valid values are: "true" or "false" (default).
+# unquote = "false"

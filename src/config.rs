@@ -21,10 +21,11 @@ lazy_static! {
         if let Some(ref config) = maybe_config {
                 debug_log!("Loaded config: {config:?}");
                 debug_log!(
-                    "default_verbosity={:?}, color_support={:?}, term_theme={:?}",
+                    "default_verbosity={:?}, color_support={:?}, term_theme={:?}, unquote={}",
                     config.logging.default_verbosity,
                     config.colors.color_support,
-                    config.colors.term_theme
+                    config.colors.term_theme,
+                    config.misc.unquote
                 );
         }
         maybe_config
@@ -37,6 +38,7 @@ lazy_static! {
 pub struct Config {
     pub logging: Logging,
     pub colors: Colors,
+    pub misc: Misc,
 }
 
 #[allow(dead_code)]
@@ -59,6 +61,16 @@ pub struct Colors {
     #[serde(default)]
     pub term_theme: TermTheme,
 }
+
+#[allow(dead_code)]
+#[serde_as]
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Misc {
+    #[serde_as(as = "DisplayFromStr")]
+    pub unquote: bool,
+}
+
 
 #[automock]
 pub trait Context {
@@ -94,7 +106,9 @@ impl RealContext {
     #[cfg(not(target_os = "windows"))]
     #[must_use]
     pub fn new() -> Self {
-        let base_dir = home::home_dir().expect("Error resolving home::home_dir()");
+        let base_dir = home::home_dir()
+            .expect("Error resolving home::home_dir()")
+            .join(".config");
         Self { base_dir }
     }
 }

@@ -44,11 +44,7 @@ impl History {
     }
 
     fn load_from_file(path: &PathBuf) -> Self {
-        if let Ok(data) = fs::read_to_string(path) {
-            serde_json::from_str(&data).unwrap_or_else(|_| Self::new())
-        } else {
-            Self::default()
-        }
+        fs::read_to_string(path).map_or_else(|_| Self::default(), |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()))
     }
 
     fn save_to_file(&self, path: &PathBuf) {

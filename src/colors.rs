@@ -43,6 +43,7 @@ lazy_static! {
             );
             return TermTheme::Dark;
         }
+        #[allow(clippy::option_if_let_else)]
         let term_theme: TermTheme = if let Some(config) = &*config::MAYBE_CONFIG {
             config.colors.term_theme.clone()
         } else {
@@ -376,7 +377,7 @@ impl NuThemeStyle for MessageStyle {
 #[must_use]
 pub fn nu_resolve_style(message_level: MessageLevel) -> Style {
     let maybe_color_support = COLOR_SUPPORT.as_ref();
-    if let Some(color_support) = maybe_color_support {
+    maybe_color_support.map_or_else(Style::default, |color_support| {
         let color_qual = color_support.to_string().to_lowercase();
         let theme_qual = TERM_THEME.to_string().to_lowercase();
         let msg_level_qual = message_level.to_string().to_lowercase();
@@ -388,13 +389,8 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> Style {
         debug_log!(
             "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
         );
-        match message_style {
-            Ok(message_style) => NuThemeStyle::get_style(&message_style),
-            Err(_) => nu_ansi_term::Style::default(),
-        }
-    } else {
-        nu_ansi_term::Style::default()
-    }
+        message_style.map_or_else(|_| Style::default(), |message_style| NuThemeStyle::get_style(&message_style))
+    })
 }
 
 /// Main function for use by testing or the script runner.

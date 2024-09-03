@@ -24,6 +24,7 @@ pub use code_utils::{
 };
 pub use colors::{nu_resolve_style, MessageLevel};
 pub use config::load;
+pub use config::MAYBE_CONFIG;
 pub use errors::ThagError;
 pub use repl::run_repl;
 pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};
@@ -31,15 +32,15 @@ pub use stdin::{edit, read};
 
 // Re-export specific items if they are defined in the respective modules
 // pub use crate::{gen_build_run, BuildState, DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
-pub const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const RS_SUFFIX: &str = ".rs";
-pub const FLOWER_BOX_LEN: usize = 70;
-pub const REPL_SUBDIR: &str = "rs_repl";
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
+pub const FLOWER_BOX_LEN: usize = 70;
+pub const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
+pub const REPL_SUBDIR: &str = "rs_repl";
+pub const RS_SUFFIX: &str = ".rs";
 pub const TEMP_DIR_NAME: &str = "temp";
 pub const TEMP_SCRIPT_NAME: &str = "temp.rs";
 pub const TOML_NAME: &str = "Cargo.toml";
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 lazy_static! {
     #[derive(Debug)]

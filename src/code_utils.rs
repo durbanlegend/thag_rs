@@ -5,10 +5,14 @@
 )]
 use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
+#[cfg(debug_assertions)]
+use crate::debug_log;
 use crate::errors::ThagError;
 use crate::logging::Verbosity;
-use crate::shared::{debug_timings, Ast, BuildState};
-use crate::{debug_log, nu_resolve_style};
+use crate::nu_resolve_style;
+#[cfg(debug_assertions)]
+use crate::shared::debug_timings;
+use crate::shared::{Ast, BuildState};
 use crate::{log, MessageLevel};
 use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
@@ -20,10 +24,14 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fs::{remove_dir_all, remove_file, OpenOptions};
 use std::hash::BuildHasher;
-use std::io::{self, BufRead, Write};
+#[cfg(debug_assertions)]
+use std::io::BufRead;
+use std::io::{self, Write};
 use std::option::Option;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+use std::process::Command;
+#[cfg(debug_assertions)]
+use std::process::Output;
 use std::time::{Instant, SystemTime};
 use std::{fs, process};
 use syn::Type::Tuple;
@@ -415,7 +423,7 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
 /// Will return `Err` if there is any error in parsing the toml data into a manifest.
 pub fn extract_manifest(
     rs_full_source: &str,
-    start_parsing_rs: Instant,
+    #[allow(unused_variables)] start_parsing_rs: Instant,
 ) -> Result<Manifest, ThagError> {
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
@@ -616,6 +624,7 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
+    #[cfg(debug_assertions)]
     debug_log!(
         "In count_main_methods: finder.main_method_count={}",
         finder.main_method_count
@@ -629,6 +638,7 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
 #[must_use]
 pub fn to_ast(source_code: &str) -> Option<Ast> {
     profile_fn!(to_ast);
+    #[cfg(debug_assertions)]
     let start_ast = Instant::now();
     #[allow(clippy::option_if_let_else)]
     if let Ok(tree) = syn::parse_file(source_code) {
@@ -976,6 +986,8 @@ pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
         command.arg("--edition");
         command.arg("2021");
         command.arg(source_path_str);
+
+        #[allow(unused_variables)]
         let output = command.output()?;
 
         #[cfg(debug_assertions)]
@@ -1050,10 +1062,11 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 #[inline]
 pub fn is_unit_return_type(expr: &Expr) -> bool {
     profile_fn!(is_unit_return_type);
+    #[cfg(debug_assertions)]
     let start = Instant::now();
 
     let function_map = extract_functions(expr);
-    #[cfg(debug_assertions)]
+    // #[cfg(debug_assertions)]
     // debug_log!("function_map={function_map:#?}");
     let is_unit_type = is_last_stmt_unit_type(expr, &function_map);
     #[cfg(debug_assertions)]

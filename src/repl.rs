@@ -1,6 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
+#[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::errors::ThagError;
 use crate::log;

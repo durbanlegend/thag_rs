@@ -10,8 +10,10 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use crate::colors::{ColorSupport, TermTheme};
+#[cfg(debug_assertions)]
+use crate::debug_log;
 use crate::logging::Verbosity;
-use crate::{debug_log, ThagError};
+use crate::ThagError;
 
 lazy_static! {
     #[derive(Debug)]
@@ -70,7 +72,6 @@ pub struct Misc {
     #[serde_as(as = "DisplayFromStr")]
     pub unquote: bool,
 }
-
 
 #[automock]
 pub trait Context {

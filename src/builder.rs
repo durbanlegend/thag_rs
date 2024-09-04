@@ -352,6 +352,7 @@ pub fn gen_build_run(
             // #[cfg(debug_assertions)]
             // debug_log!("rs_source (before)={rs_source}");
             let split_once = rs_source.split_once('\n');
+            #[allow(unused_variables)]
             let (shebang, rust_code) = split_once.ok_or("Failed to strip shebang")?;
             #[cfg(debug_assertions)]
             debug_log!("Successfully stripped shebang {shebang}");
@@ -461,7 +462,8 @@ pub fn gen_build_run(
                     debug_log!("Option A: returns a substantive type");
                     debug_log!(
                         "args.unquote={:?}, MAYBE_CONFIG={:?}",
-                        args.unquote, MAYBE_CONFIG
+                        args.unquote,
+                        MAYBE_CONFIG
                     );
 
                     if proc_flags.contains(ProcFlags::UNQUOTE) {
@@ -564,7 +566,7 @@ pub fn generate(
     if !build_state.build_from_orig_source {
         profile_section!(transform);
         let syntax_tree = syn_parse_file(rs_source)?;
-        let rs_source = prettyplease_unparse(syntax_tree);
+        let rs_source = prettyplease_unparse(&syntax_tree);
         write_source(&target_rs_path, &rs_source)?;
     }
 
@@ -611,9 +613,9 @@ fn syn_parse_file(rs_source: Option<&str>) -> Result<syn::File, ThagError> {
 }
 
 #[inline]
-fn prettyplease_unparse(syntax_tree: syn::File) -> String {
+fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
     profile_fn!(prettyplease_unparse);
-    prettyplease::unparse(&syntax_tree)
+    prettyplease::unparse(syntax_tree)
 }
 
 /// Build the Rust program using Cargo (with manifest path)

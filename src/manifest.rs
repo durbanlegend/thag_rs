@@ -78,6 +78,7 @@ See below for how to avoid this and speed up future builds.
             .next()
             .ok_or_else(|| format!("Something went wrong with Cargo search for [{dep_crate}]"))?
     } else {
+        #[allow(unused_variables)]
         let error_msg = String::from_utf8_lossy(&search_output.stderr);
         #[cfg(debug_assertions)]
         error_msg.lines().for_each(|line| {

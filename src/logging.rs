@@ -4,7 +4,9 @@ use serde::Deserialize;
 use std::sync::Mutex;
 use strum::EnumString;
 
-use crate::{debug_log, ThagError};
+#[cfg(debug_assertions)]
+use crate::debug_log;
+use crate::ThagError;
 
 /// An enum of the supported verbosity levels.
 #[derive(Clone, Copy, Debug, Default, Deserialize, EnumString, PartialEq, Eq)]

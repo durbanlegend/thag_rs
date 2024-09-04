@@ -1,5 +1,6 @@
 #![allow(clippy::implicit_return)]
 use crate::config::{self};
+#[cfg(debug_assertions)]
 use crate::debug_log;
 use {crate::log, crate::logging::Verbosity};
 
@@ -398,6 +399,7 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> Style {
 pub fn main() {
     #[cfg(not(target_os = "windows"))]
     {
+        #[allow(unused_variables)]
         let term = termbg::terminal();
         // shared::clear_screen();
         #[cfg(debug_assertions)]
@@ -438,7 +440,6 @@ pub fn main() {
 }
 
 /// An enum of the colours in a 256-colour palette.
-#[cfg(debug_assertions)]
 #[allow(dead_code)]
 #[derive(Display, EnumIter)]
 pub enum XtermColor {

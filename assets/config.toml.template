@@ -31,7 +31,7 @@ default_verbosity = "normal"
 # from text values returned by snippets. Setting this to true will override this behaviour.
 # In turn, this user default may be overridden on the command line by specifying --unquote
 # (-u) true/false (default true).
-# This behaviour only applies to snippets that explicitly or implicitly return a string
+# This behaviour only applies to snippets that implicitly return a string
 # value. It does not affect well-formed programs or println! statements in snippets.
 # Valid values are: "true" or "false" (default).
 # unquote = "false"

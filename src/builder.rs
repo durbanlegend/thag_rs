@@ -459,19 +459,19 @@ pub fn gen_build_run(
                 } else {
                     #[cfg(debug_assertions)]
                     debug_log!("Option A: returns a substantive type");
-                    eprintln!(
+                    debug_log!(
                         "args.unquote={:?}, MAYBE_CONFIG={:?}",
                         args.unquote, MAYBE_CONFIG
                     );
 
                     if proc_flags.contains(ProcFlags::UNQUOTE) {
-                        eprintln!("\nIn unquote leg\n");
+                        debug_log!("\nIn unquote leg\n");
                         quote::quote!(
                             println!("{}", format!("{:?}", #syntax_tree_ref).trim_matches('"'));
                         )
                         .to_string()
                     } else {
-                        eprintln!("\nIn quote leg\n");
+                        debug_log!("\nIn quote leg\n");
                         quote::quote!(
                             println!("{}", format!("{:?}", #syntax_tree_ref));
                         )
@@ -733,7 +733,7 @@ fn deploy_executable(build_state: &BuildState) -> Result<(), ThagError> {
         .join("target/release")
         .join(&executable_name);
     let output_path = cargo_bin_path.join(&build_state.source_stem);
-    eprintln!("executable_path={executable_path:#?}, output_path={output_path:#?}");
+    debug_log!("executable_path={executable_path:#?}, output_path={output_path:#?}");
     fs::rename(executable_path, output_path)?;
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);

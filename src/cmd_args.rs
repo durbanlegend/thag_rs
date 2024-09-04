@@ -1,5 +1,6 @@
 use crate::RS_SUFFIX;
 use crate::{errors::ThagError, MAYBE_CONFIG};
+use crate::debug_log;
 
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
@@ -223,7 +224,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
         proc_flags.set(ProcFlags::NORUN, args.norun | args.check | args.executable);
         proc_flags.set(ProcFlags::NORMAL, args.normal);
         let gen_build = !args.norun && !args.executable && !args.check;
-        eprintln!("gen_build={gen_build}");
+        debug_log!("gen_build={gen_build}");
         if gen_build {
             proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true);
         }
@@ -236,16 +237,16 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
 
         let unquote = args.unquote.map_or_else(||  (*MAYBE_CONFIG).as_ref().map_or_else(|| {
-                eprintln!("Found nothing, returning default of false");
+                debug_log!("Found nothing, returning default of false");
                 false
             }, |config| {
-                eprintln!(
+                debug_log!(
                     "MAYBE_CONFIG={:?}, returning config.misc.unquote={}",
                     MAYBE_CONFIG, config.misc.unquote
                 );
                 config.misc.unquote
             }), |unquote| {
-                eprintln!("args.unquote={:?}", args.unquote);
+                debug_log!("args.unquote={:?}", args.unquote);
                 unquote
             });
         proc_flags.set(ProcFlags::UNQUOTE, unquote);

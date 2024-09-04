@@ -51,7 +51,7 @@ pub struct Cli {
     /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`
     #[arg(short = 'x', long)]
     pub executable: bool,
-    /// Cargo check script if compiled file is stale. Less thorough than build
+    /// Cargo check script if compiled file is stale. Less thorough than build.
     /// Used by integration test to check all demo scripts
     #[arg(short, long, conflicts_with_all(["build", "executable"]))]
     pub check: bool,

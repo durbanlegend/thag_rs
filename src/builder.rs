@@ -93,7 +93,7 @@ pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
         let _ = create_temp_source_file()?;
     }
 
-    let script_dir_path = set_script_dir_path(
+    let script_dir_path = resolve_script_dir_path(
         is_repl,
         args,
         &working_dir_path,
@@ -128,14 +128,14 @@ fn set_verbosity(args: &Cli) -> Result<(), ThagError> {
 }
 
 #[inline]
-fn set_script_dir_path(
+fn resolve_script_dir_path(
     is_repl: bool,
     args: &Cli,
     working_dir_path: &Path,
     repl_source_path: &Option<PathBuf>,
     is_dynamic: bool,
 ) -> Result<PathBuf, ThagError> {
-    profile_fn!(set_script_dir_path);
+    profile_fn!(resolve_script_dir_path);
 
     let script_dir_path = if is_repl {
         if let Some(ref script) = args.script {

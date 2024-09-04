@@ -25,6 +25,7 @@
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  -vv for debug mode
 - [ ]  Firestorm example
+- [ ]  Debug Firestorm double invocation.
 - [ ]  Test [profile.dev] optimisation level
 - [ ]  Check dead code & other #[cfg[allow(...)]; look into factoring over-long gen_build_run
 - [ ]  Look for code smells

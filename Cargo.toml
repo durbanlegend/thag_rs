@@ -1,6 +1,6 @@
 [package]
 name = "thag_rs"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 description = "A versatile script runner and REPL for Rust snippets, expressions and programs"
 edition = "2021"

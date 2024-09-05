@@ -41,7 +41,7 @@ Zoned::now().round(Unit::Second)?
 
 ### * With a script:
 
-Here's a sample interactive script for discovering Pythagorean triangles:
+Here's a sample interactive script for discovering Pythagorean triangles with integer sides:
 
 ```bash
 thag demo/py_thag.rs

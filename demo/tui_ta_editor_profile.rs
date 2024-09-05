@@ -623,7 +623,7 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 fn main() -> Result<(), Box<dyn Error>> {
     if firestorm::enabled() {
         // Profile the `Editor::run` method
-        let flame_dir_path = env::temp_dir().join("/flames/");
+        let flame_dir_path = env::temp_dir().join("flames/");
         let flame_dir = flame_dir_path.to_string_lossy();
         firestorm::bench(&*flame_dir, || {
             let mut editor =
@@ -632,11 +632,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .run()
                 .expect("Error calling execute() in firestorm profiler");
         })
-        .map_err(|_| "Error invoking firestorm::bench")?;
+        .map_err(|e| format!("Error invoking firestorm::bench: {e:?}"))?;
         Ok(())
     } else {
         let mut editor = Editor::new(env::args_os().skip(1))?;
         Ok(editor.run()?)
-        Ok(())
     }
 }

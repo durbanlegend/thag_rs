@@ -2938,24 +2938,6 @@ which will give identical output to the above.
 
 ---
 
-### Script: tui_editor.rs
-
-**Description:**  Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
- down to two files at a time, because it was developed to allow editing of generated code and
- cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
- or default to a standard editor. A more minimalist version is used to edit stdin input in
- the `--edit (-d)` option of `thag_rs`.
-
-**Purpose:** Demo TUI editor and featured crates, including `crossterm`.
-
-**Crates:** `ratatui`, `tui_textarea`
-
-**Type:** Program
-
-**Link:** [tui_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_editor.rs)
-
----
-
 ### Script: tui_scrollview.rs
 
 **Description:**  Published example from `tui-scrollview` crate. Toml entries from crate's Cargo.toml.
@@ -2985,6 +2967,24 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.rs)
+
+---
+
+### Script: tui_ta_editor_profile.rs
+
+**Description:**  The same script as `demo/tui_ta_editor.rs`, but with `firestorm` profiling.
+
+ To see the profiling flamegraph after exiting the program, look in dir `flames` under the `env::temp_dir()`
+ for your operating system. Note that due to an apparent bug in `firestorm`, the `Editor::run` method currently
+ executes twice, so it will need to be closed a second time.
+
+**Purpose:** Demo featured crates, but `firestorm` profiler in particular.
+
+**Crates:** `firestorm`, `ratatui`, `tui_textarea`
+
+**Type:** Program
+
+**Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_profile.rs)
 
 ---
 

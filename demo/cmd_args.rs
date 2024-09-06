@@ -259,8 +259,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         // Check all good
         let formatted = proc_flags.to_string();
         let parsed = formatted
-            .parse::<ProcFlags>()
-            .map_err(|e| ThagError::FromStr(e.to_string().into()))?;
+            .parse::<ProcFlags>()?;
 
         assert_eq!(proc_flags, parsed);
 

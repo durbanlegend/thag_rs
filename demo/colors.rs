@@ -4,7 +4,7 @@
 lazy_static = "1.4.0"
 log = "0.4.21"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-thag_rs = "0.1.2"
+thag_rs = "0.1.3"
 
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"

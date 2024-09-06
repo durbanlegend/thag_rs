@@ -11,10 +11,13 @@
 ## Intro
 
 `thag_rs` (command `thag`) is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
-It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while hopefully being simple and convenient to use.
+It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while being as simple and convenient to use as possible.
 It also supports scripting via shebangs, building executables from your snippets, a loop-filter mode and plain or edited standard input.
 
-`thag_rs` includes a demo library of over 170 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
+If you import basic dependencies via explicit `use` statements, `thag_rs` will resolve them for you with a Cargo search.
+Alternatively, you can embed any valid Cargo manifest info, such as features, specific versions, private repos, optimisation levels etc., in a "toml block" comment.
+
+`thag_rs` includes a demo library of over 180 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
 ## Quick start: ways to run the `thag` command
 
@@ -53,14 +56,17 @@ thag demo/iced_tour.rs
 ```
 This will `cargo build` and run the tour of the `iced` cross-platform GUI library. The script is taken from the published examples in the `iced` crate.
 
-To run the script directly, you can add a shebang of the form `#! /usr/bin/env thag` on line 1. You need to give the script execute permissions in order to run it. E.g. (*nix):
+#### Using a shebang
+
+To run a script directly from the command line, you can add a shebang of the form `#! /usr/bin/env thag` on line 1. You need to give the script execute permissions in order to run it. E.g. (*nix):
 
 ```bash
 chmod ug+x demo/fib_basic.rs
 demo/fib_basic.rs -- 10
 ```
 
-But why build a script via a shebang each time you use it when you can simply make it a command as Rust intended? See `As an executable` below.
+This is useful, but a shebang will still mean building the script each time you use it.
+Instead, you can simply compile it to a fast Rust command with the --executable (-x) option. See `As an executable` below.
 
 ### * As a REPL (Read-Evaluate-Print Loop):
 

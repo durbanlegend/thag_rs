@@ -3,7 +3,7 @@
 crossterm = "0.27.0"
 log = "0.4.21"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-thag_rs = "0.1.2"
+thag_rs = "0.1.3"
 
 strum = { version = "0.26.2", features = ["derive"] }
 supports-color= "3.0.0"

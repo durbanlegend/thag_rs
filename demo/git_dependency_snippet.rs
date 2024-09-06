@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = "0.1.2"
+thag_rs = "0.1.3"
 */
 
 /// `demo/git_dependency.rs` done as a snippet, just because.

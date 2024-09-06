@@ -2,7 +2,7 @@
 [dependencies]
 bitflags = "2.5.0"
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
-thag_rs = "0.1.2"
+thag_rs = "0.1.3"
 */
 
 /// A prototype of the cmd_args module of thag_rs itself.
@@ -260,7 +260,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         let formatted = proc_flags.to_string();
         let parsed = formatted
             .parse::<ProcFlags>()
-            .map_err(|e| ThagError::FromStr(e.to_string()))?;
+            .map_err(|e| ThagError::FromStr(e.to_string().into()))?;
 
         assert_eq!(proc_flags, parsed);
 

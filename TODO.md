@@ -1,26 +1,15 @@
 # TODO List
 
 ## High Priority
-- [ ]  Clean up demos
-- [ ]  Document public APIs
 
 ## Medium Priority
 - [ ]  Add additional popular crates
 - [ ]  More unit and integration tests
-- [ ]  Document where demo subdirectory is and how to install it
 - [ ]  Simple demo https server
-- [ ]  >>> Decide how to distribute demo readme without demo dir, maybe in main under another name.
-- [ ]  Add download demos option, see prototype demo/install_demo_gpt.rs
-- [ ]  Add unquote string return values option and add to config.toml.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
 - [ ]  Add FAQ
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
-- [ ]  Add an option --config / -C to edit the config and change current --cargo / -C to --toml / -T
-        or --manifest / -M
-        Include an option to include or exclude quotes on returned strings.
-        Maybe make it a command-line option too.
-        Add option to strip symbols (default true?). LTO?
 - [ ]  Config option for formatting main
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  -vv for debug mode
@@ -32,8 +21,6 @@
 - [ ]  grep png README.md | cargo run --features=debug-logs -- -v -B 'use regex::Regex; let re = Regex::new(r"\w+.png").unwrap();' -l 'println!("{}", re.find(&line).unwrap().as_str())' | sort
        grep -Eo '[a-zA-Z0-9_]+\.png' README.md
        https://download-directory.github.io/?url=https://github.com/durbanlegend/thag_rs/tree/14d31159c42249f6aa0486f500de209438b06b8f/demo
-https://stackoverflow.com/questions/7106012/download-a-single-folder-or-directory-from-a-github-repository
-https://test.ssgithub.com/?url=https://github.com/durbanlegend/thag_rs/tree/master/demo
 - [ ]  Identify new functions requiring unit tests.
 - [ ]  Document:
         /*[toml]
@@ -44,7 +31,6 @@ https://test.ssgithub.com/?url=https://github.com/durbanlegend/thag_rs/tree/mast
         name = "dethag"
         path = "/Users/donf/projects/thag_rs/demo/dethagomizer.rs"
         */
-
 
 
 ## Low Priority
@@ -58,4 +44,3 @@ https://test.ssgithub.com/?url=https://github.com/durbanlegend/thag_rs/tree/mast
 ## Ideas / Future Enhancements
 - [ ]  Consider supporting alternative TOML embedding keywords so we can run demo/regex_capture_toml.rs and demo/parse_script.rs_toml.rs.
 - [ ]  Option to cat files before delete.
-- [ ]  WASM - is there a worthwhile one? - maybe Leptos if it doesn't need Node.js.

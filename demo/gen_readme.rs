@@ -2,7 +2,7 @@
 [dependencies]
 lazy_static = "1.4.0"
 regex = "1.10.5"
-thag_rs = "0.1.2"
+thag_rs = "0.1.3"
 */
 
 /// This is the actual script used to collect demo script metadata and generate

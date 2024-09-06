@@ -14,7 +14,7 @@
 It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while being as simple and convenient to use as possible.
 It also supports scripting via shebangs, building executables from your snippets, a loop-filter mode and plain or edited standard input.
 
-If you import basic dependencies via explicit `use` statements, `thag_rs` will resolve them for you with a Cargo search.
+If you import dependencies via explicit `use` statements, `thag_rs` will usually be able to resolve them for you automatically by doing a Cargo search and inserting a basic `<dependency> = "<current version>"` entry in the Cargo.toml file it generates behind the scenes.
 Alternatively, you can embed any valid Cargo manifest info, such as features, specific versions, private repos, optimisation levels etc., in a "toml block" comment.
 
 `thag_rs` includes a demo library of over 180 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.

@@ -2,7 +2,7 @@
 [dependencies]
 bitflags = "2.5.0"
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
-thag_rs = "0.1.3"
+thag_rs = "0.1.4"
 */
 
 /// A prototype of the cmd_args module of thag_rs itself.

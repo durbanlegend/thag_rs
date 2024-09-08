@@ -12,11 +12,12 @@ use crate::ThagError;
 #[derive(Clone, Copy, Debug, Default, Deserialize, EnumString, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
 pub enum Verbosity {
-    Quieter,
-    Quiet,
+    Quieter = 0,
+    Quiet = 1,
     #[default]
-    Normal,
-    Verbose,
+    Normal = 2,
+    Verbose = 3,
+    Debug = 4,
 }
 
 /// Define the Logger.

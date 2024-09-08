@@ -134,7 +134,7 @@ Alternatively:
 ```bash
 thag -l 'format!("{i}.\t{line}")' < demo/hello.rs               # Long form: --loop
 ```
-For a true filter that you can pipe to another process, you can use `-qq` (or `--quiet --quiet`) to suppress all non-error output.
+For a true filter that you can pipe to another process, use `-qq` (or `--quiet --quiet`) to suppress all non-error output.
 
 Loop mode also accepts the following optional arguments supplying surrounding code, along the lines of AWK:
 
@@ -145,10 +145,10 @@ Loop mode also accepts the following optional arguments supplying surrounding co
 ```
 
 Note: This is a Rust issue not a `thag_rs` issue, but in general if you are planning to pipe Rust output, it's probably a good idea to use `writeln!(io::stdout())`,
-rather than `println!`, since at time of writing `println!` panics if it encounters an error, and this
+rather than `println!`, since (as at edition 2021) `println!` panics if it encounters an error, and this
 includes the broken pipe error from a head command. See `https://github.com/BurntSushi/advent-of-code/issues/17`.
 For an example of tolerating a broken pipe, see
-demo/thag_from_rust_script.rs.
+`demo/thag_from_rust_script.rs`.
 
 ### * As an executable:
 The --executable (-x) option builds your script in release mode and moves it to ~/.cargo/bin/, which is recommended to be in your path.
@@ -290,7 +290,7 @@ thag -e "$(cat demo/fizz_buzz_gpt.rs)"
 The `--expr` flag will not only evaluate an expression, it will also accept a valid Rust program or set of statements.
 The different ways `thag` accepts code are as far as possible "orthagonal" to the common way it processes them.
 
-#### Run a script in quiet mode but show timings
+### Running a script in quiet mode but with timings
 ```bash
 thag -tq demo/fizz_buzz_gpt.rs
 Completed generation in 0.276s

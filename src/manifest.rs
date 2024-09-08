@@ -299,5 +299,4 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         };
         rs_dep_map.insert(dep_name, dep);
     }
-    debug_log!("rs_dep_map (after inferred) = {rs_dep_map:#?}");
 }

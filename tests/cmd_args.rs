@@ -49,7 +49,7 @@ fn test_get_proc_flags() {
         .contains(ProcFlags::EXPR & ProcFlags::GENERATE & ProcFlags::BUILD & ProcFlags::RUN));
     assert!(!proc_flags.contains(
         ProcFlags::FORCE
-            | ProcFlags::TIMINGS
+            | ProcFlags::DEBUG
             | ProcFlags::VERBOSE
             | ProcFlags::TIMINGS
             | ProcFlags::REPL

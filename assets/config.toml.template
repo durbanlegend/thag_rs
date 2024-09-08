@@ -1,6 +1,6 @@
 [logging]
 # User's preferred default verbosity. Overrides system default of "normal".
-# Valid values are "verbose", "normal", "quiet" and "quieter".
+# Valid values are "debug", "verbose", "normal", "quiet" and "quieter".
 default_verbosity = "normal"
 
 [colors]

@@ -67,6 +67,8 @@ pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
 
     set_verbosity(args)?;
 
+    dbg!();
+
     if args.config {
         config::edit(&RealContext::new())?;
         return Ok(());
@@ -111,11 +113,13 @@ pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
 fn set_verbosity(args: &Cli) -> Result<(), ThagError> {
     profile_fn!(set_verbosity);
 
-    let verbosity = if args.verbose {
+    let verbosity = if args.verbose >= 2 {
+        Verbosity::Debug
+    } else if args.verbose == 1 {
         Verbosity::Verbose
     } else if args.quiet == 1 {
         Verbosity::Quiet
-    } else if args.quiet == 2 {
+    } else if args.quiet >= 2 {
         Verbosity::Quieter
     } else if args.normal {
         Verbosity::Normal

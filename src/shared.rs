@@ -311,7 +311,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
     let msg = format!("{process} in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
     debug_log!("{msg}");
-    if proc_flags.intersects(ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
+    if proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
         log!(Verbosity::Quieter, "{msg}");
     }
 }

@@ -9,3 +9,4 @@ hist_debug.json
 *.svg
 flames/firestorm.html
 profile.json
+.repl.history

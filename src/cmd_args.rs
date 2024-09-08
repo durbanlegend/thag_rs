@@ -1,6 +1,6 @@
+use crate::debug_log;
 use crate::RS_SUFFIX;
 use crate::{errors::ThagError, MAYBE_CONFIG};
-use crate::debug_log;
 
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
@@ -88,14 +88,14 @@ pub struct Cli {
     /// Display timings
     #[arg(short, long)]
     pub timings: bool,
-    /// Set verbose mode
-    #[arg(short, long)]
-    pub verbose: bool,
+    /// Set verbose mode, double up for debug mode
+    #[arg(short, long, action = clap::ArgAction::Count)]
+    pub verbose: u8,
     /// Set normal verbosity, only needed to override config value
     #[arg(short = 'N', long = "normal verbosity")]
     pub normal: bool,
     /// Suppress unnecessary output, double up to show only errors
-    #[arg(short, long, action = clap::ArgAction::Count, conflicts_with("verbose"))]
+    #[arg(short, long, action = clap::ArgAction::Count)]
     pub quiet: u8,
     /// Strip double quotes from string result of expression (true/false). Default: config value / false.
     #[arg(
@@ -162,12 +162,13 @@ bitflags! {
         const LOOP = 2048;
         const MULTI = 4096;
         const TIMINGS = 8192;
-        const VERBOSE = 16384;
-        const NORMAL = 32768;
-        const QUIET = 65536;
-        const QUIETER = 131_072;
-        const UNQUOTE = 262_144;
-        const CONFIG = 524_288;
+        const DEBUG = 16384;
+        const VERBOSE = 32768;
+        const NORMAL = 65536;
+        const QUIET = 131_072;
+        const QUIETER = 262_144;
+        const UNQUOTE = 524_288;
+        const CONFIG = 1_048_576;
     }
 }
 
@@ -219,7 +220,8 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
         proc_flags.set(ProcFlags::QUIET, args.quiet == 1);
         proc_flags.set(ProcFlags::QUIETER, args.quiet >= 2);
         proc_flags.set(ProcFlags::MULTI, args.multimain);
-        proc_flags.set(ProcFlags::VERBOSE, args.verbose);
+        proc_flags.set(ProcFlags::VERBOSE, args.verbose == 1);
+        proc_flags.set(ProcFlags::DEBUG, args.verbose >= 2);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
         proc_flags.set(ProcFlags::NORUN, args.norun | args.check | args.executable);
         proc_flags.set(ProcFlags::NORMAL, args.normal);
@@ -236,19 +238,28 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
         proc_flags.set(ProcFlags::LOOP, is_loop);
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
 
-        let unquote = args.unquote.map_or_else(||  (*MAYBE_CONFIG).as_ref().map_or_else(|| {
-                debug_log!("Found nothing, returning default of false");
-                false
-            }, |config| {
-                debug_log!(
-                    "MAYBE_CONFIG={:?}, returning config.misc.unquote={}",
-                    MAYBE_CONFIG, config.misc.unquote
-                );
-                config.misc.unquote
-            }), |unquote| {
+        let unquote = args.unquote.map_or_else(
+            || {
+                (*MAYBE_CONFIG).as_ref().map_or_else(
+                    || {
+                        debug_log!("Found nothing, returning default of false");
+                        false
+                    },
+                    |config| {
+                        debug_log!(
+                            "MAYBE_CONFIG={:?}, returning config.misc.unquote={}",
+                            MAYBE_CONFIG,
+                            config.misc.unquote
+                        );
+                        config.misc.unquote
+                    },
+                )
+            },
+            |unquote| {
                 debug_log!("args.unquote={:?}", args.unquote);
                 unquote
-            });
+            },
+        );
         proc_flags.set(ProcFlags::UNQUOTE, unquote);
 
         proc_flags.set(ProcFlags::CONFIG, args.config);

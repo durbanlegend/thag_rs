@@ -642,7 +642,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     let start_ast = Instant::now();
     #[allow(clippy::option_if_let_else)]
     if let Ok(tree) = syn::parse_file(source_code) {
-        // Highlight the unexpected
+        #[cfg(debug_assertions)]
         log!(
             Verbosity::Quiet,
             "{}",
@@ -654,6 +654,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     } else if let Ok(tree) = extract_ast_expr(source_code) {
         #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
+        #[cfg(debug_assertions)]
         log!(
             Verbosity::Quiet,
             "{}",

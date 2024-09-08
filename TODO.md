@@ -12,7 +12,6 @@
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Config option for formatting main
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
-- [ ]  -vv for debug mode
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  Debug Firestorm double invocation.
 - [ ]  Test [profile.dev] optimisation level

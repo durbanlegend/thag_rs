@@ -1,6 +1,6 @@
 #![allow(clippy::implicit_return)]
 use crate::config::{self};
-#[cfg(debug_assertions)]
+
 use crate::debug_log;
 use {crate::log, crate::logging::Verbosity};
 
@@ -21,7 +21,7 @@ use termbg::Theme;
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
         if std::env::var("TEST_ENV").is_ok() {
-            #[cfg(debug_assertions)]
+
             debug_log!(
                 "Avoiding supports_color for testing"
             );
@@ -38,7 +38,7 @@ lazy_static! {
     #[derive(Debug)]
     pub static ref TERM_THEME: TermTheme = {
         if std::env::var("TEST_ENV").is_ok() {
-            #[cfg(debug_assertions)]
+
             debug_log!(
                 "Avoiding termbg for testing"
             );
@@ -52,12 +52,12 @@ lazy_static! {
             TermTheme::Dark }
 
             #[cfg(not(target_os = "windows"))] {
-            #[cfg(debug_assertions)]
+
             debug_log!(
                 "About to call termbg"
             );
             let timeout = std::time::Duration::from_millis(100);
-            // #[cfg(debug_assertions)]
+
             // debug_log!("Check terminal background color");
             let theme = termbg::theme(timeout);
             // shared::clear_screen();
@@ -104,7 +104,6 @@ fn get_color_level() -> Option<ColorSupport> {
 
 #[cfg(not(target_os = "windows"))]
 fn get_color_level() -> Option<ColorSupport> {
-    #[cfg(debug_assertions)]
     debug_log!("About to call supports_color");
     let color_level = supports_color::on(Stream::Stdout);
     color_level.map(|color_level| {
@@ -386,7 +385,7 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> Style {
             "{}_{}_{}",
             &color_qual, &theme_qual, &msg_level_qual
         ));
-        #[cfg(debug_assertions)]
+
         debug_log!(
             "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
         );
@@ -402,7 +401,7 @@ pub fn main() {
         #[allow(unused_variables)]
         let term = termbg::terminal();
         // shared::clear_screen();
-        #[cfg(debug_assertions)]
+
         debug_log!("  Term : {term:?}");
     }
 

@@ -44,7 +44,10 @@ impl History {
     }
 
     fn load_from_file(path: &PathBuf) -> Self {
-        fs::read_to_string(path).map_or_else(|_| Self::default(), |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()))
+        fs::read_to_string(path).map_or_else(
+            |_| Self::default(),
+            |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
+        )
     }
 
     fn save_to_file(&self, path: &PathBuf) {
@@ -111,7 +114,6 @@ impl EventReader for CrosstermEventReader {
     }
 }
 
-#[cfg(debug_assertions)]
 #[allow(dead_code)]
 fn main() -> Result<(), ThagError> {
     let event_reader = CrosstermEventReader;

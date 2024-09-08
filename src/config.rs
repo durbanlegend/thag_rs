@@ -10,7 +10,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use crate::colors::{ColorSupport, TermTheme};
-#[cfg(debug_assertions)]
+
 use crate::debug_log;
 use crate::logging::Verbosity;
 use crate::ThagError;
@@ -19,7 +19,7 @@ lazy_static! {
     #[derive(Debug)]
     pub static ref MAYBE_CONFIG: Option<Config> = {
         let maybe_config = load(&RealContext::new());
-        #[cfg(debug_assertions)]
+
         if let Some(ref config) = maybe_config {
                 debug_log!("Loaded config: {config:?}");
                 debug_log!(
@@ -128,7 +128,7 @@ impl Context for RealContext {
 pub fn load(context: &dyn Context) -> Option<Config> {
     profile_fn!(load);
     let config_path = context.get_config_path();
-    #[cfg(debug_assertions)]
+
     debug_log!("config_path={config_path:?}");
 
     if config_path.exists() {
@@ -149,7 +149,7 @@ pub fn load(context: &dyn Context) -> Option<Config> {
 pub fn edit(context: &dyn Context) -> Result<Option<String>, ThagError> {
     profile_fn!(edit);
     let config_path = context.get_config_path();
-    #[cfg(debug_assertions)]
+
     debug_log!("config_path={config_path:?}");
 
     let exists = config_path.exists();
@@ -184,11 +184,11 @@ pub fn edit(context: &dyn Context) -> Result<Option<String>, ThagError> {
 }
 
 /// Main function for use by testing or the script runner.
-#[cfg(debug_assertions)]
+
 #[allow(dead_code)]
 fn main() {
     let maybe_config = load(&RealContext::new());
-    #[cfg(debug_assertions)]
+
     if let Some(config) = maybe_config {
         debug_log!("Loaded config: {config:?}");
         debug_log!(

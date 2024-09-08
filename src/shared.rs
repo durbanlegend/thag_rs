@@ -334,17 +334,22 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
 /// Control debug logging
 #[macro_export]
 macro_rules! debug_log {
-    // When the feature is enabled, pass everything to log::debug!
     ($($arg:tt)*) => {
+        // If the `debug_logs` feature is enabled, always log
         #[cfg(feature = "debug-logs")]
         {
             log::debug!($($arg)*);
         }
 
+        // In all builds, log if runtime debug logging is enabled (e.g., via `-vv`)
         #[cfg(not(feature = "debug-logs"))]
         {
-            // Drop the arguments to avoid unused variable warnings
-            let _ = format_args!($($arg)*);
+            if $crate::logging::is_debug_logging_enabled() {
+                log::debug!($($arg)*);
+            } else {
+                // Avoid unused variable warnings in release mode if logging isn't enabled
+                let _ = format_args!($($arg)*);
+            }
         }
     };
 }

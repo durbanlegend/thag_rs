@@ -7,16 +7,13 @@ use crate::colors::{nu_resolve_style, MessageLevel};
 use crate::config::{self, RealContext, MAYBE_CONFIG};
 use crate::errors::ThagError;
 use crate::log;
-use crate::logging;
-use crate::logging::Verbosity;
+use crate::logging::{is_debug_logging_enabled, Verbosity};
 use crate::manifest;
 use crate::repl::run_repl;
-#[cfg(debug_assertions)]
 use crate::shared::debug_timings;
 use crate::shared::{display_timings, Ast, BuildState};
 use crate::stdin::CrosstermEventReader;
 use crate::stdin::{edit, read};
-#[cfg(debug_assertions)]
 use crate::VERSION;
 use crate::{
     cmd_args::{get_proc_flags, validate_args, Cli, ProcFlags},
@@ -28,11 +25,8 @@ use crate::{
 };
 
 use cargo_toml::Manifest;
-#[cfg(debug_assertions)]
-use env_logger::{Builder, Env, WriteStyle};
 use firestorm::{profile_fn, profile_section};
 use lazy_static::lazy_static;
-#[cfg(debug_assertions)]
 use log::{log_enabled, Level::Debug};
 use regex::Regex;
 use std::string::ToString;
@@ -55,19 +49,14 @@ pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
     // profile_fn!(execute);
 
     let start = Instant::now();
-    #[cfg(debug_assertions)]
-    configure_log();
 
     let proc_flags = get_proc_flags(args)?;
 
-    #[cfg(debug_assertions)]
     if log_enabled!(Debug) {
         log_init_setup(start, args, &proc_flags);
     }
 
-    set_verbosity(args)?;
-
-    dbg!();
+    // set_verbosity(args)?;
 
     if args.config {
         config::edit(&RealContext::new())?;
@@ -110,28 +99,6 @@ pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
 }
 
 #[inline]
-fn set_verbosity(args: &Cli) -> Result<(), ThagError> {
-    profile_fn!(set_verbosity);
-
-    let verbosity = if args.verbose >= 2 {
-        Verbosity::Debug
-    } else if args.verbose == 1 {
-        Verbosity::Verbose
-    } else if args.quiet == 1 {
-        Verbosity::Quiet
-    } else if args.quiet >= 2 {
-        Verbosity::Quieter
-    } else if args.normal {
-        Verbosity::Normal
-    } else if let Some(config) = &*MAYBE_CONFIG {
-        config.logging.default_verbosity
-    } else {
-        Verbosity::Normal
-    };
-    logging::set_global_verbosity(verbosity)
-}
-
-#[inline]
 fn resolve_script_dir_path(
     is_repl: bool,
     args: &Cli,
@@ -158,7 +125,6 @@ fn resolve_script_dir_path(
                 .to_path_buf()
         }
     } else if is_dynamic {
-        #[cfg(debug_assertions)]
         debug_log!("is_dynamic={is_dynamic}");
         TMPDIR.join(DYNAMIC_SUBDIR)
     } else {
@@ -227,7 +193,6 @@ fn process(
 
     let mut build_state = BuildState::pre_configure(proc_flags, args, script_state)?;
     if is_repl {
-        #[cfg(debug_assertions)]
         debug_log!("build_state.source_path={:?}", build_state.source_path);
         run_repl(args, proc_flags, &mut build_state, start)
     } else if is_dynamic {
@@ -244,19 +209,18 @@ fn process(
             };
             build_loop(args, filter)
         } else if is_edit {
-            #[cfg(debug_assertions)]
             debug_log!("About to call stdin::edit()");
             let event_reader = CrosstermEventReader;
             let vec = edit(&event_reader)?;
-            #[cfg(debug_assertions)]
+
             debug_log!("vec={vec:#?}");
             vec.join("\n")
         } else {
             assert!(is_stdin);
-            #[cfg(debug_assertions)]
+
             debug_log!("About to call stdin::read())");
             let str = read()? + "\n";
-            #[cfg(debug_assertions)]
+
             debug_log!("str={str}");
             str
         };
@@ -275,7 +239,6 @@ fn process(
 
         let expr_ast = extract_ast_expr(&rs_source)?;
 
-        #[cfg(debug_assertions)]
         debug_log!("expr_ast={expr_ast:#?}");
         process_expr(
             expr_ast,
@@ -290,11 +253,9 @@ fn process(
     }
 }
 
-#[cfg(debug_assertions)]
 fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
     profile_fn!(log_init_setup);
     debug_log_config();
-    #[cfg(debug_assertions)]
     debug_timings(&start, "Set up processing flags");
     debug_log!("proc_flags={proc_flags:#?}");
 
@@ -306,25 +267,11 @@ fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
     }
 }
 
-#[cfg(debug_assertions)]
 fn debug_log_config() {
     profile_fn!(debug_log_config);
     debug_log!("PACKAGE_NAME={PACKAGE_NAME}");
     debug_log!("VERSION={VERSION}");
     debug_log!("REPL_SUBDIR={REPL_SUBDIR}");
-}
-
-// Configure log level
-#[cfg(debug_assertions)]
-fn configure_log() {
-    profile_fn!(configure_log);
-    let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
-    let mut binding = Builder::new();
-    let builder = binding.parse_env(env);
-    builder.write_style(WriteStyle::Always);
-    let _ = builder.try_init();
-
-    // Builder::new().filter_level(log::LevelFilter::Debug).init();
 }
 
 /// Generate, build and run the script or expression.
@@ -353,14 +300,12 @@ pub fn gen_build_run(
         // Strip off any shebang: it may have got us here but we don't want or need it
         // in the gen_build_run process.
         rs_source = if rs_source.starts_with("#!") && !rs_source.starts_with("#![") {
-            // #[cfg(debug_assertions)]
             // debug_log!("rs_source (before)={rs_source}");
             let split_once = rs_source.split_once('\n');
             #[allow(unused_variables)]
             let (shebang, rust_code) = split_once.ok_or("Failed to strip shebang")?;
-            #[cfg(debug_assertions)]
+
             debug_log!("Successfully stripped shebang {shebang}");
-            // #[cfg(debug_assertions)]
             // debug_log!("rs_source (after)={rust_code}");
             rust_code.to_string()
         } else {
@@ -409,15 +354,14 @@ pub fn gen_build_run(
         );
 
         let rs_manifest: Manifest = { extract_manifest(&rs_source, start_parsing_rs) }?;
-        // #[cfg(debug_assertions)]
+
         // debug_log!("rs_manifest={rs_manifest:#?}");
-        #[cfg(debug_assertions)]
+
         debug_log!("rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
             build_state.rs_manifest = Some(rs_manifest);
         }
 
-        // #[cfg(debug_assertions)]
         // debug_log!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
@@ -455,14 +399,12 @@ pub fn gen_build_run(
                     Ast::File(_) => true, // Trivially true since we're here because there's no main
                 };
                 if returns_unit {
-                    #[cfg(debug_assertions)]
                     debug_log!("Option B: returns unit type");
                     quote::quote!(
                         #syntax_tree_ref
                     )
                     .to_string()
                 } else {
-                    #[cfg(debug_assertions)]
                     debug_log!("Option A: returns a substantive type");
                     debug_log!(
                         "args.unquote={:?}, MAYBE_CONFIG={:?}",
@@ -547,8 +489,7 @@ pub fn generate(
     // profile_fn!(generate);
     let start_gen = Instant::now();
 
-    #[cfg(debug_assertions)]
-    {
+    if is_debug_logging_enabled() {
         debug_log!("In generate, proc_flags={proc_flags}");
         debug_log!(
             "build_state.target_dir_path={:#?}",
@@ -574,7 +515,6 @@ pub fn generate(
         write_source(&target_rs_path, &rs_source)?;
     }
 
-    // #[cfg(debug_assertions)]
     // debug_log!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
     if !Path::try_exists(&build_state.cargo_toml_path)? {
         OpenOptions::new()
@@ -582,7 +522,7 @@ pub fn generate(
             .create_new(true)
             .open(&build_state.cargo_toml_path)?;
     }
-    // #[cfg(debug_assertions)]
+
     // debug_log!("cargo_toml: {cargo_toml:?}");
 
     let manifest = &build_state
@@ -591,7 +531,6 @@ pub fn generate(
         .ok_or("Could not unwrap BuildState.cargo_manifest")?;
     let cargo_manifest_str: &str = &toml::to_string(manifest)?;
 
-    #[cfg(debug_assertions)]
     debug_log!(
         "cargo_manifest_str: {}",
         code_utils::disentangle(cargo_manifest_str)
@@ -599,8 +538,7 @@ pub fn generate(
 
     let mut toml_file = fs::File::create(&build_state.cargo_toml_path)?;
     toml_file.write_all(cargo_manifest_str.as_bytes())?;
-    // #[cfg(debug_assertions)]
-    // {
+    // if is_debug_logging_enabled() {
     //     debug_log!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
     //     debug_log!("##### Cargo.toml generation succeeded");
     // }
@@ -636,7 +574,6 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
     let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
     let check = proc_flags.contains(ProcFlags::CHECK);
 
-    #[cfg(debug_assertions)]
     debug_log!("BBBBBBBB In build");
 
     let cargo_toml_path_str = code_utils::path_to_str(&build_state.cargo_toml_path)?;
@@ -681,7 +618,6 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
     let exit_status = output.wait_with_output()?;
 
     if exit_status.status.success() {
-        #[cfg(debug_assertions)]
         debug_log!("Build succeeded");
         if executable {
             deploy_executable(build_state)?;
@@ -775,20 +711,18 @@ pub fn run(
     // profile_fn!(run);
 
     let start_run = Instant::now();
-    #[cfg(debug_assertions)]
+
     debug_log!("RRRRRRRR In run");
 
-    // #[cfg(debug_assertions)]
     // debug_log!("BuildState={build_state:#?}");
     let target_path: &Path = build_state.target_path.as_ref();
-    // #[cfg(debug_assertions)]
+
     // debug_log!("Absolute path of generated program: {absolute_path:?}");
 
     let mut run_command = Command::new(format!("{}", target_path.display()));
 
     run_command.args(args);
 
-    // #[cfg(debug_assertions)]
     debug_log!("Run command is {run_command:?}");
 
     // Sandwich command between two lines of dashes in the terminal
@@ -808,7 +742,6 @@ pub fn run(
         nu_ansi_term::Color::Yellow.paint(&dash_line)
     );
 
-    // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");
 
     display_timings(&start_run, "Completed run", proc_flags);

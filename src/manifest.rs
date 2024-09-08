@@ -80,20 +80,18 @@ See below for how to avoid this and speed up future builds.
     } else {
         #[allow(unused_variables)]
         let error_msg = String::from_utf8_lossy(&search_output.stderr);
-        #[cfg(debug_assertions)]
+
         error_msg.lines().for_each(|line| {
             debug_log!("{line}");
         });
         return Err(format!("Cargo search failed for [{dep_crate}]").into());
     };
 
-    #[cfg(debug_assertions)]
     debug_log!("first_line={first_line}");
     let result = capture_dep(&first_line);
     let (name, version) = match result {
         Ok((name, version)) => {
             if name != dep_crate && name.replace('-', "_") != dep_crate {
-                #[cfg(debug_assertions)]
                 debug_log!("First line of cargo search for crate {dep_crate} found non-matching crate {name}");
                 return Err(format!(
                     "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"
@@ -118,7 +116,6 @@ as shown if you don't need special features:
             (name, version)
         }
         Err(err) => {
-            #[cfg(debug_assertions)]
             debug_log!("Failure! err={err}");
             return Err(err);
         }
@@ -137,7 +134,7 @@ as shown if you don't need special features:
 /// Will panic if the regular expression is malformed.
 pub fn capture_dep(first_line: &str) -> Result<(String, String), ThagError> {
     profile_fn!(capture_dep);
-    #[cfg(debug_assertions)]
+
     debug_log!("first_line={first_line}");
     lazy_static! {
         static ref RE: Regex =
@@ -240,7 +237,6 @@ pub fn merge(
         .as_ref()
         .map_or_else(|| infer_deps_from_source(rs_source), infer_deps_from_ast);
 
-    #[cfg(debug_assertions)]
     debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
 
     let merged_manifest = if let Some(ref mut rs_manifest) = build_state.rs_manifest {
@@ -250,7 +246,7 @@ pub fn merge(
                 rs_manifest.dependencies
             );
             search_deps(rs_inferred_deps, &mut rs_manifest.dependencies);
-            #[cfg(debug_assertions)]
+
             debug_log!(
                 "rs_dep_map (after inferred) {:#?}",
                 rs_manifest.dependencies

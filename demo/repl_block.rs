@@ -26,23 +26,23 @@ use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 )] // Disable automatic help subcommand and flag
 #[strum(serialize_all = "kebab-case")]
 enum ReplCommand {
-    /// Show the REPL banner
+    // Show the REPL banner
     Banner,
-    /// Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
+    // Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
     Edit,
-    /// Edit the generated Cargo.toml
+    // Edit the generated Cargo.toml
     Toml,
-    /// Attempt to build and run the Rust expression
+    // Attempt to build and run the Rust expression
     Run,
-    /// Delete all temporary files for this eval (see list)
+    // Delete all temporary files for this eval (see list)
     Delete,
-    /// List temporary files for this eval
+    // List temporary files for this eval
     List,
-    /// Edit history
+    // Edit history
     History,
-    /// Show help information
+    // Show help information
     Help,
-    /// Show key bindings
+    // Show key bindings
     Keys,
 }
 
@@ -165,7 +165,7 @@ fn main() -> ReplBlockResult<()> {
     Ok(())
 }
 
-/// Parse the current line. Borrowed from clap-repl crate.
+// Parse the current line. Borrowed from clap-repl crate.
 #[must_use]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
     lazy_static! {
@@ -179,7 +179,7 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
     (command, args)
 }
 
-/// Display the REPL banner.
+// Display the REPL banner.
 pub fn disp_repl_banner(cmd_list: &str) {
     println!(r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#);
 

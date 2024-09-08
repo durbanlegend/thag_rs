@@ -28,7 +28,5 @@ pub fn main() -> Result<(), ThagError> {
         execute(&mut args.borrow_mut())?; // Use borrow_mut to get a mutable reference
     }
 
-    // Example of debug logging that will respect both compile-time and runtime flags
-    debug_log!("This is another debug log message.");
     Ok(())
 }

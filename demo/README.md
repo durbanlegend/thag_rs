@@ -2408,6 +2408,20 @@ which will give identical output to the above.
 
 ---
 
+### Script: repl_block.rs
+
+**Description:**  Early proof of concept of using a different line editor for repl.rs.
+
+**Purpose:** Exploration
+
+**Crates:** `clap`, `lazy_static`, `regex`, `repl_block`, `strum`
+
+**Type:** Program
+
+**Link:** [repl_block.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs)
+
+---
+
 ### Script: rug_arbitrary_precision_nums.rs
 
 **Description:**  Published example from the `rug` crate, showcasing the use of the crate. I added the

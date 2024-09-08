@@ -185,6 +185,10 @@ Hopefully the help screen is self-explanatory:
 
 You can enter `thag` arguments and options in any order, as long as you separate them from any script arguments with a `--` separator.
 
+Note that you can enable debug logging by specifying the `--verbose` option twice, e.g. `-vv`. For this you must also set the environment variable `RUST_LOG=thag=debug`.
+
+## Overview
+
 ### * Getting started:
 
 You have the choice of installing `thag_rs` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run -- `.
@@ -198,15 +202,13 @@ or choose an appropriate installer for your environment from the Github releases
 You can also download the starter kit of demo scripts as `demo.zip`
 from the same page.
 
-* Cloning gives you immediate access to the demo scripts library and the opportunity to make local changes or a fork. You can also use the flag `--features=debug-logs` with the environment variable `RUST_LOG=thag_rs=debug` to get debug logging.
-
-## Overview
+* Cloning gives you immediate access to the demo scripts library and the opportunity to make local changes or a fork.
 
 `thag_rs` uses Cargo, `syn`, `quote` and `cargo_toml` to analyse and wrap well-formed snippets and expressions into working programs. Well-formed input programs are identified by having a valid `fn main` (or more than one - see below) and passed unchanged to `cargo build`.
 
 `thag_rs` uses `syn` to parse valid code into an abstract syntax tree (AST). Among other benefits this prevents it being fooled by code embedded in comments or string literals, which is the curse of regular expressions and string parsing. `thag_rs` then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code so as to generate a `Cargo.toml`. It filters these to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
 
-Well-formedness is determined by counting any occurrences of a `main` function in the AST. The lack of a `fn main` signifies a snippet or expression, whereas more than one `fn main` is sometimes valid but must be actively flagged as such by the user with the `--multimain (-m)` option.
+Well-formedness is determined by counting occurrences of a `main` function in the AST. The absence of a `fn main` signifies a snippet or expression, whereas more than one `fn main` may be valid but must be actively confirmed as such by the user with the `--multimain (-m)` option.
 
 If your code does not successfully parse into an AST because of a coding error, `thag_rs` will fall back to using source code analysis to prepare your code for the Rust compiler, which can then show you error messages to help you find the issues.
 

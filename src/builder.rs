@@ -6,7 +6,6 @@ use crate::code_utils::{
 use crate::colors::{nu_resolve_style, MessageLevel};
 use crate::config::{self, RealContext, MAYBE_CONFIG};
 use crate::errors::ThagError;
-use crate::log;
 use crate::logging::{is_debug_logging_enabled, Verbosity};
 use crate::manifest;
 use crate::repl::run_repl;
@@ -23,6 +22,7 @@ use crate::{
     debug_log, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
     TEMP_SCRIPT_NAME, TMPDIR,
 };
+use crate::{log, stdin};
 
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
@@ -711,18 +711,20 @@ pub fn run(
     // profile_fn!(run);
 
     let start_run = Instant::now();
-
+    #[cfg(debug_assertions)]
     debug_log!("RRRRRRRR In run");
 
+    // #[cfg(debug_assertions)]
     // debug_log!("BuildState={build_state:#?}");
     let target_path: &Path = build_state.target_path.as_ref();
-
+    // #[cfg(debug_assertions)]
     // debug_log!("Absolute path of generated program: {absolute_path:?}");
 
     let mut run_command = Command::new(format!("{}", target_path.display()));
 
     run_command.args(args);
 
+    // #[cfg(debug_assertions)]
     debug_log!("Run command is {run_command:?}");
 
     // Sandwich command between two lines of dashes in the terminal
@@ -742,6 +744,7 @@ pub fn run(
         nu_ansi_term::Color::Yellow.paint(&dash_line)
     );
 
+    // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");
 
     display_timings(&start_run, "Completed run", proc_flags);

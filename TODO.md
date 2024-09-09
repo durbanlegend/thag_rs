@@ -10,7 +10,8 @@
 - [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
 - [ ]  Add FAQ
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
-- [ ]  Config option for formatting main
+- [ ]  Config option for formatting main?
+- [ ]  Config option for stdin -d highlighting preference
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  Debug Firestorm double invocation.

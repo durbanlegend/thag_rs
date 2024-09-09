@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 
 use thag_rs::logging::{configure_log, set_verbosity};
-use thag_rs::{debug_log, debug_timings, ThagError};
+use thag_rs::{debug_timings, ThagError};
 use thag_rs::{execute, get_args};
 
 use std::cell::RefCell;

@@ -1,8 +1,14 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::errors::ThagError;
-use crate::log;
 use crate::logging::Verbosity;
+use crate::repl::{disp_repl_banner, parse_line};
+use crate::{
+    code_utils, extract_ast_expr, extract_manifest, log, nu_color_println, nu_resolve_style,
+    BuildState, Cli, MessageLevel, ProcFlags,
+};
 
+use clap::{CommandFactory, Parser};
+use crokey::{crossterm, key, KeyCombinationFormat};
 use crossterm::event::{
     DisableMouseCapture,
     EnableBracketedPaste,
@@ -11,7 +17,7 @@ use crossterm::event::{
     // KeyCode, KeyEvent, KeyModifiers,
 };
 use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+    self, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use lazy_static::lazy_static;
 use mockall::{automock, predicate::str};
@@ -22,12 +28,31 @@ use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::widgets::block::{Block, Title};
 use ratatui::widgets::{Borders, Clear, Paragraph};
 use ratatui::Terminal;
+// use reedline::{
+//     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
+//     EditCommand, Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt,
+//     PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent,
+//     ReedlineMenu, Signal,
+// };
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::fs::OpenOptions;
 use std::io::{self, BufRead, IsTerminal};
+use std::str::FromStr;
+use std::time::Instant;
 use std::{collections::VecDeque, fs, path::PathBuf};
-use tui_textarea::{CursorMove, Input, Key, TextArea};
+use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
+use tui_textarea::{CursorMove, Input, TextArea};
+
+/// A struct to allow sharing of necessary context between functions
+#[derive(Debug)]
+pub struct Context<'a> {
+    pub args: &'a mut Cli,
+    pub proc_flags: &'a ProcFlags,
+    pub build_state: &'a mut BuildState,
+    pub start: Instant,
+}
 
 #[derive(Default, Serialize, Deserialize)]
 struct History {
@@ -114,6 +139,64 @@ impl EventReader for CrosstermEventReader {
     }
 }
 
+#[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
+#[command(
+    name = "",
+    disable_help_flag = true,
+    disable_help_subcommand = true,
+    verbatim_doc_comment
+)] // Disable automatic help subcommand and flag
+#[strum(serialize_all = "kebab-case")]
+/// REPL mode lets you type or paste a Rust expression to be evaluated.
+/// Start by choosing the eval option and entering your expression. Expressions between matching braces,
+/// brackets, parens or quotes may span multiple lines.
+/// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
+/// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
+/// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
+/// comment block of the form
+/// /*[toml]
+/// [dependencies]
+/// ...
+/// */
+/// From here they will be extracted to a dedicated Cargo.toml file.
+/// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
+/// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
+/// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
+/// editor or directly from their temporary disk locations.
+/// The tab key will show command selections and complete partial matching selections."
+enum ReplCommand {
+    /// Show the REPL banner
+    Banner,
+    /// Edit the Rust expression.
+    Edit,
+    /// Edit the generated Cargo.toml
+    Toml,
+    //     /// Attempt to build and run the Rust expression
+    // `    Run,
+    //     /// Delete all temporary files for this eval (see list)
+    //     Delete,
+    //     /// List temporary files for this eval
+    //     List,
+    /// Edit history
+    History,
+    /// Show help information
+    Help,
+    /// Show key bindings
+    Keys,
+    /// Exit the REPL
+    Quit,
+}
+
+impl ReplCommand {
+    fn print_help() {
+        let mut command = Self::command();
+        // let mut buf = Vec::new();
+        // command.write_help(&mut buf).unwrap();
+        // let help_message = String::from_utf8(buf).unwrap();
+        println!("{}", command.render_long_help());
+    }
+}
+
 #[allow(dead_code)]
 fn main() -> Result<(), ThagError> {
     let event_reader = CrosstermEventReader;
@@ -123,6 +206,200 @@ fn main() -> Result<(), ThagError> {
     Ok(())
 }
 
+/// Run the REPL.
+/// # Errors
+/// Will return `Err` if there is any error in running the REPL.
+/// # Panics
+/// Will panic if there is a problem configuring the `reedline` history file.
+#[allow(clippy::module_name_repetitions)]
+#[allow(clippy::too_many_lines)]
+pub fn run_repl(
+    args: &mut Cli,
+    proc_flags: &ProcFlags,
+    build_state: &mut BuildState,
+    // TODO: is start redundant?
+    start: Instant,
+) -> Result<(), ThagError> {
+    // #[allow(unused_variables)]
+    let input = std::io::stdin();
+
+    let cmd_vec = ReplCommand::iter()
+        .map(<ReplCommand as Into<&'static str>>::into)
+        .map(String::from)
+        .collect::<Vec<String>>();
+    let cmd_list = &cmd_vec.join(", ");
+
+    let fmt = KeyCombinationFormat::default();
+    // Combiner not working properly on termina that supports it for some reason.
+    // let mut combiner = Combiner::default();
+    // let combines = combiner.enable_combining().unwrap();
+    // if combines {
+    //     println!("Your terminal supports combining keys");
+    // } else {
+    //     println!("Your terminal doesn't support combining standard (non modifier) keys");
+    // }
+    // println!("Type any key combination (remember that your terminal intercepts many ones)");
+
+    // let bindings = keybindings.get_keybindings();
+
+    let event_reader = CrosstermEventReader;
+
+    loop {
+        if input.is_terminal() {
+            terminal::enable_raw_mode().unwrap();
+            // let event = crossterm::event::read();
+            let event = event_reader.read_event();
+            terminal::disable_raw_mode().unwrap();
+            // eprintln!("\ne={event:#?}");
+            match event {
+                Ok(Event::Key(key_event)) => {
+                    // let Some(key_combination) = combiner.transform(key_event) else {
+                    //     continue;
+                    // };
+                    let key_combination = key_event.into();
+                    let key = fmt.to_string(key_combination);
+                    match key_combination {
+                        key!(ctrl - c) => {
+                            println!("Arg! You savagely killed me with a {}", key.red());
+                            return Ok(());
+                        }
+                        key!(ctrl - q) => {
+                            println!("You typed {} which gracefully quits", key.green());
+                            return Ok(());
+                        }
+                        // key!(ctrl - q - q - q) => {
+                        //     println!("You typed {} which gracefully quits", key.green());
+                        //     return Ok(());
+                        // }
+                        key!(f3) => {
+                            println!("You typed {} which represents toml", key.green());
+                            toml(&build_state.cargo_toml_path)?;
+                            continue;
+                        }
+                        key!(f4) => {
+                            println!("You typed {} which represents nothing yet", key.green());
+                            continue;
+                        }
+                        #[allow(clippy::unnested_or_patterns)]
+                        key!('?') | key!(shift - '?') => {
+                            println!("{}", "There's no help on this app".red());
+                        }
+                        _ => {}
+                    }
+                }
+                e => {
+                    // any other event, for example a resize, we quit
+                    eprintln!("Quitting on {:?}", e);
+                    continue;
+                }
+            }
+        } else {
+            let input = read()?;
+            let input = input.trim();
+            let (first_word, _rest) = parse_line(input);
+            let maybe_cmd = {
+                let mut matches = 0;
+                let mut cmd = String::new();
+                for key in &cmd_vec {
+                    if key.starts_with(&first_word) {
+                        matches += 1;
+                        // Selects last match
+                        if matches == 1 {
+                            cmd = key.to_string();
+                        }
+                        // eprintln!("key={key}, split[0]={}", split[0]);
+                    }
+                }
+                if matches == 1 {
+                    Some(cmd)
+                } else {
+                    // println!("No single matching key found");
+                    None
+                }
+            };
+
+            if let Some(cmd) = maybe_cmd {
+                if let Ok(repl_command) = ReplCommand::from_str(&cmd) {
+                    // let args = clap::Command::new("")
+                    //     .no_binary_name(true)
+                    //     .try_get_matches_from_mut(rest)?;
+                    match repl_command {
+                        ReplCommand::Banner => disp_repl_banner(cmd_list),
+                        ReplCommand::Help => {
+                            ReplCommand::print_help();
+                        }
+                        ReplCommand::Quit => {
+                            break;
+                        }
+                        ReplCommand::Edit => {
+                            // edit(&event_reader)?;
+                            eval(&event_reader, build_state, args, proc_flags, start)?;
+                        }
+                        ReplCommand::Toml => {
+                            toml(&build_state.cargo_toml_path)?;
+                        }
+                        // ReplCommand::Run => {
+                        //     // &history.sync();
+                        //     run_expr(&args, context)?;
+                        // }
+                        // ReplCommand::Delete => {
+                        //     delete(&args, context)?;
+                        // }
+                        // ReplCommand::List => {
+                        //     list(&args, context)?;
+                        // }
+                        ReplCommand::History => {
+                            edit_history()?;
+                        }
+                        ReplCommand::Keys => {}
+                    }
+                    continue;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn eval(
+    event_reader: &CrosstermEventReader,
+    build_state: &mut BuildState,
+    args: &Cli,
+    proc_flags: &ProcFlags,
+    start: Instant,
+) -> Result<(), ThagError> {
+    let vec = edit(event_reader)?;
+    let input = vec.join("\n");
+    let rs_source = input.trim();
+    let rs_manifest = extract_manifest(rs_source, Instant::now())?;
+    build_state.rs_manifest = Some(rs_manifest);
+    let maybe_ast = extract_ast_expr(rs_source);
+    if let Ok(expr_ast) = maybe_ast {
+        code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+    } else {
+        nu_color_println!(
+            nu_resolve_style(MessageLevel::Error),
+            "Error parsing code: {maybe_ast:#?}"
+        );
+    };
+    Ok(())
+}
+
+/// Open the generated Cargo.toml file in an editor.
+/// # Errors
+/// Will return `Err` if there is an error editing the file.
+#[allow(clippy::unnecessary_wraps)]
+pub fn toml(cargo_toml_file: &PathBuf) -> Result<Option<String>, ThagError> {
+    if cargo_toml_file.exists() {
+        edit::edit_file(cargo_toml_file)?;
+    } else {
+        log!(
+            Verbosity::Quieter,
+            "No Cargo.toml file found - have you run anything?"
+        );
+    }
+    Ok(Some(String::from("End of Cargo.toml edit")))
+}
 /// Edit the stdin stream.
 ///
 ///
@@ -206,6 +483,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
 
     apply_highlights(alt_highlights, &mut textarea);
 
+    let fmt = KeyCombinationFormat::default();
     loop {
         term.draw(|f| {
             f.render_widget(&textarea, f.area());
@@ -218,87 +496,186 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
             println!("Error drawing terminal: {:?}", e);
             e
         })?;
-        let event = event_reader.read_event().map_err(|e| {
-            println!("Error reading event: {:?}", e);
-            e
-        })?;
-        if let Paste(ref data) = event {
+        // let event = event_reader.read_event().map_err(|e| {
+        //     println!("Error reading event: {:?}", e);
+        //     e
+        // })?;
+        terminal::enable_raw_mode().unwrap();
+        // let event = crossterm::event::read();
+        let event = event_reader.read_event();
+        terminal::disable_raw_mode().unwrap();
+
+        if let Ok(Paste(ref data)) = event {
             textarea.insert_str(normalize_newlines(data));
         } else {
-            let input = Input::from(event);
-            match input {
-                Input {
-                    key: Key::Char('q'),
-                    ctrl: true,
-                    ..
-                } => {
-                    return Err(ThagError::Cancelled);
-                }
-                Input {
-                    key: Key::Char('d'),
-                    ctrl: true,
-                    ..
-                } => {
-                    // 6 >5,4,3,2,1 -> 6 >6,5,4,3,2,1
-                    history.add_entry(textarea.lines().to_vec().join("\n"));
-                    history.current_index = Some(0);
-                    history.save_to_file(&history_path);
-                    break;
-                }
-                Input {
-                    key: Key::Char('l'),
-                    ctrl: true,
-                    ..
-                } => popup = !popup,
-                Input {
-                    key: Key::Char('t'),
-                    ctrl: true,
-                    ..
-                } => {
-                    alt_highlights = !alt_highlights;
-                    term.draw(|_| {
-                        apply_highlights(alt_highlights, &mut textarea);
-                    })?;
-                }
-                Input { key: Key::F(1), .. } => {
-                    let mut found = false;
-                    // 6 5,4,3,2,1 -> >5,4,3,2,1
-                    if saved_to_history {
-                        if let Some(entry) = history.get_previous() {
-                            // 5
-                            found = true;
-                            textarea.select_all();
-                            textarea.cut(); // 6
-                            textarea.insert_str(entry); // 5
+            match event {
+                Ok(Event::Key(key_event)) => {
+                    // let Some(key_combination) = combiner.transform(key_event) else {
+                    //     continue;
+                    // };
+                    let key_combination = key_event.into();
+                    let key = fmt.to_string(key_combination);
+                    match key_combination {
+                        #[allow(clippy::unnested_or_patterns)]
+                        key!(ctrl - c) | key!(ctrl - q) => {
+                            println!("You typed {} which gracefully quits", key.green());
+                            return Ok(vec![]);
                         }
-                    } else {
-                        // println!("Not already saved to history: calling history.get_current()");
-                        if let Some(entry) = history.get_current() {
-                            found = true;
-                            textarea.select_all();
-                            textarea.cut(); // 6
-                            textarea.insert_str(entry); // 5
+                        // key!(ctrl - q - q - q) => {
+                        //     println!("You typed {} which gracefully quits", key.green());
+                        //     return Ok(());
+                        // }
+                        key!(ctrl - d) => {
+                            // 6 >5,4,3,2,1 -> 6 >6,5,4,3,2,1
+                            history.add_entry(textarea.lines().to_vec().join("\n"));
+                            history.current_index = Some(0);
+                            history.save_to_file(&history_path);
+                            break;
+                        }
+                        key!(ctrl - l) => popup = !popup,
+                        key!(ctrl - t) => {
+                            alt_highlights = !alt_highlights;
+                            term.draw(|_| {
+                                apply_highlights(alt_highlights, &mut textarea);
+                            })?;
+                        }
+                        key!(f1) => {
+                            let mut found = false;
+                            // 6 5,4,3,2,1 -> >5,4,3,2,1
+                            if saved_to_history {
+                                if let Some(entry) = history.get_previous() {
+                                    // 5
+                                    found = true;
+                                    textarea.select_all();
+                                    textarea.cut(); // 6
+                                    textarea.insert_str(entry); // 5
+                                }
+                            } else {
+                                // println!("Not already saved to history: calling history.get_current()");
+                                if let Some(entry) = history.get_current() {
+                                    found = true;
+                                    textarea.select_all();
+                                    textarea.cut(); // 6
+                                    textarea.insert_str(entry); // 5
+                                }
+                            }
+                            if found && !saved_to_history && !textarea.yank_text().is_empty() {
+                                // 5 >5,4,3,2,1 -> 5 6,>5,4,3,2,1
+                                history.add_entry(
+                                    textarea.yank_text().lines().collect::<Vec<_>>().join("\n"),
+                                );
+                                saved_to_history = true;
+                            }
+                            continue;
+                        }
+                        key!(f2) => {
+                            // 5 >6,5,4,3,2,1 ->
+                            if let Some(entry) = history.get_next() {
+                                textarea.select_all();
+                                textarea.cut();
+                                textarea.insert_str(entry);
+                            }
+                            continue;
+                        }
+                        key!(f3) => {
+                            println!("You typed {} which represents `edit toml`", key.green());
+                            continue;
+                        }
+                        key!(f4) => {
+                            println!("You typed {} which represents nothing yet", key.green());
+                            continue;
+                        }
+                        #[allow(clippy::unnested_or_patterns)]
+                        key!('?') | key!(shift - '?') => {
+                            println!("{}", "You typed {} which represents nothing yet".blue());
+                        }
+                        _ => {
+                            // println!("You typed {} which represents nothing yet", key.blue());
+                            let input = Input::from(event?);
+                            textarea.input(input);
                         }
                     }
-                    if found && !saved_to_history && !textarea.yank_text().is_empty() {
-                        // 5 >5,4,3,2,1 -> 5 6,>5,4,3,2,1
-                        history
-                            .add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
-                        saved_to_history = true;
-                    }
                 }
-                Input { key: Key::F(2), .. } => {
-                    // 5 >6,5,4,3,2,1 ->
-                    if let Some(entry) = history.get_next() {
-                        textarea.select_all();
-                        textarea.cut();
-                        textarea.insert_str(entry);
-                    }
-                }
-                input => {
-                    textarea.input(input);
+                _ => {
+                    // any other event, for example a resize, we quit
+                    // eprintln!("Quitting on {:?}", e);
+                    continue;
                 }
             }
+            // let input = Input::from(event?);
+            // match input {
+            //     Input {
+            //         key: Key::Char('q'),
+            //         ctrl: true,
+            //         ..
+            //     } => {
+            //         return Err(ThagError::Cancelled);
+            //     }
+            //     Input {
+            //         key: Key::Char('d'),
+            //         ctrl: true,
+            //         ..
+            //     } => {
+            //         // 6 >5,4,3,2,1 -> 6 >6,5,4,3,2,1
+            //         history.add_entry(textarea.lines().to_vec().join("\n"));
+            //         history.current_index = Some(0);
+            //         history.save_to_file(&history_path);
+            //         break;
+            //     }
+            //     Input {
+            //         key: Key::Char('l'),
+            //         ctrl: true,
+            //         ..
+            //     } => popup = !popup,
+            //     Input {
+            //         key: Key::Char('t'),
+            //         ctrl: true,
+            //         ..
+            //     } => {
+            //         alt_highlights = !alt_highlights;
+            //         term.draw(|_| {
+            //             apply_highlights(alt_highlights, &mut textarea);
+            //         })?;
+            //     }
+            //     Input { key: Key::F(1), .. } => {
+            //         let mut found = false;
+            //         // 6 5,4,3,2,1 -> >5,4,3,2,1
+            //         if saved_to_history {
+            //             if let Some(entry) = history.get_previous() {
+            //                 // 5
+            //                 found = true;
+            //                 textarea.select_all();
+            //                 textarea.cut(); // 6
+            //                 textarea.insert_str(entry); // 5
+            //             }
+            //         } else {
+            //             // println!("Not already saved to history: calling history.get_current()");
+            //             if let Some(entry) = history.get_current() {
+            //                 found = true;
+            //                 textarea.select_all();
+            //                 textarea.cut(); // 6
+            //                 textarea.insert_str(entry); // 5
+            //             }
+            //         }
+            //         if found && !saved_to_history && !textarea.yank_text().is_empty() {
+            //             // 5 >5,4,3,2,1 -> 5 6,>5,4,3,2,1
+            //             history
+            //                 .add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
+            //             saved_to_history = true;
+            //         }
+            //     }
+            //     Input { key: Key::F(2), .. } => {
+            //         // 5 >6,5,4,3,2,1 ->
+            //         if let Some(entry) = history.get_next() {
+            //             textarea.select_all();
+            //             textarea.cut();
+            //             textarea.insert_str(entry);
+            //         }
+            //     }
+            //     input => {
+            //         textarea.input(input);
+            //     }
+            // }
         }
     }
 
@@ -487,3 +864,20 @@ const MAPPINGS: &[[&str; 2]; 35] = &[
     ["F2", "Next in history"],
 ];
 const NUM_ROWS: usize = MAPPINGS.len();
+
+/// Open the history file in an editor.
+/// # Errors
+/// Will return `Err` if there is an error editing the file.
+#[allow(clippy::unnecessary_wraps)]
+pub fn edit_history() -> Result<Option<String>, ThagError> {
+    let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
+    let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
+    println!("history_path={history_path:#?}");
+    OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&history_path)?;
+    edit::edit_file(&history_path)?;
+    Ok(Some(String::from("End of history file edit")))
+}

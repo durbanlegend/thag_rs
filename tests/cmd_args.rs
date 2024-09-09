@@ -53,6 +53,7 @@ fn test_get_proc_flags() {
             | ProcFlags::VERBOSE
             | ProcFlags::TIMINGS
             | ProcFlags::REPL
+            | ProcFlags::TUI_REPL
             | ProcFlags::EDIT
             | ProcFlags::STDIN
     ));
@@ -159,8 +160,13 @@ fn test_proc_flags_repl() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags
-        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::REPL));
+    assert!(proc_flags.contains(
+        ProcFlags::GENERATE
+            | ProcFlags::BUILD
+            | ProcFlags::RUN
+            | ProcFlags::REPL
+            | ProcFlags::TUI_REPL
+    ));
 }
 
 #[test]

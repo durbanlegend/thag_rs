@@ -13,7 +13,7 @@ use crate::{
     shared::BuildState,
 };
 
-use clap::{ArgMatches, CommandFactory, Parser};
+use clap::{CommandFactory, Parser};
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use reedline::{
@@ -136,7 +136,7 @@ impl Prompt for ReplPrompt {
     }
 }
 
-fn add_menu_keybindings(keybindings: &mut Keybindings) {
+pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
     keybindings.add_binding(
         KeyModifiers::NONE,
         KeyCode::Tab,
@@ -176,15 +176,15 @@ pub fn run_repl(
     start: Instant,
 ) -> Result<(), ThagError> {
     #[allow(unused_variables)]
-    let mut context = Context {
-        args,
-        proc_flags,
-        build_state,
-        start,
-    };
-    // get_emacs_keybindings();
-    let context: &mut Context = &mut context;
-    let history_file = context.build_state.cargo_home.join(HISTORY_FILE);
+    // let mut context = Context {
+    //     &args,
+    //     proc_flags,
+    //     build_state,
+    //     start,
+    // };
+    // // get_emacs_keybindings();
+    // let context: &mut Context = &mut context;
+    let history_file = build_state.cargo_home.join(HISTORY_FILE);
     let history = Box::new(FileBackedHistory::with_file(25, history_file)?);
 
     let cmd_vec = ReplCommand::iter()
@@ -243,7 +243,7 @@ pub fn run_repl(
             continue;
         }
 
-        let (first_word, rest) = parse_line(rs_source);
+        let (first_word, _rest) = parse_line(rs_source);
         let maybe_cmd = {
             let mut matches = 0;
             let mut cmd = String::new();
@@ -267,9 +267,9 @@ pub fn run_repl(
 
         if let Some(cmd) = maybe_cmd {
             if let Ok(repl_command) = ReplCommand::from_str(&cmd) {
-                let args = clap::Command::new("")
-                    .no_binary_name(true)
-                    .try_get_matches_from_mut(rest)?;
+                // let arg_matches = clap::Command::new("")
+                //     .no_binary_name(true)
+                //     .try_get_matches_from_mut(rest)?;
                 match repl_command {
                     ReplCommand::Banner => disp_repl_banner(cmd_list),
                     ReplCommand::Help => {
@@ -279,23 +279,23 @@ pub fn run_repl(
                         break;
                     }
                     ReplCommand::Edit => {
-                        edit(&args, context)?;
+                        edit(build_state)?;
                     }
                     ReplCommand::Toml => {
-                        toml(&args, context)?;
+                        toml(build_state)?;
                     }
                     ReplCommand::Run => {
                         // &history.sync();
-                        run_expr(&args, context)?;
+                        run_expr(args, proc_flags, build_state)?;
                     }
                     ReplCommand::Delete => {
-                        delete(&args, context)?;
+                        delete(build_state)?;
                     }
                     ReplCommand::List => {
-                        list(&args, context)?;
+                        list(build_state)?;
                     }
                     ReplCommand::History => {
-                        edit_history(&args, context)?;
+                        edit_history(build_state)?;
                     }
                     ReplCommand::Keys => {
                         // Calculate max command len for padding
@@ -382,19 +382,12 @@ pub fn run_repl(
         }
 
         let rs_manifest = extract_manifest(rs_source, Instant::now())?;
-        context.build_state.rs_manifest = Some(rs_manifest);
+        build_state.rs_manifest = Some(rs_manifest);
 
         let maybe_ast = extract_ast_expr(rs_source);
 
         if let Ok(expr_ast) = maybe_ast {
-            code_utils::process_expr(
-                expr_ast,
-                context.build_state,
-                rs_source,
-                context.args,
-                context.proc_flags,
-                &context.start,
-            )?;
+            code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
         } else {
             nu_color_println!(
                 nu_resolve_style(MessageLevel::Error),
@@ -405,7 +398,7 @@ pub fn run_repl(
     Ok(())
 }
 
-fn show_key_bindings(formatted_bindings: Vec<(String, String)>, max_key_len: usize) {
+pub fn show_key_bindings(formatted_bindings: Vec<(String, String)>, max_key_len: usize) {
     println!();
     nu_color_println!(
         nu_resolve_style(crate::MessageLevel::Emphasis),
@@ -422,7 +415,8 @@ fn show_key_bindings(formatted_bindings: Vec<(String, String)>, max_key_len: usi
 }
 
 // Helper function to convert KeyModifiers to string
-fn format_key_modifier(modifier: KeyModifiers) -> String {
+#[must_use]
+pub fn format_key_modifier(modifier: KeyModifiers) -> String {
     let mut modifiers = Vec::new();
     if modifier.contains(KeyModifiers::CONTROL) {
         modifiers.push("CONTROL");
@@ -442,7 +436,8 @@ fn format_key_modifier(modifier: KeyModifiers) -> String {
 }
 
 // Helper function to convert KeyCode to string
-fn format_key_code(key_code: KeyCode) -> String {
+#[must_use]
+pub fn format_key_code(key_code: KeyCode) -> String {
     match key_code {
         KeyCode::Backspace => "Backspace".to_string(),
         KeyCode::Enter => "Enter".to_string(),
@@ -476,7 +471,8 @@ fn format_key_code(key_code: KeyCode) -> String {
 
 // Helper function to format ReedlineEvents other than Edit, and their doc comments
 #[allow(clippy::too_many_lines)]
-fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
+#[must_use]
+pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     lazy_static! {
         pub static ref EVENT_DESC_MAP: HashMap<String, String> = {
             let mut m = HashMap::new();
@@ -596,8 +592,11 @@ fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 }
 
 /// Helper function to format `EditCommand` and include its doc comments
+/// # Panics
+/// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
 #[allow(clippy::too_many_lines)]
-fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> String {
+#[must_use]
+pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> String {
     lazy_static! {
         pub static ref CMD_DESC_MAP: HashMap<String, String> = {
             let mut m = HashMap::new();
@@ -951,8 +950,8 @@ fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> Str
 /// # Errors
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
-pub fn delete(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
-    let build_state = &context.build_state;
+pub fn delete(build_state: &BuildState) -> Result<Option<String>, ThagError> {
+    // let build_state = &context.build_state;
     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
     if clean_up.is_ok()
         || (!&build_state.source_path.exists() && !&build_state.target_dir_path.exists())
@@ -971,18 +970,15 @@ pub fn delete(_args: &ArgMatches, context: &mut Context) -> Result<Option<String
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit_history(
-    _args: &ArgMatches,
-    context: &mut Context,
-) -> Result<Option<String>, ThagError> {
-    let history_path = &context.build_state.cargo_home.join(HISTORY_FILE);
+pub fn edit_history(build_state: &BuildState) -> Result<Option<String>, ThagError> {
+    let history_path = build_state.cargo_home.join(HISTORY_FILE);
     println!("history_path={history_path:#?}");
     OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(false)
-        .open(history_path)?;
-    edit::edit_file(history_path)?;
+        .open(&history_path)?;
+    edit::edit_file(&history_path)?;
     Ok(Some(String::from("End of history file edit")))
 }
 
@@ -990,9 +986,7 @@ pub fn edit_history(
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
-    let (build_state, _start) = (&mut context.build_state, context.start);
-
+pub fn edit(build_state: &BuildState) -> Result<Option<String>, ThagError> {
     edit::edit_file(&build_state.source_path)?;
 
     Ok(Some(String::from("End of source edit")))
@@ -1002,8 +996,16 @@ pub fn edit(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>,
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn toml(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
-    edit::edit_file(&context.build_state.cargo_toml_path)?;
+pub fn toml(build_state: &BuildState) -> Result<Option<String>, ThagError> {
+    let cargo_toml_file = &build_state.cargo_toml_path;
+    if cargo_toml_file.exists() {
+        edit::edit_file(cargo_toml_file)?;
+    } else {
+        log!(
+            Verbosity::Quieter,
+            "No Cargo.toml file found - have you run anything?"
+        );
+    }
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
@@ -1011,16 +1013,16 @@ pub fn toml(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>,
 /// # Errors
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
-pub fn run_expr(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
-    let (args, proc_flags, build_state, start) = (
-        &mut context.args,
-        context.proc_flags,
-        &mut context.build_state,
-        context.start,
-    );
+pub fn run_expr(
+    args: &Cli,
+    proc_flags: &ProcFlags,
+    build_state: &mut BuildState,
+) -> Result<Option<String>, ThagError> {
+    let start = Instant::now();
 
     #[cfg(debug_assertions)]
     debug_log!("In run_expr: build_state={build_state:#?}");
+
     let result = gen_build_run(args, proc_flags, build_state, None::<Ast>, &start);
     if result.is_err() {
         log!(Verbosity::Quieter, "{result:?}");
@@ -1064,8 +1066,8 @@ Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: 
 /// The process lacks permissions to view the contents.
 /// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn list(_args: &ArgMatches, context: &mut Context) -> Result<Option<String>, ThagError> {
-    let build_state = &context.build_state;
+pub fn list(build_state: &BuildState) -> Result<Option<String>, ThagError> {
+    // let build_state = &context.build_state;
     let source_path = &build_state.source_path;
     if source_path.exists() {
         log!(Verbosity::Quieter, "File: {:?}", &source_path);

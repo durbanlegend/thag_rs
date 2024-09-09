@@ -1,7 +1,10 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::errors::ThagError;
 use crate::logging::Verbosity;
-use crate::repl::{disp_repl_banner, parse_line};
+use crate::repl::{
+    add_menu_keybindings, disp_repl_banner, format_edit_commands, format_key_code,
+    format_key_modifier, format_non_edit_events, parse_line, show_key_bindings, ReplPrompt,
+};
 use crate::{
     code_utils, extract_ast_expr, extract_manifest, log, nu_color_println, nu_resolve_style,
     BuildState, Cli, MessageLevel, ProcFlags,
@@ -28,12 +31,10 @@ use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::widgets::block::{Block, Title};
 use ratatui::widgets::{Borders, Clear, Paragraph};
 use ratatui::Terminal;
-// use reedline::{
-//     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
-//     EditCommand, Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt,
-//     PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent,
-//     ReedlineMenu, Signal,
-// };
+use reedline::{
+    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
+    Emacs, MenuBuilder, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -217,145 +218,226 @@ pub fn run_repl(
     args: &mut Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
-    // TODO: is start redundant?
     start: Instant,
 ) -> Result<(), ThagError> {
-    // #[allow(unused_variables)]
-    let input = std::io::stdin();
-
+    #[allow(unused_variables)]
+    // let mut context = Context {
+    //     args,
+    //     proc_flags,
+    //     build_state,
+    //     start,
+    // };
+    // // get_emacs_keybindings();
+    // let context: &mut Context = &mut context;
+    // // let history_file = context.build_state.cargo_home.join(HISTORY_FILE);
+    // // let history = Box::new(FileBackedHistory::with_file(25, history_file)?);
     let cmd_vec = ReplCommand::iter()
         .map(<ReplCommand as Into<&'static str>>::into)
         .map(String::from)
         .collect::<Vec<String>>();
+
+    let completer = Box::new(DefaultCompleter::new_with_wordlen(cmd_vec.clone(), 2));
+
+    // Use the interactive menu to select options from the completer
+    let columnar_menu = ColumnarMenu::default()
+        .with_name("completion_menu")
+        .with_columns(4)
+        .with_column_width(None)
+        .with_column_padding(2);
+
+    let completion_menu = Box::new(columnar_menu);
+
+    let mut keybindings = default_emacs_keybindings();
+    add_menu_keybindings(&mut keybindings);
+    // println!("{:#?}", keybindings.get_keybindings());
+
+    let edit_mode = Box::new(Emacs::new(keybindings.clone()));
+
+    // let highlighter = Box::<ExampleHighlighter>::default();
+    let mut line_editor = Reedline::create()
+        .with_validator(Box::new(DefaultValidator))
+        .with_hinter(Box::new(
+            DefaultHinter::default().with_style(nu_resolve_style(MessageLevel::Ghost).italic()),
+        ))
+        // .with_history(history)
+        // .with_highlighter(highlighter)
+        .with_completer(completer)
+        .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
+        .with_edit_mode(edit_mode);
+
+    let bindings = keybindings.get_keybindings();
+
+    let prompt = ReplPrompt("repl");
     let cmd_list = &cmd_vec.join(", ");
 
-    let fmt = KeyCombinationFormat::default();
-    // Combiner not working properly on termina that supports it for some reason.
-    // let mut combiner = Combiner::default();
-    // let combines = combiner.enable_combining().unwrap();
-    // if combines {
-    //     println!("Your terminal supports combining keys");
-    // } else {
-    //     println!("Your terminal doesn't support combining standard (non modifier) keys");
-    // }
-    // println!("Type any key combination (remember that your terminal intercepts many ones)");
-
-    // let bindings = keybindings.get_keybindings();
-
-    let event_reader = CrosstermEventReader;
-
+    disp_repl_banner(cmd_list);
     loop {
-        if input.is_terminal() {
-            terminal::enable_raw_mode().unwrap();
-            // let event = crossterm::event::read();
-            let event = event_reader.read_event();
-            terminal::disable_raw_mode().unwrap();
-            // eprintln!("\ne={event:#?}");
-            match event {
-                Ok(Event::Key(key_event)) => {
-                    // let Some(key_combination) = combiner.transform(key_event) else {
-                    //     continue;
-                    // };
-                    let key_combination = key_event.into();
-                    let key = fmt.to_string(key_combination);
-                    match key_combination {
-                        key!(ctrl - c) => {
-                            println!("Arg! You savagely killed me with a {}", key.red());
-                            return Ok(());
-                        }
-                        key!(ctrl - q) => {
-                            println!("You typed {} which gracefully quits", key.green());
-                            return Ok(());
-                        }
-                        // key!(ctrl - q - q - q) => {
-                        //     println!("You typed {} which gracefully quits", key.green());
-                        //     return Ok(());
-                        // }
-                        key!(f3) => {
-                            println!("You typed {} which represents toml", key.green());
-                            toml(&build_state.cargo_toml_path)?;
-                            continue;
-                        }
-                        key!(f4) => {
-                            println!("You typed {} which represents nothing yet", key.green());
-                            continue;
-                        }
-                        #[allow(clippy::unnested_or_patterns)]
-                        key!('?') | key!(shift - '?') => {
-                            println!("{}", "There's no help on this app".red());
-                        }
-                        _ => {}
-                    }
-                }
-                e => {
-                    // any other event, for example a resize, we quit
-                    eprintln!("Quitting on {:?}", e);
-                    continue;
-                }
+        let sig = line_editor.read_line(&prompt)?;
+        let input: &str = match sig {
+            Signal::Success(ref buffer) => buffer,
+            Signal::CtrlD | Signal::CtrlC => {
+                break;
             }
-        } else {
-            let input = read()?;
-            let input = input.trim();
-            let (first_word, _rest) = parse_line(input);
-            let maybe_cmd = {
-                let mut matches = 0;
-                let mut cmd = String::new();
-                for key in &cmd_vec {
-                    if key.starts_with(&first_word) {
-                        matches += 1;
-                        // Selects last match
-                        if matches == 1 {
-                            cmd = key.to_string();
-                        }
-                        // eprintln!("key={key}, split[0]={}", split[0]);
-                    }
-                }
-                if matches == 1 {
-                    Some(cmd)
-                } else {
-                    // println!("No single matching key found");
-                    None
-                }
-            };
+        };
 
-            if let Some(cmd) = maybe_cmd {
-                if let Ok(repl_command) = ReplCommand::from_str(&cmd) {
-                    // let args = clap::Command::new("")
-                    //     .no_binary_name(true)
-                    //     .try_get_matches_from_mut(rest)?;
-                    match repl_command {
-                        ReplCommand::Banner => disp_repl_banner(cmd_list),
-                        ReplCommand::Help => {
-                            ReplCommand::print_help();
-                        }
-                        ReplCommand::Quit => {
-                            break;
-                        }
-                        ReplCommand::Edit => {
-                            // edit(&event_reader)?;
-                            eval(&event_reader, build_state, args, proc_flags, start)?;
-                        }
-                        ReplCommand::Toml => {
-                            toml(&build_state.cargo_toml_path)?;
-                        }
-                        // ReplCommand::Run => {
-                        //     // &history.sync();
-                        //     run_expr(&args, context)?;
-                        // }
-                        // ReplCommand::Delete => {
-                        //     delete(&args, context)?;
-                        // }
-                        // ReplCommand::List => {
-                        //     list(&args, context)?;
-                        // }
-                        ReplCommand::History => {
-                            edit_history()?;
-                        }
-                        ReplCommand::Keys => {}
+        // Process user input (line)
+
+        let rs_source = input.trim();
+        if rs_source.is_empty() {
+            continue;
+        }
+
+        let (first_word, _rest) = parse_line(rs_source);
+        let maybe_cmd = {
+            let mut matches = 0;
+            let mut cmd = String::new();
+            for key in &cmd_vec {
+                if key.starts_with(&first_word) {
+                    matches += 1;
+                    // Selects last match
+                    if matches == 1 {
+                        cmd = key.to_string();
                     }
-                    continue;
+                    // eprintln!("key={key}, split[0]={}", split[0]);
                 }
             }
+            if matches == 1 {
+                Some(cmd)
+            } else {
+                // println!("No single matching key found");
+                None
+            }
+        };
+
+        if let Some(cmd) = maybe_cmd {
+            if let Ok(repl_command) = ReplCommand::from_str(&cmd) {
+                // let args = clap::Command::new("")
+                //     .no_binary_name(true)
+                //     .try_get_matches_from_mut(rest)?;
+                match repl_command {
+                    ReplCommand::Banner => disp_repl_banner(cmd_list),
+                    ReplCommand::Help => {
+                        ReplCommand::print_help();
+                    }
+                    ReplCommand::Quit => {
+                        break;
+                    }
+                    ReplCommand::Edit => {
+                        let event_reader = CrosstermEventReader;
+                        eval(&event_reader, build_state, args, proc_flags)?;
+                    }
+                    ReplCommand::Toml => {
+                        toml(&build_state.cargo_toml_path)?;
+                    }
+                    // ReplCommand::Run => {
+                    //     // &history.sync();
+                    //     run_expr(&args, context)?;
+                    // }
+                    // ReplCommand::Delete => {
+                    //     delete(&args, context)?;
+                    // }
+                    // ReplCommand::List => {
+                    //     list(&args, context)?;
+                    // }
+                    ReplCommand::History => {
+                        edit_history()?;
+                    }
+                    ReplCommand::Keys => {
+                        // Calculate max command len for padding
+                        // Can't extract this to a method because for some reason KeyCmmbination is not exposed.
+                        let max_cmd_len = {
+                            // Determine the length of the longest command for padding
+                            let max_cmd_len = bindings
+                                .values()
+                                .map(|reedline_event| {
+                                    if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                                        edit_cmds
+                                            .iter()
+                                            .map(|cmd| {
+                                                let key_desc =
+                                                    nu_resolve_style(MessageLevel::Subheading)
+                                                        .paint(format!("{cmd:?}"));
+                                                let key_desc = format!("{key_desc}");
+                                                key_desc.len()
+                                            })
+                                            .max()
+                                            .unwrap_or(0)
+                                    } else if !format!("{reedline_event}").starts_with("UntilFound")
+                                    {
+                                        let event_desc = nu_resolve_style(MessageLevel::Subheading)
+                                            .paint(format!("{reedline_event:?}"));
+                                        let event_desc = format!("{event_desc}");
+                                        event_desc.len()
+                                    } else {
+                                        0
+                                    }
+                                })
+                                .max()
+                                .unwrap_or(0);
+                            // Add 2 bytes of padding
+                            max_cmd_len + 2
+                        };
+
+                        // Collect and format key bindings
+                        // Can't extract this to a method either, because KeyCmmbination is not exposed.
+                        let mut formatted_bindings = {
+                            let mut formatted_bindings = Vec::new();
+                            for (key_combination, reedline_event) in bindings {
+                                let key_modifiers = key_combination.modifier;
+                                let key_code = key_combination.key_code;
+                                let modifier = format_key_modifier(key_modifiers);
+                                let key = format_key_code(key_code);
+                                let key_desc = format!("{}{}", modifier, key);
+                                if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                                    let cmd_desc = format_edit_commands(edit_cmds, max_cmd_len);
+                                    formatted_bindings.push((key_desc.clone(), cmd_desc));
+                                } else {
+                                    let event_name = format!("{reedline_event:?}");
+                                    if !event_name.starts_with("UntilFound") {
+                                        let event_desc =
+                                            format_non_edit_events(&event_name, max_cmd_len);
+                                        formatted_bindings.push((key_desc, event_desc));
+                                    }
+                                }
+                            }
+                            formatted_bindings
+                        };
+
+                        // Sort the formatted bindings alphabetically by key combination description
+                        formatted_bindings.sort_by(|a, b| a.0.cmp(&b.0));
+
+                        // Determine the length of the longest key description for padding
+                        let max_key_len = formatted_bindings
+                            .iter()
+                            .map(|(key_desc, _)| {
+                                let key_desc =
+                                    nu_resolve_style(MessageLevel::Heading).paint(key_desc);
+                                let key_desc = format!("{key_desc}");
+                                key_desc.len()
+                            })
+                            .max()
+                            .unwrap_or(0);
+                        // eprintln!("max_key_len={max_key_len}");
+
+                        show_key_bindings(formatted_bindings, max_key_len);
+                    }
+                }
+                continue;
+            }
+        }
+
+        let rs_manifest = extract_manifest(rs_source, Instant::now())?;
+        build_state.rs_manifest = Some(rs_manifest);
+
+        let maybe_ast = extract_ast_expr(rs_source);
+
+        if let Ok(expr_ast) = maybe_ast {
+            code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+        } else {
+            nu_color_println!(
+                nu_resolve_style(MessageLevel::Error),
+                "Error parsing code: {maybe_ast:#?}"
+            );
         }
     }
     Ok(())
@@ -366,9 +448,9 @@ fn eval(
     build_state: &mut BuildState,
     args: &Cli,
     proc_flags: &ProcFlags,
-    start: Instant,
 ) -> Result<(), ThagError> {
     let vec = edit(event_reader)?;
+    let start = Instant::now();
     let input = vec.join("\n");
     let rs_source = input.trim();
     let rs_manifest = extract_manifest(rs_source, Instant::now())?;

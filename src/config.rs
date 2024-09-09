@@ -184,7 +184,6 @@ pub fn edit(context: &dyn Context) -> Result<Option<String>, ThagError> {
 }
 
 /// Main function for use by testing or the script runner.
-
 #[allow(dead_code)]
 fn main() {
     let maybe_config = load(&RealContext::new());

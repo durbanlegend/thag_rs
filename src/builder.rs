@@ -64,12 +64,15 @@ pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
     }
 
     let is_repl = args.repl;
-    let working_dir_path = if is_repl {
+    let is_tui_repl = args.tui_repl;
+    let working_dir_path = if is_repl || is_tui_repl {
         TMPDIR.join(REPL_SUBDIR)
     } else {
         std::env::current_dir()?.canonicalize()?
     };
     validate_args(args, &proc_flags)?;
+    // Not for tui_repl - history is solid and too expensive
+    // TODO May phase this out for repl, or phase out repl itself.
     let repl_source_path = if is_repl && args.script.is_none() {
         Some(create_next_repl_file()?)
     } else {
@@ -79,7 +82,7 @@ pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
     let is_loop = proc_flags.contains(ProcFlags::LOOP);
-    let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
+    let is_dynamic = is_expr | is_stdin | is_edit | is_loop | is_tui_repl;
     if is_dynamic {
         let _ = create_temp_source_file()?;
     }
@@ -185,6 +188,7 @@ fn process(
 ) -> Result<(), ThagError> {
     // profile_fn!(process);
     let is_repl = args.repl;
+    let is_tui_repl = args.tui_repl;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
@@ -195,6 +199,9 @@ fn process(
     if is_repl {
         debug_log!("build_state.source_path={:?}", build_state.source_path);
         run_repl(args, proc_flags, &mut build_state, start)
+    } else if is_tui_repl {
+        debug_log!("build_state.source_path={:?}", build_state.source_path);
+        stdin::run_repl(args, proc_flags, &mut build_state, start)
     } else if is_dynamic {
         let rs_source = if is_expr {
             // Consumes the expression argument

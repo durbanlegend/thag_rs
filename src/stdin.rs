@@ -132,6 +132,7 @@ pub trait EventReader {
 }
 
 /// A struct to implement real-world use of the event reader, as opposed to use in testing.
+#[derive(Debug)]
 pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {

@@ -40,6 +40,7 @@ use reedline::{
 use regex::Regex;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::fs::{self, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
@@ -218,7 +219,7 @@ pub fn run_repl(
     // // get_emacs_keybindings();
     // let context: &mut Context = &mut context;
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
-    let staging_path: PathBuf = build_state.cargo_home.join("hist_staging");
+    let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
     let history = Box::new(FileBackedHistory::with_file(25, history_path.clone())?);
 
     let cmd_vec = ReplCommand::iter()
@@ -1044,7 +1045,7 @@ pub fn edit_history_old(build_state: &BuildState) -> Result<Option<String>, Thag
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-pub fn edit_history<R: EventReader>(
+pub fn edit_history<R: EventReader + Debug>(
     history_path: &PathBuf,
     staging_path: &PathBuf,
     event_reader: &R,
@@ -1058,6 +1059,7 @@ pub fn edit_history<R: EventReader>(
         .truncate(true)
         .open(staging_path)?;
     dbg!(&staging_file);
+    dbg!(&event_reader);
 
     let mut popup = false;
     let mut alt_highlights = false;
@@ -1079,6 +1081,7 @@ pub fn edit_history<R: EventReader>(
         reset_term(term).expect("Error resetting terminal");
     });
 
+    dbg!();
     let mut textarea = TextArea::from(initial_content.lines());
 
     textarea.set_block(
@@ -1097,7 +1100,10 @@ pub fn edit_history<R: EventReader>(
     apply_highlights(alt_highlights, &mut textarea);
 
     let fmt = KeyCombinationFormat::default();
+    dbg!();
     loop {
+        dbg!();
+
         term.draw(|f| {
             f.render_widget(&textarea, f.area());
             let exclude_keys = &["F1", "F2"];
@@ -1114,14 +1120,18 @@ pub fn edit_history<R: EventReader>(
         // let event = crossterm::event::read();
         let event = event_reader.read_event();
         terminal::disable_raw_mode().unwrap();
+        dbg!(&event);
 
         if let Ok(Paste(ref data)) = event {
             textarea.insert_str(normalize_newlines(data));
+            dbg!(&textarea.lines());
         } else {
             match event {
                 Ok(Event::Key(key_event)) => {
                     let key_combination = key_event.into();
                     let key = fmt.to_string(key_combination);
+                    dbg!(&key_combination);
+                    dbg!(&key);
                     match key_combination {
                         #[allow(clippy::unnested_or_patterns)]
                         key!(ctrl - c) | key!(ctrl - q) => {
@@ -1129,7 +1139,9 @@ pub fn edit_history<R: EventReader>(
                             return Ok(());
                         }
                         key!(ctrl - d) => {
+                            debug_log!("{textarea:?}");
                             stage_history(&staging_file, &textarea)?;
+                            dbg!();
                             break;
                         }
                         key!(ctrl - l) => popup = !popup,
@@ -1157,16 +1169,18 @@ pub fn edit_history<R: EventReader>(
         }
     }
 
+    dbg!(&textarea.lines());
     Ok(())
 }
 
 fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> Result<(), ThagError> {
     let mut f = BufWriter::new(staging_file);
     for line in textarea.lines() {
-        println!("in ctrl - d: line={line}");
+        dbg!(&line);
         Write::write_all(&mut f, line.as_bytes())?;
         Write::write_all(&mut f, b"\n")?;
     }
+    dbg!();
     Ok(())
 }
 

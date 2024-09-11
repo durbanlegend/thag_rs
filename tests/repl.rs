@@ -108,9 +108,10 @@ mod tests {
             });
 
         let history_path = build_state.cargo_home.join(HISTORY_FILE);
-        let staging_path: PathBuf = build_state.cargo_home.join("hist_staging");
+        let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
         let result = edit_history(&history_path, &staging_path, &mock_reader);
-        assert!(result.is_ok());
+        dbg!(&result);
+        assert!(&result.is_ok());
     }
 
     #[cfg(not(windows))]

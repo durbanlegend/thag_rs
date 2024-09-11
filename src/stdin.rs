@@ -571,7 +571,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
         term.draw(|f| {
             f.render_widget(&textarea, f.area());
             if popup {
-                show_popup(f, &[""; 0]);
+                show_popup(f, &[""; 0], &[["", ""]]);
             }
             apply_highlights(alt_highlights, &mut textarea);
         })
@@ -853,12 +853,13 @@ pub fn reset_term(
 }
 
 #[allow(clippy::cast_possible_truncation)]
-pub fn show_popup(f: &mut ratatui::prelude::Frame, exclude_keys: &[&str]) {
-    let filtered_mappings: Vec<&[&str; 2]> = MAPPINGS
+pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[[&str; 2]]) {
+    let adjusted_mappings: Vec<&[&str; 2]> = MAPPINGS
         .iter()
-        .filter(|&row| !exclude_keys.contains(&row[0]))
+        .filter(|&row| !remove.contains(&row[0]))
+        .chain(add.iter())
         .collect();
-    let num_filtered_rows = filtered_mappings.len();
+    let num_filtered_rows = adjusted_mappings.len();
     let area = centered_rect(90, num_filtered_rows as u16 + 5, f.area());
     let inner = area.inner(Margin {
         vertical: 2,
@@ -889,7 +890,7 @@ pub fn show_popup(f: &mut ratatui::prelude::Frame, exclude_keys: &[&str]) {
             .constraints([Constraint::Length(45), Constraint::Length(43)].as_ref());
         let cells = col_layout.split(*row);
         for n in 0..=1 {
-            let mut widget = Paragraph::new(filtered_mappings[i][n]);
+            let mut widget = Paragraph::new(adjusted_mappings[i][n]);
             if i == 0 {
                 widget = widget.add_modifier(Modifier::BOLD);
             } else {

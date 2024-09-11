@@ -53,6 +53,68 @@ use tui_textarea::{CursorMove, Input, TextArea};
 pub const HISTORY_FILE: &str = "thag_repl_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
+const CMD_DESCS: &[[&str; 2]; 59] = &[
+    ["MoveToStart", "Move to the start of the buffer"],
+    ["MoveToLineStart", "Move to the start of the current line"],
+    ["MoveToEnd", "Move to the end of the buffer"],
+    ["MoveToLineEnd", "Move to the end of the current line"],
+    ["MoveLeft", "Move one character to the left"],
+    ["MoveRight", "Move one character to the right"],
+    ["MoveWordLeft", "Move one word to the left"],
+    ["MoveBigWordLeft", "Move one WORD to the left"],
+    ["MoveWordRight", "Move one word to the right"],
+    ["MoveWordRightStart", "Move one word to the right, stop at start of word"],
+    ["MoveBigWordRightStart", "Move one WORD to the right, stop at start of WORD"],
+    ["MoveWordRightEnd", "Move one word to the right, stop at end of word"],
+    ["MoveBigWordRightEnd", "Move one WORD to the right, stop at end of WORD"],
+    ["MoveToPosition", "Move to position"],
+    ["InsertChar", "Insert a character at the current insertion point"],
+    ["InsertString", "Insert a string at the current insertion point"],
+    ["InsertNewline", "Insert the system specific new line character"],
+    ["ReplaceChars", "Replace characters with string"],
+    ["Backspace", "Backspace delete from the current insertion point"],
+    ["Delete", "Delete in-place from the current insertion point"],
+    ["CutChar", "Cut the grapheme right from the current insertion point"],
+    ["BackspaceWord", "Backspace delete a word from the current insertion point"],
+    ["DeleteWord", "Delete in-place a word from the current insertion point"],
+    ["Clear", "Clear the current buffer"],
+    ["ClearToLineEnd", "Clear to the end of the current line"],
+    ["Complete", "Insert completion: entire completion if there is only one possibility, or else up to shared prefix."],
+    ["CutCurrentLine", "Cut the current line"],
+    ["CutFromStart", "Cut from the start of the buffer to the insertion point"],
+    ["CutFromLineStart", "Cut from the start of the current line to the insertion point"],
+    ["CutToEnd", "Cut from the insertion point to the end of the buffer"],
+    ["CutToLineEnd", "Cut from the insertion point to the end of the current line"],
+    ["CutWordLeft", "Cut the word left of the insertion point"],
+    ["CutBigWordLeft", "Cut the WORD left of the insertion point"],
+    ["CutWordRight", "Cut the word right of the insertion point"],
+    ["CutBigWordRight", "Cut the WORD right of the insertion point"],
+    ["CutWordRightToNext", "Cut the word right of the insertion point and any following space"],
+    ["CutBigWordRightToNext", "Cut the WORD right of the insertion point and any following space"],
+    ["PasteCutBufferBefore", "Paste the cut buffer in front of the insertion point (Emacs, vi P)"],
+    ["PasteCutBufferAfter", "Paste the cut buffer in front of the insertion point (vi p)"],
+    ["UppercaseWord", "Upper case the current word"],
+    ["LowercaseWord", "Lower case the current word"],
+    ["CapitalizeChar", "Capitalize the current character"],
+    ["SwitchcaseChar", "Switch the case of the current character"],
+    ["SwapWords", "Swap the current word with the word to the right"],
+    ["SwapGraphemes", "Swap the current grapheme/character with the one to the right"],
+    ["Undo", "Undo the previous edit command"],
+    ["Redo", "Redo an edit command from the undo history"],
+    ["CutRightUntil", "CutUntil right until char"],
+    ["CutRightBefore", "CutUntil right before char"],
+    ["MoveRightUntil", "MoveUntil right until char"],
+    ["MoveRightBefore", "MoveUntil right before char"],
+    ["CutLeftUntil", "CutUntil left until char"],
+    ["CutLeftBefore", "CutUntil left before char"],
+    ["MoveLeftUntil", "MoveUntil left until char"],
+    ["MoveLeftBefore", "MoveUntil left before char"],
+    ["SelectAll", "Select whole input buffer"],
+    ["CutSelection", "Cut selection to local buffer"],
+    ["CopySelection", "Copy selection to local buffer"],
+    ["Paste", "Paste content from local buffer at the current cursor position"],
+];
+
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(
     name = "",
@@ -333,21 +395,22 @@ pub fn run_repl(
                     }
                     ReplCommand::History => {
                         let event_reader = CrosstermEventReader;
-                        // TODO: edit_history must save history elsewhere, since the backing mechanism maay interfere with the backing file
+                        // NB: we must save history elsewhere, since the backing mechanism maay interfere with the backing file
+
                         line_editor.sync_history()?;
-                        edit_history(&history_path, &staging_path, &event_reader)?;
-                        let history_mut = line_editor.history_mut();
-                        dbg!(&staging_path.exists());
-                        let saved_history = fs::read_to_string(&staging_path)?;
-                        // dbg!();
-                        // Have to place this after reading the file because it seems to delete the file.
-                        history_mut.clear()?;
-                        // dbg!();
-                        for line in saved_history.lines() {
-                            // dbg!(line);
-                            let _ = history_mut.save(HistoryItem::from_command_line(line))?;
+                        // After editing, we won't know if history was saved with ctrl-s or not.
+                        // So we assume it was and regenerate the history from the staging file.
+                        fs::copy(&history_path, &staging_path)?;
+                        let confirm = edit_history(&history_path, &staging_path, &event_reader)?;
+                        if confirm {
+                            let history_mut = line_editor.history_mut();
+                            let saved_history = fs::read_to_string(&staging_path)?;
+                            history_mut.clear()?;
+                            for line in saved_history.lines() {
+                                let _ = history_mut.save(HistoryItem::from_command_line(line))?;
+                            }
+                            history_mut.sync()?;
                         }
-                        history_mut.sync()?;
                     }
                     ReplCommand::Keys => {
                         // Calculate max command len for padding
@@ -650,238 +713,14 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 #[must_use]
 pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> String {
     lazy_static! {
-        pub static ref CMD_DESC_MAP: HashMap<String, String> = {
-            let mut m = HashMap::new();
-            m.insert(
-                "MoveToStart".to_string(),
-                "Move to the start of the buffer".to_string(),
-            );
-            m.insert(
-                "MoveToLineStart".to_string(),
-                "Move to the start of the current line".to_string(),
-            );
-            m.insert(
-                "MoveToEnd".to_string(),
-                "Move to the end of the buffer".to_string(),
-            );
-            m.insert(
-                "MoveToLineEnd".to_string(),
-                "Move to the end of the current line".to_string(),
-            );
-            m.insert(
-                "MoveLeft".to_string(),
-                "Move one character to the left".to_string(),
-            );
-            m.insert(
-                "MoveRight".to_string(),
-                "Move one character to the right".to_string(),
-            );
-            m.insert(
-                "MoveWordLeft".to_string(),
-                "Move one word to the left".to_string(),
-            );
-            m.insert(
-                "MoveBigWordLeft".to_string(),
-                "Move one WORD to the left".to_string(),
-            );
-            m.insert(
-                "MoveWordRight".to_string(),
-                "Move one word to the right".to_string(),
-            );
-            m.insert(
-                "MoveWordRightStart".to_string(),
-                "Move one word to the right, stop at start of word".to_string(),
-            );
-            m.insert(
-                "MoveBigWordRightStart".to_string(),
-                "Move one WORD to the right, stop at start of WORD".to_string(),
-            );
-            m.insert(
-                "MoveWordRightEnd".to_string(),
-                "Move one word to the right, stop at end of word".to_string(),
-            );
-            m.insert(
-                "MoveBigWordRightEnd".to_string(),
-                "Move one WORD to the right, stop at end of WORD".to_string(),
-            );
-            m.insert("MoveToPosition".to_string(), "Move to position".to_string());
-            m.insert(
-                "InsertChar".to_string(),
-                "Insert a character at the current insertion point".to_string(),
-            );
-            m.insert(
-                "InsertString".to_string(),
-                "Insert a string at the current insertion point".to_string(),
-            );
-            m.insert(
-                "InsertNewline".to_string(),
-                "Insert the system specific new line character".to_string(),
-            );
-            m.insert(
-                "ReplaceChars".to_string(),
-                "Replace characters with string".to_string(),
-            );
-            m.insert(
-                "Backspace".to_string(),
-                "Backspace delete from the current insertion point".to_string(),
-            );
-            m.insert(
-                "Delete".to_string(),
-                "Delete in-place from the current insertion point".to_string(),
-            );
-            m.insert(
-                "CutChar".to_string(),
-                "Cut the grapheme right from the current insertion point".to_string(),
-            );
-            m.insert(
-                "BackspaceWord".to_string(),
-                "Backspace delete a word from the current insertion point".to_string(),
-            );
-            m.insert(
-                "DeleteWord".to_string(),
-                "Delete in-place a word from the current insertion point".to_string(),
-            );
-            m.insert("Clear".to_string(), "Clear the current buffer".to_string());
-            m.insert(
-                "ClearToLineEnd".to_string(),
-                "Clear to the end of the current line".to_string(),
-            );
-            m.insert("Complete".to_string(), "Insert completion: entire completion if there is only one possibility, or else up to shared prefix.".to_string());
-            m.insert(
-                "CutCurrentLine".to_string(),
-                "Cut the current line".to_string(),
-            );
-            m.insert(
-                "CutFromStart".to_string(),
-                "Cut from the start of the buffer to the insertion point".to_string(),
-            );
-            m.insert(
-                "CutFromLineStart".to_string(),
-                "Cut from the start of the current line to the insertion point".to_string(),
-            );
-            m.insert(
-                "CutToEnd".to_string(),
-                "Cut from the insertion point to the end of the buffer".to_string(),
-            );
-            m.insert(
-                "CutToLineEnd".to_string(),
-                "Cut from the insertion point to the end of the current line".to_string(),
-            );
-            m.insert(
-                "CutWordLeft".to_string(),
-                "Cut the word left of the insertion point".to_string(),
-            );
-            m.insert(
-                "CutBigWordLeft".to_string(),
-                "Cut the WORD left of the insertion point".to_string(),
-            );
-            m.insert(
-                "CutWordRight".to_string(),
-                "Cut the word right of the insertion point".to_string(),
-            );
-            m.insert(
-                "CutBigWordRight".to_string(),
-                "Cut the WORD right of the insertion point".to_string(),
-            );
-            m.insert(
-                "CutWordRightToNext".to_string(),
-                "Cut the word right of the insertion point and any following space".to_string(),
-            );
-            m.insert(
-                "CutBigWordRightToNext".to_string(),
-                "Cut the WORD right of the insertion point and any following space".to_string(),
-            );
-            m.insert(
-                "PasteCutBufferBefore".to_string(),
-                "Paste the cut buffer in front of the insertion point (Emacs, vi P)".to_string(),
-            );
-            m.insert(
-                "PasteCutBufferAfter".to_string(),
-                "Paste the cut buffer in front of the insertion point (vi p)".to_string(),
-            );
-            m.insert(
-                "UppercaseWord".to_string(),
-                "Upper case the current word".to_string(),
-            );
-            m.insert(
-                "LowercaseWord".to_string(),
-                "Lower case the current word".to_string(),
-            );
-            m.insert(
-                "CapitalizeChar".to_string(),
-                "Capitalize the current character".to_string(),
-            );
-            m.insert(
-                "SwitchcaseChar".to_string(),
-                "Switch the case of the current character".to_string(),
-            );
-            m.insert(
-                "SwapWords".to_string(),
-                "Swap the current word with the word to the right".to_string(),
-            );
-            m.insert(
-                "SwapGraphemes".to_string(),
-                "Swap the current grapheme/character with the one to the right".to_string(),
-            );
-            m.insert(
-                "Undo".to_string(),
-                "Undo the previous edit command".to_string(),
-            );
-            m.insert(
-                "Redo".to_string(),
-                "Redo an edit command from the undo history".to_string(),
-            );
-            m.insert(
-                "CutRightUntil".to_string(),
-                "CutUntil right until char".to_string(),
-            );
-            m.insert(
-                "CutRightBefore".to_string(),
-                "CutUntil right before char".to_string(),
-            );
-            m.insert(
-                "MoveRightUntil".to_string(),
-                "MoveUntil right until char".to_string(),
-            );
-            m.insert(
-                "MoveRightBefore".to_string(),
-                "MoveUntil right before char".to_string(),
-            );
-            m.insert(
-                "CutLeftUntil".to_string(),
-                "CutUntil left until char".to_string(),
-            );
-            m.insert(
-                "CutLeftBefore".to_string(),
-                "CutUntil left before char".to_string(),
-            );
-            m.insert(
-                "MoveLeftUntil".to_string(),
-                "MoveUntil left until char".to_string(),
-            );
-            m.insert(
-                "MoveLeftBefore".to_string(),
-                "MoveUntil left before char".to_string(),
-            );
-            m.insert(
-                "SelectAll".to_string(),
-                "Select whole input buffer".to_string(),
-            );
-            m.insert(
-                "CutSelection".to_string(),
-                "Cut selection to local buffer".to_string(),
-            );
-            m.insert(
-                "CopySelection".to_string(),
-                "Copy selection to local buffer".to_string(),
-            );
-            m.insert(
-                "Paste".to_string(),
-                "Paste content from local buffer at the current cursor position".to_string(),
-            );
-            m
+        pub static ref CMD_DESC_MAP: HashMap<&'static str, &'static str> = {
+            let mut map = HashMap::new();
+            for entry in CMD_DESCS.iter() {
+                map.insert(entry[0], entry[1]);
+            }
+            map
         };
-    };
+    }
 
     let mut cmd_descriptions = Vec::new();
     // eprintln!("edit_cmds={edit_cmds:?}");
@@ -907,7 +746,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
                 cmd_highlight,
                 CMD_DESC_MAP
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&String::new()),
+                    .unwrap_or(&""),
                 if *select {
                     ". Select the text between the current cursor position and destination"
                 } else {
@@ -958,9 +797,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
             | EditCommand::LowercaseWord => format!(
                 "{:<max_cmd_len$} {}",
                 cmd_highlight,
-                CMD_DESC_MAP
-                    .get(&format!("{cmd:?}"))
-                    .unwrap_or(&String::new())
+                CMD_DESC_MAP.get(format!("{cmd:?}").as_str()).unwrap_or(&"")
             ),
             EditCommand::MoveRightUntil { c: _, select }
             | EditCommand::MoveRightBefore { c: _, select }
@@ -970,7 +807,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
                 cmd_highlight,
                 CMD_DESC_MAP
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&String::new()),
+                    .unwrap_or(&""),
                 if *select {
                     "Select the text between the current cursor position and destination"
                 } else {
@@ -982,7 +819,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
                 cmd_highlight,
                 CMD_DESC_MAP
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&String::new()),
+                    .unwrap_or(&""),
                 position,
                 if *select {
                     "Select the text between the current cursor position and destination"
@@ -1051,24 +888,20 @@ pub fn edit_history<R: EventReader + Debug>(
     history_path: &PathBuf,
     staging_path: &PathBuf,
     event_reader: &R,
-) -> Result<(), ThagError> {
+) -> Result<bool, ThagError> {
     let initial_content = std::fs::read_to_string(history_path)?;
-    dbg!(code_utils::disentangle(&initial_content));
     let staging_file = OpenOptions::new()
         .read(true)
         .write(true)
         .create(true)
         .truncate(true)
         .open(staging_path)?;
-    dbg!(&staging_file);
-    dbg!(&event_reader);
 
     let mut popup = false;
     let mut alt_highlights = false;
 
     let stdout = std::io::stdout();
     let mut stdout = stdout.lock();
-    dbg!();
 
     let mut maybe_term = if var("TEST_ENV").is_ok() {
         None
@@ -1090,13 +923,12 @@ pub fn edit_history<R: EventReader + Debug>(
         Some(term)
     };
 
-    dbg!();
     let mut textarea = TextArea::from(initial_content.lines());
 
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  ^L: keys  ^T: toggle highlights")
+            .title("Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  F3: abandon  ^L: keys  ^T: toggle highlights")
             .title_style(Style::default().fg(Color::Indexed(75)).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
@@ -1109,10 +941,7 @@ pub fn edit_history<R: EventReader + Debug>(
     apply_highlights(alt_highlights, &mut textarea);
 
     let fmt = KeyCombinationFormat::default();
-    dbg!();
     loop {
-        dbg!();
-
         let event = if var("TEST_ENV").is_ok() {
             event_reader.read_event()?
         } else {
@@ -1121,10 +950,11 @@ pub fn edit_history<R: EventReader + Debug>(
                 |term| {
                     term.draw(|f| {
                         f.render_widget(&textarea, f.area());
-                        let exclude_keys = &["F1", "F2"];
+                        let remove = &["F1", "F2"];
+                        let add = &[["F3", "Discard saved and unsaved changes and exit"]];
                         if popup {
-                            show_popup(f, exclude_keys);
-                        }
+                            show_popup(f, remove, add);
+                        };
                         apply_highlights(alt_highlights, &mut textarea);
                     })
                     .map_err(|e| {
@@ -1139,29 +969,24 @@ pub fn edit_history<R: EventReader + Debug>(
                 },
             )?
         };
-        dbg!(&event);
 
         if let Paste(ref data) = event {
             textarea.insert_str(normalize_newlines(data));
-            dbg!(&textarea.lines());
         } else {
             match event {
                 Event::Key(key_event) => {
                     let key_combination = key_event.into();
                     let key = fmt.to_string(key_combination);
-                    dbg!(&key_combination);
-                    dbg!(&key);
                     match key_combination {
                         #[allow(clippy::unnested_or_patterns)]
                         key!(ctrl - c) | key!(ctrl - q) => {
                             println!("You typed {} which gracefully quits", key.green());
-                            return Ok(());
+                            return Ok(true);
                         }
                         key!(ctrl - d) => {
                             debug_log!("{textarea:?}");
                             stage_history(&staging_file, &textarea)?;
-                            dbg!();
-                            break;
+                            return Ok(true);
                         }
                         key!(ctrl - l) => popup = !popup,
                         key!(ctrl - s) => {
@@ -1187,6 +1012,10 @@ pub fn edit_history<R: EventReader + Debug>(
                                 //     })?;
                             }
                         }
+                        key!(f3) => {
+                            // Ask to revert
+                            return Ok(false);
+                        }
                         _ => {
                             // println!("You typed {} which represents nothing yet", key.blue());
                             let input = Input::from(event);
@@ -1200,19 +1029,14 @@ pub fn edit_history<R: EventReader + Debug>(
             }
         }
     }
-
-    dbg!(&textarea.lines());
-    Ok(())
 }
 
 fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> Result<(), ThagError> {
     let mut f = BufWriter::new(staging_file);
     for line in textarea.lines() {
-        dbg!(&line);
         Write::write_all(&mut f, line.as_bytes())?;
         Write::write_all(&mut f, b"\n")?;
     }
-    dbg!();
     Ok(())
 }
 

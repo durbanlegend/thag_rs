@@ -40,6 +40,7 @@ use reedline::{
 use regex::Regex;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::env::var;
 use std::fmt::Debug;
 use std::fs::{self, OpenOptions};
 use std::io::{BufWriter, Write};
@@ -1045,6 +1046,7 @@ pub fn edit_history_old(build_state: &BuildState) -> Result<Option<String>, Thag
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+#[allow(clippy::too_many_lines)]
 pub fn edit_history<R: EventReader + Debug>(
     history_path: &PathBuf,
     staging_path: &PathBuf,
@@ -1066,20 +1068,27 @@ pub fn edit_history<R: EventReader + Debug>(
 
     let stdout = std::io::stdout();
     let mut stdout = stdout.lock();
-    enable_raw_mode()?;
+    dbg!();
 
-    crossterm::execute!(
-        stdout,
-        EnterAlternateScreen,
-        EnableMouseCapture,
-        EnableBracketedPaste
-    )
-    .map_err(|e| e)?;
-    let backend = CrosstermBackend::new(stdout);
-    let terminal = Terminal::new(backend)?; // Ensure terminal will get reset when it goes out of scope.
-    let mut term = scopeguard::guard(terminal, |term| {
-        reset_term(term).expect("Error resetting terminal");
-    });
+    let mut maybe_term = if var("TEST_ENV").is_ok() {
+        None
+    } else {
+        enable_raw_mode()?;
+
+        crossterm::execute!(
+            stdout,
+            EnterAlternateScreen,
+            EnableMouseCapture,
+            EnableBracketedPaste
+        )
+        .map_err(|e| e)?;
+        let backend = CrosstermBackend::new(stdout);
+        let terminal = Terminal::new(backend)?; // Ensure terminal will get reset when it goes out of scope.
+        let term = scopeguard::guard(terminal, |term| {
+            reset_term(term).expect("Error resetting terminal");
+        });
+        Some(term)
+    };
 
     dbg!();
     let mut textarea = TextArea::from(initial_content.lines());
@@ -1104,30 +1113,40 @@ pub fn edit_history<R: EventReader + Debug>(
     loop {
         dbg!();
 
-        term.draw(|f| {
-            f.render_widget(&textarea, f.area());
-            let exclude_keys = &["F1", "F2"];
-            if popup {
-                show_popup(f, exclude_keys);
-            }
-            apply_highlights(alt_highlights, &mut textarea);
-        })
-        .map_err(|e| {
-            println!("Error drawing terminal: {:?}", e);
-            e
-        })?;
-        terminal::enable_raw_mode().unwrap();
-        // let event = crossterm::event::read();
-        let event = event_reader.read_event();
-        terminal::disable_raw_mode().unwrap();
+        let event = if var("TEST_ENV").is_ok() {
+            event_reader.read_event()?
+        } else {
+            maybe_term.as_mut().map_or_else(
+                || Err("Logic issue unwrapping term we wrapped ourselves".into()),
+                |term| {
+                    term.draw(|f| {
+                        f.render_widget(&textarea, f.area());
+                        let exclude_keys = &["F1", "F2"];
+                        if popup {
+                            show_popup(f, exclude_keys);
+                        }
+                        apply_highlights(alt_highlights, &mut textarea);
+                    })
+                    .map_err(|e| {
+                        println!("Error drawing terminal: {:?}", e);
+                        e
+                    })?;
+
+                    terminal::enable_raw_mode().unwrap();
+                    let event = event_reader.read_event();
+                    terminal::disable_raw_mode().unwrap();
+                    event.map_err(Into::<ThagError>::into) // Convert io::Error to ThagError
+                },
+            )?
+        };
         dbg!(&event);
 
-        if let Ok(Paste(ref data)) = event {
+        if let Paste(ref data) = event {
             textarea.insert_str(normalize_newlines(data));
             dbg!(&textarea.lines());
         } else {
             match event {
-                Ok(Event::Key(key_event)) => {
+                Event::Key(key_event) => {
                     let key_combination = key_event.into();
                     let key = fmt.to_string(key_combination);
                     dbg!(&key_combination);
@@ -1151,13 +1170,26 @@ pub fn edit_history<R: EventReader + Debug>(
                         }
                         key!(ctrl - t) => {
                             alt_highlights = !alt_highlights;
-                            term.draw(|_| {
-                                apply_highlights(alt_highlights, &mut textarea);
-                            })?;
+                            if var("TEST_ENV").is_err() {
+                                if let Some(ref mut term) = maybe_term {
+                                    term.draw(|_| {
+                                        apply_highlights(alt_highlights, &mut textarea);
+                                    })?;
+                                }
+                                // // map_or equivalent for interest's sake.
+                                // maybe_term
+                                //     .as_mut()
+                                //     .map_or(Ok::<(), ThagError>(()), |term| {
+                                //         term.draw(|_| {
+                                //             apply_highlights(alt_highlights, &mut textarea);
+                                //         })?;
+                                //         Ok(())
+                                //     })?;
+                            }
                         }
                         _ => {
                             // println!("You typed {} which represents nothing yet", key.blue());
-                            let input = Input::from(event?);
+                            let input = Input::from(event);
                             textarea.input(input);
                         }
                     }

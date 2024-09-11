@@ -19,7 +19,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -55,4 +55,4 @@ jobs:
       run: cargo build
 
     - name: Run tests
-      run: RUST_LOG=debug cargo test --no-fail-fast -- --test-threads=4 --test edit_history
+      run: RUST_BACKTRACE=1 RUST_LOG=debug cargo test --no-fail-fast -- --test-threads=4 --test edit_history

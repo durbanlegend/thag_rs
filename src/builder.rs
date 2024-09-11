@@ -1,7 +1,6 @@
 use crate::code_utils::{
-    self, build_loop, create_next_repl_file, create_temp_source_file, extract_ast_expr,
-    extract_manifest, process_expr, read_file_contents, remove_inner_attributes,
-    strip_curly_braces, wrap_snippet, write_source,
+    self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest, process_expr,
+    read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::colors::{nu_resolve_style, MessageLevel};
 use crate::config::{self, RealContext, MAYBE_CONFIG};
@@ -19,8 +18,8 @@ use crate::{
     ScriptState,
 };
 use crate::{
-    debug_log, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
-    TEMP_SCRIPT_NAME, TMPDIR,
+    debug_log, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR,
+    RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR,
 };
 use crate::{log, stdin};
 
@@ -74,7 +73,17 @@ pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
     // Not for tui_repl - history is solid and too expensive
     // TODO May phase this out for repl, or phase out repl itself.
     let repl_source_path = if is_repl && args.script.is_none() {
-        Some(create_next_repl_file()?)
+        // Some(create_next_repl_file()?)
+        let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
+        debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
+
+        // Ensure REPL subdirectory exists
+        fs::create_dir_all(&gen_repl_temp_dir_path)?;
+
+        // Create REPL file if necessary
+        let path = gen_repl_temp_dir_path.join(REPL_SCRIPT_NAME);
+        let _ = fs::File::create(&path)?;
+        Some(path)
     } else {
         None
     };

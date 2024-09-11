@@ -147,7 +147,7 @@ impl EventReader for CrosstermEventReader {
     disable_help_subcommand = true,
     verbatim_doc_comment
 )] // Disable automatic help subcommand and flag
-#[strum(serialize_all = "kebab-case")]
+#[strum(serialize_all = "snake_case")]
 /// REPL mode lets you type or paste a Rust expression to be evaluated.
 /// Start by choosing the eval option and entering your expression. Expressions between matching braces,
 /// brackets, parens or quotes may span multiple lines.
@@ -215,7 +215,7 @@ fn main() -> Result<(), ThagError> {
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::too_many_lines)]
 pub fn run_repl(
-    args: &mut Cli,
+    args: &Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     start: Instant,
@@ -553,8 +553,8 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit Rust script. Ctrl+D: submit  Ctrl+Q: quit  Ctrl+L: keys")
-            .title_style(Style::default().fg(Color::Yellow).bold().italic()),
+            .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
+            .title_style(Style::default().fg(Color::Indexed(42)).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::Blue));
@@ -570,7 +570,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
         term.draw(|f| {
             f.render_widget(&textarea, f.area());
             if popup {
-                show_popup(f);
+                show_popup(f, &[""; 0]);
             }
             apply_highlights(alt_highlights, &mut textarea);
         })
@@ -832,7 +832,15 @@ pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     }
 }
 
-fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> Result<(), ThagError> {
+/// Reset the terminal.
+///
+/// # Errors
+///
+/// This function will bubble up any `ratatui` or `crossterm` errors encountered.
+// TODO: move to shared?
+pub fn reset_term(
+    mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,
+) -> Result<(), ThagError> {
     disable_raw_mode()?;
     crossterm::execute!(
         term.backend_mut(),
@@ -844,8 +852,13 @@ fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> Resul
 }
 
 #[allow(clippy::cast_possible_truncation)]
-fn show_popup(f: &mut ratatui::prelude::Frame) {
-    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.area());
+pub fn show_popup(f: &mut ratatui::prelude::Frame, exclude_keys: &[&str]) {
+    let filtered_mappings: Vec<&[&str; 2]> = MAPPINGS
+        .iter()
+        .filter(|&row| !exclude_keys.contains(&row[0]))
+        .collect();
+    let num_filtered_rows = filtered_mappings.len();
+    let area = centered_rect(90, num_filtered_rows as u16 + 5, f.area());
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
@@ -858,12 +871,15 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
         )
         .title(Title::from("(Ctrl+L to toggle)").alignment(Alignment::Center))
         .add_modifier(Modifier::BOLD);
+    // this is supposed to clear out the background
     f.render_widget(Clear, area);
-    //this clears out the background
     f.render_widget(block, area);
     let row_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32)).take(NUM_ROWS));
+        .constraints(
+            std::iter::repeat(Constraint::Ratio(1, num_filtered_rows as u32))
+                .take(num_filtered_rows),
+        );
     let rows = row_layout.split(inner);
 
     for (i, row) in rows.iter().enumerate() {
@@ -872,7 +888,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
             .constraints([Constraint::Length(45), Constraint::Length(43)].as_ref());
         let cells = col_layout.split(*row);
         for n in 0..=1 {
-            let mut widget = Paragraph::new(MAPPINGS[i][n]);
+            let mut widget = Paragraph::new(filtered_mappings[i][n]);
             if i == 0 {
                 widget = widget.add_modifier(Modifier::BOLD);
             } else {
@@ -945,7 +961,7 @@ const MAPPINGS: &[[&str; 2]; 35] = &[
     ["F1", "Previous in history"],
     ["F2", "Next in history"],
 ];
-const NUM_ROWS: usize = MAPPINGS.len();
+// const NUM_ROWS: usize = MAPPINGS.len();
 
 /// Open the history file in an editor.
 /// # Errors

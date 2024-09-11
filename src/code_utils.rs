@@ -14,7 +14,7 @@ use crate::nu_resolve_style;
 use crate::shared::debug_timings;
 use crate::shared::{Ast, BuildState};
 use crate::{log, MessageLevel};
-use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
+use crate::{DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
@@ -748,81 +748,6 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, T
     debug_log!("Done!");
 
     Ok(to_rs_file)
-}
-
-/// Create the next sequential REPL file according to the `repl_nnnnnn.rs` standard used by this crate.
-/// # Errors
-/// Will return `Err` if there is any error encountered creating the next `repl_nnnnnnn/repl_nnnnnn.rs` in `$TMPDIR/REPL_SUBDIR`.
-pub fn create_next_repl_file() -> Result<PathBuf, ThagError> {
-    profile_fn!(create_next_repl_file);
-    // Create a directory inside of `std::env::temp_dir()`
-    let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
-
-    debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
-
-    // Ensure REPL subdirectory exists
-    fs::create_dir_all(&gen_repl_temp_dir_path)?;
-
-    // Find existing dirs with the pattern repl_<nnnnnn>
-    let mut existing_dirs = Vec::new();
-
-    for entry in fs::read_dir(&gen_repl_temp_dir_path)? {
-        let entry = entry?; // Bubbles up I/O errors
-        let path = entry.path();
-
-        if path.is_dir() {
-            if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                if stem.starts_with("repl_") {
-                    let num_str = stem.trim_start_matches("repl_");
-                    if num_str.len() == 6 && num_str.chars().all(char::is_numeric) {
-                        if let Ok(num) = num_str.parse::<u32>() {
-                            existing_dirs.push(num);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    let next_file_num = match existing_dirs.as_slice() {
-        [] => 0, // No existing files, start with 000000
-        _ if existing_dirs.contains(&999_999) => {
-            // Wrap around and find the first gap
-            for i in 0..999_999 {
-                if !existing_dirs.contains(&i) {
-                    return create_repl_file(&gen_repl_temp_dir_path, i);
-                }
-            }
-            return Err(format!("Cannot create new file: all possible subdirs `repl_nnnnnn` already exist in {TMPDIR:?}/{REPL_SUBDIR}.").into());
-        }
-        _ => {
-            existing_dirs
-                .iter()
-                .max()
-                .ok_or("Can't get max value iterating existing repl_nnnnnn subdirectories")?
-                + 1
-        } // Increment from highest existing number
-    };
-
-    create_repl_file(&gen_repl_temp_dir_path, next_file_num)
-}
-
-/// Create a REPL file on disk, given the path and sequence number.
-/// # Errors
-/// Will return `Err` if it fails to create the next `repl_nnnnnnn/repl_nnnnnn.rs` in `$TMPDIR/REPL_SUBDIR`.
-pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> Result<PathBuf, ThagError> {
-    profile_fn!(create_repl_file);
-    let padded_num = format!("{:06}", num);
-    let dir_name = format!("repl_{padded_num}");
-    let target_dir_path = gen_repl_temp_dir_path.join(dir_name);
-    fs::create_dir_all(&target_dir_path)?;
-
-    let filename = format!("repl_{padded_num}.rs");
-    let path = target_dir_path.join(filename);
-    fs::File::create(&path)?;
-
-    debug_log!("Created file: {path:#?}");
-    Ok(path)
 }
 
 /// Create empty script file `temp.rs` to hold expression for --expr or --stdin options,

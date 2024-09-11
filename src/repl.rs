@@ -7,6 +7,9 @@ use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::Ast;
+use crate::stdin::{
+    apply_highlights, normalize_newlines, reset_term, show_popup, CrosstermEventReader, EventReader,
+};
 use crate::{
     colors::{nu_resolve_style, MessageLevel},
     gen_build_run, nu_color_println,
@@ -14,23 +17,38 @@ use crate::{
 };
 
 use clap::{CommandFactory, Parser};
+use crokey::{crossterm, key, KeyCombinationFormat};
+use crossterm::event::{
+    EnableBracketedPaste,
+    EnableMouseCapture,
+    Event::{self, Paste},
+    // KeyCode, KeyEvent, KeyModifiers,
+};
+use crossterm::terminal::{self, enable_raw_mode, EnterAlternateScreen};
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
+use ratatui::prelude::CrosstermBackend;
+use ratatui::style::{Color, Style, Stylize};
+use ratatui::widgets::{Block, Borders};
+use ratatui::Terminal;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
-    EditCommand, Emacs, FileBackedHistory, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt,
-    PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent,
-    ReedlineMenu, Signal,
+    EditCommand, Emacs, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers, Keybindings,
+    MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline,
+    ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::fs::OpenOptions;
+use std::fs::{self, OpenOptions};
+use std::io::{BufWriter, Write};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
+use tui_textarea::{CursorMove, Input, TextArea};
 
-const HISTORY_FILE: &str = "thag_repl_hist.txt";
+pub const HISTORY_FILE: &str = "thag_repl_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
@@ -40,7 +58,7 @@ pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
     disable_help_subcommand = true,
     verbatim_doc_comment
 )] // Disable automatic help subcommand and flag
-#[strum(serialize_all = "kebab-case")]
+#[strum(serialize_all = "snake_case")]
 /// REPL mode lets you type or paste a Rust expression to be evaluated.
 /// Start by choosing the eval option and entering your expression. Expressions between matching braces,
 /// brackets, parens or quotes may span multiple lines.
@@ -150,6 +168,21 @@ pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
         KeyCode::Enter,
         ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
     );
+    // keybindings.add_binding(
+    //     KeyModifiers::NONE,
+    //     KeyCode::F(3),
+    //     ReedlineEvent::ExecuteHostCommand("line_editor.sync_history()?".into()),
+    // );
+    keybindings.add_binding(
+        KeyModifiers::NONE,
+        KeyCode::F(7),
+        ReedlineEvent::PreviousHistory,
+    );
+    keybindings.add_binding(
+        KeyModifiers::NONE,
+        KeyCode::F(8),
+        ReedlineEvent::NextHistory,
+    );
 }
 
 // fn get_emacs_keybindings() {
@@ -170,7 +203,7 @@ pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::too_many_lines)]
 pub fn run_repl(
-    args: &mut Cli,
+    args: &Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     start: Instant,
@@ -184,8 +217,9 @@ pub fn run_repl(
     // };
     // // get_emacs_keybindings();
     // let context: &mut Context = &mut context;
-    let history_file = build_state.cargo_home.join(HISTORY_FILE);
-    let history = Box::new(FileBackedHistory::with_file(25, history_file)?);
+    let history_path = build_state.cargo_home.join(HISTORY_FILE);
+    let staging_path: PathBuf = build_state.cargo_home.join("hist_staging");
+    let history = Box::new(FileBackedHistory::with_file(25, history_path.clone())?);
 
     let cmd_vec = ReplCommand::iter()
         .map(<ReplCommand as Into<&'static str>>::into)
@@ -226,6 +260,7 @@ pub fn run_repl(
     let prompt = ReplPrompt("repl");
     let cmd_list = &cmd_vec.join(", ");
 
+    // let mut hist = line_editor.with_history(history);
     disp_repl_banner(cmd_list);
     loop {
         let sig = line_editor.read_line(&prompt)?;
@@ -295,7 +330,22 @@ pub fn run_repl(
                         list(build_state)?;
                     }
                     ReplCommand::History => {
-                        edit_history(build_state)?;
+                        let event_reader = CrosstermEventReader;
+                        // TODO: edit_history must save history elsewhere, since the backing mechanism maay interfere with the backing file
+                        line_editor.sync_history()?;
+                        edit_history(&history_path, &staging_path, &event_reader)?;
+                        let history_mut = line_editor.history_mut();
+                        dbg!(&staging_path.exists());
+                        let saved_history = fs::read_to_string(&staging_path)?;
+                        // dbg!();
+                        // Have to place this after reading the file because it seems to delete the file.
+                        history_mut.clear()?;
+                        // dbg!();
+                        for line in saved_history.lines() {
+                            // dbg!(line);
+                            let _ = history_mut.save(HistoryItem::from_command_line(line))?;
+                        }
+                        history_mut.sync()?;
                     }
                     ReplCommand::Keys => {
                         // Calculate max command len for padding
@@ -969,8 +1019,10 @@ pub fn delete(build_state: &BuildState) -> Result<Option<String>, ThagError> {
 /// Open the history file in an editor.
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
+// TODO out?
+#[allow(dead_code)]
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit_history(build_state: &BuildState) -> Result<Option<String>, ThagError> {
+pub fn edit_history_old(build_state: &BuildState) -> Result<Option<String>, ThagError> {
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
     println!("history_path={history_path:#?}");
     OpenOptions::new()
@@ -980,6 +1032,142 @@ pub fn edit_history(build_state: &BuildState) -> Result<Option<String>, ThagErro
         .open(&history_path)?;
     edit::edit_file(&history_path)?;
     Ok(Some(String::from("End of history file edit")))
+}
+
+/// Edit the history file.
+///
+/// # Panics
+///
+/// Panics if a `crossterm` error is encountered resetting the terminal inside a
+/// `scopeguard::guard` closure.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+pub fn edit_history<R: EventReader>(
+    history_path: &PathBuf,
+    staging_path: &PathBuf,
+    event_reader: &R,
+) -> Result<(), ThagError> {
+    let initial_content = std::fs::read_to_string(history_path)?;
+    dbg!(code_utils::disentangle(&initial_content));
+    let staging_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(staging_path)?;
+    dbg!(&staging_file);
+
+    let mut popup = false;
+    let mut alt_highlights = false;
+
+    let stdout = std::io::stdout();
+    let mut stdout = stdout.lock();
+    enable_raw_mode()?;
+
+    crossterm::execute!(
+        stdout,
+        EnterAlternateScreen,
+        EnableMouseCapture,
+        EnableBracketedPaste
+    )
+    .map_err(|e| e)?;
+    let backend = CrosstermBackend::new(stdout);
+    let terminal = Terminal::new(backend)?; // Ensure terminal will get reset when it goes out of scope.
+    let mut term = scopeguard::guard(terminal, |term| {
+        reset_term(term).expect("Error resetting terminal");
+    });
+
+    let mut textarea = TextArea::from(initial_content.lines());
+
+    textarea.set_block(
+        Block::default()
+            .borders(Borders::NONE)
+            .title("Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  ^L: keys  ^T: toggle highlights")
+            .title_style(Style::default().fg(Color::Indexed(75)).bold()),
+    );
+    textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
+    textarea.set_selection_style(Style::default().bg(Color::Blue));
+    textarea.set_cursor_style(Style::default().on_magenta());
+    textarea.set_cursor_line_style(Style::default().on_dark_gray());
+
+    textarea.move_cursor(CursorMove::Bottom);
+
+    apply_highlights(alt_highlights, &mut textarea);
+
+    let fmt = KeyCombinationFormat::default();
+    loop {
+        term.draw(|f| {
+            f.render_widget(&textarea, f.area());
+            let exclude_keys = &["F1", "F2"];
+            if popup {
+                show_popup(f, exclude_keys);
+            }
+            apply_highlights(alt_highlights, &mut textarea);
+        })
+        .map_err(|e| {
+            println!("Error drawing terminal: {:?}", e);
+            e
+        })?;
+        terminal::enable_raw_mode().unwrap();
+        // let event = crossterm::event::read();
+        let event = event_reader.read_event();
+        terminal::disable_raw_mode().unwrap();
+
+        if let Ok(Paste(ref data)) = event {
+            textarea.insert_str(normalize_newlines(data));
+        } else {
+            match event {
+                Ok(Event::Key(key_event)) => {
+                    let key_combination = key_event.into();
+                    let key = fmt.to_string(key_combination);
+                    match key_combination {
+                        #[allow(clippy::unnested_or_patterns)]
+                        key!(ctrl - c) | key!(ctrl - q) => {
+                            println!("You typed {} which gracefully quits", key.green());
+                            return Ok(());
+                        }
+                        key!(ctrl - d) => {
+                            stage_history(&staging_file, &textarea)?;
+                            break;
+                        }
+                        key!(ctrl - l) => popup = !popup,
+                        key!(ctrl - s) => {
+                            stage_history(&staging_file, &textarea)?;
+                            continue;
+                        }
+                        key!(ctrl - t) => {
+                            alt_highlights = !alt_highlights;
+                            term.draw(|_| {
+                                apply_highlights(alt_highlights, &mut textarea);
+                            })?;
+                        }
+                        _ => {
+                            // println!("You typed {} which represents nothing yet", key.blue());
+                            let input = Input::from(event?);
+                            textarea.input(input);
+                        }
+                    }
+                }
+                _ => {
+                    continue;
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> Result<(), ThagError> {
+    let mut f = BufWriter::new(staging_file);
+    for line in textarea.lines() {
+        println!("in ctrl - d: line={line}");
+        Write::write_all(&mut f, line.as_bytes())?;
+        Write::write_all(&mut f, b"\n")?;
+    }
+    Ok(())
 }
 
 /// Open the generated destination Rust source code file in an editor.
@@ -1055,7 +1243,7 @@ pub fn disp_repl_banner(cmd_list: &str) {
     nu_color_println!(
         nu_resolve_style(MessageLevel::Subheading),
         r"Expressions in matching braces, brackets or quotes may span multiple lines.
-Use ↑ ↓ to navigate history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
+Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
     );
 }
 

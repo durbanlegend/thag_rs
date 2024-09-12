@@ -420,7 +420,7 @@ pub fn run_repl(
                             .unwrap_or(0);
                         // eprintln!("max_key_len={max_key_len}");
 
-                        show_key_bindings(formatted_bindings, max_key_len);
+                        show_key_bindings(&formatted_bindings, max_key_len);
                     }
                 }
                 continue;

@@ -53,6 +53,75 @@ use tui_textarea::{CursorMove, Input, TextArea};
 pub const HISTORY_FILE: &str = "thag_repl_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
+const EVENT_DESCS: &[[&str; 2]; 33] = &[
+    [
+        "HistoryHintComplete",
+        "Complete history hint (default in full)",
+    ],
+    [
+        "HistoryHintWordComplete",
+        "Complete a single token/word of the history hint",
+    ],
+    ["CtrlD", "Handle EndOfLine event"],
+    ["CtrlC", "Handle SIGTERM key input"],
+    [
+        "ClearScreen",
+        "Clears the screen and sets prompt to first line",
+    ],
+    [
+        "ClearScrollback",
+        "Clears the screen and the scrollback buffer, sets the prompt back to the first line",
+    ],
+    ["Enter", "Handle enter event"],
+    ["Submit", "Handle unconditional submit event"],
+    [
+        "SubmitOrNewline",
+        "Submit at the end of the *complete* text, otherwise newline",
+    ],
+    ["Esc", "Esc event"],
+    ["Mouse", "Mouse"],
+    ["Resize(u16, u16)", "trigger terminal resize"],
+    [
+        "Edit(Vec<EditCommand>)",
+        "Run §these commands in the editor",
+    ],
+    ["Repaint", "Trigger full repaint"],
+    [
+        "PreviousHistory",
+        "Navigate to the previous historic buffer",
+    ],
+    [
+        "Up",
+        "Move up to the previous line, if multiline, or up into the historic buffers",
+    ],
+    [
+        "Down",
+        "Move down to the next line, if multiline, or down through the historic buffers",
+    ],
+    [
+        "Right",
+        "Move right to the next column, completion entry, or complete hint",
+    ],
+    ["Left", "Move left to the next column, or completion entry"],
+    ["NextHistory", "Navigate to the next historic buffer"],
+    ["SearchHistory", "Search the history for a string"],
+    ["Multiple(Vec<ReedlineEvent>)", "Multiple chained (Vi)"],
+    ["UntilFound(Vec<ReedlineEvent>)", "Test"],
+    [
+        "Menu(String)",
+        "Trigger a menu event. It activates a menu with the event name",
+    ],
+    ["MenuNext", "Next element in the menu"],
+    ["MenuPrevious", "Previous element in the menu"],
+    ["MenuUp", "Moves up in the menu"],
+    ["MenuDown", "Moves down in the menu"],
+    ["MenuLeft", "Moves left in the menu"],
+    ["MenuRight", "Moves right in the menu"],
+    ["MenuPageNext", "Move to the next history page"],
+    ["MenuPagePrevious", "Move to the previous history page"],
+    ["OpenEditor", "Open text editor"],
+];
+
 const CMD_DESCS: &[[&str; 2]; 59] = &[
     ["MoveToStart", "Move to the start of the buffer"],
     ["MoveToLineStart", "Move to the start of the current line"],
@@ -173,15 +242,6 @@ impl ReplCommand {
     }
 }
 
-/// A struct to allow sharing of necessary context between functions
-#[derive(Debug)]
-pub struct Context<'a> {
-    pub args: &'a mut Cli,
-    pub proc_flags: &'a ProcFlags,
-    pub build_state: &'a mut BuildState,
-    pub start: Instant,
-}
-
 /// A struct to implement the Prompt trait.
 #[allow(clippy::module_name_repetitions)]
 pub struct ReplPrompt(pub &'static str);
@@ -232,11 +292,6 @@ pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
         KeyCode::Enter,
         ReedlineEvent::Edit(vec![EditCommand::InsertNewline]),
     );
-    // keybindings.add_binding(
-    //     KeyModifiers::NONE,
-    //     KeyCode::F(3),
-    //     ReedlineEvent::ExecuteHostCommand("line_editor.sync_history()?".into()),
-    // );
     keybindings.add_binding(
         KeyModifiers::NONE,
         KeyCode::F(7),
@@ -248,16 +303,6 @@ pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
         ReedlineEvent::NextHistory,
     );
 }
-
-// fn get_emacs_keybindings() {
-//     println!("\n--Default Keybindings--");
-//     for (mode, modifier, code, event) in get_reedline_default_keybindings() {
-//         if mode == "emacs" {
-//             println!("mode: {mode}, keymodifiers: {modifier}, keycode: {code}, event: {event}");
-//         }
-//     }
-//     println!();
-// }
 
 /// Run the REPL.
 /// # Errors
@@ -273,14 +318,6 @@ pub fn run_repl(
     start: Instant,
 ) -> Result<(), ThagError> {
     #[allow(unused_variables)]
-    // let mut context = Context {
-    //     &args,
-    //     proc_flags,
-    //     build_state,
-    //     start,
-    // };
-    // // get_emacs_keybindings();
-    // let context: &mut Context = &mut context;
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
     let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
     let history = Box::new(FileBackedHistory::with_file(25, history_path.clone())?);
@@ -366,9 +403,6 @@ pub fn run_repl(
 
         if let Some(cmd) = maybe_cmd {
             if let Ok(repl_command) = ReplCommand::from_str(&cmd) {
-                // let arg_matches = clap::Command::new("")
-                //     .no_binary_name(true)
-                //     .try_get_matches_from_mut(rest)?;
                 match repl_command {
                     ReplCommand::Banner => disp_repl_banner(cmd_list),
                     ReplCommand::Help => {
@@ -413,83 +447,32 @@ pub fn run_repl(
                         }
                     }
                     ReplCommand::Keys => {
-                        // Calculate max command len for padding
-                        // Can't extract this to a method because for some reason KeyCmmbination is not exposed.
-                        let max_cmd_len = {
-                            // Determine the length of the longest command for padding
-                            let max_cmd_len = bindings
-                                .values()
-                                .map(|reedline_event| {
-                                    if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
-                                        edit_cmds
-                                            .iter()
-                                            .map(|cmd| {
-                                                let key_desc =
-                                                    nu_resolve_style(MessageLevel::Subheading)
-                                                        .paint(format!("{cmd:?}"));
-                                                let key_desc = format!("{key_desc}");
-                                                key_desc.len()
-                                            })
-                                            .max()
-                                            .unwrap_or(0)
-                                    } else if !format!("{reedline_event}").starts_with("UntilFound")
-                                    {
-                                        let event_desc = nu_resolve_style(MessageLevel::Subheading)
-                                            .paint(format!("{reedline_event:?}"));
-                                        let event_desc = format!("{event_desc}");
-                                        event_desc.len()
-                                    } else {
-                                        0
-                                    }
-                                })
-                                .max()
-                                .unwrap_or(0);
-                            // Add 2 bytes of padding
-                            max_cmd_len + 2
-                        };
+                        let reedline_events =
+                            bindings.values().cloned().collect::<Vec<ReedlineEvent>>();
+                        let max_cmd_len = get_max_cmd_len(&reedline_events);
 
                         // Collect and format key bindings
-                        // Can't extract this to a method either, because KeyCmmbination is not exposed.
-                        let mut formatted_bindings = {
-                            let mut formatted_bindings = Vec::new();
-                            for (key_combination, reedline_event) in bindings {
+                        // NB: Can't extract this to a method either, because reedline does not expose KeyCombination.
+                        let named_reedline_events = bindings
+                            .iter()
+                            .map(|(key_combination, reedline_event)| {
                                 let key_modifiers = key_combination.modifier;
                                 let key_code = key_combination.key_code;
                                 let modifier = format_key_modifier(key_modifiers);
                                 let key = format_key_code(key_code);
                                 let key_desc = format!("{}{}", modifier, key);
-                                if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
-                                    let cmd_desc = format_edit_commands(edit_cmds, max_cmd_len);
-                                    formatted_bindings.push((key_desc.clone(), cmd_desc));
-                                } else {
-                                    let event_name = format!("{reedline_event:?}");
-                                    if !event_name.starts_with("UntilFound") {
-                                        let event_desc =
-                                            format_non_edit_events(&event_name, max_cmd_len);
-                                        formatted_bindings.push((key_desc, event_desc));
-                                    }
-                                }
-                            }
-                            formatted_bindings
-                        };
-
-                        // Sort the formatted bindings alphabetically by key combination description
-                        formatted_bindings.sort_by(|a, b| a.0.cmp(&b.0));
+                                (key_desc, reedline_event)
+                            })
+                            // .cloned()
+                            .collect::<Vec<(String, &ReedlineEvent)>>();
+                        let formatted_bindings =
+                            format_bindings(&named_reedline_events, max_cmd_len);
 
                         // Determine the length of the longest key description for padding
-                        let max_key_len = formatted_bindings
-                            .iter()
-                            .map(|(key_desc, _)| {
-                                let key_desc =
-                                    nu_resolve_style(MessageLevel::Heading).paint(key_desc);
-                                let key_desc = format!("{key_desc}");
-                                key_desc.len()
-                            })
-                            .max()
-                            .unwrap_or(0);
+                        let max_key_len = get_max_key_len(&formatted_bindings);
                         // eprintln!("max_key_len={max_key_len}");
 
-                        show_key_bindings(formatted_bindings, max_key_len);
+                        show_key_bindings(&formatted_bindings, max_key_len);
                     }
                 }
                 continue;
@@ -513,7 +496,85 @@ pub fn run_repl(
     Ok(())
 }
 
-pub fn show_key_bindings(formatted_bindings: Vec<(String, String)>, max_key_len: usize) {
+fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
+    let max_key_len = formatted_bindings
+        .iter()
+        .map(|(key_desc, _)| {
+            let key_desc = nu_resolve_style(MessageLevel::Heading).paint(key_desc);
+            let key_desc = format!("{key_desc}");
+            key_desc.len()
+        })
+        .max()
+        .unwrap_or(0);
+    max_key_len
+}
+
+fn format_bindings(
+    named_reedline_events: &[(String, &ReedlineEvent)],
+    max_cmd_len: usize,
+) -> Vec<(String, String)> {
+    let mut formatted_bindings = named_reedline_events
+        .iter()
+        .filter_map(|(key_desc, reedline_event)| {
+            if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                let cmd_desc = format_edit_commands(edit_cmds, max_cmd_len);
+                Some((key_desc.clone(), cmd_desc))
+            } else {
+                let event_name = format!("{reedline_event:?}");
+                if event_name.starts_with("UntilFound") {
+                    None
+                } else {
+                    let event_desc = format_non_edit_events(&event_name, max_cmd_len);
+                    Some((key_desc.clone(), event_desc))
+                }
+            }
+        })
+        .collect::<Vec<(String, String)>>();
+    // Sort the formatted bindings alphabetically by key combination description
+    formatted_bindings.sort_by(|a, b| a.0.cmp(&b.0));
+    formatted_bindings
+}
+
+fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
+    // Calculate max command len for padding
+    // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
+    let max_cmd_len = {
+        let max_cmd_len = {
+            // Determine the length of the longest command for padding
+            let max_cmd_len = reedline_events
+                .iter()
+                .map(|reedline_event| {
+                    if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                        edit_cmds
+                            .iter()
+                            .map(|cmd| {
+                                let key_desc = nu_resolve_style(MessageLevel::Subheading)
+                                    .paint(format!("{cmd:?}"));
+                                let key_desc = format!("{key_desc}");
+                                key_desc.len()
+                            })
+                            .max()
+                            .unwrap_or(0)
+                    } else if !format!("{reedline_event}").starts_with("UntilFound") {
+                        let event_desc = nu_resolve_style(MessageLevel::Subheading)
+                            .paint(format!("{reedline_event:?}"));
+                        let event_desc = format!("{event_desc}");
+                        event_desc.len()
+                    } else {
+                        0
+                    }
+                })
+                .max()
+                .unwrap_or(0);
+            // Add 2 bytes of padding
+            max_cmd_len + 2
+        };
+        max_cmd_len
+    };
+    max_cmd_len
+}
+
+pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
     println!();
     nu_color_println!(
         nu_resolve_style(crate::MessageLevel::Emphasis),
@@ -585,114 +646,18 @@ pub fn format_key_code(key_code: KeyCode) -> String {
 }
 
 // Helper function to format ReedlineEvents other than Edit, and their doc comments
+/// # Panics
+/// Will panic if it fails to split a `EVENT_DESC_MAP` entry, indicating a problem with the `EVENT_DESC_MAP`.
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     lazy_static! {
-        pub static ref EVENT_DESC_MAP: HashMap<String, String> = {
-            let mut m = HashMap::new();
-            m.insert(
-                "HistoryHintComplete".to_string(),
-                "Complete history hint (default in full)".to_string(),
-            );
-            m.insert(
-                "HistoryHintWordComplete".to_string(),
-                "Complete a single token/word of the history hint".to_string(),
-            );
-            m.insert("CtrlD".to_string(), "Handle EndOfLine event".to_string());
-            m.insert("CtrlC".to_string(), "Handle SIGTERM key input".to_string());
-            m.insert(
-                "ClearScreen".to_string(),
-                "Clears the screen and sets prompt to first line".to_string(),
-            );
-            m.insert("ClearScrollback".to_string(),"Clears the screen and the scrollback buffer, sets the prompt back to the first line".to_string());
-            m.insert("Enter".to_string(), "Handle enter event".to_string());
-            m.insert(
-                "Submit".to_string(),
-                "Handle unconditional submit event".to_string(),
-            );
-            m.insert(
-                "SubmitOrNewline".to_string(),
-                "Submit at the end of the *complete* text, otherwise newline".to_string(),
-            );
-            m.insert("Esc".to_string(), "Esc event".to_string());
-            m.insert("Mouse".to_string(), "Mouse".to_string());
-            m.insert(
-                "Resize(u16, u16)".to_string(),
-                "trigger terminal resize".to_string(),
-            );
-            m.insert(
-                "Edit(Vec<EditCommand>)".to_string(),
-                "Run these commands in the editor".to_string(),
-            );
-            m.insert("Repaint".to_string(), "Trigger full repaint".to_string());
-            m.insert(
-                "PreviousHistory".to_string(),
-                "Navigate to the previous historic buffer".to_string(),
-            );
-            m.insert(
-                "Up".to_string(),
-                "Move up to the previous line, if multiline, or up into the historic buffers"
-                    .to_string(),
-            );
-            m.insert(
-                "Down".to_string(),
-                "Move down to the next line, if multiline, or down through the historic buffers"
-                    .to_string(),
-            );
-            m.insert(
-                "Right".to_string(),
-                "Move right to the next column, completion entry, or complete hint".to_string(),
-            );
-            m.insert(
-                "Left".to_string(),
-                "Move left to the next column, or completion entry".to_string(),
-            );
-            m.insert(
-                "NextHistory".to_string(),
-                "Navigate to the next historic buffer".to_string(),
-            );
-            m.insert(
-                "SearchHistory".to_string(),
-                "Search the history for a string".to_string(),
-            );
-            m.insert(
-                "Multiple(Vec<ReedlineEvent>)".to_string(),
-                "Multiple chained (Vi)".to_string(),
-            );
-            m.insert(
-                "UntilFound(Vec<ReedlineEvent>)".to_string(),
-                "Test".to_string(),
-            );
-            m.insert(
-                "Menu(String)".to_string(),
-                "Trigger a menu event. It activates a menu with the event name".to_string(),
-            );
-            m.insert(
-                "MenuNext".to_string(),
-                "Next element in the menu".to_string(),
-            );
-            m.insert(
-                "MenuPrevious".to_string(),
-                "Previous element in the menu".to_string(),
-            );
-            m.insert("MenuUp".to_string(), "Moves up in the menu".to_string());
-            m.insert("MenuDown".to_string(), "Moves down in the menu".to_string());
-            m.insert("MenuLeft".to_string(), "Moves left in the menu".to_string());
-            m.insert(
-                "MenuRight".to_string(),
-                "Moves right in the menu".to_string(),
-            );
-            m.insert(
-                "MenuPageNext".to_string(),
-                "Move to the next history page".to_string(),
-            );
-            m.insert(
-                "MenuPagePrevious".to_string(),
-                "Move to the previous history page".to_string(),
-            );
-            m.insert("OpenEditor".to_string(), "Open text editor".to_string());
-            m
+        pub static ref EVENT_DESC_MAP: HashMap<&'static str, &'static str> = {
+            let mut map = HashMap::new();
+            for entry in EVENT_DESCS {
+                map.insert(entry[0], entry[1]);
+            }
+            map
         };
     };
 
@@ -701,7 +666,7 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     let event_desc = format!(
         "{:<max_cmd_len$} {}",
         event_highlight,
-        EVENT_DESC_MAP.get(event_name).unwrap_or(&String::new())
+        EVENT_DESC_MAP.get(event_name).unwrap_or(&"")
     );
     event_desc
 }
@@ -715,7 +680,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
     lazy_static! {
         pub static ref CMD_DESC_MAP: HashMap<&'static str, &'static str> = {
             let mut map = HashMap::new();
-            for entry in CMD_DESCS.iter() {
+            for entry in CMD_DESCS {
                 map.insert(entry[0], entry[1]);
             }
             map
@@ -853,24 +818,6 @@ pub fn delete(build_state: &BuildState) -> Result<Option<String>, ThagError> {
         );
     }
     Ok(Some(String::from("End of delete")))
-}
-
-/// Open the history file in an editor.
-/// # Errors
-/// Will return `Err` if there is an error editing the file.
-// TODO out?
-#[allow(dead_code)]
-#[allow(clippy::unnecessary_wraps)]
-pub fn edit_history_old(build_state: &BuildState) -> Result<Option<String>, ThagError> {
-    let history_path = build_state.cargo_home.join(HISTORY_FILE);
-    println!("history_path={history_path:#?}");
-    OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(&history_path)?;
-    edit::edit_file(&history_path)?;
-    Ok(Some(String::from("End of history file edit")))
 }
 
 /// Edit the history file.
@@ -1125,7 +1072,6 @@ Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear
 /// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
 pub fn list(build_state: &BuildState) -> Result<Option<String>, ThagError> {
-    // let build_state = &context.build_state;
     let source_path = &build_state.source_path;
     if source_path.exists() {
         log!(Verbosity::Quieter, "File: {:?}", &source_path);

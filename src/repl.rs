@@ -320,6 +320,7 @@ pub fn run_repl(
     #[allow(unused_variables)]
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
     let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
+    let backup_path: PathBuf = build_state.cargo_home.join("hist_backup.txt");
     let history = Box::new(FileBackedHistory::with_file(25, history_path.clone())?);
 
     let cmd_vec = ReplCommand::iter()

@@ -529,8 +529,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
     let mut popup = false;
     let mut alt_highlights = false;
 
-    let stdout = io::stdout();
-    let mut stdout = stdout.lock();
+    let mut stdout = io::stdout().lock();
     enable_raw_mode()?;
 
     crossterm::execute!(

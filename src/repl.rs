@@ -434,7 +434,7 @@ pub fn run_repl(
                         line_editor.sync_history()?;
                         // After editing, we won't know if history was saved with ctrl-s or not.
                         // So we assume it was and regenerate the history from the staging file.
-                        fs::copy(&history_path, &staging_path)?;
+                        fs::copy(&history_path, &backup_path)?;
                         let confirm = edit_history(&history_path, &staging_path, &event_reader)?;
                         if confirm {
                             let history_mut = line_editor.history_mut();
@@ -846,36 +846,16 @@ pub fn edit_history<R: EventReader + Debug>(
 
     let mut popup = false;
     let mut alt_highlights = false;
+    let mut saved = false;
 
-    let stdout = std::io::stdout();
-    let mut stdout = stdout.lock();
-
-    let mut maybe_term = if var("TEST_ENV").is_ok() {
-        None
-    } else {
-        enable_raw_mode()?;
-
-        crossterm::execute!(
-            stdout,
-            EnterAlternateScreen,
-            EnableMouseCapture,
-            EnableBracketedPaste
-        )
-        .map_err(|e| e)?;
-        let backend = CrosstermBackend::new(stdout);
-        let terminal = Terminal::new(backend)?; // Ensure terminal will get reset when it goes out of scope.
-        let term = scopeguard::guard(terminal, |term| {
-            reset_term(term).expect("Error resetting terminal");
-        });
-        Some(term)
-    };
+    let mut maybe_term = resolve_term()?;
 
     let mut textarea = TextArea::from(initial_content.lines());
 
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  F3: abandon  ^L: keys  ^T: toggle highlights")
+            .title("Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  F3: abandon  ^L: keys  ^T: toggle highlighting")
             .title_style(Style::default().fg(Color::Indexed(75)).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
@@ -928,7 +908,7 @@ pub fn edit_history<R: EventReader + Debug>(
                         #[allow(clippy::unnested_or_patterns)]
                         key!(ctrl - c) | key!(ctrl - q) => {
                             println!("You typed {} which gracefully quits", key.green());
-                            return Ok(true);
+                            return Ok(saved);
                         }
                         key!(ctrl - d) => {
                             debug_log!("{textarea:?}");
@@ -938,6 +918,7 @@ pub fn edit_history<R: EventReader + Debug>(
                         key!(ctrl - l) => popup = !popup,
                         key!(ctrl - s) => {
                             stage_history(&staging_file, &textarea)?;
+                            saved = true;
                             continue;
                         }
                         key!(ctrl - t) => {
@@ -976,6 +957,40 @@ pub fn edit_history<R: EventReader + Debug>(
             }
         }
     }
+}
+
+fn resolve_term() -> Result<
+    Option<
+        scopeguard::ScopeGuard<
+            Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>,
+            impl FnOnce(Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>),
+        >,
+    >,
+    ThagError,
+> {
+    let maybe_term = if var("TEST_ENV").is_ok() {
+        None
+    } else {
+        let stdout = std::io::stdout();
+        let mut stdout = stdout.lock();
+
+        enable_raw_mode()?;
+
+        crossterm::execute!(
+            stdout,
+            EnterAlternateScreen,
+            EnableMouseCapture,
+            EnableBracketedPaste
+        )
+        .map_err(|e| e)?;
+        let backend = CrosstermBackend::new(stdout);
+        let terminal = Terminal::new(backend)?; // Ensure terminal will get reset when it goes out of scope.
+        let term = scopeguard::guard(terminal, |term| {
+            reset_term(term).expect("Error resetting terminal");
+        });
+        Some(term)
+    };
+    Ok(maybe_term)
 }
 
 fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> Result<(), ThagError> {

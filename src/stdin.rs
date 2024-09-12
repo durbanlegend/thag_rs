@@ -1,4 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
+use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
 use crate::errors::ThagError;
 use crate::logging::Verbosity;
 use crate::repl::{
@@ -563,7 +564,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
 
     textarea.move_cursor(CursorMove::Bottom);
 
-    apply_highlights(alt_highlights, &mut textarea);
+    apply_highlights(&TUI_SELECTION_BG, &mut textarea);
 
     let fmt = KeyCombinationFormat::default();
     loop {
@@ -572,7 +573,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
             if popup {
                 show_popup(f, &[""; 0], &[["", ""]]);
             }
-            apply_highlights(alt_highlights, &mut textarea);
+            apply_highlights(&TUI_SELECTION_BG, &mut textarea);
         })
         .map_err(|e| {
             println!("Error drawing terminal: {:?}", e);
@@ -618,7 +619,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
                         key!(ctrl - t) => {
                             alt_highlights = !alt_highlights;
                             term.draw(|_| {
-                                apply_highlights(alt_highlights, &mut textarea);
+                                apply_highlights(&TUI_SELECTION_BG, &mut textarea);
                             })?;
                         }
                         key!(f1) => {
@@ -818,17 +819,20 @@ pub fn normalize_newlines(input: &str) -> String {
 
 /// Apply highlights to the text depending on the light or dark theme as detected, configured
 /// or defaulted, or as toggled by the user with Ctrl-t.
-pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
-    if alt_highlights {
-        // Dark theme-friendly colors
-        textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
-        textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
-        textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
-    } else {
-        // Light theme-friendly colors
-        textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
-        textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
-        textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
+pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
+    match scheme {
+        TuiSelectionBg::BlueYellow => {
+            // Dark theme-friendly colors
+            textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
+            textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
+            textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
+        }
+        TuiSelectionBg::RedWhite => {
+            // Light theme-friendly colors
+            textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
+            textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
+            textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
+        }
     }
 }
 

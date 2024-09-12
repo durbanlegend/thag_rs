@@ -69,6 +69,14 @@ lazy_static! {
         };
         term_theme
     };
+
+    pub static ref TUI_SELECTION_BG: TuiSelectionBg = {
+        (*config::MAYBE_CONFIG).as_ref().map_or_else(
+            || match &*TERM_THEME {
+                TermTheme::Light => TuiSelectionBg::BlueYellow,
+                TermTheme::Dark => TuiSelectionBg::RedWhite
+            }, |config| config.colors.tui_selection_bg.clone())
+    };
 }
 
 /// A struct of the color support details, borrowed from crate `supports-color` since we
@@ -267,6 +275,16 @@ pub enum TermTheme {
     Light,
     #[default]
     Dark,
+}
+
+/// An enum to categorise the current TUI editor highlighting scheme for the selected
+/// line as configured or defaulted.
+#[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq, Eq)]
+#[strum(serialize_all = "snake_case")]
+pub enum TuiSelectionBg {
+    #[default]
+    BlueYellow,
+    RedWhite,
 }
 
 /// An enum to categorise the supported message types for display.

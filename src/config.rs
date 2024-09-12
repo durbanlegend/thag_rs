@@ -9,7 +9,7 @@ use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
 
-use crate::colors::{ColorSupport, TermTheme};
+use crate::colors::{ColorSupport, TermTheme, TuiSelectionBg};
 
 use crate::debug_log;
 use crate::logging::Verbosity;
@@ -23,10 +23,11 @@ lazy_static! {
         if let Some(ref config) = maybe_config {
                 debug_log!("Loaded config: {config:?}");
                 debug_log!(
-                    "default_verbosity={:?}, color_support={:?}, term_theme={:?}, unquote={}",
+                    "default_verbosity={:?}, color_support={:?}, term_theme={:?}, tui_highlight_bg={:?}, unquote={}",
                     config.logging.default_verbosity,
                     config.colors.color_support,
                     config.colors.term_theme,
+                    config.colors.tui_selection_bg,
                     config.misc.unquote
                 );
         }
@@ -62,6 +63,9 @@ pub struct Colors {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
     pub term_theme: TermTheme,
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(default)]
+    pub tui_selection_bg: TuiSelectionBg,
 }
 
 #[allow(dead_code)]
@@ -191,10 +195,11 @@ fn main() {
     if let Some(config) = maybe_config {
         debug_log!("Loaded config: {config:?}");
         debug_log!(
-            "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
+            "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}, TuiSelectionBg={:?}",
             config.logging.default_verbosity,
             config.colors.color_support,
-            config.colors.term_theme
+            config.colors.term_theme,
+            config.colors.tui_selection_bg
         );
     } else {
         debug_log!("No configuration file found.");

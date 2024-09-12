@@ -4,7 +4,7 @@ use ratatui::crossterm::tty::IsTty;
 use ratatui::style::{Color, Style};
 use std::io::{stdout, Write};
 use std::process::{Command, Stdio};
-use thag_rs::colors::get_term_theme;
+use thag_rs::colors::{get_term_theme, TuiSelectionBg};
 use thag_rs::logging::Verbosity;
 use thag_rs::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
 use thag_rs::{edit, log};
@@ -158,7 +158,7 @@ fn test_apply_highlights() {
 
     eprintln!("Theme={}", get_term_theme());
 
-    apply_highlights(true, &mut textarea);
+    apply_highlights(&TuiSelectionBg::BlueYellow, &mut textarea);
     assert_eq!(
         textarea.selection_style(),
         Style::default().fg(Color::Black).bg(Color::Cyan)
@@ -172,7 +172,7 @@ fn test_apply_highlights() {
         Style::default().fg(Color::White).bg(Color::DarkGray)
     );
 
-    apply_highlights(false, &mut textarea);
+    apply_highlights(&TuiSelectionBg::RedWhite, &mut textarea);
     assert_eq!(
         textarea.selection_style(),
         Style::default().fg(Color::White).bg(Color::Blue)

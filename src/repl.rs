@@ -1,6 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
+use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
 #[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::errors::ThagError;
@@ -846,7 +847,7 @@ pub fn edit_history<R: EventReader + Debug>(
         .open(staging_path)?;
 
     let mut popup = false;
-    let mut alt_highlights = false;
+    let mut tui_highlight_bg = &*TUI_SELECTION_BG;
     let mut saved = false;
 
     let mut maybe_term = resolve_term()?;
@@ -866,7 +867,7 @@ pub fn edit_history<R: EventReader + Debug>(
 
     textarea.move_cursor(CursorMove::Bottom);
 
-    apply_highlights(alt_highlights, &mut textarea);
+    apply_highlights(&TUI_SELECTION_BG, &mut textarea);
 
     let fmt = KeyCombinationFormat::default();
     loop {
@@ -883,7 +884,7 @@ pub fn edit_history<R: EventReader + Debug>(
                         if popup {
                             show_popup(f, remove, add);
                         };
-                        apply_highlights(alt_highlights, &mut textarea);
+                        apply_highlights(&TUI_SELECTION_BG, &mut textarea);
                     })
                     .map_err(|e| {
                         println!("Error drawing terminal: {:?}", e);
@@ -923,11 +924,19 @@ pub fn edit_history<R: EventReader + Debug>(
                             continue;
                         }
                         key!(ctrl - t) => {
-                            alt_highlights = !alt_highlights;
+                            // Toggle highlighting colours
+                            tui_highlight_bg = match tui_highlight_bg {
+                                crate::colors::TuiSelectionBg::BlueYellow => {
+                                    &TuiSelectionBg::RedWhite
+                                }
+                                crate::colors::TuiSelectionBg::RedWhite => {
+                                    &TuiSelectionBg::BlueYellow
+                                }
+                            };
                             if var("TEST_ENV").is_err() {
                                 if let Some(ref mut term) = maybe_term {
                                     term.draw(|_| {
-                                        apply_highlights(alt_highlights, &mut textarea);
+                                        apply_highlights(tui_highlight_bg, &mut textarea);
                                     })?;
                                 }
                                 // // map_or equivalent for interest's sake.

@@ -1,26 +1,30 @@
-use crokey::{key, KeyCombination};
 use crossterm::event::Event;
 use crossterm::terminal;
 use ratatui::prelude::CrosstermBackend;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, Borders};
 use ratatui::Terminal;
+use scopeguard::ScopeGuard;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::convert::Into;
 use std::env::var;
 use std::fmt::Debug;
-use std::fs::OpenOptions;
 use std::path::PathBuf;
-use tui_textarea::{CursorMove, Input, TextArea};
+use tui_textarea::{CursorMove, TextArea};
 
-use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
-use crate::repl::{resolve_term, stage_history};
+use crate::colors::TUI_SELECTION_BG;
+use crate::repl::resolve_term;
 use crate::stdin::{apply_highlights, show_popup};
 use crate::ThagError;
 
+pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
+pub type Term = Terminal<BackEnd>;
+pub type ResetTermClosure = Box<dyn FnOnce(Term)>;
+pub type TermScopeGuard = ScopeGuard<Term, ResetTermClosure>;
+
 #[derive(Default, Serialize, Deserialize)]
-struct History {
+pub struct History {
     entries: VecDeque<String>,
     current_index: Option<usize>,
 }
@@ -34,21 +38,31 @@ pub trait EventReader: Debug {
     fn read_event(&self) -> Result<Event, ThagError>;
 }
 
+/// A struct to implement real-world use of the event reader, as opposed to use in testing.
+#[derive(Debug)]
+pub struct CrosstermEventReader;
+
+impl EventReader for CrosstermEventReader {
+    fn read_event(&self) -> Result<Event, ThagError> {
+        crossterm::event::read().map_err(Into::<ThagError>::into)
+    }
+}
+
 // Struct to hold data-related parameters
 #[allow(dead_code)]
 pub struct EditData<'a> {
-    initial_content: &'a str,
-    save_path: PathBuf,
-    history_path: PathBuf,
-    history: &'a mut History,
+    pub initial_content: &'a str,
+    pub save_path: &'a PathBuf,
+    pub history_path: &'a Option<PathBuf>,
+    pub history: &'a mut Option<History>,
 }
 
 // Struct to hold display-related parameters
 pub struct Display<'a> {
-    title: &'a str,
-    title_style: Style,
-    remove_keys: &'a [&'a str; 1],
-    add_keys: &'a [&'a [&'a str; 2]],
+    pub title: &'a str,
+    pub title_style: Style,
+    pub remove_keys: &'a [&'a str],
+    pub add_keys: &'a [&'a [&'a str; 2]],
 }
 
 pub enum KeyAction {
@@ -75,7 +89,14 @@ pub fn edit<R, F>(
 ) -> Result<KeyAction, ThagError>
 where
     R: EventReader + Debug,
-    F: Fn(Event, &EditData, &mut TextArea, &mut bool, &mut bool) -> Result<KeyAction, ThagError>,
+    F: Fn(
+        Event,
+        &mut Option<TermScopeGuard>,
+        &EditData,
+        &mut TextArea,
+        &mut bool,
+        &mut bool,
+    ) -> Result<KeyAction, ThagError>,
 {
     // Initialize state variables
     let mut popup = false;
@@ -131,7 +152,14 @@ where
         };
 
         // Call the key_handler closure to process events
-        let key_action = key_handler(event, data, &mut textarea, &mut popup, &mut saved)?;
+        let key_action = key_handler(
+            event,
+            &mut maybe_term,
+            data,
+            &mut textarea,
+            &mut popup,
+            &mut saved,
+        )?;
 
         match key_action {
             KeyAction::AbandonChanges | KeyAction::Quit(_) | KeyAction::SaveAndExit => {
@@ -143,90 +171,5 @@ where
             | KeyAction::TogglePopup => continue,
             KeyAction::ShowHelp => todo!(),
         }
-    }
-}
-
-/// Example of a key handler function that could be passed into `edit`
-///
-/// # Errors
-///
-/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-pub fn history_key_handler(
-    event: Event,
-    mut maybe_term: Option<
-        scopeguard::ScopeGuard<
-            Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>,
-            impl FnOnce(Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>),
-        >,
-    >,
-    data: EditData,
-    mut textarea: TextArea,
-    popup: &mut bool,
-    saved: &mut bool,
-) -> Result<KeyAction, ThagError> {
-    let mut tui_highlight_bg = &*TUI_SELECTION_BG;
-    if let Event::Key(key_event) = event {
-        let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
-        let save_file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(data.save_path)?;
-
-        match key_combination {
-            #[allow(clippy::unnested_or_patterns)]
-            key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
-            key!(ctrl - d) => {
-                // Save logic
-                stage_history(&save_file, &textarea)?;
-                println!("Saved");
-                Ok(KeyAction::SaveAndExit)
-            }
-            key!(ctrl - s) => {
-                // Save logic
-                stage_history(&save_file, &textarea)?;
-                println!("Saved");
-                *saved = true;
-                Ok(KeyAction::Save)
-            }
-            key!(ctrl - l) => {
-                // Toggle popup
-                *popup = !*popup;
-                Ok(KeyAction::TogglePopup)
-            }
-            key!(ctrl - t) => {
-                // Toggle highlighting colours
-                tui_highlight_bg = match tui_highlight_bg {
-                    TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
-                    TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
-                };
-                if var("TEST_ENV").is_err() {
-                    #[allow(clippy::option_if_let_else)]
-                    if let Some(ref mut term) = maybe_term {
-                        term.draw(|_| {
-                            apply_highlights(tui_highlight_bg, &mut textarea);
-                        })
-                        .map_err(Into::into)
-                        .map(|_| KeyAction::Continue)
-                    } else {
-                        Ok(KeyAction::Continue)
-                    }
-                } else {
-                    Ok(KeyAction::Continue)
-                }
-            }
-            key!(f3) => {
-                // Ask to revert
-                Ok(KeyAction::AbandonChanges)
-            }
-            _ => {
-                // Update the textarea with the input from the key event
-                textarea.input(Input::from(event)); // Input derived from Event
-                Ok(KeyAction::Continue)
-            }
-        }
-    } else {
-        Ok(KeyAction::Continue)
     }
 }

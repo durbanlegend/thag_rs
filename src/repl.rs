@@ -11,6 +11,7 @@ use crate::shared::Ast;
 use crate::stdin::{apply_highlights, normalize_newlines, reset_term, show_popup};
 use crate::tui_editor::{
     edit as tui_edit, CrosstermEventReader, Display, EditData, EventReader, History, KeyAction,
+    ResetTermClosure, TermScopeGuard,
 };
 use crate::{
     colors::{nu_resolve_style, MessageLevel},
@@ -40,6 +41,7 @@ use reedline::{
     ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
+use scopeguard::guard;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env::var;
@@ -366,7 +368,7 @@ pub fn run_repl(
 
     // let mut hist = line_editor.with_history(history);
     disp_repl_banner(cmd_list);
-    let mut hist_str = read_to_string(&history_path)?;
+    let hist_str = read_to_string(&history_path)?;
     loop {
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {
@@ -454,21 +456,18 @@ pub fn run_repl(
                             remove_keys: &["F1", "F2"],
                             add_keys: &[&["F3", "Discard saved and unsaved changes and exit"]],
                         };
-                        tui_edit(
+                        let key_action = tui_edit(
                             &event_reader,
                             &data,
                             &display,
-                            |event, mut maybe_term, data, textarea, popup, saved| {
+                            |event, maybe_term, data, textarea, popup, saved| {
                                 history_key_handler(
                                     event,
-                                    &mut maybe_term,
-                                    data,
-                                    textarea,
-                                    popup,
-                                    saved,
+                                    maybe_term, // Remove `&mut` since `maybe_term` is already mutable
+                                    data, textarea, popup, saved,
                                 )
                             },
-                        );
+                        )?;
                         let confirm = edit_history(&history_path, &staging_path, &event_reader)?;
                         if confirm {
                             let history_mut = line_editor.history_mut();
@@ -537,14 +536,9 @@ pub fn run_repl(
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 pub fn history_key_handler(
     event: Event,
-    maybe_term: &mut Option<
-        scopeguard::ScopeGuard<
-            Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>,
-            impl FnOnce(Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>),
-        >,
-    >,
+    maybe_term: &mut Option<TermScopeGuard>,
     data: &EditData,
-    mut textarea: &mut TextArea,
+    textarea: &mut TextArea,
     popup: &mut bool,
     saved: &mut bool,
 ) -> Result<KeyAction, ThagError> {
@@ -563,13 +557,13 @@ pub fn history_key_handler(
             key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
             key!(ctrl - d) => {
                 // Save logic
-                stage_history(&save_file, &textarea)?;
+                stage_history(&save_file, textarea)?;
                 println!("Saved");
                 Ok(KeyAction::SaveAndExit)
             }
             key!(ctrl - s) => {
                 // Save logic
-                stage_history(&save_file, &textarea)?;
+                stage_history(&save_file, textarea)?;
                 println!("Saved");
                 *saved = true;
                 Ok(KeyAction::Save)
@@ -589,7 +583,7 @@ pub fn history_key_handler(
                     #[allow(clippy::option_if_let_else)]
                     if let Some(ref mut term) = maybe_term {
                         term.draw(|_| {
-                            apply_highlights(tui_highlight_bg, &mut textarea);
+                            apply_highlights(tui_highlight_bg, textarea);
                         })
                         .map_err(Into::into)
                         .map(|_| KeyAction::Continue)
@@ -1089,43 +1083,7 @@ pub fn edit_history<R: EventReader + Debug>(
 ///
 /// # Errors
 ///
-/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-// pub fn resolve_term<G: FnOnce(Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>)>() -> Result<
-//     Option<scopeguard::ScopeGuard<Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>, G>>,
-//     ThagError,
-// > {
-//     let maybe_term = if var("TEST_ENV").is_ok() {
-//         None
-//     } else {
-//         let mut stdout = std::io::stdout().lock();
-
-//         enable_raw_mode()?;
-
-//         crossterm::execute!(
-//             stdout,
-//             EnterAlternateScreen,
-//             EnableMouseCapture,
-//             EnableBracketedPaste
-//         )
-//         .map_err(|e| e)?;
-//         let backend = CrosstermBackend::new(stdout);
-//         let terminal = Terminal::new(backend)?; // Ensure terminal will get reset when it goes out of scope.
-//         let term = scopeguard::guard(terminal, |term| {
-//             reset_term(term).expect("Error resetting terminal");
-//         });
-//         Some(term)
-//     };
-//     Ok(maybe_term)
-// }
-pub fn resolve_term() -> Result<
-    Option<
-        scopeguard::ScopeGuard<
-            Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>,
-            Box<dyn FnOnce(Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>)>,
-        >,
-    >,
-    ThagError,
-> {
+pub fn resolve_term() -> Result<Option<TermScopeGuard>, ThagError> {
     let maybe_term = if var("TEST_ENV").is_ok() {
         None
     } else {
@@ -1144,13 +1102,14 @@ pub fn resolve_term() -> Result<
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
 
-        // Use Box<dyn FnOnce> for the closure
-        let term = scopeguard::guard(
+        // Box the closure explicitly as `Box<dyn FnOnce>`
+        let term = guard(
             terminal,
             Box::new(|term| {
                 reset_term(term).expect("Error resetting terminal");
-            }),
+            }) as ResetTermClosure,
         );
+
         Some(term)
     };
     Ok(maybe_term)

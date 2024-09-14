@@ -41,6 +41,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, IsTerminal};
+use std::ops::Deref;
 use std::str::FromStr;
 use std::time::Instant;
 use std::{collections::VecDeque, fs, path::PathBuf};
@@ -193,9 +194,6 @@ enum ReplCommand {
 impl ReplCommand {
     fn print_help() {
         let mut command = Self::command();
-        // let mut buf = Vec::new();
-        // command.write_help(&mut buf).unwrap();
-        // let help_message = String::from_utf8(buf).unwrap();
         println!("{}", command.render_long_help());
     }
 }
@@ -571,7 +569,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
         term.draw(|f| {
             f.render_widget(&textarea, f.area());
             if popup {
-                show_popup(f, &[""; 0], &[["", ""]]);
+                show_popup(f, &[""; 0], &[&["", ""]]);
             }
             apply_highlights(&TUI_SELECTION_BG, &mut textarea);
         })
@@ -579,14 +577,10 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
             println!("Error drawing terminal: {:?}", e);
             e
         })?;
-        // let event = event_reader.read_event().map_err(|e| {
-        //     println!("Error reading event: {:?}", e);
-        //     e
-        // })?;
-        terminal::enable_raw_mode().unwrap();
+        terminal::enable_raw_mode()?;
         // let event = crossterm::event::read();
         let event = event_reader.read_event();
-        terminal::disable_raw_mode().unwrap();
+        terminal::disable_raw_mode()?;
 
         if let Ok(Paste(ref data)) = event {
             textarea.insert_str(normalize_newlines(data));
@@ -856,11 +850,11 @@ pub fn reset_term(
 }
 
 #[allow(clippy::cast_possible_truncation)]
-pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[[&str; 2]]) {
+pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&[&str; 2]]) {
     let adjusted_mappings: Vec<&[&str; 2]> = MAPPINGS
         .iter()
         .filter(|&row| !remove.contains(&row[0]))
-        .chain(add.iter())
+        .chain(add.iter().map(Deref::deref))
         .collect();
     let num_filtered_rows = adjusted_mappings.len();
     let area = centered_rect(90, num_filtered_rows as u16 + 5, f.area());

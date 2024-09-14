@@ -12,7 +12,7 @@
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Config option for formatting main?
 - [ ]  Config option for stdin -d highlighting preference, like repl.rs
-- [ ]  Merge ScriptState into BuildState?
+- [ ]  Configurable multi-purpose TUI editor?
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  REPL option Open in TUI

@@ -4,8 +4,8 @@ use crate::{errors::ThagError, MAYBE_CONFIG};
 
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
-use core::{fmt, str};
 use firestorm::profile_fn;
+use std::{fmt, str};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and REPL.
 #[allow(clippy::struct_excessive_bools)]

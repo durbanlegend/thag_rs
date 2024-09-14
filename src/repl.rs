@@ -861,14 +861,13 @@ pub fn edit_history<R: EventReader + Debug>(
             .title_style(Style::default().fg(Color::Indexed(75)).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
-    textarea.set_selection_style(Style::default().bg(Color::Blue));
-    textarea.set_cursor_style(Style::default().on_magenta());
-    textarea.set_cursor_line_style(Style::default().on_dark_gray());
 
     textarea.move_cursor(CursorMove::Bottom);
 
     apply_highlights(&TUI_SELECTION_BG, &mut textarea);
 
+    let remove_keys = &["F1", "F2"];
+    let add_keys = &[&["F3", "Discard saved and unsaved changes and exit"]];
     let fmt = KeyCombinationFormat::default();
     loop {
         let event = if var("TEST_ENV").is_ok() {
@@ -879,10 +878,8 @@ pub fn edit_history<R: EventReader + Debug>(
                 |term| {
                     term.draw(|f| {
                         f.render_widget(&textarea, f.area());
-                        let remove = &["F1", "F2"];
-                        let add = &[["F3", "Discard saved and unsaved changes and exit"]];
                         if popup {
-                            show_popup(f, remove, add);
+                            show_popup(f, remove_keys, add_keys);
                         };
                         apply_highlights(&TUI_SELECTION_BG, &mut textarea);
                     })
@@ -926,12 +923,8 @@ pub fn edit_history<R: EventReader + Debug>(
                         key!(ctrl - t) => {
                             // Toggle highlighting colours
                             tui_highlight_bg = match tui_highlight_bg {
-                                crate::colors::TuiSelectionBg::BlueYellow => {
-                                    &TuiSelectionBg::RedWhite
-                                }
-                                crate::colors::TuiSelectionBg::RedWhite => {
-                                    &TuiSelectionBg::BlueYellow
-                                }
+                                TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
+                                TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
                             };
                             if var("TEST_ENV").is_err() {
                                 if let Some(ref mut term) = maybe_term {
@@ -969,7 +962,18 @@ pub fn edit_history<R: EventReader + Debug>(
     }
 }
 
-fn resolve_term() -> Result<
+/// Determine whether a terminal is in use (as opposed to testing or headless CI), and
+/// if so, wrap it in a scopeguard in order to reset it regardless of success or failure.
+///
+/// # Panics
+///
+/// Panics if a `crossterm` error is encountered resetting the terminal inside a
+/// `scopeguard::guard` closure.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+pub fn resolve_term() -> Result<
     Option<
         scopeguard::ScopeGuard<
             Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>,
@@ -981,8 +985,7 @@ fn resolve_term() -> Result<
     let maybe_term = if var("TEST_ENV").is_ok() {
         None
     } else {
-        let stdout = std::io::stdout();
-        let mut stdout = stdout.lock();
+        let mut stdout = std::io::stdout().lock();
 
         enable_raw_mode()?;
 
@@ -1003,7 +1006,12 @@ fn resolve_term() -> Result<
     Ok(maybe_term)
 }
 
-fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> Result<(), ThagError> {
+/// Save the `textarea` contents to a history staging file.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o errors encountered.
+pub fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> Result<(), ThagError> {
     let mut f = BufWriter::new(staging_file);
     for line in textarea.lines() {
         Write::write_all(&mut f, line.as_bytes())?;

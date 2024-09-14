@@ -14,6 +14,7 @@ pub mod manifest;
 pub mod repl;
 pub mod shared;
 pub mod stdin;
+pub mod tui_editor;
 
 // Re-export commonly used items for convenience
 pub use builder::{execute, gen_build_run};

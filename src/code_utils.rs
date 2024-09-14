@@ -29,7 +29,6 @@ use std::io::BufRead;
 use std::io::{self, Write};
 use std::option::Option;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use std::process::Output;
 use std::time::{Instant, SystemTime};
@@ -868,51 +867,6 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
                 }
             );
         }
-    }
-    Ok(())
-}
-
-/// Format a Rust source file in situ using rustfmt.
-/// # Errors
-/// Will return `Err` if there is any error accessing path to source file
-/// # Panics
-/// Will panic if the `rustfmt` failed.
-#[allow(dead_code)]
-pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
-    profile_fn!(rustfmt);
-    let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
-    let source_path_str = target_rs_path
-        .to_str()
-        .ok_or_else(|| String::from("Error accessing path to source file"))?;
-
-    if Command::new("rustfmt").arg("--version").output().is_ok() {
-        // Run rustfmt on the source file
-        let mut command = Command::new("rustfmt");
-        command.arg("--verbose");
-        command.arg("--edition");
-        command.arg("2021");
-        command.arg(source_path_str);
-
-        #[allow(unused_variables)]
-        let output = command.output()?;
-
-        if output.status.success() {
-            debug_log!("Successfully formatted {} with rustfmt.", source_path_str);
-            debug_log!(
-                "{source_path_str}\n{}",
-                String::from_utf8_lossy(&output.stdout)
-            );
-        } else {
-            debug_log!(
-                "Failed to format {source_path_str} with rustfmt\n{}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
-    } else {
-        log!(
-            Verbosity::Quieter,
-            "`rustfmt` not found. Please install it to use this script."
-        );
     }
     Ok(())
 }

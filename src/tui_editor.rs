@@ -1,19 +1,21 @@
-use crokey::{key, KeyCombination, KeyCombinationFormat};
+use crokey::{key, KeyCombination};
 use crossterm::event::Event;
 use crossterm::terminal;
 use ratatui::prelude::CrosstermBackend;
-use ratatui::style::{Color, Style, Stylize};
+use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, Borders};
+use ratatui::Terminal;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::convert::Into;
 use std::env::var;
-use std::fmt::{self, Debug};
+use std::fmt::Debug;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use tui_textarea::{CursorMove, Input, TextArea};
 
-use crate::colors::TUI_SELECTION_BG;
-use crate::repl::resolve_term;
+use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
+use crate::repl::{resolve_term, stage_history};
 use crate::stdin::{apply_highlights, show_popup};
 use crate::ThagError;
 
@@ -24,11 +26,17 @@ struct History {
 }
 
 pub trait EventReader: Debug {
+    /// Read a terminal event.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
     fn read_event(&self) -> Result<Event, ThagError>;
 }
 
 // Struct to hold data-related parameters
-struct EditData<'a> {
+#[allow(dead_code)]
+pub struct EditData<'a> {
     initial_content: &'a str,
     save_path: PathBuf,
     history_path: PathBuf,
@@ -36,7 +44,7 @@ struct EditData<'a> {
 }
 
 // Struct to hold display-related parameters
-struct Display<'a> {
+pub struct Display<'a> {
     title: &'a str,
     title_style: Style,
     remove_keys: &'a [&'a str; 1],
@@ -46,7 +54,7 @@ struct Display<'a> {
 pub enum KeyAction {
     AbandonChanges,
     Continue, // For other inputs that don't need specific handling
-    Quit,
+    Quit(bool),
     Save,
     SaveAndExit,
     ShowHelp,
@@ -54,35 +62,30 @@ pub enum KeyAction {
     TogglePopup,
 }
 
-// Main function to edit content with TUI
+/// Edit content with a TUI
+///
+/// # Errors
+///
+/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 pub fn edit<R, F>(
     event_reader: &R,
-    data: EditData,
-    display: Display,
+    data: &EditData,
+    display: &Display,
     key_handler: F, // closure or function for key handling
 ) -> Result<KeyAction, ThagError>
 where
     R: EventReader + Debug,
-    F: Fn(Event, &mut TextArea, &mut bool, &mut bool) -> Result<KeyAction, ThagError>,
+    F: Fn(Event, &EditData, &mut TextArea, &mut bool, &mut bool) -> Result<KeyAction, ThagError>,
 {
-    // Reading the initial content and setting up file for saving
-    let initial_content = data.initial_content;
-    let save_file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(data.save_path)?;
-
     // Initialize state variables
     let mut popup = false;
-    let mut tui_highlight_bg = &*TUI_SELECTION_BG;
+    // let mut tui_highlight_bg = &*TUI_SELECTION_BG;
     let mut saved = false;
 
     let mut maybe_term = resolve_term()?;
 
     // Create the TextArea from initial content
-    let mut textarea = TextArea::from(initial_content.lines());
+    let mut textarea = TextArea::from(data.initial_content.lines());
 
     // Set up the display parameters for the textarea
     textarea.set_block(
@@ -97,13 +100,13 @@ where
     // Apply initial highlights
     apply_highlights(&TUI_SELECTION_BG, &mut textarea);
 
-    let fmt = KeyCombinationFormat::default();
-
     // Event loop for handling key events
     loop {
         let event = if var("TEST_ENV").is_ok() {
+            // Testing or CI
             event_reader.read_event()?
         } else {
+            // Real-world interaction
             maybe_term.as_mut().map_or_else(
                 || Err("Logic issue unwrapping term we wrapped ourselves".into()),
                 |term| {
@@ -115,56 +118,75 @@ where
                         apply_highlights(&TUI_SELECTION_BG, &mut textarea);
                     })
                     .map_err(|e| {
-                        println!("Error drawing terminal: {:?}", e);
+                        println!("Error drawing terminal: {e:?}");
                         e
                     })?;
 
-                    terminal::enable_raw_mode().unwrap();
+                    terminal::enable_raw_mode()?;
                     let event = event_reader.read_event();
-                    terminal::disable_raw_mode().unwrap();
+                    terminal::disable_raw_mode()?;
                     event.map_err(Into::<ThagError>::into)
                 },
             )?
         };
 
         // Call the key_handler closure to process events
-        if let Ok(action) = key_handler(&event, &mut textarea) {
-            match action {
-                KeyAction::AbandonChanges => todo!(),
-                KeyAction::Continue => todo!(),
-                KeyAction::Quit => todo!(),
-                KeyAction::Save => todo!(),
-                KeyAction::SaveAndExit => todo!(),
-                KeyAction::ShowHelp => todo!(),
-                KeyAction::ToggleHighlight => {
-                    tui_highlight_bg = match tui_highlight_bg {
-                        crate::colors::TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
-                        crate::colors::TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
-                    };
-                }
-                KeyAction::TogglePopup => popup = !popup,
+        let key_action = key_handler(event, data, &mut textarea, &mut popup, &mut saved)?;
+
+        match key_action {
+            KeyAction::AbandonChanges | KeyAction::Quit(_) | KeyAction::SaveAndExit => {
+                break (Ok(key_action))
             }
-            return Ok(action);
+            KeyAction::Continue
+            | KeyAction::Save
+            | KeyAction::ToggleHighlight
+            | KeyAction::TogglePopup => continue,
+            KeyAction::ShowHelp => todo!(),
         }
     }
 }
 
-// Example of a key handler function that could be passed into `edit`
-pub fn default_key_handler(
+/// Example of a key handler function that could be passed into `edit`
+///
+/// # Errors
+///
+/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+pub fn history_key_handler(
     event: Event,
-    textarea: &mut TextArea,
+    mut maybe_term: Option<
+        scopeguard::ScopeGuard<
+            Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>,
+            impl FnOnce(Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>),
+        >,
+    >,
+    data: EditData,
+    mut textarea: TextArea,
     popup: &mut bool,
     saved: &mut bool,
 ) -> Result<KeyAction, ThagError> {
+    let mut tui_highlight_bg = &*TUI_SELECTION_BG;
     if let Event::Key(key_event) = event {
         let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+        let save_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(data.save_path)?;
 
         match key_combination {
-            key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit),
-            key!(ctrl - d) => Ok(KeyAction::SaveAndExit),
+            #[allow(clippy::unnested_or_patterns)]
+            key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
+            key!(ctrl - d) => {
+                // Save logic
+                stage_history(&save_file, &textarea)?;
+                println!("Saved");
+                Ok(KeyAction::SaveAndExit)
+            }
             key!(ctrl - s) => {
                 // Save logic
-                println!("Save");
+                stage_history(&save_file, &textarea)?;
+                println!("Saved");
                 *saved = true;
                 Ok(KeyAction::Save)
             }
@@ -173,7 +195,33 @@ pub fn default_key_handler(
                 *popup = !*popup;
                 Ok(KeyAction::TogglePopup)
             }
+            key!(ctrl - t) => {
+                // Toggle highlighting colours
+                tui_highlight_bg = match tui_highlight_bg {
+                    TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
+                    TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
+                };
+                if var("TEST_ENV").is_err() {
+                    #[allow(clippy::option_if_let_else)]
+                    if let Some(ref mut term) = maybe_term {
+                        term.draw(|_| {
+                            apply_highlights(tui_highlight_bg, &mut textarea);
+                        })
+                        .map_err(Into::into)
+                        .map(|_| KeyAction::Continue)
+                    } else {
+                        Ok(KeyAction::Continue)
+                    }
+                } else {
+                    Ok(KeyAction::Continue)
+                }
+            }
+            key!(f3) => {
+                // Ask to revert
+                Ok(KeyAction::AbandonChanges)
+            }
             _ => {
+                // Update the textarea with the input from the key event
                 textarea.input(Input::from(event)); // Input derived from Event
                 Ok(KeyAction::Continue)
             }

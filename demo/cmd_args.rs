@@ -16,7 +16,7 @@ use thag_rs::RS_SUFFIX;
 
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
-use core::{fmt, str};
+use std::{fmt, str};
 use std::error::Error;
 
 // thag_rs script runner and REPL

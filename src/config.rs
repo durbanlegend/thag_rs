@@ -35,7 +35,6 @@ lazy_static! {
     };
 }
 
-// #[allow(dead_code)]
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -44,7 +43,6 @@ pub struct Config {
     pub misc: Misc,
 }
 
-#[allow(dead_code)]
 #[serde_as]
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
@@ -53,7 +51,6 @@ pub struct Logging {
     pub default_verbosity: Verbosity,
 }
 
-#[allow(dead_code)]
 #[serde_as]
 #[derive(Debug, Default, Deserialize)]
 pub struct Colors {
@@ -68,7 +65,6 @@ pub struct Colors {
     pub tui_selection_bg: TuiSelectionBg,
 }
 
-#[allow(dead_code)]
 #[serde_as]
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]

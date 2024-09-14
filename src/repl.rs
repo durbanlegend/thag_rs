@@ -8,8 +8,9 @@ use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::Ast;
-use crate::stdin::{
-    apply_highlights, normalize_newlines, reset_term, show_popup, CrosstermEventReader, EventReader,
+use crate::stdin::{apply_highlights, normalize_newlines, reset_term, show_popup};
+use crate::tui_editor::{
+    edit as tui_edit, CrosstermEventReader, Display, EditData, EventReader, History, KeyAction,
 };
 use crate::{
     colors::{nu_resolve_style, MessageLevel},
@@ -18,7 +19,7 @@ use crate::{
 };
 
 use clap::{CommandFactory, Parser};
-use crokey::{crossterm, key, KeyCombinationFormat};
+use crokey::{crossterm, key, KeyCombination, KeyCombinationFormat};
 use crossterm::event::{
     EnableBracketedPaste,
     EnableMouseCapture,
@@ -43,7 +44,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env::var;
 use std::fmt::Debug;
-use std::fs::{self, OpenOptions};
+use std::fs::{self, read_to_string, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -365,6 +366,7 @@ pub fn run_repl(
 
     // let mut hist = line_editor.with_history(history);
     disp_repl_banner(cmd_list);
+    let mut hist_str = read_to_string(&history_path)?;
     loop {
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {
@@ -437,6 +439,36 @@ pub fn run_repl(
                         // After editing, we won't know if history was saved with ctrl-s or not.
                         // So we assume it was and regenerate the history from the staging file.
                         fs::copy(&history_path, &backup_path)?;
+                        let initial_content = hist_str.as_str();
+                        // let mut maybe_term = resolve_term()?;
+
+                        let data = EditData {
+                            initial_content,
+                            save_path: &staging_path,
+                            history_path: &None,
+                            history: &mut None::<History>,
+                        };
+                        let display = Display {
+                            title: "Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  F3: abandon  ^L: keys  ^T: toggle highlighting",
+                            title_style: Style::default().fg(Color::Indexed(75)).bold(),
+                            remove_keys: &["F1", "F2"],
+                            add_keys: &[&["F3", "Discard saved and unsaved changes and exit"]],
+                        };
+                        tui_edit(
+                            &event_reader,
+                            &data,
+                            &display,
+                            |event, mut maybe_term, data, textarea, popup, saved| {
+                                history_key_handler(
+                                    event,
+                                    &mut maybe_term,
+                                    data,
+                                    textarea,
+                                    popup,
+                                    saved,
+                                )
+                            },
+                        );
                         let confirm = edit_history(&history_path, &staging_path, &event_reader)?;
                         if confirm {
                             let history_mut = line_editor.history_mut();
@@ -496,6 +528,91 @@ pub fn run_repl(
         }
     }
     Ok(())
+}
+
+/// Example of a key handler function that could be passed into `edit`
+///
+/// # Errors
+///
+/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+pub fn history_key_handler(
+    event: Event,
+    maybe_term: &mut Option<
+        scopeguard::ScopeGuard<
+            Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>,
+            impl FnOnce(Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>),
+        >,
+    >,
+    data: &EditData,
+    mut textarea: &mut TextArea,
+    popup: &mut bool,
+    saved: &mut bool,
+) -> Result<KeyAction, ThagError> {
+    let mut tui_highlight_bg = &*TUI_SELECTION_BG;
+    if let Event::Key(key_event) = event {
+        let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+        let save_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(data.save_path)?;
+
+        match key_combination {
+            #[allow(clippy::unnested_or_patterns)]
+            key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
+            key!(ctrl - d) => {
+                // Save logic
+                stage_history(&save_file, &textarea)?;
+                println!("Saved");
+                Ok(KeyAction::SaveAndExit)
+            }
+            key!(ctrl - s) => {
+                // Save logic
+                stage_history(&save_file, &textarea)?;
+                println!("Saved");
+                *saved = true;
+                Ok(KeyAction::Save)
+            }
+            key!(ctrl - l) => {
+                // Toggle popup
+                *popup = !*popup;
+                Ok(KeyAction::TogglePopup)
+            }
+            key!(ctrl - t) => {
+                // Toggle highlighting colours
+                tui_highlight_bg = match tui_highlight_bg {
+                    TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
+                    TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
+                };
+                if var("TEST_ENV").is_err() {
+                    #[allow(clippy::option_if_let_else)]
+                    if let Some(ref mut term) = maybe_term {
+                        term.draw(|_| {
+                            apply_highlights(tui_highlight_bg, &mut textarea);
+                        })
+                        .map_err(Into::into)
+                        .map(|_| KeyAction::Continue)
+                    } else {
+                        Ok(KeyAction::Continue)
+                    }
+                } else {
+                    Ok(KeyAction::Continue)
+                }
+            }
+            key!(f3) => {
+                // Ask to revert
+                Ok(KeyAction::AbandonChanges)
+            }
+            _ => {
+                // Update the textarea with the input from the key event
+                textarea.input(Input::from(event)); // Input derived from Event
+                Ok(KeyAction::Continue)
+            }
+        }
+    } else {
+        Ok(KeyAction::Continue)
+    }
 }
 
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
@@ -838,7 +955,7 @@ pub fn edit_history<R: EventReader + Debug>(
     staging_path: &PathBuf,
     event_reader: &R,
 ) -> Result<bool, ThagError> {
-    let initial_content = std::fs::read_to_string(history_path)?;
+    let initial_content = read_to_string(history_path)?;
     let staging_file = OpenOptions::new()
         .read(true)
         .write(true)
@@ -973,11 +1090,38 @@ pub fn edit_history<R: EventReader + Debug>(
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+// pub fn resolve_term<G: FnOnce(Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>)>() -> Result<
+//     Option<scopeguard::ScopeGuard<Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>, G>>,
+//     ThagError,
+// > {
+//     let maybe_term = if var("TEST_ENV").is_ok() {
+//         None
+//     } else {
+//         let mut stdout = std::io::stdout().lock();
+
+//         enable_raw_mode()?;
+
+//         crossterm::execute!(
+//             stdout,
+//             EnterAlternateScreen,
+//             EnableMouseCapture,
+//             EnableBracketedPaste
+//         )
+//         .map_err(|e| e)?;
+//         let backend = CrosstermBackend::new(stdout);
+//         let terminal = Terminal::new(backend)?; // Ensure terminal will get reset when it goes out of scope.
+//         let term = scopeguard::guard(terminal, |term| {
+//             reset_term(term).expect("Error resetting terminal");
+//         });
+//         Some(term)
+//     };
+//     Ok(maybe_term)
+// }
 pub fn resolve_term() -> Result<
     Option<
         scopeguard::ScopeGuard<
             Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>,
-            impl FnOnce(Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>),
+            Box<dyn FnOnce(Terminal<CrosstermBackend<std::io::StdoutLock<'static>>>)>,
         >,
     >,
     ThagError,
@@ -996,11 +1140,17 @@ pub fn resolve_term() -> Result<
             EnableBracketedPaste
         )
         .map_err(|e| e)?;
+
         let backend = CrosstermBackend::new(stdout);
-        let terminal = Terminal::new(backend)?; // Ensure terminal will get reset when it goes out of scope.
-        let term = scopeguard::guard(terminal, |term| {
-            reset_term(term).expect("Error resetting terminal");
-        });
+        let terminal = Terminal::new(backend)?;
+
+        // Use Box<dyn FnOnce> for the closure
+        let term = scopeguard::guard(
+            terminal,
+            Box::new(|term| {
+                reset_term(term).expect("Error resetting terminal");
+            }),
+        );
         Some(term)
     };
     Ok(maybe_term)

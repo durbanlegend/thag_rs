@@ -1,5 +1,6 @@
-use crossterm::event::Event;
+use crossterm::event::Event::{self, Paste};
 use crossterm::terminal;
+use mockall::automock;
 use ratatui::prelude::CrosstermBackend;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, Borders};
@@ -10,12 +11,13 @@ use std::collections::VecDeque;
 use std::convert::Into;
 use std::env::var;
 use std::fmt::Debug;
+use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 use tui_textarea::{CursorMove, TextArea};
 
 use crate::colors::TUI_SELECTION_BG;
 use crate::repl::resolve_term;
-use crate::stdin::{apply_highlights, show_popup};
+use crate::stdin::{apply_highlights, normalize_newlines, show_popup};
 use crate::ThagError;
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
@@ -29,6 +31,8 @@ pub struct History {
     current_index: Option<usize>,
 }
 
+/// A trait to allow mocking of the event reader for testing purposes.
+#[automock]
 pub trait EventReader: Debug {
     /// Read a terminal event.
     ///
@@ -65,6 +69,7 @@ pub struct Display<'a> {
     pub add_keys: &'a [&'a [&'a str; 2]],
 }
 
+#[derive(Debug)]
 pub enum KeyAction {
     AbandonChanges,
     Continue, // For other inputs that don't need specific handling
@@ -83,7 +88,7 @@ pub enum KeyAction {
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 pub fn edit<R, F>(
     event_reader: &R,
-    data: &EditData,
+    edit_data: &EditData,
     display: &Display,
     key_handler: F, // closure or function for key handling
 ) -> Result<KeyAction, ThagError>
@@ -92,12 +97,20 @@ where
     F: Fn(
         Event,
         &mut Option<TermScopeGuard>,
-        &EditData,
+        &File,
         &mut TextArea,
         &mut bool,
         &mut bool,
     ) -> Result<KeyAction, ThagError>,
 {
+    // Initialize save file
+    let save_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(edit_data.save_path)?;
+
     // Initialize state variables
     let mut popup = false;
     // let mut tui_highlight_bg = &*TUI_SELECTION_BG;
@@ -106,7 +119,7 @@ where
     let mut maybe_term = resolve_term()?;
 
     // Create the TextArea from initial content
-    let mut textarea = TextArea::from(data.initial_content.lines());
+    let mut textarea = TextArea::from(edit_data.initial_content.lines());
 
     // Set up the display parameters for the textarea
     textarea.set_block(
@@ -151,25 +164,29 @@ where
             )?
         };
 
-        // Call the key_handler closure to process events
-        let key_action = key_handler(
-            event,
-            &mut maybe_term,
-            data,
-            &mut textarea,
-            &mut popup,
-            &mut saved,
-        )?;
+        if let Paste(ref data) = event {
+            textarea.insert_str(normalize_newlines(data));
+        } else {
+            // Call the key_handler closure to process events
+            let key_action = key_handler(
+                event,
+                &mut maybe_term,
+                &save_file,
+                &mut textarea,
+                &mut popup,
+                &mut saved,
+            )?;
 
-        match key_action {
-            KeyAction::AbandonChanges | KeyAction::Quit(_) | KeyAction::SaveAndExit => {
-                break (Ok(key_action))
+            match key_action {
+                KeyAction::AbandonChanges | KeyAction::Quit(_) | KeyAction::SaveAndExit => {
+                    break (Ok(key_action))
+                }
+                KeyAction::Continue
+                | KeyAction::Save
+                | KeyAction::ToggleHighlight
+                | KeyAction::TogglePopup => continue,
+                KeyAction::ShowHelp => todo!(),
             }
-            KeyAction::Continue
-            | KeyAction::Save
-            | KeyAction::ToggleHighlight
-            | KeyAction::TogglePopup => continue,
-            KeyAction::ShowHelp => todo!(),
         }
     }
 }

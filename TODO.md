@@ -16,6 +16,7 @@
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  REPL option Open in TUI
+- [ ]  Try keyboard mapping for TUI navigation
 - [ ]  Define pub type ThagResult<T> = Result<T, ThagError>;
 - [ ]  Debug Firestorm double invocation.
 - [ ]  Test [profile.dev] optimisation level

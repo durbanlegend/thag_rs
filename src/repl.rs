@@ -46,7 +46,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env::var;
 use std::fmt::Debug;
-use std::fs::{self, read_to_string, OpenOptions};
+use std::fs::{self, read_to_string, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -356,6 +356,7 @@ pub fn run_repl(
             DefaultHinter::default().with_style(nu_resolve_style(MessageLevel::Ghost).italic()),
         ))
         .with_history(history)
+        .with_history_exclusion_prefix(Some("q".into()))
         // .with_highlighter(highlighter)
         .with_completer(completer)
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
@@ -368,7 +369,7 @@ pub fn run_repl(
 
     // let mut hist = line_editor.with_history(history);
     disp_repl_banner(cmd_list);
-    let hist_str = read_to_string(&history_path)?;
+    // let hist_str = read_to_string(&history_path)?;
     loop {
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {
@@ -441,39 +442,65 @@ pub fn run_repl(
                         // After editing, we won't know if history was saved with ctrl-s or not.
                         // So we assume it was and regenerate the history from the staging file.
                         fs::copy(&history_path, &backup_path)?;
-                        let initial_content = hist_str.as_str();
+                        let history_string = read_to_string(&history_path)?;
+                        let initial_content = history_string.as_str();
                         // let mut maybe_term = resolve_term()?;
 
-                        let data = EditData {
-                            initial_content,
-                            save_path: &staging_path,
-                            history_path: &None,
-                            history: &mut None::<History>,
+                        let new = false;
+
+                        let confirm = if new {
+                            let data = EditData {
+                                initial_content,
+                                save_path: &staging_path,
+                                history_path: &None,
+                                history: &mut None::<History>,
+                            };
+                            let display = Display {
+                                title: "Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  F3: abandon  ^L: keys  ^T: toggle highlighting",
+                                title_style: Style::default().fg(Color::Indexed(75)).bold(),
+                                remove_keys: &["F1", "F2"],
+                                add_keys: &[&["F3", "Discard saved and unsaved changes and exit"]],
+                            };
+                            let key_action = tui_edit(
+                                &event_reader,
+                                &data,
+                                &display,
+                                |event, maybe_term, data, textarea, popup, saved| {
+                                    history_key_handler(
+                                        event,
+                                        maybe_term, // Remove `&mut` since `maybe_term` is already mutable
+                                        data, textarea, popup, saved,
+                                    )
+                                },
+                            )?;
+                            // eprintln!("key_action={key_action:?}, confirm={confirm}");
+                            match key_action {
+                                KeyAction::Quit(saved) => saved,
+                                KeyAction::Save
+                                | KeyAction::ShowHelp
+                                | KeyAction::ToggleHighlight
+                                | KeyAction::TogglePopup => {
+                                    return Err(ThagError::FromStr(
+                                        format!(
+                                        "Logic error: {key_action:?} should not return from tui_edit"
+                                    )
+                                        .into(),
+                                    ))
+                                }
+                                KeyAction::SaveAndExit => true,
+                                _ => false,
+                            }
+                        } else {
+                            edit_history(&history_path, &staging_path, &event_reader)?
                         };
-                        let display = Display {
-                            title: "Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  F3: abandon  ^L: keys  ^T: toggle highlighting",
-                            title_style: Style::default().fg(Color::Indexed(75)).bold(),
-                            remove_keys: &["F1", "F2"],
-                            add_keys: &[&["F3", "Discard saved and unsaved changes and exit"]],
-                        };
-                        let key_action = tui_edit(
-                            &event_reader,
-                            &data,
-                            &display,
-                            |event, maybe_term, data, textarea, popup, saved| {
-                                history_key_handler(
-                                    event,
-                                    maybe_term, // Remove `&mut` since `maybe_term` is already mutable
-                                    data, textarea, popup, saved,
-                                )
-                            },
-                        )?;
-                        let confirm = edit_history(&history_path, &staging_path, &event_reader)?;
                         if confirm {
                             let history_mut = line_editor.history_mut();
                             let saved_history = fs::read_to_string(&staging_path)?;
+                            eprintln!("staging_path={staging_path:?}");
+                            eprintln!("saved_history={saved_history}");
                             history_mut.clear()?;
                             for line in saved_history.lines() {
+                                eprintln!("saving line={line}");
                                 let _ = history_mut.save(HistoryItem::from_command_line(line))?;
                             }
                             history_mut.sync()?;
@@ -537,7 +564,7 @@ pub fn run_repl(
 pub fn history_key_handler(
     event: Event,
     maybe_term: &mut Option<TermScopeGuard>,
-    data: &EditData,
+    save_file: &File,
     textarea: &mut TextArea,
     popup: &mut bool,
     saved: &mut bool,
@@ -545,26 +572,20 @@ pub fn history_key_handler(
     let mut tui_highlight_bg = &*TUI_SELECTION_BG;
     if let Event::Key(key_event) = event {
         let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
-        let save_file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(data.save_path)?;
 
         match key_combination {
             #[allow(clippy::unnested_or_patterns)]
             key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
             key!(ctrl - d) => {
                 // Save logic
-                stage_history(&save_file, textarea)?;
-                println!("Saved");
+                stage_history(save_file, textarea)?;
+                // println!("Saved");
                 Ok(KeyAction::SaveAndExit)
             }
             key!(ctrl - s) => {
                 // Save logic
-                stage_history(&save_file, textarea)?;
-                println!("Saved");
+                stage_history(save_file, textarea)?;
+                // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
                 *saved = true;
                 Ok(KeyAction::Save)
             }

@@ -5,13 +5,11 @@ ratatui = "0.28.1"
 tui-textarea = { version = "0.6.1", features = ["crossterm", "search"] }
 */
 
-use ratatui::backend::CrosstermBackend;
-use ratatui::crossterm::event::{
-    DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
-    Event::Paste,
-};
-/// Published basic `vim` editor example from crate `tui-textarea`.
+/// Published basic `vim` editor example from crate `tui-textarea`. Mildly tweaked
+/// to use `ratatui::crossterm` re-exports instead of `crossterm` directly.
 //# Purpose: Demo TUI `vim` editor and featured crates, including `crossterm`.
+use ratatui::backend::CrosstermBackend;
+use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use ratatui::crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
@@ -411,12 +409,7 @@ fn main() -> io::Result<()> {
     let mut stdout = stdout.lock();
 
     enable_raw_mode()?;
-    ratatui::crossterm::execute!(
-        stdout,
-        EnterAlternateScreen,
-        EnableBracketedPaste,
-        EnableMouseCapture
-    )?;
+    ratatui::crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut term = Terminal::new(backend)?;
 
@@ -436,8 +429,7 @@ fn main() -> io::Result<()> {
     loop {
         term.draw(|f| f.render_widget(&textarea, f.area()))?;
 
-        let event = ratatui::crossterm::event::read()?;
-        vim = match vim.transition(event.into(), &mut textarea) {
+        vim = match vim.transition(ratatui::crossterm::event::read()?.into(), &mut textarea) {
             Transition::Mode(mode) if vim.mode != mode => {
                 textarea.set_block(mode.block());
                 textarea.set_cursor_style(mode.cursor_style());
@@ -453,7 +445,6 @@ fn main() -> io::Result<()> {
     ratatui::crossterm::execute!(
         term.backend_mut(),
         LeaveAlternateScreen,
-        DisableBracketedPaste,
         DisableMouseCapture
     )?;
     term.show_cursor()?;

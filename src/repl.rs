@@ -27,7 +27,7 @@ use crossterm::event::{
     Event::{self, Paste},
     KeyEvent, // KeyCode, KeyEvent, KeyModifiers,
 };
-use crossterm::terminal::{self, enable_raw_mode, EnterAlternateScreen};
+use crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use ratatui::prelude::CrosstermBackend;
@@ -1000,9 +1000,9 @@ pub fn edit_history<R: EventReader + Debug>(
                         e
                     })?;
 
-                    terminal::enable_raw_mode().unwrap();
+                    // terminal::enable_raw_mode()?;
                     let event = event_reader.read_event();
-                    terminal::disable_raw_mode().unwrap();
+                    // terminal::disable_raw_mode()?;
                     event.map_err(Into::<ThagError>::into) // Convert io::Error to ThagError
                 },
             )?

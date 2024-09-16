@@ -21,7 +21,7 @@ use crossterm::event::{
     // KeyCode, KeyEvent, KeyModifiers,
 };
 use crossterm::terminal::{
-    self, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use lazy_static::lazy_static;
 use mockall::{automock, predicate::str};
@@ -577,10 +577,10 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
             println!("Error drawing terminal: {:?}", e);
             e
         })?;
-        terminal::enable_raw_mode()?;
+        // terminal::enable_raw_mode()?;
         // let event = crossterm::event::read();
         let event = event_reader.read_event();
-        terminal::disable_raw_mode()?;
+        // terminal::disable_raw_mode()?;
 
         if let Ok(Paste(ref data)) = event {
             textarea.insert_str(normalize_newlines(data));

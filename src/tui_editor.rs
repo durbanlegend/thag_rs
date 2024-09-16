@@ -1,10 +1,6 @@
 use crokey::{key, KeyCombination};
 use crossterm::event::Event::{self, Paste};
 use crossterm::event::KeyEvent;
-use crossterm::event::MouseEventKind::{
-    Down, Drag, Moved, ScrollDown, ScrollLeft, ScrollRight, ScrollUp, Up,
-};
-use crossterm::terminal;
 use mockall::automock;
 use ratatui::prelude::CrosstermBackend;
 use ratatui::style::{Color, Style};
@@ -18,7 +14,7 @@ use std::env::var;
 use std::fmt::Debug;
 use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
-use tui_textarea::{CursorMove, TextArea};
+use tui_textarea::{CursorMove, Input, TextArea};
 
 use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
 use crate::repl::resolve_term;
@@ -162,9 +158,9 @@ where
                         e
                     })?;
 
-                    terminal::enable_raw_mode()?;
+                    // terminal::enable_raw_mode()?;
                     let event = event_reader.read_event();
-                    terminal::disable_raw_mode()?;
+                    // terminal::disable_raw_mode()?;
                     event.map_err(Into::<ThagError>::into)
                 },
             )?
@@ -172,86 +168,71 @@ where
 
         if let Paste(ref data) = event {
             textarea.insert_str(normalize_newlines(data));
-        } else {
-            match event {
-                Event::Key(key_event) => {
-                    let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+        } else if let Event::Key(key_event) = event {
+            let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
-                    #[allow(clippy::unnested_or_patterns)]
-                    match key_combination {
-                        key!(ctrl - alt - p) | key!(alt - '<') | key!(alt - up) => {
-                            textarea.move_cursor(CursorMove::Top);
-                        }
-                        key!(ctrl - alt - n) | key!(alt - '>') | key!(alt - down) => {
-                            textarea.move_cursor(CursorMove::Bottom);
-                        }
-                        key!(alt - f) | key!(ctrl - right) => {
-                            textarea.move_cursor(CursorMove::WordForward);
-                        }
-                        key!(alt - b) /* | key!(ctrl - left) */ => {
-                            textarea.move_cursor(CursorMove::WordBack);
-                        }
-                        key!(alt - p) /* | key!(alt - ']') */ | key!(ctrl - up) => {
-                            textarea.move_cursor(CursorMove::ParagraphBack);
-                        }
-                        key!(alt - n) /* | key!(alt - '[') */ | key!(ctrl - down) => {
-                            textarea.move_cursor(CursorMove::ParagraphForward);
-                        }
-                        key!(ctrl - t) => {
-                            // Toggle highlighting colours
-                            tui_highlight_bg = match tui_highlight_bg {
-                                TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
-                                TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
-                            };
-                            if var("TEST_ENV").is_err() {
-                                #[allow(clippy::option_if_let_else)]
-                                if let Some(ref mut term) = maybe_term {
-                                    term.draw(|_| {
-                                        apply_highlights(tui_highlight_bg, &mut textarea);
-                                    })?;
-                                }
-                            }
-                        }
-                        _ => {
-                            // Call the key_handler closure to process events
-                            let key_action = key_handler(
-                                key_event,
-                                &mut maybe_term,
-                                &save_file,
-                                &mut textarea,
-                                &mut popup,
-                                &mut saved,
-                            )?;
-
-                            match key_action {
-                                KeyAction::AbandonChanges | KeyAction::Quit(_) | KeyAction::SaveAndExit => {
-                                    break (Ok(key_action))
-                                }
-                                KeyAction::Continue
-                                | KeyAction::Save
-                                | KeyAction::ToggleHighlight
-                                | KeyAction::TogglePopup => continue,
-                                KeyAction::ShowHelp => todo!(),
-                            }
+            #[allow(clippy::unnested_or_patterns)]
+            match key_combination {
+                key!(ctrl - alt - p) | key!(alt - '<') | key!(alt - up) => {
+                    textarea.move_cursor(CursorMove::Top);
+                }
+                key!(ctrl - alt - n) | key!(alt - '>') | key!(alt - down) => {
+                    textarea.move_cursor(CursorMove::Bottom);
+                }
+                key!(alt - f) | key!(ctrl - right) => {
+                    textarea.move_cursor(CursorMove::WordForward);
+                }
+                key!(alt - b) /* | key!(ctrl - left) */ => {
+                    textarea.move_cursor(CursorMove::WordBack);
+                }
+                key!(alt - p) /* | key!(alt - ']') */ | key!(ctrl - up) => {
+                    textarea.move_cursor(CursorMove::ParagraphBack);
+                }
+                key!(alt - n) /* | key!(alt - '[') */ | key!(ctrl - down) => {
+                    textarea.move_cursor(CursorMove::ParagraphForward);
+                }
+                key!(ctrl - t) => {
+                    // Toggle highlighting colours
+                    tui_highlight_bg = match tui_highlight_bg {
+                        TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
+                        TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
+                    };
+                    if var("TEST_ENV").is_err() {
+                        #[allow(clippy::option_if_let_else)]
+                        if let Some(ref mut term) = maybe_term {
+                            term.draw(|_| {
+                                apply_highlights(tui_highlight_bg, &mut textarea);
+                            })?;
                         }
                     }
                 }
-                Event::Mouse(mouse_event) => {
-                    eprintln!("mouse_event={mouse_event:?}");
-                    let kind = mouse_event.kind;
-                    match kind {
-                        Down(x) => eprintln!("Down {x:?}"),
-                        Up(x) => eprintln!("Up {x:?}"),
-                        Drag(x) => eprintln!("Drag {x:?}"),
-                        Moved => eprintln!("Moved"),
-                        ScrollDown => eprintln!("ScrollDown"),
-                        ScrollUp => eprintln!("ScrollUp"),
-                        ScrollLeft => eprintln!("ScrollLeft"),
-                        ScrollRight => eprintln!("ScrollRight"),
+                _ => {
+                    // Call the key_handler closure to process events
+                    let key_action = key_handler(
+                        key_event,
+                        &mut maybe_term,
+                        &save_file,
+                        &mut textarea,
+                        &mut popup,
+                        &mut saved,
+                    )?;
+
+                    match key_action {
+                        KeyAction::AbandonChanges | KeyAction::Quit(_) | KeyAction::SaveAndExit => {
+                            break (Ok(key_action))
+                        }
+                        KeyAction::Continue
+                        | KeyAction::Save
+                        | KeyAction::ToggleHighlight
+                        | KeyAction::TogglePopup => continue,
+                        KeyAction::ShowHelp => todo!(),
                     }
                 }
-                _ => (),
             }
+        } else {
+            // println!("You typed {} which represents nothing yet", key.blue());
+            let input = Input::from(event);
+            textarea.input(input);
         }
     }
 }

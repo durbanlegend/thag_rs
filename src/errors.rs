@@ -11,6 +11,8 @@ use syn::Error as SynError;
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
 
+pub type ThagResult<T> = Result<T, ThagError>;
+
 #[derive(Debug)]
 pub enum ThagError {
     BitFlagsParse(BitFlagsParseError), // For bitflags parse error

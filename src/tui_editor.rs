@@ -1,4 +1,9 @@
+use crokey::{key, KeyCombination};
 use crossterm::event::Event::{self, Paste};
+use crossterm::event::KeyEvent;
+use crossterm::event::MouseEventKind::{
+    Down, Drag, Moved, ScrollDown, ScrollLeft, ScrollRight, ScrollUp, Up,
+};
 use crossterm::terminal;
 use mockall::automock;
 use ratatui::prelude::CrosstermBackend;
@@ -15,10 +20,10 @@ use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 use tui_textarea::{CursorMove, TextArea};
 
-use crate::colors::TUI_SELECTION_BG;
+use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
 use crate::repl::resolve_term;
 use crate::stdin::{apply_highlights, normalize_newlines, show_popup};
-use crate::ThagError;
+use crate::{ThagError, ThagResult};
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
 pub type Term = Terminal<BackEnd>;
@@ -39,7 +44,7 @@ pub trait EventReader: Debug {
     /// # Errors
     ///
     /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-    fn read_event(&self) -> Result<Event, ThagError>;
+    fn read_event(&self) -> ThagResult<Event>;
 }
 
 /// A struct to implement real-world use of the event reader, as opposed to use in testing.
@@ -47,7 +52,7 @@ pub trait EventReader: Debug {
 pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
-    fn read_event(&self) -> Result<Event, ThagError> {
+    fn read_event(&self) -> ThagResult<Event> {
         crossterm::event::read().map_err(Into::<ThagError>::into)
     }
 }
@@ -86,22 +91,23 @@ pub enum KeyAction {
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+#[allow(clippy::too_many_lines)]
 pub fn edit<R, F>(
     event_reader: &R,
     edit_data: &EditData,
     display: &Display,
     key_handler: F, // closure or function for key handling
-) -> Result<KeyAction, ThagError>
+) -> ThagResult<KeyAction>
 where
     R: EventReader + Debug,
     F: Fn(
-        Event,
+        KeyEvent,
         &mut Option<TermScopeGuard>,
         &File,
         &mut TextArea,
         &mut bool,
         &mut bool,
-    ) -> Result<KeyAction, ThagError>,
+    ) -> ThagResult<KeyAction>,
 {
     // Initialize save file
     let save_file = OpenOptions::new()
@@ -113,7 +119,7 @@ where
 
     // Initialize state variables
     let mut popup = false;
-    // let mut tui_highlight_bg = &*TUI_SELECTION_BG;
+    let mut tui_highlight_bg = &*TUI_SELECTION_BG;
     let mut saved = false;
 
     let mut maybe_term = resolve_term()?;
@@ -149,10 +155,10 @@ where
                         if popup {
                             show_popup(f, display.remove_keys, display.add_keys);
                         };
-                        apply_highlights(&TUI_SELECTION_BG, &mut textarea);
+                        apply_highlights(tui_highlight_bg, &mut textarea);
                     })
                     .map_err(|e| {
-                        println!("Error drawing terminal: {e:?}");
+                        eprintln!("Error drawing terminal: {e:?}");
                         e
                     })?;
 
@@ -167,25 +173,84 @@ where
         if let Paste(ref data) = event {
             textarea.insert_str(normalize_newlines(data));
         } else {
-            // Call the key_handler closure to process events
-            let key_action = key_handler(
-                event,
-                &mut maybe_term,
-                &save_file,
-                &mut textarea,
-                &mut popup,
-                &mut saved,
-            )?;
+            match event {
+                Event::Key(key_event) => {
+                    let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
-            match key_action {
-                KeyAction::AbandonChanges | KeyAction::Quit(_) | KeyAction::SaveAndExit => {
-                    break (Ok(key_action))
+                    #[allow(clippy::unnested_or_patterns)]
+                    match key_combination {
+                        key!(ctrl - alt - p) | key!(alt - '<') | key!(alt - up) => {
+                            textarea.move_cursor(CursorMove::Top);
+                        }
+                        key!(ctrl - alt - n) | key!(alt - '>') | key!(alt - down) => {
+                            textarea.move_cursor(CursorMove::Bottom);
+                        }
+                        key!(alt - f) | key!(ctrl - right) => {
+                            textarea.move_cursor(CursorMove::WordForward);
+                        }
+                        key!(alt - b) /* | key!(ctrl - left) */ => {
+                            textarea.move_cursor(CursorMove::WordBack);
+                        }
+                        key!(alt - p) /* | key!(alt - ']') */ | key!(ctrl - up) => {
+                            textarea.move_cursor(CursorMove::ParagraphBack);
+                        }
+                        key!(alt - n) /* | key!(alt - '[') */ | key!(ctrl - down) => {
+                            textarea.move_cursor(CursorMove::ParagraphForward);
+                        }
+                        key!(ctrl - t) => {
+                            // Toggle highlighting colours
+                            tui_highlight_bg = match tui_highlight_bg {
+                                TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
+                                TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
+                            };
+                            if var("TEST_ENV").is_err() {
+                                #[allow(clippy::option_if_let_else)]
+                                if let Some(ref mut term) = maybe_term {
+                                    term.draw(|_| {
+                                        apply_highlights(tui_highlight_bg, &mut textarea);
+                                    })?;
+                                }
+                            }
+                        }
+                        _ => {
+                            // Call the key_handler closure to process events
+                            let key_action = key_handler(
+                                key_event,
+                                &mut maybe_term,
+                                &save_file,
+                                &mut textarea,
+                                &mut popup,
+                                &mut saved,
+                            )?;
+
+                            match key_action {
+                                KeyAction::AbandonChanges | KeyAction::Quit(_) | KeyAction::SaveAndExit => {
+                                    break (Ok(key_action))
+                                }
+                                KeyAction::Continue
+                                | KeyAction::Save
+                                | KeyAction::ToggleHighlight
+                                | KeyAction::TogglePopup => continue,
+                                KeyAction::ShowHelp => todo!(),
+                            }
+                        }
+                    }
                 }
-                KeyAction::Continue
-                | KeyAction::Save
-                | KeyAction::ToggleHighlight
-                | KeyAction::TogglePopup => continue,
-                KeyAction::ShowHelp => todo!(),
+                Event::Mouse(mouse_event) => {
+                    eprintln!("mouse_event={mouse_event:?}");
+                    let kind = mouse_event.kind;
+                    match kind {
+                        Down(x) => eprintln!("Down {x:?}"),
+                        Up(x) => eprintln!("Up {x:?}"),
+                        Drag(x) => eprintln!("Drag {x:?}"),
+                        Moved => eprintln!("Moved"),
+                        ScrollDown => eprintln!("ScrollDown"),
+                        ScrollUp => eprintln!("ScrollUp"),
+                        ScrollLeft => eprintln!("ScrollLeft"),
+                        ScrollRight => eprintln!("ScrollRight"),
+                    }
+                }
+                _ => (),
             }
         }
     }

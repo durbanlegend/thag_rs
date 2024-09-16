@@ -26,7 +26,7 @@ pub use code_utils::{
 pub use colors::{nu_resolve_style, MessageLevel};
 pub use config::load;
 pub use config::MAYBE_CONFIG;
-pub use errors::ThagError;
+pub use errors::{ThagError, ThagResult};
 pub use repl::run_repl;
 pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};
 pub use stdin::{edit, read};

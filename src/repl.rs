@@ -25,7 +25,7 @@ use crossterm::event::{
     EnableBracketedPaste,
     EnableMouseCapture,
     Event::{self, Paste},
-    // KeyCode, KeyEvent, KeyModifiers,
+    KeyEvent, // KeyCode, KeyEvent, KeyModifiers,
 };
 use crossterm::terminal::{self, enable_raw_mode, EnterAlternateScreen};
 use firestorm::profile_fn;
@@ -435,76 +435,12 @@ pub fn run_repl(
                         list(build_state)?;
                     }
                     ReplCommand::History => {
-                        let event_reader = CrosstermEventReader;
-                        // NB: we must save history elsewhere, since the backing mechanism maay interfere with the backing file
-
-                        line_editor.sync_history()?;
-                        // After editing, we won't know if history was saved with ctrl-s or not.
-                        // So we assume it was and regenerate the history from the staging file.
-                        fs::copy(&history_path, &backup_path)?;
-                        let history_string = read_to_string(&history_path)?;
-                        let initial_content = history_string.as_str();
-                        // let mut maybe_term = resolve_term()?;
-
-                        let new = false;
-
-                        let confirm = if new {
-                            let data = EditData {
-                                initial_content,
-                                save_path: &staging_path,
-                                history_path: &None,
-                                history: &mut None::<History>,
-                            };
-                            let display = Display {
-                                title: "Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  F3: abandon  ^L: keys  ^T: toggle highlighting",
-                                title_style: Style::default().fg(Color::Indexed(75)).bold(),
-                                remove_keys: &["F1", "F2"],
-                                add_keys: &[&["F3", "Discard saved and unsaved changes and exit"]],
-                            };
-                            let key_action = tui_edit(
-                                &event_reader,
-                                &data,
-                                &display,
-                                |event, maybe_term, data, textarea, popup, saved| {
-                                    history_key_handler(
-                                        event,
-                                        maybe_term, // Remove `&mut` since `maybe_term` is already mutable
-                                        data, textarea, popup, saved,
-                                    )
-                                },
-                            )?;
-                            // eprintln!("key_action={key_action:?}, confirm={confirm}");
-                            match key_action {
-                                KeyAction::Quit(saved) => saved,
-                                KeyAction::Save
-                                | KeyAction::ShowHelp
-                                | KeyAction::ToggleHighlight
-                                | KeyAction::TogglePopup => {
-                                    return Err(ThagError::FromStr(
-                                        format!(
-                                        "Logic error: {key_action:?} should not return from tui_edit"
-                                    )
-                                        .into(),
-                                    ))
-                                }
-                                KeyAction::SaveAndExit => true,
-                                _ => false,
-                            }
-                        } else {
-                            edit_history(&history_path, &staging_path, &event_reader)?
-                        };
-                        if confirm {
-                            let history_mut = line_editor.history_mut();
-                            let saved_history = fs::read_to_string(&staging_path)?;
-                            eprintln!("staging_path={staging_path:?}");
-                            eprintln!("saved_history={saved_history}");
-                            history_mut.clear()?;
-                            for line in saved_history.lines() {
-                                eprintln!("saving line={line}");
-                                let _ = history_mut.save(HistoryItem::from_command_line(line))?;
-                            }
-                            history_mut.sync()?;
-                        }
+                        review_history(
+                            &mut line_editor,
+                            &history_path,
+                            &backup_path,
+                            &staging_path,
+                        )?;
                     }
                     ReplCommand::Keys => {
                         let reedline_events =
@@ -556,77 +492,121 @@ pub fn run_repl(
     Ok(())
 }
 
-/// Example of a key handler function that could be passed into `edit`
+fn review_history(
+    line_editor: &mut Reedline,
+    history_path: &PathBuf,
+    backup_path: &PathBuf,
+    staging_path: &PathBuf,
+) -> Result<(), ThagError> {
+    let event_reader = CrosstermEventReader;
+    line_editor.sync_history()?;
+    fs::copy(history_path, backup_path)?;
+    let history_string = read_to_string(history_path)?;
+    let initial_content = history_string.as_str();
+    let new = true;
+    let confirm = if new {
+        let data = EditData {
+            initial_content,
+            save_path: staging_path,
+            history_path: &None,
+            history: &mut None::<History>,
+        };
+        let display = Display {
+            title: "Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  F3: abandon  ^L: keys  ^T: toggle highlighting",
+            title_style: Style::default().fg(Color::Indexed(75)).bold(),
+            remove_keys: &["F1", "F2"],
+            add_keys: &[&["F3", "Discard saved and unsaved changes and exit"]],
+        };
+        let key_action = tui_edit(
+            &event_reader,
+            &data,
+            &display,
+            |key_event, maybe_term, data, textarea, popup, saved| {
+                history_key_handler(
+                    key_event,
+                    maybe_term, // Remove `&mut` since `maybe_term` is already mutable
+                    data, textarea, popup, saved,
+                )
+            },
+        )?;
+        // eprintln!("key_action={key_action:?}, confirm={confirm}");
+        match key_action {
+            KeyAction::Quit(saved) => saved,
+            KeyAction::Save
+            | KeyAction::ShowHelp
+            | KeyAction::ToggleHighlight
+            | KeyAction::TogglePopup => {
+                return Err(ThagError::FromStr(
+                    format!("Logic error: {key_action:?} should not return from tui_edit").into(),
+                ))
+            }
+            KeyAction::SaveAndExit => true,
+            _ => false,
+        }
+    } else {
+        edit_history(history_path, staging_path, &event_reader)?
+    };
+    if confirm {
+        let history_mut = line_editor.history_mut();
+        let saved_history = fs::read_to_string(staging_path)?;
+        eprintln!("staging_path={staging_path:?}");
+        eprintln!("saved_history={saved_history}");
+        history_mut.clear()?;
+        for line in saved_history.lines() {
+            eprintln!("saving line={line}");
+            let _ = history_mut.save(HistoryItem::from_command_line(line))?;
+        }
+        history_mut.sync()?;
+    }
+    Ok(())
+}
+
+/// Key handler function to be passed into `edit` for editing REPL history.
 ///
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 pub fn history_key_handler(
-    event: Event,
-    maybe_term: &mut Option<TermScopeGuard>,
+    key_event: KeyEvent,
+    _maybe_term: &mut Option<TermScopeGuard>,
     save_file: &File,
     textarea: &mut TextArea,
     popup: &mut bool,
     saved: &mut bool,
 ) -> Result<KeyAction, ThagError> {
-    let mut tui_highlight_bg = &*TUI_SELECTION_BG;
-    if let Event::Key(key_event) = event {
-        let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+    // let mut tui_highlight_bg = &*TUI_SELECTION_BG;
+    let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
-        match key_combination {
-            #[allow(clippy::unnested_or_patterns)]
-            key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
-            key!(ctrl - d) => {
-                // Save logic
-                stage_history(save_file, textarea)?;
-                // println!("Saved");
-                Ok(KeyAction::SaveAndExit)
-            }
-            key!(ctrl - s) => {
-                // Save logic
-                stage_history(save_file, textarea)?;
-                // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
-                *saved = true;
-                Ok(KeyAction::Save)
-            }
-            key!(ctrl - l) => {
-                // Toggle popup
-                *popup = !*popup;
-                Ok(KeyAction::TogglePopup)
-            }
-            key!(ctrl - t) => {
-                // Toggle highlighting colours
-                tui_highlight_bg = match tui_highlight_bg {
-                    TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
-                    TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
-                };
-                if var("TEST_ENV").is_err() {
-                    #[allow(clippy::option_if_let_else)]
-                    if let Some(ref mut term) = maybe_term {
-                        term.draw(|_| {
-                            apply_highlights(tui_highlight_bg, textarea);
-                        })
-                        .map_err(Into::into)
-                        .map(|_| KeyAction::Continue)
-                    } else {
-                        Ok(KeyAction::Continue)
-                    }
-                } else {
-                    Ok(KeyAction::Continue)
-                }
-            }
-            key!(f3) => {
-                // Ask to revert
-                Ok(KeyAction::AbandonChanges)
-            }
-            _ => {
-                // Update the textarea with the input from the key event
-                textarea.input(Input::from(event)); // Input derived from Event
-                Ok(KeyAction::Continue)
-            }
+    match key_combination {
+        #[allow(clippy::unnested_or_patterns)]
+        key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
+        key!(ctrl - d) => {
+            // Save logic
+            stage_history(save_file, textarea)?;
+            // println!("Saved");
+            Ok(KeyAction::SaveAndExit)
         }
-    } else {
-        Ok(KeyAction::Continue)
+        key!(ctrl - s) => {
+            // Save logic
+            stage_history(save_file, textarea)?;
+            // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
+            *saved = true;
+            Ok(KeyAction::Save)
+        }
+        key!(ctrl - l) => {
+            // Toggle popup
+            *popup = !*popup;
+            Ok(KeyAction::TogglePopup)
+        }
+        key!(f3) => {
+            // Ask to revert
+            Ok(KeyAction::AbandonChanges)
+        }
+        _ => {
+            // Update the textarea with the input from the key event
+            textarea.input(Input::from(key_event)); // Input derived from Event
+            Ok(KeyAction::Continue)
+        }
     }
 }
 
@@ -1013,7 +993,7 @@ pub fn edit_history<R: EventReader + Debug>(
                         if popup {
                             show_popup(f, remove_keys, add_keys);
                         };
-                        apply_highlights(&TUI_SELECTION_BG, &mut textarea);
+                        apply_highlights(tui_highlight_bg, &mut textarea);
                     })
                     .map_err(|e| {
                         println!("Error drawing terminal: {:?}", e);

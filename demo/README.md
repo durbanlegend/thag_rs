@@ -555,6 +555,20 @@ which will give identical output to the above.
 
 ---
 
+### Script: crokey_print_key_no_combiner.rs
+
+**Description:**  Published example of KeyCombination from `crokey` crate.
+
+**Purpose:** Demo key combination without Combiner.
+
+**Crates:** `crokey`, `crossterm`
+
+**Type:** Program
+
+**Link:** [crokey_print_key_no_combiner.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key_no_combiner.rs)
+
+---
+
 ### Script: crossbeam_channel_fibonacci.rs
 
 **Description:**  `crossbeam-channel` published example.
@@ -638,6 +652,24 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs)
+
+---
+
+### Script: crossterm_alternate_screen.rs
+
+**Description:**  Published example from crossterm crate. Macro version of the example:
+ "Print a rectangle colored with magenta and use both direct execution and lazy execution."
+ Direct execution with `execute` and lazy execution with `queue`.
+
+ Url: https://docs.rs/crossterm/latest/crossterm/
+
+**Purpose:** Demo `crossterm` command API.
+
+**Crates:** `ratatui`
+
+**Type:** Program
+
+**Link:** [crossterm_alternate_screen.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alternate_screen.rs)
 
 ---
 
@@ -3013,6 +3045,20 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs)
+
+---
+
+### Script: tui_ta_vim.rs
+
+**Description:**  Published basic `vim` editor example from crate `tui-textarea`.
+
+**Purpose:** Demo TUI `vim` editor and featured crates, including `crossterm`.
+
+**Crates:** `ratatui`, `tui_textarea`
+
+**Type:** Program
+
+**Link:** [tui_ta_vim.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_vim.rs)
 
 ---
 

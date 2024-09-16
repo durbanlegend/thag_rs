@@ -835,7 +835,7 @@ pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
 /// # Errors
 ///
 /// This function will bubble up any `ratatui` or `crossterm` errors encountered.
-// TODO: move to shared?
+// TODO: move to shared or tui_editor?
 pub fn reset_term(
     mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,
 ) -> Result<(), ThagError> {

@@ -577,7 +577,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
             println!("Error drawing terminal: {:?}", e);
             e
         })?;
-        // terminal::enable_raw_mode()?;
+        // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
         // let event = crossterm::event::read();
         let event = event_reader.read_event();
         // terminal::disable_raw_mode()?;
@@ -916,10 +916,13 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 
 const MAPPINGS: &[[&str; 2]; 35] = &[
     ["Key Bindings", "Description"],
-    ["Shift+arrow keys", "Select/deselect ← chars→  / ↑ lines↓"],
+    [
+        "Shift+arrow keys",
+        "Select/deselect chars (←→) or lines (↑↓)",
+    ],
     [
         "Shift+Ctrl+arrow keys",
-        "Select/deselect ← words→  / ↑ paras↓",
+        "Select/deselect words (←→) or paras (↑↓)",
     ],
     ["Ctrl+D", "Submit"],
     ["Ctrl+Q", "Cancel and quit"],
@@ -928,7 +931,7 @@ const MAPPINGS: &[[&str; 2]; 35] = &[
     ["Ctrl+M, Enter", "Insert newline"],
     ["Ctrl+K", "Delete from cursor to end of line"],
     ["Ctrl+J", "Delete from cursor to start of line"],
-    ["Ctrl+W, Alt+<, Backspace", "Delete one word before cursor"],
+    ["Ctrl+W, Backspace", "Delete one word before cursor"],
     ["Alt+D, Delete", "Delete one word from cursor position"],
     ["Ctrl+U", "Undo"],
     ["Ctrl+R", "Redo"],
@@ -953,7 +956,7 @@ const MAPPINGS: &[[&str; 2]; 35] = &[
         "Move cursor to start of line",
     ],
     ["Alt+<, Ctrl+Alt+P or ↑", "Move cursor to top of file"],
-    ["Alt+>, Ctrl+Alt+N or↓", "Move cursor to bottom of file"],
+    ["Alt+>, Ctrl+Alt+N or ↓", "Move cursor to bottom of file"],
     ["PageDown, Cmd+↓", "Page down"],
     ["Alt+V, PageUp, Cmd+↑", "Page up"],
     ["Ctrl+T", "Toggle highlight colours"],

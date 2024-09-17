@@ -42,7 +42,7 @@ pub fn main() {
                         println!("Arg! You savagely killed me with a {}", key.red());
                         break;
                     }
-                    key!(ctrl - q) => {
+                    key!(ctrl - q) | key!(ctrl - q - q - q) => {
                         println!("You typed {} which gracefully quits", key.green());
                         break;
                     }

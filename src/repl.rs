@@ -5,35 +5,30 @@ use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
 #[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::errors::ThagError;
-use crate::log;
 use crate::logging::Verbosity;
 use crate::shared::Ast;
-use crate::stdin::{apply_highlights, normalize_newlines, reset_term, show_popup};
+use crate::stdin::{apply_highlights, normalize_newlines, show_popup};
 use crate::tui_editor::{
     edit as tui_edit, CrosstermEventReader, Display, EditData, EventReader, History, KeyAction,
-    ResetTermClosure, TermScopeGuard,
+    TermScopeGuard,
 };
 use crate::{
     colors::{nu_resolve_style, MessageLevel},
     gen_build_run, nu_color_println,
     shared::BuildState,
 };
+use crate::{log, tui_editor};
 
 use clap::{CommandFactory, Parser};
 use crokey::{crossterm, key, KeyCombination, KeyCombinationFormat};
 use crossterm::event::{
-    EnableBracketedPaste,
-    EnableMouseCapture,
     Event::{self, Paste},
-    KeyEvent, // KeyCode, KeyEvent, KeyModifiers,
+    KeyEvent,
 };
-use crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
-use ratatui::prelude::CrosstermBackend;
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::widgets::{Block, Borders};
-use ratatui::Terminal;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
     EditCommand, Emacs, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers, Keybindings,
@@ -41,7 +36,6 @@ use reedline::{
     ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
-use scopeguard::guard;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env::var;
@@ -553,7 +547,7 @@ fn review_history(
         eprintln!("saved_history={saved_history}");
         history_mut.clear()?;
         for line in saved_history.lines() {
-            eprintln!("saving line={line}");
+            // eprintln!("saving line={line}");
             let _ = history_mut.save(HistoryItem::from_command_line(line))?;
         }
         history_mut.sync()?;
@@ -962,7 +956,7 @@ pub fn edit_history<R: EventReader + Debug>(
     let mut tui_highlight_bg = &*TUI_SELECTION_BG;
     let mut saved = false;
 
-    let mut maybe_term = resolve_term()?;
+    let mut maybe_term = tui_editor::resolve_term()?;
 
     let mut textarea = TextArea::from(initial_content.lines());
 
@@ -1000,7 +994,7 @@ pub fn edit_history<R: EventReader + Debug>(
                         e
                     })?;
 
-                    // terminal::enable_raw_mode()?;
+                    // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
                     let event = event_reader.read_event();
                     // terminal::disable_raw_mode()?;
                     event.map_err(Into::<ThagError>::into) // Convert io::Error to ThagError
@@ -1072,48 +1066,6 @@ pub fn edit_history<R: EventReader + Debug>(
             }
         }
     }
-}
-
-/// Determine whether a terminal is in use (as opposed to testing or headless CI), and
-/// if so, wrap it in a scopeguard in order to reset it regardless of success or failure.
-///
-/// # Panics
-///
-/// Panics if a `crossterm` error is encountered resetting the terminal inside a
-/// `scopeguard::guard` closure.
-///
-/// # Errors
-///
-pub fn resolve_term() -> Result<Option<TermScopeGuard>, ThagError> {
-    let maybe_term = if var("TEST_ENV").is_ok() {
-        None
-    } else {
-        let mut stdout = std::io::stdout().lock();
-
-        enable_raw_mode()?;
-
-        crossterm::execute!(
-            stdout,
-            EnterAlternateScreen,
-            EnableMouseCapture,
-            EnableBracketedPaste
-        )
-        .map_err(|e| e)?;
-
-        let backend = CrosstermBackend::new(stdout);
-        let terminal = Terminal::new(backend)?;
-
-        // Box the closure explicitly as `Box<dyn FnOnce>`
-        let term = guard(
-            terminal,
-            Box::new(|term| {
-                reset_term(term).expect("Error resetting terminal");
-            }) as ResetTermClosure,
-        );
-
-        Some(term)
-    };
-    Ok(maybe_term)
 }
 
 /// Save the `textarea` contents to a history staging file.

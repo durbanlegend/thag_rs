@@ -1,12 +1,16 @@
 use crokey::{key, KeyCombination};
-use crossterm::event::Event::{self, Paste};
-use crossterm::event::KeyEvent;
+use crossterm::event::{
+    EnableBracketedPaste, EnableMouseCapture,
+    Event::{self, Paste},
+    KeyEvent,
+};
+use crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
 use mockall::automock;
 use ratatui::prelude::CrosstermBackend;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, Borders};
 use ratatui::Terminal;
-use scopeguard::ScopeGuard;
+use scopeguard::{guard, ScopeGuard};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::convert::Into;
@@ -17,14 +21,55 @@ use std::path::PathBuf;
 use tui_textarea::{CursorMove, Input, TextArea};
 
 use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
-use crate::repl::resolve_term;
-use crate::stdin::{apply_highlights, normalize_newlines, show_popup};
+use crate::stdin::{apply_highlights, normalize_newlines, reset_term, show_popup};
 use crate::{ThagError, ThagResult};
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
 pub type Term = Terminal<BackEnd>;
 pub type ResetTermClosure = Box<dyn FnOnce(Term)>;
 pub type TermScopeGuard = ScopeGuard<Term, ResetTermClosure>;
+
+/// Determine whether a terminal is in use (as opposed to testing or headless CI), and
+/// if so, wrap it in a scopeguard in order to reset it regardless of success or failure.
+///
+/// # Panics
+///
+/// Panics if a `crossterm` error is encountered resetting the terminal inside a
+/// `scopeguard::guard` closure.
+///
+/// # Errors
+///
+pub fn resolve_term() -> Result<Option<TermScopeGuard>, ThagError> {
+    let maybe_term = if var("TEST_ENV").is_ok() {
+        None
+    } else {
+        let mut stdout = std::io::stdout().lock();
+
+        enable_raw_mode()?;
+
+        crossterm::execute!(
+            stdout,
+            EnterAlternateScreen,
+            EnableMouseCapture,
+            EnableBracketedPaste
+        )
+        .map_err(|e| e)?;
+
+        let backend = CrosstermBackend::new(stdout);
+        let terminal = Terminal::new(backend)?;
+
+        // Box the closure explicitly as `Box<dyn FnOnce>`
+        let term = guard(
+            terminal,
+            Box::new(|term| {
+                reset_term(term).expect("Error resetting terminal");
+            }) as ResetTermClosure,
+        );
+
+        Some(term)
+    };
+    Ok(maybe_term)
+}
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct History {
@@ -158,9 +203,8 @@ where
                         e
                     })?;
 
-                    // terminal::enable_raw_mode()?;
+                    // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
                     let event = event_reader.read_event();
-                    // terminal::disable_raw_mode()?;
                     event.map_err(Into::<ThagError>::into)
                 },
             )?
@@ -171,8 +215,31 @@ where
         } else if let Event::Key(key_event) = event {
             let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
+            // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
             #[allow(clippy::unnested_or_patterns)]
             match key_combination {
+                key!(ctrl - h) | key!(backspace) => {
+                    textarea.delete_char();
+                }
+                key!(ctrl - i) | key!(tab) => {
+                    textarea.indent();
+                }
+                key!(ctrl - m) | key!(enter) => {
+                    textarea.insert_newline();
+                }
+                key!(ctrl - k) => {
+                    textarea.delete_line_by_end();
+                }
+                key!(ctrl - j) => {
+                    textarea.delete_line_by_head();
+                }
+                key!(ctrl - j) => {
+                    textarea.delete_line_by_head();
+                }
+                key!(ctrl - w) | key!(enter) | key!(enter) => {
+                    textarea.delete_line_by_head();
+                }
+                //
                 key!(ctrl - alt - p) | key!(alt - '<') | key!(alt - up) => {
                     textarea.move_cursor(CursorMove::Top);
                 }

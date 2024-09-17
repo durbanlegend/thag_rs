@@ -253,6 +253,39 @@ where
                 key!(ctrl - y) => {
                     textarea.paste();
                 }
+                key!(ctrl - f) | key!(right) => {
+                    textarea.move_cursor(CursorMove::Forward);
+                }
+                key!(ctrl - b) | key!(left) => {
+                    textarea.move_cursor(CursorMove::Back);
+                }
+                key!(ctrl - p) | key!(up) => {
+                    textarea.move_cursor(CursorMove::Up);
+                }
+                key!(ctrl - n) | key!(down) => {
+                    textarea.move_cursor(CursorMove::Down);
+                }
+                key!(alt - f) | key!(ctrl - right) => {
+                    textarea.move_cursor(CursorMove::WordForward);
+                }
+                key!(alt - shift - f) => {
+                    textarea.move_cursor(CursorMove::WordEnd);
+                }
+                key!(alt - b) | key!(ctrl - left) => {
+                    textarea.move_cursor(CursorMove::WordBack);
+                }
+                key!(alt - p) | key!(alt - ')') | key!(ctrl - up) => {
+                    textarea.move_cursor(CursorMove::ParagraphBack);
+                }
+                key!(alt - n) | key!(alt - '(') | key!(ctrl - down) => {
+                    textarea.move_cursor(CursorMove::ParagraphForward);
+                }
+                key!(ctrl - e) | key!(end) | key!(ctrl - alt - f) | key!(ctrl - alt - right) => {
+                    textarea.move_cursor(CursorMove::End);
+                }
+                key!(ctrl - a) | key!(home) | key!(ctrl - alt - b) | key!(ctrl - alt - left) => {
+                    textarea.move_cursor(CursorMove::Head);
+                }
                 key!(f9) => {
                     if maybe_term.is_some() {
                         crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
@@ -273,17 +306,8 @@ where
                 key!(ctrl - alt - n) | key!(alt - '>') | key!(alt - down) => {
                     textarea.move_cursor(CursorMove::Bottom);
                 }
-                key!(alt - f) | key!(ctrl - right) => {
-                    textarea.move_cursor(CursorMove::WordForward);
-                }
-                key!(alt - b) | key!(ctrl - left) => {
-                    textarea.move_cursor(CursorMove::WordBack);
-                }
-                key!(alt - p) | key!(alt - ']') | key!(ctrl - up) => {
-                    textarea.move_cursor(CursorMove::ParagraphBack);
-                }
-                key!(alt - n) | key!(alt - '[') | key!(ctrl - down) => {
-                    textarea.move_cursor(CursorMove::ParagraphForward);
+                key!(alt - c) => {
+                    textarea.cancel_selection();
                 }
                 key!(ctrl - t) => {
                     // Toggle highlighting colours

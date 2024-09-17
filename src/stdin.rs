@@ -845,15 +845,6 @@ pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&(usi
             widget = widget.remove_modifier(Modifier::BOLD);
         }
         f.render_widget(widget, cells[1]);
-        // for n in 0..=1 {
-        //     let mut widget = Paragraph::new(adjusted_mappings[i].n);
-        //     if i == 0 {
-        //         widget = widget.add_modifier(Modifier::BOLD);
-        //     } else {
-        //         widget = widget.remove_modifier(Modifier::BOLD);
-        //     }
-        //     f.render_widget(widget, cells[n]);
-        // }
     }
 }
 
@@ -873,81 +864,79 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     .split(popup_layout[1])[1]
 }
 
-const MAPPINGS: &[(usize, &str, &str); 38] = &[
+const MAPPINGS: &[(usize, &str, &str); 40] = &[
     (10, "Key Bindings", "Description"),
     (
         20,
         "Shift+arrow keys",
         "Select/deselect chars (←→) or lines (↑↓)",
     ),
+    (30, "Alt+C", "Cancel selection"),
     (
-        30,
+        40,
         "Shift+Ctrl+arrow keys",
         "Select/deselect words (←→) or paras (↑↓)",
     ),
-    (40, "Ctrl+D", "Submit"),
-    (50, "Ctrl+Q", "Cancel and quit"),
-    (60, "Ctrl+H, Backspace", "Delete character before cursor"),
-    (70, "Ctrl+I, Tab", "Indent"),
-    (80, "Ctrl+M, Enter", "Insert newline"),
-    (90, "Ctrl+K", "Delete from cursor to end of line"),
-    (100, "Ctrl+J", "Delete from cursor to start of line"),
+    (50, "Ctrl+D", "Submit"),
+    (60, "Ctrl+Q", "Cancel and quit"),
+    (70, "Ctrl+H, Backspace", "Delete character before cursor"),
+    (80, "Ctrl+I, Tab", "Indent"),
+    (90, "Ctrl+M, Enter", "Insert newline"),
+    (100, "Ctrl+K", "Delete from cursor to end of line"),
+    (110, "Ctrl+J", "Delete from cursor to start of line"),
     (
-        110,
+        120,
         "Ctrl+W, Alt+Backspace",
         "Delete one word before cursor",
     ),
-    (120, "Alt+D, Delete", "Delete one word from cursor position"),
-    (130, "Ctrl+U", "Undo"),
-    (140, "Ctrl+R", "Redo"),
-    (150, "Ctrl+C", "Copy (yank) selected text"),
-    (160, "Ctrl+X", "Cut (yank) selected text"),
-    (170, "Ctrl+Y", "Paste yanked text"),
+    (130, "Alt+D, Delete", "Delete one word from cursor position"),
+    (140, "Ctrl+U", "Undo"),
+    (150, "Ctrl+R", "Redo"),
+    (160, "Ctrl+C", "Copy (yank) selected text"),
+    (170, "Ctrl+X", "Cut (yank) selected text"),
+    (180, "Ctrl+Y", "Paste yanked text"),
     (
-        180,
+        190,
         "Ctrl+V, Shift+Ins, Cmd+V",
         "Paste from system clipboard",
     ),
-    (190, "Ctrl+F, →", "Move cursor forward one character"),
+    (200, "Ctrl+F, →", "Move cursor forward one character"),
     (210, "Ctrl+B, ←", "Move cursor backward one character"),
     (220, "Ctrl+P, ↑", "Move cursor up one line"),
     (230, "Ctrl+N, ↓", "Move cursor down one line"),
     (240, "Alt+F, Ctrl+→", "Move cursor forward one word"),
-    (250, "Atl+B, Ctrl+←", "Move cursor backward one word"),
-    (260, "Alt+) or P, Ctrl+↑", "Move cursor up one paragraph"),
+    (250, "Alt+Shift+F", "Move cursor to next word end"),
+    (260, "Atl+B, Ctrl+←", "Move cursor backward one word"),
+    (270, "Alt+) or P, Ctrl+↑", "Move cursor up one paragraph"),
+    (280, "Alt+( or N, Ctrl+↓", "Move cursor down one paragraph"),
     (
-        270,
-        "Alt+(10,  or N, Ctrl+↓",
-        "Move cursor down one paragraph",
-    ),
-    (
-        280,
+        290,
         "Ctrl+E, End, Ctrl+Alt+F or → , Cmd+→",
         "Move cursor to end of line",
     ),
     (
-        290,
+        300,
         "Ctrl+A, Home, Ctrl+Alt+B or ← , Cmd+←",
         "Move cursor to start of line",
     ),
-    (300, "Alt+<, Ctrl+Alt+P or ↑", "Move cursor to top of file"),
+    (310, "Alt+<, Ctrl+Alt+P or ↑", "Move cursor to top of file"),
     (
-        310,
+        320,
         "Alt+>, Ctrl+Alt+N or ↓",
         "Move cursor to bottom of file",
     ),
-    (320, "PageDown, Cmd+↓", "Page down"),
-    (330, "Alt+V, PageUp, Cmd+↑", "Page up"),
-    (340, "Ctrl+L", "Toggle keys display (this screen)"),
-    (350, "Ctrl+T", "Toggle highlight colours"),
-    (360, "F1", "Previous in history"),
-    (370, "F2", "Next in history"),
+    (330, "PageDown, Cmd+↓", "Page down"),
+    (340, "Alt+V, PageUp, Cmd+↑", "Page up"),
+    (350, "Ctrl+L", "Toggle keys display (this screen)"),
+    (360, "Ctrl+T", "Toggle highlight colours"),
+    (370, "F1", "Previous in history"),
+    (380, "F2", "Next in history"),
     (
-        380,
+        390,
         "F9",
         "Suspend mouse capture and line numbers for system copy",
     ),
-    (390, "F10", "Resume mouse capture and line numbers"),
+    (400, "F10", "Resume mouse capture and line numbers"),
 ];
 // const NUM_ROWS: usize = MAPPINGS.len();
 

@@ -300,10 +300,10 @@ where
                 }
 
                 //
-                key!(ctrl - alt - p) | key!(alt - '<') | key!(alt - up) => {
+                key!(alt - '<') | key!(ctrl - alt - p) | key!(ctrl - alt - up) => {
                     textarea.move_cursor(CursorMove::Top);
                 }
-                key!(ctrl - alt - n) | key!(alt - '>') | key!(alt - down) => {
+                key!(alt - '>') | key!(ctrl - alt - n) | key!(ctrl - alt - down) => {
                     textarea.move_cursor(CursorMove::Bottom);
                 }
                 key!(alt - c) => {

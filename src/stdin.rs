@@ -28,7 +28,7 @@ use mockall::{automock, predicate::str};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
-use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
 use ratatui::widgets::block::{Block, Title};
 use ratatui::widgets::{Borders, Clear, Paragraph};
 use ratatui::Terminal;
@@ -807,8 +807,9 @@ pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&(usi
             Title::from("Platform-dependent key mappings (YMMV)")
                 .alignment(ratatui::layout::Alignment::Center),
         )
-        .title(Title::from("(Ctrl+L to toggle)").alignment(Alignment::Center))
-        .add_modifier(Modifier::BOLD);
+        .title(Title::from("(Ctrl+l to toggle)").alignment(Alignment::Center))
+        .add_modifier(Modifier::BOLD)
+        .fg(Color::Indexed(75));
     // this is supposed to clear out the background
     f.render_widget(Clear, area);
     f.render_widget(block, area);
@@ -833,16 +834,19 @@ pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&(usi
         let cells = col_layout.split(*row);
         let mut widget = Paragraph::new(adjusted_mappings[i].1);
         if i == 0 {
-            widget = widget.add_modifier(Modifier::BOLD);
+            widget = widget.add_modifier(Modifier::BOLD).fg(Color::Indexed(173));
         } else {
-            widget = widget.remove_modifier(Modifier::BOLD);
+            widget = widget.fg(Color::Indexed(43)).not_bold();
         }
         f.render_widget(widget, cells[0]);
         let mut widget = Paragraph::new(adjusted_mappings[i].2);
+
         if i == 0 {
-            widget = widget.add_modifier(Modifier::BOLD);
+            widget = widget.add_modifier(Modifier::BOLD).fg(Color::Indexed(173));
         } else {
-            widget = widget.remove_modifier(Modifier::BOLD);
+            widget = widget
+                .remove_modifier(Modifier::BOLD)
+                .set_style(Style::default().fg(Color::Indexed(251)).not_bold());
         }
         f.render_widget(widget, cells[1]);
     }
@@ -871,64 +875,64 @@ const MAPPINGS: &[(usize, &str, &str); 40] = &[
         "Shift+arrow keys",
         "Select/deselect chars (←→) or lines (↑↓)",
     ),
-    (30, "Alt+C", "Cancel selection"),
     (
-        40,
+        30,
         "Shift+Ctrl+arrow keys",
         "Select/deselect words (←→) or paras (↑↓)",
     ),
-    (50, "Ctrl+D", "Submit"),
-    (60, "Ctrl+Q", "Cancel and quit"),
-    (70, "Ctrl+H, Backspace", "Delete character before cursor"),
-    (80, "Ctrl+I, Tab", "Indent"),
-    (90, "Ctrl+M, Enter", "Insert newline"),
-    (100, "Ctrl+K", "Delete from cursor to end of line"),
-    (110, "Ctrl+J", "Delete from cursor to start of line"),
+    (40, "Alt+c", "Cancel selection"),
+    (50, "Ctrl+d", "Submit"),
+    (60, "Ctrl+q", "Cancel and quit"),
+    (70, "Ctrl+h, Backspace", "Delete character before cursor"),
+    (80, "Ctrl+i, Tab", "Indent"),
+    (90, "Ctrl+m, Enter", "Insert newline"),
+    (100, "Ctrl+k", "Delete from cursor to end of line"),
+    (110, "Ctrl+j", "Delete from cursor to start of line"),
     (
         120,
-        "Ctrl+W, Alt+Backspace",
+        "Ctrl+w, Alt+Backspace",
         "Delete one word before cursor",
     ),
-    (130, "Alt+D, Delete", "Delete one word from cursor position"),
-    (140, "Ctrl+U", "Undo"),
-    (150, "Ctrl+R", "Redo"),
-    (160, "Ctrl+C", "Copy (yank) selected text"),
-    (170, "Ctrl+X", "Cut (yank) selected text"),
-    (180, "Ctrl+Y", "Paste yanked text"),
+    (130, "Alt+d, Delete", "Delete one word from cursor position"),
+    (140, "Ctrl+u", "Undo"),
+    (150, "Ctrl+r", "Redo"),
+    (160, "Ctrl+c", "Copy (yank) selected text"),
+    (170, "Ctrl+x", "Cut (yank) selected text"),
+    (180, "Ctrl+y", "Paste yanked text"),
     (
         190,
-        "Ctrl+V, Shift+Ins, Cmd+V",
+        "Ctrl+v, Shift+Ins, Cmd+v",
         "Paste from system clipboard",
     ),
-    (200, "Ctrl+F, →", "Move cursor forward one character"),
-    (210, "Ctrl+B, ←", "Move cursor backward one character"),
-    (220, "Ctrl+P, ↑", "Move cursor up one line"),
-    (230, "Ctrl+N, ↓", "Move cursor down one line"),
-    (240, "Alt+F, Ctrl+→", "Move cursor forward one word"),
-    (250, "Alt+Shift+F", "Move cursor to next word end"),
-    (260, "Atl+B, Ctrl+←", "Move cursor backward one word"),
-    (270, "Alt+) or P, Ctrl+↑", "Move cursor up one paragraph"),
-    (280, "Alt+( or N, Ctrl+↓", "Move cursor down one paragraph"),
+    (200, "Ctrl+f, →", "Move cursor forward one character"),
+    (210, "Ctrl+b, ←", "Move cursor backward one character"),
+    (220, "Ctrl+p, ↑", "Move cursor up one line"),
+    (230, "Ctrl+n, ↓", "Move cursor down one line"),
+    (240, "Alt+f, Ctrl+→", "Move cursor forward one word"),
+    (250, "Alt+Shift+f", "Move cursor to next word end"),
+    (260, "Atl+b, Ctrl+←", "Move cursor backward one word"),
+    (270, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
+    (280, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
     (
         290,
-        "Ctrl+E, End, Ctrl+Alt+F or → , Cmd+→",
+        "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
         "Move cursor to end of line",
     ),
     (
         300,
-        "Ctrl+A, Home, Ctrl+Alt+B or ← , Cmd+←",
+        "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
         "Move cursor to start of line",
     ),
-    (310, "Alt+<, Ctrl+Alt+P or ↑", "Move cursor to top of file"),
+    (310, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
     (
         320,
-        "Alt+>, Ctrl+Alt+N or ↓",
+        "Alt+>, Ctrl+Alt+n or ↓",
         "Move cursor to bottom of file",
     ),
     (330, "PageDown, Cmd+↓", "Page down"),
-    (340, "Alt+V, PageUp, Cmd+↑", "Page up"),
-    (350, "Ctrl+L", "Toggle keys display (this screen)"),
-    (360, "Ctrl+T", "Toggle highlight colours"),
+    (340, "Alt+v, PageUp, Cmd+↑", "Page up"),
+    (350, "Ctrl+l", "Toggle keys display (this screen)"),
+    (360, "Ctrl+t", "Toggle highlight colours"),
     (370, "F1", "Previous in history"),
     (380, "F2", "Next in history"),
     (

@@ -569,7 +569,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
         term.draw(|f| {
             f.render_widget(&textarea, f.area());
             if popup {
-                show_popup(f, &[""; 0], &[&["", ""]]);
+                show_popup(f, &[""; 0], &[&(0, "", ""); 0]);
             }
             apply_highlights(&TUI_SELECTION_BG, &mut textarea);
         })
@@ -679,80 +679,6 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
                     continue;
                 }
             }
-            // let input = Input::from(event?);
-            // match input {
-            //     Input {
-            //         key: Key::Char('q'),
-            //         ctrl: true,
-            //         ..
-            //     } => {
-            //         return Err(ThagError::Cancelled);
-            //     }
-            //     Input {
-            //         key: Key::Char('d'),
-            //         ctrl: true,
-            //         ..
-            //     } => {
-            //         // 6 >5,4,3,2,1 -> 6 >6,5,4,3,2,1
-            //         history.add_entry(textarea.lines().to_vec().join("\n"));
-            //         history.current_index = Some(0);
-            //         history.save_to_file(&history_path);
-            //         break;
-            //     }
-            //     Input {
-            //         key: Key::Char('l'),
-            //         ctrl: true,
-            //         ..
-            //     } => popup = !popup,
-            //     Input {
-            //         key: Key::Char('t'),
-            //         ctrl: true,
-            //         ..
-            //     } => {
-            //         alt_highlights = !alt_highlights;
-            //         term.draw(|_| {
-            //             apply_highlights(alt_highlights, &mut textarea);
-            //         })?;
-            //     }
-            //     Input { key: Key::F(1), .. } => {
-            //         let mut found = false;
-            //         // 6 5,4,3,2,1 -> >5,4,3,2,1
-            //         if saved_to_history {
-            //             if let Some(entry) = history.get_previous() {
-            //                 // 5
-            //                 found = true;
-            //                 textarea.select_all();
-            //                 textarea.cut(); // 6
-            //                 textarea.insert_str(entry); // 5
-            //             }
-            //         } else {
-            //             // println!("Not already saved to history: calling history.get_current()");
-            //             if let Some(entry) = history.get_current() {
-            //                 found = true;
-            //                 textarea.select_all();
-            //                 textarea.cut(); // 6
-            //                 textarea.insert_str(entry); // 5
-            //             }
-            //         }
-            //         if found && !saved_to_history && !textarea.yank_text().is_empty() {
-            //             // 5 >5,4,3,2,1 -> 5 6,>5,4,3,2,1
-            //             history
-            //                 .add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
-            //             saved_to_history = true;
-            //         }
-            //     }
-            //     Input { key: Key::F(2), .. } => {
-            //         // 5 >6,5,4,3,2,1 ->
-            //         if let Some(entry) = history.get_next() {
-            //             textarea.select_all();
-            //             textarea.cut();
-            //             textarea.insert_str(entry);
-            //         }
-            //     }
-            //     input => {
-            //         textarea.input(input);
-            //     }
-            // }
         }
     }
 
@@ -849,15 +775,28 @@ pub fn reset_term(
     Ok(())
 }
 
-#[allow(clippy::cast_possible_truncation)]
-pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&[&str; 2]]) {
-    let adjusted_mappings: Vec<&[&str; 2]> = MAPPINGS
+#[allow(clippy::cast_possible_truncation, clippy::missing_panics_doc)]
+pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&(usize, &str, &str)]) {
+    let mut adjusted_mappings: Vec<&(usize, &str, &str)> = MAPPINGS
         .iter()
-        .filter(|&row| !remove.contains(&row[0]))
+        .filter(|&row| !remove.contains(&row.1))
         .chain(add.iter().map(Deref::deref))
         .collect();
+    adjusted_mappings.sort();
+    let (max_key_len, max_desc_len) =
+        adjusted_mappings
+            .iter()
+            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
+                let key_len = row.1.len().try_into().unwrap();
+                let desc_len = row.2.len().try_into().unwrap();
+                (max_key.max(key_len), max_desc.max(desc_len))
+            });
     let num_filtered_rows = adjusted_mappings.len();
-    let area = centered_rect(90, num_filtered_rows as u16 + 5, f.area());
+    let area = centered_rect(
+        max_key_len + max_desc_len + 4,
+        num_filtered_rows as u16 + 5,
+        f.area(),
+    );
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
@@ -884,17 +823,37 @@ pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&[&st
     for (i, row) in rows.iter().enumerate() {
         let col_layout = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Length(45), Constraint::Length(43)].as_ref());
+            .constraints(
+                [
+                    Constraint::Length(max_key_len),
+                    Constraint::Length(max_desc_len),
+                ]
+                .as_ref(),
+            );
         let cells = col_layout.split(*row);
-        for n in 0..=1 {
-            let mut widget = Paragraph::new(adjusted_mappings[i][n]);
-            if i == 0 {
-                widget = widget.add_modifier(Modifier::BOLD);
-            } else {
-                widget = widget.remove_modifier(Modifier::BOLD);
-            }
-            f.render_widget(widget, cells[n]);
+        let mut widget = Paragraph::new(adjusted_mappings[i].1);
+        if i == 0 {
+            widget = widget.add_modifier(Modifier::BOLD);
+        } else {
+            widget = widget.remove_modifier(Modifier::BOLD);
         }
+        f.render_widget(widget, cells[0]);
+        let mut widget = Paragraph::new(adjusted_mappings[i].2);
+        if i == 0 {
+            widget = widget.add_modifier(Modifier::BOLD);
+        } else {
+            widget = widget.remove_modifier(Modifier::BOLD);
+        }
+        f.render_widget(widget, cells[1]);
+        // for n in 0..=1 {
+        //     let mut widget = Paragraph::new(adjusted_mappings[i].n);
+        //     if i == 0 {
+        //         widget = widget.add_modifier(Modifier::BOLD);
+        //     } else {
+        //         widget = widget.remove_modifier(Modifier::BOLD);
+        //     }
+        //     f.render_widget(widget, cells[n]);
+        // }
     }
 }
 
@@ -914,54 +873,81 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     .split(popup_layout[1])[1]
 }
 
-const MAPPINGS: &[[&str; 2]; 35] = &[
-    ["Key Bindings", "Description"],
-    [
+const MAPPINGS: &[(usize, &str, &str); 38] = &[
+    (10, "Key Bindings", "Description"),
+    (
+        20,
         "Shift+arrow keys",
         "Select/deselect chars (←→) or lines (↑↓)",
-    ],
-    [
+    ),
+    (
+        30,
         "Shift+Ctrl+arrow keys",
         "Select/deselect words (←→) or paras (↑↓)",
-    ],
-    ["Ctrl+D", "Submit"],
-    ["Ctrl+Q", "Cancel and quit"],
-    ["Ctrl+H, Backspace", "Delete character before cursor"],
-    ["Ctrl+I, Tab", "Indent"],
-    ["Ctrl+M, Enter", "Insert newline"],
-    ["Ctrl+K", "Delete from cursor to end of line"],
-    ["Ctrl+J", "Delete from cursor to start of line"],
-    ["Ctrl+W, Backspace", "Delete one word before cursor"],
-    ["Alt+D, Delete", "Delete one word from cursor position"],
-    ["Ctrl+U", "Undo"],
-    ["Ctrl+R", "Redo"],
-    ["Ctrl+C", "Copy (yank) selected text"],
-    ["Ctrl+X", "Cut (yank) selected text"],
-    ["Ctrl+Y", "Paste yanked text"],
-    ["Ctrl+V, Shift+Ins, Cmd+V", "Paste from system clipboard"],
-    ["Ctrl+F, →", "Move cursor forward one character"],
-    ["Ctrl+B, ←", "Move cursor backward one character"],
-    ["Ctrl+P, ↑", "Move cursor up one line"],
-    ["Ctrl+N, ↓", "Move cursor down one line"],
-    ["Alt+F, Ctrl+→", "Move cursor forward one word"],
-    ["Atl+B, Ctrl+←", "Move cursor backward one word"],
-    ["Alt+] or P, Ctrl+↑", "Move cursor up one paragraph"],
-    ["Alt+[ or N, Ctrl+↓", "Move cursor down one paragraph"],
-    [
+    ),
+    (40, "Ctrl+D", "Submit"),
+    (50, "Ctrl+Q", "Cancel and quit"),
+    (60, "Ctrl+H, Backspace", "Delete character before cursor"),
+    (70, "Ctrl+I, Tab", "Indent"),
+    (80, "Ctrl+M, Enter", "Insert newline"),
+    (90, "Ctrl+K", "Delete from cursor to end of line"),
+    (100, "Ctrl+J", "Delete from cursor to start of line"),
+    (
+        110,
+        "Ctrl+W, Alt+Backspace",
+        "Delete one word before cursor",
+    ),
+    (120, "Alt+D, Delete", "Delete one word from cursor position"),
+    (130, "Ctrl+U", "Undo"),
+    (140, "Ctrl+R", "Redo"),
+    (150, "Ctrl+C", "Copy (yank) selected text"),
+    (160, "Ctrl+X", "Cut (yank) selected text"),
+    (170, "Ctrl+Y", "Paste yanked text"),
+    (
+        180,
+        "Ctrl+V, Shift+Ins, Cmd+V",
+        "Paste from system clipboard",
+    ),
+    (190, "Ctrl+F, →", "Move cursor forward one character"),
+    (210, "Ctrl+B, ←", "Move cursor backward one character"),
+    (220, "Ctrl+P, ↑", "Move cursor up one line"),
+    (230, "Ctrl+N, ↓", "Move cursor down one line"),
+    (240, "Alt+F, Ctrl+→", "Move cursor forward one word"),
+    (250, "Atl+B, Ctrl+←", "Move cursor backward one word"),
+    (260, "Alt+) or P, Ctrl+↑", "Move cursor up one paragraph"),
+    (
+        270,
+        "Alt+(10,  or N, Ctrl+↓",
+        "Move cursor down one paragraph",
+    ),
+    (
+        280,
         "Ctrl+E, End, Ctrl+Alt+F or → , Cmd+→",
         "Move cursor to end of line",
-    ],
-    [
+    ),
+    (
+        290,
         "Ctrl+A, Home, Ctrl+Alt+B or ← , Cmd+←",
         "Move cursor to start of line",
-    ],
-    ["Alt+<, Ctrl+Alt+P or ↑", "Move cursor to top of file"],
-    ["Alt+>, Ctrl+Alt+N or ↓", "Move cursor to bottom of file"],
-    ["PageDown, Cmd+↓", "Page down"],
-    ["Alt+V, PageUp, Cmd+↑", "Page up"],
-    ["Ctrl+T", "Toggle highlight colours"],
-    ["F1", "Previous in history"],
-    ["F2", "Next in history"],
+    ),
+    (300, "Alt+<, Ctrl+Alt+P or ↑", "Move cursor to top of file"),
+    (
+        310,
+        "Alt+>, Ctrl+Alt+N or ↓",
+        "Move cursor to bottom of file",
+    ),
+    (320, "PageDown, Cmd+↓", "Page down"),
+    (330, "Alt+V, PageUp, Cmd+↑", "Page up"),
+    (340, "Ctrl+L", "Toggle keys display (this screen)"),
+    (350, "Ctrl+T", "Toggle highlight colours"),
+    (360, "F1", "Previous in history"),
+    (370, "F2", "Next in history"),
+    (
+        380,
+        "F9",
+        "Suspend mouse capture and line numbers for system copy",
+    ),
+    (390, "F10", "Resume mouse capture and line numbers"),
 ];
 // const NUM_ROWS: usize = MAPPINGS.len();
 

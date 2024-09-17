@@ -1,6 +1,6 @@
 use crokey::{key, KeyCombination};
 use crossterm::event::{
-    EnableBracketedPaste, EnableMouseCapture,
+    DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
     KeyEvent,
 };
@@ -52,8 +52,7 @@ pub fn resolve_term() -> Result<Option<TermScopeGuard>, ThagError> {
             EnterAlternateScreen,
             EnableMouseCapture,
             EnableBracketedPaste
-        )
-        .map_err(|e| e)?;
+        )?;
 
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
@@ -112,7 +111,7 @@ pub struct Display<'a> {
     pub title: &'a str,
     pub title_style: Style,
     pub remove_keys: &'a [&'a str],
-    pub add_keys: &'a [&'a [&'a str; 2]],
+    pub add_keys: &'a [&'a (usize, &'a str, &'a str)],
 }
 
 #[derive(Debug)]
@@ -233,12 +232,40 @@ where
                 key!(ctrl - j) => {
                     textarea.delete_line_by_head();
                 }
-                key!(ctrl - j) => {
-                    textarea.delete_line_by_head();
+                key!(ctrl - w) | key!(alt - backspace) => {
+                    textarea.delete_word();
                 }
-                key!(ctrl - w) | key!(enter) | key!(enter) => {
-                    textarea.delete_line_by_head();
+                key!(alt - d) => {
+                    textarea.delete_next_word();
                 }
+                key!(ctrl - u) => {
+                    textarea.undo();
+                }
+                key!(ctrl - r) => {
+                    textarea.redo();
+                }
+                key!(ctrl - c) => {
+                    textarea.yank_text();
+                }
+                key!(ctrl - x) => {
+                    textarea.cut();
+                }
+                key!(ctrl - y) => {
+                    textarea.paste();
+                }
+                key!(f9) => {
+                    if maybe_term.is_some() {
+                        crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
+                        textarea.remove_line_number();
+                    }
+                }
+                key!(f10) => {
+                    if maybe_term.is_some() {
+                        crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
+                        textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
+                    }
+                }
+
                 //
                 key!(ctrl - alt - p) | key!(alt - '<') | key!(alt - up) => {
                     textarea.move_cursor(CursorMove::Top);
@@ -249,13 +276,13 @@ where
                 key!(alt - f) | key!(ctrl - right) => {
                     textarea.move_cursor(CursorMove::WordForward);
                 }
-                key!(alt - b) /* | key!(ctrl - left) */ => {
+                key!(alt - b) | key!(ctrl - left) => {
                     textarea.move_cursor(CursorMove::WordBack);
                 }
-                key!(alt - p) /* | key!(alt - ']') */ | key!(ctrl - up) => {
+                key!(alt - p) | key!(alt - ']') | key!(ctrl - up) => {
                     textarea.move_cursor(CursorMove::ParagraphBack);
                 }
-                key!(alt - n) /* | key!(alt - '[') */ | key!(ctrl - down) => {
+                key!(alt - n) | key!(alt - '[') | key!(ctrl - down) => {
                     textarea.move_cursor(CursorMove::ParagraphForward);
                 }
                 key!(ctrl - t) => {

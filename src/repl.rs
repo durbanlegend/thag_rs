@@ -509,7 +509,7 @@ fn review_history(
             title: "Enter / paste / edit REPL history.  ^D: save & exit  ^Q: quit  ^S: save  F3: abandon  ^L: keys  ^T: toggle highlighting",
             title_style: Style::default().fg(Color::Indexed(75)).bold(),
             remove_keys: &["F1", "F2"],
-            add_keys: &[&["F3", "Discard saved and unsaved changes and exit"]],
+            add_keys: &[&(371, "F3", "Discard saved and unsaved changes and exit")],
         };
         let key_action = tui_edit(
             &event_reader,
@@ -973,7 +973,7 @@ pub fn edit_history<R: EventReader + Debug>(
     apply_highlights(&TUI_SELECTION_BG, &mut textarea);
 
     let remove_keys = &["F1", "F2"];
-    let add_keys = &[&["F3", "Discard saved and unsaved changes and exit"]];
+    let add_keys = &[&(371, "F3", "Discard saved and unsaved changes and exit")];
     let fmt = KeyCombinationFormat::default();
     loop {
         let event = if var("TEST_ENV").is_ok() {

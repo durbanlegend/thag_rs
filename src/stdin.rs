@@ -804,10 +804,9 @@ pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&(usi
     let block = Block::default()
         .borders(Borders::ALL)
         .title(
-            Title::from("Platform-dependent key mappings (YMMV)")
-                .alignment(ratatui::layout::Alignment::Center),
+            Title::from(r"Key bindings - subject to your terminal settings   (Ctrl+l to toggle)")
+                .alignment(Alignment::Center),
         )
-        .title(Title::from("(Ctrl+l to toggle)").alignment(Alignment::Center))
         .add_modifier(Modifier::BOLD)
         .fg(Color::Indexed(75));
     // this is supposed to clear out the background

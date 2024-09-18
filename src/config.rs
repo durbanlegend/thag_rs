@@ -57,9 +57,8 @@ pub struct Colors {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
     pub color_support: ColorSupport,
-    #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
-    pub term_theme: TermTheme,
+    pub term_theme: Option<TermTheme>,
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
     pub tui_selection_bg: TuiSelectionBg,

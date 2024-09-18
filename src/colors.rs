@@ -39,36 +39,20 @@ lazy_static! {
     #[derive(Debug)]
     pub static ref TERM_THEME: TermTheme = {
         if std::env::var("TEST_ENV").is_ok() {
-
             debug_log!(
                 "Avoiding termbg for testing"
             );
             return TermTheme::Dark;
         }
         #[allow(clippy::option_if_let_else)]
-        let term_theme: TermTheme = if let Some(config) = &*config::MAYBE_CONFIG {
-            config.colors.term_theme.clone()
+        if let Some(config) = &*config::MAYBE_CONFIG {
+            if let Some(ref term_theme) = config.colors.term_theme
+            {term_theme.clone()} else {
+                resolve_term_theme()
+            }
         } else {
-            #[cfg(target_os = "windows")] {
-            TermTheme::Dark }
-
-            #[cfg(not(target_os = "windows"))] {
-
-            debug_log!(
-                "About to call termbg"
-            );
-            let timeout = std::time::Duration::from_millis(100);
-
-            // debug_log!("Check terminal background color");
-            let theme = termbg::theme(timeout);
-            // shared::clear_screen();
-            match theme {
-                Ok(Theme::Light) => TermTheme::Light,
-                Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
-            }
-            }
-        };
-        term_theme
+            resolve_term_theme()
+        }
     };
 
     pub static ref TUI_SELECTION_BG: TuiSelectionBg = {
@@ -78,6 +62,25 @@ lazy_static! {
                 TermTheme::Dark => TuiSelectionBg::RedWhite
             }, |config| config.colors.tui_selection_bg.clone())
     };
+}
+
+#[cfg(target_os = "windows")]
+fn resolve_term_theme() -> TermTheme {
+    TermTheme::Dark
+}
+
+#[cfg(not(target_os = "windows"))]
+fn resolve_term_theme() -> TermTheme {
+    debug_log!("About to call termbg");
+    let timeout = std::time::Duration::from_millis(100);
+
+    // debug_log!("Check terminal background color");
+    let theme = termbg::theme(timeout);
+    // shared::clear_screen();
+    match theme {
+        Ok(Theme::Light) => TermTheme::Light,
+        Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+    }
 }
 
 /// A struct of the color support details, borrowed from crate `supports-color` since we
@@ -406,8 +409,8 @@ impl From<&MessageStyle> for XtermColor {
             MessageStyle::Xterm256DarkError => XtermColor::GuardsmanRed,
             MessageStyle::Xterm256DarkWarning => XtermColor::DarkViolet,
             MessageStyle::Xterm256DarkEmphasis => XtermColor::Copperfield,
-            MessageStyle::Xterm256DarkHeading => XtermColor::DarkMalibuBlue,
-            MessageStyle::Xterm256DarkSubheading => XtermColor::CaribbeanGreen,
+            MessageStyle::Xterm256DarkHeading => XtermColor::CaribbeanGreen,
+            MessageStyle::Xterm256DarkSubheading => XtermColor::DarkMalibuBlue,
             MessageStyle::Xterm256DarkNormal => XtermColor::Silver,
             MessageStyle::Xterm256DarkDebug => XtermColor::BondiBlue,
             MessageStyle::Xterm256DarkGhost => XtermColor::Silver,
@@ -448,8 +451,8 @@ impl NuThemeStyle for MessageStyle {
             Self::Xterm256DarkError => XtermColor::GuardsmanRed.get_color().bold(),
             Self::Xterm256DarkWarning => XtermColor::DarkViolet.get_color().bold(),
             Self::Xterm256DarkEmphasis => XtermColor::Copperfield.get_color().bold(),
-            Self::Xterm256DarkHeading => XtermColor::DarkMalibuBlue.get_color().bold(),
-            Self::Xterm256DarkSubheading => XtermColor::CaribbeanGreen.get_color().normal(),
+            Self::Xterm256DarkHeading => XtermColor::CaribbeanGreen.get_color().bold(),
+            Self::Xterm256DarkSubheading => XtermColor::DarkMalibuBlue.get_color().normal(),
             Self::Xterm256DarkNormal => XtermColor::Silver.get_color().normal(),
             Self::Xterm256DarkDebug => XtermColor::BondiBlue.get_color().normal(),
             Self::Xterm256DarkGhost => XtermColor::Silver.get_color().normal().italic(),

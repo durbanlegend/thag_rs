@@ -26,10 +26,11 @@ use crossterm::terminal::{
 use lazy_static::lazy_static;
 use mockall::{automock, predicate::str};
 use ratatui::backend::CrosstermBackend;
-use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
+use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
-use ratatui::widgets::block::{Block, Title};
+use ratatui::text::Line;
+use ratatui::widgets::block::Block;
 use ratatui::widgets::{Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use reedline::{
@@ -803,10 +804,8 @@ pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&(usi
     });
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(
-            Title::from(r"Key bindings - subject to your terminal settings   (Ctrl+l to toggle)")
-                .alignment(Alignment::Center),
-        )
+        .title_top(Line::from("Key bindings - subject to your terminal settings").centered())
+        .title_bottom(Line::from("Ctrl+l to toggle").centered())
         .add_modifier(Modifier::BOLD)
         .fg(Color::Indexed(75));
     // this is supposed to clear out the background

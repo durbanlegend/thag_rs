@@ -46,9 +46,10 @@ lazy_static! {
         }
         #[allow(clippy::option_if_let_else)]
         if let Some(config) = &*config::MAYBE_CONFIG {
-            if let Some(ref term_theme) = config.colors.term_theme
-            {term_theme.clone()} else {
+            if matches!(config.colors.term_theme, TermTheme::None) {
                 resolve_term_theme()
+            } else {
+                config.colors.term_theme.clone()
             }
         } else {
             resolve_term_theme()
@@ -59,7 +60,7 @@ lazy_static! {
         (*config::MAYBE_CONFIG).as_ref().map_or_else(
             || match &*TERM_THEME {
                 TermTheme::Light => TuiSelectionBg::BlueYellow,
-                TermTheme::Dark => TuiSelectionBg::RedWhite
+                _ => TuiSelectionBg::RedWhite,
             }, |config| config.colors.tui_selection_bg.clone())
     };
 }
@@ -277,8 +278,9 @@ pub enum ColorSupport {
 #[strum(serialize_all = "snake_case")]
 pub enum TermTheme {
     Light,
-    #[default]
     Dark,
+    #[default]
+    None,
 }
 
 /// An enum to categorise the current TUI editor highlighting scheme for the selected

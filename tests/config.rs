@@ -21,7 +21,7 @@ mod tests {
 
             [colors]
             color_support = "ansi16"
-            term_theme = "dark"
+            #term_theme = "dark"
         "#;
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let config_path = temp_dir.path().join("config.toml");
@@ -37,7 +37,7 @@ mod tests {
 
         assert_eq!(config.logging.default_verbosity, Verbosity::Verbose);
         assert_eq!(config.colors.color_support, ColorSupport::Ansi16);
-        assert_eq!(config.colors.term_theme, TermTheme::Dark);
+        assert_eq!(config.colors.term_theme, TermTheme::None);
     }
 
     #[test]

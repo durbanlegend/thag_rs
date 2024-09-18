@@ -17,7 +17,7 @@ use crate::{
     gen_build_run, nu_color_println,
     shared::BuildState,
 };
-use crate::{log, tui_editor};
+use crate::{log, tui_editor, ThagResult};
 
 use clap::{CommandFactory, Parser};
 use crokey::{crossterm, key, KeyCombination, KeyCombinationFormat};
@@ -314,7 +314,7 @@ pub fn run_repl(
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     start: Instant,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     #[allow(unused_variables)]
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
     let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
@@ -491,7 +491,7 @@ fn review_history(
     history_path: &PathBuf,
     backup_path: &PathBuf,
     staging_path: &PathBuf,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     line_editor.sync_history()?;
     fs::copy(history_path, backup_path)?;
@@ -567,7 +567,7 @@ pub fn history_key_handler(
     textarea: &mut TextArea,
     popup: &mut bool,
     saved: &mut bool,
-) -> Result<KeyAction, ThagError> {
+) -> ThagResult<KeyAction> {
     // let mut tui_highlight_bg = &*TUI_SELECTION_BG;
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
@@ -912,7 +912,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
 /// # Errors
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
-pub fn delete(build_state: &BuildState) -> Result<Option<String>, ThagError> {
+pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
     // let build_state = &context.build_state;
     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
     if clean_up.is_ok()
@@ -943,7 +943,7 @@ pub fn edit_history<R: EventReader + Debug>(
     history_path: &PathBuf,
     staging_path: &PathBuf,
     event_reader: &R,
-) -> Result<bool, ThagError> {
+) -> ThagResult<bool> {
     let initial_content = read_to_string(history_path)?;
     let staging_file = OpenOptions::new()
         .read(true)
@@ -1073,7 +1073,7 @@ pub fn edit_history<R: EventReader + Debug>(
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encountered.
-pub fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> Result<(), ThagError> {
+pub fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> ThagResult<()> {
     let mut f = BufWriter::new(staging_file);
     for line in textarea.lines() {
         Write::write_all(&mut f, line.as_bytes())?;
@@ -1086,7 +1086,7 @@ pub fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> Result
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit(build_state: &BuildState) -> Result<Option<String>, ThagError> {
+pub fn edit(build_state: &BuildState) -> ThagResult<Option<String>> {
     edit::edit_file(&build_state.source_path)?;
 
     Ok(Some(String::from("End of source edit")))
@@ -1096,7 +1096,7 @@ pub fn edit(build_state: &BuildState) -> Result<Option<String>, ThagError> {
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn toml(build_state: &BuildState) -> Result<Option<String>, ThagError> {
+pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
     let cargo_toml_file = &build_state.cargo_toml_path;
     if cargo_toml_file.exists() {
         edit::edit_file(cargo_toml_file)?;
@@ -1117,7 +1117,7 @@ pub fn run_expr(
     args: &Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
-) -> Result<Option<String>, ThagError> {
+) -> ThagResult<Option<String>> {
     let start = Instant::now();
 
     #[cfg(debug_assertions)]
@@ -1166,7 +1166,7 @@ Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear
 /// The process lacks permissions to view the contents.
 /// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn list(build_state: &BuildState) -> Result<Option<String>, ThagError> {
+pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
     let source_path = &build_state.source_path;
     if source_path.exists() {
         log!(Verbosity::Quieter, "File: {:?}", &source_path);

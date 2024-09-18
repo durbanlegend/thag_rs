@@ -8,6 +8,7 @@ use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use nu_ansi_term::Style;
 use serde::Deserialize;
+use std::convert::Into;
 #[cfg(target_os = "windows")]
 use std::env;
 use std::{fmt::Display, str::FromStr};
@@ -348,6 +349,72 @@ pub enum MessageStyle {
     Xterm256DarkGhost,
 }
 
+impl From<&MessageLevel> for MessageStyle {
+    fn from(message_level: &MessageLevel) -> Self {
+        {
+            let message_style: MessageStyle = {
+                let maybe_color_support = COLOR_SUPPORT.as_ref();
+                maybe_color_support.map_or(MessageStyle::Ansi16DarkNormal, |color_support| {
+                    let color_qual = color_support.to_string().to_lowercase();
+                    let theme_qual = TERM_THEME.to_string().to_lowercase();
+                    let msg_level_qual = message_level.to_string().to_lowercase();
+                    let message_style = MessageStyle::from_str(&format!(
+                        "{}_{}_{}",
+                        &color_qual, &theme_qual, &msg_level_qual
+                    )).unwrap_or(MessageStyle::Ansi16DarkNormal);
+                    debug_log!(
+                        "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
+                    );
+                    message_style
+                })
+            };
+            message_style
+        }
+    }
+}
+
+/// An implementation to facilitate conversion to `ratatui` and potentially other
+/// color implementations.
+#[allow(clippy::match_same_arms)]
+impl From<&MessageStyle> for XtermColor {
+    fn from(message_style: &MessageStyle) -> Self {
+        match *message_style {
+            MessageStyle::Ansi16LightError => XtermColor::UserRed,
+            MessageStyle::Ansi16LightWarning => XtermColor::UserMagenta,
+            MessageStyle::Ansi16LightEmphasis => XtermColor::UserYellow,
+            MessageStyle::Ansi16LightHeading => XtermColor::UserBlue,
+            MessageStyle::Ansi16LightSubheading => XtermColor::UserCyan,
+            MessageStyle::Ansi16LightNormal => XtermColor::UserWhite,
+            MessageStyle::Ansi16LightDebug => XtermColor::UserCyan,
+            MessageStyle::Ansi16LightGhost => XtermColor::UserCyan,
+            MessageStyle::Ansi16DarkError => XtermColor::UserRed,
+            MessageStyle::Ansi16DarkWarning => XtermColor::UserMagenta,
+            MessageStyle::Ansi16DarkEmphasis => XtermColor::UserYellow,
+            MessageStyle::Ansi16DarkHeading => XtermColor::UserCyan,
+            MessageStyle::Ansi16DarkSubheading => XtermColor::UserGreen,
+            MessageStyle::Ansi16DarkNormal => XtermColor::UserWhite,
+            MessageStyle::Ansi16DarkDebug => XtermColor::UserCyan,
+            MessageStyle::Ansi16DarkGhost => XtermColor::LightGray,
+            MessageStyle::Xterm256LightError => XtermColor::GuardsmanRed,
+            MessageStyle::Xterm256LightWarning => XtermColor::DarkPurplePizzazz,
+            MessageStyle::Xterm256LightEmphasis => XtermColor::Copperfield,
+            MessageStyle::Xterm256LightHeading => XtermColor::MidnightBlue,
+            MessageStyle::Xterm256LightSubheading => XtermColor::ScienceBlue,
+            MessageStyle::Xterm256LightNormal => XtermColor::Black,
+            MessageStyle::Xterm256LightDebug => XtermColor::LochmaraBlue,
+            MessageStyle::Xterm256LightGhost => XtermColor::Boulder,
+            MessageStyle::Xterm256DarkError => XtermColor::GuardsmanRed,
+            MessageStyle::Xterm256DarkWarning => XtermColor::DarkViolet,
+            MessageStyle::Xterm256DarkEmphasis => XtermColor::Copperfield,
+            MessageStyle::Xterm256DarkHeading => XtermColor::DarkMalibuBlue,
+            MessageStyle::Xterm256DarkSubheading => XtermColor::CaribbeanGreen,
+            MessageStyle::Xterm256DarkNormal => XtermColor::Silver,
+            MessageStyle::Xterm256DarkDebug => XtermColor::BondiBlue,
+            MessageStyle::Xterm256DarkGhost => XtermColor::Silver,
+        }
+    }
+}
+
 /// Define the implementation of the `NuThemeStyle` trait for `MessageStyle` to facilitate
 /// resolution of the `MessageStyle` variant to an `nu_ansi_term::Style`.
 #[allow(clippy::match_same_arms)]
@@ -394,21 +461,7 @@ impl NuThemeStyle for MessageStyle {
 /// colour support and light or dark theme, and the category of message to be displayed.
 #[must_use]
 pub fn nu_resolve_style(message_level: MessageLevel) -> Style {
-    let maybe_color_support = COLOR_SUPPORT.as_ref();
-    maybe_color_support.map_or_else(Style::default, |color_support| {
-        let color_qual = color_support.to_string().to_lowercase();
-        let theme_qual = TERM_THEME.to_string().to_lowercase();
-        let msg_level_qual = message_level.to_string().to_lowercase();
-        let message_style = MessageStyle::from_str(&format!(
-            "{}_{}_{}",
-            &color_qual, &theme_qual, &msg_level_qual
-        ));
-
-        debug_log!(
-            "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
-        );
-        message_style.map_or_else(|_| Style::default(), |message_style| NuThemeStyle::get_style(&message_style))
-    })
+    NuThemeStyle::get_style(&Into::<MessageStyle>::into(&message_level))
 }
 
 /// Main function for use by testing or the script runner.

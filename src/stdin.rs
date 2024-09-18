@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
+use crate::colors::{MessageStyle, NuColor, TuiSelectionBg, XtermColor, TUI_SELECTION_BG};
 use crate::errors::ThagError;
 use crate::logging::Verbosity;
 use crate::repl::{
@@ -176,12 +176,6 @@ enum ReplCommand {
     Edit,
     /// Edit the generated Cargo.toml
     Toml,
-    //     /// Attempt to build and run the Rust expression
-    // `    Run,
-    //     /// Delete all temporary files for this eval (see list)
-    //     Delete,
-    //     /// List temporary files for this eval
-    //     List,
     /// Edit history
     History,
     /// Show help information
@@ -330,16 +324,6 @@ pub fn run_repl(
                     ReplCommand::Toml => {
                         toml(&build_state.cargo_toml_path)?;
                     }
-                    // ReplCommand::Run => {
-                    //     // &history.sync();
-                    //     run_expr(&args, context)?;
-                    // }
-                    // ReplCommand::Delete => {
-                    //     delete(&args, context)?;
-                    // }
-                    // ReplCommand::List => {
-                    //     list(&args, context)?;
-                    // }
                     ReplCommand::History => {
                         edit_history()?;
                     }
@@ -554,7 +538,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
         Block::default()
             .borders(Borders::NONE)
             .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
-            .title_style(Style::default().fg(Color::Indexed(42)).bold()),
+            .title_style(Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::Blue));
@@ -686,6 +670,14 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
     Ok(textarea.lines().to_vec())
 }
 
+impl From<&MessageLevel> for u8 {
+    fn from(message_level: &MessageLevel) -> Self {
+        let message_style = MessageStyle::from(message_level);
+        let xterm_color = XtermColor::from(&message_style);
+        xterm_color.get_fixed_code()
+    }
+}
+
 /// Prompt for and read Rust source code from stdin.
 ///
 /// # Examples
@@ -807,7 +799,7 @@ pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&(usi
         .title_top(Line::from("Key bindings - subject to your terminal settings").centered())
         .title_bottom(Line::from("Ctrl+l to toggle").centered())
         .add_modifier(Modifier::BOLD)
-        .fg(Color::Indexed(75));
+        .fg(Color::Indexed(u8::from(&MessageLevel::Heading)));
     // this is supposed to clear out the background
     f.render_widget(Clear, area);
     f.render_widget(block, area);
@@ -832,19 +824,27 @@ pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&(usi
         let cells = col_layout.split(*row);
         let mut widget = Paragraph::new(adjusted_mappings[i].1);
         if i == 0 {
-            widget = widget.add_modifier(Modifier::BOLD).fg(Color::Indexed(173));
+            widget = widget
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
         } else {
-            widget = widget.fg(Color::Indexed(43)).not_bold();
+            widget = widget
+                .fg(Color::Indexed(u8::from(&MessageLevel::Subheading)))
+                .not_bold();
         }
         f.render_widget(widget, cells[0]);
         let mut widget = Paragraph::new(adjusted_mappings[i].2);
 
         if i == 0 {
-            widget = widget.add_modifier(Modifier::BOLD).fg(Color::Indexed(173));
-        } else {
             widget = widget
-                .remove_modifier(Modifier::BOLD)
-                .set_style(Style::default().fg(Color::Indexed(251)).not_bold());
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
+        } else {
+            widget = widget.remove_modifier(Modifier::BOLD).set_style(
+                Style::default()
+                    .fg(Color::Indexed(u8::from(&MessageLevel::Normal)))
+                    .not_bold(),
+            );
         }
         f.render_widget(widget, cells[1]);
     }

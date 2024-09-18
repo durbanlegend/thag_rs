@@ -507,7 +507,7 @@ fn review_history(
         };
         let display = Display {
             title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-            title_style: Style::default().fg(Color::Indexed(75)).bold(),
+            title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold(),
             remove_keys: &["F1", "F2"],
             add_keys: &[&(371, "F3", "Discard saved and unsaved changes and exit")],
         };
@@ -964,7 +964,7 @@ pub fn edit_history<R: EventReader + Debug>(
         Block::default()
             .borders(Borders::NONE)
             .title("Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting")
-            .title_style(Style::default().fg(Color::Indexed(75)).bold()),
+            .title_style(Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
 

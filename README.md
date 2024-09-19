@@ -112,7 +112,7 @@ cat my_file.rs | thag --edit                                    # Short form: -d
 
 This allows you to edit or append to the stdin input before submitting it to `thag_rs`. It has file-backed history so you don't lose your edits.
 
-#### A note on the TUI editor
+#### Key bindings in the TUI editor
 `thag_rs` tries to define all key bindings explicitly. However, the terminal emulator you use is bound to intercept some of these keys, rendering them unavailable to us.
 If specific key bindings don't work for you, you may have to adjust your terminal settings. For example:
 
@@ -124,7 +124,11 @@ Shift-Up: `\033;[2A` and `Shift-Down`: \033;[2B. Use the Esc key to generate \03
 
 If all else fails, try another terminal emulator.
 
-All of the above also applies to `REPL` mode.
+(TODO) The TUI editor is also used in the promote to TUI (`tui`) and edit history (`history`) functions in the REPL, so the
+above also applies there.
+
+Similar considerations apply to the basic REPL mode (--repl / -r). Note that the key bindings there are not identical to the TUI because the basic REPL uses mostly standard `reedline` emacs
+key bindings and the TUI uses mostly standard `tui-textarea` key bindings.
 
 ### * As a filter on standard input (loop mode):
 

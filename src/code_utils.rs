@@ -7,10 +7,9 @@ use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
 
 use crate::debug_log;
-use crate::errors::ThagError;
+use crate::errors::{ThagError, ThagResult};
 use crate::logging::Verbosity;
 use crate::nu_resolve_style;
-
 use crate::shared::debug_timings;
 use crate::shared::{Ast, BuildState};
 use crate::{log, MessageLevel};
@@ -86,7 +85,7 @@ pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
 /// Read the contents of a file. For reading the Rust script.
 /// # Errors
 /// Will return `Err` if there is any file system error reading from the file path.
-pub fn read_file_contents(path: &Path) -> Result<String, ThagError> {
+pub fn read_file_contents(path: &Path) -> ThagResult<String> {
     profile_fn!(read_file_contents);
 
     debug_log!("Reading from {path:?}");
@@ -413,7 +412,7 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
 pub fn extract_manifest(
     rs_full_source: &str,
     #[allow(unused_variables)] start_parsing_rs: Instant,
-) -> Result<Manifest, ThagError> {
+) -> ThagResult<Manifest> {
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
@@ -468,7 +467,7 @@ pub fn process_expr(
     args: &Cli,
     proc_flags: &ProcFlags,
     start: &Instant,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
@@ -479,7 +478,7 @@ pub fn process_expr(
 /// Convert a Path to a string value, assuming the path contains only valid characters.
 /// # Errors
 /// Will return `Err` if there is any error caused by invalid characters in the path name.
-pub fn path_to_str(path: &Path) -> Result<String, ThagError> {
+pub fn path_to_str(path: &Path) -> ThagResult<String> {
     let string = path
         .to_path_buf()
         .into_os_string()
@@ -511,7 +510,7 @@ pub fn disentangle(text_wall: &str) -> String {
 /// Display output captured to `std::process::Output`.
 /// # Errors
 /// Will return `Err` if the stdout or stderr is not found captured as expected.
-pub fn display_output(output: &Output) -> Result<(), ThagError> {
+pub fn display_output(output: &Output) -> ThagResult<()> {
     // Read the captured output from the pipe
     // let stdout = output.stdout;
 
@@ -536,7 +535,7 @@ pub fn display_output(output: &Output) -> Result<(), ThagError> {
 /// or if there is a logic error wrapping the path and modified time.
 pub fn modified_since_compiled(
     build_state: &BuildState,
-) -> Result<Option<(&PathBuf, SystemTime)>, ThagError> {
+) -> ThagResult<Option<(&PathBuf, SystemTime)>> {
     profile_fn!(modified_since_compiled);
 
     let executable = &build_state.target_path;
@@ -730,7 +729,7 @@ Ok(())
 /// Write the source to the destination source-code path.
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
-pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, ThagError> {
+pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> ThagResult<fs::File> {
     profile_fn!(write_source);
     let mut to_rs_file = OpenOptions::new()
         .write(true)
@@ -753,7 +752,7 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, T
 /// and open it for writing.
 /// # Errors
 /// Will return Err if it can't create the `rs_dyn` directory.
-pub fn create_temp_source_file() -> Result<PathBuf, ThagError> {
+pub fn create_temp_source_file() -> ThagResult<PathBuf> {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
@@ -1199,7 +1198,7 @@ pub fn is_stmt_unit_type<S: BuildHasher>(
 
 /// # Errors
 /// Will return `Err` if there is any error parsing expressions
-pub fn is_main_fn_returning_unit(file: &File) -> Result<bool, ThagError> {
+pub fn is_main_fn_returning_unit(file: &File) -> ThagResult<bool> {
     profile_fn!(is_main_fn_returning_unit);
 
     // Traverse the file to find the main function

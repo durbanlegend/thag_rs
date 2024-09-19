@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
-use crate::errors::ThagError;
+use crate::errors::{ThagError, ThagResult};
 use crate::logging::Verbosity;
 use crate::modified_since_compiled;
 use crate::DYNAMIC_SUBDIR;
@@ -106,7 +106,7 @@ impl BuildState {
         proc_flags: &ProcFlags,
         args: &Cli,
         script_state: &ScriptState,
-    ) -> Result<Self, ThagError> {
+    ) -> ThagResult<Self> {
         profile_fn!(pre_configure);
         let is_repl = proc_flags.contains(ProcFlags::REPL);
         let is_tui_repl = proc_flags.contains(ProcFlags::TUI_REPL);

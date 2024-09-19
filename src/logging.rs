@@ -9,8 +9,7 @@ use std::sync::{
 };
 use strum::EnumString;
 
-use crate::debug_log;
-use crate::{Cli, ThagError, MAYBE_CONFIG};
+use crate::{debug_log, Cli, ThagResult, MAYBE_CONFIG};
 
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 
@@ -71,7 +70,7 @@ lazy_static! {
 /// Determine the desired logging verbosity for the current execution.
 /// # Errors
 /// Will return `Err` if the logger mutex cannot be locked.
-pub fn set_verbosity(args: &Cli) -> Result<(), ThagError> {
+pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
     profile_fn!(set_verbosity);
 
     let verbosity = if args.verbose >= 2 {
@@ -95,7 +94,7 @@ pub fn set_verbosity(args: &Cli) -> Result<(), ThagError> {
 /// Set the logging verbosity for the current execution.
 /// # Errors
 /// Will return `Err` if the logger mutex cannot be locked.
-pub fn set_global_verbosity(verbosity: Verbosity) -> Result<(), ThagError> {
+pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
     LOGGER.lock()?.set_verbosity(verbosity);
     // Enable debug logging if -vv is passed
     if verbosity as u8 == Verbosity::Debug as u8 {

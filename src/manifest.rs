@@ -13,13 +13,12 @@ use std::time::Instant;
 
 use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 use crate::colors::{nu_resolve_style, MessageLevel};
-use crate::debug_log;
-use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
 #[cfg(target_os = "windows")]
 use crate::shared::escape_path_for_windows;
 use crate::shared::{debug_timings, Ast, BuildState};
+use crate::{debug_log, ThagResult};
 
 /// A trait to allow mocking of the command for testing purposes.
 #[automock]
@@ -47,10 +46,7 @@ impl CommandRunner for RealCommandRunner {
 /// crate name and inspecting the first line of Cargo's response.
 /// # Errors
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
-pub fn cargo_search<R: CommandRunner>(
-    runner: &R,
-    dep_crate: &str,
-) -> Result<(String, String), ThagError> {
+pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> ThagResult<(String, String)> {
     profile_fn!(cargo_search);
     let start_search = Instant::now();
 
@@ -132,7 +128,7 @@ as shown if you don't need special features:
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
 /// # Panics
 /// Will panic if the regular expression is malformed.
-pub fn capture_dep(first_line: &str) -> Result<(String, String), ThagError> {
+pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
     profile_fn!(capture_dep);
 
     debug_log!("first_line={first_line}");
@@ -157,7 +153,7 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), ThagError> {
 /// Configure the default manifest from the `BuildState` instance.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
-pub fn configure_default(build_state: &BuildState) -> Result<Manifest, ThagError> {
+pub fn configure_default(build_state: &BuildState) -> ThagResult<Manifest> {
     profile_fn!(configure_default);
     let source_stem = &build_state.source_stem;
 
@@ -185,7 +181,7 @@ gen_src_path={gen_src_path}",
 /// Parse the default manifest from a string template.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
-pub fn default(source_stem: &str, gen_src_path: &str) -> Result<Manifest, ThagError> {
+pub fn default(source_stem: &str, gen_src_path: &str) -> ThagResult<Manifest> {
     profile_fn!(default);
     let cargo_manifest = format!(
         r##"[package]
@@ -222,7 +218,7 @@ pub fn merge(
     build_state: &mut BuildState,
     rs_source: &str,
     syntax_tree: &Option<Ast>,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     profile_fn!(merge);
     let start_merge_manifest = Instant::now();
 

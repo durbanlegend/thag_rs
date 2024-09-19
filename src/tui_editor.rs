@@ -39,7 +39,7 @@ pub type TermScopeGuard = ScopeGuard<Term, ResetTermClosure>;
 ///
 /// # Errors
 ///
-pub fn resolve_term() -> Result<Option<TermScopeGuard>, ThagError> {
+pub fn resolve_term() -> ThagResult<Option<TermScopeGuard>> {
     let maybe_term = if var("TEST_ENV").is_ok() {
         None
     } else {

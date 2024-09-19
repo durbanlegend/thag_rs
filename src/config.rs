@@ -10,10 +10,8 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use crate::colors::{ColorSupport, TermTheme, TuiSelectionBg};
-
-use crate::debug_log;
 use crate::logging::Verbosity;
-use crate::ThagError;
+use crate::{debug_log, ThagResult};
 
 lazy_static! {
     #[derive(Debug)]
@@ -146,7 +144,7 @@ pub fn load(context: &dyn Context) -> Option<Config> {
 /// # Panics
 /// Will panic if it can't create the parent directory for the configuration.
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit(context: &dyn Context) -> Result<Option<String>, ThagError> {
+pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
     profile_fn!(edit);
     let config_path = context.get_config_path();
 

@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::colors::{MessageStyle, NuColor, TuiSelectionBg, XtermColor, TUI_SELECTION_BG};
-use crate::errors::ThagError;
+use crate::errors::ThagResult;
 use crate::logging::Verbosity;
 use crate::repl::{
     add_menu_keybindings, disp_repl_banner, format_edit_commands, format_key_code,
@@ -194,7 +194,7 @@ impl ReplCommand {
 }
 
 #[allow(dead_code)]
-fn main() -> Result<(), ThagError> {
+fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
         log!(Verbosity::Normal, "{line}");
@@ -214,7 +214,7 @@ pub fn run_repl(
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
     start: Instant,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     #[allow(unused_variables)]
     // let mut context = Context {
     //     args,
@@ -433,7 +433,7 @@ fn eval(
     build_state: &mut BuildState,
     args: &Cli,
     proc_flags: &ProcFlags,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     let vec = edit(event_reader)?;
     let start = Instant::now();
     let input = vec.join("\n");
@@ -456,7 +456,7 @@ fn eval(
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn toml(cargo_toml_file: &PathBuf) -> Result<Option<String>, ThagError> {
+pub fn toml(cargo_toml_file: &PathBuf) -> ThagResult<Option<String>> {
     if cargo_toml_file.exists() {
         edit::edit_file(cargo_toml_file)?;
     } else {
@@ -495,7 +495,7 @@ pub fn toml(cargo_toml_file: &PathBuf) -> Result<Option<String>, ThagError> {
 ///
 /// If the terminal cannot be reset.
 #[allow(clippy::too_many_lines)]
-pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> {
+pub fn edit<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
     let input = std::io::stdin();
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
@@ -755,9 +755,7 @@ pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
 ///
 /// This function will bubble up any `ratatui` or `crossterm` errors encountered.
 // TODO: move to shared or tui_editor?
-pub fn reset_term(
-    mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,
-) -> Result<(), ThagError> {
+pub fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> ThagResult<()> {
     disable_raw_mode()?;
     crossterm::execute!(
         term.backend_mut(),
@@ -946,7 +944,7 @@ const MAPPINGS: &[(usize, &str, &str); 40] = &[
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit_history() -> Result<Option<String>, ThagError> {
+pub fn edit_history() -> ThagResult<Option<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
     println!("history_path={history_path:#?}");

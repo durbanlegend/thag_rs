@@ -248,7 +248,9 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
             || {
                 (*MAYBE_CONFIG).as_ref().map_or_else(
                     || {
-                        debug_log!("Found nothing, returning default of false");
+                        debug_log!(
+                            "Found no arg or config file, returning default unquote = false"
+                        );
                         false
                     },
                     |config| {

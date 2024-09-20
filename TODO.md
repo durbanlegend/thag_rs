@@ -16,6 +16,8 @@
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  >>> REPL option Open in TUI
+- [ ]  Decide whether to decommission REPL delete function - keep list
+- [ ]  Decide whether to decommission REPL edit, toml and run functions.
 - [ ]  Debug Firestorm double invocation.
 - [ ]  Test [profile.dev] optimisation level
 - [ ]  Check dead code & other #[cfg[allow(...)]; look into factoring over-long gen_build_run

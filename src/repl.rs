@@ -210,6 +210,8 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 enum ReplCommand {
     /// Show the REPL banner
     Banner,
+    /// Promote the Rust expression to the TUI (Terminal user interface) repl, which can handle any script. This is a one-way process but the original expression will be saved in history.
+    Tui,
     /// Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
     Edit,
     /// Edit the generated Cargo.toml
@@ -412,6 +414,7 @@ pub fn run_repl(
                     ReplCommand::Quit => {
                         break;
                     }
+                    ReplCommand::Tui => todo!(),
                     ReplCommand::Edit => {
                         edit(build_state)?;
                     }
@@ -499,44 +502,7 @@ fn review_history(
     let initial_content = history_string.as_str();
     let new = true;
     let confirm = if new {
-        let data = EditData {
-            initial_content,
-            save_path: staging_path,
-            history_path: &None,
-            history: &mut None::<History>,
-        };
-        let display = Display {
-            title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-            title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold(),
-            remove_keys: &["F1", "F2"],
-            add_keys: &[&(371, "F3", "Discard saved and unsaved changes and exit")],
-        };
-        let key_action = tui_edit(
-            &event_reader,
-            &data,
-            &display,
-            |key_event, maybe_term, data, textarea, popup, saved| {
-                history_key_handler(
-                    key_event,
-                    maybe_term, // Remove `&mut` since `maybe_term` is already mutable
-                    data, textarea, popup, saved,
-                )
-            },
-        )?;
-        // eprintln!("key_action={key_action:?}, confirm={confirm}");
-        match key_action {
-            KeyAction::Quit(saved) => saved,
-            KeyAction::Save
-            | KeyAction::ShowHelp
-            | KeyAction::ToggleHighlight
-            | KeyAction::TogglePopup => {
-                return Err(ThagError::FromStr(
-                    format!("Logic error: {key_action:?} should not return from tui_edit").into(),
-                ))
-            }
-            KeyAction::SaveAndExit => true,
-            _ => false,
-        }
+        edit_history_new(initial_content, staging_path, &event_reader)?
     } else {
         edit_history(history_path, staging_path, &event_reader)?
     };
@@ -553,6 +519,51 @@ fn review_history(
         history_mut.sync()?;
     }
     Ok(())
+}
+
+/// Edit the history.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+pub fn edit_history_new<R: EventReader + Debug>(
+    initial_content: &str,
+    staging_path: &PathBuf,
+    event_reader: &R,
+) -> ThagResult<bool> {
+    let data = EditData {
+        initial_content,
+        save_path: staging_path,
+        history_path: &None,
+        history: &mut None::<History>,
+    };
+    let display = Display {
+        title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
+        title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold(),
+        remove_keys: &["F1", "F2"],
+        add_keys: &[&(371, "F3", "Discard saved and unsaved changes and exit")],
+    };
+    let key_action = tui_edit(
+        event_reader,
+        &data,
+        &display,
+        |key_event, maybe_term, data, textarea, popup, saved| {
+            history_key_handler(key_event, maybe_term, data, textarea, popup, saved)
+        },
+    )?;
+    Ok(match key_action {
+        KeyAction::Quit(saved) => saved,
+        KeyAction::Save
+        | KeyAction::ShowHelp
+        | KeyAction::ToggleHighlight
+        | KeyAction::TogglePopup => {
+            return Err(ThagError::FromStr(
+                format!("Logic error: {key_action:?} should not return from tui_edit").into(),
+            ))
+        }
+        KeyAction::SaveAndExit => true,
+        _ => false,
+    })
 }
 
 /// Key handler function to be passed into `edit` for editing REPL history.
@@ -933,7 +944,7 @@ pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
 /// # Panics
 ///
 /// Panics if a `crossterm` error is encountered resetting the terminal inside a
-/// `scopeguard::guard` closure.
+/// `scopeguard::guard` closure in the call to `resolve_term`.
 ///
 /// # Errors
 ///

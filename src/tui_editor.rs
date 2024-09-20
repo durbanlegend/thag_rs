@@ -128,6 +128,11 @@ pub enum KeyAction {
 
 /// Edit content with a TUI
 ///
+/// # Panics
+///
+/// Panics if a `crossterm` error is encountered resetting the terminal inside a
+/// `scopeguard::guard` closure in the call to ``resolve_term`.
+///
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.

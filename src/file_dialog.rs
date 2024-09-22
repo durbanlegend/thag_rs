@@ -1,96 +1,78 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28.1"
-ratatui = "0.28.1"
-*/
-use crossterm::{
-    event::{self, Event, KeyCode, KeyModifiers},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
+/// Original is `https://github.com/flip1995/tui-rs-file-dialog/blob/master/src/lib.rs`
+/// Copyright (c) 2023 Philipp Krones
+/// Licence: MIT
+///
+/// First, add a file dialog to the TUI app:
+///
+/// ```rust
+/// use tui_file_dialog::FileDialog;
+///
+/// struct App {
+///     // Other fields of the App...
+///
+///     file_dialog: FileDialog
+/// }
+/// ```
+///
+/// If you want to use the default key bindings provided by this crate, just wrap
+/// the event handler of your app in the [`bind_keys!`] macro.
+///
+/// ```no_run
+/// use tui_file_dialog::bind_keys;
+///
+/// fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+///     loop {
+///         terminal.draw(|f| ui(f, &mut app))?;
+///
+///         bind_keys!(
+///             // Expression to use to access the file dialog.
+///             app.file_dialog,
+///             // Event handler of the app, when the file dialog is closed.
+///             if let Event::Key(key) = event::read()? {
+///                 match key.code {
+///                     KeyCode::Char('q') => {
+///                         return Ok(());
+///                     }
+///                     _ => {}
+///                 }
+///             }
+///         )
+///     }
+/// }
+/// ```
+///
+/// Finally, draw the file dialog:
+///
+/// ```no_run
+/// fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+///     // Other UI drawing code...
+///
+///     app.file_dialog.draw(f);
+/// }
+/// ```
+///
+/// ## Limitations
+///
+/// I've started this crate with a minimalistic approach and new functionality will
+/// be added on a use-case basis. For example, it is currently not possible to add
+/// styling to the file dialog and just a boring, minimalist block with a list is
+/// used to render it.
 use ratatui::{
-    backend::CrosstermBackend,
+    // backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, List, ListItem, ListState},
-    Frame, Terminal,
+    Frame,
 };
-use std::io::{self, Result};
-use std::{cmp, ffi::OsString, fs, iter, path::PathBuf};
+use std::{
+    cmp,
+    ffi::OsString,
+    fs,
+    io::Result,
+    iter,
+    path::{Path, PathBuf},
+};
 
-struct App {
-    // 1. Add the `FileDialog` to the tui app.
-    file_dialog: FileDialog,
-}
-
-impl App {
-    pub fn new(file_dialog: FileDialog) -> Self {
-        Self { file_dialog }
-    }
-}
-
-fn main() -> Result<()> {
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
-    let res = run_app(&mut terminal, App::new(FileDialog::new(60, 40)?));
-
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
-    terminal.show_cursor()?;
-
-    if let Err(err) = res {
-        println!("{:?}", err)
-    }
-
-    Ok(())
-}
-
-fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App) -> io::Result<()> {
-    loop {
-        terminal.draw(|f| ui(f, &mut app))?;
-
-        // 2. Use the `bind_keys` macro to overwrite key bindings, when the file dialog is open.
-        // The first argument of the macro is the expression that should be used to access the file
-        // dialog.
-        bind_keys!(
-            app.file_dialog,
-            if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char('o') if key.modifiers == KeyModifiers::CONTROL => {
-                        app.file_dialog.open()
-                    }
-                    KeyCode::Char('q') | KeyCode::Esc => {
-                        return Ok(());
-                    }
-                    _ => {}
-                }
-            }
-        )
-    }
-}
-
-fn ui(f: &mut Frame, app: &mut App) {
-    let block = Block::default()
-        .title(format!(
-            "Selected file: {}",
-            app.file_dialog
-                .selected_file
-                .as_ref()
-                .map_or("None".to_string(), |f| f.to_string_lossy().to_string())
-        ))
-        .borders(Borders::ALL);
-    f.render_widget(block, f.area());
-
-    // 3. Call the draw function of the file dialog in order to render it.
-    app.file_dialog.draw(f);
-}
-
-/// The remainder of this file is from crate `tui-rs-file-dialog`, distributed under the MIT licence
-/// Copyright (c) 2023 Philipp Krones
 /// A pattern that can be used to filter the displayed files.
 pub enum FilePattern {
     /// Filter by file extension. This filter is case insensitive.
@@ -129,6 +111,10 @@ impl FileDialog {
     ///
     /// The width and height are the size of the file dialog in percent of the terminal size. They
     /// are clamped to 100%.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn new(width: u16, height: u16) -> Result<Self> {
         let mut s = Self {
             width: cmp::min(width, 100),
@@ -138,7 +124,7 @@ impl FileDialog {
 
             filter: None,
             open: false,
-            current_dir: PathBuf::from(".").canonicalize().unwrap(),
+            current_dir: PathBuf::from(".").canonicalize()?,
             show_hidden: false,
 
             list_state: ListState::default(),
@@ -150,24 +136,43 @@ impl FileDialog {
         Ok(s)
     }
 
-    /// The directory to open the file dialog in.
-    pub fn set_dir(&mut self, dir: PathBuf) -> Result<()> {
+    /// Sets the directory to open the file dialog in.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if there is a problem canonicalizing the directory.
+    pub fn set_dir(&mut self, dir: &Path) -> Result<()> {
         self.current_dir = dir.canonicalize()?;
         self.update_entries()
     }
+
     /// Sets the filter to use when browsing files.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn set_filter(&mut self, filter: FilePattern) -> Result<()> {
         self.filter = Some(filter);
         self.update_entries()
     }
+
     /// Removes the filter.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn reset_filter(&mut self) -> Result<()> {
         self.filter.take();
         self.update_entries()
     }
+
     /// Toggles whether hidden files should be shown.
     ///
     /// This only checks whether the file name starts with a dot.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn toggle_show_hidden(&mut self) -> Result<()> {
         self.show_hidden = !self.show_hidden;
         self.update_entries()
@@ -178,14 +183,18 @@ impl FileDialog {
         self.selected_file.take();
         self.open = true;
     }
+
     /// Closes the file dialog.
     pub fn close(&mut self) {
         self.open = false;
     }
+
     /// Returns whether the file dialog is currently open.
+    #[must_use]
     pub fn is_open(&self) -> bool {
         self.open
     }
+
     /// Draws the file dialog in the TUI application.
     pub fn draw(&mut self, f: &mut Frame) {
         if self.open {
@@ -225,7 +234,11 @@ impl FileDialog {
         };
         self.list_state.select(Some(i));
     }
-    /// Moves one directory up.
+
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn up(&mut self) -> Result<()> {
         self.current_dir.pop();
         self.update_entries()
@@ -236,6 +249,10 @@ impl FileDialog {
     /// If the item is a directory, the file dialog will move into that directory. If the item is a
     /// file, the file dialog will close and the path to the file will be stored in
     /// [`FileDialog::selected_file`].
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn select(&mut self) -> Result<()> {
         let Some(selected) = self.list_state.selected() else {
             self.next();
@@ -254,6 +271,14 @@ impl FileDialog {
     }
 
     /// Updates the entries in the file list. This function is called automatically when necessary.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there is a logic error comparing two strings.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered.
     fn update_entries(&mut self) -> Result<()> {
         self.items = iter::once("..".to_string())
             .chain(
@@ -308,6 +333,40 @@ impl FileDialog {
     }
 }
 
+/// Macro to automatically overwrite the default key bindings of the app, when the file dialog is
+/// open.
+///
+/// This macro only works inside of a function that returns a [`std::io::Result`] or a result that
+/// has an error type that implements [`From<std::io::Error>`].
+///
+/// Default bindings:
+///
+/// | Key | Action |
+/// | --- | --- |
+/// | `q`, `Esc` | Close the file dialog. |
+/// | `j`, `Down` | Move down in the file list. |
+/// | `k`, `Up` | Move up in the file list. |
+/// | `Enter` | Select the current item. |
+/// | `u` | Move one directory up. |
+/// | `I` | Toggle showing hidden files. |
+///
+/// ## Example
+///
+/// ```no_run
+/// bind_keys!(
+///     // Expression to use to access the file dialog.
+///     app.file_dialog,
+///     // Event handler of the app, when the file dialog is closed.
+///     if let Event::Key(key) = event::read()? {
+///         match key.code {
+///             KeyCode::Char('q') => {
+///                 return Ok(());
+///             }
+///             _ => {}
+///         }
+///     }
+/// )
+/// ```
 #[macro_export]
 macro_rules! bind_keys {
     ($file_dialog:expr, $e:expr) => {{

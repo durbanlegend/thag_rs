@@ -4,9 +4,9 @@ mod tests {
     #[cfg(not(windows))]
     use std::path::PathBuf;
     use thag_rs::cmd_args::{Cli, ProcFlags};
-    use thag_rs::repl::{delete, disp_repl_banner, list, parse_line, run_expr, HISTORY_FILE};
+    use thag_rs::repl::{delete, disp_repl_banner, edit, list, parse_line, run_expr, HISTORY_FILE};
     #[cfg(not(windows))]
-    use thag_rs::repl::{edit, edit_history_new, toml};
+    use thag_rs::repl::{edit_history, toml};
     use thag_rs::shared::BuildState;
 
     // Set environment variables before running tests
@@ -94,9 +94,9 @@ mod tests {
         let history_string =
             read_to_string(&history_path).expect(&format!("Error reading from {history_path:?}"));
 
-        let initial_content = history_string.as_str();
+        let initial_content = history_string;
         let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
-        let result = edit_history_new(&initial_content, &staging_path, &mock_reader);
+        let result = edit_history(initial_content, &staging_path, &mock_reader);
         dbg!(&result);
         assert!(&result.is_ok());
     }
@@ -110,7 +110,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = edit(&build_state);
+        let result = edit(&build_state.source_path);
         assert!(result.is_ok());
     }
 

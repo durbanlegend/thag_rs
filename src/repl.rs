@@ -1,16 +1,17 @@
 #![allow(clippy::uninlined_format_args)]
+// use crate::bind_keys;
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
 use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
 #[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::errors::ThagError;
+// use crate::file_dialog::FileDialog;
 use crate::logging::Verbosity;
 use crate::shared::Ast;
 use crate::stdin::{apply_highlights, normalize_newlines, show_popup};
 use crate::tui_editor::{
-    edit as tui_edit, CrosstermEventReader, Display, EditData, EventReader, History, KeyAction,
-    TermScopeGuard,
+    tui_edit, CrosstermEventReader, Display, EditData, EventReader, KeyAction, TermScopeGuard,
 };
 use crate::{
     colors::{nu_resolve_style, MessageLevel},
@@ -36,13 +37,14 @@ use reedline::{
     ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
+use rfd::FileDialog;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env::var;
 use std::fmt::Debug;
 use std::fs::{self, read_to_string, File, OpenOptions};
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
@@ -278,6 +280,17 @@ impl Prompt for ReplPrompt {
     }
 }
 
+// struct App {
+//     // 1. Add the `FileDialog` to the ratatui app.
+//     file_dialog: FileDialog,
+// }
+
+// impl App {
+//     pub fn new(file_dialog: FileDialog) -> Self {
+//         Self { file_dialog }
+//     }
+// }
+
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
     keybindings.add_binding(
         KeyModifiers::NONE,
@@ -319,8 +332,8 @@ pub fn run_repl(
 ) -> ThagResult<()> {
     #[allow(unused_variables)]
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
-    let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
-    let backup_path: PathBuf = build_state.cargo_home.join("hist_backup.txt");
+    let hist_staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
+    let hist_backup_path: PathBuf = build_state.cargo_home.join("hist_backup.txt");
     let history = Box::new(FileBackedHistory::with_file(25, history_path.clone())?);
 
     let cmd_vec = ReplCommand::iter()
@@ -414,9 +427,17 @@ pub fn run_repl(
                     ReplCommand::Quit => {
                         break;
                     }
-                    ReplCommand::Tui => todo!(),
+                    ReplCommand::Tui => {
+                        let source_path = &build_state.source_path;
+                        let save_path: PathBuf = build_state.cargo_home.join("repl_tui_save.rs");
+                        // let backup_path: PathBuf =
+                        //     &build_state.cargo_home.join("repl_tui_backup.rs");
+
+                        let rs_source = read_to_string(source_path)?;
+                        tui(rs_source, save_path)?;
+                    }
                     ReplCommand::Edit => {
-                        edit(build_state)?;
+                        edit(&build_state.source_path)?;
                     }
                     ReplCommand::Toml => {
                         toml(build_state)?;
@@ -435,8 +456,8 @@ pub fn run_repl(
                         review_history(
                             &mut line_editor,
                             &history_path,
-                            &backup_path,
-                            &staging_path,
+                            &hist_backup_path,
+                            &hist_staging_path,
                         )?;
                     }
                     ReplCommand::Keys => {
@@ -489,6 +510,158 @@ pub fn run_repl(
     Ok(())
 }
 
+fn tui(initial_content: String, save_path: PathBuf) -> Result<(), ThagError> {
+    let event_reader = CrosstermEventReader;
+    let edit_data = EditData {
+        return_text: true,
+        initial_content,
+        save_path: &Some(save_path),
+        // history_path: &None,
+        // history: &mut None::<History>,
+    };
+    let display = Display {
+        title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
+        title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Subheading))).bold(),
+        remove_keys: &[""; 0],
+        add_keys: &[&(371, "F3", "Discard saved and unsaved changes and exit")],
+    };
+    let (key_action, _maybe_text) = tui_edit(
+        &event_reader,
+        &edit_data,
+        &display,
+        |key_event, maybe_term, maybe_save_file, textarea, popup, saved| {
+            script_key_handler(
+                key_event,
+                maybe_term,
+                maybe_save_file,
+                textarea,
+                popup,
+                saved,
+            )
+        },
+    )?;
+    match key_action {
+        KeyAction::Quit(saved) => saved,
+        KeyAction::Save
+        | KeyAction::ShowHelp
+        | KeyAction::ToggleHighlight
+        | KeyAction::TogglePopup => {
+            return Err(ThagError::FromStr(
+                format!("Logic error: {key_action:?} should not return from tui_edit").into(),
+            ))
+        }
+        KeyAction::SaveAndExit => true,
+        _ => false,
+    };
+    // if confirm {
+    //     let history_mut = line_editor.history_mut();
+    //     let saved_history = fs::read_to_string(staging_path)?;
+    //     eprintln!("staging_path={staging_path:?}");
+    //     eprintln!("saved_history={saved_history}");
+    //     history_mut.clear()?;
+    //     for line in saved_history.lines() {
+    //         // eprintln!("saving line={line}");
+    //         let _ = history_mut.save(HistoryItem::from_command_line(line))?;
+    //     }
+    //     history_mut.sync()?;
+    // }
+    Ok(())
+}
+
+/// Key handler function to be passed into `tui_edit` for editing REPL history.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+pub fn script_key_handler(
+    key_event: KeyEvent,
+    _maybe_term: &mut Option<TermScopeGuard>,
+    _maybe_save_file: &Option<File>,
+    textarea: &mut TextArea,
+    popup: &mut bool,
+    saved: &mut bool, // TODO decide if we need this
+) -> ThagResult<KeyAction> {
+    // let mut tui_highlight_bg = &*TUI_SELECTION_BG;
+
+    // eprintln!("maybe_save_file={maybe_save_file:?}");
+    // debug_assert!(maybe_save_file.is_none());
+    let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+                                                           // eprintln!("key_combination={key_combination:?}");
+
+    match key_combination {
+        #[allow(clippy::unnested_or_patterns)]
+        key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
+        key!(ctrl - d) => Ok(KeyAction::Submit),
+        key!(ctrl - s) => {
+            // Save logic
+            // let mut app = App::new(FileDialog::new(60, 40)?);
+            // if let Some(term) = maybe_term {
+            //     app.file_dialog.open();
+            //     while app.file_dialog.selected_file.is_none() {
+            //         term.draw(|f| app.file_dialog.draw(f))?;
+            //         // 2. Use the `bind_keys` macro to overwrite key bindings, when the file dialog is open.
+            //         // The first argument of the macro is the expression that should be used to access the file
+            //         // dialog.
+            //         bind_keys!(
+            //             app.file_dialog,
+            //             if let Event::Key(key) = event::read()? {
+            //                 match key.code {
+            //                     event::KeyCode::Char('o')
+            //                         if key.modifiers == event::KeyModifiers::CONTROL =>
+            //                     {
+            //                         app.file_dialog.open()
+            //                     }
+            //                     event::KeyCode::Char('q') | event::KeyCode::Esc => {
+            //                         return Ok(KeyAction::Continue);
+            //                     }
+            //                     _ => {}
+            //                 }
+            //             }
+            //         )
+            //     }
+            //     // dbg!();
+            let source_file = FileDialog::new()
+                .set_title("Save Rust script")
+                .add_filter("rust", &["rs"])
+                .set_directory(".")
+                .save_file();
+            // .ok_or("No file selected")?;
+
+            if let Some(ref to_rs_path) = source_file {
+                // let save_file = OpenOptions::new()
+                //     .read(true)
+                //     .write(true)
+                //     .create(true)
+                //     .truncate(true)
+                //     .open(to_rs_path)?;
+
+                // for line in textarea.lines() {}
+                let _write_source =
+                    code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
+                // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
+                *saved = true;
+                Ok(KeyAction::Save)
+            } else {
+                Ok(KeyAction::Continue)
+            }
+        }
+        key!(ctrl - l) => {
+            // Toggle popup
+            *popup = !*popup;
+            Ok(KeyAction::TogglePopup)
+        }
+        key!(f3) => {
+            // Ask to revert
+            Ok(KeyAction::AbandonChanges)
+        }
+        _ => {
+            // Update the textarea with the input from the key event
+            textarea.input(Input::from(key_event)); // Input derived from Event
+            Ok(KeyAction::Continue)
+        }
+    }
+}
+
 fn review_history(
     line_editor: &mut Reedline,
     history_path: &PathBuf,
@@ -498,13 +671,12 @@ fn review_history(
     let event_reader = CrosstermEventReader;
     line_editor.sync_history()?;
     fs::copy(history_path, backup_path)?;
-    let history_string = read_to_string(history_path)?;
-    let initial_content = history_string.as_str();
     let new = true;
     let confirm = if new {
-        edit_history_new(initial_content, staging_path, &event_reader)?
+        let history_string = read_to_string(history_path)?;
+        edit_history(history_string, staging_path, &event_reader)?
     } else {
-        edit_history(history_path, staging_path, &event_reader)?
+        edit_history_old(history_path, staging_path, &event_reader)?
     };
     if confirm {
         let history_mut = line_editor.history_mut();
@@ -526,16 +698,17 @@ fn review_history(
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-pub fn edit_history_new<R: EventReader + Debug>(
-    initial_content: &str,
-    staging_path: &PathBuf,
+pub fn edit_history<R: EventReader + Debug>(
+    initial_content: String,
+    staging_path: &Path,
     event_reader: &R,
 ) -> ThagResult<bool> {
-    let data = EditData {
+    let edit_data = EditData {
+        return_text: false,
         initial_content,
-        save_path: staging_path,
-        history_path: &None,
-        history: &mut None::<History>,
+        save_path: &Some(staging_path.to_path_buf()),
+        // history_path: &None,
+        // history: &mut None::<History>,
     };
     let display = Display {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
@@ -543,12 +716,19 @@ pub fn edit_history_new<R: EventReader + Debug>(
         remove_keys: &["F1", "F2"],
         add_keys: &[&(371, "F3", "Discard saved and unsaved changes and exit")],
     };
-    let key_action = tui_edit(
+    let (key_action, _maybe_text) = tui_edit(
         event_reader,
-        &data,
+        &edit_data,
         &display,
-        |key_event, maybe_term, data, textarea, popup, saved| {
-            history_key_handler(key_event, maybe_term, data, textarea, popup, saved)
+        |key_event, maybe_term, maybe_save_file, textarea, popup, saved| {
+            history_key_handler(
+                key_event,
+                maybe_term,
+                maybe_save_file,
+                textarea,
+                popup,
+                saved,
+            )
         },
     )?;
     Ok(match key_action {
@@ -561,12 +741,17 @@ pub fn edit_history_new<R: EventReader + Debug>(
                 format!("Logic error: {key_action:?} should not return from tui_edit").into(),
             ))
         }
+        KeyAction::SaveAndSubmit => {
+            return Err(ThagError::FromStr(
+                format!("Logic error: {key_action:?} should not be implemented in tui_edit or history_key_handler").into(),
+            ))
+        }
         KeyAction::SaveAndExit => true,
         _ => false,
     })
 }
 
-/// Key handler function to be passed into `edit` for editing REPL history.
+/// Key handler function to be passed into `tui_edit` for editing REPL history.
 ///
 /// # Errors
 ///
@@ -574,13 +759,14 @@ pub fn edit_history_new<R: EventReader + Debug>(
 pub fn history_key_handler(
     key_event: KeyEvent,
     _maybe_term: &mut Option<TermScopeGuard>,
-    save_file: &File,
+    maybe_save_file: &Option<File>,
     textarea: &mut TextArea,
     popup: &mut bool,
     saved: &mut bool,
 ) -> ThagResult<KeyAction> {
     // let mut tui_highlight_bg = &*TUI_SELECTION_BG;
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+    let save_file = maybe_save_file.as_ref().ok_or("Missing save_file")?;
 
     match key_combination {
         #[allow(clippy::unnested_or_patterns)]
@@ -950,7 +1136,7 @@ pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[allow(clippy::too_many_lines)]
-pub fn edit_history<R: EventReader + Debug>(
+pub fn edit_history_old<R: EventReader + Debug>(
     history_path: &PathBuf,
     staging_path: &PathBuf,
     event_reader: &R,
@@ -1097,8 +1283,8 @@ pub fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> ThagRe
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit(build_state: &BuildState) -> ThagResult<Option<String>> {
-    edit::edit_file(&build_state.source_path)?;
+pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
+    edit::edit_file(source_path)?;
 
     Ok(Some(String::from("End of source edit")))
 }

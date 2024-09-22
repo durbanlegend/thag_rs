@@ -100,10 +100,11 @@ impl EventReader for CrosstermEventReader {
 // Struct to hold data-related parameters
 #[allow(dead_code)]
 pub struct EditData<'a> {
-    pub initial_content: &'a str,
-    pub save_path: &'a PathBuf,
-    pub history_path: &'a Option<PathBuf>,
-    pub history: &'a mut Option<History>,
+    pub return_text: bool,
+    pub initial_content: String,
+    pub save_path: &'a Option<PathBuf>,
+    // pub history_path: &'a Option<PathBuf>,
+    // pub history: &'a mut Option<History>,
 }
 
 // Struct to hold display-related parameters
@@ -122,6 +123,8 @@ pub enum KeyAction {
     Save,
     SaveAndExit,
     ShowHelp,
+    SaveAndSubmit,
+    Submit,
     ToggleHighlight,
     TogglePopup,
 }
@@ -131,36 +134,41 @@ pub enum KeyAction {
 /// # Panics
 ///
 /// Panics if a `crossterm` error is encountered resetting the terminal inside a
-/// `scopeguard::guard` closure in the call to ``resolve_term`.
+/// `scopeguard::guard` closure in the call to `resolve_term`.
 ///
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[allow(clippy::too_many_lines)]
-pub fn edit<R, F>(
+pub fn tui_edit<R, F>(
     event_reader: &R,
     edit_data: &EditData,
     display: &Display,
     key_handler: F, // closure or function for key handling
-) -> ThagResult<KeyAction>
+) -> ThagResult<(KeyAction, Option<Vec<String>>)>
 where
     R: EventReader + Debug,
     F: Fn(
         KeyEvent,
         &mut Option<TermScopeGuard>,
-        &File,
+        &Option<File>,
         &mut TextArea,
         &mut bool,
         &mut bool,
     ) -> ThagResult<KeyAction>,
 {
     // Initialize save file
-    let save_file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(edit_data.save_path)?;
+    let maybe_save_file = if let Some(save_path) = edit_data.save_path {
+        let save_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(save_path)?;
+        Some(save_file)
+    } else {
+        None
+    };
 
     // Initialize state variables
     let mut popup = false;
@@ -334,15 +342,24 @@ where
                     let key_action = key_handler(
                         key_event,
                         &mut maybe_term,
-                        &save_file,
+                        &maybe_save_file,
                         &mut textarea,
                         &mut popup,
                         &mut saved,
                     )?;
-
+                    // eprintln!("key_action={key_action:?}");
                     match key_action {
-                        KeyAction::AbandonChanges | KeyAction::Quit(_) | KeyAction::SaveAndExit => {
-                            break (Ok(key_action))
+                        KeyAction::AbandonChanges => break Ok((key_action, None::<Vec<String>>)),
+                        KeyAction::Quit(_)
+                        | KeyAction::SaveAndExit
+                        | KeyAction::SaveAndSubmit
+                        | KeyAction::Submit => {
+                            let maybe_text = if edit_data.return_text {
+                                Some(textarea.lines().to_vec())
+                            } else {
+                                None::<Vec<String>>
+                            };
+                            break Ok((key_action, maybe_text));
                         }
                         KeyAction::Continue
                         | KeyAction::Save

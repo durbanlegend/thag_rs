@@ -2,95 +2,17 @@
 [dependencies]
 crossterm = "0.28.1"
 ratatui = "0.28.1"
+tui-file-dialog = "0.1.0"
 */
-use crossterm::{
-    event::{self, Event, KeyCode, KeyModifiers},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
 use ratatui::{
-    backend::CrosstermBackend,
+    backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, List, ListItem, ListState},
-    Frame, Terminal,
+    Frame,
 };
-use std::io::{self, Result};
-use std::{cmp, ffi::OsString, fs, iter, path::PathBuf};
+use std::{cmp, ffi::OsString, fs, io::Result, iter, path::PathBuf};
 
-struct App {
-    // 1. Add the `FileDialog` to the tui app.
-    file_dialog: FileDialog,
-}
-
-impl App {
-    pub fn new(file_dialog: FileDialog) -> Self {
-        Self { file_dialog }
-    }
-}
-
-fn main() -> Result<()> {
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
-    let res = run_app(&mut terminal, App::new(FileDialog::new(60, 40)?));
-
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
-    terminal.show_cursor()?;
-
-    if let Err(err) = res {
-        println!("{:?}", err)
-    }
-
-    Ok(())
-}
-
-fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App) -> io::Result<()> {
-    loop {
-        terminal.draw(|f| ui(f, &mut app))?;
-
-        // 2. Use the `bind_keys` macro to overwrite key bindings, when the file dialog is open.
-        // The first argument of the macro is the expression that should be used to access the file
-        // dialog.
-        bind_keys!(
-            app.file_dialog,
-            if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char('o') if key.modifiers == KeyModifiers::CONTROL => {
-                        app.file_dialog.open()
-                    }
-                    KeyCode::Char('q') | KeyCode::Esc => {
-                        return Ok(());
-                    }
-                    _ => {}
-                }
-            }
-        )
-    }
-}
-
-fn ui(f: &mut Frame, app: &mut App) {
-    let block = Block::default()
-        .title(format!(
-            "Selected file: {}",
-            app.file_dialog
-                .selected_file
-                .as_ref()
-                .map_or("None".to_string(), |f| f.to_string_lossy().to_string())
-        ))
-        .borders(Borders::ALL);
-    f.render_widget(block, f.area());
-
-    // 3. Call the draw function of the file dialog in order to render it.
-    app.file_dialog.draw(f);
-}
-
-/// The remainder of this file is from crate `tui-rs-file-dialog`, distributed under the MIT licence
-/// Copyright (c) 2023 Philipp Krones
 /// A pattern that can be used to filter the displayed files.
 pub enum FilePattern {
     /// Filter by file extension. This filter is case insensitive.
@@ -204,7 +126,7 @@ impl FileDialog {
                     .add_modifier(Modifier::BOLD),
             );
 
-            let area = centered_rect(self.width, self.height, f.area());
+            let area = centered_rect(self.width, self.height, f.size());
             f.render_stateful_widget(list, area, &mut self.list_state);
         }
     }

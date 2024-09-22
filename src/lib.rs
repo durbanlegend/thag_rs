@@ -9,7 +9,6 @@ pub mod code_utils;
 pub mod colors;
 pub mod config;
 pub mod errors;
-pub mod file_dialog;
 pub mod logging;
 pub mod manifest;
 pub mod repl;

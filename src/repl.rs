@@ -1,28 +1,23 @@
 #![allow(clippy::uninlined_format_args)]
-// use crate::bind_keys;
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
-use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
+use crate::colors::{nu_resolve_style, MessageLevel, TuiSelectionBg, TUI_SELECTION_BG};
 #[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::errors::ThagError;
-// use crate::file_dialog::FileDialog;
+use crate::file_dialog::{DialogMode, FileDialog, Status};
 use crate::logging::Verbosity;
-use crate::shared::Ast;
+use crate::shared::{Ast, BuildState};
 use crate::stdin::{apply_highlights, normalize_newlines, show_popup};
 use crate::tui_editor::{
     tui_edit, CrosstermEventReader, Display, EditData, EventReader, KeyAction, TermScopeGuard,
 };
-use crate::{
-    colors::{nu_resolve_style, MessageLevel},
-    gen_build_run, nu_color_println,
-    shared::BuildState,
-};
-use crate::{log, tui_editor, ThagResult};
+use crate::{gen_build_run, log, nu_color_println, tui_editor, ThagResult};
 
 use clap::{CommandFactory, Parser};
 use crokey::{crossterm, key, KeyCombination, KeyCombinationFormat};
 use crossterm::event::{
+    self,
     Event::{self, Paste},
     KeyEvent,
 };
@@ -37,7 +32,7 @@ use reedline::{
     ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
-use rfd::FileDialog;
+//use rfd::FileDialog;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env::var;
@@ -575,7 +570,7 @@ fn tui(initial_content: String, save_path: PathBuf) -> Result<(), ThagError> {
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 pub fn script_key_handler(
     key_event: KeyEvent,
-    _maybe_term: &mut Option<TermScopeGuard>,
+    maybe_term: &mut Option<TermScopeGuard>,
     _maybe_save_file: &Option<File>,
     textarea: &mut TextArea,
     popup: &mut bool,
@@ -593,54 +588,73 @@ pub fn script_key_handler(
         key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => Ok(KeyAction::Submit),
         key!(ctrl - s) => {
-            // Save logic
+            // Save logic: rfd
+            // let source_file = suppress_logs(|| {
+            //     FileDialog::new()
+            //         .set_title("Save Rust script")
+            //         .add_filter("rust", &["rs"])
+            //         .set_directory(".")
+            //         .save_file()
+            // });
+
+            // if let Some(ref to_rs_path) = source_file {
+            //     let _write_source =
+            //         code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
+            //     // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
+            //     *saved = true;
+            //     Ok(KeyAction::Save)
+            // } else {
+            //     Ok(KeyAction::Continue)
+            // }
             // let mut app = App::new(FileDialog::new(60, 40)?);
-            // if let Some(term) = maybe_term {
-            //     app.file_dialog.open();
-            //     while app.file_dialog.selected_file.is_none() {
-            //         term.draw(|f| app.file_dialog.draw(f))?;
-            //         // 2. Use the `bind_keys` macro to overwrite key bindings, when the file dialog is open.
-            //         // The first argument of the macro is the expression that should be used to access the file
-            //         // dialog.
-            //         bind_keys!(
-            //             app.file_dialog,
-            //             if let Event::Key(key) = event::read()? {
-            //                 match key.code {
-            //                     event::KeyCode::Char('o')
-            //                         if key.modifiers == event::KeyModifiers::CONTROL =>
-            //                     {
-            //                         app.file_dialog.open()
-            //                     }
-            //                     event::KeyCode::Char('q') | event::KeyCode::Esc => {
-            //                         return Ok(KeyAction::Continue);
-            //                     }
-            //                     _ => {}
-            //                 }
-            //             }
-            //         )
-            //     }
-            //     // dbg!();
-            let source_file = FileDialog::new()
-                .set_title("Save Rust script")
-                .add_filter("rust", &["rs"])
-                .set_directory(".")
-                .save_file();
-            // .ok_or("No file selected")?;
+            if let Some(term) = maybe_term {
+                let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
+                save_dialog.open();
+                // while save_dialog.selected_file.is_none() {
+                //     term.draw(|f| save_dialog.draw(f))?;
+                //     // 2. Use the `bind_keys` macro to overwrite key bindings, when the file dialog is open.
+                //     // The first argument of the macro is the expression that should be used to access the file
+                //     // dialog.
+                //     bind_keys!(
+                //         save_dialog,
+                //         if let Event::Key(key) = event::read()? {
+                //             match key.code {
+                //                 CrosstermKeyCode::Esc => {
+                //                     return Ok(KeyAction::Continue);
+                //                 }
+                //                 CrosstermKeyCode::Enter => {
+                //                     save_dialog.select()?; // Call select() to handle file save
+                //                 }
+                //                 _ => {
+                //                     handle_save_input(&mut save_dialog.input, key);
+                //                     // Handle input in TextArea
+                //                 }
+                //             }
+                //         }
+                //     );
+                // }
+                let mut status = Status::Incomplete;
+                while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
+                    term.draw(|f| save_dialog.draw(f))?;
+                    if let Event::Key(key) = event::read()? {
+                        status = save_dialog.handle_input(key)?;
+                    }
+                } // if save_dialog.is_open() {
+                  //     term.draw(|f| save_dialog.draw(f))?;
+                  // } else {
+                  //     // Redraw the TUI editor here after the dialog is closed
+                  //     term.draw(|f| term.draw(f))?; // Assuming `app.draw(f)` is the main TUI editor rendering function
+                  // }
 
-            if let Some(ref to_rs_path) = source_file {
-                // let save_file = OpenOptions::new()
-                //     .read(true)
-                //     .write(true)
-                //     .create(true)
-                //     .truncate(true)
-                //     .open(to_rs_path)?;
-
-                // for line in textarea.lines() {}
-                let _write_source =
-                    code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
-                // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
-                *saved = true;
-                Ok(KeyAction::Save)
+                if let Some(ref to_rs_path) = save_dialog.selected_file {
+                    let _write_source =
+                        code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
+                    // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
+                    *saved = true;
+                    Ok(KeyAction::Save)
+                } else {
+                    Ok(KeyAction::Continue)
+                }
             } else {
                 Ok(KeyAction::Continue)
             }
@@ -661,6 +675,25 @@ pub fn script_key_handler(
         }
     }
 }
+
+// Attempted to suppress `rfd` rogue message from MacOS Sequoia
+// fn suppress_logs<T>(f: impl FnOnce() -> T) -> T {
+//     let original_stdout = stdout(); // Save original stdout
+//     let original_stderr = stderr(); // Save original stderr
+
+//     // Create pipes to redirect stdout and stderr
+//     let _stdout_guard = sink();
+//     let _stderr_guard = sink();
+
+//     // Perform the operation
+//     let result = f();
+
+//     // Restore stdout and stderr
+//     let _ = original_stdout.lock().flush();
+//     let _ = original_stderr.lock().flush();
+
+//     result
+// }
 
 fn review_history(
     line_editor: &mut Reedline,

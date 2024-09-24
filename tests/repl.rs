@@ -4,9 +4,9 @@ mod tests {
     #[cfg(not(windows))]
     use std::path::PathBuf;
     use thag_rs::cmd_args::{Cli, ProcFlags};
-    use thag_rs::repl::{delete, disp_repl_banner, edit, list, parse_line, run_expr, HISTORY_FILE};
+    use thag_rs::repl::{delete, disp_repl_banner, list, parse_line, run_expr};
     #[cfg(not(windows))]
-    use thag_rs::repl::{edit_history, toml};
+    use thag_rs::repl::{edit, edit_history, toml, HISTORY_FILE};
     use thag_rs::shared::BuildState;
 
     // Set environment variables before running tests

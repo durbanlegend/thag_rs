@@ -11,3 +11,8 @@ flames/firestorm.html
 profile.json
 .repl.history
 tests/assets/hist_staging.txt
+src/file_dialog1.rs
+src/file_dialog2.rs
+bank/ha.rs
+bank/ho2.rs
+*.rs

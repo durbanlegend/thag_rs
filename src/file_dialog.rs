@@ -5,7 +5,7 @@ use crossterm::{
 };
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Color, Modifier, Style, Stylize},
     widgets::{Block, Borders, List, ListItem, ListState},
     Frame,
 };
@@ -181,41 +181,85 @@ impl<'a> FileDialog<'a> {
                 )
                 .split(area);
 
-            // Render the file list
+            // Determine if the file list has focus
+            let file_list_focus = matches!(self.focus, DialogFocus::List);
+
+            // Render the file list with conditional style based on focus
+            let list_style = if file_list_focus {
+                Style::default()
+                    .bg(Color::LightMagenta)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default()
+                    .fg(Color::Gray)
+                    .bg(Color::DarkGray)
+                    .add_modifier(Modifier::DIM)
+            };
+
             let block = Block::default()
                 .title(format!("{}", self.current_dir.to_string_lossy()))
-                .borders(Borders::ALL);
+                .borders(Borders::ALL)
+                .border_style(if file_list_focus {
+                    Style::default()
+                } else {
+                    Style::default().fg(Color::DarkGray).dim()
+                });
             let list_items: Vec<ListItem> = self
                 .items
                 .iter()
                 .map(|s| ListItem::new(s.as_str()))
                 .collect();
-            let list = List::new(list_items).block(block).highlight_style(
-                Style::default()
-                    .bg(Color::LightMagenta)
-                    .add_modifier(Modifier::BOLD),
-            );
+            let list = List::new(list_items)
+                .block(block)
+                .highlight_style(list_style)
+                .style(if file_list_focus {
+                    Style::default()
+                } else {
+                    Style::default().fg(Color::DarkGray).dim()
+                });
             f.render_stateful_widget(list, chunks[0], &mut self.list_state);
 
             // Render the input box for the filename
+            let input_focus = matches!(self.focus, DialogFocus::Input);
             if let DialogMode::Save = self.mode {
                 // Create a Block for the input area with borders and background
+                let input_style = if input_focus {
+                    Style::default()
+                } else {
+                    Style::default().fg(Color::DarkGray).dim()
+                };
                 let input_block = Block::default()
                     .title("File Name")
                     .borders(Borders::ALL)
-                    .style(Style::default()); // .bg(Color::DarkGray)); // Dark background
+                    .style(input_style)
+                    .border_style(input_style);
 
                 let input_area = input_block.inner(chunks[1]); // Adjusts area to fit within borders
                 f.render_widget(input_block, chunks[1]);
 
-                // Render the input widget inside the block
-                self.input.set_cursor_line_style(
-                    Style::default()
-                        // .add_modifier(Modifier::UNDERLINED)
-                        .fg(Color::Yellow),
-                );
+                // Determine if the filename input has focus
+
+                // Conditionally show the cursor only if the input box has focus
+                self.input.set_cursor_line_style(if input_focus {
+                    Style::default().fg(Color::Yellow)
+                } else {
+                    Style::default().fg(Color::DarkGray) // Cursor won't be visible when not focused
+                });
+
+                if input_focus {
+                    self.input.set_style(Style::default());
+                    self.input
+                        .set_selection_style(Style::default().bg(Color::Blue));
+                    self.input.set_cursor_style(Style::default().on_magenta());
+                    self.input
+                        .set_cursor_line_style(Style::default().on_dark_gray());
+                } else {
+                    self.input.set_style(Style::default().dim());
+                    self.input.set_selection_style(Style::default().hidden());
+                    self.input.set_cursor_style(Style::default().hidden());
+                    self.input.set_cursor_line_style(Style::default().hidden());
+                }
                 f.render_widget(&self.input, input_area); // Renders the input widget inside the block
-                let _ = execute!(std::io::stdout().lock(), Hide,);
             }
         }
     }
@@ -414,8 +458,7 @@ pub fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
 ///
 /// ## Example
 ///
-/// ```no_run
-/// use thag_rs::bind_keys;
+/// ```ignore
 /// bind_keys!(
 ///     // Expression to use to access the file dialog.
 ///     app.file_dialog,

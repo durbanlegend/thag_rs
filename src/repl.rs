@@ -585,7 +585,7 @@ pub fn script_key_handler(
 
     match key_combination {
         #[allow(clippy::unnested_or_patterns)]
-        key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
+        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => Ok(KeyAction::Submit),
         key!(ctrl - s) => {
             // Save logic: rfd
@@ -803,7 +803,7 @@ pub fn history_key_handler(
 
     match key_combination {
         #[allow(clippy::unnested_or_patterns)]
-        key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
+        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => {
             // Save logic
             stage_history(save_file, textarea)?;
@@ -1241,7 +1241,7 @@ pub fn edit_history_old<R: EventReader + Debug>(
                     let key = fmt.to_string(key_combination);
                     match key_combination {
                         #[allow(clippy::unnested_or_patterns)]
-                        key!(ctrl - c) | key!(ctrl - q) => {
+                        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => {
                             println!("You typed {} which gracefully quits", key.green());
                             return Ok(saved);
                         }

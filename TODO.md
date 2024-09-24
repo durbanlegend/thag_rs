@@ -17,7 +17,7 @@
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  >>> REPL option Open in TUI
 - [ ]  Make key_handler a trait method? Or a closure?
-- [ ]  file_dialog doesn't work for adding new files. Try rfd
+- [ ]  Implement Ctrl+A (Save As...) on file dialog, also confirmation of save.
 - [ ]  Consider MIT licence only, see bank/tui_file_dialog.rs.
 - [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.
 - [ ]  Decommission repl::edit_history_old.

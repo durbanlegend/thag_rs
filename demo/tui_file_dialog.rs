@@ -11,21 +11,21 @@ use crossterm::{
 };
 use ratatui::{
     backend::CrosstermBackend,
-    widgets::{Block, Borders},
+    widgets::{Block, Borders, Clear},
     Frame, Terminal,
 };
 use std::io::{self, Result};
 
 use thag_rs::bind_keys;
-use thag_rs::file_dialog::FileDialog;
+use thag_rs::file_dialog::{DialogMode, FileDialog};
 
-struct App {
+struct App<'a> {
     // 1. Add the `FileDialog` to the tui app.
-    file_dialog: FileDialog,
+    file_dialog: FileDialog<'a>,
 }
 
-impl App {
-    pub fn new(file_dialog: FileDialog) -> Self {
+impl<'a> App<'a> {
+    pub fn new(file_dialog: FileDialog<'a>) -> Self {
         Self { file_dialog }
     }
 }
@@ -37,7 +37,10 @@ fn main() -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let res = run_app(&mut terminal, App::new(FileDialog::new(60, 40)?));
+    let res = run_app(
+        &mut terminal,
+        App::new(FileDialog::new(60, 40, DialogMode::Open)?),
+    );
 
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -51,7 +54,8 @@ fn main() -> Result<()> {
 }
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App) -> io::Result<()> {
-    dbg!();
+    terminal.clear()?;
+    terminal.draw(|f| f.render_widget(Clear, f.area()))?;
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 
@@ -85,6 +89,7 @@ fn ui(f: &mut Frame, app: &mut App) {
                 .map_or("None".to_string(), |f| f.to_string_lossy().to_string())
         ))
         .borders(Borders::ALL);
+    // f.render_widget(Clear, f.area()); //this clears out the background
     f.render_widget(block, f.area());
 
     // 3. Call the draw function of the file dialog in order to render it.

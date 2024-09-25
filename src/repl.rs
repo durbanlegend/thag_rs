@@ -32,7 +32,6 @@ use reedline::{
     ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
-//use rfd::FileDialog;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env::var;
@@ -274,17 +273,6 @@ impl Prompt for ReplPrompt {
         ))
     }
 }
-
-// struct App {
-//     // 1. Add the `FileDialog` to the ratatui app.
-//     file_dialog: FileDialog,
-// }
-
-// impl App {
-//     pub fn new(file_dialog: FileDialog) -> Self {
-//         Self { file_dialog }
-//     }
-// }
 
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
     keybindings.add_binding(
@@ -588,51 +576,9 @@ pub fn script_key_handler(
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => Ok(KeyAction::Submit),
         key!(ctrl - s) => {
-            // Save logic: rfd
-            // let source_file = suppress_logs(|| {
-            //     FileDialog::new()
-            //         .set_title("Save Rust script")
-            //         .add_filter("rust", &["rs"])
-            //         .set_directory(".")
-            //         .save_file()
-            // });
-
-            // if let Some(ref to_rs_path) = source_file {
-            //     let _write_source =
-            //         code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
-            //     // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
-            //     *saved = true;
-            //     Ok(KeyAction::Save)
-            // } else {
-            //     Ok(KeyAction::Continue)
-            // }
-            // let mut app = App::new(FileDialog::new(60, 40)?);
             if let Some(term) = maybe_term {
                 let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
                 save_dialog.open();
-                // while save_dialog.selected_file.is_none() {
-                //     term.draw(|f| save_dialog.draw(f))?;
-                //     // 2. Use the `bind_keys` macro to overwrite key bindings, when the file dialog is open.
-                //     // The first argument of the macro is the expression that should be used to access the file
-                //     // dialog.
-                //     bind_keys!(
-                //         save_dialog,
-                //         if let Event::Key(key) = event::read()? {
-                //             match key.code {
-                //                 CrosstermKeyCode::Esc => {
-                //                     return Ok(KeyAction::Continue);
-                //                 }
-                //                 CrosstermKeyCode::Enter => {
-                //                     save_dialog.select()?; // Call select() to handle file save
-                //                 }
-                //                 _ => {
-                //                     handle_save_input(&mut save_dialog.input, key);
-                //                     // Handle input in TextArea
-                //                 }
-                //             }
-                //         }
-                //     );
-                // }
                 let mut status = Status::Incomplete;
                 while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
                     term.draw(|f| save_dialog.draw(f))?;

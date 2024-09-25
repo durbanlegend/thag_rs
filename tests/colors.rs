@@ -2,11 +2,11 @@
 mod tests {
     use nu_ansi_term::Color;
     use supports_color::Stream;
-    use termbg::Theme;
     use thag_rs::colors::{
         ColorSupport, MessageStyle, NuColor, NuThemeStyle, TermTheme, XtermColor, COLOR_SUPPORT,
     };
     use thag_rs::logging::Verbosity;
+    use thag_rs::termbg::{self, Theme};
     use thag_rs::{log, nu_color_println, nu_resolve_style, MessageLevel};
 
     // Set environment variables before running tests

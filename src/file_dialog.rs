@@ -1,3 +1,6 @@
+/// Original is `https://github.com/flip1995/tui-rs-file-dialog/blob/master/src/lib.rs`
+/// Copyright (c) 2023 Philipp Krones
+/// Licence: MIT
 use crossterm::{
     cursor::{Hide, Show},
     event::{KeyCode, KeyEvent},
@@ -20,6 +23,7 @@ use std::{
 use tui_textarea::{Input, TextArea};
 
 /// File dialog mode to distinguish between Open and Save dialogs
+#[derive(PartialEq, Eq)]
 pub enum DialogMode {
     Open,
     Save,
@@ -160,7 +164,7 @@ impl<'a> FileDialog<'a> {
 
     /// Returns whether the file dialog is currently open.
     #[must_use]
-    pub fn is_open(&self) -> bool {
+    pub const fn is_open(&self) -> bool {
         self.open
     }
 
@@ -221,7 +225,7 @@ impl<'a> FileDialog<'a> {
 
             // Render the input box for the filename
             let input_focus = matches!(self.focus, DialogFocus::Input);
-            if let DialogMode::Save = self.mode {
+            if self.mode == DialogMode::Save {
                 // Create a Block for the input area with borders and background
                 let input_style = if input_focus {
                     Style::default()
@@ -274,14 +278,14 @@ impl<'a> FileDialog<'a> {
     }
     /// Goes to the previous item in the file list.
     pub fn previous(&mut self) {
-        let i = match self.list_state.selected() {
-            Some(i) => i.saturating_sub(1),
-            None => 0,
-        };
+        let i = self
+            .list_state
+            .selected()
+            .map_or(0, |i| i.saturating_sub(1));
         self.list_state.select(Some(i));
     }
 
-    ///
+    /// Goes to the parent directory.
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
@@ -309,10 +313,11 @@ impl<'a> FileDialog<'a> {
         let path = self.current_dir.join(&self.items[selected]);
 
         if path.is_dir() {
-            self.current_dir = path.clone();
-            let _ = self.update_entries()?;
+            self.current_dir.clone_from(&path);
+            self.update_entries()?;
         }
-        if let DialogMode::Save = self.mode {
+        // if matches!(self.mode, DialogMode::Save) {
+        if self.mode == DialogMode::Save {
             // Save mode logic to use the entered filename
             let file_name = self.input.lines().join(""); // Get the input from TextArea
                                                          // eprintln!("file_name={file_name}");
@@ -321,12 +326,10 @@ impl<'a> FileDialog<'a> {
                 self.selected_file = Some(path); // Set the selected file
                 self.close(); // Close the dialog
             }
-        } else {
-            if path.is_file() {
-                self.selected_file = Some(path);
-                self.close();
-                return Ok(());
-            }
+        } else if path.is_file() {
+            self.selected_file = Some(path);
+            self.close();
+            return Ok(());
         }
         Ok(())
     }
@@ -393,6 +396,11 @@ impl<'a> FileDialog<'a> {
         Ok(())
     }
 
+    /// Handle keyboard input while the file dialog is open.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered by the `select` method.
     pub fn handle_input(&mut self, key: KeyEvent) -> Result<Status> {
         match self.focus {
             DialogFocus::List => {
@@ -403,7 +411,7 @@ impl<'a> FileDialog<'a> {
                     KeyCode::Up | KeyCode::Char('k') => self.previous(),
                     KeyCode::Down | KeyCode::Char('j') => self.next(),
                     KeyCode::Enter => self.select()?,
-                    KeyCode::Tab /* if key.modifiers == KeyModifiers::CONTROL */ => {
+                    KeyCode::Tab => {
                         self.focus = DialogFocus::Input;
                         let _ = execute!(std::io::stdout().lock(), Show,);
                     } // Switch to input area
@@ -416,8 +424,8 @@ impl<'a> FileDialog<'a> {
                     KeyCode::Enter => {
                         self.select()?;
                         return Ok(Status::Complete);
-                    },
-                    KeyCode::Tab /* if key.modifiers == KeyModifiers::CONTROL */ => {
+                    }
+                    KeyCode::Tab => {
                         self.focus = DialogFocus::List;
                         let _ = execute!(std::io::stdout().lock(), Hide,);
                     } // Switch back to list
@@ -433,7 +441,7 @@ impl<'a> FileDialog<'a> {
 }
 
 /// Handle input in Save mode (for typing file name).
-pub fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
+fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
     // Convert the KeyEvent into an Input that TextArea can handle
     let input = Input::from(key);
     text_area.input(input);

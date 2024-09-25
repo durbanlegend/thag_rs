@@ -32,6 +32,7 @@ pub enum ThagError {
     TomlDe(TomlDeError), // For TOML deserialization errors
     TomlSer(TomlSerError), // For TOML serialization errors
     Toml(CargoTomlError), // For cargo_toml errors
+    UnsupportedTerm,
 }
 
 impl ThagError {}
@@ -152,6 +153,7 @@ impl std::fmt::Display for ThagError {
             Self::TomlDe(e) => write!(f, "{e:?}"),
             Self::TomlSer(e) => write!(f, "{e:?}"),
             Self::Toml(e) => write!(f, "{e:?}"),
+            Self::UnsupportedTerm => write!(f, "Unsupported terminal type"),
         }
     }
 }
@@ -163,7 +165,7 @@ impl Error for ThagError {
             // cast to the trait object `&error::Error`. This works because the
             // underlying type already implements the `Error` trait.
             Self::BitFlagsParse(e) => Some(e),
-            Self::Cancelled => Some(self),
+            Self::Cancelled | Self::UnsupportedTerm => Some(self),
             Self::ClapError(ref e) => Some(e),
             Self::Command(_e) => Some(self),
             Self::Dyn(e) => Some(&**e),

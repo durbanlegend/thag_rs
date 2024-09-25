@@ -1,7 +1,8 @@
 #![allow(clippy::implicit_return)]
 use crate::config::{self};
-
 use crate::debug_log;
+#[cfg(not(target_os = "windows"))]
+use crate::termbg::{terminal, theme, Theme};
 use {crate::log, crate::logging::Verbosity};
 
 use firestorm::profile_fn;
@@ -16,8 +17,6 @@ use strum::IntoEnumIterator;
 use strum::{Display, EnumIter, EnumString};
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
-#[cfg(not(target_os = "windows"))]
-use termbg::Theme;
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
@@ -76,7 +75,7 @@ fn resolve_term_theme() -> TermTheme {
     let timeout = std::time::Duration::from_millis(100);
 
     // debug_log!("Check terminal background color");
-    let theme = termbg::theme(timeout);
+    let theme = theme(timeout);
     // shared::clear_screen();
     match theme {
         Ok(Theme::Light) => TermTheme::Light,
@@ -357,16 +356,16 @@ pub enum MessageStyle {
 impl From<&MessageLevel> for MessageStyle {
     fn from(message_level: &MessageLevel) -> Self {
         {
-            let message_style: MessageStyle = {
+            let message_style: Self = {
                 let maybe_color_support = COLOR_SUPPORT.as_ref();
-                maybe_color_support.map_or(MessageStyle::Ansi16DarkNormal, |color_support| {
+                maybe_color_support.map_or(Self::Ansi16DarkNormal, |color_support| {
                     let color_qual = color_support.to_string().to_lowercase();
                     let theme_qual = TERM_THEME.to_string().to_lowercase();
                     let msg_level_qual = message_level.to_string().to_lowercase();
-                    let message_style = MessageStyle::from_str(&format!(
+                    let message_style = Self::from_str(&format!(
                         "{}_{}_{}",
                         &color_qual, &theme_qual, &msg_level_qual
-                    )).unwrap_or(MessageStyle::Ansi16DarkNormal);
+                    )).unwrap_or(Self::Ansi16DarkNormal);
                     debug_log!(
                         "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
                     );
@@ -384,38 +383,38 @@ impl From<&MessageLevel> for MessageStyle {
 impl From<&MessageStyle> for XtermColor {
     fn from(message_style: &MessageStyle) -> Self {
         match *message_style {
-            MessageStyle::Ansi16LightError => XtermColor::UserRed,
-            MessageStyle::Ansi16LightWarning => XtermColor::UserMagenta,
-            MessageStyle::Ansi16LightEmphasis => XtermColor::UserYellow,
-            MessageStyle::Ansi16LightHeading => XtermColor::UserBlue,
-            MessageStyle::Ansi16LightSubheading => XtermColor::UserCyan,
-            MessageStyle::Ansi16LightNormal => XtermColor::UserWhite,
-            MessageStyle::Ansi16LightDebug => XtermColor::UserCyan,
-            MessageStyle::Ansi16LightGhost => XtermColor::UserCyan,
-            MessageStyle::Ansi16DarkError => XtermColor::UserRed,
-            MessageStyle::Ansi16DarkWarning => XtermColor::UserMagenta,
-            MessageStyle::Ansi16DarkEmphasis => XtermColor::UserYellow,
-            MessageStyle::Ansi16DarkHeading => XtermColor::UserCyan,
-            MessageStyle::Ansi16DarkSubheading => XtermColor::UserGreen,
-            MessageStyle::Ansi16DarkNormal => XtermColor::UserWhite,
-            MessageStyle::Ansi16DarkDebug => XtermColor::UserCyan,
-            MessageStyle::Ansi16DarkGhost => XtermColor::LightGray,
-            MessageStyle::Xterm256LightError => XtermColor::GuardsmanRed,
-            MessageStyle::Xterm256LightWarning => XtermColor::DarkPurplePizzazz,
-            MessageStyle::Xterm256LightEmphasis => XtermColor::Copperfield,
-            MessageStyle::Xterm256LightHeading => XtermColor::MidnightBlue,
-            MessageStyle::Xterm256LightSubheading => XtermColor::ScienceBlue,
-            MessageStyle::Xterm256LightNormal => XtermColor::Black,
-            MessageStyle::Xterm256LightDebug => XtermColor::LochmaraBlue,
-            MessageStyle::Xterm256LightGhost => XtermColor::Boulder,
-            MessageStyle::Xterm256DarkError => XtermColor::GuardsmanRed,
-            MessageStyle::Xterm256DarkWarning => XtermColor::DarkViolet,
-            MessageStyle::Xterm256DarkEmphasis => XtermColor::Copperfield,
-            MessageStyle::Xterm256DarkHeading => XtermColor::CaribbeanGreen,
-            MessageStyle::Xterm256DarkSubheading => XtermColor::DarkMalibuBlue,
-            MessageStyle::Xterm256DarkNormal => XtermColor::Silver,
-            MessageStyle::Xterm256DarkDebug => XtermColor::BondiBlue,
-            MessageStyle::Xterm256DarkGhost => XtermColor::Silver,
+            MessageStyle::Ansi16LightError => Self::UserRed,
+            MessageStyle::Ansi16LightWarning => Self::UserMagenta,
+            MessageStyle::Ansi16LightEmphasis => Self::UserYellow,
+            MessageStyle::Ansi16LightHeading => Self::UserBlue,
+            MessageStyle::Ansi16LightSubheading => Self::UserCyan,
+            MessageStyle::Ansi16LightNormal => Self::UserWhite,
+            MessageStyle::Ansi16LightDebug => Self::UserCyan,
+            MessageStyle::Ansi16LightGhost => Self::UserCyan,
+            MessageStyle::Ansi16DarkError => Self::UserRed,
+            MessageStyle::Ansi16DarkWarning => Self::UserMagenta,
+            MessageStyle::Ansi16DarkEmphasis => Self::UserYellow,
+            MessageStyle::Ansi16DarkHeading => Self::UserCyan,
+            MessageStyle::Ansi16DarkSubheading => Self::UserGreen,
+            MessageStyle::Ansi16DarkNormal => Self::UserWhite,
+            MessageStyle::Ansi16DarkDebug => Self::UserCyan,
+            MessageStyle::Ansi16DarkGhost => Self::LightGray,
+            MessageStyle::Xterm256LightError => Self::GuardsmanRed,
+            MessageStyle::Xterm256LightWarning => Self::DarkPurplePizzazz,
+            MessageStyle::Xterm256LightEmphasis => Self::Copperfield,
+            MessageStyle::Xterm256LightHeading => Self::MidnightBlue,
+            MessageStyle::Xterm256LightSubheading => Self::ScienceBlue,
+            MessageStyle::Xterm256LightNormal => Self::Black,
+            MessageStyle::Xterm256LightDebug => Self::LochmaraBlue,
+            MessageStyle::Xterm256LightGhost => Self::Boulder,
+            MessageStyle::Xterm256DarkError => Self::GuardsmanRed,
+            MessageStyle::Xterm256DarkWarning => Self::DarkViolet,
+            MessageStyle::Xterm256DarkEmphasis => Self::Copperfield,
+            MessageStyle::Xterm256DarkHeading => Self::CaribbeanGreen,
+            MessageStyle::Xterm256DarkSubheading => Self::DarkMalibuBlue,
+            MessageStyle::Xterm256DarkNormal => Self::Silver,
+            MessageStyle::Xterm256DarkDebug => Self::BondiBlue,
+            MessageStyle::Xterm256DarkGhost => Self::Silver,
         }
     }
 }
@@ -475,7 +474,7 @@ pub fn main() {
     #[cfg(not(target_os = "windows"))]
     {
         #[allow(unused_variables)]
-        let term = termbg::terminal();
+        let term = terminal();
         // shared::clear_screen();
 
         debug_log!("  Term : {term:?}");

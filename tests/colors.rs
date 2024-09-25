@@ -6,6 +6,7 @@ mod tests {
         ColorSupport, MessageStyle, NuColor, NuThemeStyle, TermTheme, XtermColor, COLOR_SUPPORT,
     };
     use thag_rs::logging::Verbosity;
+    #[cfg(not(target_os = "windows"))]
     use thag_rs::termbg::{self, Theme};
     use thag_rs::{log, nu_color_println, nu_resolve_style, MessageLevel};
 
@@ -16,6 +17,7 @@ mod tests {
         std::env::set_var("EDITOR", "cat");
     }
 
+    #[cfg(not(target_os = "windows"))]
     fn convert_theme(theme1: &Theme) -> TermTheme {
         set_up();
         // Define how the equality is determined for `Theme`
@@ -59,6 +61,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_os = "windows"))]
     fn test_term_theme() {
         // Test if TERM_THEME is set correctly
         set_up();
@@ -94,6 +97,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_os = "windows"))]
     fn test_nu_resolve_style() {
         set_up();
         // Test the nu_resolve_style function

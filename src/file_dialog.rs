@@ -81,7 +81,7 @@ pub struct FileDialog<'a> {
     /// Current focus of the Save dialog (List or Input)
     focus: DialogFocus,
 
-    popup: bool,
+    pub popup: bool,
     title_bottom: &'a str,
 
     /// Input for the file name in Save mode

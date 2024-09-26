@@ -337,6 +337,20 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.to_string()
 }
 
+#[derive(Clone, Debug)]
+pub struct KeyDisplayLine {
+    pub seq: usize,
+    pub keys: &'static str, // Or String if you plan to modify the keys later
+    pub desc: &'static str, // Or String for modifiability
+}
+
+impl KeyDisplayLine {
+    #[must_use]
+    pub fn new(seq: usize, keys: &'static str, desc: &'static str) -> Self {
+        Self { seq, keys, desc }
+    }
+}
+
 /// Control debug logging
 #[macro_export]
 macro_rules! debug_log {

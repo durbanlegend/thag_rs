@@ -3,12 +3,13 @@
 /// Licence: MIT
 use crossterm::{
     cursor::{Hide, Show},
-    event::{KeyCode, KeyEvent},
+    event::{KeyCode, KeyEvent, KeyModifiers},
     execute,
 };
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
+    text::Line,
     widgets::{Block, Borders, List, ListItem, ListState},
     Frame,
 };
@@ -21,6 +22,9 @@ use std::{
     path::{Path, PathBuf},
 };
 use tui_textarea::{Input, TextArea};
+
+use crate::tui_editor::show_popup;
+use crate::{shared::KeyDisplayLine, tui_editor};
 
 /// File dialog mode to distinguish between Open and Save dialogs
 #[derive(PartialEq, Eq)]
@@ -74,7 +78,11 @@ pub struct FileDialog<'a> {
     /// Current mode of the dialog (Open or Save)
     mode: DialogMode,
 
+    /// Current focus of the Save dialog (List or Input)
     focus: DialogFocus,
+
+    popup: bool,
+    title_bottom: &'a str,
 
     /// Input for the file name in Save mode
     pub input: TextArea<'a>,
@@ -102,8 +110,10 @@ impl<'a> FileDialog<'a> {
             list_state: ListState::default(),
             items: vec![],
             mode,
+            focus: DialogFocus::List,
+            popup: false, // Start with focus on the file list
             input: TextArea::default(),
-            focus: DialogFocus::List, // Start with focus on the file list
+            title_bottom: "Ctrl+l to show keys",
         };
         s.update_entries()?;
         Ok(s)
@@ -207,7 +217,8 @@ impl<'a> FileDialog<'a> {
                     Style::default()
                 } else {
                     Style::default().fg(Color::DarkGray).dim()
-                });
+                })
+                .title_bottom(Line::from(self.title_bottom).centered());
             let list_items: Vec<ListItem> = self
                 .items
                 .iter()
@@ -265,6 +276,16 @@ impl<'a> FileDialog<'a> {
                 }
                 f.render_widget(&self.input, input_area); // Renders the input widget inside the block
             }
+            if self.popup {
+                show_popup(
+                    &get_mappings(),
+                    f,
+                    "Key bindings",
+                    tui_editor::TITLE_BOTTOM,
+                    &[],
+                    None,
+                );
+            };
         }
     }
 
@@ -402,39 +423,44 @@ impl<'a> FileDialog<'a> {
     ///
     /// This function will bubble up any i/o errors encountered by the `select` method.
     pub fn handle_input(&mut self, key: KeyEvent) -> Result<Status> {
-        match self.focus {
-            DialogFocus::List => {
-                // Handle keys for navigating the file list
-                match key.code {
-                    KeyCode::Esc => return Ok(Status::Quit),
-                    KeyCode::Char('u') => self.up()?,
-                    KeyCode::Up | KeyCode::Char('k') => self.previous(),
-                    KeyCode::Down | KeyCode::Char('j') => self.next(),
-                    KeyCode::Enter => self.select()?,
-                    KeyCode::Tab => {
-                        self.focus = DialogFocus::Input;
-                        let _ = execute!(std::io::stdout().lock(), Show,);
-                    } // Switch to input area
-                    _ => {}
-                }
+        let key_code = key.code;
+        match key_code {
+            KeyCode::Esc => return Ok(Status::Quit),
+            KeyCode::Char('l') if key.modifiers == KeyModifiers::CONTROL => {
+                self.popup = !self.popup;
             }
-            DialogFocus::Input => {
-                match key.code {
-                    KeyCode::Esc => return Ok(Status::Quit),
-                    KeyCode::Enter => {
-                        self.select()?;
-                        return Ok(Status::Complete);
-                    }
-                    KeyCode::Tab => {
-                        self.focus = DialogFocus::List;
-                        let _ = execute!(std::io::stdout().lock(), Hide,);
-                    } // Switch back to list
-                    _ => {
-                        // Handle keys for the input area (filename)
-                        handle_save_input(&mut self.input, key);
+            _ => match self.focus {
+                DialogFocus::List => {
+                    // Handle keys for navigating the file list
+                    match key_code {
+                        KeyCode::Char('u') => self.up()?,
+                        KeyCode::Up | KeyCode::Char('k') => self.previous(),
+                        KeyCode::Down | KeyCode::Char('j') => self.next(),
+                        KeyCode::Enter => self.select()?,
+                        KeyCode::Tab => {
+                            self.focus = DialogFocus::Input;
+                            let _ = execute!(std::io::stdout().lock(), Show,);
+                        } // Switch to input area
+                        _ => {}
                     }
                 }
-            }
+                DialogFocus::Input => {
+                    match key_code {
+                        KeyCode::Enter => {
+                            self.select()?;
+                            return Ok(Status::Complete);
+                        }
+                        KeyCode::Tab => {
+                            self.focus = DialogFocus::List;
+                            let _ = execute!(std::io::stdout().lock(), Hide,);
+                        } // Switch back to list
+                        _ => {
+                            // Handle keys for the input area (filename)
+                            handle_save_input(&mut self.input, key);
+                        }
+                    }
+                }
+            },
         }
         Ok(Status::Incomplete)
     }
@@ -455,14 +481,14 @@ fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
 ///
 /// Default bindings:
 ///
-/// | Key | Action |
-/// | --- | --- |
-/// | `q`, `Esc` | Close the file dialog. |
-/// | `j`, `Down` | Move down in the file list. |
-/// | `k`, `Up` | Move up in the file list. |
-/// | `Enter` | Select the current item. |
-/// | `u` | Move one directory up. |
-/// | `I` | Toggle showing hidden files. |
+/// | Key         | Action                       |
+/// |-------------|------------------------------|
+/// | `q`, `Esc`  | Close the file dialog.       |
+/// | `j`, `Down` | Move down in the file list.  |
+/// | `k`, `Up`   | Move up in the file list.    |
+/// | `Enter`     | Select the current item.     |
+/// | `u`         | Move one directory up.       |
+/// | `I`         | Toggle showing hidden files. |
 ///
 /// ## Example
 ///
@@ -485,7 +511,7 @@ fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
 macro_rules! bind_keys {
     ($file_dialog:expr, $e:expr) => {{
         if $file_dialog.is_open() {
-            use ::crossterm::event::{self, Event, KeyCode};
+            use crossterm::event::{self, Event, KeyCode};
             // File dialog events
             if let Event::Key(key) = event::read()? {
                 match key.code {
@@ -505,6 +531,7 @@ macro_rules! bind_keys {
                     KeyCode::Down | KeyCode::Char('j') => {
                         $file_dialog.next();
                     }
+                    KeyCode::Char('l') if key.modifiers == KeyModifiers::CONTROL => popup = !popup,
                     _ => {}
                 }
             }
@@ -529,4 +556,17 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
         Constraint::Fill(1),
     ])
     .split(popup_layout[1])[1]
+}
+
+fn get_mappings() -> Vec<KeyDisplayLine> {
+    vec![
+        KeyDisplayLine::new(10, "Keys", "Description"),
+        KeyDisplayLine::new(20, "q, Esc", "Close the file dialog"),
+        KeyDisplayLine::new(30, "j, ↓", "Move down in the file list"),
+        KeyDisplayLine::new(40, "k, ↑", "Move up in the file list"),
+        KeyDisplayLine::new(50, "Enter", "Select the current item"),
+        KeyDisplayLine::new(60, "u", "Move one directory up"),
+        KeyDisplayLine::new(70, "I", "Toggle showing hidden files"),
+        KeyDisplayLine::new(80, "Tab", "Toggle between file list and file name"),
+    ]
 }

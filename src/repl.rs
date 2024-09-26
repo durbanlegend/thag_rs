@@ -7,10 +7,11 @@ use crate::debug_log;
 use crate::errors::ThagError;
 use crate::file_dialog::{DialogMode, FileDialog, Status};
 use crate::logging::Verbosity;
-use crate::shared::{Ast, BuildState};
-use crate::stdin::{apply_highlights, normalize_newlines, show_popup};
+use crate::shared::{Ast, BuildState, KeyDisplayLine};
+use crate::stdin::{apply_highlights, normalize_newlines};
 use crate::tui_editor::{
-    tui_edit, CrosstermEventReader, Display, EditData, EventReader, KeyAction, TermScopeGuard,
+    get_mappings, show_popup, tui_edit, CrosstermEventReader, Display, EditData, EventReader,
+    KeyAction, TermScopeGuard, TITLE_BOTTOM, TITLE_TOP,
 };
 use crate::{gen_build_run, log, nu_color_println, tui_editor, ThagResult};
 
@@ -502,11 +503,16 @@ fn tui(initial_content: String, save_path: PathBuf) -> Result<(), ThagError> {
         // history_path: &None,
         // history: &mut None::<History>,
     };
+    let binding = [KeyDisplayLine::new(
+        371,
+        "F3",
+        "Discard saved and unsaved changes and exit",
+    )];
     let display = Display {
         title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Subheading))).bold(),
         remove_keys: &[""; 0],
-        add_keys: &[&(371, "F3", "Discard saved and unsaved changes and exit")],
+        add_keys: Some(&binding),
     };
     let (key_action, _maybe_text) = tui_edit(
         &event_reader,
@@ -689,11 +695,16 @@ pub fn edit_history<R: EventReader + Debug>(
         // history_path: &None,
         // history: &mut None::<History>,
     };
+    let binding = [KeyDisplayLine::new(
+        371,
+        "F3",
+        "Discard saved and unsaved changes and exit",
+    )];
     let display = Display {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold(),
         remove_keys: &["F1", "F2"],
-        add_keys: &[&(371, "F3", "Discard saved and unsaved changes and exit")],
+        add_keys: Some(&binding),
     };
     let (key_action, _maybe_text) = tui_edit(
         event_reader,
@@ -1149,7 +1160,11 @@ pub fn edit_history_old<R: EventReader + Debug>(
     apply_highlights(&TUI_SELECTION_BG, &mut textarea);
 
     let remove_keys = &["F1", "F2"];
-    let add_keys = &[&(371, "F3", "Discard saved and unsaved changes and exit")];
+    let add_keys = &[KeyDisplayLine::new(
+        371,
+        "F3",
+        "Discard saved and unsaved changes and exit",
+    )];
     let fmt = KeyCombinationFormat::default();
     loop {
         let event = if var("TEST_ENV").is_ok() {
@@ -1161,7 +1176,14 @@ pub fn edit_history_old<R: EventReader + Debug>(
                     term.draw(|f| {
                         f.render_widget(&textarea, f.area());
                         if popup {
-                            show_popup(f, remove_keys, add_keys);
+                            show_popup(
+                                &get_mappings(),
+                                f,
+                                TITLE_TOP,
+                                TITLE_BOTTOM,
+                                remove_keys,
+                                Some(add_keys),
+                            );
                         };
                         apply_highlights(tui_highlight_bg, &mut textarea);
                     })

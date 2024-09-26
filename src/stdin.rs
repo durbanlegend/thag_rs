@@ -6,9 +6,10 @@ use crate::repl::{
     add_menu_keybindings, disp_repl_banner, format_edit_commands, format_key_code,
     format_key_modifier, format_non_edit_events, parse_line, show_key_bindings, ReplPrompt,
 };
+use crate::tui_editor::{show_popup, TITLE_BOTTOM, TITLE_TOP};
 use crate::{
     code_utils, extract_ast_expr, extract_manifest, log, nu_color_println, nu_resolve_style,
-    BuildState, Cli, MessageLevel, ProcFlags,
+    tui_editor, BuildState, Cli, MessageLevel, ProcFlags,
 };
 
 use clap::{CommandFactory, Parser};
@@ -26,12 +27,8 @@ use crossterm::terminal::{
 use lazy_static::lazy_static;
 use mockall::{automock, predicate::str};
 use ratatui::backend::CrosstermBackend;
-use ratatui::layout::{Constraint, Direction, Layout, Margin};
-use ratatui::prelude::Rect;
-use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
-use ratatui::text::Line;
-use ratatui::widgets::block::Block;
-use ratatui::widgets::{Borders, Clear, Paragraph};
+use ratatui::style::{Color, Style, Stylize};
+use ratatui::widgets::{block::Block, Borders};
 use ratatui::Terminal;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
@@ -42,7 +39,6 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, IsTerminal};
-use std::ops::Deref;
 use std::str::FromStr;
 use std::time::Instant;
 use std::{collections::VecDeque, fs, path::PathBuf};
@@ -554,7 +550,14 @@ pub fn edit<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
         term.draw(|f| {
             f.render_widget(&textarea, f.area());
             if popup {
-                show_popup(f, &[""; 0], &[&(0, "", ""); 0]);
+                show_popup(
+                    &tui_editor::get_mappings(),
+                    f,
+                    TITLE_TOP,
+                    TITLE_BOTTOM,
+                    &[""; 0],
+                    None,
+                );
             }
             apply_highlights(&TUI_SELECTION_BG, &mut textarea);
         })
@@ -765,180 +768,6 @@ pub fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> T
     term.show_cursor()?;
     Ok(())
 }
-
-#[allow(clippy::cast_possible_truncation, clippy::missing_panics_doc)]
-pub fn show_popup(f: &mut ratatui::prelude::Frame, remove: &[&str], add: &[&(usize, &str, &str)]) {
-    let mut adjusted_mappings: Vec<&(usize, &str, &str)> = MAPPINGS
-        .iter()
-        .filter(|&row| !remove.contains(&row.1))
-        .chain(add.iter().map(Deref::deref))
-        .collect();
-    adjusted_mappings.sort();
-    let (max_key_len, max_desc_len) =
-        adjusted_mappings
-            .iter()
-            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
-                let key_len = row.1.len().try_into().unwrap();
-                let desc_len = row.2.len().try_into().unwrap();
-                (max_key.max(key_len), max_desc.max(desc_len))
-            });
-    let num_filtered_rows = adjusted_mappings.len();
-    let area = centered_rect(
-        max_key_len + max_desc_len + 4,
-        num_filtered_rows as u16 + 5,
-        f.area(),
-    );
-    let inner = area.inner(Margin {
-        vertical: 2,
-        horizontal: 2,
-    });
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .title_top(Line::from("Key bindings - subject to your terminal settings").centered())
-        .title_bottom(Line::from("Ctrl+l to toggle").centered())
-        .add_modifier(Modifier::BOLD)
-        .fg(Color::Indexed(u8::from(&MessageLevel::Heading)));
-    // this is supposed to clear out the background
-    f.render_widget(Clear, area);
-    f.render_widget(block, area);
-    let row_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            std::iter::repeat(Constraint::Ratio(1, num_filtered_rows as u32))
-                .take(num_filtered_rows),
-        );
-    let rows = row_layout.split(inner);
-
-    for (i, row) in rows.iter().enumerate() {
-        let col_layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(
-                [
-                    Constraint::Length(max_key_len),
-                    Constraint::Length(max_desc_len),
-                ]
-                .as_ref(),
-            );
-        let cells = col_layout.split(*row);
-        let mut widget = Paragraph::new(adjusted_mappings[i].1);
-        if i == 0 {
-            widget = widget
-                .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
-        } else {
-            widget = widget
-                .fg(Color::Indexed(u8::from(&MessageLevel::Subheading)))
-                .not_bold();
-        }
-        f.render_widget(widget, cells[0]);
-        let mut widget = Paragraph::new(adjusted_mappings[i].2);
-
-        if i == 0 {
-            widget = widget
-                .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
-        } else {
-            widget = widget.remove_modifier(Modifier::BOLD).set_style(
-                Style::default()
-                    .fg(Color::Indexed(u8::from(&MessageLevel::Normal)))
-                    .not_bold(),
-            );
-        }
-        f.render_widget(widget, cells[1]);
-    }
-}
-
-fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
-    let popup_layout = Layout::vertical([
-        Constraint::Fill(1),
-        Constraint::Max(max_height),
-        Constraint::Fill(1),
-    ])
-    .split(r);
-
-    Layout::horizontal([
-        Constraint::Fill(1),
-        Constraint::Max(max_width),
-        Constraint::Fill(1),
-    ])
-    .split(popup_layout[1])[1]
-}
-
-const MAPPINGS: &[(usize, &str, &str); 40] = &[
-    (10, "Key Bindings", "Description"),
-    (
-        20,
-        "Shift+arrow keys",
-        "Select/deselect chars (←→) or lines (↑↓)",
-    ),
-    (
-        30,
-        "Shift+Ctrl+arrow keys",
-        "Select/deselect words (←→) or paras (↑↓)",
-    ),
-    (40, "Alt+c", "Cancel selection"),
-    (50, "Ctrl+d", "Submit"),
-    (60, "Ctrl+q", "Cancel and quit"),
-    (70, "Ctrl+h, Backspace", "Delete character before cursor"),
-    (80, "Ctrl+i, Tab", "Indent"),
-    (90, "Ctrl+m, Enter", "Insert newline"),
-    (100, "Ctrl+k", "Delete from cursor to end of line"),
-    (110, "Ctrl+j", "Delete from cursor to start of line"),
-    (
-        120,
-        "Ctrl+w, Alt+Backspace",
-        "Delete one word before cursor",
-    ),
-    (130, "Alt+d, Delete", "Delete one word from cursor position"),
-    (140, "Ctrl+u", "Undo"),
-    (150, "Ctrl+r", "Redo"),
-    (160, "Ctrl+c", "Copy (yank) selected text"),
-    (170, "Ctrl+x", "Cut (yank) selected text"),
-    (180, "Ctrl+y", "Paste yanked text"),
-    (
-        190,
-        "Ctrl+v, Shift+Ins, Cmd+v",
-        "Paste from system clipboard",
-    ),
-    (200, "Ctrl+f, →", "Move cursor forward one character"),
-    (210, "Ctrl+b, ←", "Move cursor backward one character"),
-    (220, "Ctrl+p, ↑", "Move cursor up one line"),
-    (230, "Ctrl+n, ↓", "Move cursor down one line"),
-    (240, "Alt+f, Ctrl+→", "Move cursor forward one word"),
-    (250, "Alt+Shift+f", "Move cursor to next word end"),
-    (260, "Atl+b, Ctrl+←", "Move cursor backward one word"),
-    (270, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
-    (280, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
-    (
-        290,
-        "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
-        "Move cursor to end of line",
-    ),
-    (
-        300,
-        "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
-        "Move cursor to start of line",
-    ),
-    (310, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
-    (
-        320,
-        "Alt+>, Ctrl+Alt+n or ↓",
-        "Move cursor to bottom of file",
-    ),
-    (330, "PageDown, Cmd+↓", "Page down"),
-    (340, "Alt+v, PageUp, Cmd+↑", "Page up"),
-    (350, "Ctrl+l", "Toggle keys display (this screen)"),
-    (360, "Ctrl+t", "Toggle highlight colours"),
-    (370, "F1", "Previous in history"),
-    (380, "F2", "Next in history"),
-    (
-        390,
-        "F9",
-        "Suspend mouse capture and line numbers for system copy",
-    ),
-    (400, "F10", "Resume mouse capture and line numbers"),
-];
-// const NUM_ROWS: usize = MAPPINGS.len();
 
 /// Open the history file in an editor.
 /// # Errors

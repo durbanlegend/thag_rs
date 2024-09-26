@@ -627,7 +627,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     if let Ok(tree) = syn::parse_file(source_code) {
         #[cfg(debug_assertions)]
         log!(
-            Verbosity::Quiet,
+            Verbosity::Verbose,
             "{}",
             nu_resolve_style(crate::MessageLevel::Warning).paint("Parsed to syn::File")
         );
@@ -637,7 +637,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     } else if let Ok(tree) = extract_ast_expr(source_code) {
         #[cfg(debug_assertions)]
         log!(
-            Verbosity::Quiet,
+            Verbosity::Verbose,
             "{}",
             nu_resolve_style(crate::MessageLevel::Emphasis).paint("Parsed to syn::Expr")
         );

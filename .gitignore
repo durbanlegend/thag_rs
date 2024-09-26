@@ -15,3 +15,4 @@ src/file_dialog1.rs
 src/file_dialog2.rs
 bank/ha.rs
 bank/ho2.rs
+bank/tui_file_dialog2.rs

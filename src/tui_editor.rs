@@ -1,3 +1,4 @@
+use crate::MessageLevel;
 use crokey::{key, KeyCombination};
 use crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
@@ -6,12 +7,18 @@ use crossterm::event::{
 };
 use crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
 use mockall::automock;
-use ratatui::prelude::CrosstermBackend;
-use ratatui::style::{Color, Style};
-use ratatui::widgets::{Block, Borders};
+use ratatui::prelude::{CrosstermBackend, Rect};
+use ratatui::style::{Color, Modifier, Style, Styled};
+use ratatui::text::Line;
+use ratatui::widgets::{block::Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
+use ratatui::{
+    layout::{Constraint, Direction, Layout, Margin},
+    style::Stylize,
+};
 use scopeguard::{guard, ScopeGuard};
 use serde::{Deserialize, Serialize};
+use std;
 use std::collections::VecDeque;
 use std::convert::Into;
 use std::env::var;
@@ -20,14 +27,20 @@ use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 use tui_textarea::{CursorMove, Input, TextArea};
 
-use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
-use crate::stdin::{apply_highlights, normalize_newlines, reset_term, show_popup};
+use crate::stdin::{apply_highlights, normalize_newlines, reset_term};
+use crate::{
+    colors::{TuiSelectionBg, TUI_SELECTION_BG},
+    shared::KeyDisplayLine,
+};
 use crate::{ThagError, ThagResult};
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
 pub type Term = Terminal<BackEnd>;
 pub type ResetTermClosure = Box<dyn FnOnce(Term)>;
 pub type TermScopeGuard = ScopeGuard<Term, ResetTermClosure>;
+
+pub(crate) const TITLE_TOP: &str = "Key bindings - subject to your terminal settings";
+pub(crate) const TITLE_BOTTOM: &str = "Ctrl+l to hide";
 
 /// Determine whether a terminal is in use (as opposed to testing or headless CI), and
 /// if so, wrap it in a scopeguard in order to reset it regardless of success or failure.
@@ -112,7 +125,7 @@ pub struct Display<'a> {
     pub title: &'a str,
     pub title_style: Style,
     pub remove_keys: &'a [&'a str],
-    pub add_keys: &'a [&'a (usize, &'a str, &'a str)],
+    pub add_keys: Option<&'a [KeyDisplayLine]>,
 }
 
 #[derive(Debug)]
@@ -206,7 +219,14 @@ where
                     term.draw(|f| {
                         f.render_widget(&textarea, f.area());
                         if popup {
-                            show_popup(f, display.remove_keys, display.add_keys);
+                            show_popup(
+                                &get_mappings(),
+                                f,
+                                TITLE_TOP,
+                                TITLE_BOTTOM,
+                                display.remove_keys,
+                                display.add_keys,
+                            );
                         };
                         apply_highlights(tui_highlight_bg, &mut textarea);
                     })
@@ -375,4 +395,198 @@ where
             textarea.input(input);
         }
     }
+}
+
+#[allow(clippy::cast_possible_truncation, clippy::missing_panics_doc)]
+pub fn show_popup<'a>(
+    mappings: &'a [KeyDisplayLine],
+    f: &mut ratatui::prelude::Frame,
+    title_top: &str,
+    title_bottom: &str,
+    remove: &[&str],
+    add: Option<&'a [KeyDisplayLine]>,
+) {
+    let adjusted_mappings: Vec<KeyDisplayLine> = mappings
+        .iter()
+        .filter(|&row| !remove.contains(&row.keys))
+        .chain(add.unwrap_or_default().iter())
+        .cloned()
+        .collect();
+    let (max_key_len, max_desc_len) =
+        adjusted_mappings
+            .iter()
+            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
+                let key_len = row.keys.len().try_into().unwrap();
+                let desc_len = row.desc.len().try_into().unwrap();
+                (max_key.max(key_len), max_desc.max(desc_len))
+            });
+    let num_filtered_rows = adjusted_mappings.len();
+    let area = centered_rect(
+        max_key_len + max_desc_len + 5,
+        num_filtered_rows as u16 + 5,
+        f.area(),
+    );
+    let inner = area.inner(Margin {
+        vertical: 2,
+        horizontal: 2,
+    });
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title_top(Line::from(title_top).centered())
+        .title_bottom(Line::from(title_bottom).centered())
+        .add_modifier(Modifier::BOLD)
+        .fg(Color::Indexed(u8::from(&MessageLevel::Heading)));
+    // this is supposed to clear out the background
+    f.render_widget(Clear, area);
+    f.render_widget(block, area);
+    let row_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            std::iter::repeat(Constraint::Ratio(1, num_filtered_rows as u32))
+                .take(num_filtered_rows),
+        );
+    let rows = row_layout.split(inner);
+
+    for (i, row) in rows.iter().enumerate() {
+        let col_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [
+                    Constraint::Length(max_key_len + 1),
+                    Constraint::Length(max_desc_len),
+                ]
+                .as_ref(),
+            );
+        let cells = col_layout.split(*row);
+        let mut widget = Paragraph::new(adjusted_mappings[i].keys);
+        if i == 0 {
+            widget = widget
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
+        } else {
+            widget = widget
+                .fg(Color::Indexed(u8::from(&MessageLevel::Subheading)))
+                .not_bold();
+        }
+        f.render_widget(widget, cells[0]);
+        let mut widget = Paragraph::new(adjusted_mappings[i].desc);
+
+        if i == 0 {
+            widget = widget
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
+        } else {
+            widget = widget.remove_modifier(Modifier::BOLD).set_style(
+                Style::default()
+                    .fg(Color::Indexed(u8::from(&MessageLevel::Normal)))
+                    .not_bold(),
+            );
+        }
+        f.render_widget(widget, cells[1]);
+    }
+}
+
+pub(crate) fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Max(max_height),
+        Constraint::Fill(1),
+    ])
+    .split(r);
+
+    Layout::horizontal([
+        Constraint::Fill(1),
+        Constraint::Max(max_width),
+        Constraint::Fill(1),
+    ])
+    .split(popup_layout[1])[1]
+}
+
+pub(crate) fn get_mappings() -> Vec<KeyDisplayLine> {
+    vec![
+        KeyDisplayLine::new(10, "Key Bindings", "Description"),
+        KeyDisplayLine::new(
+            20,
+            "Shift+arrow keys",
+            "Select/deselect chars (←→) or lines (↑↓)",
+        ),
+        KeyDisplayLine::new(
+            30,
+            "Shift+Ctrl+arrow keys",
+            "Select/deselect words (←→) or paras (↑↓)",
+        ),
+        KeyDisplayLine::new(40, "Alt+c", "Cancel selection"),
+        KeyDisplayLine::new(50, "Ctrl+d", "Submit"),
+        KeyDisplayLine::new(60, "Ctrl+q", "Cancel and quit"),
+        KeyDisplayLine::new(70, "Ctrl+h, Backspace", "Delete character before cursor"),
+        KeyDisplayLine::new(80, "Ctrl+i, Tab", "Indent"),
+        KeyDisplayLine::new(90, "Ctrl+m, Enter", "Insert newline"),
+        KeyDisplayLine::new(100, "Ctrl+k", "Delete from cursor to end of line"),
+        KeyDisplayLine::new(110, "Ctrl+j", "Delete from cursor to start of line"),
+        KeyDisplayLine::new(
+            120,
+            "Ctrl+w, Alt+Backspace",
+            "Delete one word before cursor",
+        ),
+        KeyDisplayLine::new(130, "Alt+d, Delete", "Delete one word from cursor position"),
+        KeyDisplayLine::new(140, "Ctrl+u", "Undo"),
+        KeyDisplayLine::new(150, "Ctrl+r", "Redo"),
+        KeyDisplayLine::new(
+            160,
+            "Ctrl+c",
+            "Copy KeyDisplayLine::new(yank) selected text",
+        ),
+        KeyDisplayLine::new(170, "Ctrl+x", "Cut KeyDisplayLine::new(yank) selected text"),
+        KeyDisplayLine::new(180, "Ctrl+y", "Paste yanked text"),
+        KeyDisplayLine::new(
+            190,
+            "Ctrl+v, Shift+Ins, Cmd+v",
+            "Paste from system clipboard",
+        ),
+        KeyDisplayLine::new(200, "Ctrl+f, →", "Move cursor forward one character"),
+        KeyDisplayLine::new(210, "Ctrl+b, ←", "Move cursor backward one character"),
+        KeyDisplayLine::new(220, "Ctrl+p, ↑", "Move cursor up one line"),
+        KeyDisplayLine::new(230, "Ctrl+n, ↓", "Move cursor down one line"),
+        KeyDisplayLine::new(240, "Alt+f, Ctrl+→", "Move cursor forward one word"),
+        KeyDisplayLine::new(250, "Alt+Shift+f", "Move cursor to next word end"),
+        KeyDisplayLine::new(260, "Atl+b, Ctrl+←", "Move cursor backward one word"),
+        KeyDisplayLine::new(270, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
+        KeyDisplayLine::new(
+            280,
+            "Alt+KeyDisplayLine::new( or n, Ctrl+↓",
+            "Move cursor down one paragraph",
+        ),
+        KeyDisplayLine::new(
+            290,
+            "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
+            "Move cursor to end of line",
+        ),
+        KeyDisplayLine::new(
+            300,
+            "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
+            "Move cursor to start of line",
+        ),
+        KeyDisplayLine::new(310, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
+        KeyDisplayLine::new(
+            320,
+            "Alt+>, Ctrl+Alt+n or ↓",
+            "Move cursor to bottom of file",
+        ),
+        KeyDisplayLine::new(330, "PageDown, Cmd+↓", "Page down"),
+        KeyDisplayLine::new(340, "Alt+v, PageUp, Cmd+↑", "Page up"),
+        KeyDisplayLine::new(
+            350,
+            "Ctrl+l",
+            "Toggle keys display KeyDisplayLine::new(this screen)",
+        ),
+        KeyDisplayLine::new(360, "Ctrl+t", "Toggle highlight colours"),
+        KeyDisplayLine::new(370, "F1", "Previous in history"),
+        KeyDisplayLine::new(380, "F2", "Next in history"),
+        KeyDisplayLine::new(
+            390,
+            "F9",
+            "Suspend mouse capture and line numbers for system copy",
+        ),
+        KeyDisplayLine::new(400, "F10", "Resume mouse capture and line numbers"),
+    ]
 }

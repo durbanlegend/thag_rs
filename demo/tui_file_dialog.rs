@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = "0.28.1"
 ratatui = "0.28.1"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 */
 use crossterm::{
     event::{self, Event, KeyCode, KeyModifiers},

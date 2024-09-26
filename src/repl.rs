@@ -512,7 +512,7 @@ fn tui(initial_content: String, save_path: PathBuf) -> Result<(), ThagError> {
         title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Subheading))).bold(),
         remove_keys: &[""; 0],
-        add_keys: Some(&binding),
+        add_keys: &binding,
     };
     let (key_action, _maybe_text) = tui_edit(
         &event_reader,
@@ -704,7 +704,7 @@ pub fn edit_history<R: EventReader + Debug>(
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold(),
         remove_keys: &["F1", "F2"],
-        add_keys: Some(&binding),
+        add_keys: &binding,
     };
     let (key_action, _maybe_text) = tui_edit(
         event_reader,
@@ -1182,7 +1182,7 @@ pub fn edit_history_old<R: EventReader + Debug>(
                                 TITLE_TOP,
                                 TITLE_BOTTOM,
                                 remove_keys,
-                                Some(add_keys),
+                                add_keys,
                             );
                         };
                         apply_highlights(tui_highlight_bg, &mut textarea);

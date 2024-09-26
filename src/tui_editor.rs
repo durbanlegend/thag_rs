@@ -125,7 +125,7 @@ pub struct Display<'a> {
     pub title: &'a str,
     pub title_style: Style,
     pub remove_keys: &'a [&'a str],
-    pub add_keys: Option<&'a [KeyDisplayLine]>,
+    pub add_keys: &'a [KeyDisplayLine],
 }
 
 #[derive(Debug)]
@@ -404,12 +404,12 @@ pub fn show_popup<'a>(
     title_top: &str,
     title_bottom: &str,
     remove: &[&str],
-    add: Option<&'a [KeyDisplayLine]>,
+    add: &'a [KeyDisplayLine],
 ) {
     let adjusted_mappings: Vec<KeyDisplayLine> = mappings
         .iter()
         .filter(|&row| !remove.contains(&row.keys))
-        .chain(add.unwrap_or_default().iter())
+        .chain(add.iter())
         .cloned()
         .collect();
     let (max_key_len, max_desc_len) =

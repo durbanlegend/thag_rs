@@ -283,7 +283,7 @@ impl<'a> FileDialog<'a> {
                     "Key bindings",
                     tui_editor::TITLE_BOTTOM,
                     &[],
-                    None,
+                    &[],
                 );
             };
         }
@@ -531,7 +531,9 @@ macro_rules! bind_keys {
                     KeyCode::Down | KeyCode::Char('j') => {
                         $file_dialog.next();
                     }
-                    KeyCode::Char('l') if key.modifiers == KeyModifiers::CONTROL => popup = !popup,
+                    KeyCode::Char('l') if key.modifiers == KeyModifiers::CONTROL => {
+                        $file_dialog.popup = !$file_dialog.popup
+                    }
                     _ => {}
                 }
             }

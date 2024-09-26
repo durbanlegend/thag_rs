@@ -556,7 +556,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
                     TITLE_TOP,
                     TITLE_BOTTOM,
                     &[""; 0],
-                    None,
+                    &[],
                 );
             }
             apply_highlights(&TUI_SELECTION_BG, &mut textarea);

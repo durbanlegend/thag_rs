@@ -1,17 +1,50 @@
+/*[toml]
+[dependencies]
+clap = "4.5.18"
+crokey = "1.1.0"
+crossterm = "0.28.1"
+edit = "0.1.5"
+lazy_static = "1.4.0"
+log = "0.4.22"
+mockall = "0.13.0"
+ratatui = "0.28.1"
+reedline = "0.35.0"
+regex = "1.10.4"
+scopeguard = "1.2.0"
+serde = "1.0.210"
+serde_json = "1.0.128"
+simplelog = "0.12.2"
+strum = "0.26.3"
+thag_rs = { path = "/Users/donf/projects/thag_rs/" }
+tui-textarea = { version = "0.6", features = ["search"] }
+*/
+
 #![allow(clippy::uninlined_format_args)]
-use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
-use crate::errors::ThagResult;
-use crate::logging::Verbosity;
-use crate::repl::{
+
+/// A version of `thag_rs`'s `stdin` module for the purpose of debugging an obscure issue with the `edit`
+/// function misbehaving under certain code paths. This turned out to be a side effect of `termbg` crate
+/// code incorporated into the project, which deliberately switches off raw mode
+/// module, `stdin` was originally developed here as a separate script and integrated as a module later.
+///
+/// E.g. `thag demo/stdin_debug.rs`
+//# Purpose: Debugging.
+use thag_rs::code_utils::process_expr;
+use thag_rs::colors::TUI_SELECTION_BG;
+use thag_rs::errors::ThagResult;
+use thag_rs::logging::Verbosity;
+use thag_rs::repl::{
     add_menu_keybindings, disp_repl_banner, format_edit_commands, format_key_code,
     format_key_modifier, format_non_edit_events, parse_line, show_key_bindings, ReplPrompt,
 };
-use crate::tui_editor::{
-    show_popup, CrosstermEventReader, EventReader, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
+use thag_rs::stdin::{edit_history, toml};
+use thag_rs::tui_editor::{
+    apply_highlights, normalize_newlines, reset_term, show_popup, History, MAPPINGS, TITLE_BOTTOM,
+    TITLE_TOP,
 };
-use crate::{
-    code_utils, extract_ast_expr, extract_manifest, log, nu_color_println, nu_resolve_style,
-    BuildState, Cli, MessageLevel, ProcFlags,
+use thag_rs::ThagError;
+use thag_rs::{
+    extract_ast_expr, extract_manifest, log, nu_color_println, nu_resolve_style, BuildState, Cli,
+    MessageLevel, ProcFlags,
 };
 
 use clap::{CommandFactory, Parser};
@@ -19,100 +52,51 @@ use crokey::{crossterm, key, KeyCombinationFormat};
 use crossterm::event::{
     DisableMouseCapture,
     EnableBracketedPaste,
-    EnableMouseCapture,
+    // EnableMouseCapture,
     Event::{self, Paste},
     // KeyCode, KeyEvent, KeyModifiers,
 };
-use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
-    LeaveAlternateScreen,
-};
-use edit::edit_file;
-use lazy_static::lazy_static;
-use mockall::predicate::str;
+use crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
+use log::info;
+use mockall::automock;
 use ratatui::backend::CrosstermBackend;
 use ratatui::style::{Color, Style, Stylize};
+use ratatui::widgets::Clear;
 use ratatui::widgets::{block::Block, Borders};
 use ratatui::Terminal;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
     Emacs, MenuBuilder, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
-use regex::Regex;
-use serde::{Deserialize, Serialize};
-use serde_json;
+use simplelog::*;
 use std::fmt::Debug;
-use std::fs::OpenOptions;
+use std::fs::File;
 use std::io::{self, BufRead, IsTerminal};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Instant;
-use std::{collections::VecDeque, fs, path::PathBuf};
-use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
+use strum::EnumIter;
+use strum::{EnumString, IntoEnumIterator, IntoStaticStr};
 use tui_textarea::{CursorMove, Input, TextArea};
 
-#[derive(Default, Serialize, Deserialize)]
-struct History {
-    entries: VecDeque<String>,
-    current_index: Option<usize>,
+// A trait to allow mocking of the event reader for testing purposes.
+#[automock]
+pub trait EventReader {
+    // Read a terminal event.
+    //
+    // # Errors
+    //
+    // This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+    fn read_event(&self) -> ThagResult<Event>;
 }
 
-impl History {
-    fn new() -> Self {
-        Self {
-            entries: VecDeque::with_capacity(20),
-            current_index: None,
-        }
-    }
+// A struct to implement real-world use of the event reader, as opposed to use in testing.
+#[derive(Debug)]
+pub struct CrosstermEventReader;
 
-    fn load_from_file(path: &PathBuf) -> Self {
-        fs::read_to_string(path).map_or_else(
-            |_| Self::default(),
-            |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
-        )
-    }
-
-    fn save_to_file(&self, path: &PathBuf) {
-        if let Ok(data) = serde_json::to_string(self) {
-            let _ = fs::write(path, data);
-        }
-    }
-
-    fn add_entry(&mut self, entry: String) {
-        // Remove prior duplicates
-        self.entries.retain(|f| f != &entry);
-        self.entries.push_front(entry);
-    }
-
-    fn get_current(&mut self) -> Option<&String> {
-        if self.entries.is_empty() {
-            return None;
-        }
-
-        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
-        self.entries.front()
-    }
-
-    fn get_previous(&mut self) -> Option<&String> {
-        if self.entries.is_empty() {
-            return None;
-        }
-
-        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
-        self.current_index.and_then(|index| self.entries.get(index))
-    }
-
-    fn get_next(&mut self) -> Option<&String> {
-        if self.entries.is_empty() {
-            return None;
-        }
-
-        self.current_index = match self.current_index {
-            Some(index) if index > 0 => Some(index - 1),
-            Some(index) if index == 0 => Some(index + self.entries.len() - 1),
-            _ => Some(self.entries.len() - 1),
-        };
-
-        self.current_index.and_then(|index| self.entries.get(index))
+impl EventReader for CrosstermEventReader {
+    fn read_event(&self) -> ThagResult<Event> {
+        crossterm::event::read().map_err(Into::<ThagError>::into)
     }
 }
 
@@ -124,37 +108,20 @@ impl History {
     verbatim_doc_comment
 )] // Disable automatic help subcommand and flag
 #[strum(serialize_all = "snake_case")]
-/// REPL mode lets you type or paste a Rust expression to be evaluated.
-/// Start by choosing the eval option and entering your expression. Expressions between matching braces,
-/// brackets, parens or quotes may span multiple lines.
-/// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
-/// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
-/// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
-/// comment block of the form
-/// /*[toml]
-/// [dependencies]
-/// ...
-/// */
-/// From here they will be extracted to a dedicated Cargo.toml file.
-/// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
-/// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
-/// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
-/// editor or directly from their temporary disk locations.
-/// The tab key will show command selections and complete partial matching selections."
 enum ReplCommand {
-    /// Show the REPL banner
+    // Show the REPL banner
     Banner,
-    /// Edit the Rust expression.
+    // Edit the Rust expression.
     Edit,
-    /// Edit the generated Cargo.toml
+    // Edit the generated Cargo.toml
     Toml,
-    /// Edit history
+    // Edit history
     History,
-    /// Show help information
+    // Show help information
     Help,
-    /// Show key bindings
+    // Show key bindings
     Keys,
-    /// Exit the REPL
+    // Exit the REPL
     Quit,
 }
 
@@ -167,6 +134,23 @@ impl ReplCommand {
 
 #[allow(dead_code)]
 fn main() -> ThagResult<()> {
+    CombinedLogger::init(vec![
+        TermLogger::new(
+            LevelFilter::Warn,
+            Config::default(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        ),
+        WriteLogger::new(
+            LevelFilter::Info,
+            Config::default(),
+            File::create("app.log").unwrap(),
+        ),
+    ])
+    .unwrap();
+
+    info!("Checking the log");
+
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
         log!(Verbosity::Normal, "{line}");
@@ -174,11 +158,11 @@ fn main() -> ThagResult<()> {
     Ok(())
 }
 
-/// Run the REPL.
-/// # Errors
-/// Will return `Err` if there is any error in running the REPL.
-/// # Panics
-/// Will panic if there is a problem configuring the `reedline` history file.
+// Run the REPL.
+// # Errors
+// Will return `Err` if there is any error in running the REPL.
+// # Panics
+// Will panic if there is a problem configuring the `reedline` history file.
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::too_many_lines)]
 pub fn run_repl(
@@ -188,16 +172,6 @@ pub fn run_repl(
     start: Instant,
 ) -> ThagResult<()> {
     #[allow(unused_variables)]
-    // let mut context = Context {
-    //     args,
-    //     proc_flags,
-    //     build_state,
-    //     start,
-    // };
-    // // get_emacs_keybindings();
-    // let context: &mut Context = &mut context;
-    // // let history_file = context.build_state.cargo_home.join(HISTORY_FILE);
-    // // let history = Box::new(FileBackedHistory::with_file(25, history_file)?);
     let cmd_vec = ReplCommand::iter()
         .map(<ReplCommand as Into<&'static str>>::into)
         .map(String::from)
@@ -389,7 +363,7 @@ pub fn run_repl(
         let maybe_ast = extract_ast_expr(rs_source);
 
         if let Ok(expr_ast) = maybe_ast {
-            code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+            process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
         } else {
             nu_color_println!(
                 nu_resolve_style(MessageLevel::Error),
@@ -414,7 +388,7 @@ fn eval(
     build_state.rs_manifest = Some(rs_manifest);
     let maybe_ast = extract_ast_expr(rs_source);
     if let Ok(expr_ast) = maybe_ast {
-        code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+        process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
     } else {
         nu_color_println!(
             nu_resolve_style(MessageLevel::Error),
@@ -424,50 +398,7 @@ fn eval(
     Ok(())
 }
 
-/// Open the generated Cargo.toml file in an editor.
-/// # Errors
-/// Will return `Err` if there is an error editing the file.
-#[allow(clippy::unnecessary_wraps)]
-pub fn toml(cargo_toml_file: &PathBuf) -> ThagResult<Option<String>> {
-    if cargo_toml_file.exists() {
-        edit_file(cargo_toml_file)?;
-    } else {
-        log!(
-            Verbosity::Quieter,
-            "No Cargo.toml file found - have you run anything?"
-        );
-    }
-    Ok(Some(String::from("End of Cargo.toml edit")))
-}
-
-/// Edit the stdin stream.
-///
-///
-/// # Examples
-///
-/// ```no_run
-/// use thag_rs::stdin::edit;
-/// use thag_rs::tui_editor::CrosstermEventReader;
-/// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
-/// use thag_rs::tui_editor::MockEventReader;
-///
-/// let mut event_reader = MockEventReader::new();
-/// event_reader.expect_read_event().return_once(|| {
-///     Ok(Event::Key(KeyEvent::new(
-///         KeyCode::Char('d'),
-///         KeyModifiers::CONTROL,
-///     )))
-/// });
-/// let actual = edit(&event_reader);
-/// let buf = vec![""];
-/// assert!(matches!(actual, Ok(buf)));
-/// ```
-/// # Errors
-///
-/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
-/// # Panics
-///
-/// If the terminal cannot be reset.
+// Edit the stdin stream.
 #[allow(clippy::too_many_lines)]
 pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>> {
     let input = std::io::stdin();
@@ -478,23 +409,30 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 
     let mut saved_to_history = false;
 
-    eprintln!("input.is_terminal()? {}", input.is_terminal());
+    info!("input.is_terminal()? {:?}", input.is_terminal());
     let initial_content = if input.is_terminal() {
-        String::new()
+        // String::new()
+        String::from("\n")
     } else {
         read()?
     };
+
+    info!("input.initial_content()=|{initial_content}|");
 
     let mut popup = false;
     let mut alt_highlights = false;
 
     let mut stdout = io::stdout().lock();
     enable_raw_mode()?;
+    info!(
+        "0. is_raw_mode_enabled? {:?}",
+        crossterm::terminal::is_raw_mode_enabled()
+    );
 
     crossterm::execute!(
         stdout,
         EnterAlternateScreen,
-        EnableMouseCapture,
+        DisableMouseCapture,
         EnableBracketedPaste
     )
     .map_err(|e| {
@@ -507,26 +445,64 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         reset_term(term).expect("Error resetting terminal");
     });
 
+    info!(
+        "1. is_raw_mode_enabled? {:?}",
+        crossterm::terminal::is_raw_mode_enabled()
+    );
+
+    // info!("term={term:?}");
+
     let mut textarea = TextArea::from(initial_content.lines());
 
+    info!(
+        "1a. is_raw_mode_enabled? {:?}",
+        crossterm::terminal::is_raw_mode_enabled()
+    );
+
+    let color_index = u8::from(&MessageLevel::Heading);
+    info!(
+        "1b. is_raw_mode_enabled? {:?}",
+        crossterm::terminal::is_raw_mode_enabled()
+    );
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
             .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
-            .title_style(Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold()),
+            .title_style(Style::default().fg(Color::Indexed(color_index)).bold()),
     );
+    info!(
+        "1c. is_raw_mode_enabled? {:?}",
+        crossterm::terminal::is_raw_mode_enabled()
+    );
+
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::Blue));
     textarea.set_cursor_style(Style::default().on_magenta());
     textarea.set_cursor_line_style(Style::default().on_dark_gray());
-
     textarea.move_cursor(CursorMove::Bottom);
+
+    info!(
+        "2. is_raw_mode_enabled? {:?}",
+        crossterm::terminal::is_raw_mode_enabled()
+    );
 
     apply_highlights(&TUI_SELECTION_BG, &mut textarea);
 
+    info!(
+        "3. is_raw_mode_enabled? {:?}",
+        crossterm::terminal::is_raw_mode_enabled()
+    );
+
     let fmt = KeyCombinationFormat::default();
     loop {
+        info!(
+            "4. is_raw_mode_enabled? {:?}",
+            crossterm::terminal::is_raw_mode_enabled()
+        );
+
+        term.clear()?;
         term.draw(|f| {
+            f.render_widget(Clear, f.area());
             f.render_widget(&textarea, f.area());
             if popup {
                 show_popup(MAPPINGS, f, TITLE_TOP, TITLE_BOTTOM, &[""; 0], &[]);
@@ -538,12 +514,15 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
             e
         })?;
         // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
-        if !is_raw_mode_enabled()? {
-            enable_raw_mode()?;
-        }
         // let event = crossterm::event::read();
+        crossterm::terminal::enable_raw_mode()?;
+        info!(
+            "5. is_raw_mode_enabled? {:?}",
+            crossterm::terminal::is_raw_mode_enabled()
+        );
         let event = event_reader.read_event();
         // terminal::disable_raw_mode()?;
+        info!("event={event:?}");
 
         if let Ok(Paste(ref data)) = event {
             textarea.insert_str(normalize_newlines(data));
@@ -648,107 +627,14 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     Ok(textarea.lines().to_vec())
 }
 
-/// Prompt for and read Rust source code from stdin.
-///
-/// # Examples
-///
-/// ```
-/// use thag_rs::stdin::read;
-///
-/// let hello = String::from("Hello world!");
-/// assert!(matches!(read(), Ok(hello)));
-/// ```
-/// # Errors
-///
-/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
     log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
 }
 
-/// Read the input from a `BufRead` implementing item into a String.
-///
-/// # Examples
-///
-/// ```
-/// use thag_rs::stdin::read_to_string;
-///
-/// let stdin = std::io::stdin();
-/// let mut input = stdin.lock();
-/// let hello = String::from("Hello world!");
-/// assert!(matches!(read_to_string(&mut input), Ok(hello)));
-/// ```
-///
-/// # Errors
-///
-/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)
-}
-
-/// Convert the different newline sequences for Windows and other platforms into the common
-/// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
-/// it stands).
-#[must_use]
-pub fn normalize_newlines(input: &str) -> String {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\r\n?").unwrap();
-    }
-    RE.replace_all(input, "\n").to_string()
-}
-
-/// Apply highlights to the text depending on the light or dark theme as detected, configured
-/// or defaulted, or as toggled by the user with Ctrl-t.
-pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
-    match scheme {
-        TuiSelectionBg::BlueYellow => {
-            // Dark theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
-            textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
-            textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
-        }
-        TuiSelectionBg::RedWhite => {
-            // Light theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
-            textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
-            textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
-        }
-    }
-}
-
-/// Reset the terminal.
-///
-/// # Errors
-///
-/// This function will bubble up any `ratatui` or `crossterm` errors encountered.
-// TODO: move to shared or tui_editor?
-pub fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> ThagResult<()> {
-    disable_raw_mode()?;
-    crossterm::execute!(
-        term.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    term.show_cursor()?;
-    Ok(())
-}
-
-/// Open the history file in an editor.
-/// # Errors
-/// Will return `Err` if there is an error editing the file.
-#[allow(clippy::unnecessary_wraps)]
-pub fn edit_history() -> ThagResult<Option<String>> {
-    let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
-    let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
-    println!("history_path={history_path:#?}");
-    OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(&history_path)?;
-    edit_file(&history_path)?;
-    Ok(Some(String::from("End of history file edit")))
 }

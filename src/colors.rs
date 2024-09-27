@@ -1,10 +1,9 @@
 #![allow(clippy::implicit_return)]
-use crate::config::{self};
-use crate::debug_log;
 #[cfg(not(target_os = "windows"))]
 use crate::termbg::{terminal, theme, Theme};
-use {crate::log, crate::logging::Verbosity};
+use crate::{config, debug_log, log, logging::Verbosity, ThagError, ThagResult};
 
+use crossterm::terminal;
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use nu_ansi_term::Style;
@@ -13,8 +12,7 @@ use std::convert::Into;
 #[cfg(target_os = "windows")]
 use std::env;
 use std::{fmt::Display, str::FromStr};
-use strum::IntoEnumIterator;
-use strum::{Display, EnumIter, EnumString};
+use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
 
@@ -28,10 +26,50 @@ lazy_static! {
             return Some(ColorSupport::Ansi16);
         }
 
-        let color_support: Option<ColorSupport> = (*config::MAYBE_CONFIG).as_ref().map_or_else(get_color_level, |config| match config.colors.color_support {
-            ColorSupport::Xterm256 | ColorSupport::Ansi16 | ColorSupport::None => Some(config.colors.color_support.clone()),
-            ColorSupport::Default => get_color_level(),
-        });
+        // Take precautions in case `supports_color` currently interrogates the terminal and I've missed it,
+        // or may do so in the future. (Belt and braces given we initialise up front.)
+        let raw_before = terminal::is_raw_mode_enabled().map_err(|_e| ThagError::UnsupportedTerm);
+
+        let color_support: Option<ColorSupport> = (*config::MAYBE_CONFIG).as_ref().map_or_else(get_color_level,
+            |config| match config.colors.color_support {
+                ColorSupport::Xterm256 | ColorSupport::Ansi16 | ColorSupport::None => Some(config.colors.color_support.clone()),
+                ColorSupport::Default => get_color_level(),
+            });
+
+        // let maybe_restored: ThagResult<bool> = {
+        //     let was_raw = raw_before.map_err(|e| ThagError::UnsupportedTerm)?;
+        //     let is_raw = terminal::is_raw_mode_enabled().map_err(|e| ThagError::UnsupportedTerm)?;
+        //     if is_raw == was_raw {
+        //         debug_log!("Raw_mode status unchanged");
+        //         Ok(false)
+        //     } else {
+        //         restore_raw_status(was_raw).map_err(|e| ThagError::UnsupportedTerm)?;
+        //         Ok(true)
+        //     }
+        // };
+        // if maybe_restored.is_ok() {
+        //    debug_log!("Could not restore initial raw_mode status");
+        // }
+        if let Ok(was_raw) = raw_before {
+            let raw_after = terminal::is_raw_mode_enabled();
+            if let Ok(is_raw) = raw_after {
+                if is_raw == was_raw {
+                    debug_log!("Raw_mode status unchanged");
+                } else {
+                    let maybe_restored = restore_raw_status(was_raw);
+                    if maybe_restored.is_ok() {
+                        debug_log!("Restored initial raw_mode status of raw={was_raw}");
+                    } else {
+                        debug_log!("Could not restore initial raw_mode status");
+                    }
+                }
+            } else {
+                debug_log!("Could not get final raw_mode status");
+            }
+        } else {
+            debug_log!("Could not get initial raw_mode status");
+        }
+
         color_support
     };
 
@@ -46,12 +84,12 @@ lazy_static! {
         #[allow(clippy::option_if_let_else)]
         if let Some(config) = &*config::MAYBE_CONFIG {
             if matches!(config.colors.term_theme, TermTheme::None) {
-                resolve_term_theme()
+                resolve_term_theme().unwrap_or_default()
             } else {
                 config.colors.term_theme.clone()
             }
         } else {
-            resolve_term_theme()
+            resolve_term_theme().unwrap_or_default()
         }
     };
 
@@ -70,17 +108,37 @@ fn resolve_term_theme() -> TermTheme {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn resolve_term_theme() -> TermTheme {
+fn resolve_term_theme() -> ThagResult<TermTheme> {
+    let raw_before = terminal::is_raw_mode_enabled()?;
     debug_log!("About to call termbg");
     let timeout = std::time::Duration::from_millis(100);
 
     // debug_log!("Check terminal background color");
     let theme = theme(timeout);
-    // shared::clear_screen();
+
+    maybe_restore_raw_status(raw_before)?;
+
     match theme {
-        Ok(Theme::Light) => TermTheme::Light,
-        Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+        Ok(Theme::Light) => Ok(TermTheme::Light),
+        Ok(Theme::Dark) | Err(_) => Ok(TermTheme::Dark),
     }
+}
+
+fn maybe_restore_raw_status(raw_before: bool) -> Result<(), ThagError> {
+    let raw_after = terminal::is_raw_mode_enabled()?;
+    if raw_before != raw_after {
+        restore_raw_status(raw_before)?;
+    }
+    Ok(())
+}
+
+fn restore_raw_status(raw_before: bool) -> Result<(), ThagError> {
+    if raw_before {
+        terminal::enable_raw_mode()?;
+    } else {
+        terminal::disable_raw_mode()?;
+    }
+    Ok(())
 }
 
 /// A struct of the color support details, borrowed from crate `supports-color` since we
@@ -304,6 +362,14 @@ pub enum MessageLevel {
     Normal,
     Debug,
     Ghost,
+}
+
+impl From<&MessageLevel> for u8 {
+    fn from(message_level: &MessageLevel) -> Self {
+        let message_style = MessageStyle::from(message_level);
+        let xterm_color = XtermColor::from(&message_style);
+        xterm_color.get_fixed_code()
+    }
 }
 
 /// A trait to map a `MessageStyle` to a `nu_ansi_term::Style`.

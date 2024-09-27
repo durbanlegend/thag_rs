@@ -1,3 +1,4 @@
+use edit::edit_file;
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use mockall::{automock, predicate::str};
@@ -176,7 +177,7 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
     }
     eprintln!("About to edit {config_path:#?}");
     if context.is_real() {
-        edit::edit_file(&config_path)?;
+        edit_file(&config_path)?;
     }
     Ok(Some(String::from("End of edit")))
 }

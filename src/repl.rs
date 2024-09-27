@@ -8,10 +8,9 @@ use crate::errors::ThagError;
 use crate::file_dialog::{DialogMode, FileDialog, Status};
 use crate::logging::Verbosity;
 use crate::shared::{Ast, BuildState, KeyDisplayLine};
-use crate::stdin::{apply_highlights, normalize_newlines};
 use crate::tui_editor::{
-    get_mappings, show_popup, tui_edit, CrosstermEventReader, Display, EditData, EventReader,
-    KeyAction, TermScopeGuard, TITLE_BOTTOM, TITLE_TOP,
+    apply_highlights, normalize_newlines, show_popup, tui_edit, CrosstermEventReader, Display,
+    EditData, EventReader, History, KeyAction, TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
 };
 use crate::{gen_build_run, log, nu_color_println, tui_editor, ThagResult};
 
@@ -22,6 +21,7 @@ use crossterm::event::{
     Event::{self, Paste},
     KeyEvent,
 };
+use edit::edit_file;
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use ratatui::style::{Color, Style, Stylize};
@@ -418,7 +418,7 @@ pub fn run_repl(
                         //     &build_state.cargo_home.join("repl_tui_backup.rs");
 
                         let rs_source = read_to_string(source_path)?;
-                        tui(rs_source, save_path)?;
+                        tui(rs_source.as_str(), save_path)?;
                     }
                     ReplCommand::Edit => {
                         edit(&build_state.source_path)?;
@@ -494,14 +494,14 @@ pub fn run_repl(
     Ok(())
 }
 
-fn tui(initial_content: String, save_path: PathBuf) -> Result<(), ThagError> {
+fn tui(initial_content: &str, save_path: PathBuf) -> Result<(), ThagError> {
     let event_reader = CrosstermEventReader;
     let edit_data = EditData {
         return_text: true,
         initial_content,
-        save_path: &Some(save_path),
-        // history_path: &None,
-        // history: &mut None::<History>,
+        save_path: Some(save_path),
+        history_path: None,
+        history: None::<History>,
     };
     let binding = [KeyDisplayLine::new(
         371,
@@ -659,7 +659,7 @@ fn review_history(
     let new = true;
     let confirm = if new {
         let history_string = read_to_string(history_path)?;
-        edit_history(history_string, staging_path, &event_reader)?
+        edit_history(&history_string, staging_path, &event_reader)?
     } else {
         edit_history_old(history_path, staging_path, &event_reader)?
     };
@@ -684,16 +684,16 @@ fn review_history(
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 pub fn edit_history<R: EventReader + Debug>(
-    initial_content: String,
+    initial_content: &str,
     staging_path: &Path,
     event_reader: &R,
 ) -> ThagResult<bool> {
     let edit_data = EditData {
         return_text: false,
         initial_content,
-        save_path: &Some(staging_path.to_path_buf()),
-        // history_path: &None,
-        // history: &mut None::<History>,
+        save_path: Some(staging_path.to_path_buf()),
+        history_path: None,
+        history: None::<History>,
     };
     let binding = [KeyDisplayLine::new(
         371,
@@ -1176,14 +1176,7 @@ pub fn edit_history_old<R: EventReader + Debug>(
                     term.draw(|f| {
                         f.render_widget(&textarea, f.area());
                         if popup {
-                            show_popup(
-                                &get_mappings(),
-                                f,
-                                TITLE_TOP,
-                                TITLE_BOTTOM,
-                                remove_keys,
-                                add_keys,
-                            );
+                            show_popup(MAPPINGS, f, TITLE_TOP, TITLE_BOTTOM, remove_keys, add_keys);
                         };
                         apply_highlights(tui_highlight_bg, &mut textarea);
                     })
@@ -1285,7 +1278,7 @@ pub fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> ThagRe
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
 pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
-    edit::edit_file(source_path)?;
+    edit_file(source_path)?;
 
     Ok(Some(String::from("End of source edit")))
 }
@@ -1297,7 +1290,7 @@ pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
 pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
     let cargo_toml_file = &build_state.cargo_toml_path;
     if cargo_toml_file.exists() {
-        edit::edit_file(cargo_toml_file)?;
+        edit_file(cargo_toml_file)?;
     } else {
         log!(
             Verbosity::Quieter,

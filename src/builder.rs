@@ -10,8 +10,8 @@ use crate::manifest;
 use crate::repl::run_repl;
 use crate::shared::debug_timings;
 use crate::shared::{display_timings, Ast, BuildState};
-use crate::stdin::CrosstermEventReader;
 use crate::stdin::{edit, read};
+use crate::tui_editor::CrosstermEventReader;
 use crate::VERSION;
 use crate::{
     cmd_args::{get_proc_flags, validate_args, Cli, ProcFlags},

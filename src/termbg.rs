@@ -134,7 +134,13 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     };
 
     let mut stderr = io::stderr();
-    terminal::enable_raw_mode()?;
+
+    // Don F: Ensure we don't interfere with the raw or cooked mode of the terminal
+    let raw_before = terminal::is_raw_mode_enabled()?;
+    if !raw_before {
+        terminal::enable_raw_mode()?;
+    }
+
     write!(stderr, "{query}")?;
     stderr.flush()?;
 
@@ -180,7 +186,10 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
         }
     }
 
-    terminal::disable_raw_mode()?;
+    // Don F: Ensure we don't interfere with the raw or cooked mode of the terminal
+    if !raw_before {
+        terminal::disable_raw_mode()?;
+    }
 
     // Convert the collected buffer into a string and parse it
     let s = String::from_utf8_lossy(&buffer);
@@ -259,7 +268,13 @@ fn xterm_latency(timeout: Duration) -> ThagResult<Duration> {
     let query = "\x1b[5n";
 
     let mut stderr = io::stderr();
-    terminal::enable_raw_mode()?;
+
+    // Don F: Ensure we don't interfere with the raw or cooked mode of the terminal
+    let raw_before = terminal::is_raw_mode_enabled()?;
+    if !raw_before {
+        terminal::enable_raw_mode()?;
+    }
+
     write!(stderr, "{query}")?;
     stderr.flush()?;
 
@@ -288,7 +303,10 @@ fn xterm_latency(timeout: Duration) -> ThagResult<Duration> {
 
     let end = start.elapsed();
 
-    terminal::disable_raw_mode()?;
+    // Don F: Ensure we don't interfere with the raw or cooked mode of the terminal
+    if !raw_before {
+        terminal::disable_raw_mode()?;
+    }
 
     Ok(end)
 }

@@ -1,11 +1,16 @@
-use crate::MessageLevel;
 use crokey::{key, KeyCombination};
-use crossterm::event::{
-    DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
-    Event::{self, Paste},
-    KeyEvent,
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
 };
-use crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
+use crossterm::{
+    event::{
+        DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+        Event::{self, Paste},
+        KeyEvent,
+    },
+    terminal::LeaveAlternateScreen,
+};
+use lazy_static::lazy_static;
 use mockall::automock;
 use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled};
@@ -16,31 +21,32 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Margin},
     style::Stylize,
 };
+use regex::Regex;
 use scopeguard::{guard, ScopeGuard};
 use serde::{Deserialize, Serialize};
-use std;
 use std::collections::VecDeque;
 use std::convert::Into;
 use std::env::var;
 use std::fmt::Debug;
 use std::fs::{File, OpenOptions};
+use std::io;
 use std::path::PathBuf;
+use std::{self, fs};
 use tui_textarea::{CursorMove, Input, TextArea};
 
-use crate::stdin::{apply_highlights, normalize_newlines, reset_term};
 use crate::{
     colors::{TuiSelectionBg, TUI_SELECTION_BG},
     shared::KeyDisplayLine,
 };
-use crate::{ThagError, ThagResult};
+use crate::{MessageLevel, ThagError, ThagResult};
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
 pub type Term = Terminal<BackEnd>;
 pub type ResetTermClosure = Box<dyn FnOnce(Term)>;
 pub type TermScopeGuard = ScopeGuard<Term, ResetTermClosure>;
 
-pub(crate) const TITLE_TOP: &str = "Key bindings - subject to your terminal settings";
-pub(crate) const TITLE_BOTTOM: &str = "Ctrl+l to hide";
+pub const TITLE_TOP: &str = "Key bindings - subject to your terminal settings";
+pub const TITLE_BOTTOM: &str = "Ctrl+l to hide";
 
 /// Determine whether a terminal is in use (as opposed to testing or headless CI), and
 /// if so, wrap it in a scopeguard in order to reset it regardless of success or failure.
@@ -83,15 +89,76 @@ pub fn resolve_term() -> ThagResult<Option<TermScopeGuard>> {
     Ok(maybe_term)
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct History {
     entries: VecDeque<String>,
-    current_index: Option<usize>,
+    pub current_index: Option<usize>,
+}
+
+impl History {
+    fn new() -> Self {
+        Self {
+            entries: VecDeque::with_capacity(20),
+            current_index: None,
+        }
+    }
+
+    #[must_use]
+    pub fn load_from_file(path: &PathBuf) -> Self {
+        fs::read_to_string(path).map_or_else(
+            |_| Self::default(),
+            |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
+        )
+    }
+
+    pub fn save_to_file(&self, path: &PathBuf) {
+        if let Ok(data) = serde_json::to_string(self) {
+            let _ = fs::write(path, data);
+        }
+    }
+
+    pub fn add_entry(&mut self, entry: String) {
+        // Remove prior duplicates
+        self.entries.retain(|f| f != &entry);
+        self.entries.push_front(entry);
+    }
+
+    pub fn get_current(&mut self) -> Option<&String> {
+        if self.entries.is_empty() {
+            return None;
+        }
+
+        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
+        self.entries.front()
+    }
+
+    pub fn get_previous(&mut self) -> Option<&String> {
+        if self.entries.is_empty() {
+            return None;
+        }
+
+        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
+        self.current_index.and_then(|index| self.entries.get(index))
+    }
+
+    pub fn get_next(&mut self) -> Option<&String> {
+        if self.entries.is_empty() {
+            return None;
+        }
+
+        self.current_index = match self.current_index {
+            Some(index) if index > 0 => Some(index - 1),
+            Some(index) if index == 0 => Some(index + self.entries.len() - 1),
+            _ => Some(self.entries.len() - 1),
+        };
+
+        self.current_index.and_then(|index| self.entries.get(index))
+    }
 }
 
 /// A trait to allow mocking of the event reader for testing purposes.
 #[automock]
-pub trait EventReader: Debug {
+pub trait EventReader {
     /// Read a terminal event.
     ///
     /// # Errors
@@ -112,12 +179,13 @@ impl EventReader for CrosstermEventReader {
 
 // Struct to hold data-related parameters
 #[allow(dead_code)]
+#[derive(Debug, Default)]
 pub struct EditData<'a> {
     pub return_text: bool,
-    pub initial_content: String,
-    pub save_path: &'a Option<PathBuf>,
-    // pub history_path: &'a Option<PathBuf>,
-    // pub history: &'a mut Option<History>,
+    pub initial_content: &'a str,
+    pub save_path: Option<PathBuf>,
+    pub history_path: Option<PathBuf>,
+    pub history: Option<History>,
 }
 
 // Struct to hold display-related parameters
@@ -171,7 +239,7 @@ where
     ) -> ThagResult<KeyAction>,
 {
     // Initialize save file
-    let maybe_save_file = if let Some(save_path) = edit_data.save_path {
+    let maybe_save_file = if let Some(ref save_path) = edit_data.save_path {
         let save_file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -208,6 +276,9 @@ where
 
     // Event loop for handling key events
     loop {
+        if !is_raw_mode_enabled()? {
+            enable_raw_mode()?;
+        }
         let event = if var("TEST_ENV").is_ok() {
             // Testing or CI
             event_reader.read_event()?
@@ -220,7 +291,7 @@ where
                         f.render_widget(&textarea, f.area());
                         if popup {
                             show_popup(
-                                &get_mappings(),
+                                MAPPINGS,
                                 f,
                                 TITLE_TOP,
                                 TITLE_BOTTOM,
@@ -486,7 +557,8 @@ pub fn show_popup<'a>(
     }
 }
 
-pub(crate) fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
+#[must_use]
+pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Max(max_height),
@@ -502,91 +574,141 @@ pub(crate) fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     .split(popup_layout[1])[1]
 }
 
-pub(crate) fn get_mappings() -> Vec<KeyDisplayLine> {
-    vec![
-        KeyDisplayLine::new(10, "Key Bindings", "Description"),
-        KeyDisplayLine::new(
-            20,
-            "Shift+arrow keys",
-            "Select/deselect chars (←→) or lines (↑↓)",
-        ),
-        KeyDisplayLine::new(
-            30,
-            "Shift+Ctrl+arrow keys",
-            "Select/deselect words (←→) or paras (↑↓)",
-        ),
-        KeyDisplayLine::new(40, "Alt+c", "Cancel selection"),
-        KeyDisplayLine::new(50, "Ctrl+d", "Submit"),
-        KeyDisplayLine::new(60, "Ctrl+q", "Cancel and quit"),
-        KeyDisplayLine::new(70, "Ctrl+h, Backspace", "Delete character before cursor"),
-        KeyDisplayLine::new(80, "Ctrl+i, Tab", "Indent"),
-        KeyDisplayLine::new(90, "Ctrl+m, Enter", "Insert newline"),
-        KeyDisplayLine::new(100, "Ctrl+k", "Delete from cursor to end of line"),
-        KeyDisplayLine::new(110, "Ctrl+j", "Delete from cursor to start of line"),
-        KeyDisplayLine::new(
-            120,
-            "Ctrl+w, Alt+Backspace",
-            "Delete one word before cursor",
-        ),
-        KeyDisplayLine::new(130, "Alt+d, Delete", "Delete one word from cursor position"),
-        KeyDisplayLine::new(140, "Ctrl+u", "Undo"),
-        KeyDisplayLine::new(150, "Ctrl+r", "Redo"),
-        KeyDisplayLine::new(
-            160,
-            "Ctrl+c",
-            "Copy KeyDisplayLine::new(yank) selected text",
-        ),
-        KeyDisplayLine::new(170, "Ctrl+x", "Cut KeyDisplayLine::new(yank) selected text"),
-        KeyDisplayLine::new(180, "Ctrl+y", "Paste yanked text"),
-        KeyDisplayLine::new(
-            190,
-            "Ctrl+v, Shift+Ins, Cmd+v",
-            "Paste from system clipboard",
-        ),
-        KeyDisplayLine::new(200, "Ctrl+f, →", "Move cursor forward one character"),
-        KeyDisplayLine::new(210, "Ctrl+b, ←", "Move cursor backward one character"),
-        KeyDisplayLine::new(220, "Ctrl+p, ↑", "Move cursor up one line"),
-        KeyDisplayLine::new(230, "Ctrl+n, ↓", "Move cursor down one line"),
-        KeyDisplayLine::new(240, "Alt+f, Ctrl+→", "Move cursor forward one word"),
-        KeyDisplayLine::new(250, "Alt+Shift+f", "Move cursor to next word end"),
-        KeyDisplayLine::new(260, "Atl+b, Ctrl+←", "Move cursor backward one word"),
-        KeyDisplayLine::new(270, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
-        KeyDisplayLine::new(
-            280,
-            "Alt+KeyDisplayLine::new( or n, Ctrl+↓",
-            "Move cursor down one paragraph",
-        ),
-        KeyDisplayLine::new(
-            290,
-            "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
-            "Move cursor to end of line",
-        ),
-        KeyDisplayLine::new(
-            300,
-            "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
-            "Move cursor to start of line",
-        ),
-        KeyDisplayLine::new(310, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
-        KeyDisplayLine::new(
-            320,
-            "Alt+>, Ctrl+Alt+n or ↓",
-            "Move cursor to bottom of file",
-        ),
-        KeyDisplayLine::new(330, "PageDown, Cmd+↓", "Page down"),
-        KeyDisplayLine::new(340, "Alt+v, PageUp, Cmd+↑", "Page up"),
-        KeyDisplayLine::new(
-            350,
-            "Ctrl+l",
-            "Toggle keys display KeyDisplayLine::new(this screen)",
-        ),
-        KeyDisplayLine::new(360, "Ctrl+t", "Toggle highlight colours"),
-        KeyDisplayLine::new(370, "F1", "Previous in history"),
-        KeyDisplayLine::new(380, "F2", "Next in history"),
-        KeyDisplayLine::new(
-            390,
-            "F9",
-            "Suspend mouse capture and line numbers for system copy",
-        ),
-        KeyDisplayLine::new(400, "F10", "Resume mouse capture and line numbers"),
-    ]
+/// Convert the different newline sequences for Windows and other platforms into the common
+/// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
+/// it stands).
+#[must_use]
+pub fn normalize_newlines(input: &str) -> String {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\r\n?").unwrap();
+    }
+    RE.replace_all(input, "\n").to_string()
 }
+
+/// Apply highlights to the text depending on the light or dark theme as detected, configured
+/// or defaulted, or as toggled by the user with Ctrl-t.
+pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
+    match scheme {
+        TuiSelectionBg::BlueYellow => {
+            // Dark theme-friendly colors
+            textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
+            textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
+            textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
+        }
+        TuiSelectionBg::RedWhite => {
+            // Light theme-friendly colors
+            textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
+            textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
+            textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
+        }
+    }
+}
+
+/// Reset the terminal.
+///
+/// # Errors
+///
+/// This function will bubble up any `ratatui` or `crossterm` errors encountered.
+// TODO: move to shared or tui_editor?
+pub fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> ThagResult<()> {
+    disable_raw_mode()?;
+    crossterm::execute!(
+        term.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+    term.show_cursor()?;
+    Ok(())
+}
+
+#[macro_export]
+macro_rules! key_mappings {
+    (
+        $(($seq:expr, $keys:expr, $desc:expr)),* $(,)?
+    ) => {
+        &[
+            $(
+                KeyDisplayLine {
+                    seq: $seq,
+                    keys: $keys,
+                    desc: $desc,
+                }
+            ),*
+        ]
+    };
+}
+
+pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
+    (10, "Key bindings", "Description"),
+    (
+        20,
+        "Shift+arrow keys",
+        "Select/deselect chars (←→) or lines (↑↓)"
+    ),
+    (
+        30,
+        "Shift+Ctrl+arrow keys",
+        "Select/deselect words (←→) or paras (↑↓)"
+    ),
+    (40, "Alt+c", "Cancel selection"),
+    (50, "Ctrl+d", "Submit"),
+    (60, "Ctrl+q", "Cancel and quit"),
+    (70, "Ctrl+h, Backspace", "Delete character before cursor"),
+    (80, "Ctrl+i, Tab", "Indent"),
+    (90, "Ctrl+m, Enter", "Insert newline"),
+    (100, "Ctrl+k", "Delete from cursor to end of line"),
+    (110, "Ctrl+j", "Delete from cursor to start of line"),
+    (
+        120,
+        "Ctrl+w, Alt+Backspace",
+        "Delete one word before cursor"
+    ),
+    (130, "Alt+d, Delete", "Delete one word from cursor position"),
+    (140, "Ctrl+u", "Undo"),
+    (150, "Ctrl+r", "Redo"),
+    (160, "Ctrl+c", "Copy (yank) selected text"),
+    (170, "Ctrl+x", "Cut (yank) selected text"),
+    (180, "Ctrl+y", "Paste yanked text"),
+    (
+        190,
+        "Ctrl+v, Shift+Ins, Cmd+v",
+        "Paste from system clipboard"
+    ),
+    (200, "Ctrl+f, →", "Move cursor forward one character"),
+    (210, "Ctrl+b, ←", "Move cursor backward one character"),
+    (220, "Ctrl+p, ↑", "Move cursor up one line"),
+    (230, "Ctrl+n, ↓", "Move cursor down one line"),
+    (240, "Alt+f, Ctrl+→", "Move cursor forward one word"),
+    (250, "Alt+Shift+f", "Move cursor to next word end"),
+    (260, "Atl+b, Ctrl+←", "Move cursor backward one word"),
+    (270, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
+    (280, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
+    (
+        290,
+        "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
+        "Move cursor to end of line"
+    ),
+    (
+        300,
+        "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
+        "Move cursor to start of line"
+    ),
+    (310, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
+    (
+        320,
+        "Alt+>, Ctrl+Alt+n or ↓",
+        "Move cursor to bottom of file"
+    ),
+    (330, "PageDown, Cmd+↓", "Page down"),
+    (340, "Alt+v, PageUp, Cmd+↑", "Page up"),
+    (350, "Ctrl+l", "Toggle keys display (this screen)"),
+    (360, "Ctrl+t", "Toggle highlight colours"),
+    (370, "F1", "Previous in history"),
+    (380, "F2", "Next in history"),
+    (
+        390,
+        "F9",
+        "Suspend mouse capture and line numbers for system copy"
+    ),
+    (400, "F10", "Resume mouse capture and line numbers"),
+];

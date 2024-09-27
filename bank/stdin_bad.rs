@@ -1,35 +1,51 @@
+/*[toml]
+[dependencies]
+clap = "4.5.18"
+crokey = "1.1.0"
+crossterm = "0.28.1"
+edit = "0.1.5"
+lazy_static = "1.4.0"
+mockall = "0.13.0"
+ratatui = "0.28.1"
+reedline = "0.35.0"
+regex = "1.10.4"
+scopeguard = "1.2.0"
+serde = "1.0.210"
+serde_json = "1.0.128"
+strum = "0.26.3"
+thag_rs = { path = "/Users/donf/projects/thag_rs/" }
+tui-textarea = { version = "0.6", features = ["search"] }
+*/
+
 #![allow(clippy::uninlined_format_args)]
-use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
-use crate::errors::ThagResult;
-use crate::logging::Verbosity;
-use crate::repl::{
+use thag_rs::code_utils::process_expr;
+use thag_rs::colors::TUI_SELECTION_BG;
+use thag_rs::errors::ThagResult;
+use thag_rs::logging::Verbosity;
+use thag_rs::repl::{
     add_menu_keybindings, disp_repl_banner, format_edit_commands, format_key_code,
     format_key_modifier, format_non_edit_events, parse_line, show_key_bindings, ReplPrompt,
 };
-use crate::tui_editor::{
-    show_popup, CrosstermEventReader, EventReader, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
+use thag_rs::shared::KeyDisplayLine;
+use thag_rs::tui_editor::{
+    apply_highlights, normalize_newlines, reset_term, show_popup, CrosstermEventReader, Display,
+    EditData, EventReader, History, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
 };
-use crate::{
-    code_utils, extract_ast_expr, extract_manifest, log, nu_color_println, nu_resolve_style,
-    BuildState, Cli, MessageLevel, ProcFlags,
+use thag_rs::{
+    extract_ast_expr, extract_manifest, log, nu_color_println, nu_resolve_style, BuildState, Cli,
+    MessageLevel, ProcFlags,
 };
 
 use clap::{CommandFactory, Parser};
 use crokey::{crossterm, key, KeyCombinationFormat};
 use crossterm::event::{
-    DisableMouseCapture,
     EnableBracketedPaste,
     EnableMouseCapture,
     Event::{self, Paste},
     // KeyCode, KeyEvent, KeyModifiers,
 };
-use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
-    LeaveAlternateScreen,
-};
+use crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
 use edit::edit_file;
-use lazy_static::lazy_static;
-use mockall::predicate::str;
 use ratatui::backend::CrosstermBackend;
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::widgets::{block::Block, Borders};
@@ -38,82 +54,22 @@ use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
     Emacs, MenuBuilder, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
-use regex::Regex;
-use serde::{Deserialize, Serialize};
-use serde_json;
-use std::fmt::Debug;
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, IsTerminal};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Instant;
-use std::{collections::VecDeque, fs, path::PathBuf};
-use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
+use strum::EnumIter;
+use strum::{EnumString, IntoEnumIterator, IntoStaticStr};
 use tui_textarea::{CursorMove, Input, TextArea};
 
-#[derive(Default, Serialize, Deserialize)]
-struct History {
-    entries: VecDeque<String>,
-    current_index: Option<usize>,
-}
-
-impl History {
-    fn new() -> Self {
-        Self {
-            entries: VecDeque::with_capacity(20),
-            current_index: None,
-        }
-    }
-
-    fn load_from_file(path: &PathBuf) -> Self {
-        fs::read_to_string(path).map_or_else(
-            |_| Self::default(),
-            |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
-        )
-    }
-
-    fn save_to_file(&self, path: &PathBuf) {
-        if let Ok(data) = serde_json::to_string(self) {
-            let _ = fs::write(path, data);
-        }
-    }
-
-    fn add_entry(&mut self, entry: String) {
-        // Remove prior duplicates
-        self.entries.retain(|f| f != &entry);
-        self.entries.push_front(entry);
-    }
-
-    fn get_current(&mut self) -> Option<&String> {
-        if self.entries.is_empty() {
-            return None;
-        }
-
-        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
-        self.entries.front()
-    }
-
-    fn get_previous(&mut self) -> Option<&String> {
-        if self.entries.is_empty() {
-            return None;
-        }
-
-        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
-        self.current_index.and_then(|index| self.entries.get(index))
-    }
-
-    fn get_next(&mut self) -> Option<&String> {
-        if self.entries.is_empty() {
-            return None;
-        }
-
-        self.current_index = match self.current_index {
-            Some(index) if index > 0 => Some(index - 1),
-            Some(index) if index == 0 => Some(index + self.entries.len() - 1),
-            _ => Some(self.entries.len() - 1),
-        };
-
-        self.current_index.and_then(|index| self.entries.get(index))
-    }
+/// A struct to allow sharing of necessary context between functions
+#[derive(Debug)]
+pub struct Context<'a> {
+    pub args: &'a mut Cli,
+    pub proc_flags: &'a ProcFlags,
+    pub build_state: &'a mut BuildState,
+    pub start: Instant,
 }
 
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
@@ -389,7 +345,7 @@ pub fn run_repl(
         let maybe_ast = extract_ast_expr(rs_source);
 
         if let Ok(expr_ast) = maybe_ast {
-            code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+            process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
         } else {
             nu_color_println!(
                 nu_resolve_style(MessageLevel::Error),
@@ -414,7 +370,7 @@ fn eval(
     build_state.rs_manifest = Some(rs_manifest);
     let maybe_ast = extract_ast_expr(rs_source);
     if let Ok(expr_ast) = maybe_ast {
-        code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+        process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
     } else {
         nu_color_println!(
             nu_resolve_style(MessageLevel::Error),
@@ -447,9 +403,8 @@ pub fn toml(cargo_toml_file: &PathBuf) -> ThagResult<Option<String>> {
 ///
 /// ```no_run
 /// use thag_rs::stdin::edit;
-/// use thag_rs::tui_editor::CrosstermEventReader;
+/// use thag_rs::tui_editor::{CrosstermEventReader, MockEventReader};
 /// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
-/// use thag_rs::tui_editor::MockEventReader;
 ///
 /// let mut event_reader = MockEventReader::new();
 /// event_reader.expect_read_event().return_once(|| {
@@ -469,7 +424,7 @@ pub fn toml(cargo_toml_file: &PathBuf) -> ThagResult<Option<String>> {
 ///
 /// If the terminal cannot be reset.
 #[allow(clippy::too_many_lines)]
-pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>> {
+pub fn edit<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
     let input = std::io::stdin();
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
@@ -478,7 +433,6 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 
     let mut saved_to_history = false;
 
-    eprintln!("input.is_terminal()? {}", input.is_terminal());
     let initial_content = if input.is_terminal() {
         String::new()
     } else {
@@ -538,9 +492,229 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
             e
         })?;
         // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
-        if !is_raw_mode_enabled()? {
-            enable_raw_mode()?;
+        // let event = crossterm::event::read();
+        let event = event_reader.read_event();
+        // terminal::disable_raw_mode()?;
+
+        if let Ok(Paste(ref data)) = event {
+            textarea.insert_str(normalize_newlines(data));
+        } else {
+            match event {
+                Ok(Event::Key(key_event)) => {
+                    // let Some(key_combination) = combiner.transform(key_event) else {
+                    //     continue;
+                    // };
+                    let key_combination = key_event.into();
+                    let key = fmt.to_string(key_combination);
+                    match key_combination {
+                        #[allow(clippy::unnested_or_patterns)]
+                        key!(ctrl - c) | key!(ctrl - q) => {
+                            println!("You typed {} which gracefully quits", key.green());
+                            return Ok(vec![]);
+                        }
+                        // key!(ctrl - q - q - q) => {
+                        //     println!("You typed {} which gracefully quits", key.green());
+                        //     return Ok(());
+                        // }
+                        key!(ctrl - d) => {
+                            // 6 >5,4,3,2,1 -> 6 >6,5,4,3,2,1
+                            history.add_entry(textarea.lines().to_vec().join("\n"));
+                            history.current_index = Some(0);
+                            history.save_to_file(&history_path);
+                            break;
+                        }
+                        key!(ctrl - l) => popup = !popup,
+                        key!(ctrl - t) => {
+                            alt_highlights = !alt_highlights;
+                            term.draw(|_| {
+                                apply_highlights(&TUI_SELECTION_BG, &mut textarea);
+                            })?;
+                        }
+                        key!(f1) => {
+                            let mut found = false;
+                            // 6 5,4,3,2,1 -> >5,4,3,2,1
+                            if saved_to_history {
+                                if let Some(entry) = history.get_previous() {
+                                    // 5
+                                    found = true;
+                                    textarea.select_all();
+                                    textarea.cut(); // 6
+                                    textarea.insert_str(entry); // 5
+                                }
+                            } else {
+                                // println!("Not already saved to history: calling history.get_current()");
+                                if let Some(entry) = history.get_current() {
+                                    found = true;
+                                    textarea.select_all();
+                                    textarea.cut(); // 6
+                                    textarea.insert_str(entry); // 5
+                                }
+                            }
+                            if found && !saved_to_history && !textarea.yank_text().is_empty() {
+                                // 5 >5,4,3,2,1 -> 5 6,>5,4,3,2,1
+                                history.add_entry(
+                                    textarea.yank_text().lines().collect::<Vec<_>>().join("\n"),
+                                );
+                                saved_to_history = true;
+                            }
+                            continue;
+                        }
+                        key!(f2) => {
+                            // 5 >6,5,4,3,2,1 ->
+                            if let Some(entry) = history.get_next() {
+                                textarea.select_all();
+                                textarea.cut();
+                                textarea.insert_str(entry);
+                            }
+                            continue;
+                        }
+                        key!(f3) => {
+                            println!("You typed {} which represents `edit toml`", key.green());
+                            continue;
+                        }
+                        key!(f4) => {
+                            println!("You typed {} which represents nothing yet", key.green());
+                            continue;
+                        }
+                        #[allow(clippy::unnested_or_patterns)]
+                        key!('?') | key!(shift - '?') => {
+                            println!("{}", "You typed {} which represents nothing yet".blue());
+                        }
+                        _ => {
+                            // println!("You typed {} which represents nothing yet", key.blue());
+                            let input = Input::from(event?);
+                            textarea.input(input);
+                        }
+                    }
+                }
+                _ => {
+                    // any other event, for example a resize, we quit
+                    // eprintln!("Quitting on {:?}", e);
+                    continue;
+                }
+            }
         }
+    }
+
+    Ok(textarea.lines().to_vec())
+}
+
+/// Edit the stdin stream.
+///
+///
+/// # Examples
+///
+/// ```no_run
+/// use thag_rs::stdin::edit;
+/// use thag_rs::tui_editor::{CrosstermEventReader, MockEventReader};
+/// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+///
+/// let mut event_reader = MockEventReader::new();
+/// event_reader.expect_read_event().return_once(|| {
+///     Ok(Event::Key(KeyEvent::new(
+///         KeyCode::Char('d'),
+///         KeyModifiers::CONTROL,
+///     )))
+/// });
+/// let actual = edit(&event_reader);
+/// let buf = vec![""];
+/// assert!(matches!(actual, Ok(buf)));
+/// ```
+/// # Errors
+///
+/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+/// # Panics
+///
+/// If the terminal cannot be reset.
+#[allow(clippy::too_many_lines)]
+pub fn edit_new<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
+    let input = std::io::stdin();
+    let cargo_home_string = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
+    let cargo_home = &PathBuf::from(&cargo_home_string);
+    let history_path = cargo_home.join("rs_stdin_history.json");
+
+    let mut history = History::load_from_file(&history_path);
+    let mut saved_to_history = false;
+    let save_path: PathBuf = cargo_home.join("stdin_edit_save.rs");
+
+    let initial_content = if input.is_terminal() {
+        String::new()
+    } else {
+        read()?
+    };
+
+    let edit_data = EditData {
+        return_text: true,
+        initial_content: initial_content.as_str(),
+        save_path: Some(save_path),
+        history_path: None,
+        history: None::<History>,
+    };
+    let binding = [KeyDisplayLine::new(
+        371,
+        "F3",
+        "Discard saved and unsaved changes and exit",
+    )];
+    let display = Display {
+        title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
+        title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Subheading))).bold(),
+        remove_keys: &[""; 0],
+        add_keys: &binding,
+    };
+
+    let mut popup = false;
+    let mut alt_highlights = false;
+
+    let mut stdout = io::stdout().lock();
+    enable_raw_mode()?;
+
+    crossterm::execute!(
+        stdout,
+        EnterAlternateScreen,
+        EnableMouseCapture,
+        EnableBracketedPaste
+    )
+    .map_err(|e| {
+        // println!("Error executing terminal commands: {:?}", e);
+        e
+    })?;
+    let backend = CrosstermBackend::new(stdout);
+    let terminal = Terminal::new(backend)?; // Ensure terminal will get reset when it goes out of scope.
+    let mut term = scopeguard::guard(terminal, |term| {
+        reset_term(term).expect("Error resetting terminal");
+    });
+
+    let mut textarea = TextArea::from(initial_content.clone().lines());
+
+    textarea.set_block(
+        Block::default()
+            .borders(Borders::NONE)
+            .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
+            .title_style(Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold()),
+    );
+    textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
+    textarea.set_selection_style(Style::default().bg(Color::Blue));
+    textarea.set_cursor_style(Style::default().on_magenta());
+    textarea.set_cursor_line_style(Style::default().on_dark_gray());
+
+    textarea.move_cursor(CursorMove::Bottom);
+
+    apply_highlights(&TUI_SELECTION_BG, &mut textarea);
+
+    let fmt = KeyCombinationFormat::default();
+    loop {
+        term.draw(|f| {
+            f.render_widget(&textarea, f.area());
+            if popup {
+                show_popup(MAPPINGS, f, TITLE_TOP, TITLE_BOTTOM, &[""; 0], &[]);
+            }
+            apply_highlights(&TUI_SELECTION_BG, &mut textarea);
+        })
+        .map_err(|e| {
+            println!("Error drawing terminal: {:?}", e);
+            e
+        })?;
+        // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
         // let event = crossterm::event::read();
         let event = event_reader.read_event();
         // terminal::disable_raw_mode()?;
@@ -687,53 +861,6 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)
-}
-
-/// Convert the different newline sequences for Windows and other platforms into the common
-/// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
-/// it stands).
-#[must_use]
-pub fn normalize_newlines(input: &str) -> String {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\r\n?").unwrap();
-    }
-    RE.replace_all(input, "\n").to_string()
-}
-
-/// Apply highlights to the text depending on the light or dark theme as detected, configured
-/// or defaulted, or as toggled by the user with Ctrl-t.
-pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
-    match scheme {
-        TuiSelectionBg::BlueYellow => {
-            // Dark theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
-            textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
-            textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
-        }
-        TuiSelectionBg::RedWhite => {
-            // Light theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
-            textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
-            textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
-        }
-    }
-}
-
-/// Reset the terminal.
-///
-/// # Errors
-///
-/// This function will bubble up any `ratatui` or `crossterm` errors encountered.
-// TODO: move to shared or tui_editor?
-pub fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> ThagResult<()> {
-    disable_raw_mode()?;
-    crossterm::execute!(
-        term.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    term.show_cursor()?;
-    Ok(())
 }
 
 /// Open the history file in an editor.

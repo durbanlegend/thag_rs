@@ -23,7 +23,7 @@ use std::{
 };
 use tui_textarea::{Input, TextArea};
 
-use crate::tui_editor::show_popup;
+use crate::{key_mappings, tui_editor::show_popup};
 use crate::{shared::KeyDisplayLine, tui_editor};
 
 /// File dialog mode to distinguish between Open and Save dialogs
@@ -278,7 +278,7 @@ impl<'a> FileDialog<'a> {
             }
             if self.popup {
                 show_popup(
-                    &get_mappings(),
+                    MAPPINGS,
                     f,
                     "Key bindings",
                     tui_editor::TITLE_BOTTOM,
@@ -560,15 +560,12 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     .split(popup_layout[1])[1]
 }
 
-fn get_mappings() -> Vec<KeyDisplayLine> {
-    vec![
-        KeyDisplayLine::new(10, "Keys", "Description"),
-        KeyDisplayLine::new(20, "q, Esc", "Close the file dialog"),
-        KeyDisplayLine::new(30, "j, ↓", "Move down in the file list"),
-        KeyDisplayLine::new(40, "k, ↑", "Move up in the file list"),
-        KeyDisplayLine::new(50, "Enter", "Select the current item"),
-        KeyDisplayLine::new(60, "u", "Move one directory up"),
-        KeyDisplayLine::new(70, "I", "Toggle showing hidden files"),
-        KeyDisplayLine::new(80, "Tab", "Toggle between file list and file name"),
-    ]
-}
+const MAPPINGS: &[KeyDisplayLine] = key_mappings![
+    (10, "Key bindings", "Description"),
+    (20, "q, Esc", "Close the file dialog"),
+    (30, "j, ↓", "Move down in the file list"),
+    (40, "k, ↑", "Move up in the file list"),
+    (50, "Enter", "Select the current item"),
+    (60, "u", "Move one directory up"),
+    (70, "I", "Toggle showing hidden files")
+];

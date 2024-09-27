@@ -16,10 +16,13 @@
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  >>> REPL option Open in TUI
+- [ ]  Consider making show_popup a macro and look for others that can run at compile-time.
+- [ ]  Consider replacing lazy_static with std::sync::OnceLock per the lazy_static Readme.
 - [ ]  Make key_handler a trait method? Or a closure?
 - [ ]  Implement Ctrl+A (Save As...) on file dialog, also confirmation of save.
 - [ ]  Consider MIT licence only, see bank/tui_file_dialog.rs.
 - [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.
+- [ ]  Consider using \n-separated format for history instead of JSON, to align with `reedline`.
 - [ ]  Decommission repl::edit_history_old.
 - [ ]  Decide whether to decommission REPL delete function - keep list
 - [ ]  Decide whether to decommission REPL edit, toml and run functions.

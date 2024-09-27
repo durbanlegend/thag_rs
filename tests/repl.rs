@@ -96,7 +96,7 @@ mod tests {
 
         let initial_content = history_string;
         let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
-        let result = edit_history(initial_content, &staging_path, &mock_reader);
+        let result = edit_history(&initial_content, &staging_path, &mock_reader);
         dbg!(&result);
         assert!(&result.is_ok());
     }

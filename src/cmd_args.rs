@@ -1,6 +1,4 @@
-use crate::debug_log;
-use crate::RS_SUFFIX;
-use crate::{errors::ThagError, MAYBE_CONFIG};
+use crate::{debug_log, ThagError, ThagResult, MAYBE_CONFIG, RS_SUFFIX};
 
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
@@ -126,7 +124,7 @@ pub fn get_args() -> Cli {
 /// Validates the command-line arguments
 /// # Errors
 /// Will return `Err` if there is a missing script name or missing .rs suffix.
-pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), ThagError> {
+pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
     profile_fn!(validate_args);
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
@@ -205,7 +203,7 @@ impl str::FromStr for ProcFlags {
 /// # Panics
 ///
 /// Will panic if the internal correctness check fails.
-pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
+pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     profile_fn!(get_proc_flags);
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();

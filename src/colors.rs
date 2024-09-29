@@ -212,7 +212,7 @@ fn resolve_term_theme() -> ThagResult<TermTheme> {
     }
 }
 
-fn maybe_restore_raw_status(raw_before: bool) -> Result<(), ThagError> {
+fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
     let raw_after = terminal::is_raw_mode_enabled()?;
     if raw_before != raw_after {
         restore_raw_status(raw_before)?;
@@ -220,7 +220,7 @@ fn maybe_restore_raw_status(raw_before: bool) -> Result<(), ThagError> {
     Ok(())
 }
 
-fn restore_raw_status(raw_before: bool) -> Result<(), ThagError> {
+fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
     if raw_before {
         terminal::enable_raw_mode()?;
     } else {

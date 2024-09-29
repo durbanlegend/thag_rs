@@ -474,9 +474,11 @@ where
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encountered by `crossterm::enable_raw_mode`.
-pub fn maybe_enable_raw_mode() -> Result<(), ThagError> {
+pub fn maybe_enable_raw_mode() -> ThagResult<()> {
     let test_env = &var("TEST_ENV");
     #[cfg(debug_assertions)]
+    debug_log!("test_env={test_env:?}");
+    if !test_env.is_ok() && !is_raw_mode_enabled()? {
         #[cfg(debug_assertions)]
         debug_log!("Enabling raw mode");
         enable_raw_mode()?;

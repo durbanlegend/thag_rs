@@ -494,7 +494,7 @@ pub fn run_repl(
     Ok(())
 }
 
-fn tui(initial_content: &str, save_path: PathBuf) -> Result<(), ThagError> {
+fn tui(initial_content: &str, save_path: PathBuf) -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     let edit_data = EditData {
         return_text: true,
@@ -1207,7 +1207,8 @@ pub fn edit_history_old<R: EventReader + Debug>(
                             return Ok(saved);
                         }
                         key!(ctrl - d) => {
-                            debug_log!("{textarea:?}");
+                            // #[cfg(debug_assertions)]
+                            // debug_log!("{textarea:?}");
                             stage_history(&staging_file, &textarea)?;
                             return Ok(true);
                         }

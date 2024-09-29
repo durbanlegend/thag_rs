@@ -1,27 +1,20 @@
+use crate::cmd_args::{get_proc_flags, validate_args, Cli, ProcFlags};
 use crate::code_utils::{
     self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest, process_expr,
     read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::colors::{coloring, nu_resolve_style, MessageLevel};
 use crate::config::{self, RealContext, MAYBE_CONFIG};
-use crate::errors::ThagError;
 use crate::logging::{is_debug_logging_enabled, Verbosity};
 use crate::manifest;
 use crate::repl::run_repl;
-use crate::shared::debug_timings;
-use crate::shared::{display_timings, Ast, BuildState};
-use crate::stdin::{edit, read};
+use crate::shared::{debug_timings, display_timings, Ast, BuildState};
+use crate::stdin::{self, edit, read};
 use crate::tui_editor::CrosstermEventReader;
-use crate::VERSION;
 use crate::{
-    cmd_args::{get_proc_flags, validate_args, Cli, ProcFlags},
-    ScriptState,
+    debug_log, log, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
+    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
 };
-use crate::{
-    debug_log, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR,
-    RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR,
-};
-use crate::{log, stdin};
 
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
@@ -43,7 +36,7 @@ use std::{
 /// Will return `Err` if there is an error returned by any of the subordinate functions.
 /// # Panics
 /// Will panic if it fails to strip a .rs extension off the script name,
-pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
+pub fn execute(args: &mut Cli) -> ThagResult<()> {
     // Instrument the entire function
     // profile_fn!(execute);
 
@@ -122,7 +115,7 @@ fn resolve_script_dir_path(
     working_dir_path: &Path,
     repl_source_path: &Option<PathBuf>,
     is_dynamic: bool,
-) -> Result<PathBuf, ThagError> {
+) -> ThagResult<PathBuf> {
     profile_fn!(resolve_script_dir_path);
 
     let script_dir_path = if is_repl {
@@ -166,7 +159,7 @@ fn set_script_state(
     is_repl: bool,
     repl_source_path: Option<PathBuf>,
     is_dynamic: bool,
-) -> Result<ScriptState, ThagError> {
+) -> ThagResult<ScriptState> {
     profile_fn!(set_script_state);
     let script_state: ScriptState = if let Some(ref script) = args.script {
         let script = script.to_owned();
@@ -199,7 +192,7 @@ fn process(
     args: &mut Cli,
     script_state: &ScriptState,
     start: Instant,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     // profile_fn!(process);
     let is_repl = args.repl;
     let is_tui_repl = args.tui_repl;
@@ -309,7 +302,7 @@ pub fn gen_build_run(
     build_state: &mut BuildState,
     syntax_tree: Option<Ast>,
     start: &Instant,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     // Instrument the entire function
     // profile_fn!(gen_build_run);
 
@@ -506,7 +499,7 @@ pub fn generate(
     build_state: &BuildState,
     rs_source: Option<&str>,
     proc_flags: &ProcFlags,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     // profile_fn!(generate);
     let start_gen = Instant::now();
 
@@ -569,7 +562,7 @@ pub fn generate(
 }
 
 #[inline]
-fn syn_parse_file(rs_source: Option<&str>) -> Result<syn::File, ThagError> {
+fn syn_parse_file(rs_source: Option<&str>) -> ThagResult<syn::File> {
     profile_fn!(syn_parse_file);
     let syntax_tree = syn::parse_file(rs_source.ok_or("Logic error retrieving rs_source")?)?;
     Ok(syntax_tree)
@@ -586,7 +579,7 @@ fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
 /// Will return `Err` if there is an error composing the Cargo TOML path or running the Cargo build command.
 /// # Panics
 /// Will panic if the cargo build process fails to spawn or if it can't move the executable.
-pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), ThagError> {
+pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     // profile_fn!(build);
 
     let start_build = Instant::now();
@@ -652,7 +645,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
     Ok(())
 }
 
-fn deploy_executable(build_state: &BuildState) -> Result<(), ThagError> {
+fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     profile_fn!(deploy_executable);
     // Determine the output directory
     let mut cargo_bin_path = home::home_dir().ok_or("Could not find home directory")?;
@@ -724,11 +717,7 @@ fn deploy_executable(build_state: &BuildState) -> Result<(), ThagError> {
 ///
 /// Will return `Err` if there is an error waiting for the spawned command
 /// that runs the user script.
-pub fn run(
-    proc_flags: &ProcFlags,
-    args: &[String],
-    build_state: &BuildState,
-) -> Result<(), ThagError> {
+pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) -> ThagResult<()> {
     // profile_fn!(run);
 
     let start_run = Instant::now();

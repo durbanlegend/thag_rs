@@ -17,3 +17,6 @@ bank/ha.rs
 bank/ho2.rs
 bank/tui_file_dialog2.rs
 app.log
+my_rust_binary.log
+park/colors.rs
+park/shared.rs

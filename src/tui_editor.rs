@@ -38,7 +38,7 @@ use crate::{
     colors::{TuiSelectionBg, TUI_SELECTION_BG},
     shared::KeyDisplayLine,
 };
-use crate::{MessageLevel, ThagError, ThagResult};
+use crate::{debug_log, MessageLevel, ThagError, ThagResult};
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
 pub type Term = Terminal<BackEnd>;
@@ -189,6 +189,7 @@ pub struct EditData<'a> {
 }
 
 // Struct to hold display-related parameters
+#[derive(Debug)]
 pub struct Display<'a> {
     pub title: &'a str,
     pub title_style: Style,
@@ -276,10 +277,9 @@ where
 
     // Event loop for handling key events
     loop {
-        if !is_raw_mode_enabled()? {
-            enable_raw_mode()?;
-        }
-        let event = if var("TEST_ENV").is_ok() {
+        maybe_enable_raw_mode()?;
+        let test_env = &var("TEST_ENV");
+        let event = if test_env.is_ok() {
             // Testing or CI
             event_reader.read_event()?
         } else {
@@ -466,6 +466,22 @@ where
             textarea.input(input);
         }
     }
+}
+
+/// Enable raw mode, but not if in test mode, because that will cause the dreaded rightward drift
+/// in log output due to carriage returns being ignored.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o errors encountered by `crossterm::enable_raw_mode`.
+pub fn maybe_enable_raw_mode() -> Result<(), ThagError> {
+    let test_env = &var("TEST_ENV");
+    #[cfg(debug_assertions)]
+        #[cfg(debug_assertions)]
+        debug_log!("Enabling raw mode");
+        enable_raw_mode()?;
+    }
+    Ok(())
 }
 
 #[allow(clippy::cast_possible_truncation, clippy::missing_panics_doc)]

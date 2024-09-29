@@ -2,7 +2,7 @@ use crate::code_utils::{
     self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest, process_expr,
     read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
-use crate::colors::{nu_resolve_style, MessageLevel};
+use crate::colors::{coloring, nu_resolve_style, MessageLevel};
 use crate::config::{self, RealContext, MAYBE_CONFIG};
 use crate::errors::ThagError;
 use crate::logging::{is_debug_logging_enabled, Verbosity};
@@ -48,6 +48,11 @@ pub fn execute(args: &mut Cli) -> Result<(), ThagError> {
     // profile_fn!(execute);
 
     let start = Instant::now();
+
+    // Access lazy_static variables that have side-effects that could affect the behaviour
+    // of the terminal, to get these out of the way. (Belt and braces.)
+    // let _ = (&*TERM_THEME, &*COLOR_SUPPORT);
+    let _ = coloring();
 
     let proc_flags = get_proc_flags(args)?;
 

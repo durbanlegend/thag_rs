@@ -3,28 +3,114 @@
 use crate::termbg::{terminal, theme, Theme};
 use crate::{config, debug_log, log, logging::Verbosity, ThagError, ThagResult};
 
-use crossterm::terminal;
+use crossterm::terminal::{self, is_raw_mode_enabled};
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use nu_ansi_term::Style;
+use scopeguard::defer;
 use serde::Deserialize;
-use std::convert::Into;
 #[cfg(target_os = "windows")]
 use std::env;
+use std::sync::OnceLock;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
 
+/// Returns lazy static color values. Converted from `lazy_static` implementation
+/// in accordance with the example provided in the `lazy_static` Readme. Converted
+/// for the learning experience and to facilitate handling errors and the unwelcome
+/// side-effects of calling crates (in particular `termbg`) that switch off raw mode.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o errors encountered.
+pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
+    static COLOR_SUPPORT: OnceLock<Option<ColorSupport>> = OnceLock::new();
+    static TERM_THEME: OnceLock<TermTheme> = OnceLock::new();
+    if std::env::var("TEST_ENV").is_ok() {
+        #[cfg(debug_assertions)]
+        debug_log!("Avoiding supports_color for testing");
+        return (Some(&ColorSupport::Ansi16), &TermTheme::Dark);
+    }
+    // if cfg!(test) {
+    //     #[cfg(debug_assertions)]
+    //     debug_log!("Avoiding supports_color and termbg for testing");
+    //     return (Some(&ColorSupport::Ansi16), &TermTheme::Dark));
+    // }
+
+    let raw_before = terminal::is_raw_mode_enabled();
+    if let Ok(raw_then) = raw_before {
+        defer! {
+            let raw_now = match is_raw_mode_enabled() {
+                Ok(val) => val,
+                Err(e) => {
+                    #[cfg(debug_assertions)]
+                    debug_log!("Failed to check raw mode status: {:?}", e);
+                    return;
+                }
+            };
+
+            if raw_now == raw_then {
+                #[cfg(debug_assertions)]
+                debug_log!("Raw mode status unchanged.");
+            } else if let Err(e) = restore_raw_status(raw_then) {
+                    #[cfg(debug_assertions)]
+                    debug_log!("Failed to restore raw mode: {:?}", e);
+            } else {
+                #[cfg(debug_assertions)]
+                debug_log!("Raw mode restored to previous state.");
+            }
+        }
+    }
+
+    let color_support = COLOR_SUPPORT.get_or_init(|| {
+        (*config::MAYBE_CONFIG)
+            .as_ref()
+            .map_or_else(get_color_level, |config| {
+                match config.colors.color_support {
+                    ColorSupport::Xterm256 | ColorSupport::Ansi16 | ColorSupport::None => {
+                        Some(config.colors.color_support.clone())
+                    }
+                    ColorSupport::Default => get_color_level(),
+                }
+            })
+    });
+
+    let term_theme = TERM_THEME.get_or_init(|| {
+        (*config::MAYBE_CONFIG).as_ref().map_or_else(
+            || resolve_term_theme().unwrap_or_default(),
+            |config| {
+                if matches!(&config.colors.term_theme, &TermTheme::None) {
+                    resolve_term_theme().unwrap_or_default()
+                } else {
+                    config.colors.term_theme.clone()
+                }
+            },
+        )
+    });
+
+    (color_support.as_ref(), term_theme)
+}
+
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
+        #[cfg(debug_assertions)]
+        debug_log!(r#"std::env::var("TEST_ENV")={:?}"#, std::env::var("TEST_ENV"));
         if std::env::var("TEST_ENV").is_ok() {
-
+            #[cfg(debug_assertions)]
             debug_log!(
                 "Avoiding supports_color for testing"
             );
             return Some(ColorSupport::Ansi16);
         }
+        // if cfg!(test) {
+        //     #[cfg(debug_assertions)]
+        //     debug_log!(
+        //         "Avoiding supports_color for testing"
+        //     );
+        //     return Some(ColorSupport::Ansi16);
+        // }
 
         // Take precautions in case `supports_color` currently interrogates the terminal and I've missed it,
         // or may do so in the future. (Belt and braces given we initialise up front.)
@@ -36,37 +122,28 @@ lazy_static! {
                 ColorSupport::Default => get_color_level(),
             });
 
-        // let maybe_restored: ThagResult<bool> = {
-        //     let was_raw = raw_before.map_err(|e| ThagError::UnsupportedTerm)?;
-        //     let is_raw = terminal::is_raw_mode_enabled().map_err(|e| ThagError::UnsupportedTerm)?;
-        //     if is_raw == was_raw {
-        //         debug_log!("Raw_mode status unchanged");
-        //         Ok(false)
-        //     } else {
-        //         restore_raw_status(was_raw).map_err(|e| ThagError::UnsupportedTerm)?;
-        //         Ok(true)
-        //     }
-        // };
-        // if maybe_restored.is_ok() {
-        //    debug_log!("Could not restore initial raw_mode status");
-        // }
         if let Ok(was_raw) = raw_before {
             let raw_after = terminal::is_raw_mode_enabled();
             if let Ok(is_raw) = raw_after {
                 if is_raw == was_raw {
+                    #[cfg(debug_assertions)]
                     debug_log!("Raw_mode status unchanged");
                 } else {
                     let maybe_restored = restore_raw_status(was_raw);
                     if maybe_restored.is_ok() {
+                        #[cfg(debug_assertions)]
                         debug_log!("Restored initial raw_mode status of raw={was_raw}");
                     } else {
+                        #[cfg(debug_assertions)]
                         debug_log!("Could not restore initial raw_mode status");
                     }
                 }
             } else {
+                #[cfg(debug_assertions)]
                 debug_log!("Could not get final raw_mode status");
             }
         } else {
+            #[cfg(debug_assertions)]
             debug_log!("Could not get initial raw_mode status");
         }
 
@@ -76,11 +153,20 @@ lazy_static! {
     #[derive(Debug)]
     pub static ref TERM_THEME: TermTheme = {
         if std::env::var("TEST_ENV").is_ok() {
+            #[cfg(debug_assertions)]
             debug_log!(
                 "Avoiding termbg for testing"
             );
             return TermTheme::Dark;
         }
+        if cfg!(test) {
+            #[cfg(debug_assertions)]
+            debug_log!(
+                "Avoiding termbg for testing"
+            );
+            return TermTheme::Dark;
+        }
+
         #[allow(clippy::option_if_let_else)]
         if let Some(config) = &*config::MAYBE_CONFIG {
             if matches!(config.colors.term_theme, TermTheme::None) {
@@ -103,16 +189,18 @@ lazy_static! {
 }
 
 #[cfg(target_os = "windows")]
-fn resolve_term_theme() -> TermTheme {
-    TermTheme::Dark
+fn resolve_term_theme() -> ThagResult<TermTheme> {
+    Ok(TermTheme::Dark)
 }
 
 #[cfg(not(target_os = "windows"))]
 fn resolve_term_theme() -> ThagResult<TermTheme> {
     let raw_before = terminal::is_raw_mode_enabled()?;
+    #[cfg(debug_assertions)]
     debug_log!("About to call termbg");
     let timeout = std::time::Duration::from_millis(100);
 
+    // #[cfg(debug_assertions)]
     // debug_log!("Check terminal background color");
     let theme = theme(timeout);
 
@@ -174,6 +262,7 @@ fn get_color_level() -> Option<ColorSupport> {
 
 #[cfg(not(target_os = "windows"))]
 fn get_color_level() -> Option<ColorSupport> {
+    #[cfg(debug_assertions)]
     debug_log!("About to call supports_color");
     let color_level = supports_color::on(Stream::Stdout);
     color_level.map(|color_level| {
@@ -423,15 +512,16 @@ impl From<&MessageLevel> for MessageStyle {
     fn from(message_level: &MessageLevel) -> Self {
         {
             let message_style: Self = {
-                let maybe_color_support = COLOR_SUPPORT.as_ref();
+                let (maybe_color_support, term_theme) = coloring();
                 maybe_color_support.map_or(Self::Ansi16DarkNormal, |color_support| {
                     let color_qual = color_support.to_string().to_lowercase();
-                    let theme_qual = TERM_THEME.to_string().to_lowercase();
+                    let theme_qual = term_theme.to_string().to_lowercase();
                     let msg_level_qual = message_level.to_string().to_lowercase();
                     let message_style = Self::from_str(&format!(
                         "{}_{}_{}",
                         &color_qual, &theme_qual, &msg_level_qual
                     )).unwrap_or(Self::Ansi16DarkNormal);
+                    #[cfg(debug_assertions)]
                     debug_log!(
                         "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
                     );
@@ -543,12 +633,13 @@ pub fn main() {
         let term = terminal();
         // shared::clear_screen();
 
+        #[cfg(debug_assertions)]
         debug_log!("  Term : {term:?}");
     }
 
-    let color_support = &*COLOR_SUPPORT;
+    let (maybe_color_support, _term_theme) = coloring();
 
-    match color_support {
+    match maybe_color_support {
         None => {
             log!(Verbosity::Normal, "No colour support found for terminal");
         }

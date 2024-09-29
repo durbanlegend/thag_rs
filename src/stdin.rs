@@ -7,11 +7,12 @@ use crate::repl::{
     format_key_modifier, format_non_edit_events, parse_line, show_key_bindings, ReplPrompt,
 };
 use crate::tui_editor::{
-    show_popup, CrosstermEventReader, EventReader, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
+    maybe_enable_raw_mode, show_popup, CrosstermEventReader, EventReader, MAPPINGS, TITLE_BOTTOM,
+    TITLE_TOP,
 };
 use crate::{
-    code_utils, extract_ast_expr, extract_manifest, log, nu_color_println, nu_resolve_style,
-    BuildState, Cli, MessageLevel, ProcFlags,
+    code_utils, debug_log, extract_ast_expr, extract_manifest, log, nu_color_println,
+    nu_resolve_style, BuildState, Cli, MessageLevel, ProcFlags,
 };
 
 use clap::{CommandFactory, Parser};
@@ -478,7 +479,8 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 
     let mut saved_to_history = false;
 
-    eprintln!("input.is_terminal()? {}", input.is_terminal());
+    #[cfg(debug_assertions)]
+    debug_log!("input.is_terminal()? {}", input.is_terminal());
     let initial_content = if input.is_terminal() {
         String::new()
     } else {
@@ -489,7 +491,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     let mut alt_highlights = false;
 
     let mut stdout = io::stdout().lock();
-    enable_raw_mode()?;
+    maybe_enable_raw_mode()?;
 
     crossterm::execute!(
         stdout,

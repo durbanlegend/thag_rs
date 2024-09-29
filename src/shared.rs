@@ -346,7 +346,7 @@ pub struct KeyDisplayLine {
 
 impl KeyDisplayLine {
     #[must_use]
-    pub fn new(seq: usize, keys: &'static str, desc: &'static str) -> Self {
+    pub const fn new(seq: usize, keys: &'static str, desc: &'static str) -> Self {
         Self { seq, keys, desc }
     }
 }

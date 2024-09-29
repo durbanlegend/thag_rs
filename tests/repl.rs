@@ -6,11 +6,21 @@ mod tests {
     use thag_rs::cmd_args::{Cli, ProcFlags};
     use thag_rs::repl::{delete, disp_repl_banner, list, parse_line, run_expr};
     #[cfg(not(windows))]
-    use thag_rs::repl::{edit, edit_history, toml, HISTORY_FILE};
+    use thag_rs::repl::{edit, edit_history, edit_history_old, toml, HISTORY_FILE};
     use thag_rs::shared::BuildState;
+
+    use std::sync::Once;
+    static INIT: Once = Once::new();
+
+    fn init_logger() {
+        INIT.call_once(|| {
+            env_logger::init();
+        });
+    }
 
     // Set environment variables before running tests
     fn set_up() {
+        init_logger();
         std::env::set_var("TEST_ENV", "1");
         std::env::set_var("VISUAL", "cat");
         std::env::set_var("EDITOR", "cat");
@@ -42,6 +52,57 @@ mod tests {
 
         let result = delete(&build_state);
         assert!(result.is_ok());
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn test_edit_history_old() {
+        use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+        use mockall::Sequence;
+        use thag_rs::tui_editor::MockEventReader;
+
+        set_up();
+        let build_state = thag_rs::BuildState {
+            cargo_home: PathBuf::from("tests/assets/"),
+            ..Default::default()
+        };
+
+        let mut seq = Sequence::new();
+        let mut mock_reader = MockEventReader::new();
+
+        mock_reader
+            .expect_read_event()
+            .times(1)
+            .in_sequence(&mut seq)
+            .return_once(|| Ok(Event::Paste("Hello,\nworld".to_string())));
+
+        mock_reader
+            .expect_read_event()
+            .times(1)
+            .in_sequence(&mut seq)
+            .return_once(|| {
+                Ok(Event::Key(KeyEvent::new(
+                    KeyCode::Char('!'),
+                    KeyModifiers::NONE,
+                )))
+            });
+
+        mock_reader
+            .expect_read_event()
+            .times(1)
+            .in_sequence(&mut seq)
+            .return_once(|| {
+                Ok(Event::Key(KeyEvent::new(
+                    KeyCode::Char('q'),
+                    KeyModifiers::CONTROL,
+                )))
+            });
+
+        let history_path = build_state.cargo_home.join(HISTORY_FILE);
+        let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
+        let result = edit_history_old(&history_path, &staging_path, &mock_reader);
+        dbg!(&result);
+        assert!(&result.is_ok());
     }
 
     #[cfg(not(windows))]
@@ -94,9 +155,8 @@ mod tests {
         let history_string =
             read_to_string(&history_path).expect(&format!("Error reading from {history_path:?}"));
 
-        let initial_content = history_string;
         let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
-        let result = edit_history(&initial_content, &staging_path, &mock_reader);
+        let result = edit_history(&history_string, &staging_path, &mock_reader);
         dbg!(&result);
         assert!(&result.is_ok());
     }

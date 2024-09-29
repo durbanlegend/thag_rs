@@ -3,7 +3,7 @@ mod tests {
     use nu_ansi_term::Color;
     use supports_color::Stream;
     use thag_rs::colors::{
-        ColorSupport, MessageStyle, NuColor, NuThemeStyle, TermTheme, XtermColor, COLOR_SUPPORT,
+        ColorSupport, MessageStyle, NuColor, NuThemeStyle, TermTheme, XtermColor,
     };
     use thag_rs::logging::Verbosity;
     #[cfg(not(target_os = "windows"))]
@@ -99,6 +99,8 @@ mod tests {
     #[test]
     #[cfg(not(target_os = "windows"))]
     fn test_nu_resolve_style() {
+        use thag_rs::colors::coloring;
+
         set_up();
         // Test the nu_resolve_style function
         // Causes rightward drift of the test result printouts.
@@ -107,7 +109,8 @@ mod tests {
         // thag_rs::clear_screen();
 
         let style = nu_resolve_style(MessageLevel::Warning);
-        if let Some(color_support) = COLOR_SUPPORT.as_ref() {
+        let (maybe_color_support, _term_theme) = coloring();
+        if let Some(color_support) = maybe_color_support {
             match theme {
                 Ok(Theme::Light) => match *color_support {
                     ColorSupport::Xterm256 => {

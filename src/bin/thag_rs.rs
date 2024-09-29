@@ -1,6 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
 
-use thag_rs::colors::{COLOR_SUPPORT, TERM_THEME};
 use thag_rs::logging::{configure_log, set_verbosity};
 use thag_rs::{debug_timings, execute, get_args, ThagError};
 
@@ -15,10 +14,6 @@ pub fn main() -> Result<(), ThagError> {
 
     configure_log();
     debug_timings(&start, "Configured logging");
-
-    // Access lazy_static variables that have side-effects that could affect the behaviour
-    // of the terminal, to get these out of the way. (Belt and braces.)
-    let _ = (&*TERM_THEME, &*COLOR_SUPPORT);
 
     // Check if firestorm profiling is enabled
     if firestorm::enabled() {

@@ -38,7 +38,7 @@ nu-ansi-term = "0.50.1"
 proc-macro2 = "1.0.86"
 quote = "1.0.37"
 reedline = "0.35.0"
-regex = "1.10.6"
+regex = "1.11.0"
 serde = { version = "1.0.210", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive", "phf"] }
 supports-color = "3.0.0"

@@ -13,6 +13,11 @@ use crate::{debug_log, Cli, ThagResult, MAYBE_CONFIG};
 
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 
+/// Initializes and returns the global verbosity setting.
+pub fn get_verbosity() -> Verbosity {
+    LOGGER.lock().unwrap().verbosity.clone()
+}
+
 #[allow(clippy::module_name_repetitions)]
 pub fn enable_debug_logging() {
     DEBUG_LOG_ENABLED.store(true, Ordering::SeqCst);
@@ -23,7 +28,7 @@ pub fn is_debug_logging_enabled() -> bool {
 }
 
 /// An enum of the supported verbosity levels.
-#[derive(Clone, Copy, Debug, Default, Deserialize, EnumString, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, EnumString, PartialEq, PartialOrd, Eq)]
 #[strum(serialize_all = "snake_case")]
 pub enum Verbosity {
     Quieter = 0,
@@ -34,7 +39,10 @@ pub enum Verbosity {
     Debug = 4,
 }
 
+pub type V = Verbosity;
+
 /// Define the Logger.
+#[derive(Debug)]
 pub struct Logger {
     pub verbosity: Verbosity,
 }
@@ -58,6 +66,11 @@ impl Logger {
         self.verbosity = verbosity;
 
         debug_log!("Verbosity set to {verbosity:?}");
+    }
+
+    /// Return the verbosity level
+    pub fn verbosity(&mut self) -> Verbosity {
+        self.verbosity
     }
 }
 
@@ -96,6 +109,9 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
 /// Will return `Err` if the logger mutex cannot be locked.
 pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
     LOGGER.lock()?.set_verbosity(verbosity);
+    let v = get_verbosity();
+    #[cfg(debug_assertions)]
+    assert_eq!(v, verbosity);
     // Enable debug logging if -vv is passed
     if verbosity as u8 == Verbosity::Debug as u8 {
         enable_debug_logging(); // Set the runtime flag

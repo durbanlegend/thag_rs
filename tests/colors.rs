@@ -5,10 +5,10 @@ mod tests {
     use thag_rs::colors::{
         ColorSupport, MessageStyle, NuColor, NuThemeStyle, TermTheme, XtermColor,
     };
-    use thag_rs::logging::Verbosity;
+
     #[cfg(not(target_os = "windows"))]
     use thag_rs::termbg::{self, Theme};
-    use thag_rs::{log, nu_color_println, nu_resolve_style, MessageLevel};
+    use thag_rs::{cprtln, log, nu_resolve_style, MessageLevel};
 
     // Set environment variables before running tests
     fn set_up() {
@@ -160,7 +160,7 @@ mod tests {
         let content = "Test message from test_nu_color_println_macro";
         let output = format!("\u{1b}[1m{content}\u{1b}[0m");
         let style = nu_ansi_term::Style::new().bold();
-        nu_color_println!(style, "{}", content);
+        cprtln!(style, "{}", content);
         // thag_rs::clear_screen();
 
         // Ensure the macro output is correctly styled

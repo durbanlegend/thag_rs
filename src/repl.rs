@@ -1,7 +1,9 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
-use crate::colors::{nu_resolve_style, MessageLevel, TuiSelectionBg, TUI_SELECTION_BG};
+use crate::colors::{
+    coloring, get_style, nu_resolve_style, tui_selection_bg, MessageLevel, TuiSelectionBg,
+};
 #[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::errors::ThagError;
@@ -12,7 +14,7 @@ use crate::tui_editor::{
     apply_highlights, normalize_newlines, show_popup, tui_edit, CrosstermEventReader, Display,
     EditData, EventReader, History, KeyAction, TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
 };
-use crate::{gen_build_run, log, nu_color_println, tui_editor, ThagResult};
+use crate::{cprtln, cvprtln, gen_build_run, log, tui_editor, ThagResult};
 
 use clap::{CommandFactory, Parser};
 use crokey::{crossterm, key, KeyCombination, KeyCombinationFormat};
@@ -485,7 +487,7 @@ pub fn run_repl(
         if let Ok(expr_ast) = maybe_ast {
             code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
         } else {
-            nu_color_println!(
+            cprtln!(
                 nu_resolve_style(MessageLevel::Error),
                 "Error parsing code: {maybe_ast:#?}"
             );
@@ -871,7 +873,7 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
 
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
     println!();
-    nu_color_println!(
+    cprtln!(
         nu_resolve_style(crate::MessageLevel::Emphasis),
         "Key bindings - subject to your terminal settings"
     );
@@ -1140,7 +1142,7 @@ pub fn edit_history_old<R: EventReader + Debug>(
         .open(staging_path)?;
 
     let mut popup = false;
-    let mut tui_highlight_bg = &*TUI_SELECTION_BG;
+    let mut tui_highlight_bg = tui_selection_bg(coloring().1);
     let mut saved = false;
 
     let mut maybe_term = tui_editor::resolve_term()?;
@@ -1157,7 +1159,7 @@ pub fn edit_history_old<R: EventReader + Debug>(
 
     textarea.move_cursor(CursorMove::Bottom);
 
-    apply_highlights(&TUI_SELECTION_BG, &mut textarea);
+    apply_highlights(&tui_selection_bg(coloring().1), &mut textarea);
 
     let remove_keys = &["F1", "F2"];
     let add_keys = &[KeyDisplayLine::new(
@@ -1178,7 +1180,7 @@ pub fn edit_history_old<R: EventReader + Debug>(
                         if popup {
                             show_popup(MAPPINGS, f, TITLE_TOP, TITLE_BOTTOM, remove_keys, add_keys);
                         };
-                        apply_highlights(tui_highlight_bg, &mut textarea);
+                        apply_highlights(&tui_highlight_bg, &mut textarea);
                     })
                     .map_err(|e| {
                         println!("Error drawing terminal: {:?}", e);
@@ -1221,13 +1223,13 @@ pub fn edit_history_old<R: EventReader + Debug>(
                         key!(ctrl - t) => {
                             // Toggle highlighting colours
                             tui_highlight_bg = match tui_highlight_bg {
-                                TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
-                                TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
+                                TuiSelectionBg::BlueYellow => TuiSelectionBg::RedWhite,
+                                TuiSelectionBg::RedWhite => TuiSelectionBg::BlueYellow,
                             };
                             if var("TEST_ENV").is_err() {
                                 if let Some(ref mut term) = maybe_term {
                                     term.draw(|_| {
-                                        apply_highlights(tui_highlight_bg, &mut textarea);
+                                        apply_highlights(&tui_highlight_bg, &mut textarea);
                                     })?;
                                 }
                                 // // map_or equivalent for interest's sake.
@@ -1339,12 +1341,15 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
 
 /// Display the REPL banner.
 pub fn disp_repl_banner(cmd_list: &str) {
-    nu_color_println!(
-        nu_resolve_style(MessageLevel::Heading),
+    // let (maybe_color_support, term_theme) = coloring();
+    cvprtln!(
+        // get_style(&crate::Lvl::HEAD, term_theme, maybe_color_support),
+        crate::Lvl::HEAD,
+        crate::logging::get_verbosity(),
         r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#
     );
 
-    nu_color_println!(
+    cprtln!(
         nu_resolve_style(MessageLevel::Subheading),
         r"Expressions in matching braces, brackets or quotes may span multiple lines.
 Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."

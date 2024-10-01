@@ -3,7 +3,7 @@ use crate::code_utils::{
     self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest, process_expr,
     read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
-use crate::colors::{coloring, nu_resolve_style, MessageLevel};
+use crate::colors::{coloring, gen_mappings, nu_resolve_style, MessageLevel};
 use crate::config::{self, RealContext, MAYBE_CONFIG};
 use crate::logging::{is_debug_logging_enabled, Verbosity};
 use crate::manifest;
@@ -12,8 +12,8 @@ use crate::shared::{debug_timings, display_timings, Ast, BuildState};
 use crate::stdin::{self, edit, read};
 use crate::tui_editor::CrosstermEventReader;
 use crate::{
-    debug_log, log, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
-    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
+    debug_log, log, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN,
+    PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
 };
 
 use cargo_toml::Manifest;
@@ -45,13 +45,15 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     // Access lazy_static variables that have side-effects that could affect the behaviour
     // of the terminal, to get these out of the way. (Belt and braces.)
     // let _ = (&*TERM_THEME, &*COLOR_SUPPORT);
-    let _ = coloring();
+    let (maybe_color_support, term_theme) = coloring();
 
     let proc_flags = get_proc_flags(args)?;
 
     if log_enabled!(Debug) {
         log_init_setup(start, args, &proc_flags);
     }
+
+    gen_mappings(term_theme, maybe_color_support);
 
     // set_verbosity(args)?;
 

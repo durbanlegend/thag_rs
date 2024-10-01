@@ -26,7 +26,10 @@ pub use code_utils::{
     create_temp_source_file, extract_ast_expr, extract_manifest, modified_since_compiled,
     process_expr,
 };
-pub use colors::{nu_resolve_style, MessageLevel};
+pub use colors::{
+    nu_resolve_style, Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, Xterm256DarkStyle,
+    Xterm256LightStyle,
+};
 pub use config::{load, MAYBE_CONFIG};
 pub use errors::{ThagError, ThagResult};
 pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};

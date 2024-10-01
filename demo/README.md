@@ -1940,6 +1940,31 @@ which will give identical output to the above.
 
 ---
 
+### Script: macro_gen_enum.rs
+
+**Description:**  First prototype of building an enum from a macro and using it thereafter, thanks to SO user DK.
+ `https://stackoverflow.com/questions/37006835/building-an-enum-inside-a-macro`
+
+**Purpose:** explore a technique for resolving mappings from a message level enum to corresponding
+
+**Type:** Program
+
+**Link:** [macro_gen_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum.rs)
+
+---
+
+### Script: macro_gen_styles_enum.rs
+
+**Description:**  Second prototype of building an enum from a macro and using it thereafter.
+
+**Purpose:** explore a technique for resolving mappings from a message level enum to corresponding
+
+**Type:** Snippet
+
+**Link:** [macro_gen_styles_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styles_enum.rs)
+
+---
+
 ### Script: macro_print.rs
 
 **Description:**  Proof of concept of distinguishing types that implement Display from those that implement
@@ -2208,7 +2233,7 @@ which will give identical output to the above.
 
 **Purpose:** demo featured crates.
 
-**Crates:** `crossterm`, `reedline`
+**Crates:** `reedline`
 
 **Type:** Program
 
@@ -2590,6 +2615,86 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs)
+
+---
+
+### Script: stdin_main.rs
+
+**Description:**  A version of `thag_rs`'s `stdin` module from the `main` `git` branch for the purpose of comparison
+ with the `develop` branch version being debugged.
+
+ E.g. `thag demo/stdin_main.rs`
+ A trait to allow mocking of the event reader for testing purposes.
+ A struct to implement real-world use of the event reader, as opposed to use in testing.
+ Edit the stdin stream.
+
+
+ # Examples
+
+ ```no_run
+ use thag_rs::stdin::{edit, CrosstermEventReader};
+ use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+ # use thag_rs::stdin::MockEventReader;
+
+ # let mut event_reader = MockEventReader::new();
+ # event_reader.expect_read_event().return_once(|| {
+ #     Ok(Event::Key(KeyEvent::new(
+ #         KeyCode::Char('d'),
+ #         KeyModifiers::CONTROL,
+ #     )))
+ # });
+ let actual = edit(&event_reader);
+ let buf = vec![""];
+ assert!(matches!(actual, Ok(buf)));
+ ```
+ # Errors
+
+ If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+ # Panics
+
+ If the terminal cannot be reset.
+ Prompt for and read Rust source code from stdin.
+
+ # Examples
+
+ ```
+ use thag_rs::stdin::read;
+
+ let hello = String::from("Hello world!");
+ assert!(matches!(read(), Ok(hello)));
+ ```
+ # Errors
+
+ If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+ Read the input from a `BufRead` implementing item into a String.
+
+ # Examples
+
+ ```
+ use thag_rs::stdin::read_to_string;
+
+ let stdin = std::io::stdin();
+ let mut input = stdin.lock();
+ let hello = String::from("Hello world!");
+ assert!(matches!(read_to_string(&mut input), Ok(hello)));
+ ```
+
+ # Errors
+
+ If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+ Convert the different newline sequences for Windows and other platforms into the common
+ standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
+ it stands).
+ Apply highlights to the text depending on the light or dark theme as detected, configured
+ or defaulted, or as toggled by the user with Ctrl-t.
+
+**Purpose:** Debugging.
+
+**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `serde`, `thag_rs`, `tui_textarea`
+
+**Type:** Program
+
+**Link:** [stdin_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs)
 
 ---
 

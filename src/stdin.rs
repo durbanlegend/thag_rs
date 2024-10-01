@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::colors::{TuiSelectionBg, TUI_SELECTION_BG};
+use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
 use crate::errors::ThagResult;
 use crate::logging::Verbosity;
 use crate::repl::{
@@ -11,8 +11,8 @@ use crate::tui_editor::{
     TITLE_TOP,
 };
 use crate::{
-    code_utils, debug_log, extract_ast_expr, extract_manifest, log, nu_color_println,
-    nu_resolve_style, BuildState, Cli, MessageLevel, ProcFlags,
+    code_utils, cprtln, debug_log, extract_ast_expr, extract_manifest, log, nu_resolve_style,
+    BuildState, Cli, MessageLevel, ProcFlags,
 };
 
 use clap::{CommandFactory, Parser};
@@ -392,7 +392,7 @@ pub fn run_repl(
         if let Ok(expr_ast) = maybe_ast {
             code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
         } else {
-            nu_color_println!(
+            cprtln!(
                 nu_resolve_style(MessageLevel::Error),
                 "Error parsing code: {maybe_ast:#?}"
             );
@@ -417,7 +417,7 @@ fn eval(
     if let Ok(expr_ast) = maybe_ast {
         code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
     } else {
-        nu_color_println!(
+        cprtln!(
             nu_resolve_style(MessageLevel::Error),
             "Error parsing code: {maybe_ast:#?}"
         );
@@ -524,7 +524,8 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 
     textarea.move_cursor(CursorMove::Bottom);
 
-    apply_highlights(&TUI_SELECTION_BG, &mut textarea);
+    let tui_selection_bg = tui_selection_bg(coloring().1);
+    apply_highlights(&tui_selection_bg, &mut textarea);
 
     let fmt = KeyCombinationFormat::default();
     loop {
@@ -533,7 +534,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
             if popup {
                 show_popup(MAPPINGS, f, TITLE_TOP, TITLE_BOTTOM, &[""; 0], &[]);
             }
-            apply_highlights(&TUI_SELECTION_BG, &mut textarea);
+            apply_highlights(&tui_selection_bg, &mut textarea);
         })
         .map_err(|e| {
             println!("Error drawing terminal: {:?}", e);
@@ -578,7 +579,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                         key!(ctrl - t) => {
                             alt_highlights = !alt_highlights;
                             term.draw(|_| {
-                                apply_highlights(&TUI_SELECTION_BG, &mut textarea);
+                                apply_highlights(&tui_selection_bg, &mut textarea);
                             })?;
                         }
                         key!(f1) => {

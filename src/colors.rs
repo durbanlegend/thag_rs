@@ -1,12 +1,13 @@
 #![allow(clippy::implicit_return)]
+use crate::generate_styles;
+use crate::logging::Verbosity;
 #[cfg(not(target_os = "windows"))]
 use crate::termbg::{terminal, theme, Theme};
-use crate::{config, debug_log, log, logging::Verbosity, ThagError, ThagResult};
+use crate::{config, debug_log, log, ThagResult};
 
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
-use nu_ansi_term::Style;
+use nu_ansi_term::{Color, Style};
 use scopeguard::defer;
 use serde::Deserialize;
 #[cfg(target_os = "windows")]
@@ -17,6 +18,61 @@ use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
 
+#[derive(Debug)]
+pub enum Xterm256LightStyle {
+    Error,
+    Warning,
+    Emphasis,
+    Heading,
+    Subheading,
+    Normal,
+    Debug,
+    Ghost,
+}
+
+#[derive(Debug)]
+pub enum Xterm256DarkStyle {
+    Error,
+    Warning,
+    Emphasis,
+    Heading,
+    Subheading,
+    Normal,
+    Debug,
+    Ghost,
+}
+
+#[derive(Debug)]
+pub enum Ansi16LightStyle {
+    Error,
+    Warning,
+    Emphasis,
+    Heading,
+    Subheading,
+    Normal,
+    Debug,
+    Ghost,
+}
+
+#[derive(Debug)]
+pub enum Ansi16DarkStyle {
+    Error,
+    Warning,
+    Emphasis,
+    Heading,
+    Subheading,
+    Normal,
+    Debug,
+    Ghost,
+}
+
+generate_styles!(
+    (Xterm256LightStyle, Light, Xterm256),
+    (Xterm256DarkStyle, Dark, Xterm256),
+    (Ansi16LightStyle, Light, Ansi16),
+    (Ansi16DarkStyle, Dark, Ansi16)
+);
+
 /// Returns lazy static color values. Converted from `lazy_static` implementation
 /// in accordance with the example provided in the `lazy_static` Readme. Converted
 /// for the learning experience and to facilitate handling errors and the unwelcome
@@ -26,6 +82,8 @@ use supports_color::Stream;
 ///
 /// This function will bubble up any i/o errors encountered.
 pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
+    profile_fn!(coloring);
+
     static COLOR_SUPPORT: OnceLock<Option<ColorSupport>> = OnceLock::new();
     static TERM_THEME: OnceLock<TermTheme> = OnceLock::new();
     if std::env::var("TEST_ENV").is_ok() {
@@ -93,108 +151,116 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     (color_support.as_ref(), term_theme)
 }
 
-lazy_static! {
-    pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
-        #[cfg(debug_assertions)]
-        debug_log!(r#"std::env::var("TEST_ENV")={:?}"#, std::env::var("TEST_ENV"));
-        if std::env::var("TEST_ENV").is_ok() {
-            #[cfg(debug_assertions)]
-            debug_log!(
-                "Avoiding supports_color for testing"
-            );
-            return Some(ColorSupport::Ansi16);
-        }
-        // if cfg!(test) {
-        //     #[cfg(debug_assertions)]
-        //     debug_log!(
-        //         "Avoiding supports_color for testing"
-        //     );
-        //     return Some(ColorSupport::Ansi16);
-        // }
+/// Initializes and returns the TUI selection background coloring.
+pub fn tui_selection_bg(term_theme: &TermTheme) -> TuiSelectionBg {
+    static TUI_SELECTION_BG: OnceLock<TuiSelectionBg> = OnceLock::new();
+    TUI_SELECTION_BG
+        .get_or_init(|| match term_theme {
+            TermTheme::Light => TuiSelectionBg::BlueYellow,
+            _ => TuiSelectionBg::RedWhite,
+        })
+        .clone()
+}
 
-        // Take precautions in case `supports_color` currently interrogates the terminal and I've missed it,
-        // or may do so in the future. (Belt and braces given we initialise up front.)
-        let raw_before = terminal::is_raw_mode_enabled().map_err(|_e| ThagError::UnsupportedTerm);
+#[macro_export]
+macro_rules! generate_styles {
+    (
+        $(
+            ($style_enum:ident, $term_theme:ident, $color_support:ident)
+        ),*
+    ) => {
+        $(
+            impl From<&MessageLevel> for $style_enum {
+                fn from(message_level: &MessageLevel) -> Self {
+                    profile_fn!(style_enum_from_lvl);
 
-        let color_support: Option<ColorSupport> = (*config::MAYBE_CONFIG).as_ref().map_or_else(get_color_level,
-            |config| match config.colors.color_support {
-                ColorSupport::Xterm256 | ColorSupport::Ansi16 | ColorSupport::None => Some(config.colors.color_support.clone()),
-                ColorSupport::Default => get_color_level(),
-            });
-
-        if let Ok(was_raw) = raw_before {
-            let raw_after = terminal::is_raw_mode_enabled();
-            if let Ok(is_raw) = raw_after {
-                if is_raw == was_raw {
-                    #[cfg(debug_assertions)]
-                    debug_log!("Raw_mode status unchanged");
-                } else {
-                    let maybe_restored = restore_raw_status(was_raw);
-                    if maybe_restored.is_ok() {
-                        #[cfg(debug_assertions)]
-                        debug_log!("Restored initial raw_mode status of raw={was_raw}");
-                    } else {
-                        #[cfg(debug_assertions)]
-                        debug_log!("Could not restore initial raw_mode status");
+                    // dbg!(&$style_enum::Warning);
+                    // dbg!(&message_level);
+                    match message_level {
+                        MessageLevel::Error => $style_enum::Error,
+                        MessageLevel::Warning => $style_enum::Warning,
+                        MessageLevel::Emphasis => $style_enum::Emphasis,
+                        MessageLevel::Heading => $style_enum::Heading,
+                        MessageLevel::Subheading => $style_enum::Subheading,
+                        MessageLevel::Normal => $style_enum::Normal,
+                        MessageLevel::Debug => $style_enum::Debug,
+                        MessageLevel::Ghost => $style_enum::Ghost,
                     }
                 }
-            } else {
-                #[cfg(debug_assertions)]
-                debug_log!("Could not get final raw_mode status");
             }
-        } else {
-            #[cfg(debug_assertions)]
-            debug_log!("Could not get initial raw_mode status");
-        }
 
-        color_support
-    };
-
-    #[derive(Debug)]
-    pub static ref TERM_THEME: TermTheme = {
-        if std::env::var("TEST_ENV").is_ok() {
-            #[cfg(debug_assertions)]
-            debug_log!(
-                "Avoiding termbg for testing"
-            );
-            return TermTheme::Dark;
-        }
-        if cfg!(test) {
-            #[cfg(debug_assertions)]
-            debug_log!(
-                "Avoiding termbg for testing"
-            );
-            return TermTheme::Dark;
-        }
-
-        #[allow(clippy::option_if_let_else)]
-        if let Some(config) = &*config::MAYBE_CONFIG {
-            if matches!(config.colors.term_theme, TermTheme::None) {
-                resolve_term_theme().unwrap_or_default()
-            } else {
-                config.colors.term_theme.clone()
+            // use crate::styles::$style_enum;
+            impl $style_enum {
+                #[must_use]
+                pub fn get_style(&self) -> nu_ansi_term::Style {
+                    profile_fn!(style_enum_get_style);
+                    match self {
+                        $style_enum::Error => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Error))).bold(),
+                        $style_enum::Warning => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Warning))).bold(),
+                        $style_enum::Emphasis => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Emphasis))).bold(),
+                        $style_enum::Heading => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Heading))).bold(),
+                        $style_enum::Subheading => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Subheading))).bold(),
+                        $style_enum::Normal => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Normal))),
+                        $style_enum::Debug => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Debug))),
+                        $style_enum::Ghost => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Ghost))).dimmed().italic(),
+                    }
+                }
             }
-        } else {
-            resolve_term_theme().unwrap_or_default()
+        )*
+
+        pub fn init_styles(
+            term_theme: &TermTheme,
+            color_support: Option<&ColorSupport>,
+        ) -> fn(MessageLevel) -> Style {
+            profile_fn!(init_styles);
+            static STYLE_MAPPING: OnceLock<fn(MessageLevel) -> Style> = OnceLock::new();
+
+            *STYLE_MAPPING.get_or_init(|| match (term_theme, color_support) {
+                $(
+                    (TermTheme::$term_theme, Some(ColorSupport::$color_support)) => {
+                        |message_level| $style_enum::from(&message_level).get_style()
+                    }
+                ),*
+                _ => |message_level| Ansi16DarkStyle::from(&message_level).get_style(), // Fallback
+            })
         }
     };
+}
 
-    pub static ref TUI_SELECTION_BG: TuiSelectionBg = {
-        (*config::MAYBE_CONFIG).as_ref().map_or_else(
-            || match &*TERM_THEME {
-                TermTheme::Light => TuiSelectionBg::BlueYellow,
-                _ => TuiSelectionBg::RedWhite,
-            }, |config| config.colors.tui_selection_bg.clone())
-    };
+/// Generates the alternative style mapping enums.
+pub fn gen_mappings(
+    term_theme: &TermTheme,
+    color_support: Option<&ColorSupport>,
+) -> fn(MessageLevel) -> Style {
+    profile_fn!(gen_mappings);
+    static DUMMY: OnceLock<fn(MessageLevel) -> Style> = OnceLock::new();
+    *DUMMY.get_or_init(|| {
+        // Moved this to start of colors module.
+        // generate_styles!(
+        //     (Xterm256LightStyle, Light, Xterm256),
+        //     (Xterm256DarkStyle, Dark, Xterm256),
+        //     (Ansi16LightStyle, Light, Ansi16),
+        //     (Ansi16DarkStyle, Dark, Ansi16)
+        // );
+        // Call init_styles to ensure styles are initialized on first access
+        let style_mapping = init_styles(term_theme, color_support);
+        // dbg!(&style_mapping);
+        // let x = style_mapping(MessageLevel::Warning);
+        // dbg!(x);
+        // init_styles(term_theme, color_support)
+        style_mapping
+    })
 }
 
 #[cfg(target_os = "windows")]
 fn resolve_term_theme() -> ThagResult<TermTheme> {
+    profile_fn!(resolve_term_theme);
     Ok(TermTheme::Dark)
 }
 
 #[cfg(not(target_os = "windows"))]
 fn resolve_term_theme() -> ThagResult<TermTheme> {
+    profile_fn!(resolve_term_theme);
     let raw_before = terminal::is_raw_mode_enabled()?;
     #[cfg(debug_assertions)]
     debug_log!("About to call termbg");
@@ -213,6 +279,7 @@ fn resolve_term_theme() -> ThagResult<TermTheme> {
 }
 
 fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
+    profile_fn!(maybe_restore_raw_status);
     let raw_after = terminal::is_raw_mode_enabled()?;
     if raw_before != raw_after {
         restore_raw_status(raw_before)?;
@@ -221,6 +288,7 @@ fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
 }
 
 fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
+    profile_fn!(restore_raw_status);
     if raw_before {
         terminal::enable_raw_mode()?;
     } else {
@@ -247,6 +315,7 @@ pub struct ColorLevel {
 
 #[cfg(target_os = "windows")]
 fn get_color_level() -> Option<ColorSupport> {
+    profile_fn!(get_color_level);
     let color_level = translate_level(supports_color());
     match color_level {
         Some(color_level) => {
@@ -262,6 +331,7 @@ fn get_color_level() -> Option<ColorSupport> {
 
 #[cfg(not(target_os = "windows"))]
 fn get_color_level() -> Option<ColorSupport> {
+    profile_fn!(get_color_level);
     #[cfg(debug_assertions)]
     debug_log!("About to call supports_color");
     let color_level = supports_color::on(Stream::Stdout);
@@ -276,6 +346,7 @@ fn get_color_level() -> Option<ColorSupport> {
 
 #[cfg(target_os = "windows")]
 fn env_force_color() -> usize {
+    profile_fn!(env_force_color);
     if let Ok(force) = env::var("FORCE_COLOR") {
         match force.as_ref() {
             "true" | "" => 1,
@@ -291,6 +362,7 @@ fn env_force_color() -> usize {
 
 #[cfg(target_os = "windows")]
 fn env_no_color() -> bool {
+    profile_fn!(env_no_color);
     match as_str(&env::var("NO_COLOR")) {
         Ok("0") | Err(_) => false,
         Ok(_) => true,
@@ -383,25 +455,53 @@ fn check_256_color(term: &str) -> bool {
 #[must_use]
 pub fn get_term_theme() -> &'static TermTheme {
     profile_fn!(get_term_theme);
-    &TERM_THEME
+    &coloring().1
 }
 
 /// A trait for common handling of the different colour palettes.
 pub trait NuColor: Display {
-    fn get_color(&self) -> nu_ansi_term::Color;
+    fn get_color(&self) -> Color;
     /// Protection in case enum gets out of order, otherwise I think we could cast the variant to a number.
     fn get_fixed_code(&self) -> u8;
 }
 
+pub fn get_style(
+    message_level: &MessageLevel,
+    term_theme: &TermTheme,
+    color_support: Option<&ColorSupport>,
+) -> Style {
+    // dbg!();
+    let mapping = gen_mappings(term_theme, color_support);
+    // dbg!(&mapping);
+    mapping(*message_level)
+}
+
 /// A version of println that prints an entire message in colour or otherwise styled.
-/// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
+/// Format: `cprtln!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
-macro_rules! nu_color_println {
+macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
-        let style = $style;
+        let style: nu_ansi_term::Style = $style;
         // Qualified form to avoid imports in calling code.
-        log!(Verbosity::Quiet, "{}\n", style.paint(content));
+        let painted = style.paint(content);
+        let verbosity = $crate::logging::get_verbosity();
+        log!(verbosity, "{}\n", painted);
+    }};
+}
+
+#[macro_export]
+macro_rules! cvprtln {
+    ($level:expr, $verbosity:expr, $msg:expr) => {{
+        if $verbosity >= $crate::logging::get_verbosity() {
+            let (maybe_color_support, term_theme) = coloring();
+            // dbg!(&maybe_color_support);
+            // dbg!(&term_theme);
+            // dbg!(&$level);
+            let style = get_style(&$level, term_theme, maybe_color_support);
+            // dbg!(&style);
+            cprtln!(style, $msg);
+        }
     }};
 }
 
@@ -451,6 +551,19 @@ pub enum MessageLevel {
     Normal,
     Debug,
     Ghost,
+}
+
+pub type Lvl = MessageLevel;
+
+impl Lvl {
+    pub const ERR: Lvl = Lvl::Error;
+    pub const WARN: Lvl = Lvl::Warning;
+    pub const EMPH: Lvl = Lvl::Emphasis;
+    pub const HEAD: Lvl = Lvl::Heading;
+    pub const SUBH: Lvl = Lvl::Subheading;
+    pub const NORM: Lvl = Lvl::Normal;
+    pub const DBUG: Lvl = Lvl::Debug;
+    pub const GHST: Lvl = Lvl::Ghost;
 }
 
 impl From<&MessageLevel> for u8 {
@@ -510,26 +623,25 @@ pub enum MessageStyle {
 
 impl From<&MessageLevel> for MessageStyle {
     fn from(message_level: &MessageLevel) -> Self {
-        {
-            let message_style: Self = {
-                let (maybe_color_support, term_theme) = coloring();
-                maybe_color_support.map_or(Self::Ansi16DarkNormal, |color_support| {
-                    let color_qual = color_support.to_string().to_lowercase();
-                    let theme_qual = term_theme.to_string().to_lowercase();
-                    let msg_level_qual = message_level.to_string().to_lowercase();
-                    let message_style = Self::from_str(&format!(
-                        "{}_{}_{}",
-                        &color_qual, &theme_qual, &msg_level_qual
-                    )).unwrap_or(Self::Ansi16DarkNormal);
-                    #[cfg(debug_assertions)]
-                    debug_log!(
-                        "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
-                    );
-                    message_style
-                })
-            };
-            message_style
-        }
+        profile_fn!(msg_style_from_lvl);
+        let message_style: Self = {
+            let (maybe_color_support, term_theme) = coloring();
+            maybe_color_support.map_or(Self::Ansi16DarkNormal, |color_support| {
+                let color_qual = color_support.to_string().to_lowercase();
+                let theme_qual = term_theme.to_string().to_lowercase();
+                let msg_level_qual = message_level.to_string().to_lowercase();
+                let message_style = Self::from_str(&format!(
+                    "{}_{}_{}",
+                    &color_qual, &theme_qual, &msg_level_qual
+                )).unwrap_or(Self::Ansi16DarkNormal);
+                #[cfg(debug_assertions)]
+                debug_log!(
+                    "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
+                );
+                message_style
+            })
+        };
+        message_style
     }
 }
 
@@ -580,23 +692,24 @@ impl From<&MessageStyle> for XtermColor {
 #[allow(clippy::match_same_arms)]
 impl NuThemeStyle for MessageStyle {
     fn get_style(&self) -> Style {
+        profile_fn!(nu_get_style);
         match self {
-            Self::Ansi16LightError => nu_ansi_term::Color::Red.bold(),
-            Self::Ansi16LightWarning => nu_ansi_term::Color::Magenta.bold(),
-            Self::Ansi16LightEmphasis => nu_ansi_term::Color::Yellow.bold(),
-            Self::Ansi16LightHeading => nu_ansi_term::Color::Blue.bold(),
-            Self::Ansi16LightSubheading => nu_ansi_term::Color::Cyan.bold(),
-            Self::Ansi16LightNormal => nu_ansi_term::Color::White.normal(),
-            Self::Ansi16LightDebug => nu_ansi_term::Color::Cyan.normal(),
-            Self::Ansi16LightGhost => nu_ansi_term::Color::Cyan.dimmed().italic(),
-            Self::Ansi16DarkError => nu_ansi_term::Color::Red.bold(),
-            Self::Ansi16DarkWarning => nu_ansi_term::Color::Magenta.bold(),
-            Self::Ansi16DarkEmphasis => nu_ansi_term::Color::Yellow.bold(),
-            Self::Ansi16DarkHeading => nu_ansi_term::Color::Cyan.bold(),
-            Self::Ansi16DarkSubheading => nu_ansi_term::Color::Green.bold(),
-            Self::Ansi16DarkNormal => nu_ansi_term::Color::White.normal(),
-            Self::Ansi16DarkDebug => nu_ansi_term::Color::Cyan.normal(),
-            Self::Ansi16DarkGhost => nu_ansi_term::Color::LightGray.dimmed().italic(),
+            Self::Ansi16LightError => Color::Red.bold(),
+            Self::Ansi16LightWarning => Color::Magenta.bold(),
+            Self::Ansi16LightEmphasis => Color::Yellow.bold(),
+            Self::Ansi16LightHeading => Color::Blue.bold(),
+            Self::Ansi16LightSubheading => Color::Cyan.bold(),
+            Self::Ansi16LightNormal => Color::White.normal(),
+            Self::Ansi16LightDebug => Color::Cyan.normal(),
+            Self::Ansi16LightGhost => Color::Cyan.dimmed().italic(),
+            Self::Ansi16DarkError => Color::Red.bold(),
+            Self::Ansi16DarkWarning => Color::Magenta.bold(),
+            Self::Ansi16DarkEmphasis => Color::Yellow.bold(),
+            Self::Ansi16DarkHeading => Color::Cyan.bold(),
+            Self::Ansi16DarkSubheading => Color::Green.bold(),
+            Self::Ansi16DarkNormal => Color::White.normal(),
+            Self::Ansi16DarkDebug => Color::Cyan.normal(),
+            Self::Ansi16DarkGhost => Color::LightGray.dimmed().italic(),
             Self::Xterm256LightError => XtermColor::GuardsmanRed.get_color().bold(),
             Self::Xterm256LightWarning => XtermColor::DarkPurplePizzazz.get_color().bold(),
             Self::Xterm256LightEmphasis => XtermColor::Copperfield.get_color().bold(),
@@ -621,6 +734,7 @@ impl NuThemeStyle for MessageStyle {
 /// colour support and light or dark theme, and the category of message to be displayed.
 #[must_use]
 pub fn nu_resolve_style(message_level: MessageLevel) -> Style {
+    profile_fn!(nu_resolve_style);
     NuThemeStyle::get_style(&Into::<MessageStyle>::into(&message_level))
 }
 
@@ -933,8 +1047,8 @@ pub enum XtermColor {
 }
 
 impl NuColor for XtermColor {
-    fn get_color(&self) -> nu_ansi_term::Color {
-        nu_ansi_term::Color::Fixed(self.get_fixed_code())
+    fn get_color(&self) -> Color {
+        Color::Fixed(self.get_fixed_code())
     }
 
     #[allow(clippy::too_many_lines)]

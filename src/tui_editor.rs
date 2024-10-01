@@ -10,6 +10,7 @@ use crossterm::{
     },
     terminal::LeaveAlternateScreen,
 };
+use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use mockall::automock;
 use ratatui::prelude::{CrosstermBackend, Rect};
@@ -34,8 +35,9 @@ use std::path::PathBuf;
 use std::{self, fs};
 use tui_textarea::{CursorMove, Input, TextArea};
 
+use crate::colors::coloring;
 use crate::{
-    colors::{TuiSelectionBg, TUI_SELECTION_BG},
+    colors::{tui_selection_bg, TuiSelectionBg},
     shared::KeyDisplayLine,
 };
 use crate::{debug_log, MessageLevel, ThagError, ThagResult};
@@ -254,7 +256,7 @@ where
 
     // Initialize state variables
     let mut popup = false;
-    let mut tui_highlight_bg = &*TUI_SELECTION_BG;
+    let mut tui_highlight_bg = tui_selection_bg(coloring().1);
     let mut saved = false;
 
     let mut maybe_term = resolve_term()?;
@@ -273,7 +275,7 @@ where
     textarea.move_cursor(CursorMove::Bottom);
 
     // Apply initial highlights
-    apply_highlights(&TUI_SELECTION_BG, &mut textarea);
+    apply_highlights(&tui_selection_bg(coloring().1), &mut textarea);
 
     // Event loop for handling key events
     loop {
@@ -299,7 +301,7 @@ where
                                 display.add_keys,
                             );
                         };
-                        apply_highlights(tui_highlight_bg, &mut textarea);
+                        apply_highlights(&tui_highlight_bg, &mut textarea);
                     })
                     .map_err(|e| {
                         eprintln!("Error drawing terminal: {e:?}");
@@ -416,14 +418,14 @@ where
                 key!(ctrl - t) => {
                     // Toggle highlighting colours
                     tui_highlight_bg = match tui_highlight_bg {
-                        TuiSelectionBg::BlueYellow => &TuiSelectionBg::RedWhite,
-                        TuiSelectionBg::RedWhite => &TuiSelectionBg::BlueYellow,
+                        TuiSelectionBg::BlueYellow => TuiSelectionBg::RedWhite,
+                        TuiSelectionBg::RedWhite => TuiSelectionBg::BlueYellow,
                     };
                     if var("TEST_ENV").is_err() {
                         #[allow(clippy::option_if_let_else)]
                         if let Some(ref mut term) = maybe_term {
                             term.draw(|_| {
-                                apply_highlights(tui_highlight_bg, &mut textarea);
+                                apply_highlights(&tui_highlight_bg, &mut textarea);
                             })?;
                         }
                     }
@@ -606,6 +608,7 @@ pub fn normalize_newlines(input: &str) -> String {
 /// Apply highlights to the text depending on the light or dark theme as detected, configured
 /// or defaulted, or as toggled by the user with Ctrl-t.
 pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
+    profile_fn!(apply_highlights);
     match scheme {
         TuiSelectionBg::BlueYellow => {
             // Dark theme-friendly colors

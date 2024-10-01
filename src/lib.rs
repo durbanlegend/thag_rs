@@ -27,8 +27,8 @@ pub use code_utils::{
     process_expr,
 };
 pub use colors::{
-    nu_resolve_style, Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, Xterm256DarkStyle,
-    Xterm256LightStyle,
+    nu_resolve_style, Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, NuStyle,
+    Xterm256DarkStyle, Xterm256LightStyle,
 };
 pub use config::{load, MAYBE_CONFIG};
 pub use errors::{ThagError, ThagResult};

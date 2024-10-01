@@ -18,6 +18,8 @@ use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
 
+pub type NuStyle = nu_ansi_term::Style;
+
 #[derive(Debug)]
 pub enum Xterm256LightStyle {
     Error,
@@ -91,12 +93,6 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
         debug_log!("Avoiding supports_color for testing");
         return (Some(&ColorSupport::Ansi16), &TermTheme::Dark);
     }
-    // if cfg!(test) {
-    //     #[cfg(debug_assertions)]
-    //     debug_log!("Avoiding supports_color and termbg for testing");
-    //     return (Some(&ColorSupport::Ansi16), &TermTheme::Dark));
-    // }
-
     let raw_before = terminal::is_raw_mode_enabled();
     if let Ok(raw_then) = raw_before {
         defer! {
@@ -170,39 +166,39 @@ macro_rules! generate_styles {
         ),*
     ) => {
         $(
-            impl From<&MessageLevel> for $style_enum {
-                fn from(message_level: &MessageLevel) -> Self {
+            impl From<&Lvl> for $style_enum {
+                fn from(message_level: &Lvl) -> Self {
                     profile_fn!(style_enum_from_lvl);
 
                     // dbg!(&$style_enum::Warning);
                     // dbg!(&message_level);
                     match message_level {
-                        MessageLevel::Error => $style_enum::Error,
-                        MessageLevel::Warning => $style_enum::Warning,
-                        MessageLevel::Emphasis => $style_enum::Emphasis,
-                        MessageLevel::Heading => $style_enum::Heading,
-                        MessageLevel::Subheading => $style_enum::Subheading,
-                        MessageLevel::Normal => $style_enum::Normal,
-                        MessageLevel::Debug => $style_enum::Debug,
-                        MessageLevel::Ghost => $style_enum::Ghost,
+                        Lvl::Error => $style_enum::Error,
+                        Lvl::Warning => $style_enum::Warning,
+                        Lvl::Emphasis => $style_enum::Emphasis,
+                        Lvl::Heading => $style_enum::Heading,
+                        Lvl::Subheading => $style_enum::Subheading,
+                        Lvl::Normal => $style_enum::Normal,
+                        Lvl::Debug => $style_enum::Debug,
+                        Lvl::Ghost => $style_enum::Ghost,
                     }
                 }
             }
 
             // use crate::styles::$style_enum;
-            impl $style_enum {
+            impl From<&$style_enum> for NuStyle {
                 #[must_use]
-                pub fn get_style(&self) -> nu_ansi_term::Style {
-                    profile_fn!(style_enum_get_style);
-                    match self {
-                        $style_enum::Error => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Error))).bold(),
-                        $style_enum::Warning => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Warning))).bold(),
-                        $style_enum::Emphasis => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Emphasis))).bold(),
-                        $style_enum::Heading => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Heading))).bold(),
-                        $style_enum::Subheading => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Subheading))).bold(),
-                        $style_enum::Normal => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Normal))),
-                        $style_enum::Debug => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Debug))),
-                        $style_enum::Ghost => nu_ansi_term::Style::from(nu_ansi_term::Color::Fixed(u8::from(&MessageLevel::Ghost))).dimmed().italic(),
+                fn from(style_enum: &$style_enum) -> Self {
+                    profile_fn!(style_from_style_enum);
+                    match style_enum {
+                        $style_enum::Error => NuStyle::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Error))).bold(),
+                        $style_enum::Warning => NuStyle::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Warning))).bold(),
+                        $style_enum::Emphasis => NuStyle::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Emphasis))).bold(),
+                        $style_enum::Heading => NuStyle::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Heading))).bold(),
+                        $style_enum::Subheading => NuStyle::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Subheading))).bold(),
+                        $style_enum::Normal => NuStyle::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Normal))),
+                        $style_enum::Debug => NuStyle::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Debug))),
+                        $style_enum::Ghost => NuStyle::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Ghost))).dimmed().italic(),
                     }
                 }
             }
@@ -211,17 +207,17 @@ macro_rules! generate_styles {
         pub fn init_styles(
             term_theme: &TermTheme,
             color_support: Option<&ColorSupport>,
-        ) -> fn(MessageLevel) -> Style {
+        ) -> fn(Lvl) -> Style {
             profile_fn!(init_styles);
-            static STYLE_MAPPING: OnceLock<fn(MessageLevel) -> Style> = OnceLock::new();
+            static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
 
             *STYLE_MAPPING.get_or_init(|| match (term_theme, color_support) {
                 $(
                     (TermTheme::$term_theme, Some(ColorSupport::$color_support)) => {
-                        |message_level| $style_enum::from(&message_level).get_style()
+                        |message_level| NuStyle::from(&$style_enum::from(&message_level))
                     }
                 ),*
-                _ => |message_level| Ansi16DarkStyle::from(&message_level).get_style(), // Fallback
+                _ => |message_level| NuStyle::from(&Ansi16DarkStyle::from(&message_level)), // Fallback
             })
         }
     };
@@ -231,24 +227,12 @@ macro_rules! generate_styles {
 pub fn gen_mappings(
     term_theme: &TermTheme,
     color_support: Option<&ColorSupport>,
-) -> fn(MessageLevel) -> Style {
+) -> fn(Lvl) -> Style {
     profile_fn!(gen_mappings);
-    static DUMMY: OnceLock<fn(MessageLevel) -> Style> = OnceLock::new();
-    *DUMMY.get_or_init(|| {
-        // Moved this to start of colors module.
-        // generate_styles!(
-        //     (Xterm256LightStyle, Light, Xterm256),
-        //     (Xterm256DarkStyle, Dark, Xterm256),
-        //     (Ansi16LightStyle, Light, Ansi16),
-        //     (Ansi16DarkStyle, Dark, Ansi16)
-        // );
+    static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
+    *STYLE_MAPPING.get_or_init(|| {
         // Call init_styles to ensure styles are initialized on first access
-        let style_mapping = init_styles(term_theme, color_support);
-        // dbg!(&style_mapping);
-        // let x = style_mapping(MessageLevel::Warning);
-        // dbg!(x);
-        // init_styles(term_theme, color_support)
-        style_mapping
+        init_styles(term_theme, color_support)
     })
 }
 
@@ -455,7 +439,7 @@ fn check_256_color(term: &str) -> bool {
 #[must_use]
 pub fn get_term_theme() -> &'static TermTheme {
     profile_fn!(get_term_theme);
-    &coloring().1
+    coloring().1
 }
 
 /// A trait for common handling of the different colour palettes.
@@ -465,8 +449,9 @@ pub trait NuColor: Display {
     fn get_fixed_code(&self) -> u8;
 }
 
+#[must_use]
 pub fn get_style(
-    message_level: &MessageLevel,
+    message_level: &Lvl,
     term_theme: &TermTheme,
     color_support: Option<&ColorSupport>,
 ) -> Style {
@@ -495,11 +480,7 @@ macro_rules! cvprtln {
     ($level:expr, $verbosity:expr, $msg:expr) => {{
         if $verbosity >= $crate::logging::get_verbosity() {
             let (maybe_color_support, term_theme) = coloring();
-            // dbg!(&maybe_color_support);
-            // dbg!(&term_theme);
-            // dbg!(&$level);
-            let style = get_style(&$level, term_theme, maybe_color_support);
-            // dbg!(&style);
+            let style = $crate::colors::get_style(&$level, term_theme, maybe_color_support);
             cprtln!(style, $msg);
         }
     }};
@@ -556,18 +537,18 @@ pub enum MessageLevel {
 pub type Lvl = MessageLevel;
 
 impl Lvl {
-    pub const ERR: Lvl = Lvl::Error;
-    pub const WARN: Lvl = Lvl::Warning;
-    pub const EMPH: Lvl = Lvl::Emphasis;
-    pub const HEAD: Lvl = Lvl::Heading;
-    pub const SUBH: Lvl = Lvl::Subheading;
-    pub const NORM: Lvl = Lvl::Normal;
-    pub const DBUG: Lvl = Lvl::Debug;
-    pub const GHST: Lvl = Lvl::Ghost;
+    pub const ERR: Self = Self::Error;
+    pub const WARN: Self = Self::Warning;
+    pub const EMPH: Self = Self::Emphasis;
+    pub const HEAD: Self = Self::Heading;
+    pub const SUBH: Self = Self::Subheading;
+    pub const NORM: Self = Self::Normal;
+    pub const DBUG: Self = Self::Debug;
+    pub const GHST: Self = Self::Ghost;
 }
 
-impl From<&MessageLevel> for u8 {
-    fn from(message_level: &MessageLevel) -> Self {
+impl From<&Lvl> for u8 {
+    fn from(message_level: &Lvl) -> Self {
         let message_style = MessageStyle::from(message_level);
         let xterm_color = XtermColor::from(&message_style);
         xterm_color.get_fixed_code()
@@ -621,8 +602,8 @@ pub enum MessageStyle {
     Xterm256DarkGhost,
 }
 
-impl From<&MessageLevel> for MessageStyle {
-    fn from(message_level: &MessageLevel) -> Self {
+impl From<&Lvl> for MessageStyle {
+    fn from(message_level: &Lvl) -> Self {
         profile_fn!(msg_style_from_lvl);
         let message_style: Self = {
             let (maybe_color_support, term_theme) = coloring();
@@ -687,6 +668,47 @@ impl From<&MessageStyle> for XtermColor {
     }
 }
 
+#[allow(clippy::match_same_arms)]
+impl From<MessageStyle> for Style {
+    fn from(value: MessageStyle) -> Self {
+        profile_fn!(style_from_msg_style);
+        match value {
+            MessageStyle::Ansi16LightError => Color::Red.bold(),
+            MessageStyle::Ansi16LightWarning => Color::Magenta.bold(),
+            MessageStyle::Ansi16LightEmphasis => Color::Yellow.bold(),
+            MessageStyle::Ansi16LightHeading => Color::Blue.bold(),
+            MessageStyle::Ansi16LightSubheading => Color::Cyan.bold(),
+            MessageStyle::Ansi16LightNormal => Color::White.normal(),
+            MessageStyle::Ansi16LightDebug => Color::Cyan.normal(),
+            MessageStyle::Ansi16LightGhost => Color::Cyan.dimmed().italic(),
+            MessageStyle::Ansi16DarkError => Color::Red.bold(),
+            MessageStyle::Ansi16DarkWarning => Color::Magenta.bold(),
+            MessageStyle::Ansi16DarkEmphasis => Color::Yellow.bold(),
+            MessageStyle::Ansi16DarkHeading => Color::Cyan.bold(),
+            MessageStyle::Ansi16DarkSubheading => Color::Green.bold(),
+            MessageStyle::Ansi16DarkNormal => Color::White.normal(),
+            MessageStyle::Ansi16DarkDebug => Color::Cyan.normal(),
+            MessageStyle::Ansi16DarkGhost => Color::LightGray.dimmed().italic(),
+            MessageStyle::Xterm256LightError => XtermColor::GuardsmanRed.get_color().bold(),
+            MessageStyle::Xterm256LightWarning => XtermColor::DarkPurplePizzazz.get_color().bold(),
+            MessageStyle::Xterm256LightEmphasis => XtermColor::Copperfield.get_color().bold(),
+            MessageStyle::Xterm256LightHeading => XtermColor::MidnightBlue.get_color().bold(),
+            MessageStyle::Xterm256LightSubheading => XtermColor::ScienceBlue.get_color().normal(),
+            MessageStyle::Xterm256LightNormal => XtermColor::Black.get_color().normal(),
+            MessageStyle::Xterm256LightDebug => XtermColor::LochmaraBlue.get_color().normal(),
+            MessageStyle::Xterm256LightGhost => XtermColor::Boulder.get_color().normal().italic(),
+            MessageStyle::Xterm256DarkError => XtermColor::GuardsmanRed.get_color().bold(),
+            MessageStyle::Xterm256DarkWarning => XtermColor::DarkViolet.get_color().bold(),
+            MessageStyle::Xterm256DarkEmphasis => XtermColor::Copperfield.get_color().bold(),
+            MessageStyle::Xterm256DarkHeading => XtermColor::CaribbeanGreen.get_color().bold(),
+            MessageStyle::Xterm256DarkSubheading => XtermColor::DarkMalibuBlue.get_color().normal(),
+            MessageStyle::Xterm256DarkNormal => XtermColor::Silver.get_color().normal(),
+            MessageStyle::Xterm256DarkDebug => XtermColor::BondiBlue.get_color().normal(),
+            MessageStyle::Xterm256DarkGhost => XtermColor::Silver.get_color().normal().italic(),
+        }
+    }
+}
+
 /// Define the implementation of the `NuThemeStyle` trait for `MessageStyle` to facilitate
 /// resolution of the `MessageStyle` variant to an `nu_ansi_term::Style`.
 #[allow(clippy::match_same_arms)]
@@ -733,7 +755,7 @@ impl NuThemeStyle for MessageStyle {
 /// Determine what message colour and style to use based on the current terminal's level of
 /// colour support and light or dark theme, and the category of message to be displayed.
 #[must_use]
-pub fn nu_resolve_style(message_level: MessageLevel) -> Style {
+pub fn nu_resolve_style(message_level: Lvl) -> Style {
     profile_fn!(nu_resolve_style);
     NuThemeStyle::get_style(&Into::<MessageStyle>::into(&message_level))
 }
@@ -761,7 +783,7 @@ pub fn main() {
             log!(
                 Verbosity::Normal,
                 "{}",
-                nu_resolve_style(MessageLevel::Warning).paint("Colored Warning message\n")
+                nu_resolve_style(Lvl::Warning).paint("Colored Warning message\n")
             );
 
             for variant in MessageStyle::iter() {

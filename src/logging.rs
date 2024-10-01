@@ -14,8 +14,13 @@ use crate::{debug_log, Cli, ThagResult, MAYBE_CONFIG};
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 
 /// Initializes and returns the global verbosity setting.
+///
+/// # Panics
+///
+/// Will panic if it can't unwrap the lock on the mutex protecting the `LOGGER` static variable.
+#[must_use]
 pub fn get_verbosity() -> Verbosity {
-    LOGGER.lock().unwrap().verbosity.clone()
+    LOGGER.lock().unwrap().verbosity
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -107,6 +112,8 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
 /// Set the logging verbosity for the current execution.
 /// # Errors
 /// Will return `Err` if the logger mutex cannot be locked.
+/// # Panics
+/// Will panic in debug mode if the global verbosity value is not the value we just set.
 pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
     LOGGER.lock()?.set_verbosity(verbosity);
     let v = get_verbosity();

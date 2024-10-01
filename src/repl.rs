@@ -1,20 +1,18 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
-use crate::colors::{
-    coloring, get_style, nu_resolve_style, tui_selection_bg, MessageLevel, TuiSelectionBg,
-};
+use crate::colors::{coloring, nu_resolve_style, tui_selection_bg, MessageLevel, TuiSelectionBg};
 #[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::errors::ThagError;
 use crate::file_dialog::{DialogMode, FileDialog, Status};
-use crate::logging::Verbosity;
+use crate::logging::{get_verbosity, Verbosity};
 use crate::shared::{Ast, BuildState, KeyDisplayLine};
 use crate::tui_editor::{
     apply_highlights, normalize_newlines, show_popup, tui_edit, CrosstermEventReader, Display,
     EditData, EventReader, History, KeyAction, TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
 };
-use crate::{cprtln, cvprtln, gen_build_run, log, tui_editor, ThagResult};
+use crate::{cprtln, cvprtln, gen_build_run, log, tui_editor, Lvl, ThagResult};
 
 use clap::{CommandFactory, Parser};
 use crokey::{crossterm, key, KeyCombination, KeyCombinationFormat};
@@ -1341,16 +1339,15 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
 
 /// Display the REPL banner.
 pub fn disp_repl_banner(cmd_list: &str) {
-    // let (maybe_color_support, term_theme) = coloring();
     cvprtln!(
-        // get_style(&crate::Lvl::HEAD, term_theme, maybe_color_support),
-        crate::Lvl::HEAD,
-        crate::logging::get_verbosity(),
+        Lvl::HEAD,
+        get_verbosity(),
         r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#
     );
 
-    cprtln!(
-        nu_resolve_style(MessageLevel::Subheading),
+    cvprtln!(
+        Lvl::SUBH,
+        get_verbosity(),
         r"Expressions in matching braces, brackets or quotes may span multiple lines.
 Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
     );

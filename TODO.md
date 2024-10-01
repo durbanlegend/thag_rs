@@ -17,7 +17,7 @@
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  >>> REPL option Open in TUI
 - [ ]  Consider making show_popup a macro and look for others that can run at compile-time.
-- [ ]  Convert $style_enum::get_style to Style::from($style_enum).
+- [ ]  Get rid of clag from colors.rs. E.g. NuColor.
 - [ ]  Consider replacing lazy_static with std::sync::OnceLock per the lazy_static Readme.
 - [ ]  Make key_handler a trait method? Or a closure?
 - [ ]  Implement Ctrl+A (Save As...) on file dialog, also confirmation of save.

@@ -1,10 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use nu_ansi_term::Color;
+    use nu_ansi_term::{Color, Style};
     use supports_color::Stream;
-    use thag_rs::colors::{
-        ColorSupport, MessageStyle, NuColor, NuThemeStyle, TermTheme, XtermColor,
-    };
+    use thag_rs::colors::{ColorSupport, MessageStyle, NuColor, TermTheme, XtermColor};
 
     #[cfg(not(target_os = "windows"))]
     use thag_rs::termbg::{self, Theme};
@@ -146,10 +144,10 @@ mod tests {
     fn test_message_style_get_style() {
         // Test the get_style method for MessageStyle
         set_up();
-        let style = MessageStyle::Ansi16LightError.get_style();
+        let style = Style::from(MessageStyle::Ansi16LightError);
         assert_eq!(style, Color::Red.bold());
 
-        let style = MessageStyle::Xterm256DarkEmphasis.get_style();
+        let style = Style::from(MessageStyle::Xterm256DarkEmphasis);
         assert_eq!(style, XtermColor::Copperfield.get_color().bold());
     }
 

@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
 use crate::errors::ThagResult;
-use crate::logging::Verbosity;
+use crate::logging::{get_verbosity, Verbosity};
 use crate::repl::{
     add_menu_keybindings, disp_repl_banner, format_edit_commands, format_key_code,
     format_key_modifier, format_non_edit_events, parse_line, show_key_bindings, ReplPrompt,
@@ -11,8 +11,8 @@ use crate::tui_editor::{
     TITLE_TOP,
 };
 use crate::{
-    code_utils, cprtln, debug_log, extract_ast_expr, extract_manifest, log, nu_resolve_style,
-    BuildState, Cli, MessageLevel, ProcFlags,
+    code_utils, cprtln, cvprtln, debug_log, extract_ast_expr, extract_manifest, log,
+    nu_resolve_style, BuildState, Cli, Lvl, MessageLevel, ProcFlags,
 };
 
 use clap::{CommandFactory, Parser};
@@ -417,8 +417,9 @@ fn eval(
     if let Ok(expr_ast) = maybe_ast {
         code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
     } else {
-        cprtln!(
-            nu_resolve_style(MessageLevel::Error),
+        cvprtln!(
+            Lvl::ERR,
+            get_verbosity(),
             "Error parsing code: {maybe_ast:#?}"
         );
     };

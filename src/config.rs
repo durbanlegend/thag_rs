@@ -1,6 +1,5 @@
 use edit::edit_file;
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
 use mockall::{automock, predicate::str};
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
@@ -9,17 +8,20 @@ use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 use crate::colors::{ColorSupport, TermTheme, TuiSelectionBg};
 use crate::logging::Verbosity;
 use crate::{debug_log, ThagResult};
 
-lazy_static! {
-    #[derive(Debug)]
-    pub static ref MAYBE_CONFIG: Option<Config> = {
+/// Initializes and returns the configuration.
+#[allow(clippy::module_name_repetitions)]
+pub fn maybe_config() -> Option<Config> {
+    static MAYBE_CONFIG: OnceLock<Option<Config>> = OnceLock::new();
+    MAYBE_CONFIG.get_or_init(|| -> Option<Config> {
         let maybe_config = load(&RealContext::new());
 
-        if let Some(ref config) = maybe_config {
+        if let Some(config) = maybe_config {
                 debug_log!("Loaded config: {config:?}");
                 debug_log!(
                     "default_verbosity={:?}, color_support={:?}, term_theme={:?}, tui_highlight_bg={:?}, unquote={}",
@@ -29,12 +31,13 @@ lazy_static! {
                     config.colors.tui_selection_bg,
                     config.misc.unquote
                 );
+                return Some(config.clone());
         }
-        maybe_config
-    };
+        None::<Config>
+    }).clone()
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Config {
     pub logging: Logging,
@@ -43,7 +46,7 @@ pub struct Config {
 }
 
 #[serde_as]
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Logging {
     #[serde_as(as = "DisplayFromStr")]
@@ -51,7 +54,7 @@ pub struct Logging {
 }
 
 #[serde_as]
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 pub struct Colors {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
@@ -65,7 +68,7 @@ pub struct Colors {
 }
 
 #[serde_as]
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Misc {
     #[serde_as(as = "DisplayFromStr")]

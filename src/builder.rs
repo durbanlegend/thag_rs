@@ -4,9 +4,10 @@ use crate::code_utils::{
     read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::colors::{coloring, gen_mappings, Lvl};
-use crate::config::{self, RealContext, MAYBE_CONFIG};
+use crate::config::{self, maybe_config, RealContext};
 use crate::logging::{is_debug_logging_enabled, Verbosity};
 use crate::manifest;
+use crate::regex;
 use crate::repl::run_repl;
 use crate::shared::{debug_timings, display_timings, Ast, BuildState};
 use crate::stdin::{self, edit, read};
@@ -18,7 +19,6 @@ use crate::{
 
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
-use lazy_static::lazy_static;
 use log::{log_enabled, Level::Debug};
 use nu_ansi_term::Style;
 use regex::Regex;
@@ -336,11 +336,10 @@ pub fn gen_build_run(
             syntax_tree
         };
 
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
-        }
+        let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
+
         let main_methods = syntax_tree.as_ref().map_or_else(
-            || RE.find_iter(&rs_source).count(),
+            || re.find_iter(&rs_source).count(),
             code_utils::count_main_methods,
         );
         let has_main = match main_methods {
@@ -426,7 +425,7 @@ pub fn gen_build_run(
                     debug_log!(
                         "args.unquote={:?}, MAYBE_CONFIG={:?}",
                         args.unquote,
-                        MAYBE_CONFIG
+                        maybe_config()
                     );
 
                     if proc_flags.contains(ProcFlags::UNQUOTE) {

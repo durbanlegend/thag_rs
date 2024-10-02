@@ -9,7 +9,7 @@ use std::sync::{
 };
 use strum::EnumString;
 
-use crate::{debug_log, Cli, ThagResult, MAYBE_CONFIG};
+use crate::{config::maybe_config, debug_log, Cli, ThagResult};
 
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 
@@ -110,7 +110,7 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
         Verbosity::Quieter
     } else if args.normal {
         Verbosity::Normal
-    } else if let Some(config) = &*MAYBE_CONFIG {
+    } else if let Some(config) = maybe_config() {
         config.logging.default_verbosity
     } else {
         Verbosity::Normal

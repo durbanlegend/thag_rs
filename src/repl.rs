@@ -7,6 +7,7 @@ use crate::debug_log;
 use crate::errors::ThagError;
 use crate::file_dialog::{DialogMode, FileDialog, Status};
 use crate::logging::{get_verbosity, Verbosity};
+use crate::regex;
 use crate::shared::{Ast, BuildState, KeyDisplayLine};
 use crate::tui_editor::{
     apply_highlights, normalize_newlines, show_popup, tui_edit, CrosstermEventReader, Display,
@@ -1323,10 +1324,9 @@ pub fn run_expr(
 #[must_use]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
     profile_fn!(parse_line);
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r#"("[^"\n]+"|[\S]+)"#).unwrap();
-    }
-    let mut args = RE
+    let re: &Regex = regex!(r#"("[^"\n]+"|[\S]+)"#);
+
+    let mut args = re
         .captures_iter(line)
         .map(|a| a[0].to_string().replace('\"', ""))
         .collect::<Vec<String>>();

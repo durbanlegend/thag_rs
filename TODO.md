@@ -16,8 +16,7 @@
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  >>> REPL option Open in TUI
-- [ ]  Consider making show_popup a macro and look for others that can run at compile-time.
-- [ ]  Get rid of clag from colors.rs. E.g. NuColor.
+- [ ]  Look for any functions that can run at compile-time.
 - [ ]  Consider replacing lazy_static with std::sync::OnceLock per the lazy_static Readme.
 - [ ]  Make key_handler a trait method? Or a closure?
 - [ ]  Implement Ctrl+A (Save As...) on file dialog, also confirmation of save.

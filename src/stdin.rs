@@ -2,6 +2,7 @@
 use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
 use crate::errors::ThagResult;
 use crate::logging::{get_verbosity, Verbosity};
+use crate::regex;
 use crate::repl::{
     add_menu_keybindings, disp_repl_banner, format_edit_commands, format_key_code,
     format_key_modifier, format_non_edit_events, parse_line, show_key_bindings, ReplPrompt,
@@ -29,7 +30,6 @@ use crossterm::terminal::{
     LeaveAlternateScreen,
 };
 use edit::edit_file;
-use lazy_static::lazy_static;
 use mockall::predicate::str;
 use nu_ansi_term::Style as NuStyle;
 use ratatui::backend::CrosstermBackend;
@@ -694,10 +694,9 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 /// it stands).
 #[must_use]
 pub fn normalize_newlines(input: &str) -> String {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\r\n?").unwrap();
-    }
-    RE.replace_all(input, "\n").to_string()
+    let re: &Regex = regex!(r"\r\n?");
+
+    re.replace_all(input, "\n").to_string()
 }
 
 /// Apply highlights to the text depending on the light or dark theme as detected, configured

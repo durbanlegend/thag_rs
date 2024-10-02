@@ -16,7 +16,6 @@ use crate::{DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
 use nu_ansi_term::Style;
 use regex::Regex;
 use std::any::Any;
@@ -45,6 +44,17 @@ use syn::{
     AttrStyle, Expr, ExprBlock, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt, UsePath,
     UseRename,
 };
+
+// From burntsushi at `https://github.com/rust-lang/regex/issues/709`
+#[macro_export]
+macro_rules! regex {
+    ($re:literal $(,)?) => {{
+        use {regex::Regex, std::sync::OnceLock};
+
+        static RE: OnceLock<Regex> = OnceLock::new();
+        RE.get_or_init(|| Regex::new($re).unwrap())
+    }};
+}
 
 // To move inner attributes out of a syn AST for a snippet.
 struct RemoveInnerAttributes {
@@ -263,13 +273,10 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn infer_deps_from_source(code: &str) -> Vec<String> {
-    lazy_static! {
-        static ref USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
-        static ref MACRO_USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*#\[macro_use\((\w+)\)").unwrap();
-        static ref EXTERN_CRATE_REGEX: Regex =
-            Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
-    }
     profile_fn!(infer_deps_from_source);
+    let use_regex: &Regex = regex!(r"(?m)^[\s]*use\s+([^;{]+)");
+    let macro_use_regex: &Regex = regex!(r"(?m)^[\s]*#\[macro_use\((\w+)\)");
+    let extern_crate_regex: &Regex = regex!(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)");
 
     debug_log!("In code_utils::infer_deps_from_source");
     let use_renames = find_use_renames_source(code);
@@ -287,7 +294,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
         "super",
     ];
 
-    for cap in USE_REGEX.captures_iter(code) {
+    for cap in use_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
 
         debug_log!("dependency={crate_name}");
@@ -302,7 +309,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 
     // Similar checks for other regex patterns
 
-    for cap in MACRO_USE_REGEX.captures_iter(code) {
+    for cap in macro_use_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
         filter_deps_source(
             &crate_name,
@@ -313,7 +320,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
         );
     }
 
-    for cap in EXTERN_CRATE_REGEX.captures_iter(code) {
+    for cap in extern_crate_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
         filter_deps_source(
             &crate_name,
@@ -364,15 +371,13 @@ fn filter_deps_source(
 #[must_use]
 pub fn find_use_renames_source(code: &str) -> Vec<String> {
     profile_fn!(find_use_renames_source);
-    lazy_static! {
-        static ref USE_AS_REGEX: Regex = Regex::new(r"(?m)^\s*use\s+.+as\s+(\w+)").unwrap();
-    }
 
     debug_log!("In code_utils::find_use_renames_source");
+    let use_as_regex: &Regex = regex!(r"(?m)^\s*use\s+.+as\s+(\w+)");
 
     let mut use_renames: Vec<String> = vec![];
 
-    for cap in USE_AS_REGEX.captures_iter(code) {
+    for cap in use_as_regex.captures_iter(code) {
         let use_rename = cap[1].to_string();
 
         debug_log!("use_rename={use_rename}");
@@ -387,15 +392,13 @@ pub fn find_use_renames_source(code: &str) -> Vec<String> {
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn find_modules_source(code: &str) -> Vec<String> {
-    lazy_static! {
-        static ref MODULE_REGEX: Regex = Regex::new(r"(?m)^[\s]*mod\s+([^;{\s]+)").unwrap();
-    }
+    let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
 
     debug_log!("In code_utils::find_use_renames_source");
 
     let mut modules: Vec<String> = vec![];
 
-    for cap in MODULE_REGEX.captures_iter(code) {
+    for cap in module_regex.captures_iter(code) {
         let module = cap[1].to_string();
 
         debug_log!("module={module}");
@@ -433,7 +436,7 @@ pub fn extract_manifest(
 }
 
 fn extract_toml_block(input: &str) -> Option<String> {
-    let re = Regex::new(r"(?s)/\*\[toml\](.*?)\*/").unwrap();
+    let re: &Regex = regex!(r"(?s)/\*\[toml\](.*?)\*/");
     re.captures(input)
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
 }
@@ -664,9 +667,7 @@ type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
 pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
 
-    lazy_static! {
-        static ref INNER_ATTRIB_REGEX: Regex = Regex::new(r"(?m)^[\s]*#!\[.+\]").unwrap();
-    }
+    let inner_attrib_regex: &Regex = regex!(r"(?m)^[\s]*#!\[.+\]");
 
     profile_fn!(extract_inner_attribs);
 
@@ -675,7 +676,7 @@ pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     let (inner_attribs, rest): Zipped = rs_source
         .lines()
         .map(|line| -> (Option<&str>, Option<&str>) {
-            if INNER_ATTRIB_REGEX.is_match(line) {
+            if inner_attrib_regex.is_match(line) {
                 (Some(line), None)
             } else {
                 (None, Some(line))
@@ -877,12 +878,10 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 pub fn strip_curly_braces(haystack: &str) -> Option<String> {
     profile_fn!(strip_curly_braces);
     // Define the regex pattern
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$").unwrap();
-    }
+    let re: &Regex = regex!(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$");
 
     // Apply the regex to the input string
-    RE.captures(haystack)
+    re.captures(haystack)
         .map(|captures| captures[1].to_string())
 }
 

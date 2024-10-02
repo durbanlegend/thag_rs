@@ -1,10 +1,10 @@
 #![allow(clippy::implicit_return)]
 #![expect(unused)]
-use crate::generate_styles;
 use crate::logging::{Verbosity, V};
 #[cfg(not(target_os = "windows"))]
 use crate::termbg::{terminal, theme, Theme};
 use crate::{config, debug_log, log, ThagResult};
+use crate::{generate_styles, maybe_config};
 
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use firestorm::profile_fn;
@@ -119,7 +119,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     }
 
     let color_support = COLOR_SUPPORT.get_or_init(|| {
-        (*config::MAYBE_CONFIG)
+        maybe_config()
             .as_ref()
             .map_or_else(get_color_level, |config| {
                 match config.colors.color_support {
@@ -132,7 +132,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     });
 
     let term_theme = TERM_THEME.get_or_init(|| {
-        (*config::MAYBE_CONFIG).as_ref().map_or_else(
+        maybe_config().map_or_else(
             || resolve_term_theme().unwrap_or_default(),
             |config| {
                 if matches!(&config.colors.term_theme, &TermTheme::None) {

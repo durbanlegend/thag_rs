@@ -1,4 +1,4 @@
-use crate::{debug_log, ThagError, ThagResult, MAYBE_CONFIG, RS_SUFFIX};
+use crate::{config::maybe_config, debug_log, ThagError, ThagResult, RS_SUFFIX};
 
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
@@ -244,7 +244,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
 
         let unquote = args.unquote.map_or_else(
             || {
-                (*MAYBE_CONFIG).as_ref().map_or_else(
+                maybe_config().map_or_else(
                     || {
                         debug_log!(
                             "Found no arg or config file, returning default unquote = false"
@@ -253,8 +253,8 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
                     },
                     |config| {
                         debug_log!(
-                            "MAYBE_CONFIG={:?}, returning config.misc.unquote={}",
-                            MAYBE_CONFIG,
+                            "maybe_config()={:?}, returning config.misc.unquote={}",
+                            maybe_config(),
                             config.misc.unquote
                         );
                         config.misc.unquote

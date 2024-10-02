@@ -30,7 +30,7 @@ pub use code_utils::{
 pub use colors::{
     Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, Xterm256DarkStyle, Xterm256LightStyle,
 };
-pub use config::{load, MAYBE_CONFIG};
+pub use config::{load, maybe_config};
 pub use errors::{ThagError, ThagResult};
 pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};
 

@@ -11,7 +11,6 @@ use crossterm::{
     terminal::LeaveAlternateScreen,
 };
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
 use mockall::automock;
 use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled};
@@ -35,11 +34,9 @@ use std::path::PathBuf;
 use std::{self, fs};
 use tui_textarea::{CursorMove, Input, TextArea};
 
-use crate::colors::coloring;
-use crate::{
-    colors::{tui_selection_bg, TuiSelectionBg},
-    shared::KeyDisplayLine,
-};
+use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
+use crate::regex;
+use crate::shared::KeyDisplayLine;
 use crate::{debug_log, MessageLevel, ThagError, ThagResult};
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
@@ -599,10 +596,9 @@ pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 /// it stands).
 #[must_use]
 pub fn normalize_newlines(input: &str) -> String {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\r\n?").unwrap();
-    }
-    RE.replace_all(input, "\n").to_string()
+    let re: &Regex = regex!(r"\r\n?");
+
+    re.replace_all(input, "\n").to_string()
 }
 
 /// Apply highlights to the text depending on the light or dark theme as detected, configured

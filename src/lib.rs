@@ -1,3 +1,4 @@
+#![warn(clippy::pedantic)]
 use lazy_static::lazy_static;
 use std::env;
 use std::path::PathBuf;
@@ -27,8 +28,7 @@ pub use code_utils::{
     process_expr,
 };
 pub use colors::{
-    nu_resolve_style, Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, NuStyle,
-    Xterm256DarkStyle, Xterm256LightStyle,
+    Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, Xterm256DarkStyle, Xterm256LightStyle,
 };
 pub use config::{load, MAYBE_CONFIG};
 pub use errors::{ThagError, ThagResult};

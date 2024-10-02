@@ -3,6 +3,7 @@ use cargo_toml::{Dependency, Manifest};
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use mockall::automock;
+use nu_ansi_term::Style;
 use regex::Regex;
 use serde_merge::omerge;
 use std::collections::BTreeMap;
@@ -12,7 +13,7 @@ use std::process::{Command, Output};
 use std::time::Instant;
 
 use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
-use crate::colors::{nu_resolve_style, MessageLevel};
+use crate::colors::Lvl;
 use crate::log;
 use crate::logging::Verbosity;
 #[cfg(target_os = "windows")]
@@ -50,7 +51,7 @@ pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> ThagResult
     profile_fn!(cargo_search);
     let start_search = Instant::now();
 
-    let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(dep_crate);
+    let dep_crate_styled = Style::from(Lvl::EMPH).paint(dep_crate);
     log!(
         Verbosity::Normal,
         r#"Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
@@ -95,8 +96,8 @@ See below for how to avoid this and speed up future builds.
                 .into());
             }
 
-            let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(&name);
-            let dep_version_styled = nu_resolve_style(MessageLevel::Emphasis).paint(&version);
+            let dep_crate_styled = Style::from(Lvl::EMPH).paint(&name);
+            let dep_version_styled = Style::from(Lvl::EMPH).paint(&version);
 
             log!(
                 Verbosity::Normal,

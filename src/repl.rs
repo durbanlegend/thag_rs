@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
-use crate::colors::{coloring, nu_resolve_style, tui_selection_bg, MessageLevel, TuiSelectionBg};
+use crate::colors::{coloring, tui_selection_bg, MessageLevel, TuiSelectionBg};
 #[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::errors::ThagError;
@@ -24,6 +24,7 @@ use crossterm::event::{
 use edit::edit_file;
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
+use nu_ansi_term::Style as NuStyle;
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::widgets::{Block, Borders};
 use reedline::{
@@ -346,7 +347,7 @@ pub fn run_repl(
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
-            DefaultHinter::default().with_style(nu_resolve_style(MessageLevel::Ghost).italic()),
+            DefaultHinter::default().with_style(NuStyle::from(Lvl::Ghost).italic()),
         ))
         .with_history(history)
         .with_history_exclusion_prefix(Some("q".into()))
@@ -485,10 +486,7 @@ pub fn run_repl(
         if let Ok(expr_ast) = maybe_ast {
             code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
         } else {
-            cprtln!(
-                nu_resolve_style(MessageLevel::Error),
-                "Error parsing code: {maybe_ast:#?}"
-            );
+            cprtln!(Lvl::ERR.into(), "Error parsing code: {maybe_ast:#?}");
         }
     }
     Ok(())
@@ -795,7 +793,7 @@ fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
     let max_key_len = formatted_bindings
         .iter()
         .map(|(key_desc, _)| {
-            let key_desc = nu_resolve_style(MessageLevel::Heading).paint(key_desc);
+            let key_desc = NuStyle::from(Lvl::HEAD).paint(key_desc);
             let key_desc = format!("{key_desc}");
             key_desc.len()
         })
@@ -843,16 +841,15 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
                         edit_cmds
                             .iter()
                             .map(|cmd| {
-                                let key_desc = nu_resolve_style(MessageLevel::Subheading)
-                                    .paint(format!("{cmd:?}"));
+                                let key_desc = NuStyle::from(Lvl::SUBH).paint(format!("{cmd:?}"));
                                 let key_desc = format!("{key_desc}");
                                 key_desc.len()
                             })
                             .max()
                             .unwrap_or(0)
                     } else if !format!("{reedline_event}").starts_with("UntilFound") {
-                        let event_desc = nu_resolve_style(MessageLevel::Subheading)
-                            .paint(format!("{reedline_event:?}"));
+                        let event_desc =
+                            NuStyle::from(Lvl::SUBH).paint(format!("{reedline_event:?}"));
                         let event_desc = format!("{event_desc}");
                         event_desc.len()
                     } else {
@@ -872,13 +869,13 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
     println!();
     cprtln!(
-        nu_resolve_style(crate::MessageLevel::Emphasis),
+        NuStyle::from(Lvl::EMPH),
         "Key bindings - subject to your terminal settings"
     );
 
     // Print the formatted and sorted key bindings
     for (key_desc, cmd_desc) in formatted_bindings {
-        let key_desc = nu_resolve_style(MessageLevel::Heading).paint(key_desc);
+        let key_desc = NuStyle::from(Lvl::HEAD).paint(key_desc);
         let key_desc = format!("{key_desc}");
         println!("{:<width$}    {}", key_desc, cmd_desc, width = max_key_len);
     }
@@ -956,7 +953,7 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
         };
     };
 
-    let event_highlight = nu_resolve_style(MessageLevel::Subheading).paint(event_name);
+    let event_highlight = NuStyle::from(Lvl::SUBH).paint(event_name);
     let event_highlight = format!("{event_highlight}");
     let event_desc = format!(
         "{:<max_cmd_len$} {}",
@@ -986,7 +983,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
     // eprintln!("edit_cmds={edit_cmds:?}");
 
     for cmd in edit_cmds {
-        let cmd_highlight = nu_resolve_style(MessageLevel::Subheading).paint(format!("{cmd:?}"));
+        let cmd_highlight = NuStyle::from(Lvl::SUBH).paint(format!("{cmd:?}"));
         let cmd_highlight = format!("{cmd_highlight}");
         let cmd_desc = match cmd {
             EditCommand::MoveToStart { select }

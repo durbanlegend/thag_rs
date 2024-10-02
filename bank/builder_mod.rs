@@ -617,11 +617,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
 ///
 /// Will return `Err` if there is an error waiting for the spawned command
 /// that runs the user script.
-pub fn run(
-    proc_flags: &ProcFlags,
-    args: &[String],
-    build_state: &BuildState,
-) -> ThagResult<()> {
+pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) -> ThagResult<()> {
     let start_run = Instant::now();
     debug_log!("RRRRRRRR In run");
 

@@ -8,16 +8,16 @@ use crate::cmd_args::{Cli, ProcFlags};
 
 use crate::debug_log;
 use crate::errors::{ThagError, ThagResult};
-use crate::logging::Verbosity;
-use crate::nu_resolve_style;
+use crate::logging::V;
 use crate::shared::debug_timings;
 use crate::shared::{Ast, BuildState};
-use crate::{log, MessageLevel};
+use crate::{log, Lvl};
 use crate::{DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
 use lazy_static::lazy_static;
+use nu_ansi_term::Style;
 use regex::Regex;
 use std::any::Any;
 use std::collections::HashMap;
@@ -450,7 +450,7 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
         // Try putting the expression in braces.
         let string = format!(r"{{{rs_source}}}");
         let str = string.as_str();
-        // log!(Verbosity::Normal, "str={str}");
+        // log!(V::N, "str={str}");
 
         expr = syn::parse_str::<Expr>(str);
     }
@@ -471,7 +471,7 @@ pub fn process_expr(
     let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
-    log!(Verbosity::Normal, "{result:?}");
+    log!(V::N, "{result:?}");
     Ok(())
 }
 
@@ -515,15 +515,15 @@ pub fn display_output(output: &Output) -> ThagResult<()> {
     // let stdout = output.stdout;
 
     // Print the captured stdout
-    log!(Verbosity::Normal, "Captured stdout:");
+    log!(V::N, "Captured stdout:");
     for result in output.stdout.lines() {
-        log!(Verbosity::Normal, "{}", result?);
+        log!(V::N, "{}", result?);
     }
 
     // Print the captured stderr
-    log!(Verbosity::Normal, "Captured stderr:");
+    log!(V::N, "Captured stderr:");
     for result in output.stderr.lines() {
-        log!(Verbosity::Normal, "{}", result?);
+        log!(V::N, "{}", result?);
     }
     Ok(())
 }
@@ -572,7 +572,7 @@ pub fn modified_since_compiled(
     }
     if let Some(file) = most_recent {
         log!(
-            Verbosity::Verbose,
+            V::V,
             "The most recently modified file compared to {executable:#?} is: {file:#?}"
         );
 
@@ -627,9 +627,9 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     if let Ok(tree) = syn::parse_file(source_code) {
         #[cfg(debug_assertions)]
         log!(
-            Verbosity::Verbose,
+            V::V,
             "{}",
-            nu_resolve_style(crate::MessageLevel::Warning).paint("Parsed to syn::File")
+            Style::from(Lvl::WARN).paint("Parsed to syn::File")
         );
 
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
@@ -637,17 +637,17 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     } else if let Ok(tree) = extract_ast_expr(source_code) {
         #[cfg(debug_assertions)]
         log!(
-            Verbosity::Verbose,
+            V::V,
             "{}",
-            nu_resolve_style(crate::MessageLevel::Emphasis).paint("Parsed to syn::Expr")
+            Style::from(Lvl::EMPH).paint("Parsed to syn::Expr")
         );
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
         log!(
-            Verbosity::Quieter,
+            V::QQ,
             "{}",
-            nu_resolve_style(crate::MessageLevel::Warning)
+            Style::from(Lvl::WARN)
                 .paint("Error parsing syntax tree. Using regex to help you debug the script.")
         );
 
@@ -813,7 +813,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 }}
 "#,
         loop_toml.as_ref().map_or_else(String::new, |toml| {
-            log!(Verbosity::Verbose, "toml={toml}");
+            log!(V::V, "toml={toml}");
             format!(
                 r#"/*[toml]
 {toml}
@@ -821,11 +821,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
             )
         }),
         loop_begin.as_ref().map_or("", |prelude| {
-            log!(Verbosity::Verbose, "prelude={prelude}");
+            log!(V::V, "prelude={prelude}");
             prelude
         }),
         loop_end.as_ref().map_or("", |postlude| {
-            log!(Verbosity::Verbose, "postlude={postlude}");
+            log!(V::V, "postlude={postlude}");
             postlude
         })
     )
@@ -851,13 +851,13 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
-        log!(Verbosity::Normal, "Directory listing for {:?}", path);
+        log!(V::N, "Directory listing for {:?}", path);
         for entry in entries {
             let entry = entry?;
             let file_type = entry.file_type()?;
             let file_name = entry.file_name();
             log!(
-                Verbosity::Quieter,
+                V::QQ,
                 "  {file_name:?} ({})",
                 if file_type.is_dir() {
                     "Directory"
@@ -1096,9 +1096,9 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
         }
         _ => {
             log!(
-                Verbosity::Quiet,
+                V::Q,
                 "{}",
-                nu_resolve_style(MessageLevel::Warning).paint(format!(
+                Style::from(Lvl::WARN).paint(format!(
                     "Expression not catered for: {expr:#?}, wrapping expression in println!()"
                 ))
             );

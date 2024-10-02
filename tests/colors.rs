@@ -2,11 +2,10 @@
 mod tests {
     use nu_ansi_term::{Color, Style};
     use supports_color::Stream;
-    use thag_rs::colors::{ColorSupport, MessageStyle, NuColor, TermTheme, XtermColor};
-
+    use thag_rs::colors::{ColorSupport, MessageStyle, TermTheme, XtermColor};
     #[cfg(not(target_os = "windows"))]
     use thag_rs::termbg::{self, Theme};
-    use thag_rs::{cprtln, log, nu_resolve_style, MessageLevel};
+    use thag_rs::{cprtln, log, Lvl};
 
     // Set environment variables before running tests
     fn set_up() {
@@ -90,29 +89,29 @@ mod tests {
     fn test_nu_color_get_color() {
         // Test the get_color method for XtermColor
         set_up();
-        let color = XtermColor::GuardsmanRed;
-        assert_eq!(color.get_color(), Color::Fixed(160));
+        let xterm_color = XtermColor::GuardsmanRed;
+        assert_eq!(Color::from(&xterm_color), Color::Fixed(160));
     }
 
     #[test]
     #[cfg(not(target_os = "windows"))]
-    fn test_nu_resolve_style() {
+    fn test_style_conv() {
         use thag_rs::colors::coloring;
 
         set_up();
-        // Test the nu_resolve_style function
+        // Test sytle conversions
         // Causes rightward drift of the test result printouts.
         let theme = termbg::theme(std::time::Duration::from_millis(100));
         // print!("{}[2J", 27 as char);
         // thag_rs::clear_screen();
 
-        let style = nu_resolve_style(MessageLevel::Warning);
+        let style = Style::from(Lvl::WARN);
         let (maybe_color_support, _term_theme) = coloring();
         if let Some(color_support) = maybe_color_support {
             match theme {
                 Ok(Theme::Light) => match *color_support {
                     ColorSupport::Xterm256 => {
-                        let expected_style = XtermColor::DarkPurplePizzazz.get_color().bold();
+                        let expected_style = Color::from(&XtermColor::DarkPurplePizzazz).bold();
                         assert_eq!(style, expected_style);
                     }
                     ColorSupport::Ansi16 => {
@@ -124,7 +123,7 @@ mod tests {
                 },
                 Ok(Theme::Dark) | Err(_) => match color_support {
                     ColorSupport::Xterm256 => {
-                        let expected_style = XtermColor::DarkViolet.get_color().bold();
+                        let expected_style = Color::from(&XtermColor::DarkViolet).bold();
                         assert_eq!(style, expected_style);
                     }
                     ColorSupport::Ansi16 => {
@@ -148,7 +147,7 @@ mod tests {
         assert_eq!(style, Color::Red.bold());
 
         let style = Style::from(MessageStyle::Xterm256DarkEmphasis);
-        assert_eq!(style, XtermColor::Copperfield.get_color().bold());
+        assert_eq!(style, Color::from(&XtermColor::Copperfield).bold());
     }
 
     #[test]

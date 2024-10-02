@@ -3,7 +3,7 @@ use crate::code_utils::{
     self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest, process_expr,
     read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
-use crate::colors::{coloring, gen_mappings, nu_resolve_style, MessageLevel};
+use crate::colors::{coloring, gen_mappings, Lvl};
 use crate::config::{self, RealContext, MAYBE_CONFIG};
 use crate::logging::{is_debug_logging_enabled, Verbosity};
 use crate::manifest;
@@ -12,14 +12,15 @@ use crate::shared::{debug_timings, display_timings, Ast, BuildState};
 use crate::stdin::{self, edit, read};
 use crate::tui_editor::CrosstermEventReader;
 use crate::{
-    debug_log, log, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN,
-    PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
+    debug_log, log, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
+    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
 };
 
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
 use lazy_static::lazy_static;
 use log::{log_enabled, Level::Debug};
+use nu_ansi_term::Style;
 use regex::Regex;
 use std::string::ToString;
 use std::{
@@ -482,7 +483,7 @@ pub fn gen_build_run(
     let process = &format!(
         "{} completed processing script {}",
         PACKAGE_NAME,
-        nu_resolve_style(MessageLevel::Emphasis).paint(&build_state.source_name)
+        Style::from(Lvl::EMPH).paint(&build_state.source_name)
     );
     display_timings(start, process, proc_flags);
     Ok(())
@@ -612,7 +613,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
         Verbosity::Normal,
         "{} {} ...",
         if check { "Checking" } else { "Building" },
-        nu_resolve_style(MessageLevel::Emphasis).paint(&build_state.source_name)
+        Style::from(Lvl::EMPH).paint(&build_state.source_name)
     );
 
     if quieter {

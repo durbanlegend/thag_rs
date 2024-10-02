@@ -11,8 +11,8 @@ use crate::tui_editor::{
     TITLE_TOP,
 };
 use crate::{
-    code_utils, cprtln, cvprtln, debug_log, extract_ast_expr, extract_manifest, log,
-    nu_resolve_style, BuildState, Cli, Lvl, MessageLevel, ProcFlags,
+    code_utils, cprtln, cvprtln, debug_log, extract_ast_expr, extract_manifest, log, BuildState,
+    Cli, Lvl, MessageLevel, ProcFlags,
 };
 
 use clap::{CommandFactory, Parser};
@@ -31,6 +31,7 @@ use crossterm::terminal::{
 use edit::edit_file;
 use lazy_static::lazy_static;
 use mockall::predicate::str;
+use nu_ansi_term::Style as NuStyle;
 use ratatui::backend::CrosstermBackend;
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::widgets::{block::Block, Borders};
@@ -225,7 +226,7 @@ pub fn run_repl(
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
-            DefaultHinter::default().with_style(nu_resolve_style(MessageLevel::Ghost).italic()),
+            DefaultHinter::default().with_style(NuStyle::from(Lvl::Ghost).italic()),
         ))
         // .with_history(history)
         // .with_highlighter(highlighter)
@@ -312,9 +313,8 @@ pub fn run_repl(
                                         edit_cmds
                                             .iter()
                                             .map(|cmd| {
-                                                let key_desc =
-                                                    nu_resolve_style(MessageLevel::Subheading)
-                                                        .paint(format!("{cmd:?}"));
+                                                let key_desc = NuStyle::from(Lvl::SUBH)
+                                                    .paint(format!("{cmd:?}"));
                                                 let key_desc = format!("{key_desc}");
                                                 key_desc.len()
                                             })
@@ -322,7 +322,7 @@ pub fn run_repl(
                                             .unwrap_or(0)
                                     } else if !format!("{reedline_event}").starts_with("UntilFound")
                                     {
-                                        let event_desc = nu_resolve_style(MessageLevel::Subheading)
+                                        let event_desc = NuStyle::from(Lvl::SUBH)
                                             .paint(format!("{reedline_event:?}"));
                                         let event_desc = format!("{event_desc}");
                                         event_desc.len()
@@ -368,8 +368,7 @@ pub fn run_repl(
                         let max_key_len = formatted_bindings
                             .iter()
                             .map(|(key_desc, _)| {
-                                let key_desc =
-                                    nu_resolve_style(MessageLevel::Heading).paint(key_desc);
+                                let key_desc = NuStyle::from(Lvl::HEAD).paint(key_desc);
                                 let key_desc = format!("{key_desc}");
                                 key_desc.len()
                             })
@@ -392,10 +391,7 @@ pub fn run_repl(
         if let Ok(expr_ast) = maybe_ast {
             code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
         } else {
-            cprtln!(
-                nu_resolve_style(MessageLevel::Error),
-                "Error parsing code: {maybe_ast:#?}"
-            );
+            cprtln!(Lvl::ERR.into(), "Error parsing code: {maybe_ast:#?}");
         }
     }
     Ok(())

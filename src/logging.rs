@@ -46,6 +46,15 @@ pub enum Verbosity {
 
 pub type V = Verbosity;
 
+impl V {
+    pub const QQ: Self = Self::Quieter;
+    pub const Q: Self = Self::Quiet;
+    pub const N: Self = Self::Normal;
+    pub const V: Self = Self::Verbose;
+    pub const VV: Self = Self::Debug;
+    pub const D: Self = Self::Debug;
+}
+
 /// Define the Logger.
 #[derive(Debug)]
 pub struct Logger {

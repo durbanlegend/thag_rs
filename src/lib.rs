@@ -1,7 +1,6 @@
 #![warn(clippy::pedantic)]
-use lazy_static::lazy_static;
-use std::env;
 use std::path::PathBuf;
+use std::{env, sync::LazyLock};
 
 // Re-export the modules
 pub mod builder;
@@ -46,7 +45,4 @@ pub const TEMP_SCRIPT_NAME: &str = "temp.rs";
 pub const TOML_NAME: &str = "Cargo.toml";
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-lazy_static! {
-    #[derive(Debug)]
-    pub static ref TMPDIR: PathBuf = env::temp_dir();
-}
+pub static TMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);

@@ -28,7 +28,6 @@ use std::collections::VecDeque;
 use std::convert::Into;
 use std::env::var;
 use std::fmt::Debug;
-use std::fs::{File, OpenOptions};
 use std::io;
 use std::path::PathBuf;
 use std::{self, fs};
@@ -88,7 +87,7 @@ pub fn resolve_term() -> ThagResult<Option<TermScopeGuard>> {
     Ok(maybe_term)
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct History {
     entries: VecDeque<String>,
     pub current_index: Option<usize>,
@@ -182,8 +181,8 @@ impl EventReader for CrosstermEventReader {
 pub struct EditData<'a> {
     pub return_text: bool,
     pub initial_content: &'a str,
-    pub save_path: Option<PathBuf>,
-    pub history_path: Option<PathBuf>,
+    pub save_path: Option<&'a mut PathBuf>,
+    pub history_path: Option<&'a PathBuf>,
     pub history: Option<History>,
 }
 
@@ -223,7 +222,7 @@ pub enum KeyAction {
 #[allow(clippy::too_many_lines)]
 pub fn tui_edit<R, F>(
     event_reader: &R,
-    edit_data: &EditData,
+    edit_data: &mut EditData,
     display: &Display,
     key_handler: F, // closure or function for key handling
 ) -> ThagResult<(KeyAction, Option<Vec<String>>)>
@@ -231,26 +230,14 @@ where
     R: EventReader + Debug,
     F: Fn(
         KeyEvent,
-        &mut Option<TermScopeGuard>,
-        &Option<File>,
+        &mut Option<&mut TermScopeGuard>,
+        // &mut Option<&mut PathBuf>,
         &mut TextArea,
+        &mut EditData,
         &mut bool,
         &mut bool,
     ) -> ThagResult<KeyAction>,
 {
-    // Initialize save file
-    let maybe_save_file = if let Some(ref save_path) = edit_data.save_path {
-        let save_file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(save_path)?;
-        Some(save_file)
-    } else {
-        None
-    };
-
     // Initialize state variables
     let mut popup = false;
     let mut tui_highlight_bg = tui_selection_bg(coloring().1);
@@ -270,6 +257,11 @@ where
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.move_cursor(CursorMove::Bottom);
+    // New line with cursor at EOF for usability
+    textarea.move_cursor(CursorMove::End);
+    if !textarea.is_empty() {
+        textarea.insert_newline();
+    }
 
     // Apply initial highlights
     apply_highlights(&tui_selection_bg(coloring().1), &mut textarea);
@@ -431,9 +423,10 @@ where
                     // Call the key_handler closure to process events
                     let key_action = key_handler(
                         key_event,
-                        &mut maybe_term,
-                        &maybe_save_file,
+                        &mut maybe_term.as_mut(),
+                        // &mut edit_data.save_path.as_deref_mut(),
                         &mut textarea,
+                        edit_data,
                         &mut popup,
                         &mut saved,
                     )?;
@@ -720,8 +713,8 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (340, "Alt+v, PageUp, Cmd+↑", "Page up"),
     (350, "Ctrl+l", "Toggle keys display (this screen)"),
     (360, "Ctrl+t", "Toggle highlight colours"),
-    (370, "F1", "Previous in history"),
-    (380, "F2", "Next in history"),
+    (370, "F7", "Previous in history"),
+    (380, "F8", "Next in history"),
     (
         390,
         "F9",

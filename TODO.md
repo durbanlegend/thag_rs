@@ -15,12 +15,13 @@
 - [ ]  Configurable multi-purpose TUI editor?
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
-- [ ]  >>> REPL option Open in TUI
+- [ ]  >>> -R option to go straight into repl::tui?
+- [ ]  Messasge area in tui editor
+- [ ]  >>> Implement F7, F8 and saved_to_history in Tui_editor::tui_edit as for stdin::edit.
 - [ ]  Look for any functions that can run at compile-time.
-- [ ]  Consider replacing lazy_static with std::sync::OnceLock per the lazy_static Readme.
 - [ ]  Make key_handler a trait method? Or a closure?
 - [ ]  Implement Ctrl+A (Save As...) on file dialog, also confirmation of save.
-- [ ]  Consider MIT licence only, see bank/tui_file_dialog.rs.
+         >>> TODO: Save history on TUI save - in KeyHandler will need to be passed history file locvc
 - [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.
 - [ ]  Consider using \n-separated format for history instead of JSON, to align with `reedline`.
 - [ ]  Decommission repl::edit_history_old.

@@ -579,7 +579,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                                 apply_highlights(&tui_selection_bg, &mut textarea);
                             })?;
                         }
-                        key!(f1) => {
+                        key!(f7) => {
                             let mut found = false;
                             // 6 5,4,3,2,1 -> >5,4,3,2,1
                             if saved_to_history {
@@ -608,7 +608,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                             }
                             continue;
                         }
-                        key!(f2) => {
+                        key!(f8) => {
                             // 5 >6,5,4,3,2,1 ->
                             if let Some(entry) = history.get_next() {
                                 textarea.select_all();

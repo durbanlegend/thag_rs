@@ -1882,6 +1882,20 @@ which will give identical output to the above.
 
 ---
 
+### Script: json_parse.rs
+
+**Description:**  Demo of using deserializing JSON with the featured crates.
+
+**Purpose:** Demo featured crates.
+
+**Crates:** `serde`, `serde_json`
+
+**Type:** Snippet
+
+**Link:** [json_parse.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs)
+
+---
+
 ### Script: list_files.rs
 
 **Description:**  Demo listing files on disk. If you want a sorted list, you will need to amend the
@@ -2624,67 +2638,6 @@ which will give identical output to the above.
  with the `develop` branch version being debugged.
 
  E.g. `thag demo/stdin_main.rs`
- A trait to allow mocking of the event reader for testing purposes.
- A struct to implement real-world use of the event reader, as opposed to use in testing.
- Edit the stdin stream.
-
-
- # Examples
-
- ```no_run
- use thag_rs::stdin::{edit, CrosstermEventReader};
- use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
- # use thag_rs::stdin::MockEventReader;
-
- # let mut event_reader = MockEventReader::new();
- # event_reader.expect_read_event().return_once(|| {
- #     Ok(Event::Key(KeyEvent::new(
- #         KeyCode::Char('d'),
- #         KeyModifiers::CONTROL,
- #     )))
- # });
- let actual = edit(&event_reader);
- let buf = vec![""];
- assert!(matches!(actual, Ok(buf)));
- ```
- # Errors
-
- If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
- # Panics
-
- If the terminal cannot be reset.
- Prompt for and read Rust source code from stdin.
-
- # Examples
-
- ```
- use thag_rs::stdin::read;
-
- let hello = String::from("Hello world!");
- assert!(matches!(read(), Ok(hello)));
- ```
- # Errors
-
- If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
- Read the input from a `BufRead` implementing item into a String.
-
- # Examples
-
- ```
- use thag_rs::stdin::read_to_string;
-
- let stdin = std::io::stdin();
- let mut input = stdin.lock();
- let hello = String::from("Hello world!");
- assert!(matches!(read_to_string(&mut input), Ok(hello)));
- ```
-
- # Errors
-
- If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
- Convert the different newline sequences for Windows and other platforms into the common
- standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
- it stands).
  Apply highlights to the text depending on the light or dark theme as detected, configured
  or defaulted, or as toggled by the user with Ctrl-t.
 
@@ -3086,6 +3039,17 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs)
+
+---
+
+### Script: tui_copy.rs
+
+**Description:** 
+**Purpose:** 
+
+**Type:** Snippet
+
+**Link:** [tui_copy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_copy.rs)
 
 ---
 

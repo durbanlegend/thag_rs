@@ -115,17 +115,17 @@ impl History {
     }
 }
 
-/// A trait to allow mocking of the event reader for testing purposes.
+// A trait to allow mocking of the event reader for testing purposes.
 #[automock]
 pub trait EventReader {
-    /// Read a `crossterm` event.
-    /// # Errors
-    ///
-    /// If the timeout expires then an error is returned and buf is unchanged.
+    // Read a `crossterm` event.
+    // # Errors
+    //
+    // If the timeout expires then an error is returned and buf is unchanged.
     fn read_event(&self) -> Result<Event, std::io::Error>;
 }
 
-/// A struct to implement real-world use of the event reader, as opposed to use in testing.
+// A struct to implement real-world use of the event reader, as opposed to use in testing.
 pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
@@ -143,33 +143,33 @@ fn main() -> Result<(), ThagError> {
     Ok(())
 }
 
-/// Edit the stdin stream.
-///
-///
-/// # Examples
-///
-/// ```no_run
-/// use thag_rs::stdin::{edit, CrosstermEventReader};
-/// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
-/// # use thag_rs::stdin::MockEventReader;
-///
-/// # let mut event_reader = MockEventReader::new();
-/// # event_reader.expect_read_event().return_once(|| {
-/// #     Ok(Event::Key(KeyEvent::new(
-/// #         KeyCode::Char('d'),
-/// #         KeyModifiers::CONTROL,
-/// #     )))
-/// # });
-/// let actual = edit(&event_reader);
-/// let buf = vec![""];
-/// assert!(matches!(actual, Ok(buf)));
-/// ```
-/// # Errors
-///
-/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
-/// # Panics
-///
-/// If the terminal cannot be reset.
+// Edit the stdin stream.
+//
+//
+// # Examples
+//
+// ```no_run
+// use thag_rs::stdin::{edit, CrosstermEventReader};
+// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+// # use thag_rs::stdin::MockEventReader;
+//
+// # let mut event_reader = MockEventReader::new();
+// # event_reader.expect_read_event().return_once(|| {
+// #     Ok(Event::Key(KeyEvent::new(
+// #         KeyCode::Char('d'),
+// #         KeyModifiers::CONTROL,
+// #     )))
+// # });
+// let actual = edit(&event_reader);
+// let buf = vec![""];
+// assert!(matches!(actual, Ok(buf)));
+// ```
+// # Errors
+//
+// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+// # Panics
+//
+// If the terminal cannot be reset.
 #[allow(clippy::too_many_lines)]
 pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> {
     let input = std::io::stdin();
@@ -325,50 +325,50 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
     Ok(textarea.lines().to_vec())
 }
 
-/// Prompt for and read Rust source code from stdin.
-///
-/// # Examples
-///
-/// ```
-/// use thag_rs::stdin::read;
-///
-/// let hello = String::from("Hello world!");
-/// assert!(matches!(read(), Ok(hello)));
-/// ```
-/// # Errors
-///
-/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+// Prompt for and read Rust source code from stdin.
+//
+// # Examples
+//
+// ```
+// use thag_rs::stdin::read;
+//
+// let hello = String::from("Hello world!");
+// assert!(matches!(read(), Ok(hello)));
+// ```
+// # Errors
+//
+// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
     log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
 }
 
-/// Read the input from a `BufRead` implementing item into a String.
-///
-/// # Examples
-///
-/// ```
-/// use thag_rs::stdin::read_to_string;
-///
-/// let stdin = std::io::stdin();
-/// let mut input = stdin.lock();
-/// let hello = String::from("Hello world!");
-/// assert!(matches!(read_to_string(&mut input), Ok(hello)));
-/// ```
-///
-/// # Errors
-///
-/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+// Read the input from a `BufRead` implementing item into a String.
+//
+// # Examples
+//
+// ```
+// use thag_rs::stdin::read_to_string;
+//
+// let stdin = std::io::stdin();
+// let mut input = stdin.lock();
+// let hello = String::from("Hello world!");
+// assert!(matches!(read_to_string(&mut input), Ok(hello)));
+// ```
+//
+// # Errors
+//
+// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)
 }
 
-/// Convert the different newline sequences for Windows and other platforms into the common
-/// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
-/// it stands).
+// Convert the different newline sequences for Windows and other platforms into the common
+// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
+// it stands).
 #[must_use]
 pub fn normalize_newlines(input: &str) -> String {
     lazy_static! {

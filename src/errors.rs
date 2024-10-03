@@ -23,6 +23,7 @@ pub enum ThagError {
     FromStr(Cow<'static, str>), // For simple errors from a string
     Io(std::io::Error),  // For I/O errors
     LockMutexGuard(&'static str), // For lock errors with MutexGuard
+    Logic(&'static str), // For logic errors
     NoneOption(&'static str), // For unwrapping Options
     OsString(std::ffi::OsString), // For unconvertible OsStrings
     Reedline(ReedlineError), // For reedline errors
@@ -127,7 +128,7 @@ impl std::fmt::Display for ThagError {
             Self::BitFlagsParse(e) => write!(f, "{e:?}"),
             Self::Cancelled => write!(f, "Cancelled"),
             Self::ClapError(e) => write!(f, "{e:?}"),
-            Self::Command(s) | Self::NoneOption(s) => {
+            Self::Command(s) | Self::Logic(s) | Self::NoneOption(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
@@ -172,6 +173,7 @@ impl Error for ThagError {
             Self::FromStr(ref _e) => Some(self),
             Self::Io(ref e) => Some(e),
             Self::LockMutexGuard(_e) => Some(self),
+            Self::Logic(_e) => Some(self),
             Self::NoneOption(_e) => Some(self),
             Self::OsString(ref _o) => Some(self),
             Self::Reedline(e) => Some(e),

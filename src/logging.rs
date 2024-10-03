@@ -1,11 +1,10 @@
 #![allow(clippy::uninlined_format_args)]
 use env_logger::{Builder, Env, WriteStyle};
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Mutex,
+    LazyLock, Mutex,
 };
 use strum::EnumString;
 
@@ -88,10 +87,7 @@ impl Logger {
     }
 }
 
-lazy_static! {
-    /// The common Logger instance to use.
-    pub static ref LOGGER: Mutex<Logger> = Mutex::new(Logger::new(Verbosity::Normal)); // Default to Normal
-}
+pub static LOGGER: LazyLock<Mutex<Logger>> = LazyLock::new(|| Mutex::new(Logger::new(V::N)));
 
 #[inline]
 /// Determine the desired logging verbosity for the current execution.

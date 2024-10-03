@@ -24,7 +24,6 @@ use crossterm::event::{
 };
 use edit::edit_file;
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
 use nu_ansi_term::Style as NuStyle;
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::widgets::{Block, Borders};
@@ -39,10 +38,11 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env::var;
 use std::fmt::Debug;
-use std::fs::{self, read_to_string, File, OpenOptions};
+use std::fs::{self, read_to_string, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::OnceLock;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use tui_textarea::{CursorMove, Input, TextArea};
@@ -415,12 +415,19 @@ pub fn run_repl(
                     }
                     ReplCommand::Tui => {
                         let source_path = &build_state.source_path;
-                        let save_path: PathBuf = build_state.cargo_home.join("repl_tui_save.rs");
+                        let mut save_path: PathBuf =
+                            build_state.cargo_home.join("repl_tui_save.rs");
                         // let backup_path: PathBuf =
                         //     &build_state.cargo_home.join("repl_tui_backup.rs");
 
                         let rs_source = read_to_string(source_path)?;
-                        tui(rs_source.as_str(), save_path)?;
+                        tui(
+                            rs_source.as_str(),
+                            &mut save_path,
+                            build_state,
+                            args,
+                            proc_flags,
+                        )?;
                     }
                     ReplCommand::Edit => {
                         edit(&build_state.source_path)?;
@@ -479,56 +486,71 @@ pub fn run_repl(
             }
         }
 
-        let rs_manifest = extract_manifest(rs_source, Instant::now())?;
-        build_state.rs_manifest = Some(rs_manifest);
-
-        let maybe_ast = extract_ast_expr(rs_source);
-
-        if let Ok(expr_ast) = maybe_ast {
-            code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
-        } else {
-            cprtln!(Lvl::ERR.into(), "Error parsing code: {maybe_ast:#?}");
-        }
+        process_source(rs_source, build_state, args, proc_flags, start)?;
     }
     Ok(())
 }
 
-fn tui(initial_content: &str, save_path: PathBuf) -> ThagResult<()> {
+fn process_source(
+    rs_source: &str,
+    build_state: &mut BuildState,
+    args: &Cli,
+    proc_flags: &ProcFlags,
+    start: Instant,
+) -> ThagResult<()> {
+    let rs_manifest = extract_manifest(rs_source, Instant::now())?;
+    build_state.rs_manifest = Some(rs_manifest);
+    let maybe_ast = extract_ast_expr(rs_source);
+    if let Ok(expr_ast) = maybe_ast {
+        code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+    } else {
+        cprtln!(Lvl::ERR.into(), "Error parsing code: {maybe_ast:#?}");
+    };
+    Ok(())
+}
+
+fn tui(
+    initial_content: &str,
+    save_path: &mut PathBuf,
+    build_state: &mut BuildState,
+    args: &Cli,
+    proc_flags: &ProcFlags,
+) -> ThagResult<()> {
+    let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
+    let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
+    let mut history = History::load_from_file(&history_path);
+    history.add_entry(initial_content.to_string());
+
     let event_reader = CrosstermEventReader;
-    let edit_data = EditData {
+    let mut edit_data = EditData {
         return_text: true,
         initial_content,
         save_path: Some(save_path),
-        history_path: None,
-        history: None::<History>,
+        history_path: Some(&history_path),
+        history: Some(history),
     };
-    let binding = [KeyDisplayLine::new(
-        371,
-        "F3",
-        "Discard saved and unsaved changes and exit",
-    )];
+    let add_keys = [
+        KeyDisplayLine::new(361, "Ctrl+Alt+s", "Save a copy"),
+        KeyDisplayLine::new(371, "F3", "Discard saved and unsaved changes, and exit"),
+    ];
     let display = Display {
         title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Subheading))).bold(),
         remove_keys: &[""; 0],
-        add_keys: &binding,
+        add_keys: &add_keys,
     };
-    let (key_action, _maybe_text) = tui_edit(
+    let (key_action, maybe_text) = tui_edit(
         &event_reader,
-        &edit_data,
+        &mut edit_data,
         &display,
-        |key_event, maybe_term, maybe_save_file, textarea, popup, saved| {
+        |key_event, maybe_term, /*maybe_save_file,*/ textarea, edit_data, popup, saved| {
             script_key_handler(
-                key_event,
-                maybe_term,
-                maybe_save_file,
-                textarea,
-                popup,
-                saved,
+                key_event, maybe_term, // maybe_save_file,
+                textarea, edit_data, popup, saved,
             )
         },
     )?;
-    match key_action {
+    let _ = match key_action {
         KeyAction::Quit(saved) => saved,
         KeyAction::Save
         | KeyAction::ShowHelp
@@ -539,6 +561,12 @@ fn tui(initial_content: &str, save_path: PathBuf) -> ThagResult<()> {
             ))
         }
         KeyAction::SaveAndExit => true,
+        KeyAction::Submit => {
+            return maybe_text.map_or(Err(ThagError::Cancelled), |v| {
+                let rs_source = v.join("\n");
+                process_source(&rs_source, build_state, args, proc_flags, Instant::now())
+            });
+        }
         _ => false,
     };
     // if confirm {
@@ -563,25 +591,49 @@ fn tui(initial_content: &str, save_path: PathBuf) -> ThagResult<()> {
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 pub fn script_key_handler(
     key_event: KeyEvent,
-    maybe_term: &mut Option<TermScopeGuard>,
-    _maybe_save_file: &Option<File>,
+    maybe_term: &mut Option<&mut TermScopeGuard>,
+    // maybe_save_path: &mut Option<&mut PathBuf>,
     textarea: &mut TextArea,
+    edit_data: &mut EditData,
     popup: &mut bool,
     saved: &mut bool, // TODO decide if we need this
 ) -> ThagResult<KeyAction> {
-    // let mut tui_highlight_bg = &*TUI_SELECTION_BG;
+    let history_path = edit_data.history_path.cloned();
+    let history = edit_data.history.clone();
 
-    // eprintln!("maybe_save_file={maybe_save_file:?}");
-    // debug_assert!(maybe_save_file.is_none());
+    let history_enabled = history.is_some();
+
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
                                                            // eprintln!("key_combination={key_combination:?}");
 
+    #[allow(clippy::unnested_or_patterns)]
     match key_combination {
-        #[allow(clippy::unnested_or_patterns)]
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
-        key!(ctrl - d) => Ok(KeyAction::Submit),
-        key!(ctrl - s) => {
-            if let Some(term) = maybe_term {
+        key!(ctrl - d) => {
+            if history_enabled {
+                save_to_history(history, history_path);
+            }
+            Ok(KeyAction::Submit)
+        }
+        key!(ctrl - s) | key!(ctrl - alt - s) => {
+            // eprintln!("key_combination={key_combination}, maybe_save_path={maybe_save_path:?}");
+            if history_enabled {
+                save_to_history(history, history_path);
+            }
+            if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
+                let result = edit_data
+                    .save_path
+                    .as_mut()
+                    .map(|p| save_source_file(p, textarea, saved));
+                match result {
+                    Some(Ok(())) => {}
+                    Some(Err(e)) => return Err(e),
+                    None => return Err(ThagError::Logic(
+                        "Should be testing for maybe_save_path.is_some() before calling map on it.",
+                    )),
+                }
+                Ok(KeyAction::Save)
+            } else if let Some(term) = maybe_term {
                 let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
                 save_dialog.open();
                 let mut status = Status::Incomplete;
@@ -590,18 +642,10 @@ pub fn script_key_handler(
                     if let Event::Key(key) = event::read()? {
                         status = save_dialog.handle_input(key)?;
                     }
-                } // if save_dialog.is_open() {
-                  //     term.draw(|f| save_dialog.draw(f))?;
-                  // } else {
-                  //     // Redraw the TUI editor here after the dialog is closed
-                  //     term.draw(|f| term.draw(f))?; // Assuming `app.draw(f)` is the main TUI editor rendering function
-                  // }
+                }
 
                 if let Some(ref to_rs_path) = save_dialog.selected_file {
-                    let _write_source =
-                        code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
-                    // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
-                    *saved = true;
+                    save_source_file(to_rs_path, textarea, saved)?;
                     Ok(KeyAction::Save)
                 } else {
                     Ok(KeyAction::Continue)
@@ -627,24 +671,23 @@ pub fn script_key_handler(
     }
 }
 
-// Attempted to suppress `rfd` rogue message from MacOS Sequoia
-// fn suppress_logs<T>(f: impl FnOnce() -> T) -> T {
-//     let original_stdout = stdout(); // Save original stdout
-//     let original_stderr = stderr(); // Save original stderr
+fn save_to_history(history: Option<History>, history_path: Option<PathBuf>) {
+    if let Some(hist) = history {
+        if let Some(hist_path) = history_path {
+            hist.save_to_file(&hist_path);
+        }
+    }
+}
 
-//     // Create pipes to redirect stdout and stderr
-//     let _stdout_guard = sink();
-//     let _stderr_guard = sink();
-
-//     // Perform the operation
-//     let result = f();
-
-//     // Restore stdout and stderr
-//     let _ = original_stdout.lock().flush();
-//     let _ = original_stderr.lock().flush();
-
-//     result
-// }
+fn save_source_file(
+    to_rs_path: &PathBuf,
+    textarea: &mut TextArea<'_>,
+    saved: &mut bool,
+) -> ThagResult<()> {
+    let _write_source = code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
+    *saved = true;
+    Ok(())
+}
 
 fn review_history(
     line_editor: &mut Reedline,
@@ -687,36 +730,33 @@ pub fn edit_history<R: EventReader + Debug>(
     staging_path: &Path,
     event_reader: &R,
 ) -> ThagResult<bool> {
-    let edit_data = EditData {
+    let mut staging_path_buf = staging_path.to_path_buf();
+    let mut edit_data = EditData {
         return_text: false,
         initial_content,
-        save_path: Some(staging_path.to_path_buf()),
+        save_path: Some(&mut staging_path_buf),
         history_path: None,
         history: None::<History>,
     };
     let binding = [KeyDisplayLine::new(
         371,
         "F3",
-        "Discard saved and unsaved changes and exit",
+        "Discard saved and unsaved changes, and exit",
     )];
     let display = Display {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold(),
-        remove_keys: &["F1", "F2"],
+        remove_keys: &["F7", "F8"],
         add_keys: &binding,
     };
     let (key_action, _maybe_text) = tui_edit(
         event_reader,
-        &edit_data,
+        &mut edit_data,
         &display,
-        |key_event, maybe_term, maybe_save_file, textarea, popup, saved| {
+        |key_event, maybe_term, /*maybe_save_file,*/ textarea, edit_data, popup, saved| {
             history_key_handler(
-                key_event,
-                maybe_term,
-                maybe_save_file,
-                textarea,
-                popup,
-                saved,
+                key_event, maybe_term, // maybe_save_file,
+                textarea, edit_data, popup, saved,
             )
         },
     )?;
@@ -747,28 +787,28 @@ pub fn edit_history<R: EventReader + Debug>(
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 pub fn history_key_handler(
     key_event: KeyEvent,
-    _maybe_term: &mut Option<TermScopeGuard>,
-    maybe_save_file: &Option<File>,
+    _maybe_term: &mut Option<&mut TermScopeGuard>,
+    // maybe_save_path: &mut Option<&mut PathBuf>,
     textarea: &mut TextArea,
+    edit_data: &mut EditData,
     popup: &mut bool,
     saved: &mut bool,
 ) -> ThagResult<KeyAction> {
-    // let mut tui_highlight_bg = &*TUI_SELECTION_BG;
+    let maybe_save_path = &mut edit_data.save_path;
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
-    let save_file = maybe_save_file.as_ref().ok_or("Missing save_file")?;
 
     match key_combination {
         #[allow(clippy::unnested_or_patterns)]
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => {
             // Save logic
-            stage_history(save_file, textarea)?;
+            save_file(maybe_save_path, textarea)?;
             // println!("Saved");
             Ok(KeyAction::SaveAndExit)
         }
         key!(ctrl - s) => {
             // Save logic
-            stage_history(save_file, textarea)?;
+            save_file(maybe_save_path, textarea)?;
             // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
             *saved = true;
             Ok(KeyAction::Save)
@@ -788,6 +828,25 @@ pub fn history_key_handler(
             Ok(KeyAction::Continue)
         }
     }
+}
+
+fn save_file(
+    maybe_save_path: &Option<&mut PathBuf>,
+    textarea: &mut TextArea<'_>,
+) -> ThagResult<()> {
+    let staging_path = maybe_save_path.as_ref().ok_or("Missing save_path")?;
+    let staging_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(staging_path)?;
+    let mut f = BufWriter::new(&staging_file);
+    for line in textarea.lines() {
+        Write::write_all(&mut f, line.as_bytes())?;
+        Write::write_all(&mut f, b"\n")?;
+    }
+    Ok(())
 }
 
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
@@ -944,22 +1003,21 @@ pub fn format_key_code(key_code: KeyCode) -> String {
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
-    lazy_static! {
-        pub static ref EVENT_DESC_MAP: HashMap<&'static str, &'static str> = {
-            let mut map = HashMap::new();
-            for entry in EVENT_DESCS {
-                map.insert(entry[0], entry[1]);
-            }
-            map
-        };
-    };
+    static EVENT_DESC_MAP: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
+    let event_desc_map = EVENT_DESC_MAP.get_or_init(|| {
+        let mut map = HashMap::new();
+        for entry in EVENT_DESCS {
+            map.insert(entry[0], entry[1]);
+        }
+        map
+    });
 
     let event_highlight = NuStyle::from(Lvl::SUBH).paint(event_name);
     let event_highlight = format!("{event_highlight}");
     let event_desc = format!(
         "{:<max_cmd_len$} {}",
         event_highlight,
-        EVENT_DESC_MAP.get(event_name).unwrap_or(&"")
+        event_desc_map.get(event_name).unwrap_or(&"")
     );
     event_desc
 }
@@ -970,18 +1028,16 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> String {
-    lazy_static! {
-        pub static ref CMD_DESC_MAP: HashMap<&'static str, &'static str> = {
-            let mut map = HashMap::new();
-            for entry in CMD_DESCS {
-                map.insert(entry[0], entry[1]);
-            }
-            map
-        };
-    }
+    static CMD_DESC_MAP: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
+    let cmd_desc_map: &HashMap<&str, &str> = CMD_DESC_MAP.get_or_init(|| {
+        let mut map = HashMap::new();
+        for entry in CMD_DESCS {
+            map.insert(entry[0], entry[1]);
+        }
+        map
+    });
 
     let mut cmd_descriptions = Vec::new();
-    // eprintln!("edit_cmds={edit_cmds:?}");
 
     for cmd in edit_cmds {
         let cmd_highlight = NuStyle::from(Lvl::SUBH).paint(format!("{cmd:?}"));
@@ -1002,7 +1058,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
             | EditCommand::MoveBigWordRightEnd { select } => format!(
                 "{:<max_cmd_len$} {}{}",
                 cmd_highlight,
-                CMD_DESC_MAP
+                cmd_desc_map
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
                     .unwrap_or(&""),
                 if *select {
@@ -1055,7 +1111,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
             | EditCommand::LowercaseWord => format!(
                 "{:<max_cmd_len$} {}",
                 cmd_highlight,
-                CMD_DESC_MAP.get(format!("{cmd:?}").as_str()).unwrap_or(&"")
+                cmd_desc_map.get(format!("{cmd:?}").as_str()).unwrap_or(&"")
             ),
             EditCommand::MoveRightUntil { c: _, select }
             | EditCommand::MoveRightBefore { c: _, select }
@@ -1063,7 +1119,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
             | EditCommand::MoveLeftBefore { c: _, select } => format!(
                 "{:<max_cmd_len$} {}. {}",
                 cmd_highlight,
-                CMD_DESC_MAP
+                cmd_desc_map
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
                     .unwrap_or(&""),
                 if *select {
@@ -1075,7 +1131,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
             EditCommand::MoveToPosition { position, select } => format!(
                 "{:<max_cmd_len$} {} {} {}",
                 cmd_highlight,
-                CMD_DESC_MAP
+                cmd_desc_map
                     .get(format!("{cmd:?}").split_once(' ').unwrap().0)
                     .unwrap_or(&""),
                 position,
@@ -1130,12 +1186,6 @@ pub fn edit_history_old<R: EventReader + Debug>(
     event_reader: &R,
 ) -> ThagResult<bool> {
     let initial_content = read_to_string(history_path)?;
-    let staging_file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(staging_path)?;
 
     let mut popup = false;
     let mut tui_highlight_bg = tui_selection_bg(coloring().1);
@@ -1157,11 +1207,11 @@ pub fn edit_history_old<R: EventReader + Debug>(
 
     apply_highlights(&tui_selection_bg(coloring().1), &mut textarea);
 
-    let remove_keys = &["F1", "F2"];
+    let remove_keys = &["F7", "F8"];
     let add_keys = &[KeyDisplayLine::new(
         371,
         "F3",
-        "Discard saved and unsaved changes and exit",
+        "Discard saved and unsaved changes, and exit",
     )];
     let fmt = KeyCombinationFormat::default();
     loop {
@@ -1207,12 +1257,12 @@ pub fn edit_history_old<R: EventReader + Debug>(
                         key!(ctrl - d) => {
                             // #[cfg(debug_assertions)]
                             // debug_log!("{textarea:?}");
-                            stage_history(&staging_file, &textarea)?;
+                            save_file_old(staging_path, &textarea)?;
                             return Ok(true);
                         }
                         key!(ctrl - l) => popup = !popup,
                         key!(ctrl - s) => {
-                            stage_history(&staging_file, &textarea)?;
+                            save_file_old(staging_path, &textarea)?;
                             saved = true;
                             continue;
                         }
@@ -1258,13 +1308,14 @@ pub fn edit_history_old<R: EventReader + Debug>(
     }
 }
 
-/// Save the `textarea` contents to a history staging file.
-///
-/// # Errors
-///
-/// This function will bubble up any i/o errors encountered.
-pub fn stage_history(staging_file: &fs::File, textarea: &TextArea<'_>) -> ThagResult<()> {
-    let mut f = BufWriter::new(staging_file);
+fn save_file_old(staging_path: &PathBuf, textarea: &TextArea<'_>) -> ThagResult<()> {
+    let staging_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(staging_path)?;
+    let mut f = BufWriter::new(&staging_file);
     for line in textarea.lines() {
         Write::write_all(&mut f, line.as_bytes())?;
         Write::write_all(&mut f, b"\n")?;
@@ -1346,7 +1397,8 @@ pub fn disp_repl_banner(cmd_list: &str) {
         Lvl::SUBH,
         get_verbosity(),
         r"Expressions in matching braces, brackets or quotes may span multiple lines.
-Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
+Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end.
+"
     );
 }
 

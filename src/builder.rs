@@ -43,9 +43,8 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
 
     let start = Instant::now();
 
-    // Access lazy_static variables that have side-effects that could affect the behaviour
-    // of the terminal, to get these out of the way. (Belt and braces.)
-    // let _ = (&*TERM_THEME, &*COLOR_SUPPORT);
+    // Access lazy_static variables whose initialisation may have side-effects that could
+    // affect the behaviour of the terminal, to get these out of the way. (Belt and braces.)
     let (maybe_color_support, term_theme) = coloring();
 
     let proc_flags = get_proc_flags(args)?;

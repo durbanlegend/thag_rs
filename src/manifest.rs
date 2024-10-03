@@ -1,7 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use cargo_toml::{Dependency, Manifest};
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
 use mockall::automock;
 use nu_ansi_term::Style;
 use regex::Regex;
@@ -13,12 +12,12 @@ use std::process::{Command, Output};
 use std::time::Instant;
 
 use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
-use crate::colors::Lvl;
 use crate::log;
 use crate::logging::Verbosity;
 #[cfg(target_os = "windows")]
 use crate::shared::escape_path_for_windows;
 use crate::shared::{debug_timings, Ast, BuildState};
+use crate::{colors::Lvl, regex};
 use crate::{debug_log, ThagResult};
 
 /// A trait to allow mocking of the command for testing purposes.
@@ -133,12 +132,10 @@ pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
     profile_fn!(capture_dep);
 
     debug_log!("first_line={first_line}");
-    lazy_static! {
-        static ref RE: Regex =
-            Regex::new(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#).unwrap();
-    }
-    let (name, version) = if RE.is_match(first_line) {
-        let captures = RE.captures(first_line).unwrap();
+    let re: &Regex = regex!(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#);
+
+    let (name, version) = if re.is_match(first_line) {
+        let captures = re.captures(first_line).unwrap();
         let name = captures.get(1).unwrap().as_str();
         let version = captures.get(2).unwrap().as_str();
         // log!(Verbosity::Normal, "Dependency name: {}", name);

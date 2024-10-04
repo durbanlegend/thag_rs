@@ -14,7 +14,7 @@ mod tests {
     };
 
     #[test]
-    fn test_load_config_success() {
+    fn test_config_load_config_success() {
         let config_content = r#"
             [logging]
             default_verbosity = "verbose"
@@ -41,7 +41,7 @@ mod tests {
     }
 
     #[test]
-    fn test_load_config_file_not_found() {
+    fn test_config_load_config_file_not_found() {
         let mut mock_context = MockContext::default();
         mock_context
             .expect_get_config_path()
@@ -56,7 +56,7 @@ mod tests {
     }
 
     #[test]
-    fn test_load_config_invalid_format() {
+    fn test_config_load_config_invalid_format() {
         let config_content = r#"invalid = toml"#;
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let config_path = temp_dir.path().join("config.toml");
@@ -77,7 +77,7 @@ mod tests {
 
     // #[ignore = "Opens file and expects human interaction"]
     #[test]
-    fn test_edit_creates_config_file_if_not_exists() {
+    fn test_config_edit_creates_config_file_if_not_exists() {
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let config_path = temp_dir.path().join("config.toml");
 

@@ -1,16 +1,25 @@
+use clap::CommandFactory;
 use mockall::Sequence;
+use predicates::prelude::predicate;
 use ratatui::crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyModifiers},
     tty::IsTty,
 };
 use ratatui::style::{Color, Style};
-use std::io::{stdout, Write};
 use std::process::{Command, Stdio};
-use thag_rs::colors::{get_term_theme, TuiSelectionBg};
+use std::{
+    io::{stdout, Write},
+    path::PathBuf,
+};
+
 use thag_rs::log;
 use thag_rs::logging::Verbosity;
-use thag_rs::stdin::{edit, read_to_string};
+use thag_rs::stdin::{edit, read_to_string, toml};
 use thag_rs::tui_editor::{apply_highlights, normalize_newlines, MockEventReader};
+use thag_rs::{
+    colors::{get_term_theme, TuiSelectionBg},
+    tui_editor::History,
+};
 use tui_textarea::TextArea;
 
 // Set environment variables before running tests
@@ -20,8 +29,12 @@ fn set_up() {
     std::env::set_var("EDITOR", "cat");
 }
 
+fn init_logger() {
+    let _ = env_logger::builder().is_test(true).try_init();
+}
+
 #[test]
-fn test_edit_stdin_submit() {
+fn test_stdin_edit_stdin_submit() {
     set_up();
     // Check if the test is running in a terminal
     if !stdout().is_tty() {
@@ -75,7 +88,7 @@ fn test_edit_stdin_submit() {
 }
 
 #[test]
-fn test_edit_stdin_quit() {
+fn test_stdin_edit_stdin_quit() {
     set_up();
     // Check if the test is running in a terminal
     if !stdout().is_tty() {
@@ -96,12 +109,91 @@ fn test_edit_stdin_quit() {
     assert!(result.is_ok());
 }
 
-fn init_logger() {
-    let _ = env_logger::builder().is_test(true).try_init();
+#[test]
+fn test_stdin_history_new() {
+    set_up();
+    let history = History::new();
+    assert!(history.entries.is_empty());
+    assert!(history.current_index.is_none());
 }
 
 #[test]
-fn test_read_to_string() {
+fn test_stdin_history_get_current_empty() {
+    set_up();
+    let mut history = History::new();
+    assert!(history.get_current().is_none());
+}
+
+#[test]
+fn test_stdin_history_get_current() {
+    set_up();
+    let mut history = History::new();
+    history.add_entry("first".into());
+    history.add_entry("second".into());
+    assert_eq!(history.get_current(), Some(&"second".to_string()));
+}
+
+#[test]
+fn test_stdin_history_get_previous_empty() {
+    set_up();
+    let mut history = History::new();
+    assert!(history.get_previous().is_none());
+}
+
+#[test]
+fn test_stdin_history_get_previous() {
+    set_up();
+    let mut history = History::new();
+    history.add_entry("first".into());
+    history.add_entry("second".into());
+    assert_eq!(history.get_previous(), Some(&"second".to_string()));
+}
+
+#[test]
+fn test_stdin_history_get_next_empty() {
+    set_up();
+    let mut history = History::new();
+    assert!(history.get_next().is_none());
+}
+
+#[test]
+fn test_stdin_history_get_next() {
+    set_up();
+    let mut history = History::new();
+    history.add_entry("first".into());
+    history.add_entry("second".into());
+    history.get_previous(); // Move to the previous entry
+    assert_eq!(history.get_next(), Some(&"first".to_string()));
+}
+
+#[test]
+fn test_stdin_repl_command_print_help() {
+    set_up();
+    let mut output = Vec::new();
+    let mut command = thag_rs::repl::ReplCommand::command();
+    command.write_long_help(&mut output).unwrap();
+    let help_output = String::from_utf8(output).unwrap();
+    assert!(help_output.contains("REPL mode lets you type or paste a Rust expression"));
+}
+
+#[test]
+fn test_stdin_toml_file_exists() {
+    set_up();
+    let path = PathBuf::from("tests/assets/Cargo_t.toml");
+    assert!(toml(&path).is_ok());
+}
+
+#[test]
+fn test_stdin_toml_file_does_not_exist() {
+    set_up();
+    let path = PathBuf::from("non_existent_toml");
+    let result = toml(&path);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), Some("End of Cargo.toml edit".to_string()));
+}
+
+#[test]
+fn test_stdin_read_to_string() {
     set_up();
     let string = r#"fn main() {{ println!("Hello, world!"); }}\n"#;
     let mut input = string.as_bytes();
@@ -110,7 +202,25 @@ fn test_read_to_string() {
 }
 
 #[test]
-fn test_read_stdin() {
+fn test_stdin_read_from_stdin() {
+    set_up();
+    // Trying an alternative to process::Command.
+    // Spawn `cargo run -- -s` using assert_cmd
+    let mut cmd = assert_cmd::Command::new("cargo");
+    let cmd = cmd // Use assert_cmd to run `cargo`
+        .arg("run")
+        .arg("--")
+        .arg("-qq")
+        .arg("-s")
+        .write_stdin(Vec::from("13 + 21\n"));
+    // Assert the output
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("34"));
+}
+
+#[test]
+fn test_stdin_read_stdin() {
     set_up();
     init_logger();
     let string = "Hello, world!";
@@ -147,7 +257,7 @@ fn test_read_stdin() {
 }
 
 #[test]
-fn test_normalize_newlines() {
+fn test_stdin_normalize_newlines() {
     set_up();
     let input = "Hello\r\nWorld\r!";
     let expected_output = "Hello\nWorld\n!";
@@ -155,7 +265,7 @@ fn test_normalize_newlines() {
 }
 
 #[test]
-fn test_apply_highlights() {
+fn test_stdin_apply_highlights() {
     set_up();
     let mut textarea = TextArea::default();
 

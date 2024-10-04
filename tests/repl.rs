@@ -27,7 +27,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_line() {
+    fn test_repl_parse_line() {
         set_up();
         let input = r#"command "arg 1" arg2"#;
         let (command, args) = parse_line(input);
@@ -37,7 +37,7 @@ mod tests {
     }
 
     #[test]
-    fn test_disp_repl_banner() {
+    fn test_repl_disp_repl_banner() {
         set_up();
         let cmd_list = "command1, command2";
         disp_repl_banner(cmd_list);
@@ -46,7 +46,7 @@ mod tests {
     }
 
     #[test]
-    fn test_delete() {
+    fn test_repl_delete() {
         set_up();
         let build_state = BuildState::default();
 
@@ -56,7 +56,7 @@ mod tests {
 
     #[cfg(not(windows))]
     #[test]
-    fn test_edit_history_old() {
+    fn test_repl_edit_history_old() {
         use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
         use mockall::Sequence;
         use thag_rs::tui_editor::MockEventReader;
@@ -107,7 +107,7 @@ mod tests {
 
     #[cfg(not(windows))]
     #[test]
-    fn test_edit_history() {
+    fn test_repl_edit_history() {
         use std::fs::read_to_string;
 
         use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
@@ -163,7 +163,7 @@ mod tests {
 
     #[cfg(not(windows))]
     #[test]
-    fn test_edit() {
+    fn test_repl_edit() {
         set_up();
         let build_state = BuildState {
             source_path: PathBuf::from("tests/assets/hello_t.rs"),
@@ -176,7 +176,7 @@ mod tests {
 
     #[cfg(not(windows))]
     #[test]
-    fn test_toml() {
+    fn test_repl_toml() {
         set_up();
         let build_state = BuildState {
             cargo_toml_path: PathBuf::from("tests/assets/Cargo_t.toml"),
@@ -188,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn test_run_expr() {
+    fn test_repl_run_expr() {
         set_up();
         let args = Cli::parse_from(["test", "--repl"]);
         let proc_flags = ProcFlags::default();
@@ -202,7 +202,7 @@ mod tests {
     }
 
     #[test]
-    fn test_list() {
+    fn test_repl_list() {
         set_up();
 
         let result = list(&BuildState::default());
@@ -210,7 +210,7 @@ mod tests {
     }
 
     // #[test]
-    // fn test_run_repl() {
+    // fn test_repl_run_repl() {
     //     set_up();
     //     let mut options = Cli::parse_from(["test", "repl"]);
     //     let proc_flags = ProcFlags::default();

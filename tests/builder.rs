@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     // #[sequential]
-    fn test_execute_dynamic_script() {
+    fn test_builder_execute_dynamic_script() {
         set_up();
         let mut args = create_sample_cli(Some(
             "tests/assets/determine_if_known_type_trait_t.rs".to_string(),
@@ -80,7 +80,7 @@ mod tests {
     // Any test of the REPL is problematic because reedline will panic
     // with a message that the current cursor position can't be found.
     // #[test]
-    // fn test_execute_repl_script() {
+    // fn test_builder_execute_repl_script() {
     // let mut args = create_sample_cli(None);
     // args.repl = true;
     //     let result = execute(args);
@@ -88,7 +88,7 @@ mod tests {
     // }
 
     #[test]
-    fn test_generate_source_file() {
+    fn test_builder_generate_source_file() {
         set_up();
         let script_name = "fib_fac_lite_t.rs";
         let mut build_state = create_sample_build_state(script_name);
@@ -131,7 +131,7 @@ mod tests {
 
     #[test]
     // #[sequential]
-    fn test_build_cargo_project() {
+    fn test_builder_build_cargo_project() {
         set_up();
         let source_name = "bitflags_t.rs";
         let source_stem: &str = source_name
@@ -219,7 +219,7 @@ name = "bitflags_t"
 
     #[test]
     // #[sequential]
-    fn test_run_script() {
+    fn test_builder_run_script() {
         set_up();
         let source_name = "fib_fac_dashu_t.rs";
         let source_stem: &str = source_name

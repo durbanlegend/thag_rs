@@ -89,12 +89,12 @@ pub fn resolve_term() -> ThagResult<Option<TermScopeGuard>> {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct History {
-    entries: VecDeque<String>,
+    pub entries: VecDeque<String>,
     pub current_index: Option<usize>,
 }
 
 impl History {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             entries: VecDeque::with_capacity(20),
             current_index: None,

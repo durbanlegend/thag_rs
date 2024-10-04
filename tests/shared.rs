@@ -18,7 +18,7 @@ fn set_up() {
 }
 
 #[test]
-fn test_ast_to_tokens() {
+fn test_shared_ast_to_tokens() {
     set_up();
     use proc_macro2::TokenStream;
     use quote::quote;
@@ -54,7 +54,7 @@ fn test_ast_to_tokens() {
 }
 
 #[test]
-fn test_cargo_manifest_from_str() {
+fn test_shared_cargo_manifest_from_str() {
     set_up();
     let toml_str = r#"
         [package]
@@ -91,7 +91,7 @@ fn test_cargo_manifest_from_str() {
 }
 
 #[test]
-fn test_cargo_manifest_display() {
+fn test_shared_cargo_manifest_display() {
     set_up();
     let mut manifest = manifest::default("example", "path/to/script").unwrap();
 
@@ -161,7 +161,7 @@ required-features = []
 }
 
 #[test]
-fn test_build_state_pre_configure() {
+fn test_shared_build_state_pre_configure() {
     set_up();
     let _ = env_logger::try_init();
 
@@ -192,7 +192,7 @@ fn test_build_state_pre_configure() {
 }
 
 #[test]
-fn test_script_state_getters() {
+fn test_shared_script_state_getters() {
     set_up();
     let anonymous_state = ScriptState::Anonymous;
     assert!(anonymous_state.get_script().is_none());
@@ -223,7 +223,7 @@ fn test_script_state_getters() {
 }
 
 #[test]
-fn test_debug_timings() {
+fn test_shared_debug_timings() {
     set_up();
     let start = Instant::now();
     #[cfg(debug_assertions)]
@@ -232,7 +232,7 @@ fn test_debug_timings() {
 }
 
 #[test]
-fn test_display_timings() {
+fn test_shared_display_timings() {
     set_up();
     let start = Instant::now();
     let proc_flags = ProcFlags::empty();
@@ -241,7 +241,7 @@ fn test_display_timings() {
 }
 
 #[test]
-fn test_escape_path_for_windows() {
+fn test_shared_escape_path_for_windows() {
     set_up();
     #[cfg(windows)]
     {

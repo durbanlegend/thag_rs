@@ -24,10 +24,9 @@ mod tests {
         }
     }
 
-    // #[ignore]
     #[test]
     // supports_color::on(Stream) causes rightward drift
-    fn test_color_support() {
+    fn test_colors_color_support() {
         set_up();
         let color_level = supports_color::on(Stream::Stdout);
         // thag_rs::clear_screen();
@@ -59,7 +58,7 @@ mod tests {
 
     #[test]
     #[cfg(not(target_os = "windows"))]
-    fn test_term_theme() {
+    fn test_colors_term_theme() {
         // Test if TERM_THEME is set correctly
         set_up();
         // Example test using the manual comparison function
@@ -75,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn test_message_style_display() {
+    fn test_colors_message_style_display() {
         // Test the Display trait for MessageStyle
         set_up();
         let style = MessageStyle::Ansi16LightError;
@@ -86,20 +85,21 @@ mod tests {
     }
 
     #[test]
-    fn test_nu_color_get_color() {
+    fn test_colors_nu_color_get_color() {
         // Test the get_color method for XtermColor
         set_up();
         let xterm_color = XtermColor::GuardsmanRed;
         assert_eq!(Color::from(&xterm_color), Color::Fixed(160));
     }
 
+    #[ignore = "Causes rightward drift of the test result printouts"]
     #[test]
     #[cfg(not(target_os = "windows"))]
-    fn test_style_conv() {
+    fn test_colors_style_conv() {
         use thag_rs::colors::coloring;
 
         set_up();
-        // Test sytle conversions
+        // Test style conversions
         // Causes rightward drift of the test result printouts.
         let theme = termbg::theme(std::time::Duration::from_millis(100));
         // print!("{}[2J", 27 as char);
@@ -140,7 +140,7 @@ mod tests {
     }
 
     #[test]
-    fn test_message_style_get_style() {
+    fn test_colors_message_style_get_style() {
         // Test the get_style method for MessageStyle
         set_up();
         let style = Style::from(MessageStyle::Ansi16LightError);
@@ -151,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn test_nu_color_println_macro() {
+    fn test_colors_nu_color_println_macro() {
         // Test the nu_color_println macro
         set_up();
         let content = "Test message from test_nu_color_println_macro";

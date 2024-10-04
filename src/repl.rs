@@ -206,7 +206,7 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 /// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
 /// editor or directly from their temporary disk locations.
 /// The tab key will show command selections and complete partial matching selections."
-enum ReplCommand {
+pub enum ReplCommand {
     /// Show the REPL banner
     Banner,
     /// Promote the Rust expression to the TUI (Terminal user interface) repl, which can handle any script. This is a one-way process but the original expression will be saved in history.
@@ -599,9 +599,9 @@ pub fn script_key_handler(
     saved: &mut bool, // TODO decide if we need this
 ) -> ThagResult<KeyAction> {
     let history_path = edit_data.history_path.cloned();
-    let history = edit_data.history.clone();
-
-    let history_enabled = history.is_some();
+    let mut history = edit_data.history.clone();
+    // let history_enabled = history.is_some();
+    // let saved_to_history = false;
 
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
                                                            // eprintln!("key_combination={key_combination:?}");
@@ -610,15 +610,17 @@ pub fn script_key_handler(
     match key_combination {
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => {
-            if history_enabled {
-                save_to_history(history, history_path);
+            if let Some(ref mut hist) = history {
+                hist.add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
+                save_history(history.as_ref(), history_path.as_ref());
             }
             Ok(KeyAction::Submit)
         }
         key!(ctrl - s) | key!(ctrl - alt - s) => {
             // eprintln!("key_combination={key_combination}, maybe_save_path={maybe_save_path:?}");
-            if history_enabled {
-                save_to_history(history, history_path);
+            if let Some(ref mut hist) = history {
+                hist.add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
+                save_history(history.as_ref(), history_path.as_ref());
             }
             if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
                 let result = edit_data
@@ -663,6 +665,41 @@ pub fn script_key_handler(
             // Ask to revert
             Ok(KeyAction::AbandonChanges)
         }
+        key!(f7) => {
+            // let mut found = false;
+            // 6 5,4,3,2,1 -> >5,4,3,2,1
+            if let Some(ref mut hist) = history {
+                hist.add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
+                save_history(history.as_ref(), history_path.as_ref());
+            }
+            if let Some(ref mut hist) = history {
+                if let Some(entry) = hist.get_previous() {
+                    // 5
+                    // found = true;
+                    textarea.select_all();
+                    textarea.cut(); // 6
+                    textarea.insert_str(entry); // 5
+                }
+            }
+            // if found && !saved_to_history && !textarea.yank_text().is_empty() {
+            //     // 5 >5,4,3,2,1 -> 5 6,>5,4,3,2,1
+            //     hist.add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
+            //     // saved_to_history = true;     // Needr read
+            // }
+
+            Ok(KeyAction::Continue)
+        }
+        key!(f8) => {
+            // 5 >6,5,4,3,2,1 ->
+            if let Some(ref mut hist) = history {
+                if let Some(entry) = hist.get_next() {
+                    textarea.select_all();
+                    textarea.cut();
+                    textarea.insert_str(entry);
+                }
+            }
+            Ok(KeyAction::Continue)
+        }
         _ => {
             // Update the textarea with the input from the key event
             textarea.input(Input::from(key_event)); // Input derived from Event
@@ -671,10 +708,10 @@ pub fn script_key_handler(
     }
 }
 
-fn save_to_history(history: Option<History>, history_path: Option<PathBuf>) {
+fn save_history(history: Option<&History>, history_path: Option<&PathBuf>) {
     if let Some(hist) = history {
         if let Some(hist_path) = history_path {
-            hist.save_to_file(&hist_path);
+            hist.save_to_file(hist_path);
         }
     }
 }
@@ -1397,8 +1434,7 @@ pub fn disp_repl_banner(cmd_list: &str) {
         Lvl::SUBH,
         get_verbosity(),
         r"Expressions in matching braces, brackets or quotes may span multiple lines.
-Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end.
-"
+Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
     );
 }
 

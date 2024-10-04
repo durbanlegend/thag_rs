@@ -8,8 +8,8 @@ use crate::repl::{
     format_key_modifier, format_non_edit_events, parse_line, show_key_bindings, ReplPrompt,
 };
 use crate::tui_editor::{
-    maybe_enable_raw_mode, show_popup, CrosstermEventReader, EventReader, MAPPINGS, TITLE_BOTTOM,
-    TITLE_TOP,
+    maybe_enable_raw_mode, show_popup, CrosstermEventReader, EventReader, History, MAPPINGS,
+    TITLE_BOTTOM, TITLE_TOP,
 };
 use crate::{
     code_utils, cprtln, cvprtln, debug_log, extract_ast_expr, extract_manifest, log, BuildState,
@@ -41,82 +41,82 @@ use reedline::{
     Emacs, MenuBuilder, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
-use serde::{Deserialize, Serialize};
-use serde_json;
+// use serde::{Deserialize, Serialize};
+// use serde_json;
 use std::fmt::Debug;
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, IsTerminal};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Instant;
-use std::{collections::VecDeque, fs, path::PathBuf};
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use tui_textarea::{CursorMove, Input, TextArea};
 
-#[derive(Default, Serialize, Deserialize)]
-struct History {
-    entries: VecDeque<String>,
-    current_index: Option<usize>,
-}
+// #[derive(Default, Serialize, Deserialize)]
+// pub struct History {
+//     pub entries: VecDeque<String>,
+//     pub current_index: Option<usize>,
+// }
 
-impl History {
-    fn new() -> Self {
-        Self {
-            entries: VecDeque::with_capacity(20),
-            current_index: None,
-        }
-    }
+// impl History {
+//     pub fn new() -> Self {
+//         Self {
+//             entries: VecDeque::with_capacity(20),
+//             current_index: None,
+//         }
+//     }
 
-    fn load_from_file(path: &PathBuf) -> Self {
-        fs::read_to_string(path).map_or_else(
-            |_| Self::default(),
-            |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
-        )
-    }
+//     fn load_from_file(path: &PathBuf) -> Self {
+//         fs::read_to_string(path).map_or_else(
+//             |_| Self::default(),
+//             |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
+//         )
+//     }
 
-    fn save_to_file(&self, path: &PathBuf) {
-        if let Ok(data) = serde_json::to_string(self) {
-            let _ = fs::write(path, data);
-        }
-    }
+//     fn save_to_file(&self, path: &PathBuf) {
+//         if let Ok(data) = serde_json::to_string(self) {
+//             let _ = fs::write(path, data);
+//         }
+//     }
 
-    fn add_entry(&mut self, entry: String) {
-        // Remove prior duplicates
-        self.entries.retain(|f| f != &entry);
-        self.entries.push_front(entry);
-    }
+//     fn add_entry(&mut self, entry: String) {
+//         // Remove prior duplicates
+//         self.entries.retain(|f| f != &entry);
+//         self.entries.push_front(entry);
+//     }
 
-    fn get_current(&mut self) -> Option<&String> {
-        if self.entries.is_empty() {
-            return None;
-        }
+//     fn get_current(&mut self) -> Option<&String> {
+//         if self.entries.is_empty() {
+//             return None;
+//         }
 
-        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
-        self.entries.front()
-    }
+//         self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
+//         self.entries.front()
+//     }
 
-    fn get_previous(&mut self) -> Option<&String> {
-        if self.entries.is_empty() {
-            return None;
-        }
+//     fn get_previous(&mut self) -> Option<&String> {
+//         if self.entries.is_empty() {
+//             return None;
+//         }
 
-        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
-        self.current_index.and_then(|index| self.entries.get(index))
-    }
+//         self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
+//         self.current_index.and_then(|index| self.entries.get(index))
+//     }
 
-    fn get_next(&mut self) -> Option<&String> {
-        if self.entries.is_empty() {
-            return None;
-        }
+//     fn get_next(&mut self) -> Option<&String> {
+//         if self.entries.is_empty() {
+//             return None;
+//         }
 
-        self.current_index = match self.current_index {
-            Some(index) if index > 0 => Some(index - 1),
-            Some(index) if index == 0 => Some(index + self.entries.len() - 1),
-            _ => Some(self.entries.len() - 1),
-        };
+//         self.current_index = match self.current_index {
+//             Some(index) if index > 0 => Some(index - 1),
+//             Some(index) if index == 0 => Some(index + self.entries.len() - 1),
+//             _ => Some(self.entries.len() - 1),
+//         };
 
-        self.current_index.and_then(|index| self.entries.get(index))
-    }
-}
+//         self.current_index.and_then(|index| self.entries.get(index))
+//     }
+// }
 
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(
@@ -473,7 +473,6 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
 
     let mut history = History::load_from_file(&history_path);
-
     let mut saved_to_history = false;
 
     #[cfg(debug_assertions)]
@@ -667,7 +666,7 @@ pub fn read() -> Result<String, std::io::Error> {
     Ok(buffer)
 }
 
-/// Read the input from a `BufRead` implementing item into a String.
+/// Read Rust source code into a String from the provided reader (e.g., stdin or a mock reader).
 ///
 /// # Examples
 ///

@@ -29,7 +29,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn test_logger_new() {
+    fn test_logging_logger_new() {
         set_up();
         let logger = Logger::new(Verbosity::Quiet);
         assert_eq!(logger.verbosity, Verbosity::Quiet);
@@ -43,7 +43,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn test_logger_set_verbosity() {
+    fn test_logging_logger_set_verbosity() {
         set_up();
         let mut logger = Logger::new(Verbosity::Quiet);
         assert_eq!(logger.verbosity, Verbosity::Quiet);
@@ -54,7 +54,7 @@ mod tests {
 
     #[test]
     #[sequential]
-    fn test_logger_log() {
+    fn test_logging_logger_log() {
         set_up();
         init_logger();
         let thag_rs_path = env::current_dir().expect("Error getting current directory");
@@ -88,7 +88,7 @@ fn main() {{
 
     #[test]
     #[parallel]
-    fn test_global_logger() {
+    fn test_logging_global_logger() {
         set_up();
         reset_global_logger();
 
@@ -107,7 +107,7 @@ fn main() {{
 
     #[test]
     #[sequential]
-    fn test_macro_log() {
+    fn test_logging_macro_log() {
         set_up();
         init_logger();
         let thag_rs_path = env::current_dir().expect("Error getting current directory");

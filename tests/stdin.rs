@@ -6,6 +6,7 @@ use ratatui::crossterm::{
     tty::IsTty,
 };
 use ratatui::style::{Color, Style};
+use sequential_test::{parallel, sequential};
 use std::process::{Command, Stdio};
 use std::{
     io::{stdout, Write},
@@ -202,6 +203,7 @@ fn test_stdin_read_to_string() {
 }
 
 #[test]
+#[sequential]
 fn test_stdin_read_from_stdin() {
     set_up();
     // Trying an alternative to process::Command.
@@ -220,6 +222,7 @@ fn test_stdin_read_from_stdin() {
 }
 
 #[test]
+#[sequential]
 fn test_stdin_read_stdin() {
     set_up();
     init_logger();

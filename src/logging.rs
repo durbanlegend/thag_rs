@@ -1,7 +1,11 @@
 #![allow(clippy::uninlined_format_args)]
-use env_logger::{Builder, Env, WriteStyle};
+#[cfg(feature = "env_logger")]
+use env_logger::{Builder, Env};
 use firestorm::profile_fn;
+use log::info;
 use serde::Deserialize;
+#[cfg(feature = "simplelog")]
+use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     LazyLock, Mutex,
@@ -135,13 +139,33 @@ pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
 // Configure log level
 pub fn configure_log() {
     profile_fn!(configure_log);
-    let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
-    let mut binding = Builder::new();
-    let builder = binding.parse_env(env);
-    builder.write_style(WriteStyle::Always);
-    let _ = builder.try_init();
 
-    // Builder::new().filter_level(log::LevelFilter::Debug).init();
+    // Choose between simplelog and env_logger based on compile feature
+    #[cfg(feature = "simplelog")]
+    {
+        CombinedLogger::init(vec![
+            TermLogger::new(
+                LevelFilter::Info,
+                Config::default(),
+                TerminalMode::Mixed,
+                ColorChoice::Auto,
+            ),
+            WriteLogger::new(
+                LevelFilter::Debug,
+                Config::default(),
+                File::create("app.log").unwrap(),
+            ),
+        ])
+        .unwrap();
+        info!("Initialized simplelog");
+    }
+
+    #[cfg(feature = "env_logger")]
+    {
+        let env = Env::new().filter("RUST_LOG");
+        Builder::new().parse_env(env).init();
+        info!("Initialized env_logger");
+    }
 }
 
 #[macro_export]

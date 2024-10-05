@@ -30,7 +30,9 @@ bitflags = "2.6.0"
 clap = { version = "4.5.17", features = ["cargo", "derive"] }
 crossterm = { version = "0.28.0", features = ["use-dev-tty"] }
 edit = "0.1.5"
-env_logger = "0.11.5"
+simplelog = { version = "0.12.2", optional = true }
+env_logger = { version = "0.11.5", optional = true }
+
 home = "0.5.9"
 log = "0.4.22"
 nu-ansi-term = "0.50.1"
@@ -86,6 +88,8 @@ path = "src/bin/thag_rs.rs"
 [features]
 debug-logs = []
 nightly = []
+default = ["env_logger"]
+simplelog = ["dep:simplelog"]
 
 [dev-dependencies]
 assert_cmd = "2.0.16"

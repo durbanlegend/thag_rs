@@ -2,10 +2,14 @@
 mod tests {
     use nu_ansi_term::{Color, Style};
     use supports_color::Stream;
-    use thag_rs::colors::{ColorSupport, MessageStyle, TermTheme, XtermColor};
+    #[cfg(not(target_os = "windows"))]
+    use thag_rs::colors::TermTheme;
+    use thag_rs::colors::{ColorSupport, MessageStyle, XtermColor};
     #[cfg(not(target_os = "windows"))]
     use thag_rs::termbg::{self, Theme};
-    use thag_rs::{cprtln, log, Lvl};
+    #[cfg(not(target_os = "windows"))]
+    use thag_rs::Lvl;
+    use thag_rs::{cprtln, log};dxcc
 
     // Set environment variables before running tests
     fn set_up() {

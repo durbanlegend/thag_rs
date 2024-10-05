@@ -181,14 +181,6 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
     ["Paste", "Paste content from local buffer at the current cursor position"],
 ];
 
-#[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
-#[command(
-    name = "",
-    disable_help_flag = true,
-    disable_help_subcommand = true,
-    verbatim_doc_comment
-)] // Disable automatic help subcommand and flag
-#[strum(serialize_all = "snake_case")]
 /// REPL mode lets you type or paste a Rust expression to be evaluated.
 /// Start by choosing the eval option and entering your expression. Expressions between matching braces,
 /// brackets, parens or quotes may span multiple lines.
@@ -206,6 +198,15 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 /// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
 /// editor or directly from their temporary disk locations.
 /// The tab key will show command selections and complete partial matching selections."
+#[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
+#[command(
+    name = "",
+    disable_help_flag = true,
+    disable_help_subcommand = true,
+    verbatim_doc_comment
+)] // Disable automatic help subcommand and flag
+#[strum(serialize_all = "snake_case")]
+#[allow(clippy::module_name_repetitions)]
 pub enum ReplCommand {
     /// Show the REPL banner
     Banner,

@@ -94,6 +94,7 @@ pub struct History {
 }
 
 impl History {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             entries: VecDeque::with_capacity(20),

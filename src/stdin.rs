@@ -624,10 +624,6 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                             println!("You typed {} which represents nothing yet", key.green());
                             continue;
                         }
-                        #[allow(clippy::unnested_or_patterns)]
-                        key!('?') | key!(shift - '?') => {
-                            println!("{}", "You typed {} which represents nothing yet".blue());
-                        }
                         _ => {
                             // println!("You typed {} which represents nothing yet", key.blue());
                             let input = Input::from(event?);

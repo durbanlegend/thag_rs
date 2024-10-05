@@ -9,7 +9,7 @@ mod tests {
     use thag_rs::termbg::{self, Theme};
     #[cfg(not(target_os = "windows"))]
     use thag_rs::Lvl;
-    use thag_rs::{cprtln, log};dxcc
+    use thag_rs::{cprtln, log};
 
     // Set environment variables before running tests
     fn set_up() {

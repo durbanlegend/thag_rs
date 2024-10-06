@@ -21,7 +21,7 @@
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?
 - [ ]  Implement Ctrl+A (Save As...) on file dialog, also confirmation of save.
-         >>> TODO: Save history on TUI save - in KeyHandler will need to be passed history file locvc
+         >>> TODO: Save history on TUI save - in KeyHandler will need to be passed history file location
 - [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.
 - [ ]  Consider using \n-separated format for history instead of JSON, to align with `reedline`.
 - [ ]  Decommission repl::edit_history_old.

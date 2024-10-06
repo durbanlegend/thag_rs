@@ -1,4 +1,5 @@
-use crokey::{key, KeyCombination};
+// use crate::__private::key;
+use crokey::KeyCombination;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
 };
@@ -34,6 +35,7 @@ use std::{self, fs};
 use tui_textarea::{CursorMove, Input, TextArea};
 
 use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
+use crate::key;
 use crate::regex;
 use crate::shared::KeyDisplayLine;
 use crate::{debug_log, MessageLevel, ThagError, ThagResult};

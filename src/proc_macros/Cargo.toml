@@ -1,0 +1,22 @@
+[package]
+name = "thag_proc_macros"
+version = "0.1.0"
+authors = ["Don Forbes <don.forbes3@gmail.com>"]
+description = "proc macros for TUI key combinations, copied from the crokey crate"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+
+[dependencies]
+crokey = "1.1.0"
+crossterm = "0.28"
+proc-macro2 = "1.0"
+quote = "1.0"
+strict = "0.2"
+syn = { version = "2.0", default-features = false, features = [
+    "parsing",
+    "proc-macro",
+] }
+
+[lib]
+proc-macro = true
+path = "lib.rs"

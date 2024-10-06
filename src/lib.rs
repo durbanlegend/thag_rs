@@ -30,6 +30,7 @@ pub use colors::{
     Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, Xterm256DarkStyle, Xterm256LightStyle,
 };
 pub use config::{load, maybe_config};
+pub use crokey::*;
 pub use errors::{ThagError, ThagResult};
 pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};
 
@@ -46,3 +47,30 @@ pub const TOML_NAME: &str = "Cargo.toml";
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub static TMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);
+
+/// Borrowed from `crokey` under MIT licence.
+/// Copyright (c) 2022 Canop
+#[macro_export]
+macro_rules! key {
+    ($($tt:tt)*) => {
+        $crate::__private::key!(($crate) $($tt)*)
+    };
+}
+
+pub mod __private {
+    pub use crossterm;
+    pub use strict::OneToThree;
+    pub use thag_proc_macros::key;
+
+    use crossterm::event::KeyModifiers;
+    pub const MODS: KeyModifiers = KeyModifiers::NONE;
+    pub const MODS_CTRL: KeyModifiers = KeyModifiers::CONTROL;
+    pub const MODS_ALT: KeyModifiers = KeyModifiers::ALT;
+    pub const MODS_SHIFT: KeyModifiers = KeyModifiers::SHIFT;
+    pub const MODS_CTRL_ALT: KeyModifiers = KeyModifiers::CONTROL.union(KeyModifiers::ALT);
+    pub const MODS_ALT_SHIFT: KeyModifiers = KeyModifiers::ALT.union(KeyModifiers::SHIFT);
+    pub const MODS_CTRL_SHIFT: KeyModifiers = KeyModifiers::CONTROL.union(KeyModifiers::SHIFT);
+    pub const MODS_CTRL_ALT_SHIFT: KeyModifiers = KeyModifiers::CONTROL
+        .union(KeyModifiers::ALT)
+        .union(KeyModifiers::SHIFT);
+}

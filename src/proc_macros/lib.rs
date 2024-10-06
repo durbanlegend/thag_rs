@@ -201,7 +201,7 @@ impl Parse for KeyCombinationKey {
 #[doc(hidden)]
 #[proc_macro]
 pub fn key(input: TokenStream1) -> TokenStream1 {
-    // println!("input={input:?}");
+    // println!("input={input:#?}");
     let KeyCombinationKey {
         crate_path,
         ctrl,

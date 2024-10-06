@@ -6,7 +6,7 @@ use ratatui::crossterm::{
     tty::IsTty,
 };
 use ratatui::style::{Color, Style};
-use sequential_test::{parallel, sequential};
+use sequential_test::sequential;
 use std::process::{Command, Stdio};
 use std::{
     io::{stdout, Write},
@@ -129,8 +129,8 @@ fn test_stdin_history_get_current_empty() {
 fn test_stdin_history_get_current() {
     set_up();
     let mut history = History::new();
-    history.add_entry("first".into());
-    history.add_entry("second".into());
+    history.add_entry("first");
+    history.add_entry("second");
     assert_eq!(history.get_current(), Some(&"second".to_string()));
 }
 
@@ -145,8 +145,8 @@ fn test_stdin_history_get_previous_empty() {
 fn test_stdin_history_get_previous() {
     set_up();
     let mut history = History::new();
-    history.add_entry("first".into());
-    history.add_entry("second".into());
+    history.add_entry("first");
+    history.add_entry("second");
     assert_eq!(history.get_previous(), Some(&"second".to_string()));
 }
 
@@ -161,8 +161,8 @@ fn test_stdin_history_get_next_empty() {
 fn test_stdin_history_get_next() {
     set_up();
     let mut history = History::new();
-    history.add_entry("first".into());
-    history.add_entry("second".into());
+    history.add_entry("first");
+    history.add_entry("second");
     history.get_previous(); // Move to the previous entry
     assert_eq!(history.get_next(), Some(&"first".to_string()));
 }

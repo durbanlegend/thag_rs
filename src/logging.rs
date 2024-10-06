@@ -1,11 +1,15 @@
 #![allow(clippy::uninlined_format_args)]
-#[cfg(feature = "env_logger")]
+#[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
 use env_logger::{Builder, Env};
 use firestorm::profile_fn;
 use log::info;
 use serde::Deserialize;
 #[cfg(feature = "simplelog")]
-use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
+use simplelog::{
+    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+};
+#[cfg(feature = "simplelog")]
+use std::fs::File;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     LazyLock, Mutex,
@@ -160,7 +164,7 @@ pub fn configure_log() {
         info!("Initialized simplelog");
     }
 
-    #[cfg(feature = "env_logger")]
+    #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
     {
         let env = Env::new().filter("RUST_LOG");
         Builder::new().parse_env(env).init();

@@ -1,5 +1,6 @@
 // use crate::__private::key;
 use crokey::KeyCombination;
+use crossterm::event::KeyEventKind;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
 };
@@ -118,7 +119,13 @@ impl History {
         }
     }
 
-    pub fn add_entry(&mut self, entry: String) {
+    pub fn add_entry(&mut self, entry: &str) {
+        // Surround with braces
+        let entry = format!(
+            r#"{{
+{entry}
+}}"#
+        );
         // Remove prior duplicates
         self.entries.retain(|f| f != &entry);
         self.entries.push_front(entry);
@@ -310,6 +317,10 @@ where
         if let Paste(ref data) = event {
             textarea.insert_str(normalize_newlines(data));
         } else if let Event::Key(key_event) = event {
+            if !matches!(key_event.kind, KeyEventKind::Press) {
+                continue;
+            }
+            // log::debug!("key_event={key_event:#?}");
             let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
             // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.

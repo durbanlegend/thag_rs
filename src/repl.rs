@@ -16,7 +16,7 @@ use crate::tui_editor::{
 use crate::{cprtln, cvprtln, gen_build_run, log, tui_editor, Lvl, ThagResult};
 
 use clap::{CommandFactory, Parser};
-use crokey::{crossterm, key, KeyCombination, KeyCombinationFormat};
+use crokey::{key, KeyCombination, KeyCombinationFormat};
 use crossterm::event::{
     self,
     Event::{self, Paste},
@@ -520,7 +520,7 @@ fn tui(
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
     let mut history = History::load_from_file(&history_path);
-    history.add_entry(initial_content.to_string());
+    history.add_entry(initial_content);
 
     let event_reader = CrosstermEventReader;
     let mut edit_data = EditData {
@@ -612,7 +612,7 @@ pub fn script_key_handler(
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => {
             if let Some(ref mut hist) = history {
-                hist.add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
+                hist.add_entry(&textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
                 save_history(history.as_ref(), history_path.as_ref());
             }
             Ok(KeyAction::Submit)
@@ -620,7 +620,7 @@ pub fn script_key_handler(
         key!(ctrl - s) | key!(ctrl - alt - s) => {
             // eprintln!("key_combination={key_combination}, maybe_save_path={maybe_save_path:?}");
             if let Some(ref mut hist) = history {
-                hist.add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
+                hist.add_entry(&textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
                 save_history(history.as_ref(), history_path.as_ref());
             }
             if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
@@ -670,7 +670,7 @@ pub fn script_key_handler(
             // let mut found = false;
             // 6 5,4,3,2,1 -> >5,4,3,2,1
             if let Some(ref mut hist) = history {
-                hist.add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
+                hist.add_entry(&textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
                 save_history(history.as_ref(), history_path.as_ref());
             }
             if let Some(ref mut hist) = history {
@@ -1285,10 +1285,10 @@ pub fn edit_history_old<R: EventReader + Debug>(
             match event {
                 Event::Key(key_event) => {
                     let key_combination = key_event.into();
-                    let key = fmt.to_string(key_combination);
                     match key_combination {
                         #[allow(clippy::unnested_or_patterns)]
                         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => {
+                            let key = fmt.to_string(key_combination);
                             println!("You typed {} which gracefully quits", key.green());
                             return Ok(saved);
                         }

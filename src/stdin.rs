@@ -19,11 +19,9 @@ use crate::{
 use clap::{CommandFactory, Parser};
 use crokey::{crossterm, key, KeyCombinationFormat};
 use crossterm::event::{
-    DisableMouseCapture,
-    EnableBracketedPaste,
-    EnableMouseCapture,
+    DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
-    // KeyCode, KeyEvent, KeyModifiers,
+    KeyEventKind,
 };
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
@@ -549,6 +547,9 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         } else {
             match event {
                 Ok(Event::Key(key_event)) => {
+                    if !matches!(key_event.kind, KeyEventKind::Press) {
+                        continue;
+                    }
                     // let Some(key_combination) = combiner.transform(key_event) else {
                     //     continue;
                     // };
@@ -566,7 +567,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                         // }
                         key!(ctrl - d) => {
                             // 6 >5,4,3,2,1 -> 6 >6,5,4,3,2,1
-                            history.add_entry(textarea.lines().to_vec().join("\n"));
+                            history.add_entry(&textarea.lines().to_vec().join("\n"));
                             history.current_index = Some(0);
                             history.save_to_file(&history_path);
                             break;
@@ -601,7 +602,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                             if found && !saved_to_history && !textarea.yank_text().is_empty() {
                                 // 5 >5,4,3,2,1 -> 5 6,>5,4,3,2,1
                                 history.add_entry(
-                                    textarea.yank_text().lines().collect::<Vec<_>>().join("\n"),
+                                    &textarea.yank_text().lines().collect::<Vec<_>>().join("\n"),
                                 );
                                 saved_to_history = true;
                             }

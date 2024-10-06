@@ -273,32 +273,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
-name = "crokey"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "520e83558f4c008ac06fa6a86e5c1d4357be6f994cce7434463ebcdaadf47bb1"
-dependencies = [
- "crokey-proc_macros",
- "crossterm",
- "once_cell",
- "serde",
- "strict",
-]
-
-[[package]]
-name = "crokey-proc_macros"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "370956e708a1ce65fe4ac5bb7185791e0ece7485087f17736d54a23a0895049f"
-dependencies = [
- "crossterm",
- "proc-macro2 1.0.86",
- "quote 1.0.37",
- "strict",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "crossterm"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1405,7 +1379,6 @@ dependencies = [
 name = "thag_proc_macros"
 version = "0.1.0"
 dependencies = [
- "crokey",
  "crossterm",
  "proc-macro2 1.0.86",
  "quote 1.0.37",
@@ -1421,7 +1394,6 @@ dependencies = [
  "bitflags",
  "cargo_toml",
  "clap",
- "crokey",
  "crossterm",
  "edit",
  "env_logger",

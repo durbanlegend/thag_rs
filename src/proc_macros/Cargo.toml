@@ -7,7 +7,6 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [dependencies]
-crokey = "1.1.0"
 crossterm = "0.28"
 proc-macro2 = "1.0"
 quote = "1.0"

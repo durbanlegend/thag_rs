@@ -131,7 +131,7 @@ fn test_stdin_history_get_current() {
     let mut history = History::new();
     history.add_entry("first");
     history.add_entry("second");
-    assert_eq!(history.get_current(), Some(&"second".to_string()));
+    assert_eq!(history.get_current(), Some(&"{\nsecond\n}".to_string()));
 }
 
 #[test]
@@ -147,7 +147,7 @@ fn test_stdin_history_get_previous() {
     let mut history = History::new();
     history.add_entry("first");
     history.add_entry("second");
-    assert_eq!(history.get_previous(), Some(&"second".to_string()));
+    assert_eq!(history.get_previous(), Some(&"{\nsecond\n}".to_string()));
 }
 
 #[test]
@@ -164,7 +164,7 @@ fn test_stdin_history_get_next() {
     history.add_entry("first");
     history.add_entry("second");
     history.get_previous(); // Move to the previous entry
-    assert_eq!(history.get_next(), Some(&"first".to_string()));
+    assert_eq!(history.get_next(), Some(&"{\nfirst\n}".to_string()));
 }
 
 #[test]

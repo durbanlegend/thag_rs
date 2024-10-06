@@ -16,8 +16,8 @@ use crate::{
     Cli, Lvl, MessageLevel, ProcFlags,
 };
 
+use crate::key;
 use clap::{CommandFactory, Parser};
-use crokey::{crossterm, key, KeyCombinationFormat};
 use crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
@@ -521,7 +521,6 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     let tui_selection_bg = tui_selection_bg(coloring().1);
     apply_highlights(&tui_selection_bg, &mut textarea);
 
-    let fmt = KeyCombinationFormat::default();
     loop {
         term.draw(|f| {
             f.render_widget(&textarea, f.area());
@@ -538,9 +537,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         if !is_raw_mode_enabled()? {
             enable_raw_mode()?;
         }
-        // let event = crossterm::event::read();
         let event = event_reader.read_event();
-        // terminal::disable_raw_mode()?;
 
         if let Ok(Paste(ref data)) = event {
             textarea.insert_str(normalize_newlines(data));
@@ -550,19 +547,15 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                     if !matches!(key_event.kind, KeyEventKind::Press) {
                         continue;
                     }
-                    // let Some(key_combination) = combiner.transform(key_event) else {
-                    //     continue;
-                    // };
                     let key_combination = key_event.into();
-                    let key = fmt.to_string(key_combination);
                     match key_combination {
                         #[allow(clippy::unnested_or_patterns)]
                         key!(ctrl - c) | key!(ctrl - q) => {
-                            println!("You typed {} which gracefully quits", key.green());
+                            // println!("You typed {key_combination:?} which gracefully quits");
                             return Ok(vec![]);
                         }
                         // key!(ctrl - q - q - q) => {
-                        //     println!("You typed {} which gracefully quits", key.green());
+                        //     println!("You typed {} which gracefully quits"/*, key.green()*/);
                         //     return Ok(());
                         // }
                         key!(ctrl - d) => {
@@ -618,15 +611,19 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                             continue;
                         }
                         key!(f3) => {
-                            println!("You typed {} which represents `edit toml`", key.green());
+                            // println!(
+                            //     "You typed {key_combination:?} which represents `edit toml`" /*, key.green()*/
+                            // );
                             continue;
                         }
                         key!(f4) => {
-                            println!("You typed {} which represents nothing yet", key.green());
+                            // println!(
+                            //     "You typed {key_combination:?} which represents nothing yet" /*, key.green()*/
+                            // );
                             continue;
                         }
                         _ => {
-                            // println!("You typed {} which represents nothing yet", key.blue());
+                            // println!("You typed {key_combination:?} which represents nothing yet"/*, key.blue()*/);
                             let input = Input::from(event?);
                             textarea.input(input);
                         }

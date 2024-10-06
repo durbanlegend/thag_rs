@@ -10,6 +10,7 @@ pub mod colors;
 pub mod config;
 pub mod errors;
 pub mod file_dialog;
+pub mod keys;
 pub mod logging;
 pub mod manifest;
 pub mod repl;
@@ -30,8 +31,8 @@ pub use colors::{
     Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, Xterm256DarkStyle, Xterm256LightStyle,
 };
 pub use config::{load, maybe_config};
-pub use crokey::*;
 pub use errors::{ThagError, ThagResult};
+pub use keys::KeyCombination;
 pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};
 
 // Common constants and statics
@@ -48,20 +49,12 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub static TMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);
 
-/// Borrowed from `crokey` under MIT licence.
-/// Copyright (c) 2022 Canop
-#[macro_export]
-macro_rules! key {
-    ($($tt:tt)*) => {
-        $crate::__private::key!(($crate) $($tt)*)
-    };
-}
-
 pub mod __private {
     pub use crossterm;
     pub use strict::OneToThree;
     pub use thag_proc_macros::key;
 
+    pub use crate::KeyCombination;
     use crossterm::event::KeyModifiers;
     pub const MODS: KeyModifiers = KeyModifiers::NONE;
     pub const MODS_CTRL: KeyModifiers = KeyModifiers::CONTROL;

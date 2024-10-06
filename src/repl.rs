@@ -14,9 +14,9 @@ use crate::tui_editor::{
     EditData, EventReader, History, KeyAction, TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
 };
 use crate::{cprtln, cvprtln, gen_build_run, log, tui_editor, Lvl, ThagResult};
+use crate::{key, KeyCombination /*KeyCombinationFormat*/};
 
 use clap::{CommandFactory, Parser};
-use crokey::{key, KeyCombination, KeyCombinationFormat};
 use crossterm::event::{
     self,
     Event::{self, Paste},
@@ -618,7 +618,7 @@ pub fn script_key_handler(
             Ok(KeyAction::Submit)
         }
         key!(ctrl - s) | key!(ctrl - alt - s) => {
-            // eprintln!("key_combination={key_combination}, maybe_save_path={maybe_save_path:?}");
+            // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
             if let Some(ref mut hist) = history {
                 hist.add_entry(&textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
                 save_history(history.as_ref(), history_path.as_ref());
@@ -1251,7 +1251,6 @@ pub fn edit_history_old<R: EventReader + Debug>(
         "F3",
         "Discard saved and unsaved changes, and exit",
     )];
-    let fmt = KeyCombinationFormat::default();
     loop {
         let event = if var("TEST_ENV").is_ok() {
             event_reader.read_event()?
@@ -1288,8 +1287,9 @@ pub fn edit_history_old<R: EventReader + Debug>(
                     match key_combination {
                         #[allow(clippy::unnested_or_patterns)]
                         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => {
-                            let key = fmt.to_string(key_combination);
-                            println!("You typed {} which gracefully quits", key.green());
+                            // println!(
+                            //     "You typed {key_combination:?} which gracefully quits" /*,  key.green()*/
+                            // );
                             return Ok(saved);
                         }
                         key!(ctrl - d) => {
@@ -1332,7 +1332,7 @@ pub fn edit_history_old<R: EventReader + Debug>(
                             return Ok(false);
                         }
                         _ => {
-                            // println!("You typed {} which represents nothing yet", key.blue());
+                            // println!("You typed {key_combination:?} which represents nothing yet"/*, key.blue()*/);
                             let input = Input::from(event);
                             textarea.input(input);
                         }

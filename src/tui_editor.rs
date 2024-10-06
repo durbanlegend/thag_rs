@@ -1,5 +1,5 @@
 // use crate::__private::key;
-use crokey::KeyCombination;
+use crate::KeyCombination;
 use crossterm::event::KeyEventKind;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
@@ -467,7 +467,7 @@ where
                 }
             }
         } else {
-            // println!("You typed {} which represents nothing yet", key.blue());
+            // println!("You typed {key_combination:?} which represents nothing yet"/*, key.blue()*/);
             let input = Input::from(event);
             textarea.input(input);
         }

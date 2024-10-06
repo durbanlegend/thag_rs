@@ -37,6 +37,7 @@ pub fn main() {
                     continue;
                 };
                 let key = fmt.to_string(key_combination);
+                println!("Detected {key}");
                 match key_combination {
                     key!(ctrl - c) => {
                         println!("Arg! You savagely killed me with a {}", key.red());

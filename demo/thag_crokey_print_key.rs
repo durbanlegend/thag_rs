@@ -25,10 +25,10 @@ pub fn main() {
         terminal::disable_raw_mode().unwrap();
         match e {
             Ok(Event::Key(key_event)) => {
-            if !matches!(key_event.kind, KeyEventKind::Press) {
-                continue;
-            }
-            let key_combination = key_event.into();
+                if !matches!(key_event.kind, KeyEventKind::Press) {
+                    continue;
+                }
+                let key_combination = key_event.into();
                 match key_combination {
                     key!(ctrl - c) => {
                         println!("Arg! You savagely killed me with a {key_combination:?}");
@@ -38,9 +38,6 @@ pub fn main() {
                         // println!("You typed {key_combination:?} which gracefully quits", key.green());
                         break;
                     }
-                    // key!('?') | key!(shift - '?') => {
-                    //     println!("{}", "There's no help on this app".red());
-                    // }
                     _ => {
                         println!("You typed {key_combination:?}");
                     }

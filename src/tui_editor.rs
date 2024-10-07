@@ -13,6 +13,7 @@ use crossterm::{
     terminal::LeaveAlternateScreen,
 };
 use firestorm::profile_fn;
+use log::debug;
 use mockall::automock;
 use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled};
@@ -29,7 +30,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::convert::Into;
 use std::env::var;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::io;
 use std::path::PathBuf;
 use std::{self, fs};
@@ -90,77 +91,240 @@ pub fn resolve_term() -> ThagResult<Option<TermScopeGuard>> {
     Ok(maybe_term)
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Entry {
+    pub index: usize,       // Holds the entry's index
+    pub lines: Vec<String>, // Holds editor content as lines
+}
+
+impl Display for Entry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}: {}", self.index, self.lines.join("\n"))
+    }
+}
+
+impl Entry {
+    pub fn new(index: usize, content: &str) -> Self {
+        Self {
+            index,
+            lines: content.lines().map(String::from).collect(),
+        }
+    }
+
+    // Extracts string contents of entry for use in the editor
+    #[must_use]
+    pub fn contents(&self) -> String {
+        self.lines.join("\n")
+    }
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct History {
-    pub entries: VecDeque<String>,
     pub current_index: Option<usize>,
+    pub entries: VecDeque<Entry>, // Now a VecDeque of Entries
 }
 
 impl History {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            entries: VecDeque::with_capacity(20),
             current_index: None,
+            entries: VecDeque::with_capacity(20),
         }
     }
 
     #[must_use]
     pub fn load_from_file(path: &PathBuf) -> Self {
-        fs::read_to_string(path).map_or_else(
+        let mut history = fs::read_to_string(path).map_or_else(
             |_| Self::default(),
             |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
-        )
+        );
+
+        // Remove any blanks - TODO they shouldn't be saved in the first place
+        history.entries.retain(|e| !e.contents().trim().is_empty());
+
+        // Reassign indices
+        history.reassign_indices();
+
+        // Set current_index to the index of the front entry (most recent one)
+        if history.entries.is_empty() {
+            history.current_index = None;
+        } else {
+            history.current_index = Some(history.entries.len() - 1);
+        }
+
+        #[cfg(debug_assertions)]
+        debug!(
+            "load_from_file({path:?}); current index={:?}",
+            history.current_index
+        );
+        history
     }
 
-    pub fn save_to_file(&self, path: &PathBuf) {
-        if let Ok(data) = serde_json::to_string(self) {
-            let _ = fs::write(path, data);
-        }
+    #[must_use]
+    pub fn at_end(&self) -> bool {
+        self.current_index.map_or(true, |current_index| {
+            current_index == self.entries.len() - 1
+        })
     }
 
     pub fn add_entry(&mut self, entry: &str) {
-        // Surround with braces
-        let entry = format!(
-            r#"{{
-{entry}
-}}"#
-        );
+        let new_index = self.entries.len(); // Assign the next index based on current length
+        let new_entry = Entry::new(new_index, entry);
+
         // Remove prior duplicates
-        self.entries.retain(|f| f != &entry);
-        self.entries.push_front(entry);
+        self.entries
+            .retain(|f| f.contents().trim() != new_entry.contents().trim());
+        self.entries.push_back(new_entry);
+
+        // // Reassign indices after pushing the new entry
+        // self.reassign_indices();
+
+        // Update current_index to point to the most recent entry (the front)
+        self.current_index = Some(self.entries.len() - 1);
+
+        #[cfg(debug_assertions)]
+        debug!("add_entry({entry}); current index={:?}", self.current_index);
     }
 
-    pub fn get_current(&mut self) -> Option<&String> {
+    pub fn delete_entry(&mut self, index: usize) {
+        self.entries.retain(|entry| entry.index != index);
+
+        // Reassign indices after deletion
+        self.reassign_indices();
+
+        // Update current_index after deletion, set to most recent entry (the front)
+        if self.entries.is_empty() {
+            self.current_index = None;
+        } else {
+            self.current_index = Some(self.entries.len() - 1);
+        }
+    }
+
+    /// Save history to a file.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered writing the file.
+    pub fn save_to_file(&self, path: &PathBuf) -> ThagResult<()> {
+        if let Ok(data) = serde_json::to_string(self) {
+            fs::write(path, data)?;
+        }
+
+        #[cfg(debug_assertions)]
+        debug!("save_to_file({path:?}");
+        Ok(())
+    }
+
+    pub fn get_current(&mut self) -> Option<&Entry> {
+        // let this = &mut *self;
         if self.entries.is_empty() {
             return None;
         }
 
-        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
-        self.entries.front()
+        if let Some(index) = self.current_index {
+            #[cfg(debug_assertions)]
+            debug!("get_current(); current index={:?}", self.current_index);
+
+            self.get(index)
+        } else {
+            #[cfg(debug_assertions)]
+            debug!("None");
+            None
+        }
     }
 
-    pub fn get_previous(&mut self) -> Option<&String> {
+    // /// Side-effect: adjusts self.current_index by offset.
+    // fn get_at_offset(&mut self, offset: isize) -> Option<&Entry> {
+    //     if self.entries.is_empty() {
+    //         return None;
+    //     }
+    //     self.get(self.current_index.map_or(0, |index| index + offset))
+    // }
+
+    pub fn get(&mut self, index: usize) -> Option<&Entry> {
+        if !(0..self.entries.len()).contains(&index) {
+            return None;
+        }
+        self.current_index = Some(index);
+
+        #[cfg(debug_assertions)]
+        debug!(
+            "get({:?}); current index={:?}",
+            self.entries.get(index),
+            self.current_index
+        );
+
+        self.entries.get(index)
+    }
+
+    pub fn get_previous(&mut self) -> Option<&Entry> {
+        // let this = &mut *self;
+        if self.entries.is_empty() {
+            return None;
+        }
+        let new_index = self
+            .current_index
+            .and_then(|index| if index > 0 { Some(index - 1) } else { None });
+
+        new_index.map_or_else(
+            || {
+                #[cfg(debug_assertions)]
+                debug!("None");
+                None
+            },
+            |index| {
+                let entry = self.get(index);
+                #[cfg(debug_assertions)]
+                debug!("get_previous; current index={index:?}, entry={entry:?}");
+                entry
+            },
+        )
+    }
+
+    pub fn get_next(&mut self) -> Option<&Entry> {
+        let this = &mut *self;
+        if this.entries.is_empty() {
+            return None;
+        }
+        let new_index = self.current_index.and_then(|index| {
+            if index < self.entries.len() - 1 {
+                Some(index + 1)
+            } else {
+                None
+            }
+        });
+
+        new_index.map_or_else(
+            || {
+                #[cfg(debug_assertions)]
+                debug!("None");
+                None
+            },
+            |index| {
+                let entry = self.get(index);
+
+                #[cfg(debug_assertions)]
+                debug!("get_next(); current index={index:?}, entry={entry:?}");
+                entry
+            },
+        )
+    }
+
+    pub fn get_last(&mut self) -> Option<&Entry> {
         if self.entries.is_empty() {
             return None;
         }
 
-        self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
-        self.current_index.and_then(|index| self.entries.get(index))
+        self.entries.back()
     }
 
-    pub fn get_next(&mut self) -> Option<&String> {
-        if self.entries.is_empty() {
-            return None;
+    // Reassign indices so that the newest entry has index 0, and the oldests has len - 1
+    fn reassign_indices(&mut self) {
+        // let len = self.entries.len();
+        for (i, entry) in self.entries.iter_mut().enumerate() {
+            entry.index = i;
         }
-
-        self.current_index = match self.current_index {
-            Some(index) if index > 0 => Some(index - 1),
-            Some(index) if index == 0 => Some(index + self.entries.len() - 1),
-            _ => Some(self.entries.len() - 1),
-        };
-
-        self.current_index.and_then(|index| self.entries.get(index))
     }
 }
 
@@ -198,7 +362,7 @@ pub struct EditData<'a> {
 
 // Struct to hold display-related parameters
 #[derive(Debug)]
-pub struct Display<'a> {
+pub struct KeyDisplay<'a> {
     pub title: &'a str,
     pub title_style: Style,
     pub remove_keys: &'a [&'a str],
@@ -233,7 +397,7 @@ pub enum KeyAction {
 pub fn tui_edit<R, F>(
     event_reader: &R,
     edit_data: &mut EditData,
-    display: &Display,
+    display: &KeyDisplay,
     key_handler: F, // closure or function for key handling
 ) -> ThagResult<(KeyAction, Option<Vec<String>>)>
 where
@@ -320,6 +484,7 @@ where
             if !matches!(key_event.kind, KeyEventKind::Press) {
                 continue;
             }
+            // #[cfg(debug_assertions)]
             // log::debug!("key_event={key_event:#?}");
             let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 

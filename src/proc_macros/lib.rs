@@ -187,7 +187,7 @@ impl Parse for KeyCombinationKey {
         // Produce the token stream which will build pattern matching comparable initializers
         let codes = codes.try_map(|key_code| key_code_to_token_stream(key_code, input.span()))?;
 
-        Ok(KeyCombinationKey {
+        Ok(Self {
             crate_path,
             ctrl,
             alt,

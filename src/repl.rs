@@ -10,8 +10,8 @@ use crate::logging::{get_verbosity, Verbosity};
 use crate::regex;
 use crate::shared::{Ast, BuildState, KeyDisplayLine};
 use crate::tui_editor::{
-    apply_highlights, normalize_newlines, show_popup, tui_edit, CrosstermEventReader, Display,
-    EditData, EventReader, History, KeyAction, TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
+    apply_highlights, normalize_newlines, show_popup, tui_edit, CrosstermEventReader, EditData,
+    EventReader, History, KeyAction, KeyDisplay, TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
 };
 use crate::{cprtln, cvprtln, gen_build_run, log, tui_editor, Lvl, ThagResult};
 use crate::{key, KeyCombination /*KeyCombinationFormat*/};
@@ -24,6 +24,8 @@ use crossterm::event::{
 };
 use edit::edit_file;
 use firestorm::profile_fn;
+#[cfg(debug_assertions)]
+use log::debug;
 use nu_ansi_term::Style as NuStyle;
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::widgets::{Block, Borders};
@@ -520,7 +522,9 @@ fn tui(
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
     let mut history = History::load_from_file(&history_path);
-    history.add_entry(initial_content);
+    if !initial_content.trim().is_empty() {
+        history.add_entry(initial_content);
+    }
 
     let event_reader = CrosstermEventReader;
     let mut edit_data = EditData {
@@ -534,7 +538,7 @@ fn tui(
         KeyDisplayLine::new(361, "Ctrl+Alt+s", "Save a copy"),
         KeyDisplayLine::new(371, "F3", "Discard saved and unsaved changes, and exit"),
     ];
-    let display = Display {
+    let display = KeyDisplay {
         title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Subheading))).bold(),
         remove_keys: &[""; 0],
@@ -552,7 +556,7 @@ fn tui(
         },
     )?;
     let _ = match key_action {
-        KeyAction::Quit(saved) => saved,
+        // KeyAction::Quit(_saved) => false,
         KeyAction::Save
         | KeyAction::ShowHelp
         | KeyAction::ToggleHighlight
@@ -561,7 +565,7 @@ fn tui(
                 format!("Logic error: {key_action:?} should not return from tui_edit").into(),
             ))
         }
-        KeyAction::SaveAndExit => true,
+        // KeyAction::SaveAndExit => false,
         KeyAction::Submit => {
             return maybe_text.map_or(Err(ThagError::Cancelled), |v| {
                 let rs_source = v.join("\n");
@@ -590,10 +594,10 @@ fn tui(
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+#[allow(clippy::too_many_lines)]
 pub fn script_key_handler(
     key_event: KeyEvent,
     maybe_term: &mut Option<&mut TermScopeGuard>,
-    // maybe_save_path: &mut Option<&mut PathBuf>,
     textarea: &mut TextArea,
     edit_data: &mut EditData,
     popup: &mut bool,
@@ -601,8 +605,6 @@ pub fn script_key_handler(
 ) -> ThagResult<KeyAction> {
     let history_path = edit_data.history_path.cloned();
     let mut history = edit_data.history.clone();
-    // let history_enabled = history.is_some();
-    // let saved_to_history = false;
 
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
                                                            // eprintln!("key_combination={key_combination:?}");
@@ -611,19 +613,23 @@ pub fn script_key_handler(
     match key_combination {
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => {
-            if let Some(ref mut hist) = history {
-                hist.add_entry(&textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
-                save_history(history.as_ref(), history_path.as_ref());
+            if let Some(ref hist_path) = history_path {
+                let history = &mut history;
+                if let Some(hist) = history {
+                    preserve(textarea, hist, hist_path)?;
+                };
             }
             Ok(KeyAction::Submit)
         }
         key!(ctrl - s) | key!(ctrl - alt - s) => {
             // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
-            if let Some(ref mut hist) = history {
-                hist.add_entry(&textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
-                save_history(history.as_ref(), history_path.as_ref());
-            }
             if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
+                if let Some(ref hist_path) = history_path {
+                    let history = &mut history;
+                    if let Some(hist) = history {
+                        preserve(textarea, hist, hist_path)?;
+                    };
+                }
                 let result = edit_data
                     .save_path
                     .as_mut()
@@ -670,22 +676,36 @@ pub fn script_key_handler(
             // let mut found = false;
             // 6 5,4,3,2,1 -> >5,4,3,2,1
             if let Some(ref mut hist) = history {
-                hist.add_entry(&textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
-                save_history(history.as_ref(), history_path.as_ref());
-            }
-            if let Some(ref mut hist) = history {
-                if let Some(entry) = hist.get_previous() {
+                // TODO need we replace by a saved copy of the textarea?
+                if hist.at_end() {
+                    let contents = &textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
+                    if !textarea.is_empty() && !contents.trim().is_empty() {
+                        if let Some(entry) = hist.get_last() {
+                            if &entry.contents() != contents {
+                                hist.add_entry(contents);
+                                save_history(Some(hist), history_path.as_ref())?;
+                                #[cfg(debug_assertions)]
+                                debug!("F7 called save_history");
+                            }
+                        }
+                    }
+                }
+                // }
+                // if let Some(ref mut hist) = history {
+                if let Some(entry) = &hist.get_previous() {
+                    #[cfg(debug_assertions)]
+                    debug!("F7(2) found entry {entry:?}");
                     // 5
                     // found = true;
                     textarea.select_all();
                     textarea.cut(); // 6
-                    textarea.insert_str(entry); // 5
+                    textarea.insert_str(entry.contents());
                 }
             }
             // if found && !saved_to_history && !textarea.yank_text().is_empty() {
             //     // 5 >5,4,3,2,1 -> 5 6,>5,4,3,2,1
             //     hist.add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
-            //     // saved_to_history = true;     // Needr read
+            //     // saved_to_history = true;     // Never read
             // }
 
             Ok(KeyAction::Continue)
@@ -696,7 +716,7 @@ pub fn script_key_handler(
                 if let Some(entry) = hist.get_next() {
                     textarea.select_all();
                     textarea.cut();
-                    textarea.insert_str(entry);
+                    textarea.insert_str(entry.contents());
                 }
             }
             Ok(KeyAction::Continue)
@@ -709,17 +729,31 @@ pub fn script_key_handler(
     }
 }
 
-fn save_history(history: Option<&History>, history_path: Option<&PathBuf>) {
+fn preserve(textarea: &TextArea<'_>, hist: &mut History, history_path: &PathBuf) -> ThagResult<()> {
+    save_if_not_empty(textarea, hist);
+    save_history(Some(&hist.clone()), Some(history_path))?;
+    Ok(())
+}
+
+fn save_if_not_empty(textarea: &TextArea<'_>, hist: &mut History) {
+    let entry = &textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
+    if !entry.trim().is_empty() {
+        hist.add_entry(entry);
+    }
+}
+
+fn save_history(history: Option<&History>, history_path: Option<&PathBuf>) -> ThagResult<()> {
     if let Some(hist) = history {
         if let Some(hist_path) = history_path {
-            hist.save_to_file(hist_path);
+            hist.save_to_file(hist_path)?;
         }
     }
+    Ok(())
 }
 
 fn save_source_file(
     to_rs_path: &PathBuf,
-    textarea: &mut TextArea<'_>,
+    textarea: &TextArea<'_>,
     saved: &mut bool,
 ) -> ThagResult<()> {
     let _write_source = code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
@@ -781,7 +815,7 @@ pub fn edit_history<R: EventReader + Debug>(
         "F3",
         "Discard saved and unsaved changes, and exit",
     )];
-    let display = Display {
+    let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold(),
         remove_keys: &["F7", "F8"],
@@ -868,10 +902,7 @@ pub fn history_key_handler(
     }
 }
 
-fn save_file(
-    maybe_save_path: &Option<&mut PathBuf>,
-    textarea: &mut TextArea<'_>,
-) -> ThagResult<()> {
+fn save_file(maybe_save_path: &Option<&mut PathBuf>, textarea: &TextArea<'_>) -> ThagResult<()> {
     let staging_path = maybe_save_path.as_ref().ok_or("Missing save_path")?;
     let staging_file = OpenOptions::new()
         .read(true)
@@ -1430,6 +1461,8 @@ pub fn disp_repl_banner(cmd_list: &str) {
         get_verbosity(),
         r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#
     );
+
+    println!();
 
     cvprtln!(
         Lvl::SUBH,

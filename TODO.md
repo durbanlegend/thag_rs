@@ -16,8 +16,9 @@
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  >>> -R option to go straight into repl::tui?
-- [ ]  Messasge area in tui editor
+- [ ]  Message area in tui editor
 - [ ]  >>> Implement F7, F8 and saved_to_history in Tui_editor::tui_edit as for stdin::edit.
+- [ ]  >>> Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?
 - [ ]  Implement Ctrl+A (Save As...) on file dialog, also confirmation of save.

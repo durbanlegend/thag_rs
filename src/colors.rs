@@ -138,7 +138,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
                 if matches!(&config.colors.term_theme, &TermTheme::None) {
                     resolve_term_theme().unwrap_or_default()
                 } else {
-                    config.colors.term_theme.clone()
+                    config.colors.term_theme
                 }
             },
         )
@@ -472,7 +472,7 @@ macro_rules! cprtln {
         // Qualified form to avoid imports in calling code.
         let painted = style.paint(content);
         let verbosity = $crate::logging::get_verbosity();
-        log!(verbosity, "{}\n", painted);
+        log!(verbosity, "{}", painted);
     }};
 }
 
@@ -550,13 +550,13 @@ impl Lvl {
 
 impl From<&Lvl> for u8 {
     fn from(message_level: &Lvl) -> Self {
-        u8::from(&XtermColor::from(&MessageStyle::from(message_level)))
+        Self::from(&XtermColor::from(&MessageStyle::from(message_level)))
     }
 }
 
 impl From<&XtermColor> for Color {
     fn from(xterm_color: &XtermColor) -> Self {
-        Color::Fixed(u8::from(xterm_color))
+        Self::Fixed(u8::from(xterm_color))
     }
 }
 

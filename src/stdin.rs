@@ -562,7 +562,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                             // 6 >5,4,3,2,1 -> 6 >6,5,4,3,2,1
                             history.add_entry(&textarea.lines().to_vec().join("\n"));
                             history.current_index = Some(0);
-                            history.save_to_file(&history_path);
+                            history.save_to_file(&history_path)?;
                             break;
                         }
                         key!(ctrl - l) => popup = !popup,
@@ -581,7 +581,8 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                                     found = true;
                                     textarea.select_all();
                                     textarea.cut(); // 6
-                                    textarea.insert_str(entry); // 5
+                                    textarea.insert_str(entry.contents());
+                                    // 5
                                 }
                             } else {
                                 // println!("Not already saved to history: calling history.get_current()");
@@ -589,7 +590,8 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                                     found = true;
                                     textarea.select_all();
                                     textarea.cut(); // 6
-                                    textarea.insert_str(entry); // 5
+                                    textarea.insert_str(entry.contents());
+                                    // 5
                                 }
                             }
                             if found && !saved_to_history && !textarea.yank_text().is_empty() {
@@ -606,7 +608,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
                             if let Some(entry) = history.get_next() {
                                 textarea.select_all();
                                 textarea.cut();
-                                textarea.insert_str(entry);
+                                textarea.insert_str(entry.contents());
                             }
                             continue;
                         }

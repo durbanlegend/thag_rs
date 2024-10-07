@@ -7,20 +7,19 @@ use ratatui::crossterm::{
 };
 use ratatui::style::{Color, Style};
 use sequential_test::sequential;
-use std::process::{Command, Stdio};
+use std::{
+    fs,
+    process::{Command, Stdio},
+};
 use std::{
     io::{stdout, Write},
     path::PathBuf,
 };
 
-use thag_rs::log;
-use thag_rs::logging::Verbosity;
+use thag_rs::colors::{get_term_theme, TuiSelectionBg};
 use thag_rs::stdin::{edit, read_to_string, toml};
-use thag_rs::tui_editor::{apply_highlights, normalize_newlines, MockEventReader};
-use thag_rs::{
-    colors::{get_term_theme, TuiSelectionBg},
-    tui_editor::History,
-};
+use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History, MockEventReader};
+use thag_rs::{log, logging::Verbosity, ThagResult, TMPDIR};
 use tui_textarea::TextArea;
 
 // Set environment variables before running tests
@@ -131,7 +130,9 @@ fn test_stdin_history_get_current() {
     let mut history = History::new();
     history.add_entry("first");
     history.add_entry("second");
-    assert_eq!(history.get_current(), Some(&"{\nsecond\n}".to_string()));
+    let current = history.get_current();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "second");
 }
 
 #[test]
@@ -142,12 +143,71 @@ fn test_stdin_history_get_previous_empty() {
 }
 
 #[test]
-fn test_stdin_history_get_previous() {
+fn test_stdin_history_navigate() -> ThagResult<()> {
     set_up();
     let mut history = History::new();
     history.add_entry("first");
     history.add_entry("second");
-    assert_eq!(history.get_previous(), Some(&"{\nsecond\n}".to_string()));
+    history.add_entry("third");
+    history.add_entry("fourth");
+
+    eprintln!("History={:#?}", history);
+
+    let current = history.get_current();
+
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "fourth");
+
+    let current = history.get_previous();
+
+    eprintln!("Expecting third, current={current:?}");
+
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "third");
+
+    let current = history.get_previous();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "second");
+
+    let current = history.get_previous();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "first");
+
+    let current = history.get_previous();
+    assert!(current.is_none());
+
+    let current = history.get_next();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "second");
+
+    let current = history.get_next();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "third");
+
+    let current = history.get_next();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "fourth");
+
+    let current = history.get_next();
+    assert!(current.is_none());
+
+    eprintln!("History={history:#?}");
+
+    let dir_path = &TMPDIR.join("thag_rs_tests");
+    let path = dir_path.join("rs_stdin_hist.json");
+    eprintln!("path={path:#?}");
+
+    // Ensure REPL subdirectory exists
+    fs::create_dir_all(&dir_path)?;
+
+    // Create REPL file if necessary
+    let _ = fs::File::create(&path)?;
+
+    let _ = history.save_to_file(&path)?;
+
+    let history = History::load_from_file(&path);
+    eprintln!("History (reloaded)={:#?}", history);
+    Ok(())
 }
 
 #[test]
@@ -157,15 +217,18 @@ fn test_stdin_history_get_next_empty() {
     assert!(history.get_next().is_none());
 }
 
-#[test]
-fn test_stdin_history_get_next() {
-    set_up();
-    let mut history = History::new();
-    history.add_entry("first");
-    history.add_entry("second");
-    history.get_previous(); // Move to the previous entry
-    assert_eq!(history.get_next(), Some(&"{\nfirst\n}".to_string()));
-}
+// #[test]
+// fn test_stdin_history_get_next() {
+//     set_up();
+//     let mut history = History::new();
+//     history.add_entry("first");
+//     history.add_entry("second");
+//     eprintln!("History={:#?}", history);
+//     history.get_previous(); // Move to the previous entry
+//     let current = history.get_current();
+//     assert!(current.is_some());
+//     assert_eq!(&current.unwrap().contents(), "first");
+// }
 
 #[test]
 fn test_stdin_repl_command_print_help() {

@@ -31,7 +31,7 @@ pub fn maybe_config() -> Option<Config> {
                     config.colors.tui_selection_bg,
                     config.misc.unquote
                 );
-                return Some(config.clone());
+                return Some(config);
         }
         None::<Config>
     }).clone()

@@ -11,7 +11,8 @@ use crate::regex;
 use crate::shared::{Ast, BuildState, KeyDisplayLine};
 use crate::tui_editor::{
     apply_highlights, normalize_newlines, show_popup, tui_edit, CrosstermEventReader, EditData,
-    EventReader, History, KeyAction, KeyDisplay, TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
+    Entry, EventReader, History, KeyAction, KeyDisplay, TermScopeGuard, MAPPINGS, TITLE_BOTTOM,
+    TITLE_TOP,
 };
 use crate::{cprtln, cvprtln, gen_build_run, log, tui_editor, Lvl, ThagResult};
 use crate::{key, KeyCombination /*KeyCombinationFormat*/};
@@ -522,14 +523,18 @@ fn tui(
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
     let mut history = History::load_from_file(&history_path);
-    if !initial_content.trim().is_empty() {
+    let initial_content = if initial_content.trim().is_empty() {
+        history.get_last().map_or_else(String::new, Entry::contents)
+    } else {
         history.add_entry(initial_content);
-    }
+        history.save_to_file(&history_path)?;
+        initial_content.to_string()
+    };
 
     let event_reader = CrosstermEventReader;
     let mut edit_data = EditData {
         return_text: true,
-        initial_content,
+        initial_content: &initial_content,
         save_path: Some(save_path),
         history_path: Some(&history_path),
         history: Some(history),
@@ -604,8 +609,6 @@ pub fn script_key_handler(
     saved: &mut bool, // TODO decide if we need this
 ) -> ThagResult<KeyAction> {
     let history_path = edit_data.history_path.cloned();
-    let mut history = edit_data.history.clone();
-
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
                                                            // eprintln!("key_combination={key_combination:?}");
 
@@ -614,7 +617,7 @@ pub fn script_key_handler(
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => {
             if let Some(ref hist_path) = history_path {
-                let history = &mut history;
+                let history = &mut edit_data.history;
                 if let Some(hist) = history {
                     preserve(textarea, hist, hist_path)?;
                 };
@@ -625,7 +628,7 @@ pub fn script_key_handler(
             // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
             if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
                 if let Some(ref hist_path) = history_path {
-                    let history = &mut history;
+                    let history = &mut edit_data.history;
                     if let Some(hist) = history {
                         preserve(textarea, hist, hist_path)?;
                     };
@@ -673,50 +676,23 @@ pub fn script_key_handler(
             Ok(KeyAction::AbandonChanges)
         }
         key!(f7) => {
-            // let mut found = false;
-            // 6 5,4,3,2,1 -> >5,4,3,2,1
-            if let Some(ref mut hist) = history {
-                // TODO need we replace by a saved copy of the textarea?
-                if hist.at_end() {
-                    let contents = &textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
-                    if !textarea.is_empty() && !contents.trim().is_empty() {
-                        if let Some(entry) = hist.get_last() {
-                            if &entry.contents() != contents {
-                                hist.add_entry(contents);
-                                save_history(Some(hist), history_path.as_ref())?;
-                                #[cfg(debug_assertions)]
-                                debug!("F7 called save_history");
-                            }
-                        }
-                    }
-                }
-                // }
-                // if let Some(ref mut hist) = history {
+            if let Some(ref mut hist) = edit_data.history {
+                save_if_changed(hist, textarea, &history_path)?;
                 if let Some(entry) = &hist.get_previous() {
                     #[cfg(debug_assertions)]
-                    debug!("F7(2) found entry {entry:?}");
-                    // 5
-                    // found = true;
-                    textarea.select_all();
-                    textarea.cut(); // 6
-                    textarea.insert_str(entry.contents());
+                    debug!("F7 found entry {entry:?}");
+                    paste_to_textarea(textarea, entry);
                 }
             }
-            // if found && !saved_to_history && !textarea.yank_text().is_empty() {
-            //     // 5 >5,4,3,2,1 -> 5 6,>5,4,3,2,1
-            //     hist.add_entry(textarea.yank_text().lines().collect::<Vec<_>>().join("\n"));
-            //     // saved_to_history = true;     // Never read
-            // }
-
             Ok(KeyAction::Continue)
         }
         key!(f8) => {
-            // 5 >6,5,4,3,2,1 ->
-            if let Some(ref mut hist) = history {
+            if let Some(ref mut hist) = edit_data.history {
+                save_if_changed(hist, textarea, &history_path)?;
                 if let Some(entry) = hist.get_next() {
-                    textarea.select_all();
-                    textarea.cut();
-                    textarea.insert_str(entry.contents());
+                    #[cfg(debug_assertions)]
+                    debug!("F8 found entry {entry:?}");
+                    paste_to_textarea(textarea, entry);
                 }
             }
             Ok(KeyAction::Continue)
@@ -729,23 +705,71 @@ pub fn script_key_handler(
     }
 }
 
-fn preserve(textarea: &TextArea<'_>, hist: &mut History, history_path: &PathBuf) -> ThagResult<()> {
-    save_if_not_empty(textarea, hist);
-    save_history(Some(&hist.clone()), Some(history_path))?;
+fn save_if_changed(
+    hist: &mut History,
+    textarea: &mut TextArea<'_>,
+    history_path: &Option<PathBuf>,
+) -> Result<(), ThagError> {
+    if let Some(entry) = &hist.get_current() {
+        let index = entry.index;
+        let copy_text = copy_text(textarea);
+        if entry.contents() != copy_text {
+            // entry.lines = copy_text.lines().map(String::from).collect();
+            hist.update_entry(index, &copy_text);
+            if let Some(ref hist_path) = history_path {
+                hist.save_to_file(hist_path)?;
+            }
+        }
+    }
     Ok(())
 }
 
-fn save_if_not_empty(textarea: &TextArea<'_>, hist: &mut History) {
-    let entry = &textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
-    if !entry.trim().is_empty() {
-        hist.add_entry(entry);
+fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &tui_editor::Entry) {
+    textarea.select_all();
+    textarea.cut();
+    // 6
+    textarea.insert_str(entry.contents());
+}
+
+fn preserve(
+    textarea: &mut TextArea<'_>,
+    hist: &mut History,
+    history_path: &PathBuf,
+) -> ThagResult<()> {
+    #[cfg(debug_assertions)]
+    debug!("preserve...");
+    save_if_not_empty(textarea, hist);
+    save_history(Some(&mut hist.clone()), Some(history_path))?;
+    Ok(())
+}
+
+fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
+    #[cfg(debug_assertions)]
+    debug!("save_if_not_empty...");
+
+    let text = copy_text(textarea);
+    if !text.trim().is_empty() {
+        hist.add_entry(&text);
+        #[cfg(debug_assertions)]
+        debug!("... added entry");
     }
 }
 
-fn save_history(history: Option<&History>, history_path: Option<&PathBuf>) -> ThagResult<()> {
+fn copy_text(textarea: &mut TextArea<'_>) -> String {
+    textarea.select_all();
+    textarea.copy();
+    let text = textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
+    text
+}
+
+fn save_history(history: Option<&mut History>, history_path: Option<&PathBuf>) -> ThagResult<()> {
+    #[cfg(debug_assertions)]
+    debug!("save_history...");
     if let Some(hist) = history {
         if let Some(hist_path) = history_path {
             hist.save_to_file(hist_path)?;
+            #[cfg(debug_assertions)]
+            debug!("... saved to file");
         }
     }
     Ok(())

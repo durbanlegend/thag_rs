@@ -154,6 +154,8 @@ impl History {
         }
 
         #[cfg(debug_assertions)]
+        debug!("history={history:?}");
+        #[cfg(debug_assertions)]
         debug!(
             "load_from_file({path:?}); current index={:?}",
             history.current_index
@@ -168,9 +170,9 @@ impl History {
         })
     }
 
-    pub fn add_entry(&mut self, entry: &str) {
+    pub fn add_entry(&mut self, text: &str) {
         let new_index = self.entries.len(); // Assign the next index based on current length
-        let new_entry = Entry::new(new_index, entry);
+        let new_entry = Entry::new(new_index, text);
 
         // Remove prior duplicates
         self.entries
@@ -184,7 +186,21 @@ impl History {
         self.current_index = Some(self.entries.len() - 1);
 
         #[cfg(debug_assertions)]
-        debug!("add_entry({entry}); current index={:?}", self.current_index);
+        debug!("add_entry({text}); current index={:?}", self.current_index);
+    }
+
+    pub fn update_entry(&mut self, index: usize, text: &str) {
+        // Get a mutable reference to the entry at the specified index
+        let current_index = self.current_index;
+        if let Some(entry) = self.get_mut(index) {
+            // Update the lines if the entry exists
+            entry.lines = text.lines().map(String::from).collect::<Vec<String>>();
+            #[cfg(debug_assertions)]
+            debug!("update_entry({entry:?}); current index={current_index:?}");
+        } else {
+            // If the entry doesn't exist, add it
+            self.add_entry(text);
+        }
     }
 
     pub fn delete_entry(&mut self, index: usize) {
@@ -206,8 +222,9 @@ impl History {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered writing the file.
-    pub fn save_to_file(&self, path: &PathBuf) -> ThagResult<()> {
-        if let Ok(data) = serde_json::to_string(self) {
+    pub fn save_to_file(&mut self, path: &PathBuf) -> ThagResult<()> {
+        self.reassign_indices();
+        if let Ok(data) = serde_json::to_string(&self) {
             fs::write(path, data)?;
         }
 
@@ -243,6 +260,8 @@ impl History {
     // }
 
     pub fn get(&mut self, index: usize) -> Option<&Entry> {
+        #[cfg(debug_assertions)]
+        debug!("get({index})...");
         if !(0..self.entries.len()).contains(&index) {
             return None;
         }
@@ -250,60 +269,118 @@ impl History {
 
         #[cfg(debug_assertions)]
         debug!(
-            "get({:?}); current index={:?}",
+            "...get({:?}); current index={:?}",
             self.entries.get(index),
             self.current_index
         );
 
-        self.entries.get(index)
+        let entry = self.entries.get(index);
+        #[cfg(debug_assertions)]
+        debug!("... returning {entry:?}");
+        entry
     }
 
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut Entry> {
+        #[cfg(debug_assertions)]
+        debug!("get_mut({index})...");
+
+        if !(0..self.entries.len()).contains(&index) {
+            return None;
+        }
+
+        self.current_index = Some(index);
+
+        #[cfg(debug_assertions)]
+        debug!(
+            "...get_mut({:?}); current index={:?}",
+            self.entries.get(index),
+            self.current_index
+        );
+
+        let entry = self.entries.get_mut(index);
+
+        #[cfg(debug_assertions)]
+        debug!("... returning {entry:?}");
+
+        entry
+    }
+
+    /// Returns the previous entry in this [`History`] collection.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a logic error is detected, likely when reaching the oldest History entry.
     pub fn get_previous(&mut self) -> Option<&Entry> {
         // let this = &mut *self;
+        #[cfg(debug_assertions)]
+        debug!("get_previous...");
         if self.entries.is_empty() {
             return None;
         }
         let new_index = self
             .current_index
-            .and_then(|index| if index > 0 { Some(index - 1) } else { None });
+            .map(|index| if index > 0 { index - 1 } else { 0 });
 
-        new_index.map_or_else(
+        #[cfg(debug_assertions)]
+        debug!(
+            "...old index={:#?};new_index={new_index:?}",
+            self.current_index
+        );
+
+        self.current_index = new_index;
+
+        self.current_index.map_or_else(
             || {
-                #[cfg(debug_assertions)]
-                debug!("None");
-                None
+                panic!(
+                    "Logic error: current_index should never be None if there are History records"
+                );
             },
             |index| {
                 let entry = self.get(index);
                 #[cfg(debug_assertions)]
-                debug!("get_previous; current index={index:?}, entry={entry:?}");
+                debug!("get_previous; new current index={index:?}, entry={entry:?}");
                 entry
             },
         )
     }
 
+    /// Returns the next entry in this [`History`] collection.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a logic error is detected, likely when reaching the newest History entry.
     pub fn get_next(&mut self) -> Option<&Entry> {
+        #[cfg(debug_assertions)]
+        debug!("get_next...");
         let this = &mut *self;
         if this.entries.is_empty() {
             return None;
         }
-        let new_index = self.current_index.and_then(|index| {
-            if index < self.entries.len() - 1 {
-                Some(index + 1)
+        let new_index = self.current_index.map(|index| {
+            let max_index = self.entries.len() - 1;
+            if index < max_index {
+                index + 1
             } else {
-                None
+                max_index
             }
         });
 
-        new_index.map_or_else(
+        #[cfg(debug_assertions)]
+        debug!(
+            "...old index={:#?};new_index={new_index:?}",
+            self.current_index
+        );
+
+        self.current_index = new_index;
+
+        self.current_index.map_or_else(
             || {
-                #[cfg(debug_assertions)]
-                debug!("None");
-                None
+                panic!(
+                    "Logic error: current_index should never be None if there are History records"
+                );
             },
             |index| {
                 let entry = self.get(index);
-
                 #[cfg(debug_assertions)]
                 debug!("get_next(); current index={index:?}, entry={entry:?}");
                 entry
@@ -600,6 +677,15 @@ where
                 }
                 _ => {
                     // Call the key_handler closure to process events
+                    #[cfg(debug_assertions)]
+                    debug!(
+                        "edit_data.history.current_index={:?}",
+                        edit_data
+                            .history
+                            .as_ref()
+                            .and_then(|hist| hist.current_index)
+                    );
+
                     let key_action = key_handler(
                         key_event,
                         &mut maybe_term.as_mut(),

@@ -1,4 +1,5 @@
 use clap::CommandFactory;
+use log::info;
 use mockall::Sequence;
 use predicates::prelude::predicate;
 use ratatui::crossterm::{
@@ -7,15 +8,18 @@ use ratatui::crossterm::{
 };
 use ratatui::style::{Color, Style};
 use sequential_test::sequential;
-use std::{
-    fs,
-    process::{Command, Stdio},
+#[cfg(feature = "simplelog")]
+use simplelog::{
+    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
+#[cfg(feature = "simplelog")]
+use std::{fs::File, sync::OnceLock};
 use std::{
+    fs::{self},
     io::{stdout, Write},
     path::PathBuf,
+    process::{Command, Stdio},
 };
-
 use thag_rs::colors::{get_term_theme, TuiSelectionBg};
 use thag_rs::stdin::{edit, read_to_string, toml};
 use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History, MockEventReader};
@@ -24,13 +28,40 @@ use tui_textarea::TextArea;
 
 // Set environment variables before running tests
 fn set_up() {
+    init_logger();
     std::env::set_var("TEST_ENV", "1");
     std::env::set_var("VISUAL", "cat");
     std::env::set_var("EDITOR", "cat");
 }
 
+#[cfg(feature = "simplelog")]
+static LOGGER: OnceLock<()> = OnceLock::new();
+
 fn init_logger() {
-    let _ = env_logger::builder().is_test(true).try_init();
+    // Choose between simplelog and env_logger based on compile feature
+    #[cfg(feature = "simplelog")]
+    LOGGER.get_or_init(|| {
+        CombinedLogger::init(vec![
+            TermLogger::new(
+                LevelFilter::Info,
+                Config::default(),
+                TerminalMode::Mixed,
+                ColorChoice::Auto,
+            ),
+            WriteLogger::new(
+                LevelFilter::Debug,
+                Config::default(),
+                File::create("app.log").unwrap(),
+            ),
+        ])
+        .unwrap();
+        info!("Initialized simplelog");
+    });
+
+    #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
+    {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
 }
 
 #[test]
@@ -174,7 +205,7 @@ fn test_stdin_history_navigate() -> ThagResult<()> {
     assert_eq!(&current.unwrap().contents(), "first");
 
     let current = history.get_previous();
-    assert!(current.is_none());
+    assert_eq!(&current.unwrap().contents(), "first");
 
     let current = history.get_next();
     assert!(current.is_some());
@@ -189,7 +220,7 @@ fn test_stdin_history_navigate() -> ThagResult<()> {
     assert_eq!(&current.unwrap().contents(), "fourth");
 
     let current = history.get_next();
-    assert!(current.is_none());
+    assert_eq!(&current.unwrap().contents(), "fourth");
 
     eprintln!("History={history:#?}");
 

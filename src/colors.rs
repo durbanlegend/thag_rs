@@ -9,7 +9,7 @@ use crate::{generate_styles, maybe_config};
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use firestorm::profile_fn;
 use nu_ansi_term::{Color, Style};
-use ratatui::style::Style as RataStyle;
+use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
 use scopeguard::defer;
 use serde::Deserialize;
 #[cfg(target_os = "windows")]
@@ -468,7 +468,7 @@ pub fn get_style(
 macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
-        let style: nu_ansi_term::Style = $style;
+        let style: &nu_ansi_term::Style = $style;
         // Qualified form to avoid imports in calling code.
         let painted = style.paint(content);
         let verbosity = $crate::logging::get_verbosity();
@@ -482,7 +482,7 @@ macro_rules! cvprtln {
         if $verbosity >= $crate::logging::get_verbosity() {
             let (maybe_color_support, term_theme) = coloring();
             let style = $crate::colors::get_style(&$level, term_theme, maybe_color_support);
-            cprtln!(style, $msg);
+            cprtln!(&style, $msg);
         }
     }};
 }
@@ -933,10 +933,10 @@ impl From<&MessageStyle> for XtermColor {
 }
 
 #[allow(clippy::match_same_arms)]
-impl From<MessageStyle> for Style {
-    fn from(value: MessageStyle) -> Self {
+impl From<&MessageStyle> for Style {
+    fn from(message_style: &MessageStyle) -> Self {
         profile_fn!(style_from_msg_style);
-        match value {
+        match *message_style {
             MessageStyle::Ansi16LightError => Color::Red.bold(),
             MessageStyle::Ansi16LightWarning => Color::Magenta.bold(),
             MessageStyle::Ansi16LightEmphasis => Color::Yellow.bold(),
@@ -977,10 +977,95 @@ impl From<MessageStyle> for Style {
     }
 }
 
-impl From<MessageLevel> for Style {
-    fn from(lvl: MessageLevel) -> Self {
+impl From<&MessageLevel> for Style {
+    fn from(lvl: &MessageLevel) -> Self {
         profile_fn!(style_from_lvl);
-        Self::from(MessageStyle::from(&lvl))
+        Self::from(&MessageStyle::from(lvl))
+    }
+}
+
+#[allow(clippy::match_same_arms)]
+impl From<&MessageStyle> for RataStyle {
+    fn from(message_style: &MessageStyle) -> Self {
+        profile_fn!(ratastyle_from_msg_style);
+        match *message_style {
+            MessageStyle::Ansi16LightError => RataStyle::from(RataColor::Red).bold(),
+            MessageStyle::Ansi16LightWarning => RataStyle::from(RataColor::Magenta).bold(),
+            MessageStyle::Ansi16LightEmphasis => RataStyle::from(RataColor::Yellow).bold(),
+            MessageStyle::Ansi16LightHeading => RataStyle::from(RataColor::Blue).bold(),
+            MessageStyle::Ansi16LightSubheading => RataStyle::from(RataColor::Cyan).bold(),
+            MessageStyle::Ansi16LightNormal => RataStyle::from(RataColor::White).not_bold(),
+            MessageStyle::Ansi16LightDebug => RataStyle::from(RataColor::Cyan).not_bold(),
+            MessageStyle::Ansi16LightGhost => RataStyle::from(RataColor::Cyan).dim().italic(),
+            MessageStyle::Ansi16DarkError => RataStyle::from(RataColor::Red).bold(),
+            MessageStyle::Ansi16DarkWarning => RataStyle::from(RataColor::Magenta).bold(),
+            MessageStyle::Ansi16DarkEmphasis => RataStyle::from(RataColor::Yellow).bold(),
+            MessageStyle::Ansi16DarkHeading => RataStyle::from(RataColor::Cyan).bold(),
+            MessageStyle::Ansi16DarkSubheading => RataStyle::from(RataColor::Green).bold(),
+            MessageStyle::Ansi16DarkNormal => RataStyle::from(RataColor::White).not_bold(),
+            MessageStyle::Ansi16DarkDebug => RataStyle::from(RataColor::Cyan).not_bold(),
+            MessageStyle::Ansi16DarkGhost => RataStyle::from(RataColor::Gray).dim().italic(),
+            MessageStyle::Xterm256LightError => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
+            }
+            MessageStyle::Xterm256LightWarning => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkPurplePizzazz))).bold()
+            }
+            MessageStyle::Xterm256LightEmphasis => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
+            }
+            MessageStyle::Xterm256LightHeading => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::MidnightBlue))).bold()
+            }
+            MessageStyle::Xterm256LightSubheading => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::ScienceBlue))).not_bold()
+            }
+            MessageStyle::Xterm256LightNormal => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Black))).not_bold()
+            }
+            MessageStyle::Xterm256LightDebug => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::LochmaraBlue))).not_bold()
+            }
+            MessageStyle::Xterm256LightGhost => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Boulder)))
+                    .not_bold()
+                    .italic()
+            }
+            MessageStyle::Xterm256DarkError => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
+            }
+            MessageStyle::Xterm256DarkWarning => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkViolet))).bold()
+            }
+            MessageStyle::Xterm256DarkEmphasis => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
+            }
+            MessageStyle::Xterm256DarkHeading => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::CaribbeanGreen))).bold()
+            }
+            MessageStyle::Xterm256DarkSubheading => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkMalibuBlue)))
+                    .not_bold()
+            }
+            MessageStyle::Xterm256DarkNormal => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Silver))).not_bold()
+            }
+            MessageStyle::Xterm256DarkDebug => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::BondiBlue))).not_bold()
+            }
+            MessageStyle::Xterm256DarkGhost => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Silver)))
+                    .not_bold()
+                    .italic()
+            }
+        }
+    }
+}
+
+impl From<&MessageLevel> for RataStyle {
+    fn from(lvl: &MessageLevel) -> Self {
+        profile_fn!(ratastyle_from_lvl);
+        Self::from(&MessageStyle::from(lvl))
     }
 }
 
@@ -1007,7 +1092,7 @@ pub fn main() {
             log!(
                 Verbosity::Normal,
                 "{}",
-                Style::from(Lvl::WARN).paint("Colored Warning message\n")
+                Style::from(&Lvl::WARN).paint("Colored Warning message\n")
             );
 
             for variant in Lvl::iter() {

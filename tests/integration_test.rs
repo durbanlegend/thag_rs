@@ -34,7 +34,7 @@ use thag_rs::colors::Lvl;
 use thag_rs::log;
 use thag_rs::logging::Verbosity;
 fn main() {{
-    log!(Verbosity::Normal, "Style::from(Lvl::EMPH)={{:#?}}", Style::from(Lvl::EMPH));
+    log!(Verbosity::Normal, "Style::from(&Lvl::EMPH)={{:#?}}", Style::from(&Lvl::EMPH));
 }}"#
     )?;
 

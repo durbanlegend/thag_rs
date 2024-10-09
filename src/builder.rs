@@ -481,7 +481,7 @@ pub fn gen_build_run(
     let process = &format!(
         "{} completed processing script {}",
         PACKAGE_NAME,
-        Style::from(Lvl::EMPH).paint(&build_state.source_name)
+        Style::from(&Lvl::EMPH).paint(&build_state.source_name)
     );
     display_timings(start, process, proc_flags);
     Ok(())
@@ -611,7 +611,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
         Verbosity::Normal,
         "{} {} ...",
         if check { "Checking" } else { "Building" },
-        Style::from(Lvl::EMPH).paint(&build_state.source_name)
+        Style::from(&Lvl::EMPH).paint(&build_state.source_name)
     );
 
     if quieter {

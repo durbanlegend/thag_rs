@@ -13,7 +13,7 @@ use crate::tui_editor::{
 };
 use crate::{
     code_utils, cprtln, cvprtln, debug_log, extract_ast_expr, extract_manifest, log, BuildState,
-    Cli, Lvl, MessageLevel, ProcFlags,
+    Cli, Lvl, ProcFlags,
 };
 
 use crate::key;
@@ -49,72 +49,6 @@ use std::str::FromStr;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use tui_textarea::{CursorMove, Input, TextArea};
-
-// #[derive(Default, Serialize, Deserialize)]
-// pub struct History {
-//     pub entries: VecDeque<String>,
-//     pub current_index: Option<usize>,
-// }
-
-// impl History {
-//     pub fn new() -> Self {
-//         Self {
-//             entries: VecDeque::with_capacity(20),
-//             current_index: None,
-//         }
-//     }
-
-//     fn load_from_file(path: &PathBuf) -> Self {
-//         fs::read_to_string(path).map_or_else(
-//             |_| Self::default(),
-//             |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
-//         )
-//     }
-
-//     fn save_to_file(&self, path: &PathBuf) {
-//         if let Ok(data) = serde_json::to_string(self) {
-//             let _ = fs::write(path, data);
-//         }
-//     }
-
-//     fn add_entry(&mut self, entry: String) {
-//         // Remove prior duplicates
-//         self.entries.retain(|f| f != &entry);
-//         self.entries.push_front(entry);
-//     }
-
-//     fn get_current(&mut self) -> Option<&String> {
-//         if self.entries.is_empty() {
-//             return None;
-//         }
-
-//         self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
-//         self.entries.front()
-//     }
-
-//     fn get_previous(&mut self) -> Option<&String> {
-//         if self.entries.is_empty() {
-//             return None;
-//         }
-
-//         self.current_index = self.current_index.map_or(Some(0), |index| Some(index + 1));
-//         self.current_index.and_then(|index| self.entries.get(index))
-//     }
-
-//     fn get_next(&mut self) -> Option<&String> {
-//         if self.entries.is_empty() {
-//             return None;
-//         }
-
-//         self.current_index = match self.current_index {
-//             Some(index) if index > 0 => Some(index - 1),
-//             Some(index) if index == 0 => Some(index + self.entries.len() - 1),
-//             _ => Some(self.entries.len() - 1),
-//         };
-
-//         self.current_index.and_then(|index| self.entries.get(index))
-//     }
-// }
 
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(
@@ -188,16 +122,6 @@ pub fn run_repl(
     start: Instant,
 ) -> ThagResult<()> {
     #[allow(unused_variables)]
-    // let mut context = Context {
-    //     args,
-    //     proc_flags,
-    //     build_state,
-    //     start,
-    // };
-    // // get_emacs_keybindings();
-    // let context: &mut Context = &mut context;
-    // // let history_file = context.build_state.cargo_home.join(HISTORY_FILE);
-    // // let history = Box::new(FileBackedHistory::with_file(25, history_file)?);
     let cmd_vec = ReplCommand::iter()
         .map(<ReplCommand as Into<&'static str>>::into)
         .map(String::from)
@@ -224,7 +148,7 @@ pub fn run_repl(
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
-            DefaultHinter::default().with_style(NuStyle::from(Lvl::Ghost).italic()),
+            DefaultHinter::default().with_style(NuStyle::from(&Lvl::Ghost).italic()),
         ))
         // .with_history(history)
         // .with_highlighter(highlighter)
@@ -311,7 +235,7 @@ pub fn run_repl(
                                         edit_cmds
                                             .iter()
                                             .map(|cmd| {
-                                                let key_desc = NuStyle::from(Lvl::SUBH)
+                                                let key_desc = NuStyle::from(&Lvl::SUBH)
                                                     .paint(format!("{cmd:?}"));
                                                 let key_desc = format!("{key_desc}");
                                                 key_desc.len()
@@ -320,7 +244,7 @@ pub fn run_repl(
                                             .unwrap_or(0)
                                     } else if !format!("{reedline_event}").starts_with("UntilFound")
                                     {
-                                        let event_desc = NuStyle::from(Lvl::SUBH)
+                                        let event_desc = NuStyle::from(&Lvl::SUBH)
                                             .paint(format!("{reedline_event:?}"));
                                         let event_desc = format!("{event_desc}");
                                         event_desc.len()
@@ -366,7 +290,7 @@ pub fn run_repl(
                         let max_key_len = formatted_bindings
                             .iter()
                             .map(|(key_desc, _)| {
-                                let key_desc = NuStyle::from(Lvl::HEAD).paint(key_desc);
+                                let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
                                 let key_desc = format!("{key_desc}");
                                 key_desc.len()
                             })
@@ -389,7 +313,11 @@ pub fn run_repl(
         if let Ok(expr_ast) = maybe_ast {
             code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
         } else {
-            cprtln!(Lvl::ERR.into(), "Error parsing code: {maybe_ast:#?}");
+            cprtln!(
+                //&NuStyle::from(&Lvl::ERR),
+                &(&Lvl::ERR).into(),
+                "Error parsing code: {maybe_ast:#?}"
+            );
         }
     }
     Ok(())
@@ -509,7 +437,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         Block::default()
             .borders(Borders::NONE)
             .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
-            .title_style(Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold()),
+            .title_style(Style::from(&Lvl::HEAD).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::Blue));

@@ -632,7 +632,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
         log!(
             V::V,
             "{}",
-            Style::from(Lvl::WARN).paint("Parsed to syn::File")
+            Style::from(&Lvl::WARN).paint("Parsed to syn::File")
         );
 
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
@@ -642,7 +642,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
         log!(
             V::V,
             "{}",
-            Style::from(Lvl::EMPH).paint("Parsed to syn::Expr")
+            Style::from(&Lvl::EMPH).paint("Parsed to syn::Expr")
         );
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
@@ -650,7 +650,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
         log!(
             V::QQ,
             "{}",
-            Style::from(Lvl::WARN)
+            Style::from(&Lvl::WARN)
                 .paint("Error parsing syntax tree. Using regex to help you debug the script.")
         );
 
@@ -1097,7 +1097,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             log!(
                 V::Q,
                 "{}",
-                Style::from(Lvl::WARN).paint(format!(
+                Style::from(&Lvl::WARN).paint(format!(
                     "Expression not catered for: {expr:#?}, wrapping expression in println!()"
                 ))
             );

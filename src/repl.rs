@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
-use crate::colors::{coloring, tui_selection_bg, MessageLevel, TuiSelectionBg};
+use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
 #[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::errors::ThagError;
@@ -10,12 +10,11 @@ use crate::logging::{get_verbosity, Verbosity};
 use crate::regex;
 use crate::shared::{Ast, BuildState, KeyDisplayLine};
 use crate::tui_editor::{
-    apply_highlights, normalize_newlines, show_popup, tui_edit, CrosstermEventReader, EditData,
-    Entry, EventReader, History, KeyAction, KeyDisplay, TermScopeGuard, MAPPINGS, TITLE_BOTTOM,
-    TITLE_TOP,
+    apply_highlights, normalize_newlines, paste_to_textarea, preserve, resolve_term,
+    save_if_changed, save_source_file, show_popup, tui_edit, CrosstermEventReader, EditData, Entry,
+    EventReader, History, KeyAction, KeyDisplay, TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
 };
-use crate::{cprtln, cvprtln, gen_build_run, log, tui_editor, Lvl, ThagResult};
-use crate::{key, KeyCombination /*KeyCombinationFormat*/};
+use crate::{cprtln, cvprtln, gen_build_run, key, log, KeyCombination, Lvl, ThagResult};
 
 use clap::{CommandFactory, Parser};
 use crossterm::event::{
@@ -352,7 +351,7 @@ pub fn run_repl(
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
-            DefaultHinter::default().with_style(NuStyle::from(Lvl::Ghost).italic()),
+            DefaultHinter::default().with_style(NuStyle::from(&Lvl::Ghost).italic()),
         ))
         .with_history(history)
         .with_history_exclusion_prefix(Some("q".into()))
@@ -508,7 +507,11 @@ fn process_source(
     if let Ok(expr_ast) = maybe_ast {
         code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
     } else {
-        cprtln!(Lvl::ERR.into(), "Error parsing code: {maybe_ast:#?}");
+        cprtln!(
+            // NuStyle::from(&Lvl::ERR),
+            &(&Lvl::ERR).into(),
+            "Error parsing code: {maybe_ast:#?}"
+        );
     };
     Ok(())
 }
@@ -545,7 +548,7 @@ fn tui(
     ];
     let display = KeyDisplay {
         title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Subheading))).bold(),
+        title_style: Style::from(&Lvl::SUBH).bold(),
         remove_keys: &[""; 0],
         add_keys: &add_keys,
     };
@@ -705,86 +708,6 @@ pub fn script_key_handler(
     }
 }
 
-fn save_if_changed(
-    hist: &mut History,
-    textarea: &mut TextArea<'_>,
-    history_path: &Option<PathBuf>,
-) -> Result<(), ThagError> {
-    if let Some(entry) = &hist.get_current() {
-        let index = entry.index;
-        let copy_text = copy_text(textarea);
-        if entry.contents() != copy_text {
-            // entry.lines = copy_text.lines().map(String::from).collect();
-            hist.update_entry(index, &copy_text);
-            if let Some(ref hist_path) = history_path {
-                hist.save_to_file(hist_path)?;
-            }
-        }
-    }
-    Ok(())
-}
-
-fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &tui_editor::Entry) {
-    textarea.select_all();
-    textarea.cut();
-    // 6
-    textarea.insert_str(entry.contents());
-}
-
-fn preserve(
-    textarea: &mut TextArea<'_>,
-    hist: &mut History,
-    history_path: &PathBuf,
-) -> ThagResult<()> {
-    #[cfg(debug_assertions)]
-    debug!("preserve...");
-    save_if_not_empty(textarea, hist);
-    save_history(Some(&mut hist.clone()), Some(history_path))?;
-    Ok(())
-}
-
-fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
-    #[cfg(debug_assertions)]
-    debug!("save_if_not_empty...");
-
-    let text = copy_text(textarea);
-    if !text.trim().is_empty() {
-        hist.add_entry(&text);
-        #[cfg(debug_assertions)]
-        debug!("... added entry");
-    }
-}
-
-fn copy_text(textarea: &mut TextArea<'_>) -> String {
-    textarea.select_all();
-    textarea.copy();
-    let text = textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
-    text
-}
-
-fn save_history(history: Option<&mut History>, history_path: Option<&PathBuf>) -> ThagResult<()> {
-    #[cfg(debug_assertions)]
-    debug!("save_history...");
-    if let Some(hist) = history {
-        if let Some(hist_path) = history_path {
-            hist.save_to_file(hist_path)?;
-            #[cfg(debug_assertions)]
-            debug!("... saved to file");
-        }
-    }
-    Ok(())
-}
-
-fn save_source_file(
-    to_rs_path: &PathBuf,
-    textarea: &TextArea<'_>,
-    saved: &mut bool,
-) -> ThagResult<()> {
-    let _write_source = code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
-    *saved = true;
-    Ok(())
-}
-
 fn review_history(
     line_editor: &mut Reedline,
     history_path: &PathBuf,
@@ -841,7 +764,7 @@ pub fn edit_history<R: EventReader + Debug>(
     )];
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold(),
+        title_style: Style::from(&Lvl::HEAD).bold(),
         remove_keys: &["F7", "F8"],
         add_keys: &binding,
     };
@@ -946,7 +869,7 @@ fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
     let max_key_len = formatted_bindings
         .iter()
         .map(|(key_desc, _)| {
-            let key_desc = NuStyle::from(Lvl::HEAD).paint(key_desc);
+            let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
             let key_desc = format!("{key_desc}");
             key_desc.len()
         })
@@ -994,7 +917,7 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
                         edit_cmds
                             .iter()
                             .map(|cmd| {
-                                let key_desc = NuStyle::from(Lvl::SUBH).paint(format!("{cmd:?}"));
+                                let key_desc = NuStyle::from(&Lvl::SUBH).paint(format!("{cmd:?}"));
                                 let key_desc = format!("{key_desc}");
                                 key_desc.len()
                             })
@@ -1002,7 +925,7 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
                             .unwrap_or(0)
                     } else if !format!("{reedline_event}").starts_with("UntilFound") {
                         let event_desc =
-                            NuStyle::from(Lvl::SUBH).paint(format!("{reedline_event:?}"));
+                            NuStyle::from(&Lvl::SUBH).paint(format!("{reedline_event:?}"));
                         let event_desc = format!("{event_desc}");
                         event_desc.len()
                     } else {
@@ -1022,13 +945,14 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
     println!();
     cprtln!(
-        NuStyle::from(Lvl::EMPH),
+        //&NuStyle::from(&Lvl::EMPH),
+        &(&Lvl::EMPH).into(),
         "Key bindings - subject to your terminal settings"
     );
 
     // Print the formatted and sorted key bindings
     for (key_desc, cmd_desc) in formatted_bindings {
-        let key_desc = NuStyle::from(Lvl::HEAD).paint(key_desc);
+        let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
         let key_desc = format!("{key_desc}");
         println!("{:<width$}    {}", key_desc, cmd_desc, width = max_key_len);
     }
@@ -1105,7 +1029,7 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
         map
     });
 
-    let event_highlight = NuStyle::from(Lvl::SUBH).paint(event_name);
+    let event_highlight = NuStyle::from(&Lvl::SUBH).paint(event_name);
     let event_highlight = format!("{event_highlight}");
     let event_desc = format!(
         "{:<max_cmd_len$} {}",
@@ -1133,7 +1057,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
     let mut cmd_descriptions = Vec::new();
 
     for cmd in edit_cmds {
-        let cmd_highlight = NuStyle::from(Lvl::SUBH).paint(format!("{cmd:?}"));
+        let cmd_highlight = NuStyle::from(&Lvl::SUBH).paint(format!("{cmd:?}"));
         let cmd_highlight = format!("{cmd_highlight}");
         let cmd_desc = match cmd {
             EditCommand::MoveToStart { select }
@@ -1284,15 +1208,15 @@ pub fn edit_history_old<R: EventReader + Debug>(
     let mut tui_highlight_bg = tui_selection_bg(coloring().1);
     let mut saved = false;
 
-    let mut maybe_term = tui_editor::resolve_term()?;
+    let mut maybe_term = resolve_term()?;
 
     let mut textarea = TextArea::from(initial_content.lines());
 
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting")
-            .title_style(Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold()),
+            .title("Enter / paste / edit REPL history.  ^d: save & exi  t  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting")
+            .title_style(Style::from(&Lvl::HEAD).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
 
@@ -1491,8 +1415,13 @@ pub fn disp_repl_banner(cmd_list: &str) {
     cvprtln!(
         Lvl::SUBH,
         get_verbosity(),
-        r"Expressions in matching braces, brackets or quotes may span multiple lines.
-Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
+        r"Expressions in matching braces, brackets or quotes may span multiple lines."
+    );
+
+    cvprtln!(
+        Lvl::SUBH,
+        get_verbosity(),
+        r"Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
     );
 }
 

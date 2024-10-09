@@ -1,5 +1,3 @@
-// use crate::__private::key;
-use crate::KeyCombination;
 use crossterm::event::KeyEventKind;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
@@ -15,15 +13,12 @@ use crossterm::{
 use firestorm::profile_fn;
 use log::debug;
 use mockall::automock;
+use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
-use ratatui::style::{Color, Modifier, Style, Styled};
+use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
 use ratatui::text::Line;
 use ratatui::widgets::{block::Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
-use ratatui::{
-    layout::{Constraint, Direction, Layout, Margin},
-    style::Stylize,
-};
 use regex::Regex;
 use scopeguard::{guard, ScopeGuard};
 use serde::{Deserialize, Serialize};
@@ -36,11 +31,10 @@ use std::path::PathBuf;
 use std::{self, fs};
 use tui_textarea::{CursorMove, Input, TextArea};
 
+use crate::code_utils;
 use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
-use crate::key;
-use crate::regex;
 use crate::shared::KeyDisplayLine;
-use crate::{debug_log, MessageLevel, ThagError, ThagResult};
+use crate::{debug_log, key, regex, KeyCombination, MessageLevel, ThagError, ThagResult};
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
 pub type Term = Terminal<BackEnd>;
@@ -226,6 +220,7 @@ impl History {
         self.reassign_indices();
         if let Ok(data) = serde_json::to_string(&self) {
             fs::write(path, data)?;
+            fs::write(path, "\n")?;
         }
 
         #[cfg(debug_assertions)]
@@ -250,14 +245,6 @@ impl History {
             None
         }
     }
-
-    // /// Side-effect: adjusts self.current_index by offset.
-    // fn get_at_offset(&mut self, offset: isize) -> Option<&Entry> {
-    //     if self.entries.is_empty() {
-    //         return None;
-    //     }
-    //     self.get(self.current_index.map_or(0, |index| index + offset))
-    // }
 
     pub fn get(&mut self, index: usize) -> Option<&Entry> {
         #[cfg(debug_assertions)]
@@ -317,9 +304,14 @@ impl History {
         if self.entries.is_empty() {
             return None;
         }
-        let new_index = self
-            .current_index
-            .map(|index| if index > 0 { index - 1 } else { 0 });
+        let new_index = self.current_index.map(|index| {
+            if index > 0 {
+                index - 1
+            } else {
+                // TODO crossterm terminal beep if and when implemented (issue #806 pull request)
+                0
+            }
+        });
 
         #[cfg(debug_assertions)]
         debug!(
@@ -361,6 +353,7 @@ impl History {
             if index < max_index {
                 index + 1
             } else {
+                // crossterm terminal beep if and when implemented (issue #806 pull request)
                 max_index
             }
         });
@@ -677,14 +670,14 @@ where
                 }
                 _ => {
                     // Call the key_handler closure to process events
-                    #[cfg(debug_assertions)]
-                    debug!(
-                        "edit_data.history.current_index={:?}",
-                        edit_data
-                            .history
-                            .as_ref()
-                            .and_then(|hist| hist.current_index)
-                    );
+                    // #[cfg(debug_assertions)]
+                    // debug!(
+                    //     "edit_data.history.current_index={:?}",
+                    //     edit_data
+                    //         .history
+                    //         .as_ref()
+                    //         .and_then(|hist| hist.current_index)
+                    // );
 
                     let key_action = key_handler(
                         key_event,
@@ -895,6 +888,127 @@ pub fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> T
     term.show_cursor()?;
     Ok(())
 }
+
+/// Save a `TextArea` to history if it has changed.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o errors encuntered.
+pub fn save_if_changed(
+    hist: &mut History,
+    textarea: &mut TextArea<'_>,
+    history_path: &Option<PathBuf>,
+) -> Result<(), ThagError> {
+    if let Some(entry) = &hist.get_current() {
+        let index = entry.index;
+        let copy_text = copy_text(textarea);
+        if entry.contents() != copy_text {
+            // entry.lines = copy_text.lines().map(String::from).collect();
+            hist.update_entry(index, &copy_text);
+            if let Some(ref hist_path) = history_path {
+                hist.save_to_file(hist_path)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &Entry) {
+    textarea.select_all();
+    textarea.cut();
+    // 6
+    textarea.insert_str(entry.contents());
+}
+
+/// Save a `TextArea` to history and the history to the backing file.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o errors encuntered.
+pub fn preserve(
+    textarea: &mut TextArea<'_>,
+    hist: &mut History,
+    history_path: &PathBuf,
+) -> ThagResult<()> {
+    #[cfg(debug_assertions)]
+    debug!("preserve...");
+    save_if_not_empty(textarea, hist);
+    save_history(Some(&mut hist.clone()), Some(history_path))?;
+    Ok(())
+}
+
+pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
+    #[cfg(debug_assertions)]
+    debug!("save_if_not_empty...");
+
+    let text = copy_text(textarea);
+    if !text.trim().is_empty() {
+        hist.add_entry(&text);
+        #[cfg(debug_assertions)]
+        debug!("... added entry");
+    }
+}
+
+pub fn copy_text(textarea: &mut TextArea<'_>) -> String {
+    textarea.select_all();
+    textarea.copy();
+    let text = textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
+    text
+}
+
+/// Save the history to the backing file.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o errors encuntered.
+pub fn save_history(
+    history: Option<&mut History>,
+    history_path: Option<&PathBuf>,
+) -> ThagResult<()> {
+    #[cfg(debug_assertions)]
+    debug!("save_history...");
+    if let Some(hist) = history {
+        if let Some(hist_path) = history_path {
+            hist.save_to_file(hist_path)?;
+            #[cfg(debug_assertions)]
+            debug!("... saved to file");
+        }
+    }
+    Ok(())
+}
+
+/// Save Rust source code to a source file.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o errors encuntered.
+pub fn save_source_file(
+    to_rs_path: &PathBuf,
+    textarea: &TextArea<'_>,
+    saved: &mut bool,
+) -> ThagResult<()> {
+    let _write_source = code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
+    *saved = true;
+    Ok(())
+}
+
+// fn process_source(
+//     rs_source: &str,
+//     build_state: &mut BuildState,
+//     args: &Cli,
+//     proc_flags: &ProcFlags,
+//     start: Instant,
+// ) -> ThagResult<()> {
+//     let rs_manifest = extract_manifest(rs_source, Instant::now())?;
+//     build_state.rs_manifest = Some(rs_manifest);
+//     let maybe_ast = extract_ast_expr(rs_source);
+//     if let Ok(expr_ast) = maybe_ast {
+//         code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+//     } else {
+//         cprtln!(Lvl::ERR.into(), "Error parsing code: {maybe_ast:#?}");
+//     };
+//     Ok(())
+// }
 
 #[macro_export]
 macro_rules! key_mappings {

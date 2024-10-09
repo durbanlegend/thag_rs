@@ -1,4 +1,5 @@
 use clap::CommandFactory;
+#[cfg(feature = "simplelog")]
 use log::info;
 use mockall::Sequence;
 use predicates::prelude::predicate;

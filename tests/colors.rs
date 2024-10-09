@@ -109,7 +109,7 @@ mod tests {
         // print!("{}[2J", 27 as char);
         // thag_rs::clear_screen();
 
-        let style = Style::from(Lvl::WARN);
+        let style = Style::from(&Lvl::WARN);
         let (maybe_color_support, _term_theme) = coloring();
         if let Some(color_support) = maybe_color_support {
             match theme {

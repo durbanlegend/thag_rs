@@ -467,7 +467,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
         Block::default()
             .borders(Borders::NONE)
             .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
-            .title_style(Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold()),
+            .title_style(Style::from(&Lvl::HEAD).bold(),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::Blue));
@@ -657,7 +657,7 @@ pub fn edit_new<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
     )];
     let display = Display {
         title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Subheading))).bold(),
+        title_style: Style::from(&Lvl::SUBH).bold(),
         remove_keys: &[""; 0],
         add_keys: &binding,
     };
@@ -690,7 +690,7 @@ pub fn edit_new<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
         Block::default()
             .borders(Borders::NONE)
             .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
-            .title_style(Style::default().fg(Color::Indexed(u8::from(&MessageLevel::Heading))).bold()),
+            .title_style(Style::from(&Lvl::HEAD).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.set_selection_style(Style::default().bg(Color::Blue));

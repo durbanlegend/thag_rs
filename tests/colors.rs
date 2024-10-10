@@ -147,10 +147,10 @@ mod tests {
     fn test_colors_message_style_get_style() {
         // Test the get_style method for MessageStyle
         set_up();
-        let style = Style::from(MessageStyle::Ansi16LightError);
+        let style = Style::from(&MessageStyle::Ansi16LightError);
         assert_eq!(style, Color::Red.bold());
 
-        let style = Style::from(MessageStyle::Xterm256DarkEmphasis);
+        let style = Style::from(&MessageStyle::Xterm256DarkEmphasis);
         assert_eq!(style, Color::from(&XtermColor::Copperfield).bold());
     }
 
@@ -161,7 +161,7 @@ mod tests {
         let content = "Test message from test_nu_color_println_macro";
         let output = format!("\u{1b}[1m{content}\u{1b}[0m");
         let style = nu_ansi_term::Style::new().bold();
-        cprtln!(style, "{}", content);
+        cprtln!(&style, "{}", content);
         // thag_rs::clear_screen();
 
         // Ensure the macro output is correctly styled

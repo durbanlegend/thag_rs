@@ -10,7 +10,7 @@ use crate::manifest;
 use crate::regex;
 use crate::repl::run_repl;
 use crate::shared::{debug_timings, display_timings, Ast, BuildState};
-use crate::stdin::{self, edit_old, read};
+use crate::stdin::{self, edit, read};
 use crate::tui_editor::CrosstermEventReader;
 use crate::{
     debug_log, log, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
@@ -227,7 +227,7 @@ fn process(
         } else if is_edit {
             debug_log!("About to call stdin::edit()");
             let event_reader = CrosstermEventReader;
-            let vec = edit_old(&event_reader)?;
+            let vec = edit(&event_reader)?;
 
             debug_log!("vec={vec:#?}");
             vec.join("\n")

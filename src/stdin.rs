@@ -1,22 +1,22 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
 use crate::errors::ThagResult;
+use crate::key;
 use crate::logging::{get_verbosity, Verbosity};
 use crate::regex;
 use crate::repl::{
     add_menu_keybindings, disp_repl_banner, format_edit_commands, format_key_code,
     format_key_modifier, format_non_edit_events, parse_line, show_key_bindings, ReplPrompt,
 };
+use crate::shared::KeyDisplayLine;
 use crate::tui_editor::{
-    maybe_enable_raw_mode, show_popup, CrosstermEventReader, EventReader, History, MAPPINGS,
-    TITLE_BOTTOM, TITLE_TOP,
+    maybe_enable_raw_mode, script_key_handler, show_popup, tui_edit, CrosstermEventReader,
+    EditData, EventReader, History, KeyAction, KeyDisplay, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
 };
 use crate::{
     code_utils, cprtln, cvprtln, debug_log, extract_ast_expr, extract_manifest, log, BuildState,
-    Cli, Lvl, ProcFlags,
+    Cli, Lvl, ProcFlags, ThagError,
 };
-
-use crate::key;
 use clap::{CommandFactory, Parser};
 use crossterm::event::{
     DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
@@ -31,7 +31,7 @@ use edit::edit_file;
 use mockall::predicate::str;
 use nu_ansi_term::Style as NuStyle;
 use ratatui::backend::CrosstermBackend;
-use ratatui::style::{Color, Style, Stylize};
+use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::widgets::{block::Block, Borders};
 use ratatui::Terminal;
 use reedline::{
@@ -102,7 +102,7 @@ impl ReplCommand {
 #[allow(dead_code)]
 fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
-    for line in &edit_old(&event_reader)? {
+    for line in &edit(&event_reader)? {
         log!(Verbosity::Normal, "{line}");
     }
     Ok(())
@@ -329,7 +329,7 @@ fn eval(
     args: &Cli,
     proc_flags: &ProcFlags,
 ) -> ThagResult<()> {
-    let vec = edit_old(event_reader)?;
+    let vec = edit(event_reader)?;
     let start = Instant::now();
     let input = vec.join("\n");
     let rs_source = input.trim();
@@ -364,13 +364,13 @@ pub fn toml(cargo_toml_file: &PathBuf) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
-/// Edit the stdin stream.
+/// TODO: out. Edit the stdin stream (old version).
 ///
 ///
 /// # Examples
 ///
 /// ```no_run
-/// use thag_rs::stdin::edit_old;
+/// use thag_rs::stdin::edit;
 /// use thag_rs::tui_editor::CrosstermEventReader;
 /// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
 /// use thag_rs::tui_editor::MockEventReader;
@@ -382,7 +382,7 @@ pub fn toml(cargo_toml_file: &PathBuf) -> ThagResult<Option<String>> {
 ///         KeyModifiers::CONTROL,
 ///     )))
 /// });
-/// let actual = edit_old(&event_reader);
+/// let actual = edit(&event_reader);
 /// let buf = vec![""];
 /// assert!(matches!(actual, Ok(buf)));
 /// ```
@@ -569,6 +569,101 @@ pub fn edit_old<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<Stri
     }
 
     Ok(textarea.lines().to_vec())
+}
+
+/// Edit the stdin stream.
+///
+///
+/// # Examples
+///
+/// ```no_run
+/// use thag_rs::stdin::edit;
+/// use thag_rs::tui_editor::CrosstermEventReader;
+/// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+/// use thag_rs::tui_editor::MockEventReader;
+///
+/// let mut event_reader = MockEventReader::new();
+/// event_reader.expect_read_event().return_once(|| {
+///     Ok(Event::Key(KeyEvent::new(
+///         KeyCode::Char('d'),
+///         KeyModifiers::CONTROL,
+///     )))
+/// });
+/// let actual = edit(&event_reader);
+/// let buf = vec![""];
+/// assert!(matches!(actual, Ok(buf)));
+/// ```
+/// # Errors
+///
+/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+/// # Panics
+///
+/// If the terminal cannot be reset.
+pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>> {
+    let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
+    let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
+    let mut history = History::load_from_file(&history_path);
+
+    let input = std::io::stdin();
+
+    #[cfg(debug_assertions)]
+    debug_log!("input.is_terminal()? {}", input.is_terminal());
+    let initial_content = if input.is_terminal() {
+        String::new()
+    } else {
+        crate::stdin::read()?
+    };
+
+    if !initial_content.trim().is_empty() {
+        history.add_entry(&initial_content);
+        history.save_to_file(&history_path)?;
+    }
+
+    let mut edit_data = EditData {
+        return_text: true,
+        initial_content: &initial_content,
+        save_path: None,
+        history_path: Some(&history_path),
+        history: Some(history),
+    };
+    let add_keys = [
+        KeyDisplayLine::new(361, "Ctrl+Alt+s", "Save a copy"),
+        KeyDisplayLine::new(371, "F3", "Discard saved and unsaved changes, and exit"),
+    ];
+    let display = KeyDisplay {
+        title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",
+        title_style: Style::from((Color::Yellow, Modifier::BOLD)),
+        remove_keys: &[""; 0],
+        add_keys: &add_keys,
+    };
+    let (key_action, maybe_text) = tui_edit(
+        event_reader,
+        &mut edit_data,
+        &display,
+        |key_event, maybe_term, /*maybe_save_file,*/ textarea, edit_data, popup, saved| {
+            script_key_handler(
+                key_event, maybe_term, // maybe_save_file,
+                textarea, edit_data, popup, saved,
+            )
+        },
+    )?;
+    match key_action {
+        KeyAction::Quit(_saved) => Ok(vec![]),
+        KeyAction::Save
+        | KeyAction::ShowHelp
+        | KeyAction::ToggleHighlight
+        | KeyAction::TogglePopup => Err(ThagError::FromStr(
+            format!("Logic error: {key_action:?} should not return from tui_edit").into(),
+        )),
+        // KeyAction::SaveAndExit => false,
+        KeyAction::Submit => {
+            std::fs::File::open(&history_path)?.sync_all()?;
+            return maybe_text.map_or(Err(ThagError::Cancelled), |v| Ok(v));
+        }
+        _ => Err(ThagError::FromStr(
+            format!("Logic error: {key_action:?} should not return from tui_edit").into(),
+        )),
+    }
 }
 
 /// Prompt for and read Rust source code from stdin.

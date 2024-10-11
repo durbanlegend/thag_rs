@@ -22,7 +22,7 @@ use std::{
     process::{Command, Stdio},
 };
 use thag_rs::colors::{get_term_theme, TuiSelectionBg};
-use thag_rs::stdin::{edit_old, read_to_string, toml};
+use thag_rs::stdin::{edit, read_to_string, toml};
 use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History, MockEventReader};
 use thag_rs::{log, logging::Verbosity, ThagResult, TMPDIR};
 use tui_textarea::TextArea;
@@ -105,7 +105,7 @@ fn test_stdin_edit_stdin_submit() {
             )))
         });
 
-    let result = edit_old(&mock_reader);
+    let result = edit(&mock_reader);
 
     log!(
         Verbosity::Normal,
@@ -124,7 +124,7 @@ fn test_stdin_edit_stdin_quit() {
     set_up();
     // Check if the test is running in a terminal
     if !stdout().is_tty() {
-        println!("Skipping test_edit_stdin_submit as it is not running in a terminal.");
+        println!("Skipping test_stdin_edit_stdin_quit as it is not running in a terminal.");
         return;
     }
     let mut mock_reader = MockEventReader::new();
@@ -136,7 +136,7 @@ fn test_stdin_edit_stdin_quit() {
         )))
     });
 
-    let result = edit_old(&mock_reader);
+    let result = edit(&mock_reader);
 
     assert!(result.is_ok());
 }

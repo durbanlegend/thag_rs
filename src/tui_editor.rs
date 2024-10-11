@@ -682,8 +682,6 @@ where
                         textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
                     }
                 }
-
-                //
                 key!(alt - '<') | key!(ctrl - alt - p) | key!(ctrl - alt - up) => {
                     textarea.move_cursor(CursorMove::Top);
                 }
@@ -710,15 +708,6 @@ where
                 }
                 _ => {
                     // Call the key_handler closure to process events
-                    // #[cfg(debug_assertions)]
-                    // debug!(
-                    //     "edit_data.history.current_index={:?}",
-                    //     edit_data
-                    //         .history
-                    //         .as_ref()
-                    //         .and_then(|hist| hist.current_index)
-                    // );
-
                     let key_action = key_handler(
                         key_event,
                         &mut maybe_term.as_mut(),
@@ -843,6 +832,12 @@ pub fn script_key_handler(
         key!(f3) => {
             // Ask to revert
             Ok(KeyAction::AbandonChanges)
+        }
+        key!(f4) => {
+            // Clear textarea
+            textarea.select_all();
+            textarea.cut();
+            Ok(KeyAction::Continue)
         }
         key!(f7) => {
             if let Some(ref mut hist) = edit_data.history {
@@ -1165,24 +1160,6 @@ pub fn save_source_file(
     *saved = true;
     Ok(())
 }
-
-// fn process_source(
-//     rs_source: &str,
-//     build_state: &mut BuildState,
-//     args: &Cli,
-//     proc_flags: &ProcFlags,
-//     start: Instant,
-// ) -> ThagResult<()> {
-//     let rs_manifest = extract_manifest(rs_source, Instant::now())?;
-//     build_state.rs_manifest = Some(rs_manifest);
-//     let maybe_ast = extract_ast_expr(rs_source);
-//     if let Ok(expr_ast) = maybe_ast {
-//         code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
-//     } else {
-//         cprtln!(Lvl::ERR.into(), "Error parsing code: {maybe_ast:#?}");
-//     };
-//     Ok(())
-// }
 
 #[macro_export]
 macro_rules! key_mappings {

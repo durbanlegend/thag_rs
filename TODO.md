@@ -12,16 +12,16 @@
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Config option for formatting main?
 - [ ]  Config option for stdin -d highlighting preference, like repl.rs
-- [ ]  Configurable multi-purpose TUI editor?
+- [ ]  See if it's possible to "wrap" termbg calls so as to make them non-disruptive.
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  >>> -R option to go straight into repl::tui?
 - [ ]  Message area in tui editor
-- [ ]  >>> Implement F7, F8 and saved_to_history in Tui_editor::tui_edit as for stdin::edit.
+- [ ]  >>> Implement Clear textarea = ?F4 in tui editor.
 - [ ]  >>> Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?
-- [ ]  Implement Ctrl+A (Save As...) on file dialog, also confirmation of save.
+- [ ]  Implement confirmation of save.
         >>> TODO: Save history on TUI save - in KeyHandler will need to be passed history file location
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
 - [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.

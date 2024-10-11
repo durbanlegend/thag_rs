@@ -6,6 +6,7 @@ use crossterm::{
     event::{KeyCode, KeyEvent, KeyModifiers},
     execute,
 };
+use log::debug;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -27,7 +28,7 @@ use crate::{key_mappings, tui_editor::show_popup};
 use crate::{shared::KeyDisplayLine, tui_editor};
 
 /// File dialog mode to distinguish between Open and Save dialogs
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum DialogMode {
     Open,
     Save,
@@ -42,6 +43,7 @@ pub enum FilePattern {
 }
 
 /// Enum to represent which part of the dialog has focus.
+#[derive(PartialEq)]
 pub enum DialogFocus {
     List,  // Focus on file list
     Input, // Focus on input area
@@ -84,7 +86,7 @@ pub struct FileDialog<'a> {
     pub popup: bool,
     title_bottom: &'a str,
 
-    /// Input for the file name in Save mode
+    /// Input for the file name in Input mode
     pub input: TextArea<'a>,
 }
 
@@ -326,22 +328,30 @@ impl<'a> FileDialog<'a> {
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn select(&mut self) -> Result<()> {
         // Open mode logic (already correct)
+        debug!("In select()");
         let Some(selected) = self.list_state.selected() else {
             self.next();
+            debug!("Returning Ok(())");
             return Ok(());
         };
 
         let path = self.current_dir.join(&self.items[selected]);
+        debug!(
+            "current_dir={:?}; path={path:?}; is_file? {}; mode={:?}",
+            self.current_dir,
+            path.is_file(),
+            self.mode
+        );
 
         if path.is_dir() {
             self.current_dir.clone_from(&path);
             self.update_entries()?;
         }
         // if matches!(self.mode, DialogMode::Save) {
-        if self.mode == DialogMode::Save {
+        if self.focus == DialogFocus::Input {
             // Save mode logic to use the entered filename
             let file_name = self.input.lines().join(""); // Get the input from TextArea
-                                                         // eprintln!("file_name={file_name}");
+            debug!("file_name={file_name}");
             if !file_name.is_empty() {
                 let path = self.current_dir.join(file_name);
                 self.selected_file = Some(path); // Set the selected file
@@ -350,8 +360,9 @@ impl<'a> FileDialog<'a> {
         } else if path.is_file() {
             self.selected_file = Some(path);
             self.close();
-            return Ok(());
+            // return Ok(());
         }
+        debug!("self.selected_file={:?}", self.selected_file);
         Ok(())
     }
 

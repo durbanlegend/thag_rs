@@ -515,17 +515,18 @@ where
     F: Fn(
         KeyEvent,
         &mut Option<&mut TermScopeGuard>,
-        // &mut Option<&mut PathBuf>,
         &mut TextArea,
         &mut EditData,
         &mut bool,
         &mut bool,
+        &mut String,
     ) -> ThagResult<KeyAction>,
 {
     // Initialize state variables
     let mut popup = false;
     let mut tui_highlight_bg = tui_selection_bg(coloring().1);
     let mut saved = false;
+    let mut status_message: String = Default::default(); // Add status message variable
 
     let mut maybe_term = resolve_term()?;
 
@@ -535,7 +536,7 @@ where
     // Set up the display parameters for the textarea
     textarea.set_block(
         Block::default()
-            .borders(Borders::NONE)
+            .borders(Borders::ALL)
             .title(display.title)
             .title_style(display.title_style),
     );
@@ -563,18 +564,51 @@ where
                 || Err("Logic issue unwrapping term we wrapped ourselves".into()),
                 |term| {
                     term.draw(|f| {
-                        f.render_widget(&textarea, f.area());
-                        if popup {
-                            show_popup(
-                                MAPPINGS,
-                                f,
-                                TITLE_TOP,
-                                TITLE_BOTTOM,
-                                display.remove_keys,
-                                display.add_keys,
-                            );
-                        };
-                        apply_highlights(&tui_highlight_bg, &mut textarea);
+                        // Get the size of the available terminal area
+                        let area = f.area();
+
+                        // Ensure there's enough height for both the textarea and the status line
+                        if area.height > 1 {
+                            let chunks = Layout::default()
+                                .direction(Direction::Vertical)
+                                .constraints(
+                                    [
+                                        Constraint::Min(area.height - 3), // Editor area takes up the rest
+                                        Constraint::Length(3),            // Status line gets 1 line
+                                    ]
+                                    .as_ref(),
+                                )
+                                .split(area);
+
+                            // Render the textarea in the first chunk
+                            f.render_widget(&textarea, chunks[0]);
+
+                            // Render the status line in the second chunk
+                            let status_block = Block::default()
+                                .borders(Borders::ALL)
+                                .title("Status")
+                                .style(Style::default().fg(Color::White))
+                                .title_style(display.title_style);
+
+                            let status_text = Paragraph::new::<&str>(status_message.as_ref())
+                                .block(status_block)
+                                .style(Style::default().fg(Color::White));
+
+                            f.render_widget(status_text, chunks[1]);
+
+                            if popup {
+                                show_popup(
+                                    MAPPINGS,
+                                    f,
+                                    TITLE_TOP,
+                                    TITLE_BOTTOM,
+                                    display.remove_keys,
+                                    display.add_keys,
+                                );
+                            };
+                            apply_highlights(&tui_highlight_bg, &mut textarea);
+                            status_message = String::new();
+                        }
                     })
                     .map_err(|e| {
                         eprintln!("Error drawing terminal: {e:?}");
@@ -716,6 +750,7 @@ where
                         edit_data,
                         &mut popup,
                         &mut saved,
+                        &mut status_message,
                     )?;
                     // eprintln!("key_action={key_action:?}");
                     match key_action {
@@ -760,6 +795,7 @@ pub fn script_key_handler(
     edit_data: &mut EditData,
     popup: &mut bool,
     saved: &mut bool, // TODO decide if we need this
+    status_message: &mut String,
 ) -> ThagResult<KeyAction> {
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
@@ -784,23 +820,25 @@ pub fn script_key_handler(
         }
         key!(ctrl - s) | key!(ctrl - alt - s) => {
             // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
-            if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
-                if let Some(ref hist_path) = history_path {
-                    let history = &mut edit_data.history;
-                    if let Some(hist) = history {
-                        preserve(textarea, hist, hist_path)?;
-                    };
-                }
-                let result = edit_data
-                    .save_path
-                    .as_mut()
-                    .map(|p| save_source_file(p, textarea, saved));
-                match result {
-                    Some(Ok(())) => {}
-                    Some(Err(e)) => return Err(e),
-                    None => return Err(ThagError::Logic(
-                        "Should be testing for maybe_save_path.is_some() before calling map on it.",
-                    )),
+            if matches!(key_combination, key!(ctrl - s)) {
+                if let Some(ref mut save_path) = edit_data.save_path {
+                    if let Some(ref hist_path) = history_path {
+                        let history = &mut edit_data.history;
+                        if let Some(hist) = history {
+                            preserve(textarea, hist, hist_path)?;
+                        };
+                        let result = save_source_file(save_path, textarea, saved);
+                        match result {
+                            Ok(()) => {
+                                status_message.clear();
+                                status_message.push_str(&format!("Saved to {save_path:?}"));
+                            }
+                            Err(e) => return Err(e),
+                            // None => return Err(ThagError::Logic(
+                            //     "Should be testing for maybe_save_path.is_some() before calling map on it.",
+                            // )),
+                        }
+                    }
                 }
                 Ok(KeyAction::Save)
             } else if let Some(term) = maybe_term {
@@ -816,6 +854,9 @@ pub fn script_key_handler(
 
                 if let Some(ref to_rs_path) = save_dialog.selected_file {
                     save_source_file(to_rs_path, textarea, saved)?;
+                    status_message.clear();
+                    status_message.push_str(&format!("Saved to {to_rs_path:?}"));
+
                     Ok(KeyAction::Save)
                 } else {
                     Ok(KeyAction::Continue)
@@ -917,6 +958,12 @@ pub fn show_popup<'a>(
                 (max_key.max(key_len), max_desc.max(desc_len))
             });
     let num_filtered_rows = adjusted_mappings.len();
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title_top(Line::from(title_top).centered())
+        .title_bottom(Line::from(title_bottom).centered())
+        .add_modifier(Modifier::BOLD)
+        .fg(Color::Indexed(u8::from(&MessageLevel::Heading)));
     let area = centered_rect(
         max_key_len + max_desc_len + 5,
         num_filtered_rows as u16 + 5,
@@ -926,12 +973,6 @@ pub fn show_popup<'a>(
         vertical: 2,
         horizontal: 2,
     });
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .title_top(Line::from(title_top).centered())
-        .title_bottom(Line::from(title_bottom).centered())
-        .add_modifier(Modifier::BOLD)
-        .fg(Color::Indexed(u8::from(&MessageLevel::Heading)));
     // this is supposed to clear out the background
     f.render_widget(Clear, area);
     f.render_widget(block, area);
@@ -1153,9 +1194,15 @@ pub fn save_history(
 /// This function will bubble up any i/o errors encuntered.
 pub fn save_source_file(
     to_rs_path: &PathBuf,
-    textarea: &TextArea<'_>,
+    textarea: &mut TextArea<'_>,
     saved: &mut bool,
 ) -> ThagResult<()> {
+    // Ensure newline at end
+    textarea.move_cursor(CursorMove::Bottom);
+    textarea.move_cursor(CursorMove::End);
+    if textarea.cursor().1 != 0 {
+        textarea.insert_newline();
+    }
     let _write_source = code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
     *saved = true;
     Ok(())

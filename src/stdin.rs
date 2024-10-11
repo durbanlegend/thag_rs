@@ -641,10 +641,15 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         event_reader,
         &mut edit_data,
         &display,
-        |key_event, maybe_term, /*maybe_save_file,*/ textarea, edit_data, popup, saved| {
+        |key_event, maybe_term, textarea, edit_data, popup, saved, status_message| {
             script_key_handler(
-                key_event, maybe_term, // maybe_save_file,
-                textarea, edit_data, popup, saved,
+                key_event,
+                maybe_term, // maybe_save_file,
+                textarea,
+                edit_data,
+                popup,
+                saved,
+                status_message,
             )
         },
     )?;

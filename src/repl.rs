@@ -554,10 +554,21 @@ fn tui(
         &event_reader,
         &mut edit_data,
         &display,
-        |key_event, maybe_term, /*maybe_save_file,*/ textarea, edit_data, popup, saved| {
+        |key_event,
+         maybe_term,
+         /*maybe_save_file,*/ textarea,
+         edit_data,
+         popup,
+         saved,
+         status_message| {
             script_key_handler(
-                key_event, maybe_term, // maybe_save_file,
-                textarea, edit_data, popup, saved,
+                key_event,
+                maybe_term, // maybe_save_file,
+                textarea,
+                edit_data,
+                popup,
+                saved,
+                status_message,
             )
         },
     )?;
@@ -658,10 +669,15 @@ pub fn edit_history<R: EventReader + Debug>(
         event_reader,
         &mut edit_data,
         &display,
-        |key_event, maybe_term, /*maybe_save_file,*/ textarea, edit_data, popup, saved| {
+        |key_event, maybe_term, textarea, edit_data, popup, saved, status_message| {
             history_key_handler(
-                key_event, maybe_term, // maybe_save_file,
-                textarea, edit_data, popup, saved,
+                key_event,
+                maybe_term, // maybe_save_file,
+                textarea,
+                edit_data,
+                popup,
+                saved,
+                status_message,
             )
         },
     )?;
@@ -698,6 +714,7 @@ pub fn history_key_handler(
     edit_data: &mut EditData,
     popup: &mut bool,
     saved: &mut bool,
+    status_message: &mut String,
 ) -> ThagResult<KeyAction> {
     let maybe_save_path = &mut edit_data.save_path;
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
@@ -713,9 +730,11 @@ pub fn history_key_handler(
         }
         key!(ctrl - s) => {
             // Save logic
-            save_file(maybe_save_path, textarea)?;
+            let save_file = save_file(maybe_save_path, textarea)?;
             // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
             *saved = true;
+            status_message.clear();
+            status_message.push_str(&format!("Saved to {save_file}"));
             Ok(KeyAction::Save)
         }
         key!(ctrl - l) => {
@@ -735,7 +754,10 @@ pub fn history_key_handler(
     }
 }
 
-fn save_file(maybe_save_path: &Option<&mut PathBuf>, textarea: &TextArea<'_>) -> ThagResult<()> {
+fn save_file(
+    maybe_save_path: &Option<&mut PathBuf>,
+    textarea: &TextArea<'_>,
+) -> ThagResult<String> {
     let staging_path = maybe_save_path.as_ref().ok_or("Missing save_path")?;
     let staging_file = OpenOptions::new()
         .read(true)
@@ -748,7 +770,7 @@ fn save_file(maybe_save_path: &Option<&mut PathBuf>, textarea: &TextArea<'_>) ->
         Write::write_all(&mut f, line.as_bytes())?;
         Write::write_all(&mut f, b"\n")?;
     }
-    Ok(())
+    Ok(staging_path.display().to_string())
 }
 
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {

@@ -26,6 +26,20 @@ default_verbosity = "normal"
 # "dark" is generally a safe choice as the colors should be legible even for a light theme
 # term_theme = "dark"
 
+# User default highlight colors for the selected character and line in TUI editors. It is
+# tricky to find decent contrasting colours that are legible for all themes, so thag_rs
+# offers you a choice of two.
+# In the editor itself you can toggle between these options with Ctrl-t, but the current
+# option allows you to override the system default if the other option works better for
+# you. The choice is between:
+# yellow_blue:  the dark theme default of black on yellow for the selected character and white on
+#               blue for the rest of the selected line, and
+# red_white:    the light theme default of white on light red for the selected character and
+#               black on white for the rest of the selected line.
+#
+# Valid values are: "yellow_blue" or "red_white".
+# tui_selection_bg = "yellow_blue"
+
 [misc]
 # User's preferred text unquote behaviour. By default, thag_rs will not strip double quotes
 # from text values returned by snippets. Setting this to true will override this behaviour.

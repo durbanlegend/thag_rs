@@ -30,16 +30,16 @@ bitflags = "2.6.0"
 clap = { version = "4.5.19", features = ["cargo", "derive"] }
 crossterm = { version = "0.28.0", features = ["use-dev-tty"] }
 edit = "0.1.5"
-env_logger = "0.11.5"
+simplelog = { version = "0.12.2", optional = true }
+env_logger = { version = "0.11.5", optional = true }
 home = "0.5.9"
-lazy_static = "1.5.0"
 log = "0.4.22"
 nu-ansi-term = "0.50.1"
 proc-macro2 = "1.0.86"
 quote = "1.0.37"
 reedline = "0.35.0"
-regex = "1.11.0"
-serde = { version = "1.0.210", features = ["derive"] }
+regex = "1.10.6"
+serde = { version = "1.0.209", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive", "phf"] }
 supports-color = "3.0.0"
 syn = { version = "2.0.79", features = [
@@ -48,7 +48,6 @@ syn = { version = "2.0.79", features = [
     "visit",
     "visit-mut",
 ] }
-termbg = "0.5.1"
 toml = "0.8.19"
 tui-textarea = { version = "0.6", features = ["crossterm", "search"] }
 mockall = "0.13.0"
@@ -58,10 +57,14 @@ cargo_toml = "0.20.5"
 serde_json = "1.0.128"
 serde_with = "3.11.0"
 # To switch off, use version without features = ["enable_system_time"]
+# If on, prepare for function to run twice for some reason!
 firestorm = "0.5.1"
 # firestorm = { version = "0.5.1", features = ["enable_system_time"] }
 prettyplease = "0.2.20"
 serde_merge = "0.1.3"
+# crokey = { path = "/Users/donf/projects/crokey/" }
+strict = "0.2.0"
+thag_proc_macros = { path = "src/proc_macros" }
 
 [profile.dev]
 opt-level = 1 # Use slightly better optimizations.
@@ -86,12 +89,19 @@ path = "src/bin/thag_rs.rs"
 [features]
 debug-logs = []
 nightly = []
+default = ["env_logger"]
+simplelog = ["dep:simplelog"]
 
 [dev-dependencies]
+assert_cmd = "2.0.16"
 env_logger = "0.11.5"
+predicates = "3.1.2"
 sequential-test = "0.2.4"
 tempfile = "3.13.0"
 test-generator = "0.3.1"
+
+[workspace]
+members = ["src/proc_macros"]
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]
@@ -102,7 +112,13 @@ ci = "github"
 # The installers to generate for each app
 installers = ["shell", "powershell", "msi"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+    "x86_64-pc-windows-msvc",
+]
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
 # Whether to install an updater program

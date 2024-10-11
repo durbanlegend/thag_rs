@@ -112,11 +112,23 @@ cat my_file.rs | thag --edit                                    # Short form: -d
 
 This allows you to edit or append to the stdin input before submitting it to `thag_rs`. It has file-backed history so you don't lose your edits.
 
-#### A note on the TUI editor
-In order for the Shift-Up and Shift-Down key combinations to work on Apple Terminal, you may need to add the following to your Apple Terminal Settings | Profiles | Keyboard settings:
+#### Key bindings in the TUI editor
+`thag_rs` tries to define all key bindings explicitly. However, the terminal emulator you use is bound to intercept some of these keys, rendering them unavailable to us.
+If specific key bindings don't work for you, you may have to adjust your terminal settings. For example:
+
+1. In order for the Option key on Mac to behave correctly in `iterm2`, you may need to choose `iterm2` Settings | Profiles | Keys to specify how to handle the left and right Option keys.
+You can choose one of: Normal, Meta or Esc+. The `iterm2` recommended setting of Esc+ is what works in testing.
+
+2. In order for the Shift-Up and Shift-Down key combinations to work on Apple Terminal, you may need to add the following to your Apple Terminal Settings | Profiles | Keyboard settings:
 Shift-Up: `\033;[2A` and `Shift-Down`: \033;[2B. Use the Esc key to generate \033. This is not necessary on Iterm2 or WezTerm.
 
-In general, if you don't experience the key bindings you want, it is probably because your terminal has intercepted them and you may be able to resolve the issue by adjusting your terminal settings. The same applies to the REPL.
+If all else fails, try another terminal emulator.
+
+(TODO) The TUI editor is also used in the promote to TUI (`tui`) and edit history (`history`) functions in the REPL, so the
+above also applies there.
+
+Similar considerations apply to the basic REPL mode (--repl / -r). Note that the key bindings there are not identical to the TUI because the basic REPL uses mostly standard `reedline` emacs
+key bindings and the TUI uses mostly standard `tui-textarea` key bindings.
 
 ### * As a filter on standard input (loop mode):
 

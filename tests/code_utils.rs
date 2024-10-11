@@ -35,7 +35,7 @@ mod tests {
     }
 
     #[test]
-    fn test_read_file_contents() {
+    fn test_code_utils_read_file_contents() {
         set_up();
         let temp_file = create_temp_file("Test content");
         let path = temp_file.path();
@@ -45,7 +45,7 @@ mod tests {
     }
 
     #[test]
-    fn test_infer_deps_from_ast() {
+    fn test_code_utils_infer_deps_from_ast() {
         set_up();
         // Example AST representing use and extern crate statements
         let ast = syn::parse_file(
@@ -63,7 +63,7 @@ mod tests {
     }
 
     #[test]
-    fn test_infer_deps_from_source() {
+    fn test_code_utils_infer_deps_from_source() {
         set_up();
         let source_code = r#"
             extern crate foo;
@@ -76,7 +76,7 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_manifest() {
+    fn test_code_utils_extract_manifest() {
         set_up();
         let source_code = r#"
             /*[toml]
@@ -94,7 +94,7 @@ mod tests {
     }
 
     #[test]
-    fn test_path_to_str() {
+    fn test_code_utils_path_to_str() {
         set_up();
         let path = Path::new("/some/test/path");
         let path_str = path_to_str(path).unwrap();
@@ -102,7 +102,7 @@ mod tests {
     }
 
     #[test]
-    fn test_wrap_snippet() {
+    fn test_code_utils_wrap_snippet() {
         set_up();
         let source_code = r#"
             use std::io;
@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn test_find_use_renames_source() {
+    fn test_code_utils_find_use_renames_source() {
         set_up();
         let source_code = r#"
             use foo as bar;
@@ -129,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn test_find_modules_source() {
+    fn test_code_utils_find_modules_source() {
         set_up();
         let source_code = r#"
             mod foo;
@@ -154,7 +154,7 @@ mod tests {
     }
 
     #[test]
-    fn test_for_loop_expr() {
+    fn test_code_utils_for_loop_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             for i in 0..10 { println!("{}", i); }
@@ -164,7 +164,7 @@ mod tests {
     }
 
     #[test]
-    fn test_while_expr() {
+    fn test_code_utils_while_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             while true { break; }
@@ -174,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn test_loop_expr() {
+    fn test_code_utils_loop_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             loop { break; }
@@ -184,7 +184,7 @@ mod tests {
     }
 
     #[test]
-    fn test_if_expr() {
+    fn test_code_utils_if_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             if true { 1 } else { 0 }
@@ -194,7 +194,7 @@ mod tests {
     }
 
     #[test]
-    fn test_block_expr() {
+    fn test_code_utils_block_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             { let x = 1; x + 1 }
@@ -204,7 +204,7 @@ mod tests {
     }
 
     #[test]
-    fn test_match_expr() {
+    fn test_code_utils_match_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             match x {
@@ -217,7 +217,7 @@ mod tests {
     }
 
     #[test]
-    fn test_call_expr() {
+    fn test_code_utils_call_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             unit_fn()
@@ -227,7 +227,7 @@ mod tests {
     }
 
     #[test]
-    fn test_closure_expr() {
+    fn test_code_utils_closure_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             || { 42 }
@@ -237,7 +237,7 @@ mod tests {
     }
 
     #[test]
-    fn test_method_call_expr() {
+    fn test_code_utils_method_call_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             foo.bar()
@@ -247,7 +247,7 @@ mod tests {
     }
 
     #[test]
-    fn test_array_expr() {
+    fn test_code_utils_array_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             [0, 1, 2]
@@ -257,7 +257,7 @@ mod tests {
     }
 
     #[test]
-    fn test_return_unit_stmt() {
+    fn test_code_utils_return_unit_stmt() {
         set_up();
         let stmt: Stmt = parse_quote! {
             return;
@@ -267,7 +267,7 @@ mod tests {
     }
 
     #[test]
-    fn test_return_non_unit_stmt() {
+    fn test_code_utils_return_non_unit_stmt() {
         set_up();
         let stmt: Stmt = parse_quote! {
             return 5;
@@ -277,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    fn test_yield_expr() {
+    fn test_code_utils_yield_expr() {
         set_up();
         let stmt: Stmt = parse_quote! {
             yield;
@@ -287,7 +287,7 @@ mod tests {
     }
 
     #[test]
-    fn test_local_stmt() {
+    fn test_code_utils_local_stmt() {
         set_up();
         let stmt: Stmt = parse_quote! {
             let x = 5;
@@ -297,7 +297,7 @@ mod tests {
     }
 
     #[test]
-    fn test_item_const_stmt() {
+    fn test_code_utils_item_const_stmt() {
         set_up();
         let stmt: Stmt = parse_quote! {
             const X: i32 = 5;
@@ -307,7 +307,7 @@ mod tests {
     }
 
     #[test]
-    fn test_expr_stmt_with_semicolon() {
+    fn test_code_utils_expr_stmt_with_semicolon() {
         set_up();
         let stmt: Stmt = parse_quote! {
             42;
@@ -317,7 +317,7 @@ mod tests {
     }
 
     #[test]
-    fn test_expr_stmt_without_semicolon() {
+    fn test_code_utils_expr_stmt_without_semicolon() {
         set_up();
         let expr: Expr = parse_quote! {
             42
@@ -327,7 +327,7 @@ mod tests {
     }
 
     #[test]
-    fn test_path_unit_type() {
+    fn test_code_utils_path_unit_type() {
         set_up();
         let expr: Expr = parse_quote! {
             unit_fn()
@@ -345,7 +345,7 @@ mod tests {
     }
 
     #[test]
-    fn test_path_non_unit_type() {
+    fn test_code_utils_path_non_unit_type() {
         set_up();
         let expr: Expr = parse_quote! {
             non_unit_fn()
@@ -363,7 +363,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_expr() {
+    fn test_code_utils_macro_expr() {
         set_up();
         let stmt: Stmt = parse_quote! {
             println!("Hello, world!");
@@ -373,7 +373,7 @@ mod tests {
     }
 
     #[test]
-    fn test_async_expr() {
+    fn test_code_utils_async_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             async { 42 }
@@ -383,7 +383,7 @@ mod tests {
     }
 
     #[test]
-    fn test_await_expr() {
+    fn test_code_utils_await_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             foo.await
@@ -393,7 +393,7 @@ mod tests {
     }
 
     #[test]
-    fn test_binary_expr() {
+    fn test_code_utils_binary_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             1 + 2
@@ -403,7 +403,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cast_expr() {
+    fn test_code_utils_cast_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             1 as f64
@@ -413,7 +413,7 @@ mod tests {
     }
 
     #[test]
-    fn test_index_expr() {
+    fn test_code_utils_index_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             arr[0]
@@ -423,7 +423,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tuple_expr() {
+    fn test_code_utils_tuple_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             (1, 2, 3)
@@ -433,7 +433,7 @@ mod tests {
     }
 
     #[test]
-    fn test_unary_expr() {
+    fn test_code_utils_unary_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             -42
@@ -443,7 +443,7 @@ mod tests {
     }
 
     #[test]
-    fn test_paren_expr() {
+    fn test_code_utils_paren_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             (42)
@@ -453,7 +453,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reference_expr() {
+    fn test_code_utils_reference_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             &42
@@ -463,7 +463,7 @@ mod tests {
     }
 
     #[test]
-    fn test_field_expr() {
+    fn test_code_utils_field_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             foo.bar
@@ -473,7 +473,7 @@ mod tests {
     }
 
     #[test]
-    fn test_infer_expr() {
+    fn test_code_utils_infer_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             _
@@ -483,7 +483,7 @@ mod tests {
     }
 
     #[test]
-    fn test_continue_expr() {
+    fn test_code_utils_continue_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             continue
@@ -493,7 +493,7 @@ mod tests {
     }
 
     #[test]
-    fn test_break_expr() {
+    fn test_code_utils_break_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             break
@@ -503,7 +503,7 @@ mod tests {
     }
 
     #[test]
-    fn test_assign_expr() {
+    fn test_code_utils_assign_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             x = 1
@@ -513,7 +513,7 @@ mod tests {
     }
 
     #[test]
-    fn test_struct_expr() {
+    fn test_code_utils_struct_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             Struct { field: 1 }
@@ -523,7 +523,7 @@ mod tests {
     }
 
     #[test]
-    fn test_range_expr() {
+    fn test_code_utils_range_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             1..10
@@ -533,7 +533,7 @@ mod tests {
     }
 
     #[test]
-    fn test_try_expr() {
+    fn test_code_utils_try_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             some_result?
@@ -543,7 +543,7 @@ mod tests {
     }
 
     #[test]
-    fn test_verbatim_expr() {
+    fn test_code_utils_verbatim_expr() {
         set_up();
         let expr: Expr = parse_quote! {
             ver
@@ -553,7 +553,7 @@ mod tests {
     }
 
     #[test]
-    fn test_assign_op_expr() {
+    fn test_code_utils_assign_op_expr() {
         set_up();
         let expr: Expr = parse_quote!(a += 1);
         let function_map = HashMap::new();
@@ -561,7 +561,7 @@ mod tests {
     }
 
     #[test]
-    fn test_block_with_return_expr() {
+    fn test_code_utils_block_with_return_expr() {
         set_up();
         let expr: Expr = parse_quote!({
             let x = 5;
@@ -572,7 +572,7 @@ mod tests {
     }
 
     #[test]
-    fn test_closure_non_unit_expr() {
+    fn test_code_utils_closure_non_unit_expr() {
         set_up();
         let expr: Expr = parse_quote!(|x| x + 1);
         let function_map = HashMap::new();
@@ -580,7 +580,7 @@ mod tests {
     }
 
     #[test]
-    fn test_closure_unit_expr() {
+    fn test_code_utils_closure_unit_expr() {
         set_up();
         let expr: Expr = parse_quote!(|| {});
         let function_map = HashMap::new();
@@ -588,7 +588,7 @@ mod tests {
     }
 
     // #[test]
-    // fn test_continue_stmt() {
+    // fn test_code_utils_continue_stmt() {
     //     set_up();
     //     let stmt: Stmt = parse_quote!(continue);
     //     let function_map = HashMap::new();
@@ -596,7 +596,7 @@ mod tests {
     // }
 
     #[test]
-    fn test_if_let_expr() {
+    fn test_code_utils_if_let_expr() {
         set_up();
         let expr: Expr = parse_quote!(if let Some(x) = y { x } else { 0 });
         let function_map = HashMap::new();
@@ -604,7 +604,7 @@ mod tests {
     }
 
     #[test]
-    fn test_let_expr() {
+    fn test_code_utils_let_expr() {
         set_up();
         let expr: Expr = parse_quote!(let x = 5);
         let function_map = HashMap::new();
@@ -612,7 +612,7 @@ mod tests {
     }
 
     #[test]
-    fn test_literal_expr() {
+    fn test_code_utils_literal_expr() {
         set_up();
         let expr: Expr = parse_quote!(42);
         let function_map = HashMap::new();
@@ -620,7 +620,7 @@ mod tests {
     }
 
     #[test]
-    fn test_loop_break_expr() {
+    fn test_code_utils_loop_break_expr() {
         set_up();
         let expr: Expr = parse_quote!(break);
         let function_map = HashMap::new();
@@ -628,7 +628,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_expr_with_semi() {
+    fn test_code_utils_macro_expr_with_semi() {
         set_up();
         let stmt: Stmt = parse_quote!(println!("Hello"););
         let function_map = HashMap::new();
@@ -636,7 +636,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_expr_without_semi() {
+    fn test_code_utils_macro_expr_without_semi() {
         set_up();
         let expr: Expr = parse_quote!(println!("Hello"));
         let function_map = HashMap::new();
@@ -644,7 +644,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_with_debug() {
+    fn test_code_utils_macro_with_debug() {
         set_up();
         let expr: Expr = parse_quote!(debug!("debug message"));
         let function_map = HashMap::new();
@@ -652,7 +652,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_with_print() {
+    fn test_code_utils_macro_with_print() {
         set_up();
         let expr: Expr = parse_quote!(print!("printed message"));
         let function_map = HashMap::new();
@@ -660,7 +660,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_with_write() {
+    fn test_code_utils_macro_with_write() {
         set_up();
         let expr: Expr = parse_quote!(write!(std::io::stdout(), "written message"));
         let function_map = HashMap::new();
@@ -668,7 +668,7 @@ mod tests {
     }
 
     #[test]
-    fn test_path_expr() {
+    fn test_code_utils_path_expr() {
         set_up();
         let expr: Expr = parse_quote!(some_function());
         let function_map = {
@@ -680,7 +680,7 @@ mod tests {
     }
 
     #[test]
-    fn test_return_expr() {
+    fn test_code_utils_return_expr() {
         set_up();
         let expr: Expr = parse_quote!(return);
         let function_map = HashMap::new();
@@ -688,7 +688,7 @@ mod tests {
     }
 
     #[test]
-    fn test_stmt_expr() {
+    fn test_code_utils_stmt_expr() {
         set_up();
         let expr: Expr = parse_quote!(5);
         let function_map = HashMap::new();

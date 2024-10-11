@@ -1,74 +1,284 @@
 #![allow(clippy::implicit_return)]
-use crate::config::{self};
+#![expect(unused)]
+use crate::logging::{Verbosity, V};
+#[cfg(not(target_os = "windows"))]
+use crate::termbg::{terminal, theme, Theme};
+use crate::{config, debug_log, log, ThagResult};
+use crate::{generate_styles, maybe_config};
 
-use crate::debug_log;
-use {crate::log, crate::logging::Verbosity};
-
+use crossterm::terminal::{self, is_raw_mode_enabled};
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
-use nu_ansi_term::Style;
+use nu_ansi_term::{Color, Style};
+use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
+use scopeguard::defer;
 use serde::Deserialize;
 #[cfg(target_os = "windows")]
 use std::env;
+use std::sync::OnceLock;
 use std::{fmt::Display, str::FromStr};
-use strum::IntoEnumIterator;
-use strum::{Display, EnumIter, EnumString};
+use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
+
+#[derive(Debug)]
+pub enum Xterm256LightStyle {
+    Error,
+    Warning,
+    Emphasis,
+    Heading,
+    Subheading,
+    Normal,
+    Debug,
+    Ghost,
+}
+
+#[derive(Debug)]
+pub enum Xterm256DarkStyle {
+    Error,
+    Warning,
+    Emphasis,
+    Heading,
+    Subheading,
+    Normal,
+    Debug,
+    Ghost,
+}
+
+#[derive(Debug)]
+pub enum Ansi16LightStyle {
+    Error,
+    Warning,
+    Emphasis,
+    Heading,
+    Subheading,
+    Normal,
+    Debug,
+    Ghost,
+}
+
+#[derive(Debug)]
+pub enum Ansi16DarkStyle {
+    Error,
+    Warning,
+    Emphasis,
+    Heading,
+    Subheading,
+    Normal,
+    Debug,
+    Ghost,
+}
+
+generate_styles!(
+    (Xterm256LightStyle, Light, Xterm256),
+    (Xterm256DarkStyle, Dark, Xterm256),
+    (Ansi16LightStyle, Light, Ansi16),
+    (Ansi16DarkStyle, Dark, Ansi16)
+);
+
+/// Returns lazy static color values. Converted from `lazy_static` implementation
+/// in accordance with the example provided in the `lazy_static` Readme. Converted
+/// for the learning experience and to facilitate handling errors and the unwelcome
+/// side-effects of calling crates (in particular `termbg`) that switch off raw mode.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o errors encountered.
+pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
+    profile_fn!(coloring);
+
+    static COLOR_SUPPORT: OnceLock<Option<ColorSupport>> = OnceLock::new();
+    static TERM_THEME: OnceLock<TermTheme> = OnceLock::new();
+    if std::env::var("TEST_ENV").is_ok() {
+        #[cfg(debug_assertions)]
+        debug_log!("Avoiding supports_color for testing");
+        return (Some(&ColorSupport::Ansi16), &TermTheme::Dark);
+    }
+    let raw_before = terminal::is_raw_mode_enabled();
+    if let Ok(raw_then) = raw_before {
+        defer! {
+            let raw_now = match is_raw_mode_enabled() {
+                Ok(val) => val,
+                Err(e) => {
+                    #[cfg(debug_assertions)]
+                    debug_log!("Failed to check raw mode status: {:?}", e);
+                    return;
+                }
+            };
+
+            if raw_now == raw_then {
+                #[cfg(debug_assertions)]
+                debug_log!("Raw mode status unchanged.");
+            } else if let Err(e) = restore_raw_status(raw_then) {
+                    #[cfg(debug_assertions)]
+                    debug_log!("Failed to restore raw mode: {:?}", e);
+            } else {
+                #[cfg(debug_assertions)]
+                debug_log!("Raw mode restored to previous state.");
+            }
+        }
+    }
+
+    let color_support = COLOR_SUPPORT.get_or_init(|| {
+        maybe_config()
+            .as_ref()
+            .map_or_else(get_color_level, |config| {
+                match config.colors.color_support {
+                    ColorSupport::Xterm256 | ColorSupport::Ansi16 | ColorSupport::None => {
+                        Some(config.colors.color_support.clone())
+                    }
+                    ColorSupport::Default => get_color_level(),
+                }
+            })
+    });
+
+    let term_theme = TERM_THEME.get_or_init(|| {
+        maybe_config().map_or_else(
+            || resolve_term_theme().unwrap_or_default(),
+            |config| {
+                if matches!(&config.colors.term_theme, &TermTheme::None) {
+                    resolve_term_theme().unwrap_or_default()
+                } else {
+                    config.colors.term_theme
+                }
+            },
+        )
+    });
+
+    (color_support.as_ref(), term_theme)
+}
+
+/// Initializes and returns the TUI selection background coloring.
+pub fn tui_selection_bg(term_theme: &TermTheme) -> TuiSelectionBg {
+    static TUI_SELECTION_BG: OnceLock<TuiSelectionBg> = OnceLock::new();
+    TUI_SELECTION_BG
+        .get_or_init(|| match term_theme {
+            TermTheme::Light => TuiSelectionBg::BlueYellow,
+            _ => TuiSelectionBg::RedWhite,
+        })
+        .clone()
+}
+
+#[macro_export]
+macro_rules! generate_styles {
+    (
+        $(
+            ($style_enum:ident, $term_theme:ident, $color_support:ident)
+        ),*
+    ) => {
+        $(
+            impl From<&Lvl> for $style_enum {
+                fn from(message_level: &Lvl) -> Self {
+                    profile_fn!(style_enum_from_lvl);
+
+                    // dbg!(&$style_enum::Warning);
+                    // dbg!(&message_level);
+                    match message_level {
+                        Lvl::Error => $style_enum::Error,
+                        Lvl::Warning => $style_enum::Warning,
+                        Lvl::Emphasis => $style_enum::Emphasis,
+                        Lvl::Heading => $style_enum::Heading,
+                        Lvl::Subheading => $style_enum::Subheading,
+                        Lvl::Normal => $style_enum::Normal,
+                        Lvl::Debug => $style_enum::Debug,
+                        Lvl::Ghost => $style_enum::Ghost,
+                    }
+                }
+            }
+
+            // use crate::styles::$style_enum;
+            impl From<&$style_enum> for Style {
+                #[must_use]
+                fn from(style_enum: &$style_enum) -> Self {
+                    profile_fn!(style_from_style_enum);
+                    match style_enum {
+                        $style_enum::Error => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Error))).bold(),
+                        $style_enum::Warning => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Warning))).bold(),
+                        $style_enum::Emphasis => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Emphasis))).bold(),
+                        $style_enum::Heading => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Heading))).bold(),
+                        $style_enum::Subheading => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Subheading))).bold(),
+                        $style_enum::Normal => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Normal))),
+                        $style_enum::Debug => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Debug))),
+                        $style_enum::Ghost => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Ghost))).dimmed().italic(),
+                    }
+                }
+            }
+        )*
+
+        pub fn init_styles(
+            term_theme: &TermTheme,
+            color_support: Option<&ColorSupport>,
+        ) -> fn(Lvl) -> Style {
+            profile_fn!(init_styles);
+            static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
+
+            *STYLE_MAPPING.get_or_init(|| match (term_theme, color_support) {
+                $(
+                    (TermTheme::$term_theme, Some(ColorSupport::$color_support)) => {
+                        |message_level| Style::from(&$style_enum::from(&message_level))
+                    }
+                ),*
+                _ => |message_level| Style::from(&Ansi16DarkStyle::from(&message_level)), // Fallback
+            })
+        }
+    };
+}
+
+/// Generates the alternative style mapping enums.
+pub fn gen_mappings(
+    term_theme: &TermTheme,
+    color_support: Option<&ColorSupport>,
+) -> fn(Lvl) -> Style {
+    profile_fn!(gen_mappings);
+    static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
+    *STYLE_MAPPING.get_or_init(|| {
+        // Call init_styles to ensure styles are initialized on first access
+        init_styles(term_theme, color_support)
+    })
+}
+
+#[cfg(target_os = "windows")]
+fn resolve_term_theme() -> ThagResult<TermTheme> {
+    profile_fn!(resolve_term_theme);
+    Ok(TermTheme::Dark)
+}
+
 #[cfg(not(target_os = "windows"))]
-use termbg::Theme;
+fn resolve_term_theme() -> ThagResult<TermTheme> {
+    profile_fn!(resolve_term_theme);
+    let raw_before = terminal::is_raw_mode_enabled()?;
+    #[cfg(debug_assertions)]
+    debug_log!("About to call termbg");
+    let timeout = std::time::Duration::from_millis(100);
 
-lazy_static! {
-    pub static ref COLOR_SUPPORT: Option<ColorSupport> = {
-        if std::env::var("TEST_ENV").is_ok() {
+    // #[cfg(debug_assertions)]
+    // debug_log!("Check terminal background color");
+    let theme = theme(timeout);
 
-            debug_log!(
-                "Avoiding supports_color for testing"
-            );
-            return Some(ColorSupport::Ansi16);
-        }
+    maybe_restore_raw_status(raw_before)?;
 
-        let color_support: Option<ColorSupport> = (*config::MAYBE_CONFIG).as_ref().map_or_else(get_color_level, |config| match config.colors.color_support {
-            ColorSupport::Xterm256 | ColorSupport::Ansi16 | ColorSupport::None => Some(config.colors.color_support.clone()),
-            ColorSupport::Default => get_color_level(),
-        });
-        color_support
-    };
+    match theme {
+        Ok(Theme::Light) => Ok(TermTheme::Light),
+        Ok(Theme::Dark) | Err(_) => Ok(TermTheme::Dark),
+    }
+}
 
-    #[derive(Debug)]
-    pub static ref TERM_THEME: TermTheme = {
-        if std::env::var("TEST_ENV").is_ok() {
+fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
+    profile_fn!(maybe_restore_raw_status);
+    let raw_after = terminal::is_raw_mode_enabled()?;
+    if raw_before != raw_after {
+        restore_raw_status(raw_before)?;
+    }
+    Ok(())
+}
 
-            debug_log!(
-                "Avoiding termbg for testing"
-            );
-            return TermTheme::Dark;
-        }
-        #[allow(clippy::option_if_let_else)]
-        let term_theme: TermTheme = if let Some(config) = &*config::MAYBE_CONFIG {
-            config.colors.term_theme.clone()
-        } else {
-            #[cfg(target_os = "windows")] {
-            TermTheme::Dark }
-
-            #[cfg(not(target_os = "windows"))] {
-
-            debug_log!(
-                "About to call termbg"
-            );
-            let timeout = std::time::Duration::from_millis(100);
-
-            // debug_log!("Check terminal background color");
-            let theme = termbg::theme(timeout);
-            // shared::clear_screen();
-            match theme {
-                Ok(Theme::Light) => TermTheme::Light,
-                Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
-            }
-            }
-        };
-        term_theme
-    };
+fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
+    profile_fn!(restore_raw_status);
+    if raw_before {
+        terminal::enable_raw_mode()?;
+    } else {
+        terminal::disable_raw_mode()?;
+    }
+    Ok(())
 }
 
 /// A struct of the color support details, borrowed from crate `supports-color` since we
@@ -89,6 +299,7 @@ pub struct ColorLevel {
 
 #[cfg(target_os = "windows")]
 fn get_color_level() -> Option<ColorSupport> {
+    profile_fn!(get_color_level);
     let color_level = translate_level(supports_color());
     match color_level {
         Some(color_level) => {
@@ -104,6 +315,8 @@ fn get_color_level() -> Option<ColorSupport> {
 
 #[cfg(not(target_os = "windows"))]
 fn get_color_level() -> Option<ColorSupport> {
+    profile_fn!(get_color_level);
+    #[cfg(debug_assertions)]
     debug_log!("About to call supports_color");
     let color_level = supports_color::on(Stream::Stdout);
     color_level.map(|color_level| {
@@ -117,6 +330,7 @@ fn get_color_level() -> Option<ColorSupport> {
 
 #[cfg(target_os = "windows")]
 fn env_force_color() -> usize {
+    profile_fn!(env_force_color);
     if let Ok(force) = env::var("FORCE_COLOR") {
         match force.as_ref() {
             "true" | "" => 1,
@@ -132,6 +346,7 @@ fn env_force_color() -> usize {
 
 #[cfg(target_os = "windows")]
 fn env_no_color() -> bool {
+    profile_fn!(env_no_color);
     match as_str(&env::var("NO_COLOR")) {
         Ok("0") | Err(_) => false,
         Ok(_) => true,
@@ -224,25 +439,51 @@ fn check_256_color(term: &str) -> bool {
 #[must_use]
 pub fn get_term_theme() -> &'static TermTheme {
     profile_fn!(get_term_theme);
-    &TERM_THEME
+    coloring().1
 }
 
-/// A trait for common handling of the different colour palettes.
-pub trait NuColor: Display {
-    fn get_color(&self) -> nu_ansi_term::Color;
-    /// Protection in case enum gets out of order, otherwise I think we could cast the variant to a number.
-    fn get_fixed_code(&self) -> u8;
+// /// A trait for common handling of the different colour palettes.
+// #[warn(dead_code)]
+// pub trait NuColor: Display {
+//     fn get_color(&self) -> Color;
+//     /// Protection in case enum gets out of order, otherwise I think we could cast the variant to a number.
+//     fn get_fixed_code(&self) -> u8;
+// }
+
+#[must_use]
+pub fn get_style(
+    message_level: &Lvl,
+    term_theme: &TermTheme,
+    color_support: Option<&ColorSupport>,
+) -> Style {
+    // dbg!();
+    let mapping = gen_mappings(term_theme, color_support);
+    // dbg!(&mapping);
+    mapping(*message_level)
 }
 
 /// A version of println that prints an entire message in colour or otherwise styled.
-/// Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
+/// Format: `cprtln!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
-macro_rules! nu_color_println {
+macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
-        let style = $style;
+        let style: &nu_ansi_term::Style = $style;
         // Qualified form to avoid imports in calling code.
-        log!(Verbosity::Quiet, "{}\n", style.paint(content));
+        let painted = style.paint(content);
+        let verbosity = $crate::logging::get_verbosity();
+        log!(verbosity, "{}", painted);
+    }};
+}
+
+#[macro_export]
+macro_rules! cvprtln {
+    ($level:expr, $verbosity:expr, $msg:expr) => {{
+        if $verbosity >= $crate::logging::get_verbosity() {
+            let (maybe_color_support, term_theme) = coloring();
+            let style = $crate::colors::get_style(&$level, term_theme, maybe_color_support);
+            cprtln!(&style, $msg);
+        }
     }};
 }
 
@@ -265,12 +506,23 @@ pub enum ColorSupport {
 #[strum(serialize_all = "snake_case")]
 pub enum TermTheme {
     Light,
-    #[default]
     Dark,
+    #[default]
+    None,
+}
+
+/// An enum to categorise the current TUI editor highlighting scheme for the selected
+/// line as configured or defaulted.
+#[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq, Eq)]
+#[strum(serialize_all = "snake_case")]
+pub enum TuiSelectionBg {
+    #[default]
+    BlueYellow,
+    RedWhite,
 }
 
 /// An enum to categorise the supported message types for display.
-#[derive(Debug, Clone, Copy, EnumString, Display, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
 pub enum MessageLevel {
     Error,
@@ -283,13 +535,297 @@ pub enum MessageLevel {
     Ghost,
 }
 
-/// A trait to map a `MessageStyle` to a `nu_ansi_term::Style`.
-pub trait NuThemeStyle: Display {
-    fn get_style(&self) -> Style;
+pub type Lvl = MessageLevel;
+
+impl Lvl {
+    pub const ERR: Self = Self::Error;
+    pub const WARN: Self = Self::Warning;
+    pub const EMPH: Self = Self::Emphasis;
+    pub const HEAD: Self = Self::Heading;
+    pub const SUBH: Self = Self::Subheading;
+    pub const NORM: Self = Self::Normal;
+    pub const DBUG: Self = Self::Debug;
+    pub const GHST: Self = Self::Ghost;
+}
+
+impl From<&Lvl> for u8 {
+    fn from(message_level: &Lvl) -> Self {
+        Self::from(&XtermColor::from(&MessageStyle::from(message_level)))
+    }
+}
+
+impl From<&XtermColor> for Color {
+    fn from(xterm_color: &XtermColor) -> Self {
+        Self::Fixed(u8::from(xterm_color))
+    }
+}
+
+impl From<&XtermColor> for u8 {
+    #[allow(clippy::too_many_lines)]
+    fn from(xterm_color: &XtermColor) -> Self {
+        match xterm_color {
+            XtermColor::UserBlack => 0,
+            XtermColor::UserRed => 1,
+            XtermColor::UserGreen => 2,
+            XtermColor::UserYellow => 3,
+            XtermColor::OrientBlue => 24,
+            XtermColor::EndeavourBlue => 25,
+            XtermColor::ScienceBlue => 26,
+            XtermColor::BlueRibbon => 27,
+            XtermColor::JapaneseLaurel => 28,
+            XtermColor::DeepSeaGreen => 29,
+            XtermColor::Teal => 30,
+            XtermColor::DeepCerulean => 31,
+            XtermColor::LochmaraBlue => 32,
+            XtermColor::AzureRadiance => 33,
+            XtermColor::LightJapaneseLaurel => 34,
+            XtermColor::Jade => 35,
+            XtermColor::PersianGreen => 36,
+            XtermColor::BondiBlue => 37,
+            XtermColor::Cerulean => 38,
+            XtermColor::LightAzureRadiance => 39,
+            XtermColor::DarkGreen => 40,
+            XtermColor::Malachite => 41,
+            XtermColor::CaribbeanGreen => 42,
+            XtermColor::LightCaribbeanGreen => 43,
+            XtermColor::RobinEggBlue => 44,
+            XtermColor::Aqua => 45,
+            XtermColor::Green => 46,
+            XtermColor::DarkSpringGreen => 47,
+            XtermColor::SpringGreen => 48,
+            XtermColor::LightSpringGreen => 49,
+            XtermColor::BrightTurquoise => 50,
+            XtermColor::Cyan => 51,
+            XtermColor::Rosewood => 52,
+            XtermColor::PompadourMagenta => 53,
+            XtermColor::PigmentIndigo => 54,
+            XtermColor::DarkPurple => 55,
+            XtermColor::ElectricIndigo => 56,
+            XtermColor::ElectricPurple => 57,
+            XtermColor::VerdunGreen => 58,
+            XtermColor::ScorpionOlive => 59,
+            XtermColor::Lilac => 60,
+            XtermColor::ScampiIndigo => 61,
+            XtermColor::Indigo => 62,
+            XtermColor::DarkCornflowerBlue => 63,
+            XtermColor::DarkLimeade => 64,
+            XtermColor::GladeGreen => 65,
+            XtermColor::JuniperGreen => 66,
+            XtermColor::HippieBlue => 67,
+            XtermColor::HavelockBlue => 68,
+            XtermColor::CornflowerBlue => 69,
+            XtermColor::Limeade => 70,
+            XtermColor::FernGreen => 71,
+            XtermColor::SilverTree => 72,
+            XtermColor::Tradewind => 73,
+            XtermColor::ShakespeareBlue => 74,
+            XtermColor::DarkMalibuBlue => 75,
+            XtermColor::DarkBrightGreen => 76,
+            XtermColor::DarkPastelGreen => 77,
+            XtermColor::PastelGreen => 78,
+            XtermColor::DownyTeal => 79,
+            XtermColor::Viking => 80,
+            XtermColor::MalibuBlue => 81,
+            XtermColor::BrightGreen => 82,
+            XtermColor::DarkScreaminGreen => 83,
+            XtermColor::ScreaminGreen => 84,
+            XtermColor::DarkAquamarine => 85,
+            XtermColor::Aquamarine => 86,
+            XtermColor::LightAquamarine => 87,
+            XtermColor::Maroon => 88,
+            XtermColor::DarkFreshEggplant => 89,
+            XtermColor::LightFreshEggplant => 90,
+            XtermColor::Purple => 91,
+            XtermColor::ElectricViolet => 92,
+            XtermColor::LightElectricViolet => 93,
+            XtermColor::Brown => 94,
+            XtermColor::CopperRose => 95,
+            XtermColor::StrikemasterPurple => 96,
+            XtermColor::DelugePurple => 97,
+            XtermColor::DarkMediumPurple => 98,
+            XtermColor::DarkHeliotropePurple => 99,
+            XtermColor::Olive => 100,
+            XtermColor::ClayCreekOlive => 101,
+            XtermColor::DarkGray => 102,
+            XtermColor::WildBlueYonder => 103,
+            XtermColor::ChetwodeBlue => 104,
+            XtermColor::SlateBlue => 105,
+            XtermColor::LightLimeade => 106,
+            XtermColor::ChelseaCucumber => 107,
+            XtermColor::BayLeaf => 108,
+            XtermColor::GulfStream => 109,
+            XtermColor::PoloBlue => 110,
+            XtermColor::LightMalibuBlue => 111,
+            XtermColor::Pistachio => 112,
+            XtermColor::LightPastelGreen => 113,
+            XtermColor::DarkFeijoaGreen => 114,
+            XtermColor::VistaBlue => 115,
+            XtermColor::Bermuda => 116,
+            XtermColor::DarkAnakiwaBlue => 117,
+            XtermColor::ChartreuseGreen => 118,
+            XtermColor::LightScreaminGreen => 119,
+            XtermColor::DarkMintGreen => 120,
+            XtermColor::MintGreen => 121,
+            XtermColor::LighterAquamarine => 122,
+            XtermColor::AnakiwaBlue => 123,
+            XtermColor::BrightRed => 124,
+            XtermColor::DarkFlirt => 125,
+            XtermColor::Flirt => 126,
+            XtermColor::LightFlirt => 127,
+            XtermColor::DarkViolet => 128,
+            XtermColor::BrightElectricViolet => 129,
+            XtermColor::RoseofSharonOrange => 130,
+            XtermColor::MatrixPink => 131,
+            XtermColor::UserBlue => 4,
+            XtermColor::UserMagenta => 5,
+            XtermColor::UserCyan => 6,
+            XtermColor::UserWhite => 7,
+            XtermColor::UserBrightBlack => 8,
+            XtermColor::UserBrightRed => 9,
+            XtermColor::UserBrightGreen => 10,
+            XtermColor::UserBrightYellow => 11,
+            XtermColor::UserBrightBlue => 12,
+            XtermColor::UserBrightMagenta => 13,
+            XtermColor::UserBrightCyan => 14,
+            XtermColor::UserBrightWhite => 15,
+            XtermColor::Black => 16,
+            XtermColor::StratosBlue => 17,
+            XtermColor::NavyBlue => 18,
+            XtermColor::MidnightBlue => 19,
+            XtermColor::DarkBlue => 20,
+            XtermColor::Blue => 21,
+            XtermColor::CamaroneGreen => 22,
+            XtermColor::BlueStone => 23,
+            XtermColor::TapestryPink => 132,
+            XtermColor::FuchsiaPink => 133,
+            XtermColor::MediumPurple => 134,
+            XtermColor::Heliotrope => 135,
+            XtermColor::PirateGold => 136,
+            XtermColor::MuesliOrange => 137,
+            XtermColor::PharlapPink => 138,
+            XtermColor::Bouquet => 139,
+            XtermColor::Lavender => 140,
+            XtermColor::LightHeliotrope => 141,
+            XtermColor::BuddhaGold => 142,
+            XtermColor::OliveGreen => 143,
+            XtermColor::HillaryOlive => 144,
+            XtermColor::SilverChalice => 145,
+            XtermColor::WistfulLilac => 146,
+            XtermColor::MelroseLilac => 147,
+            XtermColor::RioGrandeGreen => 148,
+            XtermColor::ConiferGreen => 149,
+            XtermColor::Feijoa => 150,
+            XtermColor::PixieGreen => 151,
+            XtermColor::JungleMist => 152,
+            XtermColor::LightAnakiwaBlue => 153,
+            XtermColor::Lime => 154,
+            XtermColor::GreenYellow => 155,
+            XtermColor::LightMintGreen => 156,
+            XtermColor::Celadon => 157,
+            XtermColor::AeroBlue => 158,
+            XtermColor::FrenchPassLightBlue => 159,
+            XtermColor::GuardsmanRed => 160,
+            XtermColor::RazzmatazzCerise => 161,
+            XtermColor::MediumVioletRed => 162,
+            XtermColor::HollywoodCerise => 163,
+            XtermColor::DarkPurplePizzazz => 164,
+            XtermColor::BrighterElectricViolet => 165,
+            XtermColor::TennOrange => 166,
+            XtermColor::RomanOrange => 167,
+            XtermColor::CranberryPink => 168,
+            XtermColor::HopbushPink => 169,
+            XtermColor::Orchid => 170,
+            XtermColor::LighterHeliotrope => 171,
+            XtermColor::MangoTango => 172,
+            XtermColor::Copperfield => 173,
+            XtermColor::SeaPink => 174,
+            XtermColor::CanCanPink => 175,
+            XtermColor::LightOrchid => 176,
+            XtermColor::BrightHeliotrope => 177,
+            XtermColor::DarkCorn => 178,
+            XtermColor::DarkTachaOrange => 179,
+            XtermColor::TanBeige => 180,
+            XtermColor::ClamShell => 181,
+            XtermColor::ThistlePink => 182,
+            XtermColor::Mauve => 183,
+            XtermColor::Corn => 184,
+            XtermColor::TachaOrange => 185,
+            XtermColor::DecoOrange => 186,
+            XtermColor::PaleGoldenrod => 187,
+            XtermColor::AltoBeige => 188,
+            XtermColor::FogPink => 189,
+            XtermColor::ChartreuseYellow => 190,
+            XtermColor::Canary => 191,
+            XtermColor::Honeysuckle => 192,
+            XtermColor::ReefPaleYellow => 193,
+            XtermColor::SnowyMint => 194,
+            XtermColor::OysterBay => 195,
+            XtermColor::Red => 196,
+            XtermColor::DarkRose => 197,
+            XtermColor::Rose => 198,
+            XtermColor::LightHollywoodCerise => 199,
+            XtermColor::PurplePizzazz => 200,
+            XtermColor::Fuchsia => 201,
+            XtermColor::BlazeOrange => 202,
+            XtermColor::BittersweetOrange => 203,
+            XtermColor::WildWatermelon => 204,
+            XtermColor::DarkHotPink => 205,
+            XtermColor::HotPink => 206,
+            XtermColor::PinkFlamingo => 207,
+            XtermColor::FlushOrange => 208,
+            XtermColor::Salmon => 209,
+            XtermColor::VividTangerine => 210,
+            XtermColor::PinkSalmon => 211,
+            XtermColor::DarkLavenderRose => 212,
+            XtermColor::BlushPink => 213,
+            XtermColor::YellowSea => 214,
+            XtermColor::TexasRose => 215,
+            XtermColor::Tacao => 216,
+            XtermColor::Sundown => 217,
+            XtermColor::CottonCandy => 218,
+            XtermColor::LavenderRose => 219,
+            XtermColor::Gold => 220,
+            XtermColor::Dandelion => 221,
+            XtermColor::GrandisCaramel => 222,
+            XtermColor::Caramel => 223,
+            XtermColor::CosmosSalmon => 224,
+            XtermColor::PinkLace => 225,
+            XtermColor::Yellow => 226,
+            XtermColor::LaserLemon => 227,
+            XtermColor::DollyYellow => 228,
+            XtermColor::PortafinoYellow => 229,
+            XtermColor::Cumulus => 230,
+            XtermColor::White => 231,
+            XtermColor::DarkCodGray => 232,
+            XtermColor::CodGray => 233,
+            XtermColor::LightCodGray => 234,
+            XtermColor::DarkMineShaft => 235,
+            XtermColor::MineShaft => 236,
+            XtermColor::LightMineShaft => 237,
+            XtermColor::DarkTundora => 238,
+            XtermColor::Tundora => 239,
+            XtermColor::ScorpionGray => 240,
+            XtermColor::DarkDoveGray => 241,
+            XtermColor::DoveGray => 242,
+            XtermColor::Boulder => 243,
+            XtermColor::Gray => 244,
+            XtermColor::LightGray => 245,
+            XtermColor::DustyGray => 246,
+            XtermColor::NobelGray => 247,
+            XtermColor::DarkSilverChalice => 248,
+            XtermColor::LightSilverChalice => 249,
+            XtermColor::DarkSilver => 250,
+            XtermColor::Silver => 251,
+            XtermColor::DarkAlto => 252,
+            XtermColor::Alto => 253,
+            XtermColor::Mercury => 254,
+            XtermColor::GalleryGray => 255,
+        }
+    }
 }
 
 /// An enum of all the supported message styles for different levels of terminal colour support.
-#[derive(Clone, Debug, Display, EnumIter, EnumString, PartialEq, Eq)]
+#[derive(Clone, Debug, Display, EnumString, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
 #[strum(use_phf)]
 pub enum MessageStyle {
@@ -330,67 +866,207 @@ pub enum MessageStyle {
     Xterm256DarkGhost,
 }
 
-/// Define the implementation of the `NuThemeStyle` trait for `MessageStyle` to facilitate
-/// resolution of the `MessageStyle` variant to an `nu_ansi_term::Style`.
+impl From<&Lvl> for MessageStyle {
+    fn from(message_level: &Lvl) -> Self {
+        profile_fn!(msg_style_from_lvl);
+        let message_style: Self = {
+            let (maybe_color_support, term_theme) = coloring();
+            maybe_color_support.map_or(Self::Ansi16DarkNormal, |color_support| {
+                let color_qual = color_support.to_string().to_lowercase();
+                let theme_qual = term_theme.to_string().to_lowercase();
+                let msg_level_qual = message_level.to_string().to_lowercase();
+                let message_style = Self::from_str(&format!(
+                    "{}_{}_{}",
+                    &color_qual, &theme_qual, &msg_level_qual
+                )).unwrap_or(Self::Ansi16DarkNormal);
+                #[cfg(debug_assertions)]
+                debug_log!(
+                    "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
+                );
+                message_style
+            })
+        };
+        message_style
+    }
+}
+
+/// An implementation to facilitate conversion to `ratatui` and potentially other
+/// color implementations.
 #[allow(clippy::match_same_arms)]
-impl NuThemeStyle for MessageStyle {
-    fn get_style(&self) -> Style {
-        match self {
-            Self::Ansi16LightError => nu_ansi_term::Color::Red.bold(),
-            Self::Ansi16LightWarning => nu_ansi_term::Color::Magenta.bold(),
-            Self::Ansi16LightEmphasis => nu_ansi_term::Color::Yellow.bold(),
-            Self::Ansi16LightHeading => nu_ansi_term::Color::Blue.bold(),
-            Self::Ansi16LightSubheading => nu_ansi_term::Color::Cyan.bold(),
-            Self::Ansi16LightNormal => nu_ansi_term::Color::White.normal(),
-            Self::Ansi16LightDebug => nu_ansi_term::Color::Cyan.normal(),
-            Self::Ansi16LightGhost => nu_ansi_term::Color::Cyan.dimmed().italic(),
-            Self::Ansi16DarkError => nu_ansi_term::Color::Red.bold(),
-            Self::Ansi16DarkWarning => nu_ansi_term::Color::Magenta.bold(),
-            Self::Ansi16DarkEmphasis => nu_ansi_term::Color::Yellow.bold(),
-            Self::Ansi16DarkHeading => nu_ansi_term::Color::Cyan.bold(),
-            Self::Ansi16DarkSubheading => nu_ansi_term::Color::Green.bold(),
-            Self::Ansi16DarkNormal => nu_ansi_term::Color::White.normal(),
-            Self::Ansi16DarkDebug => nu_ansi_term::Color::Cyan.normal(),
-            Self::Ansi16DarkGhost => nu_ansi_term::Color::LightGray.dimmed().italic(),
-            Self::Xterm256LightError => XtermColor::GuardsmanRed.get_color().bold(),
-            Self::Xterm256LightWarning => XtermColor::DarkPurplePizzazz.get_color().bold(),
-            Self::Xterm256LightEmphasis => XtermColor::Copperfield.get_color().bold(),
-            Self::Xterm256LightHeading => XtermColor::MidnightBlue.get_color().bold(),
-            Self::Xterm256LightSubheading => XtermColor::ScienceBlue.get_color().normal(),
-            Self::Xterm256LightNormal => XtermColor::Black.get_color().normal(),
-            Self::Xterm256LightDebug => XtermColor::LochmaraBlue.get_color().normal(),
-            Self::Xterm256LightGhost => XtermColor::Boulder.get_color().normal().italic(),
-            Self::Xterm256DarkError => XtermColor::GuardsmanRed.get_color().bold(),
-            Self::Xterm256DarkWarning => XtermColor::DarkViolet.get_color().bold(),
-            Self::Xterm256DarkEmphasis => XtermColor::Copperfield.get_color().bold(),
-            Self::Xterm256DarkHeading => XtermColor::DarkMalibuBlue.get_color().bold(),
-            Self::Xterm256DarkSubheading => XtermColor::CaribbeanGreen.get_color().normal(),
-            Self::Xterm256DarkNormal => XtermColor::Silver.get_color().normal(),
-            Self::Xterm256DarkDebug => XtermColor::BondiBlue.get_color().normal(),
-            Self::Xterm256DarkGhost => XtermColor::Silver.get_color().normal().italic(),
+impl From<&MessageStyle> for XtermColor {
+    fn from(message_style: &MessageStyle) -> Self {
+        match *message_style {
+            MessageStyle::Ansi16LightError => Self::UserRed,
+            MessageStyle::Ansi16LightWarning => Self::UserMagenta,
+            MessageStyle::Ansi16LightEmphasis => Self::UserYellow,
+            MessageStyle::Ansi16LightHeading => Self::UserBlue,
+            MessageStyle::Ansi16LightSubheading => Self::UserCyan,
+            MessageStyle::Ansi16LightNormal => Self::UserWhite,
+            MessageStyle::Ansi16LightDebug => Self::UserCyan,
+            MessageStyle::Ansi16LightGhost => Self::UserCyan,
+            MessageStyle::Ansi16DarkError => Self::UserRed,
+            MessageStyle::Ansi16DarkWarning => Self::UserMagenta,
+            MessageStyle::Ansi16DarkEmphasis => Self::UserYellow,
+            MessageStyle::Ansi16DarkHeading => Self::UserCyan,
+            MessageStyle::Ansi16DarkSubheading => Self::UserGreen,
+            MessageStyle::Ansi16DarkNormal => Self::UserWhite,
+            MessageStyle::Ansi16DarkDebug => Self::UserCyan,
+            MessageStyle::Ansi16DarkGhost => Self::LightGray,
+            MessageStyle::Xterm256LightError => Self::GuardsmanRed,
+            MessageStyle::Xterm256LightWarning => Self::DarkPurplePizzazz,
+            MessageStyle::Xterm256LightEmphasis => Self::Copperfield,
+            MessageStyle::Xterm256LightHeading => Self::MidnightBlue,
+            MessageStyle::Xterm256LightSubheading => Self::ScienceBlue,
+            MessageStyle::Xterm256LightNormal => Self::Black,
+            MessageStyle::Xterm256LightDebug => Self::LochmaraBlue,
+            MessageStyle::Xterm256LightGhost => Self::Boulder,
+            MessageStyle::Xterm256DarkError => Self::GuardsmanRed,
+            MessageStyle::Xterm256DarkWarning => Self::DarkViolet,
+            MessageStyle::Xterm256DarkEmphasis => Self::Copperfield,
+            MessageStyle::Xterm256DarkHeading => Self::CaribbeanGreen,
+            MessageStyle::Xterm256DarkSubheading => Self::DarkMalibuBlue,
+            MessageStyle::Xterm256DarkNormal => Self::Silver,
+            MessageStyle::Xterm256DarkDebug => Self::BondiBlue,
+            MessageStyle::Xterm256DarkGhost => Self::Silver,
         }
     }
 }
 
-/// Determine what message colour and style to use based on the current terminal's level of
-/// colour support and light or dark theme, and the category of message to be displayed.
-#[must_use]
-pub fn nu_resolve_style(message_level: MessageLevel) -> Style {
-    let maybe_color_support = COLOR_SUPPORT.as_ref();
-    maybe_color_support.map_or_else(Style::default, |color_support| {
-        let color_qual = color_support.to_string().to_lowercase();
-        let theme_qual = TERM_THEME.to_string().to_lowercase();
-        let msg_level_qual = message_level.to_string().to_lowercase();
-        let message_style = MessageStyle::from_str(&format!(
-            "{}_{}_{}",
-            &color_qual, &theme_qual, &msg_level_qual
-        ));
+#[allow(clippy::match_same_arms)]
+impl From<&MessageStyle> for Style {
+    fn from(message_style: &MessageStyle) -> Self {
+        profile_fn!(style_from_msg_style);
+        match *message_style {
+            MessageStyle::Ansi16LightError => Color::Red.bold(),
+            MessageStyle::Ansi16LightWarning => Color::Magenta.bold(),
+            MessageStyle::Ansi16LightEmphasis => Color::Yellow.bold(),
+            MessageStyle::Ansi16LightHeading => Color::Blue.bold(),
+            MessageStyle::Ansi16LightSubheading => Color::Cyan.bold(),
+            MessageStyle::Ansi16LightNormal => Color::White.normal(),
+            MessageStyle::Ansi16LightDebug => Color::Cyan.normal(),
+            MessageStyle::Ansi16LightGhost => Color::Cyan.dimmed().italic(),
+            MessageStyle::Ansi16DarkError => Color::Red.bold(),
+            MessageStyle::Ansi16DarkWarning => Color::Magenta.bold(),
+            MessageStyle::Ansi16DarkEmphasis => Color::Yellow.bold(),
+            MessageStyle::Ansi16DarkHeading => Color::Cyan.bold(),
+            MessageStyle::Ansi16DarkSubheading => Color::Green.bold(),
+            MessageStyle::Ansi16DarkNormal => Color::White.normal(),
+            MessageStyle::Ansi16DarkDebug => Color::Cyan.normal(),
+            MessageStyle::Ansi16DarkGhost => Color::LightGray.dimmed().italic(),
+            MessageStyle::Xterm256LightError => Color::from(&XtermColor::GuardsmanRed).bold(),
+            MessageStyle::Xterm256LightWarning => {
+                Color::from(&XtermColor::DarkPurplePizzazz).bold()
+            }
+            MessageStyle::Xterm256LightEmphasis => Color::from(&XtermColor::Copperfield).bold(),
+            MessageStyle::Xterm256LightHeading => Color::from(&XtermColor::MidnightBlue).bold(),
+            MessageStyle::Xterm256LightSubheading => Color::from(&XtermColor::ScienceBlue).normal(),
+            MessageStyle::Xterm256LightNormal => Color::from(&XtermColor::Black).normal(),
+            MessageStyle::Xterm256LightDebug => Color::from(&XtermColor::LochmaraBlue).normal(),
+            MessageStyle::Xterm256LightGhost => Color::from(&XtermColor::Boulder).normal().italic(),
+            MessageStyle::Xterm256DarkError => Color::from(&XtermColor::GuardsmanRed).bold(),
+            MessageStyle::Xterm256DarkWarning => Color::from(&XtermColor::DarkViolet).bold(),
+            MessageStyle::Xterm256DarkEmphasis => Color::from(&XtermColor::Copperfield).bold(),
+            MessageStyle::Xterm256DarkHeading => Color::from(&XtermColor::CaribbeanGreen).bold(),
+            MessageStyle::Xterm256DarkSubheading => {
+                Color::from(&XtermColor::DarkMalibuBlue).normal()
+            }
+            MessageStyle::Xterm256DarkNormal => Color::from(&XtermColor::Silver).normal(),
+            MessageStyle::Xterm256DarkDebug => Color::from(&XtermColor::BondiBlue).normal(),
+            MessageStyle::Xterm256DarkGhost => Color::from(&XtermColor::Silver).normal().italic(),
+        }
+    }
+}
 
-        debug_log!(
-            "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
-        );
-        message_style.map_or_else(|_| Style::default(), |message_style| NuThemeStyle::get_style(&message_style))
-    })
+impl From<&MessageLevel> for Style {
+    fn from(lvl: &MessageLevel) -> Self {
+        profile_fn!(style_from_lvl);
+        Self::from(&MessageStyle::from(lvl))
+    }
+}
+
+#[allow(clippy::match_same_arms)]
+impl From<&MessageStyle> for RataStyle {
+    fn from(message_style: &MessageStyle) -> Self {
+        profile_fn!(ratastyle_from_msg_style);
+        match *message_style {
+            MessageStyle::Ansi16LightError => RataStyle::from(RataColor::Red).bold(),
+            MessageStyle::Ansi16LightWarning => RataStyle::from(RataColor::Magenta).bold(),
+            MessageStyle::Ansi16LightEmphasis => RataStyle::from(RataColor::Yellow).bold(),
+            MessageStyle::Ansi16LightHeading => RataStyle::from(RataColor::Blue).bold(),
+            MessageStyle::Ansi16LightSubheading => RataStyle::from(RataColor::Cyan).bold(),
+            MessageStyle::Ansi16LightNormal => RataStyle::from(RataColor::White).not_bold(),
+            MessageStyle::Ansi16LightDebug => RataStyle::from(RataColor::Cyan).not_bold(),
+            MessageStyle::Ansi16LightGhost => RataStyle::from(RataColor::Cyan).dim().italic(),
+            MessageStyle::Ansi16DarkError => RataStyle::from(RataColor::Red).bold(),
+            MessageStyle::Ansi16DarkWarning => RataStyle::from(RataColor::Magenta).bold(),
+            MessageStyle::Ansi16DarkEmphasis => RataStyle::from(RataColor::Yellow).bold(),
+            MessageStyle::Ansi16DarkHeading => RataStyle::from(RataColor::Cyan).bold(),
+            MessageStyle::Ansi16DarkSubheading => RataStyle::from(RataColor::Green).bold(),
+            MessageStyle::Ansi16DarkNormal => RataStyle::from(RataColor::White).not_bold(),
+            MessageStyle::Ansi16DarkDebug => RataStyle::from(RataColor::Cyan).not_bold(),
+            MessageStyle::Ansi16DarkGhost => RataStyle::from(RataColor::Gray).dim().italic(),
+            MessageStyle::Xterm256LightError => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
+            }
+            MessageStyle::Xterm256LightWarning => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkPurplePizzazz))).bold()
+            }
+            MessageStyle::Xterm256LightEmphasis => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
+            }
+            MessageStyle::Xterm256LightHeading => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::MidnightBlue))).bold()
+            }
+            MessageStyle::Xterm256LightSubheading => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::ScienceBlue))).not_bold()
+            }
+            MessageStyle::Xterm256LightNormal => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Black))).not_bold()
+            }
+            MessageStyle::Xterm256LightDebug => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::LochmaraBlue))).not_bold()
+            }
+            MessageStyle::Xterm256LightGhost => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Boulder)))
+                    .not_bold()
+                    .italic()
+            }
+            MessageStyle::Xterm256DarkError => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
+            }
+            MessageStyle::Xterm256DarkWarning => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkViolet))).bold()
+            }
+            MessageStyle::Xterm256DarkEmphasis => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
+            }
+            MessageStyle::Xterm256DarkHeading => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::CaribbeanGreen))).bold()
+            }
+            MessageStyle::Xterm256DarkSubheading => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkMalibuBlue)))
+                    .not_bold()
+            }
+            MessageStyle::Xterm256DarkNormal => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Silver))).not_bold()
+            }
+            MessageStyle::Xterm256DarkDebug => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::BondiBlue))).not_bold()
+            }
+            MessageStyle::Xterm256DarkGhost => {
+                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Silver)))
+                    .not_bold()
+                    .italic()
+            }
+        }
+    }
+}
+
+impl From<&MessageLevel> for RataStyle {
+    fn from(lvl: &MessageLevel) -> Self {
+        profile_fn!(ratastyle_from_lvl);
+        Self::from(&MessageStyle::from(lvl))
+    }
 }
 
 /// Main function for use by testing or the script runner.
@@ -399,15 +1075,16 @@ pub fn main() {
     #[cfg(not(target_os = "windows"))]
     {
         #[allow(unused_variables)]
-        let term = termbg::terminal();
+        let term = terminal();
         // shared::clear_screen();
 
+        #[cfg(debug_assertions)]
         debug_log!("  Term : {term:?}");
     }
 
-    let color_support = &*COLOR_SUPPORT;
+    let (maybe_color_support, _term_theme) = coloring();
 
-    match color_support {
+    match maybe_color_support {
         None => {
             log!(Verbosity::Normal, "No colour support found for terminal");
         }
@@ -415,22 +1092,18 @@ pub fn main() {
             log!(
                 Verbosity::Normal,
                 "{}",
-                nu_resolve_style(MessageLevel::Warning).paint("Colored Warning message\n")
+                Style::from(&Lvl::WARN).paint("Colored Warning message\n")
             );
 
-            for variant in MessageStyle::iter() {
+            for variant in Lvl::iter() {
                 let variant_string: &str = &variant.to_string();
-                log!(
-                    Verbosity::Normal,
-                    "My {} message",
-                    variant.get_style().paint(variant_string)
-                );
+                cvprtln!(variant, V::Normal, "My {variant_string} message");
             }
 
             if matches!(support, ColorSupport::Xterm256) {
                 log!(Verbosity::Normal, "");
                 XtermColor::iter().for_each(|variant| {
-                    let color = variant.get_color();
+                    let color = Color::from(&variant);
                     log!(Verbosity::Normal, "{}", color.paint(variant.to_string()));
                 });
             }
@@ -438,8 +1111,8 @@ pub fn main() {
     }
 }
 
-/// An enum of the colours in a 256-colour palette.
-#[allow(dead_code)]
+/// An enum of the colours in a 256-colour palette, per the naming in `https://docs.rs/owo-colors/latest/owo_colors/colors/xterm/index.html#`.
+#[warn(dead_code)]
 #[derive(Display, EnumIter)]
 pub enum XtermColor {
     UserBlack,
@@ -698,272 +1371,4 @@ pub enum XtermColor {
     Alto,
     Mercury,
     GalleryGray,
-}
-
-impl NuColor for XtermColor {
-    fn get_color(&self) -> nu_ansi_term::Color {
-        nu_ansi_term::Color::Fixed(self.get_fixed_code())
-    }
-
-    #[allow(clippy::too_many_lines)]
-    fn get_fixed_code(&self) -> u8 {
-        match self {
-            Self::UserBlack => 0,
-            Self::UserRed => 1,
-            Self::UserGreen => 2,
-            Self::UserYellow => 3,
-            Self::OrientBlue => 24,
-            Self::EndeavourBlue => 25,
-            Self::ScienceBlue => 26,
-            Self::BlueRibbon => 27,
-            Self::JapaneseLaurel => 28,
-            Self::DeepSeaGreen => 29,
-            Self::Teal => 30,
-            Self::DeepCerulean => 31,
-            Self::LochmaraBlue => 32,
-            Self::AzureRadiance => 33,
-            Self::LightJapaneseLaurel => 34,
-            Self::Jade => 35,
-            Self::PersianGreen => 36,
-            Self::BondiBlue => 37,
-            Self::Cerulean => 38,
-            Self::LightAzureRadiance => 39,
-            Self::DarkGreen => 40,
-            Self::Malachite => 41,
-            Self::CaribbeanGreen => 42,
-            Self::LightCaribbeanGreen => 43,
-            Self::RobinEggBlue => 44,
-            Self::Aqua => 45,
-            Self::Green => 46,
-            Self::DarkSpringGreen => 47,
-            Self::SpringGreen => 48,
-            Self::LightSpringGreen => 49,
-            Self::BrightTurquoise => 50,
-            Self::Cyan => 51,
-            Self::Rosewood => 52,
-            Self::PompadourMagenta => 53,
-            Self::PigmentIndigo => 54,
-            Self::DarkPurple => 55,
-            Self::ElectricIndigo => 56,
-            Self::ElectricPurple => 57,
-            Self::VerdunGreen => 58,
-            Self::ScorpionOlive => 59,
-            Self::Lilac => 60,
-            Self::ScampiIndigo => 61,
-            Self::Indigo => 62,
-            Self::DarkCornflowerBlue => 63,
-            Self::DarkLimeade => 64,
-            Self::GladeGreen => 65,
-            Self::JuniperGreen => 66,
-            Self::HippieBlue => 67,
-            Self::HavelockBlue => 68,
-            Self::CornflowerBlue => 69,
-            Self::Limeade => 70,
-            Self::FernGreen => 71,
-            Self::SilverTree => 72,
-            Self::Tradewind => 73,
-            Self::ShakespeareBlue => 74,
-            Self::DarkMalibuBlue => 75,
-            Self::DarkBrightGreen => 76,
-            Self::DarkPastelGreen => 77,
-            Self::PastelGreen => 78,
-            Self::DownyTeal => 79,
-            Self::Viking => 80,
-            Self::MalibuBlue => 81,
-            Self::BrightGreen => 82,
-            Self::DarkScreaminGreen => 83,
-            Self::ScreaminGreen => 84,
-            Self::DarkAquamarine => 85,
-            Self::Aquamarine => 86,
-            Self::LightAquamarine => 87,
-            Self::Maroon => 88,
-            Self::DarkFreshEggplant => 89,
-            Self::LightFreshEggplant => 90,
-            Self::Purple => 91,
-            Self::ElectricViolet => 92,
-            Self::LightElectricViolet => 93,
-            Self::Brown => 94,
-            Self::CopperRose => 95,
-            Self::StrikemasterPurple => 96,
-            Self::DelugePurple => 97,
-            Self::DarkMediumPurple => 98,
-            Self::DarkHeliotropePurple => 99,
-            Self::Olive => 100,
-            Self::ClayCreekOlive => 101,
-            Self::DarkGray => 102,
-            Self::WildBlueYonder => 103,
-            Self::ChetwodeBlue => 104,
-            Self::SlateBlue => 105,
-            Self::LightLimeade => 106,
-            Self::ChelseaCucumber => 107,
-            Self::BayLeaf => 108,
-            Self::GulfStream => 109,
-            Self::PoloBlue => 110,
-            Self::LightMalibuBlue => 111,
-            Self::Pistachio => 112,
-            Self::LightPastelGreen => 113,
-            Self::DarkFeijoaGreen => 114,
-            Self::VistaBlue => 115,
-            Self::Bermuda => 116,
-            Self::DarkAnakiwaBlue => 117,
-            Self::ChartreuseGreen => 118,
-            Self::LightScreaminGreen => 119,
-            Self::DarkMintGreen => 120,
-            Self::MintGreen => 121,
-            Self::LighterAquamarine => 122,
-            Self::AnakiwaBlue => 123,
-            Self::BrightRed => 124,
-            Self::DarkFlirt => 125,
-            Self::Flirt => 126,
-            Self::LightFlirt => 127,
-            Self::DarkViolet => 128,
-            Self::BrightElectricViolet => 129,
-            Self::RoseofSharonOrange => 130,
-            Self::MatrixPink => 131,
-            Self::UserBlue => 4,
-            Self::UserMagenta => 5,
-            Self::UserCyan => 6,
-            Self::UserWhite => 7,
-            Self::UserBrightBlack => 8,
-            Self::UserBrightRed => 9,
-            Self::UserBrightGreen => 10,
-            Self::UserBrightYellow => 11,
-            Self::UserBrightBlue => 12,
-            Self::UserBrightMagenta => 13,
-            Self::UserBrightCyan => 14,
-            Self::UserBrightWhite => 15,
-            Self::Black => 16,
-            Self::StratosBlue => 17,
-            Self::NavyBlue => 18,
-            Self::MidnightBlue => 19,
-            Self::DarkBlue => 20,
-            Self::Blue => 21,
-            Self::CamaroneGreen => 22,
-            Self::BlueStone => 23,
-            Self::TapestryPink => 132,
-            Self::FuchsiaPink => 133,
-            Self::MediumPurple => 134,
-            Self::Heliotrope => 135,
-            Self::PirateGold => 136,
-            Self::MuesliOrange => 137,
-            Self::PharlapPink => 138,
-            Self::Bouquet => 139,
-            Self::Lavender => 140,
-            Self::LightHeliotrope => 141,
-            Self::BuddhaGold => 142,
-            Self::OliveGreen => 143,
-            Self::HillaryOlive => 144,
-            Self::SilverChalice => 145,
-            Self::WistfulLilac => 146,
-            Self::MelroseLilac => 147,
-            Self::RioGrandeGreen => 148,
-            Self::ConiferGreen => 149,
-            Self::Feijoa => 150,
-            Self::PixieGreen => 151,
-            Self::JungleMist => 152,
-            Self::LightAnakiwaBlue => 153,
-            Self::Lime => 154,
-            Self::GreenYellow => 155,
-            Self::LightMintGreen => 156,
-            Self::Celadon => 157,
-            Self::AeroBlue => 158,
-            Self::FrenchPassLightBlue => 159,
-            Self::GuardsmanRed => 160,
-            Self::RazzmatazzCerise => 161,
-            Self::MediumVioletRed => 162,
-            Self::HollywoodCerise => 163,
-            Self::DarkPurplePizzazz => 164,
-            Self::BrighterElectricViolet => 165,
-            Self::TennOrange => 166,
-            Self::RomanOrange => 167,
-            Self::CranberryPink => 168,
-            Self::HopbushPink => 169,
-            Self::Orchid => 170,
-            Self::LighterHeliotrope => 171,
-            Self::MangoTango => 172,
-            Self::Copperfield => 173,
-            Self::SeaPink => 174,
-            Self::CanCanPink => 175,
-            Self::LightOrchid => 176,
-            Self::BrightHeliotrope => 177,
-            Self::DarkCorn => 178,
-            Self::DarkTachaOrange => 179,
-            Self::TanBeige => 180,
-            Self::ClamShell => 181,
-            Self::ThistlePink => 182,
-            Self::Mauve => 183,
-            Self::Corn => 184,
-            Self::TachaOrange => 185,
-            Self::DecoOrange => 186,
-            Self::PaleGoldenrod => 187,
-            Self::AltoBeige => 188,
-            Self::FogPink => 189,
-            Self::ChartreuseYellow => 190,
-            Self::Canary => 191,
-            Self::Honeysuckle => 192,
-            Self::ReefPaleYellow => 193,
-            Self::SnowyMint => 194,
-            Self::OysterBay => 195,
-            Self::Red => 196,
-            Self::DarkRose => 197,
-            Self::Rose => 198,
-            Self::LightHollywoodCerise => 199,
-            Self::PurplePizzazz => 200,
-            Self::Fuchsia => 201,
-            Self::BlazeOrange => 202,
-            Self::BittersweetOrange => 203,
-            Self::WildWatermelon => 204,
-            Self::DarkHotPink => 205,
-            Self::HotPink => 206,
-            Self::PinkFlamingo => 207,
-            Self::FlushOrange => 208,
-            Self::Salmon => 209,
-            Self::VividTangerine => 210,
-            Self::PinkSalmon => 211,
-            Self::DarkLavenderRose => 212,
-            Self::BlushPink => 213,
-            Self::YellowSea => 214,
-            Self::TexasRose => 215,
-            Self::Tacao => 216,
-            Self::Sundown => 217,
-            Self::CottonCandy => 218,
-            Self::LavenderRose => 219,
-            Self::Gold => 220,
-            Self::Dandelion => 221,
-            Self::GrandisCaramel => 222,
-            Self::Caramel => 223,
-            Self::CosmosSalmon => 224,
-            Self::PinkLace => 225,
-            Self::Yellow => 226,
-            Self::LaserLemon => 227,
-            Self::DollyYellow => 228,
-            Self::PortafinoYellow => 229,
-            Self::Cumulus => 230,
-            Self::White => 231,
-            Self::DarkCodGray => 232,
-            Self::CodGray => 233,
-            Self::LightCodGray => 234,
-            Self::DarkMineShaft => 235,
-            Self::MineShaft => 236,
-            Self::LightMineShaft => 237,
-            Self::DarkTundora => 238,
-            Self::Tundora => 239,
-            Self::ScorpionGray => 240,
-            Self::DarkDoveGray => 241,
-            Self::DoveGray => 242,
-            Self::Boulder => 243,
-            Self::Gray => 244,
-            Self::LightGray => 245,
-            Self::DustyGray => 246,
-            Self::NobelGray => 247,
-            Self::DarkSilverChalice => 248,
-            Self::LightSilverChalice => 249,
-            Self::DarkSilver => 250,
-            Self::Silver => 251,
-            Self::DarkAlto => 252,
-            Self::Alto => 253,
-            Self::Mercury => 254,
-            Self::GalleryGray => 255,
-        }
-    }
 }

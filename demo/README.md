@@ -555,6 +555,20 @@ which will give identical output to the above.
 
 ---
 
+### Script: crokey_print_key_no_combiner.rs
+
+**Description:**  Published example of KeyCombination from `crokey` crate.
+
+**Purpose:** Demo key combination without Combiner.
+
+**Crates:** `crokey`, `crossterm`
+
+**Type:** Program
+
+**Link:** [crokey_print_key_no_combiner.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key_no_combiner.rs)
+
+---
+
 ### Script: crossbeam_channel_fibonacci.rs
 
 **Description:**  `crossbeam-channel` published example.
@@ -638,6 +652,24 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs)
+
+---
+
+### Script: crossterm_alternate_screen.rs
+
+**Description:**  Published example from crossterm crate. Macro version of the example:
+ "Print a rectangle colored with magenta and use both direct execution and lazy execution."
+ Direct execution with `execute` and lazy execution with `queue`.
+
+ Url: https://docs.rs/crossterm/latest/crossterm/
+
+**Purpose:** Demo `crossterm` command API.
+
+**Crates:** `ratatui`
+
+**Type:** Program
+
+**Link:** [crossterm_alternate_screen.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alternate_screen.rs)
 
 ---
 
@@ -1850,6 +1882,20 @@ which will give identical output to the above.
 
 ---
 
+### Script: json_parse.rs
+
+**Description:**  Demo of using deserializing JSON with the featured crates.
+
+**Purpose:** Demo featured crates.
+
+**Crates:** `serde`, `serde_json`
+
+**Type:** Snippet
+
+**Link:** [json_parse.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs)
+
+---
+
 ### Script: list_files.rs
 
 **Description:**  Demo listing files on disk. If you want a sorted list, you will need to amend the
@@ -1905,6 +1951,31 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [loop_pre_post.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs)
+
+---
+
+### Script: macro_gen_enum.rs
+
+**Description:**  First prototype of building an enum from a macro and using it thereafter, thanks to SO user DK.
+ `https://stackoverflow.com/questions/37006835/building-an-enum-inside-a-macro`
+
+**Purpose:** explore a technique for resolving mappings from a message level enum to corresponding
+
+**Type:** Program
+
+**Link:** [macro_gen_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum.rs)
+
+---
+
+### Script: macro_gen_styles_enum.rs
+
+**Description:**  Second prototype of building an enum from a macro and using it thereafter.
+
+**Purpose:** explore a technique for resolving mappings from a message level enum to corresponding
+
+**Type:** Snippet
+
+**Link:** [macro_gen_styles_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styles_enum.rs)
 
 ---
 
@@ -2176,7 +2247,7 @@ which will give identical output to the above.
 
 **Purpose:** demo featured crates.
 
-**Crates:** `crossterm`, `reedline`
+**Crates:** `reedline`
 
 **Type:** Program
 
@@ -2558,6 +2629,25 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs)
+
+---
+
+### Script: stdin_main.rs
+
+**Description:**  A version of `thag_rs`'s `stdin` module from the `main` `git` branch for the purpose of comparison
+ with the `develop` branch version being debugged.
+
+ E.g. `thag demo/stdin_main.rs`
+ Apply highlights to the text depending on the light or dark theme as detected, configured
+ or defaulted, or as toggled by the user with Ctrl-t.
+
+**Purpose:** Debugging.
+
+**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `serde`, `thag_rs`, `tui_textarea`
+
+**Type:** Program
+
+**Link:** [stdin_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs)
 
 ---
 
@@ -2952,6 +3042,17 @@ which will give identical output to the above.
 
 ---
 
+### Script: tui_copy.rs
+
+**Description:** 
+**Purpose:** 
+
+**Type:** Snippet
+
+**Link:** [tui_copy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_copy.rs)
+
+---
+
 ### Script: tui_scrollview.rs
 
 **Description:**  Published example from `tui-scrollview` crate. Toml entries from crate's Cargo.toml.
@@ -3013,6 +3114,21 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs)
+
+---
+
+### Script: tui_ta_vim.rs
+
+**Description:**  Published basic `vim` editor example from crate `tui-textarea`. Mildly tweaked
+ to use `ratatui::crossterm` re-exports instead of `crossterm` directly.
+
+**Purpose:** Demo TUI `vim` editor and featured crates, including `crossterm`.
+
+**Crates:** `ratatui`, `tui_textarea`
+
+**Type:** Program
+
+**Link:** [tui_ta_vim.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_vim.rs)
 
 ---
 

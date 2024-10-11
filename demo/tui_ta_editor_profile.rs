@@ -397,7 +397,7 @@ impl<'a> Editor<'a> {
                 f.render_widget(&self.output.textarea, chunks[4]);
                 self.output.modified = false;
 
-                // Show key bindings on Ctrl-L
+                // Show key bindings on Ctrl-l
                 if self.show_popup {
                     show_popup(f);
                 }
@@ -553,7 +553,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
     let block = Block::default()
         .borders(Borders::ALL)
         .title(
-            Title::from("Platform-dependent key mappings (YMMV)")
+            Title::from("Key bindings - subject to your terminal settings")
                 .alignment(ratatui::layout::Alignment::Center),
         )
         .title(Title::from("(^L to toggle)").alignment(Alignment::Center))

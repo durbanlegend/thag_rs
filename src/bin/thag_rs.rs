@@ -1,13 +1,12 @@
 #![allow(clippy::uninlined_format_args)]
 
 use thag_rs::logging::{configure_log, set_verbosity};
-use thag_rs::{debug_timings, ThagError};
-use thag_rs::{execute, get_args};
+use thag_rs::{debug_timings, execute, get_args, ThagResult};
 
 use std::cell::RefCell;
 use std::time::Instant;
 
-pub fn main() -> Result<(), ThagError> {
+pub fn main() -> ThagResult<()> {
     let start = Instant::now();
     let args = RefCell::new(get_args()); // Wrap args in a RefCell
 

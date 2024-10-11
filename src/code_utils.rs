@@ -7,18 +7,16 @@ use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
 
 use crate::debug_log;
-use crate::errors::ThagError;
-use crate::logging::Verbosity;
-use crate::nu_resolve_style;
-
+use crate::errors::{ThagError, ThagResult};
+use crate::logging::V;
 use crate::shared::debug_timings;
 use crate::shared::{Ast, BuildState};
-use crate::{log, MessageLevel};
-use crate::{DYNAMIC_SUBDIR, REPL_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
+use crate::{log, Lvl};
+use crate::{DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
+use nu_ansi_term::Style;
 use regex::Regex;
 use std::any::Any;
 use std::collections::HashMap;
@@ -29,7 +27,6 @@ use std::io::BufRead;
 use std::io::{self, Write};
 use std::option::Option;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use std::process::Output;
 use std::time::{Instant, SystemTime};
@@ -47,6 +44,17 @@ use syn::{
     AttrStyle, Expr, ExprBlock, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt, UsePath,
     UseRename,
 };
+
+// From burntsushi at `https://github.com/rust-lang/regex/issues/709`
+#[macro_export]
+macro_rules! regex {
+    ($re:literal $(,)?) => {{
+        use {regex::Regex, std::sync::OnceLock};
+
+        static RE: OnceLock<Regex> = OnceLock::new();
+        RE.get_or_init(|| Regex::new($re).unwrap())
+    }};
+}
 
 // To move inner attributes out of a syn AST for a snippet.
 struct RemoveInnerAttributes {
@@ -87,7 +95,7 @@ pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
 /// Read the contents of a file. For reading the Rust script.
 /// # Errors
 /// Will return `Err` if there is any file system error reading from the file path.
-pub fn read_file_contents(path: &Path) -> Result<String, ThagError> {
+pub fn read_file_contents(path: &Path) -> ThagResult<String> {
     profile_fn!(read_file_contents);
 
     debug_log!("Reading from {path:?}");
@@ -265,13 +273,10 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn infer_deps_from_source(code: &str) -> Vec<String> {
-    lazy_static! {
-        static ref USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*use\s+([^;{]+)").unwrap();
-        static ref MACRO_USE_REGEX: Regex = Regex::new(r"(?m)^[\s]*#\[macro_use\((\w+)\)").unwrap();
-        static ref EXTERN_CRATE_REGEX: Regex =
-            Regex::new(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)").unwrap();
-    }
     profile_fn!(infer_deps_from_source);
+    let use_regex: &Regex = regex!(r"(?m)^[\s]*use\s+([^;{]+)");
+    let macro_use_regex: &Regex = regex!(r"(?m)^[\s]*#\[macro_use\((\w+)\)");
+    let extern_crate_regex: &Regex = regex!(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)");
 
     debug_log!("In code_utils::infer_deps_from_source");
     let use_renames = find_use_renames_source(code);
@@ -289,7 +294,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
         "super",
     ];
 
-    for cap in USE_REGEX.captures_iter(code) {
+    for cap in use_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
 
         debug_log!("dependency={crate_name}");
@@ -304,7 +309,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 
     // Similar checks for other regex patterns
 
-    for cap in MACRO_USE_REGEX.captures_iter(code) {
+    for cap in macro_use_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
         filter_deps_source(
             &crate_name,
@@ -315,7 +320,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
         );
     }
 
-    for cap in EXTERN_CRATE_REGEX.captures_iter(code) {
+    for cap in extern_crate_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
         filter_deps_source(
             &crate_name,
@@ -366,15 +371,13 @@ fn filter_deps_source(
 #[must_use]
 pub fn find_use_renames_source(code: &str) -> Vec<String> {
     profile_fn!(find_use_renames_source);
-    lazy_static! {
-        static ref USE_AS_REGEX: Regex = Regex::new(r"(?m)^\s*use\s+.+as\s+(\w+)").unwrap();
-    }
 
     debug_log!("In code_utils::find_use_renames_source");
+    let use_as_regex: &Regex = regex!(r"(?m)^\s*use\s+.+as\s+(\w+)");
 
     let mut use_renames: Vec<String> = vec![];
 
-    for cap in USE_AS_REGEX.captures_iter(code) {
+    for cap in use_as_regex.captures_iter(code) {
         let use_rename = cap[1].to_string();
 
         debug_log!("use_rename={use_rename}");
@@ -389,15 +392,13 @@ pub fn find_use_renames_source(code: &str) -> Vec<String> {
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn find_modules_source(code: &str) -> Vec<String> {
-    lazy_static! {
-        static ref MODULE_REGEX: Regex = Regex::new(r"(?m)^[\s]*mod\s+([^;{\s]+)").unwrap();
-    }
+    let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
 
     debug_log!("In code_utils::find_use_renames_source");
 
     let mut modules: Vec<String> = vec![];
 
-    for cap in MODULE_REGEX.captures_iter(code) {
+    for cap in module_regex.captures_iter(code) {
         let module = cap[1].to_string();
 
         debug_log!("module={module}");
@@ -414,7 +415,7 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
 pub fn extract_manifest(
     rs_full_source: &str,
     #[allow(unused_variables)] start_parsing_rs: Instant,
-) -> Result<Manifest, ThagError> {
+) -> ThagResult<Manifest> {
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
@@ -435,7 +436,7 @@ pub fn extract_manifest(
 }
 
 fn extract_toml_block(input: &str) -> Option<String> {
-    let re = Regex::new(r"(?s)/\*\[toml\](.*?)\*/").unwrap();
+    let re: &Regex = regex!(r"(?s)/\*\[toml\](.*?)\*/");
     re.captures(input)
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
 }
@@ -452,7 +453,7 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
         // Try putting the expression in braces.
         let string = format!(r"{{{rs_source}}}");
         let str = string.as_str();
-        // log!(Verbosity::Normal, "str={str}");
+        // log!(V::N, "str={str}");
 
         expr = syn::parse_str::<Expr>(str);
     }
@@ -469,18 +470,18 @@ pub fn process_expr(
     args: &Cli,
     proc_flags: &ProcFlags,
     start: &Instant,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
-    log!(Verbosity::Normal, "{result:?}");
+    log!(V::N, "{result:?}");
     Ok(())
 }
 
 /// Convert a Path to a string value, assuming the path contains only valid characters.
 /// # Errors
 /// Will return `Err` if there is any error caused by invalid characters in the path name.
-pub fn path_to_str(path: &Path) -> Result<String, ThagError> {
+pub fn path_to_str(path: &Path) -> ThagResult<String> {
     let string = path
         .to_path_buf()
         .into_os_string()
@@ -512,20 +513,20 @@ pub fn disentangle(text_wall: &str) -> String {
 /// Display output captured to `std::process::Output`.
 /// # Errors
 /// Will return `Err` if the stdout or stderr is not found captured as expected.
-pub fn display_output(output: &Output) -> Result<(), ThagError> {
+pub fn display_output(output: &Output) -> ThagResult<()> {
     // Read the captured output from the pipe
     // let stdout = output.stdout;
 
     // Print the captured stdout
-    log!(Verbosity::Normal, "Captured stdout:");
+    log!(V::N, "Captured stdout:");
     for result in output.stdout.lines() {
-        log!(Verbosity::Normal, "{}", result?);
+        log!(V::N, "{}", result?);
     }
 
     // Print the captured stderr
-    log!(Verbosity::Normal, "Captured stderr:");
+    log!(V::N, "Captured stderr:");
     for result in output.stderr.lines() {
-        log!(Verbosity::Normal, "{}", result?);
+        log!(V::N, "{}", result?);
     }
     Ok(())
 }
@@ -537,7 +538,7 @@ pub fn display_output(output: &Output) -> Result<(), ThagError> {
 /// or if there is a logic error wrapping the path and modified time.
 pub fn modified_since_compiled(
     build_state: &BuildState,
-) -> Result<Option<(&PathBuf, SystemTime)>, ThagError> {
+) -> ThagResult<Option<(&PathBuf, SystemTime)>> {
     profile_fn!(modified_since_compiled);
 
     let executable = &build_state.target_path;
@@ -574,7 +575,7 @@ pub fn modified_since_compiled(
     }
     if let Some(file) = most_recent {
         log!(
-            Verbosity::Verbose,
+            V::V,
             "The most recently modified file compared to {executable:#?} is: {file:#?}"
         );
 
@@ -629,9 +630,9 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     if let Ok(tree) = syn::parse_file(source_code) {
         #[cfg(debug_assertions)]
         log!(
-            Verbosity::Quiet,
+            V::V,
             "{}",
-            nu_resolve_style(crate::MessageLevel::Warning).paint("Parsed to syn::File")
+            Style::from(&Lvl::WARN).paint("Parsed to syn::File")
         );
 
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
@@ -639,17 +640,17 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     } else if let Ok(tree) = extract_ast_expr(source_code) {
         #[cfg(debug_assertions)]
         log!(
-            Verbosity::Quiet,
+            V::V,
             "{}",
-            nu_resolve_style(crate::MessageLevel::Emphasis).paint("Parsed to syn::Expr")
+            Style::from(&Lvl::EMPH).paint("Parsed to syn::Expr")
         );
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
         log!(
-            Verbosity::Quieter,
+            V::QQ,
             "{}",
-            nu_resolve_style(crate::MessageLevel::Warning)
+            Style::from(&Lvl::WARN)
                 .paint("Error parsing syntax tree. Using regex to help you debug the script.")
         );
 
@@ -666,9 +667,7 @@ type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
 pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
 
-    lazy_static! {
-        static ref INNER_ATTRIB_REGEX: Regex = Regex::new(r"(?m)^[\s]*#!\[.+\]").unwrap();
-    }
+    let inner_attrib_regex: &Regex = regex!(r"(?m)^[\s]*#!\[.+\]");
 
     profile_fn!(extract_inner_attribs);
 
@@ -677,7 +676,7 @@ pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     let (inner_attribs, rest): Zipped = rs_source
         .lines()
         .map(|line| -> (Option<&str>, Option<&str>) {
-            if INNER_ATTRIB_REGEX.is_match(line) {
+            if inner_attrib_regex.is_match(line) {
                 (Some(line), None)
             } else {
                 (None, Some(line))
@@ -731,7 +730,7 @@ Ok(())
 /// Write the source to the destination source-code path.
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
-pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, ThagError> {
+pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> ThagResult<fs::File> {
     profile_fn!(write_source);
     let mut to_rs_file = OpenOptions::new()
         .write(true)
@@ -750,86 +749,11 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> Result<fs::File, T
     Ok(to_rs_file)
 }
 
-/// Create the next sequential REPL file according to the `repl_nnnnnn.rs` standard used by this crate.
-/// # Errors
-/// Will return `Err` if there is any error encountered creating the next `repl_nnnnnnn/repl_nnnnnn.rs` in `$TMPDIR/REPL_SUBDIR`.
-pub fn create_next_repl_file() -> Result<PathBuf, ThagError> {
-    profile_fn!(create_next_repl_file);
-    // Create a directory inside of `std::env::temp_dir()`
-    let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
-
-    debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
-
-    // Ensure REPL subdirectory exists
-    fs::create_dir_all(&gen_repl_temp_dir_path)?;
-
-    // Find existing dirs with the pattern repl_<nnnnnn>
-    let mut existing_dirs = Vec::new();
-
-    for entry in fs::read_dir(&gen_repl_temp_dir_path)? {
-        let entry = entry?; // Bubbles up I/O errors
-        let path = entry.path();
-
-        if path.is_dir() {
-            if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                if stem.starts_with("repl_") {
-                    let num_str = stem.trim_start_matches("repl_");
-                    if num_str.len() == 6 && num_str.chars().all(char::is_numeric) {
-                        if let Ok(num) = num_str.parse::<u32>() {
-                            existing_dirs.push(num);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    let next_file_num = match existing_dirs.as_slice() {
-        [] => 0, // No existing files, start with 000000
-        _ if existing_dirs.contains(&999_999) => {
-            // Wrap around and find the first gap
-            for i in 0..999_999 {
-                if !existing_dirs.contains(&i) {
-                    return create_repl_file(&gen_repl_temp_dir_path, i);
-                }
-            }
-            return Err(format!("Cannot create new file: all possible subdirs `repl_nnnnnn` already exist in {TMPDIR:?}/{REPL_SUBDIR}.").into());
-        }
-        _ => {
-            existing_dirs
-                .iter()
-                .max()
-                .ok_or("Can't get max value iterating existing repl_nnnnnn subdirectories")?
-                + 1
-        } // Increment from highest existing number
-    };
-
-    create_repl_file(&gen_repl_temp_dir_path, next_file_num)
-}
-
-/// Create a REPL file on disk, given the path and sequence number.
-/// # Errors
-/// Will return `Err` if it fails to create the next `repl_nnnnnnn/repl_nnnnnn.rs` in `$TMPDIR/REPL_SUBDIR`.
-pub fn create_repl_file(gen_repl_temp_dir_path: &Path, num: u32) -> Result<PathBuf, ThagError> {
-    profile_fn!(create_repl_file);
-    let padded_num = format!("{:06}", num);
-    let dir_name = format!("repl_{padded_num}");
-    let target_dir_path = gen_repl_temp_dir_path.join(dir_name);
-    fs::create_dir_all(&target_dir_path)?;
-
-    let filename = format!("repl_{padded_num}.rs");
-    let path = target_dir_path.join(filename);
-    fs::File::create(&path)?;
-
-    debug_log!("Created file: {path:#?}");
-    Ok(path)
-}
-
 /// Create empty script file `temp.rs` to hold expression for --expr or --stdin options,
 /// and open it for writing.
 /// # Errors
 /// Will return Err if it can't create the `rs_dyn` directory.
-pub fn create_temp_source_file() -> Result<PathBuf, ThagError> {
+pub fn create_temp_source_file() -> ThagResult<PathBuf> {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
@@ -890,7 +814,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 }}
 "#,
         loop_toml.as_ref().map_or_else(String::new, |toml| {
-            log!(Verbosity::Verbose, "toml={toml}");
+            log!(V::V, "toml={toml}");
             format!(
                 r#"/*[toml]
 {toml}
@@ -898,11 +822,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
             )
         }),
         loop_begin.as_ref().map_or("", |prelude| {
-            log!(Verbosity::Verbose, "prelude={prelude}");
+            log!(V::V, "prelude={prelude}");
             prelude
         }),
         loop_end.as_ref().map_or("", |postlude| {
-            log!(Verbosity::Verbose, "postlude={postlude}");
+            log!(V::V, "postlude={postlude}");
             postlude
         })
     )
@@ -928,13 +852,13 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
-        log!(Verbosity::Normal, "Directory listing for {:?}", path);
+        log!(V::N, "Directory listing for {:?}", path);
         for entry in entries {
             let entry = entry?;
             let file_type = entry.file_type()?;
             let file_name = entry.file_name();
             log!(
-                Verbosity::Quieter,
+                V::QQ,
                 "  {file_name:?} ({})",
                 if file_type.is_dir() {
                     "Directory"
@@ -947,51 +871,6 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     Ok(())
 }
 
-/// Format a Rust source file in situ using rustfmt.
-/// # Errors
-/// Will return `Err` if there is any error accessing path to source file
-/// # Panics
-/// Will panic if the `rustfmt` failed.
-#[allow(dead_code)]
-pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
-    profile_fn!(rustfmt);
-    let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
-    let source_path_str = target_rs_path
-        .to_str()
-        .ok_or_else(|| String::from("Error accessing path to source file"))?;
-
-    if Command::new("rustfmt").arg("--version").output().is_ok() {
-        // Run rustfmt on the source file
-        let mut command = Command::new("rustfmt");
-        command.arg("--verbose");
-        command.arg("--edition");
-        command.arg("2021");
-        command.arg(source_path_str);
-
-        #[allow(unused_variables)]
-        let output = command.output()?;
-
-        if output.status.success() {
-            debug_log!("Successfully formatted {} with rustfmt.", source_path_str);
-            debug_log!(
-                "{source_path_str}\n{}",
-                String::from_utf8_lossy(&output.stdout)
-            );
-        } else {
-            debug_log!(
-                "Failed to format {source_path_str} with rustfmt\n{}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
-    } else {
-        log!(
-            Verbosity::Quieter,
-            "`rustfmt` not found. Please install it to use this script."
-        );
-    }
-    Ok(())
-}
-
 /// Strip a set of curly braces off a Rust script, if present. This is intended to
 /// undo the effect of adding them to create an expression that can be parsed into
 /// an abstract syntax tree.
@@ -999,12 +878,10 @@ pub fn rustfmt(build_state: &BuildState) -> Result<(), ThagError> {
 pub fn strip_curly_braces(haystack: &str) -> Option<String> {
     profile_fn!(strip_curly_braces);
     // Define the regex pattern
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$").unwrap();
-    }
+    let re: &Regex = regex!(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$");
 
     // Apply the regex to the input string
-    RE.captures(haystack)
+    re.captures(haystack)
         .map(|captures| captures[1].to_string())
 }
 
@@ -1218,9 +1095,9 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
         }
         _ => {
             log!(
-                Verbosity::Quiet,
+                V::Q,
                 "{}",
-                nu_resolve_style(MessageLevel::Warning).paint(format!(
+                Style::from(&Lvl::WARN).paint(format!(
                     "Expression not catered for: {expr:#?}, wrapping expression in println!()"
                 ))
             );
@@ -1320,7 +1197,7 @@ pub fn is_stmt_unit_type<S: BuildHasher>(
 
 /// # Errors
 /// Will return `Err` if there is any error parsing expressions
-pub fn is_main_fn_returning_unit(file: &File) -> Result<bool, ThagError> {
+pub fn is_main_fn_returning_unit(file: &File) -> ThagResult<bool> {
     profile_fn!(is_main_fn_returning_unit);
 
     // Traverse the file to find the main function

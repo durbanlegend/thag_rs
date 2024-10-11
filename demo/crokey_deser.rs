@@ -39,6 +39,7 @@ shift-h = "HEXAPODE"
 - = "mandrill"
 alt-- = "nasalis" # some terminals don't distinguish between - and alt--
 alt-up = "alt-up (native)"
+f3 = "toml"
 "#;
 // esc-[-shift-a
 // \[-shift-a

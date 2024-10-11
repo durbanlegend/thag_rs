@@ -1,18 +1,34 @@
 #![allow(clippy::uninlined_format_args)]
-use env_logger::{Builder, Env, WriteStyle};
+#[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
+use env_logger::{Builder, Env};
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
+use log::info;
 use serde::Deserialize;
+#[cfg(feature = "simplelog")]
+use simplelog::{
+    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+};
+#[cfg(feature = "simplelog")]
+use std::fs::File;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Mutex,
+    LazyLock, Mutex,
 };
 use strum::EnumString;
 
-use crate::debug_log;
-use crate::{Cli, ThagError, MAYBE_CONFIG};
+use crate::{config::maybe_config, debug_log, Cli, ThagResult};
 
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
+
+/// Initializes and returns the global verbosity setting.
+///
+/// # Panics
+///
+/// Will panic if it can't unwrap the lock on the mutex protecting the `LOGGER` static variable.
+#[must_use]
+pub fn get_verbosity() -> Verbosity {
+    LOGGER.lock().unwrap().verbosity
+}
 
 #[allow(clippy::module_name_repetitions)]
 pub fn enable_debug_logging() {
@@ -24,7 +40,7 @@ pub fn is_debug_logging_enabled() -> bool {
 }
 
 /// An enum of the supported verbosity levels.
-#[derive(Clone, Copy, Debug, Default, Deserialize, EnumString, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, EnumString, PartialEq, PartialOrd, Eq)]
 #[strum(serialize_all = "snake_case")]
 pub enum Verbosity {
     Quieter = 0,
@@ -35,7 +51,19 @@ pub enum Verbosity {
     Debug = 4,
 }
 
+pub type V = Verbosity;
+
+impl V {
+    pub const QQ: Self = Self::Quieter;
+    pub const Q: Self = Self::Quiet;
+    pub const N: Self = Self::Normal;
+    pub const V: Self = Self::Verbose;
+    pub const VV: Self = Self::Debug;
+    pub const D: Self = Self::Debug;
+}
+
 /// Define the Logger.
+#[derive(Debug)]
 pub struct Logger {
     pub verbosity: Verbosity,
 }
@@ -60,18 +88,20 @@ impl Logger {
 
         debug_log!("Verbosity set to {verbosity:?}");
     }
+
+    /// Return the verbosity level
+    pub fn verbosity(&mut self) -> Verbosity {
+        self.verbosity
+    }
 }
 
-lazy_static! {
-    /// The common Logger instance to use.
-    pub static ref LOGGER: Mutex<Logger> = Mutex::new(Logger::new(Verbosity::Normal)); // Default to Normal
-}
+pub static LOGGER: LazyLock<Mutex<Logger>> = LazyLock::new(|| Mutex::new(Logger::new(V::N)));
 
 #[inline]
 /// Determine the desired logging verbosity for the current execution.
 /// # Errors
 /// Will return `Err` if the logger mutex cannot be locked.
-pub fn set_verbosity(args: &Cli) -> Result<(), ThagError> {
+pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
     profile_fn!(set_verbosity);
 
     let verbosity = if args.verbose >= 2 {
@@ -84,7 +114,7 @@ pub fn set_verbosity(args: &Cli) -> Result<(), ThagError> {
         Verbosity::Quieter
     } else if args.normal {
         Verbosity::Normal
-    } else if let Some(config) = &*MAYBE_CONFIG {
+    } else if let Some(config) = maybe_config() {
         config.logging.default_verbosity
     } else {
         Verbosity::Normal
@@ -95,8 +125,13 @@ pub fn set_verbosity(args: &Cli) -> Result<(), ThagError> {
 /// Set the logging verbosity for the current execution.
 /// # Errors
 /// Will return `Err` if the logger mutex cannot be locked.
-pub fn set_global_verbosity(verbosity: Verbosity) -> Result<(), ThagError> {
+/// # Panics
+/// Will panic in debug mode if the global verbosity value is not the value we just set.
+pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
     LOGGER.lock()?.set_verbosity(verbosity);
+    let v = get_verbosity();
+    #[cfg(debug_assertions)]
+    assert_eq!(v, verbosity);
     // Enable debug logging if -vv is passed
     if verbosity as u8 == Verbosity::Debug as u8 {
         enable_debug_logging(); // Set the runtime flag
@@ -108,13 +143,33 @@ pub fn set_global_verbosity(verbosity: Verbosity) -> Result<(), ThagError> {
 // Configure log level
 pub fn configure_log() {
     profile_fn!(configure_log);
-    let env = Env::new().filter("RUST_LOG"); //.default_write_style_or("auto");
-    let mut binding = Builder::new();
-    let builder = binding.parse_env(env);
-    builder.write_style(WriteStyle::Always);
-    let _ = builder.try_init();
 
-    // Builder::new().filter_level(log::LevelFilter::Debug).init();
+    // Choose between simplelog and env_logger based on compile feature
+    #[cfg(feature = "simplelog")]
+    {
+        CombinedLogger::init(vec![
+            TermLogger::new(
+                LevelFilter::Info,
+                Config::default(),
+                TerminalMode::Mixed,
+                ColorChoice::Auto,
+            ),
+            WriteLogger::new(
+                LevelFilter::Debug,
+                Config::default(),
+                File::create("app.log").unwrap(),
+            ),
+        ])
+        .unwrap();
+        info!("Initialized simplelog");
+    }
+
+    #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
+    {
+        let env = Env::new().filter("RUST_LOG");
+        Builder::new().parse_env(env).init();
+        info!("Initialized env_logger");
+    }
 }
 
 #[macro_export]

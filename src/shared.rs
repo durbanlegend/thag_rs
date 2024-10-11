@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
-use crate::errors::ThagError;
+use crate::errors::{ThagError, ThagResult};
 use crate::logging::Verbosity;
 use crate::modified_since_compiled;
 use crate::DYNAMIC_SUBDIR;
@@ -106,9 +106,10 @@ impl BuildState {
         proc_flags: &ProcFlags,
         args: &Cli,
         script_state: &ScriptState,
-    ) -> Result<Self, ThagError> {
+    ) -> ThagResult<Self> {
         profile_fn!(pre_configure);
         let is_repl = proc_flags.contains(ProcFlags::REPL);
+        let is_tui_repl = proc_flags.contains(ProcFlags::TUI_REPL);
         let is_expr = args.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
         let is_edit = proc_flags.contains(ProcFlags::EDIT);
@@ -137,13 +138,13 @@ impl BuildState {
         let Some(source_stem) = source_name.strip_suffix(RS_SUFFIX) else {
             return Err(format!("Error stripping suffix from {source_name}").into());
         };
-        let working_dir_path = if is_repl {
+        let working_dir_path = if is_repl || is_tui_repl {
             TMPDIR.join(REPL_SUBDIR)
         } else {
             std::env::current_dir()?.canonicalize()?
         };
 
-        let script_path = if is_repl {
+        let script_path = if is_repl || is_tui_repl {
             script_state
                 .get_script_dir_path()
                 .ok_or("Missing script path")?
@@ -181,7 +182,7 @@ impl BuildState {
         });
         debug_log!("cargo_home={}", cargo_home.display());
 
-        let target_dir_path = if is_repl {
+        let target_dir_path = if is_repl || is_tui_repl {
             script_state
                 .get_script_dir_path()
                 .ok_or("Missing ScriptState::NamedEmpty.repl_path")?
@@ -232,10 +233,15 @@ impl BuildState {
                 || modified_since_compiled(&build_state)?.is_some();
             let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
             let build_requested = proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK);
-            let must_gen =
-                force || is_repl || is_loop || is_check || (gen_requested && stale_executable);
+            let must_gen = force
+                || is_repl
+                || is_tui_repl
+                || is_loop
+                || is_check
+                || (gen_requested && stale_executable);
             let must_build = force
                 || is_repl
+                || is_tui_repl
                 || is_loop
                 || build_exe
                 || is_check
@@ -329,6 +335,20 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
 #[cfg(not(target_os = "windows"))]
 pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.to_string()
+}
+
+#[derive(Clone, Debug)]
+pub struct KeyDisplayLine {
+    pub seq: usize,
+    pub keys: &'static str, // Or String if you plan to modify the keys later
+    pub desc: &'static str, // Or String for modifiability
+}
+
+impl KeyDisplayLine {
+    #[must_use]
+    pub const fn new(seq: usize, keys: &'static str, desc: &'static str) -> Self {
+        Self { seq, keys, desc }
+    }
 }
 
 /// Control debug logging

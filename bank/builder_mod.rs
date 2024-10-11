@@ -491,7 +491,7 @@ pub fn generate(
 /// Will return `Err` if there is an error composing the Cargo TOML path or running the Cargo build command.
 /// # Panics
 /// Will panic if the cargo build process fails to spawn or if it can't move the executable.
-pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), ThagError> {
+pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     let start_build = Instant::now();
     // let verbose = proc_flags.contains(ProcFlags::VERBOSE);
     let quiet = proc_flags.contains(ProcFlags::QUIET);
@@ -617,11 +617,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> Result<(), Tha
 ///
 /// Will return `Err` if there is an error waiting for the spawned command
 /// that runs the user script.
-pub fn run(
-    proc_flags: &ProcFlags,
-    args: &[String],
-    build_state: &BuildState,
-) -> Result<(), ThagError> {
+pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) -> ThagResult<()> {
     let start_run = Instant::now();
     debug_log!("RRRRRRRR In run");
 

@@ -1,11 +1,9 @@
-use crate::debug_log;
-use crate::RS_SUFFIX;
-use crate::{errors::ThagError, MAYBE_CONFIG};
+use crate::{config::maybe_config, debug_log, ThagError, ThagResult, RS_SUFFIX};
 
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
-use core::{fmt, str};
 use firestorm::profile_fn;
+use std::{fmt, str};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and REPL.
 #[allow(clippy::struct_excessive_bools)]
@@ -14,7 +12,7 @@ use firestorm::profile_fn;
 #[command(group(
             ArgGroup::new("commands")
                 .required(true)
-                .args(&["script", "expression", "repl", "filter", "stdin", "edit", "config"]),
+                .args(&["script", "expression", "repl", "tui_repl", "filter", "stdin", "edit", "config"]),
    ))]
 #[command(group(
             ArgGroup::new("volume")
@@ -46,7 +44,7 @@ pub struct Cli {
     #[arg(short, long)]
     pub force: bool,
     /// Don't run the script after generating and building
-    #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin"]))]
+    #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin", "tui_repl"]))]
     pub norun: bool,
     /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`
     #[arg(short = 'x', long)]
@@ -61,6 +59,9 @@ pub struct Cli {
     /// REPL mode (read–eval–print loop) for Rust expressions. Option: existing script name
     #[arg(short = 'r', long, conflicts_with_all(["generate", "build"]))]
     pub repl: bool,
+    /// Alt REPL mode (read–eval–print loop) for Rust programs, scripts and expressions.
+    #[arg(short = 'R', long, conflicts_with_all(["generate", "build"]))]
+    pub tui_repl: bool,
     /// Read script from stdin
     #[arg(short, long, conflicts_with_all(["generate", "build"]))]
     pub stdin: bool,
@@ -123,7 +124,7 @@ pub fn get_args() -> Cli {
 /// Validates the command-line arguments
 /// # Errors
 /// Will return `Err` if there is a missing script name or missing .rs suffix.
-pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), ThagError> {
+pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
     profile_fn!(validate_args);
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
@@ -131,6 +132,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), ThagError
         }
     } else if !proc_flags.contains(ProcFlags::EXPR)
         && !proc_flags.contains(ProcFlags::REPL)
+        && !proc_flags.contains(ProcFlags::TUI_REPL)
         && !proc_flags.contains(ProcFlags::STDIN)
         && !proc_flags.contains(ProcFlags::EDIT)
         && !proc_flags.contains(ProcFlags::LOOP)
@@ -148,27 +150,28 @@ bitflags! {
     // #[derive(Debug)]
     #[derive(Clone, Default, PartialEq, Eq)]
     pub struct ProcFlags: u32 {
-        const GENERATE = 1;
-        const BUILD = 2;
-        const FORCE = 4;
-        const RUN = 8;
-        const NORUN = 16;
-        const EXECUTABLE = 32;
-        const CHECK = 64;
-        const REPL = 128;
-        const EXPR = 256;
-        const STDIN = 512;
-        const EDIT = 1024;
-        const LOOP = 2048;
-        const MULTI = 4096;
-        const TIMINGS = 8192;
-        const DEBUG = 16384;
-        const VERBOSE = 32768;
-        const NORMAL = 65536;
-        const QUIET = 131_072;
-        const QUIETER = 262_144;
-        const UNQUOTE = 524_288;
-        const CONFIG = 1_048_576;
+        const GENERATE      = 1;
+        const BUILD         = 2;
+        const FORCE         = 4;
+        const RUN           = 8;
+        const NORUN         = 16;
+        const EXECUTABLE    = 32;
+        const CHECK         = 64;
+        const REPL          = 128;
+        const TUI_REPL      = 256;
+        const EXPR          = 512;
+        const STDIN         = 1024;
+        const EDIT          = 2048;
+        const LOOP          = 4096;
+        const MULTI         = 8192;
+        const TIMINGS       = 16384;
+        const DEBUG         = 32768;
+        const VERBOSE       = 65536;
+        const NORMAL        = 131_072;
+        const QUIET         = 262_144;
+        const QUIETER       = 524_288;
+        const UNQUOTE       = 1_048_576;
+        const CONFIG        = 2_097_152;
     }
 }
 
@@ -200,7 +203,7 @@ impl str::FromStr for ProcFlags {
 /// # Panics
 ///
 /// Will panic if the internal correctness check fails.
-pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
+pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     profile_fn!(get_proc_flags);
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
@@ -232,6 +235,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
         }
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
         proc_flags.set(ProcFlags::REPL, args.repl);
+        proc_flags.set(ProcFlags::TUI_REPL, args.tui_repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);
         proc_flags.set(ProcFlags::STDIN, args.stdin);
         proc_flags.set(ProcFlags::EDIT, args.edit);
@@ -240,15 +244,17 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
 
         let unquote = args.unquote.map_or_else(
             || {
-                (*MAYBE_CONFIG).as_ref().map_or_else(
+                maybe_config().map_or_else(
                     || {
-                        debug_log!("Found nothing, returning default of false");
+                        debug_log!(
+                            "Found no arg or config file, returning default unquote = false"
+                        );
                         false
                     },
                     |config| {
                         debug_log!(
-                            "MAYBE_CONFIG={:?}, returning config.misc.unquote={}",
-                            MAYBE_CONFIG,
+                            "maybe_config()={:?}, returning config.misc.unquote={}",
+                            maybe_config(),
                             config.misc.unquote
                         );
                         config.misc.unquote

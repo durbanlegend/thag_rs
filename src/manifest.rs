@@ -1,8 +1,8 @@
 #![allow(clippy::uninlined_format_args)]
 use cargo_toml::{Dependency, Manifest};
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
 use mockall::automock;
+use nu_ansi_term::Style;
 use regex::Regex;
 use serde_merge::omerge;
 use std::collections::BTreeMap;
@@ -12,14 +12,13 @@ use std::process::{Command, Output};
 use std::time::Instant;
 
 use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
-use crate::colors::{nu_resolve_style, MessageLevel};
-use crate::debug_log;
-use crate::errors::ThagError;
 use crate::log;
 use crate::logging::Verbosity;
 #[cfg(target_os = "windows")]
 use crate::shared::escape_path_for_windows;
 use crate::shared::{debug_timings, Ast, BuildState};
+use crate::{colors::Lvl, regex};
+use crate::{debug_log, ThagResult};
 
 /// A trait to allow mocking of the command for testing purposes.
 #[automock]
@@ -47,14 +46,11 @@ impl CommandRunner for RealCommandRunner {
 /// crate name and inspecting the first line of Cargo's response.
 /// # Errors
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
-pub fn cargo_search<R: CommandRunner>(
-    runner: &R,
-    dep_crate: &str,
-) -> Result<(String, String), ThagError> {
+pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> ThagResult<(String, String)> {
     profile_fn!(cargo_search);
     let start_search = Instant::now();
 
-    let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(dep_crate);
+    let dep_crate_styled = Style::from(&Lvl::EMPH).paint(dep_crate);
     log!(
         Verbosity::Normal,
         r#"Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
@@ -99,8 +95,8 @@ See below for how to avoid this and speed up future builds.
                 .into());
             }
 
-            let dep_crate_styled = nu_resolve_style(MessageLevel::Emphasis).paint(&name);
-            let dep_version_styled = nu_resolve_style(MessageLevel::Emphasis).paint(&version);
+            let dep_crate_styled = Style::from(&Lvl::EMPH).paint(&name);
+            let dep_version_styled = Style::from(&Lvl::EMPH).paint(&version);
 
             log!(
                 Verbosity::Normal,
@@ -132,16 +128,14 @@ as shown if you don't need special features:
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
 /// # Panics
 /// Will panic if the regular expression is malformed.
-pub fn capture_dep(first_line: &str) -> Result<(String, String), ThagError> {
+pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
     profile_fn!(capture_dep);
 
     debug_log!("first_line={first_line}");
-    lazy_static! {
-        static ref RE: Regex =
-            Regex::new(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#).unwrap();
-    }
-    let (name, version) = if RE.is_match(first_line) {
-        let captures = RE.captures(first_line).unwrap();
+    let re: &Regex = regex!(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#);
+
+    let (name, version) = if re.is_match(first_line) {
+        let captures = re.captures(first_line).unwrap();
         let name = captures.get(1).unwrap().as_str();
         let version = captures.get(2).unwrap().as_str();
         // log!(Verbosity::Normal, "Dependency name: {}", name);
@@ -157,7 +151,7 @@ pub fn capture_dep(first_line: &str) -> Result<(String, String), ThagError> {
 /// Configure the default manifest from the `BuildState` instance.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
-pub fn configure_default(build_state: &BuildState) -> Result<Manifest, ThagError> {
+pub fn configure_default(build_state: &BuildState) -> ThagResult<Manifest> {
     profile_fn!(configure_default);
     let source_stem = &build_state.source_stem;
 
@@ -185,7 +179,7 @@ gen_src_path={gen_src_path}",
 /// Parse the default manifest from a string template.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
-pub fn default(source_stem: &str, gen_src_path: &str) -> Result<Manifest, ThagError> {
+pub fn default(source_stem: &str, gen_src_path: &str) -> ThagResult<Manifest> {
     profile_fn!(default);
     let cargo_manifest = format!(
         r##"[package]
@@ -222,7 +216,7 @@ pub fn merge(
     build_state: &mut BuildState,
     rs_source: &str,
     syntax_tree: &Option<Ast>,
-) -> Result<(), ThagError> {
+) -> ThagResult<()> {
     profile_fn!(merge);
     let start_merge_manifest = Instant::now();
 

@@ -29,11 +29,12 @@ fn test_script_runner_with_dependencies() -> Result<(), Box<dyn std::error::Erro
 nu-ansi-term = "0.50.0"
 thag_rs = {{ path = {thag_rs_path:#?} }}
 */
-use thag_rs::colors::{{nu_resolve_style, MessageLevel}};
+use nu_ansi_term::Style;
+use thag_rs::colors::Lvl;
 use thag_rs::log;
 use thag_rs::logging::Verbosity;
 fn main() {{
-    log!(Verbosity::Normal, "nu_resolve_style(MessageLevel::Emphasis)={{:#?}}", nu_resolve_style(MessageLevel::Emphasis));
+    log!(Verbosity::Normal, "Style::from(&Lvl::EMPH)={{:#?}}", Style::from(&Lvl::EMPH));
 }}"#
     )?;
 

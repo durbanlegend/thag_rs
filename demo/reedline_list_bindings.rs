@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-reedline = "0.34.0"
+reedline = "0.35.0"
 */
 
 /// Published example from `reedline` crate.

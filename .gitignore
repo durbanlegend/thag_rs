@@ -10,3 +10,17 @@ hist_debug.json
 flames/firestorm.html
 profile.json
 .repl.history
+tests/assets/hist_staging.txt
+src/file_dialog1.rs
+src/file_dialog2.rs
+bank/ha.rs
+bank/ho2.rs
+bank/tui_file_dialog2.rs
+app.log
+my_rust_binary.log
+park/colors.rs
+park/shared.rs
+*.profraw
+expanded.rs
+rs_stdin_history copy.json
+bank_tui_rs_stdin_history.json

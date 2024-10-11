@@ -1,31 +1,61 @@
 /*[toml]
+[package]
+name = "tui_edit_stdin"
+features = ["simplelog"]
+
 [dependencies]
 crossterm = "0.28.1"
 log = "0.4.22"
 ratatui = "0.28.1"
+simplelog = { version = "0.12.2" }
+#env_logger = { version = "0.11.5", optional = true }
 thag_rs = { path = "/Users/donf/projects/thag_rs" }
 tui-textarea = "0.6.1"
+
+[features]
+debug-logs = []
+nightly = []
+default = ["simplelog"]
+simplelog = []
 */
 
-use crossterm::event::{self, Event, KeyEvent};
-use log::debug;
-use ratatui::style::{Style, Stylize};
+use log::info;
+use ratatui::style::{Color, Modifier, Style};
+use simplelog::{
+    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+};
 use std::fmt::Debug;
+use std::fs::File;
 use std::io::IsTerminal;
 use std::path::PathBuf;
-use thag_rs::file_dialog::{DialogMode, FileDialog, Status};
-use thag_rs::keys::KeyCombination;
 use thag_rs::logging::V;
 use thag_rs::shared::KeyDisplayLine;
 use thag_rs::stdin;
 use thag_rs::tui_editor::{
-    paste_to_textarea, preserve, save_if_changed, save_source_file, tui_edit, CrosstermEventReader,
-    EditData, EventReader, History, KeyAction, KeyDisplay, TermScopeGuard,
+    script_key_handler, tui_edit, CrosstermEventReader, EditData, EventReader, History, KeyAction,
+    KeyDisplay,
 };
-use thag_rs::{debug_log, key, log, Lvl, ThagError, ThagResult};
-use tui_textarea::TextArea;
+use thag_rs::{debug_log, log, ThagError, ThagResult};
 
 fn main() -> ThagResult<()> {
+    // configure_log();
+
+    CombinedLogger::init(vec![
+        TermLogger::new(
+            LevelFilter::Info,
+            Config::default(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        ),
+        WriteLogger::new(
+            LevelFilter::Debug,
+            Config::default(),
+            File::create("/Users/donf/projects/thag_rs/app.log").unwrap(),
+        ),
+    ])
+    .unwrap();
+    info!("Initialized simplelog");
+
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
         log!(V::N, "{line}");
@@ -36,7 +66,8 @@ fn main() -> ThagResult<()> {
 pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("bank_tui_rs_stdin_history.json");
-    let history = History::load_from_file(&history_path);
+    let mut history = History::load_from_file(&history_path);
+
     let input = std::io::stdin();
 
     #[cfg(debug_assertions)]
@@ -46,6 +77,11 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     } else {
         crate::stdin::read()?
     };
+
+    if !initial_content.trim().is_empty() {
+        history.add_entry(&initial_content);
+        history.save_to_file(&history_path)?;
+    }
 
     let mut edit_data = EditData {
         return_text: true,
@@ -60,7 +96,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     ];
     let display = KeyDisplay {
         title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",
-        title_style: Style::from(&Lvl::EMPH).bold(),
+        title_style: Style::from((Color::Yellow, Modifier::BOLD)),
         remove_keys: &[""; 0],
         add_keys: &add_keys,
     };
@@ -85,121 +121,11 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         )),
         // KeyAction::SaveAndExit => false,
         KeyAction::Submit => {
+            std::fs::File::open(&history_path)?.sync_all()?;
             return maybe_text.map_or(Err(ThagError::Cancelled), |v| Ok(v));
         }
         _ => Err(ThagError::FromStr(
             format!("Logic error: {key_action:?} should not return from tui_edit").into(),
         )),
-    }
-}
-
-/// Key handler function to be passed into `tui_edit` for editing REPL history.
-///
-/// # Errors
-///
-/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-#[allow(clippy::too_many_lines)]
-pub fn script_key_handler(
-    key_event: KeyEvent,
-    maybe_term: &mut Option<&mut TermScopeGuard>,
-    textarea: &mut TextArea,
-    edit_data: &mut EditData,
-    popup: &mut bool,
-    saved: &mut bool, // TODO decide if we need this
-) -> ThagResult<KeyAction> {
-    let history_path = edit_data.history_path.cloned();
-    let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
-                                                           // eprintln!("key_combination={key_combination:?}");
-
-    #[allow(clippy::unnested_or_patterns)]
-    match key_combination {
-        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
-        key!(ctrl - d) => {
-            if let Some(ref hist_path) = history_path {
-                let history = &mut edit_data.history;
-                if let Some(hist) = history {
-                    preserve(textarea, hist, hist_path)?;
-                };
-            }
-            Ok(KeyAction::Submit)
-        }
-        key!(ctrl - s) | key!(ctrl - alt - s) => {
-            // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
-            if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
-                if let Some(ref hist_path) = history_path {
-                    let history = &mut edit_data.history;
-                    if let Some(hist) = history {
-                        preserve(textarea, hist, hist_path)?;
-                    };
-                }
-                let result = edit_data
-                    .save_path
-                    .as_mut()
-                    .map(|p| save_source_file(p, textarea, saved));
-                match result {
-                    Some(Ok(())) => {}
-                    Some(Err(e)) => return Err(e),
-                    None => return Err(ThagError::Logic(
-                        "Should be testing for maybe_save_path.is_some() before calling map on it.",
-                    )),
-                }
-                Ok(KeyAction::Save)
-            } else if let Some(term) = maybe_term {
-                let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
-                save_dialog.open();
-                let mut status = Status::Incomplete;
-                while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
-                    term.draw(|f| save_dialog.draw(f))?;
-                    if let Event::Key(key) = event::read()? {
-                        status = save_dialog.handle_input(key)?;
-                    }
-                }
-
-                if let Some(ref to_rs_path) = save_dialog.selected_file {
-                    save_source_file(to_rs_path, textarea, saved)?;
-                    Ok(KeyAction::Save)
-                } else {
-                    Ok(KeyAction::Continue)
-                }
-            } else {
-                Ok(KeyAction::Continue)
-            }
-        }
-        key!(ctrl - l) => {
-            // Toggle popup
-            *popup = !*popup;
-            Ok(KeyAction::TogglePopup)
-        }
-        key!(f3) => {
-            // Ask to revert
-            Ok(KeyAction::AbandonChanges)
-        }
-        key!(f7) => {
-            if let Some(ref mut hist) = edit_data.history {
-                save_if_changed(hist, textarea, &history_path)?;
-                if let Some(entry) = &hist.get_previous() {
-                    #[cfg(debug_assertions)]
-                    debug!("F7 found entry {entry:?}");
-                    paste_to_textarea(textarea, entry);
-                }
-            }
-            Ok(KeyAction::Continue)
-        }
-        key!(f8) => {
-            if let Some(ref mut hist) = edit_data.history {
-                save_if_changed(hist, textarea, &history_path)?;
-                if let Some(entry) = hist.get_next() {
-                    #[cfg(debug_assertions)]
-                    debug!("F8 found entry {entry:?}");
-                    paste_to_textarea(textarea, entry);
-                }
-            }
-            Ok(KeyAction::Continue)
-        }
-        _ => {
-            // Update the textarea with the input from the key event
-            textarea.input(tui_textarea::Input::from(key_event)); // Input derived from Event
-            Ok(KeyAction::Continue)
-        }
     }
 }

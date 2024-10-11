@@ -1,14 +1,12 @@
-use crossterm::event::KeyEventKind;
+use crate::file_dialog::{DialogMode, FileDialog, Status};
+use crossterm::event::{
+    self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+    Event::{self, Paste},
+    KeyEvent, KeyEventKind,
+};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
-};
-use crossterm::{
-    event::{
-        DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
-        Event::{self, Paste},
-        KeyEvent,
-    },
-    terminal::LeaveAlternateScreen,
+    LeaveAlternateScreen,
 };
 use firestorm::profile_fn;
 use log::debug;
@@ -26,9 +24,12 @@ use std::collections::VecDeque;
 use std::convert::Into;
 use std::env::var;
 use std::fmt::{Debug, Display};
-use std::io;
+use std::io::Write;
 use std::path::PathBuf;
-use std::{self, fs};
+use std::{
+    self,
+    fs::{self, OpenOptions},
+};
 use tui_textarea::{CursorMove, Input, TextArea};
 
 use crate::code_utils;
@@ -134,6 +135,8 @@ impl History {
             |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
         );
 
+        #[cfg(debug_assertions)]
+        debug!("Loaded history={history:?}");
         // Remove any blanks - TODO they shouldn't be saved in the first place
         history.entries.retain(|e| !e.contents().trim().is_empty());
 
@@ -158,7 +161,17 @@ impl History {
     }
 
     #[must_use]
+    pub fn at_start(&self) -> bool {
+        #[cfg(debug_assertions)]
+        debug!("at_start ...");
+        self.current_index
+            .map_or(true, |current_index| current_index == 0)
+    }
+
+    #[must_use]
     pub fn at_end(&self) -> bool {
+        #[cfg(debug_assertions)]
+        debug!("at_end ...");
         self.current_index.map_or(true, |current_index| {
             current_index == self.entries.len() - 1
         })
@@ -181,16 +194,20 @@ impl History {
 
         #[cfg(debug_assertions)]
         debug!("add_entry({text}); current index={:?}", self.current_index);
+        #[cfg(debug_assertions)]
+        debug!("history={self:?}");
     }
 
     pub fn update_entry(&mut self, index: usize, text: &str) {
+        #[cfg(debug_assertions)]
+        debug!("update_entry for index {index}...");
         // Get a mutable reference to the entry at the specified index
         let current_index = self.current_index;
         if let Some(entry) = self.get_mut(index) {
             // Update the lines if the entry exists
             entry.lines = text.lines().map(String::from).collect::<Vec<String>>();
             #[cfg(debug_assertions)]
-            debug!("update_entry({entry:?}); current index={current_index:?}");
+            debug!("... update_entry({entry:?}); current index={current_index:?}");
         } else {
             // If the entry doesn't exist, add it
             self.add_entry(text);
@@ -217,10 +234,33 @@ impl History {
     ///
     /// This function will bubble up any i/o errors encountered writing the file.
     pub fn save_to_file(&mut self, path: &PathBuf) -> ThagResult<()> {
+        // #[cfg(debug_assertions)]
         self.reassign_indices();
         if let Ok(data) = serde_json::to_string(&self) {
-            fs::write(path, data)?;
-            fs::write(path, "\n")?;
+            #[cfg(debug_assertions)]
+            debug!("About to write data=({data}");
+            if let Ok(metadata) = std::fs::metadata(&path) {
+                debug!("File permissions: {:?}", metadata.permissions());
+            }
+
+            // fs::write(path, data)?;
+            // fs::write(path, "\n")?;
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true) // This will clear the file before writing
+                .open(path)?;
+
+            // Write the data
+            file.write_all((data + "\n").into_bytes().as_ref())?;
+
+            // Flush the write to disk
+            // Beware of exiting "too early" for writes actually to be flushed despite sync.
+            // file.sync_all()?;
+            file.sync_data()?;
+        } else {
+            #[cfg(debug_assertions)]
+            debug!("Could not serialise history: {self:?}");
         }
 
         #[cfg(debug_assertions)]
@@ -718,6 +758,128 @@ where
     }
 }
 
+/// Key handler function to be passed into `tui_edit` for editing REPL history.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+#[allow(clippy::too_many_lines)]
+pub fn script_key_handler(
+    key_event: KeyEvent,
+    maybe_term: &mut Option<&mut TermScopeGuard>,
+    textarea: &mut TextArea,
+    edit_data: &mut EditData,
+    popup: &mut bool,
+    saved: &mut bool, // TODO decide if we need this
+) -> ThagResult<KeyAction> {
+    if !matches!(key_event.kind, KeyEventKind::Press) {
+        return Ok(KeyAction::Continue);
+    }
+
+    let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+                                                           // eprintln!("key_combination={key_combination:?}");
+
+    let history_path = edit_data.history_path.cloned();
+
+    #[allow(clippy::unnested_or_patterns)]
+    match key_combination {
+        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
+        key!(ctrl - d) => {
+            if let Some(ref hist_path) = history_path {
+                let history = &mut edit_data.history;
+                if let Some(hist) = history {
+                    preserve(textarea, hist, hist_path)?;
+                };
+            }
+            Ok(KeyAction::Submit)
+        }
+        key!(ctrl - s) | key!(ctrl - alt - s) => {
+            // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
+            if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
+                if let Some(ref hist_path) = history_path {
+                    let history = &mut edit_data.history;
+                    if let Some(hist) = history {
+                        preserve(textarea, hist, hist_path)?;
+                    };
+                }
+                let result = edit_data
+                    .save_path
+                    .as_mut()
+                    .map(|p| save_source_file(p, textarea, saved));
+                match result {
+                    Some(Ok(())) => {}
+                    Some(Err(e)) => return Err(e),
+                    None => return Err(ThagError::Logic(
+                        "Should be testing for maybe_save_path.is_some() before calling map on it.",
+                    )),
+                }
+                Ok(KeyAction::Save)
+            } else if let Some(term) = maybe_term {
+                let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
+                save_dialog.open();
+                let mut status = Status::Incomplete;
+                while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
+                    term.draw(|f| save_dialog.draw(f))?;
+                    if let Event::Key(key) = event::read()? {
+                        status = save_dialog.handle_input(key)?;
+                    }
+                }
+
+                if let Some(ref to_rs_path) = save_dialog.selected_file {
+                    save_source_file(to_rs_path, textarea, saved)?;
+                    Ok(KeyAction::Save)
+                } else {
+                    Ok(KeyAction::Continue)
+                }
+            } else {
+                Ok(KeyAction::Continue)
+            }
+        }
+        key!(ctrl - l) => {
+            // Toggle popup
+            *popup = !*popup;
+            Ok(KeyAction::TogglePopup)
+        }
+        key!(f3) => {
+            // Ask to revert
+            Ok(KeyAction::AbandonChanges)
+        }
+        key!(f7) => {
+            if let Some(ref mut hist) = edit_data.history {
+                if hist.at_end() && textarea.is_empty() {
+                    if let Some(entry) = &hist.get_last() {
+                        debug!("F7 (1) found entry {entry:?}");
+                        paste_to_textarea(textarea, entry);
+                    }
+                } else {
+                    save_if_changed(hist, textarea, &history_path)?;
+                    if let Some(entry) = &hist.get_previous() {
+                        debug!("F7 (2) found entry {entry:?}");
+                        paste_to_textarea(textarea, entry);
+                    }
+                }
+            }
+            Ok(KeyAction::Continue)
+        }
+        key!(f8) => {
+            if let Some(ref mut hist) = edit_data.history {
+                // save_if_changed(hist, textarea, &history_path)?;
+                if let Some(entry) = hist.get_next() {
+                    #[cfg(debug_assertions)]
+                    debug!("F8 found entry {entry:?}");
+                    paste_to_textarea(textarea, entry);
+                }
+            }
+            Ok(KeyAction::Continue)
+        }
+        _ => {
+            // Update the textarea with the input from the key event
+            textarea.input(Input::from(key_event)); // Input derived from Event
+            Ok(KeyAction::Continue)
+        }
+    }
+}
+
 /// Enable raw mode, but not if in test mode, because that will cause the dreaded rightward drift
 /// in log output due to carriage returns being ignored.
 ///
@@ -878,7 +1040,7 @@ pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
 ///
 /// This function will bubble up any `ratatui` or `crossterm` errors encountered.
 // TODO: move to shared or tui_editor?
-pub fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> ThagResult<()> {
+pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>) -> ThagResult<()> {
     disable_raw_mode()?;
     crossterm::execute!(
         term.backend_mut(),
@@ -899,11 +1061,23 @@ pub fn save_if_changed(
     textarea: &mut TextArea<'_>,
     history_path: &Option<PathBuf>,
 ) -> Result<(), ThagError> {
+    #[cfg(debug_assertions)]
+    debug!("save_if_changed...");
+    if textarea.is_empty() {
+        #[cfg(debug_assertions)]
+        debug!("nothing to save(1)...");
+        return Ok(());
+    }
     if let Some(entry) = &hist.get_current() {
         let index = entry.index;
         let copy_text = copy_text(textarea);
+        // In case they entered blanks
+        if copy_text.trim().is_empty() {
+            #[cfg(debug_assertions)]
+            debug!("nothing to save(2)...");
+            return Ok(());
+        }
         if entry.contents() != copy_text {
-            // entry.lines = copy_text.lines().map(String::from).collect();
             hist.update_entry(index, &copy_text);
             if let Some(ref hist_path) = history_path {
                 hist.save_to_file(hist_path)?;
@@ -966,7 +1140,7 @@ pub fn save_history(
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
     #[cfg(debug_assertions)]
-    debug!("save_history...");
+    debug!("save_history...{history:?}");
     if let Some(hist) = history {
         if let Some(hist_path) = history_path {
             hist.save_to_file(hist_path)?;

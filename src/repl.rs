@@ -5,27 +5,23 @@ use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
 #[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::errors::ThagError;
-use crate::file_dialog::{DialogMode, FileDialog, Status};
 use crate::logging::{get_verbosity, Verbosity};
 use crate::regex;
 use crate::shared::{Ast, BuildState, KeyDisplayLine};
 use crate::tui_editor::{
-    apply_highlights, normalize_newlines, paste_to_textarea, preserve, resolve_term,
-    save_if_changed, save_source_file, show_popup, tui_edit, CrosstermEventReader, EditData, Entry,
-    EventReader, History, KeyAction, KeyDisplay, TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
+    apply_highlights, normalize_newlines, resolve_term, script_key_handler, show_popup, tui_edit,
+    CrosstermEventReader, EditData, Entry, EventReader, History, KeyAction, KeyDisplay,
+    TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
 };
 use crate::{cprtln, cvprtln, gen_build_run, key, log, KeyCombination, Lvl, ThagResult};
 
 use clap::{CommandFactory, Parser};
 use crossterm::event::{
-    self,
     Event::{self, Paste},
     KeyEvent,
 };
 use edit::edit_file;
 use firestorm::profile_fn;
-#[cfg(debug_assertions)]
-use log::debug;
 use nu_ansi_term::Style as NuStyle;
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::widgets::{Block, Borders};
@@ -595,117 +591,6 @@ fn tui(
     //     history_mut.sync()?;
     // }
     Ok(())
-}
-
-/// Key handler function to be passed into `tui_edit` for editing REPL history.
-///
-/// # Errors
-///
-/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-#[allow(clippy::too_many_lines)]
-pub fn script_key_handler(
-    key_event: KeyEvent,
-    maybe_term: &mut Option<&mut TermScopeGuard>,
-    textarea: &mut TextArea,
-    edit_data: &mut EditData,
-    popup: &mut bool,
-    saved: &mut bool, // TODO decide if we need this
-) -> ThagResult<KeyAction> {
-    let history_path = edit_data.history_path.cloned();
-    let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
-                                                           // eprintln!("key_combination={key_combination:?}");
-
-    #[allow(clippy::unnested_or_patterns)]
-    match key_combination {
-        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
-        key!(ctrl - d) => {
-            if let Some(ref hist_path) = history_path {
-                let history = &mut edit_data.history;
-                if let Some(hist) = history {
-                    preserve(textarea, hist, hist_path)?;
-                };
-            }
-            Ok(KeyAction::Submit)
-        }
-        key!(ctrl - s) | key!(ctrl - alt - s) => {
-            // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
-            if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
-                if let Some(ref hist_path) = history_path {
-                    let history = &mut edit_data.history;
-                    if let Some(hist) = history {
-                        preserve(textarea, hist, hist_path)?;
-                    };
-                }
-                let result = edit_data
-                    .save_path
-                    .as_mut()
-                    .map(|p| save_source_file(p, textarea, saved));
-                match result {
-                    Some(Ok(())) => {}
-                    Some(Err(e)) => return Err(e),
-                    None => return Err(ThagError::Logic(
-                        "Should be testing for maybe_save_path.is_some() before calling map on it.",
-                    )),
-                }
-                Ok(KeyAction::Save)
-            } else if let Some(term) = maybe_term {
-                let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
-                save_dialog.open();
-                let mut status = Status::Incomplete;
-                while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
-                    term.draw(|f| save_dialog.draw(f))?;
-                    if let Event::Key(key) = event::read()? {
-                        status = save_dialog.handle_input(key)?;
-                    }
-                }
-
-                if let Some(ref to_rs_path) = save_dialog.selected_file {
-                    save_source_file(to_rs_path, textarea, saved)?;
-                    Ok(KeyAction::Save)
-                } else {
-                    Ok(KeyAction::Continue)
-                }
-            } else {
-                Ok(KeyAction::Continue)
-            }
-        }
-        key!(ctrl - l) => {
-            // Toggle popup
-            *popup = !*popup;
-            Ok(KeyAction::TogglePopup)
-        }
-        key!(f3) => {
-            // Ask to revert
-            Ok(KeyAction::AbandonChanges)
-        }
-        key!(f7) => {
-            if let Some(ref mut hist) = edit_data.history {
-                save_if_changed(hist, textarea, &history_path)?;
-                if let Some(entry) = &hist.get_previous() {
-                    #[cfg(debug_assertions)]
-                    debug!("F7 found entry {entry:?}");
-                    paste_to_textarea(textarea, entry);
-                }
-            }
-            Ok(KeyAction::Continue)
-        }
-        key!(f8) => {
-            if let Some(ref mut hist) = edit_data.history {
-                save_if_changed(hist, textarea, &history_path)?;
-                if let Some(entry) = hist.get_next() {
-                    #[cfg(debug_assertions)]
-                    debug!("F8 found entry {entry:?}");
-                    paste_to_textarea(textarea, entry);
-                }
-            }
-            Ok(KeyAction::Continue)
-        }
-        _ => {
-            // Update the textarea with the input from the key event
-            textarea.input(Input::from(key_event)); // Input derived from Event
-            Ok(KeyAction::Continue)
-        }
-    }
 }
 
 fn review_history(

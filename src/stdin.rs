@@ -102,7 +102,7 @@ impl ReplCommand {
 #[allow(dead_code)]
 fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
-    for line in &edit(&event_reader)? {
+    for line in &edit_old(&event_reader)? {
         log!(Verbosity::Normal, "{line}");
     }
     Ok(())
@@ -329,7 +329,7 @@ fn eval(
     args: &Cli,
     proc_flags: &ProcFlags,
 ) -> ThagResult<()> {
-    let vec = edit(event_reader)?;
+    let vec = edit_old(event_reader)?;
     let start = Instant::now();
     let input = vec.join("\n");
     let rs_source = input.trim();
@@ -370,7 +370,7 @@ pub fn toml(cargo_toml_file: &PathBuf) -> ThagResult<Option<String>> {
 /// # Examples
 ///
 /// ```no_run
-/// use thag_rs::stdin::edit;
+/// use thag_rs::stdin::edit_old;
 /// use thag_rs::tui_editor::CrosstermEventReader;
 /// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
 /// use thag_rs::tui_editor::MockEventReader;
@@ -382,7 +382,7 @@ pub fn toml(cargo_toml_file: &PathBuf) -> ThagResult<Option<String>> {
 ///         KeyModifiers::CONTROL,
 ///     )))
 /// });
-/// let actual = edit(&event_reader);
+/// let actual = edit_old(&event_reader);
 /// let buf = vec![""];
 /// assert!(matches!(actual, Ok(buf)));
 /// ```
@@ -393,7 +393,7 @@ pub fn toml(cargo_toml_file: &PathBuf) -> ThagResult<Option<String>> {
 ///
 /// If the terminal cannot be reset.
 #[allow(clippy::too_many_lines)]
-pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>> {
+pub fn edit_old<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>> {
     let input = std::io::stdin();
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");

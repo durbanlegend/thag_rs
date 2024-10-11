@@ -22,7 +22,7 @@ use std::{
     process::{Command, Stdio},
 };
 use thag_rs::colors::{get_term_theme, TuiSelectionBg};
-use thag_rs::stdin::{edit, read_to_string, toml};
+use thag_rs::stdin::{edit_old, read_to_string, toml};
 use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History, MockEventReader};
 use thag_rs::{log, logging::Verbosity, ThagResult, TMPDIR};
 use tui_textarea::TextArea;
@@ -105,7 +105,7 @@ fn test_stdin_edit_stdin_submit() {
             )))
         });
 
-    let result = edit(&mock_reader);
+    let result = edit_old(&mock_reader);
 
     log!(
         Verbosity::Normal,
@@ -136,7 +136,7 @@ fn test_stdin_edit_stdin_quit() {
         )))
     });
 
-    let result = edit(&mock_reader);
+    let result = edit_old(&mock_reader);
 
     assert!(result.is_ok());
 }

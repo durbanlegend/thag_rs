@@ -1,4 +1,5 @@
 #![cfg(not(target_os = "windows"))]
+use crossterm::event::{poll, read, Event, KeyCode};
 /// Original is `https://github.com/dalance/termbg/blob/master/src/lib.rs`
 /// Copyright (c) 2019 dalance
 /// Licence: Apache or MIT
@@ -135,66 +136,121 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
 
     let mut stderr = io::stderr();
 
-    // Don F: Ensure we don't interfere with the raw or cooked mode of the terminal
+    // Conditionally avoid raw mode on Windows
     let raw_before = terminal::is_raw_mode_enabled()?;
-    if !raw_before {
+    if !raw_before && !cfg!(target_os = "windows") {
         terminal::enable_raw_mode()?;
     }
 
+    // Send query to terminal
     write!(stderr, "{query}")?;
     stderr.flush()?;
 
     let start_time = Instant::now();
-    let mut buffer = Vec::new();
-    let mut stdin = io::stdin();
-    let mut buf = [0; 1];
-    let mut start = false;
+    let mut response = String::new(); // Store the response as a String
+    let mut rgb_start = false; // Flag to check when rgb: is encountered
+    let mut parsing_rgb = false; // Flag to track if we're reading the color value
+
+    // Adjust timeout for Windows (if needed)
+    let timeout = if cfg!(target_os = "windows") {
+        Duration::from_secs(1) // Longer timeout for Windows terminals
+    } else {
+        timeout
+    };
 
     // Use blocking I/O with a timeout loop
     loop {
         // Check for timeout
         if start_time.elapsed() > timeout {
+            log::debug!("timed out!");
             return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
         }
 
-        // Non-blocking read with a short sleep to avoid busy-waiting
-        if stdin.read_exact(&mut buf).is_ok() {
-            // Handle BEL (0x7) as the end of response
-            if start && buf[0] == 0x7 {
-                break;
-            }
+        // Use crossterm's poll to wait for input events with a timeout
+        if poll(Duration::from_millis(10))? {
+            // Read the next event (non-blocking)
+            if let Event::Key(key_event) = read()? {
+                match key_event.code {
+                    KeyCode::Char(c) => {
+                        // Accumulate characters
+                        response.push(c);
+                        log::debug!("char={c}; response={response}, rgb_start={rgb_start}");
 
-            // Handle ST (0x1b 0x5c) as the end of response
-            if start && buf[0] == 0x1b {
-                // Consume the next character (should be 0x5c)
-                stdin.read_exact(&mut buf)?;
-                debug_assert_eq!(buf[0], 0x5c);
-                break;
-            }
+                        // Start reading once we see "rgb:"
+                        if response.ends_with("rgb:") {
+                            rgb_start = true;
+                            parsing_rgb = true;
+                        }
 
-            if start {
-                buffer.push(buf[0]);
-            }
-
-            // Start reading the response after the ':' character
-            if buf[0] == b':' {
-                start = true;
+                        // Keep parsing until the '\'
+                        if parsing_rgb && c == '\\' {
+                            log::debug!("break, hooray!");
+                            break;
+                        }
+                    }
+                    KeyCode::Esc => {
+                        // Manually push the ESC (0x1b) into the response
+                        response.push(0x1b as char);
+                        log::debug!("Esc!: response={response}, rgb_start={rgb_start}");
+                    }
+                    _ => {}
+                }
             }
         } else {
-            // Small sleep to avoid busy waiting
+            // Small sleep to avoid busy-waiting
             thread::sleep(Duration::from_millis(10));
         }
     }
 
-    // Don F: Ensure we don't interfere with the raw or cooked mode of the terminal
-    if !raw_before {
+    // log::debug!(
+    //     "buffer={}",
+    //     std::str::from_utf8(&buffer).map_err(|e| ThagError::FromStr(e.to_string().into()))?
+    // );
+
+    // // Clear any remaining characters from stdin to avoid consuming unintended input
+    // while poll(Duration::from_millis(10))? {
+    //     if let Event::Key(c) = read()? {
+    //         // Discard the characters by reading them but doing nothing with them
+    //         log::debug!("discarding char{c:x?}");
+    //     }
+    // }
+
+    // Discard unwanted characters left in stdin
+    clear_stdin()?;
+
+    // Restore raw mode state if necessary
+    if !raw_before && !cfg!(target_os = "windows") {
         terminal::disable_raw_mode()?;
     }
 
-    // Convert the collected buffer into a string and parse it
-    let s = String::from_utf8_lossy(&buffer);
-    let (r, g, b) = decode_x11_color(&s)?;
-    Ok(Rgb { r, g, b })
+    // Extract the RGB value after 'rgb:'
+    if let Some(start_idx) = response.find("rgb:") {
+        let color_value = &response[start_idx + 4..]; // Get the color string
+                                                      // Ok(color_value.to_string())
+                                                      // Convert the collected buffer into a string and parse it
+                                                      // let color_value = String::from_utf8_lossy(&buffer);
+        let (r, g, b) = decode_x11_color(&color_value)?;
+        Ok(Rgb { r, g, b })
+    } else {
+        Err("RGB color value not found".into())
+    }
+
+    // // Convert the collected buffer into a string and parse it
+    // let s = String::from_utf8_lossy(&buffer);
+    // let (r, g, b) = decode_x11_color(&s)?;
+    // Ok(Rgb { r, g, b })
+}
+
+// Helper function to discard extra characters
+fn clear_stdin() -> Result<(), Box<dyn std::error::Error>> {
+    // let mut buf = [0; 1];
+    while poll(Duration::from_millis(10))? {
+        if let Event::Key(c) = read()? {
+            // Discard the input by simply reading it
+            log::debug!("discarding char{c:x?}");
+        }
+    }
+    Ok(())
 }
 
 /// .

@@ -24,3 +24,6 @@ park/shared.rs
 expanded.rs
 rs_stdin_history copy.json
 bank_tui_rs_stdin_history.json
+bank/termbg_resp.rs
+src/termbg copy.rs
+src/termbg_orig.rs

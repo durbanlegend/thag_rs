@@ -239,7 +239,7 @@ impl History {
         if let Ok(data) = serde_json::to_string(&self) {
             #[cfg(debug_assertions)]
             debug!("About to write data=({data}");
-            if let Ok(metadata) = std::fs::metadata(&path) {
+            if let Ok(metadata) = std::fs::metadata(path) {
                 debug!("File permissions: {:?}", metadata.permissions());
             }
 
@@ -526,7 +526,7 @@ where
     let mut popup = false;
     let mut tui_highlight_bg = tui_selection_bg(coloring().1);
     let mut saved = false;
-    let mut status_message: String = Default::default(); // Add status message variable
+    let mut status_message: String = String::default(); // Add status message variable
 
     let mut maybe_term = resolve_term()?;
 

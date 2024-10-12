@@ -655,16 +655,10 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     )?;
     match key_action {
         KeyAction::Quit(_saved) => Ok(vec![]),
-        KeyAction::Save
-        | KeyAction::ShowHelp
-        | KeyAction::ToggleHighlight
-        | KeyAction::TogglePopup => Err(ThagError::FromStr(
-            format!("Logic error: {key_action:?} should not return from tui_edit").into(),
-        )),
         // KeyAction::SaveAndExit => false,
         KeyAction::Submit => {
             std::fs::File::open(&history_path)?.sync_all()?;
-            return maybe_text.map_or(Err(ThagError::Cancelled), |v| Ok(v));
+            maybe_text.ok_or(ThagError::Cancelled)
         }
         _ => Err(ThagError::FromStr(
             format!("Logic error: {key_action:?} should not return from tui_edit").into(),

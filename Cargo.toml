@@ -27,7 +27,7 @@ eula = false
 
 [dependencies]
 bitflags = "2.6.0"
-clap = { version = "4.5.17", features = ["cargo", "derive"] }
+clap = { version = "4.5.19", features = ["cargo", "derive"] }
 crossterm = { version = "0.28.0", features = ["use-dev-tty"] }
 edit = "0.1.5"
 simplelog = { version = "0.12.2", optional = true }
@@ -42,7 +42,7 @@ regex = "1.10.6"
 serde = { version = "1.0.209", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive", "phf"] }
 supports-color = "3.0.0"
-syn = { version = "2.0.77", features = [
+syn = { version = "2.0.79", features = [
     "extra-traits",
     "full",
     "visit",
@@ -53,9 +53,9 @@ tui-textarea = { version = "0.6", features = ["crossterm", "search"] }
 mockall = "0.13.0"
 scopeguard = "1.2.0"
 ratatui = "0.28.1"
-cargo_toml = "0.20.4"
+cargo_toml = "0.20.5"
 serde_json = "1.0.128"
-serde_with = "3.9.0"
+serde_with = "3.11.0"
 # To switch off, use version without features = ["enable_system_time"]
 # If on, prepare for function to run twice for some reason!
 firestorm = "0.5.1"
@@ -97,7 +97,7 @@ assert_cmd = "2.0.16"
 env_logger = "0.11.5"
 predicates = "3.1.2"
 sequential-test = "0.2.4"
-tempfile = "3.12.0"
+tempfile = "3.13.0"
 test-generator = "0.3.1"
 
 [workspace]

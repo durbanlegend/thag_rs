@@ -1,4 +1,4 @@
-#![cfg(not(target_os = "windows"))]
+// #![cfg(not(target_os = "windows"))]
 use crossterm::event::{poll, read, Event, KeyCode};
 /// Original is `https://github.com/dalance/termbg/blob/master/src/lib.rs`
 /// Copyright (c) 2019 dalance
@@ -36,7 +36,7 @@ pub enum Theme {
 }
 
 /// get detected terminal
-#[cfg(not(target_os = "windows"))]
+// #[cfg(not(target_os = "windows"))]
 #[must_use]
 pub fn terminal() -> Terminal {
     if env::var("INSIDE_EMACS").is_ok() {
@@ -60,7 +60,7 @@ pub fn terminal() -> Terminal {
 /// # Errors
 ///
 /// This function will return an error if the terminal is of type Emacs.
-#[cfg(not(target_os = "windows"))]
+// #[cfg(not(target_os = "windows"))]
 pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
     let term = terminal();
     let rgb = match term {
@@ -82,7 +82,7 @@ pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
 /// # Errors
 ///
 /// This function will bubble up any errors returned by `xterm_latency`.
-#[cfg(not(target_os = "windows"))]
+// #[cfg(not(target_os = "windows"))]
 pub fn latency(timeout: Duration) -> ThagResult<Duration> {
     let term = terminal();
     match term {
@@ -153,7 +153,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
 
     // Adjust timeout for Windows (if needed)
     let timeout = if cfg!(target_os = "windows") {
-        Duration::from_secs(1) // Longer timeout for Windows terminals
+        Duration::from_secs(5) // Longer timeout for Windows terminals
     } else {
         timeout
     };
@@ -162,6 +162,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     loop {
         // Check for timeout
         if start_time.elapsed() > timeout {
+            clear_stdin()?;
             log::debug!("timed out!");
             return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
         }

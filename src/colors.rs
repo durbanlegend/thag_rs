@@ -1,7 +1,7 @@
 #![allow(clippy::implicit_return)]
 #![expect(unused)]
 use crate::logging::{Verbosity, V};
-#[cfg(not(target_os = "windows"))]
+// #[cfg(not(target_os = "windows"))]
 use crate::termbg::{terminal, theme, Theme};
 use crate::{config, debug_log, log, ThagResult};
 use crate::{generate_styles, maybe_config};
@@ -236,13 +236,13 @@ pub fn gen_mappings(
     })
 }
 
-#[cfg(target_os = "windows")]
-fn resolve_term_theme() -> ThagResult<TermTheme> {
-    profile_fn!(resolve_term_theme);
-    Ok(TermTheme::Dark)
-}
+// #[cfg(target_os = "windows")]
+// fn resolve_term_theme() -> ThagResult<TermTheme> {
+//     profile_fn!(resolve_term_theme);
+//     Ok(TermTheme::Dark)
+// }
 
-#[cfg(not(target_os = "windows"))]
+// #[cfg(not(target_os = "windows"))]
 fn resolve_term_theme() -> ThagResult<TermTheme> {
     profile_fn!(resolve_term_theme);
     let raw_before = terminal::is_raw_mode_enabled()?;

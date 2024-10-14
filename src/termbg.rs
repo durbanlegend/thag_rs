@@ -1,4 +1,3 @@
-// #![cfg(not(target_os = "windows"))]
 use crossterm::event::{poll, read, Event, KeyCode};
 /// Original is `https://github.com/dalance/termbg/blob/master/src/lib.rs`
 /// Copyright (c) 2019 dalance
@@ -36,14 +35,13 @@ pub enum Theme {
 }
 
 /// get detected terminal
-// #[cfg(not(target_os = "windows"))]
 #[must_use]
 pub fn terminal() -> Terminal {
     if env::var("INSIDE_EMACS").is_ok() {
         return Terminal::Emacs;
     }
 
-    if env::var("TMUX").is_ok() {
+    if env::var("TMUX").is_ok() || env::var("TERM").is_ok_and(|x| x.starts_with("tmux-")) {
         Terminal::Tmux
     } else {
         let is_screen = env::var("TERM").map_or(false, |term| term.starts_with("screen"));
@@ -60,7 +58,6 @@ pub fn terminal() -> Terminal {
 /// # Errors
 ///
 /// This function will return an error if the terminal is of type Emacs.
-// #[cfg(not(target_os = "windows"))]
 pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
     let term = terminal();
     let rgb = match term {
@@ -74,20 +71,6 @@ pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
         fallback
     } else {
         rgb
-    }
-}
-
-/// get background color by `RGB`
-///
-/// # Errors
-///
-/// This function will bubble up any errors returned by `xterm_latency`.
-// #[cfg(not(target_os = "windows"))]
-pub fn latency(timeout: Duration) -> ThagResult<Duration> {
-    let term = terminal();
-    match term {
-        Terminal::Emacs => Ok(Duration::from_millis(0)),
-        _ => xterm_latency(timeout),
     }
 }
 
@@ -113,7 +96,7 @@ pub fn theme(timeout: Duration) -> ThagResult<Theme> {
 }
 
 /// Interrogates an xterm terminal, which may interfere with the user's terminal interaction,
-/// especially on Windows which is why we avoid it there.
+/// especially on Windows which is why I've updated the logic to abandon stdin after.
 ///
 /// # Errors
 ///
@@ -153,7 +136,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
 
     // Adjust timeout for Windows (if needed)
     let timeout = if cfg!(target_os = "windows") {
-        Duration::from_secs(5) // Longer timeout for Windows terminals
+        Duration::from_secs(1) // Longer timeout for Windows terminals
     } else {
         timeout
     };
@@ -167,7 +150,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
             return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
         }
 
-        // Use crossterm's poll to wait for input events with a timeout
+        // Use crossterm's poll to look for input events with a timeout,
         if poll(Duration::from_millis(10))? {
             // Read the next event (non-blocking)
             if let Event::Key(key_event) = read()? {
@@ -185,7 +168,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
 
                         // Keep parsing until the '\'
                         if parsing_rgb && c == '\\' {
-                            log::debug!("break, hooray!");
+                            log::debug!("mission accomplished");
                             break;
                         }
                     }
@@ -208,14 +191,6 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     //     std::str::from_utf8(&buffer).map_err(|e| ThagError::FromStr(e.to_string().into()))?
     // );
 
-    // // Clear any remaining characters from stdin to avoid consuming unintended input
-    // while poll(Duration::from_millis(10))? {
-    //     if let Event::Key(c) = read()? {
-    //         // Discard the characters by reading them but doing nothing with them
-    //         log::debug!("discarding char{c:x?}");
-    //     }
-    // }
-
     // Discard unwanted characters left in stdin
     clear_stdin()?;
 
@@ -235,11 +210,6 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     } else {
         Err("RGB color value not found".into())
     }
-
-    // // Convert the collected buffer into a string and parse it
-    // let s = String::from_utf8_lossy(&buffer);
-    // let (r, g, b) = decode_x11_color(&s)?;
-    // Ok(Rgb { r, g, b })
 }
 
 // Helper function to discard extra characters
@@ -313,59 +283,6 @@ fn from_env_colorfgbg() -> ThagResult<Rgb> {
         g: g * 256,
         b: b * 256,
     })
-}
-
-/// Measures the latency of the xterm terminal.
-///
-/// # Errors
-///
-/// This function will return an error if it encounters a `crossterm` error or a timeout.
-fn xterm_latency(timeout: Duration) -> ThagResult<Duration> {
-    // Query by XTerm control sequence
-    let query = "\x1b[5n";
-
-    let mut stderr = io::stderr();
-
-    // Don F: Ensure we don't interfere with the raw or cooked mode of the terminal
-    let raw_before = terminal::is_raw_mode_enabled()?;
-    if !raw_before {
-        terminal::enable_raw_mode()?;
-    }
-
-    write!(stderr, "{query}")?;
-    stderr.flush()?;
-
-    let start = Instant::now();
-    let mut stdin = io::stdin();
-    let mut buf = [0; 1];
-
-    // Manual timeout handling
-    loop {
-        // Check for timeout
-        if start.elapsed() > timeout {
-            return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
-        }
-
-        // Try reading from stdin (non-blocking with a small delay)
-        if stdin.read_exact(&mut buf).is_ok() {
-            // Response terminated by 'n'
-            if buf[0] == b'n' {
-                break;
-            }
-        } else {
-            // Sleep for a short time to avoid busy waiting
-            thread::sleep(Duration::from_millis(10));
-        }
-    }
-
-    let end = start.elapsed();
-
-    // Don F: Ensure we don't interfere with the raw or cooked mode of the terminal
-    if !raw_before {
-        terminal::disable_raw_mode()?;
-    }
-
-    Ok(end)
 }
 
 /// Decodes an X11 colour.

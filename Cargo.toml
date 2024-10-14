@@ -27,7 +27,7 @@ eula = false
 
 [dependencies]
 bitflags = "2.6.0"
-clap = { version = "4.5.19", features = ["cargo", "derive"] }
+clap = { version = "4.5.20", features = ["cargo", "derive"] }
 crossterm = { version = "0.28.0", features = ["use-dev-tty"] }
 edit = "0.1.5"
 env_logger = "0.11.5"

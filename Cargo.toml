@@ -48,7 +48,7 @@ syn = { version = "2.0.79", features = [
     "visit",
     "visit-mut",
 ] }
-termbg = "0.5.1"
+termbg = "0.5.2"
 toml = "0.8.19"
 tui-textarea = { version = "0.6", features = ["crossterm", "search"] }
 mockall = "0.13.0"

@@ -657,7 +657,6 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         KeyAction::Quit(_saved) => Ok(vec![]),
         // KeyAction::SaveAndExit => false,
         KeyAction::Submit => {
-            std::fs::File::open(&history_path)?.sync_all()?;
             maybe_text.ok_or(ThagError::Cancelled)
         }
         _ => Err(ThagError::FromStr(

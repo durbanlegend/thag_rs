@@ -43,7 +43,7 @@ pub enum FilePattern {
 }
 
 /// Enum to represent which part of the dialog has focus.
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum DialogFocus {
     List,  // Focus on file list
     Input, // Focus on input area

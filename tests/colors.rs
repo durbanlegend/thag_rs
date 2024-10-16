@@ -96,7 +96,7 @@ mod tests {
         assert_eq!(Color::from(&xterm_color), Color::Fixed(160));
     }
 
-    #[ignore = "Causes rightward drift of the test result printouts"]
+    // #[ignore = "Causes rightward drift of the test result printouts"]
     #[test]
     #[cfg(not(target_os = "windows"))]
     fn test_colors_style_conv() {

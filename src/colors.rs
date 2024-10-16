@@ -5,9 +5,9 @@ use crate::logging::{Verbosity, V};
 use crate::termbg::{terminal, theme, Theme};
 use crate::{config, debug_log, log, ThagResult};
 use crate::{generate_styles, maybe_config};
-
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use firestorm::profile_fn;
+use log::debug;
 use nu_ansi_term::{Color, Style};
 use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
 use scopeguard::defer;
@@ -248,12 +248,12 @@ fn resolve_term_theme() -> ThagResult<TermTheme> {
     let raw_before = terminal::is_raw_mode_enabled()?;
     #[cfg(debug_assertions)]
     debug_log!("About to call termbg");
-    let timeout = std::time::Duration::from_millis(100);
+    let timeout = std::time::Duration::from_millis(1000);
 
     // #[cfg(debug_assertions)]
     // debug_log!("Check terminal background color");
     let theme = theme(timeout);
-
+    debug!("Found theme {theme:?}");
     maybe_restore_raw_status(raw_before)?;
 
     match theme {
@@ -265,7 +265,10 @@ fn resolve_term_theme() -> ThagResult<TermTheme> {
 fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
     profile_fn!(maybe_restore_raw_status);
     let raw_after = terminal::is_raw_mode_enabled()?;
-    if raw_before != raw_after {
+    if raw_before == raw_after {
+        debug!("No need to restore raw status");
+    } else {
+        debug!("Restored raw status");
         restore_raw_status(raw_before)?;
     }
     Ok(())
@@ -989,72 +992,71 @@ impl From<&MessageStyle> for RataStyle {
     fn from(message_style: &MessageStyle) -> Self {
         profile_fn!(ratastyle_from_msg_style);
         match *message_style {
-            MessageStyle::Ansi16LightError => RataStyle::from(RataColor::Red).bold(),
-            MessageStyle::Ansi16LightWarning => RataStyle::from(RataColor::Magenta).bold(),
-            MessageStyle::Ansi16LightEmphasis => RataStyle::from(RataColor::Yellow).bold(),
-            MessageStyle::Ansi16LightHeading => RataStyle::from(RataColor::Blue).bold(),
-            MessageStyle::Ansi16LightSubheading => RataStyle::from(RataColor::Cyan).bold(),
-            MessageStyle::Ansi16LightNormal => RataStyle::from(RataColor::White).not_bold(),
-            MessageStyle::Ansi16LightDebug => RataStyle::from(RataColor::Cyan).not_bold(),
-            MessageStyle::Ansi16LightGhost => RataStyle::from(RataColor::Cyan).dim().italic(),
-            MessageStyle::Ansi16DarkError => RataStyle::from(RataColor::Red).bold(),
-            MessageStyle::Ansi16DarkWarning => RataStyle::from(RataColor::Magenta).bold(),
-            MessageStyle::Ansi16DarkEmphasis => RataStyle::from(RataColor::Yellow).bold(),
-            MessageStyle::Ansi16DarkHeading => RataStyle::from(RataColor::Cyan).bold(),
-            MessageStyle::Ansi16DarkSubheading => RataStyle::from(RataColor::Green).bold(),
-            MessageStyle::Ansi16DarkNormal => RataStyle::from(RataColor::White).not_bold(),
-            MessageStyle::Ansi16DarkDebug => RataStyle::from(RataColor::Cyan).not_bold(),
-            MessageStyle::Ansi16DarkGhost => RataStyle::from(RataColor::Gray).dim().italic(),
+            MessageStyle::Ansi16LightError => Self::from(RataColor::Red).bold(),
+            MessageStyle::Ansi16LightWarning => Self::from(RataColor::Magenta).bold(),
+            MessageStyle::Ansi16LightEmphasis => Self::from(RataColor::Yellow).bold(),
+            MessageStyle::Ansi16LightHeading => Self::from(RataColor::Blue).bold(),
+            MessageStyle::Ansi16LightSubheading => Self::from(RataColor::Cyan).bold(),
+            MessageStyle::Ansi16LightNormal => Self::from(RataColor::White).not_bold(),
+            MessageStyle::Ansi16LightDebug => Self::from(RataColor::Cyan).not_bold(),
+            MessageStyle::Ansi16LightGhost => Self::from(RataColor::Cyan).dim().italic(),
+            MessageStyle::Ansi16DarkError => Self::from(RataColor::Red).bold(),
+            MessageStyle::Ansi16DarkWarning => Self::from(RataColor::Magenta).bold(),
+            MessageStyle::Ansi16DarkEmphasis => Self::from(RataColor::Yellow).bold(),
+            MessageStyle::Ansi16DarkHeading => Self::from(RataColor::Cyan).bold(),
+            MessageStyle::Ansi16DarkSubheading => Self::from(RataColor::Green).bold(),
+            MessageStyle::Ansi16DarkNormal => Self::from(RataColor::White).not_bold(),
+            MessageStyle::Ansi16DarkDebug => Self::from(RataColor::Cyan).not_bold(),
+            MessageStyle::Ansi16DarkGhost => Self::from(RataColor::Gray).dim().italic(),
             MessageStyle::Xterm256LightError => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
             }
             MessageStyle::Xterm256LightWarning => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkPurplePizzazz))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::DarkPurplePizzazz))).bold()
             }
             MessageStyle::Xterm256LightEmphasis => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
             }
             MessageStyle::Xterm256LightHeading => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::MidnightBlue))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::MidnightBlue))).bold()
             }
             MessageStyle::Xterm256LightSubheading => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::ScienceBlue))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::ScienceBlue))).not_bold()
             }
             MessageStyle::Xterm256LightNormal => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Black))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Black))).not_bold()
             }
             MessageStyle::Xterm256LightDebug => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::LochmaraBlue))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::LochmaraBlue))).not_bold()
             }
             MessageStyle::Xterm256LightGhost => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Boulder)))
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Boulder)))
                     .not_bold()
                     .italic()
             }
             MessageStyle::Xterm256DarkError => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
             }
             MessageStyle::Xterm256DarkWarning => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkViolet))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::DarkViolet))).bold()
             }
             MessageStyle::Xterm256DarkEmphasis => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
             }
             MessageStyle::Xterm256DarkHeading => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::CaribbeanGreen))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::CaribbeanGreen))).bold()
             }
             MessageStyle::Xterm256DarkSubheading => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkMalibuBlue)))
-                    .not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::DarkMalibuBlue))).not_bold()
             }
             MessageStyle::Xterm256DarkNormal => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Silver))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Silver))).not_bold()
             }
             MessageStyle::Xterm256DarkDebug => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::BondiBlue))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::BondiBlue))).not_bold()
             }
             MessageStyle::Xterm256DarkGhost => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Silver)))
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Silver)))
                     .not_bold()
                     .italic()
             }

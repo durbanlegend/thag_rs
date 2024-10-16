@@ -4,17 +4,40 @@ crossterm = "0.28.1"
 winapi = { version = "0.3.9", features = ["consoleapi", "processenv", "winbase"] }
 */
 
-use crossterm::{event::{self, Event, KeyCode}, terminal};
+/// Exploration of `Windows Terminal` virtual terminal processing with respect to the `termbg` crate.
+/// `termbg` comment states: "Windows Terminal is Xterm-compatible"
+/// https://github.com/microsoft/terminal/issues/3718.
+/// Unfortunately it turns out that this is only partially true and misleading, because
+/// this compatibility excludes OSC 10/11 colour queries until Windows Terminal 1.22,
+/// which was only released in preview in August 2024.
+/// https://devblogs.microsoft.com/commandline/windows-terminal-preview-1-22-release/:
+/// "Applications can now query ... the default foreground (OSC 10 ?) [and] background (OSC 11 ?)"
+/// Another finding is that WT_SESSION is not recommended as a marker for VT capabilities:
+/// https://github.com/Textualize/rich/issues/140.
+/// Also, but out of scope of this script, there is no good fallback detection method provided by Windows,
+/// as per my comments in the adapted module `thag_rs::termbg`. Unless you have WT 1.22 or higher as above,
+/// the best bet for supporting colour schemes other than the default black is to fallback to using a
+/// configuration file (as we do) or allowing the user to specify the theme in real time.
+/// Finally, the `termbg` crate was swallowing the first character of input in Windows and causing a
+/// "rightward march" of log output due to suppression of carriage returns in all environments. I've
+/// addressed the former by using non-blocking `crossterm` event reads instead of `stdin`, and also
+/// introduced a
+//# Purpose: Debug `termbg`
+use crossterm::{
+    event::{self, Event, KeyCode},
+    terminal,
+};
 use std::io::{stdout, Write};
 use std::time::{Duration, Instant};
-use winapi::um::consoleapi::SetConsoleMode;
-use winapi::um::handleapi::INVALID_HANDLE_VALUE;
-use winapi::um::processenv::GetStdHandle;
-use winapi::um::winbase::STD_OUTPUT_HANDLE;
-use winapi::um::wincon::ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+#[cfg(target_os = "windows")]
+use {
+    winapi::um::consoleapi::SetConsoleMode, winapi::um::handleapi::INVALID_HANDLE_VALUE,
+    winapi::um::processenv::GetStdHandle, winapi::um::winbase::STD_OUTPUT_HANDLE,
+    winapi::um::wincon::ENABLE_VIRTUAL_TERMINAL_PROCESSING,
+};
 
 // Function to enable virtual terminal processing for Windows
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn enable_virtual_terminal_processing() -> bool {
     unsafe {
         let handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -40,7 +63,9 @@ fn enable_virtual_terminal_processing() -> bool {
 #[cfg(windows)]
 fn initialize_virtual_terminal() {
     if !enable_virtual_terminal_processing() {
-        eprintln!("Virtual Terminal Processing could not be enabled. Falling back to default behavior.");
+        eprintln!(
+            "Virtual Terminal Processing could not be enabled. Falling back to default behavior."
+        );
         // Optionally, add fallback behavior here, such as forcing a default dark mode
     }
 }
@@ -68,7 +93,8 @@ fn query_terminal() -> std::io::Result<()> {
 
     // Send the color query (OSC 11 for background color)
     let mut stdout = stdout();
-    print!("Querying background color: \x1B]11;?\x07");
+    println!("Querying background color...");
+    print!("\x1b]11;?\x1b\\\r");
     stdout.flush().unwrap();
 
     // Buffer to store key events (characters)
@@ -79,7 +105,7 @@ fn query_terminal() -> std::io::Result<()> {
     let start = Instant::now();
 
     // Listen for terminal events using crossterm
-    println!("Waiting for terminal response...");
+    println!("Waiting for terminal response...\r");
 
     loop {
         // Exit if timeout duration is exceeded

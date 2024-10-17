@@ -264,9 +264,9 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
             return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
         }
 
-		// Replaced expensive async_std with blocking loop. Terminal normally responds
-		// fast or not at all, and in the latter case we still have the timeout on the
-		// main loop.
+        // Replaced expensive async_std with blocking loop. Terminal normally responds
+        // fast or not at all, and in the latter case we still have the timeout on the
+        // main loop.
         if poll(Duration::from_millis(100))? {
             // Read the next event.
             // Replaced stdin read that was consuming legit user input in Windows
@@ -321,7 +321,6 @@ fn restore_raw_status(raw_before: bool) -> Result<(), ThagError> {
 /// This function will return an error if Rust has decided that the "terminal" is not a terminal.
 // Helper function to discard extra characters
 fn clear_stdin() -> Result<(), Box<dyn std::error::Error>> {
-    // let mut buf = [0; 1];
     while poll(Duration::from_millis(10))? {
         if let Event::Key(c) = read()? {
             // Discard the input by simply reading it

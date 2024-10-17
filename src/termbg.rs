@@ -209,9 +209,15 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
         if is_raw == raw_before {
             debug!("Raw mode status unchanged.");
         } else if let Err(e) = restore_raw_status(raw_before) {
-            debug!("Failed to restore raw mode: {:?}", e);
+            debug!("Failed to restore raw mode: {e:?}");
         } else {
             debug!("Raw mode restored to previous state.");
+        }
+
+        if let Err(e) = clear_stdin() {
+            debug!("Failed to clear stdin: {e:?}");
+        } else {
+            debug!("Cleared any excess from stdin.");
         }
     }
 
@@ -254,13 +260,17 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     // Main loop for capturing terminal response
     loop {
         if start_time.elapsed() > timeout {
-            clear_stdin()?; // Ensure stdin is cleared on timeout
             debug!("Failed to capture response");
             return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
         }
 
+		// Replaced expensive async_std with blocking loop. Terminal normally responds
+		// fast or not at all, and in the latter case we still have the timeout on the
+		// main loop.
         if poll(Duration::from_millis(100))? {
-            // Read the next event
+            // Read the next event.
+            // Replaced stdin read that was consuming legit user input in Windows
+            // with non-blocking crossterm read event.
             if let Event::Key(key_event) = event::read()? {
                 match key_event.code {
                     // End on backslash character
@@ -269,8 +279,6 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
                         // response.push('\\');
                         let rgb_string = response.split_off(response.find("rgb:").unwrap() + 4);
                         let (r, g, b) = decode_x11_color(&rgb_string)?;
-
-                        clear_stdin()?; // Ensure stdin is cleared
 
                         // Err("RGB color value not found".into())
                         // Print the duration it took to capture the response

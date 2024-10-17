@@ -5,11 +5,8 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     use thag_rs::colors::TermTheme;
     use thag_rs::colors::{ColorSupport, MessageStyle, XtermColor};
-    #[cfg(not(target_os = "windows"))]
     use thag_rs::termbg::{self, Theme};
-    #[cfg(not(target_os = "windows"))]
-    use thag_rs::Lvl;
-    use thag_rs::{cprtln, log};
+    use thag_rs::{cprtln, log, Lvl};
 
     // Set environment variables before running tests
     fn set_up() {
@@ -96,9 +93,8 @@ mod tests {
         assert_eq!(Color::from(&xterm_color), Color::Fixed(160));
     }
 
-    // #[ignore = "Causes rightward drift of the test result printouts"]
+    // #[ignore = "Caused rightward drift of the test result printouts"]
     #[test]
-    #[cfg(not(target_os = "windows"))]
     fn test_colors_style_conv() {
         use thag_rs::colors::coloring;
 

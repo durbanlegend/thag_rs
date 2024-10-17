@@ -31,8 +31,16 @@ use tui_textarea::TextArea;
 fn set_up() {
     init_logger();
     std::env::set_var("TEST_ENV", "1");
-    std::env::set_var("VISUAL", "cat");
-    std::env::set_var("EDITOR", "cat");
+    #[cfg(windows)]
+    {
+        std::env::set_var("VISUAL", "powershell.exe /C Get-Content");
+        std::env::set_var("EDITOR", "powershell.exe /C Get-Content");
+    }
+    #[cfg(not(windows))]
+    {
+        std::env::set_var("VISUAL", "cat");
+        std::env::set_var("EDITOR", "cat");
+    }
 }
 
 #[cfg(feature = "simplelog")]

@@ -124,7 +124,7 @@ pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
 
 /// get background color by `RGB`
 #[cfg(target_os = "windows")]
-pub fn rgb(_timeout: Duration) -> Result<Rgb, ThagError> {
+pub fn rgb(timeout: Duration) -> Result<Rgb, ThagError> {
     let term = terminal();
     let rgb = match term {
         Terminal::Emacs => Err(ThagError::UnsupportedTerm),
@@ -167,7 +167,7 @@ pub fn theme(timeout: Duration) -> ThagResult<Theme> {
 #[cfg(target_os = "windows")]
 fn enable_virtual_terminal_processing() -> bool {
     static ENABLE_VT_PROCESSING: OnceLock<bool> = OnceLock::new();
-    ENABLE_VT_PROCESSING.get_or_init(|| unsafe {
+    *ENABLE_VT_PROCESSING.get_or_init(|| unsafe {
         let handle = GetStdHandle(STD_OUTPUT_HANDLE);
         if handle != INVALID_HANDLE_VALUE {
             let mut mode: u32 = 0;

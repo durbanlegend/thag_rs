@@ -27,3 +27,4 @@ bank_tui_rs_stdin_history.json
 bank/termbg_resp.rs
 src/termbg copy.rs
 src/termbg_orig.rs
+latency.log

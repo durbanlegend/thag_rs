@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
-termbg = "0.5.0"
+#termbg = "0.5.2"
+termbg = { path = "/Users/donforbes/Documents/GitHub/termbg" }
 */
 
 use std::io::{self, Read};
@@ -9,7 +10,7 @@ fn main() {
     let timeout = std::time::Duration::from_millis(100);
 
     // let term = termbg::terminal();
-    let rgb = termbg::rgb(timeout);
+    let _rgb = termbg::rgb(timeout);
     // let theme = termbg::theme(timeout);
 
     println!("Type in something and see if first character gets swallowed in Windows Terminal");

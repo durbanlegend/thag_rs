@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
-termbg = "0.5.0"
+crossterm = "0.28.1"
+termbg = "0.5.2"
 */
 
 /// Published example from `termbg` readme.

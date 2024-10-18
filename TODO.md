@@ -12,8 +12,7 @@
 - [ ]  Config option for formatting main?
 - [ ]  Config option for stdin -d highlighting preference, like repl.rs
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
-- [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
-- [ ]  >>> -R option to go straight into repl::tui?
+- [ ]  Decommission -R option as now a duplicate of -r
 - [ ]  >>> Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?

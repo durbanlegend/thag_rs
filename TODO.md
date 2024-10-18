@@ -12,7 +12,7 @@
 - [ ]  Config option for formatting main?
 - [ ]  Config option for stdin -d highlighting preference, like repl.rs
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
-- [ ]  Decommission -R option as now a duplicate of -r
+- [ ]  Decommission repl.rs edit_history_old.
 - [ ]  >>> Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?

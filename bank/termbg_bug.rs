@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-#termbg = "0.5.2"
-termbg = { path = "/Users/donforbes/Documents/GitHub/termbg" }
+termbg = "0.5.2"
+#termbg = { path = "/Users/donforbes/Documents/GitHub/termbg" }
 */
 
 use std::io::{self, Read};

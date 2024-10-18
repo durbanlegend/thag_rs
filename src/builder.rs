@@ -20,7 +20,7 @@ use crate::{
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
 use log::{log_enabled, Level::Debug};
-use nu_ansi_term::Style;
+use nu_ansi_term::{Color, Style};
 use regex::Regex;
 use std::string::ToString;
 use std::{
@@ -457,7 +457,7 @@ pub fn gen_build_run(
         log!(
             Verbosity::Normal,
             "{}",
-            nu_ansi_term::Color::Yellow
+            Color::Yellow
                 // .bold()
                 .paint("Skipping unnecessary generation step.  Use --force (-f) to override.")
         );
@@ -470,7 +470,7 @@ pub fn gen_build_run(
         log!(
             Verbosity::Normal,
             "{}",
-            nu_ansi_term::Color::Yellow
+            Color::Yellow
                 // .bold()
                 .paint("Skipping unnecessary cargo build step. Use --force (-f) to override.")
         );
@@ -694,22 +694,14 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     fs::rename(executable_path, output_path)?;
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
 
     log!(
         Verbosity::Quieter,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
     );
 
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
     Ok(())
 }
 
@@ -741,19 +733,11 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
 
     let _exit_status = run_command.spawn()?.wait()?;
 
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
 
     // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");

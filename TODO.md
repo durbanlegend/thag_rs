@@ -3,11 +3,10 @@
 ## High Priority
 
 ## Medium Priority
-- [ ]  Add additional popular crates
 - [ ]  More unit and integration tests
 - [ ]  Simple demo https server
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
-- [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
+- [ ]  Raise clear_screen as an issue on supports-color crate?
 - [ ]  Add FAQ
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Config option for formatting main?
@@ -15,9 +14,6 @@
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
 - [ ]  >>> -R option to go straight into repl::tui?
-- [ ]  Message area in tui editor
-- [ ]  termbg should not use WT_SESSION: https://github.com/Textualize/rich/issues/140
-       "the only requirement is that you have ENABLE_VIRTUAL_TERMINAL_INPUT on" https://github.com/microsoft/terminal/pull/17729
 - [ ]  >>> Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?
@@ -64,6 +60,7 @@
        - cargo publish --no-verify
 
 ## Low Priority
+- [ ]  Add additional popular crates
 - [ ]  Paste event in Windows slow or not happening?
 - [ ]  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 - [ ]  "edit" crate - how to reconfigure editors dynamically - instructions unclear.

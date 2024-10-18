@@ -5,14 +5,10 @@
 )]
 use crate::builder::gen_build_run;
 use crate::cmd_args::{Cli, ProcFlags};
-
-use crate::debug_log;
 use crate::errors::{ThagError, ThagResult};
 use crate::logging::V;
-use crate::shared::debug_timings;
-use crate::shared::{Ast, BuildState};
-use crate::{log, Lvl};
-use crate::{DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
+use crate::shared::{debug_timings, Ast, BuildState};
+use crate::{debug_log, log, Lvl, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
@@ -23,11 +19,9 @@ use std::collections::HashMap;
 use std::fs::{remove_dir_all, remove_file, OpenOptions};
 use std::hash::BuildHasher;
 
-use std::io::BufRead;
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 use std::option::Option;
 use std::path::{Path, PathBuf};
-
 use std::process::Output;
 use std::time::{Instant, SystemTime};
 use std::{fs, process};

@@ -70,7 +70,7 @@ pub fn terminal() -> Terminal {
     // rgb values. Since xterm OSC is MS's roadmap, I'm leaving this in for when
     // VS Code hopefully follows suit. But right now it will time out
     if let Ok(term_program) = env::var("TERM_PROGRAM") {
-        debug!("term_program={term_program}");
+        debug_log!("term_program={term_program}");
         if term_program == "vscode" {
             return Terminal::XtermCompatible;
         }
@@ -89,13 +89,13 @@ pub fn terminal() -> Terminal {
     // https://github.com/Textualize/rich/issues/140
     // if env::var("WT_SESSION").is_ok() {
     if enable_virtual_terminal_processing() {
-        debug!(
+        debug_log!(
             r#"This Windows terminal supports virtual terminal processing
 (but not OSC 10/11 colour queries if prior to Windows Terminal 1.22 Preview of August 2024)"#
         );
         Terminal::XtermCompatible
     } else {
-        debug!("Terminal::Windows");
+        debug_log!("Terminal::Windows");
         Terminal::Windows
     }
 }
@@ -132,7 +132,7 @@ pub fn rgb(timeout: Duration) -> Result<Rgb, ThagError> {
         _ => from_winapi(), // effectively useless unless set via legacy Console
     };
     let fallback = from_env_colorfgbg();
-    debug!("rgb={rgb:?}, fallback={fallback:?}");
+    debug_log!("rgb={rgb:?}, fallback={fallback:?}");
     if rgb.is_ok() {
         rgb
     } else if fallback.is_ok() {
@@ -201,23 +201,23 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
         let is_raw = match is_raw_mode_enabled() {
             Ok(val) => val,
             Err(e) => {
-                debug!("Failed to check raw mode status: {:?}", e);
+                debug_log!("Failed to check raw mode status: {:?}", e);
                 return;
             }
         };
 
         if is_raw == raw_before {
-            debug!("Raw mode status unchanged.");
+            debug_log!("Raw mode status unchanged.");
         } else if let Err(e) = restore_raw_status(raw_before) {
-            debug!("Failed to restore raw mode: {e:?}");
+            debug_log!("Failed to restore raw mode: {e:?}");
         } else {
-            debug!("Raw mode restored to previous state.");
+            debug_log!("Raw mode restored to previous state.");
         }
 
         if let Err(e) = clear_stdin() {
-            debug!("Failed to clear stdin: {e:?}");
+            debug_log!("Failed to clear stdin: {e:?}");
         } else {
-            debug!("Cleared any excess from stdin.");
+            debug_log!("Cleared any excess from stdin.");
         }
     }
 
@@ -230,7 +230,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     #[cfg(target_os = "windows")]
     {
         if !enable_virtual_terminal_processing() {
-            debug!(
+            debug_log!(
                 "Virtual Terminal Processing could not be enabled. Falling back to default behavior."
             );
             return from_winapi();
@@ -260,13 +260,13 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     // Main loop for capturing terminal response
     loop {
         if start_time.elapsed() > timeout {
-            debug!("Failed to capture response");
+            debug_log!("Failed to capture response");
             return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
         }
 
-		// Replaced expensive async_std with blocking loop. Terminal normally responds
-		// fast or not at all, and in the latter case we still have the timeout on the
-		// main loop.
+        // Replaced expensive async_std with blocking loop. Terminal normally responds
+        // fast or not at all, and in the latter case we still have the timeout on the
+        // main loop.
         if poll(Duration::from_millis(100))? {
             // Read the next event.
             // Replaced stdin read that was consuming legit user input in Windows
@@ -275,7 +275,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
                 match key_event.code {
                     // End on backslash character
                     KeyCode::Char('\\') => {
-                        debug!("End of response detected (backslash character).");
+                        debug_log!("End of response detected (backslash character).");
                         // response.push('\\');
                         let rgb_string = response.split_off(response.find("rgb:").unwrap() + 4);
                         let (r, g, b) = decode_x11_color(&rgb_string)?;
@@ -283,13 +283,13 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
                         // Err("RGB color value not found".into())
                         // Print the duration it took to capture the response
                         let elapsed = start_time.elapsed();
-                        debug!("Elapsed time: {:.2?}", elapsed);
+                        debug_log!("Elapsed time: {:.2?}", elapsed);
 
                         return Ok(Rgb { r, g, b });
                     }
                     // Append other characters to buffer
                     KeyCode::Char(c) => {
-                        // debug!("pushing {c}");
+                        // debug_log!("pushing {c}");
                         response.push(c);
                     }
                     _ => {
@@ -321,11 +321,10 @@ fn restore_raw_status(raw_before: bool) -> Result<(), ThagError> {
 /// This function will return an error if Rust has decided that the "terminal" is not a terminal.
 // Helper function to discard extra characters
 fn clear_stdin() -> Result<(), Box<dyn std::error::Error>> {
-    // let mut buf = [0; 1];
     while poll(Duration::from_millis(10))? {
         if let Event::Key(c) = read()? {
             // Discard the input by simply reading it
-            debug!("discarding char{c:x?}");
+            debug_log!("discarding char{c:x?}");
         }
     }
     Ok(())
@@ -436,7 +435,7 @@ fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
 fn from_winapi() -> Result<Rgb, ThagError> {
     use winapi::um::wincon;
 
-    debug!("In from_winapi()");
+    debug_log!("In from_winapi()");
     let info = unsafe {
         let handle = winapi::um::processenv::GetStdHandle(winapi::um::winbase::STD_OUTPUT_HANDLE);
         let mut info: wincon::CONSOLE_SCREEN_BUFFER_INFO = Default::default();
@@ -444,7 +443,7 @@ fn from_winapi() -> Result<Rgb, ThagError> {
         info
     };
 
-    debug!("info.wAttributes={:x?}", info.wAttributes);
+    debug_log!("info.wAttributes={:x?}", info.wAttributes);
 
     let r = (wincon::BACKGROUND_RED & info.wAttributes) != 0;
     let g = (wincon::BACKGROUND_GREEN & info.wAttributes) != 0;

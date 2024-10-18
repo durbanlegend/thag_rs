@@ -10,7 +10,7 @@ use crate::manifest;
 use crate::regex;
 use crate::repl::run_repl;
 use crate::shared::{debug_timings, display_timings, Ast, BuildState};
-use crate::stdin::{self, edit, read};
+use crate::stdin::{edit, read};
 use crate::tui_editor::CrosstermEventReader;
 use crate::{
     debug_log, log, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
@@ -20,7 +20,7 @@ use crate::{
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
 use log::{log_enabled, Level::Debug};
-use nu_ansi_term::Style;
+use nu_ansi_term::{Color, Style};
 use regex::Regex;
 use std::string::ToString;
 use std::{
@@ -63,15 +63,13 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     }
 
     let is_repl = args.repl;
-    let is_tui_repl = args.tui_repl;
-    let working_dir_path = if is_repl || is_tui_repl {
+    let working_dir_path = if is_repl {
         TMPDIR.join(REPL_SUBDIR)
     } else {
         std::env::current_dir()?.canonicalize()?
     };
     validate_args(args, &proc_flags)?;
-    // Not for tui_repl - history is solid and too expensive
-    // TODO May phase this out for repl, or phase out repl itself.
+    // TODO May phase this out for repl.
     let repl_source_path = if is_repl && args.script.is_none() {
         // Some(create_next_repl_file()?)
         let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
@@ -91,7 +89,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
     let is_loop = proc_flags.contains(ProcFlags::LOOP);
-    let is_dynamic = is_expr | is_stdin | is_edit | is_loop | is_tui_repl;
+    let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
     if is_dynamic {
         let _ = create_temp_source_file()?;
     }
@@ -197,7 +195,6 @@ fn process(
 ) -> ThagResult<()> {
     // profile_fn!(process);
     let is_repl = args.repl;
-    let is_tui_repl = args.tui_repl;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
@@ -208,9 +205,6 @@ fn process(
     if is_repl {
         debug_log!("build_state.source_path={:?}", build_state.source_path);
         run_repl(args, proc_flags, &mut build_state, start)
-    } else if is_tui_repl {
-        debug_log!("build_state.source_path={:?}", build_state.source_path);
-        stdin::run_repl(args, proc_flags, &mut build_state, start)
     } else if is_dynamic {
         let rs_source = if is_expr {
             // Consumes the expression argument
@@ -457,7 +451,7 @@ pub fn gen_build_run(
         log!(
             Verbosity::Normal,
             "{}",
-            nu_ansi_term::Color::Yellow
+            Color::Yellow
                 // .bold()
                 .paint("Skipping unnecessary generation step.  Use --force (-f) to override.")
         );
@@ -470,7 +464,7 @@ pub fn gen_build_run(
         log!(
             Verbosity::Normal,
             "{}",
-            nu_ansi_term::Color::Yellow
+            Color::Yellow
                 // .bold()
                 .paint("Skipping unnecessary cargo build step. Use --force (-f) to override.")
         );
@@ -694,22 +688,14 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     fs::rename(executable_path, output_path)?;
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
 
     log!(
         Verbosity::Quieter,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
     );
 
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
     Ok(())
 }
 
@@ -741,19 +727,11 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
 
     let _exit_status = run_command.spawn()?.wait()?;
 
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
 
     // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");

@@ -53,7 +53,6 @@ fn test_cmd_args_get_proc_flags() {
             | ProcFlags::VERBOSE
             | ProcFlags::TIMINGS
             | ProcFlags::REPL
-            | ProcFlags::TUI_REPL
             | ProcFlags::EDIT
             | ProcFlags::STDIN
     ));

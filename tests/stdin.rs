@@ -18,11 +18,10 @@ use std::{fs::File, sync::OnceLock};
 use std::{
     fs::{self},
     io::{stdout, Write},
-    path::PathBuf,
     process::{Command, Stdio},
 };
 use thag_rs::colors::{get_term_theme, TuiSelectionBg};
-use thag_rs::stdin::{edit, read_to_string, toml};
+use thag_rs::stdin::{edit, read_to_string};
 use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History, MockEventReader};
 use thag_rs::{log, logging::Verbosity, ThagResult, TMPDIR};
 use tui_textarea::TextArea;
@@ -278,22 +277,6 @@ fn test_stdin_repl_command_print_help() {
     command.write_long_help(&mut output).unwrap();
     let help_output = String::from_utf8(output).unwrap();
     assert!(help_output.contains("REPL mode lets you type or paste a Rust expression"));
-}
-
-#[test]
-fn test_stdin_toml_file_exists() {
-    set_up();
-    let path = PathBuf::from("tests/assets/Cargo_t.toml");
-    assert!(toml(&path).is_ok());
-}
-
-#[test]
-fn test_stdin_toml_file_does_not_exist() {
-    set_up();
-    let path = PathBuf::from("non_existent_toml");
-    let result = toml(&path);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), Some("End of Cargo.toml edit".to_string()));
 }
 
 #[test]

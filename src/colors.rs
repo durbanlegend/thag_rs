@@ -253,7 +253,7 @@ fn resolve_term_theme() -> ThagResult<TermTheme> {
     // #[cfg(debug_assertions)]
     // debug_log!("Check terminal background color");
     let theme = theme(timeout);
-    debug!("Found theme {theme:?}");
+    debug_log!("Found theme {theme:?}");
     maybe_restore_raw_status(raw_before)?;
 
     match theme {
@@ -266,9 +266,9 @@ fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
     profile_fn!(maybe_restore_raw_status);
     let raw_after = terminal::is_raw_mode_enabled()?;
     if raw_before == raw_after {
-        debug!("No need to restore raw status");
+        debug_log!("No need to restore raw status");
     } else {
-        debug!("Restored raw status");
+        debug_log!("Restored raw status");
         restore_raw_status(raw_before)?;
     }
     Ok(())

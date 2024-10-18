@@ -13,6 +13,15 @@
 - [ ]  Config option for stdin -d highlighting preference, like repl.rs
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Decommission repl.rs edit_history_old.
+- [ ]  Thag develop branch changes for 0.1.5:
+            - Common TUI editor with file save dialog, status message and working history, basic mouse selection support, TUI history edit.
+            - Promote from REPL to TUI
+            - Code quality improvements, e.g. From, ThagResult, Keys display build
+            - Fix termbg Windows behaviour (PR pending)
+            - Crokey-based key bindings
+            - simplelog option
+            - replace lazy_static crate with standard Rust built-ins
+            -
 - [ ]  >>> Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?

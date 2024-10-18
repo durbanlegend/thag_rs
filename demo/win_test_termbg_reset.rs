@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 crossterm = "0.28.1"
-termbg = "0.5.0"
+termbg = "0.5.2"
 */
 
 /// This still seems to "reliably" swallow the very first character entered in Windows.

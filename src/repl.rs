@@ -591,18 +591,6 @@ fn tui(
         }
         _ => false,
     };
-    // if confirm {
-    //     let history_mut = line_editor.history_mut();
-    //     let saved_history = fs::read_to_string(staging_path)?;
-    //     eprintln!("staging_path={staging_path:?}");
-    //     eprintln!("saved_history={saved_history}");
-    //     history_mut.clear()?;
-    //     for line in saved_history.lines() {
-    //         // eprintln!("saving line={line}");
-    //         let _ = history_mut.save(HistoryItem::from_command_line(line))?;
-    //     }
-    //     history_mut.sync()?;
-    // }
     Ok(())
 }
 

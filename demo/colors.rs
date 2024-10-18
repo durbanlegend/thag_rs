@@ -8,7 +8,7 @@ thag_rs = "0.1.4"
 
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
-termbg = "0.5.0"
+termbg = "0.5.2"
 */
 /// A version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
 /// module, `colors` was originally developed here as a separate script and integrated as a module later.

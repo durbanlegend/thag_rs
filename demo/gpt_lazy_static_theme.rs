@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
+crossterm = "0.28.1"
 lazy_static = "1.4.0"
-termbg = "0.5.0"
+termbg = "0.5.2"
 */
 
 /// Prototype of detecting the light or dark theme in use, and registering it

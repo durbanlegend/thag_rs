@@ -124,7 +124,7 @@ Shift-Up: `\033;[2A` and `Shift-Down`: \033;[2B. Use the Esc key to generate \03
 
 If all else fails, try another terminal emulator.
 
-(TODO) The TUI editor is also used in the promote to TUI (`tui`) and edit history (`history`) functions in the REPL, so the
+The TUI editor is also used in the promote to TUI (`tui`) and edit history (`history`) functions in the REPL, so the
 above also applies there.
 
 Similar considerations apply to the basic REPL mode (--repl / -r). Note that the key bindings there are not identical to the TUI because the basic REPL uses mostly standard `reedline` emacs

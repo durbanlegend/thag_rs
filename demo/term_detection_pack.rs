@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
+crossterm = "0.28.1"
 supports-color= "3.0.0"
-termbg = "0.5.0"
+termbg = "0.5.2"
 terminal-light = "1.4.0"
 */
 

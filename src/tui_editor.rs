@@ -9,7 +9,6 @@ use crossterm::terminal::{
     LeaveAlternateScreen,
 };
 use firestorm::profile_fn;
-use log::debug;
 use mockall::automock;
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
@@ -134,9 +133,7 @@ impl History {
             |_| Self::default(),
             |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
         );
-
-        #[cfg(debug_assertions)]
-        debug!("Loaded history={history:?}");
+        debug_log!("Loaded history={history:?}");
         // Remove any blanks - TODO they shouldn't be saved in the first place
         history.entries.retain(|e| !e.contents().trim().is_empty());
 
@@ -149,11 +146,8 @@ impl History {
         } else {
             history.current_index = Some(history.entries.len() - 1);
         }
-
-        #[cfg(debug_assertions)]
-        debug!("history={history:?}");
-        #[cfg(debug_assertions)]
-        debug!(
+        debug_log!("history={history:?}");
+        debug_log!(
             "load_from_file({path:?}); current index={:?}",
             history.current_index
         );
@@ -162,16 +156,14 @@ impl History {
 
     #[must_use]
     pub fn at_start(&self) -> bool {
-        #[cfg(debug_assertions)]
-        debug!("at_start ...");
+        debug_log!("at_start ...");
         self.current_index
             .map_or(true, |current_index| current_index == 0)
     }
 
     #[must_use]
     pub fn at_end(&self) -> bool {
-        #[cfg(debug_assertions)]
-        debug!("at_end ...");
+        debug_log!("at_end ...");
         self.current_index.map_or(true, |current_index| {
             current_index == self.entries.len() - 1
         })
@@ -191,23 +183,18 @@ impl History {
 
         // Update current_index to point to the most recent entry (the front)
         self.current_index = Some(self.entries.len() - 1);
-
-        #[cfg(debug_assertions)]
-        debug!("add_entry({text}); current index={:?}", self.current_index);
-        #[cfg(debug_assertions)]
-        debug!("history={self:?}");
+        debug_log!("add_entry({text}); current index={:?}", self.current_index);
+        debug_log!("history={self:?}");
     }
 
     pub fn update_entry(&mut self, index: usize, text: &str) {
-        #[cfg(debug_assertions)]
-        debug!("update_entry for index {index}...");
+        debug_log!("update_entry for index {index}...");
         // Get a mutable reference to the entry at the specified index
         let current_index = self.current_index;
         if let Some(entry) = self.get_mut(index) {
             // Update the lines if the entry exists
             entry.lines = text.lines().map(String::from).collect::<Vec<String>>();
-            #[cfg(debug_assertions)]
-            debug!("... update_entry({entry:?}); current index={current_index:?}");
+            debug_log!("... update_entry({entry:?}); current index={current_index:?}");
         } else {
             // If the entry doesn't exist, add it
             self.add_entry(text);
@@ -234,13 +221,12 @@ impl History {
     ///
     /// This function will bubble up any i/o errors encountered writing the file.
     pub fn save_to_file(&mut self, path: &PathBuf) -> ThagResult<()> {
-        // #[cfg(debug_assertions)]
+        //
         self.reassign_indices();
         if let Ok(data) = serde_json::to_string(&self) {
-            #[cfg(debug_assertions)]
-            debug!("About to write data=({data}");
+            debug_log!("About to write data=({data}");
             if let Ok(metadata) = std::fs::metadata(path) {
-                debug!("File permissions: {:?}", metadata.permissions());
+                debug_log!("File permissions: {:?}", metadata.permissions());
             }
 
             // fs::write(path, data)?;
@@ -259,12 +245,9 @@ impl History {
             // file.sync_all()?;
             file.sync_data()?;
         } else {
-            #[cfg(debug_assertions)]
-            debug!("Could not serialise history: {self:?}");
+            debug_log!("Could not serialise history: {self:?}");
         }
-
-        #[cfg(debug_assertions)]
-        debug!("save_to_file({path:?}");
+        debug_log!("save_to_file({path:?}");
         Ok(())
     }
 
@@ -275,59 +258,48 @@ impl History {
         }
 
         if let Some(index) = self.current_index {
-            #[cfg(debug_assertions)]
-            debug!("get_current(); current index={:?}", self.current_index);
+            debug_log!("get_current(); current index={:?}", self.current_index);
 
             self.get(index)
         } else {
-            #[cfg(debug_assertions)]
-            debug!("None");
+            debug_log!("None");
             None
         }
     }
 
     pub fn get(&mut self, index: usize) -> Option<&Entry> {
-        #[cfg(debug_assertions)]
-        debug!("get({index})...");
+        debug_log!("get({index})...");
         if !(0..self.entries.len()).contains(&index) {
             return None;
         }
         self.current_index = Some(index);
-
-        #[cfg(debug_assertions)]
-        debug!(
+        debug_log!(
             "...get({:?}); current index={:?}",
             self.entries.get(index),
             self.current_index
         );
 
         let entry = self.entries.get(index);
-        #[cfg(debug_assertions)]
-        debug!("... returning {entry:?}");
+        debug_log!("... returning {entry:?}");
         entry
     }
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut Entry> {
-        #[cfg(debug_assertions)]
-        debug!("get_mut({index})...");
+        debug_log!("get_mut({index})...");
 
         if !(0..self.entries.len()).contains(&index) {
             return None;
         }
 
         self.current_index = Some(index);
-
-        #[cfg(debug_assertions)]
-        debug!(
+        debug_log!(
             "...get_mut({:?}); current index={:?}",
             self.entries.get(index),
             self.current_index
         );
 
         let entry = self.entries.get_mut(index);
-
-        #[cfg(debug_assertions)]
-        debug!("... returning {entry:?}");
+        debug_log!("... returning {entry:?}");
 
         entry
     }
@@ -339,8 +311,7 @@ impl History {
     /// Panics if a logic error is detected, likely when reaching the oldest History entry.
     pub fn get_previous(&mut self) -> Option<&Entry> {
         // let this = &mut *self;
-        #[cfg(debug_assertions)]
-        debug!("get_previous...");
+        debug_log!("get_previous...");
         if self.entries.is_empty() {
             return None;
         }
@@ -352,9 +323,7 @@ impl History {
                 0
             }
         });
-
-        #[cfg(debug_assertions)]
-        debug!(
+        debug_log!(
             "...old index={:#?};new_index={new_index:?}",
             self.current_index
         );
@@ -369,8 +338,7 @@ impl History {
             },
             |index| {
                 let entry = self.get(index);
-                #[cfg(debug_assertions)]
-                debug!("get_previous; new current index={index:?}, entry={entry:?}");
+                debug_log!("get_previous; new current index={index:?}, entry={entry:?}");
                 entry
             },
         )
@@ -382,8 +350,7 @@ impl History {
     ///
     /// Panics if a logic error is detected, likely when reaching the newest History entry.
     pub fn get_next(&mut self) -> Option<&Entry> {
-        #[cfg(debug_assertions)]
-        debug!("get_next...");
+        debug_log!("get_next...");
         let this = &mut *self;
         if this.entries.is_empty() {
             return None;
@@ -397,9 +364,7 @@ impl History {
                 max_index
             }
         });
-
-        #[cfg(debug_assertions)]
-        debug!(
+        debug_log!(
             "...old index={:#?};new_index={new_index:?}",
             self.current_index
         );
@@ -414,8 +379,7 @@ impl History {
             },
             |index| {
                 let entry = self.get(index);
-                #[cfg(debug_assertions)]
-                debug!("get_next(); current index={index:?}, entry={entry:?}");
+                debug_log!("get_next(); current index={index:?}, entry={entry:?}");
                 entry
             },
         )
@@ -628,8 +592,8 @@ where
             if !matches!(key_event.kind, KeyEventKind::Press) {
                 continue;
             }
-            // #[cfg(debug_assertions)]
-            // log::debug!("key_event={key_event:#?}");
+            //
+            // log::debug_log!("key_event={key_event:#?}");
             let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
             // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
@@ -884,13 +848,13 @@ pub fn script_key_handler(
             if let Some(ref mut hist) = edit_data.history {
                 if hist.at_end() && textarea.is_empty() {
                     if let Some(entry) = &hist.get_last() {
-                        debug!("F7 (1) found entry {entry:?}");
+                        debug_log!("F7 (1) found entry {entry:?}");
                         paste_to_textarea(textarea, entry);
                     }
                 } else {
                     save_if_changed(hist, textarea, &history_path)?;
                     if let Some(entry) = &hist.get_previous() {
-                        debug!("F7 (2) found entry {entry:?}");
+                        debug_log!("F7 (2) found entry {entry:?}");
                         paste_to_textarea(textarea, entry);
                     }
                 }
@@ -901,8 +865,7 @@ pub fn script_key_handler(
             if let Some(ref mut hist) = edit_data.history {
                 // save_if_changed(hist, textarea, &history_path)?;
                 if let Some(entry) = hist.get_next() {
-                    #[cfg(debug_assertions)]
-                    debug!("F8 found entry {entry:?}");
+                    debug_log!("F8 found entry {entry:?}");
                     paste_to_textarea(textarea, entry);
                 }
             }
@@ -924,10 +887,8 @@ pub fn script_key_handler(
 /// This function will bubble up any i/o errors encountered by `crossterm::enable_raw_mode`.
 pub fn maybe_enable_raw_mode() -> ThagResult<()> {
     let test_env = &var("TEST_ENV");
-    #[cfg(debug_assertions)]
     debug_log!("test_env={test_env:?}");
     if !test_env.is_ok() && !is_raw_mode_enabled()? {
-        #[cfg(debug_assertions)]
         debug_log!("Enabling raw mode");
         enable_raw_mode()?;
     }
@@ -1097,11 +1058,9 @@ pub fn save_if_changed(
     textarea: &mut TextArea<'_>,
     history_path: &Option<PathBuf>,
 ) -> Result<(), ThagError> {
-    #[cfg(debug_assertions)]
-    debug!("save_if_changed...");
+    debug_log!("save_if_changed...");
     if textarea.is_empty() {
-        #[cfg(debug_assertions)]
-        debug!("nothing to save(1)...");
+        debug_log!("nothing to save(1)...");
         return Ok(());
     }
     if let Some(entry) = &hist.get_current() {
@@ -1109,8 +1068,7 @@ pub fn save_if_changed(
         let copy_text = copy_text(textarea);
         // In case they entered blanks
         if copy_text.trim().is_empty() {
-            #[cfg(debug_assertions)]
-            debug!("nothing to save(2)...");
+            debug_log!("nothing to save(2)...");
             return Ok(());
         }
         if entry.contents() != copy_text {
@@ -1140,22 +1098,19 @@ pub fn preserve(
     hist: &mut History,
     history_path: &PathBuf,
 ) -> ThagResult<()> {
-    #[cfg(debug_assertions)]
-    debug!("preserve...");
+    debug_log!("preserve...");
     save_if_not_empty(textarea, hist);
     save_history(Some(&mut hist.clone()), Some(history_path))?;
     Ok(())
 }
 
 pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
-    #[cfg(debug_assertions)]
-    debug!("save_if_not_empty...");
+    debug_log!("save_if_not_empty...");
 
     let text = copy_text(textarea);
     if !text.trim().is_empty() {
         hist.add_entry(&text);
-        #[cfg(debug_assertions)]
-        debug!("... added entry");
+        debug_log!("... added entry");
     }
 }
 
@@ -1175,13 +1130,11 @@ pub fn save_history(
     history: Option<&mut History>,
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
-    #[cfg(debug_assertions)]
-    debug!("save_history...{history:?}");
+    debug_log!("save_history...{history:?}");
     if let Some(hist) = history {
         if let Some(hist_path) = history_path {
             hist.save_to_file(hist_path)?;
-            #[cfg(debug_assertions)]
-            debug!("... saved to file");
+            debug_log!("... saved to file");
         }
     }
     Ok(())

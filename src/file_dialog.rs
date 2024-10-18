@@ -6,7 +6,6 @@ use crossterm::{
     event::{KeyCode, KeyEvent, KeyModifiers},
     execute,
 };
-use log::debug;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -24,8 +23,9 @@ use std::{
 };
 use tui_textarea::{Input, TextArea};
 
-use crate::{key_mappings, tui_editor::show_popup};
-use crate::{shared::KeyDisplayLine, tui_editor};
+use crate::shared::KeyDisplayLine;
+use crate::tui_editor::{self, show_popup};
+use crate::{debug_log, key_mappings};
 
 /// File dialog mode to distinguish between Open and Save dialogs
 #[derive(Debug, PartialEq, Eq)]
@@ -328,15 +328,15 @@ impl<'a> FileDialog<'a> {
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn select(&mut self) -> Result<()> {
         // Open mode logic (already correct)
-        debug!("In select()");
+        debug_log!("In select()");
         let Some(selected) = self.list_state.selected() else {
             self.next();
-            debug!("Returning Ok(())");
+            debug_log!("Returning Ok(())");
             return Ok(());
         };
 
         let path = self.current_dir.join(&self.items[selected]);
-        debug!(
+        debug_log!(
             "current_dir={:?}; path={path:?}; is_file? {}; mode={:?}",
             self.current_dir,
             path.is_file(),
@@ -351,7 +351,7 @@ impl<'a> FileDialog<'a> {
         if self.focus == DialogFocus::Input {
             // Save mode logic to use the entered filename
             let file_name = self.input.lines().join(""); // Get the input from TextArea
-            debug!("file_name={file_name}");
+            debug_log!("file_name={file_name}");
             if !file_name.is_empty() {
                 let path = self.current_dir.join(file_name);
                 self.selected_file = Some(path); // Set the selected file
@@ -362,7 +362,7 @@ impl<'a> FileDialog<'a> {
             self.close();
             // return Ok(());
         }
-        debug!("self.selected_file={:?}", self.selected_file);
+        debug_log!("self.selected_file={:?}", self.selected_file);
         Ok(())
     }
 

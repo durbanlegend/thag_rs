@@ -2,15 +2,10 @@
 use crate::cmd_args::{Cli, ProcFlags};
 use crate::errors::{ThagError, ThagResult};
 use crate::logging::Verbosity;
-use crate::modified_since_compiled;
-use crate::DYNAMIC_SUBDIR;
-use crate::REPL_SUBDIR;
-use crate::RS_SUFFIX;
-use crate::TEMP_SCRIPT_NAME;
-use crate::TMPDIR;
-use crate::TOML_NAME;
-use crate::{debug_log, TEMP_DIR_NAME};
-use crate::{log, PACKAGE_NAME};
+use crate::{
+    debug_log, log, modified_since_compiled, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
+    TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME,
+};
 
 use cargo_toml::Manifest;
 use firestorm::profile_fn;
@@ -109,7 +104,6 @@ impl BuildState {
     ) -> ThagResult<Self> {
         profile_fn!(pre_configure);
         let is_repl = proc_flags.contains(ProcFlags::REPL);
-        let is_tui_repl = proc_flags.contains(ProcFlags::TUI_REPL);
         let is_expr = args.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
         let is_edit = proc_flags.contains(ProcFlags::EDIT);
@@ -138,13 +132,13 @@ impl BuildState {
         let Some(source_stem) = source_name.strip_suffix(RS_SUFFIX) else {
             return Err(format!("Error stripping suffix from {source_name}").into());
         };
-        let working_dir_path = if is_repl || is_tui_repl {
+        let working_dir_path = if is_repl {
             TMPDIR.join(REPL_SUBDIR)
         } else {
             std::env::current_dir()?.canonicalize()?
         };
 
-        let script_path = if is_repl || is_tui_repl {
+        let script_path = if is_repl {
             script_state
                 .get_script_dir_path()
                 .ok_or("Missing script path")?
@@ -182,7 +176,7 @@ impl BuildState {
         });
         debug_log!("cargo_home={}", cargo_home.display());
 
-        let target_dir_path = if is_repl || is_tui_repl {
+        let target_dir_path = if is_repl {
             script_state
                 .get_script_dir_path()
                 .ok_or("Missing ScriptState::NamedEmpty.repl_path")?
@@ -233,15 +227,10 @@ impl BuildState {
                 || modified_since_compiled(&build_state)?.is_some();
             let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
             let build_requested = proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK);
-            let must_gen = force
-                || is_repl
-                || is_tui_repl
-                || is_loop
-                || is_check
-                || (gen_requested && stale_executable);
+            let must_gen =
+                force || is_repl || is_loop || is_check || (gen_requested && stale_executable);
             let must_build = force
                 || is_repl
-                || is_tui_repl
                 || is_loop
                 || build_exe
                 || is_check
@@ -353,16 +342,17 @@ impl KeyDisplayLine {
 
 /// Control debug logging
 #[macro_export]
+#[cfg(debug_assertions)]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
-        // If the `debug_logs` feature is enabled, always log
-        #[cfg(feature = "debug-logs")]
+        // If the `debug-logs` feature is enabled, always log
+        #[cfg(any(feature = "debug-logs", feature = "simplelog"))]
         {
             log::debug!($($arg)*);
         }
 
         // In all builds, log if runtime debug logging is enabled (e.g., via `-vv`)
-        #[cfg(not(feature = "debug-logs"))]
+        #[cfg(not(any(feature = "debug-logs", feature = "simplelog")))]
         {
             if $crate::logging::is_debug_logging_enabled() {
                 log::debug!($($arg)*);

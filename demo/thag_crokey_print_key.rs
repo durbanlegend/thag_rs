@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = "0.28.0"
 serde = { version = "1.0.130", features = ["derive"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 toml = "0.5"
 */
 

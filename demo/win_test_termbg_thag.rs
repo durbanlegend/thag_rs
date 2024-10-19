@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 */
 
 /// This seems to "reliably" swallow the very first character entered in Windows.

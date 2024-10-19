@@ -69,7 +69,6 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
         std::env::current_dir()?.canonicalize()?
     };
     validate_args(args, &proc_flags)?;
-    // TODO May phase this out for repl.
     let repl_source_path = if is_repl && args.script.is_none() {
         // Some(create_next_repl_file()?)
         let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);

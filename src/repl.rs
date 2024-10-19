@@ -9,12 +9,11 @@ use crate::logging::{get_verbosity, Verbosity};
 use crate::regex;
 use crate::shared::{Ast, BuildState, KeyDisplayLine};
 use crate::tui_editor::{
-    apply_highlights, normalize_newlines, resolve_term, script_key_handler, show_popup, tui_edit,
-    CrosstermEventReader, EditData, Entry, EventReader, History, KeyAction, KeyDisplay,
+    apply_highlights, display_popup, normalize_newlines, resolve_term, script_key_handler,
+    tui_edit, CrosstermEventReader, EditData, Entry, EventReader, History, KeyAction, KeyDisplay,
     TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
 };
 use crate::{cprtln, cvprtln, gen_build_run, key, log, KeyCombination, Lvl, ThagResult};
-
 use clap::{CommandFactory, Parser};
 use crossterm::event::{
     Event::{self, Paste},
@@ -475,10 +474,10 @@ pub fn run_repl(
                             format_bindings(&named_reedline_events, max_cmd_len);
 
                         // Determine the length of the longest key description for padding
-                        let max_key_len = get_max_key_len(&formatted_bindings);
+                        let max_key_len = get_max_key_len(formatted_bindings);
                         // eprintln!("max_key_len={max_key_len}");
 
-                        show_key_bindings(&formatted_bindings, max_key_len);
+                        show_key_bindings(formatted_bindings, max_key_len);
                     }
                 }
                 continue;
@@ -762,80 +761,81 @@ fn save_file(
 }
 
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
-    let max_key_len = formatted_bindings
-        .iter()
-        .map(|(key_desc, _)| {
-            let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
-            let key_desc = format!("{key_desc}");
-            key_desc.len()
-        })
-        .max()
-        .unwrap_or(0);
-    max_key_len
+    static MAX_KEY_LEN: OnceLock<usize> = OnceLock::new();
+    *MAX_KEY_LEN.get_or_init(|| {
+        formatted_bindings
+            .iter()
+            .map(|(key_desc, _)| {
+                let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
+                let key_desc = format!("{key_desc}");
+                key_desc.len()
+            })
+            .max()
+            .unwrap_or(0)
+    })
 }
 
 fn format_bindings(
     named_reedline_events: &[(String, &ReedlineEvent)],
     max_cmd_len: usize,
-) -> Vec<(String, String)> {
-    let mut formatted_bindings = named_reedline_events
-        .iter()
-        .filter_map(|(key_desc, reedline_event)| {
-            if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
-                let cmd_desc = format_edit_commands(edit_cmds, max_cmd_len);
-                Some((key_desc.clone(), cmd_desc))
-            } else {
-                let event_name = format!("{reedline_event:?}");
-                if event_name.starts_with("UntilFound") {
-                    None
+) -> &'static Vec<(String, String)> {
+    static FORMATTED_BINDINGS: OnceLock<Vec<(String, String)>> = OnceLock::new();
+    FORMATTED_BINDINGS.get_or_init(|| {
+        let mut formatted_bindings = named_reedline_events
+            .iter()
+            .filter_map(|(key_desc, reedline_event)| {
+                if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                    let cmd_desc = format_edit_commands(edit_cmds, max_cmd_len);
+                    Some((key_desc.clone(), cmd_desc))
                 } else {
-                    let event_desc = format_non_edit_events(&event_name, max_cmd_len);
-                    Some((key_desc.clone(), event_desc))
+                    let event_name = format!("{reedline_event:?}");
+                    if event_name.starts_with("UntilFound") {
+                        None
+                    } else {
+                        let event_desc = format_non_edit_events(&event_name, max_cmd_len);
+                        Some((key_desc.clone(), event_desc))
+                    }
                 }
-            }
-        })
-        .collect::<Vec<(String, String)>>();
-    // Sort the formatted bindings alphabetically by key combination description
-    formatted_bindings.sort_by(|a, b| a.0.cmp(&b.0));
-    formatted_bindings
+            })
+            .collect::<Vec<(String, String)>>();
+        // Sort the formatted bindings alphabetically by key combination description
+        formatted_bindings.sort_by(|a, b| a.0.cmp(&b.0));
+        formatted_bindings
+    })
 }
 
 fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     // Calculate max command len for padding
-    // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
-    let max_cmd_len = {
-        let max_cmd_len = {
-            // Determine the length of the longest command for padding
-            let max_cmd_len = reedline_events
-                .iter()
-                .map(|reedline_event| {
-                    if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
-                        edit_cmds
-                            .iter()
-                            .map(|cmd| {
-                                let key_desc = NuStyle::from(&Lvl::SUBH).paint(format!("{cmd:?}"));
-                                let key_desc = format!("{key_desc}");
-                                key_desc.len()
-                            })
-                            .max()
-                            .unwrap_or(0)
-                    } else if !format!("{reedline_event}").starts_with("UntilFound") {
-                        let event_desc =
-                            NuStyle::from(&Lvl::SUBH).paint(format!("{reedline_event:?}"));
-                        let event_desc = format!("{event_desc}");
-                        event_desc.len()
-                    } else {
-                        0
-                    }
-                })
-                .max()
-                .unwrap_or(0);
-            // Add 2 bytes of padding
-            max_cmd_len + 2
-        };
-        max_cmd_len
-    };
-    max_cmd_len
+    static MAX_CMD_LEN: OnceLock<usize> = OnceLock::new();
+    *MAX_CMD_LEN.get_or_init(|| {
+        // Determine the length of the longest command for padding
+        // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
+        let max_cmd_len = reedline_events
+            .iter()
+            .map(|reedline_event| {
+                if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                    edit_cmds
+                        .iter()
+                        .map(|cmd| {
+                            let key_desc = NuStyle::from(&Lvl::SUBH).paint(format!("{cmd:?}"));
+                            let key_desc = format!("{key_desc}");
+                            key_desc.len()
+                        })
+                        .max()
+                        .unwrap_or(0)
+                } else if !format!("{reedline_event}").starts_with("UntilFound") {
+                    let event_desc = NuStyle::from(&Lvl::SUBH).paint(format!("{reedline_event:?}"));
+                    let event_desc = format!("{event_desc}");
+                    event_desc.len()
+                } else {
+                    0
+                }
+            })
+            .max()
+            .unwrap_or(0);
+        // Add 2 bytes of padding
+        max_cmd_len + 2
+    })
 }
 
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
@@ -1120,12 +1120,9 @@ pub fn edit_history_old<R: EventReader + Debug>(
 
     apply_highlights(&tui_selection_bg(coloring().1), &mut textarea);
 
-    let remove_keys = &["F7", "F8"];
-    let add_keys = &[KeyDisplayLine::new(
-        371,
-        "F3",
-        "Discard saved and unsaved changes, and exit",
-    )];
+    let adjusted_mappings: &Vec<KeyDisplayLine> = adjust_mappings();
+    let (max_key_len, max_desc_len) = get_max_lengths(adjusted_mappings);
+
     loop {
         let event = if var("TEST_ENV").is_ok() {
             event_reader.read_event()?
@@ -1136,7 +1133,14 @@ pub fn edit_history_old<R: EventReader + Debug>(
                     term.draw(|f| {
                         f.render_widget(&textarea, f.area());
                         if popup {
-                            show_popup(MAPPINGS, f, TITLE_TOP, TITLE_BOTTOM, remove_keys, add_keys);
+                            display_popup(
+                                adjusted_mappings,
+                                TITLE_TOP,
+                                TITLE_BOTTOM,
+                                max_key_len,
+                                max_desc_len,
+                                f,
+                            );
                         };
                         apply_highlights(&tui_highlight_bg, &mut textarea);
                     })
@@ -1219,6 +1223,38 @@ pub fn edit_history_old<R: EventReader + Debug>(
             }
         }
     }
+}
+
+fn adjust_mappings() -> &'static Vec<KeyDisplayLine> {
+    let remove = &["F7", "F8"];
+    let add = &[KeyDisplayLine::new(
+        371,
+        "F3",
+        "Discard saved and unsaved changes, and exit",
+    )];
+    static ADJUSTED_MAPPINGS: OnceLock<Vec<KeyDisplayLine>> = OnceLock::new();
+    ADJUSTED_MAPPINGS.get_or_init(|| {
+        MAPPINGS
+            .iter()
+            .filter(|&row| !remove.contains(&row.keys))
+            .chain(add.iter())
+            .cloned()
+            .collect()
+    })
+}
+
+fn get_max_lengths(adjusted_mappings: &Vec<KeyDisplayLine>) -> (u16, u16) {
+    static MAX_LENGTHS: OnceLock<(u16, u16)> = OnceLock::new();
+    let (max_key_len, max_desc_len) = *MAX_LENGTHS.get_or_init(|| {
+        adjusted_mappings
+            .iter()
+            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
+                let key_len = row.keys.len().try_into().unwrap();
+                let desc_len = row.desc.len().try_into().unwrap();
+                (max_key.max(key_len), max_desc.max(desc_len))
+            })
+    });
+    (max_key_len, max_desc_len)
 }
 
 fn save_file_old(staging_path: &PathBuf, textarea: &TextArea<'_>) -> ThagResult<()> {

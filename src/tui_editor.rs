@@ -515,6 +515,25 @@ where
     // Apply initial highlights
     apply_highlights(&tui_selection_bg(coloring().1), &mut textarea);
 
+    let remove = display.remove_keys;
+    let add = display.add_keys;
+    // Can't make these OnceLock values as with repl::edit_history_old and filedialog, since their
+    // configuration depends on the `remove` and `add` values passed in by the caller.
+    let adjusted_mappings: Vec<KeyDisplayLine> = MAPPINGS
+        .iter()
+        .filter(|&row| !remove.contains(&row.keys))
+        .chain(add.iter())
+        .cloned()
+        .collect();
+    let (max_key_len, max_desc_len) =
+        adjusted_mappings
+            .iter()
+            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
+                let key_len = row.keys.len().try_into().unwrap();
+                let desc_len = row.desc.len().try_into().unwrap();
+                (max_key.max(key_len), max_desc.max(desc_len))
+            });
+
     // Event loop for handling key events
     loop {
         maybe_enable_raw_mode()?;
@@ -561,13 +580,13 @@ where
                             f.render_widget(status_text, chunks[1]);
 
                             if popup {
-                                show_popup(
-                                    MAPPINGS,
-                                    f,
+                                display_popup(
+                                    &adjusted_mappings,
                                     TITLE_TOP,
                                     TITLE_BOTTOM,
-                                    display.remove_keys,
-                                    display.add_keys,
+                                    max_key_len,
+                                    max_desc_len,
+                                    f,
                                 );
                             };
                             apply_highlights(&tui_highlight_bg, &mut textarea);
@@ -895,29 +914,14 @@ pub fn maybe_enable_raw_mode() -> ThagResult<()> {
     Ok(())
 }
 
-#[allow(clippy::cast_possible_truncation, clippy::missing_panics_doc)]
-pub fn show_popup<'a>(
-    mappings: &'a [KeyDisplayLine],
-    f: &mut ratatui::prelude::Frame,
+pub fn display_popup(
+    adjusted_mappings: &Vec<KeyDisplayLine>,
     title_top: &str,
     title_bottom: &str,
-    remove: &[&str],
-    add: &'a [KeyDisplayLine],
+    max_key_len: u16,
+    max_desc_len: u16,
+    f: &mut ratatui::prelude::Frame<'_>,
 ) {
-    let adjusted_mappings: Vec<KeyDisplayLine> = mappings
-        .iter()
-        .filter(|&row| !remove.contains(&row.keys))
-        .chain(add.iter())
-        .cloned()
-        .collect();
-    let (max_key_len, max_desc_len) =
-        adjusted_mappings
-            .iter()
-            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
-                let key_len = row.keys.len().try_into().unwrap();
-                let desc_len = row.desc.len().try_into().unwrap();
-                (max_key.max(key_len), max_desc.max(desc_len))
-            });
     let num_filtered_rows = adjusted_mappings.len();
     let block = Block::default()
         .borders(Borders::ALL)

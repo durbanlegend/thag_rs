@@ -4,7 +4,7 @@ serde = "1.0.204"
 serde_json = "1.0.116"
 */
 
-/// Demo of using deserializing JSON with the featured crates.
+/// Demo of deserialising JSON with the featured crates.
 /// This version prompts for JSON input.
 //# Purpose: Demo featured crates.
 use serde::de::Deserialize;

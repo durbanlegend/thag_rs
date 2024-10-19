@@ -10,13 +10,9 @@ use crate::tui_editor::{
 };
 use crate::{debug_log, log, ThagError};
 use clap::Parser;
-use crossterm::event::DisableMouseCapture;
-use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
 use edit::edit_file;
 use mockall::predicate::str;
-use ratatui::backend::CrosstermBackend;
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::Terminal;
 use regex::Regex;
 use std::fmt::Debug;
 use std::fs::OpenOptions;
@@ -236,23 +232,6 @@ pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
             textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
         }
     }
-}
-
-/// Reset the terminal.
-///
-/// # Errors
-///
-/// This function will bubble up any `ratatui` or `crossterm` errors encountered.
-// TODO: move to shared or tui_editor?
-pub fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> ThagResult<()> {
-    disable_raw_mode()?;
-    crossterm::execute!(
-        term.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    term.show_cursor()?;
-    Ok(())
 }
 
 /// Open the history file in an editor.

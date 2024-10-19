@@ -423,7 +423,7 @@ fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
     Ok((r, g, b))
 }
 
-/// Try to determine the background colour from the lagacy Windows Console interface.
+/// Try to determine the background colour from the legacy Windows Console interface.
 /// Unfortunately, unless the colour was explicitly set by that interface, it will
 /// just return the default of rgb(0,0,0). This renders it effectively useless for
 /// modern Windows.

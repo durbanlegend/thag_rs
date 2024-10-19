@@ -40,7 +40,7 @@ impl KeyCombination {
     ///
     /// This allows direct comparisons with the fields of `crossterm::event::KeyEvent`
     /// whose code is uppercase when the shift modifier is present. And supports the
-    /// case where the modifier isn't mentionned but the key is uppercase.
+    /// case where the modifier isn't mentioned but the key is uppercase.
     #[must_use]
     pub fn normalized(mut self) -> Self {
         let mut shift = normalize_key_code(self.codes.first_mut(), self.modifiers);

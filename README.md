@@ -1,4 +1,4 @@
-# thag_rs
+`# thag_rs
 
 [![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://crates.io/crates/thag_rs)
 [![Crates.io size](https://img.shields.io/crates/size/thag_rs)](https://img.shields.io/crates/size/thag_rs)
@@ -270,7 +270,7 @@ at the start of the script, as you will see done in most of the demos. To help w
 ## Installation
 
 ### Minimum Supported Rust Version
-The minimum supported Rust version (MSRV) for `thag_rs` is 1.74.1.
+The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.81.0.
 
 You can install `thag_rs` using `cargo install`:
 
@@ -380,12 +380,12 @@ _— The Rust Reference_
 * You can use a shebang to write scripts in Rust.
 * For more speed and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
 * `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast big-integer factorial and Fibonacci calculation and prototypes of TUI editing and of the adaptive colour palettes described below.
-* Any valid valid Cargo.toml input may be specified in the toml block, e.g.:
+* Any valid Cargo.toml input may be specified in the toml block, e.g.:
   - Specific features of dependencies for advanced functionality
   - Local path and git dependencies
   - A [profile.dev] with a non-default optimisation level
   - A [[bin]] to rename the executable output.
-* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows, interrogating the terminal is not well supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` defaults to basic ANSI-16 colours and dark mode support. However, the dark mode colours it uses have been chosen to work well with most light modes.
+* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows, interrogating the terminal is not well supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` defaults to basic Ansi-16 colours and dark mode support. However, the dark mode colours it uses have been chosen to work well with most light modes.
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from thag_rs. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
 
 ## Platform Support
@@ -427,10 +427,10 @@ or
 
     MIT license (LICENSE-MIT or http://opensource.org/licenses/MIT)
 
-at your option.
+as you prefer.
 
 ## Contributing
 
 Contributions will be considered if they fit the goals of the project.
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you will be dual-licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you will be dual-licensed as above, without any further terms or conditions.

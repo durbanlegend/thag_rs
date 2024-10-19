@@ -8,7 +8,7 @@ regex = "1.10.4"
 scopeguard = "1.2.0"
 serde = "1.0.210"
 serde_json = "1.0.128"
-thag_rs = "0.1.5"
+thag_rs = "0.1.4"
 tui-textarea = { version = "0.6", features = ["search"] }
 */
 

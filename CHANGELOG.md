@@ -7,16 +7,17 @@ All notable changes to this project will be documented in this file.
 ### Highlights
 
 - Common TUI editor with file save dialog, status message and working history, basic mouse selection support, TUI history edit.
-- Promote code from REPL to TUI
-- Code quality improvements, e.g. From for colour conversions, ThagResult, Keys display build, regex! macro
-- Fix termbg Windows behaviour (PR pending)
-- Crokey-based key bindings
-- simplelog option
-- replace lazy_static crate with standard Rust built-ins
+- Feature to promote script from REPL (-r) to TUI (with separate TUI history shared with -d option)
+- Code quality improvements, e.g. From trait for message level to style conversions, ThagResult, Keys display build, regex! macro,
+    clippy::nursery recommendations as well as clippy::pedantic.
+- Fix termbg Windows behaviour (using custom version of termbg pending PR raised on termbg crate)
+- Crokey-based key bindings (using custom version of crokey)
+- simplelog option as alternative to env_logger
+- Replaced lazy_static crate with standard Rust built-ins
 - New demo and bank scripts
 - Drop individual REPL builds as too expensive
 - New ThagErrors: Logic and UnsupportedTerm
-- Rename test functions to incorporate module name and thus filter by module
+- Rename test functions to incorporate module name and thus allow filtering tests by module
 
 - [Prepare for debug logging in release.](https://github.com/durbanlegend/thag_rs/commit/3b8174b13788ac5ea792d8a755404c566bd5317d)
 - [Bump serde from 1.0.209 to 1.0.210](https://github.com/durbanlegend/thag_rs/commit/17eefba5eaf721ea064259429b9bd6d36ba3f1a0)

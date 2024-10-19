@@ -482,9 +482,9 @@ impl<'a> FileDialog<'a> {
 }
 
 fn adjust_mappings() -> &'static Vec<KeyDisplayLine> {
+    static ADJUSTED_MAPPINGS: OnceLock<Vec<KeyDisplayLine>> = OnceLock::new();
     let remove: &[&str] = &[];
     let add: &'static [KeyDisplayLine] = &[];
-    static ADJUSTED_MAPPINGS: OnceLock<Vec<KeyDisplayLine>> = OnceLock::new();
     ADJUSTED_MAPPINGS.get_or_init(|| {
         MAPPINGS
             .iter()
@@ -495,7 +495,7 @@ fn adjust_mappings() -> &'static Vec<KeyDisplayLine> {
     })
 }
 
-fn get_max_lengths(adjusted_mappings: &Vec<KeyDisplayLine>) -> (u16, u16) {
+fn get_max_lengths(adjusted_mappings: &[KeyDisplayLine]) -> (u16, u16) {
     static MAX_LENGTHS: OnceLock<(u16, u16)> = OnceLock::new();
     let (max_key_len, max_desc_len) = *MAX_LENGTHS.get_or_init(|| {
         adjusted_mappings

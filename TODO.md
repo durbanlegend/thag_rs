@@ -40,6 +40,9 @@
 - [ ]  Checklist for making releases:
        - Tip: disable ci.yml for Readme & similar tweaks that won't
               affect compilation.
+       - Don't upgrade thag versions in demo scripts to new release as you get a
+           catch-22 until it's on crates.io. If you absolutely need to, wait until you've
+           released to crates.io a first time, then release all over again.
        - Run `typos` command.
        - Run vale README.md and vale demo/README.md.
        - Run cargo msrv find, and update the MSRV in README.md.

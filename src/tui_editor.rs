@@ -915,7 +915,7 @@ pub fn maybe_enable_raw_mode() -> ThagResult<()> {
 }
 
 pub fn display_popup(
-    adjusted_mappings: &Vec<KeyDisplayLine>,
+    adjusted_mappings: &[KeyDisplayLine],
     title_top: &str,
     title_bottom: &str,
     max_key_len: u16,
@@ -929,6 +929,7 @@ pub fn display_popup(
         .title_bottom(Line::from(title_bottom).centered())
         .add_modifier(Modifier::BOLD)
         .fg(Color::Indexed(u8::from(&MessageLevel::Heading)));
+    #[allow(clippy::cast_possible_truncation)]
     let area = centered_rect(
         max_key_len + max_desc_len + 5,
         num_filtered_rows as u16 + 5,
@@ -941,6 +942,7 @@ pub fn display_popup(
     // this is supposed to clear out the background
     f.render_widget(Clear, area);
     f.render_widget(block, area);
+    #[allow(clippy::cast_possible_truncation)]
     let row_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints(

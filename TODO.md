@@ -16,8 +16,7 @@
 - [ ]  >>> Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?
-- [ ]  Implement confirmation of save.
-        >>> TODO: Save history on TUI save - in KeyHandler will need to be passed history file location
+- [ ]  Fix confirmation of save on Windows.
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
 - [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.
 - [ ]  Decommission repl::edit_history_old.

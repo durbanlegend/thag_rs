@@ -590,7 +590,7 @@ where
                                 );
                             };
                             apply_highlights(&tui_highlight_bg, &mut textarea);
-                            status_message = String::new();
+                            // status_message = String::new();
                         }
                     })
                     .map_err(|e| {

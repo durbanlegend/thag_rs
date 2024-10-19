@@ -129,9 +129,8 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
 /// Will panic in debug mode if the global verbosity value is not the value we just set.
 pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
     LOGGER.lock()?.set_verbosity(verbosity);
-    let v = get_verbosity();
     #[cfg(debug_assertions)]
-    assert_eq!(v, verbosity);
+    assert_eq!(get_verbosity(), verbosity);
     // Enable debug logging if -vv is passed
     if verbosity as u8 == Verbosity::Debug as u8 {
         enable_debug_logging(); // Set the runtime flag

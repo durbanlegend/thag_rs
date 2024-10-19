@@ -107,7 +107,6 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 
     let input = std::io::stdin();
 
-    #[cfg(debug_assertions)]
     debug_log!("input.is_terminal()? {}", input.is_terminal());
     let initial_content = if input.is_terminal() {
         String::new()

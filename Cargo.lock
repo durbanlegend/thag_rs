@@ -1338,18 +1338,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "termbg"
-version = "0.5.2"
-source = "git+https://github.com/durbanlegend/termbg#8a88ed62e041cf7f3718c602f26ebaee465a6c37"
-dependencies = [
- "crossterm",
- "log",
- "scopeguard",
- "thiserror",
- "winapi",
-]
-
-[[package]]
 name = "termcolor"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1422,7 +1410,6 @@ dependencies = [
  "supports-color",
  "syn 2.0.79",
  "tempfile",
- "termbg",
  "test-generator",
  "thag_proc_macros",
  "toml",

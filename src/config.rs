@@ -1,5 +1,5 @@
+use edit::edit_file;
 use firestorm::profile_fn;
-use lazy_static::lazy_static;
 use mockall::{automock, predicate::str};
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
@@ -8,34 +8,36 @@ use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
-use crate::colors::{ColorSupport, TermTheme};
-
-use crate::debug_log;
+use crate::colors::{ColorSupport, TermTheme, TuiSelectionBg};
 use crate::logging::Verbosity;
-use crate::ThagError;
+use crate::{debug_log, ThagResult};
 
-lazy_static! {
-    #[derive(Debug)]
-    pub static ref MAYBE_CONFIG: Option<Config> = {
+/// Initializes and returns the configuration.
+#[allow(clippy::module_name_repetitions)]
+pub fn maybe_config() -> Option<Config> {
+    static MAYBE_CONFIG: OnceLock<Option<Config>> = OnceLock::new();
+    MAYBE_CONFIG.get_or_init(|| -> Option<Config> {
         let maybe_config = load(&RealContext::new());
 
-        if let Some(ref config) = maybe_config {
+        if let Some(config) = maybe_config {
                 debug_log!("Loaded config: {config:?}");
                 debug_log!(
-                    "default_verbosity={:?}, color_support={:?}, term_theme={:?}, unquote={}",
+                    "default_verbosity={:?}, color_support={:?}, term_theme={:?}, tui_highlight_bg={:?}, unquote={}",
                     config.logging.default_verbosity,
                     config.colors.color_support,
                     config.colors.term_theme,
+                    config.colors.tui_selection_bg,
                     config.misc.unquote
                 );
+                return Some(config);
         }
-        maybe_config
-    };
+        None::<Config>
+    }).clone()
 }
 
-// #[allow(dead_code)]
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Config {
     pub logging: Logging,
@@ -43,30 +45,30 @@ pub struct Config {
     pub misc: Misc,
 }
 
-#[allow(dead_code)]
 #[serde_as]
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Logging {
     #[serde_as(as = "DisplayFromStr")]
     pub default_verbosity: Verbosity,
 }
 
-#[allow(dead_code)]
 #[serde_as]
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 pub struct Colors {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
     pub color_support: ColorSupport,
+    #[serde(default)]
+    #[serde_as(as = "DisplayFromStr")]
+    pub term_theme: TermTheme,
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
-    pub term_theme: TermTheme,
+    pub tui_selection_bg: TuiSelectionBg,
 }
 
-#[allow(dead_code)]
 #[serde_as]
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Misc {
     #[serde_as(as = "DisplayFromStr")]
@@ -146,7 +148,7 @@ pub fn load(context: &dyn Context) -> Option<Config> {
 /// # Panics
 /// Will panic if it can't create the parent directory for the configuration.
 #[allow(clippy::unnecessary_wraps)]
-pub fn edit(context: &dyn Context) -> Result<Option<String>, ThagError> {
+pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
     profile_fn!(edit);
     let config_path = context.get_config_path();
 
@@ -178,13 +180,12 @@ pub fn edit(context: &dyn Context) -> Result<Option<String>, ThagError> {
     }
     eprintln!("About to edit {config_path:#?}");
     if context.is_real() {
-        edit::edit_file(&config_path)?;
+        edit_file(&config_path)?;
     }
     Ok(Some(String::from("End of edit")))
 }
 
 /// Main function for use by testing or the script runner.
-
 #[allow(dead_code)]
 fn main() {
     let maybe_config = load(&RealContext::new());
@@ -192,10 +193,11 @@ fn main() {
     if let Some(config) = maybe_config {
         debug_log!("Loaded config: {config:?}");
         debug_log!(
-            "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
+            "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}, TuiSelectionBg={:?}",
             config.logging.default_verbosity,
             config.colors.color_support,
-            config.colors.term_theme
+            config.colors.term_theme,
+            config.colors.tui_selection_bg
         );
     } else {
         debug_log!("No configuration file found.");

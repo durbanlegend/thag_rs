@@ -1,16 +1,11 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::cmd_args::{Cli, ProcFlags};
-use crate::errors::ThagError;
+use crate::errors::{ThagError, ThagResult};
 use crate::logging::Verbosity;
-use crate::modified_since_compiled;
-use crate::DYNAMIC_SUBDIR;
-use crate::REPL_SUBDIR;
-use crate::RS_SUFFIX;
-use crate::TEMP_SCRIPT_NAME;
-use crate::TMPDIR;
-use crate::TOML_NAME;
-use crate::{debug_log, TEMP_DIR_NAME};
-use crate::{log, PACKAGE_NAME};
+use crate::{
+    debug_log, log, modified_since_compiled, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
+    TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME,
+};
 
 use cargo_toml::Manifest;
 use firestorm::profile_fn;
@@ -106,7 +101,7 @@ impl BuildState {
         proc_flags: &ProcFlags,
         args: &Cli,
         script_state: &ScriptState,
-    ) -> Result<Self, ThagError> {
+    ) -> ThagResult<Self> {
         profile_fn!(pre_configure);
         let is_repl = proc_flags.contains(ProcFlags::REPL);
         let is_expr = args.expression.is_some();
@@ -331,18 +326,33 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.to_string()
 }
 
+#[derive(Clone, Debug)]
+pub struct KeyDisplayLine {
+    pub seq: usize,
+    pub keys: &'static str, // Or String if you plan to modify the keys later
+    pub desc: &'static str, // Or String for modifiability
+}
+
+impl KeyDisplayLine {
+    #[must_use]
+    pub const fn new(seq: usize, keys: &'static str, desc: &'static str) -> Self {
+        Self { seq, keys, desc }
+    }
+}
+
 /// Control debug logging
 #[macro_export]
+#[cfg(debug_assertions)]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
-        // If the `debug_logs` feature is enabled, always log
-        #[cfg(feature = "debug-logs")]
+        // If the `debug-logs` feature is enabled, always log
+        #[cfg(any(feature = "debug-logs", feature = "simplelog"))]
         {
             log::debug!($($arg)*);
         }
 
         // In all builds, log if runtime debug logging is enabled (e.g., via `-vv`)
-        #[cfg(not(feature = "debug-logs"))]
+        #[cfg(not(any(feature = "debug-logs", feature = "simplelog")))]
         {
             if $crate::logging::is_debug_logging_enabled() {
                 log::debug!($($arg)*);

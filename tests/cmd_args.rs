@@ -9,7 +9,7 @@ fn set_up() {
 }
 
 #[test]
-fn test_get_args_script() {
+fn test_cmd_args_get_args_script() {
     set_up();
     let args = vec!["thag", "demo_script", "--", "arg1", "arg2"];
     let cli = Cli::parse_from(args);
@@ -19,7 +19,7 @@ fn test_get_args_script() {
 }
 
 #[test]
-fn test_get_args_expr() {
+fn test_cmd_args_get_args_expr() {
     set_up();
     let args = vec!["thag", "--expr", "'2 + 5'"];
     let cli = Cli::parse_from(args);
@@ -29,7 +29,7 @@ fn test_get_args_expr() {
 }
 
 #[test]
-fn test_get_args_stdin() {
+fn test_cmd_args_get_args_stdin() {
     set_up();
     let args = vec!["thag", "-s"];
     let cli = Cli::parse_from(args);
@@ -39,7 +39,7 @@ fn test_get_args_stdin() {
 }
 
 #[test]
-fn test_get_proc_flags() {
+fn test_cmd_args_get_proc_flags() {
     set_up();
     let args = vec!["thag", "--expr", "'2 + 5'"];
     let cli = Cli::parse_from(args);
@@ -59,7 +59,7 @@ fn test_get_proc_flags() {
 }
 
 #[test]
-fn test_conflicts_with_all() {
+fn test_cmd_args_conflicts_with_all() {
     set_up();
     let args = vec!["thag", "--expr", "--edit"];
     let result = Cli::try_parse_from(args);
@@ -68,7 +68,7 @@ fn test_conflicts_with_all() {
 }
 
 #[test]
-fn test_proc_flags_generate_build_force_run() {
+fn test_cmd_args_proc_flags_generate_build_force_run() {
     set_up();
     let args = vec!["thag", "/demo/hello.rs", "-f"];
     let cli = Cli::parse_from(args);
@@ -79,7 +79,7 @@ fn test_proc_flags_generate_build_force_run() {
 }
 
 #[test]
-fn test_proc_flags_generate_build_run() {
+fn test_cmd_args_proc_flags_generate_build_run() {
     set_up();
     let args = vec!["thag", "/demo/hello.rs", "-g"];
     let cli = Cli::parse_from(args);
@@ -89,7 +89,7 @@ fn test_proc_flags_generate_build_run() {
 }
 
 #[test]
-fn test_proc_flags_build_run() {
+fn test_cmd_args_proc_flags_build_run() {
     set_up();
     let args = vec!["thag", "/demo/hello.rs", "-b"];
     let cli = Cli::parse_from(args);
@@ -99,7 +99,7 @@ fn test_proc_flags_build_run() {
 }
 
 #[test]
-fn test_proc_flags_norun() {
+fn test_cmd_args_proc_flags_norun() {
     set_up();
     let args = vec!["thag", "/demo/hello.rs", "-n"];
     let cli = Cli::parse_from(args);
@@ -109,7 +109,7 @@ fn test_proc_flags_norun() {
 }
 
 #[test]
-fn test_proc_flags_expr() {
+fn test_cmd_args_proc_flags_expr() {
     set_up();
     let args = vec!["thag", "-e", "Hi"];
     let cli = Cli::parse_from(args);
@@ -120,7 +120,7 @@ fn test_proc_flags_expr() {
 }
 
 #[test]
-fn test_proc_flags_edit() {
+fn test_cmd_args_proc_flags_edit() {
     set_up();
     let args = vec!["thag", "-d"];
     let cli = Cli::parse_from(args);
@@ -131,7 +131,7 @@ fn test_proc_flags_edit() {
 }
 
 #[test]
-fn test_proc_flags_stdin() {
+fn test_cmd_args_proc_flags_stdin() {
     set_up();
     let args = vec!["thag", "-s"];
     let cli = Cli::parse_from(args);
@@ -142,7 +142,7 @@ fn test_proc_flags_stdin() {
 }
 
 #[test]
-fn test_proc_flags_loop() {
+fn test_cmd_args_proc_flags_loop() {
     set_up();
     let args = vec!["thag", "-l", "&line"];
     let cli = Cli::parse_from(args);
@@ -153,7 +153,7 @@ fn test_proc_flags_loop() {
 }
 
 #[test]
-fn test_proc_flags_repl() {
+fn test_cmd_args_proc_flags_repl() {
     set_up();
     let args = vec!["thag", "-r"];
     let cli = Cli::parse_from(args);
@@ -164,7 +164,7 @@ fn test_proc_flags_repl() {
 }
 
 #[test]
-fn test_proc_flags_executable() {
+fn test_cmd_args_proc_flags_executable() {
     set_up();
     let args = vec!["thag", "/demo/hello.rs", "-x"];
     let cli = Cli::parse_from(args);

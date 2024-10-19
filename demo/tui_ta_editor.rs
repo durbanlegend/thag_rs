@@ -6,13 +6,13 @@ tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 #tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
 */
 
-use ratatui::backend::CrosstermBackend;
 /// Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
 /// down to two files at a time, because it was developed to allow editing of generated code and
 /// cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
 /// or default to a standard editor. A more minimalist version is used to edit stdin input in
 /// the `--edit (-d)` option of `thag_rs`.
 //# Purpose: Demo TUI editor and featured crates, including `crossterm`.
+use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::read;
 use ratatui::crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
@@ -383,7 +383,7 @@ impl<'a> Editor<'a> {
                 f.render_widget(&self.output.textarea, chunks[4]);
                 self.output.modified = false;
 
-                // Show key bindings on Ctrl-L
+                // Show key bindings on Ctrl-l
                 if self.show_popup {
                     show_popup(f);
                 }
@@ -443,7 +443,7 @@ impl<'a> Editor<'a> {
             } else {
                 let event = read()?;
 
-                if let Paste(data) = event {
+                if let Paste(ref data) = event {
                     self.write_output("Pasting data");
                     self.output.modified = true;
 
@@ -454,7 +454,7 @@ impl<'a> Editor<'a> {
                         buffer.modified = true;
                     }
                 } else {
-                    let input = Input::from(event.clone());
+                    let input = Input::from(event);
                     if input.alt || input.ctrl || input.shift {
                         self.write_output(format!("input={input:?}").as_str());
                     }
@@ -485,7 +485,6 @@ impl<'a> Editor<'a> {
                                     .to_string_lossy()
                             )
                             .into();
-                            // self.message = Some(msg.clone());
                             self.write_output(&msg);
                         }
                         Input {
@@ -537,7 +536,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
     let block = Block::default()
         .borders(Borders::ALL)
         .title(
-            Title::from("Platform-dependent key mappings (YMMV)")
+            Title::from("Key bindings - subject to your terminal settings")
                 .alignment(ratatui::layout::Alignment::Center),
         )
         .title(Title::from("(^L to toggle)").alignment(Alignment::Center))

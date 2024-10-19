@@ -1,12 +1,12 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
+crossterm = "0.28.1"
 enum-assoc = "1.1.0"
 log = "0.4.21"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
-termbg = "0.5.0"
+termbg = "0.5.2"
 */
 
 /// More fully worked-out prototype of colouring and styling messages based on the level of
@@ -140,10 +140,10 @@ enum MessageStyle {
 // termbg sends an operating system command (OSC) to interrogate the screen
 // but with side effects which we undo here.
 fn clear_screen() {
-//     let mut out = stdout();
-//     out.execute(MoveToColumn(0)).unwrap();
-//     out.execute(Show).unwrap();
-//     out.flush().unwrap();
+    //     let mut out = stdout();
+    //     out.execute(MoveToColumn(0)).unwrap();
+    //     out.execute(Show).unwrap();
+    //     out.flush().unwrap();
 }
 
 fn get_theme() -> Result<Theme, termbg::Error> {

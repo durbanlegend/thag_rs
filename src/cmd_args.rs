@@ -1,11 +1,9 @@
-use crate::debug_log;
-use crate::RS_SUFFIX;
-use crate::{errors::ThagError, MAYBE_CONFIG};
+use crate::{config::maybe_config, debug_log, ThagError, ThagResult, RS_SUFFIX};
 
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
-use core::{fmt, str};
 use firestorm::profile_fn;
+use std::{fmt, str};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and REPL.
 #[allow(clippy::struct_excessive_bools)]
@@ -123,7 +121,7 @@ pub fn get_args() -> Cli {
 /// Validates the command-line arguments
 /// # Errors
 /// Will return `Err` if there is a missing script name or missing .rs suffix.
-pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), ThagError> {
+pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
     profile_fn!(validate_args);
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
@@ -148,27 +146,27 @@ bitflags! {
     // #[derive(Debug)]
     #[derive(Clone, Default, PartialEq, Eq)]
     pub struct ProcFlags: u32 {
-        const GENERATE = 1;
-        const BUILD = 2;
-        const FORCE = 4;
-        const RUN = 8;
-        const NORUN = 16;
-        const EXECUTABLE = 32;
-        const CHECK = 64;
-        const REPL = 128;
-        const EXPR = 256;
-        const STDIN = 512;
-        const EDIT = 1024;
-        const LOOP = 2048;
-        const MULTI = 4096;
-        const TIMINGS = 8192;
-        const DEBUG = 16384;
-        const VERBOSE = 32768;
-        const NORMAL = 65536;
-        const QUIET = 131_072;
-        const QUIETER = 262_144;
-        const UNQUOTE = 524_288;
-        const CONFIG = 1_048_576;
+        const GENERATE      = 1;
+        const BUILD         = 2;
+        const FORCE         = 4;
+        const RUN           = 8;
+        const NORUN         = 16;
+        const EXECUTABLE    = 32;
+        const CHECK         = 64;
+        const REPL          = 128;
+        const EXPR          = 256;
+        const STDIN         = 512;
+        const EDIT          = 1024;
+        const LOOP          = 2048;
+        const MULTI         = 4096;
+        const TIMINGS       = 8192;
+        const DEBUG         = 16384;
+        const VERBOSE       = 32768;
+        const NORMAL        = 65536;
+        const QUIET         = 131_072;
+        const QUIETER       = 262_144;
+        const UNQUOTE       = 524_288;
+        const CONFIG        = 1_048_576;
     }
 }
 
@@ -200,7 +198,7 @@ impl str::FromStr for ProcFlags {
 /// # Panics
 ///
 /// Will panic if the internal correctness check fails.
-pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
+pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     profile_fn!(get_proc_flags);
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
@@ -240,15 +238,17 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, ThagError> {
 
         let unquote = args.unquote.map_or_else(
             || {
-                (*MAYBE_CONFIG).as_ref().map_or_else(
+                maybe_config().map_or_else(
                     || {
-                        debug_log!("Found nothing, returning default of false");
+                        debug_log!(
+                            "Found no arg or config file, returning default unquote = false"
+                        );
                         false
                     },
                     |config| {
                         debug_log!(
-                            "MAYBE_CONFIG={:?}, returning config.misc.unquote={}",
-                            MAYBE_CONFIG,
+                            "maybe_config()={:?}, returning config.misc.unquote={}",
+                            maybe_config(),
                             config.misc.unquote
                         );
                         config.misc.unquote

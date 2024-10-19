@@ -34,7 +34,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cargo_search_success() {
+    fn test_manifest_cargo_search_success() {
         set_up();
         let output = Output {
             status: successful_exit_status(),
@@ -63,7 +63,7 @@ mod tests {
     }
 
     #[test]
-    fn test_capture_dep_valid() {
+    fn test_manifest_capture_dep_valid() {
         set_up();
         let line = r#"serde = "1.0.104""#;
         let result = capture_dep(line);
@@ -74,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn test_capture_dep_invalid() {
+    fn test_manifest_capture_dep_invalid() {
         set_up();
         let line = r#"invalid format"#;
         let result = capture_dep(line);
@@ -82,7 +82,7 @@ mod tests {
     }
 
     #[test]
-    fn test_default_manifest() {
+    fn test_manifest_default_manifest() {
         set_up();
         let build_state = BuildState {
             source_stem: "example".to_string(),
@@ -101,7 +101,7 @@ mod tests {
     }
 
     // #[test]
-    // fn test_cargo_search_success() {
+    // fn test_manifest_cargo_search_success() {
     //     // This is a mocked test. In a real test environment, you should mock Command to simulate Cargo behavior.
     //     let output = r#"serde = "1.0.203""#;
     //     let mut search_command = NamedTempFile::new().unwrap();
@@ -117,7 +117,7 @@ mod tests {
     // }
 
     #[test]
-    fn test_merge_manifest() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_manifest_merge_manifest() -> Result<(), Box<dyn std::error::Error>> {
         set_up();
         init_logger();
 

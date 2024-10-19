@@ -1,6 +1,8 @@
 /*[toml]
 [dependencies]
-termbg = "0.5.0"
+# Alternate between the following two termbg dependencies to test the difference:
+termbg = "=0.5.2"
+#termbg = { git = "https://github.com/durbanlegend/termbg" }
 */
 
 /// This seems to "reliably" swallow the very first character entered in Windows.
@@ -8,13 +10,11 @@ termbg = "0.5.0"
 use std::io::{self, Read};
 
 fn main() {
-    let timeout = std::time::Duration::from_millis(100);
+    let timeout = std::time::Duration::from_millis(500);
 
-    // let term = termbg::terminal();
-    let rgb = termbg::rgb(timeout);
-    // let theme = termbg::theme(timeout);
+    let _rgb = termbg::rgb(timeout);
 
-    println!("Run with -qq in Windows Terminal to suppress colored lines, type in something and see if first character gets swallowed");
+    println!("Type in something in Windows Terminal and see if first character gets swallowed");
     let mut buffer = String::new();
     io::stdin().lock().read_to_string(&mut buffer).unwrap();
     println!("buffer={buffer:?}");

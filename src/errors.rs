@@ -11,6 +11,8 @@ use syn::Error as SynError;
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
 
+pub type ThagResult<T> = Result<T, ThagError>;
+
 #[derive(Debug)]
 pub enum ThagError {
     BitFlagsParse(BitFlagsParseError), // For bitflags parse error
@@ -21,6 +23,7 @@ pub enum ThagError {
     FromStr(Cow<'static, str>), // For simple errors from a string
     Io(std::io::Error),  // For I/O errors
     LockMutexGuard(&'static str), // For lock errors with MutexGuard
+    Logic(&'static str), // For logic errors
     NoneOption(&'static str), // For unwrapping Options
     OsString(std::ffi::OsString), // For unconvertible OsStrings
     Reedline(ReedlineError), // For reedline errors
@@ -30,6 +33,7 @@ pub enum ThagError {
     TomlDe(TomlDeError), // For TOML deserialization errors
     TomlSer(TomlSerError), // For TOML serialization errors
     Toml(CargoTomlError), // For cargo_toml errors
+    UnsupportedTerm,
 }
 
 impl ThagError {}
@@ -124,7 +128,7 @@ impl std::fmt::Display for ThagError {
             Self::BitFlagsParse(e) => write!(f, "{e:?}"),
             Self::Cancelled => write!(f, "Cancelled"),
             Self::ClapError(e) => write!(f, "{e:?}"),
-            Self::Command(s) | Self::NoneOption(s) => {
+            Self::Command(s) | Self::Logic(s) | Self::NoneOption(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
@@ -150,6 +154,7 @@ impl std::fmt::Display for ThagError {
             Self::TomlDe(e) => write!(f, "{e:?}"),
             Self::TomlSer(e) => write!(f, "{e:?}"),
             Self::Toml(e) => write!(f, "{e:?}"),
+            Self::UnsupportedTerm => write!(f, "Unsupported terminal type"),
         }
     }
 }
@@ -161,13 +166,14 @@ impl Error for ThagError {
             // cast to the trait object `&error::Error`. This works because the
             // underlying type already implements the `Error` trait.
             Self::BitFlagsParse(e) => Some(e),
-            Self::Cancelled => Some(self),
+            Self::Cancelled | Self::UnsupportedTerm => Some(self),
             Self::ClapError(ref e) => Some(e),
             Self::Command(_e) => Some(self),
             Self::Dyn(e) => Some(&**e),
             Self::FromStr(ref _e) => Some(self),
             Self::Io(ref e) => Some(e),
             Self::LockMutexGuard(_e) => Some(self),
+            Self::Logic(_e) => Some(self),
             Self::NoneOption(_e) => Some(self),
             Self::OsString(ref _o) => Some(self),
             Self::Reedline(e) => Some(e),

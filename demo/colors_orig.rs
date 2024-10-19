@@ -1,13 +1,13 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
+crossterm = "0.28.1"
 log = "0.4.21"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 thag_rs = "0.1.4"
 
 strum = { version = "0.26.2", features = ["derive"] }
 supports-color= "3.0.0"
-termbg = "0.5.0"
+termbg = "0.5.2"
 */
 
 /// Original prototype of `thag_rs`'s `colors` module to style messages according

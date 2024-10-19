@@ -1,24 +1,79 @@
+use clap::CommandFactory;
+#[cfg(feature = "simplelog")]
+use log::info;
 use mockall::Sequence;
-use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
-use ratatui::crossterm::tty::IsTty;
+use predicates::prelude::predicate;
+use ratatui::crossterm::{
+    event::{Event, KeyCode, KeyEvent, KeyModifiers},
+    tty::IsTty,
+};
 use ratatui::style::{Color, Style};
-use std::io::{stdout, Write};
-use std::process::{Command, Stdio};
-use thag_rs::colors::get_term_theme;
-use thag_rs::logging::Verbosity;
-use thag_rs::stdin::{apply_highlights, normalize_newlines, read_to_string, MockEventReader};
-use thag_rs::{edit, log, ThagError};
+use sequential_test::sequential;
+#[cfg(feature = "simplelog")]
+use simplelog::{
+    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+};
+#[cfg(feature = "simplelog")]
+use std::{fs::File, sync::OnceLock};
+use std::{
+    fs::{self},
+    io::{stdout, Write},
+    process::{Command, Stdio},
+};
+use thag_rs::colors::{get_term_theme, TuiSelectionBg};
+use thag_rs::stdin::{edit, read_to_string};
+use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History, MockEventReader};
+use thag_rs::{log, logging::Verbosity, ThagResult, TMPDIR};
 use tui_textarea::TextArea;
 
 // Set environment variables before running tests
 fn set_up() {
+    init_logger();
     std::env::set_var("TEST_ENV", "1");
-    std::env::set_var("VISUAL", "cat");
-    std::env::set_var("EDITOR", "cat");
+    #[cfg(windows)]
+    {
+        std::env::set_var("VISUAL", "powershell.exe /C Get-Content");
+        std::env::set_var("EDITOR", "powershell.exe /C Get-Content");
+    }
+    #[cfg(not(windows))]
+    {
+        std::env::set_var("VISUAL", "cat");
+        std::env::set_var("EDITOR", "cat");
+    }
+}
+
+#[cfg(feature = "simplelog")]
+static LOGGER: OnceLock<()> = OnceLock::new();
+
+fn init_logger() {
+    // Choose between simplelog and env_logger based on compile feature
+    #[cfg(feature = "simplelog")]
+    LOGGER.get_or_init(|| {
+        CombinedLogger::init(vec![
+            TermLogger::new(
+                LevelFilter::Info,
+                Config::default(),
+                TerminalMode::Mixed,
+                ColorChoice::Auto,
+            ),
+            WriteLogger::new(
+                LevelFilter::Debug,
+                Config::default(),
+                File::create("app.log").unwrap(),
+            ),
+        ])
+        .unwrap();
+        info!("Initialized simplelog");
+    });
+
+    #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
+    {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
 }
 
 #[test]
-fn test_edit_stdin_submit() {
+fn test_stdin_edit_stdin_submit() {
     set_up();
     // Check if the test is running in a terminal
     if !stdout().is_tty() {
@@ -72,11 +127,11 @@ fn test_edit_stdin_submit() {
 }
 
 #[test]
-fn test_edit_stdin_quit() {
+fn test_stdin_edit_stdin_quit() {
     set_up();
     // Check if the test is running in a terminal
     if !stdout().is_tty() {
-        println!("Skipping test_edit_stdin_submit as it is not running in a terminal.");
+        println!("Skipping test_stdin_edit_stdin_quit as it is not running in a terminal.");
         return;
     }
     let mut mock_reader = MockEventReader::new();
@@ -90,16 +145,142 @@ fn test_edit_stdin_quit() {
 
     let result = edit(&mock_reader);
 
-    assert!(result.is_err());
-    assert!(matches!(result.err().unwrap(), ThagError::Cancelled));
-}
-
-fn init_logger() {
-    let _ = env_logger::builder().is_test(true).try_init();
+    assert!(result.is_ok());
 }
 
 #[test]
-fn test_read_to_string() {
+fn test_stdin_history_new() {
+    set_up();
+    let history = History::new();
+    assert!(history.entries.is_empty());
+    assert!(history.current_index.is_none());
+}
+
+#[test]
+fn test_stdin_history_get_current_empty() {
+    set_up();
+    let mut history = History::new();
+    assert!(history.get_current().is_none());
+}
+
+#[test]
+fn test_stdin_history_get_current() {
+    set_up();
+    let mut history = History::new();
+    history.add_entry("first");
+    history.add_entry("second");
+    let current = history.get_current();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "second");
+}
+
+#[test]
+fn test_stdin_history_get_previous_empty() {
+    set_up();
+    let mut history = History::new();
+    assert!(history.get_previous().is_none());
+}
+
+#[test]
+fn test_stdin_history_navigate() -> ThagResult<()> {
+    set_up();
+    let mut history = History::new();
+    history.add_entry("first");
+    history.add_entry("second");
+    history.add_entry("third");
+    history.add_entry("fourth");
+
+    eprintln!("History={:#?}", history);
+
+    let current = history.get_current();
+
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "fourth");
+
+    let current = history.get_previous();
+
+    eprintln!("Expecting third, current={current:?}");
+
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "third");
+
+    let current = history.get_previous();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "second");
+
+    let current = history.get_previous();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "first");
+
+    let current = history.get_previous();
+    assert_eq!(&current.unwrap().contents(), "first");
+
+    let current = history.get_next();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "second");
+
+    let current = history.get_next();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "third");
+
+    let current = history.get_next();
+    assert!(current.is_some());
+    assert_eq!(&current.unwrap().contents(), "fourth");
+
+    let current = history.get_next();
+    assert_eq!(&current.unwrap().contents(), "fourth");
+
+    eprintln!("History={history:#?}");
+
+    let dir_path = &TMPDIR.join("thag_rs_tests");
+    let path = dir_path.join("rs_stdin_hist.json");
+    eprintln!("path={path:#?}");
+
+    // Ensure REPL subdirectory exists
+    fs::create_dir_all(&dir_path)?;
+
+    // Create REPL file if necessary
+    let _ = fs::File::create(&path)?;
+
+    let _ = history.save_to_file(&path)?;
+
+    let history = History::load_from_file(&path);
+    eprintln!("History (reloaded)={:#?}", history);
+    Ok(())
+}
+
+#[test]
+fn test_stdin_history_get_next_empty() {
+    set_up();
+    let mut history = History::new();
+    assert!(history.get_next().is_none());
+}
+
+// #[test]
+// fn test_stdin_history_get_next() {
+//     set_up();
+//     let mut history = History::new();
+//     history.add_entry("first");
+//     history.add_entry("second");
+//     eprintln!("History={:#?}", history);
+//     history.get_previous(); // Move to the previous entry
+//     let current = history.get_current();
+//     assert!(current.is_some());
+//     assert_eq!(&current.unwrap().contents(), "first");
+// }
+
+#[test]
+fn test_stdin_repl_command_print_help() {
+    set_up();
+    let mut output = Vec::new();
+    let mut command = thag_rs::repl::ReplCommand::command();
+    command.write_long_help(&mut output).unwrap();
+    let help_output = String::from_utf8(output).unwrap();
+    assert!(help_output.contains("REPL mode lets you type or paste a Rust expression"));
+}
+
+#[test]
+fn test_stdin_read_to_string() {
     set_up();
     let string = r#"fn main() {{ println!("Hello, world!"); }}\n"#;
     let mut input = string.as_bytes();
@@ -108,7 +289,27 @@ fn test_read_to_string() {
 }
 
 #[test]
-fn test_read_stdin() {
+#[sequential]
+fn test_stdin_read_from_stdin() {
+    set_up();
+    // Trying an alternative to process::Command.
+    // Spawn `cargo run -- -s` using assert_cmd
+    let mut cmd = assert_cmd::Command::new("cargo");
+    let cmd = cmd // Use assert_cmd to run `cargo`
+        .arg("run")
+        .arg("--")
+        .arg("-qq")
+        .arg("-s")
+        .write_stdin(Vec::from("13 + 21\n"));
+    // Assert the output
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("34"));
+}
+
+#[test]
+#[sequential]
+fn test_stdin_read_stdin() {
     set_up();
     init_logger();
     let string = "Hello, world!";
@@ -145,7 +346,7 @@ fn test_read_stdin() {
 }
 
 #[test]
-fn test_normalize_newlines() {
+fn test_stdin_normalize_newlines() {
     set_up();
     let input = "Hello\r\nWorld\r!";
     let expected_output = "Hello\nWorld\n!";
@@ -153,13 +354,13 @@ fn test_normalize_newlines() {
 }
 
 #[test]
-fn test_apply_highlights() {
+fn test_stdin_apply_highlights() {
     set_up();
     let mut textarea = TextArea::default();
 
     eprintln!("Theme={}", get_term_theme());
 
-    apply_highlights(true, &mut textarea);
+    apply_highlights(&TuiSelectionBg::BlueYellow, &mut textarea);
     assert_eq!(
         textarea.selection_style(),
         Style::default().fg(Color::Black).bg(Color::Cyan)
@@ -173,7 +374,7 @@ fn test_apply_highlights() {
         Style::default().fg(Color::White).bg(Color::DarkGray)
     );
 
-    apply_highlights(false, &mut textarea);
+    apply_highlights(&TuiSelectionBg::RedWhite, &mut textarea);
     assert_eq!(
         textarea.selection_style(),
         Style::default().fg(Color::White).bg(Color::Blue)

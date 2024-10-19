@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
+crossterm = "0.28.1"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-termbg = "0.5.0"
+termbg = "0.5.2"
 */
 
 /// An early exploration of message colouring, GPT-generated.

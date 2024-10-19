@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 crokey = "1.1.0"
-crossterm = "0.28.0"
+crossterm = "0.28.1"
 serde = { version = "1.0.130", features = ["derive"] }
 toml = "0.5"
 */
@@ -37,12 +37,13 @@ pub fn main() {
                     continue;
                 };
                 let key = fmt.to_string(key_combination);
+                println!("Detected {key}");
                 match key_combination {
                     key!(ctrl - c) => {
                         println!("Arg! You savagely killed me with a {}", key.red());
                         break;
                     }
-                    key!(ctrl - q) => {
+                    key!(ctrl - q) | key!(ctrl - q - q - q) => {
                         println!("You typed {} which gracefully quits", key.green());
                         break;
                     }

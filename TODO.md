@@ -3,17 +3,26 @@
 ## High Priority
 
 ## Medium Priority
-- [ ]  Add additional popular crates
 - [ ]  More unit and integration tests
 - [ ]  Simple demo https server
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
-- [ ]  Raise clear_screen as an issue on termbg and supports-color crates?
+- [ ]  Raise clear_screen as an issue on supports-color crate?
 - [ ]  Add FAQ
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Config option for formatting main?
-- [ ]  Config option for stdin -d highlighting preference
+- [ ]  Config option for stdin -d highlighting preference, like repl.rs
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
-- [ ]  Own line editor for REPL, and/or REPL based on stdin.rs
+- [ ]  Decommission repl.rs edit_history_old.
+- [ ]  >>> Implement deletion of current history line with function key.
+- [ ]  Look for any functions that can run at compile-time.
+- [ ]  Make key_handler a trait method? Or a closure?
+- [ ]  Implement confirmation of save.
+        >>> TODO: Save history on TUI save - in KeyHandler will need to be passed history file location
+- [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
+- [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.
+- [ ]  Decommission repl::edit_history_old.
+- [ ]  Decide whether to decommission REPL delete function - keep list
+- [ ]  Decide whether to decommission REPL edit, toml and run functions.
 - [ ]  Debug Firestorm double invocation.
 - [ ]  Test [profile.dev] optimisation level
 - [ ]  Check dead code & other #[cfg[allow(...)]; look into factoring over-long gen_build_run
@@ -50,6 +59,7 @@
        - cargo publish --no-verify
 
 ## Low Priority
+- [ ]  Add additional popular crates
 - [ ]  Paste event in Windows slow or not happening?
 - [ ]  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 - [ ]  "edit" crate - how to reconfigure editors dynamically - instructions unclear.

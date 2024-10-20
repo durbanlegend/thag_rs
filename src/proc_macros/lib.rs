@@ -1,3 +1,6 @@
+/// Copied from `crokey` under MIT licence.
+/// Copyright (c) 2022 Canop
+///
 use {
     crossterm::event::KeyCode,
     proc_macro::TokenStream as TokenStream1,

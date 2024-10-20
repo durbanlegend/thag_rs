@@ -1,4 +1,4 @@
-/// Borrowed from `crokey` under MIT licence.
+/// Copied from `crokey` under MIT licence.
 /// Copyright (c) 2022 Canop
 ///
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};

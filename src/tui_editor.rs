@@ -915,14 +915,14 @@ pub fn maybe_enable_raw_mode() -> ThagResult<()> {
 }
 
 pub fn display_popup(
-    adjusted_mappings: &[KeyDisplayLine],
+    mappings: &[KeyDisplayLine],
     title_top: &str,
     title_bottom: &str,
     max_key_len: u16,
     max_desc_len: u16,
     f: &mut ratatui::prelude::Frame<'_>,
 ) {
-    let num_filtered_rows = adjusted_mappings.len();
+    let num_filtered_rows = mappings.len();
     let block = Block::default()
         .borders(Borders::ALL)
         .title_top(Line::from(title_top).centered())
@@ -962,7 +962,7 @@ pub fn display_popup(
                 .as_ref(),
             );
         let cells = col_layout.split(*row);
-        let mut widget = Paragraph::new(adjusted_mappings[i].keys);
+        let mut widget = Paragraph::new(mappings[i].keys);
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
@@ -973,7 +973,7 @@ pub fn display_popup(
                 .not_bold();
         }
         f.render_widget(widget, cells[0]);
-        let mut widget = Paragraph::new(adjusted_mappings[i].desc);
+        let mut widget = Paragraph::new(mappings[i].desc);
 
         if i == 0 {
             widget = widget

@@ -758,6 +758,21 @@ which will give identical output to the above.
 
 ---
 
+### Script: darling_consume_fields.rs
+
+**Description:**  Published example from `darling` crate showing parsing for derive input.
+ Extended to show formatted version of emitted code.
+
+**Purpose:** Explore `darling` crate.
+
+**Crates:** `darling`, `proc_macro2`, `quote`, `syn`
+
+**Type:** Program
+
+**Link:** [darling_consume_fields.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs)
+
+---
+
 ### Script: dethag_re.rs
 
 **Description:**  Unescape \n and \\" markers in a string to convert the wall of text to readable lines.
@@ -2527,6 +2542,18 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [rustfmt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs)
+
+---
+
+### Script: rustfmt_stdin.rs
+
+**Description:**  Read Rust source code from stdin and display the output as formatted by `rustfmt`.
+
+**Purpose:** Format arbitrary Rust code. Does no more than `rustfmt --`.
+
+**Type:** Program
+
+**Link:** [rustfmt_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs)
 
 ---
 

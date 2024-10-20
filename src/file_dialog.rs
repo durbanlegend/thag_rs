@@ -281,10 +281,10 @@ impl<'a> FileDialog<'a> {
             }
             if self.popup {
                 let title_bottom = tui_editor::TITLE_BOTTOM;
-                let adjusted_mappings = adjust_mappings();
-                let (max_key_len, max_desc_len) = get_max_lengths(adjusted_mappings);
+                // let adjusted_mappings = adjust_mappings();
+                let (max_key_len, max_desc_len) = get_max_lengths(MAPPINGS);
                 display_popup(
-                    adjusted_mappings,
+                    MAPPINGS,
                     "Key bindings",
                     title_bottom,
                     max_key_len,
@@ -481,19 +481,19 @@ impl<'a> FileDialog<'a> {
     }
 }
 
-fn adjust_mappings() -> &'static Vec<KeyDisplayLine> {
-    static ADJUSTED_MAPPINGS: OnceLock<Vec<KeyDisplayLine>> = OnceLock::new();
-    let remove: &[&str] = &[];
-    let add: &'static [KeyDisplayLine] = &[];
-    ADJUSTED_MAPPINGS.get_or_init(|| {
-        MAPPINGS
-            .iter()
-            .filter(|&row| !remove.contains(&row.keys))
-            .chain(add.iter())
-            .cloned()
-            .collect()
-    })
-}
+// fn adjust_mappings() -> &'static Vec<KeyDisplayLine> {
+//     static ADJUSTED_MAPPINGS: OnceLock<Vec<KeyDisplayLine>> = OnceLock::new();
+//     let remove: &[&str] = &[];
+//     let add: &'static [KeyDisplayLine] = &[];
+//     ADJUSTED_MAPPINGS.get_or_init(|| {
+//         MAPPINGS
+//             .iter()
+//             .filter(|&row| !remove.contains(&row.keys))
+//             .chain(add.iter())
+//             .cloned()
+//             .collect()
+//     })
+// }
 
 fn get_max_lengths(adjusted_mappings: &[KeyDisplayLine]) -> (u16, u16) {
     static MAX_LENGTHS: OnceLock<(u16, u16)> = OnceLock::new();

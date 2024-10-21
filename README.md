@@ -351,13 +351,7 @@ thag -r
 This will start an interactive REPL session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally edit an expression from history.
 Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano...) and rerun it. The REPL also offers basic housekeeping functions for the temporary files generated, otherwise being in temporary space they will be cleaned up by the operating system in due course.
 
-#### Revisiting a REPL expression from a previous session
-```bash
-thag -r repl_<nnnnnn>.rs
-```
-will return to edit and run a named generated script from a previous REPL session.
-
-More informally, you can access the last 25 REPL commands or expressions from within the REPL function just by using the up and down arrow keys to navigate history.
+You can access the last 25 REPL commands or expressions from within the REPL function just by using the up and down arrow keys to navigate history.
 
 #### General notes on REPL
 All REPL files are created under the `rs_repl` subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust) so as not to clog up your system. Until such time as they are harvested by the OS you can display the locations and copy the files if desired.
@@ -387,6 +381,14 @@ _— The Rust Reference_
   - A [[bin]] to rename the executable output.
 * Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows, interrogating the terminal is not well supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` defaults to basic ANSI-16 colours and dark mode support. However, the dark mode colours it uses have been chosen to work well with most light modes.
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from thag_rs. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
+
+## Usage notes
+
+### Testing changes to dependencies
+
+As mentioned earlier, ``thag_rs`` uses timestamps to rerun compiled scripts without unnecessary rebuilding. You can override this behaviour with the `--force (-f)` option.
+This is important to note if you are using the script to test changes to a dependency specified in the toml block, typically as a path dependency but possibly a git or even a version dependency.
+If you make changes to the dependency but not to the script, you need to specify -f to rebuild the script so that it will pick up the changed dependency.
 
 ## Platform Support
 This crate is designed to be cross-platform and supports MacOS, Linux and Windows.

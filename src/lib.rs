@@ -35,6 +35,7 @@ pub use errors::{ThagError, ThagResult};
 pub use keys::KeyCombination;
 pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};
 pub use termbg;
+pub use thag_proc_macros::{DeriveCustomModel, IntoStringHashMap};
 
 // Common constants and statics
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";

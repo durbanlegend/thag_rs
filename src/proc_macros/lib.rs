@@ -1,24 +1,30 @@
+mod custom_model;
+mod into_string_hash_map;
+
+use into_string_hash_map::into_hash_map_impl;
+
+use crate::custom_model::derive_custom_model_impl;
 use {
     crossterm::event::KeyCode,
-    proc_macro::TokenStream as TokenStream1,
-    proc_macro2::{Group, Span, TokenStream},
+    // derive_syn_parse::Parse as DeriveSynParse,
+    proc_macro::TokenStream,
+    proc_macro2::{Group, Span},
     quote::quote,
     strict::OneToThree,
     syn::{
-        parse::{Error, Parse, ParseStream, Result},
+        parse::{Parse, ParseStream},
         parse_macro_input, Ident, LitChar, LitInt, Token,
     },
 };
-
 struct KeyCombinationKey {
-    pub crate_path: TokenStream,
+    pub crate_path: proc_macro2::TokenStream,
     pub ctrl: bool,
     pub alt: bool,
     pub shift: bool,
-    pub codes: OneToThree<TokenStream>,
+    pub codes: OneToThree<proc_macro2::TokenStream>,
 }
 
-fn parse_key_code(raw: &str, shift: bool, code_span: Span) -> Result<KeyCode> {
+fn parse_key_code(raw: &str, shift: bool, code_span: Span) -> syn::parse::Result<KeyCode> {
     use KeyCode::{
         BackTab, Backspace, Char, Delete, Down, End, Enter, Esc, Home, Insert, Left, PageDown,
         PageUp, Right, Tab, Up, F,
@@ -65,7 +71,7 @@ fn parse_key_code(raw: &str, shift: bool, code_span: Span) -> Result<KeyCode> {
             Char(c)
         }
         _ => {
-            return Err(Error::new(
+            return Err(syn::parse::Error::new(
                 code_span,
                 format_args!("unrecognized key code {raw:?}"),
             ));
@@ -74,7 +80,10 @@ fn parse_key_code(raw: &str, shift: bool, code_span: Span) -> Result<KeyCode> {
     Ok(code)
 }
 
-fn key_code_to_token_stream(key_code: KeyCode, code_span: Span) -> Result<TokenStream> {
+fn key_code_to_token_stream(
+    key_code: KeyCode,
+    code_span: Span,
+) -> syn::parse::Result<proc_macro2::TokenStream> {
     let ts = match key_code {
         KeyCode::Backspace => quote! { Backspace },
         KeyCode::Enter => quote! { Enter },
@@ -104,7 +113,7 @@ fn key_code_to_token_stream(key_code: KeyCode, code_span: Span) -> Result<TokenS
         // Media(MediaKeyCode),
         // Modifier(ModifierKeyCode),
         _ => {
-            return Err(Error::new(
+            return Err(syn::parse::Error::new(
                 code_span,
                 format_args!("failed to encode {key_code:?}"),
             ));
@@ -114,7 +123,7 @@ fn key_code_to_token_stream(key_code: KeyCode, code_span: Span) -> Result<TokenS
 }
 
 impl Parse for KeyCombinationKey {
-    fn parse(input: ParseStream<'_>) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> syn::parse::Result<Self> {
         let crate_path = input.parse::<Group>()?.stream();
 
         let mut ctrl = false;
@@ -133,7 +142,10 @@ impl Parse for KeyCombinationKey {
                 let int = input.parse::<LitInt>()?;
                 let digits = int.base10_digits();
                 if digits.len() > 1 {
-                    return Err(Error::new(int.span(), "invalid key; must be between 0-9"));
+                    return Err(syn::parse::Error::new(
+                        int.span(),
+                        "invalid key; must be between 0-9",
+                    ));
                 }
                 break (digits.to_owned(), int.span());
             }
@@ -151,7 +163,7 @@ impl Parse for KeyCombinationKey {
                 _ => break (ident_value, ident.span()),
             };
             if *modifier {
-                return Err(Error::new(
+                return Err(syn::parse::Error::new(
                     ident.span(),
                     format_args!("duplicate modifier {ident_value}"),
                 ));
@@ -200,7 +212,7 @@ impl Parse for KeyCombinationKey {
 // Not public API. This is internal and to be used only by `key!`.
 #[doc(hidden)]
 #[proc_macro]
-pub fn key(input: TokenStream1) -> TokenStream1 {
+pub fn key(input: TokenStream) -> TokenStream {
     // println!("input={input:#?}");
     let KeyCombinationKey {
         crate_path,
@@ -258,4 +270,14 @@ pub fn key(input: TokenStream1) -> TokenStream1 {
         }
     }
     .into()
+}
+
+#[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
+pub fn derive_custom_model(item: TokenStream) -> TokenStream {
+    derive_custom_model_impl(item)
+}
+
+#[proc_macro_derive(IntoStringHashMap)]
+pub fn into_hash_map(item: TokenStream) -> TokenStream {
+    into_hash_map_impl(item)
 }

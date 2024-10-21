@@ -342,7 +342,6 @@ impl KeyDisplayLine {
 
 /// Control debug logging
 #[macro_export]
-#[cfg(debug_assertions)]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
         // If the `debug-logs` feature is enabled, always log

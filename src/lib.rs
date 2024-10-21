@@ -17,7 +17,7 @@ pub mod repl;
 pub mod shared;
 pub mod stdin;
 // #[cfg(not(target_os = "windows"))]
-// pub mod termbg;
+pub mod termbg;
 pub mod tui_editor;
 
 // Re-export commonly used items for convenience

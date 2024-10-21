@@ -836,7 +836,7 @@ which will give identical output to the above.
  in a fn main, thag_rs pulls any inner attributes out to the top of the program.
 
  Notice we also have a shebang so that this script may be run as `demo/duration_snippet.rs` with execute
- permission. The shebang must be on the very first line but coexists peacefulyl with the inner attribute.
+ permission. The shebang must be on the very first line but coexists peacefully with the inner attribute.
 
  See tracking issue https://github.com/rust-lang/rust/issues/120301 for the `Duration` constructor issue..
 
@@ -1885,7 +1885,7 @@ which will give identical output to the above.
 
 ### Script: json.rs
 
-**Description:**  Demo of using deserializing JSON with the featured crates.
+**Description:**  Demo of deserialising JSON with the featured crates.
 
 **Purpose:** Demo featured crates.
 
@@ -1899,7 +1899,7 @@ which will give identical output to the above.
 
 ### Script: json_parse.rs
 
-**Description:**  Demo of using deserializing JSON with the featured crates.
+**Description:**  Demo of deserialising JSON with the featured crates.
  This version prompts for JSON input.
 
 **Purpose:** Demo featured crates.
@@ -2086,7 +2086,7 @@ which will give identical output to the above.
  colour support of the current terminal and whether a light or dark theme is currently
  selected. This was the result of good deal of exploration and dialog with ChatGPT.  Try it on dark vs light
  backgrounds to see how some of the same colours "pop" when shown against a light or dark theme
- and how some virtually or literally disappear when when not well matched to the theme.
+ and how some virtually or literally disappear when not well matched to the theme.
  Fully worked-out demonstration of colouring and styling display messages according
  to message level.
 
@@ -2542,6 +2542,18 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [rustfmt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs)
+
+---
+
+### Script: rustfmt_stdin.rs
+
+**Description:**  Read Rust source code from stdin and display the output as formatted by `rustfmt`.
+
+**Purpose:** Format arbitrary Rust code. Does no more than `rustfmt --`.
+
+**Type:** Program
+
+**Link:** [rustfmt_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs)
 
 ---
 

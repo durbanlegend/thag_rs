@@ -20,12 +20,13 @@ use std::{
     io::Result,
     iter,
     path::{Path, PathBuf},
+    sync::OnceLock,
 };
 use tui_textarea::{Input, TextArea};
 
-use crate::shared::KeyDisplayLine;
-use crate::tui_editor::{self, show_popup};
+use crate::tui_editor::{self};
 use crate::{debug_log, key_mappings};
+use crate::{shared::KeyDisplayLine, tui_editor::display_popup};
 
 /// File dialog mode to distinguish between Open and Save dialogs
 #[derive(Debug, PartialEq, Eq)]
@@ -278,14 +279,17 @@ impl<'a> FileDialog<'a> {
                 }
                 f.render_widget(&self.input, input_area); // Renders the input widget inside the block
             }
+
             if self.popup {
-                show_popup(
+                let title_bottom = tui_editor::TITLE_BOTTOM;
+                let (max_key_len, max_desc_len) = get_max_lengths(MAPPINGS);
+                display_popup(
                     MAPPINGS,
-                    f,
                     "Key bindings",
-                    tui_editor::TITLE_BOTTOM,
-                    &[],
-                    &[],
+                    title_bottom,
+                    max_key_len,
+                    max_desc_len,
+                    f,
                 );
             };
         }
@@ -475,6 +479,34 @@ impl<'a> FileDialog<'a> {
         }
         Ok(Status::Incomplete)
     }
+}
+
+// fn adjust_mappings() -> &'static Vec<KeyDisplayLine> {
+//     static ADJUSTED_MAPPINGS: OnceLock<Vec<KeyDisplayLine>> = OnceLock::new();
+//     let remove: &[&str] = &[];
+//     let add: &'static [KeyDisplayLine] = &[];
+//     ADJUSTED_MAPPINGS.get_or_init(|| {
+//         MAPPINGS
+//             .iter()
+//             .filter(|&row| !remove.contains(&row.keys))
+//             .chain(add.iter())
+//             .cloned()
+//             .collect()
+//     })
+// }
+
+fn get_max_lengths(adjusted_mappings: &[KeyDisplayLine]) -> (u16, u16) {
+    static MAX_LENGTHS: OnceLock<(u16, u16)> = OnceLock::new();
+    let (max_key_len, max_desc_len) = *MAX_LENGTHS.get_or_init(|| {
+        adjusted_mappings
+            .iter()
+            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
+                let key_len = row.keys.len().try_into().unwrap();
+                let desc_len = row.desc.len().try_into().unwrap();
+                (max_key.max(key_len), max_desc.max(desc_len))
+            })
+    });
+    (max_key_len, max_desc_len)
 }
 
 /// Handle input in Save mode (for typing file name).

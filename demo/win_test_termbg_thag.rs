@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs"}
+thag_rs = "0.1.5"
 */
 
 /// This seems to "reliably" swallow the very first character entered in Windows.

@@ -1,10 +1,9 @@
 /// Original is `https://github.com/dalance/termbg/blob/master/src/lib.rs`
 /// Copyright (c) 2019 dalance
 /// Licence: Apache or MIT
-use crate::{ThagError, ThagResult};
+use crate::{debug_log, ThagError, ThagResult};
 use crossterm::event::{self, poll, read, Event, KeyCode};
 use crossterm::terminal::{self, is_raw_mode_enabled};
-use log::debug;
 use scopeguard::defer;
 use std::env;
 use std::io::{self, IsTerminal, Write};
@@ -423,7 +422,7 @@ fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
     Ok((r, g, b))
 }
 
-/// Try to determine the background colour from the lagacy Windows Console interface.
+/// Try to determine the background colour from the legacy Windows Console interface.
 /// Unfortunately, unless the colour was explicitly set by that interface, it will
 /// just return the default of rgb(0,0,0). This renders it effectively useless for
 /// modern Windows.

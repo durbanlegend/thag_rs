@@ -10,7 +10,7 @@
 //: in a fn main, thag_rs pulls any inner attributes out to the top of the program.
 //:
 //: Notice we also have a shebang so that this script may be run as `demo/duration_snippet.rs` with execute
-//: permission. The shebang must be on the very first line but coexists peacefulyl with the inner attribute.
+//: permission. The shebang must be on the very first line but coexists peacefully with the inner attribute.
 //:
 //: See tracking issue https://github.com/rust-lang/rust/issues/120301 for the `Duration` constructor issue..
 //:

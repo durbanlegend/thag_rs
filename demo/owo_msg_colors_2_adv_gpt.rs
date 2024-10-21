@@ -13,7 +13,7 @@ termbg = "0.5.2"
 /// colour support of the current terminal and whether a light or dark theme is currently
 /// selected. This was the result of good deal of exploration and dialog with ChatGPT.  Try it on dark vs light
 /// backgrounds to see how some of the same colours "pop" when shown against a light or dark theme
-/// and how some virtually or literally disappear when when not well matched to the theme.
+/// and how some virtually or literally disappear when not well matched to the theme.
 //# Purpose: Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
 use enum_assoc::Assoc;
 use log::debug;

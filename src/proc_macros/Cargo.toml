@@ -8,6 +8,7 @@ edition = "2021"
 
 [dependencies]
 crossterm = "0.28"
+darling = "0.20.10"
 proc-macro2 = "1.0"
 quote = "1.0"
 strict = "0.2"

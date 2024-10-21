@@ -1339,8 +1339,9 @@ dependencies = [
 
 [[package]]
 name = "termbg"
-version = "0.5.2"
-source = "git+https://github.com/durbanlegend/termbg#8a88ed62e041cf7f3718c602f26ebaee465a6c37"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a89303fd1e127e84c66ccb9326f102466810affc17b344fb9decd435d9ecc7a"
 dependencies = [
  "crossterm",
  "log",
@@ -1381,6 +1382,7 @@ name = "thag_proc_macros"
 version = "0.1.0"
 dependencies = [
  "crossterm",
+ "darling",
  "proc-macro2 1.0.88",
  "quote 1.0.37",
  "strict",

@@ -60,7 +60,7 @@ serde_with = "3.11.0"
 # If on, prepare for function to run twice for some reason!
 firestorm = "0.5.1"
 # firestorm = { version = "0.5.1", features = ["enable_system_time"] }
-prettyplease = "0.2.20"
+prettyplease = "0.2.24"
 serde_merge = "0.1.3"
 # crokey = { path = "/Users/donf/projects/crokey/" }
 strict = "0.2.0"

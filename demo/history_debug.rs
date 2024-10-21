@@ -2,7 +2,7 @@
 [dependencies]
 regex = "1.10.6"
 serde = { version = "1.0.208", features = ["derive"] }
-serde_json = "1.0.125"
+serde_json = "1.0.132"
 */
 
 /// Debug the history handling logic of the `stdin` module and display the effects.

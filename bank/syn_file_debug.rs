@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.71", features = ["extra-traits", "full", "visit"] }*/
+syn = { version = "2.0.82", features = ["extra-traits", "full", "visit"] }*/
 
 use syn::{parse_file, Item};
 

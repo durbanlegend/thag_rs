@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-reedline = "0.33.0"
+reedline = "0.36.0"
 */
 use reedline::DefaultHinter;
 use reedline::DefaultValidator;

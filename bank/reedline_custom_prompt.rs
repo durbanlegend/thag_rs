@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-reedline = "0.33.0"
+reedline = "0.36.0"
 */
 
 // Create a reedline object with a custom prompt.

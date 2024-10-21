@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 serde = { version = "1.0.204", features = ["derive"] }
-syn = { version = "2.0.71", features = ["extra-traits", "full", "parsing"] }
+syn = { version = "2.0.82", features = ["extra-traits", "full", "parsing"] }
 */
 
 use syn::{Item, UseTree};

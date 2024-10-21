@@ -54,7 +54,7 @@ mockall = "0.13.0"
 scopeguard = "1.2.0"
 ratatui = "0.28.1"
 cargo_toml = "0.20.5"
-serde_json = "1.0.128"
+serde_json = "1.0.132"
 serde_with = "3.11.0"
 # To switch off, use version without features = ["enable_system_time"]
 # If on, prepare for function to run twice for some reason!

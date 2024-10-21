@@ -2,7 +2,7 @@
 [dependencies]
 bitflags = "2.5.0"
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
-thag_rs = "0.1.4"
+thag_rs = "0.1.5"
 */
 
 /// A prototype of the cmd_args module of thag_rs itself.
@@ -16,8 +16,8 @@ use thag_rs::RS_SUFFIX;
 
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
-use std::{fmt, str};
 use std::error::Error;
+use std::{fmt, str};
 
 // thag_rs script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
@@ -258,8 +258,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
 
         // Check all good
         let formatted = proc_flags.to_string();
-        let parsed = formatted
-            .parse::<ProcFlags>()?;
+        let parsed = formatted.parse::<ProcFlags>()?;
 
         assert_eq!(proc_flags, parsed);
 

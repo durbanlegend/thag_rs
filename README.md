@@ -270,7 +270,7 @@ at the start of the script, as you will see done in most of the demos. To help w
 ## Installation
 
 ### Minimum Supported Rust Version
-The minimum supported Rust version (MSRV) for `thag_rs` is 1.74.1.
+The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.81.0.
 
 You can install `thag_rs` using `cargo install`:
 
@@ -393,9 +393,16 @@ If you make changes to the dependency but not to the script, you need to specify
 ## Platform Support
 This crate is designed to be cross-platform and supports MacOS, Linux and Windows.
 
-Currently tested on MacOS (M1) Sonoma, Zorin and (WSL2) Ubuntu, and Windows 11 PowerShell 5, CMD under Windows Terminal and Windows Console, and WSL2.
-
-GitHub Actions test each commit on `ubuntu-latest`, `macos-latest` and `windows-latest`.
+### Currently tested on:
+* MacOS (M1) Sonoma and Sequoia
+* Linux: Zorin and (WSL2) Ubuntu
+* Windows 11:
+  - PowerShell 5 and 7
+  - CMD
+  - Windows Console
+  - Windows Terminal up to 1.22 Preview with OSC query support.
+  - WSL2
+* GitHub Actions test each commit and PR on `ubuntu-latest`, `macos-latest` and `windows-latest`.
 
 ## Why "thag"?
 

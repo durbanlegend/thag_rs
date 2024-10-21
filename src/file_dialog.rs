@@ -279,9 +279,9 @@ impl<'a> FileDialog<'a> {
                 }
                 f.render_widget(&self.input, input_area); // Renders the input widget inside the block
             }
+
             if self.popup {
                 let title_bottom = tui_editor::TITLE_BOTTOM;
-                // let adjusted_mappings = adjust_mappings();
                 let (max_key_len, max_desc_len) = get_max_lengths(MAPPINGS);
                 display_popup(
                     MAPPINGS,

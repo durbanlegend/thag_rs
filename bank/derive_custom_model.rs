@@ -1,13 +1,13 @@
 /*[toml]
 [dependencies]
-thag_rs = { path = "/Users/donf/projects/thag_rs/" }
+thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
 */
 
 #![allow(dead_code)]
 /// Published example from `https://github.com/anshulsanghi-blog/macros-handbook`
 //# Purpose: explore derive proc macros
 use std::collections::HashMap;
-use thag_rs::{DeriveCustomModel, IntoStringHashMap};
+use thag_proc_macros::{DeriveCustomModel, IntoStringHashMap};
 
 #[derive(DeriveCustomModel)]
 #[custom_model(model(

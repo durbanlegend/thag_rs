@@ -17,7 +17,7 @@ pub mod repl;
 pub mod shared;
 pub mod stdin;
 // #[cfg(not(target_os = "windows"))]
-pub mod termbg;
+// pub mod termbg;
 pub mod tui_editor;
 
 // Re-export commonly used items for convenience
@@ -35,7 +35,7 @@ pub use errors::{ThagError, ThagResult};
 pub use keys::KeyCombination;
 pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};
 pub use termbg;
-pub use thag_proc_macros::{DeriveCustomModel, IntoStringHashMap};
+pub use thag_proc_macros::{DeriveCustomModel, DeriveKeyMapList, IntoStringHashMap, MyDescription};
 
 // Common constants and statics
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";

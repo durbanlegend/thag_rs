@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 crossterm = "0.28.1"
-log = "0.4.21"
+log = "0.4.22"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 thag_rs = "0.1.5"
 

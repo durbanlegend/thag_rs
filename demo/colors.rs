@@ -2,7 +2,7 @@
 [dependencies]
 
 lazy_static = "1.4.0"
-log = "0.4.21"
+log = "0.4.22"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 thag_rs = "0.1.5"
 

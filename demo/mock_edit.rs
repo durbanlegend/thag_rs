@@ -10,13 +10,15 @@ thag_rs = "0.1.5"
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crossterm::event::Event;
 use mockall::{automock, predicate::str};
-use thag_rs::stdin::{edit, EventReader, MockEventReader};
+use thag_rs::stdin::edit;
+use thag_rs::tui_editor::{EventReader, MockEventReader};
+use thag_rs::ThagResult;
 
 pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
-    fn read_event(&self) -> Result<crossterm::event::Event, std::io::Error> {
-        crossterm::event::read()
+    fn read_event(&self) -> ThagResult<Event> {
+         Ok(crossterm::event::read()?)
     }
 }
 

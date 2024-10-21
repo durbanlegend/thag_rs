@@ -758,6 +758,21 @@ which will give identical output to the above.
 
 ---
 
+### Script: darling_consume_fields.rs
+
+**Description:**  Published example from `darling` crate showing parsing for derive input.
+ Extended to show formatted version of emitted code.
+
+**Purpose:** Explore `darling` crate.
+
+**Crates:** `darling`, `proc_macro2`, `quote`, `syn`
+
+**Type:** Program
+
+**Link:** [darling_consume_fields.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs)
+
+---
+
 ### Script: dethag_re.rs
 
 **Description:**  Unescape \n and \\" markers in a string to convert the wall of text to readable lines.

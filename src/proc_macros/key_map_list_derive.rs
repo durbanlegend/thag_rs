@@ -14,15 +14,10 @@ pub(crate) fn key_map_list_derive_impl(
     // Extract the attributes
     let KeyMappings { delete, add } = deluxe::extract_attributes(&mut input)?;
 
-    // Now get some info to generate an associated function...
-    let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
-
-    // Generate token stream for the deletions
+    // Filter out deleted mappings from MAPPINGS
     let delete_tokens = delete.iter().map(|key| {
         let key = key.as_str();
-        quote::quote! {
-            println!("Key: {}", #key);
-        }
+        quote::quote! { #key }
     });
 
     // Generate token stream for the additions
@@ -34,29 +29,31 @@ pub(crate) fn key_map_list_derive_impl(
         }
     });
 
-    // Extract the 'use_mappings' attribute from the struct
-    let mappings_attr = input
+    // Assume the attribute is found and contains the MAPPINGS identifier
+    let mappings_ident = input
         .attrs
         .iter()
         .find(|attr| attr.path().is_ident("use_mappings"));
 
-    // Assume the attribute is found and contains the MAPPINGS identifier
-    let mappings_ident = if let Some(attr) = mappings_attr {
-        attr.parse_args::<syn::Expr>().ok()
-    } else {
-        None
-    }
-    .expect("Must provide a 'use_mappings' attribute");
-
-    // Generate the code for the impl, using the mappings constant from the caller
+    // Generate the code for the impl, filtering out deleted items and adding new ones
     let ident = &input.ident;
     Ok(quote::quote! {
-        impl #impl_generics #ident #type_generics #where_clause {
+        impl #ident {
             pub const fn adjust_mappings(&self) -> &'static [(i32, &'static str, &'static str)] {
-                static ADJUSTED_MAPPINGS: &[(i32, &'static str, &'static str)] = &[
-                    #( #add_tokens )*
-                ];
-                ADJUSTED_MAPPINGS
+                const BASE_MAPPINGS: &[(i32, &'static str, &'static str)] = &MAPPINGS;
+                const FILTERED_MAPPINGS: Vec<(i32, &'static str, &'static str)> = {
+                    let mut result = Vec::new();
+                    for mapping in BASE_MAPPINGS.iter() {
+                        if !(#(mapping.1 == #delete_tokens) || *) {
+                            result.push(*mapping);
+                        }
+                    }
+                    result
+                };
+                &[
+                    #( #add_tokens )*,
+                    &FILTERED_MAPPINGS
+                ]
             }
         }
     })

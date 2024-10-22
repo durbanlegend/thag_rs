@@ -10,8 +10,6 @@ pub(crate) struct VecField {
 pub(crate) fn deserialize_vec_derive_impl(
     item: proc_macro2::TokenStream,
 ) -> deluxe::Result<proc_macro2::TokenStream> {
-    // let input = syn::parse2::<syn::DeriveInput>(item)?;
-
     let mut input = syn::parse2::<syn::DeriveInput>(item)?;
 
     // Extract the attributes!

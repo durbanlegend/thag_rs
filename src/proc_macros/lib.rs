@@ -41,7 +41,7 @@ pub fn deserialize_vec_derive(input: TokenStream) -> TokenStream {
     deserialize_vec_derive_impl(input.into()).unwrap().into()
 }
 
-#[proc_macro_derive(DeriveKeyMapList, attributes(deluxe))]
+#[proc_macro_derive(DeriveKeyMapList, attributes(deluxe, use_mappings))]
 pub fn key_map_list_derive(item: TokenStream) -> TokenStream {
     key_map_list_derive_impl(item.into()).unwrap().into()
 }

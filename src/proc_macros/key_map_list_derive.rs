@@ -31,9 +31,30 @@ pub(crate) fn key_map_list_derive_impl(
         }
     });
 
+    // Extract the 'use_mappings' attribute from the struct
+    let mappings_attr = input
+        .attrs
+        .iter()
+        .find(|attr| attr.path().is_ident("use_mappings"));
+
+    // Assume the attribute is found and contains the MAPPINGS identifier
+    let mappings_ident = if let Some(attr) = mappings_attr {
+        // Parse the attribute as an expression (since it can now be any expression)
+        attr.parse_args::<syn::Expr>().ok()
+    } else {
+        None
+    }
+    .expect("Must provide a 'use_mappings' attribute");
+
+    // Generate the code for the impl, using the mappings constant from the caller
+    let ident = &input.ident;
     Ok(quote::quote! {
         impl #impl_generics #ident #type_generics #where_clause {
             pub fn print_values(&self) {
+                println!("Base mappings from named constant:");
+                for (num, text) in #mappings_ident {
+                    println!("Number: {}, Text: {}", num, text);
+                }
                 println!("Deletions:");
                 #( #delete_tokens )*
                 println!("Additions:");

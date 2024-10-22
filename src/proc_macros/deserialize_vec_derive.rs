@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 // Deluxe struct for extracting attributes
 #[derive(deluxe::ExtractAttributes)]
 #[deluxe(attributes(deluxe))]
@@ -9,27 +10,33 @@ pub(crate) struct VecField {
 pub(crate) fn deserialize_vec_derive_impl(
     item: proc_macro2::TokenStream,
 ) -> deluxe::Result<proc_macro2::TokenStream> {
-    let mut input = syn::parse2::<syn::DeriveInput>(item)?;
+    let input = syn::parse2::<syn::DeriveInput>(item)?;
 
-    // Extract the attributes!
-    let VecField { items } = deluxe::extract_attributes(&mut input)?;
+    // Extract the 'use_mappings' attribute from the struct
+    let mappings_attr = input
+        .attrs
+        .iter()
+        .find(|attr| attr.path().is_ident("use_mappings"));
 
-    // Now get some info to generate an associated function...
+    // Assume the attribute is found and contains the MAPPINGS identifier
+    let mappings_ident = if let Some(attr) = mappings_attr {
+        // Parse the attribute as an expression (since it can now be any expression)
+        attr.parse_args::<syn::Expr>().ok()
+    } else {
+        None
+    }
+    .expect("Must provide a 'use_mappings' attribute");
+
+    // Generate the code for the impl, using the mappings constant from the caller
     let ident = &input.ident;
-    let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
-
-    // Generate token stream for the items
-    let item_tokens = items.iter().map(|(num, text)| {
-        quote::quote! {
-            println!("Number: {0}, Text: {1}", #num, #text);
-        }
-    });
-
-    Ok(quote::quote! {
-        impl #impl_generics #ident #type_generics #where_clause {
+    let output = quote::quote! {
+        impl #ident {
             pub fn print_values(&self) {
-                #( #item_tokens )*
+                for (num, text) in #mappings_ident {
+                    println!("Number: {}, Text: {}", num, text);
+                }
             }
         }
-    })
+    };
+    Ok(output.into())
 }

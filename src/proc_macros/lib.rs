@@ -36,7 +36,7 @@ pub fn derive_my_description(item: proc_macro::TokenStream) -> proc_macro::Token
 }
 
 // Define the custom derive macro using `deluxe`
-#[proc_macro_derive(DeserializeVec, attributes(deluxe))]
+#[proc_macro_derive(DeserializeVec, attributes(deluxe, use_mappings))]
 pub fn deserialize_vec_derive(input: TokenStream) -> TokenStream {
     deserialize_vec_derive_impl(input.into()).unwrap().into()
 }

@@ -28,5 +28,5 @@ struct MyStruct;
 fn main() {
     let my_struct: MyStruct = Default::default();
 
-    my_struct.print_values(); // This will print the overridden values.
+    my_struct.adjust_mappings();
 }

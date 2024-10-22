@@ -36,7 +36,7 @@ pub use keys::KeyCombination;
 pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};
 pub use termbg;
 pub use thag_proc_macros::{
-    key_map_list_derive, DeriveCustomModel, IntoStringHashMap, MyDescription,
+    DeriveKeyMapList, DeriveCustomModel, IntoStringHashMap, MyDescription,
 };
 
 // Common constants and statics

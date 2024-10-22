@@ -10,7 +10,7 @@ const MAPPINGS_1: [(i32, &str); 2] = [(1, "First"), (2, "Second")];
 const MAPPINGS_2: [(i32, &str); 2] = [(3, "Third"), (4, "Fourth")];
 
 #[derive(DeserializeVec, Default)]
-// #[deluxe(items = [(9, "Ninth"), (10, "Tenth")])]
+#[deluxe(items = [(9, "Ninth"), (10, "Tenth")])]
 #[use_mappings(MAPPINGS_1)]
 struct MyStruct {
     items: Vec<(i32, String)>,

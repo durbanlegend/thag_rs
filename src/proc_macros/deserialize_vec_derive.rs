@@ -16,7 +16,6 @@ pub(crate) fn deserialize_vec_derive_impl(
     let VecField { items } = deluxe::extract_attributes(&mut input)?;
 
     // Now get some info to generate an associated function...
-    let ident = &input.ident;
     let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
 
     eprintln!("impl_generics={impl_generics:?}\ntype_generics={type_generics:?}\nwhere_clause={where_clause:?}");

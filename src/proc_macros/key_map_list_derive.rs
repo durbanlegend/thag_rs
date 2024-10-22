@@ -15,7 +15,6 @@ pub(crate) fn key_map_list_derive_impl(
     let KeyMappings { delete, add } = deluxe::extract_attributes(&mut input)?;
 
     // Now get some info to generate an associated function...
-    let ident = &input.ident;
     let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
 
     // Generate token stream for the deletions
@@ -25,9 +24,9 @@ pub(crate) fn key_map_list_derive_impl(
         }
     });
     // Generate token stream for the additions
-    let add_tokens = add.iter().map(|(num, key, desc)| {
+    let add_tokens = add.iter().map(|(seq, key, desc)| {
         quote::quote! {
-            println!("Number: {0}, Key: {1}, Desc: {2}", #num, #key, #desc);
+            println!("Number: {0}, Key: {1}, Desc: {2}", #seq, #key, #desc);
         }
     });
 
@@ -50,15 +49,27 @@ pub(crate) fn key_map_list_derive_impl(
     let ident = &input.ident;
     Ok(quote::quote! {
         impl #impl_generics #ident #type_generics #where_clause {
-            pub fn print_values(&self) {
+            pub fn adjust_mappings(&self) -> &'static[(i32, String, String)] {
                 println!("Base mappings from named constant:");
-                for (num, text) in #mappings_ident {
-                    println!("Number: {}, Text: {}", num, text);
+                for (seq, key, desc) in #mappings_ident {
+                    println!("Seq: {}, key: {}, desc: {}", seq, key, desc);
                 }
                 println!("Deletions:");
                 #( #delete_tokens )*
                 println!("Additions:");
                 #( #add_tokens )*
+
+                static ADJUSTED_MAPPINGS: OnceLock<&'static[(i32, String, String)]> = OnceLock::new();
+                let adjusted_mappings = ADJUSTED_MAPPINGS.get_or_init(|| {
+                    #mappings_ident
+                        .iter()
+                        .filter(|&row| !#delete.contains(&row.keys))
+                        .chain(#add.iter())
+                        .cloned()
+                        .collect()
+                });
+                let range = &'static adjusted_mappings[..];
+                range
             }
         }
     })

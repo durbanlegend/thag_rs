@@ -1,7 +1,9 @@
 /*[toml]
 [dependencies]
 # Alternate between the following two termbg dependencies to test the difference:
-termbg = "=0.5.2"
+# termbg = "=0.5.2"
+# termbg "0.6.0" incorporates my PR to fix the issue:
+termbg = "0.6.0"
 #termbg = { git = "https://github.com/durbanlegend/termbg" }
 */
 

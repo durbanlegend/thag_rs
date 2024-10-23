@@ -221,8 +221,11 @@ fn process(
             debug_log!("About to call stdin::edit()");
             let event_reader = CrosstermEventReader;
             let vec = edit(&event_reader)?;
-
             debug_log!("vec={vec:#?}");
+            if vec.is_empty() {
+                // User chose Quit
+                return Ok(());
+            }
             vec.join("\n")
         } else {
             assert!(is_stdin);

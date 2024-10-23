@@ -31,6 +31,7 @@ fn main() {
         use std::time::Duration;
         Duration::from_days(10);
     }"#;
+    println!("Before: {source}");
 
     // Parse the source code into an expression block
     let mut expr_block: ExprBlock = syn::parse_str(source).expect("Failed to parse source");
@@ -39,8 +40,8 @@ fn main() {
     RemoveInnerAttributes.visit_expr_block_mut(&mut expr_block);
 
     // Print the modified expression block
-    println!("{expr_block:#?}");
+    // println!("{expr_block:#?}");
 
     // Convert back using quote:
-    println!("{}", quote!(#expr_block));
+    println!("After:{}", quote!(#expr_block));
 }

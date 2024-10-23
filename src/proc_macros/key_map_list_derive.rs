@@ -1,3 +1,4 @@
+#![allow(unused_variables)]
 // Deluxe struct for extracting attributes
 #[derive(deluxe::ExtractAttributes)]
 #[deluxe(attributes(deluxe))]
@@ -19,16 +20,15 @@ pub(crate) fn key_map_list_derive_impl(
 
     // Generate token stream for the deletions
     let delete_tokens = delete.iter().map(|key| {
-        let key = key.as_str();
-        quote::quote! { #key }
+        quote::quote! { #key, }
     });
+
+    // eprintln!("delete_tokens={delete_tokens:#?}");
 
     // Generate token stream for the additions
     let add_tokens = add.iter().map(|(seq, key, desc)| {
-        let key = key.as_str();
-        let desc = desc.as_str();
         quote::quote! {
-            ( #seq, #key, #desc ),
+            ( #seq, #key.to_string(), #desc.to_string() ),
         }
     });
 
@@ -51,34 +51,34 @@ pub(crate) fn key_map_list_derive_impl(
     let ident = &input.ident;
     Ok(quote::quote! {
         impl #impl_generics #ident #type_generics #where_clause {
-            pub fn adjust_mappings(&self) -> &'static[(i32, &'static str, &'static str)] {
-                println!("Base mappings from named constant:");
-                for (seq, key, desc) in #mappings_ident {
-                    println!("Seq: {}, key: {}, desc: {}", seq, key, desc);
-                }
-                // println!("Deletions:");
-                // #( #delete_tokens )*
-                // println!("Additions:");
-                // #( #add_tokens )*
-
-                static ADJUSTED_MAPPINGS: std::sync::OnceLock<&'static [(i32, &'static str, &'static str)]> = std::sync::OnceLock::new();
-                let adjusted_mappings = ADJUSTED_MAPPINGS.get_or_init(|| {
+            pub fn adjust_mappings(&self) -> Vec<(i32, String, String)> {
+                // eprintln!("Base mappings from named constant:");
+                // for (seq, key, desc) in #mappings_ident {
+                //     eprintln!("Seq: {}, key: {}, desc: {}", seq, key, desc);
+                // }
+                static ADJUSTED_MAPPINGS: std::sync::OnceLock<Vec<(i32, String, String)>> =
+                    std::sync::OnceLock::new();
+                let adjusted_mappings = ADJUSTED_MAPPINGS.get_or_init(move || {
                     const BASE_MAPPINGS: &[(i32, &'static str, &'static str)] = &MAPPINGS;
-                    let filtered_mappings: Vec<(i32, &'static str, &'static str)> = {
-                        let mut result = vec![#( #add_tokens )*];
-                        for mapping in BASE_MAPPINGS.iter() {
-                            if !(#(mapping.1 == #delete_tokens) || *) {
-                                result.push(*mapping);
-                            }
+                    let mut work_vec: Vec<(i32, String, String)> = vec![];
+                    let deletions = vec![ #( #delete_tokens )* ];
+                    // eprintln!("deletions={deletions:#?}");
+                    let additions = vec![ #( #add_tokens )* ];
+                    for mapping in BASE_MAPPINGS {
+                        // eprintln!("mapping.1={:#?}", mapping.1);
+                        // if !(mapping.1 == "I" || mapping.1 == "u") {
+                        if !(deletions.contains(&mapping.1)) {
+                            work_vec.push((mapping.0, String::from(mapping.1), String::from(mapping.2)));
                         }
-                        result
-                    };
-                    &[
-                        filtered_mappings,
-                        // #( #add_tokens )*
-                    ]
+                    }
+                    for row in additions {
+                        // eprintln!("row={row:#?}");
+                        work_vec.push(row);
+                    }
+                    work_vec
                 });
-                adjusted_mappings
+                // eprintln!("adjusted_mappings={adjusted_mappings:#?}");
+                adjusted_mappings.clone()
             }
         }
     })

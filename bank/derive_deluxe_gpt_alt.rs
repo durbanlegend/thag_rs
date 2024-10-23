@@ -27,6 +27,6 @@ struct MyStruct;
 
 fn main() {
     let my_struct: MyStruct = Default::default();
-
-    my_struct.adjust_mappings();
+    let adjusted_mappings = my_struct.adjust_mappings();
+    println!("adjusted_mappings={adjusted_mappings:#?}");
 }

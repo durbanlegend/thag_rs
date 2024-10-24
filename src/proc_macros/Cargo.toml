@@ -16,6 +16,7 @@ strict = "0.2"
 syn = { version = "2.0", default-features = false, features = [
     "parsing",
     "proc-macro",
+    "visit-mut",
 ] }
 
 [lib]

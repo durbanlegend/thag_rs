@@ -1,107 +1,139 @@
 #![allow(unused_variables)]
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
+use syn::parse_macro_input;
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, visit_mut::VisitMut, Expr, Ident, ItemConst, ItemStruct, Lit, Meta};
+use syn::{visit_mut::VisitMut, Expr, ItemStruct, Lit, Meta};
 
 // Custom visitor for AST manipulation
 struct MappingsVisitor<'a> {
     deletions: &'a Vec<String>,
 }
 
-// impl<'a> VisitMut for MappingsVisitor<'a> {
-//     fn visit_expr_array_mut(&mut self, array: &mut syn::ExprArray) {
-//         // We want to modify the array in place by removing items
-//         array.elems.retain(|elem| {
-//             // Check if the element is in the deletions
-//             match elem {
-//                 Expr::Tuple(tuple) => {
-//                     // Assuming the key binding is stored in the second element of the tuple (index 1)
-//                     if let Expr::Lit(lit) = &tuple.elems[1] {
-//                         if let Lit::Str(key) = &lit.lit {
-//                             // If the key is in the deletions list, remove it
-//                             !self.deletions.contains(&key.value())
-//                         } else {
-//                             true
-//                         }
-//                     } else {
-//                         true
-//                     }
-//                 }
-//                 _ => true,
-//             }
-//         });
-//         // Continue walking the rest of the array
-//         syn::visit_mut::visit_expr_array_mut(self, array);
-//     }
-// }
+impl<'a> VisitMut for MappingsVisitor<'a> {
+    fn visit_expr_array_mut(&mut self, array: &mut syn::ExprArray) {
+        // Collect elements into a Vec, apply retain, then reconstruct the array
+        let mut elems: Vec<Expr> = array.elems.iter().cloned().collect();
 
-pub fn use_mappings_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
-    // Parse the struct that the macro is applied to
-    // let input = parse_macro_input!(item as ItemStruct);
+        elems.retain(|elem| match elem {
+            Expr::Tuple(tuple) => {
+                if let Expr::Lit(lit) = &tuple.elems[1] {
+                    if let Lit::Str(key) = &lit.lit {
+                        !self.deletions.contains(&key.value())
+                    } else {
+                        true
+                    }
+                } else {
+                    true
+                }
+            }
+            _ => true,
+        });
+
+        // Reassign the modified elements back into `array.elems`
+        array.elems = syn::punctuated::Punctuated::from_iter(elems.into_iter());
+        syn::visit_mut::visit_expr_array_mut(self, array);
+    }
+}
+
+pub fn use_mappings_impl(attr: TokenStream, input: TokenStream) -> TokenStream {
+    // Parse the attribute input
     let args = parse_macro_input!(attr with Punctuated::<Meta, syn::Token![,]>::parse_terminated);
-    // let attr_meta = parse_macro_input!(attr as Meta);
-    eprintln!("args={args:#?}");
+    println!("args={args:#?}");
+    let input_struct = parse_macro_input!(input as ItemStruct);
 
-    let mut base_ident: Option<Expr> = None;
-    let mut additions_ident: Option<Expr> = None;
-    let mut deletions_ident: Option<Vec<String>> = None;
+    let mut base: Option<Expr> = None;
+    let mut additions: Option<Expr> = None;
+    let mut deletions: Option<Expr> = None;
+    // let mut deletions: Option<Vec<String>> = None;
 
-    eprintln!("args={args:#?}");
+    // Extract each argument by matching its identifier (base, additions, deletions)
+    for arg in &args {
+        match arg {
+            Meta::NameValue(nv) => {
+                let ident = nv.path.get_ident().unwrap().to_string();
+                if ident == "base" {
+                    base = Some(nv.value.clone());
+                } else if ident == "additions" {
+                    additions = Some(nv.value.clone());
+                } else if ident == "deletions" {
+                    deletions = Some(nv.value.clone());
+                }
+            }
+            _ => panic!("Expected name-value pair for base, additions, and deletions"),
+        }
+    }
 
-    // // Handle the attribute input to extract base, additions, and deletions
-    // if let Meta::List(meta_list) = attr_meta {
-    //     for meta in meta_list.nested {
-    //         if let NestedMeta::Meta(Meta::NameValue(nv)) = meta {
-    //             let key = nv.path.get_ident().unwrap().to_string();
-    //             if key == "base" {
-    //                 if let Lit::Str(litstr) = &nv.value {
-    //                     // Parse the base as an Expr (in this case, as an array)
-    //                     base_const = Some(syn::parse_str(&litstr.value()).unwrap());
+    eprintln!("base={base:#?}");
+    println!("additions={additions:#?}");
+
+    // let mut base_ident: Option<Expr> = None;
+    // let mut additions_ident: Option<Expr> = None;
+    // let mut deletions_ident: Option<Vec<String>> = None;
+
+    // for meta in args {
+    //     if let Meta::NameValue(nv) = meta {
+    //         let key = nv.path.get_ident().unwrap().to_string();
+
+    //         if key == "base" {
+    //             // Check if the value is an expression literal and downcast it to a string
+    //             if let Expr::Lit(expr_lit) = &nv.value {
+    //                 // eprintln!("expr_lit={expr_lit:?}");
+    //                 if let Lit::Str(litstr) = &expr_lit.lit {
+    //                     base_ident = Some(syn::parse_str(&litstr.value()).unwrap());
     //                 }
-    //             } else if key == "additions" {
-    //                 if let Lit::Str(litstr) = &nv.value {
-    //                     // Parse the additions as an Expr
-    //                     additions_const = Some(syn::parse_str(&litstr.value()).unwrap());
+    //             }
+    //         } else if key == "additions" {
+    //             if let Expr::Lit(expr_lit) = &nv.value {
+    //                 if let Lit::Str(litstr) = &expr_lit.lit {
+    //                     additions_ident = Some(syn::parse_str(&litstr.value()).unwrap());
     //                 }
-    //             } else if key == "deletions" {
-    //                 if let Lit::Str(litstr) = &nv.value {
-    //                     // Parse deletions as a list of strings
+    //             }
+    //         } else if key == "deletions" {
+    //             if let Expr::Lit(expr_lit) = &nv.value {
+    //                 if let Lit::Str(litstr) = &expr_lit.lit {
     //                     let deletions: Vec<String> = litstr
     //                         .value()
     //                         .split(',')
     //                         .map(|s| s.trim().to_string())
     //                         .collect();
-    //                     deletions_list = Some(deletions);
+    //                     deletions_ident = Some(deletions);
     //                 }
     //             }
     //         }
     //     }
     // }
 
-    let base_expr = base_ident.expect("Base mappings not provided");
-    let additions_expr = additions_ident.expect("Additions mappings not provided");
-    let deletions_vec = deletions_ident.expect("Deletions list not provided");
+    // println!("additions_ident={additions_ident:#?}");
 
-    // Use `VisitMut` to modify the base mappings by removing deletions
-    let mut visitor = MappingsVisitor {
-        deletions: &deletions_vec,
+    let base_expr = base.expect("Base mappings not provided");
+    let additions_expr = additions.expect("Additions mappings not provided");
+    let deletions_vec = deletions.expect("Deletions list not provided");
+    eprintln!("base_expr={base_expr:#?}");
+    eprintln!("additions_expr={additions_expr:#?}");
+
+    let additions = quote! {
+            #additions_expr
     };
-    let mut base_ast: Expr = syn::parse_quote! { #base_expr };
-    // visitor.visit_expr_mut(&mut base_ast);
+    eprintln!("additions={additions:#?}");
 
-    // Generate the final code by combining the modified base and the additions
-    let expanded = quote! {
-        const MAPPINGS: [(i32, &str, &str)] = #base_ast;
-
-        const ADDITIONS: [(i32, &str, &str)] = #additions_expr;
-
-        const FINAL_MAPPINGS: [(i32, &str, &str)] = {
-            let mut mappings = MAPPINGS.to_vec();
-            mappings.extend(ADDITIONS.iter().cloned());
+    // Generate the final mappings from base, additions, and deletions
+    let final_mappings = quote! {
+        &[(i32, &str, &str)] = {
+            let mut mappings = &#base_expr;
+            // mappings.extend_from_slice(&#additions_expr);
             mappings
-        };
+        }
     };
 
-    TokenStream::from(expanded)
+    eprintln!("final_mappings={final_mappings:#?}");
+
+    // Return the struct along with the final mappings
+    let output = quote! {
+        #input_struct
+        const FINAL_MAPPINGS: #final_mappings;
+        const ADDITIONS: &[(i32, &str, &str)] = &#additions;
+    };
+
+    TokenStream::from(output)
 }

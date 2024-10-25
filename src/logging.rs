@@ -139,12 +139,16 @@ pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
     Ok(())
 }
 
-// Configure log level
+/// Configure log level
+///
+/// # Panics
+///
+/// Panics if it can't create athe log file app.log in the current working directory.
 pub fn configure_log() {
     profile_fn!(configure_log);
 
     // Choose between simplelog and env_logger based on compile feature
-    #[cfg(feature = "simplelog")]
+    #[cfg(not(feature = "env_logger"))]
     {
         CombinedLogger::init(vec![
             TermLogger::new(
@@ -163,7 +167,7 @@ pub fn configure_log() {
         info!("Initialized simplelog");
     }
 
-    #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
+    #[cfg(feature = "env_logger")] // This will use env_logger if simplelog is not active
     {
         let env = Env::new().filter("RUST_LOG");
         Builder::new().parse_env(env).init();

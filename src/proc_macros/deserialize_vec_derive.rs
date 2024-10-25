@@ -55,5 +55,5 @@ pub(crate) fn deserialize_vec_derive_impl(
             }
         }
     };
-    Ok(output.into())
+    Ok(output)
 }

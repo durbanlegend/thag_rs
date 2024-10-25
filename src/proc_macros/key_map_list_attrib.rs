@@ -6,6 +6,7 @@ use syn::punctuated::Punctuated;
 use syn::{visit_mut::VisitMut, Expr, ItemStruct, Lit, Meta};
 
 // Custom visitor for AST manipulation
+#[allow(dead_code)]
 struct MappingsVisitor<'a> {
     deletions: &'a Vec<String>,
 }
@@ -31,7 +32,9 @@ impl<'a> VisitMut for MappingsVisitor<'a> {
         });
 
         // Reassign the modified elements back into `array.elems`
-        array.elems = syn::punctuated::Punctuated::from_iter(elems.into_iter());
+        array.elems = elems
+            .into_iter()
+            .collect::<syn::punctuated::Punctuated<_, _>>();
         syn::visit_mut::visit_expr_array_mut(self, array);
     }
 }
@@ -135,5 +138,7 @@ pub fn use_mappings_impl(attr: TokenStream, input: TokenStream) -> TokenStream {
         const ADDITIONS: &[(i32, &str, &str)] = &#additions;
     };
 
-    TokenStream::from(output)
+    let token_stream = TokenStream::from(output);
+    eprintln!("token_stream={:#?}", token_stream.to_string());
+    token_stream
 }

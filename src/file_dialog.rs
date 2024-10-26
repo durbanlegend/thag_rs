@@ -3,11 +3,11 @@
 /// Licence: MIT
 use crossterm::{
     cursor::{Hide, Show},
-    event::{KeyCode, KeyEvent, KeyModifiers},
+    event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     execute,
 };
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
     text::Line,
     widgets::{Block, Borders, List, ListItem, ListState},
@@ -24,7 +24,7 @@ use std::{
 };
 use tui_textarea::{Input, TextArea};
 
-use crate::tui_editor::{self};
+use crate::tui_editor::{self, centered_rect};
 use crate::{debug_log, key_mappings};
 use crate::{shared::KeyDisplayLine, tui_editor::display_popup};
 
@@ -437,46 +437,50 @@ impl<'a> FileDialog<'a> {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered by the `select` method.
-    pub fn handle_input(&mut self, key: KeyEvent) -> Result<Status> {
-        let key_code = key.code;
-        match key_code {
-            KeyCode::Esc => return Ok(Status::Quit),
-            KeyCode::Char('l') if key.modifiers == KeyModifiers::CONTROL => {
-                self.popup = !self.popup;
+    pub fn handle_input(&mut self, key_event: KeyEvent) -> Result<Status> {
+        let key_code = key_event.code;
+        // Make sure for Windows
+        if matches!(key_event.kind, KeyEventKind::Press) {
+            match key_code {
+                KeyCode::Esc => return Ok(Status::Quit),
+                KeyCode::Char('l') if key_event.modifiers == KeyModifiers::CONTROL => {
+                    self.popup = !self.popup;
+                }
+                _ => match self.focus {
+                    DialogFocus::List => {
+                        // Handle keys for navigating the file list
+                        match key_code {
+                            KeyCode::Char('u') => self.up()?,
+                            KeyCode::Up | KeyCode::Char('k') => self.previous(),
+                            KeyCode::Down | KeyCode::Char('j') => self.next(),
+                            KeyCode::Enter => self.select()?,
+                            KeyCode::Tab => {
+                                self.focus = DialogFocus::Input;
+                                let _ = execute!(std::io::stdout().lock(), Show,);
+                            } // Switch to input area
+                            _ => {}
+                        }
+                    }
+                    DialogFocus::Input => {
+                        match key_code {
+                            KeyCode::Enter => {
+                                self.select()?;
+                                return Ok(Status::Complete);
+                            }
+                            KeyCode::Tab => {
+                                self.focus = DialogFocus::List;
+                                let _ = execute!(std::io::stdout().lock(), Hide,);
+                            } // Switch back to list
+                            _ => {
+                                // Handle keys for the input area (filename)
+                                handle_save_input(&mut self.input, key_event);
+                            }
+                        }
+                    }
+                },
             }
-            _ => match self.focus {
-                DialogFocus::List => {
-                    // Handle keys for navigating the file list
-                    match key_code {
-                        KeyCode::Char('u') => self.up()?,
-                        KeyCode::Up | KeyCode::Char('k') => self.previous(),
-                        KeyCode::Down | KeyCode::Char('j') => self.next(),
-                        KeyCode::Enter => self.select()?,
-                        KeyCode::Tab => {
-                            self.focus = DialogFocus::Input;
-                            let _ = execute!(std::io::stdout().lock(), Show,);
-                        } // Switch to input area
-                        _ => {}
-                    }
-                }
-                DialogFocus::Input => {
-                    match key_code {
-                        KeyCode::Enter => {
-                            self.select()?;
-                            return Ok(Status::Complete);
-                        }
-                        KeyCode::Tab => {
-                            self.focus = DialogFocus::List;
-                            let _ = execute!(std::io::stdout().lock(), Hide,);
-                        } // Switch back to list
-                        _ => {
-                            // Handle keys for the input area (filename)
-                            handle_save_input(&mut self.input, key);
-                        }
-                    }
-                }
-            },
         }
+
         Ok(Status::Incomplete)
     }
 }
@@ -514,99 +518,6 @@ fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
     // Convert the KeyEvent into an Input that TextArea can handle
     let input = Input::from(key);
     text_area.input(input);
-}
-
-/// Macro to automatically overwrite the default key bindings of the app, when the file dialog is
-/// open.
-///
-/// This macro only works inside of a function that returns a [`std::io::Result`] or a result that
-/// has an error type that implements [`From<std::io::Error>`].
-///
-/// Default bindings:
-///
-/// | Key         | Action                       |
-/// |-------------|------------------------------|
-/// | `q`, `Esc`  | Close the file dialog.       |
-/// | `j`, `Down` | Move down in the file list.  |
-/// | `k`, `Up`   | Move up in the file list.    |
-/// | `Enter`     | Select the current item.     |
-/// | `u`         | Move one directory up.       |
-/// | `I`         | Toggle showing hidden files. |
-///
-/// ## Example
-///
-/// ```ignore
-/// bind_keys!(
-///     // Expression to use to access the file dialog.
-///     app.file_dialog,
-///     // Event handler of the app, when the file dialog is closed.
-///     if let Event::Key(key) = event::read()? {
-///         Ignore key release, which creates an unwanted second event in Windows
-///         if  matches!(key_event.kind, KeyEventKind::Press) {
-///             match key.code {
-///                 KeyCode::Char('q') => {
-///                     return Ok(());
-///                 }
-///                 _ => {}
-///             }
-///         }
-///     }
-/// )
-/// ```
-#[macro_export]
-macro_rules! bind_keys {
-    ($file_dialog:expr, $e:expr) => {{
-        if $file_dialog.is_open() {
-            use crossterm::event::{self, Event, KeyCode};
-            // File dialog events
-            if let Event::Key(key) = event::read()? {
-                if !matches!(key_event.kind, KeyEventKind::Release) {
-                    continue;
-                }
-                match key.code {
-                    KeyCode::Char('q') | KeyCode::Esc => {
-                        $file_dialog.close();
-                    }
-                    KeyCode::Char('I') => $file_dialog.toggle_show_hidden()?,
-                    KeyCode::Enter => {
-                        $file_dialog.select()?;
-                    }
-                    KeyCode::Char('u') => {
-                        $file_dialog.up()?;
-                    }
-                    KeyCode::Up | KeyCode::Char('k') => {
-                        $file_dialog.previous();
-                    }
-                    KeyCode::Down | KeyCode::Char('j') => {
-                        $file_dialog.next();
-                    }
-                    KeyCode::Char('l') if key.modifiers == KeyModifiers::CONTROL => {
-                        $file_dialog.popup = !$file_dialog.popup
-                    }
-                    _ => {}
-                }
-            }
-        } else {
-            $e
-        }
-    }};
-}
-
-/// Helper function to create a centered rectangle in the TUI app.
-fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
-    let popup_layout = Layout::vertical([
-        Constraint::Fill(1),
-        Constraint::Max(max_height),
-        Constraint::Fill(1),
-    ])
-    .split(r);
-
-    Layout::horizontal([
-        Constraint::Fill(1),
-        Constraint::Max(max_width),
-        Constraint::Fill(1),
-    ])
-    .split(popup_layout[1])[1]
 }
 
 const MAPPINGS: &[KeyDisplayLine] = key_mappings![

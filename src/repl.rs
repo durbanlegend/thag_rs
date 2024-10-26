@@ -15,6 +15,7 @@ use crate::tui_editor::{
 };
 use crate::{cprtln, cvprtln, gen_build_run, key, log, KeyCombination, Lvl, ThagResult};
 use clap::{CommandFactory, Parser};
+use crossterm::event::KeyEventKind;
 use crossterm::event::{
     Event::{self, Paste},
     KeyEvent,
@@ -703,6 +704,10 @@ pub fn history_key_handler(
     saved: &mut bool,
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
+    // Make sure for Windows
+    if !matches!(key_event.kind, KeyEventKind::Press) {
+        return Ok(KeyAction::Continue);
+    }
     let maybe_save_path = &mut edit_data.save_path;
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 

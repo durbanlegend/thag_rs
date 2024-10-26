@@ -1,3 +1,4 @@
+#![allow(clippy::missing_panics_doc)]
 mod custom_model;
 mod deserialize_vec_derive;
 mod into_string_hash_map;

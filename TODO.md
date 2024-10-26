@@ -22,7 +22,6 @@
 - [ ]  Trim dependencies, e.g. regex
 - [ ]  Try going back to derive macro with declarative macro to expand the attributes. Problem with attrib macro is the AST isn't
         editable in the way we want, it just points to spans that get resolved later. See bank/syn_parse_mappings.rs for nice format;
-- [ ]  See if prettyplease can be adapted to a string.
 - [ ]  Decommission repl::edit_history_old.
 - [ ]  Decide whether to decommission REPL delete function - keep list
 - [ ]  Decide whether to decommission REPL edit, toml and run functions.

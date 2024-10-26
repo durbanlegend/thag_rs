@@ -191,8 +191,8 @@ impl<'a> FileDialog<'a> {
                 .direction(Direction::Vertical)
                 .constraints(
                     [
-                        Constraint::Min(self.height - 3), // File list area
                         Constraint::Length(3),            // Input field area
+                        Constraint::Min(self.height - 3), // File list area
                     ]
                     .as_ref(),
                 )
@@ -235,7 +235,7 @@ impl<'a> FileDialog<'a> {
                 } else {
                     Style::default().fg(Color::DarkGray).dim()
                 });
-            f.render_stateful_widget(list, chunks[0], &mut self.list_state);
+            f.render_stateful_widget(list, chunks[1], &mut self.list_state);
 
             // Render the input box for the filename
             let input_focus = matches!(self.focus, DialogFocus::Input);
@@ -252,8 +252,8 @@ impl<'a> FileDialog<'a> {
                     .style(input_style)
                     .border_style(input_style);
 
-                let input_area = input_block.inner(chunks[1]); // Adjusts area to fit within borders
-                f.render_widget(input_block, chunks[1]);
+                let input_area = input_block.inner(chunks[0]); // Adjusts area to fit within borders
+                f.render_widget(input_block, chunks[0]);
 
                 // Determine if the filename input has focus
 
@@ -456,7 +456,7 @@ impl<'a> FileDialog<'a> {
                             KeyCode::Up | KeyCode::Char('k') => self.previous(),
                             KeyCode::Down | KeyCode::Char('j') => self.next(),
                             KeyCode::Enter => self.select()?,
-                            KeyCode::Tab => {
+                            KeyCode::Tab | KeyCode::BackTab => {
                                 debug_log!("Matched tab in {:#?} mode", self.focus);
                                 self.focus = DialogFocus::Input;
                                 let _ = execute!(std::io::stdout().lock(), Show,);
@@ -470,7 +470,7 @@ impl<'a> FileDialog<'a> {
                                 self.select()?;
                                 return Ok(Status::Complete);
                             }
-                            KeyCode::Tab => {
+                            KeyCode::Tab | KeyCode::BackTab => {
                                 debug_log!("Matched tab in {:#?} mode", self.focus);
                                 self.focus = DialogFocus::List;
                                 let _ = execute!(std::io::stdout().lock(), Hide,);
@@ -527,9 +527,15 @@ fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
 const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (10, "Key bindings", "Description"),
     (20, "q, Esc", "Close the file dialog"),
-    (30, "j, ↓", "Move down in the file list"),
-    (40, "k, ↑", "Move up in the file list"),
-    (50, "Enter", "Select the current item"),
-    (60, "u", "Move one directory up"),
-    (70, "I", "Toggle showing hidden files")
+    (30, "j, ↓", "Move down in file list view"),
+    (40, "k, ↑", "Move up in file list view"),
+    (50, "Enter", "Choose the current selection"),
+    (60, "u", "Go up to parent directory (list view)"),
+    (70, "I", "Toggle showing hidden files"),
+    (
+        80,
+        "Tab, BackTab",
+        "Toggle between directory list and file name input"
+    ),
+    (90, "Ctrl+l", "Toggle keys display (this screen)"),
 ];

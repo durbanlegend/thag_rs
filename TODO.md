@@ -17,7 +17,7 @@
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?
 - [ ]  Key filedialog tab issue on Windows.
-- [ ]  Try and figure out a way for thag_rs to test proc macros.
+- [ ]  Try and figure out a way for thag_rs to test proc macros - and maybe to show the generated output?.
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
 - [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.
 - [ ]  Trim dependencies, e.g. regex

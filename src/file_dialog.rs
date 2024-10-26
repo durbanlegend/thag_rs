@@ -541,11 +541,14 @@ fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
 ///     app.file_dialog,
 ///     // Event handler of the app, when the file dialog is closed.
 ///     if let Event::Key(key) = event::read()? {
-///         match key.code {
-///             KeyCode::Char('q') => {
-///                 return Ok(());
+///         Ignore key release, which creates an unwanted second event in Windows
+///         if  matches!(key_event.kind, KeyEventKind::Press) {
+///             match key.code {
+///                 KeyCode::Char('q') => {
+///                     return Ok(());
+///                 }
+///                 _ => {}
 ///             }
-///             _ => {}
 ///         }
 ///     }
 /// )
@@ -557,6 +560,9 @@ macro_rules! bind_keys {
             use crossterm::event::{self, Event, KeyCode};
             // File dialog events
             if let Event::Key(key) = event::read()? {
+                if !matches!(key_event.kind, KeyEventKind::Release) {
+                    continue;
+                }
                 match key.code {
                     KeyCode::Char('q') | KeyCode::Esc => {
                         $file_dialog.close();

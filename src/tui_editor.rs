@@ -608,6 +608,7 @@ where
         if let Paste(ref data) = event {
             textarea.insert_str(normalize_newlines(data));
         } else if let Event::Key(key_event) = event {
+            // Ignore key release, which creates an unwanted second event in Windows
             if !matches!(key_event.kind, KeyEventKind::Press) {
                 continue;
             }

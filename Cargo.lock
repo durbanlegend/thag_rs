@@ -261,17 +261,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "const_gen_proc_macro"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d90332d2afaaec9f171e7d773c3dfca8123dca85da63b3d8e21b93961a41ad29"
-dependencies = [
- "proc-macro2 1.0.88",
- "quote 1.0.37",
- "syn 2.0.82",
-]
-
-[[package]]
 name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1467,7 +1456,6 @@ dependencies = [
 name = "thag_proc_macros"
 version = "0.1.0"
 dependencies = [
- "const_gen_proc_macro",
  "crossterm",
  "darling",
  "deluxe",

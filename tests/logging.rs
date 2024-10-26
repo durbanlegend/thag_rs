@@ -1,22 +1,53 @@
 #[cfg(test)]
 mod tests {
     use sequential_test::{parallel, sequential};
-    use std::env;
-    use std::io::Write;
-    use std::process::{Command, Stdio};
-    use std::sync::Once;
-    use thag_rs::debug_log;
-    use thag_rs::logging::{set_global_verbosity, Logger, Verbosity, LOGGER};
+    use simplelog::{
+        ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+    };
+    use std::{
+        env,
+        fs::File,
+        io::Write,
+        process::{Command, Stdio},
+        sync::Once,
+    };
+    use thag_rs::{
+        debug_log,
+        logging::{set_global_verbosity, Logger, Verbosity, LOGGER},
+    };
 
     // Set environment variables before running tests
     fn set_up() {
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        static INIT: Once = Once::new();
+        INIT.call_once(|| {
+            env::set_var("TEST_ENV", "1");
+            env::set_var("VISUAL", "cat");
+            env::set_var("EDITOR", "cat");
+            init_logger();
+        });
     }
 
+    #[cfg(feature = "env_logger")]
     fn init_logger() {
         let _ = env_logger::builder().is_test(true).try_init();
+    }
+
+    #[cfg(not(feature = "env_logger"))]
+    fn init_logger() {
+        CombinedLogger::init(vec![
+            TermLogger::new(
+                LevelFilter::Info,
+                Config::default(),
+                TerminalMode::Mixed,
+                ColorChoice::Auto,
+            ),
+            WriteLogger::new(
+                LevelFilter::Debug,
+                Config::default(),
+                File::create("app.log").unwrap(),
+            ),
+        ])
+        .unwrap();
     }
 
     // A utility function to reset the global logger for testing.
@@ -56,7 +87,7 @@ mod tests {
     #[sequential]
     fn test_logging_logger_log() {
         set_up();
-        init_logger();
+        // init_logger();
         let thag_rs_path = env::current_dir().expect("Error getting current directory");
 
         let input = format!(
@@ -109,7 +140,7 @@ fn main() {{
     #[sequential]
     fn test_logging_macro_log() {
         set_up();
-        init_logger();
+        // init_logger();
         let thag_rs_path = env::current_dir().expect("Error getting current directory");
 
         let input = format!(

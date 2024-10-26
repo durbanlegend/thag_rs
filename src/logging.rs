@@ -2,7 +2,6 @@
 #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
 use env_logger::{Builder, Env};
 use firestorm::profile_fn;
-use log::info;
 use serde::Deserialize;
 #[cfg(feature = "simplelog")]
 use simplelog::{
@@ -16,7 +15,7 @@ use std::sync::{
 };
 use strum::EnumString;
 
-use crate::{config::maybe_config, debug_log, Cli, ThagResult};
+use crate::{config::maybe_config, debug_log, log, Cli, ThagResult};
 
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 
@@ -140,39 +139,50 @@ pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
 }
 
 /// Configure log level
+#[cfg(feature = "env_logger")]
+pub fn configure_log() {
+    profile_fn!(configure_log);
+
+    let env = Env::new().filter("RUST_LOG");
+    Builder::new().parse_env(env).init();
+    info!("Initialized env_logger");
+}
+
+/// Configure log level
+///
+/// # Panics
+///
+/// Panics if it can't create the log file app.log in the current working directory.
+#[cfg(not(feature = "env_logger"))]
+pub fn configure_log() {
+    profile_fn!(configure_log);
+
+    configure_simplelog();
+    // info!("Initialized simplelog");  // interferes with testing
+    log!(V::N, "Initialized simplelog");
+}
+
+/// Configure log level
 ///
 /// # Panics
 ///
 /// Panics if it can't create athe log file app.log in the current working directory.
-pub fn configure_log() {
-    profile_fn!(configure_log);
-
-    // Choose between simplelog and env_logger based on compile feature
-    #[cfg(not(feature = "env_logger"))]
-    {
-        CombinedLogger::init(vec![
-            TermLogger::new(
-                LevelFilter::Info,
-                Config::default(),
-                TerminalMode::Mixed,
-                ColorChoice::Auto,
-            ),
-            WriteLogger::new(
-                LevelFilter::Debug,
-                Config::default(),
-                File::create("app.log").unwrap(),
-            ),
-        ])
-        .unwrap();
-        info!("Initialized simplelog");
-    }
-
-    #[cfg(feature = "env_logger")] // This will use env_logger if simplelog is not active
-    {
-        let env = Env::new().filter("RUST_LOG");
-        Builder::new().parse_env(env).init();
-        info!("Initialized env_logger");
-    }
+#[cfg(not(feature = "env_logger"))]
+fn configure_simplelog() {
+    CombinedLogger::init(vec![
+        TermLogger::new(
+            LevelFilter::Info,
+            Config::default(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        ),
+        WriteLogger::new(
+            LevelFilter::Debug,
+            Config::default(),
+            File::create("app.log").unwrap(),
+        ),
+    ])
+    .unwrap();
 }
 
 #[macro_export]

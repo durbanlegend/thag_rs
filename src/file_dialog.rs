@@ -44,7 +44,7 @@ pub enum FilePattern {
 }
 
 /// Enum to represent which part of the dialog has focus.
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum DialogFocus {
     List,  // Focus on file list
     Input, // Focus on input area
@@ -438,9 +438,11 @@ impl<'a> FileDialog<'a> {
     ///
     /// This function will bubble up any i/o errors encountered by the `select` method.
     pub fn handle_input(&mut self, key_event: KeyEvent) -> Result<Status> {
-        let key_code = key_event.code;
         // Make sure for Windows
         if matches!(key_event.kind, KeyEventKind::Press) {
+            debug_log!("key_event={key_event:#?}");
+            debug_log!("self.focus={:#?}", self.focus);
+            let key_code = key_event.code;
             match key_code {
                 KeyCode::Esc => return Ok(Status::Quit),
                 KeyCode::Char('l') if key_event.modifiers == KeyModifiers::CONTROL => {
@@ -455,6 +457,7 @@ impl<'a> FileDialog<'a> {
                             KeyCode::Down | KeyCode::Char('j') => self.next(),
                             KeyCode::Enter => self.select()?,
                             KeyCode::Tab => {
+                                debug_log!("Matched tab in {:#?} mode", self.focus);
                                 self.focus = DialogFocus::Input;
                                 let _ = execute!(std::io::stdout().lock(), Show,);
                             } // Switch to input area
@@ -468,6 +471,7 @@ impl<'a> FileDialog<'a> {
                                 return Ok(Status::Complete);
                             }
                             KeyCode::Tab => {
+                                debug_log!("Matched tab in {:#?} mode", self.focus);
                                 self.focus = DialogFocus::List;
                                 let _ = execute!(std::io::stdout().lock(), Hide,);
                             } // Switch back to list

@@ -16,7 +16,7 @@
 - [ ]  >>> Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?
-- [ ]  Key release issue on Windows.
+- [ ]  Key filedialog tab issue on Windows.
 - [ ]  Try and figure out a way for thag_rs to test proc macros.
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
 - [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.

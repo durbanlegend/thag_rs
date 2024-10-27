@@ -5,7 +5,7 @@ use crate::code_utils::{
 };
 use crate::colors::{coloring, gen_mappings, Lvl};
 use crate::config::{self, maybe_config, RealContext};
-use crate::logging::{is_debug_logging_enabled, Verbosity};
+use crate::logging::{is_debug_logging_enabled, V};
 use crate::manifest;
 use crate::regex;
 use crate::repl::run_repl;
@@ -22,6 +22,7 @@ use firestorm::{profile_fn, profile_section};
 use log::{log_enabled, Level::Debug};
 use nu_ansi_term::{Color, Style};
 use regex::Regex;
+use std::env::current_dir;
 use std::string::ToString;
 use std::{
     fs::{self, OpenOptions},
@@ -66,7 +67,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     let working_dir_path = if is_repl {
         TMPDIR.join(REPL_SUBDIR)
     } else {
-        std::env::current_dir()?.canonicalize()?
+        current_dir()?.canonicalize()?
     };
     validate_args(args, &proc_flags)?;
     let repl_source_path = if is_repl && args.script.is_none() {
@@ -237,7 +238,7 @@ fn process(
             str
         };
 
-        log!(Verbosity::Verbose, "rs_source={rs_source}");
+        log!(V::V, "rs_source={rs_source}");
 
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
             // .map_err(|_err| ThagError::FromStr("Error parsing rs_source"))
@@ -330,6 +331,19 @@ pub fn gen_build_run(
         } else {
             syntax_tree
         };
+
+        if syntax_tree.is_none() {
+            let current_dir = current_dir()?;
+            let formatted = format!(
+                "If no useful error messages are shown below, try `rustfmt {0}` or `rustc {0}`.",
+                source_path
+                    .strip_prefix(current_dir)
+                    .map_err(|e| e.to_string())?
+                    .display()
+            );
+            log!(V::QQ, "{}", Style::from(&Lvl::EMPH).paint(formatted));
+        }
+        // debug_log!("syntax_tree={syntax_tree:#?}");
 
         let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
 
@@ -451,7 +465,7 @@ pub fn gen_build_run(
         generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
         log!(
-            Verbosity::Normal,
+            V::N,
             "{}",
             Color::Yellow
                 // .bold()
@@ -464,7 +478,7 @@ pub fn gen_build_run(
         build(proc_flags, build_state)?;
     } else {
         log!(
-            Verbosity::Normal,
+            V::N,
             "{}",
             Color::Yellow
                 // .bold()
@@ -487,7 +501,7 @@ pub fn gen_build_run(
 /// # Errors
 ///
 /// Will return `Err` if there is an error creating the directory path, writing to the
-/// target source or `Cargo.toml` file or formatting the source file with rustfmt.
+/// target source or `Cargo.toml` file or formatting the source file with `prettyplease`.
 ///
 /// # Panics
 ///
@@ -514,10 +528,7 @@ pub fn generate(
 
     let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
     // let is_repl = proc_flags.contains(ProcFlags::REPL);
-    log!(
-        Verbosity::Verbose,
-        "GGGGGGGG Creating source file: {target_rs_path:?}"
-    );
+    log!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {
         profile_section!(transform);
@@ -604,7 +615,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
 
     // Show sign of life in case build takes a while
     log!(
-        Verbosity::Normal,
+        V::N,
         "{} {} ...",
         if check { "Checking" } else { "Building" },
         Style::from(&Lvl::EMPH).paint(&build_state.source_name)
@@ -690,14 +701,14 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     fs::rename(executable_path, output_path)?;
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
+    log!(V::Q, "{}", Color::Yellow.paint(&dash_line));
 
     log!(
-        Verbosity::Quieter,
+        V::QQ,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
     );
 
-    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
+    log!(V::Q, "{}", Color::Yellow.paint(&dash_line));
     Ok(())
 }
 
@@ -729,11 +740,11 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
+    log!(V::Q, "{}", Color::Yellow.paint(&dash_line));
 
     let _exit_status = run_command.spawn()?.wait()?;
 
-    log!(Verbosity::Quiet, "{}", Color::Yellow.paint(&dash_line));
+    log!(V::Q, "{}", Color::Yellow.paint(&dash_line));
 
     // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");

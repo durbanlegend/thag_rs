@@ -2,6 +2,7 @@
 [dependencies]
 crossterm = "0.28.1"
 ratatui = "0.28.1"
+ratatui-explorer = "0.1.2"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 */
 use std::io::{self, stdout};
@@ -15,7 +16,6 @@ use ratatui::{
     prelude::*,
     widgets::{Block, BorderType, Borders},
 };
-
 use ratatui_explorer::{FileExplorer, Theme};
 
 fn main() -> io::Result<()> {

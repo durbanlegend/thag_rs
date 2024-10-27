@@ -3,7 +3,7 @@
 /// Licence: MIT
 use crossterm::{
     cursor::{Hide, Show},
-    event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    event::{KeyCode, KeyEvent, KeyEventKind},
     execute,
 };
 use ratatui::{
@@ -24,9 +24,12 @@ use std::{
 };
 use tui_textarea::{Input, TextArea};
 
-use crate::tui_editor::{self, centered_rect};
-use crate::{debug_log, key_mappings, Lvl};
+use crate::{debug_log, key, key_mappings, Lvl};
 use crate::{shared::KeyDisplayLine, tui_editor::display_popup};
+use crate::{
+    tui_editor::{self, centered_rect},
+    KeyCombination,
+};
 
 /// File dialog mode to distinguish between Open and Save dialogs
 #[derive(Debug, PartialEq, Eq)]
@@ -89,6 +92,8 @@ pub struct FileDialog<'a> {
 
     /// Input for the file name in Input mode
     pub input: TextArea<'a>,
+
+    pub buf: String,
 }
 
 // impl<FilePattern> FileDialog<'_, FilePattern> {
@@ -117,6 +122,7 @@ impl<'a> FileDialog<'a> {
             popup: false, // Start with focus on the file list
             input: TextArea::default(),
             title_bottom: "Ctrl+l to show keys",
+            buf: String::new(),
         };
         s.update_entries()?;
         Ok(s)
@@ -256,12 +262,13 @@ impl<'a> FileDialog<'a> {
                 // Determine if the filename input has focus
 
                 // Conditionally show the cursor only if the input box has focus
-                self.input.set_cursor_line_style(if input_focus {
-                    Style::default().fg(Color::DarkGray)
-                } else {
-                    Style::default().fg(Color::DarkGray) // Cursor won't be visible when not focused
-                });
-
+                // self.input.set_cursor_line_style(if input_focus {
+                //     Style::default().fg(Color::DarkGray)
+                // } else {
+                //     Style::default().fg(Color::DarkGray) // Cursor won't be visible when not focused
+                // });
+                self.input
+                    .set_cursor_line_style(Style::default().fg(Color::DarkGray));
                 if input_focus {
                     self.input.set_style(Style::default());
                     self.input
@@ -282,10 +289,14 @@ impl<'a> FileDialog<'a> {
             }
 
             if self.popup {
+                let mappings: &[KeyDisplayLine] = match self.focus {
+                    DialogFocus::List => LIST_MAPPINGS,
+                    DialogFocus::Input => INPUT_MAPPINGS,
+                };
+                let (max_key_len, max_desc_len) = get_max_lengths(mappings);
                 let title_bottom = tui_editor::TITLE_BOTTOM;
-                let (max_key_len, max_desc_len) = get_max_lengths(MAPPINGS);
                 display_popup(
-                    MAPPINGS,
+                    mappings,
                     "Key bindings",
                     title_bottom,
                     max_key_len,
@@ -392,16 +403,28 @@ impl<'a> FileDialog<'a> {
                         {
                             return self.show_hidden;
                         }
-                        if e.is_dir() || self.filter.is_none() {
+                        // if e.is_dir() || self.filter.is_none() {
+                        if self.filter.is_none()
+                            || matches!(self.filter, Some(FilePattern::Extension(_)))
+                        {
                             return true;
                         }
                         match self.filter.as_ref().unwrap() {
                             FilePattern::Extension(ext) => e.extension().map_or(false, |e| {
                                 e.to_ascii_lowercase() == OsString::from(ext.to_ascii_lowercase())
                             }),
-                            FilePattern::Substring(substr) => e
-                                .file_name()
-                                .map_or(false, |n| n.to_string_lossy().contains(substr)),
+                            FilePattern::Substring(substr) => {
+                                // let file_name = e
+                                //     .file_name()
+                                //     .expect("Error getting file name")
+                                //     .to_string_lossy();
+                                // debug_log!(
+                                //     "substr={substr}, e.file_name()={file_name}, match={}",
+                                //     file_name.contains(substr)
+                                // );
+                                e.file_name()
+                                    .map_or(false, |n| n.to_string_lossy().contains(substr))
+                            }
                         }
                     })
                     .map(|file| {
@@ -438,42 +461,61 @@ impl<'a> FileDialog<'a> {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered by the `select` method.
+    /// # Panics
+    ///
+    /// Panics if there is a logic error popping the last character out of the search buffer.
+    #[allow(clippy::unnested_or_patterns)]
     pub fn handle_input(&mut self, key_event: KeyEvent) -> Result<Status> {
         // Make sure for Windows
         if matches!(key_event.kind, KeyEventKind::Press) {
             debug_log!("key_event={key_event:#?}");
             debug_log!("self.focus={:#?}", self.focus);
             let key_code = key_event.code;
-            match key_code {
-                KeyCode::Esc => return Ok(Status::Quit),
-                KeyCode::Char('l') if key_event.modifiers == KeyModifiers::CONTROL => {
-                    self.popup = !self.popup;
+            let key_combination = KeyCombination::from(key_event);
+            match key_combination {
+                key!(ctrl - l) => self.popup = !self.popup,
+                key!(ctrl - q) | key!(Esc) => return Ok(Status::Quit),
+                key!(Enter) => {
+                    self.select()?;
+                    self.buf.clear();
+                    self.reset_filter()?;
                 }
                 _ => match self.focus {
                     DialogFocus::List => {
                         // Handle keys for navigating the file list
-                        match key_code {
-                            KeyCode::Char('u') => self.up()?,
-                            KeyCode::Up | KeyCode::Char('k') => self.previous(),
-                            KeyCode::Down | KeyCode::Char('j') => self.next(),
-                            KeyCode::Enter => self.select()?,
-                            KeyCode::Tab | KeyCode::BackTab => {
+                        match key_combination {
+                            key!(tab) | key!(backtab) => {
                                 debug_log!("Matched Tab / Backtab in {:#?} mode", self.focus);
                                 self.focus = DialogFocus::Input;
                                 let _ = execute!(std::io::stdout().lock(), Show,);
                             } // Switch to input area
-                            KeyCode::Char('I') => self.toggle_show_hidden()?,
-                            _ => {}
+                            key!(down) | key!(ctrl - j) => self.next(),
+                            key!(up) | key!(ctrl - k) => self.previous(),
+                            key!(ctrl - u) => {
+                                self.buf.clear();
+                                self.reset_filter()?;
+                                self.up()?;
+                            }
+                            key!(ctrl - h) => self.toggle_show_hidden()?,
+                            key!(backspace) => {
+                                if !self.buf.is_empty() {
+                                    self.buf.pop().expect("Logic error updating search buffer");
+                                }
+                                self.set_filter(FilePattern::Substring(self.buf.clone()))?;
+                            }
+                            _ => {
+                                if let KeyCode::Char(c) = key_code {
+                                    self.buf.push(c);
+                                    debug_log!("self.buf={}", self.buf);
+                                    self.set_filter(FilePattern::Substring(self.buf.clone()))?;
+                                }
+                            }
                         }
                     }
                     DialogFocus::Input => {
-                        match key_code {
-                            KeyCode::Enter => {
-                                self.select()?;
-                                return Ok(Status::Complete);
-                            }
-                            KeyCode::Tab | KeyCode::BackTab => {
-                                debug_log!("Matched tab in {:#?} mode", self.focus);
+                        match key_combination {
+                            key!(tab) | key!(backtab) => {
+                                debug_log!("Matched Tab / Backtab in {:#?} mode", self.focus);
                                 self.focus = DialogFocus::List;
                                 let _ = execute!(std::io::stdout().lock(), Hide,);
                             } // Switch back to list
@@ -486,7 +528,6 @@ impl<'a> FileDialog<'a> {
                 },
             }
         }
-
         Ok(Status::Incomplete)
     }
 }
@@ -526,18 +567,32 @@ fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
     text_area.input(input);
 }
 
-const MAPPINGS: &[KeyDisplayLine] = key_mappings![
+const LIST_MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (10, "Key bindings", "Description"),
-    (20, "q, Esc", "Close the file dialog"),
-    (30, "j, ↓", "Move down in file list view"),
-    (40, "k, ↑", "Move up in file list view"),
+    (20, "Esc, Ctrl+q", "Close the file dialog"),
+    (30, "↓, Ctrl+j", "Move down in file list view"),
+    (40, "↑, Ctrl+k", "Move up in file list view"),
     (50, "Enter", "Choose the current selection"),
-    (60, "u", "Go up to parent directory (list view)"),
-    (70, "I", "Toggle showing hidden files"),
+    (60, "Ctrl+u", "Go up to parent directory"),
+    (70, "Ctrl+h", "Toggle showing hidden files"),
     (
         80,
         "Tab, BackTab",
         "Toggle between directory list and file name input"
     ),
-    (90, "Ctrl+l", "Toggle keys display (this screen)"),
+    (90, "a-z, A-Z", "Append character to match string"),
+    (100, "Backspace", "Remove last character from match string"),
+    (110, "Ctrl+l", "Toggle keys display (this screen)"),
+];
+
+const INPUT_MAPPINGS: &[KeyDisplayLine] = key_mappings![
+    (10, "Key bindings", "Description"),
+    (20, "Esc, Ctrl+q", "Close the file dialog"),
+    (30, "Enter", "Save file"),
+    (
+        40,
+        "Tab, BackTab",
+        "Toggle between directory list and file name input"
+    ),
+    (50, "Ctrl+l", "Toggle keys display (this screen)"),
 ];

@@ -815,7 +815,8 @@ pub fn script_key_handler(
                         match result {
                             Ok(()) => {
                                 status_message.clear();
-                                status_message.push_str(&format!("Saved to {save_path:?}"));
+                                status_message
+                                    .push_str(&format!("Saved to {}", save_path.display()));
                             }
                             Err(e) => return Err(e),
                             // None => return Err(ThagError::Logic(
@@ -839,7 +840,7 @@ pub fn script_key_handler(
                 if let Some(ref to_rs_path) = save_dialog.selected_file {
                     save_source_file(to_rs_path, textarea, saved)?;
                     status_message.clear();
-                    status_message.push_str(&format!("Saved to {to_rs_path:?}"));
+                    status_message.push_str(&format!("Saved to {}", to_rs_path.display()));
 
                     Ok(KeyAction::Save)
                 } else {

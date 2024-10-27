@@ -16,11 +16,13 @@
 - [ ]  >>> Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?
-- [ ]  Key filedialog tab issue on Windows.
-- [ ]  File display to include entries >= hidden current buffer value
 - [ ]  File display input to display directory name
 - [ ]  New concise macro for styled log!, e.g. for builder line 335 or code_utils "Error parsing syntax tree" message.s
-- [ ]  Try and figure out a way for thag_rs to test proc macros - and maybe to show the generated output?.
+- [ ]  Try and figure out a way for thag_rs to test proc macros - and maybe to show the generated output?
+        - could do an expand option that builds the file and calls cargo expand with --manifest-path <build_state.cargo_toml_path>
+        - consider a dedicated installable thag_rs proc library - maybe configurable location specified in config.toml.
+            Source files need to import this with path in toml file or even allow a git option.
+            Prototype this!
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
 - [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.
 - [ ]  Trim dependencies, e.g. regex

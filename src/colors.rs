@@ -481,11 +481,11 @@ macro_rules! cprtln {
 
 #[macro_export]
 macro_rules! cvprtln {
-    ($level:expr, $verbosity:expr, $msg:expr) => {{
-        if $verbosity >= $crate::logging::get_verbosity() {
+    ($level:expr, $verbosity:expr, $($arg:tt)*) => {{
+        if $verbosity <= $crate::logging::get_verbosity() {
             let (maybe_color_support, term_theme) = coloring();
             let style = $crate::colors::get_style(&$level, term_theme, maybe_color_support);
-            cprtln!(&style, $msg);
+            cprtln!(&style, $($arg)*);
         }
     }};
 }

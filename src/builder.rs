@@ -6,12 +6,12 @@ use crate::code_utils::{
 use crate::colors::{coloring, gen_mappings, Lvl};
 use crate::config::{self, maybe_config, RealContext};
 use crate::logging::{is_debug_logging_enabled, V};
-use crate::manifest;
 use crate::regex;
 use crate::repl::run_repl;
 use crate::shared::{debug_timings, display_timings, Ast, BuildState};
 use crate::stdin::{edit, read};
 use crate::tui_editor::CrosstermEventReader;
+use crate::{cprtln, cvprtln, manifest};
 use crate::{
     debug_log, log, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
     REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
@@ -341,7 +341,7 @@ pub fn gen_build_run(
                     .map_err(|e| e.to_string())?
                     .display()
             );
-            log!(V::QQ, "{}", Style::from(&Lvl::EMPH).paint(formatted));
+            cvprtln!(Lvl::EMPH, V::QQ, "{}", formatted);
         }
         // debug_log!("syntax_tree={syntax_tree:#?}");
 

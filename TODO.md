@@ -18,7 +18,8 @@
 - [ ]  Make key_handler a trait method? Or a closure?
 - [ ]  File display input to display directory name
 - [ ]  Replace log! with cvprtln! where MessageLevel/Lvl and Verbosity/V are specified.
-- [ ]  Consider a new Lvl for Yellow: Bright?
+- [ ]  Consider replacing TuiSelectionBg with just foreground colour/bolding as per popups.
+- [ ]  Get GPT to write a termbg unit test with MockEventReader as per stdin.
 - [ ]  Try and figure out a way for thag_rs to test proc macros - and maybe to show the generated output?
         - could do an expand option that builds the file and calls cargo expand with --manifest-path <build_state.cargo_toml_path>
         - consider a dedicated installable thag_rs proc library - maybe configurable location specified in config.toml, with preferred theme.

@@ -59,7 +59,7 @@ mod tests {
     fn test_repl_edit_history_old() {
         use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
         use mockall::Sequence;
-        use thag_rs::tui_editor::MockEventReader;
+        use thag_rs::MockEventReader;
 
         set_up();
         let build_state = thag_rs::BuildState {
@@ -112,7 +112,7 @@ mod tests {
 
         use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
         use mockall::Sequence;
-        use thag_rs::tui_editor::MockEventReader;
+        use thag_rs::MockEventReader;
 
         set_up();
         let build_state = thag_rs::BuildState {

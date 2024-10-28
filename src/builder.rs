@@ -1,20 +1,18 @@
-use crate::cmd_args::{get_proc_flags, validate_args, Cli, ProcFlags};
 use crate::code_utils::{
-    self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest, process_expr,
+    self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest,
     read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
-use crate::colors::{coloring, gen_mappings, Lvl};
+use crate::colors::gen_mappings;
 use crate::config::{self, maybe_config, RealContext};
-use crate::logging::{is_debug_logging_enabled, V};
+use crate::logging::is_debug_logging_enabled;
 use crate::regex;
 use crate::repl::run_repl;
-use crate::shared::{debug_timings, display_timings, Ast, BuildState};
 use crate::stdin::{edit, read};
-use crate::tui_editor::CrosstermEventReader;
-use crate::{cprtln, cvprtln, manifest};
 use crate::{
-    debug_log, log, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
-    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
+    coloring, cprtln, cvprtln, debug_log, debug_timings, display_timings, get_proc_flags, log,
+    manifest, validate_args, Ast, BuildState, Cli, CrosstermEventReader, Lvl, ProcFlags,
+    ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME,
+    REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V, VERSION,
 };
 
 use cargo_toml::Manifest;
@@ -31,6 +29,7 @@ use std::{
     process::Command,
     time::Instant,
 };
+use syn::Expr;
 
 /// Execute the script runner.
 /// # Errors
@@ -266,6 +265,23 @@ fn process(
     }
 }
 
+/// Process a Rust expression
+/// # Errors
+/// Will return `Err` if there is any errors encountered opening or writing to the file.
+pub fn process_expr(
+    expr_ast: Expr,
+    build_state: &mut BuildState,
+    rs_source: &str,
+    args: &Cli,
+    proc_flags: &ProcFlags,
+    start: &Instant,
+) -> ThagResult<()> {
+    let syntax_tree = Some(Ast::Expr(expr_ast));
+    write_source(&build_state.source_path, rs_source)?;
+    let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
+    log!(V::N, "{result:?}");
+    Ok(())
+}
 fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
     profile_fn!(log_init_setup);
     debug_log_config();
@@ -464,12 +480,10 @@ pub fn gen_build_run(
         };
         generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
-        log!(
+        cvprtln!(
+            Lvl::EMPH,
             V::N,
-            "{}",
-            Color::Yellow
-                // .bold()
-                .paint("Skipping unnecessary generation step.  Use --force (-f) to override.")
+            "Skipping unnecessary generation step.  Use --force (-f) to override."
         );
         // build_state.cargo_manifest = Some(default_manifest(build_state)?);
         build_state.cargo_manifest = None; // Don't need it in memory, build will find it on disk
@@ -477,12 +491,10 @@ pub fn gen_build_run(
     if build_state.must_build {
         build(proc_flags, build_state)?;
     } else {
-        log!(
+        cvprtln!(
+            Lvl::EMPH,
             V::N,
-            "{}",
-            Color::Yellow
-                // .bold()
-                .paint("Skipping unnecessary cargo build step. Use --force (-f) to override.")
+            "Skipping unnecessary cargo build step.  Use --force (-f) to override."
         );
     }
     if proc_flags.contains(ProcFlags::RUN) {

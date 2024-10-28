@@ -17,27 +17,29 @@ pub mod repl;
 pub mod shared;
 pub mod stdin;
 // #[cfg(not(target_os = "windows"))]
-// pub mod termbg;
+pub mod termbg;
 pub mod tui_editor;
 
 // Re-export commonly used items for convenience
-pub use builder::{execute, gen_build_run};
+pub use builder::{execute, gen_build_run, process_expr};
 pub use cmd_args::{get_args, get_proc_flags, validate_args, Cli, ProcFlags};
 pub use code_utils::{
     create_temp_source_file, extract_ast_expr, extract_manifest, modified_since_compiled,
-    process_expr,
 };
 pub use colors::{
-    Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, Xterm256DarkStyle, Xterm256LightStyle,
+    coloring, Ansi16DarkStyle, Ansi16LightStyle, ColorSupport, Lvl, MessageLevel, TermTheme,
+    Xterm256DarkStyle, Xterm256LightStyle,
 };
 pub use config::{load, maybe_config};
 pub use errors::{ThagError, ThagResult};
 pub use keys::KeyCombination;
-pub use shared::{debug_timings, escape_path_for_windows, Ast, BuildState, ScriptState};
-pub use termbg;
-pub use thag_proc_macros::{
-    DeriveKeyMapList, DeriveCustomModel, IntoStringHashMap, MyDescription,
+pub use logging::{get_verbosity, Verbosity, V};
+pub use shared::{
+    debug_timings, display_timings, escape_path_for_windows, Ast, BuildState, CrosstermEventReader,
+    EventReader, KeyDisplayLine, MockEventReader, ScriptState,
 };
+// pub use termbg;
+pub use thag_proc_macros::{DeriveCustomModel, DeriveKeyMapList, IntoStringHashMap, MyDescription};
 
 // Common constants and statics
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";

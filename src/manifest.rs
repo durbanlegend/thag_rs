@@ -1,24 +1,21 @@
 #![allow(clippy::uninlined_format_args)]
+use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
+#[cfg(target_os = "windows")]
+use crate::escape_path_for_windows;
+use crate::{debug_log, debug_timings, log, regex, Ast, BuildState, Lvl, ThagResult, V};
 use cargo_toml::{Dependency, Manifest};
 use firestorm::profile_fn;
 use mockall::automock;
 use nu_ansi_term::Style;
 use regex::Regex;
 use serde_merge::omerge;
-use std::collections::BTreeMap;
-use std::io::{self, BufRead};
-use std::path::PathBuf;
-use std::process::{Command, Output};
-use std::time::Instant;
-
-use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
-use crate::log;
-use crate::logging::Verbosity;
-#[cfg(target_os = "windows")]
-use crate::shared::escape_path_for_windows;
-use crate::shared::{debug_timings, Ast, BuildState};
-use crate::{colors::Lvl, regex};
-use crate::{debug_log, ThagResult};
+use std::{
+    collections::BTreeMap,
+    io::{self, BufRead},
+    path::PathBuf,
+    process::{Command, Output},
+    time::Instant,
+};
 
 /// A trait to allow mocking of the command for testing purposes.
 #[automock]
@@ -52,7 +49,7 @@ pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> ThagResult
 
     let dep_crate_styled = Style::from(&Lvl::EMPH).paint(dep_crate);
     log!(
-        Verbosity::Normal,
+        V::N,
         r#"Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
 See below for how to avoid this and speed up future builds.
 "#,
@@ -99,7 +96,7 @@ See below for how to avoid this and speed up future builds.
             let dep_version_styled = Style::from(&Lvl::EMPH).paint(&version);
 
             log!(
-                Verbosity::Normal,
+                V::N,
                 r#"Cargo found the following dependency, which you can copy into the toml block
 as shown if you don't need special features:
 
@@ -138,11 +135,11 @@ pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
         let captures = re.captures(first_line).unwrap();
         let name = captures.get(1).unwrap().as_str();
         let version = captures.get(2).unwrap().as_str();
-        // log!(Verbosity::Normal, "Dependency name: {}", name);
-        // log!(Verbosity::Normal, "Dependency version: {}", version);
+        // log!(V::N, "Dependency name: {}", name);
+        // log!(V::N, "Dependency version: {}", version);
         (String::from(name), String::from(version))
     } else {
-        log!(Verbosity::Quieter, "Not a valid Cargo dependency format.");
+        log!(V::QQ, "Not a valid Cargo dependency format.");
         return Err("Not a valid Cargo dependency format".into());
     };
     Ok((name, version))
@@ -203,7 +200,7 @@ edition = "2021"
         source_stem, source_stem, gen_src_path
     );
 
-    // log!(Verbosity::Normal, "cargo_manifest=\n{cargo_manifest}");
+    // log!(V::N, "cargo_manifest=\n{cargo_manifest}");
 
     Ok(Manifest::from_str(&cargo_manifest)?)
 }
@@ -281,10 +278,7 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
             // return Err(format!(
             //     "Cargo search couldn't find crate [{dep_name}]").into()
             // );
-            log!(
-                Verbosity::Quieter,
-                "Cargo search couldn't find crate [{dep_name}]"
-            );
+            log!(V::QQ, "Cargo search couldn't find crate [{dep_name}]");
             continue;
         };
         rs_dep_map.insert(dep_name, dep);

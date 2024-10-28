@@ -3,12 +3,10 @@
     clippy::implicit_return,
     clippy::missing_trait_methods
 )]
-use crate::builder::gen_build_run;
-use crate::cmd_args::{Cli, ProcFlags};
-use crate::errors::{ThagError, ThagResult};
-use crate::logging::V;
-use crate::shared::{debug_timings, Ast, BuildState};
-use crate::{debug_log, log, Lvl, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
+use crate::{
+    debug_log, debug_timings, log, Ast, BuildState, Cli, Lvl, ThagError, ThagResult,
+    DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
+};
 
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
@@ -452,24 +450,6 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
         expr = syn::parse_str::<Expr>(str);
     }
     expr
-}
-
-/// Process a Rust expression
-/// # Errors
-/// Will return `Err` if there is any errors encountered opening or writing to the file.
-pub fn process_expr(
-    expr_ast: Expr,
-    build_state: &mut BuildState,
-    rs_source: &str,
-    args: &Cli,
-    proc_flags: &ProcFlags,
-    start: &Instant,
-) -> ThagResult<()> {
-    let syntax_tree = Some(Ast::Expr(expr_ast));
-    write_source(&build_state.source_path, rs_source)?;
-    let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
-    log!(V::N, "{result:?}");
-    Ok(())
 }
 
 /// Convert a Path to a string value, assuming the path contains only valid characters.

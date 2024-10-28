@@ -1,3 +1,5 @@
+use crate::colors::TuiSelectionBg;
+use crate::{debug_log, ColorSupport, TermTheme, ThagResult, Verbosity};
 use edit::edit_file;
 use firestorm::profile_fn;
 use mockall::{automock, predicate::str};
@@ -9,10 +11,6 @@ use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::OnceLock;
-
-use crate::colors::{ColorSupport, TermTheme, TuiSelectionBg};
-use crate::logging::Verbosity;
-use crate::{debug_log, ThagResult};
 
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]

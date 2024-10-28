@@ -207,8 +207,9 @@ impl<'a> FileDialog<'a> {
             // Determine if the file list has focus
             let file_list_focus = matches!(self.focus, DialogFocus::List);
 
+            let title = format!("{}", self.current_dir.display());
             let block = Block::default()
-                .title(format!("{}", self.current_dir.to_string_lossy()))
+                .title(title.clone())
                 .borders(Borders::ALL)
                 .border_style(if file_list_focus {
                     Style::default()
@@ -251,7 +252,7 @@ impl<'a> FileDialog<'a> {
                     Style::default().fg(Color::DarkGray).dim()
                 };
                 let input_block = Block::default()
-                    .title("File Name")
+                    .title(title)
                     .borders(Borders::ALL)
                     .style(input_style)
                     .border_style(input_style);

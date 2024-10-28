@@ -1,24 +1,23 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::cmd_args::{Cli, ProcFlags};
-use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
-use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
+use crate::builder::process_expr;
+use crate::code_utils::{clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
+use crate::colors::{tui_selection_bg, TuiSelectionBg};
 #[cfg(debug_assertions)]
 use crate::debug_log;
-use crate::errors::ThagError;
-use crate::logging::{get_verbosity, Verbosity};
-use crate::regex;
-use crate::shared::{Ast, BuildState, KeyDisplayLine};
 use crate::tui_editor::{
     apply_highlights, display_popup, normalize_newlines, resolve_term, script_key_handler,
-    tui_edit, CrosstermEventReader, EditData, Entry, EventReader, History, KeyAction, KeyDisplay,
-    TermScopeGuard, MAPPINGS, TITLE_BOTTOM, TITLE_TOP,
+    tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, TermScopeGuard, MAPPINGS,
+    TITLE_BOTTOM, TITLE_TOP,
 };
-use crate::{cprtln, cvprtln, gen_build_run, key, log, KeyCombination, Lvl, ThagResult};
+use crate::{
+    coloring, cprtln, cvprtln, gen_build_run, get_verbosity, key, log, regex, Ast, BuildState, Cli,
+    CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError,
+    ThagResult, V,
+};
 use clap::{CommandFactory, Parser};
-use crossterm::event::KeyEventKind;
 use crossterm::event::{
     Event::{self, Paste},
-    KeyEvent,
+    KeyEvent, KeyEventKind,
 };
 use edit::edit_file;
 use firestorm::profile_fn;
@@ -501,7 +500,7 @@ fn process_source(
     build_state.rs_manifest = Some(rs_manifest);
     let maybe_ast = extract_ast_expr(rs_source);
     if let Ok(expr_ast) = maybe_ast {
-        code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+        process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
     } else {
         cprtln!(
             // NuStyle::from(&Lvl::ERR),
@@ -1077,10 +1076,10 @@ pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
     if clean_up.is_ok()
         || (!&build_state.source_path.exists() && !&build_state.target_dir_path.exists())
     {
-        log!(Verbosity::Quieter, "Deleted");
+        log!(V::QQ, "Deleted");
     } else {
         log!(
-            Verbosity::Quieter,
+            V::QQ,
             "Failed to delete all files - enter l(ist) to list remaining files"
         );
     }
@@ -1296,10 +1295,7 @@ pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
     if cargo_toml_file.exists() {
         edit_file(cargo_toml_file)?;
     } else {
-        log!(
-            Verbosity::Quieter,
-            "No Cargo.toml file found - have you run anything?"
-        );
+        log!(V::QQ, "No Cargo.toml file found - have you run anything?");
     }
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
@@ -1320,7 +1316,7 @@ pub fn run_expr(
 
     let result = gen_build_run(args, proc_flags, build_state, None::<Ast>, &start);
     if result.is_err() {
-        log!(Verbosity::Quieter, "{result:?}");
+        log!(V::QQ, "{result:?}");
     }
     Ok(Some(String::from("End of run")))
 }
@@ -1372,7 +1368,7 @@ pub fn disp_repl_banner(cmd_list: &str) {
 pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
     let source_path = &build_state.source_path;
     if source_path.exists() {
-        log!(Verbosity::Quieter, "File: {:?}", &source_path);
+        log!(V::QQ, "File: {:?}", &source_path);
     }
 
     // Display directory contents
@@ -1380,7 +1376,7 @@ pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
 
     // Check if neither file nor directory exist
     if !&source_path.exists() && !&build_state.target_dir_path.exists() {
-        log!(Verbosity::Quieter, "No temporary files found");
+        log!(V::QQ, "No temporary files found");
     }
     Ok(Some(String::from("End of list")))
 }

@@ -1,4 +1,10 @@
+use crate::code_utils::write_source;
+use crate::colors::{tui_selection_bg, TuiSelectionBg};
 use crate::file_dialog::{DialogMode, FileDialog, Status};
+use crate::{
+    coloring, debug_log, key, regex, EventReader, KeyCombination, KeyDisplayLine, MessageLevel,
+    ThagError, ThagResult,
+};
 use crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
@@ -9,7 +15,6 @@ use crossterm::terminal::{
     LeaveAlternateScreen,
 };
 use firestorm::profile_fn;
-use mockall::automock;
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
@@ -30,11 +35,6 @@ use std::{
     fs::{self, OpenOptions},
 };
 use tui_textarea::{CursorMove, Input, TextArea};
-
-use crate::code_utils;
-use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
-use crate::shared::KeyDisplayLine;
-use crate::{debug_log, key, regex, KeyCombination, MessageLevel, ThagError, ThagResult};
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
 pub type Term = Terminal<BackEnd>;
@@ -399,27 +399,6 @@ impl History {
         for (i, entry) in self.entries.iter_mut().enumerate() {
             entry.index = i;
         }
-    }
-}
-
-/// A trait to allow mocking of the event reader for testing purposes.
-#[automock]
-pub trait EventReader {
-    /// Read a terminal event.
-    ///
-    /// # Errors
-    ///
-    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-    fn read_event(&self) -> ThagResult<Event>;
-}
-
-/// A struct to implement real-world use of the event reader, as opposed to use in testing.
-#[derive(Debug)]
-pub struct CrosstermEventReader;
-
-impl EventReader for CrosstermEventReader {
-    fn read_event(&self) -> ThagResult<Event> {
-        crossterm::event::read().map_err(Into::<ThagError>::into)
     }
 }
 
@@ -1164,7 +1143,7 @@ pub fn save_source_file(
     if textarea.cursor().1 != 0 {
         textarea.insert_newline();
     }
-    let _write_source = code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
+    let _write_source = write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
     *saved = true;
     Ok(())
 }

@@ -13,32 +13,33 @@ use sequential_test::sequential;
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
-#[cfg(feature = "simplelog")]
-use std::{fs::File, sync::OnceLock};
 use std::{
-    fs::{self},
+    env::set_var,
+    fs,
     io::{stdout, Write},
     process::{Command, Stdio},
 };
+#[cfg(feature = "simplelog")]
+use std::{fs::File, sync::OnceLock};
 use thag_rs::colors::{get_term_theme, TuiSelectionBg};
 use thag_rs::stdin::{edit, read_to_string};
-use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History, MockEventReader};
-use thag_rs::{log, logging::Verbosity, ThagResult, TMPDIR};
+use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History};
+use thag_rs::{log, MockEventReader, ThagResult, TMPDIR, V};
 use tui_textarea::TextArea;
 
 // Set environment variables before running tests
 fn set_up() {
     init_logger();
-    std::env::set_var("TEST_ENV", "1");
+    set_var("TEST_ENV", "1");
     #[cfg(windows)]
     {
-        std::env::set_var("VISUAL", "powershell.exe /C Get-Content");
-        std::env::set_var("EDITOR", "powershell.exe /C Get-Content");
+        set_var("VISUAL", "powershell.exe /C Get-Content");
+        set_var("EDITOR", "powershell.exe /C Get-Content");
     }
     #[cfg(not(windows))]
     {
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        set_var("VISUAL", "cat");
+        set_var("EDITOR", "cat");
     }
 }
 
@@ -114,10 +115,7 @@ fn test_stdin_edit_stdin_submit() {
 
     let result = edit(&mock_reader);
 
-    log!(
-        Verbosity::Normal,
-        "\ntest_edit_stdin_submit result={result:#?}"
-    );
+    log!(V::N, "\ntest_edit_stdin_submit result={result:#?}");
     assert!(result.is_ok());
     let lines = result.unwrap();
     // Expecting a Vec with one entry: an empty string

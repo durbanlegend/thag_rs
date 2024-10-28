@@ -49,7 +49,7 @@ syn = { version = "2.0.82", features = [
     "visit-mut",
 ] }
 toml = "0.8.19"
-tui-textarea = { version = "0.6", features = ["crossterm", "search"] }
+tui-textarea = { version = "0.7", features = ["crossterm", "search"] }
 mockall = "0.13.0"
 scopeguard = "1.2.0"
 ratatui = "0.28.1"

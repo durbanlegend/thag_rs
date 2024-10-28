@@ -1,9 +1,16 @@
 /*[toml]
+[package]
+name = "term_detection_pack"
+features = ["simplelog"]
+
 [dependencies]
 crossterm = "0.28.1"
+log = "0.4.22"
+simplelog = { version = "0.12.2" }
 supports-color= "3.0.0"
-termbg = "0.5.2"
+#termbg = "0.6"
 terminal-light = "1.4.0"
+thag_rs = { path = "/Users/donf/projects/thag_rs/" }
 */
 
 /// A basic tool I cobbled together that uses different crates to a) test terminal
@@ -16,9 +23,13 @@ use crossterm::{
     terminal::{Clear, ClearType},
     ExecutableCommand,
 };
+use log::info;
 use std::io::stdout;
+use std::fs::File;
 use supports_color::Stream;
-use termbg;
+use thag_rs::termbg;
+// use thag_rs::config::Config;
+use simplelog::{Config, ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger};
 
 // termbg sends an operating system command (OSC) to interrogate the screen
 // but with side effects which we undo here.
@@ -30,14 +41,30 @@ pub fn clear_screen() {
     // out.flush().unwrap();
 }
 
-let timeout = std::time::Duration::from_millis(100);
+CombinedLogger::init(vec![
+    TermLogger::new(
+        LevelFilter::Info,
+        Config::default(),
+        TerminalMode::Mixed,
+        ColorChoice::Auto,
+    ),
+    WriteLogger::new(
+        LevelFilter::Debug,
+        Config::default(),
+        File::create("app.log").unwrap(),
+    ),
+])
+.unwrap();
+info!("term_detection_pack initialized simplelog");
+
+let timeout = std::time::Duration::from_millis(500);
 
 let term = termbg::terminal();
+println!("  Term : {:?}", term);
+
 let rgb = termbg::rgb(timeout);
 let theme = termbg::theme(timeout);
 clear_screen();
-
-println!("  Term : {:?}", term);
 
 match rgb {
     Ok(rgb) => {

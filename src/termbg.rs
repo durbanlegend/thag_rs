@@ -2,12 +2,16 @@
 /// Copyright (c) 2019 dalance
 /// Licence: Apache or MIT
 use crate::{debug_log, ThagError, ThagResult};
-use crossterm::event::{self, poll, read, Event, KeyCode};
-use crossterm::terminal::{self, is_raw_mode_enabled};
+use crossterm::{
+    event::{self, poll, read, Event, KeyCode, KeyModifiers},
+    terminal::{self, is_raw_mode_enabled},
+};
 use scopeguard::defer;
-use std::env;
-use std::io::{self, IsTerminal, Write};
-use std::time::{Duration, Instant};
+use std::{
+    env,
+    io::{self, IsTerminal, Write},
+    time::{Duration, Instant},
+};
 #[cfg(target_os = "windows")]
 use {
     std::sync::OnceLock, winapi::um::consoleapi::SetConsoleMode,
@@ -244,7 +248,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     };
 
     // Send query
-    writeln!(stderr, "{query}")?;
+    write!(stderr, "{query}")?;
     stderr.flush()?;
 
     let start_time = Instant::now();
@@ -259,8 +263,18 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     // Main loop for capturing terminal response
     loop {
         if start_time.elapsed() > timeout {
-            debug_log!("Failed to capture response");
-            return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
+            if response.contains("rgb:") {
+                let rgb_string = response.split_off(response.find("rgb:").unwrap() + 4);
+                if rgb_string.chars().filter(|&c| c == '/').count() == 2
+                    && rgb_string.split('/').all(|frag| !frag.is_empty())
+                {
+                    debug_log!("Unrecognized terminator in response code {response:#?}, but found a valid response in pre-timeout check");
+                    return parse_response(&mut response, start_time);
+                }
+            } else {
+                debug_log!("Failed to capture response");
+                return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
+            }
         }
 
         // Replaced expensive async_std with blocking loop. Terminal normally responds
@@ -271,33 +285,44 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
             // Replaced stdin read that was consuming legit user input in Windows
             // with non-blocking crossterm read event.
             if let Event::Key(key_event) = event::read()? {
-                match key_event.code {
-                    // End on backslash character
-                    KeyCode::Char('\\') => {
-                        debug_log!("End of response detected (backslash character).");
+                debug_log!("key_event={key_event:#?}");
+                match (key_event.code, key_event.modifiers) {
+                    (KeyCode::Char('\\'), KeyModifiers::ALT)   // ST
+                    | (KeyCode::Char('g'), KeyModifiers::CONTROL)   // BEL
+                    // Insurance in case BEL is not recognosed as ^g
+                    | (KeyCode::Char('\u{0007}'), KeyModifiers::NONE)   //BEL
+                    => {
+                        debug_log!("End of response detected ({key_event:?}).");
                         // response.push('\\');
-                        let rgb_string = response.split_off(response.find("rgb:").unwrap() + 4);
-                        let (r, g, b) = decode_x11_color(&rgb_string)?;
-
-                        // Err("RGB color value not found".into())
-                        // Print the duration it took to capture the response
-                        let elapsed = start_time.elapsed();
-                        debug_log!("Elapsed time: {:.2?}", elapsed);
-
-                        return Ok(Rgb { r, g, b });
+                        return parse_response(&mut response, start_time);
                     }
                     // Append other characters to buffer
-                    KeyCode::Char(c) => {
-                        // debug_log!("pushing {c}");
+                    (KeyCode::Char(c), KeyModifiers::NONE) => {
+                        debug_log!("pushing {c}");
                         response.push(c);
                     }
                     _ => {
                         // Ignore other keys
+                        debug_log!("ignoring {key_event:#?}");
                     }
                 }
             }
         }
     }
+}
+
+fn parse_response(response: &mut String, start_time: Instant) -> Result<Rgb, ThagError> {
+    let (r, g, b) = extract_rgb(response)?;
+    let elapsed = start_time.elapsed();
+    debug_log!("response=: {response}");
+    debug_log!("Elapsed time: {:.2?}", elapsed);
+    Ok(Rgb { r, g, b })
+}
+
+fn extract_rgb(response: &mut String) -> Result<(u16, u16, u16), ThagError> {
+    let rgb_string = response.split_off(response.find("rgb:").unwrap() + 4);
+    let (r, g, b) = decode_x11_color(&rgb_string)?;
+    Ok((r, g, b))
 }
 
 fn restore_raw_status(raw_before: bool) -> Result<(), ThagError> {

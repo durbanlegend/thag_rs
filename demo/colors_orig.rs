@@ -14,7 +14,6 @@ termbg = "0.5.2"
 /// to their type. I only dropped `owo-colors` because I switched from `rustyline` to
 /// `reedline`, which was already using `nu_ansi_term`.
 ///
-/// Format: `color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 //# Purpose: Demo older alternative implementation of `colors` module using `owo-colors`.
 use log::debug;
 use owo_ansi::xterm as owo_xterm;

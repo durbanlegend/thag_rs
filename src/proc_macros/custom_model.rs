@@ -1,4 +1,8 @@
-#![allow(clippy::if_not_else)]
+#![allow(
+    clippy::if_not_else,
+    clippy::redundant_pub_crate,
+    clippy::option_if_let_else
+)]
 use darling::util::PathList;
 use darling::{FromDeriveInput, FromMeta};
 use proc_macro::TokenStream;

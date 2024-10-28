@@ -1,4 +1,5 @@
-#![allow(unused_variables)]
+#![allow(unused_variables, clippy::redundant_pub_crate)]
+
 // Deluxe struct for extracting attributes
 #[derive(deluxe::ExtractAttributes)]
 #[deluxe(attributes(deluxe))]
@@ -39,13 +40,9 @@ pub(crate) fn key_map_list_derive_impl(
         .find(|attr| attr.path().is_ident("use_mappings"));
 
     // Assume the attribute is found and contains the MAPPINGS identifier
-    let mappings_ident = if let Some(attr) = mappings_attr {
-        // Parse the attribute as an expression (since it can now be any expression)
-        attr.parse_args::<syn::Expr>().ok()
-    } else {
-        None
-    }
-    .expect("Must provide a 'use_mappings' attribute");
+    let mappings_ident = mappings_attr
+        .map_or_else(|| None, |attr| attr.parse_args::<syn::Expr>().ok())
+        .expect("Must provide a 'use_mappings' attribute");
 
     // Generate the code for the impl, using the mappings constant from the caller
     let ident = &input.ident;

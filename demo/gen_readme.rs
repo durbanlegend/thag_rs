@@ -34,7 +34,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     content = if content.starts_with("#!") {
         let split_once = content.split_once('\n');
         let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
-        debug_log!("Successfully stripped shebang {shebang}");
+        eprintln!("Successfully stripped shebang {shebang}");
         rust_code.to_string()
     } else {
         content

@@ -13,16 +13,9 @@ tui-textarea = "0.6.0"
 /// Licence: MIT
 use crossterm::{
     cursor::{Hide, Show},
-    event::{
-        self,
-        Event::{self, Paste},
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
-    },
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     execute,
-    terminal::{
-        disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
-        LeaveAlternateScreen,
-    },
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
 use ratatui::{
@@ -107,8 +100,7 @@ pub struct FileDialog<'a> {
     focus: DialogFocus,
 
     pub popup: bool,
-    title_bottom: &'a str,
-
+    // title_bottom: &'a str,
     /// Input for the file name in Input mode
     pub input: TextArea<'a>,
 }
@@ -142,7 +134,7 @@ impl<'a> FileDialog<'a> {
             focus: DialogFocus::List,
             popup: false, // Start with focus on the file list
             input: TextArea::default(),
-            title_bottom: "Ctrl+l to show keys",
+            // title_bottom: "Ctrl+l to show keys",
         };
         s.update_entries()?;
         Ok(s)
@@ -224,11 +216,11 @@ impl<'a> FileDialog<'a> {
                 )
                 .split(area);
 
+            /*
             // Determine if the file list has focus
             let file_list_focus = matches!(self.focus, DialogFocus::List);
 
             // Render the file list with conditional style based on focus
-            /*
             let list_style = if file_list_focus {
                 Style::default()
                     .bg(Color::LightMagenta)

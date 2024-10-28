@@ -10,7 +10,8 @@ thag_rs = "0.1.4"
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crossterm::event::Event;
 use mockall::{automock, predicate::str};
-use thag_rs::stdin::{edit, EventReader, MockEventReader};
+use thag_rs::stdin::{edit, EventReader};
+use thag_rs::tui_editor::MockEventReader;
 
 pub struct CrosstermEventReader;
 

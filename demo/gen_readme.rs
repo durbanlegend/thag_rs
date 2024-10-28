@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 lazy_static = "1.4.0"
+log = "0.4.22"
 regex = "1.10.5"
 thag_rs = "0.1.4"
 */

@@ -10,7 +10,7 @@ simplelog = { version = "0.12.2" }
 supports-color= "3.0.0"
 #termbg = "0.6"
 terminal-light = "1.4.0"
-thag_rs = { path = "/Users/donf/projects/thag_rs/" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 */
 
 /// A basic tool I cobbled together that uses different crates to a) test terminal

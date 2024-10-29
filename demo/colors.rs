@@ -11,8 +11,7 @@ strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 # supports-color= "3.0.0"
 termbg = "0.6.0"
 # thag_rs = "0.1.5"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
-thag_rs = { path = "/Users/donf/projects/thag_rs/" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 */
 
 #![allow(clippy::implicit_return)]

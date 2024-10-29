@@ -43,6 +43,7 @@
 - [ ]  Look for code smells
 - [ ]  Look into fuzzing the tests such as test_merge_manifest.
 - [ ]  Identify new functions requiring unit tests.
+# thag_rs = { path = "/Users/donf/projects/thag_rs/" }
 - [ ]  Document:
         /*[toml]
         [package]

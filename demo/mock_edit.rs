@@ -2,22 +2,22 @@
 [dependencies]
 crossterm = "0.28"
 mockall = "0.13.0"
-thag_rs = "0.1.4"
+thag_rs = "0.1.5"
 */
 
 /// Used to debug a doctest.
 //# Purpose: Debugging script.
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use crossterm::event::Event;
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use mockall::{automock, predicate::str};
-use thag_rs::stdin::{edit, EventReader};
-use thag_rs::tui_editor::MockEventReader;
+use thag_rs::ThagResult;
+use thag_rs::stdin::edit;
+use thag_rs::tui_editor::{EventReader, MockEventReader};
 
 pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
-    fn read_event(&self) -> Result<crossterm::event::Event, std::io::Error> {
-        crossterm::event::read()
+    fn read_event(&self) -> ThagResult<Event> {
+        Ok(crossterm::event::read()?)
     }
 }
 

@@ -7,8 +7,7 @@ thag_rs = "0.1.5"
 
 /// Used to debug a doctest.
 //# Purpose: Debugging script.
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use crossterm::event::Event;
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use mockall::{automock, predicate::str};
 use thag_rs::stdin::edit;
 use thag_rs::tui_editor::{EventReader, MockEventReader};

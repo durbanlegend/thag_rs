@@ -2,7 +2,7 @@
 use crate::colors::TuiSelectionBg;
 use crate::tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay};
 use crate::{
-    debug_log, log, regex, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError,
+    debug_log, regex, vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError,
     ThagResult, V,
 };
 use clap::Parser;
@@ -65,7 +65,7 @@ enum ReplCommand {
 fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
-        log!(V::N, "{line}");
+        vlog!(V::N, "{line}");
     }
     Ok(())
 }
@@ -175,7 +175,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
-    log!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+    vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
 }

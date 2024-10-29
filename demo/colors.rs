@@ -21,7 +21,7 @@ use strum::IntoEnumIterator;
 use termbg::terminal;
 use thag_rs::colors::{coloring, ColorSupport, MessageStyle, XtermColor};
 use thag_rs::logging::V;
-use thag_rs::{cprtln, cvprtln, log, Lvl};
+use thag_rs::{cprtln, cvprtln, vlog, Lvl};
 /// Runner for current version of `src/colors.rs`, as it's become too enmeshed with other modules to split out nicely.
 /// We just borrow the main method here and add all the necessary dependencies and imports.
 ///
@@ -38,14 +38,14 @@ pub fn main() {
 
     match maybe_color_support {
         None => {
-            log!(V::N, "No colour support found for terminal");
+            vlog!(V::N, "No colour support found for terminal");
         }
         Some(support) => {
             if matches!(support, ColorSupport::Xterm256) {
-                log!(V::N, "");
+                vlog!(V::N, "");
                 XtermColor::iter().for_each(|variant| {
                     let color = Color::from(&variant);
-                    log!(V::N, "{}", color.paint(variant.to_string()));
+                    vlog!(V::N, "{}", color.paint(variant.to_string()));
                 });
             }
 
@@ -61,11 +61,11 @@ pub fn main() {
             }
 
             println!("\nTerm : {term:?}");
-            log!(
+            vlog!(
                 V::N,
                 "Colour support={support:?}, term_theme={term_theme:?}"
             );
-            log!(
+            vlog!(
                 V::N,
                 "{}",
                 Style::from(&Lvl::WARN).paint("Colored Warning message\n")

@@ -24,7 +24,7 @@ use std::{fs::File, sync::OnceLock};
 use thag_rs::colors::{get_term_theme, TuiSelectionBg};
 use thag_rs::stdin::{edit, read_to_string};
 use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History};
-use thag_rs::{log, MockEventReader, ThagResult, TMPDIR, V};
+use thag_rs::{vlog, MockEventReader, ThagResult, TMPDIR, V};
 use tui_textarea::TextArea;
 
 // Set environment variables before running tests
@@ -115,7 +115,7 @@ fn test_stdin_edit_stdin_submit() {
 
     let result = edit(&mock_reader);
 
-    log!(V::N, "\ntest_edit_stdin_submit result={result:#?}");
+    vlog!(V::N, "\ntest_edit_stdin_submit result={result:#?}");
     assert!(result.is_ok());
     let lines = result.unwrap();
     // Expecting a Vec with one entry: an empty string

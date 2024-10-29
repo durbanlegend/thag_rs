@@ -15,7 +15,7 @@ use std::sync::{
 };
 use strum::EnumString;
 
-use crate::{config::maybe_config, debug_log, log, Cli, ThagResult};
+use crate::{config::maybe_config, debug_log, vlog, Cli, ThagResult};
 
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 
@@ -108,15 +108,15 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
     } else if args.verbose == 1 {
         Verbosity::Verbose
     } else if args.quiet == 1 {
-        Verbosity::Quiet
+        V::Quiet
     } else if args.quiet >= 2 {
-        Verbosity::Quieter
+        V::Quieter
     } else if args.normal {
-        Verbosity::Normal
+        V::Normal
     } else if let Some(config) = maybe_config() {
         config.logging.default_verbosity
     } else {
-        Verbosity::Normal
+        V::Normal
     };
     set_global_verbosity(verbosity)
 }
@@ -159,7 +159,7 @@ pub fn configure_log() {
 
     configure_simplelog();
     // info!("Initialized simplelog");  // interferes with testing
-    log!(V::N, "Initialized simplelog");
+    vlog!(V::N, "Initialized simplelog");
 }
 
 /// Configure log level
@@ -186,7 +186,7 @@ fn configure_simplelog() {
 }
 
 #[macro_export]
-macro_rules! log {
+macro_rules! vlog {
     ($verbosity:expr, $($arg:tt)*) => {
         {
             $crate::logging::LOGGER.lock().unwrap().log($verbosity, &format!($($arg)*))

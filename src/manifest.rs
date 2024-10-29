@@ -2,7 +2,7 @@
 use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 #[cfg(target_os = "windows")]
 use crate::escape_path_for_windows;
-use crate::{debug_log, debug_timings, log, regex, Ast, BuildState, Lvl, ThagResult, V};
+use crate::{debug_log, debug_timings, regex, vlog, Ast, BuildState, Lvl, ThagResult, V};
 use cargo_toml::{Dependency, Manifest};
 use firestorm::profile_fn;
 use mockall::automock;
@@ -48,7 +48,7 @@ pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> ThagResult
     let start_search = Instant::now();
 
     let dep_crate_styled = Style::from(&Lvl::EMPH).paint(dep_crate);
-    log!(
+    vlog!(
         V::N,
         r#"Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
 See below for how to avoid this and speed up future builds.
@@ -95,7 +95,7 @@ See below for how to avoid this and speed up future builds.
             let dep_crate_styled = Style::from(&Lvl::EMPH).paint(&name);
             let dep_version_styled = Style::from(&Lvl::EMPH).paint(&version);
 
-            log!(
+            vlog!(
                 V::N,
                 r#"Cargo found the following dependency, which you can copy into the toml block
 as shown if you don't need special features:
@@ -139,7 +139,7 @@ pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
         // log!(V::N, "Dependency version: {}", version);
         (String::from(name), String::from(version))
     } else {
-        log!(V::QQ, "Not a valid Cargo dependency format.");
+        vlog!(V::QQ, "Not a valid Cargo dependency format.");
         return Err("Not a valid Cargo dependency format".into());
     };
     Ok((name, version))
@@ -278,7 +278,7 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
             // return Err(format!(
             //     "Cargo search couldn't find crate [{dep_name}]").into()
             // );
-            log!(V::QQ, "Cargo search couldn't find crate [{dep_name}]");
+            vlog!(V::QQ, "Cargo search couldn't find crate [{dep_name}]");
             continue;
         };
         rs_dep_map.insert(dep_name, dep);

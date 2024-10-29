@@ -20,6 +20,10 @@
 - [ ]  Replace log! with cvprtln! where MessageLevel/Lvl and Verbosity/V are specified.
 - [ ]  Consider replacing TuiSelectionBg with just foreground colour/bolding as per popups.
 - [ ]  Get GPT to write a termbg unit test with MockEventReader as per stdin.
+- [ ]  FAQs: Periodically update toml blocks by commenting entries out with # to get latest versions
+             Missing toml entries are not pulled in for crates without use. If you want such a crate to work without a toml block
+             or to pull in a toml entry for it, you will need to convert the qualified name to use or redundantly add a
+             use <crate_name>::; statement for it. You can remove this once it's got an entry in the toml block.
 - [ ]  Try and figure out a way for thag_rs to test proc macros - and maybe to show the generated output?
         - could do an expand option that builds the file and calls cargo expand with --manifest-path <build_state.cargo_toml_path>
         - consider a dedicated installable thag_rs proc library - maybe configurable location specified in config.toml, with preferred theme.

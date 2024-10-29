@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{
-    debug_log, log, modified_since_compiled, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
+    debug_log, modified_since_compiled, vlog, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
     TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
 use crate::{Cli, ProcFlags};
@@ -287,7 +287,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
 
     debug_log!("{msg}");
     if proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        log!(V::QQ, "{msg}");
+        vlog!(V::QQ, "{msg}");
     }
 }
 

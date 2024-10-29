@@ -96,14 +96,14 @@ mod tests {
 thag_rs = {{ path = {thag_rs_path:#?} }}
 */
 
-use thag_rs::log;
+use thag_rs::vlog;
 use thag_rs::logging::Verbosity;
 
 fn main() {{
-    log!(Verbosity::Quieter, "Quieter message");
-    log!(Verbosity::Quiet, "Quiet message");
-    log!(Verbosity::Normal, "Normal message");
-    log!(Verbosity::Verbose, "Verbose message");
+    vlog!(Verbosity::Quieter, "Quieter message");
+    vlog!(Verbosity::Quiet, "Quiet message");
+    vlog!(Verbosity::Normal, "Normal message");
+    vlog!(Verbosity::Verbose, "Verbose message");
 }}
 "#
         );
@@ -149,7 +149,7 @@ fn main() {{
 thag_rs = {{ path = {thag_rs_path:#?} }}
 */
 
-use thag_rs::log;
+use thag_rs::vlog;
 use thag_rs::logging::Verbosity;
 
 fn main() {{

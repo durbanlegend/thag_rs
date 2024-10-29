@@ -6,7 +6,7 @@ mod tests {
     use thag_rs::colors::TermTheme;
     use thag_rs::colors::{ColorSupport, MessageStyle, XtermColor};
     use thag_rs::termbg::{self, Theme};
-    use thag_rs::{cprtln, log, Lvl};
+    use thag_rs::{cprtln, vlog, Lvl};
 
     // Set environment variables before running tests
     fn set_up() {

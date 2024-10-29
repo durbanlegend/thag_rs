@@ -10,9 +10,9 @@ use crate::tui_editor::{
     TITLE_BOTTOM, TITLE_TOP,
 };
 use crate::{
-    coloring, cprtln, cvprtln, gen_build_run, get_verbosity, key, log, regex, Ast, BuildState, Cli,
-    CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError,
-    ThagResult, V,
+    coloring, cprtln, cvprtln, gen_build_run, get_verbosity, key, regex, vlog, Ast, BuildState,
+    Cli, CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags,
+    ThagError, ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
 use crossterm::event::{
@@ -1076,9 +1076,9 @@ pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
     if clean_up.is_ok()
         || (!&build_state.source_path.exists() && !&build_state.target_dir_path.exists())
     {
-        log!(V::QQ, "Deleted");
+        vlog!(V::QQ, "Deleted");
     } else {
-        log!(
+        vlog!(
             V::QQ,
             "Failed to delete all files - enter l(ist) to list remaining files"
         );
@@ -1295,7 +1295,7 @@ pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
     if cargo_toml_file.exists() {
         edit_file(cargo_toml_file)?;
     } else {
-        log!(V::QQ, "No Cargo.toml file found - have you run anything?");
+        vlog!(V::QQ, "No Cargo.toml file found - have you run anything?");
     }
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
@@ -1316,7 +1316,7 @@ pub fn run_expr(
 
     let result = gen_build_run(args, proc_flags, build_state, None::<Ast>, &start);
     if result.is_err() {
-        log!(V::QQ, "{result:?}");
+        vlog!(V::QQ, "{result:?}");
     }
     Ok(Some(String::from("End of run")))
 }
@@ -1368,7 +1368,7 @@ pub fn disp_repl_banner(cmd_list: &str) {
 pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
     let source_path = &build_state.source_path;
     if source_path.exists() {
-        log!(V::QQ, "File: {:?}", &source_path);
+        vlog!(V::QQ, "File: {:?}", &source_path);
     }
 
     // Display directory contents
@@ -1376,7 +1376,7 @@ pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
 
     // Check if neither file nor directory exist
     if !&source_path.exists() && !&build_state.target_dir_path.exists() {
-        log!(V::QQ, "No temporary files found");
+        vlog!(V::QQ, "No temporary files found");
     }
     Ok(Some(String::from("End of list")))
 }

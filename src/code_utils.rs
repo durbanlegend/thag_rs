@@ -4,7 +4,7 @@
     clippy::missing_trait_methods
 )]
 use crate::{
-    debug_log, debug_timings, log, Ast, BuildState, Cli, Lvl, ThagError, ThagResult,
+    debug_log, debug_timings, vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult,
     DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 
@@ -492,15 +492,15 @@ pub fn display_output(output: &Output) -> ThagResult<()> {
     // let stdout = output.stdout;
 
     // Print the captured stdout
-    log!(V::N, "Captured stdout:");
+    vlog!(V::N, "Captured stdout:");
     for result in output.stdout.lines() {
-        log!(V::N, "{}", result?);
+        vlog!(V::N, "{}", result?);
     }
 
     // Print the captured stderr
-    log!(V::N, "Captured stderr:");
+    vlog!(V::N, "Captured stderr:");
     for result in output.stderr.lines() {
-        log!(V::N, "{}", result?);
+        vlog!(V::N, "{}", result?);
     }
     Ok(())
 }
@@ -548,7 +548,7 @@ pub fn modified_since_compiled(
         }
     }
     if let Some(file) = most_recent {
-        log!(
+        vlog!(
             V::V,
             "The most recently modified file compared to {executable:#?} is: {file:#?}"
         );
@@ -603,7 +603,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     #[allow(clippy::option_if_let_else)]
     if let Ok(tree) = syn::parse_file(source_code) {
         #[cfg(debug_assertions)]
-        log!(
+        vlog!(
             V::V,
             "{}",
             Style::from(&Lvl::WARN).paint("Parsed to syn::File")
@@ -613,7 +613,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
         Some(Ast::File(tree))
     } else if let Ok(tree) = extract_ast_expr(source_code) {
         #[cfg(debug_assertions)]
-        log!(
+        vlog!(
             V::V,
             "{}",
             Style::from(&Lvl::EMPH).paint("Parsed to syn::Expr")
@@ -621,7 +621,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
-        log!(
+        vlog!(
             V::QQ,
             "{}",
             Style::from(&Lvl::WARN)
@@ -788,7 +788,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 }}
 "#,
         loop_toml.as_ref().map_or_else(String::new, |toml| {
-            log!(V::V, "toml={toml}");
+            vlog!(V::V, "toml={toml}");
             format!(
                 r#"/*[toml]
 {toml}
@@ -796,11 +796,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
             )
         }),
         loop_begin.as_ref().map_or("", |prelude| {
-            log!(V::V, "prelude={prelude}");
+            vlog!(V::V, "prelude={prelude}");
             prelude
         }),
         loop_end.as_ref().map_or("", |postlude| {
-            log!(V::V, "postlude={postlude}");
+            vlog!(V::V, "postlude={postlude}");
             postlude
         })
     )
@@ -826,12 +826,12 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
-        log!(V::N, "Directory listing for {:?}", path);
+        vlog!(V::N, "Directory listing for {:?}", path);
         for entry in entries {
             let entry = entry?;
             let file_type = entry.file_type()?;
             let file_name = entry.file_name();
-            log!(
+            vlog!(
                 V::QQ,
                 "  {file_name:?} ({})",
                 if file_type.is_dir() {
@@ -1068,7 +1068,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             expr_return.expr.is_none()
         }
         _ => {
-            log!(
+            vlog!(
                 V::Q,
                 "{}",
                 Style::from(&Lvl::WARN).paint(format!(

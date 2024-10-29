@@ -3,18 +3,16 @@ use crate::code_utils::{
     read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::colors::gen_mappings;
-use crate::config::{self, maybe_config, RealContext};
+use crate::config::{self, RealContext};
 use crate::logging::is_debug_logging_enabled;
-use crate::regex;
 use crate::repl::run_repl;
 use crate::stdin::{edit, read};
 use crate::{
-    coloring, cprtln, cvprtln, debug_log, debug_timings, display_timings, get_proc_flags, log,
-    manifest, validate_args, Ast, BuildState, Cli, CrosstermEventReader, Lvl, ProcFlags,
-    ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME,
-    REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V, VERSION,
+    coloring, cprtln, cvprtln, debug_log, debug_timings, display_timings, get_proc_flags, manifest,
+    maybe_config, regex, validate_args, vlog, Ast, BuildState, Cli, CrosstermEventReader, Lvl,
+    ProcFlags, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
+    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V, VERSION,
 };
-
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
 use log::{log_enabled, Level::Debug};
@@ -237,7 +235,7 @@ fn process(
             str
         };
 
-        log!(V::V, "rs_source={rs_source}");
+        vlog!(V::V, "rs_source={rs_source}");
 
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
             // .map_err(|_err| ThagError::FromStr("Error parsing rs_source"))
@@ -279,7 +277,7 @@ pub fn process_expr(
     let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
-    log!(V::N, "{result:?}");
+    vlog!(V::N, "{result:?}");
     Ok(())
 }
 fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
@@ -540,7 +538,7 @@ pub fn generate(
 
     let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
     // let is_repl = proc_flags.contains(ProcFlags::REPL);
-    log!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
+    vlog!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {
         profile_section!(transform);
@@ -626,7 +624,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
     cargo_command.args(&args); // .current_dir(build_dir);
 
     // Show sign of life in case build takes a while
-    log!(
+    vlog!(
         V::N,
         "{} {} ...",
         if check { "Checking" } else { "Building" },
@@ -713,14 +711,14 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     fs::rename(executable_path, output_path)?;
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(V::Q, "{}", Color::Yellow.paint(&dash_line));
+    vlog!(V::Q, "{}", Color::Yellow.paint(&dash_line));
 
-    log!(
+    vlog!(
         V::QQ,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
     );
 
-    log!(V::Q, "{}", Color::Yellow.paint(&dash_line));
+    vlog!(V::Q, "{}", Color::Yellow.paint(&dash_line));
     Ok(())
 }
 
@@ -752,11 +750,11 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(V::Q, "{}", Color::Yellow.paint(&dash_line));
+    vlog!(V::Q, "{}", Color::Yellow.paint(&dash_line));
 
     let _exit_status = run_command.spawn()?.wait()?;
 
-    log!(V::Q, "{}", Color::Yellow.paint(&dash_line));
+    vlog!(V::Q, "{}", Color::Yellow.paint(&dash_line));
 
     // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");

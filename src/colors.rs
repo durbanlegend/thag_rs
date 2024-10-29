@@ -1,7 +1,7 @@
 #![allow(clippy::implicit_return)]
 #![expect(unused)]
 use crate::termbg::{terminal, theme, Theme};
-use crate::{config, debug_log, generate_styles, log, maybe_config, ThagResult, V};
+use crate::{config, debug_log, generate_styles, maybe_config, vlog, ThagResult, V};
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use firestorm::profile_fn;
 use log::debug;
@@ -487,7 +487,7 @@ macro_rules! cprtln {
         // Qualified form to avoid imports in calling code.
         let painted = style.paint(content);
         let verbosity = $crate::logging::get_verbosity();
-        log!(verbosity, "{}", painted);
+        vlog!(verbosity, "{}", painted);
     }};
 }
 
@@ -1122,14 +1122,14 @@ pub fn main() {
 
     match maybe_color_support {
         None => {
-            log!(V::N, "No colour support found for terminal");
+            vlog!(V::N, "No colour support found for terminal");
         }
         Some(support) => {
             if matches!(support, ColorSupport::Xterm256) {
-                log!(V::N, "");
+                vlog!(V::N, "");
                 XtermColor::iter().for_each(|variant| {
                     let color = Color::from(&variant);
-                    log!(V::N, "{}", color.paint(variant.to_string()));
+                    vlog!(V::N, "{}", color.paint(variant.to_string()));
                 });
             }
 
@@ -1144,11 +1144,11 @@ pub fn main() {
                 );
             }
 
-            log!(
+            vlog!(
                 V::N,
                 "Colour support={support:?}, term_theme={term_theme:?}"
             );
-            log!(
+            vlog!(
                 V::N,
                 "{}",
                 Style::from(&Lvl::WARN).paint("Colored Warning message\n")

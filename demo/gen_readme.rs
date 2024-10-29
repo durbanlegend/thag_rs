@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 lazy_static = "1.4.0"
+log = "0.4.22"
 regex = "1.10.5"
 thag_rs = "0.1.4"
 */
@@ -33,7 +34,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     content = if content.starts_with("#!") {
         let split_once = content.split_once('\n');
         let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
-        debug_log!("Successfully stripped shebang {shebang}");
+        eprintln!("Successfully stripped shebang {shebang}");
         rust_code.to_string()
     } else {
         content

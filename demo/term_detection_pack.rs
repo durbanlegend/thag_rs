@@ -2,6 +2,7 @@
 [package]
 name = "term_detection_pack"
 features = ["simplelog"]
+version = "0.0.1"
 
 [dependencies]
 crossterm = "0.28.1"

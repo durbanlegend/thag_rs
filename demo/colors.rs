@@ -1,17 +1,10 @@
 /*[toml]
 [dependencies]
-# crossterm = "0.28.1"
-# firestorm = "0.5.1"
-# log = "0.4.22"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-# ratatui = "0.28"
-# scopeguard = "1.2.0"
-# serde = "1.0.213"
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
-# supports-color= "3.0.0"
 termbg = "0.6.0"
 # thag_rs = "0.1.5"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 */
 
 #![allow(clippy::implicit_return)]

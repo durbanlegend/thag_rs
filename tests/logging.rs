@@ -153,10 +153,10 @@ use thag_rs::vlog;
 use thag_rs::logging::Verbosity;
 
 fn main() {{
-    log!(Verbosity::Quieter, "Macro quieter message");
-    log!(Verbosity::Quiet, "Macro quiet message");
-    log!(Verbosity::Normal, "Macro normal message");
-    log!(Verbosity::Verbose, "Macro verbose message");
+    vlog!(Verbosity::Quieter, "Macro quieter message");
+    vlog!(Verbosity::Quiet, "Macro quiet message");
+    vlog!(Verbosity::Normal, "Macro normal message");
+    vlog!(Verbosity::Verbose, "Macro verbose message");
 }}
 "#
         );

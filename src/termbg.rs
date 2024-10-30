@@ -279,22 +279,24 @@ where
     // Main loop for capturing terminal response
     loop {
         if start_time.elapsed() > timeout {
-            if &response != "r" {
-                dbg!(&response[..50]);
-            }
-            dbg!(&response);
+            println!("\rAfter timeout, found response={response}");
             if response.contains("rgb:") {
-                let rgb_string = response.split_off(response.find("rgb:").unwrap() + 4);
-                if rgb_string.chars().filter(|&c| c == '/').count() == 2
-                    && rgb_string.split('/').all(|frag| !frag.is_empty())
-                {
-                    debug_log!("Unrecognized terminator in response code {response:#?}, but found a valid response in pre-timeout check");
-                    return parse_response(&mut response, start_time);
-                }
-            } else {
-                debug_log!("Failed to capture response");
-                return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
+                let resp_start = response.find("rgb:").unwrap();
+                let mid = resp_start + 4;
+                let raw_rgb_slice = response.as_str().split_at(mid).1;
+                println!("raw_rgb_slice={raw_rgb_slice}");
+                let collect = raw_rgb_slice.splitn(3, '/').collect::<Vec<_>>();
+                let frag_len = collect[0].len();
+                #[cfg(debug_assertions)]
+                assert_eq!(collect[1].len(), frag_len);
+                // Trim extraneous trailing characters
+                let rgb_str_len = frag_len * 3 + 2;
+                let rgb_slice = &response[resp_start..mid + rgb_str_len];
+                println!("Unrecognized terminator in response code {response:#?}, but found a valid response {rgb_slice} in pre-timeout check");
+                return parse_response(rgb_slice, start_time);
             }
+            debug_log!("Failed to capture response");
+            return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout 1").into());
         }
 
         // Replaced expensive async_std with blocking loop. Terminal normally responds
@@ -317,11 +319,12 @@ where
                     => {
                         debug_log!("End of response detected ({key_event:?}).");
                         // response.push('\\');
-                        return parse_response(&mut response, start_time);
+                        // println!("response={response}");
+                        return parse_response(&response, start_time);
                     }
                     // Append other characters to buffer
                     (KeyCode::Char(c), KeyModifiers::NONE) => {
-                        debug_log!("pushing {c}");
+                        // println!("pushing {c}");
                         response.push(c);
                     }
                     _ => {
@@ -334,17 +337,24 @@ where
     }
 }
 
-fn parse_response(response: &mut String, start_time: Instant) -> Result<Rgb, ThagError> {
-    debug_log!("response=: {response}");
+fn parse_response(response: &str, start_time: Instant) -> Result<Rgb, ThagError> {
+    // println!("response={response}");
     let (r, g, b) = extract_rgb(response)?;
     let elapsed = start_time.elapsed();
     debug_log!("Elapsed time: {:.2?}", elapsed);
     Ok(Rgb { r, g, b })
 }
 
-fn extract_rgb(response: &mut String) -> Result<(u16, u16, u16), ThagError> {
-    let rgb_string = response.split_off(response.find("rgb:").unwrap() + 4);
-    let (r, g, b) = decode_x11_color(&rgb_string)?;
+fn extract_rgb(response: &str) -> Result<(u16, u16, u16), ThagError> {
+    let rgb_str = response
+        .split_at(
+            response
+                .find("rgb:")
+                .ok_or("Could not find 'rgb:' in terminal response string")?
+                + 4,
+        )
+        .1;
+    let (r, g, b) = decode_x11_color(rgb_str)?;
     Ok((r, g, b))
 }
 
@@ -532,11 +542,150 @@ fn from_winapi() -> Result<Rgb, ThagError> {
 #[cfg(test)]
 mod tests {
 
+    use super::*;
+    use crate::MockEventReader;
+    use crossterm::event::KeyEvent;
+    use mockall::mock;
+    // use std::cell::RefCell;
+    use std::io::{self, Write};
+    use std::iter;
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    // Xterm expected query
+    const ESC_OSC_QUERY: &[u8; 8] = b"\x1b]11;?\x1b\\";
+
+    // Base constant response for successful RGB parsing.
+    const RGB_RESPONSE: &[Event] = &[
+        Event::Key(KeyEvent::new(KeyCode::Char(']'), KeyModifiers::ALT)),
+        Event::Key(KeyEvent::new(KeyCode::Char('1'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('1'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char(';'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char(':'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('9'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('9'), KeyModifiers::NONE)),
+        // Event::Key(KeyEvent::new(KeyCode::Char('\\'), KeyModifiers::ALT)), // ST terminator
+    ];
+
     fn scale_u16_to_u8(rgb: Rgb) -> Rgb {
         Rgb {
             r: if rgb.r % 256 == 0 { rgb.r >> 8 } else { rgb.r },
             g: if rgb.g % 256 == 0 { rgb.g >> 8 } else { rgb.g },
             b: if rgb.b % 256 == 0 { rgb.b >> 8 } else { rgb.b },
+        }
+    }
+
+    fn run_from_xterm_test(terminator: Event, expected_rgb: Option<(u8, u8, u8)>) {
+        // Set up the mock writer and mock event reader
+        let mut mock_writer = MockWriter::new();
+        let mut mock_event_reader = MockEventReader::new();
+
+        // Expect the query write once with the appropriate OSC command
+        mock_writer
+            .expect_write()
+            .withf(move |buf| buf == ESC_OSC_QUERY)
+            .times(1)
+            .returning(|_| Ok(ESC_OSC_QUERY.len()));
+
+        // Expect flush to be called once, returning Ok
+        mock_writer.expect_flush().times(1).returning(|| Ok(()));
+
+        // // A counter to keep track of the events
+        // let mut event_count = 0;
+        // let total_events = RGB_RESPONSE.len() + 1;
+        // Shared, thread-safe counter for events
+        let event_count = Arc::new(Mutex::new(0));
+        let total_events = RGB_RESPONSE.len() + 1;
+
+        // Clone `event_count` so each closure can access the same counter
+        let poll_event_count = Arc::clone(&event_count);
+        let read_event_count = Arc::clone(&event_count);
+
+        // Mock the event reader behavior
+        // Configure the mock event reader based on the provided RGB response
+        // mock_event_reader.expect_poll().returning(|_| Ok(true)); // Poll always succeeds in these cases
+        // Mock the behavior of `poll()` using the counter
+        mock_event_reader.expect_poll().returning(move |_| {
+            let count = poll_event_count.lock().unwrap();
+            if *count < total_events {
+                // eprintln!(
+                //     "\rIn expect_poll, count={count}, total_events={total_events}, returning true"
+                // );
+                Ok(true) // More events to process
+            } else {
+                // eprintln!(
+                //     "\rIn expect_poll, count={count}, total_events={total_events}, returning false"
+                // );
+                Ok(false) // No more events left, stop polling
+            }
+        });
+
+        let mut response_iter = RGB_RESPONSE.iter().cloned().chain(iter::once(terminator));
+        mock_event_reader.expect_read_event().returning(move || {
+            // if event_count < total_events {
+            //     event_count += 1;
+            //     eprintln!("\rIn expect_read_event, increasing event_count to {event_count}, total_events={total_events}, responding");
+            //     response_iter
+            //         .next()
+            //         .ok_or(io::Error::new(io::ErrorKind::TimedOut, "timeout 2").into())
+            // } else {
+            //     eprintln!("\rIn expect_read_event, event_count={event_count}, total_events={total_events}, why are we here?");
+            //     // When we run out of events, simulate a timeout or empty response
+            //     // Ok(ThagError::Timeout)
+            //     panic!("Unexpected read - should have been blocked by expect_poll returning false");
+            // }
+            let event_count = Arc::clone(&read_event_count);
+            let mut count = event_count.lock().unwrap();
+            if *count < total_events {
+                *count += 1; // Increment the count as we read each event
+                             // eprintln!("\rIn expect_read_event, increasing count to {count}, total_events={total_events}, responding");
+                response_iter
+                    .next()
+                    .ok_or(io::Error::new(io::ErrorKind::TimedOut, "timeout 2").into())
+            } else {
+                // eprintln!("\rIn expect_read_event, count={count}, total_events={total_events}, why are we here?");
+                // Block here without returning, simulating a "wait" condition
+                std::thread::sleep(std::time::Duration::from_secs(3));
+                Err("timeout 2".into()) // Optionally return an error after some time
+            }
+        });
+
+        // Run the `from_xterm` function and assert the results
+        let result = from_xterm(
+            Terminal::XtermCompatible,
+            Duration::from_secs(1),
+            &mock_event_reader,
+            &mut mock_writer,
+        );
+
+        println!("result={result:?}");
+
+        match expected_rgb {
+            Some((r, g, b)) => {
+                let rgb = result.expect("Expected successful RGB parsing");
+                let adj_actual_rgb = scale_u16_to_u8(rgb);
+                assert_eq!(
+                    adj_actual_rgb,
+                    Rgb {
+                        r: r.into(),
+                        g: g.into(),
+                        b: b.into()
+                    },
+                    "RGB values do not match expected"
+                );
+            }
+            None => {
+                assert!(result.is_err(), "Expected an error for this scenario");
+            }
         }
     }
 
@@ -558,13 +707,6 @@ mod tests {
         assert_eq!((0x1000, 0x2000, 0x3000), decode_x11_color(s).unwrap());
     }
 
-    use super::*;
-    use crate::MockEventReader;
-    use crossterm::event::KeyEvent;
-    use mockall::mock;
-    use std::io::{self, Write};
-    use std::time::Duration;
-
     // Mock the `Write` trait to use in testing
     mock! {
         #[derive(Debug)]
@@ -577,7 +719,7 @@ mod tests {
     }
 
     #[test]
-    fn test_from_xterm_successful_rgb_parsing() {
+    fn test_from_xterm_successful_rgb_parsing_orig() {
         // Initialize the mocks
         let mut mock_writer = MockWriter::new();
         let mut mock_event_reader = MockEventReader::new();
@@ -600,16 +742,17 @@ mod tests {
             Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)),
             Event::Key(KeyEvent::new(KeyCode::Char('9'), KeyModifiers::NONE)),
             Event::Key(KeyEvent::new(KeyCode::Char('9'), KeyModifiers::NONE)),
-            Event::Key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::CONTROL)), // BEL terminator
+            // Event::Key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::CONTROL)), // BEL terminator
+            Event::Key(KeyEvent::new(KeyCode::Char('\\'), KeyModifiers::ALT)), // ST terminator
         ];
 
         // Set up `mock_writer` to expect a specific query write and succeed
-        let query_command = b"\x1b]11;?\x1b\\"; // Corrected to match the observed command in MockWriter
         mock_writer
             .expect_write()
-            .withf(move |buf| buf == query_command)
+            .withf(move |buf| buf == ESC_OSC_QUERY)
             .times(1)
-            .returning(|_| Ok(query_command.len()));
+            .returning(|_| Ok(ESC_OSC_QUERY.len()));
+
         // Expect flush to be called once, returning Ok
         mock_writer.expect_flush().times(1).returning(|| Ok(()));
 
@@ -621,7 +764,7 @@ mod tests {
         mock_event_reader.expect_read_event().returning(move || {
             response_iter
                 .next()
-                .ok_or(io::Error::new(io::ErrorKind::TimedOut, "timeout").into())
+                .ok_or(io::Error::new(io::ErrorKind::TimedOut, "timeout 3").into())
         });
 
         // Invoke `from_xterm` with the mocks
@@ -631,10 +774,10 @@ mod tests {
         let result = from_xterm(terminal, timeout, &mock_event_reader, &mut mock_writer);
         println!("result={result:?}");
         assert!(result.is_ok(), "from_xterm did not return an Ok result");
-        let actual_rgb = scale_u16_to_u8(result.unwrap());
+        let adj_actual_rgb = scale_u16_to_u8(result.unwrap());
         println!(
             "actual_rgb hex values: {{ {:x}, {:x}, {:x} }}",
-            actual_rgb.r, actual_rgb.g, actual_rgb.b
+            adj_actual_rgb.r, adj_actual_rgb.g, adj_actual_rgb.b
         );
 
         // Assert the RGB result matches the expected value
@@ -644,6 +787,50 @@ mod tests {
             b: 153,
         };
         // Scale the `u16` RGB to `u8` and test
-        assert_eq!(actual_rgb, expected_rgb, "RGB values do not match expected");
+        assert_eq!(
+            adj_actual_rgb, expected_rgb,
+            "RGB values do not match expected"
+        );
     }
+
+    #[test]
+    fn test_from_xterm_successful_rgb_parsing_with_bel_terminator() {
+        // Test with BEL as the terminator
+        let terminator = Event::Key(KeyEvent::new(
+            KeyCode::Char('g'), // BEL equivalent
+            KeyModifiers::CONTROL,
+        ));
+        // let rgb_response = rgb_response_with_terminator(Some(terminator));
+        run_from_xterm_test(terminator, Some((255, 204, 153))); // Expected RGB values
+    }
+
+    #[test]
+    fn test_from_xterm_successful_rgb_parsing_with_st_terminator() {
+        // Test with ST as the terminator
+        let terminator = Event::Key(KeyEvent::new(
+            KeyCode::Char('\\'), // ST equivalent
+            KeyModifiers::ALT,
+        ));
+        run_from_xterm_test(terminator, Some((255, 204, 153))); // Expected RGB values
+    }
+
+    #[test]
+    fn test_from_xterm_unrecognized_terminator() {
+        // Test with an arbitrary invalid character as the terminator
+        let terminator = Event::Key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
+        run_from_xterm_test(terminator, Some((255, 204, 153))); // Expected RGB values
+    }
+
+    // #[test]
+    // fn test_from_xterm_timeout_no_response() {
+    //     // Test timeout scenario: No response received
+    //     run_from_xterm_test(vec![], None); // Empty response vector simulates no response
+    // }
+
+    // #[test]
+    // fn test_from_xterm_timeout_incomplete_response() {
+    //     // Test timeout scenario: Incomplete response, e.g., missing terminator
+    //     let incomplete_response = RGB_RESPONSE.to_vec(); // No terminator added
+    //     run_from_xterm_test(incomplete_response, None); // Expect a failure or error scenario
+    // }
 }

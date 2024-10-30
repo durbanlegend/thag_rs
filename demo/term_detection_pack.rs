@@ -11,7 +11,7 @@ simplelog = { version = "0.12.2" }
 supports-color= "3.0.0"
 #termbg = "0.6"
 terminal-light = "1.4.0"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 */
 
 /// A basic tool I cobbled together that uses different crates to a) test terminal
@@ -31,16 +31,6 @@ use supports_color::Stream;
 use thag_rs::termbg;
 // use thag_rs::config::Config;
 use simplelog::{Config, ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger};
-
-// termbg sends an operating system command (OSC) to interrogate the screen
-// but with side effects which we undo here.
-pub fn clear_screen() {
-    // let mut out = stdout();
-    // out.execute(Clear(ClearType::All)).unwrap();
-    // out.execute(MoveTo(0, 0)).unwrap();
-    // out.execute(Show).unwrap();
-    // out.flush().unwrap();
-}
 
 CombinedLogger::init(vec![
     TermLogger::new(
@@ -65,7 +55,6 @@ println!("  Term : {:?}", term);
 
 let rgb = termbg::rgb(timeout);
 let theme = termbg::theme(timeout);
-clear_screen();
 
 match rgb {
     Ok(rgb) => {

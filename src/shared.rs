@@ -13,6 +13,7 @@ use mockall::automock;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use std::convert::Into;
+use std::time::Duration;
 use std::{
     path::{Path, PathBuf},
     time::Instant,
@@ -329,6 +330,12 @@ pub trait EventReader {
     ///
     /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
     fn read_event(&self) -> ThagResult<Event>;
+    /// Poll for a terminal event.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+    fn poll(&self, timeout: Duration) -> ThagResult<bool>;
 }
 
 /// A struct to implement real-world use of the event reader, as opposed to use in testing.
@@ -338,6 +345,10 @@ pub struct CrosstermEventReader;
 impl EventReader for CrosstermEventReader {
     fn read_event(&self) -> ThagResult<Event> {
         crossterm::event::read().map_err(Into::<ThagError>::into)
+    }
+
+    fn poll(&self, timeout: Duration) -> ThagResult<bool> {
+        crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
     }
 }
 

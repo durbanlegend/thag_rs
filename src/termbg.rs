@@ -1,14 +1,15 @@
 /// Original is `https://github.com/dalance/termbg/blob/master/src/lib.rs`
 /// Copyright (c) 2019 dalance
 /// Licence: Apache or MIT
-use crate::{debug_log, ThagError, ThagResult};
+use crate::{debug_log, CrosstermEventReader, EventReader, ThagError, ThagResult};
 use crossterm::{
-    event::{self, poll, read, Event, KeyCode, KeyModifiers},
+    event::{poll, read, Event, KeyCode, KeyModifiers},
     terminal::{self, is_raw_mode_enabled},
 };
 use scopeguard::defer;
 use std::{
     env,
+    fmt::Debug,
     io::{self, IsTerminal, Write},
     time::{Duration, Instant},
 };
@@ -111,9 +112,12 @@ pub fn terminal() -> Terminal {
 #[cfg(not(target_os = "windows"))]
 pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
     let term = terminal();
+    let event_reader = CrosstermEventReader;
+    let mut stderr = io::stderr();
+
     let rgb = match term {
         Terminal::Emacs => Err(ThagError::UnsupportedTerm),
-        _ => from_xterm(term, timeout),
+        _ => from_xterm(term, timeout, &event_reader, &mut stderr),
     };
     let fallback = from_env_colorfgbg();
     if rgb.is_ok() {
@@ -131,7 +135,12 @@ pub fn rgb(timeout: Duration) -> Result<Rgb, ThagError> {
     let term = terminal();
     let rgb = match term {
         Terminal::Emacs => Err(ThagError::UnsupportedTerm),
-        Terminal::XtermCompatible => from_xterm(term, timeout), // will time out pre Windows Terminal 1.22
+        Terminal::XtermCompatible => {
+            let event_reader = CrosstermEventReader;
+            let mut stderr = io::stderr();
+
+            from_xterm(term, timeout, &event_reader, &mut stderr)
+        } // will time out pre Windows Terminal 1.22
         _ => from_winapi(), // effectively useless unless set via legacy Console
     };
     let fallback = from_env_colorfgbg();
@@ -190,7 +199,16 @@ fn enable_virtual_terminal_processing() -> bool {
     })
 }
 
-fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
+fn from_xterm<R, W>(
+    term: Terminal,
+    timeout: Duration,
+    event_reader: &R,
+    buffer: &mut W,
+) -> ThagResult<Rgb>
+where
+    R: EventReader + Debug,
+    W: Write + Debug,
+{
     if !std::io::stdin().is_terminal()
         || !std::io::stdout().is_terminal()
         || !std::io::stderr().is_terminal()
@@ -228,8 +246,6 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
         terminal::enable_raw_mode()?;
     }
 
-    let mut stderr = io::stderr();
-
     #[cfg(target_os = "windows")]
     {
         if !enable_virtual_terminal_processing() {
@@ -248,8 +264,8 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     };
 
     // Send query
-    write!(stderr, "{query}")?;
-    stderr.flush()?;
+    write!(buffer, "{query}")?;
+    buffer.flush()?;
 
     let start_time = Instant::now();
     let mut response = String::new();
@@ -263,6 +279,10 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     // Main loop for capturing terminal response
     loop {
         if start_time.elapsed() > timeout {
+            if &response != "r" {
+                dbg!(&response[..50]);
+            }
+            dbg!(&response);
             if response.contains("rgb:") {
                 let rgb_string = response.split_off(response.find("rgb:").unwrap() + 4);
                 if rgb_string.chars().filter(|&c| c == '/').count() == 2
@@ -280,11 +300,14 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
         // Replaced expensive async_std with blocking loop. Terminal normally responds
         // fast or not at all, and in the latter case we still have the timeout on the
         // main loop.
-        if poll(Duration::from_millis(100))? {
+        if event_reader.poll(Duration::from_millis(100))? {
             // Read the next event.
             // Replaced stdin read that was consuming legit user input in Windows
             // with non-blocking crossterm read event.
-            if let Event::Key(key_event) = event::read()? {
+            if let Event::Key(key_event) = event_reader.read_event()? {
+                // if &key_event.code != &KeyCode::Char('r') {
+                //     dbg!(&key_event);
+                // }
                 debug_log!("key_event={key_event:#?}");
                 match (key_event.code, key_event.modifiers) {
                     (KeyCode::Char('\\'), KeyModifiers::ALT)   // ST
@@ -312,9 +335,9 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
 }
 
 fn parse_response(response: &mut String, start_time: Instant) -> Result<Rgb, ThagError> {
+    debug_log!("response=: {response}");
     let (r, g, b) = extract_rgb(response)?;
     let elapsed = start_time.elapsed();
-    debug_log!("response=: {response}");
     debug_log!("Elapsed time: {:.2?}", elapsed);
     Ok(Rgb { r, g, b })
 }
@@ -508,7 +531,14 @@ fn from_winapi() -> Result<Rgb, ThagError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
+    fn scale_u16_to_u8(rgb: Rgb) -> Rgb {
+        Rgb {
+            r: if rgb.r % 256 == 0 { rgb.r >> 8 } else { rgb.r },
+            g: if rgb.g % 256 == 0 { rgb.g >> 8 } else { rgb.g },
+            b: if rgb.b % 256 == 0 { rgb.b >> 8 } else { rgb.b },
+        }
+    }
 
     #[test]
     fn test_decode_x11_color() {
@@ -526,5 +556,94 @@ mod tests {
 
         let s = "1/2/3";
         assert_eq!((0x1000, 0x2000, 0x3000), decode_x11_color(s).unwrap());
+    }
+
+    use super::*;
+    use crate::MockEventReader;
+    use crossterm::event::KeyEvent;
+    use mockall::mock;
+    use std::io::{self, Write};
+    use std::time::Duration;
+
+    // Mock the `Write` trait to use in testing
+    mock! {
+        #[derive(Debug)]
+        Writer {}
+
+        impl Write for Writer {
+            fn write(&mut self, buf: &[u8]) -> io::Result<usize>;
+            fn flush(&mut self) -> io::Result<()>;
+        }
+    }
+
+    #[test]
+    fn test_from_xterm_successful_rgb_parsing() {
+        // Initialize the mocks
+        let mut mock_writer = MockWriter::new();
+        let mut mock_event_reader = MockEventReader::new();
+
+        // Simulate xterm RGB response string, e.g., "rgb:ff/cc/99"
+        const RGB_RESPONSE: &[Event] = &[
+            Event::Key(KeyEvent::new(KeyCode::Char(']'), KeyModifiers::ALT)),
+            Event::Key(KeyEvent::new(KeyCode::Char('1'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('1'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char(';'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char(':'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('9'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('9'), KeyModifiers::NONE)),
+            Event::Key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::CONTROL)), // BEL terminator
+        ];
+
+        // Set up `mock_writer` to expect a specific query write and succeed
+        let query_command = b"\x1b]11;?\x1b\\"; // Corrected to match the observed command in MockWriter
+        mock_writer
+            .expect_write()
+            .withf(move |buf| buf == query_command)
+            .times(1)
+            .returning(|_| Ok(query_command.len()));
+        // Expect flush to be called once, returning Ok
+        mock_writer.expect_flush().times(1).returning(|| Ok(()));
+
+        // Mock the event reader behavior
+        mock_event_reader.expect_poll().returning(|_| Ok(true)); // Always poll successfully
+
+        // Each call to `read_event` should sequentially return the next `KeyEvent` in rgb_response
+        let mut response_iter = RGB_RESPONSE.iter().cloned();
+        mock_event_reader.expect_read_event().returning(move || {
+            response_iter
+                .next()
+                .ok_or(io::Error::new(io::ErrorKind::TimedOut, "timeout").into())
+        });
+
+        // Invoke `from_xterm` with the mocks
+        let terminal = Terminal::XtermCompatible; // Initialize `Terminal` as required
+        let timeout = Duration::from_secs(1); // Set timeout as needed
+
+        let result = from_xterm(terminal, timeout, &mock_event_reader, &mut mock_writer);
+        println!("result={result:?}");
+        assert!(result.is_ok(), "from_xterm did not return an Ok result");
+        let actual_rgb = scale_u16_to_u8(result.unwrap());
+        println!(
+            "actual_rgb hex values: {{ {:x}, {:x}, {:x} }}",
+            actual_rgb.r, actual_rgb.g, actual_rgb.b
+        );
+
+        // Assert the RGB result matches the expected value
+        let expected_rgb = Rgb {
+            r: 255,
+            g: 204,
+            b: 153,
+        };
+        // Scale the `u16` RGB to `u8` and test
+        assert_eq!(actual_rgb, expected_rgb, "RGB values do not match expected");
     }
 }

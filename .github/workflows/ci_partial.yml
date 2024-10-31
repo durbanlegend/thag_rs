@@ -60,3 +60,10 @@ jobs:
 
     - name: Run tests
       run: cargo test --no-fail-fast -p thag_rs test_termbg_ -- --nocapture --show-output > test_output.log
+
+    - name: Upload test output log
+      if: failure()  # Only upload if the test run fails
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-output-log
+        path: test_output.log

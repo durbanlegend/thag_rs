@@ -68,8 +68,6 @@ pub fn terminal() -> Terminal {
 /// get detected terminal
 #[cfg(target_os = "windows")]
 pub fn terminal() -> Terminal {
-    use log::debug;
-
     // As of 2024-10-16, only Windows Terminal 1.22 (preview) supports *querying*
     // rgb values. Since xterm OSC is MS's roadmap, I'm leaving this in for when
     // VS Code hopefully follows suit. But right now it will time out

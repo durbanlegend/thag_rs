@@ -131,12 +131,7 @@ pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
     let term = terminal();
     let rgb = match term {
         Terminal::Emacs => Err(ThagError::UnsupportedTerm),
-        Terminal::XtermCompatible => {
-            let event_reader = CrosstermEventReader;
-            let mut stderr = io::stderr();
-
-            from_xterm(term, timeout, &event_reader, &mut stderr)
-        } // will time out pre Windows Terminal 1.22
+        Terminal::XtermCompatible => from_xterm(term, timeout),  // will time out pre Windows Terminal 1.22:
         _ => from_winapi(), // effectively useless unless set via legacy Console
     };
     let fallback = from_env_colorfgbg();

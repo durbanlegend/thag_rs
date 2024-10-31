@@ -68,7 +68,6 @@ pub fn terminal() -> Terminal {
 /// get detected terminal
 #[cfg(target_os = "windows")]
 pub fn terminal() -> Terminal {
-
     // As of 2024-10-16, only Windows Terminal 1.22 (preview) supports *querying*
     // rgb values. Since xterm OSC is MS's roadmap, I'm leaving this in for when
     // VS Code hopefully follows suit. But right now it will time out
@@ -355,7 +354,7 @@ fn parse_response(response: &str, start_time: Instant) -> Result<Rgb, ThagError>
     let (r, g, b) = extract_rgb(response)?;
     let elapsed = start_time.elapsed();
     debug_log!("Elapsed time: {:.2?}", elapsed);
-    println!("Rgb {{ r, g, b }}={:?}", Rgb { r, g, b });
+    println!("Rgb {{ r, g, b }} = {:?}", Rgb { r, g, b });
     Ok(Rgb { r, g, b })
 }
 
@@ -369,6 +368,7 @@ fn extract_rgb(response: &str) -> Result<(u16, u16, u16), ThagError> {
         )
         .1;
     let (r, g, b) = decode_x11_color(rgb_str)?;
+    println!("(r, g, b)=({r}, {g}, {b})");
     Ok((r, g, b))
 }
 
@@ -478,6 +478,7 @@ fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
     }
 
     let rgb: Vec<_> = s.split('/').collect();
+    println!("rgb vec = {rgb:?}");
 
     let r = rgb
         .first()

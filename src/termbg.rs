@@ -68,7 +68,6 @@ pub fn terminal() -> Terminal {
 /// get detected terminal
 #[cfg(target_os = "windows")]
 pub fn terminal() -> Terminal {
-    use log::debug;
 
     // As of 2024-10-16, only Windows Terminal 1.22 (preview) supports *querying*
     // rgb values. Since xterm OSC is MS's roadmap, I'm leaving this in for when
@@ -352,7 +351,7 @@ where
 }
 
 fn parse_response(response: &str, start_time: Instant) -> Result<Rgb, ThagError> {
-    // println!("response={response}");
+    println!("response={response}");
     let (r, g, b) = extract_rgb(response)?;
     let elapsed = start_time.elapsed();
     debug_log!("Elapsed time: {:.2?}", elapsed);
@@ -468,6 +467,7 @@ fn from_env_colorfgbg() -> ThagResult<Rgb> {
 ///
 /// This function will return a `FromStr` error if it fails to parse a hex colour code.
 fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
+    println!("s={s}");
     fn decode_hex(s: &str) -> ThagResult<u16> {
         let len = s.len();
         let mut ret =

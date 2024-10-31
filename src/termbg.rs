@@ -355,6 +355,7 @@ fn parse_response(response: &str, start_time: Instant) -> Result<Rgb, ThagError>
     let (r, g, b) = extract_rgb(response)?;
     let elapsed = start_time.elapsed();
     debug_log!("Elapsed time: {:.2?}", elapsed);
+    println!("Rgb {{ r, g, b }}={:?}", Rgb { r, g, b });
     Ok(Rgb { r, g, b })
 }
 

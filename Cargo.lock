@@ -1475,6 +1475,7 @@ dependencies = [
  "clap",
  "crossterm",
  "edit",
+ "either",
  "env_logger",
  "firestorm",
  "home",

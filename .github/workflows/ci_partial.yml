@@ -59,4 +59,4 @@ jobs:
       run: cargo build
 
     - name: Run tests
-      run: cargo test test -p thag_rs test_termbg_ -- --nocapture --test test_termbg_
+      run: cargo test -p thag_rs test_termbg_ -- --nocapture

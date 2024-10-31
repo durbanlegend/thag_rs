@@ -350,10 +350,11 @@ where
 }
 
 fn parse_response(response: &str, start_time: Instant) -> Result<Rgb, ThagError> {
-    // println!("response={response}");
+    println!("response={response}");
     let (r, g, b) = extract_rgb(response)?;
     let elapsed = start_time.elapsed();
     debug_log!("Elapsed time: {:.2?}", elapsed);
+    println!("Rgb {{ r, g, b }}={:?}", Rgb { r, g, b });
     Ok(Rgb { r, g, b })
 }
 
@@ -466,11 +467,14 @@ fn from_env_colorfgbg() -> ThagResult<Rgb> {
 ///
 /// This function will return a `FromStr` error if it fails to parse a hex colour code.
 fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
+    println!("s={s}");
     fn decode_hex(s: &str) -> ThagResult<u16> {
+        println!("s={s}");
         let len = s.len();
         let mut ret =
             u16::from_str_radix(s, 16).map_err(|_| ThagError::FromStr(String::from(s).into()))?;
         ret <<= (4 - len) * 4;
+        println!("ret={ret}");
         Ok(ret)
     }
 
@@ -566,6 +570,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
     use std::thread::sleep;
     use std::time::Duration;
+
     // Xterm expected query
     const ESC_OSC_QUERY: &[u8; 8] = b"\x1b]11;?\x1b\\";
 

@@ -19,7 +19,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -59,4 +59,4 @@ jobs:
       run: cargo build
 
     - name: Run tests
-      run: cargo test -p thag_rs test_termbg_ -- --nocapture
+      run: cargo test -p thag_rs test_termbg_ -- --nocapture --show-output

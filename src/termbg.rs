@@ -246,6 +246,19 @@ where
         terminal::enable_raw_mode()?;
     }
 
+    query_xterm(term, timeout, event_reader, buffer)
+}
+
+fn query_xterm<R, W>(
+    term: Terminal,
+    timeout: Duration,
+    event_reader: &R,
+    buffer: &mut W,
+) -> ThagResult<Rgb>
+where
+    R: EventReader + Debug,
+    W: Write + Debug,
+{
     #[cfg(target_os = "windows")]
     {
         if !enable_virtual_terminal_processing() {
@@ -546,7 +559,6 @@ mod tests {
     use crate::MockEventReader;
     use crossterm::event::KeyEvent;
     use mockall::mock;
-    // use std::cell::RefCell;
     use std::io::{self, Write};
     use std::iter;
     use std::sync::{Arc, Mutex};
@@ -660,7 +672,7 @@ mod tests {
         });
 
         // Run the `from_xterm` function and assert the results
-        let result = from_xterm(
+        let result = query_xterm(
             Terminal::XtermCompatible,
             Duration::from_secs(1),
             &mock_event_reader,
@@ -771,7 +783,7 @@ mod tests {
         let terminal = Terminal::XtermCompatible; // Initialize `Terminal` as required
         let timeout = Duration::from_secs(1); // Set timeout as needed
 
-        let result = from_xterm(terminal, timeout, &mock_event_reader, &mut mock_writer);
+        let result = query_xterm(terminal, timeout, &mock_event_reader, &mut mock_writer);
         println!("result={result:?}");
         assert!(result.is_ok(), "from_xterm did not return an Ok result");
         let adj_actual_rgb = scale_u16_to_u8(result.unwrap());

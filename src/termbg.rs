@@ -317,7 +317,7 @@ where
                     }
                     _ => {
                         // Ignore other keys
-                        debug!("ignoring {key_event:#?}\r");
+                        debug!("ignoring {key_event:?}\r");
                     }
                 }
             }

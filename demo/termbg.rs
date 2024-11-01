@@ -3,7 +3,7 @@
 crossterm = "0.28.1"
 simplelog = "0.12.2"
 #termbg = "0.6.0"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "8cb669b39fa3c34fc49e94d3cd10f3a1a9bc9c0d" }
 */
 
 /// Published example from `termbg` readme.

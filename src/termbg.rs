@@ -73,7 +73,7 @@ pub fn terminal() -> Terminal {
     // supports *querying* rgb values. In the mean time, there is effectively no way to query
     // Windows color schemes.
     if let Ok(term_program) = env::var("TERM_PROGRAM") {
-        debug!("term_program={term_program}");
+        debug!("\rterm_program={term_program}");
         if term_program == "vscode" {
             return Terminal::XtermCompatible;
         }
@@ -98,7 +98,7 @@ pub fn terminal() -> Terminal {
         );
         Terminal::XtermCompatible
     } else {
-        debug!("Terminal::Windows");
+        debug!("\rTerminal::Windows");
         Terminal::Windows
     }
 }
@@ -136,7 +136,7 @@ pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
         _ => from_winapi(), // effectively useless unless set via legacy Console
     };
     let fallback = from_env_colorfgbg();
-    debug!("rgb={rgb:?}, fallback={fallback:?}");
+    debug!("\rrgb={rgb:?}, fallback={fallback:?}");
     if rgb.is_ok() {
         rgb
     } else if fallback.is_ok() {
@@ -207,23 +207,23 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
         let is_raw = match is_raw_mode_enabled() {
             Ok(val) => val,
             Err(e) => {
-                debug!("Failed to check raw mode status: {:?}", e);
+                debug!("\rFailed to check raw mode status: {:?}", e);
                 return;
             }
         };
 
         if is_raw == raw_before {
-            debug!("Raw mode status unchanged from raw={raw_before}.");
+            debug!("\rRaw mode status unchanged from raw={raw_before}.");
         } else if let Err(e) = restore_raw_status(raw_before) {
-            debug!("Failed to restore raw mode: {e:?} to raw={raw_before}");
+            debug!("\rFailed to restore raw mode: {e:?} to raw={raw_before}");
         } else {
-            debug!("Raw mode restored to previous state (raw={raw_before}).");
+            debug!("\rRaw mode restored to previous state (raw={raw_before}).");
         }
 
         if let Err(e) = clear_stdin() {
-            debug!("Failed to clear stdin: {e:?}");
+            debug!("\rFailed to clear stdin: {e:?}");
         } else {
-            debug!("Cleared any excess from stdin.");
+            debug!("\rCleared any excess from stdin.");
         }
     }
 
@@ -283,10 +283,10 @@ where
             debug!("\rAfter timeout, found response={response}");
             if response.contains("rgb:") {
                 let rgb_slice = decode_unterminated(&response)?;
-                debug!("Found a valid response {rgb_slice} in pre-timeout check despite unrecognized terminator in response code {response:#?}");
+                debug!("\rFound a valid response {rgb_slice} in pre-timeout check despite unrecognized terminator in response code {response:#?}");
                 return parse_response(rgb_slice, start_time);
             }
-            debug!("Failed to capture response");
+            debug!("\rFailed to capture response");
             return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout 1").into());
         }
 
@@ -298,16 +298,16 @@ where
             // Replaced stdin read that was consuming legit user input in Windows
             // with non-blocking crossterm read event.
             if let Event::Key(key_event) = event_reader.read_event()? {
-                // debug!("key_event={key_event:#?}");
+                // debug!("\rkey_event={key_event:#?}");
                 match (key_event.code, key_event.modifiers) {
                     (KeyCode::Char('\\'), KeyModifiers::ALT | KeyModifiers::NONE)   // ST
                     | (KeyCode::Char('g'), KeyModifiers::CONTROL)   // BEL
                     // Insurance in case BEL is not recognosed as ^g
                     | (KeyCode::Char('\u{0007}'), KeyModifiers::NONE)   //BEL
                     => {
-                        debug!("End of response detected ({key_event:?}).\r");
+                        debug!("\rEnd of response detected ({key_event:?}).");
                         // response.push('\\');
-                        // debug!("response={response}");
+                        // debug!("\rresponse={response}");
                         return parse_response(&response, start_time);
                     }
                     // Append other characters to buffer
@@ -317,7 +317,7 @@ where
                     }
                     _ => {
                         // Ignore other keys
-                        debug!("ignoring {key_event:#?}");
+                        debug!("\rignoring {key_event:#?}");
                     }
                 }
             }
@@ -333,14 +333,14 @@ fn decode_unterminated(response: &str) -> ThagResult<&str> {
     // Point after "rgb:"
     let raw_rgb_slice = response.split_at(mid).1;
     // slash-delimited r/g/b string with any trailing characters
-    debug!("raw_rgb_slice={raw_rgb_slice}");
+    debug!("\rraw_rgb_slice={raw_rgb_slice}");
 
     // Identify where to trim trailing characters, by assuming the slash-delimited colour specifiers
     // are all supposed to be the same length. I.e. trim after 3 specifiers and 2 delimiters.
     let fragments = raw_rgb_slice.splitn(3, '/').collect::<Vec<_>>();
 
     if fragments.len() < 3 {
-        // debug!("Incomplete response `{response}`: does not contain two forward slashes");
+        // debug!("\rIncomplete response `{response}`: does not contain two forward slashes");
         return Err(format!(
             "Incomplete response `{response}`: does not contain two forward slashes"
         )
@@ -348,7 +348,7 @@ fn decode_unterminated(response: &str) -> ThagResult<&str> {
     }
     let frag_len = fragments[0].len();
     if fragments[1].len() != frag_len || fragments[2].len() < frag_len {
-        // debug!("Can't safely reconstitute unterminated response `{response}`from fragments of unequal length");
+        // debug!("\rCan't safely reconstitute unterminated response `{response}`from fragments of unequal length");
         return Err(format!("Can't safely reconstitute unterminated response `{response}`from fragments of unequal length").into());
     }
 
@@ -359,11 +359,11 @@ fn decode_unterminated(response: &str) -> ThagResult<&str> {
 }
 
 fn parse_response(response: &str, start_time: Instant) -> ThagResult<Rgb> {
-    // debug!("response={response}");
+    // debug!("\rresponse={response}");
     let (r, g, b) = extract_rgb(response)?;
     let elapsed = start_time.elapsed();
-    debug!("Elapsed time: {:.2?}", elapsed);
-    // debug!("Rgb {{ r, g, b }} = {:?}", Rgb { r, g, b });
+    debug!("\rElapsed time: {:.2?}", elapsed);
+    // debug!("\rRgb {{ r, g, b }} = {:?}", Rgb { r, g, b });
     Ok(Rgb { r, g, b })
 }
 
@@ -404,7 +404,7 @@ fn clear_stdin() -> Result<(), Box<dyn std::error::Error>> {
     while poll(Duration::from_millis(10))? {
         if let Event::Key(c) = read()? {
             // Discard the input by simply reading it
-            debug!("discarding char{c:x?}");
+            debug!("\rdiscarding char{c:x?}");
         }
     }
     Ok(())
@@ -476,17 +476,17 @@ fn from_env_colorfgbg() -> ThagResult<Rgb> {
 /// This function will return a `FromStr` error if it fails to parse a hex colour code.
 fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
     fn decode_hex(s: &str) -> ThagResult<u16> {
-        // debug!("s={s}");
+        // debug!("\rs={s}");
         let len = s.len();
         let mut ret = u16::from_str_radix(s, 16).map_err(|_| s.to_string())?;
         ret <<= (4 - len) * 4;
-        // debug!("ret={ret}");
+        // debug!("\rret={ret}");
         Ok(ret)
     }
 
-    // debug!("s={s}");
+    // debug!("\rs={s}");
     let rgb: Vec<_> = s.split('/').collect();
-    // debug!("rgb vec = {rgb:?}");
+    // debug!("\rrgb vec = {rgb:?}");
 
     let r = rgb.first().ok_or_else(|| s.to_string())?;
     let g = rgb.get(1).ok_or_else(|| s.to_string())?;
@@ -510,7 +510,7 @@ fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
 fn from_winapi() -> ThagResult<Rgb> {
     use winapi::um::wincon;
 
-    debug!("In from_winapi()");
+    debug!("\rIn from_winapi()");
     let info = unsafe {
         let handle = winapi::um::processenv::GetStdHandle(winapi::um::winbase::STD_OUTPUT_HANDLE);
         let mut info: wincon::CONSOLE_SCREEN_BUFFER_INFO = Default::default();
@@ -518,7 +518,7 @@ fn from_winapi() -> ThagResult<Rgb> {
         info
     };
 
-    debug!("info.wAttributes={:x?}", info.wAttributes);
+    debug!("\rinfo.wAttributes={:x?}", info.wAttributes);
 
     let r = (wincon::BACKGROUND_RED & info.wAttributes) != 0;
     let g = (wincon::BACKGROUND_GREEN & info.wAttributes) != 0;
@@ -679,7 +679,7 @@ mod tests {
             &mut mock_writer,
         );
 
-        debug!("result={result:?}");
+        debug!("\rresult={result:?}");
 
         match expected_rgb {
             Some((r, g, b)) => {

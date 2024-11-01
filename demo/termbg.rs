@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = "0.28.1"
 simplelog = "0.12.2"
-#termbg = "0.7.0"
+#termbg = "0.6.0"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 */
 
@@ -15,9 +15,7 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" 
 //     terminal::{Clear, ClearType},
 //     ExecutableCommand,
 // };
-use simplelog::{
-    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode,
-};
+use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 use std::env;
 use thag_rs::termbg;
 

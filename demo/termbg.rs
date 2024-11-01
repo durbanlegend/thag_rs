@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 crossterm = "0.28.1"
+simplelog = "0.12.2"
 #termbg = "0.7.0"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 */
@@ -14,12 +15,34 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" 
 //     terminal::{Clear, ClearType},
 //     ExecutableCommand,
 // };
-// use std::io::{stdout, Write};
+use simplelog::{
+    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode,
+};
+use std::env;
 use thag_rs::termbg;
 
 // termbg sends an operating system command (OSC) to interrogate the screen
 // but with side effects which we undo here.
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let num_args = args.len();
+    match num_args {
+        1 => (),
+        2 if args[1] == "-v" => {
+            CombinedLogger::init(vec![TermLogger::new(
+                LevelFilter::Debug,
+                Config::default(),
+                TerminalMode::Mixed,
+                ColorChoice::Auto,
+            )])
+            .unwrap();
+        }
+        _ => {
+            eprintln!("Usage: {} [-v]", args[0]);
+            std::process::exit(1);
+        }
+    }
+
     let timeout = std::time::Duration::from_millis(100);
 
     println!("Check terminal background color");

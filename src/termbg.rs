@@ -280,10 +280,10 @@ where
     // Main loop for capturing terminal response
     loop {
         if start_time.elapsed() > timeout {
-            println!("\rAfter timeout, found response={response}");
+            debug!("\rAfter timeout, found response={response}");
             if response.contains("rgb:") {
                 let rgb_slice = decode_unterminated(&response)?;
-                println!("Found a valid response {rgb_slice} in pre-timeout check despite unrecognized terminator in response code {response:#?}");
+                debug!("Found a valid response {rgb_slice} in pre-timeout check despite unrecognized terminator in response code {response:#?}");
                 return parse_response(rgb_slice, start_time);
             }
             debug!("Failed to capture response");
@@ -305,19 +305,19 @@ where
                     // Insurance in case BEL is not recognosed as ^g
                     | (KeyCode::Char('\u{0007}'), KeyModifiers::NONE)   //BEL
                     => {
-                        println!("End of response detected ({key_event:?}).\r");
+                        debug!("End of response detected ({key_event:?}).\r");
                         // response.push('\\');
-                        // println!("response={response}");
+                        // debug!("response={response}");
                         return parse_response(&response, start_time);
                     }
                     // Append other characters to buffer
                     (KeyCode::Char(c), KeyModifiers::NONE) => {
-                        println!("\rpushing {c}");
+                        debug!("\rpushing {c}");
                         response.push(c);
                     }
                     _ => {
                         // Ignore other keys
-                        println!("ignoring {key_event:#?}");
+                        debug!("ignoring {key_event:#?}");
                     }
                 }
             }
@@ -333,14 +333,14 @@ fn decode_unterminated(response: &str) -> ThagResult<&str> {
     // Point after "rgb:"
     let raw_rgb_slice = response.split_at(mid).1;
     // slash-delimited r/g/b string with any trailing characters
-    println!("raw_rgb_slice={raw_rgb_slice}");
+    debug!("raw_rgb_slice={raw_rgb_slice}");
 
     // Identify where to trim trailing characters, by assuming the slash-delimited colour specifiers
     // are all supposed to be the same length. I.e. trim after 3 specifiers and 2 delimiters.
     let fragments = raw_rgb_slice.splitn(3, '/').collect::<Vec<_>>();
 
     if fragments.len() < 3 {
-        // println!("Incomplete response `{response}`: does not contain two forward slashes");
+        // debug!("Incomplete response `{response}`: does not contain two forward slashes");
         return Err(format!(
             "Incomplete response `{response}`: does not contain two forward slashes"
         )
@@ -348,7 +348,7 @@ fn decode_unterminated(response: &str) -> ThagResult<&str> {
     }
     let frag_len = fragments[0].len();
     if fragments[1].len() != frag_len || fragments[2].len() < frag_len {
-        // println!("Can't safely reconstitute unterminated response `{response}`from fragments of unequal length");
+        // debug!("Can't safely reconstitute unterminated response `{response}`from fragments of unequal length");
         return Err(format!("Can't safely reconstitute unterminated response `{response}`from fragments of unequal length").into());
     }
 
@@ -359,11 +359,11 @@ fn decode_unterminated(response: &str) -> ThagResult<&str> {
 }
 
 fn parse_response(response: &str, start_time: Instant) -> ThagResult<Rgb> {
-    // println!("response={response}");
+    // debug!("response={response}");
     let (r, g, b) = extract_rgb(response)?;
     let elapsed = start_time.elapsed();
     debug!("Elapsed time: {:.2?}", elapsed);
-    // println!("Rgb {{ r, g, b }} = {:?}", Rgb { r, g, b });
+    // debug!("Rgb {{ r, g, b }} = {:?}", Rgb { r, g, b });
     Ok(Rgb { r, g, b })
 }
 
@@ -377,7 +377,7 @@ fn extract_rgb(response: &str) -> ThagResult<(u16, u16, u16)> {
         )
         .1;
     let (r, g, b) = decode_x11_color(rgb_str)?;
-    // println!("(r, g, b)=({r}, {g}, {b})");
+    // debug!("(r, g, b)=({r}, {g}, {b})");
     Ok((r, g, b))
 }
 
@@ -476,17 +476,17 @@ fn from_env_colorfgbg() -> ThagResult<Rgb> {
 /// This function will return a `FromStr` error if it fails to parse a hex colour code.
 fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
     fn decode_hex(s: &str) -> ThagResult<u16> {
-        // println!("s={s}");
+        // debug!("s={s}");
         let len = s.len();
         let mut ret = u16::from_str_radix(s, 16).map_err(|_| s.to_string())?;
         ret <<= (4 - len) * 4;
-        // println!("ret={ret}");
+        // debug!("ret={ret}");
         Ok(ret)
     }
 
-    // println!("s={s}");
+    // debug!("s={s}");
     let rgb: Vec<_> = s.split('/').collect();
-    // println!("rgb vec = {rgb:?}");
+    // debug!("rgb vec = {rgb:?}");
 
     let r = rgb.first().ok_or_else(|| s.to_string())?;
     let g = rgb.get(1).ok_or_else(|| s.to_string())?;
@@ -679,7 +679,7 @@ mod tests {
             &mut mock_writer,
         );
 
-        println!("result={result:?}");
+        debug!("result={result:?}");
 
         match expected_rgb {
             Some((r, g, b)) => {

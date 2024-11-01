@@ -577,9 +577,9 @@ fn tui(
         | KeyAction::ShowHelp
         | KeyAction::ToggleHighlight
         | KeyAction::TogglePopup => {
-            return Err(ThagError::FromStr(
+            return Err(
                 format!("Logic error: {key_action:?} should not return from tui_edit").into(),
-            ))
+            )
         }
         // KeyAction::SaveAndExit => false,
         KeyAction::Submit => {
@@ -674,14 +674,11 @@ pub fn edit_history<R: EventReader + Debug>(
         | KeyAction::ShowHelp
         | KeyAction::ToggleHighlight
         | KeyAction::TogglePopup => {
-            return Err(ThagError::FromStr(
-                format!("Logic error: {key_action:?} should not return from tui_edit").into(),
-            ))
+            return Err(format!("Logic error: {key_action:?} should not return from tui_edit").into())
         }
         KeyAction::SaveAndSubmit => {
-            return Err(ThagError::FromStr(
-                format!("Logic error: {key_action:?} should not be implemented in tui_edit or history_key_handler").into(),
-            ))
+            return Err(format!("Logic error: {key_action:?} should not be implemented in tui_edit or history_key_handler").into()
+            )
         }
         KeyAction::SaveAndExit => true,
         _ => false,

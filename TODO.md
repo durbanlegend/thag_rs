@@ -17,9 +17,9 @@
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?
 - [ ]  File display input to display directory name
-- [ ]  Replace log! with cvprtln! where MessageLevel/Lvl and Verbosity/V are specified.
+- [ ]  Replace vlog! with cvprtln! where MessageLevel/Lvl and Verbosity/V are specified.
+- [ ]  vlog! or similar macro to incorporate format literal "{}".
 - [ ]  Consider replacing TuiSelectionBg with just foreground colour/bolding as per popups.
-- [ ]  Get GPT to write a termbg unit test with MockEventReader as per stdin.
 - [ ]  FAQs: Periodically update toml blocks by commenting entries out with # to get latest versions
              Missing toml entries are not pulled in for crates without use. If you want such a crate to work without a toml block
              or to pull in a toml entry for it, you will need to convert the qualified name to use or redundantly add a
@@ -37,7 +37,6 @@
 - [ ]  Decommission repl::edit_history_old.
 - [ ]  Decide whether to decommission REPL delete function - keep list
 - [ ]  Decide whether to decommission REPL edit, toml and run functions.
-- [ ]  Debug Firestorm double invocation.
 - [ ]  Test [profile.dev] optimisation level
 - [ ]  Check dead code & other #[cfg[allow(...)]; look into factoring over-long gen_build_run
 - [ ]  Look for code smells
@@ -84,6 +83,7 @@
        - cargo publish --no-verify
 
 ## Low Priority
+- [ ]  Debug Firestorm double invocation.
 - [ ]  Add additional popular crates
 - [ ]  Paste event in Windows slow or not happening?
 - [ ]  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)

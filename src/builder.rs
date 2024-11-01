@@ -238,7 +238,7 @@ fn process(
         vlog!(V::V, "rs_source={rs_source}");
 
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
-            // .map_err(|_err| ThagError::FromStr("Error parsing rs_source"))
+            // .map_err(|_err| "Error parsing rs_source")
             ?;
         build_state.rs_manifest = Some(rs_manifest);
 

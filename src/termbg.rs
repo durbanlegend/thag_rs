@@ -179,6 +179,7 @@ fn enable_virtual_terminal_processing() -> bool {
                 // Try to set virtual terminal processing mode
                 if SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0 {
                     // Success in enabling VT
+                    eprintln!("Successfully enabled Virtual Terminal Processing.");
                     return true;
                 } else {
                     // Failed to enable VT, optionally log error
@@ -299,24 +300,24 @@ where
             if let Event::Key(key_event) = event_reader.read_event()? {
                 // debug!("key_event={key_event:#?}");
                 match (key_event.code, key_event.modifiers) {
-                    (KeyCode::Char('\\'), KeyModifiers::ALT)   // ST
+                    (KeyCode::Char('\\'), KeyModifiers::ALT | KeyModifiers::NONE)   // ST
                     | (KeyCode::Char('g'), KeyModifiers::CONTROL)   // BEL
                     // Insurance in case BEL is not recognosed as ^g
                     | (KeyCode::Char('\u{0007}'), KeyModifiers::NONE)   //BEL
                     => {
-                        debug!("End of response detected ({key_event:?}).\r");
+                        println!("End of response detected ({key_event:?}).\r");
                         // response.push('\\');
                         // println!("response={response}");
                         return parse_response(&response, start_time);
                     }
                     // Append other characters to buffer
                     (KeyCode::Char(c), KeyModifiers::NONE) => {
-                        // println!("\rpushing {c}");
+                        println!("\rpushing {c}");
                         response.push(c);
                     }
                     _ => {
                         // Ignore other keys
-                        debug!("ignoring {key_event:#?}");
+                        println!("ignoring {key_event:#?}");
                     }
                 }
             }

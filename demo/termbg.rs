@@ -1,30 +1,24 @@
 /*[toml]
 [dependencies]
 crossterm = "0.28.1"
-termbg = "0.5.2"
+#termbg = "0.7.0"
+thag_rs = { path = "C:/Users/donforbes/Documents/GitHub/thag_rs" }
 */
 
 /// Published example from `termbg` readme.
 ///
 /// Detects the light or dark theme in use, as well as the colours in use.
 //# Purpose: Demo theme detection with `termbg` and clearing terminal state with `crossterm`.
-use crossterm::{
-    cursor::{MoveTo, Show},
-    terminal::{Clear, ClearType},
-    ExecutableCommand,
-};
-use std::io::{stdout, Write};
+// use crossterm::{
+//     cursor::{MoveTo, Show},
+//     terminal::{Clear, ClearType},
+//     ExecutableCommand,
+// };
+// use std::io::{stdout, Write};
+use thag_rs::termbg;
 
 // termbg sends an operating system command (OSC) to interrogate the screen
 // but with side effects which we undo here.
-pub fn clear_screen() {
-    // let mut out = stdout();
-    // out.execute(Clear(ClearType::All)).unwrap();
-    // out.execute(MoveTo(0, 0)).unwrap();
-    // out.execute(Show).unwrap();
-    // out.flush().unwrap();
-}
-
 fn main() {
     let timeout = std::time::Duration::from_millis(100);
 
@@ -32,7 +26,6 @@ fn main() {
     let term = termbg::terminal();
     let rgb = termbg::rgb(timeout);
     let theme = termbg::theme(timeout);
-    clear_screen();
 
     println!("  Term : {:?}", term);
 

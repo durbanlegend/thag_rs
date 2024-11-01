@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = "0.28.1"
 #termbg = "0.7.0"
-thag_rs = { path = "C:/Users/donforbes/Documents/GitHub/thag_rs" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 */
 
 /// Published example from `termbg` readme.

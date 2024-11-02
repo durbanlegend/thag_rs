@@ -10,7 +10,7 @@
 
 ## Intro
 
-`thag_rs` (command `thag`) is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
+`thag_rs` (command `thag`) is a versatile cross-platform script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
 It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while being as simple and convenient to use as possible.
 It also supports scripting via shebangs, building executables from your snippets, a loop-filter mode and plain or edited standard input.
 

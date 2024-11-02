@@ -547,15 +547,12 @@ pub fn generate(
         write_source(&target_rs_path, &rs_source)?;
     }
 
-    // debug_log!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
-    if !Path::try_exists(&build_state.cargo_toml_path)? {
-        OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&build_state.cargo_toml_path)?;
+    // Remove any existing Cargo.lock as this may raise spurious compatibility issues with new dependency versions.
+    let lock_path = &build_state.target_dir_path.join("Cargo.lock");
+    eprintln!("Lock path {lock_path:?} exists? - {}", lock_path.exists());
+    if lock_path.exists() {
+        fs::remove_file(lock_path)?;
     }
-
-    // debug_log!("cargo_toml: {cargo_toml:?}");
 
     let manifest = &build_state
         .cargo_manifest
@@ -568,12 +565,14 @@ pub fn generate(
         code_utils::disentangle(cargo_manifest_str)
     );
 
-    let mut toml_file = fs::File::create(&build_state.cargo_toml_path)?;
+    // Create or truncate the Cargo.toml file and write the content
+    let mut toml_file = OpenOptions::new()
+        .write(true)
+        .create(true) // Creates the file if it doesn't exist
+        .truncate(true) // Ensures the file is emptied if it exists
+        .open(&build_state.cargo_toml_path)?;
+
     toml_file.write_all(cargo_manifest_str.as_bytes())?;
-    // if is_debug_logging_enabled() {
-    //     debug_log!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
-    //     debug_log!("##### Cargo.toml generation succeeded");
-    // }
     display_timings(&start_gen, "Completed generation", proc_flags);
 
     Ok(())

@@ -94,7 +94,7 @@ pub fn terminal() -> Terminal {
     if enable_virtual_terminal_processing() {
         debug!(
             r#"This Windows terminal supports virtual terminal processing
-(but not OSC 10/11 colour queries if prior to Windows Terminal 1.22 Preview of August 2024)"#
+(but not OSC 10/11 colour queries if prior to Windows Terminal 1.22 Preview of August 2024)\r"#
         );
         Terminal::XtermCompatible
     } else {
@@ -179,11 +179,11 @@ fn enable_virtual_terminal_processing() -> bool {
                 // Try to set virtual terminal processing mode
                 if SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0 {
                     // Success in enabling VT
-                    debug!("Successfully enabled Virtual Terminal Processing.");
+                    debug!("Successfully enabled Virtual Terminal Processing.\r");
                     return true;
                 } else {
                     // Failed to enable VT, optionally log error
-                    debug!("Failed to enable Virtual Terminal Processing.");
+                    debug!("Failed to enable Virtual Terminal Processing.\r");
                 }
             }
         }
@@ -235,7 +235,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     {
         if !enable_virtual_terminal_processing() {
             debug!(
-                "Virtual Terminal Processing could not be enabled. Falling back to default behavior."
+                "Virtual Terminal Processing could not be enabled. Falling back to default behavior.\r"
             );
             return from_winapi();
         }
@@ -377,7 +377,7 @@ fn extract_rgb(response: &str) -> ThagResult<(u16, u16, u16)> {
         )
         .1;
     let (r, g, b) = decode_x11_color(rgb_str)?;
-    // debug!("(r, g, b)=({r}, {g}, {b})");
+    // debug!("(r, g, b)=({r}, {g}, {b})\r");
     Ok((r, g, b))
 }
 
@@ -603,9 +603,10 @@ mod tests {
     fn run_query_xterm_test(
         emulate_response: bool,
         num_to_send: usize, // Excluding any terminator
-        maybe_terminator: Option<Event>,
+        maybe_terminator: Option<&Event>,
         expected_rgb: Option<(u16, u16, u16)>,
     ) {
+        eprintln!("Testing for terminator {maybe_terminator:?}");
         // Set up the mock writer and mock event reader
         let mut mock_writer = MockWriter::new();
         let mut mock_event_reader = MockEventReader::new();
@@ -647,7 +648,7 @@ mod tests {
             Cloned<Iter<'_, Event>>,
             std::iter::Chain<Cloned<Iter<'_, Event>>, iter::Once<Event>>,
         > = if let Some(terminator) = maybe_terminator {
-            Either::Right(base_iterator.chain(iter::once(terminator)))
+            Either::Right(base_iterator.chain(iter::once(terminator.clone())))
         } else {
             Either::Left(base_iterator)
         };
@@ -685,7 +686,11 @@ mod tests {
             Some((r, g, b)) => {
                 let rgb = result.expect("Expected successful RGB parsing");
                 // let adj_actual_rgb = scale_u16_to_u8(rgb);
-                assert_eq!(rgb, Rgb { r, g, b }, "RGB values do not match expected");
+                assert_eq!(
+                    rgb,
+                    Rgb { r, g, b },
+                    "RGB values do not match expected for terminator {maybe_terminator:?}",
+                );
             }
             None => {
                 assert!(result.is_err(), "Expected an error for this scenario");
@@ -706,47 +711,37 @@ mod tests {
 
     // Expect response values expressed in 16-bit space
     #[test]
-    fn test_termbg_query_xterm_with_bel_terminator() {
-        // Test with BEL as the terminator
-        let terminator = Event::Key(KeyEvent::new(
-            KeyCode::Char('g'), // BEL equivalent
-            KeyModifiers::CONTROL,
-        ));
-        run_query_xterm_test(
-            true,
-            RGB_RESPONSE_LEN,
-            Some(terminator),
-            Some((0xff * 256, 0xcc * 256, 0x99 * 256)),
-        );
-    }
+    fn test_termbg_query_xterm_with_various_terminators() {
+        const TERMINATORS: &[Event] = &[
+            Event::Key(KeyEvent::new(
+                KeyCode::Char('g'), // BEL equivalent
+                KeyModifiers::CONTROL,
+            )),
+            Event::Key(KeyEvent::new(
+                KeyCode::Char(0x07_u8 as char),
+                KeyModifiers::NONE,
+            )), // Raw BEL
+            Event::Key(KeyEvent::new(
+                KeyCode::Char(0x09c_u8 as char),
+                KeyModifiers::NONE,
+            )), // Raw ST
+            Event::Key(KeyEvent::new(
+                KeyCode::Char(0x5c_u8 as char),
+                KeyModifiers::ALT,
+            )), // Esc-5c mapped to Alt-5c, equivalent to Alt-\
+            Event::Key(KeyEvent::new(
+                KeyCode::Char(0x5c_u8 as char),
+                KeyModifiers::NONE,
+            )), // Esc-5c missing the Esc, equivalent to \
+            Event::Key(KeyEvent::new(KeyCode::Char('\\'), KeyModifiers::ALT)), // Esc-\ mapped to Alt-\
+            Event::Key(KeyEvent::new(KeyCode::Char('\\'), KeyModifiers::NONE)), // Esc-\ missing the Esc
+            Event::Key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)), // Represents any unrecognised value, should be corrected on timeout
+        ];
 
-    // Expect response values expressed in 16-bit space
-    #[test]
-    fn test_termbg_query_xterm_with_st_terminator() {
-        // Test with ST as the terminator
-        let terminator = Event::Key(KeyEvent::new(
-            KeyCode::Char('\\'), // ST equivalent
-            KeyModifiers::ALT,
-        ));
-        run_query_xterm_test(
-            true,
-            RGB_RESPONSE_LEN,
-            Some(terminator),
-            Some((0xff * 256, 0xcc * 256, 0x99 * 256)),
-        ); // Expected RGB values
-    }
-
-    // Test with an arbitrary unexpected character as the terminator.
-    // Expect query_xterm to pick it up and reconstitute the response on timeout check
-    #[test]
-    fn test_termbg_query_xterm_with_unrecognized_terminator() {
-        let terminator = Event::Key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
-        run_query_xterm_test(
-            true,
-            RGB_RESPONSE_LEN,
-            Some(terminator),
-            Some((0xff * 256, 0xcc * 256, 0x99 * 256)),
-        );
+        let expected_rgb = Some((0xff * 256, 0xcc * 256, 0x99 * 256));
+        for terminator in TERMINATORS {
+            run_query_xterm_test(true, RGB_RESPONSE_LEN, Some(terminator), expected_rgb);
+        }
     }
 
     // Expect timeout

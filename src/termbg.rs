@@ -179,11 +179,11 @@ fn enable_virtual_terminal_processing() -> bool {
                 // Try to set virtual terminal processing mode
                 if SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0 {
                     // Success in enabling VT
-                    eprintln!("Successfully enabled Virtual Terminal Processing.");
+                    debug!("Successfully enabled Virtual Terminal Processing.");
                     return true;
                 } else {
                     // Failed to enable VT, optionally log error
-                    eprintln!("Failed to enable Virtual Terminal Processing.");
+                    debug!("Failed to enable Virtual Terminal Processing.");
                 }
             }
         }
@@ -657,14 +657,14 @@ mod tests {
             let mut count = event_count.lock().unwrap();
             if *count < total_events {
                 *count += 1; // Increment the count as we read each event
-                             // eprintln!("\rIn expect_read_event, increasing count to {count}, total_events={total_events}, responding");
+                             // debug!("\rIn expect_read_event, increasing count to {count}, total_events={total_events}, responding");
                 response_iter.next().ok_or_else(|| {
                     // Block here without returning, simulating a "wait" condition
                     sleep(Duration::from_secs(3));
                     io::Error::new(io::ErrorKind::TimedOut, "timeout 2").into()
                 })
             } else {
-                // eprintln!("\rIn expect_read_event, count={count}, total_events={total_events}, why are we here?");
+                // debug!("\rIn expect_read_event, count={count}, total_events={total_events}, why are we here?");
                 // Block here without returning, simulating a "wait" condition
                 sleep(Duration::from_secs(3));
                 Err("timeout 3".into()) // Optionally return an error after some time

@@ -1,27 +1,19 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::builder::process_expr;
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
-use crate::colors::{tui_selection_bg, TuiSelectionBg};
 use crate::tui_editor::{
-    apply_highlights, display_popup, normalize_newlines, resolve_term, script_key_handler,
-    tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, TermScopeGuard, MAPPINGS,
-    TITLE_BOTTOM, TITLE_TOP,
+    script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, TermScopeGuard,
 };
 use crate::{
-    coloring, cprtln, cvprtln, get_verbosity, key, regex, vlog, BuildState, Cli,
-    CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError,
-    ThagResult, V,
+    cprtln, cvprtln, get_verbosity, key, regex, vlog, BuildState, Cli, CrosstermEventReader,
+    EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError, ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
-use crossterm::event::{
-    Event::{self, Paste},
-    KeyEvent, KeyEventKind,
-};
+use crossterm::event::{KeyEvent, KeyEventKind};
 use edit::edit_file;
 use firestorm::profile_fn;
 use nu_ansi_term::Style as NuStyle;
-use ratatui::style::{Color, Style, Stylize};
-use ratatui::widgets::{Block, Borders};
+use ratatui::style::{Style, Stylize};
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
     EditCommand, Emacs, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers, Keybindings,
@@ -31,7 +23,6 @@ use reedline::{
 use regex::Regex;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::env::var;
 use std::fmt::Debug;
 use std::fs::{self, read_to_string, OpenOptions};
 use std::io::{BufWriter, Write};
@@ -40,7 +31,7 @@ use std::str::FromStr;
 use std::sync::OnceLock;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
-use tui_textarea::{CursorMove, Input, TextArea};
+use tui_textarea::{Input, TextArea};
 
 pub const HISTORY_FILE: &str = "thag_repl_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
@@ -487,6 +478,11 @@ pub fn run_repl(
     Ok(())
 }
 
+/// Process a source string through to completion according to the arguments passed in.
+///
+/// # Errors
+///
+/// This function will bubble up any error encountered in processing.
 pub fn process_source(
     rs_source: &str,
     build_state: &mut BuildState,
@@ -596,13 +592,8 @@ fn review_history(
     let event_reader = CrosstermEventReader;
     line_editor.sync_history()?;
     fs::copy(history_path, backup_path)?;
-    let new = true;
-    let confirm = if new {
-        let history_string = read_to_string(history_path)?;
-        edit_history(&history_string, staging_path, &event_reader)?
-    } else {
-        edit_history_old(history_path, staging_path, &event_reader)?
-    };
+    let history_string = read_to_string(history_path)?;
+    let confirm = edit_history(&history_string, staging_path, &event_reader)?;
     if confirm {
         let history_mut = line_editor.history_mut();
         let saved_history = fs::read_to_string(staging_path)?;
@@ -1074,196 +1065,6 @@ pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
         );
     }
     Ok(Some(String::from("End of delete")))
-}
-
-/// Edit the history file.
-///
-/// # Panics
-///
-/// Panics if a `crossterm` error is encountered resetting the terminal inside a
-/// `scopeguard::guard` closure in the call to `resolve_term`.
-///
-/// # Errors
-///
-/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-#[allow(clippy::too_many_lines)]
-pub fn edit_history_old<R: EventReader + Debug>(
-    history_path: &PathBuf,
-    staging_path: &PathBuf,
-    event_reader: &R,
-) -> ThagResult<bool> {
-    let initial_content = read_to_string(history_path)?;
-
-    let mut popup = false;
-    let mut tui_highlight_bg = tui_selection_bg(coloring().1);
-    let mut saved = false;
-
-    let mut maybe_term = resolve_term()?;
-
-    let mut textarea = TextArea::from(initial_content.lines());
-
-    textarea.set_block(
-        Block::default()
-            .borders(Borders::NONE)
-            .title("Enter / paste / edit REPL history.  ^d: save & exi  t  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting")
-            .title_style(Style::from(&Lvl::HEAD).bold()),
-    );
-    textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
-
-    textarea.move_cursor(CursorMove::Bottom);
-
-    apply_highlights(&tui_selection_bg(coloring().1), &mut textarea);
-
-    let adjusted_mappings: &Vec<KeyDisplayLine> = adjust_mappings();
-    let (max_key_len, max_desc_len) = get_max_lengths(adjusted_mappings);
-
-    loop {
-        let event = if var("TEST_ENV").is_ok() {
-            event_reader.read_event()?
-        } else {
-            maybe_term.as_mut().map_or_else(
-                || Err("Logic issue unwrapping term we wrapped ourselves".into()),
-                |term| {
-                    term.draw(|f| {
-                        f.render_widget(&textarea, f.area());
-                        if popup {
-                            display_popup(
-                                adjusted_mappings,
-                                TITLE_TOP,
-                                TITLE_BOTTOM,
-                                max_key_len,
-                                max_desc_len,
-                                f,
-                            );
-                        };
-                        apply_highlights(&tui_highlight_bg, &mut textarea);
-                    })
-                    .map_err(|e| {
-                        println!("Error drawing terminal: {:?}", e);
-                        e
-                    })?;
-
-                    // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
-                    let event = event_reader.read_event();
-                    // terminal::disable_raw_mode()?;
-                    event.map_err(Into::<ThagError>::into) // Convert io::Error to ThagError
-                },
-            )?
-        };
-
-        if let Paste(ref data) = event {
-            textarea.insert_str(normalize_newlines(data));
-        } else {
-            match event {
-                Event::Key(key_event) => {
-                    let key_combination = key_event.into();
-                    match key_combination {
-                        #[allow(clippy::unnested_or_patterns)]
-                        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => {
-                            // println!(
-                            //     "You typed {key_combination:?} which gracefully quits" /*,  key.green()*/
-                            // );
-                            return Ok(saved);
-                        }
-                        key!(ctrl - d) => {
-                            // #[cfg(debug_assertions)]
-                            // debug_log!("{textarea:?}");
-                            save_file_old(staging_path, &textarea)?;
-                            return Ok(true);
-                        }
-                        key!(ctrl - l) => popup = !popup,
-                        key!(ctrl - s) => {
-                            save_file_old(staging_path, &textarea)?;
-                            saved = true;
-                            continue;
-                        }
-                        key!(ctrl - t) => {
-                            // Toggle highlighting colours
-                            tui_highlight_bg = match tui_highlight_bg {
-                                TuiSelectionBg::BlueYellow => TuiSelectionBg::RedWhite,
-                                TuiSelectionBg::RedWhite => TuiSelectionBg::BlueYellow,
-                            };
-                            if var("TEST_ENV").is_err() {
-                                if let Some(ref mut term) = maybe_term {
-                                    term.draw(|_| {
-                                        apply_highlights(&tui_highlight_bg, &mut textarea);
-                                    })?;
-                                }
-                                // // map_or equivalent for interest's sake.
-                                // maybe_term
-                                //     .as_mut()
-                                //     .map_or(Ok::<(), ThagError>(()), |term| {
-                                //         term.draw(|_| {
-                                //             apply_highlights(alt_highlights, &mut textarea);
-                                //         })?;
-                                //         Ok(())
-                                //     })?;
-                            }
-                        }
-                        key!(f3) => {
-                            // Ask to revert
-                            return Ok(false);
-                        }
-                        _ => {
-                            // println!("You typed {key_combination:?} which represents nothing yet"/*, key.blue()*/);
-                            let input = Input::from(event);
-                            textarea.input(input);
-                        }
-                    }
-                }
-                _ => {
-                    continue;
-                }
-            }
-        }
-    }
-}
-
-fn adjust_mappings() -> &'static Vec<KeyDisplayLine> {
-    static ADJUSTED_MAPPINGS: OnceLock<Vec<KeyDisplayLine>> = OnceLock::new();
-    let remove = &["F7", "F8"];
-    let add = &[KeyDisplayLine::new(
-        371,
-        "F3",
-        "Discard saved and unsaved changes, and exit",
-    )];
-    ADJUSTED_MAPPINGS.get_or_init(|| {
-        MAPPINGS
-            .iter()
-            .filter(|&row| !remove.contains(&row.keys))
-            .chain(add.iter())
-            .cloned()
-            .collect()
-    })
-}
-
-fn get_max_lengths(adjusted_mappings: &[KeyDisplayLine]) -> (u16, u16) {
-    static MAX_LENGTHS: OnceLock<(u16, u16)> = OnceLock::new();
-    let (max_key_len, max_desc_len) = *MAX_LENGTHS.get_or_init(|| {
-        adjusted_mappings
-            .iter()
-            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
-                let key_len = row.keys.len().try_into().unwrap();
-                let desc_len = row.desc.len().try_into().unwrap();
-                (max_key.max(key_len), max_desc.max(desc_len))
-            })
-    });
-    (max_key_len, max_desc_len)
-}
-
-fn save_file_old(staging_path: &PathBuf, textarea: &TextArea<'_>) -> ThagResult<()> {
-    let staging_file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(staging_path)?;
-    let mut f = BufWriter::new(&staging_file);
-    for line in textarea.lines() {
-        Write::write_all(&mut f, line.as_bytes())?;
-        Write::write_all(&mut f, b"\n")?;
-    }
-    Ok(())
 }
 
 /// Open the generated destination Rust source code file in an editor.

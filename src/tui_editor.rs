@@ -1,9 +1,7 @@
 use crate::code_utils::write_source;
-use crate::colors::{tui_selection_bg, TuiSelectionBg};
 use crate::file_dialog::{DialogMode, FileDialog, Status};
 use crate::{
-    coloring, debug_log, key, regex, EventReader, KeyCombination, KeyDisplayLine, MessageLevel,
-    ThagError, ThagResult,
+    debug_log, key, regex, EventReader, KeyCombination, KeyDisplayLine, Lvl, ThagError, ThagResult,
 };
 use crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
@@ -14,7 +12,6 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
     LeaveAlternateScreen,
 };
-use firestorm::profile_fn;
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
@@ -467,7 +464,7 @@ where
 {
     // Initialize state variables
     let mut popup = false;
-    let mut tui_highlight_bg = tui_selection_bg(coloring().1);
+    let mut tui_highlight_fg: Lvl = Lvl::EMPH;
     let mut saved = false;
     let mut status_message: String = String::default(); // Add status message variable
 
@@ -483,6 +480,7 @@ where
             .title(display.title)
             .title_style(display.title_style),
     );
+
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.move_cursor(CursorMove::Bottom);
     // New line with cursor at EOF for usability
@@ -492,12 +490,12 @@ where
     }
 
     // Apply initial highlights
-    apply_highlights(&tui_selection_bg(coloring().1), &mut textarea);
+    highlight_selection(&mut textarea, tui_highlight_fg);
 
     let remove = display.remove_keys;
     let add = display.add_keys;
-    // Can't make these OnceLock values as with repl::edit_history_old and filedialog, since their
-    // configuration depends on the `remove` and `add` values passed in by the caller.
+    // Can't make these OnceLock values, since their configuration depends on the `remove`
+    // and `add` values passed in by the caller.
     let adjusted_mappings: Vec<KeyDisplayLine> = MAPPINGS
         .iter()
         .filter(|&row| !remove.contains(&row.keys))
@@ -568,7 +566,7 @@ where
                                     f,
                                 );
                             };
-                            apply_highlights(&tui_highlight_bg, &mut textarea);
+                            highlight_selection(&mut textarea, tui_highlight_fg);
                             // status_message = String::new();
                         }
                     })
@@ -690,15 +688,19 @@ where
                 }
                 key!(ctrl - t) => {
                     // Toggle highlighting colours
-                    tui_highlight_bg = match tui_highlight_bg {
-                        TuiSelectionBg::BlueYellow => TuiSelectionBg::RedWhite,
-                        TuiSelectionBg::RedWhite => TuiSelectionBg::BlueYellow,
+                    tui_highlight_fg = match tui_highlight_fg {
+                        Lvl::EMPH => Lvl::BRI,
+                        Lvl::BRI => Lvl::ERR,
+                        Lvl::ERR => Lvl::WARN,
+                        Lvl::WARN => Lvl::HEAD,
+                        Lvl::HEAD => Lvl::SUBH,
+                        _ => Lvl::EMPH,
                     };
                     if var("TEST_ENV").is_err() {
                         #[allow(clippy::option_if_let_else)]
                         if let Some(ref mut term) = maybe_term {
                             term.draw(|_| {
-                                apply_highlights(&tui_highlight_bg, &mut textarea);
+                                highlight_selection(&mut textarea, tui_highlight_fg);
                             })?;
                         }
                     }
@@ -743,6 +745,14 @@ where
             textarea.input(input);
         }
     }
+}
+
+pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate::MessageLevel) {
+    textarea.set_selection_style(
+        Style::default()
+            .fg(Color::Indexed(u8::from(&tui_highlight_fg)))
+            .bold(),
+    );
 }
 
 /// Key handler function to be passed into `tui_edit` for editing REPL history.
@@ -909,7 +919,7 @@ pub fn display_popup(
         .title_top(Line::from(title_top).centered())
         .title_bottom(Line::from(title_bottom).centered())
         .add_modifier(Modifier::BOLD)
-        .fg(Color::Indexed(u8::from(&MessageLevel::Heading)));
+        .fg(Color::Indexed(u8::from(&Lvl::HEAD)));
     #[allow(clippy::cast_possible_truncation)]
     let area = centered_rect(
         max_key_len + max_desc_len + 5,
@@ -947,11 +957,9 @@ pub fn display_popup(
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
+                .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
         } else {
-            widget = widget
-                .fg(Color::Indexed(u8::from(&MessageLevel::Subheading)))
-                .not_bold();
+            widget = widget.fg(Color::Indexed(u8::from(&Lvl::SUBH))).not_bold();
         }
         f.render_widget(widget, cells[0]);
         let mut widget = Paragraph::new(mappings[i].desc);
@@ -959,11 +967,11 @@ pub fn display_popup(
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
+                .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
         } else {
             widget = widget.remove_modifier(Modifier::BOLD).set_style(
                 Style::default()
-                    .fg(Color::Indexed(u8::from(&MessageLevel::Normal)))
+                    .fg(Color::Indexed(u8::from(&Lvl::NORM)))
                     .not_bold(),
             );
         }
@@ -996,26 +1004,6 @@ pub fn normalize_newlines(input: &str) -> String {
     let re: &Regex = regex!(r"\r\n?");
 
     re.replace_all(input, "\n").to_string()
-}
-
-/// Apply highlights to the text depending on the light or dark theme as detected, configured
-/// or defaulted, or as toggled by the user with Ctrl-t.
-pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
-    profile_fn!(apply_highlights);
-    match scheme {
-        TuiSelectionBg::BlueYellow => {
-            // Dark theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
-            textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
-            textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
-        }
-        TuiSelectionBg::RedWhite => {
-            // Light theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
-            textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
-            textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
-        }
-    }
 }
 
 /// Reset the terminal.
@@ -1229,7 +1217,7 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (330, "PageDown, Cmd+↓", "Page down"),
     (340, "Alt+v, PageUp, Cmd+↑", "Page up"),
     (350, "Ctrl+l", "Toggle keys display (this screen)"),
-    (360, "Ctrl+t", "Toggle highlight colours"),
+    (360, "Ctrl+t", "Toggle selection highlight colours"),
     (370, "F7", "Previous in history"),
     (380, "F8", "Next in history"),
     (

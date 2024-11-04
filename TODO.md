@@ -16,9 +16,6 @@
 - [ ]  >>> Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile-time.
 - [ ]  Make key_handler a trait method? Or a closure?
-- [ ]  File display input to display directory name
-- [ ]  Replace vlog! with cvprtln! where MessageLevel/Lvl and Verbosity/V are specified.
-- [ ]  Consider replacing TuiSelectionBg with just foreground colour/bolding as per popups.
 - [ ]  FAQs: Periodically update toml blocks by commenting entries out with # to get latest versions
              Missing toml entries are not pulled in for crates without use. If you want such a crate to work without a toml block
              or to pull in a toml entry for it, you will need to convert the qualified name to use or redundantly add a
@@ -33,9 +30,8 @@
 - [ ]  Trim dependencies, e.g. regex
 - [ ]  Try going back to derive macro with declarative macro to expand the attributes. Problem with attrib macro is the AST isn't
         editable in the way we want, it just points to spans that get resolved later. See bank/syn_parse_mappings.rs for nice format;
-- [ ]  Decommission repl::edit_history_old.
 - [ ]  Decide whether to decommission REPL delete function - keep list
-- [ ]  Decide whether to decommission REPL edit, toml and run functions.
+- [ ]  Decide whether to decommission REPL edit, toml and run functions - No.
 - [ ]  Test [profile.dev] optimisation level
 - [ ]  Check dead code & other #[cfg[allow(...)]; look into factoring over-long gen_build_run
 - [ ]  Look for code smells

@@ -265,7 +265,7 @@ fn process(
 
 /// Process a Rust expression
 /// # Errors
-/// Will return `Err` if there is any errors encountered opening or writing to the file.
+/// Will return `Err` if there is any error encountered opening or writing to the file.
 pub fn process_expr(
     expr_ast: Expr,
     build_state: &mut BuildState,
@@ -280,6 +280,7 @@ pub fn process_expr(
     vlog!(V::N, "{result:?}");
     Ok(())
 }
+
 fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
     profile_fn!(log_init_setup);
     debug_log_config();

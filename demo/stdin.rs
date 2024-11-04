@@ -284,6 +284,6 @@ const MAPPINGS: &[[&str; 2]; 33] = &[
     ["Alt+>, Ctrl+Alt+N or↓", "Move cursor to bottom of file"],
     ["PageDown, Cmd+↓", "Page down"],
     ["Alt+V, PageUp, Cmd+↑", "Page up"],
-    ["Ctrl+T", "Toggle highlight colours"],
+    ["Ctrl+T", "Toggle selection highlight colours"],
 ];
 const NUM_ROWS: usize = MAPPINGS.len();

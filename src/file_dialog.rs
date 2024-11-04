@@ -533,24 +533,10 @@ impl<'a> FileDialog<'a> {
     }
 }
 
-// fn adjust_mappings() -> &'static Vec<KeyDisplayLine> {
-//     static ADJUSTED_MAPPINGS: OnceLock<Vec<KeyDisplayLine>> = OnceLock::new();
-//     let remove: &[&str] = &[];
-//     let add: &'static [KeyDisplayLine] = &[];
-//     ADJUSTED_MAPPINGS.get_or_init(|| {
-//         MAPPINGS
-//             .iter()
-//             .filter(|&row| !remove.contains(&row.keys))
-//             .chain(add.iter())
-//             .cloned()
-//             .collect()
-//     })
-// }
-
-fn get_max_lengths(adjusted_mappings: &[KeyDisplayLine]) -> (u16, u16) {
+fn get_max_lengths(mappings: &[KeyDisplayLine]) -> (u16, u16) {
     static MAX_LENGTHS: OnceLock<(u16, u16)> = OnceLock::new();
     let (max_key_len, max_desc_len) = *MAX_LENGTHS.get_or_init(|| {
-        adjusted_mappings
+        mappings
             .iter()
             .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
                 let key_len = row.keys.len().try_into().unwrap();

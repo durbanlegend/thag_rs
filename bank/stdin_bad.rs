@@ -466,7 +466,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
+            .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting")
             .title_style(Style::from(&Lvl::HEAD).bold(),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
@@ -689,7 +689,7 @@ pub fn edit_new<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
+            .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting")
             .title_style(Style::from(&Lvl::HEAD).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));

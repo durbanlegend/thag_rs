@@ -502,7 +502,7 @@ const MAPPINGS: &[[&str; 2]; 35] = &[
     ["Alt+>, Ctrl+Alt+N or↓", "Move cursor to bottom of file"],
     ["PageDown, Cmd+↓", "Page down"],
     ["Alt+V, PageUp, Cmd+↑", "Page up"],
-    ["Ctrl+T", "Toggle highlight colours"],
+    ["Ctrl+T", "Toggle selection highlight colours"],
     ["F1", "Previous in history"],
     ["F2", "Next in history"],
 ];

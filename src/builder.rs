@@ -8,7 +8,7 @@ use crate::logging::is_debug_logging_enabled;
 use crate::repl::run_repl;
 use crate::stdin::{edit, read};
 use crate::{
-    coloring, cprtln, cvprtln, debug_log, debug_timings, display_timings, get_proc_flags, manifest,
+    coloring, cvprtln, debug_log, debug_timings, display_timings, get_proc_flags, manifest,
     maybe_config, regex, validate_args, vlog, Ast, BuildState, Cli, CrosstermEventReader, Lvl,
     ProcFlags, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
     REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V, VERSION,
@@ -16,7 +16,7 @@ use crate::{
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
 use log::{log_enabled, Level::Debug};
-use nu_ansi_term::{Color, Style};
+use nu_ansi_term::Style;
 use regex::Regex;
 use std::env::current_dir;
 use std::string::ToString;
@@ -347,15 +347,15 @@ pub fn gen_build_run(
         };
 
         if syntax_tree.is_none() {
-            let current_dir = current_dir()?;
-            let formatted = format!(
+            cvprtln!(
+                Lvl::WARN,
+                V::QQ,
                 "If no useful error messages are shown below, try `rustfmt {0}` or `rustc {0}`.",
                 source_path
-                    .strip_prefix(current_dir)
+                    .strip_prefix(current_dir()?)
                     .map_err(|e| e.to_string())?
                     .display()
             );
-            cvprtln!(Lvl::EMPH, V::QQ, "{}", formatted);
         }
         // debug_log!("syntax_tree={syntax_tree:#?}");
 
@@ -710,14 +710,14 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     fs::rename(executable_path, output_path)?;
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    vlog!(V::Q, "{}", Color::Yellow.paint(&dash_line));
+    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
 
     vlog!(
         V::QQ,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
     );
 
-    vlog!(V::Q, "{}", Color::Yellow.paint(&dash_line));
+    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
     Ok(())
 }
 
@@ -749,11 +749,11 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    vlog!(V::Q, "{}", Color::Yellow.paint(&dash_line));
+    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
 
     let _exit_status = run_command.spawn()?.wait()?;
 
-    vlog!(V::Q, "{}", Color::Yellow.paint(&dash_line));
+    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
 
     // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");

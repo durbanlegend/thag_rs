@@ -18,7 +18,6 @@
 - [ ]  Make key_handler a trait method? Or a closure?
 - [ ]  File display input to display directory name
 - [ ]  Replace vlog! with cvprtln! where MessageLevel/Lvl and Verbosity/V are specified.
-- [ ]  vlog! or similar macro to incorporate format literal "{}".
 - [ ]  Consider replacing TuiSelectionBg with just foreground colour/bolding as per popups.
 - [ ]  FAQs: Periodically update toml blocks by commenting entries out with # to get latest versions
              Missing toml entries are not pulled in for crates without use. If you want such a crate to work without a toml block

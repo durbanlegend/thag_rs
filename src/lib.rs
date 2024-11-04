@@ -45,7 +45,7 @@ pub use thag_proc_macros::{DeriveCustomModel, DeriveKeyMapList, IntoStringHashMa
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
 pub const FLOWER_BOX_LEN: usize = 70;
 pub const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
-pub const REPL_SCRIPT_NAME: &str = "repl.rs";
+pub const REPL_SCRIPT_NAME: &str = "repl_script.rs";
 pub const REPL_SUBDIR: &str = "rs_repl";
 pub const RS_SUFFIX: &str = ".rs";
 pub const TEMP_DIR_NAME: &str = "temp";

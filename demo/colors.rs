@@ -4,7 +4,7 @@ nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 termbg = "0.6.0"
 # thag_rs = "0.1.5"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "6c5bff14435ebf308795dc5b62e04ea8e8d1e99e" }
 */
 
 #![allow(clippy::implicit_return)]
@@ -57,11 +57,7 @@ pub fn main() {
                 V::N,
                 "Colour support={support:?}, term_theme={term_theme:?}"
             );
-            vlog!(
-                V::N,
-                "{}",
-                Style::from(&Lvl::WARN).paint("Colored Warning message\n")
-            );
+            cvprtln!(&Lvl::WARN, V::N, "Colored Warning message\n");
         }
     }
 }

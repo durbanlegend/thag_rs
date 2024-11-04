@@ -4,13 +4,12 @@
     clippy::missing_trait_methods
 )]
 use crate::{
-    debug_log, debug_timings, vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult,
+    cvprtln, debug_log, debug_timings, vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult,
     DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
-use nu_ansi_term::Style;
 use regex::Regex;
 use std::any::Any;
 use std::collections::HashMap;
@@ -603,29 +602,20 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     #[allow(clippy::option_if_let_else)]
     if let Ok(tree) = syn::parse_file(source_code) {
         #[cfg(debug_assertions)]
-        vlog!(
-            V::V,
-            "{}",
-            Style::from(&Lvl::WARN).paint("Parsed to syn::File")
-        );
+        cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::File");
 
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))
     } else if let Ok(tree) = extract_ast_expr(source_code) {
         #[cfg(debug_assertions)]
-        vlog!(
-            V::V,
-            "{}",
-            Style::from(&Lvl::EMPH).paint("Parsed to syn::Expr")
-        );
+        cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::Expr");
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
-        vlog!(
+        cvprtln!(
+            &Lvl::WARN,
             V::QQ,
-            "{}",
-            Style::from(&Lvl::WARN)
-                .paint("Error parsing syntax tree. Using regex to help you debug the script.")
+            "Error parsing syntax tree. Using regex to help you debug the script."
         );
 
         debug_timings(&start_ast, "Completed unsuccessful AST parse");
@@ -826,7 +816,7 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
-        vlog!(V::N, "Directory listing for {:?}", path);
+        vlog!(V::N, "Directory listing for {path:?}");
         for entry in entries {
             let entry = entry?;
             let file_type = entry.file_type()?;
@@ -1068,12 +1058,10 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             expr_return.expr.is_none()
         }
         _ => {
-            vlog!(
+            cvprtln!(
+                &Lvl::WARN,
                 V::Q,
-                "{}",
-                Style::from(&Lvl::WARN).paint(format!(
-                    "Expression not catered for: {expr:#?}, wrapping expression in println!()"
-                ))
+                "Expression not catered for: {expr:#?}, wrapping expression in println!()"
             );
             false
         }

@@ -1,18 +1,16 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::builder::process_expr;
-use crate::code_utils::{clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
+use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
 use crate::colors::{tui_selection_bg, TuiSelectionBg};
-#[cfg(debug_assertions)]
-use crate::debug_log;
 use crate::tui_editor::{
     apply_highlights, display_popup, normalize_newlines, resolve_term, script_key_handler,
     tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, TermScopeGuard, MAPPINGS,
     TITLE_BOTTOM, TITLE_TOP,
 };
 use crate::{
-    coloring, cprtln, cvprtln, gen_build_run, get_verbosity, key, regex, vlog, Ast, BuildState,
-    Cli, CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags,
-    ThagError, ThagResult, V,
+    coloring, cprtln, cvprtln, get_verbosity, key, regex, vlog, BuildState, Cli,
+    CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError,
+    ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
 use crossterm::event::{
@@ -434,8 +432,8 @@ pub fn run_repl(
                         toml(build_state)?;
                     }
                     ReplCommand::Run => {
-                        // &history.sync();
-                        run_expr(args, proc_flags, build_state)?;
+                        let rs_source = code_utils::read_file_contents(&build_state.source_path)?;
+                        process_source(&rs_source, build_state, args, proc_flags, start)?;
                     }
                     ReplCommand::Delete => {
                         delete(build_state)?;
@@ -489,7 +487,7 @@ pub fn run_repl(
     Ok(())
 }
 
-fn process_source(
+pub fn process_source(
     rs_source: &str,
     build_state: &mut BuildState,
     args: &Cli,
@@ -502,11 +500,7 @@ fn process_source(
     if let Ok(expr_ast) = maybe_ast {
         process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
     } else {
-        cprtln!(
-            // NuStyle::from(&Lvl::ERR),
-            &(&Lvl::ERR).into(),
-            "Error parsing code: {maybe_ast:#?}"
-        );
+        cprtln!(&(&Lvl::ERR).into(), "Error parsing code: {maybe_ast:#?}");
     };
     Ok(())
 }
@@ -842,7 +836,6 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
     println!();
     cprtln!(
-        //&NuStyle::from(&Lvl::EMPH),
         &(&Lvl::EMPH).into(),
         "Key bindings - subject to your terminal settings"
     );
@@ -1297,27 +1290,6 @@ pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
-/// Run an expression.
-/// # Errors
-/// Currently will not return any errors.
-#[allow(clippy::unnecessary_wraps)]
-pub fn run_expr(
-    args: &Cli,
-    proc_flags: &ProcFlags,
-    build_state: &mut BuildState,
-) -> ThagResult<Option<String>> {
-    let start = Instant::now();
-
-    #[cfg(debug_assertions)]
-    debug_log!("In run_expr: build_state={build_state:#?}");
-
-    let result = gen_build_run(args, proc_flags, build_state, None::<Ast>, &start);
-    if result.is_err() {
-        vlog!(V::QQ, "{result:?}");
-    }
-    Ok(Some(String::from("End of run")))
-}
-
 /// Parse the current line. Borrowed from clap-repl crate.
 #[must_use]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
@@ -1365,7 +1337,7 @@ pub fn disp_repl_banner(cmd_list: &str) {
 pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
     let source_path = &build_state.source_path;
     if source_path.exists() {
-        vlog!(V::QQ, "File: {:?}", &source_path);
+        vlog!(V::QQ, "File: {source_path:?}");
     }
 
     // Display directory contents

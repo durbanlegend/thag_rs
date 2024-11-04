@@ -558,7 +558,6 @@ fn from_winapi() -> ThagResult<Rgb> {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use crate::MockEventReader;
     use crossterm::event::Event;

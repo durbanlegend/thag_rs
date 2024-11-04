@@ -26,7 +26,7 @@ fn main() {
     let num_args = args.len();
     match num_args {
         1 => (),
-        2 if args[1] == "-v" => {
+        2 if args[1] == "-d" || args[1] == "--debug" => {
             CombinedLogger::init(vec![TermLogger::new(
                 LevelFilter::Debug,
                 Config::default(),
@@ -36,7 +36,7 @@ fn main() {
             .unwrap();
         }
         _ => {
-            eprintln!("Usage: {} [-v]", args[0]);
+            eprintln!("Usage: {} [--debug/-d]", args[0]);
             std::process::exit(1);
         }
     }

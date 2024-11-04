@@ -487,7 +487,7 @@ macro_rules! cprtln {
         // Qualified form to avoid imports in calling code.
         let painted = style.paint(content);
         let verbosity = $crate::logging::get_verbosity();
-        vlog!(verbosity, "{}", painted);
+        vlog!(verbosity, "{painted}");
     }};
 }
 
@@ -495,9 +495,9 @@ macro_rules! cprtln {
 macro_rules! cvprtln {
     ($level:expr, $verbosity:expr, $($arg:tt)*) => {{
         if $verbosity <= $crate::logging::get_verbosity() {
-            let (maybe_color_support, term_theme) = coloring();
+            let (maybe_color_support, term_theme) = $crate::colors::coloring();
             let style = $crate::colors::get_style(&$level, term_theme, maybe_color_support);
-            cprtln!(&style, $($arg)*);
+            $crate::cprtln!(&style, $($arg)*);
         }
     }};
 }
@@ -1148,11 +1148,7 @@ pub fn main() {
                 V::N,
                 "Colour support={support:?}, term_theme={term_theme:?}"
             );
-            vlog!(
-                V::N,
-                "{}",
-                Style::from(&Lvl::WARN).paint("Colored Warning message\n")
-            );
+            cvprtln!(&Lvl::WARN, V::N, "Colored Warning message\n");
         }
     }
 }

@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 quote = "1.0.36"
-syn = { version = "2.0.82", features = ["full"] }
+syn = { version = "2.0.87", features = ["full"] }
 */
 
 /// Typical basic (runtime) solution to expression type identification. See also `demo/determine_if_known_type_trait.rs`

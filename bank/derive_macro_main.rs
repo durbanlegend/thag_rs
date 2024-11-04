@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 quote = "1.0.37"
-syn = "2.0.82"
+syn = "2.0.87"
 # macro_demo_derive = { path = "/Users/donf/projects/macro_demo/macro_demo_derive/" }
 macro_demo_derive = { path = "../derive_macro_lib/" }
 */

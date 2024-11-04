@@ -3,7 +3,7 @@
 darling = "0.20.10"
 proc-macro2 = "1.0.88"
 quote = "1.0.37"
-syn = "2.0.81"
+syn = "2.0.87"
 */
 
 // The use of fields in debug print commands does not count as "used",

@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 quote = "1.0.36"
-syn = { version = "2.0.82", features = ["fold", "extra-traits", "full", "parsing", "visit-mut"] }
+syn = { version = "2.0.87", features = ["fold", "extra-traits", "full", "parsing", "visit-mut"] }
 */
 
 /// Prototype of removing an inner attribute (`#![...]`) from a syntax tree. Requires the `visit-mut'

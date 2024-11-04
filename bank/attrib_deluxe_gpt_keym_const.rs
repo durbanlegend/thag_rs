@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-#syn = { version = "2.0.85", features = ["extra-traits", "full"] }
-syn = { version = "2.0.85", features = ["full"] }
+#syn = { version = "2.0.87", features = ["extra-traits", "full"] }
+syn = { version = "2.0.87", features = ["full"] }
 thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
 */
 

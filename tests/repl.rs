@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use clap::Parser;
-    #[cfg(not(windows))]
     use std::path::PathBuf;
     use std::time::Instant;
     use thag_rs::cmd_args::{Cli, ProcFlags};

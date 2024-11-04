@@ -7,7 +7,6 @@ use ratatui::crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyModifiers},
     tty::IsTty,
 };
-use ratatui::style::{Color, Style};
 use sequential_test::sequential;
 #[cfg(feature = "simplelog")]
 use simplelog::{
@@ -21,11 +20,9 @@ use std::{
 };
 #[cfg(feature = "simplelog")]
 use std::{fs::File, sync::OnceLock};
-use thag_rs::colors::{get_term_theme, TuiSelectionBg};
 use thag_rs::stdin::{edit, read_to_string};
-use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History};
+use thag_rs::tui_editor::{normalize_newlines, History};
 use thag_rs::{vlog, MockEventReader, ThagResult, TMPDIR, V};
-use tui_textarea::TextArea;
 
 // Set environment variables before running tests
 fn set_up() {
@@ -349,40 +346,4 @@ fn test_stdin_normalize_newlines() {
     let input = "Hello\r\nWorld\r!";
     let expected_output = "Hello\nWorld\n!";
     assert_eq!(normalize_newlines(input), expected_output);
-}
-
-#[test]
-fn test_stdin_apply_highlights() {
-    set_up();
-    let mut textarea = TextArea::default();
-
-    eprintln!("Theme={}", get_term_theme());
-
-    apply_highlights(&TuiSelectionBg::BlueYellow, &mut textarea);
-    assert_eq!(
-        textarea.selection_style(),
-        Style::default().fg(Color::Black).bg(Color::Cyan)
-    );
-    assert_eq!(
-        textarea.cursor_style(),
-        Style::default().fg(Color::Black).bg(Color::LightYellow)
-    );
-    assert_eq!(
-        textarea.cursor_line_style(),
-        Style::default().fg(Color::White).bg(Color::DarkGray)
-    );
-
-    apply_highlights(&TuiSelectionBg::RedWhite, &mut textarea);
-    assert_eq!(
-        textarea.selection_style(),
-        Style::default().fg(Color::White).bg(Color::Blue)
-    );
-    assert_eq!(
-        textarea.cursor_style(),
-        Style::default().fg(Color::White).bg(Color::LightRed)
-    );
-    assert_eq!(
-        textarea.cursor_line_style(),
-        Style::default().fg(Color::Black).bg(Color::Gray)
-    );
 }

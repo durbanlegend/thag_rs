@@ -1,14 +1,13 @@
 #[cfg(test)]
 mod tests {
     use clap::Parser;
-    #[cfg(not(windows))]
     use std::path::PathBuf;
     use std::time::Instant;
     use thag_rs::cmd_args::{Cli, ProcFlags};
     use thag_rs::code_utils::read_file_contents;
     use thag_rs::repl::{delete, disp_repl_banner, list, parse_line, process_source};
     #[cfg(not(windows))]
-    use thag_rs::repl::{edit, edit_history, edit_history_old, toml, HISTORY_FILE};
+    use thag_rs::repl::{edit, edit_history, toml, HISTORY_FILE};
     use thag_rs::shared::BuildState;
 
     use std::sync::Once;
@@ -54,57 +53,6 @@ mod tests {
 
         let result = delete(&build_state);
         assert!(result.is_ok());
-    }
-
-    #[cfg(not(windows))]
-    #[test]
-    fn test_repl_edit_history_old() {
-        use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
-        use mockall::Sequence;
-        use thag_rs::MockEventReader;
-
-        set_up();
-        let build_state = thag_rs::BuildState {
-            cargo_home: PathBuf::from("tests/assets/"),
-            ..Default::default()
-        };
-
-        let mut seq = Sequence::new();
-        let mut mock_reader = MockEventReader::new();
-
-        mock_reader
-            .expect_read_event()
-            .times(1)
-            .in_sequence(&mut seq)
-            .return_once(|| Ok(Event::Paste("Hello,\nworld".to_string())));
-
-        mock_reader
-            .expect_read_event()
-            .times(1)
-            .in_sequence(&mut seq)
-            .return_once(|| {
-                Ok(Event::Key(KeyEvent::new(
-                    KeyCode::Char('!'),
-                    KeyModifiers::NONE,
-                )))
-            });
-
-        mock_reader
-            .expect_read_event()
-            .times(1)
-            .in_sequence(&mut seq)
-            .return_once(|| {
-                Ok(Event::Key(KeyEvent::new(
-                    KeyCode::Char('q'),
-                    KeyModifiers::CONTROL,
-                )))
-            });
-
-        let history_path = build_state.cargo_home.join(HISTORY_FILE);
-        let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
-        let result = edit_history_old(&history_path, &staging_path, &mock_reader);
-        dbg!(&result);
-        assert!(&result.is_ok());
     }
 
     #[cfg(not(windows))]

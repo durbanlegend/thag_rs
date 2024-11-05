@@ -307,11 +307,23 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.to_string()
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct KeyDisplayLine {
     pub seq: usize,
     pub keys: &'static str, // Or String if you plan to modify the keys later
     pub desc: &'static str, // Or String for modifiability
+}
+
+impl PartialOrd for KeyDisplayLine {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        usize::partial_cmp(&self.seq, &other.seq)
+    }
+}
+
+impl Ord for KeyDisplayLine {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        usize::cmp(&self.seq, &other.seq)
+    }
 }
 
 impl KeyDisplayLine {

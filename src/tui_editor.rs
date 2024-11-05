@@ -496,12 +496,13 @@ where
     let add = display.add_keys;
     // Can't make these OnceLock values, since their configuration depends on the `remove`
     // and `add` values passed in by the caller.
-    let adjusted_mappings: Vec<KeyDisplayLine> = MAPPINGS
+    let mut adjusted_mappings: Vec<KeyDisplayLine> = MAPPINGS
         .iter()
         .filter(|&row| !remove.contains(&row.keys))
         .chain(add.iter())
         .cloned()
         .collect();
+    adjusted_mappings.sort();
     let (max_key_len, max_desc_len) =
         adjusted_mappings
             .iter()
@@ -633,27 +634,48 @@ where
                     textarea.paste();
                 }
                 key!(ctrl - f) | key!(right) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Forward);
                 }
                 key!(ctrl - b) | key!(left) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Back);
                 }
                 key!(ctrl - p) | key!(up) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Up);
                 }
                 key!(ctrl - n) | key!(down) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Down);
                 }
                 key!(alt - f) | key!(ctrl - right) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::WordForward);
                 }
                 key!(alt - shift - f) => {
                     textarea.move_cursor(CursorMove::WordEnd);
                 }
                 key!(alt - b) | key!(ctrl - left) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::WordBack);
                 }
                 key!(alt - p) | key!(alt - ')') | key!(ctrl - up) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::ParagraphBack);
                 }
                 key!(alt - n) | key!(alt - '(') | key!(ctrl - down) => {
@@ -684,7 +706,17 @@ where
                     textarea.move_cursor(CursorMove::Bottom);
                 }
                 key!(alt - c) => {
-                    textarea.cancel_selection();
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    } else {
+                        textarea.start_selection();
+                    }
+                }
+                // key!(alt - shift - c) => {
+                //     textarea.start_selection();
+                // }
+                key!(alt - shift - a) => {
+                    textarea.select_all();
                 }
                 key!(ctrl - t) => {
                     // Toggle highlighting colours
@@ -1165,65 +1197,70 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
         "Shift+Ctrl+arrow keys",
         "Select/deselect words (←→) or paras (↑↓)"
     ),
-    (40, "Alt+c", "Cancel selection"),
-    (50, "Ctrl+d", "Submit"),
-    (60, "Ctrl+q", "Cancel and quit"),
-    (70, "Ctrl+h, Backspace", "Delete character before cursor"),
-    (80, "Ctrl+i, Tab", "Indent"),
-    (90, "Ctrl+m, Enter", "Insert newline"),
-    (100, "Ctrl+k", "Delete from cursor to end of line"),
-    (110, "Ctrl+j", "Delete from cursor to start of line"),
+    (40, "Alt+a", "Select all"),
     (
-        120,
+        50,
+        "Alt+c",
+        "Toggle selection mode: start selecting / cancel selection"
+    ),
+    (60, "Ctrl+d", "Submit"),
+    (70, "Ctrl+q", "Cancel and quit"),
+    (80, "Ctrl+h, Backspace", "Delete character before cursor"),
+    (90, "Ctrl+i, Tab", "Indent"),
+    (100, "Ctrl+m, Enter", "Insert newline"),
+    (110, "Ctrl+k", "Delete from cursor to end of line"),
+    (120, "Ctrl+j", "Delete from cursor to start of line"),
+    (
+        130,
         "Ctrl+w, Alt+Backspace",
         "Delete one word before cursor"
     ),
-    (130, "Alt+d, Delete", "Delete one word from cursor position"),
-    (140, "Ctrl+u", "Undo"),
-    (150, "Ctrl+r", "Redo"),
-    (160, "Ctrl+c", "Copy (yank) selected text"),
-    (170, "Ctrl+x", "Cut (yank) selected text"),
-    (180, "Ctrl+y", "Paste yanked text"),
+    (140, "Alt+d, Delete", "Delete one word from cursor position"),
+    (150, "Ctrl+u", "Undo"),
+    (160, "Ctrl+r", "Redo"),
+    (170, "Ctrl+c", "Copy (yank) selected text"),
+    (180, "Ctrl+x", "Cut (yank) selected text"),
+    (190, "Ctrl+y", "Paste yanked text"),
     (
-        190,
+        200,
         "Ctrl+v, Shift+Ins, Cmd+v",
         "Paste from system clipboard"
     ),
-    (200, "Ctrl+f, →", "Move cursor forward one character"),
-    (210, "Ctrl+b, ←", "Move cursor backward one character"),
-    (220, "Ctrl+p, ↑", "Move cursor up one line"),
-    (230, "Ctrl+n, ↓", "Move cursor down one line"),
-    (240, "Alt+f, Ctrl+→", "Move cursor forward one word"),
-    (250, "Alt+Shift+f", "Move cursor to next word end"),
-    (260, "Atl+b, Ctrl+←", "Move cursor backward one word"),
-    (270, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
-    (280, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
+    (210, "Ctrl+f, →", "Move cursor forward one character"),
+    (220, "Ctrl+b, ←", "Move cursor backward one character"),
+    (230, "Ctrl+p, ↑", "Move cursor up one line"),
+    (240, "Ctrl+n, ↓", "Move cursor down one line"),
+    (250, "Alt+f, Ctrl+→", "Move cursor forward one word"),
+    (260, "Alt+Shift+f", "Move cursor to next word end"),
+    (270, "Atl+b, Ctrl+←", "Move cursor backward one word"),
+    (280, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
+    (290, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
     (
-        290,
+        300,
         "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
         "Move cursor to end of line"
     ),
     (
-        300,
+        310,
         "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
         "Move cursor to start of line"
     ),
-    (310, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
+    (320, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
     (
-        320,
+        330,
         "Alt+>, Ctrl+Alt+n or ↓",
         "Move cursor to bottom of file"
     ),
-    (330, "PageDown, Cmd+↓", "Page down"),
-    (340, "Alt+v, PageUp, Cmd+↑", "Page up"),
-    (350, "Ctrl+l", "Toggle keys display (this screen)"),
-    (360, "Ctrl+t", "Toggle selection highlight colours"),
-    (370, "F7", "Previous in history"),
-    (380, "F8", "Next in history"),
+    (340, "PageDown, Cmd+↓", "Page down"),
+    (350, "Alt+v, PageUp, Cmd+↑", "Page up"),
+    (360, "Ctrl+l", "Toggle keys display (this screen)"),
+    (370, "Ctrl+t", "Toggle selection highlight colours"),
+    (380, "F7", "Previous in history"),
+    (390, "F8", "Next in history"),
     (
-        390,
+        400,
         "F9",
         "Suspend mouse capture and line numbers for system copy"
     ),
-    (400, "F10", "Resume mouse capture and line numbers"),
+    (410, "F10", "Resume mouse capture and line numbers"),
 ];

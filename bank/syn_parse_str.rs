@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-quote = "1.0.36"
+quote = "1.0.37"
 syn = { version = "2.0.87", features = ["extra-traits", "full"] }
 */
 

@@ -7,26 +7,21 @@
 - [ ]  Simple demo https server
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Raise clear_screen as an issue on supports-color crate?
-- [ ]  Add FAQ
 - [ ]  cat demo/fizz_buzz_gpt.rs | while read l; do thag_rs -qe "println!(\"{}\", \"$l\".to_uppercase());"; done
 - [ ]  Config option for formatting main?
 - [ ]  Config option for stdin -d highlighting preference, like repl.rs
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Decommission repl.rs edit_history_old.
 - [ ]  >>> Implement deletion of current history line with function key.
-- [ ]  Look for any functions that can run at compile-time.
+- [ ]  Look for any functions that can run at compile time.
 - [ ]  Make key_handler a trait method? Or a closure?
-- [ ]  FAQs: Periodically update toml blocks by commenting entries out with # to get latest versions
-             Missing toml entries are not pulled in for crates without use. If you want such a crate to work without a toml block
-             or to pull in a toml entry for it, you will need to convert the qualified name to use or redundantly add a
-             use <crate_name>::; statement for it. You can remove this once it's got an entry in the toml block.
+- [ ]  Add FAQ? See Usage notes in Readme.
 - [ ]  Try and figure out a way for thag_rs to test proc macros - and maybe to show the generated output?
         - could do an expand option that builds the file and calls cargo expand with --manifest-path <build_state.cargo_toml_path>
         - consider a dedicated installable thag_rs proc library - maybe configurable location specified in config.toml, with preferred theme.
             Source files need to import this with path in toml file or even allow a git option.
             Prototype this!
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
-- [ ]  Consider forking crate tui_file_dialog.rs for `ratatui`.
 - [ ]  Trim dependencies, e.g. regex
 - [ ]  Try going back to derive macro with declarative macro to expand the attributes. Problem with attrib macro is the AST isn't
         editable in the way we want, it just points to spans that get resolved later. See bank/syn_parse_mappings.rs for nice format;

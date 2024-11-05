@@ -2836,7 +2836,7 @@ which will give identical output to the above.
 
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
  Rust source program passed to the script. Specifically the combination of fn `visit_item_extern_crate`
- to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
+ to process the nodes representing `extern crate` statements and fn `visit_file` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
 
 **Purpose:** Demo featured crate.
@@ -2887,7 +2887,7 @@ which will give identical output to the above.
 
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
  Rust source program passed to the script. Specifically the combination of fn `visit_use_path`
- to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
+ to process the nodes representing `use` statements and fn `visit_file` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
 
 **Purpose:** Demo featured crate.
@@ -2905,7 +2905,7 @@ which will give identical output to the above.
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that exist
  for the purpose of renaming a dependency so that we don't go looking for the temporary in the registry.
  Specifically the combination of fn `visit_use_rename` to process the nodes representing `extern crate`
- statements and fn `visit_expr` to initiate the tree traversal. This version expects the script contents
+ statements and fn `` to initiate the tree traversal. This version expects the script contents
  to consist of a full-fledged Rust program.
 
 **Purpose:** Demo featured crate.
@@ -2915,6 +2915,23 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs)
+
+---
+
+### Script: syn_visit_use_tree_file.rs
+
+**Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
+ Rust source program passed to the script. Specifically the combination of fn `visit_use_tree`
+ to process the nodes representing `use` statements and fn `` to initiate the tree
+ traversal. This version expects the script contents to consist of a full-fledged Rust program.
+
+**Purpose:** Develop improved algorithm for `thag_rs` that accepts imports of the form `use <crate>;` instead of requiring `use <crate>::...`.
+
+**Crates:** `syn`
+
+**Type:** Program
+
+**Link:** [syn_visit_use_tree_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs)
 
 ---
 
@@ -2955,7 +2972,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo theme detection with `termbg` and clearing terminal state with `crossterm`.
 
-**Crates:** `crossterm`
+**Crates:** `simplelog`, `thag_rs`
 
 **Type:** Program
 
@@ -3305,7 +3322,7 @@ which will give identical output to the above.
 
 ### Script: win_test_supports_color.rs
 
-**Description:**  This seems to intermittently swallow the very first character entered in Windows.
+**Description:**  This seems to intermittently swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
@@ -3319,7 +3336,7 @@ which will give identical output to the above.
 
 ### Script: win_test_termbg.rs
 
-**Description:**  This seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
@@ -3331,7 +3348,7 @@ which will give identical output to the above.
 
 ### Script: win_test_termbg_reset.rs
 
-**Description:**  This still seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This still seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
  The `crossterm` reset doesn't seem to help. My disappointment is immeasurable and
  my day is ruined.
 
@@ -3347,7 +3364,7 @@ which will give identical output to the above.
 
 ### Script: win_test_termbg_thag.rs
 
-**Description:**  This seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
@@ -3361,7 +3378,7 @@ which will give identical output to the above.
 
 ### Script: win_test_terminal_light.rs
 
-**Description:**  This seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This seems to "reliably" swallow the very first character entered in Window, prior to `termbg` 0.6.0..
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 

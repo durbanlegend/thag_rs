@@ -11,29 +11,29 @@ use crate::{
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
 use regex::Regex;
-use std::any::Any;
-use std::collections::HashMap;
-use std::fs::{remove_dir_all, remove_file, OpenOptions};
-use std::hash::BuildHasher;
+use std::{
+    any::Any,
+    collections::HashMap,
+    fs::{self, remove_dir_all, remove_file, OpenOptions},
+    hash::BuildHasher,
+    io::{self, BufRead, Write},
+    option::Option,
+    path::{Path, PathBuf},
+    process::{self, Output},
+    time::{Instant, SystemTime},
+};
 
-use std::io::{self, BufRead, Write};
-use std::option::Option;
-use std::path::{Path, PathBuf};
-use std::process::Output;
-use std::time::{Instant, SystemTime};
-use std::{fs, process};
-use syn::Type::Tuple;
 use syn::{
     visit::Visit,
     visit_mut::{self, VisitMut},
+    AttrStyle,
     BinOp::{
         AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, DivAssign, MulAssign, RemAssign,
         ShlAssign, ShrAssign, SubAssign,
     },
-};
-use syn::{
-    AttrStyle, Expr, ExprBlock, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt, UsePath,
-    UseRename,
+    Expr, ExprBlock, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt,
+    Type::Tuple,
+    UseRename, UseTree,
 };
 
 // From burntsushi at `https://github.com/rust-lang/regex/issues/709`
@@ -208,17 +208,23 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
         use_crates: Vec<String>,
     }
     impl<'a> Visit<'a> for FindCrates {
-        fn visit_use_path(&mut self, node: &'a UsePath) {
-            profile_fn!(visit_use_path);
-            let node_name = node.ident.to_string();
+        fn visit_use_tree(&mut self, node: &'a syn::UseTree) {
+            profile_fn!(visit_use_tree);
+            let maybe_node_name = match node {
+                UseTree::Path(use_path) => Some(use_path.ident.to_string()),
+                UseTree::Name(use_name) => Some(use_name.ident.to_string()),
+                _ => None,
+            };
             // See for instance Constraint and Keyword in demo/tui_scrollview.rs.
-            if let Some(c) = node_name.chars().nth(0) {
-                if c.is_uppercase() {
-                    debug_log!("Assuming capitalised use name {} is not a crate", node_name);
-                    return;
+            if let Some(node_name) = maybe_node_name {
+                if let Some(c) = node_name.chars().nth(0) {
+                    if c.is_uppercase() {
+                        debug_log!("Assuming capitalised use name {} is not a crate", node_name);
+                        return;
+                    }
                 }
+                self.use_crates.push(node_name);
             }
-            self.use_crates.push(node_name);
         }
     }
 

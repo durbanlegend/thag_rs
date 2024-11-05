@@ -400,6 +400,12 @@ When using a git dependency that resides on GitHub, you may need to specify the 
 
 If you make changes to the dependency but not to the script, you need to specify -f to rebuild the script so that it will pick up the changed dependency.
 
+### Other dependency tips
+
+Missing toml entries are not pulled in for crates that are only referenced by qualified paths instead of being imported with `use`. In this case you need to add either a toml block entry or at least one "redundant" `use <crate>...;` statement for the crate.
+
+If you want to ensure that a dependency in a TOML block is up to date, you can get the latest version in copyable format by issuing `cargo search <crate> [--limit 1]` from the command line. Alternatively, comment it out temporarily with a hash (`#`) and let `thag -c` do the search for you.
+
 ## Platform Support
 This crate is designed to be cross-platform and supports MacOS, Linux and Windows.
 

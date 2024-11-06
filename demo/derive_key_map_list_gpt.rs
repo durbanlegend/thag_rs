@@ -1,9 +1,9 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+thag_demo_proc_macros = { path = "/Users/donf/projects/thag_rs/demo/proc_macros" }
 */
 
-use thag_proc_macros::DeriveKeyMapList;
+use thag_demo_proc_macros::DeriveKeyMapList;
 
 const MAPPINGS: [(i32, &str, &str); 7] = [
     (10, "Key bindings", "Description"),

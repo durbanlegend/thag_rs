@@ -17,6 +17,7 @@ use std::{
     io::{self, BufRead},
     path::PathBuf,
     process::{Command, Output},
+    str::FromStr,
     time::Instant,
 };
 
@@ -286,8 +287,17 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
             );
             if let Some(ref demo_proc_macros_dir) = maybe_demo_proc_macros_dir {
                 cvprtln!(Lvl::BRI, V::V, "Found {demo_proc_macros_dir:#?}.");
+                let path = PathBuf::from_str(demo_proc_macros_dir).expect(&format!(
+                    "Could not parse string {demo_proc_macros_dir} into a pathname"
+                ));
+                let path = if path.is_absolute() {
+                    path
+                } else {
+                    path.canonicalize()
+                        .expect(&format!("Could not canonicalize path {}", path.display()))
+                };
                 let dep = Dependency::Detailed(Box::new(DependencyDetail {
-                    path: maybe_demo_proc_macros_dir,
+                    path: Some(path.display().to_string()),
                     ..Default::default()
                 }));
                 rs_dep_map.insert(dep_name.clone(), dep);

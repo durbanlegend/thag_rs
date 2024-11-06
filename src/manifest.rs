@@ -278,34 +278,42 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
             );
             let maybe_demo_proc_macros_dir = maybe_config().map_or_else(
                 || {
-                    panic!(r#"Missing config file, required for "use thag_demo_proc_macros;"."#);
+                    debug_log!(r#"Missing config file for "use thag_demo_proc_macros;", defaulting to "demo/proc_macros"."#);
+                    Some("demo/proc_macros".to_string())
                 },
                 |config| {
                     debug_log!("Found config.proc_macros()={:#?}", config.proc_macros);
                     config.proc_macros.proc_macro_crate_path
                 },
             );
-            if let Some(ref demo_proc_macros_dir) = maybe_demo_proc_macros_dir {
+            let demo_proc_macros_dir = if let Some(ref demo_proc_macros_dir) =
+                maybe_demo_proc_macros_dir
+            {
                 cvprtln!(Lvl::BRI, V::V, "Found {demo_proc_macros_dir:#?}.");
-                let path = PathBuf::from_str(demo_proc_macros_dir).expect(&format!(
-                    "Could not parse string {demo_proc_macros_dir} into a pathname"
-                ));
-                let path = if path.is_absolute() {
-                    path
-                } else {
-                    path.canonicalize()
-                        .expect(&format!("Could not canonicalize path {}", path.display()))
-                };
-                let dep = Dependency::Detailed(Box::new(DependencyDetail {
-                    path: Some(path.display().to_string()),
-                    ..Default::default()
-                }));
-                rs_dep_map.insert(dep_name.clone(), dep);
+                demo_proc_macros_dir
             } else {
-                panic!(
-                    r#"Missing `config.proc_macros.proc_macro_crate_path` in config file, required for "use thag_demo_proc_macros;"."#
+                cvprtln!(
+                    Lvl::BRI,
+                    V::V,
+                    r#"Missing `config.proc_macros.proc_macro_crate_path` in config file for "use thag_demo_proc_macros;": defaulting to "demo/proc_macros"."#
                 );
-            }
+                "demo/proc_macros"
+            };
+
+            let path = PathBuf::from_str(demo_proc_macros_dir).expect(&format!(
+                "Could not parse string {demo_proc_macros_dir} into a pathname"
+            ));
+            let path = if path.is_absolute() {
+                path
+            } else {
+                path.canonicalize()
+                    .expect(&format!("Could not canonicalize path {}", path.display()))
+            };
+            let dep = Dependency::Detailed(Box::new(DependencyDetail {
+                path: Some(path.display().to_string()),
+                ..Default::default()
+            }));
+            rs_dep_map.insert(dep_name.clone(), dep);
             continue;
         }
 

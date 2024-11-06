@@ -1,8 +1,4 @@
-/*[toml]
-[dependencies]
-thag_demo_proc_macros = { path = "/Users/donf/projects/thag_rs/demo/proc_macros" }
-*/
-
+// "use thag_demo_proc_macros..." is a magic import that will be substituted by proc_macros.proc_macro_crate_path in your config file.
 use thag_demo_proc_macros::DeriveKeyMapList;
 
 const MAPPINGS: [(i32, &str, &str); 7] = [

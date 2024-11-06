@@ -1,5 +1,4 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::colors::TuiSelectionBg;
 use crate::tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay};
 use crate::{
     debug_log, regex, vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError,
@@ -17,7 +16,6 @@ use std::{
     path::PathBuf,
 };
 use strum::{EnumIter, EnumString, IntoStaticStr};
-use tui_textarea::TextArea;
 
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(
@@ -210,25 +208,6 @@ pub fn normalize_newlines(input: &str) -> String {
     let re: &Regex = regex!(r"\r\n?");
 
     re.replace_all(input, "\n").to_string()
-}
-
-/// Apply highlights to the text depending on the light or dark theme as detected, configured
-/// or defaulted, or as toggled by the user with Ctrl-t.
-pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
-    match scheme {
-        TuiSelectionBg::BlueYellow => {
-            // Dark theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
-            textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
-            textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
-        }
-        TuiSelectionBg::RedWhite => {
-            // Light theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
-            textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
-            textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
-        }
-    }
 }
 
 /// Open the history file in an editor.

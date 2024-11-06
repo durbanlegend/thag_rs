@@ -157,17 +157,6 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     (color_support.as_ref(), term_theme)
 }
 
-/// Initializes and returns the TUI selection background coloring.
-pub fn tui_selection_bg(term_theme: &TermTheme) -> TuiSelectionBg {
-    static TUI_SELECTION_BG: OnceLock<TuiSelectionBg> = OnceLock::new();
-    TUI_SELECTION_BG
-        .get_or_init(|| match term_theme {
-            TermTheme::Light => TuiSelectionBg::BlueYellow,
-            _ => TuiSelectionBg::RedWhite,
-        })
-        .clone()
-}
-
 #[macro_export]
 macro_rules! generate_styles {
     (
@@ -524,16 +513,6 @@ pub enum TermTheme {
     Dark,
     #[default]
     None,
-}
-
-/// An enum to categorise the current TUI editor highlighting scheme for the selected
-/// line as configured or defaulted.
-#[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq, Eq)]
-#[strum(serialize_all = "snake_case")]
-pub enum TuiSelectionBg {
-    #[default]
-    BlueYellow,
-    RedWhite,
 }
 
 /// An enum to categorise the supported message types for display.

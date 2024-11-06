@@ -135,8 +135,8 @@ pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
         let captures = re.captures(first_line).unwrap();
         let name = captures.get(1).unwrap().as_str();
         let version = captures.get(2).unwrap().as_str();
-        // log!(V::N, "Dependency name: {}", name);
-        // log!(V::N, "Dependency version: {}", version);
+        // vlog!(V::N, "Dependency name: {}", name);
+        // vlog!(V::N, "Dependency version: {}", version);
         (String::from(name), String::from(version))
     } else {
         vlog!(V::QQ, "Not a valid Cargo dependency format.");

@@ -2,10 +2,6 @@
 mod tests {
     use std::path::PathBuf;
 
-    // use mockall::predicate::*;
-    // use mockall::*; // Ensure you have mockall imported
-    // use std::fs;
-    // use std::path::PathBuf;
     use thag_rs::{
         colors::{ColorSupport, TermTheme},
         config::{self, MockContext},

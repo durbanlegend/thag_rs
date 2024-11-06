@@ -260,14 +260,7 @@ impl<'a> FileDialog<'a> {
                 let input_area = input_block.inner(chunks[0]); // Adjusts area to fit within borders
                 f.render_widget(input_block, chunks[0]);
 
-                // Determine if the filename input has focus
-
                 // Conditionally show the cursor only if the input box has focus
-                // self.input.set_cursor_line_style(if input_focus {
-                //     Style::default().fg(Color::DarkGray)
-                // } else {
-                //     Style::default().fg(Color::DarkGray) // Cursor won't be visible when not focused
-                // });
                 self.input
                     .set_cursor_line_style(Style::default().fg(Color::DarkGray));
                 if input_focus {
@@ -404,7 +397,6 @@ impl<'a> FileDialog<'a> {
                         {
                             return self.show_hidden;
                         }
-                        // if e.is_dir() || self.filter.is_none() {
                         if self.filter.is_none()
                             || matches!(self.filter, Some(FilePattern::Extension(_)))
                         {
@@ -414,18 +406,9 @@ impl<'a> FileDialog<'a> {
                             FilePattern::Extension(ext) => e.extension().map_or(false, |e| {
                                 e.to_ascii_lowercase() == OsString::from(ext.to_ascii_lowercase())
                             }),
-                            FilePattern::Substring(substr) => {
-                                // let file_name = e
-                                //     .file_name()
-                                //     .expect("Error getting file name")
-                                //     .to_string_lossy();
-                                // debug_log!(
-                                //     "substr={substr}, e.file_name()={file_name}, match={}",
-                                //     file_name.contains(substr)
-                                // );
-                                e.file_name()
-                                    .map_or(false, |n| n.to_string_lossy().contains(substr))
-                            }
+                            FilePattern::Substring(substr) => e
+                                .file_name()
+                                .map_or(false, |n| n.to_string_lossy().contains(substr)),
                         }
                     })
                     .map(|file| {

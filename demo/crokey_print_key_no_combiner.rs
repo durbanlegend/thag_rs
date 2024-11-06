@@ -11,7 +11,7 @@ toml = "0.5"
 use {
     crokey::*,
     crossterm::{
-        event::{read, Event},
+        event::{read, Event, KeyEventKind},
         style::Stylize,
         terminal,
     },
@@ -19,13 +19,17 @@ use {
 
 pub fn main() {
     let fmt = KeyCombinationFormat::default();
+    terminal::enable_raw_mode().unwrap();
     println!("Type any key combination (remember that your terminal intercepts many ones)");
     loop {
-        terminal::enable_raw_mode().unwrap();
         let e = read();
-        terminal::disable_raw_mode().unwrap();
+        // terminal::disable_raw_mode().unwrap();
         match e {
             Ok(Event::Key(key_event)) => {
+                if key_event.kind == KeyEventKind::Release {
+                    continue;
+                }
+                println!("event={e:?}");
                 let key_combination = key_event.into();
                 let key = fmt.to_string(key_combination);
                 match key_combination {
@@ -37,9 +41,9 @@ pub fn main() {
                         println!("You typed {} which gracefully quits", key.green());
                         break;
                     }
-                    key!('?') | key!(shift - '?') => {
-                        println!("{}", "There's no help on this app".red());
-                    }
+                    // key!('?') | key!(shift - '?') => {
+                    //     println!("{}", "There's no help on this app".red());
+                    // }
                     _ => {
                         println!("You typed {}", key.blue());
                     }
@@ -52,4 +56,5 @@ pub fn main() {
             }
         }
     }
+    terminal::disable_raw_mode().unwrap();
 }

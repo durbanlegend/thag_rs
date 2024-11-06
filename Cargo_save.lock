@@ -607,7 +607,7 @@ dependencies = [
 name = "fastrand"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e51093e27b0797c359783294ca4f0a911c270184cb10f85783b118614a1501be"
+checksum = "e51093e27b0797c359783294ca4f0a911c2.0.87cb10f85783b118614a1501be"
 dependencies = [
  "instant",
 ]

@@ -7,11 +7,11 @@ edit = "0.1.5"
 lazy_static = "1.4.0"
 mockall = "0.13.0"
 ratatui = "0.28.1"
-reedline = "0.35.0"
+reedline = "0.36.0"
 regex = "1.10.4"
 scopeguard = "1.2.0"
 serde = "1.0.210"
-serde_json = "1.0.128"
+serde_json = "1.0.132"
 strum = "0.26.3"
 thag_rs = { path = "/Users/donf/projects/thag_rs/" }
 tui-textarea = { version = "0.6", features = ["search"] }
@@ -466,7 +466,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
+            .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting")
             .title_style(Style::from(&Lvl::HEAD).bold(),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
@@ -689,7 +689,7 @@ pub fn edit_new<R: EventReader>(event_reader: &R) -> ThagResult<Vec<String>> {
     textarea.set_block(
         Block::default()
             .borders(Borders::NONE)
-            .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlights")
+            .title("Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting")
             .title_style(Style::from(&Lvl::HEAD).bold()),
     );
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));

@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 nu-ansi-term = "0.50.1"
-reedline = "0.35.0"
+reedline = "0.36.0"
 */
 
 /// Published demo from `reedline` crate.

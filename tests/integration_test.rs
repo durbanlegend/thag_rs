@@ -31,10 +31,10 @@ thag_rs = {{ path = {thag_rs_path:#?} }}
 */
 use nu_ansi_term::Style;
 use thag_rs::colors::Lvl;
-use thag_rs::log;
+use thag_rs::vlog;
 use thag_rs::logging::Verbosity;
 fn main() {{
-    log!(Verbosity::Normal, "Style::from(&Lvl::EMPH)={{:#?}}", Style::from(&Lvl::EMPH));
+    vlog!(Verbosity::Normal, "Style::from(&Lvl::EMPH)={{:#?}}", Style::from(&Lvl::EMPH));
 }}"#
     )?;
 

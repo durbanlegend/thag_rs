@@ -1,27 +1,24 @@
-use crate::cmd_args::{get_proc_flags, validate_args, Cli, ProcFlags};
 use crate::code_utils::{
-    self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest, process_expr,
+    self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest,
     read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
-use crate::colors::{coloring, gen_mappings, Lvl};
-use crate::config::{self, maybe_config, RealContext};
-use crate::logging::{is_debug_logging_enabled, Verbosity};
-use crate::manifest;
-use crate::regex;
+use crate::colors::gen_mappings;
+use crate::config::{self, RealContext};
+use crate::logging::is_debug_logging_enabled;
 use crate::repl::run_repl;
-use crate::shared::{debug_timings, display_timings, Ast, BuildState};
-use crate::stdin::{self, edit, read};
-use crate::tui_editor::CrosstermEventReader;
+use crate::stdin::{edit, read};
 use crate::{
-    debug_log, log, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
-    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, VERSION,
+    coloring, cvprtln, debug_log, debug_timings, display_timings, get_proc_flags, manifest,
+    maybe_config, regex, validate_args, vlog, Ast, BuildState, Cli, CrosstermEventReader, Lvl,
+    ProcFlags, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
+    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V, VERSION,
 };
-
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
 use log::{log_enabled, Level::Debug};
 use nu_ansi_term::Style;
 use regex::Regex;
+use std::env::current_dir;
 use std::string::ToString;
 use std::{
     fs::{self, OpenOptions},
@@ -30,6 +27,7 @@ use std::{
     process::Command,
     time::Instant,
 };
+use syn::Expr;
 
 /// Execute the script runner.
 /// # Errors
@@ -63,15 +61,12 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     }
 
     let is_repl = args.repl;
-    let is_tui_repl = args.tui_repl;
-    let working_dir_path = if is_repl || is_tui_repl {
+    let working_dir_path = if is_repl {
         TMPDIR.join(REPL_SUBDIR)
     } else {
-        std::env::current_dir()?.canonicalize()?
+        current_dir()?.canonicalize()?
     };
     validate_args(args, &proc_flags)?;
-    // Not for tui_repl - history is solid and too expensive
-    // TODO May phase this out for repl, or phase out repl itself.
     let repl_source_path = if is_repl && args.script.is_none() {
         // Some(create_next_repl_file()?)
         let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
@@ -91,7 +86,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
     let is_loop = proc_flags.contains(ProcFlags::LOOP);
-    let is_dynamic = is_expr | is_stdin | is_edit | is_loop | is_tui_repl;
+    let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
     if is_dynamic {
         let _ = create_temp_source_file()?;
     }
@@ -197,7 +192,6 @@ fn process(
 ) -> ThagResult<()> {
     // profile_fn!(process);
     let is_repl = args.repl;
-    let is_tui_repl = args.tui_repl;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
@@ -208,9 +202,6 @@ fn process(
     if is_repl {
         debug_log!("build_state.source_path={:?}", build_state.source_path);
         run_repl(args, proc_flags, &mut build_state, start)
-    } else if is_tui_repl {
-        debug_log!("build_state.source_path={:?}", build_state.source_path);
-        stdin::run_repl(args, proc_flags, &mut build_state, start)
     } else if is_dynamic {
         let rs_source = if is_expr {
             // Consumes the expression argument
@@ -228,8 +219,11 @@ fn process(
             debug_log!("About to call stdin::edit()");
             let event_reader = CrosstermEventReader;
             let vec = edit(&event_reader)?;
-
             debug_log!("vec={vec:#?}");
+            if vec.is_empty() {
+                // User chose Quit
+                return Ok(());
+            }
             vec.join("\n")
         } else {
             assert!(is_stdin);
@@ -241,10 +235,10 @@ fn process(
             str
         };
 
-        log!(Verbosity::Verbose, "rs_source={rs_source}");
+        vlog!(V::V, "rs_source={rs_source}");
 
         let rs_manifest = extract_manifest(&rs_source, Instant::now())
-            // .map_err(|_err| ThagError::FromStr("Error parsing rs_source"))
+            // .map_err(|_err| "Error parsing rs_source")
             ?;
         build_state.rs_manifest = Some(rs_manifest);
 
@@ -267,6 +261,24 @@ fn process(
     } else {
         gen_build_run(args, proc_flags, &mut build_state, None::<Ast>, &start)
     }
+}
+
+/// Process a Rust expression
+/// # Errors
+/// Will return `Err` if there is any error encountered opening or writing to the file.
+pub fn process_expr(
+    expr_ast: Expr,
+    build_state: &mut BuildState,
+    rs_source: &str,
+    args: &Cli,
+    proc_flags: &ProcFlags,
+    start: &Instant,
+) -> ThagResult<()> {
+    let syntax_tree = Some(Ast::Expr(expr_ast));
+    write_source(&build_state.source_path, rs_source)?;
+    let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
+    vlog!(V::N, "{result:?}");
+    Ok(())
 }
 
 fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
@@ -334,6 +346,19 @@ pub fn gen_build_run(
         } else {
             syntax_tree
         };
+
+        if syntax_tree.is_none() {
+            cvprtln!(
+                Lvl::WARN,
+                V::QQ,
+                "If no useful error messages are shown below, try `rustfmt {0}` or `rustc {0}`.",
+                source_path
+                    .strip_prefix(current_dir()?)
+                    .map_err(|e| e.to_string())?
+                    .display()
+            );
+        }
+        // debug_log!("syntax_tree={syntax_tree:#?}");
 
         let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
 
@@ -454,12 +479,10 @@ pub fn gen_build_run(
         };
         generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
-        log!(
-            Verbosity::Normal,
-            "{}",
-            nu_ansi_term::Color::Yellow
-                // .bold()
-                .paint("Skipping unnecessary generation step.  Use --force (-f) to override.")
+        cvprtln!(
+            Lvl::EMPH,
+            V::N,
+            "Skipping unnecessary generation step.  Use --force (-f) to override."
         );
         // build_state.cargo_manifest = Some(default_manifest(build_state)?);
         build_state.cargo_manifest = None; // Don't need it in memory, build will find it on disk
@@ -467,12 +490,10 @@ pub fn gen_build_run(
     if build_state.must_build {
         build(proc_flags, build_state)?;
     } else {
-        log!(
-            Verbosity::Normal,
-            "{}",
-            nu_ansi_term::Color::Yellow
-                // .bold()
-                .paint("Skipping unnecessary cargo build step. Use --force (-f) to override.")
+        cvprtln!(
+            Lvl::EMPH,
+            V::N,
+            "Skipping unnecessary cargo build step.  Use --force (-f) to override."
         );
     }
     if proc_flags.contains(ProcFlags::RUN) {
@@ -491,7 +512,7 @@ pub fn gen_build_run(
 /// # Errors
 ///
 /// Will return `Err` if there is an error creating the directory path, writing to the
-/// target source or `Cargo.toml` file or formatting the source file with rustfmt.
+/// target source or `Cargo.toml` file or formatting the source file with `prettyplease`.
 ///
 /// # Panics
 ///
@@ -518,10 +539,7 @@ pub fn generate(
 
     let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
     // let is_repl = proc_flags.contains(ProcFlags::REPL);
-    log!(
-        Verbosity::Verbose,
-        "GGGGGGGG Creating source file: {target_rs_path:?}"
-    );
+    vlog!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {
         profile_section!(transform);
@@ -530,15 +548,12 @@ pub fn generate(
         write_source(&target_rs_path, &rs_source)?;
     }
 
-    // debug_log!("cargo_toml_path will be {:?}", &build_state.cargo_toml_path);
-    if !Path::try_exists(&build_state.cargo_toml_path)? {
-        OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&build_state.cargo_toml_path)?;
+    // Remove any existing Cargo.lock as this may raise spurious compatibility issues with new dependency versions.
+    let lock_path = &build_state.target_dir_path.join("Cargo.lock");
+    eprintln!("Lock path {lock_path:?} exists? - {}", lock_path.exists());
+    if lock_path.exists() {
+        fs::remove_file(lock_path)?;
     }
-
-    // debug_log!("cargo_toml: {cargo_toml:?}");
 
     let manifest = &build_state
         .cargo_manifest
@@ -551,12 +566,14 @@ pub fn generate(
         code_utils::disentangle(cargo_manifest_str)
     );
 
-    let mut toml_file = fs::File::create(&build_state.cargo_toml_path)?;
+    // Create or truncate the Cargo.toml file and write the content
+    let mut toml_file = OpenOptions::new()
+        .write(true)
+        .create(true) // Creates the file if it doesn't exist
+        .truncate(true) // Ensures the file is emptied if it exists
+        .open(&build_state.cargo_toml_path)?;
+
     toml_file.write_all(cargo_manifest_str.as_bytes())?;
-    // if is_debug_logging_enabled() {
-    //     debug_log!("cargo_toml_path={:?}", &build_state.cargo_toml_path);
-    //     debug_log!("##### Cargo.toml generation succeeded");
-    // }
     display_timings(&start_gen, "Completed generation", proc_flags);
 
     Ok(())
@@ -607,8 +624,8 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
     cargo_command.args(&args); // .current_dir(build_dir);
 
     // Show sign of life in case build takes a while
-    log!(
-        Verbosity::Normal,
+    vlog!(
+        V::N,
         "{} {} ...",
         if check { "Checking" } else { "Building" },
         Style::from(&Lvl::EMPH).paint(&build_state.source_name)
@@ -694,22 +711,14 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     fs::rename(executable_path, output_path)?;
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
 
-    log!(
-        Verbosity::Quieter,
+    vlog!(
+        V::QQ,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
     );
 
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
     Ok(())
 }
 
@@ -741,19 +750,11 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
 
     let _exit_status = run_command.spawn()?.wait()?;
 
-    log!(
-        Verbosity::Quiet,
-        "{}",
-        nu_ansi_term::Color::Yellow.paint(&dash_line)
-    );
+    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
 
     // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");

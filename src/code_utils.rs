@@ -3,46 +3,37 @@
     clippy::implicit_return,
     clippy::missing_trait_methods
 )]
-use crate::builder::gen_build_run;
-use crate::cmd_args::{Cli, ProcFlags};
-
-use crate::debug_log;
-use crate::errors::{ThagError, ThagResult};
-use crate::logging::V;
-use crate::shared::debug_timings;
-use crate::shared::{Ast, BuildState};
-use crate::{log, Lvl};
-use crate::{DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
+use crate::{
+    cvprtln, debug_log, debug_timings, vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult,
+    DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
+};
 
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
-use nu_ansi_term::Style;
 use regex::Regex;
-use std::any::Any;
-use std::collections::HashMap;
-use std::fs::{remove_dir_all, remove_file, OpenOptions};
-use std::hash::BuildHasher;
+use std::{
+    any::Any,
+    collections::HashMap,
+    fs::{self, remove_dir_all, remove_file, OpenOptions},
+    hash::BuildHasher,
+    io::{self, BufRead, Write},
+    option::Option,
+    path::{Path, PathBuf},
+    process::{self, Output},
+    time::{Instant, SystemTime},
+};
 
-use std::io::BufRead;
-use std::io::{self, Write};
-use std::option::Option;
-use std::path::{Path, PathBuf};
-
-use std::process::Output;
-use std::time::{Instant, SystemTime};
-use std::{fs, process};
-use syn::Type::Tuple;
 use syn::{
     visit::Visit,
     visit_mut::{self, VisitMut},
+    AttrStyle,
     BinOp::{
         AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, DivAssign, MulAssign, RemAssign,
         ShlAssign, ShrAssign, SubAssign,
     },
-};
-use syn::{
-    AttrStyle, Expr, ExprBlock, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt, UsePath,
-    UseRename,
+    Expr, ExprBlock, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt,
+    Type::Tuple,
+    UseRename, UseTree,
 };
 
 // From burntsushi at `https://github.com/rust-lang/regex/issues/709`
@@ -217,17 +208,23 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
         use_crates: Vec<String>,
     }
     impl<'a> Visit<'a> for FindCrates {
-        fn visit_use_path(&mut self, node: &'a UsePath) {
-            profile_fn!(visit_use_path);
-            let node_name = node.ident.to_string();
+        fn visit_use_tree(&mut self, node: &'a syn::UseTree) {
+            profile_fn!(visit_use_tree);
+            let maybe_node_name = match node {
+                UseTree::Path(use_path) => Some(use_path.ident.to_string()),
+                UseTree::Name(use_name) => Some(use_name.ident.to_string()),
+                _ => None,
+            };
             // See for instance Constraint and Keyword in demo/tui_scrollview.rs.
-            if let Some(c) = node_name.chars().nth(0) {
-                if c.is_uppercase() {
-                    debug_log!("Assuming capitalised use name {} is not a crate", node_name);
-                    return;
+            if let Some(node_name) = maybe_node_name {
+                if let Some(c) = node_name.chars().nth(0) {
+                    if c.is_uppercase() {
+                        debug_log!("Assuming capitalised use name {} is not a crate", node_name);
+                        return;
+                    }
                 }
+                self.use_crates.push(node_name);
             }
-            self.use_crates.push(node_name);
         }
     }
 
@@ -460,24 +457,6 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
     expr
 }
 
-/// Process a Rust expression
-/// # Errors
-/// Will return `Err` if there is any errors encountered opening or writing to the file.
-pub fn process_expr(
-    expr_ast: Expr,
-    build_state: &mut BuildState,
-    rs_source: &str,
-    args: &Cli,
-    proc_flags: &ProcFlags,
-    start: &Instant,
-) -> ThagResult<()> {
-    let syntax_tree = Some(Ast::Expr(expr_ast));
-    write_source(&build_state.source_path, rs_source)?;
-    let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
-    log!(V::N, "{result:?}");
-    Ok(())
-}
-
 /// Convert a Path to a string value, assuming the path contains only valid characters.
 /// # Errors
 /// Will return `Err` if there is any error caused by invalid characters in the path name.
@@ -518,15 +497,15 @@ pub fn display_output(output: &Output) -> ThagResult<()> {
     // let stdout = output.stdout;
 
     // Print the captured stdout
-    log!(V::N, "Captured stdout:");
+    vlog!(V::N, "Captured stdout:");
     for result in output.stdout.lines() {
-        log!(V::N, "{}", result?);
+        vlog!(V::N, "{}", result?);
     }
 
     // Print the captured stderr
-    log!(V::N, "Captured stderr:");
+    vlog!(V::N, "Captured stderr:");
     for result in output.stderr.lines() {
-        log!(V::N, "{}", result?);
+        vlog!(V::N, "{}", result?);
     }
     Ok(())
 }
@@ -574,7 +553,7 @@ pub fn modified_since_compiled(
         }
     }
     if let Some(file) = most_recent {
-        log!(
+        vlog!(
             V::V,
             "The most recently modified file compared to {executable:#?} is: {file:#?}"
         );
@@ -629,29 +608,20 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
     #[allow(clippy::option_if_let_else)]
     if let Ok(tree) = syn::parse_file(source_code) {
         #[cfg(debug_assertions)]
-        log!(
-            V::V,
-            "{}",
-            Style::from(&Lvl::WARN).paint("Parsed to syn::File")
-        );
+        cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::File");
 
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))
     } else if let Ok(tree) = extract_ast_expr(source_code) {
         #[cfg(debug_assertions)]
-        log!(
-            V::V,
-            "{}",
-            Style::from(&Lvl::EMPH).paint("Parsed to syn::Expr")
-        );
+        cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::Expr");
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
-        log!(
+        cvprtln!(
+            &Lvl::WARN,
             V::QQ,
-            "{}",
-            Style::from(&Lvl::WARN)
-                .paint("Error parsing syntax tree. Using regex to help you debug the script.")
+            "Error parsing syntax tree. Using regex to help you debug the script."
         );
 
         debug_timings(&start_ast, "Completed unsuccessful AST parse");
@@ -814,7 +784,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 }}
 "#,
         loop_toml.as_ref().map_or_else(String::new, |toml| {
-            log!(V::V, "toml={toml}");
+            vlog!(V::V, "toml={toml}");
             format!(
                 r#"/*[toml]
 {toml}
@@ -822,11 +792,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
             )
         }),
         loop_begin.as_ref().map_or("", |prelude| {
-            log!(V::V, "prelude={prelude}");
+            vlog!(V::V, "prelude={prelude}");
             prelude
         }),
         loop_end.as_ref().map_or("", |postlude| {
-            log!(V::V, "postlude={postlude}");
+            vlog!(V::V, "postlude={postlude}");
             postlude
         })
     )
@@ -852,12 +822,12 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
-        log!(V::N, "Directory listing for {:?}", path);
+        vlog!(V::N, "Directory listing for {path:?}");
         for entry in entries {
             let entry = entry?;
             let file_type = entry.file_type()?;
             let file_name = entry.file_name();
-            log!(
+            vlog!(
                 V::QQ,
                 "  {file_name:?} ({})",
                 if file_type.is_dir() {
@@ -1094,12 +1064,10 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             expr_return.expr.is_none()
         }
         _ => {
-            log!(
+            cvprtln!(
+                &Lvl::WARN,
                 V::Q,
-                "{}",
-                Style::from(&Lvl::WARN).paint(format!(
-                    "Expression not catered for: {expr:#?}, wrapping expression in println!()"
-                ))
+                "Expression not catered for: {expr:#?}, wrapping expression in println!()"
             );
             false
         }

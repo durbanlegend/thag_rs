@@ -443,12 +443,28 @@ which will give identical output to the above.
 
 ### Script: colors.rs
 
-**Description:**  A version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
- module, `colors` was originally developed here as a separate script and integrated as a module later.
-
- Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
+**Description:**  Runner for current version of `src/colors.rs`, as it's become too enmeshed with other modules to split out nicely.
+ We just borrow the main method here and add all the necessary dependencies and imports.
 
  E.g. `thag demo/colors.rs`
+ Main function for use by testing or the script runner.
+
+**Purpose:** Test the look of the various colours.
+
+**Crates:** `nu_ansi_term`, `strum`, `termbg`, `thag_rs`
+
+**Type:** Program
+
+**Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
+
+---
+
+### Script: colors_old.rs
+
+**Description:**  An older version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
+ module, `colors` was originally developed here as a separate script and integrated as a module later.
+
+ E.g. `thag demo/colors_old.rs`
 
 **Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
@@ -456,7 +472,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
+**Link:** [colors_old.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs)
 
 ---
 
@@ -466,7 +482,6 @@ which will give identical output to the above.
  to their type. I only dropped `owo-colors` because I switched from `rustyline` to
  `reedline`, which was already using `nu_ansi_term`.
 
- Format: `color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 
 **Purpose:** Demo older alternative implementation of `colors` module using `owo-colors`.
 
@@ -758,6 +773,36 @@ which will give identical output to the above.
 
 ---
 
+### Script: darling_consume_fields.rs
+
+**Description:**  Published example from `darling` crate showing parsing for derive input.
+ Extended to show formatted version of emitted code.
+
+**Purpose:** Explore `darling` crate.
+
+**Crates:** `darling`, `proc_macro2`, `quote`, `syn`
+
+**Type:** Program
+
+**Link:** [darling_consume_fields.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs)
+
+---
+
+### Script: darling_struct.rs
+
+**Description:**  Published example from `darling` crate showing parsing for derive input.
+ Extended to show formatted version of emitted code.
+
+**Purpose:** Explore `darling` crate.
+
+**Crates:** `darling`, `proc_macro2`, `quote`, `syn`
+
+**Type:** Program
+
+**Link:** [darling_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs)
+
+---
+
 ### Script: dethag_re.rs
 
 **Description:**  Unescape \n and \\" markers in a string to convert the wall of text to readable lines.
@@ -821,7 +866,7 @@ which will give identical output to the above.
  in a fn main, thag_rs pulls any inner attributes out to the top of the program.
 
  Notice we also have a shebang so that this script may be run as `demo/duration_snippet.rs` with execute
- permission. The shebang must be on the very first line but coexists peacefulyl with the inner attribute.
+ permission. The shebang must be on the very first line but coexists peacefully with the inner attribute.
 
  See tracking issue https://github.com/rust-lang/rust/issues/120301 for the `Duration` constructor issue..
 
@@ -1870,7 +1915,7 @@ which will give identical output to the above.
 
 ### Script: json.rs
 
-**Description:**  Demo of using deserializing JSON with the featured crates.
+**Description:**  Demo of deserialising JSON with the featured crates.
 
 **Purpose:** Demo featured crates.
 
@@ -1884,7 +1929,8 @@ which will give identical output to the above.
 
 ### Script: json_parse.rs
 
-**Description:**  Demo of using deserializing JSON with the featured crates.
+**Description:**  Demo of deserialising JSON with the featured crates.
+ This version prompts for JSON input.
 
 **Purpose:** Demo featured crates.
 
@@ -2070,7 +2116,7 @@ which will give identical output to the above.
  colour support of the current terminal and whether a light or dark theme is currently
  selected. This was the result of good deal of exploration and dialog with ChatGPT.  Try it on dark vs light
  backgrounds to see how some of the same colours "pop" when shown against a light or dark theme
- and how some virtually or literally disappear when when not well matched to the theme.
+ and how some virtually or literally disappear when not well matched to the theme.
  Fully worked-out demonstration of colouring and styling display messages according
  to message level.
 
@@ -2529,6 +2575,18 @@ which will give identical output to the above.
 
 ---
 
+### Script: rustfmt_stdin.rs
+
+**Description:**  Read Rust source code from stdin and display the output as formatted by `rustfmt`.
+
+**Purpose:** Format arbitrary Rust code. Does no more than `rustfmt --`.
+
+**Type:** Program
+
+**Link:** [rustfmt_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs)
+
+---
+
 ### Script: rustlings_smart_pointers_rc1.rs
 
 **Description:**  Published exercise solution from the `rustlings` crate.
@@ -2728,8 +2786,8 @@ which will give identical output to the above.
  ```
  Fun fact: you can paste the output into any of the `expr`, `edit`, `repl` or `stdin`
  modes of `thag_rs`, or even into a .rs file, and it will print out the value of the
- expression (in this case 13). Or you can do the same with the input (5 + 8) and it
- will do the same because `thag_rs` will detect and evaluate an expression in
+ expression (in this case the number 13). Or you can do the same with the input (5 + 8)
+ and it will do the same because `thag_rs` will detect and evaluate an expression in
  essentially the same way as this script does.
 
 **Purpose:** demo expression evaluation (excluding compilation and execution) using the `syn` and `quote` crates.
@@ -2778,7 +2836,7 @@ which will give identical output to the above.
 
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
  Rust source program passed to the script. Specifically the combination of fn `visit_item_extern_crate`
- to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
+ to process the nodes representing `extern crate` statements and fn `visit_file` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
 
 **Purpose:** Demo featured crate.
@@ -2829,7 +2887,7 @@ which will give identical output to the above.
 
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
  Rust source program passed to the script. Specifically the combination of fn `visit_use_path`
- to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
+ to process the nodes representing `use` statements and fn `visit_file` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
 
 **Purpose:** Demo featured crate.
@@ -2847,7 +2905,7 @@ which will give identical output to the above.
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that exist
  for the purpose of renaming a dependency so that we don't go looking for the temporary in the registry.
  Specifically the combination of fn `visit_use_rename` to process the nodes representing `extern crate`
- statements and fn `visit_expr` to initiate the tree traversal. This version expects the script contents
+ statements and fn `` to initiate the tree traversal. This version expects the script contents
  to consist of a full-fledged Rust program.
 
 **Purpose:** Demo featured crate.
@@ -2857,6 +2915,23 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs)
+
+---
+
+### Script: syn_visit_use_tree_file.rs
+
+**Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
+ Rust source program passed to the script. Specifically the combination of fn `visit_use_tree`
+ to process the nodes representing `use` statements and fn `` to initiate the tree
+ traversal. This version expects the script contents to consist of a full-fledged Rust program.
+
+**Purpose:** Develop improved algorithm for `thag_rs` that accepts imports of the form `use <crate>;` instead of requiring `use <crate>::...`.
+
+**Crates:** `syn`
+
+**Type:** Program
+
+**Link:** [syn_visit_use_tree_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs)
 
 ---
 
@@ -2881,7 +2956,7 @@ which will give identical output to the above.
 
 **Purpose:** Allow checking of terminals on platforms to be supported, also test reliability of different crates.
 
-**Crates:** `crossterm`, `supports_color`
+**Crates:** `crossterm`, `log`, `simplelog`, `supports_color`, `thag_rs`
 
 **Type:** Snippet
 
@@ -2897,7 +2972,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo theme detection with `termbg` and clearing terminal state with `crossterm`.
 
-**Crates:** `crossterm`
+**Crates:** `simplelog`, `thag_rs`
 
 **Type:** Program
 
@@ -2964,6 +3039,21 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [test_clap_4707.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707.rs)
+
+---
+
+### Script: thag_crokey_print_key.rs
+
+**Description:**  Published example of KeyCombination from `crokey` crate, modified to use
+ basic `crokey` key combos embedded in `thag_rs` under MIT licence.
+
+**Purpose:** Test for stability and consistency across different platforms and terminals.
+
+**Crates:** `crossterm`, `thag_rs`
+
+**Type:** Program
+
+**Link:** [thag_crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_crokey_print_key.rs)
 
 ---
 
@@ -3039,17 +3129,6 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs)
-
----
-
-### Script: tui_copy.rs
-
-**Description:** 
-**Purpose:** 
-
-**Type:** Snippet
-
-**Link:** [tui_copy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_copy.rs)
 
 ---
 
@@ -3243,7 +3322,7 @@ which will give identical output to the above.
 
 ### Script: win_test_supports_color.rs
 
-**Description:**  This seems to intermittently swallow the very first character entered in Windows.
+**Description:**  This seems to intermittently swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
@@ -3257,7 +3336,7 @@ which will give identical output to the above.
 
 ### Script: win_test_termbg.rs
 
-**Description:**  This seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
@@ -3269,7 +3348,7 @@ which will give identical output to the above.
 
 ### Script: win_test_termbg_reset.rs
 
-**Description:**  This still seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This still seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
  The `crossterm` reset doesn't seem to help. My disappointment is immeasurable and
  my day is ruined.
 
@@ -3283,15 +3362,60 @@ which will give identical output to the above.
 
 ---
 
+### Script: win_test_termbg_thag.rs
+
+**Description:**  This seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
+
+**Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
+
+**Crates:** `thag_rs`
+
+**Type:** Program
+
+**Link:** [win_test_termbg_thag.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_thag.rs)
+
+---
+
 ### Script: win_test_terminal_light.rs
 
-**Description:**  This seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This seems to "reliably" swallow the very first character entered in Window, prior to `termbg` 0.6.0..
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
 **Type:** Program
 
 **Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs)
+
+---
+
+### Script: win_test_vt.rs
+
+**Description:**  Exploration of `Windows Terminal` virtual terminal processing with respect to the `termbg` crate.
+ `termbg` comment states: "Windows Terminal is Xterm-compatible"
+ https://github.com/microsoft/terminal/issues/3718.
+ Unfortunately it turns out that this is only partially true and misleading, because
+ this compatibility excludes OSC 10/11 colour queries until Windows Terminal 1.22,
+ which was only released in preview in August 2024.
+ https://devblogs.microsoft.com/commandline/windows-terminal-preview-1-22-release/:
+ "Applications can now query ... the default foreground (OSC 10 ?) [and] background (OSC 11 ?)"
+ Another finding is that WT_SESSION is not recommended as a marker for VT capabilities:
+ https://github.com/Textualize/rich/issues/140.
+ Also, but out of scope of this script, there is no good fallback detection method provided by Windows,
+ as per my comments in the adapted module `thag_rs::termbg`. Unless you have WT 1.22 or higher as above,
+ the best bet for supporting colour schemes other than the default black is to fallback to using a
+ configuration file (as we do) or allowing the user to specify the theme in real time.
+ Finally, the `termbg` crate was swallowing the first character of input in Windows and causing a
+ "rightward march" of log output due to suppression of carriage returns in all environments. I've
+ addressed the former by using non-blocking `crossterm` event polling instead of `stdin`, and also
+ introduced a
+
+**Purpose:** Debug `termbg`
+
+**Crates:** `crossterm`, `winapi`
+
+**Type:** Program
+
+**Link:** [win_test_vt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs)
 
 ---
 

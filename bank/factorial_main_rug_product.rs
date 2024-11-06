@@ -11,7 +11,7 @@
    #           dependencies from code and are not needed by this script at all.
    serde = { version = "1.0", features = ["derive"] }
    env_logger = "0.11.3"
-   log = "0.4.21"
+   log = "0.4.22"
 
    [workspace]
 

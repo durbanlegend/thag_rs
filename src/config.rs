@@ -1,3 +1,4 @@
+use crate::{debug_log, ColorSupport, TermTheme, ThagResult, Verbosity};
 use edit::edit_file;
 use firestorm::profile_fn;
 use mockall::{automock, predicate::str};
@@ -5,36 +6,27 @@ use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
 #[cfg(target_os = "windows")]
 use std::env;
-use std::fs::{self, OpenOptions};
-use std::io::Write;
-use std::path::PathBuf;
-use std::sync::OnceLock;
-
-use crate::colors::{ColorSupport, TermTheme, TuiSelectionBg};
-use crate::logging::Verbosity;
-use crate::{debug_log, ThagResult};
+use std::{
+    fs::{self, OpenOptions},
+    io::Write,
+    path::PathBuf,
+    sync::OnceLock,
+};
 
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
 pub fn maybe_config() -> Option<Config> {
     static MAYBE_CONFIG: OnceLock<Option<Config>> = OnceLock::new();
-    MAYBE_CONFIG.get_or_init(|| -> Option<Config> {
-        let maybe_config = load(&RealContext::new());
-
-        if let Some(config) = maybe_config {
+    MAYBE_CONFIG
+        .get_or_init(|| -> Option<Config> {
+            let maybe_config = load(&RealContext::new());
+            if let Some(config) = maybe_config {
                 debug_log!("Loaded config: {config:?}");
-                debug_log!(
-                    "default_verbosity={:?}, color_support={:?}, term_theme={:?}, tui_highlight_bg={:?}, unquote={}",
-                    config.logging.default_verbosity,
-                    config.colors.color_support,
-                    config.colors.term_theme,
-                    config.colors.tui_selection_bg,
-                    config.misc.unquote
-                );
                 return Some(config);
-        }
-        None::<Config>
-    }).clone()
+            }
+            None::<Config>
+        })
+        .clone()
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -62,9 +54,6 @@ pub struct Colors {
     #[serde(default)]
     #[serde_as(as = "DisplayFromStr")]
     pub term_theme: TermTheme,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default)]
-    pub tui_selection_bg: TuiSelectionBg,
 }
 
 #[serde_as]
@@ -193,11 +182,10 @@ fn main() {
     if let Some(config) = maybe_config {
         debug_log!("Loaded config: {config:?}");
         debug_log!(
-            "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}, TuiSelectionBg={:?}",
+            "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
             config.logging.default_verbosity,
             config.colors.color_support,
-            config.colors.term_theme,
-            config.colors.tui_selection_bg
+            config.colors.term_theme
         );
     } else {
         debug_log!("No configuration file found.");

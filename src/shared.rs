@@ -1,48 +1,24 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::cmd_args::{Cli, ProcFlags};
-use crate::errors::{ThagError, ThagResult};
-use crate::logging::Verbosity;
-use crate::modified_since_compiled;
-use crate::DYNAMIC_SUBDIR;
-use crate::REPL_SUBDIR;
-use crate::RS_SUFFIX;
-use crate::TEMP_SCRIPT_NAME;
-use crate::TMPDIR;
-use crate::TOML_NAME;
-use crate::{debug_log, TEMP_DIR_NAME};
-use crate::{log, PACKAGE_NAME};
-
+use crate::{
+    debug_log, modified_since_compiled, vlog, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
+    TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
+};
+use crate::{Cli, ProcFlags};
+use crate::{ThagError, ThagResult};
 use cargo_toml::Manifest;
+use crossterm::event::Event;
 use firestorm::profile_fn;
 use home::home_dir;
+use mockall::automock;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
+use std::convert::Into;
+use std::time::Duration;
 use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
 use strum::Display;
-
-/// Reset the display by moving the cursor to the first column and showing it.
-/// Crates like `termbg` and `supports-color` send an operating system command (OSC)
-/// to interrogate the screen but with side effects which we attempt(ed) to undo here.
-/// Unfortunately this appends the `MoveToColumn` and Show command sequences to the
-/// program's output, which prevents it being used as a filter in a pipeline. On
-/// Windows we resort to defaults and configuration; on other platforms any lingering
-/// effects of disabling this remain to be seen.
-/// # Panics
-/// Will panic if a crossterm execute command fails.
-#[deprecated(
-    since = "0.1.0",
-    note = "Redundant and pollutes piped output. Alternatives already in place."
-)]
-pub const fn clear_screen() {
-    // Commented out because this turns up at the end of the output
-    // let mut out = stdout();
-    // out.execute(MoveToColumn(0)).unwrap();
-    // out.execute(Show).unwrap();
-    // out.flush().unwrap();
-}
 
 /// An abstract syntax tree wrapper for use with syn.
 #[derive(Clone, Debug, Display)]
@@ -109,7 +85,6 @@ impl BuildState {
     ) -> ThagResult<Self> {
         profile_fn!(pre_configure);
         let is_repl = proc_flags.contains(ProcFlags::REPL);
-        let is_tui_repl = proc_flags.contains(ProcFlags::TUI_REPL);
         let is_expr = args.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
         let is_edit = proc_flags.contains(ProcFlags::EDIT);
@@ -138,13 +113,13 @@ impl BuildState {
         let Some(source_stem) = source_name.strip_suffix(RS_SUFFIX) else {
             return Err(format!("Error stripping suffix from {source_name}").into());
         };
-        let working_dir_path = if is_repl || is_tui_repl {
+        let working_dir_path = if is_repl {
             TMPDIR.join(REPL_SUBDIR)
         } else {
             std::env::current_dir()?.canonicalize()?
         };
 
-        let script_path = if is_repl || is_tui_repl {
+        let script_path = if is_repl {
             script_state
                 .get_script_dir_path()
                 .ok_or("Missing script path")?
@@ -182,7 +157,7 @@ impl BuildState {
         });
         debug_log!("cargo_home={}", cargo_home.display());
 
-        let target_dir_path = if is_repl || is_tui_repl {
+        let target_dir_path = if is_repl {
             script_state
                 .get_script_dir_path()
                 .ok_or("Missing ScriptState::NamedEmpty.repl_path")?
@@ -233,15 +208,10 @@ impl BuildState {
                 || modified_since_compiled(&build_state)?.is_some();
             let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
             let build_requested = proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK);
-            let must_gen = force
-                || is_repl
-                || is_tui_repl
-                || is_loop
-                || is_check
-                || (gen_requested && stale_executable);
+            let must_gen =
+                force || is_repl || is_loop || is_check || (gen_requested && stale_executable);
             let must_build = force
                 || is_repl
-                || is_tui_repl
                 || is_loop
                 || build_exe
                 || is_check
@@ -318,7 +288,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
 
     debug_log!("{msg}");
     if proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        log!(Verbosity::Quieter, "{msg}");
+        vlog!(V::QQ, "{msg}");
     }
 }
 
@@ -337,11 +307,23 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.to_string()
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct KeyDisplayLine {
     pub seq: usize,
     pub keys: &'static str, // Or String if you plan to modify the keys later
     pub desc: &'static str, // Or String for modifiability
+}
+
+impl PartialOrd for KeyDisplayLine {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        usize::partial_cmp(&self.seq, &other.seq)
+    }
+}
+
+impl Ord for KeyDisplayLine {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        usize::cmp(&self.seq, &other.seq)
+    }
 }
 
 impl KeyDisplayLine {
@@ -351,18 +333,49 @@ impl KeyDisplayLine {
     }
 }
 
+/// A trait to allow mocking of the event reader for testing purposes.
+#[automock]
+pub trait EventReader {
+    /// Read a terminal event.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+    fn read_event(&self) -> ThagResult<Event>;
+    /// Poll for a terminal event.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+    fn poll(&self, timeout: Duration) -> ThagResult<bool>;
+}
+
+/// A struct to implement real-world use of the event reader, as opposed to use in testing.
+#[derive(Debug)]
+pub struct CrosstermEventReader;
+
+impl EventReader for CrosstermEventReader {
+    fn read_event(&self) -> ThagResult<Event> {
+        crossterm::event::read().map_err(Into::<ThagError>::into)
+    }
+
+    fn poll(&self, timeout: Duration) -> ThagResult<bool> {
+        crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
+    }
+}
+
 /// Control debug logging
 #[macro_export]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
-        // If the `debug_logs` feature is enabled, always log
-        #[cfg(feature = "debug-logs")]
+        // If the `debug-logs` feature is enabled, always log
+        #[cfg(any(feature = "debug-logs", feature = "simplelog"))]
         {
             log::debug!($($arg)*);
         }
 
         // In all builds, log if runtime debug logging is enabled (e.g., via `-vv`)
-        #[cfg(not(feature = "debug-logs"))]
+        #[cfg(not(any(feature = "debug-logs", feature = "simplelog")))]
         {
             if $crate::logging::is_debug_logging_enabled() {
                 log::debug!($($arg)*);

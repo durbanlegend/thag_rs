@@ -1,13 +1,10 @@
 #![allow(clippy::implicit_return)]
 #![expect(unused)]
-use crate::logging::{Verbosity, V};
-#[cfg(not(target_os = "windows"))]
 use crate::termbg::{terminal, theme, Theme};
-use crate::{config, debug_log, log, ThagResult};
-use crate::{generate_styles, maybe_config};
-
+use crate::{config, debug_log, generate_styles, maybe_config, vlog, ThagResult, V};
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use firestorm::profile_fn;
+use log::debug;
 use nu_ansi_term::{Color, Style};
 use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
 use scopeguard::defer;
@@ -27,6 +24,7 @@ pub enum Xterm256LightStyle {
     Emphasis,
     Heading,
     Subheading,
+    Bright,
     Normal,
     Debug,
     Ghost,
@@ -39,6 +37,7 @@ pub enum Xterm256DarkStyle {
     Emphasis,
     Heading,
     Subheading,
+    Bright,
     Normal,
     Debug,
     Ghost,
@@ -51,6 +50,7 @@ pub enum Ansi16LightStyle {
     Emphasis,
     Heading,
     Subheading,
+    Bright,
     Normal,
     Debug,
     Ghost,
@@ -63,6 +63,7 @@ pub enum Ansi16DarkStyle {
     Emphasis,
     Heading,
     Subheading,
+    Bright,
     Normal,
     Debug,
     Ghost,
@@ -86,8 +87,8 @@ generate_styles!(
 pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     profile_fn!(coloring);
 
-    static COLOR_SUPPORT: OnceLock<Option<ColorSupport>> = OnceLock::new();
-    static TERM_THEME: OnceLock<TermTheme> = OnceLock::new();
+    pub static COLOR_SUPPORT: OnceLock<Option<ColorSupport>> = OnceLock::new();
+    pub static TERM_THEME: OnceLock<TermTheme> = OnceLock::new();
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
         debug_log!("Avoiding supports_color for testing");
@@ -133,8 +134,17 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
 
     let term_theme = TERM_THEME.get_or_init(|| {
         maybe_config().map_or_else(
-            || resolve_term_theme().unwrap_or_default(),
+            || {
+                eprintln!(
+                    "######## default mode: about to call resolve_term_theme().unwrap_or_default()"
+                );
+                resolve_term_theme().unwrap_or_default()
+            },
             |config| {
+                eprintln!(
+                    "######## config.colors.term_theme={:?}",
+                    &config.colors.term_theme
+                );
                 if matches!(&config.colors.term_theme, &TermTheme::None) {
                     resolve_term_theme().unwrap_or_default()
                 } else {
@@ -143,19 +153,8 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
             },
         )
     });
-
+    debug_log!("######## term_theme={term_theme:?}");
     (color_support.as_ref(), term_theme)
-}
-
-/// Initializes and returns the TUI selection background coloring.
-pub fn tui_selection_bg(term_theme: &TermTheme) -> TuiSelectionBg {
-    static TUI_SELECTION_BG: OnceLock<TuiSelectionBg> = OnceLock::new();
-    TUI_SELECTION_BG
-        .get_or_init(|| match term_theme {
-            TermTheme::Light => TuiSelectionBg::BlueYellow,
-            _ => TuiSelectionBg::RedWhite,
-        })
-        .clone()
 }
 
 #[macro_export]
@@ -178,6 +177,7 @@ macro_rules! generate_styles {
                         Lvl::Emphasis => $style_enum::Emphasis,
                         Lvl::Heading => $style_enum::Heading,
                         Lvl::Subheading => $style_enum::Subheading,
+                        Lvl::Bright => $style_enum::Bright,
                         Lvl::Normal => $style_enum::Normal,
                         Lvl::Debug => $style_enum::Debug,
                         Lvl::Ghost => $style_enum::Ghost,
@@ -196,6 +196,7 @@ macro_rules! generate_styles {
                         $style_enum::Emphasis => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Emphasis))).bold(),
                         $style_enum::Heading => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Heading))).bold(),
                         $style_enum::Subheading => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Subheading))).bold(),
+                        $style_enum::Bright => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Bright))).bold(),
                         $style_enum::Normal => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Normal))),
                         $style_enum::Debug => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Debug))),
                         $style_enum::Ghost => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Ghost))).dimmed().italic(),
@@ -236,24 +237,24 @@ pub fn gen_mappings(
     })
 }
 
-#[cfg(target_os = "windows")]
-fn resolve_term_theme() -> ThagResult<TermTheme> {
-    profile_fn!(resolve_term_theme);
-    Ok(TermTheme::Dark)
-}
+// #[cfg(target_os = "windows")]
+// fn resolve_term_theme() -> ThagResult<TermTheme> {
+//     profile_fn!(resolve_term_theme);
+//     Ok(TermTheme::Dark)
+// }
 
-#[cfg(not(target_os = "windows"))]
+// #[cfg(not(target_os = "windows"))]
 fn resolve_term_theme() -> ThagResult<TermTheme> {
     profile_fn!(resolve_term_theme);
     let raw_before = terminal::is_raw_mode_enabled()?;
     #[cfg(debug_assertions)]
     debug_log!("About to call termbg");
-    let timeout = std::time::Duration::from_millis(100);
+    let timeout = std::time::Duration::from_millis(1000);
 
     // #[cfg(debug_assertions)]
     // debug_log!("Check terminal background color");
     let theme = theme(timeout);
-
+    debug_log!("Found theme {theme:?}");
     maybe_restore_raw_status(raw_before)?;
 
     match theme {
@@ -265,7 +266,10 @@ fn resolve_term_theme() -> ThagResult<TermTheme> {
 fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
     profile_fn!(maybe_restore_raw_status);
     let raw_after = terminal::is_raw_mode_enabled()?;
-    if raw_before != raw_after {
+    if raw_before == raw_after {
+        debug_log!("No need to restore raw status");
+    } else {
+        debug_log!("Restored raw status");
         restore_raw_status(raw_before)?;
     }
     Ok(())
@@ -472,17 +476,17 @@ macro_rules! cprtln {
         // Qualified form to avoid imports in calling code.
         let painted = style.paint(content);
         let verbosity = $crate::logging::get_verbosity();
-        log!(verbosity, "{}", painted);
+        vlog!(verbosity, "{painted}");
     }};
 }
 
 #[macro_export]
 macro_rules! cvprtln {
-    ($level:expr, $verbosity:expr, $msg:expr) => {{
-        if $verbosity >= $crate::logging::get_verbosity() {
-            let (maybe_color_support, term_theme) = coloring();
+    ($level:expr, $verbosity:expr, $($arg:tt)*) => {{
+        if $verbosity <= $crate::logging::get_verbosity() {
+            let (maybe_color_support, term_theme) = $crate::colors::coloring();
             let style = $crate::colors::get_style(&$level, term_theme, maybe_color_support);
-            cprtln!(&style, $msg);
+            $crate::cprtln!(&style, $($arg)*);
         }
     }};
 }
@@ -511,16 +515,6 @@ pub enum TermTheme {
     None,
 }
 
-/// An enum to categorise the current TUI editor highlighting scheme for the selected
-/// line as configured or defaulted.
-#[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq, Eq)]
-#[strum(serialize_all = "snake_case")]
-pub enum TuiSelectionBg {
-    #[default]
-    BlueYellow,
-    RedWhite,
-}
-
 /// An enum to categorise the supported message types for display.
 #[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
@@ -530,6 +524,7 @@ pub enum MessageLevel {
     Emphasis,
     Heading,
     Subheading,
+    Bright,
     Normal,
     Debug,
     Ghost,
@@ -543,6 +538,7 @@ impl Lvl {
     pub const EMPH: Self = Self::Emphasis;
     pub const HEAD: Self = Self::Heading;
     pub const SUBH: Self = Self::Subheading;
+    pub const BRI: Self = Self::Bright;
     pub const NORM: Self = Self::Normal;
     pub const DBUG: Self = Self::Debug;
     pub const GHST: Self = Self::Ghost;
@@ -834,6 +830,7 @@ pub enum MessageStyle {
     Ansi16LightEmphasis,
     Ansi16LightHeading,
     Ansi16LightSubheading,
+    Ansi16LightBright,
     Ansi16LightNormal,
     Ansi16LightDebug,
     Ansi16LightGhost,
@@ -843,6 +840,7 @@ pub enum MessageStyle {
     Ansi16DarkEmphasis,
     Ansi16DarkHeading,
     Ansi16DarkSubheading,
+    Ansi16DarkBright,
     Ansi16DarkNormal,
     Ansi16DarkDebug,
     Ansi16DarkGhost,
@@ -852,6 +850,7 @@ pub enum MessageStyle {
     Xterm256LightEmphasis,
     Xterm256LightHeading,
     Xterm256LightSubheading,
+    Xterm256LightBright,
     Xterm256LightNormal,
     Xterm256LightDebug,
     Xterm256LightGhost,
@@ -861,6 +860,7 @@ pub enum MessageStyle {
     Xterm256DarkEmphasis,
     Xterm256DarkHeading,
     Xterm256DarkSubheading,
+    Xterm256DarkBright,
     Xterm256DarkNormal,
     Xterm256DarkDebug,
     Xterm256DarkGhost,
@@ -901,6 +901,7 @@ impl From<&MessageStyle> for XtermColor {
             MessageStyle::Ansi16LightEmphasis => Self::UserYellow,
             MessageStyle::Ansi16LightHeading => Self::UserBlue,
             MessageStyle::Ansi16LightSubheading => Self::UserCyan,
+            MessageStyle::Ansi16LightBright => Self::UserGreen,
             MessageStyle::Ansi16LightNormal => Self::UserWhite,
             MessageStyle::Ansi16LightDebug => Self::UserCyan,
             MessageStyle::Ansi16LightGhost => Self::UserCyan,
@@ -909,6 +910,7 @@ impl From<&MessageStyle> for XtermColor {
             MessageStyle::Ansi16DarkEmphasis => Self::UserYellow,
             MessageStyle::Ansi16DarkHeading => Self::UserCyan,
             MessageStyle::Ansi16DarkSubheading => Self::UserGreen,
+            MessageStyle::Ansi16DarkBright => Self::UserBrightYellow,
             MessageStyle::Ansi16DarkNormal => Self::UserWhite,
             MessageStyle::Ansi16DarkDebug => Self::UserCyan,
             MessageStyle::Ansi16DarkGhost => Self::LightGray,
@@ -916,6 +918,7 @@ impl From<&MessageStyle> for XtermColor {
             MessageStyle::Xterm256LightWarning => Self::DarkPurplePizzazz,
             MessageStyle::Xterm256LightEmphasis => Self::Copperfield,
             MessageStyle::Xterm256LightHeading => Self::MidnightBlue,
+            MessageStyle::Xterm256LightBright => Self::YellowSea,
             MessageStyle::Xterm256LightSubheading => Self::ScienceBlue,
             MessageStyle::Xterm256LightNormal => Self::Black,
             MessageStyle::Xterm256LightDebug => Self::LochmaraBlue,
@@ -925,6 +928,7 @@ impl From<&MessageStyle> for XtermColor {
             MessageStyle::Xterm256DarkEmphasis => Self::Copperfield,
             MessageStyle::Xterm256DarkHeading => Self::CaribbeanGreen,
             MessageStyle::Xterm256DarkSubheading => Self::DarkMalibuBlue,
+            MessageStyle::Xterm256DarkBright => Self::UserYellow,
             MessageStyle::Xterm256DarkNormal => Self::Silver,
             MessageStyle::Xterm256DarkDebug => Self::BondiBlue,
             MessageStyle::Xterm256DarkGhost => Self::Silver,
@@ -942,6 +946,7 @@ impl From<&MessageStyle> for Style {
             MessageStyle::Ansi16LightEmphasis => Color::Yellow.bold(),
             MessageStyle::Ansi16LightHeading => Color::Blue.bold(),
             MessageStyle::Ansi16LightSubheading => Color::Cyan.bold(),
+            MessageStyle::Ansi16LightBright => Color::Green.into(), // .bold(),
             MessageStyle::Ansi16LightNormal => Color::White.normal(),
             MessageStyle::Ansi16LightDebug => Color::Cyan.normal(),
             MessageStyle::Ansi16LightGhost => Color::Cyan.dimmed().italic(),
@@ -950,6 +955,7 @@ impl From<&MessageStyle> for Style {
             MessageStyle::Ansi16DarkEmphasis => Color::Yellow.bold(),
             MessageStyle::Ansi16DarkHeading => Color::Cyan.bold(),
             MessageStyle::Ansi16DarkSubheading => Color::Green.bold(),
+            MessageStyle::Ansi16DarkBright => Color::LightYellow.into(), // .bold(),
             MessageStyle::Ansi16DarkNormal => Color::White.normal(),
             MessageStyle::Ansi16DarkDebug => Color::Cyan.normal(),
             MessageStyle::Ansi16DarkGhost => Color::LightGray.dimmed().italic(),
@@ -960,6 +966,7 @@ impl From<&MessageStyle> for Style {
             MessageStyle::Xterm256LightEmphasis => Color::from(&XtermColor::Copperfield).bold(),
             MessageStyle::Xterm256LightHeading => Color::from(&XtermColor::MidnightBlue).bold(),
             MessageStyle::Xterm256LightSubheading => Color::from(&XtermColor::ScienceBlue).normal(),
+            MessageStyle::Xterm256LightBright => Color::from(&XtermColor::Green).into(), // .bold(),
             MessageStyle::Xterm256LightNormal => Color::from(&XtermColor::Black).normal(),
             MessageStyle::Xterm256LightDebug => Color::from(&XtermColor::LochmaraBlue).normal(),
             MessageStyle::Xterm256LightGhost => Color::from(&XtermColor::Boulder).normal().italic(),
@@ -970,6 +977,7 @@ impl From<&MessageStyle> for Style {
             MessageStyle::Xterm256DarkSubheading => {
                 Color::from(&XtermColor::DarkMalibuBlue).normal()
             }
+            MessageStyle::Xterm256DarkBright => Color::from(&XtermColor::Yellow).into(), // .bold(),
             MessageStyle::Xterm256DarkNormal => Color::from(&XtermColor::Silver).normal(),
             MessageStyle::Xterm256DarkDebug => Color::from(&XtermColor::BondiBlue).normal(),
             MessageStyle::Xterm256DarkGhost => Color::from(&XtermColor::Silver).normal().italic(),
@@ -989,72 +997,79 @@ impl From<&MessageStyle> for RataStyle {
     fn from(message_style: &MessageStyle) -> Self {
         profile_fn!(ratastyle_from_msg_style);
         match *message_style {
-            MessageStyle::Ansi16LightError => RataStyle::from(RataColor::Red).bold(),
-            MessageStyle::Ansi16LightWarning => RataStyle::from(RataColor::Magenta).bold(),
-            MessageStyle::Ansi16LightEmphasis => RataStyle::from(RataColor::Yellow).bold(),
-            MessageStyle::Ansi16LightHeading => RataStyle::from(RataColor::Blue).bold(),
-            MessageStyle::Ansi16LightSubheading => RataStyle::from(RataColor::Cyan).bold(),
-            MessageStyle::Ansi16LightNormal => RataStyle::from(RataColor::White).not_bold(),
-            MessageStyle::Ansi16LightDebug => RataStyle::from(RataColor::Cyan).not_bold(),
-            MessageStyle::Ansi16LightGhost => RataStyle::from(RataColor::Cyan).dim().italic(),
-            MessageStyle::Ansi16DarkError => RataStyle::from(RataColor::Red).bold(),
-            MessageStyle::Ansi16DarkWarning => RataStyle::from(RataColor::Magenta).bold(),
-            MessageStyle::Ansi16DarkEmphasis => RataStyle::from(RataColor::Yellow).bold(),
-            MessageStyle::Ansi16DarkHeading => RataStyle::from(RataColor::Cyan).bold(),
-            MessageStyle::Ansi16DarkSubheading => RataStyle::from(RataColor::Green).bold(),
-            MessageStyle::Ansi16DarkNormal => RataStyle::from(RataColor::White).not_bold(),
-            MessageStyle::Ansi16DarkDebug => RataStyle::from(RataColor::Cyan).not_bold(),
-            MessageStyle::Ansi16DarkGhost => RataStyle::from(RataColor::Gray).dim().italic(),
+            MessageStyle::Ansi16LightError => Self::from(RataColor::Red).bold(),
+            MessageStyle::Ansi16LightWarning => Self::from(RataColor::Magenta).bold(),
+            MessageStyle::Ansi16LightEmphasis => Self::from(RataColor::Yellow).bold(),
+            MessageStyle::Ansi16LightHeading => Self::from(RataColor::Blue).bold(),
+            MessageStyle::Ansi16LightSubheading => Self::from(RataColor::Cyan).bold(),
+            MessageStyle::Ansi16LightBright => Self::from(RataColor::Green), // .bold(),
+            MessageStyle::Ansi16LightNormal => Self::from(RataColor::White).not_bold(),
+            MessageStyle::Ansi16LightDebug => Self::from(RataColor::Cyan).not_bold(),
+            MessageStyle::Ansi16LightGhost => Self::from(RataColor::Cyan).dim().italic(),
+            MessageStyle::Ansi16DarkError => Self::from(RataColor::Red).bold(),
+            MessageStyle::Ansi16DarkWarning => Self::from(RataColor::Magenta).bold(),
+            MessageStyle::Ansi16DarkEmphasis => Self::from(RataColor::Yellow).bold(),
+            MessageStyle::Ansi16DarkHeading => Self::from(RataColor::Cyan).bold(),
+            MessageStyle::Ansi16DarkSubheading => Self::from(RataColor::Green).bold(),
+            MessageStyle::Ansi16DarkBright => Self::from(RataColor::LightYellow), // .bold(),
+            MessageStyle::Ansi16DarkNormal => Self::from(RataColor::White).not_bold(),
+            MessageStyle::Ansi16DarkDebug => Self::from(RataColor::Cyan).not_bold(),
+            MessageStyle::Ansi16DarkGhost => Self::from(RataColor::Gray).dim().italic(),
             MessageStyle::Xterm256LightError => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
             }
             MessageStyle::Xterm256LightWarning => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkPurplePizzazz))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::DarkPurplePizzazz))).bold()
             }
             MessageStyle::Xterm256LightEmphasis => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
             }
             MessageStyle::Xterm256LightHeading => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::MidnightBlue))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::MidnightBlue))).bold()
             }
             MessageStyle::Xterm256LightSubheading => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::ScienceBlue))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::ScienceBlue))).not_bold()
+            }
+            MessageStyle::Xterm256LightBright => {
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Green))).bold()
             }
             MessageStyle::Xterm256LightNormal => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Black))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Black))).not_bold()
             }
             MessageStyle::Xterm256LightDebug => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::LochmaraBlue))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::LochmaraBlue))).not_bold()
             }
             MessageStyle::Xterm256LightGhost => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Boulder)))
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Boulder)))
                     .not_bold()
                     .italic()
             }
             MessageStyle::Xterm256DarkError => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
             }
             MessageStyle::Xterm256DarkWarning => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkViolet))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::DarkViolet))).bold()
             }
             MessageStyle::Xterm256DarkEmphasis => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Copperfield))).bold()
             }
             MessageStyle::Xterm256DarkHeading => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::CaribbeanGreen))).bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::CaribbeanGreen))).bold()
             }
             MessageStyle::Xterm256DarkSubheading => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::DarkMalibuBlue)))
-                    .not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::DarkMalibuBlue))).not_bold()
+            }
+            MessageStyle::Xterm256DarkBright => {
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Yellow))).bold()
             }
             MessageStyle::Xterm256DarkNormal => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Silver))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Silver))).not_bold()
             }
             MessageStyle::Xterm256DarkDebug => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::BondiBlue))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::BondiBlue))).not_bold()
             }
             MessageStyle::Xterm256DarkGhost => {
-                RataStyle::from(RataColor::Indexed(u8::from(&XtermColor::Silver)))
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::Silver)))
                     .not_bold()
                     .italic()
             }
@@ -1072,41 +1087,47 @@ impl From<&MessageLevel> for RataStyle {
 /// Main function for use by testing or the script runner.
 #[allow(dead_code)]
 pub fn main() {
-    #[cfg(not(target_os = "windows"))]
+    // #[cfg(not(target_os = "windows"))]
     {
         #[allow(unused_variables)]
         let term = terminal();
         // shared::clear_screen();
 
         #[cfg(debug_assertions)]
-        debug_log!("  Term : {term:?}");
+        println!("  Term : {term:?}");
     }
 
-    let (maybe_color_support, _term_theme) = coloring();
+    let (maybe_color_support, term_theme) = coloring();
 
     match maybe_color_support {
         None => {
-            log!(Verbosity::Normal, "No colour support found for terminal");
+            vlog!(V::N, "No colour support found for terminal");
         }
         Some(support) => {
-            log!(
-                Verbosity::Normal,
-                "{}",
-                Style::from(&Lvl::WARN).paint("Colored Warning message\n")
-            );
+            if matches!(support, ColorSupport::Xterm256) {
+                vlog!(V::N, "");
+                XtermColor::iter().for_each(|variant| {
+                    let color = Color::from(&variant);
+                    vlog!(V::N, "{}", color.paint(variant.to_string()));
+                });
+            }
 
             for variant in Lvl::iter() {
                 let variant_string: &str = &variant.to_string();
-                cvprtln!(variant, V::Normal, "My {variant_string} message");
+                let message_style = MessageStyle::from(&variant);
+                let style = Style::from(&variant);
+                cvprtln!(
+                    variant,
+                    V::N,
+                    "My {variant_string} message: message_style={message_style:?}, style={style:?}"
+                );
             }
 
-            if matches!(support, ColorSupport::Xterm256) {
-                log!(Verbosity::Normal, "");
-                XtermColor::iter().for_each(|variant| {
-                    let color = Color::from(&variant);
-                    log!(Verbosity::Normal, "{}", color.paint(variant.to_string()));
-                });
-            }
+            vlog!(
+                V::N,
+                "Colour support={support:?}, term_theme={term_theme:?}"
+            );
+            cvprtln!(&Lvl::WARN, V::N, "Colored Warning message\n");
         }
     }
 }

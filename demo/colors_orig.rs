@@ -1,20 +1,19 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
-log = "0.4.21"
+crossterm = "0.28.1"
+log = "0.4.22"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-thag_rs = "0.1.4"
+thag_rs = "0.1.5"
 
 strum = { version = "0.26.2", features = ["derive"] }
 supports-color= "3.0.0"
-termbg = "0.5.0"
+termbg = "0.5.2"
 */
 
 /// Original prototype of `thag_rs`'s `colors` module to style messages according
 /// to their type. I only dropped `owo-colors` because I switched from `rustyline` to
 /// `reedline`, which was already using `nu_ansi_term`.
 ///
-/// Format: `color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 //# Purpose: Demo older alternative implementation of `colors` module using `owo-colors`.
 use log::debug;
 use owo_ansi::xterm as owo_xterm;

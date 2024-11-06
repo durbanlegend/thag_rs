@@ -1,19 +1,19 @@
 /*[toml]
 [dependencies]
-crossterm = "0.27.0"
+crossterm = "0.28.1"
 enum-assoc = "1.1.0"
-log = "0.4.21"
+log = "0.4.22"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
-termbg = "0.5.0"
+termbg = "0.5.2"
 */
 
 /// More fully worked-out prototype of colouring and styling messages based on the level of
 /// colour support of the current terminal and whether a light or dark theme is currently
 /// selected. This was the result of good deal of exploration and dialog with ChatGPT.  Try it on dark vs light
 /// backgrounds to see how some of the same colours "pop" when shown against a light or dark theme
-/// and how some virtually or literally disappear when when not well matched to the theme.
+/// and how some virtually or literally disappear when not well matched to the theme.
 //# Purpose: Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
 use enum_assoc::Assoc;
 use log::debug;
@@ -140,10 +140,10 @@ enum MessageStyle {
 // termbg sends an operating system command (OSC) to interrogate the screen
 // but with side effects which we undo here.
 fn clear_screen() {
-//     let mut out = stdout();
-//     out.execute(MoveToColumn(0)).unwrap();
-//     out.execute(Show).unwrap();
-//     out.flush().unwrap();
+    //     let mut out = stdout();
+    //     out.execute(MoveToColumn(0)).unwrap();
+    //     out.execute(Show).unwrap();
+    //     out.flush().unwrap();
 }
 
 fn get_theme() -> Result<Theme, termbg::Error> {

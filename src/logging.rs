@@ -2,7 +2,6 @@
 #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
 use env_logger::{Builder, Env};
 use firestorm::profile_fn;
-use log::info;
 use serde::Deserialize;
 #[cfg(feature = "simplelog")]
 use simplelog::{
@@ -16,7 +15,7 @@ use std::sync::{
 };
 use strum::EnumString;
 
-use crate::{config::maybe_config, debug_log, Cli, ThagResult};
+use crate::{config::maybe_config, debug_log, vlog, Cli, ThagResult};
 
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 
@@ -109,15 +108,15 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
     } else if args.verbose == 1 {
         Verbosity::Verbose
     } else if args.quiet == 1 {
-        Verbosity::Quiet
+        V::Quiet
     } else if args.quiet >= 2 {
-        Verbosity::Quieter
+        V::Quieter
     } else if args.normal {
-        Verbosity::Normal
+        V::Normal
     } else if let Some(config) = maybe_config() {
         config.logging.default_verbosity
     } else {
-        Verbosity::Normal
+        V::Normal
     };
     set_global_verbosity(verbosity)
 }
@@ -129,9 +128,8 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
 /// Will panic in debug mode if the global verbosity value is not the value we just set.
 pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
     LOGGER.lock()?.set_verbosity(verbosity);
-    let v = get_verbosity();
     #[cfg(debug_assertions)]
-    assert_eq!(v, verbosity);
+    assert_eq!(get_verbosity(), verbosity);
     // Enable debug logging if -vv is passed
     if verbosity as u8 == Verbosity::Debug as u8 {
         enable_debug_logging(); // Set the runtime flag
@@ -140,40 +138,55 @@ pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
     Ok(())
 }
 
-// Configure log level
+/// Configure log level
+#[cfg(feature = "env_logger")]
 pub fn configure_log() {
     profile_fn!(configure_log);
 
-    // Choose between simplelog and env_logger based on compile feature
-    #[cfg(feature = "simplelog")]
-    {
-        CombinedLogger::init(vec![
-            TermLogger::new(
-                LevelFilter::Info,
-                Config::default(),
-                TerminalMode::Mixed,
-                ColorChoice::Auto,
-            ),
-            WriteLogger::new(
-                LevelFilter::Debug,
-                Config::default(),
-                File::create("app.log").unwrap(),
-            ),
-        ])
-        .unwrap();
-        info!("Initialized simplelog");
-    }
+    let env = Env::new().filter("RUST_LOG");
+    Builder::new().parse_env(env).init();
+    info!("Initialized env_logger");
+}
 
-    #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
-    {
-        let env = Env::new().filter("RUST_LOG");
-        Builder::new().parse_env(env).init();
-        info!("Initialized env_logger");
-    }
+/// Configure log level
+///
+/// # Panics
+///
+/// Panics if it can't create the log file app.log in the current working directory.
+#[cfg(not(feature = "env_logger"))]
+pub fn configure_log() {
+    profile_fn!(configure_log);
+
+    configure_simplelog();
+    // info!("Initialized simplelog");  // interferes with testing
+    vlog!(V::N, "Initialized simplelog");
+}
+
+/// Configure log level
+///
+/// # Panics
+///
+/// Panics if it can't create athe log file app.log in the current working directory.
+#[cfg(not(feature = "env_logger"))]
+fn configure_simplelog() {
+    CombinedLogger::init(vec![
+        TermLogger::new(
+            LevelFilter::Info,
+            Config::default(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        ),
+        WriteLogger::new(
+            LevelFilter::Debug,
+            Config::default(),
+            File::create("app.log").unwrap(),
+        ),
+    ])
+    .unwrap();
 }
 
 #[macro_export]
-macro_rules! log {
+macro_rules! vlog {
     ($verbosity:expr, $($arg:tt)*) => {
         {
             $crate::logging::LOGGER.lock().unwrap().log($verbosity, &format!($($arg)*))

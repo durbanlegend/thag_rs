@@ -1,4 +1,8 @@
+use crate::code_utils::write_source;
 use crate::file_dialog::{DialogMode, FileDialog, Status};
+use crate::{
+    debug_log, key, regex, EventReader, KeyCombination, KeyDisplayLine, Lvl, ThagError, ThagResult,
+};
 use crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
@@ -8,9 +12,6 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
     LeaveAlternateScreen,
 };
-use firestorm::profile_fn;
-use log::debug;
-use mockall::automock;
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
@@ -31,11 +32,6 @@ use std::{
     fs::{self, OpenOptions},
 };
 use tui_textarea::{CursorMove, Input, TextArea};
-
-use crate::code_utils;
-use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
-use crate::shared::KeyDisplayLine;
-use crate::{debug_log, key, regex, KeyCombination, MessageLevel, ThagError, ThagResult};
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
 pub type Term = Terminal<BackEnd>;
@@ -134,9 +130,7 @@ impl History {
             |_| Self::default(),
             |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
         );
-
-        #[cfg(debug_assertions)]
-        debug!("Loaded history={history:?}");
+        debug_log!("Loaded history={history:?}");
         // Remove any blanks - TODO they shouldn't be saved in the first place
         history.entries.retain(|e| !e.contents().trim().is_empty());
 
@@ -149,11 +143,8 @@ impl History {
         } else {
             history.current_index = Some(history.entries.len() - 1);
         }
-
-        #[cfg(debug_assertions)]
-        debug!("history={history:?}");
-        #[cfg(debug_assertions)]
-        debug!(
+        debug_log!("history={history:?}");
+        debug_log!(
             "load_from_file({path:?}); current index={:?}",
             history.current_index
         );
@@ -162,16 +153,14 @@ impl History {
 
     #[must_use]
     pub fn at_start(&self) -> bool {
-        #[cfg(debug_assertions)]
-        debug!("at_start ...");
+        debug_log!("at_start ...");
         self.current_index
             .map_or(true, |current_index| current_index == 0)
     }
 
     #[must_use]
     pub fn at_end(&self) -> bool {
-        #[cfg(debug_assertions)]
-        debug!("at_end ...");
+        debug_log!("at_end ...");
         self.current_index.map_or(true, |current_index| {
             current_index == self.entries.len() - 1
         })
@@ -191,23 +180,18 @@ impl History {
 
         // Update current_index to point to the most recent entry (the front)
         self.current_index = Some(self.entries.len() - 1);
-
-        #[cfg(debug_assertions)]
-        debug!("add_entry({text}); current index={:?}", self.current_index);
-        #[cfg(debug_assertions)]
-        debug!("history={self:?}");
+        debug_log!("add_entry({text}); current index={:?}", self.current_index);
+        debug_log!("history={self:?}");
     }
 
     pub fn update_entry(&mut self, index: usize, text: &str) {
-        #[cfg(debug_assertions)]
-        debug!("update_entry for index {index}...");
+        debug_log!("update_entry for index {index}...");
         // Get a mutable reference to the entry at the specified index
         let current_index = self.current_index;
         if let Some(entry) = self.get_mut(index) {
             // Update the lines if the entry exists
             entry.lines = text.lines().map(String::from).collect::<Vec<String>>();
-            #[cfg(debug_assertions)]
-            debug!("... update_entry({entry:?}); current index={current_index:?}");
+            debug_log!("... update_entry({entry:?}); current index={current_index:?}");
         } else {
             // If the entry doesn't exist, add it
             self.add_entry(text);
@@ -234,13 +218,12 @@ impl History {
     ///
     /// This function will bubble up any i/o errors encountered writing the file.
     pub fn save_to_file(&mut self, path: &PathBuf) -> ThagResult<()> {
-        // #[cfg(debug_assertions)]
+        //
         self.reassign_indices();
         if let Ok(data) = serde_json::to_string(&self) {
-            #[cfg(debug_assertions)]
-            debug!("About to write data=({data}");
-            if let Ok(metadata) = std::fs::metadata(&path) {
-                debug!("File permissions: {:?}", metadata.permissions());
+            debug_log!("About to write data=({data}");
+            if let Ok(metadata) = std::fs::metadata(path) {
+                debug_log!("File permissions: {:?}", metadata.permissions());
             }
 
             // fs::write(path, data)?;
@@ -259,12 +242,9 @@ impl History {
             // file.sync_all()?;
             file.sync_data()?;
         } else {
-            #[cfg(debug_assertions)]
-            debug!("Could not serialise history: {self:?}");
+            debug_log!("Could not serialise history: {self:?}");
         }
-
-        #[cfg(debug_assertions)]
-        debug!("save_to_file({path:?}");
+        debug_log!("save_to_file({path:?}");
         Ok(())
     }
 
@@ -275,59 +255,48 @@ impl History {
         }
 
         if let Some(index) = self.current_index {
-            #[cfg(debug_assertions)]
-            debug!("get_current(); current index={:?}", self.current_index);
+            debug_log!("get_current(); current index={:?}", self.current_index);
 
             self.get(index)
         } else {
-            #[cfg(debug_assertions)]
-            debug!("None");
+            debug_log!("None");
             None
         }
     }
 
     pub fn get(&mut self, index: usize) -> Option<&Entry> {
-        #[cfg(debug_assertions)]
-        debug!("get({index})...");
+        debug_log!("get({index})...");
         if !(0..self.entries.len()).contains(&index) {
             return None;
         }
         self.current_index = Some(index);
-
-        #[cfg(debug_assertions)]
-        debug!(
+        debug_log!(
             "...get({:?}); current index={:?}",
             self.entries.get(index),
             self.current_index
         );
 
         let entry = self.entries.get(index);
-        #[cfg(debug_assertions)]
-        debug!("... returning {entry:?}");
+        debug_log!("... returning {entry:?}");
         entry
     }
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut Entry> {
-        #[cfg(debug_assertions)]
-        debug!("get_mut({index})...");
+        debug_log!("get_mut({index})...");
 
         if !(0..self.entries.len()).contains(&index) {
             return None;
         }
 
         self.current_index = Some(index);
-
-        #[cfg(debug_assertions)]
-        debug!(
+        debug_log!(
             "...get_mut({:?}); current index={:?}",
             self.entries.get(index),
             self.current_index
         );
 
         let entry = self.entries.get_mut(index);
-
-        #[cfg(debug_assertions)]
-        debug!("... returning {entry:?}");
+        debug_log!("... returning {entry:?}");
 
         entry
     }
@@ -339,8 +308,7 @@ impl History {
     /// Panics if a logic error is detected, likely when reaching the oldest History entry.
     pub fn get_previous(&mut self) -> Option<&Entry> {
         // let this = &mut *self;
-        #[cfg(debug_assertions)]
-        debug!("get_previous...");
+        debug_log!("get_previous...");
         if self.entries.is_empty() {
             return None;
         }
@@ -352,9 +320,7 @@ impl History {
                 0
             }
         });
-
-        #[cfg(debug_assertions)]
-        debug!(
+        debug_log!(
             "...old index={:#?};new_index={new_index:?}",
             self.current_index
         );
@@ -369,8 +335,7 @@ impl History {
             },
             |index| {
                 let entry = self.get(index);
-                #[cfg(debug_assertions)]
-                debug!("get_previous; new current index={index:?}, entry={entry:?}");
+                debug_log!("get_previous; new current index={index:?}, entry={entry:?}");
                 entry
             },
         )
@@ -382,8 +347,7 @@ impl History {
     ///
     /// Panics if a logic error is detected, likely when reaching the newest History entry.
     pub fn get_next(&mut self) -> Option<&Entry> {
-        #[cfg(debug_assertions)]
-        debug!("get_next...");
+        debug_log!("get_next...");
         let this = &mut *self;
         if this.entries.is_empty() {
             return None;
@@ -397,9 +361,7 @@ impl History {
                 max_index
             }
         });
-
-        #[cfg(debug_assertions)]
-        debug!(
+        debug_log!(
             "...old index={:#?};new_index={new_index:?}",
             self.current_index
         );
@@ -414,8 +376,7 @@ impl History {
             },
             |index| {
                 let entry = self.get(index);
-                #[cfg(debug_assertions)]
-                debug!("get_next(); current index={index:?}, entry={entry:?}");
+                debug_log!("get_next(); current index={index:?}, entry={entry:?}");
                 entry
             },
         )
@@ -435,27 +396,6 @@ impl History {
         for (i, entry) in self.entries.iter_mut().enumerate() {
             entry.index = i;
         }
-    }
-}
-
-/// A trait to allow mocking of the event reader for testing purposes.
-#[automock]
-pub trait EventReader {
-    /// Read a terminal event.
-    ///
-    /// # Errors
-    ///
-    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-    fn read_event(&self) -> ThagResult<Event>;
-}
-
-/// A struct to implement real-world use of the event reader, as opposed to use in testing.
-#[derive(Debug)]
-pub struct CrosstermEventReader;
-
-impl EventReader for CrosstermEventReader {
-    fn read_event(&self) -> ThagResult<Event> {
-        crossterm::event::read().map_err(Into::<ThagError>::into)
     }
 }
 
@@ -515,17 +455,18 @@ where
     F: Fn(
         KeyEvent,
         &mut Option<&mut TermScopeGuard>,
-        // &mut Option<&mut PathBuf>,
         &mut TextArea,
         &mut EditData,
         &mut bool,
         &mut bool,
+        &mut String,
     ) -> ThagResult<KeyAction>,
 {
     // Initialize state variables
     let mut popup = false;
-    let mut tui_highlight_bg = tui_selection_bg(coloring().1);
+    let mut tui_highlight_fg: Lvl = Lvl::EMPH;
     let mut saved = false;
+    let mut status_message: String = String::default(); // Add status message variable
 
     let mut maybe_term = resolve_term()?;
 
@@ -535,10 +476,11 @@ where
     // Set up the display parameters for the textarea
     textarea.set_block(
         Block::default()
-            .borders(Borders::NONE)
+            .borders(Borders::ALL)
             .title(display.title)
             .title_style(display.title_style),
     );
+
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.move_cursor(CursorMove::Bottom);
     // New line with cursor at EOF for usability
@@ -548,7 +490,27 @@ where
     }
 
     // Apply initial highlights
-    apply_highlights(&tui_selection_bg(coloring().1), &mut textarea);
+    highlight_selection(&mut textarea, tui_highlight_fg);
+
+    let remove = display.remove_keys;
+    let add = display.add_keys;
+    // Can't make these OnceLock values, since their configuration depends on the `remove`
+    // and `add` values passed in by the caller.
+    let mut adjusted_mappings: Vec<KeyDisplayLine> = MAPPINGS
+        .iter()
+        .filter(|&row| !remove.contains(&row.keys))
+        .chain(add.iter())
+        .cloned()
+        .collect();
+    adjusted_mappings.sort();
+    let (max_key_len, max_desc_len) =
+        adjusted_mappings
+            .iter()
+            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
+                let key_len = row.keys.len().try_into().unwrap();
+                let desc_len = row.desc.len().try_into().unwrap();
+                (max_key.max(key_len), max_desc.max(desc_len))
+            });
 
     // Event loop for handling key events
     loop {
@@ -563,18 +525,51 @@ where
                 || Err("Logic issue unwrapping term we wrapped ourselves".into()),
                 |term| {
                     term.draw(|f| {
-                        f.render_widget(&textarea, f.area());
-                        if popup {
-                            show_popup(
-                                MAPPINGS,
-                                f,
-                                TITLE_TOP,
-                                TITLE_BOTTOM,
-                                display.remove_keys,
-                                display.add_keys,
-                            );
-                        };
-                        apply_highlights(&tui_highlight_bg, &mut textarea);
+                        // Get the size of the available terminal area
+                        let area = f.area();
+
+                        // Ensure there's enough height for both the textarea and the status line
+                        if area.height > 1 {
+                            let chunks = Layout::default()
+                                .direction(Direction::Vertical)
+                                .constraints(
+                                    [
+                                        Constraint::Min(area.height - 3), // Editor area takes up the rest
+                                        Constraint::Length(3),            // Status line gets 1 line
+                                    ]
+                                    .as_ref(),
+                                )
+                                .split(area);
+
+                            // Render the textarea in the first chunk
+                            f.render_widget(&textarea, chunks[0]);
+
+                            // Render the status line in the second chunk
+                            let status_block = Block::default()
+                                .borders(Borders::ALL)
+                                .title("Status")
+                                .style(Style::default().fg(Color::White))
+                                .title_style(display.title_style);
+
+                            let status_text = Paragraph::new::<&str>(status_message.as_ref())
+                                .block(status_block)
+                                .style(Style::default().fg(Color::White));
+
+                            f.render_widget(status_text, chunks[1]);
+
+                            if popup {
+                                display_popup(
+                                    &adjusted_mappings,
+                                    TITLE_TOP,
+                                    TITLE_BOTTOM,
+                                    max_key_len,
+                                    max_desc_len,
+                                    f,
+                                );
+                            };
+                            highlight_selection(&mut textarea, tui_highlight_fg);
+                            // status_message = String::new();
+                        }
                     })
                     .map_err(|e| {
                         eprintln!("Error drawing terminal: {e:?}");
@@ -591,11 +586,12 @@ where
         if let Paste(ref data) = event {
             textarea.insert_str(normalize_newlines(data));
         } else if let Event::Key(key_event) = event {
+            // Ignore key release, which creates an unwanted second event in Windows
             if !matches!(key_event.kind, KeyEventKind::Press) {
                 continue;
             }
-            // #[cfg(debug_assertions)]
-            // log::debug!("key_event={key_event:#?}");
+            //
+            // log::debug_log!("key_event={key_event:#?}");
             let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
             // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
@@ -638,27 +634,48 @@ where
                     textarea.paste();
                 }
                 key!(ctrl - f) | key!(right) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Forward);
                 }
                 key!(ctrl - b) | key!(left) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Back);
                 }
                 key!(ctrl - p) | key!(up) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Up);
                 }
                 key!(ctrl - n) | key!(down) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Down);
                 }
                 key!(alt - f) | key!(ctrl - right) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::WordForward);
                 }
                 key!(alt - shift - f) => {
                     textarea.move_cursor(CursorMove::WordEnd);
                 }
                 key!(alt - b) | key!(ctrl - left) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::WordBack);
                 }
                 key!(alt - p) | key!(alt - ')') | key!(ctrl - up) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::ParagraphBack);
                 }
                 key!(alt - n) | key!(alt - '(') | key!(ctrl - down) => {
@@ -682,8 +699,6 @@ where
                         textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
                     }
                 }
-
-                //
                 key!(alt - '<') | key!(ctrl - alt - p) | key!(ctrl - alt - up) => {
                     textarea.move_cursor(CursorMove::Top);
                 }
@@ -691,34 +706,39 @@ where
                     textarea.move_cursor(CursorMove::Bottom);
                 }
                 key!(alt - c) => {
-                    textarea.cancel_selection();
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    } else {
+                        textarea.start_selection();
+                    }
+                }
+                // key!(alt - shift - c) => {
+                //     textarea.start_selection();
+                // }
+                key!(alt - shift - a) => {
+                    textarea.select_all();
                 }
                 key!(ctrl - t) => {
                     // Toggle highlighting colours
-                    tui_highlight_bg = match tui_highlight_bg {
-                        TuiSelectionBg::BlueYellow => TuiSelectionBg::RedWhite,
-                        TuiSelectionBg::RedWhite => TuiSelectionBg::BlueYellow,
+                    tui_highlight_fg = match tui_highlight_fg {
+                        Lvl::EMPH => Lvl::BRI,
+                        Lvl::BRI => Lvl::ERR,
+                        Lvl::ERR => Lvl::WARN,
+                        Lvl::WARN => Lvl::HEAD,
+                        Lvl::HEAD => Lvl::SUBH,
+                        _ => Lvl::EMPH,
                     };
                     if var("TEST_ENV").is_err() {
                         #[allow(clippy::option_if_let_else)]
                         if let Some(ref mut term) = maybe_term {
                             term.draw(|_| {
-                                apply_highlights(&tui_highlight_bg, &mut textarea);
+                                highlight_selection(&mut textarea, tui_highlight_fg);
                             })?;
                         }
                     }
                 }
                 _ => {
                     // Call the key_handler closure to process events
-                    // #[cfg(debug_assertions)]
-                    // debug!(
-                    //     "edit_data.history.current_index={:?}",
-                    //     edit_data
-                    //         .history
-                    //         .as_ref()
-                    //         .and_then(|hist| hist.current_index)
-                    // );
-
                     let key_action = key_handler(
                         key_event,
                         &mut maybe_term.as_mut(),
@@ -727,6 +747,7 @@ where
                         edit_data,
                         &mut popup,
                         &mut saved,
+                        &mut status_message,
                     )?;
                     // eprintln!("key_action={key_action:?}");
                     match key_action {
@@ -758,6 +779,14 @@ where
     }
 }
 
+pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate::MessageLevel) {
+    textarea.set_selection_style(
+        Style::default()
+            .fg(Color::Indexed(u8::from(&tui_highlight_fg)))
+            .bold(),
+    );
+}
+
 /// Key handler function to be passed into `tui_edit` for editing REPL history.
 ///
 /// # Errors
@@ -771,6 +800,7 @@ pub fn script_key_handler(
     edit_data: &mut EditData,
     popup: &mut bool,
     saved: &mut bool, // TODO decide if we need this
+    status_message: &mut String,
 ) -> ThagResult<KeyAction> {
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
@@ -795,23 +825,26 @@ pub fn script_key_handler(
         }
         key!(ctrl - s) | key!(ctrl - alt - s) => {
             // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
-            if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
-                if let Some(ref hist_path) = history_path {
-                    let history = &mut edit_data.history;
-                    if let Some(hist) = history {
-                        preserve(textarea, hist, hist_path)?;
-                    };
-                }
-                let result = edit_data
-                    .save_path
-                    .as_mut()
-                    .map(|p| save_source_file(p, textarea, saved));
-                match result {
-                    Some(Ok(())) => {}
-                    Some(Err(e)) => return Err(e),
-                    None => return Err(ThagError::Logic(
-                        "Should be testing for maybe_save_path.is_some() before calling map on it.",
-                    )),
+            if matches!(key_combination, key!(ctrl - s)) {
+                if let Some(ref mut save_path) = edit_data.save_path {
+                    if let Some(ref hist_path) = history_path {
+                        let history = &mut edit_data.history;
+                        if let Some(hist) = history {
+                            preserve(textarea, hist, hist_path)?;
+                        };
+                        let result = save_source_file(save_path, textarea, saved);
+                        match result {
+                            Ok(()) => {
+                                status_message.clear();
+                                status_message
+                                    .push_str(&format!("Saved to {}", save_path.display()));
+                            }
+                            Err(e) => return Err(e),
+                            // None => return Err(ThagError::Logic(
+                            //     "Should be testing for maybe_save_path.is_some() before calling map on it.",
+                            // )),
+                        }
+                    }
                 }
                 Ok(KeyAction::Save)
             } else if let Some(term) = maybe_term {
@@ -827,6 +860,9 @@ pub fn script_key_handler(
 
                 if let Some(ref to_rs_path) = save_dialog.selected_file {
                     save_source_file(to_rs_path, textarea, saved)?;
+                    status_message.clear();
+                    status_message.push_str(&format!("Saved to {}", to_rs_path.display()));
+
                     Ok(KeyAction::Save)
                 } else {
                     Ok(KeyAction::Continue)
@@ -844,17 +880,23 @@ pub fn script_key_handler(
             // Ask to revert
             Ok(KeyAction::AbandonChanges)
         }
+        key!(f4) => {
+            // Clear textarea
+            textarea.select_all();
+            textarea.cut();
+            Ok(KeyAction::Continue)
+        }
         key!(f7) => {
             if let Some(ref mut hist) = edit_data.history {
                 if hist.at_end() && textarea.is_empty() {
                     if let Some(entry) = &hist.get_last() {
-                        debug!("F7 (1) found entry {entry:?}");
+                        debug_log!("F7 (1) found entry {entry:?}");
                         paste_to_textarea(textarea, entry);
                     }
                 } else {
                     save_if_changed(hist, textarea, &history_path)?;
                     if let Some(entry) = &hist.get_previous() {
-                        debug!("F7 (2) found entry {entry:?}");
+                        debug_log!("F7 (2) found entry {entry:?}");
                         paste_to_textarea(textarea, entry);
                     }
                 }
@@ -865,8 +907,7 @@ pub fn script_key_handler(
             if let Some(ref mut hist) = edit_data.history {
                 // save_if_changed(hist, textarea, &history_path)?;
                 if let Some(entry) = hist.get_next() {
-                    #[cfg(debug_assertions)]
-                    debug!("F8 found entry {entry:?}");
+                    debug_log!("F8 found entry {entry:?}");
                     paste_to_textarea(textarea, entry);
                 }
             }
@@ -888,40 +929,30 @@ pub fn script_key_handler(
 /// This function will bubble up any i/o errors encountered by `crossterm::enable_raw_mode`.
 pub fn maybe_enable_raw_mode() -> ThagResult<()> {
     let test_env = &var("TEST_ENV");
-    #[cfg(debug_assertions)]
     debug_log!("test_env={test_env:?}");
     if !test_env.is_ok() && !is_raw_mode_enabled()? {
-        #[cfg(debug_assertions)]
         debug_log!("Enabling raw mode");
         enable_raw_mode()?;
     }
     Ok(())
 }
 
-#[allow(clippy::cast_possible_truncation, clippy::missing_panics_doc)]
-pub fn show_popup<'a>(
-    mappings: &'a [KeyDisplayLine],
-    f: &mut ratatui::prelude::Frame,
+pub fn display_popup(
+    mappings: &[KeyDisplayLine],
     title_top: &str,
     title_bottom: &str,
-    remove: &[&str],
-    add: &'a [KeyDisplayLine],
+    max_key_len: u16,
+    max_desc_len: u16,
+    f: &mut ratatui::prelude::Frame<'_>,
 ) {
-    let adjusted_mappings: Vec<KeyDisplayLine> = mappings
-        .iter()
-        .filter(|&row| !remove.contains(&row.keys))
-        .chain(add.iter())
-        .cloned()
-        .collect();
-    let (max_key_len, max_desc_len) =
-        adjusted_mappings
-            .iter()
-            .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
-                let key_len = row.keys.len().try_into().unwrap();
-                let desc_len = row.desc.len().try_into().unwrap();
-                (max_key.max(key_len), max_desc.max(desc_len))
-            });
-    let num_filtered_rows = adjusted_mappings.len();
+    let num_filtered_rows = mappings.len();
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title_top(Line::from(title_top).centered())
+        .title_bottom(Line::from(title_bottom).centered())
+        .add_modifier(Modifier::BOLD)
+        .fg(Color::Indexed(u8::from(&Lvl::HEAD)));
+    #[allow(clippy::cast_possible_truncation)]
     let area = centered_rect(
         max_key_len + max_desc_len + 5,
         num_filtered_rows as u16 + 5,
@@ -931,15 +962,10 @@ pub fn show_popup<'a>(
         vertical: 2,
         horizontal: 2,
     });
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .title_top(Line::from(title_top).centered())
-        .title_bottom(Line::from(title_bottom).centered())
-        .add_modifier(Modifier::BOLD)
-        .fg(Color::Indexed(u8::from(&MessageLevel::Heading)));
     // this is supposed to clear out the background
     f.render_widget(Clear, area);
     f.render_widget(block, area);
+    #[allow(clippy::cast_possible_truncation)]
     let row_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -959,27 +985,25 @@ pub fn show_popup<'a>(
                 .as_ref(),
             );
         let cells = col_layout.split(*row);
-        let mut widget = Paragraph::new(adjusted_mappings[i].keys);
+        let mut widget = Paragraph::new(mappings[i].keys);
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
+                .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
         } else {
-            widget = widget
-                .fg(Color::Indexed(u8::from(&MessageLevel::Subheading)))
-                .not_bold();
+            widget = widget.fg(Color::Indexed(u8::from(&Lvl::SUBH))).not_bold();
         }
         f.render_widget(widget, cells[0]);
-        let mut widget = Paragraph::new(adjusted_mappings[i].desc);
+        let mut widget = Paragraph::new(mappings[i].desc);
 
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
+                .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
         } else {
             widget = widget.remove_modifier(Modifier::BOLD).set_style(
                 Style::default()
-                    .fg(Color::Indexed(u8::from(&MessageLevel::Normal)))
+                    .fg(Color::Indexed(u8::from(&Lvl::NORM)))
                     .not_bold(),
             );
         }
@@ -1014,26 +1038,6 @@ pub fn normalize_newlines(input: &str) -> String {
     re.replace_all(input, "\n").to_string()
 }
 
-/// Apply highlights to the text depending on the light or dark theme as detected, configured
-/// or defaulted, or as toggled by the user with Ctrl-t.
-pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
-    profile_fn!(apply_highlights);
-    match scheme {
-        TuiSelectionBg::BlueYellow => {
-            // Dark theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
-            textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
-            textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
-        }
-        TuiSelectionBg::RedWhite => {
-            // Light theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
-            textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
-            textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
-        }
-    }
-}
-
 /// Reset the terminal.
 ///
 /// # Errors
@@ -1061,11 +1065,9 @@ pub fn save_if_changed(
     textarea: &mut TextArea<'_>,
     history_path: &Option<PathBuf>,
 ) -> Result<(), ThagError> {
-    #[cfg(debug_assertions)]
-    debug!("save_if_changed...");
+    debug_log!("save_if_changed...");
     if textarea.is_empty() {
-        #[cfg(debug_assertions)]
-        debug!("nothing to save(1)...");
+        debug_log!("nothing to save(1)...");
         return Ok(());
     }
     if let Some(entry) = &hist.get_current() {
@@ -1073,8 +1075,7 @@ pub fn save_if_changed(
         let copy_text = copy_text(textarea);
         // In case they entered blanks
         if copy_text.trim().is_empty() {
-            #[cfg(debug_assertions)]
-            debug!("nothing to save(2)...");
+            debug_log!("nothing to save(2)...");
             return Ok(());
         }
         if entry.contents() != copy_text {
@@ -1104,22 +1105,19 @@ pub fn preserve(
     hist: &mut History,
     history_path: &PathBuf,
 ) -> ThagResult<()> {
-    #[cfg(debug_assertions)]
-    debug!("preserve...");
+    debug_log!("preserve...");
     save_if_not_empty(textarea, hist);
     save_history(Some(&mut hist.clone()), Some(history_path))?;
     Ok(())
 }
 
 pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
-    #[cfg(debug_assertions)]
-    debug!("save_if_not_empty...");
+    debug_log!("save_if_not_empty...");
 
     let text = copy_text(textarea);
     if !text.trim().is_empty() {
         hist.add_entry(&text);
-        #[cfg(debug_assertions)]
-        debug!("... added entry");
+        debug_log!("... added entry");
     }
 }
 
@@ -1139,13 +1137,11 @@ pub fn save_history(
     history: Option<&mut History>,
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
-    #[cfg(debug_assertions)]
-    debug!("save_history...{history:?}");
+    debug_log!("save_history...{history:?}");
     if let Some(hist) = history {
         if let Some(hist_path) = history_path {
             hist.save_to_file(hist_path)?;
-            #[cfg(debug_assertions)]
-            debug!("... saved to file");
+            debug_log!("... saved to file");
         }
     }
     Ok(())
@@ -1158,31 +1154,19 @@ pub fn save_history(
 /// This function will bubble up any i/o errors encuntered.
 pub fn save_source_file(
     to_rs_path: &PathBuf,
-    textarea: &TextArea<'_>,
+    textarea: &mut TextArea<'_>,
     saved: &mut bool,
 ) -> ThagResult<()> {
-    let _write_source = code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
+    // Ensure newline at end
+    textarea.move_cursor(CursorMove::Bottom);
+    textarea.move_cursor(CursorMove::End);
+    if textarea.cursor().1 != 0 {
+        textarea.insert_newline();
+    }
+    let _write_source = write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
     *saved = true;
     Ok(())
 }
-
-// fn process_source(
-//     rs_source: &str,
-//     build_state: &mut BuildState,
-//     args: &Cli,
-//     proc_flags: &ProcFlags,
-//     start: Instant,
-// ) -> ThagResult<()> {
-//     let rs_manifest = extract_manifest(rs_source, Instant::now())?;
-//     build_state.rs_manifest = Some(rs_manifest);
-//     let maybe_ast = extract_ast_expr(rs_source);
-//     if let Ok(expr_ast) = maybe_ast {
-//         code_utils::process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
-//     } else {
-//         cprtln!(Lvl::ERR.into(), "Error parsing code: {maybe_ast:#?}");
-//     };
-//     Ok(())
-// }
 
 #[macro_export]
 macro_rules! key_mappings {
@@ -1213,65 +1197,70 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
         "Shift+Ctrl+arrow keys",
         "Select/deselect words (←→) or paras (↑↓)"
     ),
-    (40, "Alt+c", "Cancel selection"),
-    (50, "Ctrl+d", "Submit"),
-    (60, "Ctrl+q", "Cancel and quit"),
-    (70, "Ctrl+h, Backspace", "Delete character before cursor"),
-    (80, "Ctrl+i, Tab", "Indent"),
-    (90, "Ctrl+m, Enter", "Insert newline"),
-    (100, "Ctrl+k", "Delete from cursor to end of line"),
-    (110, "Ctrl+j", "Delete from cursor to start of line"),
+    (40, "Alt+a", "Select all"),
     (
-        120,
+        50,
+        "Alt+c",
+        "Toggle selection mode: start selecting / cancel selection"
+    ),
+    (60, "Ctrl+d", "Submit"),
+    (70, "Ctrl+q", "Cancel and quit"),
+    (80, "Ctrl+h, Backspace", "Delete character before cursor"),
+    (90, "Ctrl+i, Tab", "Indent"),
+    (100, "Ctrl+m, Enter", "Insert newline"),
+    (110, "Ctrl+k", "Delete from cursor to end of line"),
+    (120, "Ctrl+j", "Delete from cursor to start of line"),
+    (
+        130,
         "Ctrl+w, Alt+Backspace",
         "Delete one word before cursor"
     ),
-    (130, "Alt+d, Delete", "Delete one word from cursor position"),
-    (140, "Ctrl+u", "Undo"),
-    (150, "Ctrl+r", "Redo"),
-    (160, "Ctrl+c", "Copy (yank) selected text"),
-    (170, "Ctrl+x", "Cut (yank) selected text"),
-    (180, "Ctrl+y", "Paste yanked text"),
+    (140, "Alt+d, Delete", "Delete one word from cursor position"),
+    (150, "Ctrl+u", "Undo"),
+    (160, "Ctrl+r", "Redo"),
+    (170, "Ctrl+c", "Copy (yank) selected text"),
+    (180, "Ctrl+x", "Cut (yank) selected text"),
+    (190, "Ctrl+y", "Paste yanked text"),
     (
-        190,
+        200,
         "Ctrl+v, Shift+Ins, Cmd+v",
         "Paste from system clipboard"
     ),
-    (200, "Ctrl+f, →", "Move cursor forward one character"),
-    (210, "Ctrl+b, ←", "Move cursor backward one character"),
-    (220, "Ctrl+p, ↑", "Move cursor up one line"),
-    (230, "Ctrl+n, ↓", "Move cursor down one line"),
-    (240, "Alt+f, Ctrl+→", "Move cursor forward one word"),
-    (250, "Alt+Shift+f", "Move cursor to next word end"),
-    (260, "Atl+b, Ctrl+←", "Move cursor backward one word"),
-    (270, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
-    (280, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
+    (210, "Ctrl+f, →", "Move cursor forward one character"),
+    (220, "Ctrl+b, ←", "Move cursor backward one character"),
+    (230, "Ctrl+p, ↑", "Move cursor up one line"),
+    (240, "Ctrl+n, ↓", "Move cursor down one line"),
+    (250, "Alt+f, Ctrl+→", "Move cursor forward one word"),
+    (260, "Alt+Shift+f", "Move cursor to next word end"),
+    (270, "Atl+b, Ctrl+←", "Move cursor backward one word"),
+    (280, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
+    (290, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
     (
-        290,
+        300,
         "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
         "Move cursor to end of line"
     ),
     (
-        300,
+        310,
         "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
         "Move cursor to start of line"
     ),
-    (310, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
+    (320, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
     (
-        320,
+        330,
         "Alt+>, Ctrl+Alt+n or ↓",
         "Move cursor to bottom of file"
     ),
-    (330, "PageDown, Cmd+↓", "Page down"),
-    (340, "Alt+v, PageUp, Cmd+↑", "Page up"),
-    (350, "Ctrl+l", "Toggle keys display (this screen)"),
-    (360, "Ctrl+t", "Toggle highlight colours"),
-    (370, "F7", "Previous in history"),
-    (380, "F8", "Next in history"),
+    (340, "PageDown, Cmd+↓", "Page down"),
+    (350, "Alt+v, PageUp, Cmd+↑", "Page up"),
+    (360, "Ctrl+l", "Toggle keys display (this screen)"),
+    (370, "Ctrl+t", "Toggle selection highlight colours"),
+    (380, "F7", "Previous in history"),
+    (390, "F8", "Next in history"),
     (
-        390,
+        400,
         "F9",
         "Suspend mouse capture and line numbers for system copy"
     ),
-    (400, "F10", "Resume mouse capture and line numbers"),
+    (410, "F10", "Resume mouse capture and line numbers"),
 ];

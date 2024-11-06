@@ -1,8 +1,9 @@
 /*[toml]
 [dependencies]
 lazy_static = "1.4.0"
+log = "0.4.22"
 regex = "1.10.5"
-thag_rs = "0.1.4"
+thag_rs = "0.1.5"
 */
 
 /// This is the actual script used to collect demo script metadata and generate

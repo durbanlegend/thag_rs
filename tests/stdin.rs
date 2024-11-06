@@ -7,32 +7,37 @@ use ratatui::crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyModifiers},
     tty::IsTty,
 };
-use ratatui::style::{Color, Style};
 use sequential_test::sequential;
 #[cfg(feature = "simplelog")]
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
-#[cfg(feature = "simplelog")]
-use std::{fs::File, sync::OnceLock};
 use std::{
-    fs::{self},
+    env::set_var,
+    fs,
     io::{stdout, Write},
-    path::PathBuf,
     process::{Command, Stdio},
 };
-use thag_rs::colors::{get_term_theme, TuiSelectionBg};
-use thag_rs::stdin::{edit, read_to_string, toml};
-use thag_rs::tui_editor::{apply_highlights, normalize_newlines, History, MockEventReader};
-use thag_rs::{log, logging::Verbosity, ThagResult, TMPDIR};
-use tui_textarea::TextArea;
+#[cfg(feature = "simplelog")]
+use std::{fs::File, sync::OnceLock};
+use thag_rs::stdin::{edit, read_to_string};
+use thag_rs::tui_editor::{normalize_newlines, History};
+use thag_rs::{vlog, MockEventReader, ThagResult, TMPDIR, V};
 
 // Set environment variables before running tests
 fn set_up() {
     init_logger();
-    std::env::set_var("TEST_ENV", "1");
-    std::env::set_var("VISUAL", "cat");
-    std::env::set_var("EDITOR", "cat");
+    set_var("TEST_ENV", "1");
+    #[cfg(windows)]
+    {
+        set_var("VISUAL", "powershell.exe /C Get-Content");
+        set_var("EDITOR", "powershell.exe /C Get-Content");
+    }
+    #[cfg(not(windows))]
+    {
+        set_var("VISUAL", "cat");
+        set_var("EDITOR", "cat");
+    }
 }
 
 #[cfg(feature = "simplelog")]
@@ -107,10 +112,7 @@ fn test_stdin_edit_stdin_submit() {
 
     let result = edit(&mock_reader);
 
-    log!(
-        Verbosity::Normal,
-        "\ntest_edit_stdin_submit result={result:#?}"
-    );
+    vlog!(V::N, "\ntest_edit_stdin_submit result={result:#?}");
     assert!(result.is_ok());
     let lines = result.unwrap();
     // Expecting a Vec with one entry: an empty string
@@ -273,22 +275,6 @@ fn test_stdin_repl_command_print_help() {
 }
 
 #[test]
-fn test_stdin_toml_file_exists() {
-    set_up();
-    let path = PathBuf::from("tests/assets/Cargo_t.toml");
-    assert!(toml(&path).is_ok());
-}
-
-#[test]
-fn test_stdin_toml_file_does_not_exist() {
-    set_up();
-    let path = PathBuf::from("non_existent_toml");
-    let result = toml(&path);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), Some("End of Cargo.toml edit".to_string()));
-}
-
-#[test]
 fn test_stdin_read_to_string() {
     set_up();
     let string = r#"fn main() {{ println!("Hello, world!"); }}\n"#;
@@ -360,40 +346,4 @@ fn test_stdin_normalize_newlines() {
     let input = "Hello\r\nWorld\r!";
     let expected_output = "Hello\nWorld\n!";
     assert_eq!(normalize_newlines(input), expected_output);
-}
-
-#[test]
-fn test_stdin_apply_highlights() {
-    set_up();
-    let mut textarea = TextArea::default();
-
-    eprintln!("Theme={}", get_term_theme());
-
-    apply_highlights(&TuiSelectionBg::BlueYellow, &mut textarea);
-    assert_eq!(
-        textarea.selection_style(),
-        Style::default().fg(Color::Black).bg(Color::Cyan)
-    );
-    assert_eq!(
-        textarea.cursor_style(),
-        Style::default().fg(Color::Black).bg(Color::LightYellow)
-    );
-    assert_eq!(
-        textarea.cursor_line_style(),
-        Style::default().fg(Color::White).bg(Color::DarkGray)
-    );
-
-    apply_highlights(&TuiSelectionBg::RedWhite, &mut textarea);
-    assert_eq!(
-        textarea.selection_style(),
-        Style::default().fg(Color::White).bg(Color::Blue)
-    );
-    assert_eq!(
-        textarea.cursor_style(),
-        Style::default().fg(Color::White).bg(Color::LightRed)
-    );
-    assert_eq!(
-        textarea.cursor_line_style(),
-        Style::default().fg(Color::Black).bg(Color::Gray)
-    );
 }

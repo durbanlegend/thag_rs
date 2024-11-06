@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.71", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
+syn = { version = "2.0.87", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
 */
 
 /// Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a

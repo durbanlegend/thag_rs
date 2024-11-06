@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-quote = "1.0.36"
-syn = { version = "2.0.71", features = ["full"] }
+quote = "1.0.37"
+syn = { version = "2.0.87", features = ["full"] }
 */
 
 /// Prototype of a simple partial expression evaluator. It solicits a Rust expression and embeds

@@ -1,25 +1,21 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::colors::TuiSelectionBg;
-use crate::errors::ThagResult;
-use crate::logging::Verbosity;
-use crate::regex;
-use crate::shared::KeyDisplayLine;
-use crate::tui_editor::{
-    script_key_handler, tui_edit, CrosstermEventReader, EditData, EventReader, History, KeyAction,
-    KeyDisplay,
+use crate::tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay};
+use crate::{
+    debug_log, regex, vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError,
+    ThagResult, V,
 };
-use crate::{debug_log, log, ThagError};
 use clap::Parser;
 use edit::edit_file;
 use mockall::predicate::str;
 use ratatui::style::{Color, Modifier, Style};
 use regex::Regex;
-use std::fmt::Debug;
-use std::fs::OpenOptions;
-use std::io::{self, BufRead, IsTerminal};
-use std::path::PathBuf;
+use std::{
+    fmt::Debug,
+    fs::OpenOptions,
+    io::{self, BufRead, IsTerminal},
+    path::PathBuf,
+};
 use strum::{EnumIter, EnumString, IntoStaticStr};
-use tui_textarea::TextArea;
 
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(
@@ -67,7 +63,7 @@ enum ReplCommand {
 fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
-        log!(Verbosity::Normal, "{line}");
+        vlog!(V::N, "{line}");
     }
     Ok(())
 }
@@ -79,9 +75,9 @@ fn main() -> ThagResult<()> {
 ///
 /// ```no_run
 /// use thag_rs::stdin::edit;
-/// use thag_rs::tui_editor::CrosstermEventReader;
+/// use thag_rs::CrosstermEventReader;
 /// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
-/// use thag_rs::tui_editor::MockEventReader;
+/// use thag_rs::MockEventReader;
 ///
 /// let mut event_reader = MockEventReader::new();
 /// event_reader.expect_read_event().return_once(|| {
@@ -111,7 +107,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     let initial_content = if input.is_terminal() {
         String::new()
     } else {
-        crate::stdin::read()?
+        read()?
     };
 
     if !initial_content.trim().is_empty() {
@@ -127,9 +123,9 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         history: Some(history),
     };
     let add_keys = [
-        KeyDisplayLine::new(361, "Ctrl+Alt+s", "Save a copy"),
-        KeyDisplayLine::new(371, "F3", "Discard saved and unsaved changes, and exit"),
-        KeyDisplayLine::new(372, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
+        KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
+        KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
+        KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
     let display = KeyDisplay {
         title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",
@@ -177,7 +173,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
-    log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+    vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
 }
@@ -212,25 +208,6 @@ pub fn normalize_newlines(input: &str) -> String {
     let re: &Regex = regex!(r"\r\n?");
 
     re.replace_all(input, "\n").to_string()
-}
-
-/// Apply highlights to the text depending on the light or dark theme as detected, configured
-/// or defaulted, or as toggled by the user with Ctrl-t.
-pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
-    match scheme {
-        TuiSelectionBg::BlueYellow => {
-            // Dark theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
-            textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
-            textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
-        }
-        TuiSelectionBg::RedWhite => {
-            // Light theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
-            textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
-            textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
-        }
-    }
 }
 
 /// Open the history file in an editor.

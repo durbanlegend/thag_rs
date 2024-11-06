@@ -1,43 +1,24 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::cmd_args::{Cli, ProcFlags};
-use crate::errors::{ThagError, ThagResult};
-use crate::logging::Verbosity;
 use crate::{
-    debug_log, log, modified_since_compiled, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
-    TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME,
+    debug_log, modified_since_compiled, vlog, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
+    TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
-
+use crate::{Cli, ProcFlags};
+use crate::{ThagError, ThagResult};
 use cargo_toml::Manifest;
+use crossterm::event::Event;
 use firestorm::profile_fn;
 use home::home_dir;
+use mockall::automock;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
+use std::convert::Into;
+use std::time::Duration;
 use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
 use strum::Display;
-
-/// Reset the display by moving the cursor to the first column and showing it.
-/// Crates like `termbg` and `supports-color` send an operating system command (OSC)
-/// to interrogate the screen but with side effects which we attempt(ed) to undo here.
-/// Unfortunately this appends the `MoveToColumn` and Show command sequences to the
-/// program's output, which prevents it being used as a filter in a pipeline. On
-/// Windows we resort to defaults and configuration; on other platforms any lingering
-/// effects of disabling this remain to be seen.
-/// # Panics
-/// Will panic if a crossterm execute command fails.
-#[deprecated(
-    since = "0.1.0",
-    note = "Redundant and pollutes piped output. Alternatives already in place."
-)]
-pub const fn clear_screen() {
-    // Commented out because this turns up at the end of the output
-    // let mut out = stdout();
-    // out.execute(MoveToColumn(0)).unwrap();
-    // out.execute(Show).unwrap();
-    // out.flush().unwrap();
-}
 
 /// An abstract syntax tree wrapper for use with syn.
 #[derive(Clone, Debug, Display)]
@@ -307,7 +288,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
 
     debug_log!("{msg}");
     if proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        log!(Verbosity::Quieter, "{msg}");
+        vlog!(V::QQ, "{msg}");
     }
 }
 
@@ -326,17 +307,60 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.to_string()
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct KeyDisplayLine {
     pub seq: usize,
     pub keys: &'static str, // Or String if you plan to modify the keys later
     pub desc: &'static str, // Or String for modifiability
 }
 
+impl PartialOrd for KeyDisplayLine {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        usize::partial_cmp(&self.seq, &other.seq)
+    }
+}
+
+impl Ord for KeyDisplayLine {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        usize::cmp(&self.seq, &other.seq)
+    }
+}
+
 impl KeyDisplayLine {
     #[must_use]
     pub const fn new(seq: usize, keys: &'static str, desc: &'static str) -> Self {
         Self { seq, keys, desc }
+    }
+}
+
+/// A trait to allow mocking of the event reader for testing purposes.
+#[automock]
+pub trait EventReader {
+    /// Read a terminal event.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+    fn read_event(&self) -> ThagResult<Event>;
+    /// Poll for a terminal event.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+    fn poll(&self, timeout: Duration) -> ThagResult<bool>;
+}
+
+/// A struct to implement real-world use of the event reader, as opposed to use in testing.
+#[derive(Debug)]
+pub struct CrosstermEventReader;
+
+impl EventReader for CrosstermEventReader {
+    fn read_event(&self) -> ThagResult<Event> {
+        crossterm::event::read().map_err(Into::<ThagError>::into)
+    }
+
+    fn poll(&self, timeout: Duration) -> ThagResult<bool> {
+        crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
     }
 }
 

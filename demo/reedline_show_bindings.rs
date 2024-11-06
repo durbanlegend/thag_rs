@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-reedline = "0.35.0"
+reedline = "0.36.0"
 */
 
 /// Prototype of key binding display function for `reedline` REPL. This was developed

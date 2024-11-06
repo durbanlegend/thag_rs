@@ -4,7 +4,7 @@ crossterm = "0.28.1"
 termbg = "0.5.2"
 */
 
-/// This still seems to "reliably" swallow the very first character entered in Windows.
+/// This still seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
 /// The `crossterm` reset doesn't seem to help. My disappointment is immeasurable and
 /// my day is ruined.
 //# Purpose: Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.

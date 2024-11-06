@@ -443,12 +443,28 @@ which will give identical output to the above.
 
 ### Script: colors.rs
 
-**Description:**  A version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
- module, `colors` was originally developed here as a separate script and integrated as a module later.
-
- Format: `nu_color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
+**Description:**  Runner for current version of `src/colors.rs`, as it's become too enmeshed with other modules to split out nicely.
+ We just borrow the main method here and add all the necessary dependencies and imports.
 
  E.g. `thag demo/colors.rs`
+ Main function for use by testing or the script runner.
+
+**Purpose:** Test the look of the various colours.
+
+**Crates:** `nu_ansi_term`, `strum`, `termbg`, `thag_rs`
+
+**Type:** Program
+
+**Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
+
+---
+
+### Script: colors_old.rs
+
+**Description:**  An older version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
+ module, `colors` was originally developed here as a separate script and integrated as a module later.
+
+ E.g. `thag demo/colors_old.rs`
 
 **Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
@@ -456,7 +472,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
+**Link:** [colors_old.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs)
 
 ---
 
@@ -466,7 +482,6 @@ which will give identical output to the above.
  to their type. I only dropped `owo-colors` because I switched from `rustyline` to
  `reedline`, which was already using `nu_ansi_term`.
 
- Format: `color_println!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 
 **Purpose:** Demo older alternative implementation of `colors` module using `owo-colors`.
 
@@ -770,6 +785,21 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [darling_consume_fields.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs)
+
+---
+
+### Script: darling_struct.rs
+
+**Description:**  Published example from `darling` crate showing parsing for derive input.
+ Extended to show formatted version of emitted code.
+
+**Purpose:** Explore `darling` crate.
+
+**Crates:** `darling`, `proc_macro2`, `quote`, `syn`
+
+**Type:** Program
+
+**Link:** [darling_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs)
 
 ---
 
@@ -2806,7 +2836,7 @@ which will give identical output to the above.
 
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
  Rust source program passed to the script. Specifically the combination of fn `visit_item_extern_crate`
- to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
+ to process the nodes representing `extern crate` statements and fn `visit_file` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
 
 **Purpose:** Demo featured crate.
@@ -2857,7 +2887,7 @@ which will give identical output to the above.
 
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
  Rust source program passed to the script. Specifically the combination of fn `visit_use_path`
- to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
+ to process the nodes representing `use` statements and fn `visit_file` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
 
 **Purpose:** Demo featured crate.
@@ -2875,7 +2905,7 @@ which will give identical output to the above.
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that exist
  for the purpose of renaming a dependency so that we don't go looking for the temporary in the registry.
  Specifically the combination of fn `visit_use_rename` to process the nodes representing `extern crate`
- statements and fn `visit_expr` to initiate the tree traversal. This version expects the script contents
+ statements and fn `` to initiate the tree traversal. This version expects the script contents
  to consist of a full-fledged Rust program.
 
 **Purpose:** Demo featured crate.
@@ -2885,6 +2915,23 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs)
+
+---
+
+### Script: syn_visit_use_tree_file.rs
+
+**Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
+ Rust source program passed to the script. Specifically the combination of fn `visit_use_tree`
+ to process the nodes representing `use` statements and fn `` to initiate the tree
+ traversal. This version expects the script contents to consist of a full-fledged Rust program.
+
+**Purpose:** Develop improved algorithm for `thag_rs` that accepts imports of the form `use <crate>;` instead of requiring `use <crate>::...`.
+
+**Crates:** `syn`
+
+**Type:** Program
+
+**Link:** [syn_visit_use_tree_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs)
 
 ---
 
@@ -2909,7 +2956,7 @@ which will give identical output to the above.
 
 **Purpose:** Allow checking of terminals on platforms to be supported, also test reliability of different crates.
 
-**Crates:** `crossterm`, `supports_color`
+**Crates:** `crossterm`, `log`, `simplelog`, `supports_color`, `thag_rs`
 
 **Type:** Snippet
 
@@ -2925,7 +2972,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo theme detection with `termbg` and clearing terminal state with `crossterm`.
 
-**Crates:** `crossterm`
+**Crates:** `simplelog`, `thag_rs`
 
 **Type:** Program
 
@@ -3275,7 +3322,7 @@ which will give identical output to the above.
 
 ### Script: win_test_supports_color.rs
 
-**Description:**  This seems to intermittently swallow the very first character entered in Windows.
+**Description:**  This seems to intermittently swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
@@ -3289,7 +3336,7 @@ which will give identical output to the above.
 
 ### Script: win_test_termbg.rs
 
-**Description:**  This seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
@@ -3301,7 +3348,7 @@ which will give identical output to the above.
 
 ### Script: win_test_termbg_reset.rs
 
-**Description:**  This still seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This still seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
  The `crossterm` reset doesn't seem to help. My disappointment is immeasurable and
  my day is ruined.
 
@@ -3317,7 +3364,7 @@ which will give identical output to the above.
 
 ### Script: win_test_termbg_thag.rs
 
-**Description:**  This seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
@@ -3331,7 +3378,7 @@ which will give identical output to the above.
 
 ### Script: win_test_terminal_light.rs
 
-**Description:**  This seems to "reliably" swallow the very first character entered in Windows.
+**Description:**  This seems to "reliably" swallow the very first character entered in Window, prior to `termbg` 0.6.0..
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 

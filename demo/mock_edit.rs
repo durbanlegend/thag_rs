@@ -9,15 +9,15 @@ thag_rs = "0.1.5"
 //# Purpose: Debugging script.
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use mockall::{automock, predicate::str};
-use thag_rs::ThagResult;
 use thag_rs::stdin::edit;
 use thag_rs::tui_editor::{EventReader, MockEventReader};
+use thag_rs::ThagResult;
 
 pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
     fn read_event(&self) -> ThagResult<Event> {
-        Ok(crossterm::event::read()?)
+         Ok(crossterm::event::read()?)
     }
 }
 

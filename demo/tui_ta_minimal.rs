@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-ratatui = "0.27.0"
+ratatui = "0.29.0"
 scopeguard = "1.2.0"
-tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
+tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
 */
 
 /// Demo a very minimal and not very useful TUI (text user interface) editor based on the featured crates.
@@ -50,7 +50,7 @@ fn main() -> io::Result<()> {
 
     loop {
         term.draw(|f| {
-            f.render_widget(textarea.widget(), f.size());
+            f.render_widget(&textarea, f.area());
         })?;
         let event = event::read()?;
         if let Paste(data) = event {

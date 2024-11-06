@@ -1,19 +1,27 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.71", features = ["extra-traits", "full", "visit"] }
-quote = "1.0.36"
+syn = { version = "2.0.87", features = ["extra-traits", "full", "visit"] }
+quote = "1.0.37"
 */
 
-use quote::quote;
-use syn::{parse_quote, parse_str, Expr, File, Item, Stmt};
+use syn::{parse_quote, Stmt};
 
-let expr: Expr = parse_quote! {
-    {
-        // fn fib_fn(n: usize) -> impl Iterator<Item = (IBig, IBig)> {
-        //     successors(Some((IBig::from(0), IBig::from(1))), |(a, b)| Some((b.clone(), (a + b).into())))
-        // .take(n + 1)
-        a += 1
-    }
-};
+fn main() {
+    // let name = quote!(v);
+    // let ty = quote!(u8);
 
-println!("expr={expr:#?}");
+    let stmt: Stmt = parse_quote! {
+        // let #name: #ty = Default::default();
+        const MAPPINGS: [(i32, &str, &str); 7] = [
+            (10, "Key bindings", "Description"),
+            (20, "q, Esc", "Close the file dialog"),
+            (30, "j, ↓", "Move down in the file list"),
+            (40, "k, ↑", "Move up in the file list"),
+            (50, "Enter", "Select the current item"),
+            (60, "u", "Move one directory up"),
+            (70, "I", "Toggle showing hidden files"),
+        ];
+    };
+
+    println!("{:#?}", stmt);
+}

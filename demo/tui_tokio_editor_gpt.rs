@@ -78,7 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .constraints([Constraint::Percentage(100)].as_ref())
                 .split(size);
 
-            f.render_widget(textarea.widget(), chunks[0]);
+            f.render_widget(&textarea, chunks[0]);
         })?;
 
         if event::poll(Duration::from_millis(100))? {

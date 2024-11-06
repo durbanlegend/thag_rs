@@ -1,4 +1,4 @@
-`# thag_rs
+# thag_rs
 
 [![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://crates.io/crates/thag_rs)
 [![Crates.io size](https://img.shields.io/crates/size/thag_rs)](https://img.shields.io/crates/size/thag_rs)
@@ -10,7 +10,7 @@
 
 ## Intro
 
-`thag_rs` (command `thag`) is a versatile script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
+`thag_rs` (command `thag`) is a versatile cross-platform script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
 It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while being as simple and convenient to use as possible.
 It also supports scripting via shebangs, building executables from your snippets, a loop-filter mode and plain or edited standard input.
 
@@ -95,7 +95,7 @@ This is equivalent to:
 thag -e 'println!("Hello {}", std::env::args().nth(1).unwrap());' -- Ferris
 ```
 
-### * With a TUI (Terminal User Interface) editor
+### * With the built-in TUI (Terminal User Interface) editor
 
 ```bash
 thag --edit                                                     # Short form: -d
@@ -124,7 +124,7 @@ Shift-Up: `\033;[2A` and `Shift-Down`: \033;[2B. Use the Esc key to generate \03
 
 If all else fails, try another terminal emulator.
 
-The TUI editor is also used in the promote to TUI (`tui`) and edit history (`history`) functions in the REPL, so the
+The TUI editor is also used in the promote-to-TUI (`tui`) and edit history (`history`) functions in the REPL, so the
 above also applies there.
 
 Similar considerations apply to the basic REPL mode (--repl / -r). Note that the key bindings there are not identical to the TUI because the basic REPL uses mostly standard `reedline` emacs
@@ -132,7 +132,7 @@ key bindings and the TUI uses mostly standard `tui-textarea` key bindings.
 
 ### * As a filter on standard input (loop mode):
 
-At a minimum, loops though `stdin` running the `--loop` expression against every line. The line number and content are made available to the expression as `i` and `line` respectively.
+At a minimum, this loops though `stdin` running the `--loop` expression against every line. The line number and content are made available to the expression as `i` and `line` respectively.
 
 ```bash
 cat demo/iter.rs | thag --loop 'format!("{i}.\t{line}")' -q    # Short form: -l
@@ -200,6 +200,32 @@ You can enter `thag` arguments and options in any order, as long as you separate
 Note that you can enable debug logging by specifying the `--verbose` option twice, e.g. `-vv`. For this you must also set the environment variable `RUST_LOG=thag=debug`.
 
 ## Overview
+
+### Features
+
+_Rust is primarily an expression language.... In contrast, statements serve mostly to contain and explicitly sequence expression evaluation._
+_— The Rust Reference_
+
+* Runs serious Rust scripts (not just the "Hello, world!" variety) with no need to create a project.
+* Aims to be the most capable and reliable script runner for Rust code.
+* A choice of modes - bearing in mind the importance of expressions in Rust:
+    * expression mode for small, basic expressions on the fly.
+    * REPL mode offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
+    * stdin mode accepts larger scripts or programs on the fly, as typed, pasted or piped input.
+    * edit mode is stdin mode with the addition of basic TUI (terminal user interface) in-place editing, with or without piped input.
+    * the classic script mode runs an .rs file consisting of a valid Rust snippet or program.
+
+  If the REPL mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the REPL editor.
+* You can use a shebang to write scripts in Rust, or better yet...
+* For more speed and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
+* `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast big-integer factorial and Fibonacci calculation and prototypes of TUI editing and of the adaptive colour palettes described below.
+* Any valid Cargo.toml input may be specified in the toml block, e.g.:
+  - Specific features of dependencies for advanced functionality
+  - Local path and git dependencies
+  - A [profile.dev] with a non-default optimisation level
+  - A [[bin]] to rename the executable output.
+* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows prior to the Windows Terminal 1.22 Preview of August 2024, interrogating the terminal is not supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` currently defaults to basic Ansi-16 colours and dark mode support. However, the dark mode colours it uses have been chosen to work well with most light modes.
+* In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from `thag_rs`. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
 
 ### * Getting started:
 
@@ -282,12 +308,12 @@ As from `v0.1.1` you can download `demo.zip` from `https://github.com/durbanlege
 
 Note that you can also link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
 As a matter of interest, the `rs_thag` demo file [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/download_demo_dir.rs) can download the whole demo directory from Github.
-Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/download_demo_dir.rs`, or just copy it and paste it into the `thag -d` editor and choose Ctrl-d to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
+Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/download_demo_dir.rs`, or just copy it and paste it into the `thag -d` editor and choose `Ctrl-d` to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
 
 ## Usage
 Once installed, you can use the `thag` command from the command line. `thag` uses `clap` to process command-line arguments including `--help`.
 
-Here are some examples:
+See the `Quick start` section for a comprehensive introduction. Here are some further examples:
 
 ### Evaluating an expression
 #### Concise fast factorial calculation
@@ -351,49 +377,48 @@ thag -r
 This will start an interactive REPL session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally edit an expression from history.
 Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano...) and rerun it. The REPL also offers basic housekeeping functions for the temporary files generated, otherwise being in temporary space they will be cleaned up by the operating system in due course.
 
-#### Revisiting a REPL expression from a previous session
-```bash
-thag -r repl_<nnnnnn>.rs
-```
-will return to edit and run a named generated script from a previous REPL session.
-
-More informally, you can access the last 25 REPL commands or expressions from within the REPL function just by using the up and down arrow keys to navigate history.
+You can access the last 25 REPL commands or expressions from within the REPL function just by using the up and down arrow keys to navigate history.
 
 #### General notes on REPL
-All REPL files are created under the `rs_repl` subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust) so as not to clog up your system. Until such time as they are harvested by the OS you can display the locations and copy the files if desired.
+The REPL temporary files are created under the `rs_repl` subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust). The generated script is called `repl_script.rs`.
 
-The REPL feature is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. You can overcome these limitations by using the REPL's `edit` mode instead, but by this point it's probably more convenient just to use `--stdin / -s` or `--edit / -d` instead of the REPL, or save the source in a .rs file and run it from the command line.
+The REPL feature is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. If you're in REPL mode and it starts cramping your style, you can clear the REPL command line with `Ctrl-u` and promote the current expression to a full-blown script using either the built-in TUI editor with history support, or the editor of your choice without history support. Both of these options mean that your Rust script no longer has to be a smallish single expression, and both allow you to save your script to a .rs file or your choice and run it from the command line after you exit the REPL session.
 
-## Features
+1. _The TUI editor._ The `tui` REPL command will open your current REPL expression in the built-in TUI editor. When you've finished editing, you can run it with `Ctrl-d` and/or save it to a .rs file of your choice. The `tui` command will also place the expression in the TUI editor's history, which by the way is kept separate from the REPL's history because it is not subject to the same limitations. `Ctrl-d` will autosave your changes so that you can keep repeating the cycle of `tui` and `Ctrl-d` until you're satisfied with the outcome. The TUI editor is pretty basic but has the advantage of file-backed history support so you can come back to your code later.
 
-_Rust is primarily an expression language.... In contrast, statements serve mostly to contain and explicitly sequence expression evaluation._
-_— The Rust Reference_
+2. _Your preferred editor._ You can enter the `edit` command on the REPL command line to edit your script in your preferred editor as configured via the $VISUAL or $EDITOR environment variables, and save it from there. Get back to the REPL session by closing the edit session or tabbing back in the operating system, and run the updated code with the REPL's `run` command. Alternatively you can save the source to a .rs file. As with `tui` and `Ctrl-d`, you can keep repeating the cycle of `edit` and `run` until you're satisfied. However, since the `edit` command has no history support, the only way to see it or preserve the final code in history is to switch to the `tui` command once you've finished, which will add it to the TUI history.
 
-* Runs serious Rust scripts (not just the "Hello, world!" variety) with no need to create a project.
-* Aims to be the most capable and reliable script runner for Rust code.
-* A choice of modes - bearing in mind the importance of expressions in Rust:
-    * expression mode for small, basic expressions on the fly.
-    * REPL mode offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
-    * stdin mode accepts larger scripts or programs on the fly, as typed, pasted or piped input.
-    * edit mode is stdin mode with the addition of basic TUI (terminal user interface) in-place editing, with or without piped input.
-    * the classic script mode runs an .rs file consisting of a valid Rust snippet or program.
-* You can use a shebang to write scripts in Rust.
-* For more speed and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
-* `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory includes numerous examples from popular crates, as well as original examples including fast big-integer factorial and Fibonacci calculation and prototypes of TUI editing and of the adaptive colour palettes described below.
-* Any valid Cargo.toml input may be specified in the toml block, e.g.:
-  - Specific features of dependencies for advanced functionality
-  - Local path and git dependencies
-  - A [profile.dev] with a non-default optimisation level
-  - A [[bin]] to rename the executable output.
-* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows, interrogating the terminal is not well supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` defaults to basic Ansi-16 colours and dark mode support. However, the dark mode colours it uses have been chosen to work well with most light modes.
-* In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from thag_rs. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
+## Usage notes
+
+### Testing changes to dependencies
+
+As mentioned earlier, ``thag_rs`` uses timestamps to rerun compiled scripts without unnecessary rebuilding. You can override this behaviour with the `--force (-f)` option.
+
+This is important to note if you are using the script to test changes to a dependency specified in the toml block, typically as a path dependency but possibly a git or even a version dependency.
+
+When using a git dependency that resides on GitHub, you may need to specify the `rev` parameter to pick up the latest version. This is a feature of GitHub, not of `thag_rs`.
+
+If you make changes to the dependency but not to the script, you need to specify -f to rebuild the script so that it will pick up the changed dependency.
+
+### Other dependency tips
+
+Missing toml entries are not pulled in for crates that are only referenced by qualified paths instead of being imported with `use`. In this case you need to add either a toml block entry or at least one "redundant" `use <crate>...;` statement for the crate.
+
+If you want to ensure that a dependency in a TOML block is up to date, you can get the latest version in copyable format by issuing `cargo search <crate> [--limit 1]` from the command line. Alternatively, comment it out temporarily with a hash (`#`) and let `thag -c` do the search for you.
 
 ## Platform Support
 This crate is designed to be cross-platform and supports MacOS, Linux and Windows.
 
-Currently tested on MacOS (M1) Sonoma, Zorin and (WSL2) Ubuntu, and Windows 11 PowerShell 5, CMD under Windows Terminal and Windows Console, and WSL2.
-
-GitHub Actions test each commit on `ubuntu-latest`, `macos-latest` and `windows-latest`.
+### Currently tested on:
+* MacOS (M1) Sonoma and Sequoia
+* Linux: Zorin and (WSL2) Ubuntu
+* Windows 11:
+  - PowerShell 5 and 7
+  - CMD
+  - Windows Console
+  - Windows Terminal up to 1.22 Preview with OSC query support.
+  - WSL2
+* GitHub Actions test each commit and PR on `ubuntu-latest`, `macos-latest` and `windows-latest`.
 
 ## Why "thag"?
 

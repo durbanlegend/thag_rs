@@ -1,11 +1,11 @@
 /*[toml]
 [dependencies]
-thag_rs = "0.1.4"
+thag_rs = "0.1.5"
 
 lazy_static = "1.4.0"
 regex = "1.10.4"
-ratatui = "0.27.0"
-tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
+ratatui = "0.29.0"
+tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
 */
 
 /// A version of `thag_rs`'s `stdin` module to handle standard input editor input. Like the `colors`
@@ -21,11 +21,12 @@ use ratatui::crossterm::event::{
 use ratatui::crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
-use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
+use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::widgets::block::Title;
-use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::text::Line;
+use ratatui::widgets::block::Block;
+use ratatui::widgets::{Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use regex::Regex;
 use std::error::Error;
@@ -83,7 +84,7 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
 
     loop {
         term.draw(|f| {
-            f.render_widget(&textarea, f.size());
+            f.render_widget(&textarea, f.area());
             if popup {
                 show_popup(f);
             }
@@ -186,18 +187,15 @@ fn reset_term(
 
 #[allow(clippy::cast_possible_truncation)]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
-    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
+    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.area());
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
     });
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(
-            Title::from("Key bindings - subject to your terminal settings")
-                .alignment(ratatui::layout::Alignment::Center),
-        )
-        .title(Title::from("(Ctrl+L to toggle)").alignment(Alignment::Center))
+        .title(Line::from("Key bindings - subject to your terminal settings").centered())
+        .title_bottom(Line::from("(Ctrl+L to toggle)").centered())
         .add_modifier(Modifier::BOLD);
     f.render_widget(Clear, area);
     //this clears out the background
@@ -286,6 +284,6 @@ const MAPPINGS: &[[&str; 2]; 33] = &[
     ["Alt+>, Ctrl+Alt+N or↓", "Move cursor to bottom of file"],
     ["PageDown, Cmd+↓", "Page down"],
     ["Alt+V, PageUp, Cmd+↑", "Page up"],
-    ["Ctrl+T", "Toggle highlight colours"],
+    ["Ctrl+T", "Toggle selection highlight colours"],
 ];
 const NUM_ROWS: usize = MAPPINGS.len();

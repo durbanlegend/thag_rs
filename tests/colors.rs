@@ -6,7 +6,7 @@ mod tests {
     use thag_rs::colors::TermTheme;
     use thag_rs::colors::{ColorSupport, MessageStyle, XtermColor};
     use thag_rs::termbg::{self, Theme};
-    use thag_rs::{cprtln, log, Lvl};
+    use thag_rs::{cprtln, vlog, Lvl};
 
     // Set environment variables before running tests
     fn set_up() {
@@ -100,7 +100,7 @@ mod tests {
 
         set_up();
         // Test style conversions
-        // Causes rightward drift of the test result printouts.
+        // Was causing rightward drift of the test result printouts.
         let theme = termbg::theme(std::time::Duration::from_millis(100));
         // print!("{}[2J", 27 as char);
         // thag_rs::clear_screen();

@@ -1,4 +1,8 @@
+use crate::code_utils::write_source;
 use crate::file_dialog::{DialogMode, FileDialog, Status};
+use crate::{
+    debug_log, key, regex, EventReader, KeyCombination, KeyDisplayLine, Lvl, ThagError, ThagResult,
+};
 use crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
@@ -8,8 +12,6 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
     LeaveAlternateScreen,
 };
-use firestorm::profile_fn;
-use mockall::automock;
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
@@ -30,11 +32,6 @@ use std::{
     fs::{self, OpenOptions},
 };
 use tui_textarea::{CursorMove, Input, TextArea};
-
-use crate::code_utils;
-use crate::colors::{coloring, tui_selection_bg, TuiSelectionBg};
-use crate::shared::KeyDisplayLine;
-use crate::{debug_log, key, regex, KeyCombination, MessageLevel, ThagError, ThagResult};
 
 pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
 pub type Term = Terminal<BackEnd>;
@@ -402,27 +399,6 @@ impl History {
     }
 }
 
-/// A trait to allow mocking of the event reader for testing purposes.
-#[automock]
-pub trait EventReader {
-    /// Read a terminal event.
-    ///
-    /// # Errors
-    ///
-    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-    fn read_event(&self) -> ThagResult<Event>;
-}
-
-/// A struct to implement real-world use of the event reader, as opposed to use in testing.
-#[derive(Debug)]
-pub struct CrosstermEventReader;
-
-impl EventReader for CrosstermEventReader {
-    fn read_event(&self) -> ThagResult<Event> {
-        crossterm::event::read().map_err(Into::<ThagError>::into)
-    }
-}
-
 // Struct to hold data-related parameters
 #[allow(dead_code)]
 #[derive(Debug, Default)]
@@ -488,7 +464,7 @@ where
 {
     // Initialize state variables
     let mut popup = false;
-    let mut tui_highlight_bg = tui_selection_bg(coloring().1);
+    let mut tui_highlight_fg: Lvl = Lvl::EMPH;
     let mut saved = false;
     let mut status_message: String = String::default(); // Add status message variable
 
@@ -504,6 +480,7 @@ where
             .title(display.title)
             .title_style(display.title_style),
     );
+
     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
     textarea.move_cursor(CursorMove::Bottom);
     // New line with cursor at EOF for usability
@@ -513,18 +490,19 @@ where
     }
 
     // Apply initial highlights
-    apply_highlights(&tui_selection_bg(coloring().1), &mut textarea);
+    highlight_selection(&mut textarea, tui_highlight_fg);
 
     let remove = display.remove_keys;
     let add = display.add_keys;
-    // Can't make these OnceLock values as with repl::edit_history_old and filedialog, since their
-    // configuration depends on the `remove` and `add` values passed in by the caller.
-    let adjusted_mappings: Vec<KeyDisplayLine> = MAPPINGS
+    // Can't make these OnceLock values, since their configuration depends on the `remove`
+    // and `add` values passed in by the caller.
+    let mut adjusted_mappings: Vec<KeyDisplayLine> = MAPPINGS
         .iter()
         .filter(|&row| !remove.contains(&row.keys))
         .chain(add.iter())
         .cloned()
         .collect();
+    adjusted_mappings.sort();
     let (max_key_len, max_desc_len) =
         adjusted_mappings
             .iter()
@@ -589,7 +567,7 @@ where
                                     f,
                                 );
                             };
-                            apply_highlights(&tui_highlight_bg, &mut textarea);
+                            highlight_selection(&mut textarea, tui_highlight_fg);
                             // status_message = String::new();
                         }
                     })
@@ -608,6 +586,7 @@ where
         if let Paste(ref data) = event {
             textarea.insert_str(normalize_newlines(data));
         } else if let Event::Key(key_event) = event {
+            // Ignore key release, which creates an unwanted second event in Windows
             if !matches!(key_event.kind, KeyEventKind::Press) {
                 continue;
             }
@@ -655,27 +634,48 @@ where
                     textarea.paste();
                 }
                 key!(ctrl - f) | key!(right) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Forward);
                 }
                 key!(ctrl - b) | key!(left) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Back);
                 }
                 key!(ctrl - p) | key!(up) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Up);
                 }
                 key!(ctrl - n) | key!(down) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::Down);
                 }
                 key!(alt - f) | key!(ctrl - right) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::WordForward);
                 }
                 key!(alt - shift - f) => {
                     textarea.move_cursor(CursorMove::WordEnd);
                 }
                 key!(alt - b) | key!(ctrl - left) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::WordBack);
                 }
                 key!(alt - p) | key!(alt - ')') | key!(ctrl - up) => {
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    }
                     textarea.move_cursor(CursorMove::ParagraphBack);
                 }
                 key!(alt - n) | key!(alt - '(') | key!(ctrl - down) => {
@@ -706,19 +706,33 @@ where
                     textarea.move_cursor(CursorMove::Bottom);
                 }
                 key!(alt - c) => {
-                    textarea.cancel_selection();
+                    if textarea.is_selecting() {
+                        textarea.cancel_selection();
+                    } else {
+                        textarea.start_selection();
+                    }
+                }
+                // key!(alt - shift - c) => {
+                //     textarea.start_selection();
+                // }
+                key!(alt - shift - a) => {
+                    textarea.select_all();
                 }
                 key!(ctrl - t) => {
                     // Toggle highlighting colours
-                    tui_highlight_bg = match tui_highlight_bg {
-                        TuiSelectionBg::BlueYellow => TuiSelectionBg::RedWhite,
-                        TuiSelectionBg::RedWhite => TuiSelectionBg::BlueYellow,
+                    tui_highlight_fg = match tui_highlight_fg {
+                        Lvl::EMPH => Lvl::BRI,
+                        Lvl::BRI => Lvl::ERR,
+                        Lvl::ERR => Lvl::WARN,
+                        Lvl::WARN => Lvl::HEAD,
+                        Lvl::HEAD => Lvl::SUBH,
+                        _ => Lvl::EMPH,
                     };
                     if var("TEST_ENV").is_err() {
                         #[allow(clippy::option_if_let_else)]
                         if let Some(ref mut term) = maybe_term {
                             term.draw(|_| {
-                                apply_highlights(&tui_highlight_bg, &mut textarea);
+                                highlight_selection(&mut textarea, tui_highlight_fg);
                             })?;
                         }
                     }
@@ -763,6 +777,14 @@ where
             textarea.input(input);
         }
     }
+}
+
+pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate::MessageLevel) {
+    textarea.set_selection_style(
+        Style::default()
+            .fg(Color::Indexed(u8::from(&tui_highlight_fg)))
+            .bold(),
+    );
 }
 
 /// Key handler function to be passed into `tui_edit` for editing REPL history.
@@ -814,7 +836,8 @@ pub fn script_key_handler(
                         match result {
                             Ok(()) => {
                                 status_message.clear();
-                                status_message.push_str(&format!("Saved to {save_path:?}"));
+                                status_message
+                                    .push_str(&format!("Saved to {}", save_path.display()));
                             }
                             Err(e) => return Err(e),
                             // None => return Err(ThagError::Logic(
@@ -838,7 +861,7 @@ pub fn script_key_handler(
                 if let Some(ref to_rs_path) = save_dialog.selected_file {
                     save_source_file(to_rs_path, textarea, saved)?;
                     status_message.clear();
-                    status_message.push_str(&format!("Saved to {to_rs_path:?}"));
+                    status_message.push_str(&format!("Saved to {}", to_rs_path.display()));
 
                     Ok(KeyAction::Save)
                 } else {
@@ -928,7 +951,7 @@ pub fn display_popup(
         .title_top(Line::from(title_top).centered())
         .title_bottom(Line::from(title_bottom).centered())
         .add_modifier(Modifier::BOLD)
-        .fg(Color::Indexed(u8::from(&MessageLevel::Heading)));
+        .fg(Color::Indexed(u8::from(&Lvl::HEAD)));
     #[allow(clippy::cast_possible_truncation)]
     let area = centered_rect(
         max_key_len + max_desc_len + 5,
@@ -966,11 +989,9 @@ pub fn display_popup(
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
+                .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
         } else {
-            widget = widget
-                .fg(Color::Indexed(u8::from(&MessageLevel::Subheading)))
-                .not_bold();
+            widget = widget.fg(Color::Indexed(u8::from(&Lvl::SUBH))).not_bold();
         }
         f.render_widget(widget, cells[0]);
         let mut widget = Paragraph::new(mappings[i].desc);
@@ -978,11 +999,11 @@ pub fn display_popup(
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&MessageLevel::Emphasis)));
+                .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
         } else {
             widget = widget.remove_modifier(Modifier::BOLD).set_style(
                 Style::default()
-                    .fg(Color::Indexed(u8::from(&MessageLevel::Normal)))
+                    .fg(Color::Indexed(u8::from(&Lvl::NORM)))
                     .not_bold(),
             );
         }
@@ -1015,26 +1036,6 @@ pub fn normalize_newlines(input: &str) -> String {
     let re: &Regex = regex!(r"\r\n?");
 
     re.replace_all(input, "\n").to_string()
-}
-
-/// Apply highlights to the text depending on the light or dark theme as detected, configured
-/// or defaulted, or as toggled by the user with Ctrl-t.
-pub fn apply_highlights(scheme: &TuiSelectionBg, textarea: &mut TextArea) {
-    profile_fn!(apply_highlights);
-    match scheme {
-        TuiSelectionBg::BlueYellow => {
-            // Dark theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Cyan).fg(Color::Black));
-            textarea.set_cursor_style(Style::default().bg(Color::LightYellow).fg(Color::Black));
-            textarea.set_cursor_line_style(Style::default().bg(Color::DarkGray).fg(Color::White));
-        }
-        TuiSelectionBg::RedWhite => {
-            // Light theme-friendly colors
-            textarea.set_selection_style(Style::default().bg(Color::Blue).fg(Color::White));
-            textarea.set_cursor_style(Style::default().bg(Color::LightRed).fg(Color::White));
-            textarea.set_cursor_line_style(Style::default().bg(Color::Gray).fg(Color::Black));
-        }
-    }
 }
 
 /// Reset the terminal.
@@ -1162,7 +1163,7 @@ pub fn save_source_file(
     if textarea.cursor().1 != 0 {
         textarea.insert_newline();
     }
-    let _write_source = code_utils::write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
+    let _write_source = write_source(to_rs_path, textarea.lines().join("\n").as_str())?;
     *saved = true;
     Ok(())
 }
@@ -1196,65 +1197,70 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
         "Shift+Ctrl+arrow keys",
         "Select/deselect words (←→) or paras (↑↓)"
     ),
-    (40, "Alt+c", "Cancel selection"),
-    (50, "Ctrl+d", "Submit"),
-    (60, "Ctrl+q", "Cancel and quit"),
-    (70, "Ctrl+h, Backspace", "Delete character before cursor"),
-    (80, "Ctrl+i, Tab", "Indent"),
-    (90, "Ctrl+m, Enter", "Insert newline"),
-    (100, "Ctrl+k", "Delete from cursor to end of line"),
-    (110, "Ctrl+j", "Delete from cursor to start of line"),
+    (40, "Alt+a", "Select all"),
     (
-        120,
+        50,
+        "Alt+c",
+        "Toggle selection mode: start selecting / cancel selection"
+    ),
+    (60, "Ctrl+d", "Submit"),
+    (70, "Ctrl+q", "Cancel and quit"),
+    (80, "Ctrl+h, Backspace", "Delete character before cursor"),
+    (90, "Ctrl+i, Tab", "Indent"),
+    (100, "Ctrl+m, Enter", "Insert newline"),
+    (110, "Ctrl+k", "Delete from cursor to end of line"),
+    (120, "Ctrl+j", "Delete from cursor to start of line"),
+    (
+        130,
         "Ctrl+w, Alt+Backspace",
         "Delete one word before cursor"
     ),
-    (130, "Alt+d, Delete", "Delete one word from cursor position"),
-    (140, "Ctrl+u", "Undo"),
-    (150, "Ctrl+r", "Redo"),
-    (160, "Ctrl+c", "Copy (yank) selected text"),
-    (170, "Ctrl+x", "Cut (yank) selected text"),
-    (180, "Ctrl+y", "Paste yanked text"),
+    (140, "Alt+d, Delete", "Delete one word from cursor position"),
+    (150, "Ctrl+u", "Undo"),
+    (160, "Ctrl+r", "Redo"),
+    (170, "Ctrl+c", "Copy (yank) selected text"),
+    (180, "Ctrl+x", "Cut (yank) selected text"),
+    (190, "Ctrl+y", "Paste yanked text"),
     (
-        190,
+        200,
         "Ctrl+v, Shift+Ins, Cmd+v",
         "Paste from system clipboard"
     ),
-    (200, "Ctrl+f, →", "Move cursor forward one character"),
-    (210, "Ctrl+b, ←", "Move cursor backward one character"),
-    (220, "Ctrl+p, ↑", "Move cursor up one line"),
-    (230, "Ctrl+n, ↓", "Move cursor down one line"),
-    (240, "Alt+f, Ctrl+→", "Move cursor forward one word"),
-    (250, "Alt+Shift+f", "Move cursor to next word end"),
-    (260, "Atl+b, Ctrl+←", "Move cursor backward one word"),
-    (270, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
-    (280, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
+    (210, "Ctrl+f, →", "Move cursor forward one character"),
+    (220, "Ctrl+b, ←", "Move cursor backward one character"),
+    (230, "Ctrl+p, ↑", "Move cursor up one line"),
+    (240, "Ctrl+n, ↓", "Move cursor down one line"),
+    (250, "Alt+f, Ctrl+→", "Move cursor forward one word"),
+    (260, "Alt+Shift+f", "Move cursor to next word end"),
+    (270, "Atl+b, Ctrl+←", "Move cursor backward one word"),
+    (280, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
+    (290, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
     (
-        290,
+        300,
         "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
         "Move cursor to end of line"
     ),
     (
-        300,
+        310,
         "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
         "Move cursor to start of line"
     ),
-    (310, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
+    (320, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
     (
-        320,
+        330,
         "Alt+>, Ctrl+Alt+n or ↓",
         "Move cursor to bottom of file"
     ),
-    (330, "PageDown, Cmd+↓", "Page down"),
-    (340, "Alt+v, PageUp, Cmd+↑", "Page up"),
-    (350, "Ctrl+l", "Toggle keys display (this screen)"),
-    (360, "Ctrl+t", "Toggle highlight colours"),
-    (370, "F7", "Previous in history"),
-    (380, "F8", "Next in history"),
+    (340, "PageDown, Cmd+↓", "Page down"),
+    (350, "Alt+v, PageUp, Cmd+↑", "Page up"),
+    (360, "Ctrl+l", "Toggle keys display (this screen)"),
+    (370, "Ctrl+t", "Toggle selection highlight colours"),
+    (380, "F7", "Previous in history"),
+    (390, "F8", "Next in history"),
     (
-        390,
+        400,
         "F9",
         "Suspend mouse capture and line numbers for system copy"
     ),
-    (400, "F10", "Resume mouse capture and line numbers"),
+    (410, "F10", "Resume mouse capture and line numbers"),
 ];

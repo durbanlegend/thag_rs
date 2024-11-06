@@ -1,13 +1,19 @@
 /// Original is `https://github.com/dalance/termbg/blob/master/src/lib.rs`
 /// Copyright (c) 2019 dalance
 /// Licence: Apache or MIT
-use crate::{debug_log, ThagError, ThagResult};
-use crossterm::event::{self, poll, read, Event, KeyCode};
-use crossterm::terminal::{self, is_raw_mode_enabled};
+// Alias debug_log as debug to facilitate merges with original termbg crate.
+use crate::{debug_log as debug, CrosstermEventReader, EventReader, ThagError, ThagResult};
+use crossterm::{
+    event::{poll, read, Event, KeyCode, KeyModifiers},
+    terminal::{self, is_raw_mode_enabled},
+};
 use scopeguard::defer;
-use std::env;
-use std::io::{self, IsTerminal, Write};
-use std::time::{Duration, Instant};
+use std::{
+    env,
+    fmt::Debug,
+    io::{self, IsTerminal, Write},
+    time::{Duration, Instant},
+};
 #[cfg(target_os = "windows")]
 use {
     std::sync::OnceLock, winapi::um::consoleapi::SetConsoleMode,
@@ -63,13 +69,11 @@ pub fn terminal() -> Terminal {
 /// get detected terminal
 #[cfg(target_os = "windows")]
 pub fn terminal() -> Terminal {
-    use log::debug;
-
-    // As of 2024-10-16, only Windows Terminal 1.22 (preview) supports *querying*
-    // rgb values. Since xterm OSC is MS's roadmap, I'm leaving this in for when
-    // VS Code hopefully follows suit. But right now it will time out
+    // Although xterm OSC is MS's roadmap, as of 2024-10-16, only Windows Terminal 1.22 (preview)
+    // supports *querying* rgb values. In the mean time, there is effectively no way to query
+    // Windows color schemes.
     if let Ok(term_program) = env::var("TERM_PROGRAM") {
-        debug_log!("term_program={term_program}");
+        debug!("term_program={term_program}\r");
         if term_program == "vscode" {
             return Terminal::XtermCompatible;
         }
@@ -88,13 +92,12 @@ pub fn terminal() -> Terminal {
     // https://github.com/Textualize/rich/issues/140
     // if env::var("WT_SESSION").is_ok() {
     if enable_virtual_terminal_processing() {
-        debug_log!(
-            r#"This Windows terminal supports virtual terminal processing
-(but not OSC 10/11 colour queries if prior to Windows Terminal 1.22 Preview of August 2024)"#
+        debug!(
+            "This Windows terminal supports virtual terminal processing (but not OSC 10/11 colour queries if prior to Windows Terminal 1.22 Preview of August 2024)\r"
         );
         Terminal::XtermCompatible
     } else {
-        debug_log!("Terminal::Windows");
+        debug!("Terminal::Windows\r");
         Terminal::Windows
     }
 }
@@ -107,6 +110,7 @@ pub fn terminal() -> Terminal {
 #[cfg(not(target_os = "windows"))]
 pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
     let term = terminal();
+
     let rgb = match term {
         Terminal::Emacs => Err(ThagError::UnsupportedTerm),
         _ => from_xterm(term, timeout),
@@ -123,15 +127,15 @@ pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
 
 /// get background color by `RGB`
 #[cfg(target_os = "windows")]
-pub fn rgb(timeout: Duration) -> Result<Rgb, ThagError> {
+pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
     let term = terminal();
     let rgb = match term {
         Terminal::Emacs => Err(ThagError::UnsupportedTerm),
-        Terminal::XtermCompatible => from_xterm(term, timeout), // will time out pre Windows Terminal 1.22
+        Terminal::XtermCompatible => from_xterm(term, timeout), // will time out pre Windows Terminal 1.22:
         _ => from_winapi(), // effectively useless unless set via legacy Console
     };
     let fallback = from_env_colorfgbg();
-    debug_log!("rgb={rgb:?}, fallback={fallback:?}");
+    debug!("rgb={rgb:?}, fallback={fallback:?}\r");
     if rgb.is_ok() {
         rgb
     } else if fallback.is_ok() {
@@ -174,10 +178,11 @@ fn enable_virtual_terminal_processing() -> bool {
                 // Try to set virtual terminal processing mode
                 if SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0 {
                     // Success in enabling VT
+                    debug!("Successfully enabled Virtual Terminal Processing.\r");
                     return true;
                 } else {
                     // Failed to enable VT, optionally log error
-                    eprintln!("Failed to enable Virtual Terminal Processing.");
+                    debug!("Failed to enable Virtual Terminal Processing.\r");
                 }
             }
         }
@@ -191,6 +196,7 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
         || !std::io::stdout().is_terminal()
         || !std::io::stderr().is_terminal()
     {
+        // Not a terminal, so don't try to read the current background color.
         return Err(ThagError::UnsupportedTerm);
     }
 
@@ -200,23 +206,23 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
         let is_raw = match is_raw_mode_enabled() {
             Ok(val) => val,
             Err(e) => {
-                debug_log!("Failed to check raw mode status: {:?}", e);
+                debug!("Failed to check raw mode status: {:?}\r", e);
                 return;
             }
         };
 
         if is_raw == raw_before {
-            debug_log!("Raw mode status unchanged.");
+            debug!("Raw mode status unchanged from raw={raw_before}.\r");
         } else if let Err(e) = restore_raw_status(raw_before) {
-            debug_log!("Failed to restore raw mode: {e:?}");
+            debug!("Failed to restore raw mode: {e:?} to raw={raw_before}\r");
         } else {
-            debug_log!("Raw mode restored to previous state.");
+            debug!("Raw mode restored to previous state (raw={raw_before}).\r");
         }
 
         if let Err(e) = clear_stdin() {
-            debug_log!("Failed to clear stdin: {e:?}");
+            debug!("Failed to clear stdin: {e:?}\r");
         } else {
-            debug_log!("Cleared any excess from stdin.");
+            debug!("Cleared any excess from stdin.\r");
         }
     }
 
@@ -224,18 +230,32 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
         terminal::enable_raw_mode()?;
     }
 
-    let mut stderr = io::stderr();
-
     #[cfg(target_os = "windows")]
     {
         if !enable_virtual_terminal_processing() {
-            debug_log!(
-                "Virtual Terminal Processing could not be enabled. Falling back to default behavior."
+            debug!(
+                "Virtual Terminal Processing could not be enabled. Falling back to default behavior.\r"
             );
             return from_winapi();
         }
     }
 
+    let event_reader = CrosstermEventReader;
+    let mut stderr = io::stderr();
+
+    query_xterm(term, timeout, &event_reader, &mut stderr)
+}
+
+fn query_xterm<R, W>(
+    term: Terminal,
+    timeout: Duration,
+    event_reader: &R,
+    buffer: &mut W,
+) -> ThagResult<Rgb>
+where
+    R: EventReader + Debug,
+    W: Write + Debug,
+{
     // Query by XTerm control sequence
     let query = match term {
         Terminal::Tmux => "\x1bPtmux;\x1b\x1b]11;?\x07\x1b\\",
@@ -244,14 +264,14 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     };
 
     // Send query
-    writeln!(stderr, "{query}")?;
-    stderr.flush()?;
+    write!(buffer, "{query}")?;
+    buffer.flush()?;
 
-    let start_time = Instant::now();
     let mut response = String::new();
+    let start_time = Instant::now();
 
     let timeout = if cfg!(target_os = "windows") {
-        Duration::from_secs(2) // Adjust as needed
+        Duration::from_secs(1) // Adjust as needed
     } else {
         timeout
     };
@@ -259,40 +279,44 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     // Main loop for capturing terminal response
     loop {
         if start_time.elapsed() > timeout {
-            debug_log!("Failed to capture response");
-            return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout").into());
+            debug!("After timeout, found response={response}\r");
+            if response.contains("rgb:") {
+                let rgb_slice = decode_unterminated(&response)?;
+                debug!("Found a valid response {rgb_slice} in pre-timeout check despite unrecognized terminator in response code {response:#?}\r");
+                return parse_response(rgb_slice, start_time);
+            }
+            debug!("Failed to capture response\r");
+            return Err(io::Error::new(io::ErrorKind::TimedOut, "timeout 1").into());
         }
 
         // Replaced expensive async_std with blocking loop. Terminal normally responds
         // fast or not at all, and in the latter case we still have the timeout on the
         // main loop.
-        if poll(Duration::from_millis(100))? {
+        if event_reader.poll(Duration::from_millis(100))? {
             // Read the next event.
             // Replaced stdin read that was consuming legit user input in Windows
             // with non-blocking crossterm read event.
-            if let Event::Key(key_event) = event::read()? {
-                match key_event.code {
-                    // End on backslash character
-                    KeyCode::Char('\\') => {
-                        debug_log!("End of response detected (backslash character).");
+            if let Event::Key(key_event) = event_reader.read_event()? {
+                // debug!("key_event={key_event:#?}\r");
+                match (key_event.code, key_event.modifiers) {
+                    (KeyCode::Char('\\'), KeyModifiers::ALT | KeyModifiers::NONE)   // ST
+                    | (KeyCode::Char('g'), KeyModifiers::CONTROL)   // BEL
+                    // Insurance in case BEL is not recognosed as ^g
+                    | (KeyCode::Char('\u{0007}'), KeyModifiers::NONE)   //BEL
+                    => {
+                        debug!("End of response detected ({key_event:?}).\r");
                         // response.push('\\');
-                        let rgb_string = response.split_off(response.find("rgb:").unwrap() + 4);
-                        let (r, g, b) = decode_x11_color(&rgb_string)?;
-
-                        // Err("RGB color value not found".into())
-                        // Print the duration it took to capture the response
-                        let elapsed = start_time.elapsed();
-                        debug_log!("Elapsed time: {:.2?}", elapsed);
-
-                        return Ok(Rgb { r, g, b });
+                        // debug!("response={response}\r");
+                        return parse_response(&response, start_time);
                     }
                     // Append other characters to buffer
-                    KeyCode::Char(c) => {
-                        // debug_log!("pushing {c}");
+                    (KeyCode::Char(c), KeyModifiers::NONE) => {
+                        debug!("pushing {c}\r");
                         response.push(c);
                     }
                     _ => {
                         // Ignore other keys
+                        debug!("ignoring {key_event:?}\r");
                     }
                 }
             }
@@ -300,7 +324,63 @@ fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
     }
 }
 
-fn restore_raw_status(raw_before: bool) -> Result<(), ThagError> {
+fn decode_unterminated(response: &str) -> ThagResult<&str> {
+    let resp_start = response
+        .find("rgb:")
+        .ok_or("Required string `rgb:` not found in response")?;
+    let mid = resp_start + 4;
+    // Point after "rgb:"
+    let raw_rgb_slice = response.split_at(mid).1;
+    // slash-delimited r/g/b string with any trailing characters
+    debug!("raw_rgb_slice={raw_rgb_slice}\r");
+
+    // Identify where to trim trailing characters, by assuming the slash-delimited colour specifiers
+    // are all supposed to be the same length. I.e. trim after 3 specifiers and 2 delimiters.
+    let fragments = raw_rgb_slice.splitn(3, '/').collect::<Vec<_>>();
+
+    if fragments.len() < 3 {
+        // debug!("Incomplete response `{response}`: does not contain two forward slashes\r");
+        return Err(format!(
+            "Incomplete response `{response}`: does not contain two forward slashes"
+        )
+        .into());
+    }
+    let frag_len = fragments[0].len();
+    if fragments[1].len() != frag_len || fragments[2].len() < frag_len {
+        // debug!("Can't safely reconstitute unterminated response `{response}`from fragments of unequal length\r");
+        return Err(format!("Can't safely reconstitute unterminated response `{response}`from fragments of unequal length").into());
+    }
+
+    // "Trim" extraneous trailing characters by excluding them from slice
+    let rgb_str_len = frag_len * 3 + 2;
+    let rgb_slice = &response[resp_start..mid + rgb_str_len];
+    Ok(rgb_slice)
+}
+
+fn parse_response(response: &str, start_time: Instant) -> ThagResult<Rgb> {
+    // debug!("response={response}\r");
+    let (r, g, b) = extract_rgb(response)?;
+    let elapsed = start_time.elapsed();
+    debug!("Elapsed time: {:.2?}\r", elapsed);
+    // debug!("Rgb {{ r, g, b }} = {:?}\r", Rgb { r, g, b });
+    Ok(Rgb { r, g, b })
+}
+
+fn extract_rgb(response: &str) -> ThagResult<(u16, u16, u16)> {
+    let rgb_str = response
+        .split_at(
+            response
+                .find("rgb:")
+                .ok_or("Could not find 'rgb:' in terminal response string")?
+                + 4,
+        )
+        .1;
+    let (r, g, b) = decode_x11_color(rgb_str)?;
+    // debug!("(r, g, b)=({r}, {g}, {b})\r");
+    Ok((r, g, b))
+}
+
+fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
     let raw_now = is_raw_mode_enabled()?;
     if raw_now == raw_before {
         return Ok(());
@@ -323,7 +403,7 @@ fn clear_stdin() -> Result<(), Box<dyn std::error::Error>> {
     while poll(Duration::from_millis(10))? {
         if let Event::Key(c) = read()? {
             // Discard the input by simply reading it
-            debug_log!("discarding char{c:x?}");
+            debug!("discarding char{c:x?}\r");
         }
     }
     Ok(())
@@ -339,9 +419,7 @@ fn from_env_colorfgbg() -> ThagResult<Rgb> {
     let var = env::var("COLORFGBG").map_err(|_| ThagError::UnsupportedTerm)?;
     let fgbg: Vec<_> = var.split(';').collect();
     let bg = fgbg.get(1).ok_or(ThagError::UnsupportedTerm)?;
-    let bg = bg
-        .parse::<u8>()
-        .map_err(|_| ThagError::FromStr(var.into()))?;
+    let bg = bg.parse::<u8>().map_err(|_| var)?;
 
     // rxvt default color table
     #[allow(clippy::match_same_arms)]
@@ -397,24 +475,21 @@ fn from_env_colorfgbg() -> ThagResult<Rgb> {
 /// This function will return a `FromStr` error if it fails to parse a hex colour code.
 fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
     fn decode_hex(s: &str) -> ThagResult<u16> {
+        // debug!("s={s}\r");
         let len = s.len();
-        let mut ret =
-            u16::from_str_radix(s, 16).map_err(|_| ThagError::FromStr(String::from(s).into()))?;
+        let mut ret = u16::from_str_radix(s, 16).map_err(|_| s.to_string())?;
         ret <<= (4 - len) * 4;
+        // debug!("ret={ret}\r");
         Ok(ret)
     }
 
+    // debug!("s={s}\r");
     let rgb: Vec<_> = s.split('/').collect();
+    // debug!("rgb vec = {rgb:?}\r");
 
-    let r = rgb
-        .first()
-        .ok_or_else(|| ThagError::FromStr(String::from(s).into()))?;
-    let g = rgb
-        .get(1)
-        .ok_or_else(|| ThagError::FromStr(String::from(s).into()))?;
-    let b = rgb
-        .get(2)
-        .ok_or_else(|| ThagError::FromStr(String::from(s).into()))?;
+    let r = rgb.first().ok_or_else(|| s.to_string())?;
+    let g = rgb.get(1).ok_or_else(|| s.to_string())?;
+    let b = rgb.get(2).ok_or_else(|| s.to_string())?;
     let r = decode_hex(r)?;
     let g = decode_hex(g)?;
     let b = decode_hex(b)?;
@@ -431,10 +506,10 @@ fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
 ///
 /// This function will bubble up any errors returned by the Windows API.
 #[cfg(target_os = "windows")]
-fn from_winapi() -> Result<Rgb, ThagError> {
+fn from_winapi() -> ThagResult<Rgb> {
     use winapi::um::wincon;
 
-    debug_log!("In from_winapi()");
+    debug!("In from_winapi()\r");
     let info = unsafe {
         let handle = winapi::um::processenv::GetStdHandle(winapi::um::winbase::STD_OUTPUT_HANDLE);
         let mut info: wincon::CONSOLE_SCREEN_BUFFER_INFO = Default::default();
@@ -442,7 +517,7 @@ fn from_winapi() -> Result<Rgb, ThagError> {
         info
     };
 
-    debug_log!("info.wAttributes={:x?}", info.wAttributes);
+    debug!("info.wAttributes={:x?}\r", info.wAttributes);
 
     let r = (wincon::BACKGROUND_RED & info.wAttributes) != 0;
     let g = (wincon::BACKGROUND_GREEN & info.wAttributes) != 0;
@@ -484,9 +559,224 @@ fn from_winapi() -> Result<Rgb, ThagError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::MockEventReader;
+    use crossterm::event::Event;
+    use crossterm::event::KeyEvent;
+    use either::Either;
+    use mockall::mock;
+    use std::io::{self, Write};
+    use std::iter::{self, Cloned};
+    use std::slice::Iter;
+    use std::sync::{Arc, Mutex};
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    // Xterm expected query
+    const ESC_OSC_QUERY: &[u8; 8] = b"\x1b]11;?\x1b\\";
+
+    // Base constant response for successful RGB parsing.
+    const RGB_RESPONSE: &[Event] = &[
+        Event::Key(KeyEvent::new(KeyCode::Char(']'), KeyModifiers::ALT)),
+        Event::Key(KeyEvent::new(KeyCode::Char('1'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('1'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char(';'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char(':'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('9'), KeyModifiers::NONE)),
+        Event::Key(KeyEvent::new(KeyCode::Char('9'), KeyModifiers::NONE)),
+        // Event::Key(KeyEvent::new(KeyCode::Char('\\'), KeyModifiers::ALT)), // ST terminator
+    ];
+
+    const RGB_RESPONSE_LEN: usize = RGB_RESPONSE.len();
+
+    // Helper method for setting up and invoking call to query_xterm.
+    fn run_query_xterm_test(
+        emulate_response: bool,
+        num_to_send: usize, // Excluding any terminator
+        maybe_terminator: Option<&Event>,
+        expected_rgb: Option<(u16, u16, u16)>,
+    ) {
+        eprintln!("Testing for terminator {maybe_terminator:?}");
+        // Set up the mock writer and mock event reader
+        let mut mock_writer = MockWriter::new();
+        let mut mock_event_reader = MockEventReader::new();
+
+        // Expect the query write once with the appropriate OSC command
+        mock_writer
+            .expect_write()
+            .withf(move |buf| buf == ESC_OSC_QUERY)
+            .times(1)
+            .returning(|_| Ok(ESC_OSC_QUERY.len()));
+
+        // Expect flush to be called once, returning Ok
+        mock_writer.expect_flush().times(1).returning(|| Ok(()));
+
+        // Shared, thread-safe counter for events
+        let event_count = Arc::new(Mutex::new(0));
+        let total_events = if emulate_response {
+            num_to_send + if maybe_terminator.is_some() { 1 } else { 0 }
+        } else {
+            0
+        };
+
+        // Clone `event_count` so each closure can access the same counter
+        let poll_event_count = Arc::clone(&event_count);
+        let read_event_count = Arc::clone(&event_count);
+
+        // Mock the behavior of `poll()` using the counter
+        mock_event_reader.expect_poll().returning(move |_| {
+            let count = poll_event_count.lock().unwrap();
+            if *count < total_events {
+                Ok(true) // More events to process
+            } else {
+                Ok(false) // No more events left, stop responding to polling
+            }
+        });
+
+        let base_iterator = RGB_RESPONSE.iter().cloned();
+        let mut response_iter: Either<
+            Cloned<Iter<'_, Event>>,
+            std::iter::Chain<Cloned<Iter<'_, Event>>, iter::Once<Event>>,
+        > = if let Some(terminator) = maybe_terminator {
+            Either::Right(base_iterator.chain(iter::once(terminator.clone())))
+        } else {
+            Either::Left(base_iterator)
+        };
+
+        mock_event_reader.expect_read_event().returning(move || {
+            let event_count = Arc::clone(&read_event_count);
+            let mut count = event_count.lock().unwrap();
+            if *count < total_events {
+                *count += 1; // Increment the count as we read each event
+                             // debug!("\rIn expect_read_event, increasing count to {count}, total_events={total_events}, responding");
+                response_iter.next().ok_or_else(|| {
+                    // Block here without returning, simulating a "wait" condition
+                    sleep(Duration::from_secs(3));
+                    io::Error::new(io::ErrorKind::TimedOut, "timeout 2").into()
+                })
+            } else {
+                // debug!("\rIn expect_read_event, count={count}, total_events={total_events}, why are we here?");
+                // Block here without returning, simulating a "wait" condition
+                sleep(Duration::from_secs(3));
+                Err("timeout 3".into()) // Optionally return an error after some time
+            }
+        });
+
+        // Run the `from_xterm` function and assert the results
+        let result = query_xterm(
+            Terminal::XtermCompatible,
+            Duration::from_secs(1),
+            &mock_event_reader,
+            &mut mock_writer,
+        );
+
+        debug!("result={result:?}\r");
+
+        match expected_rgb {
+            Some((r, g, b)) => {
+                let rgb = result.expect("Expected successful RGB parsing");
+                // let adj_actual_rgb = scale_u16_to_u8(rgb);
+                assert_eq!(
+                    rgb,
+                    Rgb { r, g, b },
+                    "RGB values do not match expected for terminator {maybe_terminator:?}",
+                );
+            }
+            None => {
+                assert!(result.is_err(), "Expected an error for this scenario");
+            }
+        }
+    }
+
+    // Mock the `Write` trait to use in testing
+    mock! {
+        #[derive(Debug)]
+        Writer {}
+
+        impl Write for Writer {
+            fn write(&mut self, buf: &[u8]) -> io::Result<usize>;
+            fn flush(&mut self) -> io::Result<()>;
+        }
+    }
+
+    // Expect response values expressed in 16-bit space
+    #[test]
+    fn test_termbg_query_xterm_with_various_terminators() {
+        const TERMINATORS: &[Event] = &[
+            Event::Key(KeyEvent::new(
+                KeyCode::Char('g'), // BEL equivalent
+                KeyModifiers::CONTROL,
+            )),
+            Event::Key(KeyEvent::new(
+                KeyCode::Char(0x07_u8 as char),
+                KeyModifiers::NONE,
+            )), // Raw BEL
+            Event::Key(KeyEvent::new(
+                KeyCode::Char(0x09c_u8 as char),
+                KeyModifiers::NONE,
+            )), // Raw ST
+            Event::Key(KeyEvent::new(
+                KeyCode::Char(0x5c_u8 as char),
+                KeyModifiers::ALT,
+            )), // Esc-5c mapped to Alt-5c, equivalent to Alt-\
+            Event::Key(KeyEvent::new(
+                KeyCode::Char(0x5c_u8 as char),
+                KeyModifiers::NONE,
+            )), // Esc-5c missing the Esc, equivalent to \
+            Event::Key(KeyEvent::new(KeyCode::Char('\\'), KeyModifiers::ALT)), // Esc-\ mapped to Alt-\
+            Event::Key(KeyEvent::new(KeyCode::Char('\\'), KeyModifiers::NONE)), // Esc-\ missing the Esc
+            Event::Key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)), // Represents any unrecognised value, should be corrected on timeout
+        ];
+
+        let expected_rgb = Some((0xff * 256, 0xcc * 256, 0x99 * 256));
+        for terminator in TERMINATORS {
+            run_query_xterm_test(true, RGB_RESPONSE_LEN, Some(terminator), expected_rgb);
+        }
+    }
+
+    // Expect timeout
+    #[test]
+    fn test_termbg_query_xterm_timeout_no_response() {
+        // Test timeout scenario: No response received
+        run_query_xterm_test(false, RGB_RESPONSE_LEN, None, None);
+    }
+
+    // Expect timeout
+    #[test]
+    fn test_termbg_query_xterm_timeout_incomplete_response_1() {
+        // Test timeout scenario: Incomplete response, e.g., missing terminator
+        run_query_xterm_test(true, RGB_RESPONSE_LEN - 4, None, None);
+    }
+
+    // Expect timeout
+    #[test]
+    fn test_termbg_query_xterm_timeout_incomplete_response_2() {
+        // Test timeout scenario: Incomplete response, e.g., missing terminator
+        run_query_xterm_test(true, RGB_RESPONSE_LEN - 1, None, None);
+    }
+
+    // Expect query_xterm to pick it up and reconstitute the response on timeout check
+    #[test]
+    fn test_termbg_query_xterm_timeout_unterminated_response() {
+        // Test timeout scenario: Incomplete response, e.g., missing terminator
+        run_query_xterm_test(
+            true,
+            RGB_RESPONSE_LEN,
+            None,
+            Some((0xff * 256, 0xcc * 256, 0x99 * 256)),
+        );
+    }
 
     #[test]
-    fn test_decode_x11_color() {
+    fn test_termbg_decode_x11_color() {
         let s = "0000/0000/0000";
         assert_eq!((0, 0, 0), decode_x11_color(s).unwrap());
 

@@ -316,7 +316,7 @@ pub struct KeyDisplayLine {
 
 impl PartialOrd for KeyDisplayLine {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        usize::partial_cmp(&self.seq, &other.seq)
+        Some(self.cmp(other))
     }
 }
 

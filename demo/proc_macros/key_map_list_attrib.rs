@@ -1,4 +1,5 @@
 #![allow(unused_variables)]
+use expander::{Edition, Expander};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
@@ -6,6 +7,7 @@ use syn::punctuated::Punctuated;
 use syn::{visit_mut::VisitMut, Expr, ItemStruct, Lit, Meta};
 
 // Custom visitor for AST manipulation
+#[allow(dead_code)]
 struct MappingsVisitor<'a> {
     deletions: &'a Vec<String>,
 }
@@ -135,5 +137,18 @@ pub fn use_mappings_impl(attr: TokenStream, input: TokenStream) -> TokenStream {
         const ADDITIONS: &[(i32, &str, &str)] = &#additions;
     };
 
-    TokenStream::from(output)
+    // TokenStream::from(output)
+    let expanded = Expander::new("use_mappings")
+        .add_comment("This is generated code!".to_owned())
+        .fmt(Edition::_2021)
+        .verbose(true)
+        // common way of gating this, by making it part of the default feature set
+        // .dry(cfg!(feature = "no-file-expansion"))
+        .dry(false)
+        .write_to_out_dir(output.clone())
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to write to file: {:?}", e);
+            output
+        });
+    expanded.into()
 }

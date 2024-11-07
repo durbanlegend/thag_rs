@@ -260,6 +260,7 @@ pub fn merge(
     Ok(())
 }
 
+#[allow(clippy::missing_panics_doc)]
 pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
     profile_fn!(search_deps);
     for dep_name in rs_inferred_deps {
@@ -300,14 +301,12 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
                 "demo/proc_macros"
             };
 
-            let path = PathBuf::from_str(demo_proc_macros_dir).expect(&format!(
-                "Could not parse string {demo_proc_macros_dir} into a pathname"
-            ));
+            let path = PathBuf::from_str(demo_proc_macros_dir).unwrap();
             let path = if path.is_absolute() {
                 path
             } else {
                 path.canonicalize()
-                    .expect(&format!("Could not canonicalize path {}", path.display()))
+                    .unwrap_or_else(|_| panic!("Could not canonicalize path {}", path.display()))
             };
             let dep = Dependency::Detailed(Box::new(DependencyDetail {
                 path: Some(path.display().to_string()),

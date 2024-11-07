@@ -1,0 +1,58 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install wayland-client dependencies (Ubuntu only)
+      if: runner.os == 'Linux'
+      run: sudo apt-get install -y libwayland-dev
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Clear /tmp directories
+      run: |
+        df -h
+        rm -rf /tmp/thag_rs
+        df -h
+        du -sh /* 2>/dev/null || true
+        du -sh /usr/* 2>/dev/null || true
+
+    - name: Cache Cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-registry-
+
+    - name: Cache Cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-index-
+
+    - name: Update crates.io index
+      run: cargo update
+
+    - name: Build
+      run: cargo build
+
+    - name: Run tests
+      run: cargo test --no-fail-fast -- --test-threads=3

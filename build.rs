@@ -9,7 +9,7 @@ use std::path::Path;
 /// identify undocumented and abandoned scripts. Given that there are so many of these scripts,
 /// avoid Cargo's default behaviour of running all tests in parallel. --test-threads=5 seems
 /// to work best on my MacBook Air M1.
-/// Suggested command: `RUST_LOG=thag=debug cargo test --features=debug-logs -- --nocapture --test-threads=3
+/// Suggested command: `cargo test --features=simplelog -- --nocapture --test-threads=3
 /// You may want to adjust the test-threads value further depending on your hardware.
 fn main() {
     // Get the OUT_DIR environment variable
@@ -121,19 +121,42 @@ fn check_{test_name}() {{
             );
         }}
 
-        // // Get the file stem
-        // let file_stem = {source_name:?}.trim_end_matches(".rs");
+        // eprintln!("... finished {source_name}, starting cargo clean");
 
-        // // Construct the destination directory path
-        // let mut dest_dir = env::temp_dir();
-        // dest_dir.push("thag_rs");
-        // dest_dir.push(file_stem);
+        // Get the file stem
+        let file_stem = {source_name:?}.trim_end_matches(".rs");
 
-        // let target_dir = &dest_dir.join("target/debug");
-        // // Delete the destination directory after building the file
-        // if let Err(e) = fs::remove_dir_all(&target_dir) {{
-        //     eprintln!("Failed to remove directory {test_name}: {{}}, {{e:?}}", dest_dir.display());
+        // Construct the destination directory path
+        let mut dest_dir = env::temp_dir();
+        dest_dir.push("thag_rs");
+        dest_dir.push(file_stem);
+
+        // Cargo clean seems to work but is desperately slow.
+        // let toml_path = &dest_dir.join("Cargo.toml");
+        // let toml_path_str = toml_path.display().to_string();
+
+        // let output = Command::new("cargo")
+        //     .arg("clean")
+        //     .arg("--manifest-path")
+        //     .arg(&toml_path_str)
+        //     .output()
+        //     .expect("Failed to execute command");
+
+        // if !output.status.success() {{
+        //     panic!(
+        //         "Failed on cargo clean: {{toml_path_str}}\nstdout: {{}}\nstderr: {{}}",
+        //         String::from_utf8_lossy(&output.stdout),
+        //         String::from_utf8_lossy(&output.stderr)
+        //     );
         // }}
+
+        // Seems OK
+        let target_dir = &dest_dir.join("target/debug");
+        // eprintln!("target_dir={{}}", target_dir.display());
+        // Delete the destination directory after building the file
+        if let Err(e) = fs::remove_dir_all(&target_dir) {{
+            eprintln!("Failed to remove directory {test_name}: {{}}, {{e:?}}", target_dir.display());
+        }}
     }}
 }}
 "#,

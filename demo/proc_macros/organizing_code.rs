@@ -3,7 +3,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse_quote, ExprMacro};
 
-pub fn my_proc_impl(input: TokenStream) -> TokenStream {
+pub fn organizing_code_impl(input: TokenStream) -> TokenStream {
     let progress = progress_message("Thinking about the answer".to_string());
     let answer = answer(input);
 

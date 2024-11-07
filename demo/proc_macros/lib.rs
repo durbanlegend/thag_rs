@@ -3,18 +3,23 @@ mod custom_model;
 mod deserialize_vec_derive;
 mod expander_demo;
 mod into_string_hash_map;
-mod key_map_list_attrib;
-mod key_map_list_derive;
+mod attrib_key_map_list;
+mod derive_key_map_list;
 mod my_description;
-mod my_proc;
+mod organizing_code;
+mod organizing_code_const;
+mod organizing_code_tokenstream;
 
 use crate::custom_model::derive_custom_model_impl;
 use crate::deserialize_vec_derive::deserialize_vec_derive_impl;
 use crate::expander_demo::baz2;
 use crate::into_string_hash_map::into_hash_map_impl;
-use crate::key_map_list_attrib::use_mappings_impl;
-use crate::key_map_list_derive::key_map_list_derive_impl;
+use crate::attrib_key_map_list::use_mappings_impl;
+use crate::derive_key_map_list::derive_key_map_list_impl;
 use crate::my_description::my_derive;
+use crate::organizing_code::organizing_code_impl;
+use crate::organizing_code_const::organizing_code_const_impl;
+use crate::organizing_code_tokenstream::organizing_code_tokenstream_impl;
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
@@ -40,15 +45,27 @@ pub fn deserialize_vec_derive(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(DeriveKeyMapList, attributes(deluxe, use_mappings))]
-pub fn key_map_list_derive(item: TokenStream) -> TokenStream {
-    key_map_list_derive_impl(item.into()).unwrap().into()
+pub fn derive_key_map_list(item: TokenStream) -> TokenStream {
+    derive_key_map_list_impl(item.into()).unwrap().into()
 }
 
 // From https://github.com/tdimitrov/rust-proc-macro-post
 #[proc_macro]
-pub fn my_proc_macro(input: TokenStream) -> TokenStream {
+pub fn organizing_code(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
-    my_proc::my_proc_impl(input).into()
+    organizing_code_impl(input).into()
+}
+
+// From https://github.com/tdimitrov/rust-proc-macro-post
+#[proc_macro]
+pub fn organizing_code_tokenstream(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input);
+    organizing_code_tokenstream_impl(input).into()
+}
+
+#[proc_macro_derive(DeriveConst, attributes(adjust, use_mappings))]
+pub fn organizing_code_const(input: TokenStream) -> TokenStream {
+    organizing_code_const_impl(input.into()).unwrap().into()
 }
 
 #[proc_macro_attribute]

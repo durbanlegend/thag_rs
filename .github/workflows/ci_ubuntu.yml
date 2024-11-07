@@ -1,4 +1,4 @@
-name: CI
+name: CI Ubuntu
 
 on: [push]
 
@@ -26,7 +26,6 @@ jobs:
 
     - name: Clear /tmp directories
       run: |
-        df -h
         rm -rf /tmp/thag_rs
         df -h
         du -sh /* 2>/dev/null || true

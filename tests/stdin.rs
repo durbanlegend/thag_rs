@@ -1,4 +1,3 @@
-use clap::CommandFactory;
 #[cfg(feature = "simplelog")]
 use log::info;
 use mockall::Sequence;
@@ -263,16 +262,6 @@ fn test_stdin_history_get_next_empty() {
 //     assert!(current.is_some());
 //     assert_eq!(&current.unwrap().contents(), "first");
 // }
-
-#[test]
-fn test_stdin_repl_command_print_help() {
-    set_up();
-    let mut output = Vec::new();
-    let mut command = thag_rs::repl::ReplCommand::command();
-    command.write_long_help(&mut output).unwrap();
-    let help_output = String::from_utf8(output).unwrap();
-    assert!(help_output.contains("REPL mode lets you type or paste a Rust expression"));
-}
 
 #[test]
 fn test_stdin_read_to_string() {

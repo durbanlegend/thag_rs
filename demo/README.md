@@ -2240,7 +2240,7 @@ which will give identical output to the above.
 
 ---
 
-### Script: proc_macro_my_proc.rs
+### Script: proc_macro_organizing_code.rs
 
 **Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
 
@@ -2250,7 +2250,35 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Link:** [proc_macro_my_proc.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_my_proc.rs)
+**Link:** [proc_macro_organizing_code.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code.rs)
+
+---
+
+### Script: proc_macro_organizing_code_const.rs
+
+**Description:**  Experimental - work in progress
+
+**Purpose:** investigate the possibility of generating a useful constant.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Link:** [proc_macro_organizing_code_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_const.rs)
+
+---
+
+### Script: proc_macro_organizing_code_tokenstream.rs
+
+**Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
+
+**Purpose:** explore proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Link:** [proc_macro_organizing_code_tokenstream.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs)
 
 ---
 

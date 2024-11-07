@@ -1,14 +1,20 @@
-#![allow(unused_variables, clippy::redundant_pub_crate)]
+#![allow(dead_code, unused_variables, clippy::redundant_pub_crate)]
+
+/// Experimental - work in progress
+use expander::{Edition, Expander};
+use proc_macro2::TokenStream;
+use quote::quote;
+use syn::{parse_quote, ExprMacro};
 
 // Deluxe struct for extracting attributes
 #[derive(deluxe::ExtractAttributes)]
-#[deluxe(attributes(deluxe))]
+#[deluxe(attributes(adjust))]
 pub(crate) struct KeyMappings {
     pub(crate) delete: Vec<String>,
     pub(crate) add: Vec<(i32, String, String)>,
 }
 
-pub(crate) fn key_map_list_derive_impl(
+pub(crate) fn organizing_code_const_impl(
     item: proc_macro2::TokenStream,
 ) -> deluxe::Result<proc_macro2::TokenStream> {
     let mut input = syn::parse2::<syn::DeriveInput>(item)?;
@@ -38,6 +44,13 @@ pub(crate) fn key_map_list_derive_impl(
         .attrs
         .iter()
         .find(|attr| attr.path().is_ident("use_mappings"));
+    eprintln!("mappings_attr={mappings_attr:#?}");
+
+    let mappings: syn::Expr = parse_quote!(println!(#mappings_attr));
+
+    eprintln!("mappings={mappings:#?}");
+
+    // let output = quote!(#mappings_attr);
 
     // Assume the attribute is found and contains the MAPPINGS identifier
     let mappings_ident = mappings_attr
@@ -46,7 +59,7 @@ pub(crate) fn key_map_list_derive_impl(
 
     // Generate the code for the impl, using the mappings constant from the caller
     let ident = &input.ident;
-    Ok(quote::quote! {
+    let output = quote::quote! {
         impl #impl_generics #ident #type_generics #where_clause {
             pub fn adjust_mappings(&self) -> Vec<(i32, String, String)> {
                 // eprintln!("Base mappings from named constant:");
@@ -78,5 +91,37 @@ pub(crate) fn key_map_list_derive_impl(
                 adjusted_mappings.clone()
             }
         }
-    })
+    };
+
+    let expanded = Expander::new("DeriveConst")
+        .add_comment("This is generated code!".to_owned())
+        .fmt(Edition::_2021)
+        .verbose(true)
+        .dry(false)
+        .write_to_out_dir(output.clone())
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to write to file: {:?}", e);
+            output
+        });
+    Ok(expanded)
 }
+
+// pub fn organizing_code_const_impl(input: TokenStream) -> TokenStream {
+//     let progress = progress_message("Thinking about the answer".to_string());
+//     let answer = answer(input);
+
+//     // println!("answer={answer:#?}");
+
+//     quote!(
+//         #progress;
+//         #answer;
+//     )
+// }
+
+// fn progress_message(msg: String) -> ExprMacro {
+//     parse_quote!(println!(#msg))
+// }
+
+// fn answer(result: TokenStream) -> ExprMacro {
+//     parse_quote!(println!("Answer: {}", #result))
+// }

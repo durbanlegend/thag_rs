@@ -4,7 +4,8 @@ nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 termbg = "0.6.0"
 # thag_rs = "0.1.5"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "6c5bff14435ebf308795dc5b62e04ea8e8d1e99e" }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "6c5bff14435ebf308795dc5b62e04ea8e8d1e99e" }
+thag_rs = { path = "/Users/donf/projects/thag_rs" }
 */
 
 #![allow(clippy::implicit_return)]
@@ -13,7 +14,7 @@ use strum::IntoEnumIterator;
 use termbg::terminal;
 use thag_rs::colors::{coloring, ColorSupport, MessageStyle, XtermColor};
 use thag_rs::logging::V;
-use thag_rs::{cprtln, cvprtln, vlog, Lvl};
+use thag_rs::{cvprtln, vlog, Lvl};
 /// Runner for current version of `src/colors.rs`, as it's become too enmeshed with other modules to split out nicely.
 /// We just borrow the main method here and add all the necessary dependencies and imports.
 ///
@@ -24,7 +25,6 @@ use thag_rs::{cprtln, cvprtln, vlog, Lvl};
 pub fn main() {
     #[allow(unused_variables)]
     let term = terminal();
-    // shared::clear_screen();
 
     let (maybe_color_support, term_theme) = coloring();
 
@@ -41,6 +41,59 @@ pub fn main() {
                 });
             }
 
+            println!();
+
+            // Convert to title case
+            let term_theme_str = term_theme.to_string();
+            println!("ANSI-16 color palette in use for {term_theme_str} theme:\n");
+            for variant in MessageStyle::iter() {
+                let variant_str: &str = &variant.to_string();
+                let variant_prefix = format!("ansi16_{term_theme_str}_");
+                if !variant_str.starts_with(&variant_prefix) {
+                    continue;
+                }
+                let xterm_color = XtermColor::from(&variant);
+                let color_num = u8::from(&xterm_color);
+                let style = Style::from(&variant);
+                let content = format!(
+                    "{variant_str} message: message_style={variant_str:?}, style={style:?}, color_num={color_num}"
+                );
+                println!("{}", style.paint(content));
+            }
+
+            println!();
+
+            println!("ANSI-16 color palette in use for {term_theme_str} theme (converted via XtermColor and missing bold/dimmed/italic):\n");
+            for variant in MessageStyle::iter() {
+                let variant_str: &str = &variant.to_string();
+                let variant_prefix = format!("ansi16_{term_theme_str}_");
+                if !variant_str.starts_with(&variant_prefix) {
+                    continue;
+                }
+                let xterm_color = XtermColor::from(&variant);
+                let color = Color::from(&xterm_color);
+                let style = Style::from(color);
+                let content = format!(
+                    "{variant_str} message: message_style={variant_str:?}, style={style:?}"
+                );
+                println!("{}", style.paint(content));
+            }
+
+            println!();
+
+            println!("XtermColor::user* colours for comparison:\n");
+            for variant in XtermColor::iter().take(16) {
+                let variant_str: &str = &variant.to_string();
+                let color = Color::from(&variant);
+                let style = Style::from(color);
+                let content = format!(
+                    "{variant_str} message: message_style={variant_str:?}, style={style:?}"
+                );
+                println!("{}", style.paint(content));
+            }
+
+            println!();
+            println!("Color palette in use on this terminal:\n");
             for variant in Lvl::iter() {
                 let variant_string: &str = &variant.to_string();
                 let message_style = MessageStyle::from(&variant);

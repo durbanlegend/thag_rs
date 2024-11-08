@@ -195,7 +195,7 @@ impl BuildState {
             cargo_home,
             target_dir_path,
             target_path,
-            cargo_toml_path,
+            cargo_toml_path: cargo_toml_path.clone(),
             ..Default::default()
         };
 
@@ -208,8 +208,12 @@ impl BuildState {
                 || modified_since_compiled(&build_state)?.is_some();
             let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
             let build_requested = proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK);
-            let must_gen =
-                force || is_repl || is_loop || is_check || (gen_requested && stale_executable);
+            let must_gen = force
+                || is_repl
+                || is_loop
+                || is_check
+                || (gen_requested && stale_executable)
+                || !cargo_toml_path.exists();
             let must_build = force
                 || is_repl
                 || is_loop

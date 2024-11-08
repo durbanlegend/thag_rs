@@ -3,6 +3,7 @@ use std::env;
 /// to `rust-script`'s `--loop` or `runner`'s `--lines`, but with pre-
 /// and post-loop logic analogous to `awk`. I got GPT to do me this
 /// mock-up.
+/// P.S.: This was since implemented as `--loop`.
 //# Purpose: Evaluate expression logic for line processing.
 use std::io::{self, BufRead};
 

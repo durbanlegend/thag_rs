@@ -1,8 +1,8 @@
 [package]
+description = "A versatile cross-platform script runner and REPL for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
 name = "thag_rs"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
-description = "A versatile cross-platform script runner and REPL for Rust snippets, expressions and programs"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 # Include the demo directory in the crate packagename = "thag_rs"
@@ -115,7 +115,13 @@ ci = "github"
 # The installers to generate for each app
 installers = ["shell", "powershell", "msi"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+    "x86_64-pc-windows-msvc",
+]
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
 # Whether to install an updater program

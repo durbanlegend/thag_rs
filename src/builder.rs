@@ -1,6 +1,7 @@
 use crate::code_utils::{
     self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest,
-    read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
+    read_file_contents, remove_inner_attributes, strip_curly_braces, to_ast, wrap_snippet,
+    write_source,
 };
 use crate::colors::gen_mappings;
 use crate::config::{self, RealContext};
@@ -340,9 +341,11 @@ pub fn gen_build_run(
             rs_source
         };
 
+        // let sourch_path_string = source_path.display().to_string();
+        let sourch_path_string = source_path.to_string_lossy();
         // let mut rs_source = read_file_contents(&build_state.source_path)?;
         let mut syntax_tree: Option<Ast> = if syntax_tree.is_none() {
-            code_utils::to_ast(&rs_source)
+            to_ast(&sourch_path_string, &rs_source)
         } else {
             syntax_tree
         };
@@ -490,11 +493,12 @@ pub fn gen_build_run(
     if build_state.must_build {
         build(proc_flags, build_state)?;
     } else {
-        cvprtln!(
-            Lvl::EMPH,
-            V::N,
+        let build_qualifier = if proc_flags.contains(ProcFlags::BUILD) {
             "Skipping unnecessary cargo build step.  Use --force (-f) to override."
-        );
+        } else {
+            "Skipping cargo build step because --norun specified without --build."
+        };
+        cvprtln!(Lvl::EMPH, V::N, "{build_qualifier}");
     }
     if proc_flags.contains(ProcFlags::RUN) {
         run(proc_flags, &args.args, build_state)?;

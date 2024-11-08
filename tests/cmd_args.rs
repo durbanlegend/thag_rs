@@ -79,23 +79,23 @@ fn test_cmd_args_proc_flags_generate_build_force_run() {
 }
 
 #[test]
-fn test_cmd_args_proc_flags_generate_build_run() {
+fn test_cmd_args_proc_flags_generate_norun() {
     set_up();
-    let args = vec!["thag", "/demo/hello.rs", "-g"];
+    let args = vec!["thag", "/demo/hello.rs", "-gn"];
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags.contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN));
+    assert!(proc_flags.contains(ProcFlags::GENERATE | ProcFlags::NORUN));
 }
 
 #[test]
 fn test_cmd_args_proc_flags_build_run() {
     set_up();
-    let args = vec!["thag", "/demo/hello.rs", "-b"];
+    let args = vec!["thag", "/demo/hello.rs", "-bn"];
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags.contains(ProcFlags::BUILD | ProcFlags::RUN));
+    assert!(proc_flags.contains(ProcFlags::BUILD | ProcFlags::NORUN));
 }
 
 #[test]

@@ -199,7 +199,7 @@ macro_rules! generate_styles {
                         $style_enum::Bright => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Bright))).bold(),
                         $style_enum::Normal => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Normal))),
                         $style_enum::Debug => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Debug))),
-                        $style_enum::Ghost => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Ghost))).dimmed().italic(),
+                        $style_enum::Ghost => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Ghost))).italic(),
                     }
                 }
             }
@@ -821,7 +821,7 @@ impl From<&XtermColor> for u8 {
 }
 
 /// An enum of all the supported message styles for different levels of terminal colour support.
-#[derive(Clone, Debug, Display, EnumString, PartialEq, Eq)]
+#[derive(Clone, Debug, Display, EnumIter, EnumString, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
 #[strum(use_phf)]
 pub enum MessageStyle {
@@ -898,22 +898,22 @@ impl From<&MessageStyle> for XtermColor {
         match *message_style {
             MessageStyle::Ansi16LightError => Self::UserRed,
             MessageStyle::Ansi16LightWarning => Self::UserMagenta,
-            MessageStyle::Ansi16LightEmphasis => Self::UserYellow,
+            MessageStyle::Ansi16LightEmphasis => Self::UserGreen,
             MessageStyle::Ansi16LightHeading => Self::UserBlue,
             MessageStyle::Ansi16LightSubheading => Self::UserCyan,
             MessageStyle::Ansi16LightBright => Self::UserGreen,
-            MessageStyle::Ansi16LightNormal => Self::UserWhite,
+            MessageStyle::Ansi16LightNormal => Self::UserBrightBlack,
             MessageStyle::Ansi16LightDebug => Self::UserCyan,
             MessageStyle::Ansi16LightGhost => Self::UserCyan,
-            MessageStyle::Ansi16DarkError => Self::UserRed,
-            MessageStyle::Ansi16DarkWarning => Self::UserMagenta,
-            MessageStyle::Ansi16DarkEmphasis => Self::UserYellow,
-            MessageStyle::Ansi16DarkHeading => Self::UserCyan,
-            MessageStyle::Ansi16DarkSubheading => Self::UserGreen,
+            MessageStyle::Ansi16DarkError => Self::UserBrightRed,
+            MessageStyle::Ansi16DarkWarning => Self::UserBrightYellow,
+            MessageStyle::Ansi16DarkEmphasis => Self::UserBrightCyan,
+            MessageStyle::Ansi16DarkHeading => Self::UserBrightGreen,
+            MessageStyle::Ansi16DarkSubheading => Self::UserBrightBlue,
             MessageStyle::Ansi16DarkBright => Self::UserBrightYellow,
-            MessageStyle::Ansi16DarkNormal => Self::UserWhite,
-            MessageStyle::Ansi16DarkDebug => Self::UserCyan,
-            MessageStyle::Ansi16DarkGhost => Self::LightGray,
+            MessageStyle::Ansi16DarkNormal => Self::UserBrightWhite,
+            MessageStyle::Ansi16DarkDebug => Self::UserBrightCyan,
+            MessageStyle::Ansi16DarkGhost => Self::UserWhite,
             MessageStyle::Xterm256LightError => Self::GuardsmanRed,
             MessageStyle::Xterm256LightWarning => Self::DarkPurplePizzazz,
             MessageStyle::Xterm256LightEmphasis => Self::Copperfield,
@@ -922,14 +922,14 @@ impl From<&MessageStyle> for XtermColor {
             MessageStyle::Xterm256LightSubheading => Self::ScienceBlue,
             MessageStyle::Xterm256LightNormal => Self::Black,
             MessageStyle::Xterm256LightDebug => Self::LochmaraBlue,
-            MessageStyle::Xterm256LightGhost => Self::Boulder,
-            MessageStyle::Xterm256DarkError => Self::GuardsmanRed,
-            MessageStyle::Xterm256DarkWarning => Self::DarkViolet,
+            MessageStyle::Xterm256LightGhost => Self::DarkCodGray,
+            MessageStyle::Xterm256DarkError => Self::UserRed,
+            MessageStyle::Xterm256DarkWarning => Self::LighterHeliotrope,
             MessageStyle::Xterm256DarkEmphasis => Self::Copperfield,
             MessageStyle::Xterm256DarkHeading => Self::CaribbeanGreen,
             MessageStyle::Xterm256DarkSubheading => Self::DarkMalibuBlue,
             MessageStyle::Xterm256DarkBright => Self::UserYellow,
-            MessageStyle::Xterm256DarkNormal => Self::Silver,
+            MessageStyle::Xterm256DarkNormal => Self::White,
             MessageStyle::Xterm256DarkDebug => Self::BondiBlue,
             MessageStyle::Xterm256DarkGhost => Self::Silver,
         }
@@ -943,22 +943,22 @@ impl From<&MessageStyle> for Style {
         match *message_style {
             MessageStyle::Ansi16LightError => Color::Red.bold(),
             MessageStyle::Ansi16LightWarning => Color::Magenta.bold(),
-            MessageStyle::Ansi16LightEmphasis => Color::Yellow.bold(),
+            MessageStyle::Ansi16LightEmphasis => Color::Green.bold(),
             MessageStyle::Ansi16LightHeading => Color::Blue.bold(),
             MessageStyle::Ansi16LightSubheading => Color::Cyan.bold(),
             MessageStyle::Ansi16LightBright => Color::Green.into(), // .bold(),
-            MessageStyle::Ansi16LightNormal => Color::White.normal(),
+            MessageStyle::Ansi16LightNormal => Color::DarkGray.normal(),
             MessageStyle::Ansi16LightDebug => Color::Cyan.normal(),
-            MessageStyle::Ansi16LightGhost => Color::Cyan.dimmed().italic(),
+            MessageStyle::Ansi16LightGhost => Color::Cyan.italic(),
             MessageStyle::Ansi16DarkError => Color::Red.bold(),
-            MessageStyle::Ansi16DarkWarning => Color::Magenta.bold(),
-            MessageStyle::Ansi16DarkEmphasis => Color::Yellow.bold(),
-            MessageStyle::Ansi16DarkHeading => Color::Cyan.bold(),
-            MessageStyle::Ansi16DarkSubheading => Color::Green.bold(),
+            MessageStyle::Ansi16DarkWarning => Color::Yellow.bold(),
+            MessageStyle::Ansi16DarkEmphasis => Color::Cyan.bold(),
+            MessageStyle::Ansi16DarkHeading => Color::Green.bold(),
+            MessageStyle::Ansi16DarkSubheading => Color::Blue.bold(),
             MessageStyle::Ansi16DarkBright => Color::LightYellow.into(), // .bold(),
             MessageStyle::Ansi16DarkNormal => Color::White.normal(),
-            MessageStyle::Ansi16DarkDebug => Color::Cyan.normal(),
-            MessageStyle::Ansi16DarkGhost => Color::LightGray.dimmed().italic(),
+            MessageStyle::Ansi16DarkDebug => Color::LightCyan.normal(),
+            MessageStyle::Ansi16DarkGhost => Color::LightGray.italic(),
             MessageStyle::Xterm256LightError => Color::from(&XtermColor::GuardsmanRed).bold(),
             MessageStyle::Xterm256LightWarning => {
                 Color::from(&XtermColor::DarkPurplePizzazz).bold()
@@ -969,7 +969,9 @@ impl From<&MessageStyle> for Style {
             MessageStyle::Xterm256LightBright => Color::from(&XtermColor::Green).into(), // .bold(),
             MessageStyle::Xterm256LightNormal => Color::from(&XtermColor::Black).normal(),
             MessageStyle::Xterm256LightDebug => Color::from(&XtermColor::LochmaraBlue).normal(),
-            MessageStyle::Xterm256LightGhost => Color::from(&XtermColor::Boulder).normal().italic(),
+            MessageStyle::Xterm256LightGhost => {
+                Color::from(&XtermColor::DarkCodGray).normal().italic()
+            }
             MessageStyle::Xterm256DarkError => Color::from(&XtermColor::GuardsmanRed).bold(),
             MessageStyle::Xterm256DarkWarning => Color::from(&XtermColor::DarkViolet).bold(),
             MessageStyle::Xterm256DarkEmphasis => Color::from(&XtermColor::Copperfield).bold(),
@@ -978,7 +980,7 @@ impl From<&MessageStyle> for Style {
                 Color::from(&XtermColor::DarkMalibuBlue).normal()
             }
             MessageStyle::Xterm256DarkBright => Color::from(&XtermColor::Yellow).into(), // .bold(),
-            MessageStyle::Xterm256DarkNormal => Color::from(&XtermColor::Silver).normal(),
+            MessageStyle::Xterm256DarkNormal => Color::from(&XtermColor::White).normal(),
             MessageStyle::Xterm256DarkDebug => Color::from(&XtermColor::BondiBlue).normal(),
             MessageStyle::Xterm256DarkGhost => Color::from(&XtermColor::Silver).normal().italic(),
         }
@@ -999,22 +1001,22 @@ impl From<&MessageStyle> for RataStyle {
         match *message_style {
             MessageStyle::Ansi16LightError => Self::from(RataColor::Red).bold(),
             MessageStyle::Ansi16LightWarning => Self::from(RataColor::Magenta).bold(),
-            MessageStyle::Ansi16LightEmphasis => Self::from(RataColor::Yellow).bold(),
+            MessageStyle::Ansi16LightEmphasis => Self::from(RataColor::Green).bold(),
             MessageStyle::Ansi16LightHeading => Self::from(RataColor::Blue).bold(),
             MessageStyle::Ansi16LightSubheading => Self::from(RataColor::Cyan).bold(),
             MessageStyle::Ansi16LightBright => Self::from(RataColor::Green), // .bold(),
-            MessageStyle::Ansi16LightNormal => Self::from(RataColor::White).not_bold(),
+            MessageStyle::Ansi16LightNormal => Self::from(RataColor::DarkGray).not_bold(),
             MessageStyle::Ansi16LightDebug => Self::from(RataColor::Cyan).not_bold(),
             MessageStyle::Ansi16LightGhost => Self::from(RataColor::Cyan).dim().italic(),
             MessageStyle::Ansi16DarkError => Self::from(RataColor::Red).bold(),
-            MessageStyle::Ansi16DarkWarning => Self::from(RataColor::Magenta).bold(),
-            MessageStyle::Ansi16DarkEmphasis => Self::from(RataColor::Yellow).bold(),
-            MessageStyle::Ansi16DarkHeading => Self::from(RataColor::Cyan).bold(),
-            MessageStyle::Ansi16DarkSubheading => Self::from(RataColor::Green).bold(),
+            MessageStyle::Ansi16DarkWarning => Self::from(RataColor::Yellow).bold(),
+            MessageStyle::Ansi16DarkEmphasis => Self::from(RataColor::Cyan).bold(),
+            MessageStyle::Ansi16DarkHeading => Self::from(RataColor::Green).bold(),
+            MessageStyle::Ansi16DarkSubheading => Self::from(RataColor::Blue).bold(),
             MessageStyle::Ansi16DarkBright => Self::from(RataColor::LightYellow), // .bold(),
             MessageStyle::Ansi16DarkNormal => Self::from(RataColor::White).not_bold(),
-            MessageStyle::Ansi16DarkDebug => Self::from(RataColor::Cyan).not_bold(),
-            MessageStyle::Ansi16DarkGhost => Self::from(RataColor::Gray).dim().italic(),
+            MessageStyle::Ansi16DarkDebug => Self::from(RataColor::LightCyan).not_bold(),
+            MessageStyle::Ansi16DarkGhost => Self::from(RataColor::Gray).italic(),
             MessageStyle::Xterm256LightError => {
                 Self::from(RataColor::Indexed(u8::from(&XtermColor::GuardsmanRed))).bold()
             }
@@ -1040,7 +1042,7 @@ impl From<&MessageStyle> for RataStyle {
                 Self::from(RataColor::Indexed(u8::from(&XtermColor::LochmaraBlue))).not_bold()
             }
             MessageStyle::Xterm256LightGhost => {
-                Self::from(RataColor::Indexed(u8::from(&XtermColor::Boulder)))
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::DarkCodGray)))
                     .not_bold()
                     .italic()
             }
@@ -1063,7 +1065,7 @@ impl From<&MessageStyle> for RataStyle {
                 Self::from(RataColor::Indexed(u8::from(&XtermColor::Yellow))).bold()
             }
             MessageStyle::Xterm256DarkNormal => {
-                Self::from(RataColor::Indexed(u8::from(&XtermColor::Silver))).not_bold()
+                Self::from(RataColor::Indexed(u8::from(&XtermColor::White))).not_bold()
             }
             MessageStyle::Xterm256DarkDebug => {
                 Self::from(RataColor::Indexed(u8::from(&XtermColor::BondiBlue))).not_bold()
@@ -1087,15 +1089,8 @@ impl From<&MessageLevel> for RataStyle {
 /// Main function for use by testing or the script runner.
 #[allow(dead_code)]
 pub fn main() {
-    // #[cfg(not(target_os = "windows"))]
-    {
-        #[allow(unused_variables)]
-        let term = terminal();
-        // shared::clear_screen();
-
-        #[cfg(debug_assertions)]
-        println!("  Term : {term:?}");
-    }
+    #[allow(unused_variables)]
+    let term = terminal();
 
     let (maybe_color_support, term_theme) = coloring();
 
@@ -1112,6 +1107,59 @@ pub fn main() {
                 });
             }
 
+            println!();
+
+            // Convert to title case
+            let term_theme_str = term_theme.to_string();
+            println!("ANSI-16 color palette in use for {term_theme_str} theme:\n");
+            for variant in MessageStyle::iter() {
+                let variant_str: &str = &variant.to_string();
+                let variant_prefix = format!("ansi16_{term_theme_str}_");
+                if !variant_str.starts_with(&variant_prefix) {
+                    continue;
+                }
+                let xterm_color = XtermColor::from(&variant);
+                let color_num = u8::from(&xterm_color);
+                let style = Style::from(&variant);
+                let content = format!(
+                    "{variant_str} message: message_style={variant_str:?}, style={style:?}, color_num={color_num}"
+                );
+                println!("{}", style.paint(content));
+            }
+
+            println!();
+
+            println!("ANSI-16 color palette in use for {term_theme_str} theme (converted via XtermColor and missing bold/dimmed/italic):\n");
+            for variant in MessageStyle::iter() {
+                let variant_str: &str = &variant.to_string();
+                let variant_prefix = format!("ansi16_{term_theme_str}_");
+                if !variant_str.starts_with(&variant_prefix) {
+                    continue;
+                }
+                let xterm_color = XtermColor::from(&variant);
+                let color = Color::from(&xterm_color);
+                let style = Style::from(color);
+                let content = format!(
+                    "{variant_str} message: message_style={variant_str:?}, style={style:?}"
+                );
+                println!("{}", style.paint(content));
+            }
+
+            println!();
+
+            println!("XtermColor::user* colours for comparison:\n");
+            for variant in XtermColor::iter().take(16) {
+                let variant_str: &str = &variant.to_string();
+                let color = Color::from(&variant);
+                let style = Style::from(color);
+                let content = format!(
+                    "{variant_str} message: message_style={variant_str:?}, style={style:?}"
+                );
+                println!("{}", style.paint(content));
+            }
+
+            println!();
+            println!("Color palette in use on this terminal:\n");
             for variant in Lvl::iter() {
                 let variant_string: &str = &variant.to_string();
                 let message_style = MessageStyle::from(&variant);
@@ -1123,6 +1171,7 @@ pub fn main() {
                 );
             }
 
+            println!("\nTerm : {term:?}");
             vlog!(
                 V::N,
                 "Colour support={support:?}, term_theme={term_theme:?}"

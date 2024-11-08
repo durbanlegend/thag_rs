@@ -7,7 +7,7 @@ pub(crate) struct VecField {
                                           // items: String,
 }
 
-pub(crate) fn deserialize_vec_derive_impl(
+pub(crate) fn derive_deserialize_vec_impl(
     item: proc_macro2::TokenStream,
 ) -> deluxe::Result<proc_macro2::TokenStream> {
     let mut input = syn::parse2::<syn::DeriveInput>(item)?;

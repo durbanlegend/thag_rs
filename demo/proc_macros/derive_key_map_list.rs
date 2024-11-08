@@ -8,7 +8,7 @@ pub(crate) struct KeyMappings {
     pub(crate) add: Vec<(i32, String, String)>,
 }
 
-pub(crate) fn key_map_list_derive(
+pub(crate) fn derive_key_map_list_impl(
     item: proc_macro2::TokenStream,
 ) -> deluxe::Result<proc_macro2::TokenStream> {
     let mut input = syn::parse2::<syn::DeriveInput>(item)?;

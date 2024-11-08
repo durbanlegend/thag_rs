@@ -1,21 +1,21 @@
 #![allow(clippy::missing_panics_doc)]
+mod attrib_key_map_list;
 mod custom_model;
-mod deserialize_vec_derive;
+mod derive_deserialize_vec;
+mod derive_key_map_list;
 mod expander_demo;
 mod into_string_hash_map;
-mod attrib_key_map_list;
-mod derive_key_map_list;
 mod my_description;
 mod organizing_code;
 mod organizing_code_const;
 mod organizing_code_tokenstream;
 
+use crate::attrib_key_map_list::use_mappings_impl;
 use crate::custom_model::derive_custom_model_impl;
-use crate::deserialize_vec_derive::deserialize_vec_derive_impl;
+use crate::derive_deserialize_vec::derive_deserialize_vec_impl;
+use crate::derive_key_map_list::derive_key_map_list_impl;
 use crate::expander_demo::baz2;
 use crate::into_string_hash_map::into_hash_map_impl;
-use crate::attrib_key_map_list::use_mappings_impl;
-use crate::derive_key_map_list::derive_key_map_list_impl;
 use crate::my_description::my_derive;
 use crate::organizing_code::organizing_code_impl;
 use crate::organizing_code_const::organizing_code_const_impl;
@@ -40,8 +40,8 @@ pub fn derive_my_description(item: proc_macro::TokenStream) -> proc_macro::Token
 
 // Define the custom derive macro using `deluxe`
 #[proc_macro_derive(DeserializeVec, attributes(deluxe, use_mappings))]
-pub fn deserialize_vec_derive(input: TokenStream) -> TokenStream {
-    deserialize_vec_derive_impl(input.into()).unwrap().into()
+pub fn derive_deserialize_vec(input: TokenStream) -> TokenStream {
+    derive_deserialize_vec_impl(input.into()).unwrap().into()
 }
 
 #[proc_macro_derive(DeriveKeyMapList, attributes(deluxe, use_mappings))]

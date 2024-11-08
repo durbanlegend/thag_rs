@@ -131,28 +131,10 @@ fn check_{test_name}() {{
         dest_dir.push("thag_rs");
         dest_dir.push(file_stem);
 
-        // Cargo clean seems to work but is desperately slow.
-        // let toml_path = &dest_dir.join("Cargo.toml");
-        // let toml_path_str = toml_path.display().to_string();
-
-        // let output = Command::new("cargo")
-        //     .arg("clean")
-        //     .arg("--manifest-path")
-        //     .arg(&toml_path_str)
-        //     .output()
-        //     .expect("Failed to execute command");
-
-        // if !output.status.success() {{
-        //     panic!(
-        //         "Failed on cargo clean: {{toml_path_str}}\nstdout: {{}}\nstderr: {{}}",
-        //         String::from_utf8_lossy(&output.stdout),
-        //         String::from_utf8_lossy(&output.stderr)
-        //     );
-        // }}
-
+        // Cargo clean seems to work but is desperately slow - see rev d65b1aed47527f267fcc88f111bec6164b31c8a0
+        // for (commented) code.
         // Seems OK
         let target_dir = &dest_dir.join("target/debug");
-        // eprintln!("target_dir={{}}", target_dir.display());
         // Delete the destination directory after building the file
         if let Err(e) = fs::remove_dir_all(&target_dir) {{
             eprintln!("Failed to remove directory {test_name}: {{}}, {{e:?}}", target_dir.display());

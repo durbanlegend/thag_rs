@@ -1,10 +1,9 @@
 #![allow(dead_code, unused_variables, clippy::redundant_pub_crate)]
-
 /// Experimental - work in progress
 use expander::{Edition, Expander};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse_quote, ExprMacro};
+use syn::parse_quote;
 
 // Deluxe struct for extracting attributes
 #[derive(deluxe::ExtractAttributes)]
@@ -27,14 +26,14 @@ pub(crate) fn organizing_code_const_impl(
 
     // Generate token stream for the deletions
     let delete_tokens = delete.iter().map(|key| {
-        quote::quote! { #key, }
+        quote! { #key, }
     });
 
     // eprintln!("delete_tokens={delete_tokens:#?}");
 
     // Generate token stream for the additions
     let add_tokens = add.iter().map(|(seq, key, desc)| {
-        quote::quote! {
+        quote! {
             ( #seq, #key.to_string(), #desc.to_string() ),
         }
     });
@@ -59,7 +58,7 @@ pub(crate) fn organizing_code_const_impl(
 
     // Generate the code for the impl, using the mappings constant from the caller
     let ident = &input.ident;
-    let output = quote::quote! {
+    let output = quote! {
         impl #impl_generics #ident #type_generics #where_clause {
             pub fn adjust_mappings(&self) -> Vec<(i32, String, String)> {
                 // eprintln!("Base mappings from named constant:");

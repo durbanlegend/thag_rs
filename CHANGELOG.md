@@ -7,17 +7,23 @@ All notable changes to this project will be documented in this file.
 ### Highlights
 
 - Provide helpful message if source can't be parsed to AST.
+- Remove --norun (-n) CLI option: instead it's now implied by --gen (-g) and --build (-b), which would serve no purpose otherwise.
 - Pick up crates with `use <single-path_segment>;
 - Add new Bright level to message levels for emphasis.
 - Streamline logging and colour handling.
 - Make `simplelog` the default logger in place of `env_logger` but retain `env_logger` as an alternative feature.
-- Pick better message colours with the aid of new displays in demo/colors.rs,
-  and align `XtermColor` colour choices with `nu_ansi_term` and `ratatui`.
+- Pick better message colours with the aid of new displays in demo/colors.rs, and align `XtermColor` colour choices with
+    `nu_ansi_term` and `ratatui`.
   Ensure Ansi-16 colours are valid.
 - Add REPL support for edit-run cycle with external editor, analogous to tui_edit-submit cycle with built-in TUI editor.
-- Enhance selected line highlighting with toggling between main level colours.
+- Enhance selected line highlighting in TUI editor with toggling between main level colours.
+- Bring look of file dialog in line with others and add a separate keys display screen for filename input mode as opposed to list mode.
+- Sort TUI editor keys displays by sequence number provided for the purpose.
+- Introduce unit tests for fn `from_xterm` in `termbg` module.
+- Make many more common items public in lib.
 - Review CLI options and reorganise and reword help screen.
-- Remove redundant code.
+- Remove redundant code including alternative REPL in stdin (now merged into repl.rs) and old TUI history edit function from before
+    `tui_editor::tui_edit`.
 - Clean after `cargo check` in demo testing to avoid space issues in Github CI.
 - New demo scripts
 - Remove reference to revisit-REPL feature, decommissioned because too expensive.

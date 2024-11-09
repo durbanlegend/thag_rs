@@ -208,11 +208,6 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         let mut proc_flags = ProcFlags::empty();
         // eprintln!("args={args:#?}");
         proc_flags.set(ProcFlags::GENERATE, args.generate);
-        // eprintln!(
-        //     "After set(ProcFlags::GENERATE, args.generate), ProcFlags::GENERATE = {:#?}",
-        //     ProcFlags::GENERATE
-        // );
-
         proc_flags.set(ProcFlags::BUILD, args.build);
         proc_flags.set(ProcFlags::CHECK, args.check);
         proc_flags.set(ProcFlags::FORCE, args.force);
@@ -222,18 +217,11 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::VERBOSE, args.verbose == 1);
         proc_flags.set(ProcFlags::DEBUG, args.verbose >= 2);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
-        dbg!(&proc_flags);
         proc_flags.set(
             ProcFlags::NORUN,
             args.generate | args.build | args.check | args.executable,
         );
-        dbg!(&proc_flags);
         proc_flags.set(ProcFlags::NORMAL, args.normal);
-        // let gen_build = !args.norun && !args.executable && !args.check;
-        // debug_log!("gen_build={gen_build}");
-        // if gen_build {
-        //     proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true);
-        // }
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
         proc_flags.set(ProcFlags::REPL, args.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);
@@ -293,41 +281,3 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     }?;
     Ok(proc_flags)
 }
-
-// pub fn get_styles() -> clap::builder::Styles {
-//     clap::builder::Styles::styled()
-//         .usage(
-//             anstyle::Style::new()
-//                 .bold()
-//                 .underline()
-//                 .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Yellow))),
-//         )
-//         .header(
-//             anstyle::Style::new()
-//                 .bold()
-//                 .underline()
-//                 .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Yellow))),
-//         )
-//         .literal(
-//             anstyle::Style::new().fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Green))),
-//         )
-//         .invalid(
-//             anstyle::Style::new()
-//                 .bold()
-//                 .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Red))),
-//         )
-//         .error(
-//             anstyle::Style::new()
-//                 .bold()
-//                 .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Red))),
-//         )
-//         .valid(
-//             anstyle::Style::new()
-//                 .bold()
-//                 .underline()
-//                 .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Green))),
-//         )
-//         .placeholder(
-//             anstyle::Style::new().fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::White))),
-//         )
-// }

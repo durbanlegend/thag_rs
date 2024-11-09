@@ -7,9 +7,9 @@ use std::path::Path;
 /// Create a separate test for each individual script in demo/, to ensure that it builds
 /// successfully. We don't try to run them for logistical reasons, but at least we
 /// identify undocumented and abandoned scripts. Given that there are so many of these scripts,
-/// avoid Cargo's default behaviour of running all tests in parallel. --test-threads=5 seems
+/// avoid Cargo's default behaviour of running all tests in parallel. --test-threads=3 to 5 seems
 /// to work best on my MacBook Air M1.
-/// Suggested command: `RUST_LOG=thag=debug cargo test --features=debug-logs -- --nocapture --test-threads=3
+/// Suggested command: `cargo test --features=simplelog -- --nocapture --test-threads=3
 /// You may want to adjust the test-threads value further depending on your hardware.
 fn main() {
     // Get the OUT_DIR environment variable
@@ -108,7 +108,7 @@ fn check_{test_name}() {{
         let output = Command::new("cargo")
             .arg("run")
             .arg("--")
-            .arg("-cfgnq{more_options}")
+            .arg("-cq{more_options}")
             .arg({source_path:?})
             .output()
             .expect("Failed to execute command");

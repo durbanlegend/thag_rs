@@ -206,20 +206,14 @@ impl BuildState {
             let stale_executable = matches!(script_state, ScriptState::NamedEmpty { .. })
                 || !target_path_exists
                 || modified_since_compiled(&build_state)?.is_some();
-            let gen_requested = proc_flags.contains(ProcFlags::GENERATE);
-            let build_requested = proc_flags.intersects(ProcFlags::BUILD | ProcFlags::CHECK);
             let must_gen = force
                 || is_repl
                 || is_loop
                 || is_check
-                || (gen_requested && stale_executable)
+                || stale_executable
                 || !cargo_toml_path.exists();
-            let must_build = force
-                || is_repl
-                || is_loop
-                || build_exe
-                || is_check
-                || (build_requested && stale_executable);
+            let must_build =
+                must_gen || is_repl || is_loop || build_exe || is_check || stale_executable;
             (must_gen, must_build)
         };
 

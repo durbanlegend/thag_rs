@@ -493,11 +493,12 @@ pub fn gen_build_run(
     if build_state.must_build {
         build(proc_flags, build_state)?;
     } else {
-        let build_qualifier = if proc_flags.contains(ProcFlags::BUILD) {
-            "Skipping unnecessary cargo build step.  Use --force (-f) to override."
-        } else {
-            "Skipping cargo build step because --norun specified without --build."
-        };
+        let build_qualifier =
+            if proc_flags.contains(ProcFlags::NORUN) && !proc_flags.contains(ProcFlags::BUILD) {
+                "Skipping cargo build step because --norun specified without --build."
+            } else {
+                "Skipping unnecessary cargo build step. Use --force (-f) to override."
+            };
         cvprtln!(Lvl::EMPH, V::N, "{build_qualifier}");
     }
     if proc_flags.contains(ProcFlags::RUN) {

@@ -878,11 +878,12 @@ impl From<&Lvl> for MessageStyle {
                 let message_style = Self::from_str(&format!(
                     "{}_{}_{}",
                     &color_qual, &theme_qual, &msg_level_qual
-                )).unwrap_or(Self::Ansi16DarkNormal);
-                #[cfg(debug_assertions)]
-                debug_log!(
-                    "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
-                );
+                ))
+                .unwrap_or(Self::Ansi16DarkNormal);
+                // #[cfg(debug_assertions)]
+                // debug_log!(
+                //     "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
+                // );
                 message_style
             })
         };

@@ -6,7 +6,7 @@ syn = { version = "2.0.87", features = ["extra-traits", "full", "parsing", "visi
 
 /// Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
 /// Rust source program passed to the script. Specifically the combination of fn `visit_use_tree`
-/// to process the nodes representing `use` statements and fn `` to initiate the tree
+/// to process the nodes representing `use` statements and fn `visit_file` to initiate the tree
 /// traversal. This version expects the script contents to consist of a full-fledged Rust program.
 //# Purpose: Develop improved algorithm for `thag_rs` that accepts imports of the form `use <crate>;` instead of requiring `use <crate>::...`.
 use std::{env, fs, path::PathBuf};

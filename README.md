@@ -195,9 +195,7 @@ Hopefully the help screen is self-explanatory:
 
 ![Help](assets/helpt.png)
 
-You can enter `thag` arguments and options in any order, as long as you separate them from any script arguments with a `--` separator.
-
-Note that you can enable debug logging by specifying the `--verbose` option twice, e.g. `-vv`. For this you must also set the environment variable `RUST_LOG=thag=debug`.
+You can enter `thag` arguments and options in any order. If your script or dynamic run accepts arguments of its own, they must come after the `thag` arguments and separated from them by a double dash (`--`). In other words, the common convention imposed by `clap`.
 
 ## Overview
 
@@ -242,9 +240,9 @@ from the same page.
 
 * Cloning gives you immediate access to the demo scripts library and the opportunity to make local changes or a fork.
 
-`thag_rs` uses Cargo, `syn`, `quote` and `cargo_toml` to analyse and wrap well-formed snippets and expressions into working programs. Well-formed input programs are identified by having a valid `fn main` (or more than one - see below) and passed unchanged to `cargo build`.
+`thag_rs` uses Cargo, `syn`, `quote` and `cargo_toml` to analyse and wrap well-formed snippets and expressions into working programs. Well-formed input programs are identified by having a valid `fn main` (or more than one - see below) and are passed unchanged to `cargo build`.
 
-`thag_rs` uses `syn` to parse valid code into an abstract syntax tree (AST). Among other benefits this prevents it being fooled by code embedded in comments or string literals, which is the curse of regular expressions and string parsing. `thag_rs` then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code so as to generate a `Cargo.toml`. It filters these to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
+`thag_rs` uses `syn` to parse valid code into an abstract syntax tree (AST). Among other benefits this prevents it from being fooled by code embedded in comments or string literals, which is the curse of regular expressions and string parsing. `thag_rs` then uses the `syn` visitor mechanism to traverse the AST to identify dependencies in the code so as to generate a `Cargo.toml`. It filters these to remove duplicates and false positives such as built-in Rust crates, renamed crates and local modules.
 
 Well-formedness is determined by counting occurrences of a `main` function in the AST. The absence of a `fn main` signifies a snippet or expression, whereas more than one `fn main` may be valid but must be actively confirmed as such by the user with the `--multimain (-m)` option.
 

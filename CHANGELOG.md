@@ -9,9 +9,11 @@ All notable changes to this project will be documented in this file.
 - Provide helpful message if source can't be parsed to AST.
 - Pick up crates with `use <single-path_segment>;
 - Add new Bright level to message levels for emphasis.
-- Streamline logging and colour handling. Pick better message colours with the aid of new displays in demo/colors.rs,
-  Ensure Ansi-16 colours are valid.
+- Streamline logging and colour handling.
+- Make `simplelog` the default logger in place of `env_logger` but retain `env_logger` as an alternative feature.
+- Pick better message colours with the aid of new displays in demo/colors.rs,
   and align `XtermColor` colour choices with `nu_ansi_term` and `ratatui`.
+  Ensure Ansi-16 colours are valid.
 - Add REPL support for edit-run cycle with external editor, analogous to tui_edit-submit cycle with built-in TUI editor.
 - Enhance selected line highlighting with toggling between main level colours.
 - Review CLI options and reorganise and reword help screen.

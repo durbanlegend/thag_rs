@@ -29,5 +29,4 @@ pub fn repeat_dash(input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         const DASH_LINE: &str = #dash_line;
     })
-    .into()
 }

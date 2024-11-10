@@ -24,8 +24,10 @@ use crate::organizing_code_const::organizing_code_const_impl;
 use crate::organizing_code_tokenstream::organizing_code_tokenstream_impl;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::parse_macro_input;
-use syn::LitInt;
+use syn::{
+    parse::{Parse, ParseStream},
+    parse_macro_input, ExprArray, LitInt, Result, Token,
+};
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
 pub fn derive_custom_model(item: TokenStream) -> TokenStream {
@@ -106,4 +108,42 @@ pub fn repeat_dash(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn string_concat(tokens: TokenStream) -> TokenStream {
     string_concat_impl(tokens)
+}
+
+/// Custom struct to hold two arrays
+struct ArrayConcatInput {
+    first: ExprArray,
+    _comma: Token![,],
+    second: ExprArray,
+}
+
+impl Parse for ArrayConcatInput {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let first = input.parse()?;
+        let _comma = input.parse()?;
+        let second = input.parse()?;
+        Ok(ArrayConcatInput {
+            first,
+            _comma,
+            second,
+        })
+    }
+}
+
+/// The `concat_arrays` macro implementation
+#[proc_macro]
+pub fn concat_arrays(input: TokenStream) -> TokenStream {
+    // Parse the input as two arrays
+    let ArrayConcatInput { first, second, .. } = parse_macro_input!(input as ArrayConcatInput);
+
+    // Extract the elements from each array
+    let mut combined_elements = first.elems.clone();
+    combined_elements.extend(second.elems.clone());
+
+    // Generate the resulting array as a token stream
+    let expanded = quote! {
+        [#combined_elements]
+    };
+
+    TokenStream::from(expanded)
 }

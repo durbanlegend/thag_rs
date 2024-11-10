@@ -7,7 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Highlights
 
 - Provide helpful message if source can't be parsed to AST.
-- Remove --norun (-n) CLI option: instead it's now implied by --gen (-g) and --build (-b), which would serve no purpose otherwise.
+- CLI simplification: De-emphasise --gen and --build, make them imply "don't run" and drop explicit --norun. Group options by
+    category on help screen and clarify wording.
 - Pick up crates with `use <single-path_segment>;
 - Add new Bright level to message levels for emphasis.
 - Streamline logging and colour handling.
@@ -21,7 +22,6 @@ All notable changes to this project will be documented in this file.
 - Sort TUI editor keys displays by sequence number provided for the purpose.
 - Introduce unit tests for fn `from_xterm` in `termbg` module.
 - Make many more common items public in lib.
-- Review CLI options and reorganise and reword help screen.
 - Remove redundant code including alternative REPL in stdin (now merged into repl.rs) and old TUI history edit function from before
     `tui_editor::tui_edit`.
 - Clean after `cargo check` in demo testing to avoid space issues in Github CI.
@@ -71,6 +71,7 @@ All notable changes to this project will be documented in this file.
 - [Merge pull request #68 from durbanlegend/develop](https://github.com/durbanlegend/thag_rs/commit/844e4b6f3dd1f0dd1132c26dc36219cf56a8b40a)
 - [Merge pull request #69 from durbanlegend/main](https://github.com/durbanlegend/thag_rs/commit/1f11a7673391464cc2ca3288741e29bb3cf80245)
 - [Merge pull request #70 from durbanlegend/staging](https://github.com/durbanlegend/thag_rs/commit/440a177cef97d51ed500b364a1ad9e1809d9a453)
+- [Prepare for release 1.6.0.](https://github.com/durbanlegend/thag_rs/commit/d72662f489acefd84d1637ae792e54ce6641ed86)
 
 ### Notes
 
@@ -197,7 +198,7 @@ All notable changes to this project will be documented in this file.
 
 - Previous version saved as colors_old.rs.
 
-- New MessageLevel Bright to largely replace hard-coded Yellow. Enhance colors::main to be like new demo version.
+- New MessageLevel Bright to largely replace  hard-coded Yellow. Enhance colors::main to be like new demo version.
   Move process_expr from code_utils to builder.
   Reorganise imports: publish additional popular ones in lib.
   Rationalise Verbosity naming.
@@ -256,6 +257,7 @@ All notable changes to this project will be documented in this file.
 
 - Merge selected changes from develop to main via staging branch.
 
+- Extensive enhancements to cmd_args and colors modules, minor enhancements to shared, builder and code_utils.
 ## v0.1.5 (2024-10-20)
 
 ### Highlights

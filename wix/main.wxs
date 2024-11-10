@@ -69,7 +69,8 @@
 
         <Package Id='*'
             Keywords='Installer'
-            Description='A versatile cross-platform script runner and REPL for Rust snippets, expressions and programs'
+            Description='A versatile cross-platform script runner and REPL for Rust snippets, expressions and programs.
+Accepts a script file or dynamic options.'
             Manufacturer='Don Forbes'
             InstallerVersion='450'
             Languages='1033'

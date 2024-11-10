@@ -1,104 +1,105 @@
 use crate::{config::maybe_config, debug_log, ThagError, ThagResult, RS_SUFFIX};
 
 use bitflags::bitflags;
-use clap::{ArgGroup, Parser};
+// use clap::builder::styling::{Ansi256Color, AnsiColor, Color, Style};
+use clap::{ArgGroup /*, ColorChoice */, Parser};
 use firestorm::profile_fn;
 use std::{fmt, str};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and REPL.
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Default, Parser, Debug)]
-#[command(name = "thag_rs", version, about, long_about)]
+#[command(name = "thag_rs", version, about, long_about/*, color = ColorChoice::Always, styles=get_styles(), next_help_heading = Some("Information Options")*/)]
 #[command(group(
             ArgGroup::new("commands")
                 .required(true)
                 .args(&["script", "expression", "repl", "filter", "stdin", "edit", "config"]),
    ))]
 #[command(group(
-            ArgGroup::new("volume")
+            ArgGroup::new("verbosity")
                 .required(false)
                 .args(&["quiet", "normal", "verbose"]),
         ))]
 pub struct Cli {
-    /// Optional name of a script to run (`stem`.rs)
+    /// Optional path of a script to run (`path`/`stem`.rs)
     pub script: Option<String>,
-    /// Set the arguments for the script
+    /// Any arguments for the script
     #[arg(last = true, requires = "script")]
     pub args: Vec<String>,
-    /// Generate Rust source and individual cargo .toml if compiled file is stale
-    #[arg(short, long = "gen", default_value_ifs([
-        ("force", "true", "true"),
+    /// Force the generation and build steps, even if the script is unchanged since a previous build. Required if there are updates to dependencies.
+    #[arg(short, long, help_heading = Some("Script Options"))]
+    pub force: bool,
+    // /// Don't run the script after generating and building
+    // #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin"]))]
+    // pub norun: bool,
+    /// Evaluate a quoted Rust expression on the fly
+    #[arg(short, long = "expr", help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
+    pub expression: Option<String>,
+    /// REPL mode (read–eval–print loop) for Rust expressions, or for dynamic scripts using TUI or external editors.
+    #[arg(short = 'r', long, help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
+    pub repl: bool,
+    /// Read script from stdin
+    #[arg(short, long, help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
+    pub stdin: bool,
+    /// Simple TUI edit-submit with history. Editor will also capture any stdin input
+    #[arg(short = 'd', long, help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
+    pub edit: bool,
+    /// Run the given filter expression in a loop against every line of stdin, with optional pre- and/or post-loop logic via -T, -B and -E.
+    #[arg(short = 'l', long = "loop", help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
+    pub filter: Option<String>,
+    /// Optional manifest info for --loop in Cargo.toml format, such as a [dependencies] section
+    //  clap issue 4707 may prevent `requires` from working, as I've experienced.
+    #[arg(short = 'T', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "CARGO-TOML")]
+    pub toml: Option<String>,
+    /// Optional pre-loop Rust statements for --loop, somewhat like awk BEGIN
+    //  clap issue 4707 may prevent `requires` from working, as I've experienced.
+    #[arg(short = 'B', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "PRE-LOOP")]
+    pub begin: Option<String>,
+    /// Optional post-loop Rust statements for --loop, somewhat like awk END
+    //  clap issue 4707 may prevent `requires` from working, as I've experienced.
+    #[arg(short = 'E', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "POST-LOOP")]
+    pub end: Option<String>,
+    /// Required if multiple main methods are valid for the current script
+    #[arg(short, long, help_heading = Some("Script Options"))]
+    pub multimain: bool,
+    /// Display timings
+    #[arg(short, long, help_heading = Some("Output Options"))]
+    pub timings: bool,
+    /// Set verbose mode. Double up for debug mode with destination app.log.
+    #[arg(short, long, help_heading = Some("Output Options"), action = clap::ArgAction::Count)]
+    pub verbose: u8,
+    /// Set normal verbosity. Only needed in the case of overriding a different configured value
+    #[arg(short = 'N', long = "normal verbosity", help_heading = Some("Output Options"))]
+    pub normal: bool,
+    /// Suppress unnecessary output. Double up to show only errors, or to pipe output to another command.
+    #[arg(short, long, help_heading = Some("Output Options"), action = clap::ArgAction::Count)]
+    pub quiet: u8,
+    /// Just generate individual Cargo.toml and any required Rust scaffolding for script, unless script unchanged from a previous build.
+    #[arg(short, long = "gen"/*, requires = "norun"*/, help_heading = Some("No-run Options"), default_value_ifs([
+        /*("force", "true", "true"),*/
         ("expression", "_", "true"),
         ("executable", "true", "true"),
         ("check", "true", "true"),
     ]))]
     pub generate: bool,
-    /// Build script if compiled file is stale
-    #[arg(short, long, default_value_ifs([
-        ("force", "true", "true"),
+    /// Just build script (generating first if necessary), unless unchanged from a previous build
+    #[arg(short, long/*, requires = "norun"*/, help_heading = Some("No-run Options"), default_value_ifs([
+        /*("force", "true", "true"),*/
         ("expression", "_", "true"),
         ("executable", "true", "true"),
     ]))]
     pub build: bool,
-    /// Force generation of Rust source and individual Cargo.toml, and build, even if compiled file is not stale
-    #[arg(short, long)]
-    pub force: bool,
-    /// Don't run the script after generating and building
-    #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin"]))]
-    pub norun: bool,
-    /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`
-    #[arg(short = 'x', long)]
+    /// Just build executable `home_dir`/.cargo/bin/`stem` from script `path`/`stem`.rs using `cargo build --release`
+    #[arg(short = 'x', long, help_heading = Some("No-run Options"))]
     pub executable: bool,
-    /// Cargo check script if compiled file is stale. Less thorough than build.
+    /// Just cargo check script, unless unchanged from a previous build. Less thorough than build.
     /// Used by integration test to check all demo scripts
-    #[arg(short, long, conflicts_with_all(["build", "executable"]))]
+    #[arg(short, long, help_heading = Some("No-run Options"), conflicts_with_all(["build", "executable"]))]
     pub check: bool,
-    /// Evaluate a quoted expression on the fly
-    #[arg(short, long = "expr", conflicts_with_all(["generate", "build"]))]
-    pub expression: Option<String>,
-    /// REPL mode (read–eval–print loop) for Rust expressions. Option: existing script name
-    #[arg(short = 'r', long, conflicts_with_all(["generate", "build"]))]
-    pub repl: bool,
-    /// Read script from stdin
-    #[arg(short, long, conflicts_with_all(["generate", "build"]))]
-    pub stdin: bool,
-    /// Simple TUI edit-submit with history; editor will also capture any stdin input
-    #[arg(short = 'd', long, conflicts_with_all(["generate", "build"]))]
-    pub edit: bool,
-    /// Filter expression to be run in a loop against every line in stdin, with optional pre- and post-loop logic.
-    #[arg(short = 'l', long = "loop", conflicts_with_all(["generate", "build"]))]
-    pub filter: Option<String>,
-    /// Optional manifest info for --loop in format ready for Cargo.toml
-    //  clap issue 4707 may prevent `requires` from working, as I've experienced.
-    #[arg(short = 'T', long, requires = "filter", value_name = "CARGO-TOML")]
-    pub toml: Option<String>,
-    /// Optional pre-loop logic for --loop, somewhat like awk BEGIN
-    //  clap issue 4707 may prevent `requires` from working, as I've experienced.
-    #[arg(short = 'B', long, requires = "filter", value_name = "PRE-LOOP")]
-    pub begin: Option<String>,
-    /// Optional post-loop logic for --loop, somewhat like awk END
-    //  clap issue 4707 may prevent `requires` from working, as I've experienced.
-    #[arg(short = 'E', long, requires = "filter", value_name = "POST-LOOP")]
-    pub end: Option<String>,
-    /// Confirm that multiple main methods are valid for this script
-    #[arg(short, long)]
-    pub multimain: bool,
-    /// Display timings
-    #[arg(short, long)]
-    pub timings: bool,
-    /// Set verbose mode, double up for debug mode
-    #[arg(short, long, action = clap::ArgAction::Count)]
-    pub verbose: u8,
-    /// Set normal verbosity, only needed to override config value
-    #[arg(short = 'N', long = "normal verbosity")]
-    pub normal: bool,
-    /// Suppress unnecessary output, double up to show only errors
-    #[arg(short, long, action = clap::ArgAction::Count)]
-    pub quiet: u8,
     /// Strip double quotes from string result of expression (true/false). Default: config value / false.
     #[arg(
         short,
-        long,
+        long, help_heading = Some("Dynamic Options (no script)"),
         // require_equals = true,
         action = clap::ArgAction::Set,
         num_args = 0..=1,
@@ -106,7 +107,7 @@ pub struct Cli {
         conflicts_with("multimain")
     )]
     pub unquote: Option<bool>,
-    /// Edit configuration
+    /// Edit the configuration file
     #[arg(short = 'C', long, conflicts_with_all(["generate", "build", "executable"]))]
     pub config: bool,
 }
@@ -207,11 +208,6 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         let mut proc_flags = ProcFlags::empty();
         // eprintln!("args={args:#?}");
         proc_flags.set(ProcFlags::GENERATE, args.generate);
-        // eprintln!(
-        //     "After set(ProcFlags::GENERATE, args.generate), ProcFlags::GENERATE = {:#?}",
-        //     ProcFlags::GENERATE
-        // );
-
         proc_flags.set(ProcFlags::BUILD, args.build);
         proc_flags.set(ProcFlags::CHECK, args.check);
         proc_flags.set(ProcFlags::FORCE, args.force);
@@ -221,13 +217,11 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::VERBOSE, args.verbose == 1);
         proc_flags.set(ProcFlags::DEBUG, args.verbose >= 2);
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
-        proc_flags.set(ProcFlags::NORUN, args.norun | args.check | args.executable);
+        proc_flags.set(
+            ProcFlags::NORUN,
+            args.generate | args.build | args.check | args.executable,
+        );
         proc_flags.set(ProcFlags::NORMAL, args.normal);
-        let gen_build = !args.norun && !args.executable && !args.check;
-        debug_log!("gen_build={gen_build}");
-        if gen_build {
-            proc_flags.set(ProcFlags::GENERATE | ProcFlags::BUILD, true);
-        }
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
         proc_flags.set(ProcFlags::REPL, args.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);

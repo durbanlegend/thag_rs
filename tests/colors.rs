@@ -127,7 +127,7 @@ mod tests {
                         assert_eq!(style, expected_style);
                     }
                     ColorSupport::Ansi16 => {
-                        let expected_style = Color::Magenta.bold();
+                        let expected_style = Color::Yellow.bold();
                         assert_eq!(style, expected_style);
                     }
                     ColorSupport::Default => assert_eq!(style, nu_ansi_term::Style::default()),

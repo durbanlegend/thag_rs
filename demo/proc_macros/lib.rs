@@ -21,6 +21,8 @@ use crate::organizing_code::organizing_code_impl;
 use crate::organizing_code_const::organizing_code_const_impl;
 use crate::organizing_code_tokenstream::organizing_code_tokenstream_impl;
 use proc_macro::TokenStream;
+use quote::quote;
+use syn::LitInt;
 use syn::parse_macro_input;
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
@@ -81,3 +83,20 @@ pub fn baz(
 pub fn use_mappings(attr: TokenStream, item: TokenStream) -> TokenStream {
     use_mappings_impl(attr, item) /* .unwrap() */
 }
+
+#[proc_macro]
+pub fn repeat_dash(input: TokenStream) -> TokenStream {
+    // Parse the input as a literal integer
+    let input = parse_macro_input!(input as LitInt);
+    let len = input
+        .base10_parse::<usize>()
+        .expect("Expected a usize integer");
+
+    // Generate the repeated dash string
+    let dash_line = "-".repeat(len);
+
+    // Output a constant string definition
+    TokenStream::from(quote! {
+        const DASH_LINE: &str = #dash_line;
+    })
+

@@ -601,7 +601,7 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
 /// Parse the code into an abstract syntax tree for inspection
 /// if possible (should work if the code will compile)
 #[must_use]
-pub fn to_ast(source_code: &str) -> Option<Ast> {
+pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     profile_fn!(to_ast);
 
     let start_ast = Instant::now();
@@ -621,7 +621,7 @@ pub fn to_ast(source_code: &str) -> Option<Ast> {
         cvprtln!(
             &Lvl::WARN,
             V::QQ,
-            "Error parsing syntax tree. Using regex to help you debug the script."
+            "Error parsing syntax tree for `{sourch_path_string}`. Using regex to help you debug the script."
         );
 
         debug_timings(&start_ast, "Completed unsuccessful AST parse");

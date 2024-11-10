@@ -74,18 +74,18 @@ fn test_cmd_args_proc_flags_generate_build_force_run() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags
-        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::FORCE | ProcFlags::RUN));
+    eprintln!("proc_flags={proc_flags:#?}");
+    assert!(proc_flags.contains(ProcFlags::FORCE | ProcFlags::RUN));
 }
 
 #[test]
-fn test_cmd_args_proc_flags_generate_build_run() {
+fn test_cmd_args_proc_flags_generate_norun() {
     set_up();
     let args = vec!["thag", "/demo/hello.rs", "-g"];
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags.contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN));
+    assert!(proc_flags.contains(ProcFlags::GENERATE | ProcFlags::NORUN));
 }
 
 #[test]
@@ -95,18 +95,18 @@ fn test_cmd_args_proc_flags_build_run() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags.contains(ProcFlags::BUILD | ProcFlags::RUN));
+    assert!(proc_flags.contains(ProcFlags::BUILD | ProcFlags::NORUN));
 }
 
-#[test]
-fn test_cmd_args_proc_flags_norun() {
-    set_up();
-    let args = vec!["thag", "/demo/hello.rs", "-n"];
-    let cli = Cli::parse_from(args);
-    let result = get_proc_flags(&cli);
-    let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags.contains(ProcFlags::NORUN));
-}
+// #[test]
+// fn test_cmd_args_proc_flags_norun() {
+//     set_up();
+//     let args = vec!["thag", "/demo/hello.rs", "-n"];
+//     let cli = Cli::parse_from(args);
+//     let result = get_proc_flags(&cli);
+//     let proc_flags = result.expect("Couldn't access ProcFlags");
+//     assert!(proc_flags.contains(ProcFlags::NORUN));
+// }
 
 #[test]
 fn test_cmd_args_proc_flags_expr() {
@@ -115,8 +115,8 @@ fn test_cmd_args_proc_flags_expr() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags
-        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::EXPR));
+    eprintln!("test_cmd_args_proc_flags_expr proc_flags={proc_flags:#?}");
+    assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::EXPR));
 }
 
 #[test]
@@ -126,8 +126,8 @@ fn test_cmd_args_proc_flags_edit() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags
-        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::EDIT));
+    eprintln!("test_cmd_args_proc_flags_edit proc_flags={proc_flags:#?}");
+    assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::EDIT));
 }
 
 #[test]
@@ -137,8 +137,8 @@ fn test_cmd_args_proc_flags_stdin() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags
-        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::STDIN));
+    eprintln!("test_cmd_args_proc_flags_stdin proc_flags={proc_flags:#?}");
+    assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::STDIN));
 }
 
 #[test]
@@ -148,8 +148,8 @@ fn test_cmd_args_proc_flags_loop() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags
-        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::LOOP));
+    eprintln!("test_cmd_args_proc_flags_loop proc_flags={proc_flags:#?}");
+    assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::LOOP));
 }
 
 #[test]
@@ -159,8 +159,8 @@ fn test_cmd_args_proc_flags_repl() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags
-        .contains(ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::RUN | ProcFlags::REPL));
+    eprintln!("test_cmd_args_proc_flags_repl proc_flags={proc_flags:#?}");
+    assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::REPL));
 }
 
 #[test]
@@ -170,7 +170,5 @@ fn test_cmd_args_proc_flags_executable() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    assert!(proc_flags.contains(
-        ProcFlags::GENERATE | ProcFlags::BUILD | ProcFlags::NORUN | ProcFlags::EXECUTABLE
-    ));
+    assert!(proc_flags.contains(ProcFlags::NORUN | ProcFlags::EXECUTABLE));
 }

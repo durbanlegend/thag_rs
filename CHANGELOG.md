@@ -2,6 +2,262 @@
 
 All notable changes to this project will be documented in this file.
 
+# v0.1.6 (2024-11-06)
+
+### Highlights
+
+- Provide helpful message if source can't be parsed to AST.
+- CLI simplification: De-emphasise --gen and --build, make them imply "don't run" and drop explicit --norun. Group options by
+    category on help screen and clarify wording.
+- Pick up crates with `use <single-path_segment>;
+- Add new Bright level to message levels for emphasis.
+- Streamline logging and colour handling.
+- Make `simplelog` the default logger in place of `env_logger` but retain `env_logger` as an alternative feature.
+- Pick better message colours with the aid of new displays in demo/colors.rs, and align `XtermColor` colour choices with
+    `nu_ansi_term` and `ratatui`.
+  Ensure Ansi-16 colours are valid.
+- Add REPL support for edit-run cycle with external editor, analogous to tui_edit-submit cycle with built-in TUI editor.
+- Enhance selected line highlighting in TUI editor with toggling between main level colours.
+- Bring look of file dialog in line with others and add a separate keys display screen for filename input mode as opposed to list mode.
+- Sort TUI editor keys displays by sequence number provided for the purpose.
+- Introduce unit tests for fn `from_xterm` in `termbg` module.
+- Make many more common items public in lib.
+- Remove redundant code including alternative REPL in stdin (now merged into repl.rs) and old TUI history edit function from before
+    `tui_editor::tui_edit`.
+- Clean after `cargo check` in demo testing to avoid space issues in Github CI.
+- New demo scripts
+- Remove reference to revisit-REPL feature, decommissioned because too expensive.
+- Bump dependencies
+
+- [Optimise file_dialog popup.](https://github.com/durbanlegend/thag_rs/commit/e3a510c0b07dd267b31c16c8c613b21dacd70770)
+- [Bump syn from 2.0.79 to 2.0.82](https://github.com/durbanlegend/thag_rs/commit/be0ef546bf21bca989919e642a50bc9dc50abc13)
+- [Bump prettyplease from 0.2.22 to 0.2.24](https://github.com/durbanlegend/thag_rs/commit/6c91cf897d1b9b86b32f49fcd511cc9cf90a369c)
+- [Bump serde_json from 1.0.129 to 1.0.132](https://github.com/durbanlegend/thag_rs/commit/220744c7c0b6c45a06a5618e8cdea5c22e6a3e37)
+- [Bump reedline from 0.35.0 to 0.36.0](https://github.com/durbanlegend/thag_rs/commit/9b4ac729691165c388e3a7595a15a3a0af99623b)
+- [Update README.md](https://github.com/durbanlegend/thag_rs/commit/e8a2ac6a693d75d361c5ea62d36c870b57a83621)
+- [Bump thag_rs dependency of bank & demo scripts](https://github.com/durbanlegend/thag_rs/commit/f5e6d9105b28c85cfe25b1ffe617a1b235087569)
+- [Fix failing demo scripts, bump log dependency](https://github.com/durbanlegend/thag_rs/commit/96c7ac0dd3da29272db798ff7935452f5ee018cf)
+- [Update termbg tests](https://github.com/durbanlegend/thag_rs/commit/65f1ed55938d5660a2eb3502d48b0eb9ce716eb5)
+- [Merge pull request #58 from durbanlegend/dependabot/cargo/syn-2.0.82](https://github.com/durbanlegend/thag_rs/commit/585994cca8db9917070e6e755b487676009f915f)
+- [Merge pull request #59 from durbanlegend/dependabot/cargo/prettyplease-0.2.24](https://github.com/durbanlegend/thag_rs/commit/2e7c2a0613cf7dd0e711ddf0962e22884e41530d)
+- [Merge pull request #60 from durbanlegend/dependabot/cargo/serde_json-1.0.132](https://github.com/durbanlegend/thag_rs/commit/200f4ff9e8aa7862a2a39b279f2c9e0f5a9aa317)
+- [Merge pull request #61 from durbanlegend/dependabot/cargo/reedline-0.36.0](https://github.com/durbanlegend/thag_rs/commit/2fe06e20646c283748731b1a97222c3378716f78)
+- [Fix: remove build of -d after quit.](https://github.com/durbanlegend/thag_rs/commit/d54df8328b5d40074b4d03b9f64c9a670f3e4d7d)
+- [Attrib macro running but not useful.](https://github.com/durbanlegend/thag_rs/commit/80e001538f15689bbf8b255916d31b323d9af51e)
+- [Revert "Temporary experimental proc macros"](https://github.com/durbanlegend/thag_rs/commit/9d518e28f2b256b2d60b54945c2b4ae0ea23a24c)
+- [Small fix and exploring filedialog improvements](https://github.com/durbanlegend/thag_rs/commit/231125791d7df0597ebadaed311de65b28523b6c)
+- [file_dialog: list filtering, context sensitive key displays.](https://github.com/durbanlegend/thag_rs/commit/2114ad6b3e721533e627a73f5f7591d1aa537353)
+- [Bump serde from 1.0.210 to 1.0.213](https://github.com/durbanlegend/thag_rs/commit/e896de767cd1172dc4e0bec57db298fdb331cece)
+- [Bump syn from 2.0.82 to 2.0.85](https://github.com/durbanlegend/thag_rs/commit/632a18aa850d48ee8b596554e09c18a2c9e8d57e)
+- [Bump proc-macro2 from 1.0.88 to 1.0.89](https://github.com/durbanlegend/thag_rs/commit/3594852e282880c19a6457df60a53641d34cf034)
+- [Fix for termbg timing out on BEL](https://github.com/durbanlegend/thag_rs/commit/8e8ed9453959f3193d389745acb9c18e4e987125)
+- [Replace demo/colors.rs with a shell for interactive testing](https://github.com/durbanlegend/thag_rs/commit/cbe987abd1a75d81a682ae98ffb4db1136d8231b)
+- [Significant refactoring facelift as per details.](https://github.com/durbanlegend/thag_rs/commit/c0067308927021262360c4994cede228ede7083d)
+- [Update ci.yml](https://github.com/durbanlegend/thag_rs/commit/818085665ec62ec1d5fe78c8467973b03c502607)
+- [Merge pull request #62 from durbanlegend/dependabot/cargo/serde-1.0.213](https://github.com/durbanlegend/thag_rs/commit/703f12be300178326d628e88012264c09f2586ad)
+- [Upgrade demo scripts to keep them current.](https://github.com/durbanlegend/thag_rs/commit/968782f5ba9130bf942374a3b94c4d2d40cd0386)
+- [Merge pull request #64 from durbanlegend/dependabot/cargo/syn-2.0.85](https://github.com/durbanlegend/thag_rs/commit/7aa0493cfeb788536fd934366c010cdfb8fc4098)
+- [Upgrade dependencies to help resolve PR issue](https://github.com/durbanlegend/thag_rs/commit/2752ba592208628ccc55badab400686400d2fc22)
+- [Merge pull request #66 from durbanlegend/dependabot/cargo/proc-macro2-1.0.89](https://github.com/durbanlegend/thag_rs/commit/3c12c5dedebdef48695b70dafa1c5865b2c45648)
+- [Update demo/colors.rs for CI issue with vlog.](https://github.com/durbanlegend/thag_rs/commit/4c44c6e55448dd66999c76c825df3faaeda55f69)
+- [Fix crossterm raw mode rightward march problem](https://github.com/durbanlegend/thag_rs/commit/ee7dc9244ba09624d3489aa27015c8520fc63a0b)
+- [Update termbg.rs](https://github.com/durbanlegend/thag_rs/commit/827bb1578a777fb3877625d3f18e4cc37c92f878)
+- [Bump syn from 2.0.85 to 2.0.87](https://github.com/durbanlegend/thag_rs/commit/a3161330d0ca9833125367fc9f5edbd749bdda1c)
+- [Enhance TUI selection highlighting.](https://github.com/durbanlegend/thag_rs/commit/a526f8f44a62c4caaaaae81ebe980e534361b2b5)
+- [Decommission obsolete tests, modify repl run test.](https://github.com/durbanlegend/thag_rs/commit/375548e49380861231186d9837ff720842b35d41)
+- [Merge pull request #67 from durbanlegend/dependabot/cargo/syn-2.0.87](https://github.com/durbanlegend/thag_rs/commit/e6859e4a2ed91060b82059022c2effa467c74eb0)
+- [Accept `use <crate>;` instead of requiring `::`.](https://github.com/durbanlegend/thag_rs/commit/f733385ba4a2fdd1e0889b4b6185615e1d2c3b9a)
+- [Clean up dead code before merging back to main.](https://github.com/durbanlegend/thag_rs/commit/eeee89ad378dcb33f2ad5348d51e2a8df42c7cda)
+- [Merge pull request #68 from durbanlegend/develop](https://github.com/durbanlegend/thag_rs/commit/844e4b6f3dd1f0dd1132c26dc36219cf56a8b40a)
+- [Merge pull request #69 from durbanlegend/main](https://github.com/durbanlegend/thag_rs/commit/1f11a7673391464cc2ca3288741e29bb3cf80245)
+- [Merge pull request #70 from durbanlegend/staging](https://github.com/durbanlegend/thag_rs/commit/440a177cef97d51ed500b364a1ad9e1809d9a453)
+- [Prepare for release 1.6.0.](https://github.com/durbanlegend/thag_rs/commit/d72662f489acefd84d1637ae792e54ce6641ed86)
+
+### Notes
+
+- Add darling demo.
+
+- Bumps [syn](https://github.com/dtolnay/syn) from 2.0.79 to 2.0.82.
+   [Release notes](https://github.com/dtolnay/syn/releases)
+   [Commits](https://github.com/dtolnay/syn/compare/2.0.79...2.0.82)
+
+  --
+  updated-dependencies:
+   dependency-name: syn
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bumps [prettyplease](https://github.com/dtolnay/prettyplease) from 0.2.22 to 0.2.24.
+   [Release notes](https://github.com/dtolnay/prettyplease/releases)
+   [Commits](https://github.com/dtolnay/prettyplease/compare/0.2.22...0.2.24)
+
+  --
+  updated-dependencies:
+   dependency-name: prettyplease
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bumps [serde_json](https://github.com/serde-rs/json) from 1.0.129 to 1.0.132.
+   [Release notes](https://github.com/serde-rs/json/releases)
+   [Commits](https://github.com/serde-rs/json/compare/1.0.129...1.0.132)
+
+  --
+  updated-dependencies:
+   dependency-name: serde_json
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bumps [reedline](https://github.com/nushell/reedline) from 0.35.0 to 0.36.0.
+   [Release notes](https://github.com/nushell/reedline/releases)
+   [Commits](https://github.com/nushell/reedline/compare/v0.35.0...v0.36.0)
+
+  --
+  updated-dependencies:
+   dependency-name: reedline
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Remove reference to revisit-REPL feature, decommissioned because too expensive.
+
+- From 0.1.4 to 0.1.5 and branch = "develop" to implicit main.
+
+- Add darling_comsume_fields.rs
+
+- Test broken termbg 0.5.2 against fixed 0.6.0. Script bank\termbg_bug.rs has app.log for features=simplelog, which if run under Windows 1.22+ should show it was answered with an RGB value, or if run under an earlier version, should show no response was  received.
+
+- Bump syn from 2.0.79 to 2.0.82
+
+- Bump prettyplease from 0.2.22 to 0.2.24
+
+- Bump serde_json from 1.0.129 to 1.0.132
+
+- Bump reedline from 0.35.0 to 0.36.0
+
+- And other minor enhancements and tests.
+
+- See TODO comment.
+
+- This reverts commit e968921ee28d8fd09e003f0e2ed9b9701f0e320d.
+
+- Provide helpful message if source can't be parsed to AST.
+
+- tui_editor: prettify saved display.
+
+- Bumps [serde](https://github.com/serde-rs/serde) from 1.0.210 to 1.0.213.
+   [Release notes](https://github.com/serde-rs/serde/releases)
+   [Commits](https://github.com/serde-rs/serde/compare/v1.0.210...v1.0.213)
+
+  --
+  updated-dependencies:
+   dependency-name: serde
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bumps [syn](https://github.com/dtolnay/syn) from 2.0.82 to 2.0.85.
+   [Release notes](https://github.com/dtolnay/syn/releases)
+   [Commits](https://github.com/dtolnay/syn/compare/2.0.82...2.0.85)
+
+  --
+  updated-dependencies:
+   dependency-name: syn
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bumps [proc-macro2](https://github.com/dtolnay/proc-macro2) from 1.0.88 to 1.0.89.
+   [Release notes](https://github.com/dtolnay/proc-macro2/releases)
+   [Commits](https://github.com/dtolnay/proc-macro2/compare/1.0.88...1.0.89)
+
+  --
+  updated-dependencies:
+   dependency-name: proc-macro2
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- TODO: Raise as termbg issue and PR (my fault).
+
+- Previous version saved as colors_old.rs.
+
+- New MessageLevel Bright to largely replace  hard-coded Yellow. Enhance colors::main to be like new demo version.
+  Move process_expr from code_utils to builder.
+  Reorganise imports: publish additional popular ones in lib.
+  Rationalise Verbosity naming.
+  Tweak logging: a few updates to out-of-date logging calls; use abbreviated Lvl and V naming.
+  filedialog.rs: show dirname in input mode.
+  Move EventReader and derivatives from tui_editor to shared.
+  Decommission clear_screen.
+
+- Reduce threads from 4 to 3.
+
+- Bump serde from 1.0.210 to 1.0.213
+
+- Reduce ci.yml from 4 threads to 3.
+
+- Bump syn from 2.0.82 to 2.0.85
+
+- Dependabot updates failing.
+
+- Bump proc-macro2 from 1.0.88 to 1.0.89
+
+- Need to use develop branch for log -> vlog change.
+  (vlog was to avoid constant confusion with log crate.)
+
+- Refactor to ensure code that sets raw mode on terminal is not involved in testing.
+
+- \r at beginning splits line after debug prefix info, have to move it to end.
+
+- Bumps [syn](https://github.com/dtolnay/syn) from 2.0.85 to 2.0.87.
+   [Release notes](https://github.com/dtolnay/syn/releases)
+   [Commits](https://github.com/dtolnay/syn/compare/2.0.85...2.0.87)
+
+  --
+  updated-dependencies:
+   dependency-name: syn
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Decommission repl::edit_history_old
+
+- Fix for Windows
+
+- Bump syn from 2.0.85 to 2.0.87
+
+- Add demo prototype syn_visit_use_tree_file.rs.
+  Fix errors in descriptions of demo/syn_* scripts.
+  Add dependency tips to Readme.
+
+- Before experimenting with demo proc macro feature.
+
+- Stage changes from develop to main, excluding experimental proc_macros
+
+- Bring staging up to date with main
+
+- Merge selected changes from develop to main via staging branch.
+
+- Extensive enhancements to cmd_args and colors modules, minor enhancements to shared, builder and code_utils.
 ## v0.1.5 (2024-10-20)
 
 ### Highlights

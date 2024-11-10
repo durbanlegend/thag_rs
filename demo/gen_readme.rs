@@ -3,7 +3,9 @@
 lazy_static = "1.4.0"
 log = "0.4.22"
 regex = "1.10.5"
-thag_rs = "0.1.5"
+# thag_rs = "0.1.5"
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "d72662f489acefd84d1637ae792e54ce6641ed86" }
+# thag_rs = { path = "/Users/donf/projects/thag_rs" }
 */
 
 /// This is the actual script used to collect demo script metadata and generate
@@ -17,7 +19,8 @@ use std::collections::HashMap;
 use std::fs::{self, read_dir, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use thag_rs::{code_utils, debug_log};
+use thag_rs::code_utils;
+use thag_rs::debug_log;
 
 #[derive(Debug)]
 struct ScriptMetadata {
@@ -34,7 +37,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     content = if content.starts_with("#!") {
         let split_once = content.split_once('\n');
         let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
-        eprintln!("Successfully stripped shebang {shebang}");
+        debug_log!("Successfully stripped shebang {shebang}");
         rust_code.to_string()
     } else {
         content
@@ -63,13 +66,14 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
         }
     }
 
+    let file_path_str = &file_path.to_string_lossy();
+
     if !doc || !purpose {
-        let filename = &file_path.to_string_lossy();
         if !doc {
-            println!("{filename} has no docs");
+            println!("{file_path_str} has no docs");
         }
         if !purpose {
-            println!("{filename} has no purpose");
+            println!("{file_path_str} has no purpose");
         }
     }
 
@@ -77,7 +81,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
         metadata.insert("description".to_string(), lines.join(""));
     }
 
-    let maybe_syntax_tree = code_utils::to_ast(&content);
+    let maybe_syntax_tree = code_utils::to_ast(file_path_str, &content);
 
     let crates = match maybe_syntax_tree {
         Some(ref ast) => code_utils::infer_deps_from_ast(&ast),

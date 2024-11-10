@@ -39,6 +39,7 @@ pub use shared::{
     EventReader, KeyDisplayLine, MockEventReader, ScriptState,
 };
 // pub use termbg;
+pub use thag_proc_macros::repeat_dash;
 
 // Common constants and statics
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";

@@ -1,8 +1,8 @@
 [package]
+description = "A versatile cross-platform script runner and REPL for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
 name = "thag_rs"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
-description = "A versatile cross-platform script runner and REPL for Rust snippets, expressions and programs"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 # Include the demo directory in the crate packagename = "thag_rs"

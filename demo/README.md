@@ -1961,6 +1961,7 @@ which will give identical output to the above.
  to `rust-script`'s `--loop` or `runner`'s `--lines`. Might go with
  the latter since I'm not sure what the closure logic buys us. It's
  going to be checked by the compiler anyway. Compare with `demo/loop_expr.rs`.
+ P.S.: This was since implemented as `--loop`.
 
 **Purpose:** Evaluate closure logic for line processing.
 
@@ -1976,6 +1977,7 @@ which will give identical output to the above.
  to `rust-script`'s `--loop` or `runner`'s `--lines`. Might go with
  the latter since I'm not sure what the closure logic buys us. It's
  going to be checked by the compiler anyway. Compare with `demo/loop_closure.rs`.
+ P.S.: This was since implemented as `--loop`.
 
 **Purpose:** Evaluate expression logic for line processing.
 
@@ -1991,6 +1993,7 @@ which will give identical output to the above.
  to `rust-script`'s `--loop` or `runner`'s `--lines`, but with pre-
  and post-loop logic analogous to `awk`. I got GPT to do me this
  mock-up.
+ P.S.: This was since implemented as `--loop`.
 
 **Purpose:** Evaluate expression logic for line processing.
 

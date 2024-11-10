@@ -160,6 +160,7 @@ fn main() {{
 }}
 "#
         );
+
         debug_log!("input={input}");
 
         let output = run(input);

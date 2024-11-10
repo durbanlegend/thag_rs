@@ -2,14 +2,11 @@
 [dependencies]
 #syn = { version = "2.0.87", features = ["extra-traits", "full"] }
 syn = { version = "2.0.87", features = ["full"] }
-thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
 */
 
 #![allow(dead_code, unused_variables)]
-// use syn::parse_quote;
-// use syn::Expr;
-// use syn::ItemConst;
-use thag_proc_macros::use_mappings;
+// Magic import expanded by thag_rs.
+use thag_demo_proc_macros::use_mappings;
 
 // Put this in tui_editor with #[macro_export]
 macro_rules! base_data {

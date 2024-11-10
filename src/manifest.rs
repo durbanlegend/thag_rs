@@ -1,9 +1,12 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 #[cfg(target_os = "windows")]
 use crate::escape_path_for_windows;
+use crate::{
+    code_utils::{infer_deps_from_ast, infer_deps_from_source},
+    cvprtln, maybe_config,
+}; // Valid if no circular dependency
 use crate::{debug_log, debug_timings, regex, vlog, Ast, BuildState, Lvl, ThagResult, V};
-use cargo_toml::{Dependency, Manifest};
+use cargo_toml::{Dependency, DependencyDetail, Manifest};
 use firestorm::profile_fn;
 use mockall::automock;
 use nu_ansi_term::Style;
@@ -14,6 +17,7 @@ use std::{
     io::{self, BufRead},
     path::PathBuf,
     process::{Command, Output},
+    str::FromStr,
     time::Instant,
 };
 
@@ -256,6 +260,7 @@ pub fn merge(
     Ok(())
 }
 
+#[allow(clippy::missing_panics_doc)]
 pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
     profile_fn!(search_deps);
     for dep_name in rs_inferred_deps {
@@ -265,6 +270,52 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         {
             continue;
         }
+
+        if &dep_name == "thag_demo_proc_macros" {
+            cvprtln!(
+                Lvl::BRI,
+                V::V,
+                r#"Found magic import "thag_demo_proc_macros": attempting to generate path dependency from proc_macros.proc_macro_crate_path in config file "/Users/donf/.config/thag_rs/config.toml"."#
+            );
+            let maybe_demo_proc_macros_dir = maybe_config().map_or_else(
+                || {
+                    debug_log!(r#"Missing config file for "use thag_demo_proc_macros;", defaulting to "demo/proc_macros"."#);
+                    Some("demo/proc_macros".to_string())
+                },
+                |config| {
+                    debug_log!("Found config.proc_macros()={:#?}", config.proc_macros);
+                    config.proc_macros.proc_macro_crate_path
+                },
+            );
+            let demo_proc_macros_dir = if let Some(ref demo_proc_macros_dir) =
+                maybe_demo_proc_macros_dir
+            {
+                cvprtln!(Lvl::BRI, V::V, "Found {demo_proc_macros_dir:#?}.");
+                demo_proc_macros_dir
+            } else {
+                cvprtln!(
+                    Lvl::BRI,
+                    V::V,
+                    r#"Missing `config.proc_macros.proc_macro_crate_path` in config file for "use thag_demo_proc_macros;": defaulting to "demo/proc_macros"."#
+                );
+                "demo/proc_macros"
+            };
+
+            let path = PathBuf::from_str(demo_proc_macros_dir).unwrap();
+            let path = if path.is_absolute() {
+                path
+            } else {
+                path.canonicalize()
+                    .unwrap_or_else(|_| panic!("Could not canonicalize path {}", path.display()))
+            };
+            let dep = Dependency::Detailed(Box::new(DependencyDetail {
+                path: Some(path.display().to_string()),
+                ..Default::default()
+            }));
+            rs_dep_map.insert(dep_name.clone(), dep);
+            continue;
+        }
+
         #[cfg(debug_assertions)]
         debug_log!("Starting Cargo search for key dep_name [{dep_name}]");
         let command_runner = RealCommandRunner;

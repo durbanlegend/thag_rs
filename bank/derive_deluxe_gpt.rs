@@ -1,9 +1,9 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+thag_demo_proc_macros = { path = "/Users/donf/projects/thag_rs/demo/proc_macros" }
 */
 
-use thag_proc_macros::DeserializeVec;
+use thag_demo_proc_macros::DeserializeVec;
 
 #[derive(DeserializeVec, Default)]
 #[deluxe(items = [(1, "First"), (2, "Second")])]

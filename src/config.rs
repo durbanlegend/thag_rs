@@ -34,6 +34,7 @@ pub fn maybe_config() -> Option<Config> {
 pub struct Config {
     pub logging: Logging,
     pub colors: Colors,
+    pub proc_macros: ProcMacros,
     pub misc: Misc,
 }
 
@@ -54,6 +55,14 @@ pub struct Colors {
     #[serde(default)]
     #[serde_as(as = "DisplayFromStr")]
     pub term_theme: TermTheme,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct ProcMacros {
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub proc_macro_crate_path: Option<String>,
 }
 
 #[serde_as]

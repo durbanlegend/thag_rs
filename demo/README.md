@@ -2200,6 +2200,91 @@ which will give identical output to the above.
 
 ---
 
+### Script: proc_macro_derive_custom_model.rs
+
+**Description:**  Published example from `https://github.com/anshulsanghi-blog/macros-handbook`
+
+**Purpose:** explore derive proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Link:** [proc_macro_derive_custom_model.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_custom_model.rs)
+
+---
+
+### Script: proc_macro_derive_key_map_list.rs
+
+**Description:**  Use a derive proc macro to implement a table. from a base with additions and deletions.
+ Not very useful currently: the dream is to generate a constant and get mappings as a variable.
+
+**Purpose:** explore derive proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Link:** [proc_macro_derive_key_map_list.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs)
+
+---
+
+### Script: proc_macro_expander_demo.rs
+
+**Description:**  Published example from crate `expander`
+
+**Purpose:** debug proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Link:** [proc_macro_expander_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_expander_demo.rs)
+
+---
+
+### Script: proc_macro_organizing_code.rs
+
+**Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
+
+**Purpose:** explore proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Link:** [proc_macro_organizing_code.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code.rs)
+
+---
+
+### Script: proc_macro_organizing_code_const.rs
+
+**Description:**  Experimental - work in progress
+
+**Purpose:** investigate the possibility of generating a useful constant.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Link:** [proc_macro_organizing_code_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_const.rs)
+
+---
+
+### Script: proc_macro_organizing_code_tokenstream.rs
+
+**Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
+
+**Purpose:** explore proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Link:** [proc_macro_organizing_code_tokenstream.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs)
+
+---
+
 ### Script: profiling_puffin_demo.rs
 
 **Description:**  Published demo from the `profiling` crate using the `puffin` profiler.
@@ -3102,6 +3187,18 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [time_cookbook.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.rs)
+
+---
+
+### Script: tlborm_callbacks.rs
+
+**Description:**  `Callbacks` example from `The Little Book of Rust Macros`
+
+**Purpose:** Demo macro callbacks.
+
+**Type:** Program
+
+**Link:** [tlborm_callbacks.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs)
 
 ---
 

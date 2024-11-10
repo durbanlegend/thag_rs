@@ -1,10 +1,10 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+thag_demo_proc_macros = { path = "/Users/donf/projects/thag_rs/demo/proc_macros" }
 */
 
 #![allow(dead_code)]
-use thag_proc_macros::DeserializeVec;
+use thag_demo_proc_macros::DeserializeVec;
 
 const MAPPINGS: [(i32, &str, &str); 2] = [(1, "First"), (2, "Second")];
 const MAPPINGS_2: [(i32, &str, &str); 2] = [(3, "Third"), (4, "Fourth")];

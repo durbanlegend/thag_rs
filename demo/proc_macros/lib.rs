@@ -1,5 +1,6 @@
 #![allow(clippy::missing_panics_doc)]
 mod attrib_key_map_list;
+mod const_gen_demo;
 mod custom_model;
 mod derive_deserialize_vec;
 mod derive_key_map_list;
@@ -11,6 +12,7 @@ mod organizing_code_const;
 mod organizing_code_tokenstream;
 
 use crate::attrib_key_map_list::use_mappings_impl;
+use crate::const_gen_demo::string_concat_impl;
 use crate::custom_model::derive_custom_model_impl;
 use crate::derive_deserialize_vec::derive_deserialize_vec_impl;
 use crate::derive_key_map_list::derive_key_map_list_impl;
@@ -22,8 +24,8 @@ use crate::organizing_code_const::organizing_code_const_impl;
 use crate::organizing_code_tokenstream::organizing_code_tokenstream_impl;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::LitInt;
 use syn::parse_macro_input;
+use syn::LitInt;
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
 pub fn derive_custom_model(item: TokenStream) -> TokenStream {
@@ -81,7 +83,7 @@ pub fn baz(
 
 #[proc_macro_attribute]
 pub fn use_mappings(attr: TokenStream, item: TokenStream) -> TokenStream {
-    use_mappings_impl(attr, item) /* .unwrap() */
+    use_mappings_impl(attr, item)
 }
 
 #[proc_macro]
@@ -99,4 +101,9 @@ pub fn repeat_dash(input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         const DASH_LINE: &str = #dash_line;
     })
+}
 
+#[proc_macro]
+pub fn string_concat(tokens: TokenStream) -> TokenStream {
+    string_concat_impl(tokens)
+}

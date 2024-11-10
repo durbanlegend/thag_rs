@@ -1,7 +1,6 @@
 #![allow(dead_code, unused_variables, clippy::redundant_pub_crate)]
 /// Experimental - work in progress
 use expander::{Edition, Expander};
-use proc_macro2::TokenStream;
 use quote::quote;
 use syn::parse_quote;
 

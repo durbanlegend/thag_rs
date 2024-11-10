@@ -99,7 +99,7 @@ pub fn repeat_dash(input: TokenStream) -> TokenStream {
     // Generate the repeated dash string
     let dash_line = "-".repeat(len);
 
-    // Output a constant string definition
+    // expanded a constant string definition
     TokenStream::from(quote! {
         const DASH_LINE: &str = #dash_line;
     })
@@ -110,7 +110,7 @@ pub fn string_concat(tokens: TokenStream) -> TokenStream {
     string_concat_impl(tokens)
 }
 
-/// Custom struct to hold two arrays
+/// Struct to parse two arrays of `&str` elements as input
 struct ArrayConcatInput {
     first: ExprArray,
     _comma: Token![,],
@@ -130,19 +130,22 @@ impl Parse for ArrayConcatInput {
     }
 }
 
-/// The `concat_arrays` macro implementation
+/// The `concat_arrays` macro implementation to create a `&[str]` slice
 #[proc_macro]
 pub fn concat_arrays(input: TokenStream) -> TokenStream {
-    // Parse the input as two arrays
+    // Parse the input as two arrays of `&str`
     let ArrayConcatInput { first, second, .. } = parse_macro_input!(input as ArrayConcatInput);
 
     // Extract the elements from each array
     let mut combined_elements = first.elems.clone();
     combined_elements.extend(second.elems.clone());
 
-    // Generate the resulting array as a token stream
+    // Generate a `&[str]` slice from the combined elements
     let expanded = quote! {
-        [#combined_elements]
+        {
+            const CONCATENATED_ARRAY: &[&str] = &[#combined_elements];
+            CONCATENATED_ARRAY
+        }
     };
 
     TokenStream::from(expanded)

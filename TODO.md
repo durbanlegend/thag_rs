@@ -58,7 +58,7 @@
            own change log, edited as required from raw changelog output above.
        - Make sure to update all bank and demo scripts using thag to use latest release instead of develop branch if appropriate.
        - Keep develop branch around and bring it up to date with main branch changes such as version number in Cargo.toml
-            Use a temp staging branch like Staging_temp, otherwise it will merge backwards into main for some reason while creating
+            Use a temp staging branch like staging_temp, otherwise it will merge backwards into main for some reason while creating
             the pull request.
        - Reinstall thag_rs from tag. (cargo install --git https://github.com/durbanlegend/thag_rs --tag v0.1.<n>)
        - Suggest give it a day to settle before publishing to crates.io.

@@ -40,12 +40,6 @@ fn main() {
     let mut required_indices = HashSet::new();
     let mut stack = vec![n];
     let cached = 100;
-    let dur = start.elapsed();
-    println!(
-        "Cached {cached} in {}.{}s",
-        dur.as_secs(),
-        dur.subsec_millis()
-    );
 
     // Identify all necessary indices
     while let Some(i) = stack.pop() {
@@ -72,6 +66,9 @@ fn main() {
         }
     }
 
+    // eprintln!("stack={stack:#?}");
+
+    // Sort indices in ascending order
     let mut sorted_indices: Vec<_> = required_indices.into_iter().collect();
     sorted_indices.sort();
     // eprintln!("sorted_indices={sorted_indices:#?}");
@@ -178,6 +175,8 @@ fn main() {
 
     let dur = start.elapsed();
     println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
+
+    let fib_n = &memo[&n];
 
     let fib_n_str = fib_n.to_string();
     let l = fib_n_str.len();

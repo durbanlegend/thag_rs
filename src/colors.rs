@@ -135,16 +135,16 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     let term_theme = TERM_THEME.get_or_init(|| {
         maybe_config().map_or_else(
             || {
-                eprintln!(
-                    "######## default mode: about to call resolve_term_theme().unwrap_or_default()"
-                );
+                // eprintln!(
+                //     "######## default mode: about to call resolve_term_theme().unwrap_or_default()"
+                // );
                 resolve_term_theme().unwrap_or_default()
             },
             |config| {
-                eprintln!(
-                    "######## config.colors.term_theme={:?}",
-                    &config.colors.term_theme
-                );
+                // eprintln!(
+                //     "######## config.colors.term_theme={:?}",
+                //     &config.colors.term_theme
+                // );
                 if matches!(&config.colors.term_theme, &TermTheme::None) {
                     resolve_term_theme().unwrap_or_default()
                 } else {

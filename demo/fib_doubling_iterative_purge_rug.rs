@@ -55,7 +55,7 @@ fn invert_order(n: usize, cached: usize) -> Vec<usize> {
 }
 
 fn fib(n: usize, cached: usize, sorted_indices: &[usize]) -> Integer {
-    if n < cached {
+    if n <= cached {
         return successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| {
             Some((b.clone(), (a + b).into()))
         })

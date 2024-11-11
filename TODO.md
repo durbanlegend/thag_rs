@@ -31,7 +31,7 @@
        - Tip: disable ci.yml for Readme & similar tweaks that won't
               affect compilation.
        - Remember to update Cargo.toml version to the required release before tagging.
-       - Do a trial release build locally to check for anomalies.
+       - Do a trial release build locally to check for anomalies: cargo build --release --workspace
        - Don't upgrade thag versions in demo scripts to new release, because you get a
            catch-22 until it's on crates.io. If you absolutely need to, wait until you've
            released to crates.io a first time, then release all over again.
@@ -43,6 +43,9 @@
        - Run `typos` command.
        - Run `vale README.md` and `vale demo/README.md`.
        - Run cargo msrv find, and update the MSRV in README.md.
+       - NB NB: If there have been any changes to thag_proc_macros since its last published release, bump its version number
+             in src/proc_macros/Cargo.toml and also in its dependency entry in the main Cargo.toml. as this will be used in
+             the crates.io version
        - Use 'git changelog v0.1.<n-1>..HEAD' to generate raw release notes.
        - Leave it to cargo-dist to make the release.
        - To trigger cargo-dist:
@@ -62,6 +65,8 @@
             the pull request.
        - Reinstall thag_rs from tag. (cargo install --git https://github.com/durbanlegend/thag_rs --tag v0.1.<n>)
        - Suggest give it a day to settle before publishing to crates.io.
+       - First publish the new version of src/proc_macros if applicable, same steps as below.
+       - Before publishing, dry run installation with `cargo install --path /Users/donf/projects/thag_rs/`
        - Test with cargo package --no-verify
        - find . -name .DS_Store -delete
        - cargo publish --no-verify

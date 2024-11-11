@@ -30,9 +30,8 @@
 - [ ]  Testing fib scripts: ls -1 demo/fib_*.rs | grep -v basic | grep -v binet | while read f; do echo $f;  cargo run -- $f -qq -- 100 | grep 354224848179261915075 || echo "...failed"; done
 
 - [ ]  Checklist for making releases:
-       - Tip: disable ci.yml for Readme & similar tweaks that won't
-              affect compilation.
-       - Remember to update Cargo.toml version to the required release before tagging.
+       - Tip: disable ci.yml for Readme & similar tweaks that won't affect compilation.
+       - NB NB. Remember to update Cargo.toml version to the required release before tagging.
        - Do a trial release build locally to check for anomalies: cargo build --release --workspace
        - Don't upgrade thag versions in demo scripts to new release, because you get a
            catch-22 until it's on crates.io. If you absolutely need to, wait until you've

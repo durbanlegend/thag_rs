@@ -41,7 +41,7 @@
        - Run cargo tests
        - Run `gen_readme`
        - Run `typos` command.
-       - Run `vale README.md` and `vale demo/README.md`.
+       - Run `vale README.md --no-wrap` and `vale demo/README.md --no-wrap`.
        - Run cargo msrv find, and update the MSRV in README.md.
        - NB NB: If there have been any changes to thag_proc_macros since its last published release, bump its version number
              in src/proc_macros/Cargo.toml and also in its dependency entry in the main Cargo.toml. as this will be used in

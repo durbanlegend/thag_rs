@@ -117,21 +117,22 @@ use std::str::FromStr;
 
 mod string_array {
     pub struct StringArray {
-        values: Vec<String>,
+        first: Vec<String>,
+        second: Vec<String>,
     }
 
     impl StringArray {
         #[allow(dead_code)]
-        pub fn new(values: Vec<String>) -> Self {
-            Self { values }
+        pub fn new(first: Vec<String>, second: Vec<String>) -> Self {
+            Self { first, second }
         }
 
-        pub fn merge(&mut self, other: Vec<String>) {
-            self.values.extend(other);
+        pub fn merge(&mut self) {
+            self.first.extend_from_slice(&self.second);
         }
 
         pub fn get_values(&self) -> Vec<String> {
-            self.values.clone()
+            self.first.clone()
         }
     }
 }
@@ -190,7 +191,7 @@ fn merge_arrays(array: &mut StringArray, param: Parameter) -> ReturnResult {
                     }
                 })
                 .collect();
-            array.merge(strings);
+            array.merge();
             Ok(Return::Object(object.clone())) // Return an updated object
         } else {
             Err("Expected an Array of Strings.".to_string())
@@ -239,20 +240,22 @@ pub fn string_array_macro(tokens: TokenStream) -> TokenStream {
 
     let mut env = ProcMacroEnv::new();
     env.add_path("string_array", string_array_path);
-    let modified = env.process(tokens);
+    env.process(tokens)
 
-    use expander::{Edition, Expander};
-    let expanded = Expander::new("string_array_macro")
-        .add_comment("This is generated code!".to_owned())
-        .fmt(Edition::_2021)
-        .verbose(true)
-        // common way of gating this, by making it part of the default feature set
-        // .dry(cfg!(feature = "no-file-expansion"))
-        .dry(false)
-        .write_to_out_dir(modified.clone().into())
-        .unwrap_or_else(|e| {
-            eprintln!("Failed to write to file: {:?}", e);
-            modified.into()
-        });
-    expanded.into()
+    // let modified = env.process(tokens);
+
+    // use expander::{Edition, Expander};
+    // let expanded = Expander::new("string_array_macro")
+    //     .add_comment("This is generated code!".to_owned())
+    //     .fmt(Edition::_2021)
+    //     .verbose(true)
+    //     // common way of gating this, by making it part of the default feature set
+    //     // .dry(cfg!(feature = "no-file-expansion"))
+    //     .dry(false)
+    //     .write_to_out_dir(modified.clone().into())
+    //     .unwrap_or_else(|e| {
+    //         eprintln!("Failed to write to file: {:?}", e);
+    //         modified.into()
+    //     });
+    // expanded.into()
 }

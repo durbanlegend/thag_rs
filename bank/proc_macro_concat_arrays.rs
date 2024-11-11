@@ -5,20 +5,18 @@
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::string_array_macro;
 
-// In shared_module.rs
+struct Foo {
+    first: Vec<String>,
+    second: Vec<String>,
+}
 
-// #[macro_export]
-// macro_rules! first_array {
-//     () => {
-//         &["Hello", "world"]
-//     };
-// }
-
-// fn main() {
-//     // Concatenate `first_array` with a second array
-//     const RESULT: &[&str] = concat_arrays!(first_array, ["from", "macro"]);
-//     println!("{:?}", RESULT); // Expected output: ["Hello", "world", "from", "macro"]
-// }
-
-// const RESULT: &[&str] = string_array_macro!([["hello", "world"], ["from", "macro"]];);
-const RESULT: &[&str] = string_array_macro! { [["hello", "world"], ["from", "macro"]]; };
+fn get_foo() -> Foo {
+    Foo {
+        first: vec!["hello".to_string(), "world".to_string()],
+        second: vec!["from".to_string(), "macro".to_string()],
+    }
+}
+fn main() {
+    string_array_macro! {
+    get_foo.merge(); }
+}

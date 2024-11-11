@@ -1,4 +1,4 @@
-#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::missing_panics_doc, unused_imports)]
 mod attrib_key_map_list;
 mod const_gen_demo;
 mod custom_model;
@@ -26,7 +26,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, ExprArray, Ident, LitInt, Result, Token,
+    parse_macro_input, ExprArray, Ident, LitInt, Token,
 };
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
@@ -110,71 +110,108 @@ pub fn string_concat(tokens: TokenStream) -> TokenStream {
     string_concat_impl(tokens)
 }
 
-/// Custom struct to parse the input, accepting a callback as the first argument
-struct ArrayConcatInput {
-    callback: Ident,   // The callback macro to invoke for the first array
-    _comma: Token![,], // Comma separator
-    second: ExprArray, // Second array (directly provided)
-}
+use const_gen_proc_macro::{
+    Expression, Object, ObjectType, Parameter, Path, ProcMacroEnv, Return, ReturnResult,
+};
+use std::str::FromStr;
 
-impl Parse for ArrayConcatInput {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let callback = input.parse()?;
-        let _comma = input.parse()?;
-        let second = input.parse()?;
-        Ok(ArrayConcatInput {
-            callback,
-            _comma,
-            second,
-        })
+mod string_array {
+    pub struct StringArray {
+        values: Vec<String>,
+    }
+
+    impl StringArray {
+        pub fn new(values: Vec<String>) -> Self {
+            Self { values }
+        }
+
+        pub fn merge(&mut self, other: Vec<String>) {
+            self.values.extend(other);
+        }
+
+        pub fn get_values(&self) -> Vec<String> {
+            self.values.clone()
+        }
     }
 }
 
-use expander::{Edition, Expander};
+use string_array::StringArray;
+// Updated string_array_new function
+fn string_array_new(param: Parameter) -> Result<Object, String> {
+    // Check if the parameter is an array of strings
+    if let Parameter::Array(boxed_array) = param {
+        let values: Vec<String> = boxed_array
+            .iter()
+            .map(|item| match item {
+                Parameter::String(s) => Ok(s.clone()),
+                _ => Err("Expected an array of strings".to_string()),
+            })
+            .collect::<Result<_, _>>()?; // Collect results, propagating any errors
 
-/// The `concat_arrays` macro implementation with callback support
-#[proc_macro]
-pub fn concat_arrays(input: TokenStream) -> TokenStream {
-    // Parse input as a callback macro and an array
-    let ArrayConcatInput {
-        callback, second, ..
-    } = parse_macro_input!(input as ArrayConcatInput);
+        // Create a new instance of StringArray if successful
+        let string_array = StringArray::new(values);
+        let string_array_type = ObjectType::new(); // Assuming ObjectType is already sealed elsewhere
+        let string_array_type = string_array_type.seal();
 
-    // Generate the code to call the callback macro directly as an array expression
-    let first_array = quote! {
-        #callback!()
-    };
+        Ok(string_array_type.new_instance(string_array))
+    } else {
+        Err("Expected Parameter::Array(Box<[Parameter::String]>)".to_string())
+    }
+}
 
-    // Collect elements from the `second.elems` field of type `Punctuated<Expr, Token![,]>`
-    let second_elements: Vec<_> = second.elems.iter().collect();
-
-    // Generate the combined array as a slice of `&str`
-    let modified = quote! {
-        {
-            // Define the final array by merging elements from the first and second arrays
-            const CONCATENATED_ARRAY: &[&str] = &[
-                // Inline expansion of the first array using the callback
-                #first_array,
-                // Inline expansion of the second array elements
-                #(#second_elements),*
-            ].concat();
-            CONCATENATED_ARRAY
+fn merge_arrays(array: &mut StringArray, param: Parameter) -> ReturnResult {
+    if let Parameter::Object(object) = param {
+        if let Return::Array(arr) = object.call("get_values", &[])? {
+            let strings: Vec<String> = arr
+                .iter()
+                .filter_map(|ret| {
+                    if let Return::String(s) = ret {
+                        Some(s.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            array.merge(strings);
+            Ok(Return::Object(object.clone())) // Return an updated object
+        } else {
+            Err("Expected an Array of Strings.".to_string())
         }
-    };
+    } else {
+        Err("Expected an Object parameter.".to_string())
+    }
+}
 
-    let expanded = Expander::new("concat_arrays")
-        .add_comment("This is generated code!".to_owned())
-        .fmt(Edition::_2021)
-        .verbose(true)
-        // common way of gating this, by making it part of the default feature set
-        // .dry(cfg!(feature = "no-file-expansion"))
-        .dry(false)
-        .write_to_out_dir(modified.clone())
-        .unwrap_or_else(|e| {
-            eprintln!("Failed to write to file: {:?}", e);
-            modified
-        });
-    expanded.into()
+fn get_array(array: &StringArray) -> Return {
+    let values = array
+        .get_values()
+        .into_iter()
+        .map(Return::String)
+        .collect::<Vec<_>>();
+    Return::Array(values.into_boxed_slice())
+}
 
-    // TokenStream::from(expanded)
+// Updated proc_macro to use string_array_new with a single Parameter argument
+#[proc_macro]
+pub fn string_array_macro(tokens: TokenStream) -> TokenStream {
+    let mut string_array_type = ObjectType::new();
+
+    string_array_type.add_method(
+        "get_values",
+        &(&get_array as &dyn Fn(&StringArray) -> Return),
+    );
+    string_array_type.add_method_mut(
+        "merge",
+        &(&merge_arrays as &dyn Fn(&mut StringArray, Parameter) -> ReturnResult),
+    );
+
+    let mut string_array_path = Path::new();
+    string_array_path.add_function(
+        "new",
+        &(&string_array_new as &dyn Fn(Parameter) -> Result<Object, String>),
+    );
+
+    let mut env = ProcMacroEnv::new();
+    env.add_path("string_array", string_array_path);
+    env.process(tokens)
 }

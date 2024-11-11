@@ -2993,7 +2993,7 @@ which will give identical output to the above.
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that exist
  for the purpose of renaming a dependency so that we don't go looking for the temporary in the registry.
  Specifically the combination of fn `visit_use_rename` to process the nodes representing `extern crate`
- statements and fn `` to initiate the tree traversal. This version expects the script contents
+ statements and fn `visit_file` to initiate the tree traversal. This version expects the script contents
  to consist of a full-fledged Rust program.
 
 **Purpose:** Demo featured crate.
@@ -3010,7 +3010,7 @@ which will give identical output to the above.
 
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
  Rust source program passed to the script. Specifically the combination of fn `visit_use_tree`
- to process the nodes representing `use` statements and fn `` to initiate the tree
+ to process the nodes representing `use` statements and fn `visit_file` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
 
 **Purpose:** Develop improved algorithm for `thag_rs` that accepts imports of the form `use <crate>;` instead of requiring `use <crate>::...`.

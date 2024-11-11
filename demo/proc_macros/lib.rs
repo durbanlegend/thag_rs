@@ -121,6 +121,7 @@ mod string_array {
     }
 
     impl StringArray {
+        #[allow(dead_code)]
         pub fn new(values: Vec<String>) -> Self {
             Self { values }
         }
@@ -136,26 +137,34 @@ mod string_array {
 }
 
 use string_array::StringArray;
-// Updated string_array_new function
 fn string_array_new(param: Parameter) -> Result<Object, String> {
-    // Check if the parameter is an array of strings
-    if let Parameter::Array(boxed_array) = param {
-        let values: Vec<String> = boxed_array
-            .iter()
-            .map(|item| match item {
-                Parameter::String(s) => Ok(s.clone()),
-                _ => Err("Expected an array of strings".to_string()),
+    if let Parameter::Array(array) = param {
+        // Convert Box<[Parameter]> to Vec<String> by unboxing and mapping each parameter
+        let vec_of_strings: Result<Vec<String>, String> = array
+            .into_vec() // Unbox and convert to Vec
+            .into_iter()
+            .map(|param| {
+                // Match each item to ensure it's a Parameter::String, then convert
+                if let Parameter::String(s) = param {
+                    Ok(s) // Add to the Vec if it's a String
+                } else {
+                    Err("Expected array of strings".to_string()) // Error if not a String
+                }
             })
-            .collect::<Result<_, _>>()?; // Collect results, propagating any errors
+            .collect(); // Collect results into Vec<String>
 
-        // Create a new instance of StringArray if successful
-        let string_array = StringArray::new(values);
-        let string_array_type = ObjectType::new(); // Assuming ObjectType is already sealed elsewhere
-        let string_array_type = string_array_type.seal();
-
-        Ok(string_array_type.new_instance(string_array))
+        match vec_of_strings {
+            Ok(strings) => {
+                // Now, `strings` is Vec<String> we can pass to `new_instance`.
+                let string_array_type = ObjectType::new();
+                // Ensure the `ObjectType` is sealed if needed before calling `new_instance`.
+                let sealed_string_array_type = string_array_type.seal(); // Seal if not already done.
+                Ok(sealed_string_array_type.new_instance(strings))
+            }
+            Err(e) => Err(e), // Pass through any errors from mapping
+        }
     } else {
-        Err("Expected Parameter::Array(Box<[Parameter::String]>)".to_string())
+        Err("Expected Parameter::Array".to_string())
     }
 }
 

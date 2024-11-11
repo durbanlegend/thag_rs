@@ -72,6 +72,7 @@ All notable changes to this project will be documented in this file.
 - [Merge pull request #69 from durbanlegend/main](https://github.com/durbanlegend/thag_rs/commit/1f11a7673391464cc2ca3288741e29bb3cf80245)
 - [Merge pull request #70 from durbanlegend/staging](https://github.com/durbanlegend/thag_rs/commit/440a177cef97d51ed500b364a1ad9e1809d9a453)
 - [Prepare for release 1.6.0.](https://github.com/durbanlegend/thag_rs/commit/d72662f489acefd84d1637ae792e54ce6641ed86)
+- [Fixes for release 0.1.6 not working](https://github.com/durbanlegend/thag_rs/commit/ebc87a205869da5ee32467e7bae77e17d04752f4)
 
 ### Notes
 
@@ -258,6 +259,9 @@ All notable changes to this project will be documented in this file.
 - Merge selected changes from develop to main via staging branch.
 
 - Extensive enhancements to cmd_args and colors modules, minor enhancements to shared, builder and code_utils.
+
+- Back out unnecessary thag_proc_macro changes, no need to publish a new release of that.
+
 ## v0.1.5 (2024-10-20)
 
 ### Highlights

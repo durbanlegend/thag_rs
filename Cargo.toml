@@ -1,7 +1,7 @@
 [package]
 description = "A versatile cross-platform script runner and REPL for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
 name = "thag_rs"
-version = "0.1.6"
+version = "0.1.7"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"

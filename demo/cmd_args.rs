@@ -120,12 +120,12 @@ pub struct Cli {
         conflicts_with("multimain")
     )]
     pub unquote: Option<bool>,
-    /// Edit configuration
+    // Edit configuration
     #[arg(short = 'C', long, conflicts_with_all(["generate", "build", "executable"]))]
     pub config: bool,
 }
 
-/// Getter for clap command-line arguments
+// Getter for clap command-line arguments
 #[must_use]
 pub fn get_args() -> Cli {
     Cli::parse()
@@ -149,7 +149,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn E
 }
 
 bitflags! {
-    /// Processing flags for ease of handling command-line options.
+    // Processing flags for ease of handling command-line options.
     // You can `#[derive]` the `Debug` trait, but implementing it manually
     // can produce output like `A | B` instead of `Flags(A | B)`.
     // #[derive(Debug)]

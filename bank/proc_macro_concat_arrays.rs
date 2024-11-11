@@ -21,7 +21,4 @@ use thag_demo_proc_macros::string_array_macro;
 // }
 
 // const RESULT: &[&str] = string_array_macro!([["hello", "world"], ["from", "macro"]];);
-// const RESULT: &[&str] = string_array_macro! {
-//     (["hello", "world"], ["from", "macro"]);
-// };
-const RESULT: &[&str] = string_array_macro!([["hello", "world"], ["from", "macro"]]);
+const RESULT: &[&str] = string_array_macro! { [["hello", "world"], ["from", "macro"]]; };

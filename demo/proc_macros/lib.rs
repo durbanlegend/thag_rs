@@ -137,36 +137,45 @@ mod string_array {
 }
 
 use string_array::StringArray;
-fn string_array_new(param: Parameter) -> Result<Object, String> {
-    if let Parameter::Array(array) = param {
-        // Convert Box<[Parameter]> to Vec<String> by unboxing and mapping each parameter
-        let vec_of_strings: Result<Vec<String>, String> = array
-            .into_vec() // Unbox and convert to Vec
-            .into_iter()
-            .map(|param| {
-                // Match each item to ensure it's a Parameter::String, then convert
-                if let Parameter::String(s) = param {
-                    Ok(s) // Add to the Vec if it's a String
-                } else {
-                    Err("Expected array of strings".to_string()) // Error if not a String
-                }
-            })
-            .collect(); // Collect results into Vec<String>
+// fn string_array_new(param: Parameter) -> Result<Object, String> {
+//     if let Parameter::Array(arrays) = param {
+//         let mut result = Vec::new();
 
-        match vec_of_strings {
-            Ok(strings) => {
-                // Now, `strings` is Vec<String> we can pass to `new_instance`.
-                let string_array_type = ObjectType::new();
-                // Ensure the `ObjectType` is sealed if needed before calling `new_instance`.
-                let sealed_string_array_type = string_array_type.seal(); // Seal if not already done.
-                Ok(sealed_string_array_type.new_instance(strings))
-            }
-            Err(e) => Err(e), // Pass through any errors from mapping
-        }
-    } else {
-        Err("Expected Parameter::Array".to_string())
-    }
-}
+//         for array in arrays.iter() {
+//             match array {
+//                 Parameter::Array(inner_array) => {
+//                     for item in inner_array.iter() {
+//                         if let Parameter::String(ref s) = item {
+//                             result.push(Return::String(s.clone()));
+//                         } else {
+//                             return Err("Expected Parameter::String in inner array".to_string());
+//                         }
+//                     }
+//                 }
+//                 _ => return Err("Expected Parameter::Array of arrays".to_string()),
+//             }
+//         }
+
+//         // Dispatch function using the new result
+//         let dispatch = move |_, method: &str, _params: &[Parameter]| -> ReturnResult {
+//             match method {
+//                 "get_array" => Ok(Return::Array(result.clone().into_boxed_slice())),
+//                 _ => Err("Unknown method".to_string()),
+//             }
+//         };
+
+//         let string_array_type = ObjectType::new();
+//         // Ensure the `ObjectType` is sealed if needed before calling `new_instance`.
+//         let sealed_string_array_type = string_array_type.seal(); // Seal if not already done.
+
+//         // Instantiate Object using SealedObjectType's new_instance method
+//         Ok(Object {
+//             string_array_type: string_array_type.new_instance(result),
+//         })
+//     } else {
+//         Err("Expected Parameter::Array at top level".to_string())
+//     }
+// }
 
 fn merge_arrays(array: &mut StringArray, param: Parameter) -> ReturnResult {
     if let Parameter::Object(object) = param {
@@ -214,13 +223,36 @@ pub fn string_array_macro(tokens: TokenStream) -> TokenStream {
         &(&merge_arrays as &dyn Fn(&mut StringArray, Parameter) -> ReturnResult),
     );
 
+    let string_array_type = ObjectType::new();
+    // Ensure the `ObjectType` is sealed if needed before calling `new_instance`.
+    let string_array_type = string_array_type.seal(); // Seal if not already done.
+
+    let string_array_path = Path::new();
+    // string_array_path.add_function(
+    //     "new",
+    //     &(&string_array_new as &dyn Fn(Parameter) -> Result<Object, String>),
+    // );
     let mut string_array_path = Path::new();
-    string_array_path.add_function(
-        "new",
-        &(&string_array_new as &dyn Fn(Parameter) -> Result<Object, String>),
-    );
+    let string_array_new = &|first: Parameter| -> Object { string_array_type.new_instance(first) }
+        as &dyn Fn(Parameter) -> Object;
+    string_array_path.add_function("new", &string_array_new);
 
     let mut env = ProcMacroEnv::new();
     env.add_path("string_array", string_array_path);
-    env.process(tokens)
+    let modified = env.process(tokens);
+
+    use expander::{Edition, Expander};
+    let expanded = Expander::new("string_array_macro")
+        .add_comment("This is generated code!".to_owned())
+        .fmt(Edition::_2021)
+        .verbose(true)
+        // common way of gating this, by making it part of the default feature set
+        // .dry(cfg!(feature = "no-file-expansion"))
+        .dry(false)
+        .write_to_out_dir(modified.clone().into())
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to write to file: {:?}", e);
+            modified.into()
+        });
+    expanded.into()
 }

@@ -5,8 +5,17 @@
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::concat_arrays;
 
+// In shared_module.rs
+
+#[macro_export]
+macro_rules! first_array {
+    () => {
+        &["Hello", "world"]
+    };
+}
+
 fn main() {
-    // Concatenating two arrays of `&str`
-    const RESULT: &[&str] = concat_arrays!(["Hello", "world"], ["from", "macro"]);
-    println!("{:?}", RESULT); // Should output: ["Hello", "world", "from", "macro"]
+    // Concatenate `first_array` with a second array
+    const RESULT: &[&str] = concat_arrays!(first_array, ["from", "macro"]);
+    println!("{:?}", RESULT); // Expected output: ["Hello", "world", "from", "macro"]
 }

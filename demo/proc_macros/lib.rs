@@ -26,7 +26,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, ExprArray, LitInt, Result, Token,
+    parse_macro_input, ExprArray, Ident, LitInt, Result, Token,
 };
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
@@ -110,43 +110,71 @@ pub fn string_concat(tokens: TokenStream) -> TokenStream {
     string_concat_impl(tokens)
 }
 
-/// Struct to parse two arrays of `&str` elements as input
+/// Custom struct to parse the input, accepting a callback as the first argument
 struct ArrayConcatInput {
-    first: ExprArray,
-    _comma: Token![,],
-    second: ExprArray,
+    callback: Ident,   // The callback macro to invoke for the first array
+    _comma: Token![,], // Comma separator
+    second: ExprArray, // Second array (directly provided)
 }
 
 impl Parse for ArrayConcatInput {
     fn parse(input: ParseStream) -> Result<Self> {
-        let first = input.parse()?;
+        let callback = input.parse()?;
         let _comma = input.parse()?;
         let second = input.parse()?;
         Ok(ArrayConcatInput {
-            first,
+            callback,
             _comma,
             second,
         })
     }
 }
 
-/// The `concat_arrays` macro implementation to create a `&[str]` slice
+use expander::{Edition, Expander};
+
+/// The `concat_arrays` macro implementation with callback support
 #[proc_macro]
 pub fn concat_arrays(input: TokenStream) -> TokenStream {
-    // Parse the input as two arrays of `&str`
-    let ArrayConcatInput { first, second, .. } = parse_macro_input!(input as ArrayConcatInput);
+    // Parse input as a callback macro and an array
+    let ArrayConcatInput {
+        callback, second, ..
+    } = parse_macro_input!(input as ArrayConcatInput);
 
-    // Extract the elements from each array
-    let mut combined_elements = first.elems.clone();
-    combined_elements.extend(second.elems.clone());
+    // Generate the code to call the callback macro directly as an array expression
+    let first_array = quote! {
+        #callback!()
+    };
 
-    // Generate a `&[str]` slice from the combined elements
-    let expanded = quote! {
+    // Collect elements from the `second.elems` field of type `Punctuated<Expr, Token![,]>`
+    let second_elements: Vec<_> = second.elems.iter().collect();
+
+    // Generate the combined array as a slice of `&str`
+    let modified = quote! {
         {
-            const CONCATENATED_ARRAY: &[&str] = &[#combined_elements];
+            // Define the final array by merging elements from the first and second arrays
+            const CONCATENATED_ARRAY: &[&str] = &[
+                // Inline expansion of the first array using the callback
+                #first_array,
+                // Inline expansion of the second array elements
+                #(#second_elements),*
+            ].concat();
             CONCATENATED_ARRAY
         }
     };
 
-    TokenStream::from(expanded)
+    let expanded = Expander::new("concat_arrays")
+        .add_comment("This is generated code!".to_owned())
+        .fmt(Edition::_2021)
+        .verbose(true)
+        // common way of gating this, by making it part of the default feature set
+        // .dry(cfg!(feature = "no-file-expansion"))
+        .dry(false)
+        .write_to_out_dir(modified.clone())
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to write to file: {:?}", e);
+            modified
+        });
+    expanded.into()
+
+    // TokenStream::from(expanded)
 }

@@ -7,17 +7,19 @@ toml = "0.8.19"
 
 /// Published example of serde deserialisation from `crokey` crate.
 //# Purpose: Demo loading keybindings from a file.
-use crokey::{
-    crossterm::{
-        event::{read, Event},
-        style::Stylize,
-        terminal,
+use {
+    crokey::{
+        crossterm::{
+            event::{read, Event},
+            style::Stylize,
+            terminal,
+        },
+        key, KeyCombination, KeyCombinationFormat,
     },
-    key, KeyCombination, KeyCombinationFormat,
+    serde::Deserialize,
+    std::collections::HashMap,
+    toml,
 };
-use serde::Deserialize;
-use std::collections::HashMap;
-use toml;
 
 /// This is an example of a configuration structure which contains
 /// a map from KeyEvent to String.

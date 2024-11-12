@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = "0.1.5"
+thag_rs = "0.1.7"
 */
 
 /// This seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.

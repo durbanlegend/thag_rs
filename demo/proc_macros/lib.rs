@@ -1,6 +1,7 @@
 #![allow(clippy::missing_panics_doc, unused_imports)]
 mod attrib_key_map_list;
 mod const_demo;
+mod const_demo_grail;
 mod const_gen_str_demo;
 mod custom_model;
 mod derive_deserialize_vec;
@@ -14,6 +15,7 @@ mod organizing_code_tokenstream;
 
 use crate::attrib_key_map_list::use_mappings_impl;
 use crate::const_demo::const_demo_impl;
+use crate::const_demo_grail::const_demo_grail_impl;
 use crate::const_gen_str_demo::string_concat_impl;
 use crate::custom_model::derive_custom_model_impl;
 use crate::derive_deserialize_vec::derive_deserialize_vec_impl;
@@ -133,6 +135,11 @@ pub fn const_demo_expand(tokens: TokenStream) -> TokenStream {
         });
     // Run it again to avoid "error: expected expression, found keyword `const`"
     const_demo_impl(tokens)
+}
+
+#[proc_macro]
+pub fn const_demo_grail(tokens: TokenStream) -> TokenStream {
+    const_demo_grail_impl(tokens)
 }
 
 // #[proc_macro]

@@ -14,6 +14,8 @@ deluxe = "0.5.0"
 expander = "2.2.1"
 proc-macro2 = "1.0"
 quote = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
 strict = "0.2"
 syn = { version = "2.0", default-features = false, features = [
     "full",

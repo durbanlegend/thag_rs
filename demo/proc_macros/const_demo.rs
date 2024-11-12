@@ -1,4 +1,4 @@
-//! This crate is used to test the const_gen_proc_macro library
+/// Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`
 use const_gen_proc_macro::{
     Expression, Object, ObjectType, Parameter, Path, ProcMacroEnv, Return, ReturnResult,
 };

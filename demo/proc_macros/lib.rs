@@ -117,6 +117,24 @@ pub fn const_demo(tokens: TokenStream) -> TokenStream {
     const_demo_impl(tokens)
 }
 
+#[proc_macro]
+pub fn const_demo_expand(tokens: TokenStream) -> TokenStream {
+    use expander::{Edition, Expander};
+    let output = const_demo_impl(tokens.clone());
+    let _expanded = Expander::new("const_demo")
+        .add_comment("This is generated code!".to_owned())
+        .fmt(Edition::_2021)
+        .verbose(true)
+        .dry(false)
+        .write_to_out_dir(output.clone().into())
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to write to file: {:?}", e);
+            output.into()
+        });
+    // Run it again to avoid "error: expected expression, found keyword `const`"
+    const_demo_impl(tokens)
+}
+
 // #[proc_macro]
 // pub fn vec_concat(tokens: TokenStream) -> TokenStream {
 //     use const_gen_proc_macro::Object;

@@ -7,30 +7,30 @@ use std::str::FromStr;
 
 mod grail {
     pub struct Grail {
-        value: i128,
+        value: Vec<i128>,
     }
 
     impl Grail {
         pub fn new(value: i128) -> Self {
-            Self { value }
+            Self { value: vec![value] }
         }
 
         pub fn get(&self) -> i128 {
-            self.value
+            self.value[0]
         }
 
         pub fn add(&mut self, other: i128) -> i128 {
-            self.value += other;
-            self.value
+            self.value[0] += other;
+            self.value[0]
         }
 
         pub fn add_four(&mut self, first: i128, second: i128, third: i128, fourth: i128) {
-            self.value += first + second + third + fourth
+            self.value[0] += first + second + third + fourth
         }
 
         pub fn sub(&mut self, other: i128) -> i128 {
-            self.value -= other;
-            self.value
+            self.value[0] -= other;
+            self.value[0]
         }
     }
 }

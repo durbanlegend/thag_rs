@@ -3,6 +3,8 @@ use const_gen_proc_macro::{
     Expression, Object, ObjectType, Parameter, Path, ProcMacroEnv, Return, ReturnResult,
 };
 use proc_macro::TokenStream;
+use serde::{Deserialize, Serialize};
+use serde_json;
 use std::str::FromStr;
 
 mod grail {
@@ -11,8 +13,10 @@ mod grail {
     }
 
     impl Grail {
-        pub fn new(value: i128) -> Self {
-            Self { value: vec![value] }
+        pub fn new(json_string: String) -> Self {
+            let value = serde_json::from_str(&json_string)
+                .expect("Error deserializing JSON string {json_string}");
+            Self { value }
         }
 
         pub fn get(&self) -> i128 {
@@ -71,9 +75,9 @@ pub fn const_demo_grail_impl(tokens: TokenStream) -> TokenStream {
     let grail_type = grail_type.seal();
 
     let mut math_path = Path::new();
-    let math_new =
-        &|value: i128| -> Result<Object, String> { Ok(grail_type.new_instance(Grail::new(value))) }
-            as &dyn Fn(i128) -> Result<Object, String>;
+    let math_new = &|value: String| -> Result<Object, String> {
+        Ok(grail_type.new_instance(Grail::new(value)))
+    } as &dyn Fn(String) -> Result<Object, String>;
     math_path.add_function("new", &math_new);
 
     let mut expr_path = Path::new();

@@ -380,7 +380,6 @@ which will give identical output to the above.
 **Description:**  A prototype of the cmd_args module of thag_rs itself.
 
  E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
- Getter for clap command-line arguments
 
 **Purpose:** Prototype CLI.
 
@@ -548,7 +547,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo loading keybindings from a file.
 
-**Crates:** `crokey`, `serde`
+**Crates:** `crokey`, `serde`, `toml`
 
 **Type:** Program
 
@@ -749,6 +748,8 @@ which will give identical output to the above.
 
 **Purpose:** Demo one option for intercepting Ctrl-C.
 
+**Crates:** `ctrlc`
+
 **Type:** Program
 
 **Link:** [ctrlc_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs)
@@ -800,6 +801,20 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [darling_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs)
+
+---
+
+### Script: derive_deftly.rs
+
+**Description:**  Introductory example from the `derive-deftly` user guide.
+
+**Purpose:** Explore proc macro alternatives.
+
+**Crates:** `derive_deftly`
+
+**Type:** Snippet
+
+**Link:** [derive_deftly.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.rs)
 
 ---
 
@@ -911,6 +926,8 @@ which will give identical output to the above.
 **Description:**  A prototype GUI editor with saved state and syntax highlighting.
 
 **Purpose:** Prototype a native-mode editor using the `egui` crate.
+
+**Crates:** `eframe`, `env_logger`
 
 **Type:** Program
 
@@ -1613,6 +1630,8 @@ which will give identical output to the above.
 
 **Purpose:** demo of async and channel programming and of `flume` in particular.
 
+**Crates:** `flume`
+
 **Type:** Program
 
 **Link:** [flume_async.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs)
@@ -1783,7 +1802,7 @@ which will give identical output to the above.
 
 **Purpose:** Debug and demo history ordering.
 
-**Crates:** `regex`, `serde`
+**Crates:** `regex`, `serde`, `serde_json`
 
 **Type:** Snippet
 
@@ -1894,6 +1913,8 @@ which will give identical output to the above.
 **Description:**  Tries to convert input to a `syn` abstract syntax tree.
 
 **Purpose:** Debugging
+
+**Crates:** `syn`
 
 **Type:** Snippet
 
@@ -2200,6 +2221,48 @@ which will give identical output to the above.
 
 ---
 
+### Script: proc_macro_const_demo.rs
+
+**Description:**  Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`
+
+**Purpose:** Demo the use of proc macros to generate constants at compile time
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Link:** [proc_macro_const_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo.rs)
+
+---
+
+### Script: proc_macro_const_demo_expand.rs
+
+**Description:**  Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`.
+
+**Purpose:** Demo the use of proc macros to generate constants at compile time and the `expander` crate to expand the output to a file.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Link:** [proc_macro_const_demo_expand.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_expand.rs)
+
+---
+
+### Script: proc_macro_const_demo_grail.rs
+
+**Description:**  Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`
+
+**Purpose:** Demo the use of proc macros to generate constants at compile time
+
+**Crates:** `serde`, `serde_json`, `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Link:** [proc_macro_const_demo_grail.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_grail.rs)
+
+---
+
 ### Script: proc_macro_derive_custom_model.rs
 
 **Description:**  Published example from `https://github.com/anshulsanghi-blog/macros-handbook`
@@ -2282,6 +2345,20 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [proc_macro_organizing_code_tokenstream.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs)
+
+---
+
+### Script: proc_macro_string_concat.rs
+
+**Description:**  Published example from `https://github.com/redmcg/const_gen_proc_macro`
+
+**Purpose:** Use proc macros to generate constants at compile time
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Link:** [proc_macro_string_concat.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_string_concat.rs)
 
 ---
 
@@ -2725,7 +2802,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo a popular logging crate.
 
-**Crates:** `slog`
+**Crates:** `slog`, `slog_term`
 
 **Type:** Program
 
@@ -2789,7 +2866,7 @@ which will give identical output to the above.
 
 **Purpose:** Debugging.
 
-**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `serde`, `thag_rs`, `tui_textarea`
+**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 
@@ -3439,6 +3516,8 @@ which will give identical output to the above.
 **Description:**  This seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
+
+**Crates:** `termbg`
 
 **Type:** Program
 

@@ -1,6 +1,7 @@
 #![allow(clippy::missing_panics_doc, unused_imports)]
 mod attrib_key_map_list;
-mod const_gen_demo;
+mod const_demo;
+mod const_gen_str_demo;
 mod custom_model;
 mod derive_deserialize_vec;
 mod derive_key_map_list;
@@ -12,7 +13,8 @@ mod organizing_code_const;
 mod organizing_code_tokenstream;
 
 use crate::attrib_key_map_list::use_mappings_impl;
-use crate::const_gen_demo::string_concat_impl;
+use crate::const_demo::const_demo_impl;
+use crate::const_gen_str_demo::string_concat_impl;
 use crate::custom_model::derive_custom_model_impl;
 use crate::derive_deserialize_vec::derive_deserialize_vec_impl;
 use crate::derive_key_map_list::derive_key_map_list_impl;
@@ -110,152 +112,35 @@ pub fn string_concat(tokens: TokenStream) -> TokenStream {
     string_concat_impl(tokens)
 }
 
-use const_gen_proc_macro::{
-    Expression, Object, ObjectType, Parameter, Path, ProcMacroEnv, Return, ReturnResult,
-};
-use std::str::FromStr;
-
-mod string_array {
-    pub struct StringArray {
-        first: Vec<String>,
-        second: Vec<String>,
-    }
-
-    impl StringArray {
-        #[allow(dead_code)]
-        pub fn new(first: Vec<String>, second: Vec<String>) -> Self {
-            Self { first, second }
-        }
-
-        pub fn merge(&mut self) {
-            self.first.extend_from_slice(&self.second);
-        }
-
-        pub fn get_values(&self) -> Vec<String> {
-            self.first.clone()
-        }
-    }
-}
-
-use string_array::StringArray;
-// fn string_array_new(param: Parameter) -> Result<Object, String> {
-//     if let Parameter::Array(arrays) = param {
-//         let mut result = Vec::new();
-
-//         for array in arrays.iter() {
-//             match array {
-//                 Parameter::Array(inner_array) => {
-//                     for item in inner_array.iter() {
-//                         if let Parameter::String(ref s) = item {
-//                             result.push(Return::String(s.clone()));
-//                         } else {
-//                             return Err("Expected Parameter::String in inner array".to_string());
-//                         }
-//                     }
-//                 }
-//                 _ => return Err("Expected Parameter::Array of arrays".to_string()),
-//             }
-//         }
-
-//         // Dispatch function using the new result
-//         let dispatch = move |_, method: &str, _params: &[Parameter]| -> ReturnResult {
-//             match method {
-//                 "get_array" => Ok(Return::Array(result.clone().into_boxed_slice())),
-//                 _ => Err("Unknown method".to_string()),
-//             }
-//         };
-
-//         let string_array_type = ObjectType::new();
-//         // Ensure the `ObjectType` is sealed if needed before calling `new_instance`.
-//         let sealed_string_array_type = string_array_type.seal(); // Seal if not already done.
-
-//         // Instantiate Object using SealedObjectType's new_instance method
-//         Ok(Object {
-//             string_array_type: string_array_type.new_instance(result),
-//         })
-//     } else {
-//         Err("Expected Parameter::Array at top level".to_string())
-//     }
-// }
-
-fn merge_arrays(array: &mut StringArray, param: Parameter) -> ReturnResult {
-    if let Parameter::Object(object) = param {
-        if let Return::Array(arr) = object.call("get_values", &[])? {
-            let strings: Vec<String> = arr
-                .iter()
-                .filter_map(|ret| {
-                    if let Return::String(s) = ret {
-                        Some(s.clone())
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-            array.merge();
-            Ok(Return::Object(object.clone())) // Return an updated object
-        } else {
-            Err("Expected an Array of Strings.".to_string())
-        }
-    } else {
-        Err("Expected an Object parameter.".to_string())
-    }
-}
-
-fn get_array(array: &StringArray) -> Return {
-    let values = array
-        .get_values()
-        .into_iter()
-        .map(Return::String)
-        .collect::<Vec<_>>();
-    Return::Array(values.into_boxed_slice())
-}
-
-// Updated proc_macro to use string_array_new with a single Parameter argument
 #[proc_macro]
-pub fn string_array_macro(tokens: TokenStream) -> TokenStream {
-    let mut string_array_type = ObjectType::new();
-
-    string_array_type.add_method(
-        "get_values",
-        &(&get_array as &dyn Fn(&StringArray) -> Return),
-    );
-    string_array_type.add_method_mut(
-        "merge",
-        &(&merge_arrays as &dyn Fn(&mut StringArray, Parameter) -> ReturnResult),
-    );
-
-    let string_array_type = ObjectType::new();
-    // Ensure the `ObjectType` is sealed if needed before calling `new_instance`.
-    let string_array_type = string_array_type.seal(); // Seal if not already done.
-
-    let string_array_path = Path::new();
-    // string_array_path.add_function(
-    //     "new",
-    //     &(&string_array_new as &dyn Fn(Parameter) -> Result<Object, String>),
-    // );
-    let mut string_array_path = Path::new();
-    let string_array_new = &|first: Parameter| -> Object { string_array_type.new_instance(first) }
-        as &dyn Fn(Parameter) -> Object;
-    string_array_path.add_function("new", &string_array_new);
-
-    let mut env = ProcMacroEnv::new();
-    env.add_path("string_array", string_array_path);
-    env.process(tokens)
-
-    // let modified = env.process(tokens);
-
-    // use expander::{Edition, Expander};
-    // let expanded = Expander::new("string_array_macro")
-    //     .add_comment("This is generated code!".to_owned())
-    //     .fmt(Edition::_2021)
-    //     .verbose(true)
-    //     // common way of gating this, by making it part of the default feature set
-    //     // .dry(cfg!(feature = "no-file-expansion"))
-    //     .dry(false)
-    //     .write_to_out_dir(modified.clone().into())
-    //     .unwrap_or_else(|e| {
-    //         eprintln!("Failed to write to file: {:?}", e);
-    //         modified.into()
-    //     });
-    // expanded.into()
+pub fn const_demo(tokens: TokenStream) -> TokenStream {
+    const_demo_impl(tokens)
 }
+
+// #[proc_macro]
+// pub fn vec_concat(tokens: TokenStream) -> TokenStream {
+//     use const_gen_proc_macro::Object;
+//     use const_gen_proc_macro::ObjectType;
+//     use const_gen_proc_macro::Path;
+//     use const_gen_proc_macro::ProcMacroEnv;
+
+//     let mut vec_type = ObjectType::new();
+//     vec_type.add_method(
+//         "concat",
+//         &(&|first: &mut Vec<_>, second: Vec<_>| -> Vec<_> {
+//             first.to_owned().extend_from_slice(&second);
+//             first.to_vec()
+//         } as &dyn Fn(&Vec<_>, Vec<_>) -> Vec<_>),
+//     );
+//     // sealing the ObjectType means it is no longer mutable and can now instantiate objects
+//     let vec_type = vec_type.seal();
+
+//     let mut vec_path = Path::new();
+//     let vec_new =
+//         &|first: Vec<_>| -> Object { vec_type.new_instance(first) } as &dyn Fn(Vec<_>) -> Object;
+//     vec_path.add_function("new", &vec_new);
+
+//     let mut env = ProcMacroEnv::new();
+//     env.add_path("vec", vec_path);
+//     env.process(tokens)
+// }

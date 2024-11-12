@@ -3,20 +3,16 @@
 //# Purpose: Use proc macros to generate constants at compile time
 // "use thag_demo_proc_macros..." is a magic import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-use thag_demo_proc_macros::string_array_macro;
+use thag_demo_proc_macros::string_concat;
 
-struct Foo {
-    first: Vec<String>,
-    second: Vec<String>,
+let other = "Other";
+
+string_concat! {
+    let prefix: Vec<usize> = vec::new("1, 2, 3");
+    let variable: Vec<usize> = vec![4, 5];
+    const VARIABLE: Vec<usize> = prefix.concat(variable);
 }
 
-fn get_foo() -> Foo {
-    Foo {
-        first: vec!["hello".to_string(), "world".to_string()],
-        second: vec!["from".to_string(), "macro".to_string()],
-    }
-}
-fn main() {
-    string_array_macro! {
-    get_foo.merge(); }
-}
+assert_eq!(VARIABLE, "A Variable");
+
+println!("VARIABLE={VARIABLE}");

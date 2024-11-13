@@ -63,6 +63,34 @@ mod tests {
     }
 
     #[test]
+    fn test_code_utils_infer_deps_from_nested_ast() {
+        set_up();
+        // Example AST representing use and extern crate statements
+        let ast = syn::parse_file(
+            r#"
+            use {
+                crokey::{
+                    crossterm::{
+                        event::{read, Event},
+                        style::Stylize,
+                        terminal,
+                    },
+                    key, KeyCombination, KeyCombinationFormat,
+                },
+                serde::Deserialize,
+                std::collections::HashMap,
+                toml,
+            };
+            "#,
+        )
+        .unwrap();
+        let ast = Ast::File(ast);
+
+        let deps = infer_deps_from_ast(&ast);
+        assert_eq!(deps, vec!["crokey", "serde", "toml"]);
+    }
+
+    #[test]
     fn test_code_utils_infer_deps_from_source() {
         set_up();
         let source_code = r#"

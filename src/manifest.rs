@@ -204,7 +204,7 @@ edition = "2021"
         source_stem, source_stem, gen_src_path
     );
 
-    // log!(V::N, "cargo_manifest=\n{cargo_manifest}");
+    // vlog!(V::N, "cargo_manifest=\n{cargo_manifest}");
 
     Ok(Manifest::from_str(&cargo_manifest)?)
 }

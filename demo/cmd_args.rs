@@ -9,15 +9,10 @@ thag_rs = "0.1.7"
 ///
 /// E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 //# Purpose: Prototype CLI.
-use thag_rs::errors::ThagError;
-use thag_rs::log;
-use thag_rs::logging::Verbosity;
-use thag_rs::RS_SUFFIX;
-
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
-use std::error::Error;
-use std::{fmt, str};
+use std::{error::Error, fmt, str};
+use thag_rs::{errors::ThagError, logging::Verbosity, vlog, RS_SUFFIX};
 
 // thag_rs script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
@@ -277,40 +272,40 @@ fn main() {
     let opt = Cli::parse();
 
     if opt.verbose {
-        log!(Verbosity::Normal, "Verbosity enabled");
+        vlog!(Verbosity::Normal, "Verbosity enabled");
     }
 
     if opt.timings {
-        log!(Verbosity::Normal, "Timings enabled");
+        vlog!(Verbosity::Normal, "Timings enabled");
     }
 
     if opt.generate {
-        log!(Verbosity::Normal, "Generate option selected");
+        vlog!(Verbosity::Normal, "Generate option selected");
     }
 
     if opt.build {
-        log!(Verbosity::Normal, "Build option selected");
+        vlog!(Verbosity::Normal, "Build option selected");
     }
 
     if opt.force {
-        log!(Verbosity::Normal, "Force option selected");
+        vlog!(Verbosity::Normal, "Force option selected");
     }
 
     if opt.executable {
-        log!(Verbosity::Normal, "Executable option selected");
+        vlog!(Verbosity::Normal, "Executable option selected");
     }
 
-    log!(Verbosity::Normal, "Unquote={:#?}", opt.unquote);
+    vlog!(Verbosity::Normal, "Unquote={:#?}", opt.unquote);
 
     if opt.executable {
-        log!(Verbosity::Normal, "Config option selected");
+        vlog!(Verbosity::Normal, "Config option selected");
     }
 
-    log!(Verbosity::Normal, "Script to run: {:?}", opt.script);
+    vlog!(Verbosity::Normal, "Script to run: {:?}", opt.script);
     if !opt.args.is_empty() {
-        log!(Verbosity::Normal, "With arguments:");
+        vlog!(Verbosity::Normal, "With arguments:");
         for arg in &opt.args {
-            log!(Verbosity::Normal, "{arg}");
+            vlog!(Verbosity::Normal, "{arg}");
         }
     }
 

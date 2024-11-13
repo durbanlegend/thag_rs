@@ -13,10 +13,11 @@ use firestorm::profile_fn;
 use regex::Regex;
 use std::{
     any::Any,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs::{self, remove_dir_all, remove_file, OpenOptions},
     hash::BuildHasher,
     io::{self, BufRead, Write},
+    ops::Deref,
     option::Option,
     path::{Path, PathBuf},
     process::{self, Output},
@@ -100,17 +101,21 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     profile_fn!(infer_deps_from_ast);
     let use_crates = find_use_crates_ast(syntax_tree);
     let extern_crates = find_extern_crates_ast(syntax_tree);
-    let use_renames = find_use_renames_ast(syntax_tree);
+    let (use_renames_from, use_renames_to) = find_use_renames_ast(syntax_tree);
     let modules = find_modules_ast(syntax_tree);
 
     let mut dependencies = Vec::new();
 
     for crate_name in use_crates {
-        filter_deps_ast(&crate_name, &use_renames, &modules, &mut dependencies);
+        filter_deps_ast(&crate_name, &use_renames_to, &modules, &mut dependencies);
+    }
+
+    for crate_name in use_renames_from {
+        filter_deps_ast(&crate_name, &use_renames_to, &modules, &mut dependencies);
     }
 
     for crate_name in extern_crates {
-        filter_deps_ast(&crate_name, &use_renames, &modules, &mut dependencies);
+        filter_deps_ast(&crate_name, &use_renames_to, &modules, &mut dependencies);
     }
 
     // Deduplicate the list of dependencies
@@ -139,15 +144,17 @@ fn filter_deps_ast(
 }
 
 /// Identify use ... as statements for exclusion from Cargo.toml metadata: abstract syntax tree-based version.
-fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
+fn find_use_renames_ast(syntax_tree: &Ast) -> (Vec<String>, Vec<String>) {
     #[derive(Default)]
     struct FindCrates {
-        use_renames: Vec<String>,
+        use_renames_from: Vec<String>,
+        use_renames_to: Vec<String>,
     }
     impl<'a> Visit<'a> for FindCrates {
         fn visit_use_rename(&mut self, node: &'a UseRename) {
             profile_fn!(visit_use_rename);
-            self.use_renames.push(node.rename.to_string());
+            self.use_renames_from.push(node.ident.to_string());
+            self.use_renames_to.push(node.rename.to_string());
         }
     }
 
@@ -159,8 +166,12 @@ fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
-    debug_log!("use_renames from ast={:#?}", finder.use_renames);
-    finder.use_renames
+    debug_log!(
+        "use_renames from ast: from={:#?}; to={:#?}",
+        finder.use_renames_from,
+        finder.use_renames_to
+    );
+    (finder.use_renames_from, finder.use_renames_to)
 }
 
 /// Identify modules for filtering use statements from Cargo.toml metadata: abstract syntax tree-based version.
@@ -197,7 +208,7 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     impl<'a> Visit<'a> for FindCrates {
         fn visit_use_tree(&mut self, node: &'a syn::UseTree) {
             profile_fn!(visit_use_tree);
-            eprintln!("node={node:#?}");
+            // eprintln!("node={node:#?}");
             if let UseTree::Group(_use_group) = node {
                 syn::visit::visit_use_tree(self, node);
             } else {
@@ -270,32 +281,48 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     let macro_use_regex: &Regex = regex!(r"(?m)^[\s]*#\[macro_use\((\w+)\)");
     let extern_crate_regex: &Regex = regex!(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)");
 
-    let use_renames = find_use_renames_source(code);
-    let modules = find_modules_source(code);
-    let mut dependencies = Vec::new();
+    let (use_renames_from, use_renames_to) = find_use_renames_source(code);
+    // eprintln!("use_renames_from={use_renames_from:#?}");
+    // eprintln!("use_renames_to={use_renames_to:#?}");
 
-    let use_crates = if let Ok(ast) = extract_and_wrap_uses(code) {
+    let modules = find_modules_source(code);
+    // let mut dependencies = Vec::new();
+
+    let mut dependencies = if let Ok(ast) = extract_and_wrap_uses(code) {
         find_use_crates_ast(&ast)
     } else {
         vec![]
     };
-    eprintln!("use_crates={use_crates:#?}");
+    // eprintln!("dependencies (before)={dependencies:#?}");
 
-    for crate_name in &use_crates {
+    for crate_name in &use_renames_from {
         println!("dependency={crate_name}");
-        filter_deps_source(crate_name, &use_renames, &modules, &mut dependencies);
+        filter_deps_source(crate_name, &use_renames_to, &modules, &mut dependencies);
     }
+
+    let to_remove: HashSet<String> = use_renames_to
+        .iter()
+        .cloned()
+        .chain(modules.iter().cloned())
+        .chain(BUILT_IN_CRATES.iter().map(Deref::deref).map(String::from))
+        .collect();
+    // eprintln!("to_remove={to_remove:#?}");
+
+    dependencies.retain(|e| !to_remove.contains(e));
+    // eprintln!("dependencies (after)={dependencies:#?}");
 
     // Similar checks for other regex patterns
 
     for cap in macro_use_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
-        filter_deps_source(&crate_name, &use_renames, &modules, &mut dependencies);
+        // eprintln!("macro-use crate_name={crate_name:#?}");
+        filter_deps_source(&crate_name, &use_renames_to, &modules, &mut dependencies);
     }
 
     for cap in extern_crate_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
-        filter_deps_source(&crate_name, &use_renames, &modules, &mut dependencies);
+        // eprintln!("extern-crate crate_name={crate_name:#?}");
+        filter_deps_source(&crate_name, &use_renames_to, &modules, &mut dependencies);
     }
 
     // Deduplicate the list of dependencies
@@ -325,11 +352,11 @@ fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
 
     // Step 2: Wrap with braces
     let wrapped_block = format!("{{\n{}\n}}", use_statements.join("\n"));
-    eprintln!("wrapped_block={wrapped_block}");
+    // eprintln!("wrapped_block={wrapped_block}");
 
     // Step 3: Parse as `syn::Expr`
     let parsed_expr: Expr = parse_str(&wrapped_block)?;
-    eprintln!("parsed_expr={parsed_expr:#?}");
+    // eprintln!("parsed_expr={parsed_expr:#?}");
 
     // Return wrapped in `Ast::Expr`
     Ok(Ast::Expr(parsed_expr))
@@ -365,23 +392,29 @@ fn filter_deps_source(
 /// Identify use ... as statements for exclusion from Cargo.toml metadata.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
-pub fn find_use_renames_source(code: &str) -> Vec<String> {
+pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {
     profile_fn!(find_use_renames_source);
 
     debug_log!("In code_utils::find_use_renames_source");
-    let use_as_regex: &Regex = regex!(r"(?m)^\s*use\s+.+as\s+(\w+)");
+    let use_as_regex: &Regex = regex!(r"(?m)^\s*use\s+(\w+).*? as\s+(\w+)");
 
-    let mut use_renames: Vec<String> = vec![];
+    let mut use_renames_from: Vec<String> = vec![];
+    let mut use_renames_to: Vec<String> = vec![];
 
     for cap in use_as_regex.captures_iter(code) {
-        let use_rename = cap[1].to_string();
+        let from_name = cap[1].to_string();
+        let to_name = cap[2].to_string();
 
-        debug_log!("use_rename={use_rename}");
-        use_renames.push(use_rename);
+        debug_log!("use_rename: from={from_name}, to={to_name}");
+        use_renames_from.push(from_name);
+        use_renames_to.push(to_name);
     }
 
-    debug_log!("use_renames from source={use_renames:#?}");
-    use_renames
+    use_renames_from.sort();
+    use_renames_from.dedup();
+
+    debug_log!("use_renames from source: from={use_renames_from:#?}, to={use_renames_to:#?}");
+    (use_renames_from, use_renames_to)
 }
 
 /// Identify mod statements for exclusion from Cargo.toml metadata.

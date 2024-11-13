@@ -61,6 +61,9 @@ mod tests {
         // Example AST representing use and extern crate statements
         let ast = syn::parse_file(
             r#"
+            extern crate foo;
+            use bar::baz;
+            mod glorp;
             use {
                 crokey::{
                     crossterm::{
@@ -70,17 +73,21 @@ mod tests {
                     },
                     key, KeyCombination, KeyCombinationFormat,
                 },
+                glorp::thagomize,
                 serde::Deserialize,
                 std::collections::HashMap,
                 toml,
             };
+            use snarf as qux;
+            use std::fmt;
+            use qux::corge;
             "#,
         )
         .unwrap();
         let ast = Ast::File(ast);
 
         let deps = infer_deps_from_ast(&ast);
-        assert_eq!(deps, vec!["crokey", "serde", "toml"]);
+        assert_eq!(deps, vec!["bar", "crokey", "foo", "serde", "snarf", "toml"]);
     }
 
     #[test]
@@ -95,7 +102,7 @@ mod tests {
             "#;
 
         let deps = infer_deps_from_source(source_code);
-        assert_eq!(deps, vec!["bar", "foo", "glorp"]);
+        assert_eq!(deps, vec!["bar", "foo", "snarf"]);
     }
 
     #[test]
@@ -115,12 +122,14 @@ mod tests {
                     },
                     key, KeyCombination, KeyCombinationFormat,
                 },
+                glorp::thagomize,
                 serde::Deserialize,
                 std::collections::HashMap,
                 toml,
             };
+            use snarf as qux;
             use std::fmt;
-            use snarf;
+            use qux::corge;
             "#;
 
         let deps = infer_deps_from_source(source_code);
@@ -177,8 +186,9 @@ mod tests {
             use baz::qux as corge;
             "#;
 
-        let use_renames = find_use_renames_source(source_code);
-        assert_eq!(use_renames, vec!["bar", "corge"]);
+        let (use_renames_from, use_renames_to) = find_use_renames_source(source_code);
+        assert_eq!(use_renames_from, vec!["baz", "foo"]);
+        assert_eq!(use_renames_to, vec!["bar", "corge"]);
     }
 
     #[test]

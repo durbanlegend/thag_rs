@@ -99,23 +99,33 @@ pub fn read_file_contents(path: &Path) -> ThagResult<String> {
 #[must_use]
 pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     profile_fn!(infer_deps_from_ast);
-    let use_crates = find_use_crates_ast(syntax_tree);
+    let mut dependencies = find_use_crates_ast(syntax_tree);
     let extern_crates = find_extern_crates_ast(syntax_tree);
     let (use_renames_from, use_renames_to) = find_use_renames_ast(syntax_tree);
     let modules = find_modules_ast(syntax_tree);
 
-    let mut dependencies = Vec::new();
+    let to_remove: HashSet<String> = use_renames_to
+        .iter()
+        .cloned()
+        .chain(modules.iter().cloned())
+        .chain(BUILT_IN_CRATES.iter().map(Deref::deref).map(String::from))
+        .collect();
+    // eprintln!("to_remove={to_remove:#?}");
 
-    for crate_name in use_crates {
-        filter_deps_ast(&crate_name, &use_renames_to, &modules, &mut dependencies);
-    }
+    dependencies.retain(|e| !to_remove.contains(e));
+    // eprintln!("dependencies (after)={dependencies:#?}");
 
+    // Similar checks for other regex patterns
     for crate_name in use_renames_from {
-        filter_deps_ast(&crate_name, &use_renames_to, &modules, &mut dependencies);
+        if !to_remove.contains(&crate_name) {
+            dependencies.push(crate_name);
+        }
     }
 
     for crate_name in extern_crates {
-        filter_deps_ast(&crate_name, &use_renames_to, &modules, &mut dependencies);
+        if !to_remove.contains(&crate_name) {
+            dependencies.push(crate_name);
+        }
     }
 
     // Deduplicate the list of dependencies
@@ -125,25 +135,9 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     dependencies
 }
 
-/// Filter out crates that don't need to be added as dependencies: abstract syntax tree-based version.
-fn filter_deps_ast(
-    crate_name: &str,
-    use_renames: &[String],
-    modules: &[String],
-    dependencies: &mut Vec<String>,
-) {
-    profile_fn!(filter_deps_ast);
-    let crate_name_string = crate_name.to_string();
-    // Filter out "crate" entries
-    if !&BUILT_IN_CRATES.contains(&crate_name)
-        && !use_renames.contains(&crate_name_string)
-        && !modules.contains(&crate_name_string)
-    {
-        dependencies.push(crate_name_string);
-    }
-}
-
-/// Identify use ... as statements for exclusion from Cargo.toml metadata: abstract syntax tree-based version.
+/// Identify use ... as statements for inclusion in / exclusion from Cargo.toml metadata.
+/// Include the "from" name and exclude the "to" name.
+/// Abstract syntax tree-based version.
 fn find_use_renames_ast(syntax_tree: &Ast) -> (Vec<String>, Vec<String>) {
     #[derive(Default)]
     struct FindCrates {
@@ -286,7 +280,6 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     // eprintln!("use_renames_to={use_renames_to:#?}");
 
     let modules = find_modules_source(code);
-    // let mut dependencies = Vec::new();
 
     let mut dependencies = if let Ok(ast) = extract_and_wrap_uses(code) {
         find_use_crates_ast(&ast)
@@ -294,11 +287,6 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
         vec![]
     };
     // eprintln!("dependencies (before)={dependencies:#?}");
-
-    for crate_name in &use_renames_from {
-        println!("dependency={crate_name}");
-        filter_deps_source(crate_name, &use_renames_to, &modules, &mut dependencies);
-    }
 
     let to_remove: HashSet<String> = use_renames_to
         .iter()
@@ -312,17 +300,27 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     // eprintln!("dependencies (after)={dependencies:#?}");
 
     // Similar checks for other regex patterns
+    for crate_name in use_renames_from {
+        println!("dependency={crate_name}");
+        if !to_remove.contains(&crate_name) {
+            dependencies.push(crate_name);
+        }
+    }
 
     for cap in macro_use_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
         // eprintln!("macro-use crate_name={crate_name:#?}");
-        filter_deps_source(&crate_name, &use_renames_to, &modules, &mut dependencies);
+        if !to_remove.contains(&crate_name) {
+            dependencies.push(crate_name);
+        }
     }
 
     for cap in extern_crate_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
         // eprintln!("extern-crate crate_name={crate_name:#?}");
-        filter_deps_source(&crate_name, &use_renames_to, &modules, &mut dependencies);
+        if !to_remove.contains(&crate_name) {
+            dependencies.push(crate_name);
+        }
     }
 
     // Deduplicate the list of dependencies
@@ -362,34 +360,8 @@ fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
     Ok(Ast::Expr(parsed_expr))
 }
 
-/// Filter out crates that don't need to be added as dependencies: fallback version using regex on source code.
-fn filter_deps_source(
-    crate_name: &str,
-    use_renames: &[String],
-    modules: &[String],
-    dependencies: &mut Vec<String>,
-) {
-    profile_fn!(filter_deps_source);
-
-    debug_log!("crate_name={crate_name}");
-    let dep = if crate_name.contains(':') {
-        crate_name.split_once(':').unwrap().0
-    } else {
-        crate_name
-    };
-
-    let dep_string = dep.to_owned();
-
-    debug_log!("dep_string={dep_string}, BUILT_IN_CRATES={BUILT_IN_CRATES:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
-    if !&BUILT_IN_CRATES.contains(&dep)
-        && !use_renames.contains(&dep_string)
-        && !modules.contains(&dep_string)
-    {
-        dependencies.push(dep_string);
-    }
-}
-
-/// Identify use ... as statements for exclusion from Cargo.toml metadata.
+/// Identify use ... as statements for inclusion in / exclusion from Cargo.toml metadata.
+/// Include the "from" name and exclude the "to" name.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {

@@ -5,7 +5,7 @@
 )]
 use crate::{
     cvprtln, debug_log, debug_timings, vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult,
-    DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
+    BUILT_IN_CRATES, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 
 use cargo_toml::{Edition, Manifest};
@@ -24,6 +24,7 @@ use std::{
 };
 
 use syn::{
+    parse_str,
     visit::Visit,
     visit_mut::{self, VisitMut},
     AttrStyle,
@@ -103,26 +104,13 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     let modules = find_modules_ast(syntax_tree);
 
     let mut dependencies = Vec::new();
-    let built_in_crates = ["std", "core", "alloc", "collections", "fmt", "crate"];
 
     for crate_name in use_crates {
-        filter_deps_ast(
-            &crate_name,
-            &built_in_crates,
-            &use_renames,
-            &modules,
-            &mut dependencies,
-        );
+        filter_deps_ast(&crate_name, &use_renames, &modules, &mut dependencies);
     }
 
     for crate_name in extern_crates {
-        filter_deps_ast(
-            &crate_name,
-            &built_in_crates,
-            &use_renames,
-            &modules,
-            &mut dependencies,
-        );
+        filter_deps_ast(&crate_name, &use_renames, &modules, &mut dependencies);
     }
 
     // Deduplicate the list of dependencies
@@ -135,7 +123,6 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
 /// Filter out crates that don't need to be added as dependencies: abstract syntax tree-based version.
 fn filter_deps_ast(
     crate_name: &str,
-    built_in_crates: &[&str; 6],
     use_renames: &[String],
     modules: &[String],
     dependencies: &mut Vec<String>,
@@ -143,7 +130,7 @@ fn filter_deps_ast(
     profile_fn!(filter_deps_ast);
     let crate_name_string = crate_name.to_string();
     // Filter out "crate" entries
-    if !built_in_crates.contains(&crate_name)
+    if !&BUILT_IN_CRATES.contains(&crate_name)
         && !use_renames.contains(&crate_name_string)
         && !modules.contains(&crate_name_string)
     {
@@ -210,7 +197,7 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     impl<'a> Visit<'a> for FindCrates {
         fn visit_use_tree(&mut self, node: &'a syn::UseTree) {
             profile_fn!(visit_use_tree);
-            // eprintln!("node={node:#?}");
+            eprintln!("node={node:#?}");
             if let UseTree::Group(_use_group) = node {
                 syn::visit::visit_use_tree(self, node);
             } else {
@@ -274,79 +261,83 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     finder.extern_crates
 }
 
-/// Infer dependencies from source code to put in a Cargo.toml.
+/// Infer dependencxxies from source code to put in a Cargo.toml.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     profile_fn!(infer_deps_from_source);
-    let use_regex: &Regex = regex!(r"(?m)^[\s]*use\s+([^;{]+)");
+
     let macro_use_regex: &Regex = regex!(r"(?m)^[\s]*#\[macro_use\((\w+)\)");
     let extern_crate_regex: &Regex = regex!(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)");
 
-    debug_log!("In code_utils::infer_deps_from_source");
     let use_renames = find_use_renames_source(code);
     let modules = find_modules_source(code);
-
     let mut dependencies = Vec::new();
 
-    let built_in_crates = [
-        "std",
-        "core",
-        "alloc",
-        "collections",
-        "fmt",
-        "crate",
-        "super",
-    ];
+    let use_crates = if let Ok(ast) = extract_and_wrap_uses(code) {
+        find_use_crates_ast(&ast)
+    } else {
+        vec![]
+    };
+    eprintln!("use_crates={use_crates:#?}");
 
-    for cap in use_regex.captures_iter(code) {
-        let crate_name = cap[1].to_string();
-
-        debug_log!("dependency={crate_name}");
-        filter_deps_source(
-            &crate_name,
-            &built_in_crates,
-            &use_renames,
-            &modules,
-            &mut dependencies,
-        );
+    for crate_name in &use_crates {
+        println!("dependency={crate_name}");
+        filter_deps_source(crate_name, &use_renames, &modules, &mut dependencies);
     }
 
     // Similar checks for other regex patterns
 
     for cap in macro_use_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
-        filter_deps_source(
-            &crate_name,
-            &built_in_crates,
-            &use_renames,
-            &modules,
-            &mut dependencies,
-        );
+        filter_deps_source(&crate_name, &use_renames, &modules, &mut dependencies);
     }
 
     for cap in extern_crate_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
-        filter_deps_source(
-            &crate_name,
-            &built_in_crates,
-            &use_renames,
-            &modules,
-            &mut dependencies,
-        );
+        filter_deps_source(&crate_name, &use_renames, &modules, &mut dependencies);
     }
+
     // Deduplicate the list of dependencies
     dependencies.sort();
     dependencies.dedup();
 
-    debug_log!("dependencies from source={dependencies:#?}");
+    println!("dependencies from source={dependencies:#?}");
     dependencies
+}
+
+// Function to extract use statements and wrap in braces for parsing
+fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
+    // Step 1: Capture `use` statements
+    let use_simple_regex: &Regex = regex!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
+    let use_nested_regex: &Regex = regex!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
+
+    let mut use_statements: Vec<String> = vec![];
+
+    for cap in use_simple_regex.captures_iter(source) {
+        let use_string = cap[1].to_string();
+        use_statements.push(use_string);
+    }
+    for cap in use_nested_regex.captures_iter(source) {
+        let use_string = cap[1].to_string();
+        use_statements.push(use_string);
+    }
+
+    // Step 2: Wrap with braces
+    let wrapped_block = format!("{{\n{}\n}}", use_statements.join("\n"));
+    eprintln!("wrapped_block={wrapped_block}");
+
+    // Step 3: Parse as `syn::Expr`
+    let parsed_expr: Expr = parse_str(&wrapped_block)?;
+    eprintln!("parsed_expr={parsed_expr:#?}");
+
+    // Return wrapped in `Ast::Expr`
+    Ok(Ast::Expr(parsed_expr))
 }
 
 /// Filter out crates that don't need to be added as dependencies: fallback version using regex on source code.
 fn filter_deps_source(
     crate_name: &str,
-    built_in_crates: &[&str; 7],
     use_renames: &[String],
     modules: &[String],
     dependencies: &mut Vec<String>,
@@ -362,8 +353,8 @@ fn filter_deps_source(
 
     let dep_string = dep.to_owned();
 
-    debug_log!("dep_string={dep_string}, built_in_crates={built_in_crates:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
-    if !built_in_crates.contains(&dep)
+    debug_log!("dep_string={dep_string}, BUILT_IN_CRATES={BUILT_IN_CRATES:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
+    if !&BUILT_IN_CRATES.contains(&dep)
         && !use_renames.contains(&dep_string)
         && !modules.contains(&dep_string)
     {
@@ -458,7 +449,7 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
         // Try putting the expression in braces.
         let string = format!(r"{{{rs_source}}}");
         let str = string.as_str();
-        // log!(V::N, "str={str}");
+        // vlog!(V::N, "str={str}");
 
         expr = syn::parse_str::<Expr>(str);
     }

@@ -23,6 +23,7 @@
 - [ ]  Try going back to derive macro with declarative macro to expand the attributes. Problem with attrib macro is the AST isn't
         editable in the way we want, it just points to spans that get resolved later. See bank/syn_parse_mappings.rs for nice format;
 - [ ]  Decide whether to decommission REPL delete function - keep list
+- [ ]  filter_deps_source and filter_deps_ast in code_utils: maybe streamline by passing in a vec of all identified crates.
 - [ ]  Test [profile.dev] optimisation level
 - [ ]  Check dead code & other #[cfg[allow(...)]; look into factoring over-long gen_build_run
 - [ ]  Look for code smells

@@ -41,6 +41,7 @@ pub use shared::{
 // pub use termbg;
 
 // Common constants and statics
+pub const BUILT_IN_CRATES: [&str; 6] = ["std", "core", "alloc", "collections", "fmt", "crate"];
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
 pub const FLOWER_BOX_LEN: usize = 70;
 pub const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");

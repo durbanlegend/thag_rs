@@ -17,7 +17,7 @@ It also supports scripting via shebangs, building executables from your snippets
 If you import dependencies via explicit `use` statements, `thag_rs` will usually be able to resolve them for you automatically by doing a Cargo search and inserting a basic `<dependency> = "<current version>"` entry in the Cargo.toml file it generates behind the scenes.
 Alternatively, you can embed any valid Cargo manifest info, such as features, specific versions, private repos, optimisation levels etc., in a "toml block" comment.
 
-`thag_rs` includes a demo library of over 180 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
+`thag_rs` includes a demo library of over 190 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
 ## Quick start: ways to run the `thag` command
 

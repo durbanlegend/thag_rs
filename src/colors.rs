@@ -546,7 +546,7 @@ impl Lvl {
 
 impl From<&Lvl> for u8 {
     fn from(message_level: &Lvl) -> Self {
-        Self::from(&XtermColor::from(&MessageStyle::from(message_level)))
+        Self::from(&XtermColor::from(message_level))
     }
 }
 
@@ -933,6 +933,12 @@ impl From<&MessageStyle> for XtermColor {
             MessageStyle::Xterm256DarkDebug => Self::BondiBlue,
             MessageStyle::Xterm256DarkGhost => Self::Silver,
         }
+    }
+}
+
+impl From<&Lvl> for XtermColor {
+    fn from(message_level: &Lvl) -> Self {
+        Self::from(&MessageStyle::from(message_level))
     }
 }
 

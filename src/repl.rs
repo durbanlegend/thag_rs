@@ -2,8 +2,7 @@
 use crate::builder::process_expr;
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
 use crate::tui_editor::{
-    dethagomize, script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
-    TermScopeGuard,
+    script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, TermScopeGuard,
 };
 use crate::{
     cprtln, cvprtln, get_max_key_len, get_verbosity, key, regex, vlog, BuildState, Cli,
@@ -614,13 +613,22 @@ fn review_history(
         eprintln!("saved_history={saved_history}");
         history_mut.clear()?;
         for line in saved_history.lines() {
-            let entry = dethagomize(line);
+            let entry = decode(line);
             // eprintln!("saving entry={entry}");
             let _ = history_mut.save(HistoryItem::from_command_line(entry))?;
         }
         history_mut.sync()?;
     }
     Ok(())
+}
+
+/// Convert the `reedline` file-backed history newline sequence <\n> into the '\n' (0xa) character for which it stands.
+#[must_use]
+#[allow(clippy::missing_panics_doc)]
+pub fn decode(input: &str) -> String {
+    let re = regex!(r"(<\\n>)");
+    let lf = std::str::from_utf8(&[10_u8]).unwrap();
+    re.replace_all(input, lf).to_string()
 }
 
 /// Edit the history.

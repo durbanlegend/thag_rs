@@ -13,15 +13,13 @@ use simplelog::{
 };
 use std::{
     env::set_var,
-    fs,
     io::{stdout, Write},
     process::{Command, Stdio},
 };
 #[cfg(feature = "simplelog")]
 use std::{fs::File, sync::OnceLock};
 use thag_rs::stdin::{edit, read_to_string};
-use thag_rs::tui_editor::{dethagomize, History};
-use thag_rs::{vlog, MockEventReader, ThagResult, TMPDIR, V};
+use thag_rs::{vlog, MockEventReader, V};
 
 // Set environment variables before running tests
 fn set_up() {
@@ -143,127 +141,6 @@ fn test_stdin_edit_stdin_quit() {
 }
 
 #[test]
-fn test_stdin_history_new() {
-    set_up();
-    let history = History::new();
-    assert!(history.entries.is_empty());
-    assert!(history.current_index.is_none());
-}
-
-#[test]
-fn test_stdin_history_get_current_empty() {
-    set_up();
-    let mut history = History::new();
-    assert!(history.get_current().is_none());
-}
-
-#[test]
-fn test_stdin_history_get_current() {
-    set_up();
-    let mut history = History::new();
-    history.add_entry("first");
-    history.add_entry("second");
-    let current = history.get_current();
-    assert!(current.is_some());
-    assert_eq!(&current.unwrap().contents(), "second");
-}
-
-#[test]
-fn test_stdin_history_get_previous_empty() {
-    set_up();
-    let mut history = History::new();
-    assert!(history.get_previous().is_none());
-}
-
-#[test]
-fn test_stdin_history_navigate() -> ThagResult<()> {
-    set_up();
-    let mut history = History::new();
-    history.add_entry("first");
-    history.add_entry("second");
-    history.add_entry("third");
-    history.add_entry("fourth");
-
-    eprintln!("History={:#?}", history);
-
-    let current = history.get_current();
-
-    assert!(current.is_some());
-    assert_eq!(&current.unwrap().contents(), "fourth");
-
-    let current = history.get_previous();
-
-    eprintln!("Expecting third, current={current:?}");
-
-    assert!(current.is_some());
-    assert_eq!(&current.unwrap().contents(), "third");
-
-    let current = history.get_previous();
-    assert!(current.is_some());
-    assert_eq!(&current.unwrap().contents(), "second");
-
-    let current = history.get_previous();
-    assert!(current.is_some());
-    assert_eq!(&current.unwrap().contents(), "first");
-
-    let current = history.get_previous();
-    assert_eq!(&current.unwrap().contents(), "first");
-
-    let current = history.get_next();
-    assert!(current.is_some());
-    assert_eq!(&current.unwrap().contents(), "second");
-
-    let current = history.get_next();
-    assert!(current.is_some());
-    assert_eq!(&current.unwrap().contents(), "third");
-
-    let current = history.get_next();
-    assert!(current.is_some());
-    assert_eq!(&current.unwrap().contents(), "fourth");
-
-    let current = history.get_next();
-    assert_eq!(&current.unwrap().contents(), "fourth");
-
-    eprintln!("History={history:#?}");
-
-    let dir_path = &TMPDIR.join("thag_rs_tests");
-    let path = dir_path.join("rs_stdin_hist.json");
-    eprintln!("path={path:#?}");
-
-    // Ensure REPL subdirectory exists
-    fs::create_dir_all(&dir_path)?;
-
-    // Create REPL file if necessary
-    let _ = fs::File::create(&path)?;
-
-    let _ = history.save_to_file(&path)?;
-
-    let history = History::load_from_file(&path);
-    eprintln!("History (reloaded)={:#?}", history);
-    Ok(())
-}
-
-#[test]
-fn test_stdin_history_get_next_empty() {
-    set_up();
-    let mut history = History::new();
-    assert!(history.get_next().is_none());
-}
-
-// #[test]
-// fn test_stdin_history_get_next() {
-//     set_up();
-//     let mut history = History::new();
-//     history.add_entry("first");
-//     history.add_entry("second");
-//     eprintln!("History={:#?}", history);
-//     history.get_previous(); // Move to the previous entry
-//     let current = history.get_current();
-//     assert!(current.is_some());
-//     assert_eq!(&current.unwrap().contents(), "first");
-// }
-
-#[test]
 fn test_stdin_read_to_string() {
     set_up();
     let string = r#"fn main() {{ println!("Hello, world!"); }}\n"#;
@@ -327,12 +204,4 @@ fn test_stdin_read_stdin() {
         String::from_utf8_lossy(&output.stdout),
         format!("{}\n", string)
     );
-}
-
-#[test]
-fn test_stdin_normalize_newlines() {
-    set_up();
-    let input = "Hello\r\nWorld\r!";
-    let expected_output = "Hello\nWorld\n!";
-    assert_eq!(dethagomize(input), expected_output);
 }

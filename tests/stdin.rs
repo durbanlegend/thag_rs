@@ -20,7 +20,7 @@ use std::{
 #[cfg(feature = "simplelog")]
 use std::{fs::File, sync::OnceLock};
 use thag_rs::stdin::{edit, read_to_string};
-use thag_rs::tui_editor::{normalize_newlines, History};
+use thag_rs::tui_editor::{dethagomize, History};
 use thag_rs::{vlog, MockEventReader, ThagResult, TMPDIR, V};
 
 // Set environment variables before running tests
@@ -334,5 +334,5 @@ fn test_stdin_normalize_newlines() {
     set_up();
     let input = "Hello\r\nWorld\r!";
     let expected_output = "Hello\nWorld\n!";
-    assert_eq!(normalize_newlines(input), expected_output);
+    assert_eq!(dethagomize(input), expected_output);
 }

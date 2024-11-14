@@ -2,7 +2,8 @@
 use crate::builder::process_expr;
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
 use crate::tui_editor::{
-    script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, TermScopeGuard,
+    dethagomize, script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
+    TermScopeGuard,
 };
 use crate::{
     cprtln, cvprtln, get_max_key_len, get_verbosity, key, regex, vlog, BuildState, Cli,
@@ -613,8 +614,9 @@ fn review_history(
         eprintln!("saved_history={saved_history}");
         history_mut.clear()?;
         for line in saved_history.lines() {
-            // eprintln!("saving line={line}");
-            let _ = history_mut.save(HistoryItem::from_command_line(line))?;
+            let entry = dethagomize(line);
+            // eprintln!("saving entry={entry}");
+            let _ = history_mut.save(HistoryItem::from_command_line(entry))?;
         }
         history_mut.sync()?;
     }

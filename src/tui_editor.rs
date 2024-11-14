@@ -18,7 +18,6 @@ use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
 use ratatui::text::Line;
 use ratatui::widgets::{block::Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
-use regex::Regex;
 use scopeguard::{guard, ScopeGuard};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
@@ -584,7 +583,7 @@ where
         };
 
         if let Paste(ref data) = event {
-            textarea.insert_str(normalize_newlines(data));
+            textarea.insert_str(dethagomize(data));
         } else if let Event::Key(key_event) = event {
             // Ignore key release, which creates an unwanted second event in Windows
             if !matches!(key_event.kind, KeyEventKind::Press) {
@@ -1028,14 +1027,21 @@ pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     .split(popup_layout[1])[1]
 }
 
-/// Convert the different newline sequences for Windows and other platforms into the common
-/// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
-/// it stands).
+/// Convert the different newline sequences for Windows and other platforms into the common standard
+/// sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which it stands).
+///
+/// Also remove backslash escapes from double quotes.
 #[must_use]
-pub fn normalize_newlines(input: &str) -> String {
-    let re: &Regex = regex!(r"\r\n?");
+#[allow(clippy::missing_panics_doc)]
+pub fn dethagomize(input: &str) -> String {
+    let re1 = regex!(r"(\\r\\n|\\r|\\n)");
+    let re2 = regex!(r#"(\\")"#);
+    let lf = std::str::from_utf8(&[10_u8]).unwrap();
+    let s = re1.replace_all(input, lf);
+    // Remove backslash escapes from double quotes.
+    let dq = r#"""#;
 
-    re.replace_all(input, "\n").to_string()
+    re2.replace_all(&s, dq).to_string()
 }
 
 /// Reset the terminal.
@@ -1183,6 +1189,20 @@ macro_rules! key_mappings {
             ),*
         ]
     };
+}
+
+#[macro_export]
+/// Return a lazy static value representing the maximum length of the key descriptor for a set of styled and
+/// formatted key / description bindings to be displayed on screen. This macro expects to find a local function
+/// `get_max_key_len($formatted_bindings)`, where `$formatted_bindings` is the argument passed to this macro.
+/// The suggested format of this argument is `&[(String, String)]`.
+macro_rules! get_max_key_len {
+    ($formatted_bindings:ident $(,)?) => {{
+        use std::sync::OnceLock;
+
+        static MAX_KEY_LEN: OnceLock<usize> = OnceLock::new();
+        MAX_KEY_LEN.get_or_init(|| get_max_key_len($formatted_bindings))
+    }};
 }
 
 pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![

@@ -5,20 +5,21 @@ use crate::tui_editor::{
     script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, TermScopeGuard,
 };
 use crate::{
-    cprtln, cvprtln, get_verbosity, key, regex, vlog, BuildState, Cli, CrosstermEventReader,
-    EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError, ThagResult, V,
+    cprtln, cvprtln, get_max_key_len, get_verbosity, key, regex, vlog, BuildState, Cli,
+    CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError,
+    ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
 use crossterm::event::{KeyEvent, KeyEventKind};
 use edit::edit_file;
 use firestorm::profile_fn;
-use nu_ansi_term::Style as NuStyle;
+use nu_ansi_term::{Color, Style as NuStyle};
 use ratatui::style::{Style, Stylize};
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
-    EditCommand, Emacs, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers, Keybindings,
-    MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline,
-    ReedlineEvent, ReedlineMenu, Signal,
+    EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
+    Keybindings, MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch,
+    PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
 use std::borrow::Cow;
@@ -330,8 +331,12 @@ pub fn run_repl(
     // println!("{:#?}", keybindings.get_keybindings());
 
     let edit_mode = Box::new(Emacs::new(keybindings.clone()));
-
-    // let highlighter = Box::<ExampleHighlighter>::default();
+    let mut highlighter = Box::new(ExampleHighlighter::new(cmd_vec.clone()));
+    highlighter.change_colors(
+        Color::from(&Lvl::HEAD),
+        Color::from(&Lvl::EMPH),
+        Color::from(&Lvl::NORM),
+    );
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
@@ -339,19 +344,42 @@ pub fn run_repl(
         ))
         .with_history(history)
         .with_history_exclusion_prefix(Some("q".into()))
-        // .with_highlighter(highlighter)
+        .with_highlighter(highlighter)
         .with_completer(completer)
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
 
     let bindings = keybindings.get_keybindings();
+    let reedline_events = bindings.values().cloned().collect::<Vec<ReedlineEvent>>();
+    let max_cmd_len = get_max_cmd_len(&reedline_events);
 
     let prompt = ReplPrompt("repl");
     let cmd_list = &cmd_vec.join(", ");
+    disp_repl_banner(cmd_list);
 
     // let mut hist = line_editor.with_history(history);
-    disp_repl_banner(cmd_list);
     // let hist_str = read_to_string(&history_path)?;
+
+    // Collect and format key bindings while user is taking in the display banner
+    // NB: Can't extract this to a method either, because reedline does not expose KeyCombination.
+    let named_reedline_events = bindings
+        .iter()
+        .map(|(key_combination, reedline_event)| {
+            let key_modifiers = key_combination.modifier;
+            let key_code = key_combination.key_code;
+            let modifier = format_key_modifier(key_modifiers);
+            let key = format_key_code(key_code);
+            let key_desc = format!("{modifier}{key}");
+            (key_desc, reedline_event)
+        })
+        // .cloned()
+        .collect::<Vec<(String, &ReedlineEvent)>>();
+    let formatted_bindings = format_bindings(&named_reedline_events, max_cmd_len);
+
+    // Determine the length of the longest key description for padding
+    let max_key_len = *get_max_key_len!(formatted_bindings);
+    // eprintln!("max_key_len={max_key_len}");
+
     loop {
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {
@@ -441,31 +469,6 @@ pub fn run_repl(
                         )?;
                     }
                     ReplCommand::Keys => {
-                        let reedline_events =
-                            bindings.values().cloned().collect::<Vec<ReedlineEvent>>();
-                        let max_cmd_len = get_max_cmd_len(&reedline_events);
-
-                        // Collect and format key bindings
-                        // NB: Can't extract this to a method either, because reedline does not expose KeyCombination.
-                        let named_reedline_events = bindings
-                            .iter()
-                            .map(|(key_combination, reedline_event)| {
-                                let key_modifiers = key_combination.modifier;
-                                let key_code = key_combination.key_code;
-                                let modifier = format_key_modifier(key_modifiers);
-                                let key = format_key_code(key_code);
-                                let key_desc = format!("{}{}", modifier, key);
-                                (key_desc, reedline_event)
-                            })
-                            // .cloned()
-                            .collect::<Vec<(String, &ReedlineEvent)>>();
-                        let formatted_bindings =
-                            format_bindings(&named_reedline_events, max_cmd_len);
-
-                        // Determine the length of the longest key description for padding
-                        let max_key_len = get_max_key_len(formatted_bindings);
-                        // eprintln!("max_key_len={max_key_len}");
-
                         show_key_bindings(formatted_bindings, max_key_len);
                     }
                 }
@@ -747,18 +750,15 @@ fn save_file(
 }
 
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
-    static MAX_KEY_LEN: OnceLock<usize> = OnceLock::new();
-    *MAX_KEY_LEN.get_or_init(|| {
-        formatted_bindings
-            .iter()
-            .map(|(key_desc, _)| {
-                let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
-                let key_desc = format!("{key_desc}");
-                key_desc.len()
-            })
-            .max()
-            .unwrap_or(0)
-    })
+    formatted_bindings
+        .iter()
+        .map(|(key_desc, _)| {
+            let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
+            let key_desc = format!("{key_desc}");
+            key_desc.len()
+        })
+        .max()
+        .unwrap_or(0)
 }
 
 fn format_bindings(
@@ -796,6 +796,7 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     *MAX_CMD_LEN.get_or_init(|| {
         // Determine the length of the longest command for padding
         // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
+        let style = NuStyle::from(&Lvl::SUBH);
         let max_cmd_len = reedline_events
             .iter()
             .map(|reedline_event| {
@@ -803,14 +804,14 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
                     edit_cmds
                         .iter()
                         .map(|cmd| {
-                            let key_desc = NuStyle::from(&Lvl::SUBH).paint(format!("{cmd:?}"));
+                            let key_desc = style.paint(format!("{cmd:?}"));
                             let key_desc = format!("{key_desc}");
                             key_desc.len()
                         })
                         .max()
                         .unwrap_or(0)
                 } else if !format!("{reedline_event}").starts_with("UntilFound") {
-                    let event_desc = NuStyle::from(&Lvl::SUBH).paint(format!("{reedline_event:?}"));
+                    let event_desc = style.paint(format!("{reedline_event:?}"));
                     let event_desc = format!("{event_desc}");
                     event_desc.len()
                 } else {
@@ -832,10 +833,11 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
     );
 
     // Print the formatted and sorted key bindings
+    let style = NuStyle::from(&Lvl::HEAD);
     for (key_desc, cmd_desc) in formatted_bindings {
-        let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
+        let key_desc = style.paint(key_desc);
         let key_desc = format!("{key_desc}");
-        println!("{:<width$}    {}", key_desc, cmd_desc, width = max_key_len);
+        println!("{key_desc:<width$}    {cmd_desc}", width = max_key_len);
     }
     println!();
 }

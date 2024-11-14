@@ -384,3 +384,17 @@ macro_rules! debug_log {
         }
     };
 }
+
+#[macro_export]
+/// Return a lazy static value representing the maximum length of the key descriptor for a set of styled and
+/// formatted key / description bindings to be displayed on screen. This macro expects to find a local function
+/// `get_max_key_len($formatted_bindings)`, where `$formatted_bindings` is the argument passed to this macro.
+/// The suggested format of this argument is `&[(String, String)]`.
+macro_rules! get_max_key_len {
+    ($formatted_bindings:ident $(,)?) => {{
+        use std::sync::OnceLock;
+
+        static MAX_KEY_LEN: OnceLock<usize> = OnceLock::new();
+        MAX_KEY_LEN.get_or_init(|| get_max_key_len($formatted_bindings))
+    }};
+}

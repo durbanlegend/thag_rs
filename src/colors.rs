@@ -1086,6 +1086,13 @@ impl From<&MessageLevel> for RataStyle {
     }
 }
 
+impl From<&MessageLevel> for Color {
+    fn from(lvl: &MessageLevel) -> Self {
+        profile_fn!(color_from_lvl);
+        Self::from(&XtermColor::from(&MessageStyle::from(lvl)))
+    }
+}
+
 /// Main function for use by testing or the script runner.
 #[allow(dead_code)]
 pub fn main() {

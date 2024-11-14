@@ -287,19 +287,17 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
                     config.proc_macros.proc_macro_crate_path
                 },
             );
-            let demo_proc_macros_dir = if let Some(ref demo_proc_macros_dir) =
-                maybe_demo_proc_macros_dir
-            {
-                cvprtln!(Lvl::BRI, V::V, "Found {demo_proc_macros_dir:#?}.");
-                demo_proc_macros_dir
-            } else {
+            let demo_proc_macros_dir = maybe_demo_proc_macros_dir.as_ref().map_or_else(|| {
                 cvprtln!(
                     Lvl::BRI,
                     V::V,
                     r#"Missing `config.proc_macros.proc_macro_crate_path` in config file for "use thag_demo_proc_macros;": defaulting to "demo/proc_macros"."#
                 );
                 "demo/proc_macros"
-            };
+            }, |demo_proc_macros_dir| {
+                cvprtln!(Lvl::BRI, V::V, "Found {demo_proc_macros_dir:#?}.");
+                demo_proc_macros_dir
+            });
 
             let path = PathBuf::from_str(demo_proc_macros_dir).unwrap();
             let path = if path.is_absolute() {

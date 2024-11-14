@@ -357,9 +357,6 @@ pub fn run_repl(
     let cmd_list = &cmd_vec.join(", ");
     disp_repl_banner(cmd_list);
 
-    // let mut hist = line_editor.with_history(history);
-    // let hist_str = read_to_string(&history_path)?;
-
     // Collect and format key bindings while user is taking in the display banner
     // NB: Can't extract this to a method either, because reedline does not expose KeyCombination.
     let named_reedline_events = bindings
@@ -750,10 +747,11 @@ fn save_file(
 }
 
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
+    let style = NuStyle::from(&Lvl::HEAD);
     formatted_bindings
         .iter()
         .map(|(key_desc, _)| {
-            let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
+            let key_desc = style.paint(key_desc);
             let key_desc = format!("{key_desc}");
             key_desc.len()
         })
@@ -905,11 +903,10 @@ pub fn format_key_code(key_code: KeyCode) -> String {
 pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     static EVENT_DESC_MAP: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
     let event_desc_map = EVENT_DESC_MAP.get_or_init(|| {
-        let mut map = HashMap::new();
-        for entry in EVENT_DESCS {
-            map.insert(entry[0], entry[1]);
-        }
-        map
+        EVENT_DESCS
+            .iter()
+            .map(|[k, d]| (*k, *d))
+            .collect::<HashMap<&'static str, &'static str>>()
     });
 
     let event_highlight = NuStyle::from(&Lvl::SUBH).paint(event_name);
@@ -930,17 +927,17 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> String {
     static CMD_DESC_MAP: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
     let cmd_desc_map: &HashMap<&str, &str> = CMD_DESC_MAP.get_or_init(|| {
-        let mut map = HashMap::new();
-        for entry in CMD_DESCS {
-            map.insert(entry[0], entry[1]);
-        }
-        map
+        CMD_DESCS
+            .iter()
+            .map(|[k, d]| (*k, *d))
+            .collect::<HashMap<&'static str, &'static str>>()
     });
 
     let mut cmd_descriptions = Vec::new();
+    let style = NuStyle::from(&Lvl::SUBH);
 
     for cmd in edit_cmds {
-        let cmd_highlight = NuStyle::from(&Lvl::SUBH).paint(format!("{cmd:?}"));
+        let cmd_highlight = style.paint(format!("{cmd:?}"));
         let cmd_highlight = format!("{cmd_highlight}");
         let cmd_desc = match cmd {
             EditCommand::MoveToStart { select }

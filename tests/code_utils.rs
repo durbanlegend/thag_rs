@@ -11,6 +11,31 @@ mod tests {
         extract_manifest, Ast,
     };
 
+    // Example AST representing use and extern crate statements
+    const IMPORTS: &str = r#"
+        extern crate foo;
+        use bar::baz;
+        mod glorp;
+        use {
+            crokey::{
+                crossterm::{
+                    event::{read, Event},
+                    style::Stylize,
+                    terminal,
+                },
+                key, KeyCombination, KeyCombinationFormat,
+            },
+            glorp::thagomize,
+            serde::Deserialize,
+            std::collections::HashMap,
+            toml,
+        };
+        use snarf as qux;
+        use std::fmt;
+        use qux::corge;
+        "#;
+    const EXPECTED_CRATES: &[&str] = &["bar", "crokey", "foo", "serde", "snarf", "toml"];
+
     // Set environment variables before running tests
     fn set_up() {
         std::env::set_var("TEST_ENV", "1");
@@ -59,35 +84,10 @@ mod tests {
     fn test_code_utils_infer_deps_from_nested_ast() {
         set_up();
         // Example AST representing use and extern crate statements
-        let ast = syn::parse_file(
-            r#"
-            extern crate foo;
-            use bar::baz;
-            mod glorp;
-            use {
-                crokey::{
-                    crossterm::{
-                        event::{read, Event},
-                        style::Stylize,
-                        terminal,
-                    },
-                    key, KeyCombination, KeyCombinationFormat,
-                },
-                glorp::thagomize,
-                serde::Deserialize,
-                std::collections::HashMap,
-                toml,
-            };
-            use snarf as qux;
-            use std::fmt;
-            use qux::corge;
-            "#,
-        )
-        .unwrap();
+        let ast = syn::parse_file(IMPORTS).unwrap();
         let ast = Ast::File(ast);
-
         let deps = infer_deps_from_ast(&ast);
-        assert_eq!(deps, vec!["bar", "crokey", "foo", "serde", "snarf", "toml"]);
+        assert_eq!(&deps, EXPECTED_CRATES);
     }
 
     #[test]
@@ -108,32 +108,8 @@ mod tests {
     #[test]
     fn test_code_utils_infer_deps_from_nested_source() {
         set_up();
-        // Example AST representing use and extern crate statements
-        let source_code = r#"
-            extern crate foo;
-            use bar::baz;
-            mod glorp;
-            use {
-                crokey::{
-                    crossterm::{
-                        event::{read, Event},
-                        style::Stylize,
-                        terminal,
-                    },
-                    key, KeyCombination, KeyCombinationFormat,
-                },
-                glorp::thagomize,
-                serde::Deserialize,
-                std::collections::HashMap,
-                toml,
-            };
-            use snarf as qux;
-            use std::fmt;
-            use qux::corge;
-            "#;
-
-        let deps = infer_deps_from_source(source_code);
-        assert_eq!(deps, vec!["bar", "crokey", "foo", "serde", "snarf", "toml"]);
+        let deps = infer_deps_from_source(IMPORTS);
+        assert_eq!(&deps, EXPECTED_CRATES);
     }
 
     #[test]

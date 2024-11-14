@@ -25,7 +25,7 @@ use std::{
 };
 
 use syn::{
-    parse_str,
+    parse_file,
     visit::Visit,
     visit_mut::{self, VisitMut},
     AttrStyle,
@@ -281,11 +281,8 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 
     let modules = find_modules_source(code);
 
-    let mut dependencies = if let Ok(ast) = extract_and_wrap_uses(code) {
-        find_use_crates_ast(&ast)
-    } else {
-        vec![]
-    };
+    let mut dependencies =
+        extract_and_wrap_uses(code).map_or_else(|_| vec![], |ast| find_use_crates_ast(&ast));
     // eprintln!("dependencies (before)={dependencies:#?}");
 
     let to_remove: HashSet<String> = use_renames_to
@@ -348,16 +345,12 @@ fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
         use_statements.push(use_string);
     }
 
-    // Step 2: Wrap with braces
-    let wrapped_block = format!("{{\n{}\n}}", use_statements.join("\n"));
-    // eprintln!("wrapped_block={wrapped_block}");
+    // Step 2: Parse as `syn::File`
+    let ast: File = parse_file(&use_statements.join("\n"))?;
+    // eprintln!("ast={ast:#?}");
 
-    // Step 3: Parse as `syn::Expr`
-    let parsed_expr: Expr = parse_str(&wrapped_block)?;
-    // eprintln!("parsed_expr={parsed_expr:#?}");
-
-    // Return wrapped in `Ast::Expr`
-    Ok(Ast::Expr(parsed_expr))
+    // Return wrapped in `Ast::File`
+    Ok(Ast::File(ast))
 }
 
 /// Identify use ... as statements for inclusion in / exclusion from Cargo.toml metadata.

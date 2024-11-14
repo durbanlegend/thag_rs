@@ -6,8 +6,8 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [dependencies]
-# const_gen_proc_macro = "0.1.1"
-const_gen_proc_macro = { version = "0.1.1", path = "/Users/donf/projects/const_gen_proc_macro/lib" }
+const_gen_proc_macro = "0.1.1"
+# const_gen_proc_macro = { path = "/Users/donf/projects/const_gen_proc_macro/lib" }
 thag_proc_macros = { version = "0.1.0", path = "src/proc_macros" }
 crossterm = "0.28"
 darling = "0.20.10"

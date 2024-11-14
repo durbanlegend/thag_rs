@@ -14,7 +14,7 @@ use crossterm::event::{KeyEvent, KeyEventKind};
 use edit::edit_file;
 use firestorm::profile_fn;
 use nu_ansi_term::{Color, Style as NuStyle};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::{Style as RataStyle, Stylize};
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
     EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
@@ -263,6 +263,18 @@ impl Prompt for ReplPrompt {
             prefix, history_search.term
         ))
     }
+}
+
+fn get_heading_style() -> &'static NuStyle {
+    static STYLE: OnceLock<NuStyle> = OnceLock::new();
+    let style = STYLE.get_or_init(|| NuStyle::from(&Lvl::HEAD));
+    style
+}
+
+fn get_subhead_style() -> &'static NuStyle {
+    static STYLE: OnceLock<NuStyle> = OnceLock::new();
+    let style = STYLE.get_or_init(|| NuStyle::from(&Lvl::SUBH));
+    style
 }
 
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
@@ -535,7 +547,7 @@ fn tui(
 
     let display = KeyDisplay {
         title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: Style::from(&Lvl::SUBH).bold(),
+        title_style: RataStyle::from(&Lvl::SUBH).bold(),
         remove_keys: &[""; 0],
         add_keys: &add_keys,
     };
@@ -633,7 +645,7 @@ pub fn edit_history<R: EventReader + Debug>(
     ];
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: Style::from(&Lvl::HEAD).bold(),
+        title_style: RataStyle::from(&Lvl::HEAD).bold(),
         remove_keys: &["F7", "F8"],
         add_keys: &binding,
     };
@@ -747,7 +759,7 @@ fn save_file(
 }
 
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
-    let style = NuStyle::from(&Lvl::HEAD);
+    let style: NuStyle = *get_heading_style();
     formatted_bindings
         .iter()
         .map(|(key_desc, _)| {
@@ -794,7 +806,7 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     *MAX_CMD_LEN.get_or_init(|| {
         // Determine the length of the longest command for padding
         // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
-        let style = NuStyle::from(&Lvl::SUBH);
+        let style = get_subhead_style();
         let max_cmd_len = reedline_events
             .iter()
             .map(|reedline_event| {
@@ -831,7 +843,7 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
     );
 
     // Print the formatted and sorted key bindings
-    let style = NuStyle::from(&Lvl::HEAD);
+    let style = get_heading_style();
     for (key_desc, cmd_desc) in formatted_bindings {
         let key_desc = style.paint(key_desc);
         let key_desc = format!("{key_desc}");
@@ -909,7 +921,7 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
             .collect::<HashMap<&'static str, &'static str>>()
     });
 
-    let event_highlight = NuStyle::from(&Lvl::SUBH).paint(event_name);
+    let event_highlight = get_subhead_style().paint(event_name);
     let event_highlight = format!("{event_highlight}");
     let event_desc = format!(
         "{:<max_cmd_len$} {}",
@@ -922,9 +934,8 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 /// Helper function to format `EditCommand` and include its doc comments
 /// # Panics
 /// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
-#[allow(clippy::too_many_lines)]
 #[must_use]
-pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> String {
+pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> String {
     static CMD_DESC_MAP: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
     let cmd_desc_map: &HashMap<&str, &str> = CMD_DESC_MAP.get_or_init(|| {
         CMD_DESCS
@@ -933,117 +944,126 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
             .collect::<HashMap<&'static str, &'static str>>()
     });
 
-    let mut cmd_descriptions = Vec::new();
-    let style = NuStyle::from(&Lvl::SUBH);
+    let cmd_descriptions = edit_cmds
+        .iter()
+        .map(|cmd| format_cmd_desc(cmd, cmd_desc_map, max_cmd_len))
+        .collect::<Vec<String>>();
 
-    for cmd in edit_cmds {
-        let cmd_highlight = style.paint(format!("{cmd:?}"));
-        let cmd_highlight = format!("{cmd_highlight}");
-        let cmd_desc = match cmd {
-            EditCommand::MoveToStart { select }
-            | EditCommand::MoveToLineStart { select }
-            | EditCommand::MoveToEnd { select }
-            | EditCommand::MoveToLineEnd { select }
-            | EditCommand::MoveLeft { select }
-            | EditCommand::MoveRight { select }
-            | EditCommand::MoveWordLeft { select }
-            | EditCommand::MoveBigWordLeft { select }
-            | EditCommand::MoveWordRight { select }
-            | EditCommand::MoveWordRightStart { select }
-            | EditCommand::MoveBigWordRightStart { select }
-            | EditCommand::MoveWordRightEnd { select }
-            | EditCommand::MoveBigWordRightEnd { select } => format!(
-                "{:<max_cmd_len$} {}{}",
-                cmd_highlight,
-                cmd_desc_map
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&""),
-                if *select {
-                    ". Select the text between the current cursor position and destination"
-                } else {
-                    ", without selecting"
-                }
-            ),
-            EditCommand::InsertString(_)
-            | EditCommand::InsertNewline
-            | EditCommand::ReplaceChar(_)
-            | EditCommand::ReplaceChars(_, _)
-            | EditCommand::Backspace
-            | EditCommand::Delete
-            | EditCommand::CutChar
-            | EditCommand::BackspaceWord
-            | EditCommand::DeleteWord
-            | EditCommand::Clear
-            | EditCommand::ClearToLineEnd
-            | EditCommand::Complete
-            | EditCommand::CutCurrentLine
-            | EditCommand::CutFromStart
-            | EditCommand::CutFromLineStart
-            | EditCommand::CutToEnd
-            | EditCommand::CutToLineEnd
-            | EditCommand::CutWordLeft
-            | EditCommand::CutBigWordLeft
-            | EditCommand::CutWordRight
-            | EditCommand::CutBigWordRight
-            | EditCommand::CutWordRightToNext
-            | EditCommand::CutBigWordRightToNext
-            | EditCommand::PasteCutBufferBefore
-            | EditCommand::PasteCutBufferAfter
-            | EditCommand::UppercaseWord
-            | EditCommand::InsertChar(_)
-            | EditCommand::CapitalizeChar
-            | EditCommand::SwitchcaseChar
-            | EditCommand::SwapWords
-            | EditCommand::SwapGraphemes
-            | EditCommand::Undo
-            | EditCommand::Redo
-            | EditCommand::CutRightUntil(_)
-            | EditCommand::CutRightBefore(_)
-            | EditCommand::CutLeftUntil(_)
-            | EditCommand::CutLeftBefore(_)
-            | EditCommand::CutSelection
-            | EditCommand::CopySelection
-            | EditCommand::Paste
-            | EditCommand::SelectAll
-            | EditCommand::LowercaseWord => format!(
-                "{:<max_cmd_len$} {}",
-                cmd_highlight,
-                cmd_desc_map.get(format!("{cmd:?}").as_str()).unwrap_or(&"")
-            ),
-            EditCommand::MoveRightUntil { c: _, select }
-            | EditCommand::MoveRightBefore { c: _, select }
-            | EditCommand::MoveLeftUntil { c: _, select }
-            | EditCommand::MoveLeftBefore { c: _, select } => format!(
-                "{:<max_cmd_len$} {}. {}",
-                cmd_highlight,
-                cmd_desc_map
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&""),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveToPosition { position, select } => format!(
-                "{:<max_cmd_len$} {} {} {}",
-                cmd_highlight,
-                cmd_desc_map
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&""),
-                position,
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            // Add other EditCommand variants and their descriptions here
-            _ => format!("{:<width$}", cmd_highlight, width = max_cmd_len + 2),
-        };
-        cmd_descriptions.push(cmd_desc);
-    }
     cmd_descriptions.join(", ")
+}
+
+#[allow(clippy::too_many_lines)]
+fn format_cmd_desc(
+    cmd: &EditCommand,
+    cmd_desc_map: &HashMap<&str, &str>,
+    max_cmd_len: usize,
+) -> String {
+    let style = get_subhead_style();
+
+    let cmd_highlight = style.paint(format!("{cmd:?}"));
+    let cmd_highlight = format!("{cmd_highlight}");
+    match cmd {
+        EditCommand::MoveToStart { select }
+        | EditCommand::MoveToLineStart { select }
+        | EditCommand::MoveToEnd { select }
+        | EditCommand::MoveToLineEnd { select }
+        | EditCommand::MoveLeft { select }
+        | EditCommand::MoveRight { select }
+        | EditCommand::MoveWordLeft { select }
+        | EditCommand::MoveBigWordLeft { select }
+        | EditCommand::MoveWordRight { select }
+        | EditCommand::MoveWordRightStart { select }
+        | EditCommand::MoveBigWordRightStart { select }
+        | EditCommand::MoveWordRightEnd { select }
+        | EditCommand::MoveBigWordRightEnd { select } => format!(
+            "{:<max_cmd_len$} {}{}",
+            cmd_highlight,
+            cmd_desc_map
+                .get(format!("{cmd:?}").split_once(' ').unwrap().0)
+                .unwrap_or(&""),
+            if *select {
+                ". Select the text between the current cursor position and destination"
+            } else {
+                ", without selecting"
+            }
+        ),
+        EditCommand::InsertString(_)
+        | EditCommand::InsertNewline
+        | EditCommand::ReplaceChar(_)
+        | EditCommand::ReplaceChars(_, _)
+        | EditCommand::Backspace
+        | EditCommand::Delete
+        | EditCommand::CutChar
+        | EditCommand::BackspaceWord
+        | EditCommand::DeleteWord
+        | EditCommand::Clear
+        | EditCommand::ClearToLineEnd
+        | EditCommand::Complete
+        | EditCommand::CutCurrentLine
+        | EditCommand::CutFromStart
+        | EditCommand::CutFromLineStart
+        | EditCommand::CutToEnd
+        | EditCommand::CutToLineEnd
+        | EditCommand::CutWordLeft
+        | EditCommand::CutBigWordLeft
+        | EditCommand::CutWordRight
+        | EditCommand::CutBigWordRight
+        | EditCommand::CutWordRightToNext
+        | EditCommand::CutBigWordRightToNext
+        | EditCommand::PasteCutBufferBefore
+        | EditCommand::PasteCutBufferAfter
+        | EditCommand::UppercaseWord
+        | EditCommand::InsertChar(_)
+        | EditCommand::CapitalizeChar
+        | EditCommand::SwitchcaseChar
+        | EditCommand::SwapWords
+        | EditCommand::SwapGraphemes
+        | EditCommand::Undo
+        | EditCommand::Redo
+        | EditCommand::CutRightUntil(_)
+        | EditCommand::CutRightBefore(_)
+        | EditCommand::CutLeftUntil(_)
+        | EditCommand::CutLeftBefore(_)
+        | EditCommand::CutSelection
+        | EditCommand::CopySelection
+        | EditCommand::Paste
+        | EditCommand::SelectAll
+        | EditCommand::LowercaseWord => format!(
+            "{:<max_cmd_len$} {}",
+            cmd_highlight,
+            cmd_desc_map.get(format!("{cmd:?}").as_str()).unwrap_or(&"")
+        ),
+        EditCommand::MoveRightUntil { c: _, select }
+        | EditCommand::MoveRightBefore { c: _, select }
+        | EditCommand::MoveLeftUntil { c: _, select }
+        | EditCommand::MoveLeftBefore { c: _, select } => format!(
+            "{:<max_cmd_len$} {}. {}",
+            cmd_highlight,
+            cmd_desc_map
+                .get(format!("{cmd:?}").split_once(' ').unwrap().0)
+                .unwrap_or(&""),
+            if *select {
+                "Select the text between the current cursor position and destination"
+            } else {
+                "without selecting"
+            }
+        ),
+        EditCommand::MoveToPosition { position, select } => format!(
+            "{:<max_cmd_len$} {} {} {}",
+            cmd_highlight,
+            cmd_desc_map
+                .get(format!("{cmd:?}").split_once(' ').unwrap().0)
+                .unwrap_or(&""),
+            position,
+            if *select {
+                "Select the text between the current cursor position and destination"
+            } else {
+                "without selecting"
+            }
+        ),
+        // Add other EditCommand variants and their descriptions here
+        _ => format!("{:<width$}", cmd_highlight, width = max_cmd_len + 2),
+    }
 }
 
 /// Delete the temporary files used by the current REPL instance.

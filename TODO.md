@@ -26,9 +26,10 @@
         editable in the way we want, it just points to spans that get resolved later. See bank/syn_parse_mappings.rs for nice format;
 - [ ]  Decide whether to decommission REPL delete function - keep list
 - [ ]  Test [profile.dev] optimisation level
-- [ ]  Check dead code & other #[cfg[allow(...)]; look into factoring over-long gen_build_run
+- [ ]  Check dead code & other #(!)[allow(...)]; look into factoring over-long gen_build_run
 - [ ]  Look for code smells
 - [ ]  Look into fuzzing the tests such as test_merge_manifest.
+- [ ]  Consider dropping our termbg module if termbg 0.6.1 is working fine.
 - [ ]  Testing fib scripts: ls -1 demo/fib_*.rs | grep -v basic | grep -v binet | while read f; do echo $f;  cargo run -- $f -qq -- 100 | grep 354224848179261915075 || echo "...failed"; done
 
 ## Low Priority

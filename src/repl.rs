@@ -370,7 +370,19 @@ pub fn run_repl(
     disp_repl_banner(cmd_list);
 
     // Collect and format key bindings while user is taking in the display banner
-    let named_reedline_events = to_named_events(bindings);
+    // NB: Can't extract this to a method either, because reedline does not expose KeyCombination.
+    let named_reedline_events = bindings
+        .iter()
+        .map(|(key_combination, reedline_event)| {
+            let key_modifiers = key_combination.modifier;
+            let key_code = key_combination.key_code;
+            let modifier = format_key_modifier(key_modifiers);
+            let key = format_key_code(key_code);
+            let key_desc = format!("{modifier}{key}");
+            (key_desc, reedline_event)
+        })
+        // .cloned()
+        .collect::<Vec<(String, &ReedlineEvent)>>();
     let formatted_bindings = format_bindings(&named_reedline_events, max_cmd_len);
 
     // Determine the length of the longest key description for padding
@@ -476,21 +488,6 @@ pub fn run_repl(
         process_source(rs_source, build_state, args, proc_flags, start)?;
     }
     Ok(())
-}
-
-fn to_named_events(bindings: _) -> Vec<(String, &ReedlineEvent)> {
-    let named_reedline_events = bindings
-        .iter()
-        .map(|(key_combination, reedline_event)| {
-            let key_modifiers = key_combination.modifier;
-            let key_code = key_combination.key_code;
-            let modifier = format_key_modifier(key_modifiers);
-            let key = format_key_code(key_code);
-            let key_desc = format!("{modifier}{key}");
-            (key_desc, reedline_event)
-        })
-        .collect::<Vec<(String, &ReedlineEvent)>>();
-    named_reedline_events
 }
 
 /// Process a source string through to completion according to the arguments passed in.
@@ -818,38 +815,34 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     static MAX_CMD_LEN: OnceLock<usize> = OnceLock::new();
     *MAX_CMD_LEN.get_or_init(|| {
         // Determine the length of the longest command for padding
+        // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
         let style = get_subhead_style();
-        let max_cmd_len = get_max_cmd_len(reedline_events, style);
+        let max_cmd_len = reedline_events
+            .iter()
+            .map(|reedline_event| {
+                if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                    edit_cmds
+                        .iter()
+                        .map(|cmd| {
+                            let key_desc = style.paint(format!("{cmd:?}"));
+                            let key_desc = format!("{key_desc}");
+                            key_desc.len()
+                        })
+                        .max()
+                        .unwrap_or(0)
+                } else if !format!("{reedline_event}").starts_with("UntilFound") {
+                    let event_desc = style.paint(format!("{reedline_event:?}"));
+                    let event_desc = format!("{event_desc}");
+                    event_desc.len()
+                } else {
+                    0
+                }
+            })
+            .max()
+            .unwrap_or(0);
         // Add 2 bytes of padding
         max_cmd_len + 2
     })
-}
-
-fn get_max_cmd_len(reedline_events: &[ReedlineEvent], style: &NuStyle) -> usize {
-    let max_cmd_len = reedline_events
-        .iter()
-        .map(|reedline_event| {
-            if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
-                edit_cmds
-                    .iter()
-                    .map(|cmd| {
-                        let key_desc = style.paint(format!("{cmd:?}"));
-                        let key_desc = format!("{key_desc}");
-                        key_desc.len()
-                    })
-                    .max()
-                    .unwrap_or(0)
-            } else if !format!("{reedline_event}").starts_with("UntilFound") {
-                let event_desc = style.paint(format!("{reedline_event:?}"));
-                let event_desc = format!("{event_desc}");
-                event_desc.len()
-            } else {
-                0
-            }
-        })
-        .max()
-        .unwrap_or(0);
-    max_cmd_len
 }
 
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {

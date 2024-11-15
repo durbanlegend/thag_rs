@@ -7,6 +7,7 @@ mod custom_model;
 mod derive_deserialize_vec;
 mod derive_key_map_list;
 mod expander_demo;
+mod host_port_const;
 mod into_string_hash_map;
 mod my_description;
 mod organizing_code;
@@ -21,6 +22,7 @@ use crate::custom_model::derive_custom_model_impl;
 use crate::derive_deserialize_vec::derive_deserialize_vec_impl;
 use crate::derive_key_map_list::derive_key_map_list_impl;
 use crate::expander_demo::baz2;
+use crate::host_port_const::host_port_const_impl;
 use crate::into_string_hash_map::into_hash_map_impl;
 use crate::my_description::my_derive;
 use crate::organizing_code::organizing_code_impl;
@@ -142,30 +144,7 @@ pub fn const_demo_grail(tokens: TokenStream) -> TokenStream {
     const_demo_grail_impl(tokens)
 }
 
-// #[proc_macro]
-// pub fn vec_concat(tokens: TokenStream) -> TokenStream {
-//     use const_gen_proc_macro::Object;
-//     use const_gen_proc_macro::ObjectType;
-//     use const_gen_proc_macro::Path;
-//     use const_gen_proc_macro::ProcMacroEnv;
-
-//     let mut vec_type = ObjectType::new();
-//     vec_type.add_method(
-//         "concat",
-//         &(&|first: &mut Vec<_>, second: Vec<_>| -> Vec<_> {
-//             first.to_owned().extend_from_slice(&second);
-//             first.to_vec()
-//         } as &dyn Fn(&Vec<_>, Vec<_>) -> Vec<_>),
-//     );
-//     // sealing the ObjectType means it is no longer mutable and can now instantiate objects
-//     let vec_type = vec_type.seal();
-
-//     let mut vec_path = Path::new();
-//     let vec_new =
-//         &|first: Vec<_>| -> Object { vec_type.new_instance(first) } as &dyn Fn(Vec<_>) -> Object;
-//     vec_path.add_function("new", &vec_new);
-
-//     let mut env = ProcMacroEnv::new();
-//     env.add_path("vec", vec_path);
-//     env.process(tokens)
-// }
+#[proc_macro_derive(HostPortConst, attributes(const_value))]
+pub fn host_port_const(tokens: TokenStream) -> TokenStream {
+    host_port_const_impl(tokens)
+}

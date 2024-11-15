@@ -29,6 +29,7 @@
 - [ ]  Check dead code & other #(!)[allow(...)]; look into factoring over-long gen_build_run
 - [ ]  Look for code smells
 - [ ]  Look into fuzzing the tests such as test_merge_manifest.
+- [ ]  Do gen_readme version for demo/proc_macros, curently demo/gen_readme_proc_macro.rs
 - [ ]  Consider dropping our termbg module if termbg 0.6.1 is working fine.
 - [ ]  Testing fib scripts: ls -1 demo/fib_*.rs | grep -v basic | grep -v binet | while read f; do echo $f;  cargo run -- $f -qq -- 100 | grep 354224848179261915075 || echo "...failed"; done
 

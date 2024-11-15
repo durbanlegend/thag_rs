@@ -227,7 +227,7 @@ _— The Rust Reference_
 
 ### * Getting started:
 
-You have the choice of installing `thag_rs` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run -- `.
+You have the choice of installing `thag_rs` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run`.
 
 * Installing gives you speed out of the box and a simpler command-line interface without invoking Cargo yourself. You have a choice:
 ```bash

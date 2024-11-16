@@ -153,7 +153,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
             },
         )
     });
-    debug_log!("######## term_theme={term_theme:?}");
+    // debug_log!("######## term_theme={term_theme:?}");
     (color_support.as_ref(), term_theme)
 }
 

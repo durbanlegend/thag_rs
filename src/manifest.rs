@@ -272,45 +272,7 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         }
 
         if &dep_name == "thag_demo_proc_macros" {
-            cvprtln!(
-                Lvl::BRI,
-                V::V,
-                r#"Found magic import "thag_demo_proc_macros": attempting to generate path dependency from proc_macros.proc_macro_crate_path in config file "/Users/donf/.config/thag_rs/config.toml"."#
-            );
-            let maybe_demo_proc_macros_dir = maybe_config().map_or_else(
-                || {
-                    debug_log!(r#"Missing config file for "use thag_demo_proc_macros;", defaulting to "demo/proc_macros"."#);
-                    Some("demo/proc_macros".to_string())
-                },
-                |config| {
-                    debug_log!("Found config.proc_macros()={:#?}", config.proc_macros);
-                    config.proc_macros.proc_macro_crate_path
-                },
-            );
-            let demo_proc_macros_dir = maybe_demo_proc_macros_dir.as_ref().map_or_else(|| {
-                cvprtln!(
-                    Lvl::BRI,
-                    V::V,
-                    r#"Missing `config.proc_macros.proc_macro_crate_path` in config file for "use thag_demo_proc_macros;": defaulting to "demo/proc_macros"."#
-                );
-                "demo/proc_macros"
-            }, |demo_proc_macros_dir| {
-                cvprtln!(Lvl::BRI, V::V, "Found {demo_proc_macros_dir:#?}.");
-                demo_proc_macros_dir
-            });
-
-            let path = PathBuf::from_str(demo_proc_macros_dir).unwrap();
-            let path = if path.is_absolute() {
-                path
-            } else {
-                path.canonicalize()
-                    .unwrap_or_else(|_| panic!("Could not canonicalize path {}", path.display()))
-            };
-            let dep = Dependency::Detailed(Box::new(DependencyDetail {
-                path: Some(path.display().to_string()),
-                ..Default::default()
-            }));
-            rs_dep_map.insert(dep_name.clone(), dep);
+            demo_proc_macros_magic(rs_dep_map, &dep_name);
             continue;
         }
 
@@ -332,4 +294,48 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         };
         rs_dep_map.insert(dep_name, dep);
     }
+}
+
+fn demo_proc_macros_magic(rs_dep_map: &mut BTreeMap<String, Dependency>, dep_name: &String) {
+    cvprtln!(
+        Lvl::BRI,
+        V::V,
+        r#"Found magic import `{dep_name}`: attempting to generate path dependency from proc_macros.proc_macro_crate_path in config file ".../config.toml"."#
+    );
+    let maybe_demo_proc_macros_dir = maybe_config().map_or_else(
+        || {
+            debug_log!(
+                r#"Missing config file for "use {dep_name};", defaulting to "demo/proc_macros"."#
+            );
+            Some("demo/proc_macros".to_string())
+        },
+        |config| {
+            debug_log!("Found config.proc_macros()={:#?}", config.proc_macros);
+            config.proc_macros.proc_macro_crate_path
+        },
+    );
+    let demo_proc_macros_dir = maybe_demo_proc_macros_dir.as_ref().map_or_else(|| {
+        cvprtln!(
+            Lvl::BRI,
+            V::V,
+            r#"Missing `config.proc_macros.proc_macro_crate_path` in config file for "use {dep_name};": defaulting to "demo/proc_macros"."#
+        );
+        "demo/proc_macros"
+    }, |demo_proc_macros_dir| {
+        cvprtln!(Lvl::BRI, V::V, "Found {demo_proc_macros_dir:#?}.");
+        demo_proc_macros_dir
+    });
+
+    let path = PathBuf::from_str(demo_proc_macros_dir).unwrap();
+    let path = if path.is_absolute() {
+        path
+    } else {
+        path.canonicalize()
+            .unwrap_or_else(|_| panic!("Could not canonicalize path {}", path.display()))
+    };
+    let dep = Dependency::Detailed(Box::new(DependencyDetail {
+        path: Some(path.display().to_string()),
+        ..Default::default()
+    }));
+    rs_dep_map.insert(dep_name.clone(), dep);
 }

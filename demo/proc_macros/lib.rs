@@ -123,20 +123,20 @@ pub fn const_demo(tokens: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn const_demo_expand(tokens: TokenStream) -> TokenStream {
-    use expander::{Edition, Expander};
     let output = const_demo_impl(tokens.clone());
-    let _expanded = Expander::new("const_demo")
-        .add_comment("This is generated code!".to_owned())
-        .fmt(Edition::_2021)
-        .verbose(true)
-        .dry(false)
-        .write_to_out_dir(output.clone().into())
-        .unwrap_or_else(|e| {
-            eprintln!("Failed to write to file: {:?}", e);
-            output.into()
-        });
-    // Run it again to avoid "error: expected expression, found keyword `const`"
-    const_demo_impl(tokens)
+    let token_str = output.to_string();
+    let _token_str = match syn::parse_file(&token_str) {
+        Err(e) => {
+            eprintln!("failed to prettify token_str: {e:?}");
+            token_str
+        }
+        Ok(syn_file) => {
+            let token_str = prettyplease::unparse(&syn_file);
+            eprintln!("output={}", token_str);
+            token_str
+        }
+    };
+    output
 }
 
 #[proc_macro]

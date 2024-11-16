@@ -1697,6 +1697,23 @@ which will give identical output to the above.
 
 ---
 
+### Script: gen_readme_proc_macros.rs
+
+**Description:**  This is the actual script used to collect demo proc macro script metadata and generate
+ demo/proc_macros/README.md.
+
+ Strategy and grunt work thanks to ChatGPT.
+
+**Purpose:** Document demo proc macro scripts in a demo/proc_macros/README.md as a guide to the user.
+
+**Crates:** `lazy_static`, `regex`, `thag_rs`
+
+**Type:** Program
+
+**Link:** [gen_readme_proc_macros.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme_proc_macros.rs)
+
+---
+
 ### Script: git_dependency.rs
 
 **Description:**  Demo the use of git dependencies in the toml block. Local path dependencies
@@ -2791,6 +2808,20 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [rustyline_full.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full.rs)
+
+---
+
+### Script: side_by_side_diff.rs
+
+**Description:**  Published example from `side-by-side-diff` crate.
+
+**Purpose:** Explore integrated side by side diffs.
+
+**Crates:** `side_by_side_diff`
+
+**Type:** Program
+
+**Link:** [side_by_side_diff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_diff.rs)
 
 ---
 

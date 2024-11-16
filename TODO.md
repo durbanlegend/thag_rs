@@ -16,6 +16,8 @@
 - [ ]  Try pre-building colour mappings
 - [ ]  New test for local paths in demo files and maybe even main Cargo.toml.
 - [ ]  Try ThagDisplay trait and derive macro.
+- [ ]  Debug FileDialog saving file one dir too low.
+- [ ]  Add a --expand (-X) flag to generate (not run) and expand the script. Requires cargo-expand crate.
 - [ ]  Try and figure out a way for thag_rs to test proc macros - and maybe to show the generated output?
         - could do an expand option that builds the file and calls cargo expand with --manifest-path <build_state.cargo_toml_path>
         - consider a dedicated installable thag_rs proc library - maybe configurable location specified in config.toml, with preferred theme.

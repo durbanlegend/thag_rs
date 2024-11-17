@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 /// Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
 //# Purpose: Second working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_expand.rs`.
-// "use thag_demo_proc_macros..." is a magic import that will be substituted by proc_macros.proc_macro_crate_path
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::const_demo_debug;
 

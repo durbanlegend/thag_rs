@@ -17,7 +17,7 @@ It also supports scripting via shebangs, building executables from your snippets
 If you import dependencies via explicit `use` statements, `thag_rs` will usually be able to resolve them for you automatically by doing a Cargo search and inserting a basic `<dependency> = "<current version>"` entry in the Cargo.toml file it generates behind the scenes.
 Alternatively, you can embed any valid Cargo manifest info, such as features, specific versions, private repos, optimisation levels etc., in a "toml block" comment.
 
-`thag_rs` includes a demo library of over 190 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
+`thag_rs` includes a demo library of over 200 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
 ## Quick start: ways to run the `thag` command
 
@@ -216,7 +216,7 @@ _— The Rust Reference_
   If the REPL mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the REPL editor.
 * You can use a shebang to write scripts in Rust, or better yet...
 * For more speed and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
-* `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory contains over 190 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and colour handling, and CLI and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
+* `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory contains over 200 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and colour handling, and CLI and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
 * Any valid Cargo.toml input may be specified in the toml block, e.g.:
   - Specific features of dependencies for advanced functionality
   - Local path and git dependencies

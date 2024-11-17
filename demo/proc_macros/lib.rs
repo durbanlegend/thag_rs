@@ -227,7 +227,9 @@ pub fn my_derive_macro(input: TokenStream) -> TokenStream {
         // Macro expansion logic
         let expanded = quote! {
             impl #struct_name {
-                pub const CONST_VALUE: usize = 42;
+                pub fn new(field: String) -> MyStruct {
+                    Self { field }
+                }
             }
         };
         TokenStream::from(expanded)

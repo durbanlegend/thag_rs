@@ -219,6 +219,22 @@ which will give identical output to the above.
 
 ---
 
+### Script: cargo_expand.rs
+
+**Description:**  Run a command (in this case a cargo search for the `log` crate),
+ and capture and print its stdout and stderr concurrently in a
+ separate thread.
+
+**Purpose:** Demo process::Command with output capture.
+
+**Crates:** `env_logger`, `log`
+
+**Type:** Program
+
+**Link:** [cargo_expand.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_expand.rs)
+
+---
+
 ### Script: cargo_output.rs
 
 **Description:**  Run a command (in this case a cargo search for the `log` crate),
@@ -2252,9 +2268,24 @@ which will give identical output to the above.
 
 ---
 
+### Script: proc_macro_const_demo_debug.rs
+
+**Description:**  Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
+
+**Purpose:** Second working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_expand.rs`.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Link:** [proc_macro_const_demo_debug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_debug.rs)
+
+---
+
 ### Script: proc_macro_const_demo_expand.rs
 
-**Description:**  Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`.
+**Description:**  Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
+ Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`.
 
 **Purpose:** Demo the use of proc macros to generate constants at compile time and the `expander` crate to expand the output to a file.
 
@@ -2320,6 +2351,50 @@ which will give identical output to the above.
 **Type:** Program
 
 **Link:** [proc_macro_host_port_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_host_port_const.rs)
+
+---
+
+### Script: proc_macro_my_attribute.rs
+
+**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
+ `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
+
+**Purpose:** Sample model of a basic attribute proc macro.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Link:** [proc_macro_my_attribute.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_my_attribute.rs)
+
+---
+
+### Script: proc_macro_my_derive_macro.rs
+
+**Description:**  Exploring expansion
+
+**Purpose:** explore proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Link:** [proc_macro_my_derive_macro.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_my_derive_macro.rs)
+
+---
+
+### Script: proc_macro_my_macro.rs
+
+**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
+ `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
+
+**Purpose:** Sample model of a basic function-like proc macro.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Link:** [proc_macro_my_macro.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_my_macro.rs)
 
 ---
 

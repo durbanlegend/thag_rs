@@ -229,6 +229,30 @@ impl BuildState {
         );
 
         #[cfg(debug_assertions)]
+        {
+            if proc_flags.contains(ProcFlags::BUILD)
+                | proc_flags.contains(ProcFlags::CHECK)
+                | proc_flags.contains(ProcFlags::EXECUTABLE)
+            {
+                assert!(
+                    build_state.must_gen
+                        & build_state.must_build
+                        & proc_flags.contains(ProcFlags::NORUN)
+                );
+            }
+            if proc_flags.contains(ProcFlags::FORCE) {
+                assert!(
+                    build_state.must_gen
+                        & build_state.must_build
+                        & !proc_flags.contains(ProcFlags::NORUN)
+                );
+            }
+            if build_state.must_build {
+                assert!(build_state.must_gen);
+            }
+        }
+
+        #[cfg(debug_assertions)]
         debug_log!("build_state={build_state:#?}");
 
         Ok(build_state)

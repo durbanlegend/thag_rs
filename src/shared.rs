@@ -84,14 +84,6 @@ impl BuildState {
         script_state: &ScriptState,
     ) -> ThagResult<Self> {
         profile_fn!(pre_configure);
-        let is_repl = proc_flags.contains(ProcFlags::REPL);
-        let is_expr = args.expression.is_some();
-        let is_stdin = proc_flags.contains(ProcFlags::STDIN);
-        let is_edit = proc_flags.contains(ProcFlags::EDIT);
-        let is_loop = proc_flags.contains(ProcFlags::LOOP);
-        let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
-        let is_check = proc_flags.contains(ProcFlags::CHECK);
-        let build_exe = proc_flags.contains(ProcFlags::EXECUTABLE);
         let maybe_script = script_state.get_script();
         let Some(ref script) = maybe_script else {
             return Err(ThagError::NoneOption("No script specified"));
@@ -108,6 +100,13 @@ impl BuildState {
                 "Error converting filename to a string",
             ));
         };
+
+        let is_repl = proc_flags.contains(ProcFlags::REPL);
+        let is_expr = args.expression.is_some();
+        let is_stdin = proc_flags.contains(ProcFlags::STDIN);
+        let is_edit = proc_flags.contains(ProcFlags::EDIT);
+        let is_loop = proc_flags.contains(ProcFlags::LOOP);
+        let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
 
         debug_log!("source_name={source_name}");
         let Some(source_stem) = source_name.strip_suffix(RS_SUFFIX) else {
@@ -199,23 +198,35 @@ impl BuildState {
             ..Default::default()
         };
 
-        let force = proc_flags.contains(ProcFlags::FORCE);
-        (build_state.must_gen, build_state.must_build) = if force {
+        debug_log!("proc_flags={proc_flags}");
+
+        (build_state.must_gen, build_state.must_build) = if is_dynamic
+            || is_repl
+            || proc_flags.contains(ProcFlags::FORCE)
+            || proc_flags.contains(ProcFlags::CHECK)
+        {
+            (true, true)
+        } else if proc_flags.contains(ProcFlags::NORUN) {
+            let must_build =
+                proc_flags.contains(ProcFlags::BUILD) || proc_flags.contains(ProcFlags::EXECUTABLE);
+            let must_gen =
+                must_build || proc_flags.contains(ProcFlags::GENERATE) || !cargo_toml_path.exists();
+            (must_gen, must_build)
+        } else if (matches!(script_state, ScriptState::NamedEmpty { .. })
+            // Executable is absent or stale
+            || !target_path_exists
+            || modified_since_compiled(&build_state)?.is_some())
+        {
             (true, true)
         } else {
-            let stale_executable = matches!(script_state, ScriptState::NamedEmpty { .. })
-                || !target_path_exists
-                || modified_since_compiled(&build_state)?.is_some();
-            let must_gen = force
-                || is_repl
-                || is_loop
-                || is_check
-                || stale_executable
-                || !cargo_toml_path.exists();
-            let must_build =
-                must_gen || is_repl || is_loop || build_exe || is_check || stale_executable;
-            (must_gen, must_build)
+            (false, false)
         };
+
+        debug_log!(
+            "must_gen={}; must_build={}",
+            build_state.must_gen,
+            build_state.must_build
+        );
 
         #[cfg(debug_assertions)]
         debug_log!("build_state={build_state:#?}");

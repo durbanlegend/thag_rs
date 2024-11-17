@@ -495,7 +495,7 @@ pub fn gen_build_run(
     } else {
         let build_qualifier =
             if proc_flags.contains(ProcFlags::NORUN) && !proc_flags.contains(ProcFlags::BUILD) {
-                "Skipping cargo build step because --norun specified without --build."
+                "Skipping cargo build step because --gen specified without --build."
             } else {
                 "Skipping unnecessary cargo build step. Use --force (-f) to override."
             };
@@ -611,7 +611,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
     let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
     let check = proc_flags.contains(ProcFlags::CHECK);
 
-    debug_log!("BBBBBBBB In build");
+    vlog!(V::V, "BBBBBBBB In build");
 
     let cargo_toml_path_str = code_utils::path_to_str(&build_state.cargo_toml_path)?;
 

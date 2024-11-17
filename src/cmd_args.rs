@@ -75,7 +75,7 @@ pub struct Cli {
     #[arg(short, long, help_heading = Some("Output Options"), action = clap::ArgAction::Count)]
     pub quiet: u8,
     /// Just generate individual Cargo.toml and any required Rust scaffolding for script, unless script unchanged from a previous build.
-    #[arg(short, long = "gen"/*, requires = "norun"*/, help_heading = Some("No-run Options"), default_value_ifs([
+    #[arg(short, long = "gen", help_heading = Some("No-run Options"), default_value_ifs([
         /*("force", "true", "true"),*/
         ("expression", "_", "true"),
         ("executable", "true", "true"),
@@ -83,7 +83,7 @@ pub struct Cli {
     ]))]
     pub generate: bool,
     /// Just build script (generating first if necessary), unless unchanged from a previous build
-    #[arg(short, long/*, requires = "norun"*/, help_heading = Some("No-run Options"), default_value_ifs([
+    #[arg(short, long, help_heading = Some("No-run Options"), default_value_ifs([
         /*("force", "true", "true"),*/
         ("expression", "_", "true"),
         ("executable", "true", "true"),

@@ -63,7 +63,7 @@ jobs:
 
     - name: Upload test output log
       if: failure()  # Only upload if the test run fails
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-output-log
         path: test_output.log

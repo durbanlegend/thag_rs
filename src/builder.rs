@@ -3,7 +3,7 @@ use crate::code_utils::{
     read_file_contents, remove_inner_attributes, strip_curly_braces, to_ast, wrap_snippet,
     write_source,
 };
-use crate::colors::gen_mappings;
+use crate::colors::init_styles;
 use crate::config::{self, RealContext};
 use crate::logging::is_debug_logging_enabled;
 use crate::repl::run_repl;
@@ -52,7 +52,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
         log_init_setup(start, args, &proc_flags);
     }
 
-    gen_mappings(term_theme, maybe_color_support);
+    init_styles(term_theme, maybe_color_support);
 
     // set_verbosity(args)?;
 

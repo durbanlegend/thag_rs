@@ -204,6 +204,7 @@ macro_rules! generate_styles {
             color_support: Option<&ColorSupport>,
         ) -> fn(Lvl) -> Style {
             profile_fn!(init_styles);
+            use std::sync::OnceLock;
             static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
 
             *STYLE_MAPPING.get_or_init(|| match (term_theme, color_support) {
@@ -217,25 +218,6 @@ macro_rules! generate_styles {
         }
     };
 }
-
-/// Generates the alternative style mapping enums.
-pub fn gen_mappings(
-    term_theme: &TermTheme,
-    color_support: Option<&ColorSupport>,
-) -> fn(Lvl) -> Style {
-    profile_fn!(gen_mappings);
-    static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
-    *STYLE_MAPPING.get_or_init(|| {
-        // Call init_styles to ensure styles are initialized on first access
-        init_styles(term_theme, color_support)
-    })
-}
-
-// #[cfg(target_os = "windows")]
-// fn resolve_term_theme() -> ThagResult<TermTheme> {
-//     profile_fn!(resolve_term_theme);
-//     Ok(TermTheme::Dark)
-// }
 
 // #[cfg(not(target_os = "windows"))]
 fn resolve_term_theme() -> ThagResult<TermTheme> {
@@ -455,7 +437,7 @@ pub fn get_style(
     color_support: Option<&ColorSupport>,
 ) -> Style {
     // dbg!();
-    let mapping = gen_mappings(term_theme, color_support);
+    let mapping = init_styles(term_theme, color_support);
     // dbg!(&mapping);
     mapping(*message_level)
 }

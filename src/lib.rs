@@ -16,8 +16,11 @@ pub mod manifest;
 pub mod repl;
 pub mod shared;
 pub mod stdin;
-// #[cfg(not(target_os = "windows"))]
-pub mod termbg;
+// Specify `pub mod termbg;` or `pub use termbg;` depending whether we want to use our termbg module or the `termbg crate`.
+// Crate should be good as from 0.6.1.
+// pub mod termbg;
+pub use termbg;
+
 pub mod tui_editor;
 
 // Re-export commonly used items for convenience
@@ -38,9 +41,10 @@ pub use shared::{
     debug_timings, display_timings, escape_path_for_windows, Ast, BuildState, CrosstermEventReader,
     EventReader, KeyDisplayLine, MockEventReader, ScriptState,
 };
-// pub use termbg;
+pub use thag_proc_macros::repeat_dash;
 
 // Common constants and statics
+pub const BUILT_IN_CRATES: [&str; 6] = ["std", "core", "alloc", "collections", "fmt", "crate"];
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
 pub const FLOWER_BOX_LEN: usize = 70;
 pub const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");

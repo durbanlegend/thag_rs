@@ -3,8 +3,8 @@
 lazy_static = "1.4.0"
 log = "0.4.22"
 regex = "1.10.5"
-# thag_rs = "0.1.5"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "d72662f489acefd84d1637ae792e54ce6641ed86" }
+# thag_rs = "0.1.7"
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "83694dd6e4f0e1bd0f887d32a2cebbadc691dc84" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
 */
 
@@ -15,12 +15,13 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "d72662f489ac
 //# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::collections::HashMap;
-use std::fs::{self, read_dir, File};
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashMap,
+    fs::{self, read_dir, File},
+    io::Write,
+    path::{Path, PathBuf},
+};
 use thag_rs::code_utils;
-use thag_rs::debug_log;
 
 #[derive(Debug)]
 struct ScriptMetadata {
@@ -34,10 +35,13 @@ struct ScriptMetadata {
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     let mut content = fs::read_to_string(file_path).ok()?;
 
-    content = if content.starts_with("#!") {
+    content = if content.starts_with("#!") && !(content.starts_with("#![")) {
         let split_once = content.split_once('\n');
         let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
-        debug_log!("Successfully stripped shebang {shebang}");
+        eprintln!(
+            "Successfully stripped shebang {shebang} from {}",
+            file_path.display()
+        );
         rust_code.to_string()
     } else {
         content

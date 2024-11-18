@@ -17,7 +17,7 @@ It also supports scripting via shebangs, building executables from your snippets
 If you import dependencies via explicit `use` statements, `thag_rs` will usually be able to resolve them for you automatically by doing a Cargo search and inserting a basic `<dependency> = "<current version>"` entry in the Cargo.toml file it generates behind the scenes.
 Alternatively, you can embed any valid Cargo manifest info, such as features, specific versions, private repos, optimisation levels etc., in a "toml block" comment.
 
-`thag_rs` includes a demo library of over 180 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
+`thag_rs` includes a demo library of over 200 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
 ## Quick start: ways to run the `thag` command
 
@@ -216,7 +216,7 @@ _— The Rust Reference_
   If the REPL mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the REPL editor.
 * You can use a shebang to write scripts in Rust, or better yet...
 * For more speed and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
-* `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory contains over 190 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and colour handling, and CLI and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
+* `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory contains over 200 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and colour handling, and CLI and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
 * Any valid Cargo.toml input may be specified in the toml block, e.g.:
   - Specific features of dependencies for advanced functionality
   - Local path and git dependencies
@@ -227,7 +227,7 @@ _— The Rust Reference_
 
 ### * Getting started:
 
-You have the choice of installing `thag_rs` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run -- `.
+You have the choice of installing `thag_rs` (recommended), or you may prefer to clone it and compile it yourself and run it via `cargo run`.
 
 * Installing gives you speed out of the box and a simpler command-line interface without invoking Cargo yourself. You have a choice:
 ```bash
@@ -296,15 +296,19 @@ at the start of the script, as you will see done in most of the demos. To help w
 ### Minimum Supported Rust Version
 The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.81.0.
 
+### Installation options
+
+#### Cargo install
 You can install `thag_rs` using `cargo install`:
 
 ```bash
 cargo install thag_rs
 ```
-### Downloading the starter kit (demo directory)
+#### Downloading the starter kit (demo directory)
 As from `v0.1.1` you can download `demo.zip` from `https://github.com/durbanlegend/thag_rs/releases`.
 
 Note that you can also link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
+
 As a matter of interest, the `rs_thag` demo file [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/download_demo_dir.rs) can download the whole demo directory from Github.
 Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/download_demo_dir.rs`, or just copy it and paste it into the `thag -d` editor and choose `Ctrl-d` to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
 

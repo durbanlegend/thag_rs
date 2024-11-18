@@ -1,9 +1,12 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::code_utils::{infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 #[cfg(target_os = "windows")]
 use crate::escape_path_for_windows;
+use crate::{
+    code_utils::{infer_deps_from_ast, infer_deps_from_source},
+    cvprtln, maybe_config,
+}; // Valid if no circular dependency
 use crate::{debug_log, debug_timings, regex, vlog, Ast, BuildState, Lvl, ThagResult, V};
-use cargo_toml::{Dependency, Manifest};
+use cargo_toml::{Dependency, DependencyDetail, Manifest};
 use firestorm::profile_fn;
 use mockall::automock;
 use nu_ansi_term::Style;
@@ -14,6 +17,7 @@ use std::{
     io::{self, BufRead},
     path::PathBuf,
     process::{Command, Output},
+    str::FromStr,
     time::Instant,
 };
 
@@ -200,7 +204,7 @@ edition = "2021"
         source_stem, source_stem, gen_src_path
     );
 
-    // log!(V::N, "cargo_manifest=\n{cargo_manifest}");
+    // vlog!(V::N, "cargo_manifest=\n{cargo_manifest}");
 
     Ok(Manifest::from_str(&cargo_manifest)?)
 }
@@ -256,6 +260,7 @@ pub fn merge(
     Ok(())
 }
 
+#[allow(clippy::missing_panics_doc)]
 pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
     profile_fn!(search_deps);
     for dep_name in rs_inferred_deps {
@@ -265,6 +270,15 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         {
             continue;
         }
+
+        if &dep_name == "thag_demo_proc_macros" {
+            proc_macros_magic(rs_dep_map, &dep_name, "demo");
+            continue;
+        } else if &dep_name == "thag_bank_proc_macros" {
+            proc_macros_magic(rs_dep_map, &dep_name, "bank");
+            continue;
+        }
+
         #[cfg(debug_assertions)]
         debug_log!("Starting Cargo search for key dep_name [{dep_name}]");
         let command_runner = RealCommandRunner;
@@ -283,4 +297,53 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         };
         rs_dep_map.insert(dep_name, dep);
     }
+}
+
+fn proc_macros_magic(
+    rs_dep_map: &mut BTreeMap<String, Dependency>,
+    dep_name: &str,
+    dir_name: &str,
+) {
+    cvprtln!(
+        Lvl::BRI,
+        V::V,
+        r#"Found magic import `{dep_name}`: attempting to generate path dependency from proc_macros.proc_macro_crate_path in config file ".../config.toml"."#
+    );
+    let default_proc_macros_dir = format!("{dir_name}/proc_macros");
+    let maybe_magic_proc_macros_dir = maybe_config().map_or_else(
+        || {
+            debug_log!(
+                r#"Missing config file for "use {dep_name};", defaulting to "{dir_name}/proc_macros"."#
+            );
+            Some(default_proc_macros_dir.clone())
+        },
+        |config| {
+            debug_log!("Found config.proc_macros()={:#?}", config.proc_macros);
+            config.proc_macros.proc_macro_crate_path
+        },
+    );
+    let magic_proc_macros_dir = maybe_magic_proc_macros_dir.as_ref().map_or_else(|| {
+        cvprtln!(
+            Lvl::BRI,
+            V::V,
+            r#"Missing `config.proc_macros.proc_macro_crate_path` in config file for "use {dep_name};": defaulting to "{default_proc_macros_dir}"."#
+        );
+        default_proc_macros_dir
+    }, |proc_macros_dir| {
+        cvprtln!(Lvl::BRI, V::V, "Found {proc_macros_dir:#?}.");
+        proc_macros_dir.to_string()
+    });
+
+    let path = PathBuf::from_str(&magic_proc_macros_dir).unwrap();
+    let path = if path.is_absolute() {
+        path
+    } else {
+        path.canonicalize()
+            .unwrap_or_else(|_| panic!("Could not canonicalize path {}", path.display()))
+    };
+    let dep = Dependency::Detailed(Box::new(DependencyDetail {
+        path: Some(path.display().to_string()),
+        ..Default::default()
+    }));
+    rs_dep_map.insert(dep_name.to_string(), dep);
 }

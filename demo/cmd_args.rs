@@ -2,22 +2,17 @@
 [dependencies]
 bitflags = "2.5.0"
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
-thag_rs = "0.1.5"
+thag_rs = "0.1.7"
 */
 
 /// A prototype of the cmd_args module of thag_rs itself.
 ///
 /// E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 //# Purpose: Prototype CLI.
-use thag_rs::errors::ThagError;
-use thag_rs::log;
-use thag_rs::logging::Verbosity;
-use thag_rs::RS_SUFFIX;
-
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
-use std::error::Error;
-use std::{fmt, str};
+use std::{error::Error, fmt, str};
+use thag_rs::{errors::ThagError, logging::Verbosity, vlog, RS_SUFFIX};
 
 // thag_rs script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
@@ -120,12 +115,12 @@ pub struct Cli {
         conflicts_with("multimain")
     )]
     pub unquote: Option<bool>,
-    /// Edit configuration
+    // Edit configuration
     #[arg(short = 'C', long, conflicts_with_all(["generate", "build", "executable"]))]
     pub config: bool,
 }
 
-/// Getter for clap command-line arguments
+// Getter for clap command-line arguments
 #[must_use]
 pub fn get_args() -> Cli {
     Cli::parse()
@@ -149,7 +144,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn E
 }
 
 bitflags! {
-    /// Processing flags for ease of handling command-line options.
+    // Processing flags for ease of handling command-line options.
     // You can `#[derive]` the `Debug` trait, but implementing it manually
     // can produce output like `A | B` instead of `Flags(A | B)`.
     // #[derive(Debug)]
@@ -277,40 +272,40 @@ fn main() {
     let opt = Cli::parse();
 
     if opt.verbose {
-        log!(Verbosity::Normal, "Verbosity enabled");
+        vlog!(Verbosity::Normal, "Verbosity enabled");
     }
 
     if opt.timings {
-        log!(Verbosity::Normal, "Timings enabled");
+        vlog!(Verbosity::Normal, "Timings enabled");
     }
 
     if opt.generate {
-        log!(Verbosity::Normal, "Generate option selected");
+        vlog!(Verbosity::Normal, "Generate option selected");
     }
 
     if opt.build {
-        log!(Verbosity::Normal, "Build option selected");
+        vlog!(Verbosity::Normal, "Build option selected");
     }
 
     if opt.force {
-        log!(Verbosity::Normal, "Force option selected");
+        vlog!(Verbosity::Normal, "Force option selected");
     }
 
     if opt.executable {
-        log!(Verbosity::Normal, "Executable option selected");
+        vlog!(Verbosity::Normal, "Executable option selected");
     }
 
-    log!(Verbosity::Normal, "Unquote={:#?}", opt.unquote);
+    vlog!(Verbosity::Normal, "Unquote={:#?}", opt.unquote);
 
     if opt.executable {
-        log!(Verbosity::Normal, "Config option selected");
+        vlog!(Verbosity::Normal, "Config option selected");
     }
 
-    log!(Verbosity::Normal, "Script to run: {:?}", opt.script);
+    vlog!(Verbosity::Normal, "Script to run: {:?}", opt.script);
     if !opt.args.is_empty() {
-        log!(Verbosity::Normal, "With arguments:");
+        vlog!(Verbosity::Normal, "With arguments:");
         for arg in &opt.args {
-            log!(Verbosity::Normal, "{arg}");
+            vlog!(Verbosity::Normal, "{arg}");
         }
     }
 

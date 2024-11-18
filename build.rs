@@ -121,19 +121,24 @@ fn check_{test_name}() {{
             );
         }}
 
-        // // Get the file stem
-        // let file_stem = {source_name:?}.trim_end_matches(".rs");
+        // eprintln!("... finished {source_name}, starting cargo clean");
 
-        // // Construct the destination directory path
-        // let mut dest_dir = env::temp_dir();
-        // dest_dir.push("thag_rs");
-        // dest_dir.push(file_stem);
+        // Get the file stem
+        let file_stem = {source_name:?}.trim_end_matches(".rs");
 
-        // let target_dir = &dest_dir.join("target/debug");
-        // // Delete the destination directory after building the file
-        // if let Err(e) = fs::remove_dir_all(&target_dir) {{
-        //     eprintln!("Failed to remove directory {test_name}: {{}}, {{e:?}}", dest_dir.display());
-        // }}
+        // Construct the destination directory path
+        let mut dest_dir = env::temp_dir();
+        dest_dir.push("thag_rs");
+        dest_dir.push(file_stem);
+
+        // Cargo clean seems to work but is desperately slow - see rev d65b1aed47527f267fcc88f111bec6164b31c8a0
+        // for (commented) code.
+        // Seems OK
+        let target_dir = &dest_dir.join("target/debug");
+        // Delete the destination directory after building the file
+        if let Err(e) = fs::remove_dir_all(&target_dir) {{
+            eprintln!("Failed to remove directory {test_name}: {{}}, {{e:?}}", target_dir.display());
+        }}
     }}
 }}
 "#,

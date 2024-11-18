@@ -24,6 +24,7 @@ enum Planet {
 }
 
 impl Planet {
+    #[allow(dead_code)]
     fn details(&self) {
         println!("Hi from {self:?}!");
     }
@@ -35,7 +36,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
 
     #[test]
     fn rc1() {

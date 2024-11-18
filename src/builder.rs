@@ -10,9 +10,9 @@ use crate::repl::run_repl;
 use crate::stdin::{edit, read};
 use crate::{
     coloring, cvprtln, debug_log, debug_timings, display_timings, get_proc_flags, manifest,
-    maybe_config, regex, validate_args, vlog, Ast, BuildState, Cli, CrosstermEventReader, Lvl,
-    ProcFlags, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
-    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V, VERSION,
+    maybe_config, regex, repeat_dash, validate_args, vlog, Ast, BuildState, Cli,
+    CrosstermEventReader, Lvl, ProcFlags, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN,
+    PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V, VERSION,
 };
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
@@ -495,7 +495,7 @@ pub fn gen_build_run(
     } else {
         let build_qualifier =
             if proc_flags.contains(ProcFlags::NORUN) && !proc_flags.contains(ProcFlags::BUILD) {
-                "Skipping cargo build step because --norun specified without --build."
+                "Skipping cargo build step because --gen specified without --build."
             } else {
                 "Skipping unnecessary cargo build step. Use --force (-f) to override."
             };
@@ -611,7 +611,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
     let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
     let check = proc_flags.contains(ProcFlags::CHECK);
 
-    debug_log!("BBBBBBBB In build");
+    vlog!(V::V, "BBBBBBBB In build");
 
     let cargo_toml_path_str = code_utils::path_to_str(&build_state.cargo_toml_path)?;
 
@@ -715,15 +715,16 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     debug_log!("executable_path={executable_path:#?}, output_path={output_path:#?}");
     fs::rename(executable_path, output_path)?;
 
-    let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
+    // let dash_line = "-".repeat(&FLOWER_BOX_LEN);
+    repeat_dash!(70);
+    cvprtln!(Lvl::EMPH, V::Q, "{DASH_LINE}");
 
     vlog!(
         V::QQ,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
     );
 
-    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
+    cvprtln!(Lvl::EMPH, V::Q, "{DASH_LINE}");
     Ok(())
 }
 

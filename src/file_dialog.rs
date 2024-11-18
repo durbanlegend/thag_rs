@@ -345,18 +345,6 @@ impl<'a> FileDialog<'a> {
             return Ok(());
         };
 
-        let path = self.current_dir.join(&self.items[selected]);
-        debug_log!(
-            "current_dir={:?}; path={path:?}; is_file? {}; mode={:?}",
-            self.current_dir,
-            path.is_file(),
-            self.mode
-        );
-
-        if path.is_dir() {
-            self.current_dir.clone_from(&path);
-            self.update_entries()?;
-        }
         // if matches!(self.mode, DialogMode::Save) {
         if self.focus == DialogFocus::Input {
             // Save mode logic to use the entered filename
@@ -365,12 +353,33 @@ impl<'a> FileDialog<'a> {
             if !file_name.is_empty() {
                 let path = self.current_dir.join(file_name);
                 self.selected_file = Some(path); // Set the selected file
+                debug_log!("{:?}: selected_file={:?}", self.focus, self.selected_file);
                 self.close(); // Close the dialog
             }
-        } else if path.is_file() {
-            self.selected_file = Some(path);
-            self.close();
-            // return Ok(());
+        } else {
+            let path = self.current_dir.join(&self.items[selected]);
+            debug_log!(
+                "current_dir={:?}; path={path:?}; is_file? {}; mode={:?}",
+                self.current_dir,
+                path.is_file(),
+                self.mode
+            );
+            if path.is_dir() {
+                self.current_dir.clone_from(&path);
+                self.update_entries()?;
+            }
+            debug_log!(
+                "Updated:current_dir={:?}; path={path:?}; is_file? {}; mode={:?}",
+                self.current_dir,
+                path.is_file(),
+                self.mode
+            );
+            if path.is_file() {
+                self.selected_file = Some(path);
+                debug_log!("{:?}: selected_file={:?}", self.focus, self.selected_file);
+                self.close();
+                // return Ok(());
+            }
         }
         debug_log!("self.selected_file={:?}", self.selected_file);
         Ok(())
@@ -460,6 +469,7 @@ impl<'a> FileDialog<'a> {
                 key!(ctrl - l) => self.popup = !self.popup,
                 key!(ctrl - q) | key!(Esc) => return Ok(Status::Quit),
                 key!(Enter) => {
+                    debug_log!("In handle_input: Enter pressed, about to call self.select()");
                     self.select()?;
                     self.buf.clear();
                     self.reset_filter()?;

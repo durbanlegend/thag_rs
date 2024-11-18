@@ -18,7 +18,7 @@ fn count_main_methods(rs_source: &str) -> usize {
         // Try putting the expression in braces.
         let string = format!(r"{{{rs_source}}}");
         let str = string.as_str();
-        // log!(Verbosity::Normal, "str={str}");
+        // vlog!(Verbosity::Normal, "str={str}");
 
         maybe_ast = syn::parse_str::<Expr>(str);
     }

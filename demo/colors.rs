@@ -3,7 +3,7 @@
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 termbg = "0.6.0"
-# thag_rs = "0.1.5"
+# thag_rs = "0.1.7"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "d72662f489acefd84d1637ae792e54ce6641ed86" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
 */

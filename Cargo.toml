@@ -105,6 +105,7 @@ test-generator = "0.3.1"
 
 [workspace]
 members = ["src/proc_macros"]
+exclude = ["demo/proc_macros"]
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]

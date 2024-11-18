@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use clap::CommandFactory;
     use clap::Parser;
     use std::path::PathBuf;
     use std::time::Instant;
@@ -25,6 +26,16 @@ mod tests {
         std::env::set_var("TEST_ENV", "1");
         std::env::set_var("VISUAL", "cat");
         std::env::set_var("EDITOR", "cat");
+    }
+
+    #[test]
+    fn test_repl_command_print_help() {
+        set_up();
+        let mut output = Vec::new();
+        let mut command = thag_rs::repl::ReplCommand::command();
+        command.write_long_help(&mut output).unwrap();
+        let help_output = String::from_utf8(output).unwrap();
+        assert!(help_output.contains("REPL mode lets you type or paste a Rust expression"));
     }
 
     #[test]

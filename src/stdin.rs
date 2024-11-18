@@ -1,14 +1,12 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay};
 use crate::{
-    debug_log, regex, vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError,
-    ThagResult, V,
+    debug_log, vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError, ThagResult, V,
 };
 use clap::Parser;
 use edit::edit_file;
 use mockall::predicate::str;
 use ratatui::style::{Color, Modifier, Style};
-use regex::Regex;
 use std::{
     fmt::Debug,
     fs::OpenOptions,
@@ -198,16 +196,6 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)
-}
-
-/// Convert the different newline sequences for Windows and other platforms into the common
-/// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
-/// it stands).
-#[must_use]
-pub fn normalize_newlines(input: &str) -> String {
-    let re: &Regex = regex!(r"\r\n?");
-
-    re.replace_all(input, "\n").to_string()
 }
 
 /// Open the history file in an editor.

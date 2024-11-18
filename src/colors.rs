@@ -1,7 +1,10 @@
 #![allow(clippy::implicit_return)]
 #![expect(unused)]
+use crate::config::Config;
 use crate::termbg::{terminal, theme, Theme};
-use crate::{config, debug_log, generate_styles, maybe_config, vlog, ThagResult, V};
+use crate::{
+    config, debug_log, generate_styles, lazy_static_fn, maybe_config, vlog, ThagResult, V,
+};
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use firestorm::profile_fn;
 use log::debug;
@@ -87,8 +90,6 @@ generate_styles!(
 pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     profile_fn!(coloring);
 
-    pub static COLOR_SUPPORT: OnceLock<Option<ColorSupport>> = OnceLock::new();
-    pub static TERM_THEME: OnceLock<TermTheme> = OnceLock::new();
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
         debug_log!("Avoiding supports_color for testing");
@@ -119,7 +120,8 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
         }
     }
 
-    let color_support = COLOR_SUPPORT.get_or_init(|| {
+    let color_support = lazy_static_fn!(
+        Option<ColorSupport>,
         maybe_config()
             .as_ref()
             .map_or_else(get_color_level, |config| {
@@ -130,21 +132,13 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
                     ColorSupport::Default => get_color_level(),
                 }
             })
-    });
+    );
 
-    let term_theme = TERM_THEME.get_or_init(|| {
+    let term_theme = lazy_static_fn!(
+        TermTheme,
         maybe_config().map_or_else(
-            || {
-                // eprintln!(
-                //     "######## default mode: about to call resolve_term_theme().unwrap_or_default()"
-                // );
-                resolve_term_theme().unwrap_or_default()
-            },
+            || { resolve_term_theme().unwrap_or_default() },
             |config| {
-                // eprintln!(
-                //     "######## config.colors.term_theme={:?}",
-                //     &config.colors.term_theme
-                // );
                 if matches!(&config.colors.term_theme, &TermTheme::None) {
                     resolve_term_theme().unwrap_or_default()
                 } else {
@@ -152,8 +146,8 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
                 }
             },
         )
-    });
-    debug_log!("######## term_theme={term_theme:?}");
+    );
+    // debug_log!("######## term_theme={term_theme:?}");
     (color_support.as_ref(), term_theme)
 }
 
@@ -546,7 +540,7 @@ impl Lvl {
 
 impl From<&Lvl> for u8 {
     fn from(message_level: &Lvl) -> Self {
-        Self::from(&XtermColor::from(&MessageStyle::from(message_level)))
+        Self::from(&XtermColor::from(message_level))
     }
 }
 
@@ -936,6 +930,12 @@ impl From<&MessageStyle> for XtermColor {
     }
 }
 
+impl From<&Lvl> for XtermColor {
+    fn from(message_level: &Lvl) -> Self {
+        Self::from(&MessageStyle::from(message_level))
+    }
+}
+
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for Style {
     fn from(message_style: &MessageStyle) -> Self {
@@ -1083,6 +1083,13 @@ impl From<&MessageLevel> for RataStyle {
     fn from(lvl: &MessageLevel) -> Self {
         profile_fn!(ratastyle_from_lvl);
         Self::from(&MessageStyle::from(lvl))
+    }
+}
+
+impl From<&MessageLevel> for Color {
+    fn from(lvl: &MessageLevel) -> Self {
+        profile_fn!(color_from_lvl);
+        Self::from(&XtermColor::from(&MessageStyle::from(lvl)))
     }
 }
 

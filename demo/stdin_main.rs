@@ -8,7 +8,7 @@ regex = "1.10.4"
 scopeguard = "1.2.0"
 serde = "1.0.210"
 serde_json = "1.0.132"
-thag_rs = "0.1.5"
+thag_rs = "0.1.7"
 tui-textarea = { version = "0.6", features = ["search"] }
 */
 
@@ -19,34 +19,32 @@ tui-textarea = { version = "0.6", features = ["search"] }
 ///
 /// E.g. `thag demo/stdin_main.rs`
 //# Purpose: Debugging.
-use thag_rs::errors::ThagError;
-use thag_rs::log;
-use thag_rs::logging::Verbosity;
-
-use crossterm::event::{
-    DisableMouseCapture,
-    EnableBracketedPaste,
-    EnableMouseCapture,
-    Event::{self, Paste},
-    // KeyCode, KeyEvent, KeyModifiers,
-};
-use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+use crossterm::{
+    event::{
+        DisableMouseCapture,
+        EnableBracketedPaste,
+        EnableMouseCapture,
+        Event::{self, Paste},
+        // KeyCode, KeyEvent, KeyModifiers,
+    },
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use lazy_static::lazy_static;
 use mockall::{automock, predicate::str};
-use ratatui::backend::CrosstermBackend;
-use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
-use ratatui::prelude::Rect;
-use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::widgets::block::Title;
-use ratatui::widgets::{Block, Borders, Clear, Paragraph};
-use ratatui::Terminal;
+use ratatui::{
+    backend::CrosstermBackend,
+    layout::{Alignment, Constraint, Direction, Layout, Margin},
+    prelude::Rect,
+    style::{Color, Modifier, Style, Stylize},
+    widgets::{block::Title, Block, Borders, Clear, Paragraph},
+    Terminal,
+};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::io::{self, BufRead, IsTerminal};
 use std::{collections::VecDeque, fs, path::PathBuf};
+use thag_rs::{errors::ThagError, logging::Verbosity, vlog};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 #[derive(Default, Serialize, Deserialize)]
@@ -138,7 +136,7 @@ impl EventReader for CrosstermEventReader {
 fn main() -> Result<(), ThagError> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
-        log!(Verbosity::Normal, "{line}");
+        vlog!(Verbosity::Normal, "{line}");
     }
     Ok(())
 }
@@ -339,7 +337,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
 //
 // If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
-    log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+    vlog!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
 }

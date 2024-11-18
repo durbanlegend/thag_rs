@@ -1,25 +1,24 @@
 /*[toml]
 [dependencies]
+lazy_static = "1.5.0"
 log = "0.4.22"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-thag_rs = "0.1.5"
-
+thag_rs = "0.1.7"
 strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
-termbg = "0.5.2"
+termbg = "0.6"
 */
 /// An older version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
 /// module, `colors` was originally developed here as a separate script and integrated as a module later.
 ///
 /// E.g. `thag demo/colors_old.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
-use thag_rs::{debug_log, log, logging::Verbosity};
-
 use lazy_static::lazy_static;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
+use thag_rs::{debug_log, logging::Verbosity, vlog};
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
@@ -58,7 +57,7 @@ macro_rules! nu_color_println {
         let content = format!("{}", format_args!($($arg)*));
      let style = $style;
     // Qualified form to avoid imports in calling code.
-    #[cfg(windows)] {log!(Verbosity::Quiet, "{}\r", style.paint(content));} else {log!(Verbosity::Quiet, "{}", style.paint(content)); }
+    #[cfg(windows)] {vlog!(Verbosity::Quiet, "{}\r", style.paint(content));} else {vlog!(Verbosity::Quiet, "{}", style.paint(content)); }
     }};
 }
 
@@ -224,10 +223,10 @@ fn main() {
 
     match color_support {
         None => {
-            log!(Verbosity::Normal, "No colour support found for terminal");
+            vlog!(Verbosity::Normal, "No colour support found for terminal");
         }
         Some(support) => {
-            log!(
+            vlog!(
                 Verbosity::Normal,
                 "{}",
                 nu_resolve_style(MessageLevel::Warning).paint("Colored Warning message\n")
@@ -235,7 +234,7 @@ fn main() {
 
             for variant in MessageStyle::iter() {
                 let variant_string: &str = &variant.to_string();
-                log!(
+                vlog!(
                     Verbosity::Normal,
                     "My {} message",
                     variant.get_style().paint(variant_string)
@@ -243,10 +242,10 @@ fn main() {
             }
 
             if matches!(support, ColorSupport::Xterm256) {
-                log!(Verbosity::Normal, "");
+                vlog!(Verbosity::Normal, "");
                 XtermColor::iter().for_each(|variant| {
                     let color = variant.get_color();
-                    log!(Verbosity::Normal, "{}", color.paint(variant.to_string()));
+                    vlog!(Verbosity::Normal, "{}", color.paint(variant.to_string()));
                 });
             }
         }

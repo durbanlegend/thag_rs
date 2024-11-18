@@ -32,7 +32,4 @@ Project_Notes.md
 demo/gen_readme_proc_macros.rs
 demo/proc_macros/README.md
 src/proc_macros/Cargo copy.toml
-demo/macro_utils/Cargo.toml
-demo/macro_utils/src/host_port_const.rs
-demo/macro_utils/src/lib.rs
 demo/proc_macro_const_demo copy.rs

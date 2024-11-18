@@ -1,7 +1,7 @@
 [package]
-name = "thag_demo_proc_macros"
+name = "thag_bank_proc_macros"
 version = "0.1.0"
-description = "Demo proc macros for the thag_rs crate"
+description = "Reserve demo proc macros for the thag_rs crate"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 
@@ -13,6 +13,7 @@ darling = "0.20.10"
 deluxe = "0.5.0"
 expander = "2.2.1"
 inline_colorization = "0.1.6"
+# macro_utils = { path = "../macro_utils" } # Adjust the path as needed
 prettyplease = "0.2.25"
 proc-macro2 = "1.0"
 quote = "1.0"

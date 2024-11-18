@@ -104,7 +104,6 @@ tempfile = "3.14.0"
 test-generator = "0.3.1"
 
 [workspace]
-# members = ["demo/macro_utils", "src/proc_macros"]
 members = ["src/proc_macros"]
 exclude = ["demo/proc_macros"]
 

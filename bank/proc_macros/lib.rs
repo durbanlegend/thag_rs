@@ -34,6 +34,7 @@ use crate::organizing_code::organizing_code_impl;
 use crate::organizing_code_const::organizing_code_const_impl;
 use crate::organizing_code_tokenstream::organizing_code_tokenstream_impl;
 use crate::repeat_dash::repeat_dash_impl;
+// use macro_utils::expand_macro_with;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
@@ -49,17 +50,6 @@ pub fn attribute_basic(_attr: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DeriveBasic)]
 pub fn derive_basic(input: TokenStream) -> TokenStream {
     intercept_and_debug(cfg!(feature = "expand"), input, derive_basic_impl)
-}
-
-#[proc_macro]
-pub fn function_like_basic(input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), input, |_tokens| {
-        // Original macro logic
-        let expanded = quote! {
-            pub const VALUE: usize = 42;
-        };
-        TokenStream::from(expanded)
-    })
 }
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
@@ -221,4 +211,17 @@ where
     }
 
     output
+}
+
+#[proc_macro]
+pub fn my_macro(input: TokenStream) -> TokenStream {
+    intercept_and_debug(cfg!(feature = "expand"), input, |_tokens| {
+        // let tokens: proc_macro2::TokenStream = tokens.clone().into();
+
+        // Original macro logic
+        let expanded = quote! {
+            pub const VALUE: usize = 42;
+        };
+        TokenStream::from(expanded)
+    })
 }

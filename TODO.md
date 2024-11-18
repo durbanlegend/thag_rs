@@ -16,12 +16,10 @@
 - [ ]  Try pre-building colour mappings
 - [ ]  New test for local paths in demo files and maybe even main Cargo.toml.
 - [ ]  Try ThagDisplay trait and derive macro.
+- [ ]  Set up bank/proc_macros and only take best to demo.
 - [ ]  Add a --expand (-X) flag to generate (not run) and expand the script. Requires cargo-expand crate.
-- [ ]  Try and figure out a way for thag_rs to test proc macros - and maybe to show the generated output?
-        - could do an expand option that builds the file and calls cargo expand with --manifest-path <build_state.cargo_toml_path>
-        - consider a dedicated installable thag_rs proc library - maybe configurable location specified in config.toml, with preferred theme.
-            Source files need to import this with path in toml file or even allow a git option.
-            Prototype this!
+- [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
+- [ ]  Replace OnceLock instances with lazy_static_fn! invocation.
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
 - [ ]  Try going back to derive macro with declarative macro to expand the attributes. Problem with attrib macro is the AST isn't
         editable in the way we want, it just points to spans that get resolved later. See bank/syn_parse_mappings.rs for nice format;

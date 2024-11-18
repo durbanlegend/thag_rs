@@ -547,7 +547,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "thag_demo_proc_macros"
+name = "thag_bank_proc_macros"
 version = "0.1.0"
 dependencies = [
  "const_gen_proc_macro",

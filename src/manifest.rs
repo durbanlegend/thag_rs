@@ -272,7 +272,10 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         }
 
         if &dep_name == "thag_demo_proc_macros" {
-            demo_proc_macros_magic(rs_dep_map, &dep_name);
+            proc_macros_magic(rs_dep_map, &dep_name, "demo");
+            continue;
+        } else if &dep_name == "thag_bank_proc_macros" {
+            proc_macros_magic(rs_dep_map, &dep_name, "bank");
             continue;
         }
 
@@ -296,37 +299,42 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
     }
 }
 
-fn demo_proc_macros_magic(rs_dep_map: &mut BTreeMap<String, Dependency>, dep_name: &String) {
+fn proc_macros_magic(
+    rs_dep_map: &mut BTreeMap<String, Dependency>,
+    dep_name: &str,
+    dir_name: &str,
+) {
     cvprtln!(
         Lvl::BRI,
         V::V,
         r#"Found magic import `{dep_name}`: attempting to generate path dependency from proc_macros.proc_macro_crate_path in config file ".../config.toml"."#
     );
-    let maybe_demo_proc_macros_dir = maybe_config().map_or_else(
+    let default_proc_macros_dir = format!("{dir_name}/proc_macros");
+    let maybe_magic_proc_macros_dir = maybe_config().map_or_else(
         || {
             debug_log!(
-                r#"Missing config file for "use {dep_name};", defaulting to "demo/proc_macros"."#
+                r#"Missing config file for "use {dep_name};", defaulting to "{dir_name}/proc_macros"."#
             );
-            Some("demo/proc_macros".to_string())
+            Some(default_proc_macros_dir.clone())
         },
         |config| {
             debug_log!("Found config.proc_macros()={:#?}", config.proc_macros);
             config.proc_macros.proc_macro_crate_path
         },
     );
-    let demo_proc_macros_dir = maybe_demo_proc_macros_dir.as_ref().map_or_else(|| {
+    let magic_proc_macros_dir = maybe_magic_proc_macros_dir.as_ref().map_or_else(|| {
         cvprtln!(
             Lvl::BRI,
             V::V,
-            r#"Missing `config.proc_macros.proc_macro_crate_path` in config file for "use {dep_name};": defaulting to "demo/proc_macros"."#
+            r#"Missing `config.proc_macros.proc_macro_crate_path` in config file for "use {dep_name};": defaulting to "{default_proc_macros_dir}"."#
         );
-        "demo/proc_macros"
-    }, |demo_proc_macros_dir| {
-        cvprtln!(Lvl::BRI, V::V, "Found {demo_proc_macros_dir:#?}.");
-        demo_proc_macros_dir
+        default_proc_macros_dir
+    }, |proc_macros_dir| {
+        cvprtln!(Lvl::BRI, V::V, "Found {proc_macros_dir:#?}.");
+        proc_macros_dir.to_string()
     });
 
-    let path = PathBuf::from_str(demo_proc_macros_dir).unwrap();
+    let path = PathBuf::from_str(&magic_proc_macros_dir).unwrap();
     let path = if path.is_absolute() {
         path
     } else {
@@ -337,5 +345,5 @@ fn demo_proc_macros_magic(rs_dep_map: &mut BTreeMap<String, Dependency>, dep_nam
         path: Some(path.display().to_string()),
         ..Default::default()
     }));
-    rs_dep_map.insert(dep_name.clone(), dep);
+    rs_dep_map.insert(dep_name.to_string(), dep);
 }

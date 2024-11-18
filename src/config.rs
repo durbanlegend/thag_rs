@@ -1,4 +1,4 @@
-use crate::{debug_log, ColorSupport, TermTheme, ThagResult, Verbosity};
+use crate::{debug_log, lazy_static_fn, ColorSupport, TermTheme, ThagResult, Verbosity};
 use edit::edit_file;
 use firestorm::profile_fn;
 use mockall::{automock, predicate::str};
@@ -10,23 +10,21 @@ use std::{
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
-    sync::OnceLock,
 };
 
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
 pub fn maybe_config() -> Option<Config> {
-    static MAYBE_CONFIG: OnceLock<Option<Config>> = OnceLock::new();
-    MAYBE_CONFIG
-        .get_or_init(|| -> Option<Config> {
-            let maybe_config = load(&RealContext::new());
-            if let Some(config) = maybe_config {
-                debug_log!("Loaded config: {config:?}");
-                return Some(config);
-            }
-            None::<Config>
-        })
-        .clone()
+    lazy_static_fn!(Option<Config>, maybe_load_config()).clone()
+}
+
+fn maybe_load_config() -> Option<Config> {
+    let maybe_config = load(&RealContext::new());
+    if let Some(config) = maybe_config {
+        debug_log!("Loaded config: {config:?}");
+        return Some(config);
+    }
+    None::<Config>
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]

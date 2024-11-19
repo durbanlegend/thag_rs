@@ -6,17 +6,17 @@
 //# Purpose: Demonstrate a handy alternative to the `lazy_static` crate.
 use std::collections::HashMap;
 
-/// A generic macro for lazily initializing a static variable using `OnceLock`.
-///
-/// # Parameters
-/// - `$type`: The type of the static variable.
-/// - `$init_fn`: The initialization function, which is only called once.
-/// - `deref` (optional): Dereferences the initialized value for direct access.
-///
-/// # Example
-/// ```rust
-/// let my_lazy_var = lazy_static_var!(HashMap<usize, &'static str>, { /* initialization */ });
-/// ```
+// A generic macro for lazily initializing a static variable using `OnceLock`.
+//
+// # Parameters
+// - `$type`: The type of the static variable.
+// - `$init_fn`: The initialization function, which is only called once.
+// - `deref` (optional): Dereferences the initialized value for direct access.
+//
+// # Example
+// ```rust
+// let my_lazy_var = lazy_static_var!(HashMap<usize, &'static str>, { /* initialization */ });
+// ```
 #[macro_export]
 macro_rules! lazy_static_var {
     ($type:ty, $init_fn:expr, deref) => {{
@@ -32,8 +32,7 @@ macro_rules! lazy_static_var {
 }
 
 fn get_error_description(code: usize) -> &'static str {
-    #[allow(non_snake_case)]
-    let LAZY_STATIC_ERROR_MAP = lazy_static_var!(HashMap<usize, &'static str>, {
+    let lazy_static_error_map = lazy_static_var!(HashMap<usize, &'static str>, {
         eprintln!("Generating the error map - you should only see this function being called once");
         let mut errors = HashMap::new();
         errors.insert(404, "Not Found");
@@ -43,7 +42,7 @@ fn get_error_description(code: usize) -> &'static str {
         errors.insert(503, "Service Unavailable");
         errors
     });
-    LAZY_STATIC_ERROR_MAP
+    lazy_static_error_map
         .get(&code)
         .copied()
         .unwrap_or("Unknown Error")

@@ -422,14 +422,14 @@ macro_rules! debug_log {
 
 #[macro_export]
 macro_rules! lazy_static_fn {
+    ($type:ty, $init_fn:expr, deref) => {{
+        use std::sync::OnceLock;
+        static GENERIC_LAZY: OnceLock<$type> = OnceLock::new();
+        *GENERIC_LAZY.get_or_init(|| $init_fn)
+    }};
     ($type:ty, $init_fn:expr) => {{
         use std::sync::OnceLock;
         static GENERIC_LAZY: OnceLock<$type> = OnceLock::new();
         GENERIC_LAZY.get_or_init(|| $init_fn)
-    }};
-    ($type:ty, $init_fn:expr, $static_name:ident) => {{
-        use std::sync::OnceLock;
-        static $static_name: OnceLock<$type> = OnceLock::new();
-        $static_name.get_or_init(|| $init_fn)
     }};
 }

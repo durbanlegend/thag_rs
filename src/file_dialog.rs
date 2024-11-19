@@ -20,11 +20,10 @@ use std::{
     io::Result,
     iter,
     path::{Path, PathBuf},
-    sync::OnceLock,
 };
 use tui_textarea::{Input, TextArea};
 
-use crate::{debug_log, key, key_mappings, Lvl};
+use crate::{debug_log, key, key_mappings, lazy_static_fn, Lvl};
 use crate::{shared::KeyDisplayLine, tui_editor::display_popup};
 use crate::{
     tui_editor::{self, centered_rect},
@@ -527,17 +526,17 @@ impl<'a> FileDialog<'a> {
 }
 
 fn get_max_lengths(mappings: &[KeyDisplayLine]) -> (u16, u16) {
-    static MAX_LENGTHS: OnceLock<(u16, u16)> = OnceLock::new();
-    let (max_key_len, max_desc_len) = *MAX_LENGTHS.get_or_init(|| {
+    lazy_static_fn!(
+        (u16, u16),
         mappings
             .iter()
             .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
                 let key_len = row.keys.len().try_into().unwrap();
                 let desc_len = row.desc.len().try_into().unwrap();
                 (max_key.max(key_len), max_desc.max(desc_len))
-            })
-    });
-    (max_key_len, max_desc_len)
+            }),
+        deref
+    )
 }
 
 /// Handle input in Save mode (for typing file name).

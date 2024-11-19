@@ -169,26 +169,29 @@ pub fn theme(timeout: Duration) -> ThagResult<Theme> {
 // Function to enable virtual terminal processing for Windows
 #[cfg(target_os = "windows")]
 fn enable_virtual_terminal_processing() -> bool {
-    static ENABLE_VT_PROCESSING: OnceLock<bool> = OnceLock::new();
-    *ENABLE_VT_PROCESSING.get_or_init(|| unsafe {
-        let handle = GetStdHandle(STD_OUTPUT_HANDLE);
-        if handle != INVALID_HANDLE_VALUE {
-            let mut mode: u32 = 0;
-            if winapi::um::consoleapi::GetConsoleMode(handle, &mut mode) != 0 {
-                // Try to set virtual terminal processing mode
-                if SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0 {
-                    // Success in enabling VT
-                    debug!("Successfully enabled Virtual Terminal Processing.\r");
-                    return true;
-                } else {
-                    // Failed to enable VT, optionally log error
-                    debug!("Failed to enable Virtual Terminal Processing.\r");
+    lazy_static_fn!(
+        bool,
+        unsafe {
+            let handle = GetStdHandle(STD_OUTPUT_HANDLE);
+            if handle != INVALID_HANDLE_VALUE {
+                let mut mode: u32 = 0;
+                if winapi::um::consoleapi::GetConsoleMode(handle, &mut mode) != 0 {
+                    // Try to set virtual terminal processing mode
+                    if SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0 {
+                        // Success in enabling VT
+                        debug!("Successfully enabled Virtual Terminal Processing.\r");
+                        return true;
+                    } else {
+                        // Failed to enable VT, optionally log error
+                        debug!("Failed to enable Virtual Terminal Processing.\r");
+                    }
                 }
             }
-        }
-        // Return false if enabling VT failed
-        false
-    })
+            // Return false if enabling VT failed
+            false
+        },
+        deref
+    )
 }
 
 fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {

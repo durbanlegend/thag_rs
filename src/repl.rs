@@ -5,7 +5,7 @@ use crate::tui_editor::{
     script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, TermScopeGuard,
 };
 use crate::{
-    cprtln, cvprtln, get_max_key_len, get_verbosity, key, regex, vlog, BuildState, Cli,
+    cprtln, cvprtln, get_verbosity, key, lazy_static_fn, regex, vlog, BuildState, Cli,
     CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError,
     ThagResult, V,
 };
@@ -29,7 +29,6 @@ use std::fs::{self, read_to_string, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::OnceLock;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use tui_textarea::{Input, TextArea};
@@ -266,15 +265,11 @@ impl Prompt for ReplPrompt {
 }
 
 fn get_heading_style() -> &'static NuStyle {
-    static STYLE: OnceLock<NuStyle> = OnceLock::new();
-    let style = STYLE.get_or_init(|| NuStyle::from(&Lvl::HEAD));
-    style
+    lazy_static_fn!(NuStyle, NuStyle::from(&Lvl::HEAD))
 }
 
 fn get_subhead_style() -> &'static NuStyle {
-    static STYLE: OnceLock<NuStyle> = OnceLock::new();
-    let style = STYLE.get_or_init(|| NuStyle::from(&Lvl::SUBH));
-    style
+    lazy_static_fn!(NuStyle, NuStyle::from(&Lvl::SUBH))
 }
 
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
@@ -386,7 +381,7 @@ pub fn run_repl(
     let formatted_bindings = format_bindings(&named_reedline_events, max_cmd_len);
 
     // Determine the length of the longest key description for padding
-    let max_key_len = *get_max_key_len!(formatted_bindings);
+    let max_key_len = lazy_static_fn!(usize, get_max_key_len(formatted_bindings), deref);
     // eprintln!("max_key_len={max_key_len}");
 
     loop {
@@ -767,7 +762,8 @@ fn save_file(
     }
     Ok(staging_path.display().to_string())
 }
-
+/// Return the maximum length of the key descriptor for a set of styled and
+/// formatted key / description bindings to be displayed on screen.
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
     let style: NuStyle = *get_heading_style();
     formatted_bindings
@@ -785,8 +781,7 @@ fn format_bindings(
     named_reedline_events: &[(String, &ReedlineEvent)],
     max_cmd_len: usize,
 ) -> &'static Vec<(String, String)> {
-    static FORMATTED_BINDINGS: OnceLock<Vec<(String, String)>> = OnceLock::new();
-    FORMATTED_BINDINGS.get_or_init(|| {
+    lazy_static_fn!(Vec<(String, String)>, {
         let mut formatted_bindings = named_reedline_events
             .iter()
             .filter_map(|(key_desc, reedline_event)| {
@@ -812,37 +807,40 @@ fn format_bindings(
 
 fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     // Calculate max command len for padding
-    static MAX_CMD_LEN: OnceLock<usize> = OnceLock::new();
-    *MAX_CMD_LEN.get_or_init(|| {
-        // Determine the length of the longest command for padding
-        // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
-        let style = get_subhead_style();
-        let max_cmd_len = reedline_events
-            .iter()
-            .map(|reedline_event| {
-                if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
-                    edit_cmds
-                        .iter()
-                        .map(|cmd| {
-                            let key_desc = style.paint(format!("{cmd:?}"));
-                            let key_desc = format!("{key_desc}");
-                            key_desc.len()
-                        })
-                        .max()
-                        .unwrap_or(0)
-                } else if !format!("{reedline_event}").starts_with("UntilFound") {
-                    let event_desc = style.paint(format!("{reedline_event:?}"));
-                    let event_desc = format!("{event_desc}");
-                    event_desc.len()
-                } else {
-                    0
-                }
-            })
-            .max()
-            .unwrap_or(0);
-        // Add 2 bytes of padding
-        max_cmd_len + 2
-    })
+    lazy_static_fn!(
+        usize,
+        {
+            // Determine the length of the longest command for padding
+            // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
+            let style = get_subhead_style();
+            let max_cmd_len = reedline_events
+                .iter()
+                .map(|reedline_event| {
+                    if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                        edit_cmds
+                            .iter()
+                            .map(|cmd| {
+                                let key_desc = style.paint(format!("{cmd:?}"));
+                                let key_desc = format!("{key_desc}");
+                                key_desc.len()
+                            })
+                            .max()
+                            .unwrap_or(0)
+                    } else if !format!("{reedline_event}").starts_with("UntilFound") {
+                        let event_desc = style.paint(format!("{reedline_event:?}"));
+                        let event_desc = format!("{event_desc}");
+                        event_desc.len()
+                    } else {
+                        0
+                    }
+                })
+                .max()
+                .unwrap_or(0);
+            // Add 2 bytes of padding
+            max_cmd_len + 2
+        },
+        deref
+    )
 }
 
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
@@ -923,8 +921,7 @@ pub fn format_key_code(key_code: KeyCode) -> String {
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
-    static EVENT_DESC_MAP: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
-    let event_desc_map = EVENT_DESC_MAP.get_or_init(|| {
+    let event_desc_map = lazy_static_fn!(HashMap<&'static str, &'static str>, {
         EVENT_DESCS
             .iter()
             .map(|[k, d]| (*k, *d))
@@ -946,14 +943,13 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 /// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
 #[must_use]
 pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> String {
-    static CMD_DESC_MAP: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
-    let cmd_desc_map: &HashMap<&str, &str> = CMD_DESC_MAP.get_or_init(|| {
-        CMD_DESCS
-            .iter()
-            .map(|[k, d]| (*k, *d))
-            .collect::<HashMap<&'static str, &'static str>>()
-    });
-
+    let cmd_desc_map: &HashMap<&str, &str> =
+        lazy_static_fn!(HashMap<&'static str, &'static str>, {
+            CMD_DESCS
+                .iter()
+                .map(|[k, d]| (*k, *d))
+                .collect::<HashMap<&'static str, &'static str>>()
+        });
     let cmd_descriptions = edit_cmds
         .iter()
         .map(|cmd| format_cmd_desc(cmd, cmd_desc_map, max_cmd_len))

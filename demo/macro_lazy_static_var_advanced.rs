@@ -43,27 +43,47 @@ macro_rules! lazy_static_var {
     }};
 }
 
-fn main() {
-    println!("1. Simple Case with Explicit Type");
-    let my_lazy_var = lazy_static_var!(Vec<i32>, {
-        eprintln!("Initializing simple case...");
-        vec![1, 2, 3]
-    });
-    println!("Value: {:?}", my_lazy_var);
-
-    println!("\n2. Debug Logging with Explicit Type");
+fn case_2() {
     let my_lazy_var = lazy_static_var!(Vec<i32>, { vec![4, 5, 6] }, "MyLazyVec");
     println!("Value: {:?}", my_lazy_var);
+}
 
-    println!("\n3. Explicit Type with Logging");
+fn case_3() {
     let my_lazy_var = lazy_static_var!(Vec<usize>, { vec![7, 8, 9] }, "ExplicitTypeLazyVec");
     println!("Value: {:?}", my_lazy_var);
+}
+
+fn main() {
+    println!("1. Simple Case with Explicit Type");
+    for _ in 0..3 {
+        // case_1();
+        let my_lazy_var = lazy_static_var!(Vec<i32>, {
+            eprintln!("Initializing simple case...");
+            vec![1, 2, 3]
+        });
+        println!("Value: {:?}", my_lazy_var);
+    }
+
+    println!("\n2. Debug Logging with Explicit Type");
+    for _ in 0..3 {
+        case_2();
+    }
+
+    println!("\n3. Explicit Type with Logging");
+    for _ in 0..3 {
+        case_3();
+    }
 
     println!("\n4. Dereferenced Value");
-    let my_lazy_var = lazy_static_var!(Vec<i32>, { vec![10, 11, 12] }, deref);
-    println!("Value: {:?}", *my_lazy_var);
+    for _ in 0..3 {
+        let my_lazy_var = lazy_static_var!(Vec<i32>, { vec![10, 11, 12] }, deref);
+        println!("Value: {:?}", *my_lazy_var);
+    }
 
     println!("\n5. Debug Logging + Dereference");
-    let my_lazy_var = lazy_static_var!(Vec<i32>, { vec![13, 14, 15] }, "MyDereferencedVec", deref);
-    println!("Value: {:?}", *my_lazy_var);
+    for _ in 0..3 {
+        let my_lazy_var =
+            lazy_static_var!(Vec<i32>, { vec![13, 14, 15] }, "MyDereferencedVec", deref);
+        println!("Value: {:?}", *my_lazy_var);
+    }
 }

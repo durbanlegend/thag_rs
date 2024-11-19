@@ -30,15 +30,16 @@
 - [ ]  Do gen_readme version for demo/proc_macros, curently demo/gen_readme_proc_macro.rs
 - [ ]  Consider dropping our termbg module if termbg 0.6.1 is working fine.
 - [ ]  Testing fib scripts: ls -1 demo/fib_*.rs | grep -v basic | grep -v binet | while read f; do echo $f;  cargo run -- $f -qq -- 100 | grep 354224848179261915075 || echo "...failed"; done
-n=stem
-r=$n.rs
+stem=macro_lazy_static_var_advanced
+stem=macro_lazy_static_var_errs
+r=$stem.rs
 p=demo/$r
-find $TMPDIR -name $n 2>/dev/null
+find $TMPDIR -name $stem 2>/dev/null
 d=...
 f=$d/Cargo.toml
-cargo expand --bin $n --manifest-path=$f --theme=gruvbox-dark | sdiff $p - | less
+cargo expand --bin $stem --manifest-path=$f --theme=gruvbox-dark | sdiff $p - | less
 
-n=proc_macro_host_port_const
+stem=proc_macro_host_port_const
 
 
 ## Low Priority

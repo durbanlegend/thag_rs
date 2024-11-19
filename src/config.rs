@@ -19,6 +19,7 @@ pub fn maybe_config() -> Option<Config> {
 }
 
 fn maybe_load_config() -> Option<Config> {
+    eprintln!("In maybe_load_config, should not see this message more than once");
     let maybe_config = load(&RealContext::new());
     if let Some(config) = maybe_config {
         debug_log!("Loaded config: {config:?}");

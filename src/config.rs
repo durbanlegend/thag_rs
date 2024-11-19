@@ -1,4 +1,4 @@
-use crate::{debug_log, lazy_static_fn, ColorSupport, TermTheme, ThagResult, Verbosity};
+use crate::{debug_log, lazy_static_var, ColorSupport, TermTheme, ThagResult, Verbosity};
 use edit::edit_file;
 use firestorm::profile_fn;
 use mockall::{automock, predicate::str};
@@ -15,7 +15,7 @@ use std::{
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
 pub fn maybe_config() -> Option<Config> {
-    lazy_static_fn!(Option<Config>, maybe_load_config()).clone()
+    lazy_static_var!(Option<Config>, maybe_load_config()).clone()
 }
 
 fn maybe_load_config() -> Option<Config> {

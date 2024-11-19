@@ -3,7 +3,7 @@
 use crate::config::Config;
 use crate::termbg::{terminal, theme, Theme};
 use crate::{
-    config, debug_log, generate_styles, lazy_static_fn, maybe_config, vlog, ThagResult, V,
+    config, debug_log, generate_styles, lazy_static_var, maybe_config, vlog, ThagResult, V,
 };
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use firestorm::profile_fn;
@@ -120,7 +120,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
         }
     }
 
-    let color_support = lazy_static_fn!(
+    let color_support = lazy_static_var!(
         Option<ColorSupport>,
         maybe_config()
             .as_ref()
@@ -134,7 +134,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
             })
     );
 
-    let term_theme = lazy_static_fn!(
+    let term_theme = lazy_static_var!(
         TermTheme,
         maybe_config().map_or_else(
             || { resolve_term_theme().unwrap_or_default() },

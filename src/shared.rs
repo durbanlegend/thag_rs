@@ -421,7 +421,7 @@ macro_rules! debug_log {
 }
 
 #[macro_export]
-macro_rules! lazy_static_fn {
+macro_rules! lazy_static_var {
     ($type:ty, $init_fn:expr, deref) => {{
         use std::sync::OnceLock;
         static GENERIC_LAZY: OnceLock<$type> = OnceLock::new();

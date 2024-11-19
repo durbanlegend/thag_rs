@@ -5,7 +5,7 @@ use crate::tui_editor::{
     script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, TermScopeGuard,
 };
 use crate::{
-    cprtln, cvprtln, get_verbosity, key, lazy_static_fn, regex, vlog, BuildState, Cli,
+    cprtln, cvprtln, get_verbosity, key, lazy_static_var, regex, vlog, BuildState, Cli,
     CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError,
     ThagResult, V,
 };
@@ -265,11 +265,11 @@ impl Prompt for ReplPrompt {
 }
 
 fn get_heading_style() -> &'static NuStyle {
-    lazy_static_fn!(NuStyle, NuStyle::from(&Lvl::HEAD))
+    lazy_static_var!(NuStyle, NuStyle::from(&Lvl::HEAD))
 }
 
 fn get_subhead_style() -> &'static NuStyle {
-    lazy_static_fn!(NuStyle, NuStyle::from(&Lvl::SUBH))
+    lazy_static_var!(NuStyle, NuStyle::from(&Lvl::SUBH))
 }
 
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
@@ -381,7 +381,7 @@ pub fn run_repl(
     let formatted_bindings = format_bindings(&named_reedline_events, max_cmd_len);
 
     // Determine the length of the longest key description for padding
-    let max_key_len = lazy_static_fn!(usize, get_max_key_len(formatted_bindings), deref);
+    let max_key_len = lazy_static_var!(usize, get_max_key_len(formatted_bindings), deref);
     // eprintln!("max_key_len={max_key_len}");
 
     loop {
@@ -781,7 +781,7 @@ fn format_bindings(
     named_reedline_events: &[(String, &ReedlineEvent)],
     max_cmd_len: usize,
 ) -> &'static Vec<(String, String)> {
-    lazy_static_fn!(Vec<(String, String)>, {
+    lazy_static_var!(Vec<(String, String)>, {
         let mut formatted_bindings = named_reedline_events
             .iter()
             .filter_map(|(key_desc, reedline_event)| {
@@ -807,7 +807,7 @@ fn format_bindings(
 
 fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     // Calculate max command len for padding
-    lazy_static_fn!(
+    lazy_static_var!(
         usize,
         {
             // Determine the length of the longest command for padding
@@ -921,7 +921,7 @@ pub fn format_key_code(key_code: KeyCode) -> String {
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
-    let event_desc_map = lazy_static_fn!(HashMap<&'static str, &'static str>, {
+    let event_desc_map = lazy_static_var!(HashMap<&'static str, &'static str>, {
         EVENT_DESCS
             .iter()
             .map(|[k, d]| (*k, *d))
@@ -944,7 +944,7 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 #[must_use]
 pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> String {
     let cmd_desc_map: &HashMap<&str, &str> =
-        lazy_static_fn!(HashMap<&'static str, &'static str>, {
+        lazy_static_var!(HashMap<&'static str, &'static str>, {
             CMD_DESCS
                 .iter()
                 .map(|[k, d]| (*k, *d))

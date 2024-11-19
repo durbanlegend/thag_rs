@@ -23,7 +23,7 @@ use std::{
 };
 use tui_textarea::{Input, TextArea};
 
-use crate::{debug_log, key, key_mappings, lazy_static_fn, Lvl};
+use crate::{debug_log, key, key_mappings, lazy_static_var, Lvl};
 use crate::{shared::KeyDisplayLine, tui_editor::display_popup};
 use crate::{
     tui_editor::{self, centered_rect},
@@ -526,7 +526,7 @@ impl<'a> FileDialog<'a> {
 }
 
 fn get_max_lengths(mappings: &[KeyDisplayLine]) -> (u16, u16) {
-    lazy_static_fn!(
+    lazy_static_var!(
         (u16, u16),
         mappings
             .iter()

@@ -4,6 +4,7 @@ use clap::error::Error as ClapError;
 use reedline::ReedlineError;
 use serde_merge::error::Error as SerdeMergeError;
 use std::borrow::Cow;
+use std::string::FromUtf8Error;
 use std::sync::{MutexGuard, PoisonError as LockError};
 use std::{error::Error, io};
 use strum::ParseError as StrumParseError;
@@ -21,6 +22,7 @@ pub enum ThagError {
     Command(&'static str),             // For errors during Cargo build or program execution
     Dyn(Box<dyn Error>), // For boxed dynamic errors from 3rd parties (firestorm in first instance)
     FromStr(Cow<'static, str>), // For simple errors from a string
+    FromUtf8(FromUtf8Error), // For simple errors from a utf8 array
     Io(std::io::Error),  // For I/O errors
     LockMutexGuard(&'static str), // For lock errors with MutexGuard
     Logic(&'static str), // For logic errors
@@ -36,7 +38,11 @@ pub enum ThagError {
     UnsupportedTerm,
 }
 
-impl ThagError {}
+impl From<FromUtf8Error> for ThagError {
+    fn from(err: FromUtf8Error) -> Self {
+        Self::FromUtf8(err)
+    }
+}
 
 impl From<io::Error> for ThagError {
     fn from(err: io::Error) -> Self {
@@ -141,6 +147,7 @@ impl std::fmt::Display for ThagError {
                 }
                 Ok(())
             }
+            Self::FromUtf8(e) => write!(f, "{e:?}"),
             Self::Io(e) => write!(f, "{e:?}"),
             Self::LockMutexGuard(e) => write!(f, "{e:?}"),
             Self::OsString(o) => {
@@ -171,6 +178,7 @@ impl Error for ThagError {
             Self::Command(_e) => Some(self),
             Self::Dyn(e) => Some(&**e),
             Self::FromStr(ref _e) => Some(self),
+            Self::FromUtf8(e) => Some(e),
             Self::Io(ref e) => Some(e),
             Self::LockMutexGuard(_e) => Some(self),
             Self::Logic(_e) => Some(self),

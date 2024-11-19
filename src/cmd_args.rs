@@ -20,6 +20,11 @@ use std::{fmt, str};
                 .required(false)
                 .args(&["quiet", "normal", "verbose"]),
         ))]
+#[command(group(
+            ArgGroup::new("norun_options")
+                .required(false)
+                .args(&["generate", "build", "check", "executable", "expand"]),
+        ))]
 pub struct Cli {
     /// Optional path of a script to run (`path`/`stem`.rs)
     pub script: Option<String>,
@@ -94,8 +99,13 @@ pub struct Cli {
     pub executable: bool,
     /// Just cargo check script, unless unchanged from a previous build. Less thorough than build.
     /// Used by integration test to check all demo scripts
-    #[arg(short, long, help_heading = Some("No-run Options"), conflicts_with_all(["build", "executable"]))]
+    #[arg(short, long, help_heading = Some("No-run Options"))]
     pub check: bool,
+    /// Just generate script, unless unchanged from a previous build, and show the version with expanded
+    /// macros side by side with the original version.
+    /// Requires the `cargo-expand` crate to be installed.
+    #[arg(short = 'X', long, help_heading = Some("No-run Options"))]
+    pub expand: bool,
     /// Strip double quotes from string result of expression (true/false). Default: config value / false.
     #[arg(
         short,
@@ -168,6 +178,7 @@ bitflags! {
         const QUIETER       = 262_144;
         const UNQUOTE       = 524_288;
         const CONFIG        = 1_048_576;
+        const EXPAND        = 2_097_152;
     }
 }
 
@@ -219,7 +230,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
         proc_flags.set(
             ProcFlags::NORUN,
-            args.generate | args.build | args.check | args.executable,
+            args.generate | args.build | args.check | args.executable | args.expand,
         );
         proc_flags.set(ProcFlags::NORMAL, args.normal);
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
@@ -229,6 +240,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::EDIT, args.edit);
         proc_flags.set(ProcFlags::LOOP, is_loop);
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
+        proc_flags.set(ProcFlags::EXPAND, args.expand);
 
         let unquote = args.unquote.map_or_else(
             || {

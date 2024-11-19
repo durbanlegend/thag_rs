@@ -1,11 +1,11 @@
 #![allow(clippy::uninlined_format_args)]
+use crate::code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 #[cfg(target_os = "windows")]
 use crate::escape_path_for_windows;
 use crate::{
-    code_utils::{infer_deps_from_ast, infer_deps_from_source},
-    cvprtln, maybe_config,
-}; // Valid if no circular dependency
-use crate::{debug_log, debug_timings, regex, vlog, Ast, BuildState, Lvl, ThagResult, V};
+    cvprtln, debug_log, debug_timings, maybe_config, regex, vlog, Ast, BuildState, Lvl, ThagResult,
+    V,
+};
 use cargo_toml::{Dependency, DependencyDetail, Manifest};
 use firestorm::profile_fn;
 use mockall::automock;
@@ -156,17 +156,7 @@ pub fn configure_default(build_state: &BuildState) -> ThagResult<Manifest> {
     profile_fn!(configure_default);
     let source_stem = &build_state.source_stem;
 
-    let binding: &PathBuf = if build_state.build_from_orig_source {
-        &build_state.source_path
-    } else {
-        &build_state.target_dir_path.join(&build_state.source_name)
-    };
-
-    #[cfg(target_os = "windows")]
-    let gen_src_path = escape_path_for_windows(binding.to_string_lossy().as_ref());
-
-    #[cfg(not(target_os = "windows"))]
-    let gen_src_path = binding.to_string_lossy().into_owned();
+    let gen_src_path = get_source_path(build_state);
 
     debug_log!(
         r"build_state.build_from_orig_source={}

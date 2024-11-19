@@ -1179,3 +1179,18 @@ pub fn is_main_fn_returning_unit(file: &File) -> ThagResult<bool> {
 
     Err("No main function found".into())
 }
+
+pub fn get_source_path(build_state: &BuildState) -> String {
+    let binding: &PathBuf = if build_state.build_from_orig_source {
+        &build_state.source_path
+    } else {
+        &build_state.target_dir_path.join(&build_state.source_name)
+    };
+
+    #[cfg(target_os = "windows")]
+    let src_path = escape_path_for_windows(binding.to_string_lossy().as_ref());
+
+    #[cfg(not(target_os = "windows"))]
+    let src_path = binding.to_string_lossy().into_owned();
+    src_path
+}

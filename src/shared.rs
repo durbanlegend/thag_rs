@@ -207,8 +207,9 @@ impl BuildState {
         {
             (true, true)
         } else if proc_flags.contains(ProcFlags::NORUN) {
-            let must_build =
-                proc_flags.contains(ProcFlags::BUILD) || proc_flags.contains(ProcFlags::EXECUTABLE);
+            let must_build = proc_flags.contains(ProcFlags::BUILD)
+                || proc_flags.contains(ProcFlags::EXECUTABLE)
+                || proc_flags.contains(ProcFlags::EXPAND);
             let must_gen =
                 must_build || proc_flags.contains(ProcFlags::GENERATE) || !cargo_toml_path.exists();
             (must_gen, must_build)
@@ -233,6 +234,7 @@ impl BuildState {
             if proc_flags.contains(ProcFlags::BUILD)
                 | proc_flags.contains(ProcFlags::CHECK)
                 | proc_flags.contains(ProcFlags::EXECUTABLE)
+                | proc_flags.contains(ProcFlags::EXPAND)
             {
                 assert!(
                     build_state.must_gen
@@ -241,10 +243,13 @@ impl BuildState {
                 );
             }
             if proc_flags.contains(ProcFlags::FORCE) {
+                assert!(build_state.must_gen & build_state.must_build);
+            }
+            if proc_flags.contains(ProcFlags::EXPAND) {
                 assert!(
                     build_state.must_gen
                         & build_state.must_build
-                        & !proc_flags.contains(ProcFlags::NORUN)
+                        & proc_flags.contains(ProcFlags::NORUN)
                 );
             }
             if build_state.must_build {

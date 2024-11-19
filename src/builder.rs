@@ -1,5 +1,5 @@
 use crate::code_utils::{
-    self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest,
+    self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest, get_source_path,
     read_file_contents, remove_inner_attributes, strip_curly_braces, to_ast, wrap_snippet,
     write_source,
 };
@@ -603,40 +603,54 @@ fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
 /// # Panics
 /// Will panic if the cargo build process fails to spawn or if it can't move the executable.
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
-    // profile_fn!(build);
-
     let start_build = Instant::now();
     let quiet = proc_flags.contains(ProcFlags::QUIET);
     let quieter = proc_flags.contains(ProcFlags::QUIETER);
     let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
     let check = proc_flags.contains(ProcFlags::CHECK);
+    let expand = proc_flags.contains(ProcFlags::EXPAND);
 
     vlog!(V::V, "BBBBBBBB In build");
 
     let cargo_toml_path_str = code_utils::path_to_str(&build_state.cargo_toml_path)?;
 
     let mut cargo_command = Command::new("cargo");
-    let cargo_subcommand = if check { "check" } else { "build" };
-    // Rustc writes to std
+    let cargo_subcommand = if check {
+        "check"
+    } else if expand {
+        "expand"
+    } else {
+        "build"
+    };
+
     let mut args = vec![cargo_subcommand, "--manifest-path", &cargo_toml_path_str];
     if quiet || quieter {
         args.push("--quiet");
     }
     if executable {
         args.push("--release");
+    } else if expand {
+        args.push("--bin");
+        args.push(&build_state.source_stem);
+        args.push("--theme=gruvbox-dark");
     }
 
-    cargo_command.args(&args); // .current_dir(build_dir);
+    cargo_command.args(&args);
 
-    // Show sign of life in case build takes a while
     vlog!(
         V::N,
         "{} {} ...",
-        if check { "Checking" } else { "Building" },
+        if check {
+            "Checking"
+        } else if expand {
+            "Expanding"
+        } else {
+            "Building"
+        },
         Style::from(&Lvl::EMPH).paint(&build_state.source_name)
     );
 
-    if quieter {
+    if quieter | expand {
         // Pipe output
         cargo_command
             .stdout(std::process::Stdio::piped())
@@ -648,23 +662,44 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
             .stderr(std::process::Stdio::inherit());
     }
 
-    // Execute the command and handle the result
-    let output = cargo_command.spawn()?;
+    if expand {
+        // Capture expanded output
+        let output = cargo_command.output()?; // This waits for the command to finish
+        if !output.status.success() {
+            eprintln!(
+                "Error running `cargo expand`: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return Err("Expansion failed".into());
+        }
 
-    // Wait for the process to finish
-    let exit_status = output.wait_with_output()?;
+        // Capture expanded source as String
+        let expanded_source = String::from_utf8(output.stdout)?;
 
-    if exit_status.status.success() {
-        debug_log!("Build succeeded");
+        // Read the unexpanded source
+        let unexpanded_path = get_source_path(build_state);
+        let unexpanded_source = std::fs::read_to_string(unexpanded_path)?;
+
+        let max_width = if let Ok((width, _height)) = crossterm::terminal::size() {
+            (width - 22) / 2
+        } else {
+            80
+        };
+        // Compare the sources
+        use side_by_side_diff::create_side_by_side_diff;
+        let diff = create_side_by_side_diff(&unexpanded_source, &expanded_source, max_width.into());
+        println!("{diff}");
+    } else {
+        let status = cargo_command.spawn()?.wait()?;
+        if !status.success() {
+            return Err("Build failed".into());
+        }
         if executable {
             deploy_executable(build_state)?;
         }
-    } else {
-        return Err("Build failed".into());
-    };
+    }
 
     display_timings(&start_build, "Completed build", proc_flags);
-
     Ok(())
 }
 

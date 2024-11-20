@@ -1,7 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
-#[cfg(target_os = "windows")]
-use crate::escape_path_for_windows;
 use crate::{
     cvprtln, debug_log, debug_timings, maybe_config, regex, vlog, Ast, BuildState, Lvl, ThagResult,
     V,

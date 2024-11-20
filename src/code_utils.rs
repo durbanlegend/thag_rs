@@ -3,11 +3,12 @@
     clippy::implicit_return,
     clippy::missing_trait_methods
 )]
+#[cfg(target_os = "windows")]
+use crate::escape_path_for_windows;
 use crate::{
     cvprtln, debug_log, debug_timings, vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult,
     BUILT_IN_CRATES, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
-
 use cargo_toml::{Edition, Manifest};
 use firestorm::profile_fn;
 use regex::Regex;

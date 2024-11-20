@@ -21,7 +21,7 @@ use std::{
     ops::Deref,
     option::Option,
     path::{Path, PathBuf},
-    process::{self, Output},
+    process::{self, Command, Output},
     time::{Instant, SystemTime},
 };
 
@@ -619,8 +619,9 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
         cvprtln!(
             &Lvl::WARN,
             V::QQ,
-            "Error parsing syntax tree for `{sourch_path_string}`. Using regex to help you debug the script."
+            "Error parsing syntax tree for `{sourch_path_string}`. Using `rustfmt` to help you debug the script."
         );
+        rustfmt(sourch_path_string);
 
         debug_timings(&start_ast, "Completed unsuccessful AST parse");
         None
@@ -1194,4 +1195,41 @@ pub fn get_source_path(build_state: &BuildState) -> String {
     #[cfg(not(target_os = "windows"))]
     let src_path = binding.to_string_lossy().into_owned();
     src_path
+}
+
+/// Format a Rust source file in situ using rustfmt.
+/// # Panics
+/// Will panic if the `rustfmt` failed.
+fn rustfmt(source_path_str: &str) {
+    if Command::new("rustfmt").arg("--version").output().is_ok() {
+        // Run rustfmt on the source file
+        let mut command = Command::new("rustfmt");
+        command.arg("--edition");
+        command.arg("2021");
+        command.arg(source_path_str);
+        command
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit());
+        let output = command.output().expect("Failed to run rustfmt");
+
+        if output.status.success() {
+            debug_log!("Successfully formatted {} with rustfmt.", source_path_str);
+            debug_log!(
+                "{}\n{}",
+                source_path_str,
+                String::from_utf8_lossy(&output.stdout)
+            );
+        } else {
+            debug_log!(
+                "Failed to format {} with rustfmt\n{}",
+                source_path_str,
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+    } else {
+        vlog!(
+            V::QQ,
+            "`rustfmt` not found. Please install it to use this script."
+        );
+    }
 }

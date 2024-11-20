@@ -350,23 +350,11 @@ pub fn gen_build_run(
             syntax_tree
         };
 
-        if syntax_tree.is_none() {
-            cvprtln!(
-                Lvl::WARN,
-                V::QQ,
-                "If no useful error messages are shown below, try `rustfmt {0}` or `rustc {0}`.",
-                source_path
-                    .strip_prefix(current_dir()?)
-                    .map_err(|e| e.to_string())?
-                    .display()
-            );
-        }
-        // debug_log!("syntax_tree={syntax_tree:#?}");
-
-        let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
-
         let main_methods = syntax_tree.as_ref().map_or_else(
-            || re.find_iter(&rs_source).count(),
+            || {
+                let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
+                re.find_iter(&rs_source).count()
+            },
             code_utils::count_main_methods,
         );
         let has_main = match main_methods {

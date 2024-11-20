@@ -6,6 +6,7 @@ supports-color= "3.0.0"
 /// Windows-friendly logic extracted from crate `supports-color`.
 ///
 //# Purpose: Proof of concept for Windows environment
+//# Categories: crates, prototype
 use std::env;
 use std::io::{self, Read};
 

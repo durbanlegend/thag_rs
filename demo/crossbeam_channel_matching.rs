@@ -7,6 +7,7 @@ crossbeam-utils = "0.8.20"
 /// `crossbeam-channel` published example
 /// Using `select!` to send and receive on the same channel at the same time.
 //# Purpose: Demo featured crates.
+//# Categories: crates
 use crossbeam_channel::{bounded, select};
 use crossbeam_utils::thread;
 

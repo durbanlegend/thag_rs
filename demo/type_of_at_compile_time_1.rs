@@ -4,6 +4,7 @@
 ///
 /// See also `demo/type_of_at_compile_time_2.rs` for an alternative implementation.
 //# Purpose: Demo expression type determination for static dispatch.
+//# Categories: type_identification, technique
 use std::stringify;
 
 trait TypeInfo {

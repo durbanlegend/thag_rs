@@ -13,6 +13,7 @@ termbg = "0.6"
 ///
 /// E.g. `thag demo/colors_old.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
+//# Categories: prototype, technique
 use lazy_static::lazy_static;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};

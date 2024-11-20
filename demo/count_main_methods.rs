@@ -11,6 +11,7 @@ use syn::Expr;
 /// visitor pattern. This is more reliable than a simple source code search
 /// which tends to find false positives in string literals and comments.
 //# Purpose: Demo prototyping with thag_rs and use of the `syn` visitor pattern to visit nodes of interest
+//# Categories: AST, prototype, technique
 fn count_main_methods(rs_source: &str) -> usize {
     // Parse the source code into a syntax tree
     let mut maybe_ast: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);

@@ -1,5 +1,6 @@
 /// Converts embedded manifest format from `thag` to `rust-script`.
 //# Purpose: Convenience for any `thag` user who wants to try out `rust-script`.
+//# Categories: crates, tools
 use std::io::{self, Read, Write};
 
 fn read_stdin() -> Result<String, io::Error> {

@@ -5,6 +5,7 @@ use std::env;
 /// mock-up.
 /// P.S.: This was since implemented as `--loop`.
 //# Purpose: Evaluate expression logic for line processing.
+//# Categories: exploration, technique
 use std::io::{self, BufRead};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -18,6 +18,7 @@ use termbg::Theme;
 /// An early exploration of the idea of adaptive message colouring according to the terminal theme.
 
 //# Purpose: Demo a simple example of adaptive message colouring, and the featured crates.
+//# Categories: crates, exploration, technique
 pub trait ThemeStyle {
     fn get_style(&self) -> Style;
 }

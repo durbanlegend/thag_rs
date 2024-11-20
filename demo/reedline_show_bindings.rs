@@ -10,6 +10,7 @@ reedline = "0.36.0"
 /// the addition of command descriptions, non-edit commands such as SearchHistory, and colour-
 /// coding.
 //# Purpose: Demo the end result of development dialog with ChatGPT.
+//# Categories: crates, REPL, technique
 use reedline::{default_emacs_keybindings, EditCommand, KeyCode, KeyModifiers, ReedlineEvent};
 
 fn main() {

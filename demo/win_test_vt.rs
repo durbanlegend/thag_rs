@@ -23,6 +23,7 @@ winapi = { version = "0.3.9", features = ["consoleapi", "processenv", "winbase"]
 /// addressed the former by using non-blocking `crossterm` event polling instead of `stdin`, and also
 /// introduced a
 //# Purpose: Debug `termbg`
+//# Categories: testing
 use crossterm::{
     event::{self, Event, KeyCode},
     terminal,

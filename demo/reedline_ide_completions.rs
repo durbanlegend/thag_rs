@@ -7,6 +7,7 @@ reedline = "0.36.0"
 /// history. Enter a letter, e.g. "h" and press Tab to see the magic happen: all the commands starting
 /// with that letter will be displayed for selection with a tab, up and down arrows or Enter. Or you can
 /// enter subsequent letters to narrow the search. Noice.
+//# Categories: crates, REPL, technique
 //# Purpose: Demo `reedline` tab completions.
 // Create a reedline object with tab completions support
 // cargo run --example completions

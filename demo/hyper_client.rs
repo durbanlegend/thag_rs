@@ -36,6 +36,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 /// `thag_rs demo/hyper_client.rs -- http://127.0.0.1:3000`.
 /// Or use any other available HTTP server.
 //# Purpose: Demo `hyper` HTTP client, and incorporating separate modules into the script.
+//# Categories: async, crates, technique
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();

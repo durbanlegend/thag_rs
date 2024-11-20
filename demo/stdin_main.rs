@@ -19,6 +19,7 @@ tui-textarea = { version = "0.6", features = ["search"] }
 ///
 /// E.g. `thag demo/stdin_main.rs`
 //# Purpose: Debugging.
+//# Categories: testing
 use crossterm::{
     event::{
         DisableMouseCapture,

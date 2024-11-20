@@ -8,7 +8,8 @@ syn = { version = "2.0.87", features = ["extra-traits", "full", "parsing", "visi
 /// Rust source expression passed to the script. Specifically the combination of fn `visit_use_path`
 /// to process the nodes representing `use` statements and fn `visit_expr` to initiate the tree
 /// traversal. This version expects the script contents to consist of a Rust expression.
-//# Purpose: Demo featured crate.
+//# Purpose: Prototype.
+//# Categories: AST, crates, prototype, technique
 use std::{env, fs, path::PathBuf};
 
 fn main() {

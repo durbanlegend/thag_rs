@@ -19,6 +19,7 @@ flume = "0.11.0"
 /// Published example from the `flume` channel crate.
 /// Must be run with --multimain (-m) option to allow multiple main methods.
 //# Purpose: demo of async and channel programming and of `flume` in particular.
+//# Categories: async, crates, technique
 use flume;
 
 #[cfg(feature = "async")]

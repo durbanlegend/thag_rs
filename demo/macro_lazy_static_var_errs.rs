@@ -4,6 +4,7 @@
 ///
 /// See also `demo/macro_lazy_static_var_advanced.rs` for a more advanced form of the macro.
 //# Purpose: Demonstrate a handy alternative to the `lazy_static` crate.
+//# Categories: macros, technique
 use std::collections::HashMap;
 
 // A generic macro for lazily initializing a static variable using `OnceLock`.

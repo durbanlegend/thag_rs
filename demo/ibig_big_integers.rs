@@ -5,6 +5,7 @@ ibig = "0.3.6"
 
 /// Published example from the `ibig` crate, showcasing the use of the crate.
 //# Purpose: Demo featured crate, also how we can often run an incomplete snippet "as is".
+//# Categories: big_numbers, crates, technique
 use ibig::{ibig, modular::ModuloRing, ubig, UBig};
 
 let a = ubig!(12345678);

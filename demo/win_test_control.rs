@@ -1,5 +1,6 @@
 /// This is the "control" test for the `demo/win_test_*.rs` scripts. It seems to reliably NOT swallow the first character.
 //# Purpose: Show how crates *not* sending an OSC to the terminal in Windows will *not* the first character you enter to be swallowed.
+//# Categories: testing
 use std::io::{self, Read};
 
 fn main() {

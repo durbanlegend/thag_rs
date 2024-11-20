@@ -3,6 +3,7 @@
 /// decided to use a regular expression as I found it less problematic (see
 /// `demo/regex_capture_toml.rs`).
 //# Purpose: Prototype
+//# Categories: prototype, technique
 fn separate_rust_and_toml(source_code: &str) -> (String, String) {
     let mut rust_code = String::new();
     let mut toml_metadata = String::new();

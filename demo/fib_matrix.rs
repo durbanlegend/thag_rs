@@ -7,6 +7,7 @@
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo an alternative to the standard computation for Fibonacci numbers.
+//# Categories: educational, math, recreational, technique
 use std::env;
 
 fn fibonacci_matrix(n: u128) -> u128 {

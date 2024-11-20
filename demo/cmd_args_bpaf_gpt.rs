@@ -10,6 +10,7 @@ bpaf_derive = "0.5.10"
 ///
 /// E.g. `thag -tv demo/cmd_args_bpaf_gpt.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 //# Purpose: Demo one lighter-weight alternative to clap.
+//# Categories: CLI, crates, technique
 use bitflags::bitflags;
 use bpaf_derive::Bpaf;
 use core::fmt;

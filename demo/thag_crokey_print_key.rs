@@ -9,6 +9,7 @@ toml = "0.5"
 /// Published example of KeyCombination from `crokey` crate, modified to use
 /// basic `crokey` key combos embedded in `thag_rs` under MIT licence.
 //# Purpose: Test for stability and consistency across different platforms and terminals.
+//# Categories: crates, testing
 use {
     crossterm::{
         event::{read, Event, KeyEventKind},

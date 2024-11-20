@@ -17,7 +17,7 @@ rug = { version = "1.24.0", features = ["integer"] }
 /// Using `clap` here is complete overkill, but this is just a demo.
 /// On Linux you may need to install the m4 package.
 //# Purpose: Demonstrate snippets, closures, `clap` builder and a fast non-recursive fibonacci algorithm using the `successors`.
-use clap::{Arg, Command};
+//# Categories: big_numbers, educational, math, recreational, technique
 use rug::Integer;
 use std::iter::{successors, Successors, Take};
 

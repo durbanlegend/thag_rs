@@ -6,11 +6,12 @@ rug = { version = "1.24.1", features = ["integer", "std"] }
 /// Published example from the `rug` crate, showcasing the use of the crate. I added the
 /// last line to return a tuple of the state of the values of interest, as a quick way
 /// of displaying them.
-/// 
+///
 /// Won't work with default Windows 11 because of `rug` crate.
 /// On Linux you may need to install the m4 package.
 ///
 //# Purpose: Demo featured crate, also how we can often run an incomplete snippet "as is".
+//# Categories: crates, technique
 use rug::{Assign, Integer};
 let mut int = Integer::new();
 assert_eq!(int, 0);

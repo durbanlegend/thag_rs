@@ -8,6 +8,7 @@
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers..
+//# Categories: educational, math, recreational, technique
 use std::env;
 
 let args: Vec<String> = env::args().collect();

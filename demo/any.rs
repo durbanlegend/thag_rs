@@ -4,6 +4,7 @@
 /// generated code, whereas using an AST is quite a mission but works with
 /// any arbitrary snippet and doesn't pollute the generated source code.
 //# Purpose: Demo Rust's answer to dynamic typing.
+//# Categories: type_identification, technique
 use std::any::Any;
 
 let expr = ();

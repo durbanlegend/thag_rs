@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 /// Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
-//# Purpose: First working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_debug.rs`.
 /// Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`.
-//# Purpose: Demo the use of proc macros to generate constants at compile time and the `expander` crate to expand the output to a file.
+//# Purpose: First working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_debug.rs`.
+//# Categories: proc_macros, technique
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::const_demo_expand;

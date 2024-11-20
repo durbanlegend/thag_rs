@@ -14,6 +14,7 @@ dashu = "0.4.2"
 ///
 /// Seems to work very well provided all the types encountered are anticipated.
 //# Purpose: Demo expression type determination for static dispatch.
+//# Categories: type_identification, technique
 use dashu::integer::IBig;
 
 trait Attribute {

@@ -7,6 +7,7 @@ thag_rs = "0.1.7"
 
 /// Used to debug a doctest.
 //# Purpose: Debugging script.
+//# Categories: crates, technique, testing
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use mockall::{automock, predicate::str};
 use std::time::Duration;

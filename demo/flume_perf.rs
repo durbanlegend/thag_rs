@@ -5,6 +5,7 @@ flume = "0.11.0"
 
 /// Published example from the `flume` channel crate.
 //# Purpose: demo of channel programming and of `flume` in particular.
+//# Categories: crates, technique
 fn main() {
     let thread_num = 32;
     let msg_num = 16;

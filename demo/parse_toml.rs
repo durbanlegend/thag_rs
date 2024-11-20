@@ -2,6 +2,7 @@
 /// the start and end of the toml block. I eventually decided to use a regular
 /// expression as I found it less problematic (see `demo/regex_capture_toml.rs`).
 //# Purpose: Prototype
+//# Categories: prototype
 fn extract_metadata(source_code: &str) -> Option<String> {
     // Using the dodge of interpolating the toml literal here so as not to
     // break the script runner when it parses the source code for /*[t0ml].

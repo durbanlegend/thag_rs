@@ -8,6 +8,7 @@ toml = "0.5"
 
 /// Published example of combiner from `crokey` crate.
 //# Purpose: Demo key combiner.
+//# Categories: crates, technique
 use {
     crokey::*,
     crossterm::{

@@ -1,6 +1,7 @@
 /// Fast factorial algorithm avoiding recursion, but limited to a maximum of `34!` by using only
 /// Rust primitives.
 //# Purpose: Demo fast limited-scale factorial using Rust primitives and std::iter::Product trait.
+//# Categories: educational, math, recreational, technique
 use std::env;
 use std::io::Result;
 

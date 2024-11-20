@@ -5,6 +5,7 @@ syn = {version = "2.0.87", features = ["extra-traits", "full", "parsing"] }
 
 /// Tries to convert input to a `syn` abstract syntax tree.
 //# Purpose: Debugging
+//# Categories: AST, crates, technique
 use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::fmt;

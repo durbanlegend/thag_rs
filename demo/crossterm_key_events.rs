@@ -11,6 +11,7 @@ crossterm = "0.28.1"
 /// This example demonstrates the display format of key events, which is useful for displaying in
 /// the help section of a terminal application."
 //# Purpose: Demo running crate example code, `crossterm` events.
+//# Categories: crates, technique
 use std::io;
 
 use crossterm::event::{KeyEventKind, KeyModifiers};

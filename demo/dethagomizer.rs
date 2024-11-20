@@ -12,6 +12,7 @@ opt-level = 2
 ///
 /// See `demo/dethagomizer.rs` for a Regex version.
 //# Purpose: Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
+//# Categories: crates, technique, tools
 use std::io::{self, Read};
 
 fn read_stdin() -> Result<String, io::Error> {

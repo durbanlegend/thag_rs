@@ -1,6 +1,7 @@
 /// Demo of an advanced generic macro to generate lazy static variables.
 /// See also `demo/macro_lazy_static_var_errs.rs` for a more meaningful usage example.
 //# Purpose: Demonstrate a handy alternative to the `lazy_static` crate.
+//# Categories: macros, technique
 
 // A generic macro for lazily initializing a static variable using `OnceLock`.
 //

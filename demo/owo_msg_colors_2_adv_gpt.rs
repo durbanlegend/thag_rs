@@ -15,6 +15,7 @@ termbg = "0.5.2"
 /// backgrounds to see how some of the same colours "pop" when shown against a light or dark theme
 /// and how some virtually or literally disappear when not well matched to the theme.
 //# Purpose: Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
+//# Categories: crates, prototype, technique
 use enum_assoc::Assoc;
 use log::debug;
 use owo_ansi::xterm as owo_xterm;

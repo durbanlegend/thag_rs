@@ -8,13 +8,14 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::error::Error;
 
-/// Unescape \n and \\" markers in a string to convert the wall of text to readable lines.
+/// Unescape `\n` and `\\` markers in a string to convert the wall of text to readable lines.
 /// This version using regex may be more reliable than the classic approach using .lines().
 /// However, at time of writing, `regex` is a 248kB crate, which makes the binary of this
 /// module more than 5 time larger than that of `thagomizer`.
 ///
 /// Tip: Regex tested using https://rustexp.lpil.uk/.
 //# Purpose: Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
+//# Categories: crates, technique, tools
 pub fn read_stdin() -> Result<String, std::io::Error> {
     println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     use std::io::Read;

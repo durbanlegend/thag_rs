@@ -13,6 +13,7 @@ use syn::{parse_str, Expr, Stmt};
 ///
 /// Part 2: ChatGPT responds to feedback with an improved algorithm.
 //# Purpose: Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.
+//# Categories: AST, technique
 fn main() {
     let code = r#"
         for i in 1..=5 {

@@ -7,6 +7,7 @@ use std::path::Path;
 /// directory. The need is to generate well-behaved and consistent human-readable
 /// names for temporary programs generated from REPL expressions.
 //# Purpose: Demo sequential file creation and the kind of code that is well suited to generation by an LLM.
+//# Categories: technique
 fn main() {
     let demo_dir = env::temp_dir().join("thag_rs").join("demo");
 

@@ -15,6 +15,7 @@ termbg = "0.5.2"
 /// `reedline`, which was already using `nu_ansi_term`.
 ///
 //# Purpose: Demo older alternative implementation of `colors` module using `owo-colors`.
+//# Categories: prototype, technique
 use log::debug;
 use owo_ansi::xterm as owo_xterm;
 use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};

@@ -7,10 +7,10 @@ signal-hook = "0.3.17"
 
 /// `crossbeam-channel` published example.
 ///
-/// Prints the elapsed time every 1 second and quits on `Ctrl+C`.
-/// You can reinstate the separate main method for Windows provided you
-/// run the script with the `--multimain (-m)` option.
+/// Prints the elapsed time every 1 second and quits on `Ctrl+C`. You can reinstate the separate main method for
+/// Windows provided you run the script with the `--multimain (-m)` option.
 //# Purpose: showcase featured crates.
+//# Categories: crates
 use std::process;
 
 fn main() {

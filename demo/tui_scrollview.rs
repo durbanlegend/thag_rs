@@ -8,6 +8,7 @@ tui-scrollview = "0.4"
 
 /// Published example from `tui-scrollview` crate. Toml entries from crate's Cargo.toml.
 //# Purpose: Explore TUI editing
+//# Categories: crates, exploration, techniques
 use std::io::{self, stdout};
 
 use color_eyre::{config::HookBuilder, Result};

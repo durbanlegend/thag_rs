@@ -13,6 +13,7 @@ toml = "0.8"
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
 //# Purpose: Develop a configuration file implementation for `thag_rs`.
+//# Categories: prototype, technique
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
 use std::fs;

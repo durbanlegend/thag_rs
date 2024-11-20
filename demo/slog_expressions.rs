@@ -6,6 +6,7 @@ slog-term = "2.9.1"
 
 /// Published example from `slog` crate (misc/examples/expressions.rs).
 //# Purpose: Demo a popular logging crate.
+//# Categories: crates
 use slog::{self, o, slog_warn, warn};
 use slog_term;
 

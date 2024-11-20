@@ -1,10 +1,11 @@
 /*[toml]
 [dependencies]
-ratatui = "0.27.0"
+ratatui = "0.29.0"
 */
 
 /// Published example from the `ratatui` crate.
 //# Purpose: Demo the featured crate.
+//# Categories: crates
 // # [Ratatui] User Input example
 //
 // The latest version of this example is available in the [examples] folder in the repository.

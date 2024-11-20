@@ -34,6 +34,7 @@ use crate::support::TokioIo;
 /// "This is our service handler. It receives a Request, routes on its
 /// path, and returns a Future of a Response."
 //# Purpose: Demo `hyper` HTTP echo server, and incorporating separate modules into the script.
+//# Categories: async, crates, technique
 async fn echo(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {

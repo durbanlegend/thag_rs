@@ -13,6 +13,7 @@ syn = "2.0.87"
 /// Published example from `darling` crate showing parsing for derive input.
 /// Extended to show formatted version of emitted code.
 //# Purpose: Explore `darling` crate.
+//# Categories: crates, exploration, technique
 // The use of fields in debug print commands does not count as "used",
 // which causes the fields to trigger an unwanted dead code warning.
 use darling::{ast, FromDeriveInput, FromField, FromMeta};

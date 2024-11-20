@@ -8,6 +8,7 @@ ibig = "0.3.6"
 /// not dramatically so.
 ///
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.
+//# Categories: big_numbers, educational, math, recreational, technique
 use ibig::{ubig, UBig};
 use std::env;
 use std::time::Instant;

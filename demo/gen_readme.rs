@@ -13,6 +13,7 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "83694dd6e4f0
 ///
 /// Strategy and grunt work thanks to ChatGPT.
 //# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
+//# Categories: technique, tools
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::{
@@ -30,6 +31,7 @@ struct ScriptMetadata {
     crates: Vec<String>,
     script_type: Option<String>,
     description: Option<String>,
+    categories: Vec<String>, // New field for categories
 }
 
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
@@ -51,15 +53,23 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     let mut lines = Vec::<String>::new();
     let mut doc = false;
     let mut purpose = false;
+    let mut categories = vec!["missing".to_string()]; // Default to "general"
 
     for line in content.clone().lines() {
         if line.starts_with("//#") {
             let parts: Vec<&str> = line[3..].splitn(2, ':').collect();
             if parts.len() == 2 {
                 let keyword = parts[0].trim();
-                metadata.insert(keyword.to_lowercase(), parts[1].trim().to_string());
-                if !purpose && keyword == "Purpose" {
-                    purpose = true;
+                let value = parts[1].trim().to_string();
+                match keyword.to_lowercase().as_str() {
+                    "purpose" => {
+                        metadata.insert("purpose".to_string(), value);
+                        purpose = true;
+                    }
+                    "categories" => {
+                        categories = value.split(',').map(|cat| cat.trim().to_string()).collect();
+                    }
+                    _ => {}
                 }
             }
         } else if line.starts_with("///") || line.starts_with("//:") {
@@ -128,6 +138,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
         crates,
         script_type: Some(script_type.to_string()),
         description: description.cloned(),
+        categories, // Add categories to metadata
     })
 }
 
@@ -158,83 +169,16 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
     all_metadata
 }
 
-fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path) {
+fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path, boilerplate_path: &Path) {
     let mut file = File::create(output_path).unwrap();
-    writeln!(file, r#"## Running the scripts
 
-`thag_rs` uses `clap` for a standard command-line interface. Try `thag --help` (or -h) if
-you get stuck.
+    // Read boilerplate content
+    let boilerplate = fs::read_to_string(boilerplate_path)
+        .unwrap_or_else(|_| "## Running the scripts\n\n...".to_string()); // Fallback content if the file is missing
 
-### In its simplest form:
-
-
-    thag <path to script>
-
-###### E.g.:
-
-    thag demo/hello.rs
-
-### Passing options and arguments to a script:
-
-Use `--` to separate options and arguments meant for the script from those meant for `thag` itself.
-
-###### E.g.:
-
-demo/fib_dashu_snippet.rs expects to be passed an integer _n_ and will compute the _nth_ number in the
-Fibonacci sequence.
-
-     thag demo/fib_dashu_snippet.rs -- 100
-
-### Full syntax:
-
-    thag [THAG OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
-
-###### E.g.:
-
-`demo/clap_tut_builder_01.rs` is a published example from the `clap` crate.
-Its command-line signature looks like this:
-
-    clap_tut_builder_01 [OPTIONS] [name] [COMMAND]
-
-The arguments in their short form are:
-
-    `-c <config_file>`      an optional configuration file
-    `-d` / `-dd` / `ddd`    debug, at increasing levels of verbosity
-    [name]                  an optional filename
-    [COMMAND]               a command (e.g. test) to run
-
-If we were to compile `clap_tut_builder_01` as an executable (`-x` option) and then run it, we might pass
-it some parameters like this:
-
-    clap_tut_builder_01 -dd -c my.cfg my_file test -l
-
-and get output like this:
-
-    Value for name: my_file
-    Value for config: my.cfg
-    Debug mode is on
-    Printing testing lists...
-
-Running the source from `thag` looks similar, we just replace `clap_tut_builder_01` by `thag demo/clap_tut_builder_01.rs --`:
-
-*thag demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
-
-Any parameters for `thag` should go before the `--`, e.g. we may choose use -qq to suppress `thag` messages:
-
-    thag demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
-
-which will give identical output to the above.
-
-
-
-##### Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.
-
-***
-## Detailed script listing
-
-"#
-    )
-    .unwrap();
+    // Write boilerplate to README
+    writeln!(file, "{}", boilerplate).unwrap();
+    writeln!(file, "***\n## Detailed script listing\n").unwrap();
 
     for metadata in metadata_list {
         writeln!(file, "### Script: {}\n", metadata.script).unwrap();
@@ -264,6 +208,7 @@ which will give identical output to the above.
             metadata.script_type.as_ref().unwrap_or(&String::new())
         )
         .unwrap();
+        writeln!(file, "**Categories:** {}\n", metadata.categories.join(", ")).unwrap(); // Include categories
         writeln!(
             file,
             "**Link:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/demo/{})\n",
@@ -277,9 +222,10 @@ which will give identical output to the above.
 fn main() {
     let scripts_dir = Path::new("demo");
     let output_path = Path::new("demo/README.md");
+    let boilerplate_path = Path::new("assets/boilerplate.md");
 
     let all_metadata = collect_all_metadata(scripts_dir);
-    generate_readme(&all_metadata, output_path);
+    generate_readme(&all_metadata, output_path, boilerplate_path);
 
     println!("demo/README.md generated successfully.");
 }

@@ -4,6 +4,7 @@
 /// going to be checked by the compiler anyway. Compare with `demo/loop_closure.rs`.
 /// P.S.: This was since implemented as `--loop`.
 //# Purpose: Evaluate expression logic for line processing.
+//# Categories: exploration, technique
 use std::io::Read;
 let mut buffer = String::new();
 std::io::stdin().lock().read_to_string(&mut buffer)?;

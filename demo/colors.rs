@@ -20,7 +20,8 @@ use thag_rs::{cvprtln, vlog, Lvl};
 ///
 /// E.g. `thag demo/colors.rs`
 //# Purpose: Test the look of the various colours.
-/// Main function for use by testing or the script runner.
+//# Categories: testing
+// Main function for use by testing or the script runner.
 #[allow(dead_code)]
 pub fn main() {
     #[allow(unused_variables)]

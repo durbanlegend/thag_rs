@@ -11,6 +11,7 @@ proc-macro2 = { version = "1", features = ["span-locations"] }
 /// Pass it the absolute or relative path of any Rust source file, e.g. its own
 /// path that you passed to the script runner to invoke it.
 //# Purpose: show off the power of `syn`.
+//# Categories: AST, crates, technique
 
 // Parse a Rust source file into a `syn::File` and print out a debug
 // representation of the syntax tree.

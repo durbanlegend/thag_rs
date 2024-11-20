@@ -21,7 +21,7 @@ ibig = "0.3.6"
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo a very fast precise computation for large individual Fibonacci numbers.
-
+//# Categories: big_numbers, educational, math, recreational, technique
 use ibig::{ubig, UBig};
 use std::env;
 use std::time::Instant;

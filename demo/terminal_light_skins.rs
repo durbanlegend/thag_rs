@@ -8,6 +8,7 @@ crossterm = "0.28.1"
 /// A published example from the `terminal-light` crate. A simple example of
 /// choosing an appropriate skin based on the terminal theme.
 //# Purpose: Demo of the `terminal-light` crate.
+//# Categories: crates
 // This example selects a different skin for light or dark terminals
 use {
     coolor::*,

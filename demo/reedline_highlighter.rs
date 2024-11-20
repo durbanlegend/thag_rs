@@ -5,6 +5,7 @@ reedline = "0.36.0"
 
 /// Published example from `reedline` crate.
 //# Purpose: Explore featured crate.
+//# Categories: crates, REPL, technique
 //
 // Create a reedline object with highlighter support.
 // cargo run --example highlighter

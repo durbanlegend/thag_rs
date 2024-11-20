@@ -6,6 +6,7 @@ syn = { version = "2", default-features = false, features = ["full", "parsing"] 
 
 /// Published example from `prettyplease` Readme.
 //# Purpose: Demo featured crate.
+//# Categories: AST, crates, technique
 const INPUT: &str = stringify! {
     use crate::{
           lazy::{Lazy, SyncLazy, SyncOnceCell}, panic,

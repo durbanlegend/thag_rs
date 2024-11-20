@@ -19,6 +19,7 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "6c5bff14435e
 /// theme is in use and c) determine the level of colour supported reported by
 /// the terminal.
 //# Purpose: Allow checking of terminals on platforms to be supported, also test reliability of different crates.
+//# Categories: crates, tools
 use crossterm::{
     cursor::{MoveTo, Show},
     terminal::{Clear, ClearType},

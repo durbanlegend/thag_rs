@@ -21,6 +21,7 @@ use flume::Selector;
 /// Published example from the `flume` channel crate.
 /// Must be run with --multimain (-m) option to allow multiple main methods.
 //# Purpose: demo of async and channel programming and of `flume` in particular.
+//# Categories: async, crates, technique
 #[cfg(feature = "select")]
 fn main() {
     // Create two channels

@@ -8,6 +8,7 @@ crossterm = "0.28.1"
 /// Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read.rs
 /// "Demonstrates how to block read events."
 //# Purpose: Demo running crate example code, `crossterm` events.
+//# Categories: crates, technique
 use std::io;
 
 use crossterm::event::{

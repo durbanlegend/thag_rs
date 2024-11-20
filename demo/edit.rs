@@ -11,7 +11,7 @@ edit = "0.1.5"
 ///
 /// E.g. `EDITOR=vim thag_rs demo/edit.rs`
 //# Purpose: Demo of edit crate to invoke preferred editor.
-// eprintln!("VISUAL={:?}", std::env::var("VISUAL"));
+//# Categories: crates, technique
 use std::env;
 use std::error::Error;
 use std::io::Result;

@@ -8,7 +8,7 @@ ibig = "0.3.6"
 //: coexisting in the same println! invocation. Demonstrates that when wrapping
 //: a snippet we can't assume it's OK to pull the imports up to the top level.
 //# Purpose: Prototype to confirm leaving imports in situ when wrapping snippets.
-
+//# Categories: crates, educational
 println!(
     "ibig UBig 123={}, dashu UBig 987={}",
     {

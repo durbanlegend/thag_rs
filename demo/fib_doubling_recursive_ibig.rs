@@ -28,6 +28,7 @@ ibig = "0.3.6"
 /// and fanning out of calls to fib(), the memoization drastically cuts down recursion.
 ///
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and memoization, and a good job by ChatGPT.
+//# Categories: big_numbers, educational, math, recreational, technique
 use ibig::{ubig, UBig};
 use std::collections::HashMap;
 use std::time::Instant;

@@ -7,6 +7,7 @@ use clap::Parser;
 
 /// GPT-generated CLI using the `clap` crate.
 //# Purpose: Demonstrate `clap` CLI using the derive option.
+//# Categories: CLI, crates, technique
 // Script Runner
 #[derive(Debug, Parser)]
 #[clap(version = "1.0", author = "Your Name")]

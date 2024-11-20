@@ -1,5 +1,6 @@
 /// Read Rust source code from stdin and display the output as formatted by `rustfmt`.
 //# Purpose: Format arbitrary Rust code. Does no more than `rustfmt --`.
+//# Categories: crates, technique
 use std::io::{self, Read, Write};
 use std::process::{Command, Stdio};
 

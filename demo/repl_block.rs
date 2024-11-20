@@ -8,6 +8,7 @@ strum = { version = "0.26.3", features = ["derive", "phf"] }
 */
 /// Early proof of concept of using a different line editor for repl.rs.
 //# Purpose: Exploration
+//# Categories: crates, REPL, technique
 use clap::{CommandFactory, Parser};
 use lazy_static::lazy_static;
 use regex::Regex;

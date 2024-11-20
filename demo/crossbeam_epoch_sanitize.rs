@@ -18,6 +18,7 @@ use std::time::{Duration, Instant};
 /// (Not included here due to implicit copyright).
 ///
 //# Purpose: Demo featured crate.
+//# Categories: crates, technique
 use crossbeam_epoch::{self as epoch, Atomic, Collector, LocalHandle, Owned, Shared};
 use rand::Rng;
 

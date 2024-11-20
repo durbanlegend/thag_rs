@@ -7,6 +7,7 @@ crossterm = "0.28.1"
 ///
 /// Url: https://github.com/crossterm-rs/crossterm/blob/master/README.md
 //# Purpose: Demo crossterm terminal manipulation.
+//# Categories: crates, technique
 use std::io::stdout;
 
 use crossterm::{

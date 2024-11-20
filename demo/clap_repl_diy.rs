@@ -8,6 +8,7 @@ shlex = "0.1.1"
 /// Can't find a keybinding to navigate history, unlike
 /// clap_repl_rustyline.rs and unlike clap_repl_reedline.rs.
 //# Purpose: Demo building a repl using `clap` directly.
+//# Categories: REPL, technique
 use std::io::Write;
 
 use clap::{Parser, Subcommand};

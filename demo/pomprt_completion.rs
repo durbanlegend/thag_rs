@@ -5,6 +5,7 @@ pomprt = "0.5.3"
 
 /// Published example from `pomprt` crate.
 //# Purpose: Demo of `pomprt` readline implementation.
+//# Categories: crates
 // pomprt, a line editor prompt library
 // Copyright (c) 2023 rini
 //

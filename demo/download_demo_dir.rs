@@ -11,6 +11,7 @@ serde_json = "1.0"
 
 /// Downloader for the `demo` directory. Basics courtesy of GPT.
 //# Purpose: Download the demo directory from Github main.
+//# Categories: crates, technique, tools
 use reqwest::blocking::get;
 use rfd::FileDialog;
 use serde::Deserialize;

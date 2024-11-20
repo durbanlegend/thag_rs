@@ -7,6 +7,7 @@ owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 /// Demo the use of a command-line interface to override the colour support to be provided.
 /// The owo-colors "supports-colors" feature must be enabled.
 //# Purpose: Demo setting colour support via a very simple CLI.
+//# Categories: CLI, crates, technique
 use clap::{Parser, ValueEnum};
 use owo_colors::{OwoColorize, Stream};
 

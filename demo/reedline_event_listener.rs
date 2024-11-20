@@ -6,6 +6,7 @@ reedline = "0.36.0"
 
 /// Published example from `reedline` crate.
 //# Purpose: demo featured crates.
+//# Categories: crates, REPL, technique
 use {
     crossterm::{
         event::{poll, Event, KeyCode, KeyEvent},
@@ -25,6 +26,7 @@ fn main() -> std::io::Result<()> {
 }
 
 // **For debugging purposes only:** Track the terminal events observed by [`Reedline`] and print them.
+//# Categories: crates, REPL, technique
 pub fn print_events() -> std::io::Result<()> {
     stdout().flush()?;
     terminal::enable_raw_mode()?;

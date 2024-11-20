@@ -9,6 +9,7 @@ ibig = "0.3.6"
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demonstrate snippets and a fast non-recursive fibonacci algorithm using the `successors` iterator.
+//# Categories: big_numbers, educational, math, recreational, technique
 use ibig::{ubig, UBig};
 use std::env;
 use std::iter::{successors, Successors, Take};

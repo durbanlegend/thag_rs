@@ -1,5 +1,6 @@
 /// Second prototype of building an enum from a macro and using it thereafter.
 //# Purpose: explore a technique for resolving mappings from a message level enum to corresponding
+//# Categories: macros, technique
 // message styles at compile time instead of dynamically while logging. This involves using macros
 // to build impls for 4 enums representing the 4 combinations of light vs dark theme and 16 vs 256
 // colour palette, and selecting the appropriate enum at the start of execution according to the

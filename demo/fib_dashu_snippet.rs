@@ -12,6 +12,7 @@ dashu = "0.4.2"
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demonstrate snippets, a fast non-recursive fibonacci algorithm using `successors`, and zipping 2 iterators together.
+//# Categories: big_numbers, educational, math, recreational, technique
 // Given a non-negative integer n, return an iterator of fibonacci pairs (F0, F1) ... (Fn, Fn+1).
 use dashu::ubig;
 use dashu::integer::UBig;

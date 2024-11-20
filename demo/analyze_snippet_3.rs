@@ -16,6 +16,7 @@ use syn::{parse_str, Expr, ReturnType, Stmt};
 /// I've commented out ChatGPT's brute-force parse of &block.stmts and replaced it with a syn::Visit
 /// implementation that can handle embedded functions.
 //# Purpose: Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.
+//# Categories: AST, technique
 fn main() {
     // Function or closure, comment out either to test the other
     let code = r#"

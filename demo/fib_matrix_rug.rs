@@ -13,6 +13,7 @@ rug = "1.24.1"
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo a very fast precise computation for large individual Fibonacci numbers.
+//# Categories: big_numbers, educational, math, recreational, technique
 
 use rug::ops::Pow;
 use rug::Integer;
@@ -20,36 +21,36 @@ use std::env;
 use std::time::Instant;
 
 fn fibonacci_matrix(n: u128) -> Integer {
-  if n <= 1 {
-    return Integer::from(n);
-  }
-
-  let mut a = [[Integer::from(1), Integer::from(1)], [Integer::from(1), Integer::from(0)]];
-  let mut result = [[Integer::from(1), Integer::from(0)], [Integer::from(0), Integer::from(1)]];
-
-  // Efficient exponentiation using repeated squaring
-  let mut power = n - 1;
-  while power > 0 {
-    if power & 1 == 1 {
-      result = multiply_matrices(result.clone(), a.clone());
+    if n <= 1 {
+        return Integer::from(n);
     }
-    power >>= 1;
-    a = multiply_matrices(a.clone(), a.clone());
-  }
 
-  return result[0][0].clone();
+    let mut a = [[Integer::from(1), Integer::from(1)], [Integer::from(1), Integer::from(0)]];
+    let mut result = [[Integer::from(1), Integer::from(0)], [Integer::from(0), Integer::from(1)]];
+
+    // Efficient exponentiation using repeated squaring
+    let mut power = n - 1;
+    while power > 0 {
+        if power & 1 == 1 {
+            result = multiply_matrices(result.clone(), a.clone());
+        }
+        power >>= 1;
+        a = multiply_matrices(a.clone(), a.clone());
+    }
+
+    return result[0][0].clone();
 }
 
 fn multiply_matrices(a: [[Integer; 2]; 2], b: [[Integer; 2]; 2]) -> [[Integer; 2]; 2] {
-  let mut result: [[Integer; 2]; 2] = [[Integer::from(0), Integer::from(0)], [Integer::from(0), Integer::from(0)]];
-  for i in 0..2 {
-    for j in 0..2 {
-      for k in 0..2 {
-        result[i][j] += a[i][k].clone() * b[k][j].clone();
-      }
+    let mut result: [[Integer; 2]; 2] = [[Integer::from(0), Integer::from(0)], [Integer::from(0), Integer::from(0)]];
+    for i in 0..2 {
+        for j in 0..2 {
+            for k in 0..2 {
+                result[i][j] += a[i][k].clone() * b[k][j].clone();
+            }
+        }
     }
-  }
-  return result;
+    return result;
 }
 
 let args: Vec<String> = env::args().collect();

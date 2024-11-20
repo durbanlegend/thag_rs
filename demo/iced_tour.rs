@@ -6,6 +6,7 @@ tracing-subscriber = "0.3"
 
 /// The full tour of the `iced` crate published in the `iced` examples.
 //# Purpose: Show that `thag_rs` can handle product demos.
+//# Categories: crates, technique
 use iced::alignment::{self, Alignment};
 use iced::theme;
 use iced::widget::{

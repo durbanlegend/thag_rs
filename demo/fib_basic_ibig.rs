@@ -6,7 +6,7 @@ itertools = "0.13.0"
 /// Big-number (and thus more practical) version of `demo/fib_basic.rs`.
 ///
 //# Purpose: Demo using a big-number crate to avoid the size limitations of primitive integers.
-
+//# Categories: big_numbers, educational, math, recreational, technique
 use ibig::{ubig, UBig};
 use itertools::iterate;
 use std::env;

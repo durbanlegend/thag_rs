@@ -11,6 +11,7 @@ ibig = "0.3.6"
 /// E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 ///
 //# Purpose: Demo 3 very fast Fibonacci algorithms, though still 7-11 times slower than `rug`.
+//# Categories: big_numbers, educational, math, recreational, technique
 use ibig::{ubig, UBig};
 use std::collections::HashMap;
 use std::env;

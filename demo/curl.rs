@@ -8,6 +8,7 @@ curl = "0.4.46"
 /// name](https://curl.se/libcurl/c/https.html).
 /// On Linux you may need to install `pkg-config` and `libssl-dev`.
 //# Purpose: Demo `curl` implementation.
+//# Categories: crates, technique
 use curl::easy::Easy;
 use std::io::{stdout, Write};
 

@@ -8,6 +8,7 @@ toml = "0.5"
 
 /// Published example of KeyCombination from `crokey` crate.
 //# Purpose: Demo key combination without Combiner.
+//# Categories: crates, technique
 use {
     crokey::*,
     crossterm::{

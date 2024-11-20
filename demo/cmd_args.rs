@@ -9,6 +9,7 @@ thag_rs = "0.1.7"
 ///
 /// E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 //# Purpose: Prototype CLI.
+//# Categories: CLI, crates, prototype, technique
 use bitflags::bitflags;
 use clap::{ArgGroup, Parser};
 use std::{error::Error, fmt, str};

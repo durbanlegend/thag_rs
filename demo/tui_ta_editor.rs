@@ -11,7 +11,8 @@ tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 /// cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
 /// or default to a standard editor. A more minimalist version is used to edit stdin input in
 /// the `--edit (-d)` option of `thag_rs`.
-//# Purpose: Demo TUI editor and featured crates, including `crossterm`.
+//# Purpose: Demo and explore TUI editor and featured crates, including `crossterm`.
+//# Categories: crates, exploration, techniques
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::read;
 use ratatui::crossterm::event::{

@@ -5,6 +5,7 @@ reedline = "0.36.0"
 
 /// Published example `basic.rs` from `reedline` crate.
 //# Purpose: demo featured crates.
+//# Categories: crates, REPL, technique
 // Create a default reedline object to handle user input
 // cargo run --example basic
 //

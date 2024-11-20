@@ -66,6 +66,3 @@ which will give identical output to the above.
 
 
 ##### Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.
-
-***
-## Detailed script listing

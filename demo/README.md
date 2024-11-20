@@ -70,7 +70,6 @@ which will give identical output to the above.
 ***
 ## Detailed script listing
 
-
 ### Script: analyze_snippet_1.rs
 
 **Description:**  Guided ChatGPT-generated prototype of using a `syn` abstract syntax tree (AST)
@@ -266,7 +265,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Categories:** general
+**Categories:** technique
 
 **Link:** [cargo_output.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.rs)
 
@@ -534,7 +533,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo older alternative implementation of `colors` module using `owo-colors`.
 
-**Crates:** `log`, `owo_colors`, `self`, `strum`, `supports_color`, `termbg`, `thag_rs`, `xterm`
+**Crates:** `log`, `owo_colors`, `strum`, `supports_color`, `termbg`, `thag_rs`
 
 **Type:** Program
 
@@ -711,7 +710,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo featured crate.
 
-**Crates:** `crossbeam_epoch`, `rand`, `self`
+**Crates:** `crossbeam_epoch`, `rand`
 
 **Type:** Program
 
@@ -2007,7 +2006,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo `hyper` HTTP client, and incorporating separate modules into the script.
 
-**Crates:** `AsyncWriteExt`, `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
+**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
 
 **Type:** Program
 
@@ -2453,7 +2452,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
 
-**Crates:** `enum_assoc`, `log`, `owo_colors`, `self`, `strum`, `supports_color`, `termbg`, `xterm`
+**Crates:** `enum_assoc`, `log`, `owo_colors`, `strum`, `supports_color`, `termbg`
 
 **Type:** Program
 

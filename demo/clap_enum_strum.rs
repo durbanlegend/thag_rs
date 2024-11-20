@@ -39,7 +39,7 @@ enum Opt {
 //# Purpose: Simple demo of featured crates, contrasting how they expose variants.
 //# Categories: CLI, crates, technique
 fn main() {
-    let CLI = Cli::parse();
+    let cli = Cli::parse();
 
     println!("Chosen option:");
     match cli.opt {

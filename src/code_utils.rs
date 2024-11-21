@@ -102,7 +102,7 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     profile_fn!(infer_deps_from_ast);
     let mut dependencies = find_use_crates_ast(syntax_tree);
     let extern_crates = find_extern_crates_ast(syntax_tree);
-    let (use_renames_from, use_renames_to) = find_use_renames_ast(syntax_tree);
+    let use_renames_to = find_use_renames_ast(syntax_tree);
     let modules = find_modules_ast(syntax_tree);
 
     let to_remove: HashSet<String> = use_renames_to
@@ -116,13 +116,7 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     dependencies.retain(|e| !to_remove.contains(e));
     // eprintln!("dependencies (after)={dependencies:#?}");
 
-    // Similar checks for other regex patterns
-    for crate_name in use_renames_from {
-        if !to_remove.contains(&crate_name) {
-            dependencies.push(crate_name);
-        }
-    }
-
+    // Similar check for other regex pattern
     for crate_name in extern_crates {
         if !to_remove.contains(&crate_name) {
             dependencies.push(crate_name);
@@ -137,18 +131,18 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
 }
 
 /// Identify use ... as statements for inclusion in / exclusion from Cargo.toml metadata.
-/// Include the "from" name and exclude the "to" name.
+/// Exclude the "to" name. Don't include the "from" name as only the first path element
+/// of the "from" is valid, and this is not necessarily it.
+/// E.g. `use owo_colors::colors::self as owo_ansi;` would invlaidly pick up "self".
 /// Abstract syntax tree-based version.
-fn find_use_renames_ast(syntax_tree: &Ast) -> (Vec<String>, Vec<String>) {
+fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
     #[derive(Default)]
     struct FindCrates {
-        use_renames_from: Vec<String>,
         use_renames_to: Vec<String>,
     }
     impl<'a> Visit<'a> for FindCrates {
         fn visit_use_rename(&mut self, node: &'a UseRename) {
             profile_fn!(visit_use_rename);
-            self.use_renames_from.push(node.ident.to_string());
             self.use_renames_to.push(node.rename.to_string());
         }
     }
@@ -161,12 +155,8 @@ fn find_use_renames_ast(syntax_tree: &Ast) -> (Vec<String>, Vec<String>) {
         Ast::Expr(ast) => finder.visit_expr(ast),
     }
 
-    debug_log!(
-        "use_renames from ast: from={:#?}; to={:#?}",
-        finder.use_renames_from,
-        finder.use_renames_to
-    );
-    (finder.use_renames_from, finder.use_renames_to)
+    debug_log!("use_renames from ast: to={:#?}", finder.use_renames_to);
+    finder.use_renames_to
 }
 
 /// Identify modules for filtering use statements from Cargo.toml metadata: abstract syntax tree-based version.
@@ -201,6 +191,17 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
         use_crates: Vec<String>,
     }
     impl<'a> Visit<'a> for FindCrates {
+        fn visit_item_use(&mut self, node: &'a syn::ItemUse) {
+            profile_fn!(visit_item_use);
+            // This seems to be the only way to pick up the simple case `use a as b;`
+            if let UseTree::Rename(use_rename) = &node.tree {
+                let node_name = use_rename.ident.to_string();
+                self.use_crates.push(node_name);
+            } else {
+                // Crucial: keep visiting child nodes
+                syn::visit::visit_item_use(self, node);
+            }
+        }
         fn visit_use_tree(&mut self, node: &'a syn::UseTree) {
             profile_fn!(visit_use_tree);
             // eprintln!("node={node:#?}");
@@ -223,6 +224,7 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
                             return;
                         }
                     }
+                    // eprintln!("pushing to use:crates: {node_name}");
                     self.use_crates.push(node_name);
                 }
             }
@@ -267,7 +269,7 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     finder.extern_crates
 }
 
-/// Infer dependencxxies from source code to put in a Cargo.toml.
+/// Infer dependencies from source code to put in a Cargo.toml.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn infer_deps_from_source(code: &str) -> Vec<String> {

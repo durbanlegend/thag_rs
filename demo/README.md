@@ -67,6 +67,9 @@ which will give identical output to the above.
 
 ##### Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.
 
+### TODO: check:
+For detailed documentation on the `category_enum` procedural macro, see [category_enum](docs/category_enum.md).
+
 ***
 ## Detailed script listing
 
@@ -533,7 +536,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo older alternative implementation of `colors` module using `owo-colors`.
 
-**Crates:** `log`, `owo_colors`, `self`, `strum`, `supports_color`, `termbg`, `thag_rs`, `xterm`
+**Crates:** `log`, `owo_colors`, `quote`, `simplelog`, `strum`, `supports_color`, `termbg`, `thag_rs`, `xterm`
 
 **Type:** Program
 
@@ -710,7 +713,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo featured crate.
 
-**Crates:** `crossbeam_epoch`, `rand`, `self`
+**Crates:** `crossbeam_epoch`, `rand`
 
 **Type:** Program
 
@@ -2470,7 +2473,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
 
-**Crates:** `enum_assoc`, `log`, `owo_colors`, `self`, `strum`, `supports_color`, `termbg`, `xterm`
+**Crates:** `enum_assoc`, `log`, `owo_colors`, `strum`, `supports_color`, `termbg`, `xterm`
 
 **Type:** Program
 

@@ -3,11 +3,11 @@
 lazy_static = "1.4.0"
 log = "0.4.22"
 regex = "1.10.5"
-# thag_rs = "0.1.7"
 # thag_proc_macros = { version = "0.1.0", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
 thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", rev = "cedce80a5faaab83ef172682e196065ccce892d8" }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "cedce80a5faaab83ef172682e196065ccce892d8" }
-# thag_rs = { path = "/Users/donf/projects/thag_rs" }
+# thag_rs = "0.1.7"
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "cedce80a5faaab83ef172682e196065ccce892d8" }
+thag_rs = { path = "/Users/donf/projects/thag_rs" }
 */
 
 /// This is the actual script used to collect demo script metadata and generate
@@ -28,7 +28,6 @@ use thag_rs::{code_utils, lazy_static_var};
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::category_enum;
-// use thag_proc_macros::lazy_static_var;
 
 #[derive(Debug)]
 struct ScriptMetadata {

@@ -30,11 +30,24 @@ mod tests {
             std::collections::HashMap,
             toml,
         };
+        use owo_ansi::xterm as owo_xterm;
+        use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
+        use owo_colors::colors::{self as owo_ansi, Magenta};
+        use owo_colors::{AnsiColors, Style, XtermColors};
+        use owo_xterm::Black;
         use snarf as qux;
         use std::fmt;
         use qux::corge;
         "#;
-    const EXPECTED_CRATES: &[&str] = &["bar", "crokey", "foo", "serde", "snarf", "toml"];
+    const EXPECTED_CRATES: &[&str] = &[
+        "bar",
+        "crokey",
+        "foo",
+        "owo_colors",
+        "serde",
+        "snarf",
+        "toml",
+    ];
 
     // Set environment variables before running tests
     fn set_up() {

@@ -20,6 +20,12 @@
 - [ ]  Add a --expand (-X) flag to generate (not run) and expand the script. Requires cargo-expand crate.
 - [ ]  Consider adding category "category" to gen_readme.
 - [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
+use_renames_from=["xterm", "self"], use_renames_to=["owo_xterm", "owo_ansi"]
+demo/colors_orig.rs: maybe_syntax_tree.is_some()? true
+use owo_ansi::xterm as owo_xterm;
+use owo_colors::colors::{self as owo_ansi, Magenta};
+
+- [ ]  Perf: combine multiple finder.visit_* into one in code_utils so the AST is only traversed once.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?

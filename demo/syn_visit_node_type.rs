@@ -9,7 +9,7 @@ syn = { version = "2.0.87", features = ["extra-traits", "full", "parsing", "visi
 /// https://users.rust-lang.org/t/writing-proc-macros-with-syn-is-there-a-way-to-visit-parts-of-the-ast-that-match-a-given-format/54733/4
 /// (This content is dual-licensed under the MIT and Apache 2.0 licenses according to the Rust forum terms of service.)
 //# Purpose: Demo programmatically modifying Rust source code using `syn` and `quote`.
-//# Categories: AST, crates,, technique
+//# Categories: AST, crates, technique
 const INPUT_CODE: &str = stringify! {
     fn foobar() {
       do_something(1, 2, 3);

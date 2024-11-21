@@ -44,7 +44,15 @@ pub use shared::{
 pub use thag_proc_macros::repeat_dash;
 
 // Common constants and statics
-pub const BUILT_IN_CRATES: [&str; 6] = ["std", "core", "alloc", "collections", "fmt", "crate"];
+pub const BUILT_IN_CRATES: [&str; 7] = [
+    "std",
+    "core",
+    "alloc",
+    "collections",
+    "fmt",
+    "crate",
+    "self",
+];
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
 pub const FLOWER_BOX_LEN: usize = 70;
 pub const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");

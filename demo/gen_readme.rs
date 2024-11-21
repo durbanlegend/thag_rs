@@ -4,7 +4,9 @@ lazy_static = "1.4.0"
 log = "0.4.22"
 regex = "1.10.5"
 # thag_rs = "0.1.7"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "83694dd6e4f0e1bd0f887d32a2cebbadc691dc84" }
+# thag_proc_macros = { version = "0.1.0", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", rev = "cedce80a5faaab83ef172682e196065ccce892d8" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "cedce80a5faaab83ef172682e196065ccce892d8" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
 */
 
@@ -22,7 +24,11 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use thag_rs::code_utils;
+use thag_rs::{code_utils, lazy_static_var};
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
+use thag_demo_proc_macros::category_enum;
+// use thag_proc_macros::lazy_static_var;
 
 #[derive(Debug)]
 struct ScriptMetadata {
@@ -34,16 +40,24 @@ struct ScriptMetadata {
     categories: Vec<String>, // New field for categories
 }
 
+category_enum! {}
+
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
+    // Lazy static variable from the categories defined in macro category_enum!.
+    let valid_categories = lazy_static_var!(Vec<String>, {
+        let valid_categories = all_categories();
+        // eprintln!("valid_categories={valid_categories:?}");
+        valid_categories
+    });
     let mut content = fs::read_to_string(file_path).ok()?;
 
     content = if content.starts_with("#!") && !(content.starts_with("#![")) {
         let split_once = content.split_once('\n');
-        let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
-        eprintln!(
-            "Successfully stripped shebang {shebang} from {}",
-            file_path.display()
-        );
+        let (_shebang, rust_code) = split_once.expect("Failed to strip shebang");
+        // eprintln!(
+        //     "Successfully stripped shebang {shebang} from {}",
+        //     file_path.display()
+        // );
         rust_code.to_string()
     } else {
         content
@@ -68,6 +82,13 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
                     }
                     "categories" => {
                         categories = value.split(',').map(|cat| cat.trim().to_string()).collect();
+                        // eprintln!("{}: categories={categories:?}", file_path.display());
+                        // Check all the categories are valid
+                        assert!(
+                            categories.iter().all(|cat| valid_categories.contains(cat)),
+                            "One or more invalid categories found in {}",
+                            file_path.display()
+                        );
                     }
                     _ => {}
                 }

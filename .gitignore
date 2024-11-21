@@ -33,3 +33,4 @@ demo/gen_readme_proc_macros.rs
 demo/proc_macros/README.md
 src/proc_macros/Cargo copy.toml
 demo/proc_macro_const_demo copy.rs
+demo/proc_macros/target/

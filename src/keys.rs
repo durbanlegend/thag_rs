@@ -67,6 +67,8 @@ impl From<KeyEvent> for KeyCombination {
     }
 }
 
+/// A macro that calls the private `key` proc macro to create a `KeyCombination` from an idiomatic shorthand.
+/// Directly borrowed from the `crokey` crate.
 #[macro_export]
 macro_rules! key {
     ($($tt:tt)*) => {

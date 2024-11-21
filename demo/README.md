@@ -533,7 +533,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo older alternative implementation of `colors` module using `owo-colors`.
 
-**Crates:** `log`, `owo_colors`, `strum`, `supports_color`, `termbg`, `thag_rs`
+**Crates:** `log`, `owo_colors`, `self`, `strum`, `supports_color`, `termbg`, `thag_rs`, `xterm`
 
 **Type:** Program
 
@@ -710,7 +710,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo featured crate.
 
-**Crates:** `crossbeam_epoch`, `rand`
+**Crates:** `crossbeam_epoch`, `rand`, `self`
 
 **Type:** Program
 
@@ -1252,7 +1252,7 @@ which will give identical output to the above.
 
 **Purpose:** Demonstrate snippets, closures, `clap` builder and a fast non-recursive fibonacci algorithm using the `successors`.
 
-**Crates:** `rug`
+**Crates:** `clap`, `rug`
 
 **Type:** Snippet
 
@@ -1750,6 +1750,24 @@ which will give identical output to the above.
 
 ---
 
+### Script: filter_demos.rs
+
+**Description:**  Select demo scripts and generate and serve HTML report.
+
+ Strategy and grunt work thanks to ChatGPT.
+
+**Purpose:** Allow user to select scripts by category.
+
+**Crates:** `edit`, `thag_rs`, `tokio`, `warp`
+
+**Type:** Program
+
+**Categories:** technique, tools
+
+**Link:** [filter_demos.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/filter_demos.rs)
+
+---
+
 ### Script: fizz_buzz_blandy_orendorff.rs
 
 **Description:**  A fun example from Programming Rust by Jim Blandy and Jason Orendorff (O’Reilly).
@@ -1854,7 +1872,7 @@ which will give identical output to the above.
 
 **Purpose:** Document demo scripts in a demo/README.md as a guide to the user.
 
-**Crates:** `lazy_static`, `regex`, `thag_rs`
+**Crates:** `lazy_static`, `regex`, `thag_demo_proc_macros`, `thag_rs`
 
 **Type:** Program
 
@@ -2006,7 +2024,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo `hyper` HTTP client, and incorporating separate modules into the script.
 
-**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
+**Crates:** `AsyncWriteExt`, `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
 
 **Type:** Program
 
@@ -2452,7 +2470,7 @@ which will give identical output to the above.
 
 **Purpose:** Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
 
-**Crates:** `enum_assoc`, `log`, `owo_colors`, `strum`, `supports_color`, `termbg`
+**Crates:** `enum_assoc`, `log`, `owo_colors`, `self`, `strum`, `supports_color`, `termbg`, `xterm`
 
 **Type:** Program
 
@@ -2553,6 +2571,23 @@ which will give identical output to the above.
 **Categories:** proc_macros, technique
 
 **Link:** [proc_macro_attribute_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_attribute_basic.rs)
+
+---
+
+### Script: proc_macro_category_enum.rs
+
+**Description:**  Try generating category enum.
+ Testing the `category_enum` proc macro for use with `demo/gen_readme.rs` and `demo/filter_demos.rs`/
+
+**Purpose:** Test the proof of concept and potentially the implementation.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** missing
+
+**Link:** [proc_macro_category_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_category_enum.rs)
 
 ---
 
@@ -3560,7 +3595,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Categories:** AST, crates, , technique
+**Categories:** AST, crates, technique
 
 **Link:** [syn_visit_node_type.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node_type.rs)
 
@@ -3843,7 +3878,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Categories:** educational, techniques
+**Categories:** educational, technique
 
 **Link:** [tlborm_callbacks.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs)
 
@@ -3893,7 +3928,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Categories:** crates, exploration, techniques
+**Categories:** crates, exploration, technique
 
 **Link:** [tui_scrollview.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_scrollview.rs)
 
@@ -3913,7 +3948,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Categories:** crates, exploration, techniques
+**Categories:** crates, exploration, technique
 
 **Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.rs)
 
@@ -3933,7 +3968,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Categories:** crates, exploration, techniques
+**Categories:** crates, exploration, technique
 
 **Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_profile.rs)
 
@@ -3949,7 +3984,7 @@ which will give identical output to the above.
 
 **Type:** Program
 
-**Categories:** crates, exploration, techniques
+**Categories:** crates, exploration, technique
 
 **Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs)
 
@@ -4189,7 +4224,7 @@ which will give identical output to the above.
  https://github.com/Textualize/rich/issues/140.
  Also, but out of scope of this script, there is no good fallback detection method provided by Windows,
  as per my comments in the adapted module `thag_rs::termbg`. Unless you have WT 1.22 or higher as above,
- the best bet for supporting colour schemes other than the default black is to fallback to using a
+ the best bet for supporting colour schemes other than the default black is to fall back to using a
  configuration file (as we do) or allowing the user to specify the theme in real time.
  Finally, the `termbg` crate was swallowing the first character of input in Windows and causing a
  "rightward march" of log output due to suppression of carriage returns in all environments. I've

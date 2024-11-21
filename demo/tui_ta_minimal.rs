@@ -7,7 +7,7 @@ tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
 
 /// Demo a very minimal and not very useful TUI (text user interface) editor based on the featured crates.
 //# Purpose: Demo TUI editor and featured crates, including `crossterm`, and the use of the `scopeguard` crate to reset the terminal when it goes out of scope.
-//# Categories: crates, exploration, techniques
+//# Categories: crates, exploration, technique
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, Event::Paste,

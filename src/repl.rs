@@ -174,10 +174,12 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 /// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
 /// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
 /// comment block of the form
+/// ``` Rust
 /// /*[toml]
 /// [dependencies]
 /// ...
 /// */
+/// ```
 /// From here they will be extracted to a dedicated Cargo.toml file.
 /// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
 /// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can

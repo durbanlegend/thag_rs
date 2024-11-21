@@ -12,7 +12,7 @@ tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 /// or default to a standard editor. A more minimalist version is used to edit stdin input in
 /// the `--edit (-d)` option of `thag_rs`.
 //# Purpose: Demo and explore TUI editor and featured crates, including `crossterm`.
-//# Categories: crates, exploration, techniques
+//# Categories: crates, exploration, technique
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::read;
 use ratatui::crossterm::event::{

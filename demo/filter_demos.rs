@@ -5,8 +5,8 @@ edit = "0.1.5"
 regex = "1.10.5"
 syn = "2"
 # thag_rs = "0.1.7"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "83694dd6e4f0e1bd0f887d32a2cebbadc691dc84" }
-thag_rs = { path = "/Users/donf/projects/thag_rs" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "cedce80a5faaab83ef172682e196065ccce892d8" }
+# thag_rs = { path = "/Users/donf/projects/thag_rs" }
 # tokio = "1.41.1"
 tokio = { version = "1", features = ["full"] }
 warp = "0.3.7"

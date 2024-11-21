@@ -12,7 +12,7 @@ tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 /// for your operating system. Note that due to an apparent bug in `firestorm`, the `Editor::run` method currently
 /// executes twice, so it will need to be closed a second time.
 //# Purpose: Demo featured crates, but `firestorm` profiler in particular.
-//# Categories: crates, exploration, techniques
+//# Categories: crates, exploration, technique
 use firestorm::profile_fn;
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::read;

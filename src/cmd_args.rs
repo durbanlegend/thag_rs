@@ -52,7 +52,7 @@ pub struct Cli {
     /// Run the given filter expression in a loop against every line of stdin, with optional pre- and/or post-loop logic via -T, -B and -E.
     #[arg(short = 'l', long = "loop", help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
     pub filter: Option<String>,
-    /// Optional manifest info for --loop in Cargo.toml format, such as a [dependencies] section
+    /// Optional manifest info for --loop in Cargo.toml format, such as a `[dependencies]` section
     //  clap issue 4707 may prevent `requires` from working, as I've experienced.
     #[arg(short = 'T', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "CARGO-TOML")]
     pub toml: Option<String>,

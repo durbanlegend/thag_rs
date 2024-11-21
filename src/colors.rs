@@ -151,6 +151,13 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     (color_support.as_ref(), term_theme)
 }
 
+/// A macro that generate all possible trait implementations for a given style enum <S> such as
+/// Xterm256LightStyle, and an `init_styles` function that will be used to map any given message level
+/// to the actual terminal theme and colour support level encountered on initialisation.
+///
+/// From<&Lvl> for <S>.
+/// From<S> for <Style>.
+///
 #[macro_export]
 macro_rules! generate_styles {
     (
@@ -442,7 +449,8 @@ pub fn get_style(
     mapping(*message_level)
 }
 
-/// A version of println that prints an entire message in colour or otherwise styled.
+/// A line print macro that prints a styled and coloured message.
+///
 /// Format: `cprtln!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! cprtln {
@@ -456,6 +464,12 @@ macro_rules! cprtln {
     }};
 }
 
+/// A line print macro that conditionally prints a message using `cprtln` if the current global verbosity
+/// is at least as verbose as the `Verbosity` (alias `V`) level passed in.
+///
+/// The message will be styled and coloured according to the `MessageLevel` (alias `Lvl`) passed in.
+///
+/// Format: `cvprtln!(level: Lvl, verbosity: V, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! cvprtln {
     ($level:expr, $verbosity:expr, $($arg:tt)*) => {{

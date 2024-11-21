@@ -1,6 +1,11 @@
 #![allow(clippy::missing_panics_doc, unused_imports)]
+//! Procedural macros for generating enums and utilities for managing script categories.
+//!
+//! For detailed documentation on the `category_enum` macro, see the
+//! [dedicated documentation](https://github.com/thag_rs/demo/proc_macros/docs/category_enum.md).
 mod attrib_key_map_list;
 mod attribute_basic;
+mod category_enum;
 mod const_demo;
 mod const_demo_grail;
 mod const_gen_str_demo;
@@ -19,6 +24,7 @@ mod repeat_dash;
 
 use crate::attrib_key_map_list::use_mappings_impl;
 use crate::attribute_basic::attribute_basic_impl;
+use crate::category_enum::category_enum_impl;
 use crate::const_demo::const_demo_impl;
 use crate::const_demo_grail::const_demo_grail_impl;
 use crate::const_gen_str_demo::string_concat_impl;
@@ -222,3 +228,202 @@ where
 
     output
 }
+
+/// Generates a `Category` enum with predefined variants and utility implementations.
+///
+/// The `category_enum` macro defines an enum `Category` with a hardcoded set of variants.
+/// This ensures consistency across all callers and centralizes control over the available categories.
+///
+/// Additionally, it generates:
+/// - A `FromStr` implementation to parse strings into the `Category` enum.
+/// - A utility method `Category::all_categories()` to return a list of all available category names.
+///
+/// # Usage
+///
+/// Simply invoke the macro in your project:
+///
+/// ```rust
+/// use demo_proc_macros::category_enum;
+///
+/// category_enum!();
+/// ```
+///
+/// This generates:
+///
+/// ```rust
+/// pub enum Category {
+///     AST,
+///     CLI,
+///     REPL,
+///     Async,
+///     Basic,
+///     BigNumbers,
+///     Crates,
+///     Educational,
+///     ErrorHandling,
+///     Exploration,
+///     Macros,
+///     Math,
+///     ProcMacros,
+///     Prototype,
+///     Recreational,
+///     Reference,
+///     Technique,
+///     Testing,
+///     Tools,
+///     TypeIdentification,
+/// }
+///
+/// impl std::str::FromStr for Category {
+///     type Err = String;
+///
+///     fn from_str(s: &str) -> Result<Self, Self::Err> {
+///         match s {
+///             "AST" => Ok(Category::AST),
+///             "CLI" => Ok(Category::CLI),
+///             "REPL" => Ok(Category::REPL),
+///             "Async" => Ok(Category::Async),
+///             // ... other variants ...
+///             _ => Err(format!("Invalid category: {s}")),
+///         }
+///     }
+/// }
+///
+/// impl Category {
+///     pub fn all_categories() -> Vec<&'static str> {
+///         vec![
+///             "AST", "CLI", "REPL", "Async", "Basic", "BigNumbers", "Crates",
+///             "Educational", "ErrorHandling", "Exploration", "Macros", "Math",
+///             "ProcMacros", "Prototype", "Recreational", "Reference", "Technique",
+///             "Testing", "Tools", "TypeIdentification",
+///         ]
+///     }
+/// }
+/// ```
+///
+/// # Benefits
+///
+/// - Consistency: The hardcoded list ensures uniformity across all callers.
+/// - Convenience: Auto-generated utility methods simplify working with the categories.
+/// - Safety: Enums prevent invalid values at compile time.
+///
+/// # Use Cases
+///
+/// This macro is ideal for scenarios requiring centralized control over predefined categories,
+/// such as filtering demo scripts or generating reports.
+#[proc_macro]
+pub fn category_enum(input: TokenStream) -> TokenStream {
+    intercept_and_debug(false, input, |tokens| category_enum_impl(tokens))
+}
+
+// mod category_enum {
+//     pub(crate) fn category_enum_impl(_input: TokenStream) -> TokenStream {
+//         let expanded = quote! {
+//             use std::str::FromStr;
+
+//             #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+//             enum Category {
+//                 AST,
+//                 CLI,
+//                 REPL,
+//                 Async,
+//                 Basic,
+//                 BigNumbers,
+//                 Crates,
+//                 Educational,
+//                 ErrorHandling,
+//                 Exploration,
+//                 Macros,
+//                 Math,
+//                 ProcMacros,
+//                 Prototype,
+//                 Recreational,
+//                 Reference,
+//                 Technique,
+//                 Testing,
+//                 Tools,
+//                 TypeIdentification,
+//             }
+
+//             impl FromStr for Category {
+//                 type Err = String;
+
+//                 fn from_str(s: &str) -> Result<Self, Self::Err> {
+//                     match s.to_lowercase().as_str() {
+//                         "ast" => Ok(Category::AST),
+//                         "cli" => Ok(Category::CLI),
+//                         "repl" => Ok(Category::REPL),
+//                         "async" => Ok(Category::Async),
+//                         "basic" => Ok(Category::Basic),
+//                         "big_numbers" => Ok(Category::BigNumbers),
+//                         "crates" => Ok(Category::Crates),
+//                         "educational" => Ok(Category::Educational),
+//                         "error_handling" => Ok(Category::ErrorHandling),
+//                         "exploration" => Ok(Category::Exploration),
+//                         "macros" => Ok(Category::Macros),
+//                         "math" => Ok(Category::Math),
+//                         "proc_macros" => Ok(Category::ProcMacros),
+//                         "prototype" => Ok(Category::Prototype),
+//                         "recreational" => Ok(Category::Recreational),
+//                         "reference" => Ok(Category::Reference),
+//                         "technique" => Ok(Category::Technique),
+//                         "testing" => Ok(Category::Testing),
+//                         "tools" => Ok(Category::Tools),
+//                         "type_identification" => Ok(Category::TypeIdentification),
+//                         _ => Err(format!("Invalid category: {}", s)),
+//                     }
+//                 }
+//             }
+
+//             /// Returns a vector of all valid category names as strings.
+//             ///
+//             /// This function is automatically generated by the `category_enum` macro and provides
+//             /// a complete list of categories, making it convenient for validation, UI prompts, or filtering.
+//             ///
+//             /// # Example
+//             ///
+//             /// ```rust
+//             /// use demo_proc_macros::category_enum;
+//             ///
+//             /// category_enum! {
+//             ///     AST, CLI, REPL, async, basic, big_numbers, crates, educational,
+//             ///     error_handling, exploration, macros, math, proc_macros, prototype,
+//             ///     recreational, reference, technique, testing, tools, type_identification
+//             /// }
+//             ///
+//             /// let categories = Category::all_categories();
+//             /// assert_eq!(categories, vec![
+//             ///     "AST", "CLI", "REPL", "Async", "Basic", "BigNumbers", "Crates",
+//             ///     "Educational", "ErrorHandling", "Exploration", "Macros", "Math",
+//             ///     "ProcMacros", "Prototype", "Recreational", "Reference", "Technique",
+//             ///     "Testing", "Tools", "TypeIdentification"
+//             /// ]);
+//             /// ```
+//             pub fn all_categories() -> Vec<String> {
+//                 vec![
+//                     "AST".to_string(),
+//                     "CLI".to_string(),
+//                     "REPL".to_string(),
+//                     "async".to_string(),
+//                     "basic".to_string(),
+//                     "big_numbers".to_string(),
+//                     "crates".to_string(),
+//                     "educational".to_string(),
+//                     "error_handling".to_string(),
+//                     "exploration".to_string(),
+//                     "macros".to_string(),
+//                     "math".to_string(),
+//                     "proc_macros".to_string(),
+//                     "prototype".to_string(),
+//                     "recreational".to_string(),
+//                     "reference".to_string(),
+//                     "technique".to_string(),
+//                     "testing".to_string(),
+//                     "tools".to_string(),
+//                     "type_identification".to_string(),
+//                 ]
+//             }
+//         };
+//         TokenStream::from(expanded)
+//     }
+// }

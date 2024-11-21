@@ -19,6 +19,8 @@
 - [ ]  Set up bank/proc_macros and only take best to demo.
 - [ ]  Add a --expand (-X) flag to generate (not run) and expand the script. Requires cargo-expand crate.
 - [ ]  Consider adding category "category" to gen_readme.
+- [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
+- [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
 - [ ]  Try going back to derive macro with declarative macro to expand the attributes. Problem with attrib macro is the AST isn't

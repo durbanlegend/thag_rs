@@ -16,7 +16,7 @@ winapi = { version = "0.3.9", features = ["consoleapi", "processenv", "winbase"]
 /// https://github.com/Textualize/rich/issues/140.
 /// Also, but out of scope of this script, there is no good fallback detection method provided by Windows,
 /// as per my comments in the adapted module `thag_rs::termbg`. Unless you have WT 1.22 or higher as above,
-/// the best bet for supporting colour schemes other than the default black is to fallback to using a
+/// the best bet for supporting colour schemes other than the default black is to fall back to using a
 /// configuration file (as we do) or allowing the user to specify the theme in real time.
 /// Finally, the `termbg` crate was swallowing the first character of input in Windows and causing a
 /// "rightward march" of log output due to suppression of carriage returns in all environments. I've

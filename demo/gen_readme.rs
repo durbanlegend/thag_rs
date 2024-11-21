@@ -1,13 +1,17 @@
 /*[toml]
 [dependencies]
+# To switch off, use version without features = ["enable_system_time"]
+# If on, prepare for function to run twice for some reason!
+# firestorm = "0.5.1"
+firestorm = { version = "0.5.1", features = ["enable_system_time"] }
 lazy_static = "1.4.0"
 log = "0.4.22"
 regex = "1.10.5"
 # thag_proc_macros = { version = "0.1.0", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
-thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", rev = "cedce80a5faaab83ef172682e196065ccce892d8" }
+thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", rev = "ae819fc549a9d6a40d4907f6f981815c25882bfa" }
 # thag_rs = "0.1.7"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "cedce80a5faaab83ef172682e196065ccce892d8" }
-thag_rs = { path = "/Users/donf/projects/thag_rs" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "ae819fc549a9d6a40d4907f6f981815c25882bfa" }
+# thag_rs = { path = "/Users/donf/projects/thag_rs" }
 */
 
 /// This is the actual script used to collect demo script metadata and generate
@@ -16,6 +20,7 @@ thag_rs = { path = "/Users/donf/projects/thag_rs" }
 /// Strategy and grunt work thanks to ChatGPT.
 //# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
 //# Categories: technique, tools
+use firestorm::profile_fn;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::{
@@ -42,6 +47,7 @@ struct ScriptMetadata {
 category_enum! {}
 
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
+    profile_fn!(parse_metadata);
     // Lazy static variable from the categories defined in macro category_enum!.
     let valid_categories = lazy_static_var!(Vec<String>, {
         let valid_categories = all_categories();
@@ -163,6 +169,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
 }
 
 fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
+    profile_fn!(collect_all_metadata);
     let mut all_metadata = Vec::new();
 
     let scripts = read_dir(scripts_dir).expect("Error reading scripts");
@@ -190,6 +197,7 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
 }
 
 fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path, boilerplate_path: &Path) {
+    profile_fn!(generate_readme);
     let mut file = File::create(output_path).unwrap();
 
     // Read boilerplate content
@@ -240,6 +248,7 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path, boilerp
 }
 
 fn main() {
+    profile_fn!(main);
     let scripts_dir = Path::new("demo");
     let output_path = Path::new("demo/README.md");
     let boilerplate_path = Path::new("assets/boilerplate.md");

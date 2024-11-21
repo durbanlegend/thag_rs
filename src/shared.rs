@@ -7,7 +7,7 @@ use crate::{Cli, ProcFlags};
 use crate::{ThagError, ThagResult};
 use cargo_toml::Manifest;
 use crossterm::event::Event;
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_method};
 use home::home_dir;
 use mockall::automock;
 use proc_macro2::TokenStream;
@@ -41,7 +41,7 @@ impl Ast {
 /// Required to use quote! macro to generate code to resolve expression.
 impl ToTokens for Ast {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        profile_fn!(to_tokens);
+        profile_method!(to_tokens);
         match self {
             Self::File(file) => file.to_tokens(tokens),
             Self::Expr(expr) => expr.to_tokens(tokens),
@@ -83,7 +83,7 @@ impl BuildState {
         args: &Cli,
         script_state: &ScriptState,
     ) -> ThagResult<Self> {
-        profile_fn!(pre_configure);
+        profile_method!(pre_configure);
         let maybe_script = script_state.get_script();
         let Some(ref script) = maybe_script else {
             return Err(ThagError::NoneOption("No script specified"));
@@ -286,6 +286,7 @@ impl ScriptState {
     /// Return the script name wrapped in an Option.
     #[must_use]
     pub fn get_script(&self) -> Option<String> {
+        profile_method!(get_script);
         match self {
             Self::Anonymous => None,
             Self::NamedEmpty { script, .. } | Self::Named { script, .. } => {
@@ -296,6 +297,7 @@ impl ScriptState {
     /// Return the script's directory path wrapped in an Option.
     #[must_use]
     pub fn get_script_dir_path(&self) -> Option<PathBuf> {
+        profile_method!(get_script_dir_path);
         match self {
             Self::Anonymous => None,
             Self::Named {
@@ -336,12 +338,14 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
 #[inline]
 #[cfg(target_os = "windows")]
 pub fn escape_path_for_windows(path_str: &str) -> String {
+    profile_fn!(escape_path_for_windows);
     path_str.replace('\\', "/")
 }
 
 #[must_use]
 #[cfg(not(target_os = "windows"))]
 pub fn escape_path_for_windows(path_str: &str) -> String {
+    profile_fn!(escape_path_for_windows);
     path_str.to_string()
 }
 
@@ -354,12 +358,14 @@ pub struct KeyDisplayLine {
 
 impl PartialOrd for KeyDisplayLine {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        profile_method!(partial_cmp);
         Some(self.cmp(other))
     }
 }
 
 impl Ord for KeyDisplayLine {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        profile_method!(cmp);
         usize::cmp(&self.seq, &other.seq)
     }
 }
@@ -394,10 +400,12 @@ pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
     fn read_event(&self) -> ThagResult<Event> {
+        profile_method!(read_event);
         crossterm::event::read().map_err(Into::<ThagError>::into)
     }
 
     fn poll(&self, timeout: Duration) -> ThagResult<bool> {
+        profile_method!(poll);
         crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
     }
 }

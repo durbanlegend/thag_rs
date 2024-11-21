@@ -5,7 +5,7 @@ use crate::{
     V,
 };
 use cargo_toml::{Dependency, DependencyDetail, Manifest};
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_method};
 use mockall::automock;
 use nu_ansi_term::Style;
 use regex::Regex;
@@ -36,7 +36,7 @@ impl CommandRunner for RealCommandRunner {
     /// # Errors
     /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
     fn run_command(&self, program: &str, args: &[String]) -> io::Result<Output> {
-        profile_fn!(run_command);
+        profile_method!(run_command);
         Command::new(program).args(args).output()
     }
 }
@@ -292,6 +292,7 @@ fn proc_macros_magic(
     dep_name: &str,
     dir_name: &str,
 ) {
+    profile_fn!(proc_macros_magic);
     cvprtln!(
         Lvl::BRI,
         V::V,

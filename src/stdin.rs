@@ -5,6 +5,7 @@ use crate::{
 };
 use clap::Parser;
 use edit::edit_file;
+use firestorm::profile_fn;
 use mockall::predicate::str;
 use ratatui::style::{Color, Modifier, Style};
 use std::{
@@ -193,6 +194,7 @@ pub fn read() -> Result<String, std::io::Error> {
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
+    profile_fn!(read_to_string);
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)

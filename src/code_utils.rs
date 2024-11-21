@@ -10,7 +10,7 @@ use crate::{
     BUILT_IN_CRATES, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use cargo_toml::{Edition, Manifest};
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_method};
 use regex::Regex;
 use std::{
     any::Any,
@@ -57,7 +57,7 @@ struct RemoveInnerAttributes {
 
 impl VisitMut for RemoveInnerAttributes {
     fn visit_expr_block_mut(&mut self, expr_block: &mut ExprBlock) {
-        profile_fn!(visit_expr_block_mut);
+        profile_method!(visit_expr_block_mut);
         // Count inner attributes
         self.found = expr_block
             .attrs
@@ -142,7 +142,7 @@ fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
     }
     impl<'a> Visit<'a> for FindCrates {
         fn visit_use_rename(&mut self, node: &'a UseRename) {
-            profile_fn!(visit_use_rename);
+            profile_method!(visit_use_rename);
             self.use_renames_to.push(node.rename.to_string());
         }
     }
@@ -167,7 +167,7 @@ fn find_modules_ast(syntax_tree: &Ast) -> Vec<String> {
     }
     impl<'a> Visit<'a> for FindMods {
         fn visit_item_mod(&mut self, node: &'a ItemMod) {
-            profile_fn!(visit_item_mod);
+            profile_method!(visit_item_mod);
             self.modules.push(node.ident.to_string());
         }
     }
@@ -192,20 +192,21 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
     }
     impl<'a> Visit<'a> for FindCrates {
         fn visit_item_use(&mut self, node: &'a syn::ItemUse) {
-            profile_fn!(visit_item_use);
+            profile_method!(visit_item_use);
             // This seems to be the only way to pick up the simple case `use a as b;`
             if let UseTree::Rename(use_rename) = &node.tree {
                 let node_name = use_rename.ident.to_string();
                 self.use_crates.push(node_name);
             } else {
-                // Crucial: keep visiting child nodes
+                // Essential to keep visiting child nodes
                 syn::visit::visit_item_use(self, node);
             }
         }
         fn visit_use_tree(&mut self, node: &'a syn::UseTree) {
-            profile_fn!(visit_use_tree);
+            profile_method!(visit_use_tree);
             // eprintln!("node={node:#?}");
             if let UseTree::Group(_use_group) = node {
+                // Essential to keep visiting child nodes
                 syn::visit::visit_use_tree(self, node);
             } else {
                 let maybe_node_name = match node {
@@ -252,7 +253,7 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
 
     impl<'a> Visit<'a> for FindCrates {
         fn visit_item_extern_crate(&mut self, node: &'a ItemExternCrate) {
-            profile_fn!(visit_item_extern_crate);
+            profile_method!(visit_item_extern_crate);
             self.extern_crates.push(node.ident.to_string());
         }
     }
@@ -575,7 +576,7 @@ pub fn count_main_methods(syntax_tree: &Ast) -> usize {
 
     impl<'a> Visit<'a> for FindMainFns {
         fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
-            profile_fn!(visit_item_fn);
+            profile_method!(visit_item_fn);
             if node.sig.ident == "main" && node.sig.inputs.is_empty() {
                 self.main_method_count += 1;
             }
@@ -1184,7 +1185,9 @@ pub fn is_main_fn_returning_unit(file: &File) -> ThagResult<bool> {
     Err("No main function found".into())
 }
 
+#[must_use]
 pub fn get_source_path(build_state: &BuildState) -> String {
+    profile_fn!(get_source_path);
     let binding: &PathBuf = if build_state.build_from_orig_source {
         &build_state.source_path
     } else {
@@ -1203,6 +1206,7 @@ pub fn get_source_path(build_state: &BuildState) -> String {
 /// # Panics
 /// Will panic if the `rustfmt` failed.
 fn rustfmt(source_path_str: &str) {
+    profile_fn!(rustfmt);
     if Command::new("rustfmt").arg("--version").output().is_ok() {
         // Run rustfmt on the source file
         let mut command = Command::new("rustfmt");

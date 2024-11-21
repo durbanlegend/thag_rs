@@ -536,7 +536,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Purpose:** Demo older alternative implementation of `colors` module using `owo-colors`.
 
-**Crates:** `log`, `owo_colors`, `quote`, `simplelog`, `strum`, `supports_color`, `termbg`, `thag_rs`, `xterm`
+**Crates:** `log`, `owo_colors`, `strum`, `supports_color`, `termbg`, `thag_rs`
 
 **Type:** Program
 
@@ -1875,7 +1875,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Purpose:** Document demo scripts in a demo/README.md as a guide to the user.
 
-**Crates:** `lazy_static`, `regex`, `thag_demo_proc_macros`, `thag_rs`
+**Crates:** `firestorm`, `lazy_static`, `regex`, `thag_demo_proc_macros`, `thag_rs`
 
 **Type:** Program
 
@@ -2027,7 +2027,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Purpose:** Demo `hyper` HTTP client, and incorporating separate modules into the script.
 
-**Crates:** `AsyncWriteExt`, `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
+**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
 
 **Type:** Program
 
@@ -2473,7 +2473,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Purpose:** Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
 
-**Crates:** `enum_assoc`, `log`, `owo_colors`, `strum`, `supports_color`, `termbg`, `xterm`
+**Crates:** `enum_assoc`, `log`, `owo_colors`, `strum`, `supports_color`, `termbg`
 
 **Type:** Program
 

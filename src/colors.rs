@@ -6,7 +6,7 @@ use crate::{
     config, debug_log, generate_styles, lazy_static_var, maybe_config, vlog, ThagResult, V,
 };
 use crossterm::terminal::{self, is_raw_mode_enabled};
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_method};
 use log::debug;
 use nu_ansi_term::{Color, Style};
 use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
@@ -152,8 +152,8 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
 }
 
 /// A macro that generate all possible trait implementations for a given style enum <S> such as
-/// Xterm256LightStyle, and an `init_styles` function that will be used to map any given message level
-/// to the actual terminal theme and colour support level encountered on initialisation.
+/// `Xterm256LightStyle`, and an `init_styles` function that will be used to map any given message
+/// level to the actual terminal theme and colour support level encountered on initialisation.
 ///
 /// From<&Lvl> for <S>.
 /// From<S> for <Style>.
@@ -168,7 +168,7 @@ macro_rules! generate_styles {
         $(
             impl From<&Lvl> for $style_enum {
                 fn from(message_level: &Lvl) -> Self {
-                    profile_fn!(style_enum_from_lvl);
+                    profile_method!(style_enum_from_lvl);
 
                     // dbg!(&$style_enum::Warning);
                     // dbg!(&message_level);
@@ -190,7 +190,7 @@ macro_rules! generate_styles {
             impl From<&$style_enum> for Style {
                 #[must_use]
                 fn from(style_enum: &$style_enum) -> Self {
-                    profile_fn!(style_from_style_enum);
+                    profile_method!(style_from_style_enum);
                     match style_enum {
                         $style_enum::Error => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Error))).bold(),
                         $style_enum::Warning => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Warning))).bold(),
@@ -858,7 +858,7 @@ pub enum MessageStyle {
 
 impl From<&Lvl> for MessageStyle {
     fn from(message_level: &Lvl) -> Self {
-        profile_fn!(msg_style_from_lvl);
+        profile_method!(msg_style_from_lvl);
         let message_style: Self = {
             let (maybe_color_support, term_theme) = coloring();
             maybe_color_support.map_or(Self::Ansi16DarkNormal, |color_support| {
@@ -935,7 +935,7 @@ impl From<&Lvl> for XtermColor {
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for Style {
     fn from(message_style: &MessageStyle) -> Self {
-        profile_fn!(style_from_msg_style);
+        profile_method!(style_from_msg_style);
         match *message_style {
             MessageStyle::Ansi16LightError => Color::Red.bold(),
             MessageStyle::Ansi16LightWarning => Color::Magenta.bold(),
@@ -985,7 +985,7 @@ impl From<&MessageStyle> for Style {
 
 impl From<&MessageLevel> for Style {
     fn from(lvl: &MessageLevel) -> Self {
-        profile_fn!(style_from_lvl);
+        profile_method!(style_from_lvl);
         Self::from(&MessageStyle::from(lvl))
     }
 }
@@ -993,7 +993,7 @@ impl From<&MessageLevel> for Style {
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for RataStyle {
     fn from(message_style: &MessageStyle) -> Self {
-        profile_fn!(ratastyle_from_msg_style);
+        profile_method!(ratastyle_from_msg_style);
         match *message_style {
             MessageStyle::Ansi16LightError => Self::from(RataColor::Red).bold(),
             MessageStyle::Ansi16LightWarning => Self::from(RataColor::Magenta).bold(),
@@ -1077,14 +1077,14 @@ impl From<&MessageStyle> for RataStyle {
 
 impl From<&MessageLevel> for RataStyle {
     fn from(lvl: &MessageLevel) -> Self {
-        profile_fn!(ratastyle_from_lvl);
+        profile_method!(ratastyle_from_lvl);
         Self::from(&MessageStyle::from(lvl))
     }
 }
 
 impl From<&MessageLevel> for Color {
     fn from(lvl: &MessageLevel) -> Self {
-        profile_fn!(color_from_lvl);
+        profile_method!(color_from_lvl);
         Self::from(&XtermColor::from(&MessageStyle::from(lvl)))
     }
 }

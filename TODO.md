@@ -17,13 +17,18 @@
 - [ ]  New test for local paths in demo files and maybe even main Cargo.toml.
 - [ ]  Try ThagDisplay trait and derive macro.
 - [ ]  Set up bank/proc_macros and only take best to demo.
-- [ ]  Add a --expand (-X) flag to generate (not run) and expand the script. Requires cargo-expand crate.
-- [ ]  Consider adding category "category" to gen_readme.
 - [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
 use_renames_from=["xterm", "self"], use_renames_to=["owo_xterm", "owo_ansi"]
 demo/colors_orig.rs: maybe_syntax_tree.is_some()? true
 use owo_ansi::xterm as owo_xterm;
 use owo_colors::colors::{self as owo_ansi, Magenta};
+
+find_use_renames_ast
+find_modules_ast
+find_use_crates_ast
+find_extern_crates_ast
+count_main_methods  - set up a common Finder in builder.gen_build_run and populate it from Visit::visit in a single run with all the
+                      current method overrides together.
 
 - [ ]  Perf: combine multiple finder.visit_* into one in code_utils so the AST is only traversed once.
 - [ ]  Documentation (cargo doc), e.g. for macros.

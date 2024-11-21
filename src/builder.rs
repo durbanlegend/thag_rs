@@ -19,13 +19,14 @@ use firestorm::{profile_fn, profile_section};
 use log::{log_enabled, Level::Debug};
 use nu_ansi_term::Style;
 use regex::Regex;
-use std::env::current_dir;
-use std::string::ToString;
+use side_by_side_diff::create_side_by_side_diff;
 use std::{
+    env::current_dir,
     fs::{self, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
     process::Command,
+    string::ToString,
     time::Instant,
 };
 use syn::Expr;
@@ -674,7 +675,6 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
             80
         };
         // Compare the sources
-        use side_by_side_diff::create_side_by_side_diff;
         let diff = create_side_by_side_diff(&unexpanded_source, &expanded_source, max_width.into());
         println!("{diff}");
     } else {

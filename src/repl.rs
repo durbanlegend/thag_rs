@@ -12,7 +12,7 @@ use crate::{
 use clap::{CommandFactory, Parser};
 use crossterm::event::{KeyEvent, KeyEventKind};
 use edit::edit_file;
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_method};
 use nu_ansi_term::{Color, Style as NuStyle};
 use ratatui::style::{Style as RataStyle, Stylize};
 use reedline::{
@@ -222,6 +222,7 @@ pub enum ReplCommand {
 
 impl ReplCommand {
     fn print_help() {
+        profile_method!(print_help);
         let mut command = Self::command();
         // let mut buf = Vec::new();
         // command.write_help(&mut buf).unwrap();
@@ -235,18 +236,22 @@ impl ReplCommand {
 pub struct ReplPrompt(pub &'static str);
 impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
+        profile_method!(render_prompt_left);
         Cow::Owned(self.0.to_string())
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
+        profile_method!(render_prompt_right);
         Cow::Owned(String::new())
     }
 
     fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<str> {
+        profile_method!(render_prompt_indicator);
         Cow::Owned("> ".to_string())
     }
 
     fn render_prompt_multiline_indicator(&self) -> Cow<str> {
+        profile_method!(render_prompt_multiline_indicator);
         Cow::Borrowed(DEFAULT_MULTILINE_INDICATOR)
     }
 
@@ -254,6 +259,7 @@ impl Prompt for ReplPrompt {
         &self,
         history_search: PromptHistorySearch,
     ) -> Cow<str> {
+        profile_method!(render_prompt_history_search_indicator);
         let prefix = match history_search.status {
             PromptHistorySearchStatus::Passing => "",
             PromptHistorySearchStatus::Failing => "failing ",
@@ -267,14 +273,17 @@ impl Prompt for ReplPrompt {
 }
 
 fn get_heading_style() -> &'static NuStyle {
+    profile_fn!(get_heading_style);
     lazy_static_var!(NuStyle, NuStyle::from(&Lvl::HEAD))
 }
 
 fn get_subhead_style() -> &'static NuStyle {
+    profile_fn!(get_subhead_style);
     lazy_static_var!(NuStyle, NuStyle::from(&Lvl::SUBH))
 }
 
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
+    profile_fn!(add_menu_keybindings);
     keybindings.add_binding(
         KeyModifiers::NONE,
         KeyCode::Tab,
@@ -499,6 +508,7 @@ pub fn process_source(
     proc_flags: &ProcFlags,
     start: Instant,
 ) -> ThagResult<()> {
+    profile_fn!(process_source);
     let rs_manifest = extract_manifest(rs_source, Instant::now())?;
     build_state.rs_manifest = Some(rs_manifest);
     let maybe_ast = extract_ast_expr(rs_source);
@@ -623,6 +633,7 @@ fn review_history(
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
 pub fn decode(input: &str) -> String {
+    profile_fn!(decode);
     let re = regex!(r"(<\\n>)");
     let lf = std::str::from_utf8(&[10_u8]).unwrap();
     re.replace_all(input, lf).to_string()
@@ -704,6 +715,7 @@ pub fn history_key_handler(
     saved: &mut bool,
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
+    profile_fn!(history_key_handler);
     // Make sure for Windows
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
@@ -750,6 +762,7 @@ fn save_file(
     maybe_save_path: &Option<&mut PathBuf>,
     textarea: &TextArea<'_>,
 ) -> ThagResult<String> {
+    profile_fn!(save_file);
     let staging_path = maybe_save_path.as_ref().ok_or("Missing save_path")?;
     let staging_file = OpenOptions::new()
         .read(true)
@@ -764,9 +777,11 @@ fn save_file(
     }
     Ok(staging_path.display().to_string())
 }
+
 /// Return the maximum length of the key descriptor for a set of styled and
 /// formatted key / description bindings to be displayed on screen.
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
+    profile_fn!(get_max_key_len);
     let style: NuStyle = *get_heading_style();
     formatted_bindings
         .iter()
@@ -783,6 +798,7 @@ fn format_bindings(
     named_reedline_events: &[(String, &ReedlineEvent)],
     max_cmd_len: usize,
 ) -> &'static Vec<(String, String)> {
+    profile_fn!(format_bindings);
     lazy_static_var!(Vec<(String, String)>, {
         let mut formatted_bindings = named_reedline_events
             .iter()
@@ -808,6 +824,7 @@ fn format_bindings(
 }
 
 fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
+    profile_fn!(get_max_cmd_len);
     // Calculate max command len for padding
     lazy_static_var!(
         usize,
@@ -846,6 +863,7 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
 }
 
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
+    profile_fn!(show_key_bindings);
     println!();
     cprtln!(
         &(&Lvl::EMPH).into(),
@@ -865,6 +883,7 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
 // Helper function to convert KeyModifiers to string
 #[must_use]
 pub fn format_key_modifier(modifier: KeyModifiers) -> String {
+    profile_fn!(format_key_modifier);
     let mut modifiers = Vec::new();
     if modifier.contains(KeyModifiers::CONTROL) {
         modifiers.push("CONTROL");
@@ -886,6 +905,7 @@ pub fn format_key_modifier(modifier: KeyModifiers) -> String {
 // Helper function to convert KeyCode to string
 #[must_use]
 pub fn format_key_code(key_code: KeyCode) -> String {
+    profile_fn!(format_key_code);
     match key_code {
         KeyCode::Backspace => "Backspace".to_string(),
         KeyCode::Enter => "Enter".to_string(),
@@ -923,6 +943,7 @@ pub fn format_key_code(key_code: KeyCode) -> String {
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
+    profile_fn!(format_non_edit_events);
     let event_desc_map = lazy_static_var!(HashMap<&'static str, &'static str>, {
         EVENT_DESCS
             .iter()
@@ -945,6 +966,7 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 /// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
 #[must_use]
 pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> String {
+    profile_fn!(format_edit_commands);
     let cmd_desc_map: &HashMap<&str, &str> =
         lazy_static_var!(HashMap<&'static str, &'static str>, {
             CMD_DESCS
@@ -966,6 +988,7 @@ fn format_cmd_desc(
     cmd_desc_map: &HashMap<&str, &str>,
     max_cmd_len: usize,
 ) -> String {
+    profile_fn!(format_cmd_desc);
     let style = get_subhead_style();
 
     let cmd_highlight = style.paint(format!("{cmd:?}"));
@@ -1079,6 +1102,7 @@ fn format_cmd_desc(
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
 pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
+    profile_fn!(delete);
     // let build_state = &context.build_state;
     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
     if clean_up.is_ok()
@@ -1134,6 +1158,7 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
 
 /// Display the REPL banner.
 pub fn disp_repl_banner(cmd_list: &str) {
+    profile_fn!(disp_repl_banner);
     cvprtln!(
         Lvl::HEAD,
         get_verbosity(),
@@ -1163,6 +1188,7 @@ pub fn disp_repl_banner(cmd_list: &str) {
 /// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
 pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
+    profile_fn!(list);
     let source_path = &build_state.source_path;
     if source_path.exists() {
         vlog!(V::QQ, "File: {source_path:?}");

@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
 use env_logger::{Builder, Env};
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_method};
 use serde::Deserialize;
 #[cfg(feature = "simplelog")]
 use simplelog::{
@@ -26,15 +26,18 @@ static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 /// Will panic if it can't unwrap the lock on the mutex protecting the `LOGGER` static variable.
 #[must_use]
 pub fn get_verbosity() -> Verbosity {
+    profile_fn!(get_verbosity);
     LOGGER.lock().unwrap().verbosity
 }
 
 #[allow(clippy::module_name_repetitions)]
 pub fn enable_debug_logging() {
+    profile_fn!(enable_debug_logging);
     DEBUG_LOG_ENABLED.store(true, Ordering::SeqCst);
 }
 
 pub fn is_debug_logging_enabled() -> bool {
+    profile_fn!(is_debug_logging_enabled);
     DEBUG_LOG_ENABLED.load(Ordering::SeqCst)
 }
 
@@ -76,6 +79,7 @@ impl Logger {
 
     /// Log a message if it passes the verbosity filter.
     pub fn log(&self, verbosity: Verbosity, message: &str) {
+        profile_method!(log);
         if verbosity as u8 <= self.verbosity as u8 {
             println!("{}", message);
         }
@@ -83,6 +87,7 @@ impl Logger {
 
     /// Set the verbosity level.
     pub fn set_verbosity(&mut self, verbosity: Verbosity) {
+        profile_method!(set_verbosity);
         self.verbosity = verbosity;
 
         debug_log!("Verbosity set to {verbosity:?}");
@@ -90,6 +95,7 @@ impl Logger {
 
     /// Return the verbosity level
     pub fn verbosity(&mut self) -> Verbosity {
+        profile_method!(verbosity);
         self.verbosity
     }
 }
@@ -127,6 +133,7 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
 /// # Panics
 /// Will panic in debug mode if the global verbosity value is not the value we just set.
 pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
+    profile_fn!(set_global_verbosity);
     LOGGER.lock()?.set_verbosity(verbosity);
     #[cfg(debug_assertions)]
     assert_eq!(get_verbosity(), verbosity);
@@ -169,6 +176,7 @@ pub fn configure_log() {
 /// Panics if it can't create athe log file app.log in the current working directory.
 #[cfg(not(feature = "env_logger"))]
 fn configure_simplelog() {
+    profile_fn!(configure_simplelog);
     CombinedLogger::init(vec![
         TermLogger::new(
             LevelFilter::Info,

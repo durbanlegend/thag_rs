@@ -6,7 +6,7 @@ use crate::{
     config, debug_log, generate_styles, lazy_static_var, maybe_config, vlog, ThagResult, V,
 };
 use crossterm::terminal::{self, is_raw_mode_enabled};
-use firestorm::{profile_fn, profile_method};
+use firestorm::{profile_fn, profile_method, profile_section};
 use log::debug;
 use nu_ansi_term::{Color, Style};
 use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
@@ -862,17 +862,21 @@ impl From<&Lvl> for MessageStyle {
         let message_style: Self = {
             let (maybe_color_support, term_theme) = coloring();
             maybe_color_support.map_or(Self::Ansi16DarkNormal, |color_support| {
-                let color_qual = color_support.to_string().to_lowercase();
-                let theme_qual = term_theme.to_string().to_lowercase();
-                let msg_level_qual = message_level.to_string().to_lowercase();
+                let color_qual = color_support.to_string();
+                let theme_qual = term_theme.to_string();
+                let msg_level_qual = message_level.to_string();
                 // #[cfg(debug_assertions)]
                 // debug_log!(
                 //     "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
                 // );
-                Self::from_str(&format!(
-                    "{}_{}_{}",
-                    &color_qual, &theme_qual, &msg_level_qual
-                ))
+                profile_section!(format_and_get_variant);
+                Self::from_str(
+                    &format!(
+                        "{color_support}_{term_theme}_{message_level}" //,
+                                                                       // &color_qual, &theme_qual, &msg_level_qual
+                    )
+                    .to_lowercase(),
+                )
                 .unwrap_or(Self::Ansi16DarkNormal)
             })
         };

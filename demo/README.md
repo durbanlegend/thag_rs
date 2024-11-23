@@ -2140,6 +2140,39 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ---
 
+### Script: interactive_clap_adv_struct.rs
+
+**Description:**  Published example from the `interactive-clap` crate. I've adapted the run instractions below for use with `thag_rs`:
+
+ This example shows additional functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
+
+```
+ thag demo/interactive_clap_adv_struct.rs (without parameters) => entered interactive mode
+ thag demo/interactive_clap_adv_struct.rs -- --age-full-years 30 --first-name QWE --second-name QWERTY --favorite-color red
+                                    => cli_args: CliArgs { age: Some(30), first_name: Some("QWE"), second_name: Some("QWERTY"), favorite_color: Some(Red) }
+ thag demo/interactive_clap_adv_struct.rs -- --first-name QWE --second-name QWERTY --favorite-color red
+                                    => cli_args: CliArgs { age: None, first_name: Some("QWE"), second_name: Some("QWERTY"), favorite_color: Some(Red) }
+```
+
+ To learn more about the parameters, use "help" flag:
+
+```
+  thag demo/interactive_clap_adv_struct.rs -- --help
+```
+
+
+**Purpose:** Demo featured crate.
+
+**Crates:** `clap`, `color_eyre`, `inquire`, `interactive_clap`, `shell_words`, `strum`
+
+**Type:** Program
+
+**Categories:** CLI, crates, technique
+
+**Link:** [interactive_clap_adv_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_clap_adv_struct.rs)
+
+---
+
 ### Script: iter.rs
 
 **Description:**  Demo a simple iterator

@@ -3,14 +3,16 @@
     clippy::implicit_return,
     clippy::missing_trait_methods
 )]
+#[cfg(debug_assertions)]
+use crate::debug_timings;
 #[cfg(target_os = "windows")]
 use crate::escape_path_for_windows;
 use crate::{
-    cvprtln, debug_log, debug_timings, vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult,
-    BUILT_IN_CRATES, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
+    cvprtln, debug_log, shared::find_crates, vlog, Ast, BuildState, Cli, Lvl, ThagError,
+    ThagResult, BUILT_IN_CRATES, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use cargo_toml::{Edition, Manifest};
-use firestorm::{profile_fn, profile_method};
+use firestorm::{profile_fn, profile_method, profile_section};
 use regex::Regex;
 use std::{
     any::Any,
@@ -35,7 +37,6 @@ use syn::{
     },
     Expr, ExprBlock, File, Item, ReturnType, Stmt,
     Type::Tuple,
-    UseTree,
 };
 
 // From burntsushi at `https://github.com/rust-lang/regex/issues/709`
@@ -101,6 +102,7 @@ pub fn infer_deps_from_ast(
     use_crates: &[String],
     metadata_finder: &crate::shared::MetadataFinder,
 ) -> Vec<String> {
+    profile_fn!(infer_deps_from_ast);
     let mut dependencies = vec![];
     dependencies.extend_from_slice(use_crates);
     let to_remove: HashSet<String> = metadata_finder
@@ -129,66 +131,6 @@ pub fn infer_deps_from_ast(
     dependencies
 }
 
-/// Identify use crate statements for inclusion in Cargo.toml metadata: abstract syntax tree-based version.
-fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
-    #[derive(Default)]
-    struct FindCrates {
-        use_crates: Vec<String>,
-    }
-    impl<'a> Visit<'a> for FindCrates {
-        fn visit_item_use(&mut self, node: &'a syn::ItemUse) {
-            profile_method!(visit_item_use);
-            // This seems to be the only way to pick up the simple case `use a as b;`
-            if let UseTree::Rename(use_rename) = &node.tree {
-                let node_name = use_rename.ident.to_string();
-                self.use_crates.push(node_name);
-            } else {
-                // Essential to keep visiting child nodes
-                syn::visit::visit_item_use(self, node);
-            }
-        }
-        fn visit_use_tree(&mut self, node: &'a syn::UseTree) {
-            profile_method!(visit_use_tree);
-            // eprintln!("node={node:#?}");
-            if let UseTree::Group(_use_group) = node {
-                // Essential to keep visiting child nodes
-                syn::visit::visit_use_tree(self, node);
-            } else {
-                let maybe_node_name = match node {
-                    UseTree::Path(use_path) => Some(use_path.ident.to_string()),
-                    UseTree::Name(use_name) => Some(use_name.ident.to_string()),
-                    _ => None,
-                };
-                // See for instance Constraint and Keyword in demo/tui_scrollview.rs.
-                if let Some(node_name) = maybe_node_name {
-                    if let Some(c) = node_name.chars().nth(0) {
-                        if c.is_uppercase() {
-                            debug_log!(
-                                "Assuming capitalised use name {} is not a crate",
-                                node_name
-                            );
-                            return;
-                        }
-                    }
-                    // eprintln!("pushing to use:crates: {node_name}");
-                    self.use_crates.push(node_name);
-                }
-            }
-        }
-    }
-
-    profile_fn!(find_use_crates_ast);
-    let mut finder = FindCrates::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    debug_log!("use_crates from ast={:#?}", finder.use_crates);
-    finder.use_crates
-}
-
 /// Infer dependencies from source code to put in a Cargo.toml.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
@@ -205,7 +147,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     let modules = find_modules_source(code);
 
     let mut dependencies =
-        extract_and_wrap_uses(code).map_or_else(|_| vec![], |ast| find_use_crates_ast(&ast));
+        extract_and_wrap_uses(code).map_or_else(|_| vec![], |ast| find_crates(&ast));
     // eprintln!("dependencies (before)={dependencies:#?}");
 
     let to_remove: HashSet<String> = use_renames_to
@@ -310,6 +252,7 @@ pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn find_modules_source(code: &str) -> Vec<String> {
+    profile_fn!(find_modules_source);
     let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
 
     debug_log!("In code_utils::find_use_renames_source");
@@ -334,8 +277,10 @@ pub fn extract_manifest(
     rs_full_source: &str,
     #[allow(unused_variables)] start_parsing_rs: Instant,
 ) -> ThagResult<Manifest> {
+    profile_fn!(extract_manifest);
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
+    profile_section!(parse_and_set_edition);
     let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
         // debug_log!("rs_toml_str={rs_toml_str}");
         Manifest::from_str(&rs_toml_str)?
@@ -343,17 +288,22 @@ pub fn extract_manifest(
         Manifest::from_str("")?
     };
 
-    if let Some(package) = rs_manifest.package.as_mut() {
-        package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
+    {
+        profile_section!(set_edition);
+        if let Some(package) = rs_manifest.package.as_mut() {
+            package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
+        }
     }
 
     // debug_log!("rs_manifest={rs_manifest:#?}");
 
+    #[cfg(debug_assertions)]
     debug_timings(&start_parsing_rs, "extract_manifest parsed source");
     Ok(rs_manifest)
 }
 
 fn extract_toml_block(input: &str) -> Option<String> {
+    profile_fn!(extract_toml_block);
     let re: &Regex = regex!(r"(?s)/\*\[toml\](.*?)\*/");
     re.captures(input)
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
@@ -366,6 +316,7 @@ fn extract_toml_block(input: &str) -> Option<String> {
 /// # Errors
 /// Will return `Err` if there is any error encountered by the `syn` crate trying to parse the source string into an AST.
 pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
+    profile_fn!(extract_ast_expr);
     let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
     if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
         // Try putting the expression in braces.
@@ -382,6 +333,7 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
 /// # Errors
 /// Will return `Err` if there is any error caused by invalid characters in the path name.
 pub fn path_to_str(path: &Path) -> ThagResult<String> {
+    profile_fn!(path_to_str);
     let string = path
         .to_path_buf()
         .into_os_string()
@@ -396,6 +348,7 @@ pub fn path_to_str(path: &Path) -> ThagResult<String> {
 #[inline]
 pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
+    profile_fn!(reassemble);
     map.fold(String::new(), |mut output, b| {
         let _ = writeln!(output, "{b}");
         output
@@ -406,6 +359,7 @@ pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
 #[inline]
 #[must_use]
 pub fn disentangle(text_wall: &str) -> String {
+    profile_fn!(disentangle);
     reassemble(text_wall.lines())
 }
 
@@ -414,6 +368,7 @@ pub fn disentangle(text_wall: &str) -> String {
 /// # Errors
 /// Will return `Err` if the stdout or stderr is not found captured as expected.
 pub fn display_output(output: &Output) -> ThagResult<()> {
+    profile_fn!(display_output);
     // Read the captured output from the pipe
     // let stdout = output.stdout;
 
@@ -486,56 +441,29 @@ pub fn modified_since_compiled(
     Ok(most_recent)
 }
 
-/// Count the number of `main()` methods in an abstract syntax tree.
-#[must_use]
-pub fn count_main_methods(syntax_tree: &Ast) -> usize {
-    #[derive(Default)]
-    struct FindMainFns {
-        main_method_count: usize,
-    }
-
-    impl<'a> Visit<'a> for FindMainFns {
-        fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
-            profile_method!(visit_item_fn);
-            if node.sig.ident == "main" && node.sig.inputs.is_empty() {
-                self.main_method_count += 1;
-            }
-        }
-    }
-
-    profile_fn!(count_main_methods);
-    let mut finder = FindMainFns::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    debug_log!(
-        "In count_main_methods: finder.main_method_count={}",
-        finder.main_method_count
-    );
-
-    finder.main_method_count
-}
-
 /// Parse the code into an abstract syntax tree for inspection
 /// if possible (should work if the code will compile)
 #[must_use]
 pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     profile_fn!(to_ast);
 
+    #[cfg(debug_assertions)]
     let start_ast = Instant::now();
     #[allow(clippy::option_if_let_else)]
-    if let Ok(tree) = syn::parse_file(source_code) {
+    if let Ok(tree) = {
+        profile_section!(parse_file);
+        syn::parse_file(source_code)
+    } {
         #[cfg(debug_assertions)]
         cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::File");
 
+        #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))
     } else if let Ok(tree) = extract_ast_expr(source_code) {
         #[cfg(debug_assertions)]
         cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::Expr");
+        #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
@@ -546,6 +474,7 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
         );
         rustfmt(sourch_path_string);
 
+        #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed unsuccessful AST parse");
         None
     }
@@ -558,7 +487,7 @@ type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
 #[must_use]
 pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
-
+    profile_fn!(extract_inner_attribs);
     let inner_attrib_regex: &Regex = regex!(r"(?m)^[\s]*#!\[.+\]");
 
     profile_fn!(extract_inner_attribs);
@@ -646,6 +575,7 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> ThagResult<fs::Fil
 /// # Errors
 /// Will return Err if it can't create the `rs_dyn` directory.
 pub fn create_temp_source_file() -> ThagResult<PathBuf> {
+    profile_fn!(create_temp_source_file);
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
@@ -797,6 +727,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
                 .insert(i.sig.ident.to_string(), i.sig.output.clone());
         }
     }
+    profile_fn!(extract_functions);
 
     let mut finder = FindFns::default();
     finder.visit_expr(expr);
@@ -811,6 +742,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 pub fn is_unit_return_type(expr: &Expr) -> bool {
     profile_fn!(is_unit_return_type);
 
+    #[cfg(debug_assertions)]
     let start = Instant::now();
 
     let function_map = extract_functions(expr);
@@ -818,6 +750,7 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
     // debug_log!("function_map={function_map:#?}");
     let is_unit_type = is_last_stmt_unit_type(expr, &function_map);
 
+    #[cfg(debug_assertions)]
     debug_timings(&start, "Determined probable snippet return type");
     is_unit_type
 }
@@ -839,7 +772,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
 ) -> bool {
     profile_fn!(is_last_stmt_unit_type);
 
-    debug_log!("%%%%%%%% expr={expr:#?}");
+    // debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
         Expr::ForLoop(for_loop) => {
             // debug_log!("%%%%%%%% Expr::ForLoop(for_loop))");
@@ -982,7 +915,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             false
         }
         Expr::Return(ref expr_return) => {
-            debug_log!("%%%%%%%% expr_return={expr_return:#?}");
+            // debug_log!("%%%%%%%% expr_return={expr_return:#?}");
             expr_return.expr.is_none()
         }
         _ => {
@@ -1122,7 +1055,7 @@ pub fn get_source_path(build_state: &BuildState) -> String {
     src_path
 }
 
-/// Format a Rust source file in situ using rustfmt.
+/// Format a Rust source file in situ using rustfmt. For user diagnostic assistance only.
 /// # Panics
 /// Will panic if the `rustfmt` failed.
 fn rustfmt(source_path_str: &str) {

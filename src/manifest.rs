@@ -1,21 +1,22 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
-use crate::{
-    cvprtln, debug_log, debug_timings, maybe_config, regex, vlog, BuildState, Lvl, ThagResult, V,
-};
+#[cfg(debug_assertions)]
+use crate::debug_timings;
+use crate::{cvprtln, debug_log, maybe_config, regex, vlog, BuildState, Lvl, ThagResult, V};
 use cargo_toml::{Dependency, DependencyDetail, Manifest};
-use firestorm::{profile_fn, profile_method};
+use firestorm::{profile_fn, profile_method, profile_section};
 use mockall::automock;
 use nu_ansi_term::Style;
 use regex::Regex;
 use serde_merge::omerge;
+#[cfg(debug_assertions)]
+use std::time::Instant;
 use std::{
     collections::BTreeMap,
     io::{self, BufRead},
     path::PathBuf,
     process::{Command, Output},
     str::FromStr,
-    time::Instant,
 };
 
 /// A trait to allow mocking of the command for testing purposes.
@@ -46,6 +47,7 @@ impl CommandRunner for RealCommandRunner {
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
 pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> ThagResult<(String, String)> {
     profile_fn!(cargo_search);
+    #[cfg(debug_assertions)]
     let start_search = Instant::now();
 
     let dep_crate_styled = Style::from(&Lvl::EMPH).paint(dep_crate);
@@ -115,6 +117,7 @@ as shown if you don't need special features:
         }
     };
 
+    #[cfg(debug_assertions)]
     debug_timings(&start_search, "Completed search");
 
     Ok((name, version))
@@ -202,6 +205,7 @@ edition = "2021"
 /// Will return `Err` if there is any error parsing the default manifest.
 pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     profile_fn!(merge);
+    #[cfg(debug_assertions)]
     let start_merge_manifest = Instant::now();
 
     // Take ownership of the default manifest
@@ -215,6 +219,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     //     .as_ref()
     //     .map_or_else(|| infer_deps_from_source(rs_source), infer_deps_from_ast);
 
+    profile_section!(infer_deps_and_merge);
     let rs_inferred_deps = if let Some(ref use_crates) = build_state.crates_finder {
         build_state.metadata_finder.as_ref().map_or_else(
             || infer_deps_from_source(rs_source),
@@ -224,8 +229,9 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
         infer_deps_from_source(rs_source)
     };
 
-    debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
+    // debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
 
+    profile_section!(merge_manifest);
     let merged_manifest = if let Some(ref mut rs_manifest) = build_state.rs_manifest {
         if !rs_inferred_deps.is_empty() {
             debug_log!(
@@ -240,7 +246,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
             );
         }
 
-        omerge(&cargo_manifest, rs_manifest)?
+        call_omerge(&cargo_manifest, rs_manifest)?
     } else {
         cargo_manifest
     };
@@ -248,8 +254,17 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     // Reassign the merged manifest back to build_state
     build_state.cargo_manifest = Some(merged_manifest);
 
+    #[cfg(debug_assertions)]
     debug_timings(&start_merge_manifest, "Processed features");
     Ok(())
+}
+
+fn call_omerge(
+    cargo_manifest: &Manifest,
+    rs_manifest: &mut Manifest,
+) -> Result<Manifest, crate::ThagError> {
+    profile_fn!(call_omerge);
+    Ok(omerge(cargo_manifest, rs_manifest)?)
 }
 
 #[allow(clippy::missing_panics_doc)]
@@ -281,9 +296,6 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         let (dep_name, dep) = if let Ok((dep_name, version)) = cargo_search_result {
             (dep_name, Dependency::Simple(version))
         } else {
-            // return Err(format!(
-            //     "Cargo search couldn't find crate [{dep_name}]").into()
-            // );
             vlog!(V::QQ, "Cargo search couldn't find crate [{dep_name}]");
             continue;
         };

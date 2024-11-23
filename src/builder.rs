@@ -5,18 +5,23 @@ use crate::code_utils::{
 use crate::code_utils::{extract_ast_expr, to_ast};
 use crate::colors::init_styles;
 use crate::config::{self, RealContext};
+#[cfg(debug_assertions)]
+use crate::debug_timings;
 use crate::logging::is_debug_logging_enabled;
 use crate::repl::run_repl;
 use crate::shared::{find_crates, find_metadata};
 use crate::stdin::{edit, read};
+#[cfg(debug_assertions)]
+use crate::VERSION;
 use crate::{
-    coloring, cvprtln, debug_log, debug_timings, display_timings, get_proc_flags, manifest,
-    maybe_config, regex, repeat_dash, validate_args, vlog, Ast, BuildState, Cli,
-    CrosstermEventReader, Lvl, ProcFlags, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN,
-    PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V, VERSION,
+    coloring, cvprtln, debug_log, display_timings, get_proc_flags, manifest, maybe_config, regex,
+    repeat_dash, validate_args, vlog, Ast, BuildState, Cli, CrosstermEventReader, Lvl, ProcFlags,
+    ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME,
+    REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
+#[cfg(debug_assertions)]
 use log::{log_enabled, Level::Debug};
 use nu_ansi_term::Style;
 use regex::Regex;
@@ -49,6 +54,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
 
     let proc_flags = get_proc_flags(args)?;
 
+    #[cfg(debug_assertions)]
     if log_enabled!(Debug) {
         log_init_setup(start, args, &proc_flags);
     }
@@ -275,6 +281,7 @@ pub fn process_expr(
     Ok(())
 }
 
+#[cfg(debug_assertions)]
 fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
     profile_fn!(log_init_setup);
     debug_log_config();
@@ -289,6 +296,7 @@ fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
     }
 }
 
+#[cfg(debug_assertions)]
 fn debug_log_config() {
     profile_fn!(debug_log_config);
     debug_log!("PACKAGE_NAME={PACKAGE_NAME}");
@@ -530,7 +538,7 @@ pub fn generate(
     vlog!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {
-        profile_section!(transform);
+        profile_section!(transform_snippet);
         // TODO make this configurable
         let rs_source: &str = {
             #[cfg(feature = "format_snippet")]

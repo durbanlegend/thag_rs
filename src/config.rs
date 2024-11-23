@@ -1,6 +1,6 @@
 use crate::{debug_log, lazy_static_var, ColorSupport, TermTheme, ThagResult, Verbosity};
 use edit::edit_file;
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_method};
 use mockall::{automock, predicate::str};
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
@@ -15,14 +15,16 @@ use std::{
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
 pub fn maybe_config() -> Option<Config> {
+    profile_fn!(maybe_config);
     lazy_static_var!(Option<Config>, maybe_load_config()).clone()
 }
 
 fn maybe_load_config() -> Option<Config> {
+    profile_fn!(maybe_load_config);
     // eprintln!("In maybe_load_config, should not see this message more than once");
     let maybe_config = load(&RealContext::new());
     if let Some(config) = maybe_config {
-        debug_log!("Loaded config: {config:?}");
+        // debug_log!("Loaded config: {config:?}");
         return Some(config);
     }
     None::<Config>
@@ -106,6 +108,7 @@ impl RealContext {
     #[cfg(not(target_os = "windows"))]
     #[must_use]
     pub fn new() -> Self {
+        profile_method!(new_real_contexr);
         let base_dir = home::home_dir()
             .expect("Error resolving home::home_dir()")
             .join(".config");
@@ -115,6 +118,8 @@ impl RealContext {
 
 impl Context for RealContext {
     fn get_config_path(&self) -> PathBuf {
+        profile_method!(get_config_path);
+
         self.base_dir.join("thag_rs").join("config.toml")
     }
 

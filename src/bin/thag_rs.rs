@@ -1,18 +1,23 @@
 #![allow(clippy::uninlined_format_args)]
 
+#[cfg(debug_assertions)]
+use thag_rs::debug_timings;
 use thag_rs::logging::{configure_log, set_verbosity};
-use thag_rs::{debug_timings, execute, get_args, ThagResult};
+use thag_rs::{execute, get_args, ThagResult};
 
 use std::cell::RefCell;
+#[cfg(debug_assertions)]
 use std::time::Instant;
 
 pub fn main() -> ThagResult<()> {
+    #[cfg(debug_assertions)]
     let start = Instant::now();
     let args = RefCell::new(get_args()); // Wrap args in a RefCell
 
     set_verbosity(&args.borrow())?;
 
     configure_log();
+    #[cfg(debug_assertions)]
     debug_timings(&start, "Configured logging");
 
     // Check if firestorm profiling is enabled

@@ -37,9 +37,11 @@ pub use config::{load, maybe_config};
 pub use errors::{ThagError, ThagResult};
 pub use keys::KeyCombination;
 pub use logging::{get_verbosity, Verbosity, V};
+#[cfg(debug_assertions)]
+pub use shared::debug_timings;
 pub use shared::{
-    debug_timings, display_timings, escape_path_for_windows, Ast, BuildState, CrosstermEventReader,
-    EventReader, KeyDisplayLine, MockEventReader, ScriptState,
+    display_timings, escape_path_for_windows, Ast, BuildState, CrosstermEventReader, EventReader,
+    KeyDisplayLine, MockEventReader, ScriptState,
 };
 pub use thag_proc_macros::repeat_dash;
 

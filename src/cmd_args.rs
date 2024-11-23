@@ -1,9 +1,9 @@
-use crate::{config::maybe_config, debug_log, ThagError, ThagResult, RS_SUFFIX};
+use crate::{config::maybe_config, ThagError, ThagResult, RS_SUFFIX};
 
 use bitflags::bitflags;
 // use clap::builder::styling::{Ansi256Color, AnsiColor, Color, Style};
 use clap::{ArgGroup /*, ColorChoice */, Parser};
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_section};
 use std::{fmt, str};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and REPL.
@@ -215,6 +215,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();
+    profile_section!(init_config_loop_assert);
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
         // eprintln!("args={args:#?}");
@@ -242,34 +243,18 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
         proc_flags.set(ProcFlags::EXPAND, args.expand);
 
+        profile_section!(config_loop_assert);
         let unquote = args.unquote.map_or_else(
-            || {
-                maybe_config().map_or_else(
-                    || {
-                        debug_log!(
-                            "Found no arg or config file, returning default unquote = false"
-                        );
-                        false
-                    },
-                    |config| {
-                        debug_log!(
-                            "maybe_config()={:?}, returning config.misc.unquote={}",
-                            maybe_config(),
-                            config.misc.unquote
-                        );
-                        config.misc.unquote
-                    },
-                )
-            },
+            || maybe_config().map_or_else(|| false, |config| config.misc.unquote),
             |unquote| {
-                debug_log!("args.unquote={:?}", args.unquote);
+                // debug_log!("args.unquote={:?}", args.unquote);
                 unquote
             },
         );
         proc_flags.set(ProcFlags::UNQUOTE, unquote);
-
         proc_flags.set(ProcFlags::CONFIG, args.config);
 
+        profile_section!(loop_assert);
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
             if args.toml.is_some() {
                 eprintln!("Option --toml (-T) requires --loop (-l)");
@@ -283,11 +268,14 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
             return Err("Missing --loop option".into());
         }
 
-        // Check all good
-        let formatted = proc_flags.to_string();
-        let parsed = formatted.parse::<ProcFlags>()?;
-
-        assert_eq!(proc_flags, parsed);
+        #[cfg(debug_assertions)]
+        {
+            profile_section!(assert);
+            // Check all good
+            let formatted = proc_flags.to_string();
+            let parsed = formatted.parse::<ProcFlags>()?;
+            assert_eq!(proc_flags, parsed);
+        }
 
         Ok::<ProcFlags, ThagError>(proc_flags)
     }?;

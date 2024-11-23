@@ -6,9 +6,9 @@ use std::time::Instant;
 use thag_rs::manifest;
 
 use thag_rs::cmd_args::{Cli, ProcFlags};
-use thag_rs::shared::{
-    debug_timings, display_timings, escape_path_for_windows, Ast, BuildState, ScriptState,
-};
+#[cfg(debug_assertions)]
+use thag_rs::shared::debug_timings;
+use thag_rs::shared::{display_timings, escape_path_for_windows, Ast, BuildState, ScriptState};
 
 // Set environment variables before running tests
 fn set_up() {
@@ -223,10 +223,10 @@ fn test_shared_script_state_getters() {
 }
 
 #[test]
+#[cfg(debug_assertions)]
 fn test_shared_debug_timings() {
     set_up();
     let start = Instant::now();
-    #[cfg(debug_assertions)]
     debug_timings(&start, "test_process");
     // No direct assertion, this just ensures the function runs without panic
 }

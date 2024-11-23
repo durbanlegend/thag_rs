@@ -253,8 +253,20 @@ fn main() {
     let output_path = Path::new("demo/README.md");
     let boilerplate_path = Path::new("assets/boilerplate.md");
 
-    let all_metadata = collect_all_metadata(scripts_dir);
-    generate_readme(&all_metadata, output_path, boilerplate_path);
+    // Check if firestorm profiling is enabled
+    if firestorm::enabled() {
+        // Profile the `execute` function
+        // Use borrow_mut to get a mutable reference
+        firestorm::bench("./flames/", || {
+            let all_metadata = collect_all_metadata(scripts_dir);
+            generate_readme(&all_metadata, output_path, boilerplate_path);
+        })
+        .unwrap();
+    } else {
+        // Regular execution when profiling is not enabled
+        let all_metadata = collect_all_metadata(scripts_dir);
+        generate_readme(&all_metadata, output_path, boilerplate_path);
+    }
 
     println!("demo/README.md generated successfully.");
 }

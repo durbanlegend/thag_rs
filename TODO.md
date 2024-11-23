@@ -18,11 +18,7 @@
 - [ ]  Try ThagDisplay trait and derive macro.
 - [ ]  Set up bank/proc_macros and only take best to demo.
 - [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
-use_renames_from=["xterm", "self"], use_renames_to=["owo_xterm", "owo_ansi"]
-demo/colors_orig.rs: maybe_syntax_tree.is_some()? true
-use owo_ansi::xterm as owo_xterm;
-use owo_colors::colors::{self as owo_ansi, Magenta};
-
+- [ ]  In cargo search, generate a nice toml block
 find_use_renames_ast
 find_modules_ast
 find_use_crates_ast
@@ -32,7 +28,7 @@ extract_functions   - TODO
 `transform` section of generate - Make reformat of source configurable.
 BuildState::pre-configure - factor out fns so I can profile them.
 Try running tests without debug or debug_timings.
-Try syn::parse and then match type instead of trying parse_file first.
+validate_state only when feature minimal not engaged - instead switched off debug and debug-assertions in Cargo.toml
 
 - [ ]  Consider adding --guided (-G) option using `inquire` to capture parameters.
 - [ ]  Perf: combine multiple finder.visit_* into one in code_utils so the AST is only traversed once.

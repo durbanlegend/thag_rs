@@ -1,6 +1,8 @@
 #![allow(clippy::uninlined_format_args)]
+#[cfg(debug_assertions)]
+use crate::debug_log;
 use crate::{
-    debug_log, modified_since_compiled, vlog, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
+    modified_since_compiled, vlog, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
     TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
 use crate::{Cli, ProcFlags};
@@ -61,6 +63,7 @@ impl ExecutionFlags {
         let is_expr = args.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
         let is_edit = proc_flags.contains(ProcFlags::EDIT);
+        // let is_url = proc_flags.contains(ProcFlags::URL); // TODO reinstate
         let is_loop = proc_flags.contains(ProcFlags::LOOP);
         let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
 
@@ -149,6 +152,7 @@ impl<'a> Visit<'a> for MetadataFinder {
     }
 
     fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
+        profile_method!(visit_item_fn);
         if node.sig.ident == "main" {
             self.main_count += 1; // Increment counter instead of setting bool
         }
@@ -257,7 +261,7 @@ impl BuildState {
         let execution_flags = ExecutionFlags::new(proc_flags, args);
 
         // 3. Set up directory paths
-        let paths = Self::setup_paths(&execution_flags, script_state, &source_name, &source_stem)?;
+        let paths = Self::set_up_paths(&execution_flags, script_state, &source_name, &source_stem)?;
 
         // 4. Create initial build state
         let mut build_state = Self::create_initial_state(paths, source_name, source_stem);
@@ -273,6 +277,7 @@ impl BuildState {
     }
 
     fn extract_script_info(script_state: &ScriptState) -> ThagResult<(String, String)> {
+        profile_fn!(extract_script_info);
         let script = script_state
             .get_script()
             .ok_or(ThagError::NoneOption("No script specified"))?;
@@ -299,12 +304,13 @@ impl BuildState {
         Ok((source_name, source_stem))
     }
 
-    fn setup_paths(
+    fn set_up_paths(
         flags: &ExecutionFlags,
         script_state: &ScriptState,
         source_name: &str,
         source_stem: &str,
     ) -> ThagResult<BuildPaths> {
+        profile_fn!(set_up_paths);
         // Working directory setup
         let working_dir_path = if flags.is_repl {
             TMPDIR.join(REPL_SUBDIR)
@@ -388,6 +394,7 @@ impl BuildState {
     }
 
     fn create_initial_state(paths: BuildPaths, source_name: String, source_stem: String) -> Self {
+        profile_fn!(create_initial_state);
         Self {
             working_dir_path: paths.working_dir_path,
             source_stem,
@@ -411,6 +418,7 @@ impl BuildState {
         script_state: &ScriptState,
         flags: &ExecutionFlags,
     ) -> ThagResult<()> {
+        profile_fn!(determine_build_requirements);
         // Case 1: Force generation and building
         if flags.is_dynamic
             || flags.is_repl
@@ -451,6 +459,7 @@ impl BuildState {
 
     #[cfg(debug_assertions)]
     fn validate_state(&self, proc_flags: &ProcFlags) {
+        profile_fn!(validate_state);
         // Validate build/check/executable/expand flags
         if proc_flags.contains(ProcFlags::BUILD)
             | proc_flags.contains(ProcFlags::CHECK)
@@ -527,8 +536,9 @@ impl ScriptState {
     }
 }
 
-#[inline]
 /// Developer method to log method timings.
+#[inline]
+#[cfg(debug_assertions)]
 pub fn debug_timings(start: &Instant, process: &str) {
     profile_fn!(debug_timings);
     let dur = start.elapsed();
@@ -539,9 +549,14 @@ pub fn debug_timings(start: &Instant, process: &str) {
 /// Display method timings when either the --verbose or --timings option is chosen.
 pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
     profile_fn!(display_timings);
+    #[cfg(not(debug_assertions))]
+    if !proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
+        return;
+    }
     let dur = start.elapsed();
     let msg = format!("{process} in {}.{}s", dur.as_secs(), dur.subsec_millis());
 
+    #[cfg(debug_assertions)]
     debug_log!("{msg}");
     if proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
         vlog!(V::QQ, "{msg}");

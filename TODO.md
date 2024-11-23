@@ -29,8 +29,12 @@ find_use_crates_ast
 find_extern_crates_ast
 count_main_methods
 extract_functions   - TODO
-`transform` section of generate - try using build_state.ast and favour parse_file.
+`transform` section of generate - Make reformat of source configurable.
+BuildState::pre-configure - factor out fns so I can profile them.
+Try running tests without debug or debug_timings.
+Try syn::parse and then match type instead of trying parse_file first.
 
+- [ ]  Consider adding --guided (-G) option using `inquire` to capture parameters.
 - [ ]  Perf: combine multiple finder.visit_* into one in code_utils so the AST is only traversed once.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?

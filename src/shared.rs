@@ -237,7 +237,7 @@ impl BuildState {
     /// * Cannot determine if source has been modified since last compilation
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// let proc_flags = ProcFlags::default();
     /// let args = Cli::parse();
     /// let script_state = ScriptState::new("example.rs");

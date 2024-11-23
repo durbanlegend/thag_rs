@@ -531,9 +531,18 @@ pub fn generate(
 
     if !build_state.build_from_orig_source {
         profile_section!(transform);
-        let syntax_tree = syn_parse_file(rs_source)?;
-        let rs_source = prettyplease_unparse(&syntax_tree);
-        write_source(&target_rs_path, &rs_source)?;
+        // TODO make this configurable
+        let rs_source: &str = {
+            #[cfg(feature = "format_snippet")]
+            {
+                let syntax_tree = syn_parse_file(rs_source)?;
+                prettyplease_unparse(&syntax_tree)
+            }
+            #[cfg(not(feature = "format_snippet"))]
+            rs_source.expect("Logic error retrieving rs_source")
+        };
+
+        write_source(&target_rs_path, rs_source)?;
     }
 
     // Remove any existing Cargo.lock as this may raise spurious compatibility issues with new dependency versions.
@@ -568,6 +577,7 @@ pub fn generate(
 }
 
 #[inline]
+#[cfg(feature = "format_snippet")]
 fn syn_parse_file(rs_source: Option<&str>) -> ThagResult<syn::File> {
     profile_fn!(syn_parse_file);
     let syntax_tree = syn::parse_file(rs_source.ok_or("Logic error retrieving rs_source")?)?;
@@ -575,6 +585,7 @@ fn syn_parse_file(rs_source: Option<&str>) -> ThagResult<syn::File> {
 }
 
 #[inline]
+#[cfg(feature = "format_snippet")]
 fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
     profile_fn!(prettyplease_unparse);
     prettyplease::unparse(syntax_tree)

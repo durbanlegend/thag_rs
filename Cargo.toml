@@ -94,6 +94,7 @@ path = "src/bin/thag_rs.rs"
 debug-logs = []
 nightly = []
 default = ["simplelog"]
+format_snippet = []
 
 [dev-dependencies]
 assert_cmd = "2.0.16"

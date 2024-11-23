@@ -1,8 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 use crate::{
-    cvprtln, debug_log, debug_timings, maybe_config, regex, vlog, Ast, BuildState, Lvl, ThagResult,
-    V,
+    cvprtln, debug_log, debug_timings, maybe_config, regex, vlog, BuildState, Lvl, ThagResult, V,
 };
 use cargo_toml::{Dependency, DependencyDetail, Manifest};
 use firestorm::{profile_fn, profile_method};
@@ -201,11 +200,7 @@ edition = "2021"
 /// into the default manifest.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
-pub fn merge(
-    build_state: &mut BuildState,
-    rs_source: &str,
-    syntax_tree: &Option<Ast>,
-) -> ThagResult<()> {
+pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     profile_fn!(merge);
     let start_merge_manifest = Instant::now();
 
@@ -216,9 +211,18 @@ pub fn merge(
         .take()
         .map_or(default_cargo_manifest, |manifest| manifest);
 
-    let rs_inferred_deps = syntax_tree
-        .as_ref()
-        .map_or_else(|| infer_deps_from_source(rs_source), infer_deps_from_ast);
+    // let rs_inferred_deps = syntax_tree
+    //     .as_ref()
+    //     .map_or_else(|| infer_deps_from_source(rs_source), infer_deps_from_ast);
+
+    let rs_inferred_deps = if let Some(ref use_crates) = build_state.crates_finder {
+        build_state.metadata_finder.as_ref().map_or_else(
+            || infer_deps_from_source(rs_source),
+            |metadata_finder| infer_deps_from_ast(use_crates, metadata_finder),
+        )
+    } else {
+        infer_deps_from_source(rs_source)
+    };
 
     debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
 

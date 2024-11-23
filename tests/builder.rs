@@ -60,6 +60,9 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
         must_gen: true,
         must_build: true,
         build_from_orig_source: false,
+        ast: None,
+        crates_finder: None,
+        metadata_finder: None,
     }
 }
 
@@ -207,6 +210,9 @@ name = "bitflags_t"
         must_gen: true,
         must_build: true,
         build_from_orig_source: false,
+        ast: None,
+        crates_finder: None,
+        metadata_finder: None,
     };
     dbg!(&build_state);
     let proc_flags = ProcFlags::empty();

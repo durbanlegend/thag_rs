@@ -27,8 +27,9 @@ find_use_renames_ast
 find_modules_ast
 find_use_crates_ast
 find_extern_crates_ast
-count_main_methods  - set up a common Finder in builder.gen_build_run and populate it from Visit::visit in a single run with all the
-                      current method overrides together.
+count_main_methods
+extract_functions   - TODO
+`transform` section of generate - try using build_state.ast and favour parse_file.
 
 - [ ]  Perf: combine multiple finder.visit_* into one in code_utils so the AST is only traversed once.
 - [ ]  Documentation (cargo doc), e.g. for macros.

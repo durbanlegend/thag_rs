@@ -24,7 +24,6 @@ use std::{
     process::{self, Command, Output},
     time::{Instant, SystemTime},
 };
-
 use syn::{
     parse_file,
     visit::Visit,
@@ -34,9 +33,9 @@ use syn::{
         AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, DivAssign, MulAssign, RemAssign,
         ShlAssign, ShrAssign, SubAssign,
     },
-    Expr, ExprBlock, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt,
+    Expr, ExprBlock, File, Item, ReturnType, Stmt,
     Type::Tuple,
-    UseRename, UseTree,
+    UseTree,
 };
 
 // From burntsushi at `https://github.com/rust-lang/regex/issues/709`
@@ -96,19 +95,19 @@ pub fn read_file_contents(path: &Path) -> ThagResult<String> {
     Ok(fs::read_to_string(path)?)
 }
 
-/// Infer dependencies from the abstract syntax tree to put in a Cargo.toml.
+/// Infer dependencies from AST-derived metadata to put in a Cargo.toml.
 #[must_use]
-pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
-    profile_fn!(infer_deps_from_ast);
-    let mut dependencies = find_use_crates_ast(syntax_tree);
-    let extern_crates = find_extern_crates_ast(syntax_tree);
-    let use_renames_to = find_use_renames_ast(syntax_tree);
-    let modules = find_modules_ast(syntax_tree);
-
-    let to_remove: HashSet<String> = use_renames_to
+pub fn infer_deps_from_ast(
+    use_crates: &[String],
+    metadata_finder: &crate::shared::MetadataFinder,
+) -> Vec<String> {
+    let mut dependencies = vec![];
+    dependencies.extend_from_slice(use_crates);
+    let to_remove: HashSet<String> = metadata_finder
+        .names_to_exclude
         .iter()
         .cloned()
-        .chain(modules.iter().cloned())
+        .chain(metadata_finder.mods_to_exclude.iter().cloned())
         .chain(BUILT_IN_CRATES.iter().map(Deref::deref).map(String::from))
         .collect();
     // eprintln!("to_remove={to_remove:#?}");
@@ -117,9 +116,9 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     // eprintln!("dependencies (after)={dependencies:#?}");
 
     // Similar check for other regex pattern
-    for crate_name in extern_crates {
-        if !to_remove.contains(&crate_name) {
-            dependencies.push(crate_name);
+    for crate_name in &metadata_finder.extern_crates {
+        if !&to_remove.contains(crate_name) {
+            dependencies.push(crate_name.to_owned());
         }
     }
 
@@ -128,60 +127,6 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     dependencies.dedup();
 
     dependencies
-}
-
-/// Identify use ... as statements for inclusion in / exclusion from Cargo.toml metadata.
-/// Exclude the "to" name. Don't include the "from" name as only the first path element
-/// of the "from" is valid, and this is not necessarily it.
-/// E.g. `use owo_colors::colors::self as owo_ansi;` would invlaidly pick up "self".
-/// Abstract syntax tree-based version.
-fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
-    #[derive(Default)]
-    struct FindCrates {
-        use_renames_to: Vec<String>,
-    }
-    impl<'a> Visit<'a> for FindCrates {
-        fn visit_use_rename(&mut self, node: &'a UseRename) {
-            profile_method!(visit_use_rename);
-            self.use_renames_to.push(node.rename.to_string());
-        }
-    }
-
-    profile_fn!(find_use_renames_ast);
-    let mut finder = FindCrates::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    debug_log!("use_renames from ast: to={:#?}", finder.use_renames_to);
-    finder.use_renames_to
-}
-
-/// Identify modules for filtering use statements from Cargo.toml metadata: abstract syntax tree-based version.
-fn find_modules_ast(syntax_tree: &Ast) -> Vec<String> {
-    #[derive(Default)]
-    struct FindMods {
-        modules: Vec<String>,
-    }
-    impl<'a> Visit<'a> for FindMods {
-        fn visit_item_mod(&mut self, node: &'a ItemMod) {
-            profile_method!(visit_item_mod);
-            self.modules.push(node.ident.to_string());
-        }
-    }
-
-    profile_fn!(find_modules_ast);
-    let mut finder = FindMods::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    debug_log!("modules from ast={:#?}", finder.modules);
-    finder.modules
 }
 
 /// Identify use crate statements for inclusion in Cargo.toml metadata: abstract syntax tree-based version.
@@ -242,32 +187,6 @@ fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
 
     debug_log!("use_crates from ast={:#?}", finder.use_crates);
     finder.use_crates
-}
-
-/// Identify extern crate stxatements for inclusion in Cargo.toml metadata: abstract syntax tree-based version.
-fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
-    #[derive(Default)]
-    struct FindCrates {
-        extern_crates: Vec<String>,
-    }
-
-    impl<'a> Visit<'a> for FindCrates {
-        fn visit_item_extern_crate(&mut self, node: &'a ItemExternCrate) {
-            profile_method!(visit_item_extern_crate);
-            self.extern_crates.push(node.ident.to_string());
-        }
-    }
-
-    profile_fn!(find_extern_crates_ast);
-    let mut finder = FindCrates::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    debug_log!("extern_crates from ast={:#?}", finder.extern_crates);
-    finder.extern_crates
 }
 
 /// Infer dependencies from source code to put in a Cargo.toml.
@@ -334,6 +253,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 
 // Function to extract use statements and wrap in braces for parsing
 fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
+    profile_fn!(extract_and_wrap_uses);
     // Step 1: Capture `use` statements
     let use_simple_regex: &Regex = regex!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
     let use_nested_regex: &Regex = regex!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");

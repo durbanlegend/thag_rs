@@ -8,7 +8,9 @@ mod tests {
             infer_deps_from_ast, infer_deps_from_source, is_last_stmt_unit_type, is_path_unit_type,
             is_stmt_unit_type, path_to_str, read_file_contents, wrap_snippet,
         },
-        extract_manifest, Ast,
+        extract_manifest,
+        shared::{find_crates, find_metadata},
+        Ast,
     };
 
     // Example AST representing use and extern crate statements
@@ -88,8 +90,9 @@ mod tests {
         )
         .unwrap();
         let ast = Ast::File(ast);
-
-        let deps = infer_deps_from_ast(&ast);
+        let crates_finder = Some(find_crates(&ast)).unwrap();
+        let metadata_finder = Some(find_metadata(&ast)).unwrap();
+        let deps = infer_deps_from_ast(&crates_finder, &metadata_finder);
         assert_eq!(deps, vec!["bar", "foo", "glorp"]);
     }
 
@@ -97,9 +100,11 @@ mod tests {
     fn test_code_utils_infer_deps_from_nested_ast() {
         set_up();
         // Example AST representing use and extern crate statements
-        let ast = syn::parse_file(IMPORTS).unwrap();
-        let ast = Ast::File(ast);
-        let deps = infer_deps_from_ast(&ast);
+        let file = syn::parse_file(IMPORTS).unwrap();
+        let ast = Ast::File(file);
+        let crates_finder = Some(find_crates(&ast)).unwrap();
+        let metadata_finder = Some(find_metadata(&ast)).unwrap();
+        let deps = infer_deps_from_ast(&crates_finder, &metadata_finder);
         assert_eq!(&deps, EXPECTED_CRATES);
     }
 

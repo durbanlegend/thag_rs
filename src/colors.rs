@@ -210,9 +210,9 @@ macro_rules! generate_styles {
             term_theme: &TermTheme,
             color_support: Option<&ColorSupport>,
         ) -> fn(Lvl) -> Style {
-            profile_fn!(init_styles);
             use std::sync::OnceLock;
             static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
+            profile_fn!(init_styles);
 
             *STYLE_MAPPING.get_or_init(|| match (term_theme, color_support) {
                 $(

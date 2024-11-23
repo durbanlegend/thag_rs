@@ -7,13 +7,19 @@ The `category_enum` procedural macro generates an enum named `Category` with pre
 ## Overview
 
 The `category_enum` macro generates:
+
 - An `enum` named `Category` with predefined variants.
+
 - A `FromStr` implementation for converting strings to `Category`.
+
 - A helper function `all_categories` that returns a list of all variants.
 
 This allows you to:
+
 - Use enums to represent script categories with compile-time checks.
+
 - Easily iterate through all possible categories.
+
 - Convert user input strings into category enum variants.
 
 ---
@@ -137,7 +143,7 @@ If you have suggestions or want to add more categories, feel free to submit a pu
 
 ## License
 
-This crate is licensed under MIT and Apache 2 at your discretion.
+This crate is licensed under MIT and Apache 2. You may use either at your discretion.
 
 ---
 

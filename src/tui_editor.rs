@@ -1054,7 +1054,6 @@ pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 /// Convert the different newline sequences for Windows and other platforms into the common
 /// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
 /// it stands).
-
 #[must_use]
 pub fn normalize_newlines(input: &str) -> String {
     profile_fn!(normalize_newlines);

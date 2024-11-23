@@ -157,8 +157,7 @@ mod tests {
         extern crate serde_derive;
         "#;
 
-        let syntax_tree = None;
-        merge(&mut build_state, rs_source, &syntax_tree)?;
+        merge(&mut build_state, rs_source)?;
 
         eprintln!("merged manifest={:#?}", build_state.cargo_manifest);
 

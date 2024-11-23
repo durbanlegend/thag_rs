@@ -68,4 +68,4 @@ which will give identical output to the above.
 ##### Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.
 
 ### TODO: check:
-For detailed documentation on the `category_enum` procedural macro, see [category_enum](docs/category_enum.md).
+For detailed documentation on the `category_enum` procedural macro, see [category_enum](proc_macros/docs/category_enum.md).

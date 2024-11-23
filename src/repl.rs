@@ -513,7 +513,8 @@ pub fn process_source(
     build_state.rs_manifest = Some(rs_manifest);
     let maybe_ast = extract_ast_expr(rs_source);
     if let Ok(expr_ast) = maybe_ast {
-        process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+        build_state.ast = Some(crate::Ast::Expr(expr_ast));
+        process_expr(build_state, rs_source, args, proc_flags, &start)?;
     } else {
         cprtln!(&(&Lvl::ERR).into(), "Error parsing code: {maybe_ast:#?}");
     };

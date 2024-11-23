@@ -1,12 +1,13 @@
 use crate::code_utils::{
-    self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest, get_source_path,
-    read_file_contents, remove_inner_attributes, strip_curly_braces, to_ast, wrap_snippet,
-    write_source,
+    self, build_loop, create_temp_source_file, extract_manifest, get_source_path,
+    read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
+use crate::code_utils::{extract_ast_expr, to_ast};
 use crate::colors::init_styles;
 use crate::config::{self, RealContext};
 use crate::logging::is_debug_logging_enabled;
 use crate::repl::run_repl;
+use crate::shared::{find_crates, find_metadata};
 use crate::stdin::{edit, read};
 use crate::{
     coloring, cvprtln, debug_log, debug_timings, display_timings, get_proc_flags, manifest,
@@ -29,7 +30,6 @@ use std::{
     string::ToString,
     time::Instant,
 };
-use syn::Expr;
 
 /// Execute the script runner.
 /// # Errors
@@ -252,16 +252,9 @@ fn process(
         let expr_ast = extract_ast_expr(&rs_source)?;
 
         debug_log!("expr_ast={expr_ast:#?}");
-        process_expr(
-            expr_ast,
-            &mut build_state,
-            &rs_source,
-            args,
-            proc_flags,
-            &start,
-        )
+        process_expr(&mut build_state, &rs_source, args, proc_flags, &start)
     } else {
-        gen_build_run(args, proc_flags, &mut build_state, None::<Ast>, &start)
+        gen_build_run(args, proc_flags, &mut build_state, &start)
     }
 }
 
@@ -269,16 +262,15 @@ fn process(
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
 pub fn process_expr(
-    expr_ast: Expr,
     build_state: &mut BuildState,
     rs_source: &str,
     args: &Cli,
     proc_flags: &ProcFlags,
     start: &Instant,
 ) -> ThagResult<()> {
-    let syntax_tree = Some(Ast::Expr(expr_ast));
+    // let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
-    let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
+    let result = gen_build_run(args, proc_flags, build_state, start);
     vlog!(V::N, "{result:?}");
     Ok(())
 }
@@ -316,7 +308,6 @@ pub fn gen_build_run(
     args: &Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
-    syntax_tree: Option<Ast>,
     start: &Instant,
 ) -> ThagResult<()> {
     // Instrument the entire function
@@ -345,18 +336,20 @@ pub fn gen_build_run(
         // let sourch_path_string = source_path.display().to_string();
         let sourch_path_string = source_path.to_string_lossy();
         // let mut rs_source = read_file_contents(&build_state.source_path)?;
-        let mut syntax_tree: Option<Ast> = if syntax_tree.is_none() {
-            to_ast(&sourch_path_string, &rs_source)
-        } else {
-            syntax_tree
-        };
+        if build_state.ast.is_none() {
+            build_state.ast = to_ast(&sourch_path_string, &rs_source);
+        }
+        if let Some(ref ast) = build_state.ast {
+            build_state.crates_finder = Some(find_crates(ast));
+            build_state.metadata_finder = Some(find_metadata(ast));
+        }
 
-        let main_methods = syntax_tree.as_ref().map_or_else(
+        let main_methods = build_state.metadata_finder.as_ref().map_or_else(
             || {
                 let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
                 re.find_iter(&rs_source).count()
             },
-            code_utils::count_main_methods,
+            |metadata_finder| metadata_finder.main_count,
         );
         let has_main = match main_methods {
             0 => false,
@@ -377,7 +370,7 @@ pub fn gen_build_run(
         // NB build scripts that are well-formed programs from the original source.
         // Fun fact: Rust compiler will ignore shebangs:
         // https://neosmart.net/blog/self-compiling-rust-code/
-        let is_file = syntax_tree.as_ref().map_or(false, Ast::is_file);
+        let is_file = build_state.ast.as_ref().map_or(false, Ast::is_file);
         build_state.build_from_orig_source = has_main && args.script.is_some() && is_file;
 
         debug_log!(
@@ -397,7 +390,7 @@ pub fn gen_build_run(
         // debug_log!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
-            manifest::merge(build_state, &rs_source, &syntax_tree)?;
+            manifest::merge(build_state, &rs_source)?;
         }
 
         // println!("build_state={build_state:#?}");
@@ -412,12 +405,13 @@ pub fn gen_build_run(
             // let start_quote = Instant::now();
 
             // Remove any inner attributes from the syntax tree
-            let found = if let Some(Ast::Expr(syn::Expr::Block(ref mut expr_block))) = syntax_tree {
-                // Apply the RemoveInnerAttributes visitor to the expression block
-                remove_inner_attributes(expr_block)
-            } else {
-                false
-            };
+            let found =
+                if let Some(Ast::Expr(syn::Expr::Block(ref mut expr_block))) = build_state.ast {
+                    // Apply the RemoveInnerAttributes visitor to the expression block
+                    remove_inner_attributes(expr_block)
+                } else {
+                    false
+                };
 
             let (inner_attribs, body) = if found {
                 code_utils::extract_inner_attribs(&rs_source)
@@ -425,7 +419,7 @@ pub fn gen_build_run(
                 (String::new(), rs_source)
             };
 
-            let rust_code = syntax_tree.as_ref().map_or(body, |syntax_tree_ref| {
+            let rust_code = build_state.ast.as_ref().map_or(body, |syntax_tree_ref| {
                 let returns_unit = match syntax_tree_ref {
                     Ast::Expr(expr) => code_utils::is_unit_return_type(expr),
                     Ast::File(_) => true, // Trivially true since we're here because there's no main

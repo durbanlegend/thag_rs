@@ -66,6 +66,8 @@ install_handler() {
     <string>APPL</string>
     <key>CFBundleExecutable</key>
     <string>thag_launcher</string>
+    <key>LSBackgroundOnly</key>
+    <false/>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
@@ -83,17 +85,44 @@ EOF
 
 # Create launcher script
 cat > "$MACOS_DIR/thag_launcher" << EOF
+#!/usr/bin/osascript
+
+on run argv
+log "Launcher started"
+
+-- Get the URL from the open location event
+on open location this_URL
+    log "Received URL: " & this_URL
+
+    -- Strip the protocol prefix
+    set stripped_URL to text 7 thru -1 of this_URL -- removes "thag://"
+
+    -- Construct the shell command
+    set cmd to "echo 'Running thag with URL: " & stripped_URL & "' && $THAG_PATH -u '" & stripped_URL & "' && echo 'Press any key to close' && read -n 1"
+
+    tell application "Terminal"
+        activate
+        do script cmd
+    end tell
+end open location
+
+log "Launcher completed"
+end run
+
+-- Handle the open location event
+on open location this_URL
+log "Direct open location event: " & this_URL
+run {this_URL}
+end open location
+EOF
+
+# Change the file extension to .scpt
+mv "$MACOS_DIR/thag_launcher" "$MACOS_DIR/thag_launcher.scpt"
+
+# Create a shell script wrapper
+cat > "$MACOS_DIR/thag_launcher" << EOF
 #!/bin/bash
-url="\$1"
-if [ -z "\$url" ]; then
-echo "Error: No URL provided"
-exit 1
-fi
-url=\${url#$PROTOCOL://}
-osascript -e 'tell application "WezTerm"
-activate
-do script "echo \"Running thag with URL: \$url\" && $THAG_PATH -u \"\$url\" ; echo \"Press any key to close\"; read -n 1"
-end tell'
+exec osascript "$MACOS_DIR/thag_launcher.scpt" "\$@"
 EOF
 
     # Set permissions
@@ -106,6 +135,9 @@ EOF
         exit 1
     fi
 
+    # Set ownership (important for permissions)
+    sudo chown -R $(whoami) "/Applications/$APP_NAME.app"
+
     # Register with Launch Services
     if ! /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -R "/Applications/$APP_NAME.app"; then
         echo "Warning: Failed to register with Launch Services"
@@ -116,6 +148,7 @@ EOF
 
     echo "Installation completed successfully!"
     echo "You can now use $PROTOCOL:// links in your browser"
+    echo "Check /tmp/thag_launcher.log for debugging information"
 }
 
 # Main execution

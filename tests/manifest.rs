@@ -55,9 +55,9 @@ mod tests {
             .with(eq("cargo"), eq(args))
             .returning(move |_, _| Ok(output.clone()));
 
-        let result = cargo_search(&mock_runner, "serde");
-        assert!(result.is_ok());
-        let (name, version) = result.unwrap();
+        let option = cargo_search(&mock_runner, "serde");
+        assert!(option.is_some());
+        let (name, version) = option.unwrap();
         assert_eq!(name, "serde");
         assert_eq!(version, "1.0.203");
     }

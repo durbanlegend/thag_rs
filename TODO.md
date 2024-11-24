@@ -19,6 +19,7 @@
 - [ ]  Set up bank/proc_macros and only take best to demo.
 - [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
 - [ ]  In cargo search, generate a nice toml block
+- [ ]  Add a --test option
 find_use_renames_ast
 find_modules_ast
 find_use_crates_ast
@@ -29,6 +30,18 @@ extract_functions   - TODO
 BuildState::pre-configure - factor out fns so I can profile them.
 Try running tests without debug or debug_timings.
 validate_state only when feature minimal not engaged - instead switched off debug and debug-assertions in Cargo.toml
+
+[thag](</Users/donf/.cargo/bin/thag?-r>)
+
+[Run this script with thag](thag://github.com/near-cli-rs/interactive-clap/blob/master/examples/advanced_struct.rs)
+
+Run this example:
+```bash
+thag -u https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
+```
+https://raw.githubusercontent.com/durbanlegend/thag_rs/3f52d4c4590c0573ad130727e746161029fdae57/demo/in_place.rs#L1C1-L24C2
+
+thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 - [ ]  Consider adding --guided (-G) option using `inquire` to capture parameters.
 - [ ]  Perf: combine multiple finder.visit_* into one in code_utils so the AST is only traversed once.

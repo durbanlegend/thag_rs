@@ -109,7 +109,7 @@ pub struct Cli {
     /// Strip double quotes from string result of expression (true/false). Default: config value / false.
     #[arg(
         short,
-        long, help_heading = Some("Dynamic Options (no script)"),
+        long, help_heading = Some("Output Options"),
         // require_equals = true,
         action = clap::ArgAction::Set,
         num_args = 0..=1,

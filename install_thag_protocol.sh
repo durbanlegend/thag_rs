@@ -8,7 +8,7 @@ BUNDLE_ID="io.github.durbanlegend.thaghandler"
 COMPANY_NAME="durbanlegend"
 APP_NAME="ThagHandler"
 PROTOCOL="thag"
-THAG_PATH="/usr/local/bin/thag"
+THAG_PATH="$HOME/.cargo/bin/thag"  # Updated path to thag
 
 # Function to check if thag is installed
 check_thag() {
@@ -83,50 +83,54 @@ install_handler() {
 </plist>
 EOF
 
+# ===== BEGIN NEW LAUNCHER SCRIPT SECTION =====
 # Create launcher script
-cat > "$MACOS_DIR/thag_launcher" << EOF
+cat > "$MACOS_DIR/thag_launcher.scpt" << 'EOF'
 #!/usr/bin/osascript
 
 on run argv
-log "Launcher started"
-
--- Get the URL from the open location event
-on open location this_URL
-    log "Received URL: " & this_URL
-
-    -- Strip the protocol prefix
-    set stripped_URL to text 7 thru -1 of this_URL -- removes "thag://"
-
-    -- Construct the shell command
-    set cmd to "echo 'Running thag with URL: " & stripped_URL & "' && $THAG_PATH -u '" & stripped_URL & "' && echo 'Press any key to close' && read -n 1"
-
-    tell application "Terminal"
-        activate
-        do script cmd
-    end tell
-end open location
-
-log "Launcher completed"
+log "Launcher started with arguments: " & argv
 end run
 
--- Handle the open location event
 on open location this_URL
-log "Direct open location event: " & this_URL
-run {this_URL}
+-- Set up logging
+set log_file to "/tmp/thag_handler_" & (do shell script "date +%Y%m%d_%H%M%S") & ".log"
+do shell script "echo \"=== Thag Handler Started at $(date) ===\" > " & quoted form of log_file
+do shell script "echo \"Received URL: " & this_URL & "\" >> " & quoted form of log_file
+
+-- Strip the protocol prefix
+set stripped_URL to text 7 thru -1 of this_URL -- removes "thag://"
+
+-- Convert GitHub URL if needed
+if stripped_URL contains "github.com" and stripped_URL contains "/blob/" then
+    set stripped_URL to do shell script "echo " & quoted form of stripped_URL & " | sed 's/github\\.com/raw.githubusercontent.com/g' | sed 's/\\/blob\\//\\//g'"
+end if
+
+do shell script "echo \"Converted URL: " & stripped_URL & "\" >> " & quoted form of log_file
+
+-- Construct the command
+set cmd to "echo \"Running thag with URL: " & stripped_URL & "\" && " & "$HOME/.cargo/bin/thag" & " -u \"" & stripped_URL & "\" && echo \"Press any key to close\" && read -n 1"
+
+tell application "Terminal"
+    activate
+    do script cmd
+end tell
+
+do shell script "echo \"=== Thag Handler Completed at $(date) ===\" >> " & quoted form of log_file
 end open location
 EOF
 
-# Change the file extension to .scpt
-mv "$MACOS_DIR/thag_launcher" "$MACOS_DIR/thag_launcher.scpt"
-
 # Create a shell script wrapper
-cat > "$MACOS_DIR/thag_launcher" << EOF
+cat > "$MACOS_DIR/thag_launcher" << 'EOF'
 #!/bin/bash
-exec osascript "$MACOS_DIR/thag_launcher.scpt" "\$@"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec osascript "$SCRIPT_DIR/thag_launcher.scpt" "$@"
 EOF
 
-    # Set permissions
-    chmod +x "$MACOS_DIR/thag_launcher"
+# Make scripts executable
+chmod +x "$MACOS_DIR/thag_launcher"
+chmod +x "$MACOS_DIR/thag_launcher.scpt"
+# ===== END NEW LAUNCHER SCRIPT SECTION =====
 
     # Move to Applications
     if ! sudo mv "$APP_BUNDLE" /Applications/; then
@@ -135,7 +139,7 @@ EOF
         exit 1
     fi
 
-    # Set ownership (important for permissions)
+    # Set ownership
     sudo chown -R $(whoami) "/Applications/$APP_NAME.app"
 
     # Register with Launch Services
@@ -143,12 +147,21 @@ EOF
         echo "Warning: Failed to register with Launch Services"
     fi
 
+    # Force Launch Services to rebuild its database
+    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user
+
     # Cleanup
     rm -rf "$TEMP_DIR"
 
     echo "Installation completed successfully!"
     echo "You can now use $PROTOCOL:// links in your browser"
-    echo "Check /tmp/thag_launcher.log for debugging information"
+    echo "For example, try:"
+    echo "thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs"
+    echo ""
+    echo "To test the handler directly, run:"
+    echo "/Applications/$APP_NAME.app/Contents/MacOS/thag_launcher 'thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs'"
+    echo ""
+    echo "Check /tmp/thag_handler_*.log files for debugging information"
 }
 
 # Main execution

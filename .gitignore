@@ -34,6 +34,5 @@ demo/proc_macros/README.md
 src/proc_macros/Cargo copy.toml
 demo/proc_macro_const_demo copy.rs
 demo/proc_macros/target/
-src/cmd_args copy.rs
-tests/cmd_args copy.rs
-src/builder copy.rs
+install_thag_protocol.sh
+thag.html

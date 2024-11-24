@@ -45,7 +45,7 @@ impl CommandRunner for RealCommandRunner {
 /// crate name and inspecting the first line of Cargo's response.
 /// # Errors
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
-pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> ThagResult<(String, String)> {
+pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> Option<(String, String)> {
     profile_fn!(cargo_search);
     #[cfg(debug_assertions)]
     let start_search = Instant::now();
@@ -53,9 +53,7 @@ pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> ThagResult
     let dep_crate_styled = Style::from(&Lvl::EMPH).paint(dep_crate);
     vlog!(
         V::N,
-        r#"Doing a Cargo search for crate {dep_crate_styled} referenced in your script.
-See below for how to avoid this and speed up future builds.
-"#,
+        "Doing a Cargo search for crate {dep_crate_styled} referenced in your script.",
     );
 
     let args = vec![
@@ -64,63 +62,43 @@ See below for how to avoid this and speed up future builds.
         "--limit".to_string(),
         "1".to_string(),
     ];
-    let search_output = runner.run_command("cargo", &args)?;
 
-    let first_line = if search_output.status.success() {
-        search_output
-            .stdout
-            .lines()
-            .map_while(Result::ok)
-            .next()
-            .ok_or_else(|| format!("Something went wrong with Cargo search for [{dep_crate}]"))?
-    } else {
+    let search_output = match runner.run_command("cargo", &args) {
+        Ok(output) => output,
+        Err(_) => return None,
+    };
+
+    if !search_output.status.success() {
         #[allow(unused_variables)]
         let error_msg = String::from_utf8_lossy(&search_output.stderr);
-
         error_msg.lines().for_each(|line| {
             debug_log!("{line}");
         });
-        return Err(format!("Cargo search failed for [{dep_crate}]").into());
-    };
+        return None;
+    }
+
+    let first_line = search_output.stdout.lines().map_while(Result::ok).next()?;
 
     debug_log!("first_line={first_line}");
-    let result = capture_dep(&first_line);
-    let (name, version) = match result {
-        Ok((name, version)) => {
-            if name != dep_crate && name.replace('-', "_") != dep_crate {
-                debug_log!("First line of cargo search for crate {dep_crate} found non-matching crate {name}");
-                return Err(format!(
-                    "Cargo search failed for [{dep_crate}]: returned non-matching crate [{name}]"
-                )
-                .into());
-            }
 
-            let dep_crate_styled = Style::from(&Lvl::EMPH).paint(&name);
-            let dep_version_styled = Style::from(&Lvl::EMPH).paint(&version);
+    match capture_dep(&first_line) {
+        Ok((name, version)) if name == dep_crate || name.replace('-', "_") == dep_crate => {
+            #[cfg(debug_assertions)]
+            debug_timings(&start_search, "Completed search");
 
-            vlog!(
-                V::N,
-                r#"Cargo found the following dependency, which you can copy into the toml block
-as shown if you don't need special features:
-
-/*[toml]
-[dependencies]
-{dep_crate_styled} = "{dep_version_styled}"
-*/
-"#
+            Some((name, version))
+        }
+        Ok((name, _)) => {
+            debug_log!(
+                "First line of cargo search for crate {dep_crate} found non-matching crate {name}"
             );
-            (name, version)
+            None
         }
         Err(err) => {
             debug_log!("Failure! err={err}");
-            return Err(err);
+            None
         }
-    };
-
-    #[cfg(debug_assertions)]
-    debug_timings(&start_search, "Completed search");
-
-    Ok((name, version))
+    }
 }
 
 /// Attempt to capture the dependency name and version from the first line returned by
@@ -273,6 +251,9 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
     if rs_inferred_deps.is_empty() {
         return;
     }
+
+    let mut found_deps = Vec::new();
+
     for dep_name in rs_inferred_deps {
         if rs_dep_map.contains_key(&dep_name)
             || rs_dep_map.contains_key(&dep_name.replace('_', "-"))
@@ -292,17 +273,30 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         #[cfg(debug_assertions)]
         debug_log!("Starting Cargo search for key dep_name [{dep_name}]");
         let command_runner = RealCommandRunner;
-        let cargo_search_result = cargo_search(&command_runner, &dep_name);
-        // If the crate name is hyphenated, Cargo search will nicely search for underscore version and return the correct
-        // hyphenated name. So we must replace the incorrect underscored version we searched on with the corrected
-        // hyphenated version that the Cargo search returned.
-        let (dep_name, dep) = if let Ok((dep_name, version)) = cargo_search_result {
-            (dep_name, Dependency::Simple(version))
+
+        if let Some((name, version)) = cargo_search(&command_runner, &dep_name) {
+            found_deps.push((name.clone(), version.clone()));
+            rs_dep_map.insert(name, Dependency::Simple(version));
         } else {
             vlog!(V::QQ, "Cargo search couldn't find crate [{dep_name}]");
-            continue;
-        };
-        rs_dep_map.insert(dep_name, dep);
+        }
+    }
+
+    // Generate combined toml block if any dependencies were found
+    if !found_deps.is_empty() {
+        let mut toml_block = String::from("/*[toml]\n[dependencies]\n");
+        for (name, version) in found_deps {
+            let dep_line = format!("{} = \"{}\"\n", name, version);
+            toml_block.push_str(&dep_line);
+        }
+        toml_block.push_str("*/");
+
+        let styled_block = Style::from(&Lvl::EMPH).paint(&toml_block);
+        vlog!(
+            V::N,
+            "\nYou can copy the following toml block into your script:\n\n{}\n",
+            styled_block
+        );
     }
 }
 

@@ -1,5 +1,6 @@
 use crate::code_utils::write_source;
 use crate::file_dialog::{DialogMode, FileDialog, Status};
+use crate::stdin::edit_history;
 use crate::{
     debug_log, key, regex, EventReader, KeyCombination, KeyDisplayLine, Lvl, ThagError, ThagResult,
 };
@@ -906,6 +907,39 @@ pub fn script_key_handler(
             textarea.cut();
             Ok(KeyAction::Continue)
         }
+        key!(f5) => {
+            // Clear textarea and wipe from history
+            if textarea.is_empty() {
+                return Ok(KeyAction::Continue);
+            }
+            if let Some(ref mut hist) = edit_data.history {
+                let _in_hist = !&hist.at_end();
+                let textarea_contents = textarea.lines().to_vec().join("\n");
+                textarea.select_all();
+                textarea.cut();
+                let yank_text = textarea.yank_text();
+                assert_eq!(yank_text, textarea_contents);
+                if let Some(ref current_hist_entry) = &hist.get_current() {
+                    assert_eq!(yank_text, current_hist_entry.contents());
+                    let index = current_hist_entry.index;
+                    hist.delete_entry(index);
+                    hist.entries.retain(|f| {
+                        f.contents().trim() != textarea_contents
+                    })
+                }
+                if let Some(ref hist_path) = history_path {
+                hist.save_to_file(hist_path)?;
+                }
+                Ok(KeyAction::Continue)
+            } else {
+                Ok(KeyAction::Continue)
+            }
+        }
+        key!(f6) => {
+            // Edit history
+            edit_history()?;
+            Ok(KeyAction::Continue)
+        }
         key!(f7) => {
             if let Some(ref mut hist) = edit_data.history {
                 if hist.at_end() && textarea.is_empty() {
@@ -1114,6 +1148,40 @@ pub fn save_if_changed(
     Ok(())
 }
 
+/// Save a `TextArea` to history if it has changed.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o errors encuntered.
+// pub fn remove_current_from_history(
+//     hist: &mut History,
+//     textarea: &mut TextArea<'_>,
+//     history_path: &Option<PathBuf>,
+// ) -> Result<(), ThagError> {
+//     profile_fn!(save_if_changed);
+//     debug_log!("save_if_changed...");
+//     if textarea.is_empty() {
+//         debug_log!("nothing to save(1)...");
+//         return Ok(());
+//     }
+//     if let Some(entry) = &hist.get_current() {
+//         let index = entry.index;
+//         let copy_text = copy_text(textarea);
+//         // In case they entered blanks
+//         if copy_text.trim().is_empty() {
+//             debug_log!("nothing to save(2)...");
+//             return Ok(());
+//         }
+//         if entry.contents() != copy_text {
+//             hist.update_entry(index, &copy_text);
+//             if let Some(ref hist_path) = history_path {
+//                 hist.save_to_file(hist_path)?;
+//             }
+//         }
+//     }
+//     Ok(())
+// }
+
 pub fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &Entry) {
     profile_fn!(paste_to_textarea);
     textarea.select_all();
@@ -1287,12 +1355,19 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (350, "Alt+v, PageUp, Cmd+↑", "Page up"),
     (360, "Ctrl+l", "Toggle keys display (this screen)"),
     (370, "Ctrl+t", "Toggle selection highlight colours"),
-    (380, "F7", "Previous in history"),
-    (390, "F8", "Next in history"),
+    (380, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     (
-        400,
+        390,
+        "F5",
+        "Clear and wipe from history (Ctrl+y or Ctrl+u to restore text buffer)"
+    ),
+    (400, "F6", "Edit history"),
+    (410, "F7", "Previous in history"),
+    (420, "F8", "Next in history"),
+    (
+        430,
         "F9",
         "Suspend mouse capture and line numbers for system copy"
     ),
-    (410, "F10", "Resume mouse capture and line numbers"),
+    (440, "F10", "Resume mouse capture and line numbers"),
 ];

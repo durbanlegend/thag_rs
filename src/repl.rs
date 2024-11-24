@@ -550,11 +550,11 @@ fn tui(
     let add_keys = [
         KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
-        KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
+        // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
     let display = KeyDisplay {
-        title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
+        title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: RataStyle::from(&Lvl::SUBH).bold(),
         remove_keys: &[""; 0],
         add_keys: &add_keys,
@@ -660,7 +660,7 @@ pub fn edit_history<R: EventReader + Debug>(
     };
     let binding = [
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
-        KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
+        // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",

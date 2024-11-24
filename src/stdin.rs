@@ -124,7 +124,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     let add_keys = [
         KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
-        KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
+        // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
     let display = KeyDisplay {
         title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",

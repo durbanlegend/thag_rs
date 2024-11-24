@@ -369,7 +369,12 @@ impl<'a> FileDialog<'a> {
                 self.close(); // Close the dialog
             }
         } else {
-            let path = self.current_dir.join(&self.items[selected]);
+            let path = if &self.items[selected] == ".." {
+                self.current_dir.pop();
+                self.current_dir.clone()
+            } else {
+                self.current_dir.join(&self.items[selected])
+            };
             debug_log!(
                 "current_dir={:?}; path={path:?}; is_file? {}; mode={:?}",
                 self.current_dir,

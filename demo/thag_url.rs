@@ -1,6 +1,12 @@
+/*[toml]
+[dependencies]
+url = "2.5.4"
+*/
+
 use std::error::Error;
 use std::fmt;
 use std::process::{Command, Stdio};
+use url::Url;
 
 #[derive(Debug)]
 struct UrlError(String);
@@ -21,89 +27,138 @@ enum SourceType {
     Raw,
 }
 
-fn detect_source_type(url: &str) -> SourceType {
-    if url.contains("github.com") {
-        SourceType::GitHub
-    } else if url.contains("gitlab.com") {
-        SourceType::GitLab
-    } else if url.contains("bitbucket.org") {
-        SourceType::Bitbucket
-    } else if url.contains("play.rust-lang.org") {
-        SourceType::RustPlayground
-    } else {
-        SourceType::Raw
+fn detect_source_type(url: &Url) -> SourceType {
+    match url.host_str() {
+        Some(host) => match host {
+            "github.com" => SourceType::GitHub,
+            "gitlab.com" => SourceType::GitLab,
+            "bitbucket.org" => SourceType::Bitbucket,
+            "play.rust-lang.org" => SourceType::RustPlayground,
+            _ => SourceType::Raw,
+        },
+        None => SourceType::Raw,
     }
 }
 
-fn convert_to_raw_url(url: &str) -> Result<String, UrlError> {
-    match detect_source_type(url) {
+fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
+    let url = Url::parse(url_str).map_err(|e| UrlError(format!("Invalid URL: {}", e)))?;
+
+    match detect_source_type(&url) {
         SourceType::GitHub => {
-            if url.contains("/blob/") {
-                Ok(url
-                    .replace("github.com", "raw.githubusercontent.com")
-                    .replace("/blob/", "/"))
-            } else {
-                Err(UrlError("Invalid GitHub URL format".to_string()))
+            let path = url.path();
+            if !path.contains("/blob/") {
+                return Err(UrlError(
+                    "GitHub URL must contain '/blob/' in path".to_string(),
+                ));
             }
+            if path.split('/').count() < 4 {
+                return Err(UrlError(
+                    "Invalid GitHub URL format: expected user/repo/blob/path".to_string(),
+                ));
+            }
+            Ok(url_str
+                .replace("github.com", "raw.githubusercontent.com")
+                .replace("/blob/", "/"))
         }
         SourceType::GitLab => {
-            if url.contains("/-/blob/") {
-                Ok(url.replace("/-/blob/", "/-/raw/"))
-            } else {
-                Err(UrlError("Invalid GitLab URL format".to_string()))
+            let path = url.path();
+            if !path.contains("/-/blob/") {
+                return Err(UrlError(
+                    "GitLab URL must contain '/-/blob/' in path".to_string(),
+                ));
             }
+            if path.split('/').count() < 5 {
+                return Err(UrlError(
+                    "Invalid GitLab URL format: expected user/repo/-/blob/path".to_string(),
+                ));
+            }
+            Ok(url_str.replace("/-/blob/", "/-/raw/"))
         }
         SourceType::Bitbucket => {
-            if url.contains("/src/") {
-                Ok(url.replace("/src/", "/raw/"))
-            } else {
-                Err(UrlError("Invalid Bitbucket URL format".to_string()))
+            let path = url.path();
+            if !path.contains("/src/") {
+                return Err(UrlError(
+                    "Bitbucket URL must contain '/src/' in path".to_string(),
+                ));
             }
+            if path.split('/').count() < 4 {
+                return Err(UrlError(
+                    "Invalid Bitbucket URL format: expected user/repo/src/path".to_string(),
+                ));
+            }
+            Ok(url_str.replace("/src/", "/raw/"))
         }
         SourceType::RustPlayground => {
-            // Extract gist ID from Playground URL
-            if let Some(gist_id) = url.split("gist=").nth(1) {
-                Ok(format!(
-                    "https://gist.githubusercontent.com/rust-play/{}/raw",
-                    gist_id
-                ))
-            } else {
-                Err(UrlError(
-                    "Invalid Rust Playground URL format. Expected URL with gist ID".to_string(),
-                ))
+            let gist_id = url
+                .query_pairs()
+                .find(|(key, _)| key == "gist")
+                .map(|(_, value)| value.to_string())
+                .ok_or_else(|| UrlError("No gist ID found in Playground URL".to_string()))?;
+
+            if gist_id.len() != 32 {
+                // Standard GitHub gist ID length
+                return Err(UrlError("Invalid gist ID format".to_string()));
             }
+
+            Ok(format!(
+                "https://gist.githubusercontent.com/rust-play/{}/raw",
+                gist_id
+            ))
         }
-        SourceType::Raw => Ok(url.to_string()),
+        SourceType::Raw => Ok(url_str.to_string()),
     }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() < 2 || args.len() > 3 {
-        eprintln!("Usage: {} [-s|-d] <url>", args[0]);
-        eprintln!("Supported sources:");
-        eprintln!("  - GitHub (github.com)");
-        eprintln!("  - GitLab (gitlab.com)");
-        eprintln!("  - Bitbucket (bitbucket.org)");
-        eprintln!("  - Rust Playground (play.rust-lang.org)");
-        eprintln!("  - Raw URLs (direct links to raw content)");
+
+    // Need at least URL and optionally -s/-d and additional flags
+    if args.len() < 2 {
+        print_usage(&args[0]);
         std::process::exit(1);
     }
 
-    let (flag, url) = if args.len() == 3 {
-        let flag = match args[1].as_str() {
-            "-s" | "-d" => args[1].as_str(),
-            _ => {
-                eprintln!("Invalid flag. Use -s or -d");
-                std::process::exit(1);
-            }
-        };
-        (flag, &args[2])
-    } else {
-        ("-s", &args[1]) // default to -s if no flag provided
-    };
+    // Parse arguments
+    let mut iter = args.iter().skip(1); // skip program name
+    let mut thag_mode = String::from("-s"); // default
+    let mut url = String::new();
+    let mut additional_args = Vec::new();
+    let mut found_separator = false;
 
-    let raw_url = convert_to_raw_url(url)?;
+    while let Some(arg) = iter.next() {
+        match arg.as_str() {
+            "-s" | "-d" => {
+                if url.is_empty() {
+                    thag_mode = arg.to_string();
+                } else {
+                    additional_args.push(arg.to_string());
+                }
+            }
+            "--" => {
+                found_separator = true;
+                break;
+            }
+            arg => {
+                if url.is_empty() {
+                    url = arg.to_string();
+                } else {
+                    additional_args.push(arg.to_string());
+                }
+            }
+        }
+    }
+
+    // Collect remaining args after --
+    if found_separator {
+        additional_args.extend(iter.map(|s| s.to_string()));
+    }
+
+    if url.is_empty() {
+        print_usage(&args[0]);
+        std::process::exit(1);
+    }
+
+    let raw_url = convert_to_raw_url(&url)?;
 
     // Create the curl command
     let curl = Command::new("curl")
@@ -111,17 +166,42 @@ fn main() -> Result<(), Box<dyn Error>> {
         .stdout(Stdio::piped())
         .spawn()?;
 
-    // Pipe curl's output to thag
-    let status = Command::new("thag")
-        .arg(flag)
-        .stdin(curl.stdout.unwrap())
-        .status()?;
+    // Build thag command with all arguments
+    let mut thag_command = Command::new("thag");
+    thag_command.arg(&thag_mode);
+    thag_command.args(&additional_args);
+    thag_command.stdin(curl.stdout.unwrap());
+
+    // Run thag
+    let status = thag_command.status()?;
 
     if !status.success() {
         std::process::exit(status.code().unwrap_or(1));
     }
 
     Ok(())
+}
+
+fn print_usage(program: &str) {
+    eprintln!(
+        "Usage: {} [-s|-d] <url> [-- <additional_thag_args>]",
+        program
+    );
+    eprintln!("Supported sources:");
+    eprintln!("  - GitHub (github.com)");
+    eprintln!("  - GitLab (gitlab.com)");
+    eprintln!("  - Bitbucket (bitbucket.org)");
+    eprintln!("  - Rust Playground (play.rust-lang.org)");
+    eprintln!("  - Raw URLs (direct links to raw content)");
+    eprintln!("\nExamples:");
+    eprintln!(
+        "  {} -d https://github.com/user/repo/blob/master/script.rs -- -m",
+        program
+    );
+    eprintln!(
+        "  {} https://github.com/user/repo/blob/master/script.rs -v",
+        program
+    );
 }
 
 #[cfg(test)]
@@ -138,15 +218,19 @@ mod tests {
 
     #[test]
     fn test_gitlab_url() {
-        let url = "https://gitlab.com/user/repo/-/blob/master/file.rs";
-        let expected = "https://gitlab.com/user/repo/-/raw/master/file.rs";
+        // Example from gitlab.com/rust-embedded/cortex-m
+        let url = "https://gitlab.com/rust-embedded/cortex-m/-/blob/master/src/lib.rs";
+        let expected = "https://gitlab.com/rust-embedded/cortex-m/-/raw/master/src/lib.rs";
         assert_eq!(convert_to_raw_url(url).unwrap(), expected);
     }
 
     #[test]
     fn test_bitbucket_url() {
-        let url = "https://bitbucket.org/user/repo/src/master/file.rs";
-        let expected = "https://bitbucket.org/user/repo/raw/master/file.rs";
+        // Example from bitbucket.org/atlassian/atlaskit-mk-2
+        let url =
+            "https://bitbucket.org/atlassian/atlaskit-mk-2/src/master/build/docs/src/md/index.ts";
+        let expected =
+            "https://bitbucket.org/atlassian/atlaskit-mk-2/raw/master/build/docs/src/md/index.ts";
         assert_eq!(convert_to_raw_url(url).unwrap(), expected);
     }
 
@@ -156,6 +240,21 @@ mod tests {
         let expected =
             "https://gist.githubusercontent.com/rust-play/362dc87d7c1c8f2d569cc205165424d3/raw";
         assert_eq!(convert_to_raw_url(url).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_invalid_urls() {
+        // Test invalid URL format
+        assert!(convert_to_raw_url("not_a_url").is_err());
+
+        // Test invalid GitHub URL
+        assert!(convert_to_raw_url("https://github.com/user/repo").is_err());
+
+        // Test invalid GitLab URL
+        assert!(convert_to_raw_url("https://gitlab.com/user/repo/blob/master/file.rs").is_err());
+
+        // Test invalid Playground URL (no gist parameter)
+        assert!(convert_to_raw_url("https://play.rust-lang.org/?version=stable").is_err());
     }
 
     #[test]

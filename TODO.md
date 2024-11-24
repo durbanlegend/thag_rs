@@ -19,6 +19,12 @@
 - [ ]  Set up bank/proc_macros and only take best to demo.
 - [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
 - [ ]  In cargo search, generate a nice toml block
+- [ ]  Debug: No history edit function in stdin.
+- [ ]  Debug: repl history doesn't show unwanted HTML but it's in F7 (wrong file!) and can't get to beginning or get rid of it.
+         REPL history belongs in /Users/donf/.cargo/hist_staging.txt and stdin history in /Users/donf/.cargo/rs_stdin_history.json
+         (check both).
+- [ ]  Debug: History older than max isn't being removed even though only .
+
 - [ ]  Add a --test option
 find_use_renames_ast
 find_modules_ast
@@ -43,7 +49,7 @@ https://raw.githubusercontent.com/durbanlegend/thag_rs/3f52d4c4590c0573ad130727e
 
 thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
-- [ ]  Consider adding --guided (-G) option using `inquire` to capture parameters.
+- [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
 - [ ]  Perf: combine multiple finder.visit_* into one in code_utils so the AST is only traversed once.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?

@@ -270,6 +270,9 @@ fn call_omerge(
 #[allow(clippy::missing_panics_doc)]
 pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
     profile_fn!(search_deps);
+    if rs_inferred_deps.is_empty() {
+        return;
+    }
     for dep_name in rs_inferred_deps {
         if rs_dep_map.contains_key(&dep_name)
             || rs_dep_map.contains_key(&dep_name.replace('_', "-"))

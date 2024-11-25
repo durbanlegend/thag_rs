@@ -19,11 +19,11 @@ use {
 
 pub fn main() {
     let fmt = KeyCombinationFormat::default();
-    terminal::enable_raw_mode().unwrap();
     println!("Type any key combination (remember that your terminal intercepts many ones)");
     loop {
+        terminal::enable_raw_mode().unwrap();
         let e = read();
-        // terminal::disable_raw_mode().unwrap();
+        terminal::disable_raw_mode().unwrap();
         match e {
             Ok(Event::Key(key_event)) => {
                 if key_event.kind == KeyEventKind::Release {

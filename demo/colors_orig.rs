@@ -3,7 +3,7 @@
 crossterm = "0.28.1"
 log = "0.4.22"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-thag_rs = "0.1.5"
+thag_rs = "0.1.7"
 
 strum = { version = "0.26.2", features = ["derive"] }
 supports-color= "3.0.0"
@@ -15,6 +15,7 @@ termbg = "0.5.2"
 /// `reedline`, which was already using `nu_ansi_term`.
 ///
 //# Purpose: Demo older alternative implementation of `colors` module using `owo-colors`.
+//# Categories: prototype, technique
 use log::debug;
 use owo_ansi::xterm as owo_xterm;
 use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};

@@ -245,6 +245,35 @@ fn call_omerge(
     Ok(omerge(cargo_manifest, rs_manifest)?)
 }
 
+struct CrateInfo {
+    name: String,
+    version: String,
+    features: Option<Vec<String>>,
+}
+
+fn get_crate_features(name: &str) -> Option<Vec<String>> {
+    let output = Command::new("cargo")
+        .args(["lookup", name, "-t=features", "-f", "no-prefix"])
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        let features_str = String::from_utf8_lossy(&output.stdout);
+        let features: Vec<String> = features_str
+            .trim()
+            .split_whitespace()
+            .map(String::from)
+            .collect();
+        if features.is_empty() {
+            None
+        } else {
+            Some(features)
+        }
+    } else {
+        None
+    }
+}
+
 #[allow(clippy::missing_panics_doc)]
 pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
     profile_fn!(search_deps);
@@ -275,27 +304,57 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         let command_runner = RealCommandRunner;
 
         if let Some((name, version)) = cargo_search(&command_runner, &dep_name) {
-            found_deps.push((name.clone(), version.clone()));
+            let features = get_crate_features(&name);
+            found_deps.push(CrateInfo {
+                name: name.clone(),
+                version: version.clone(),
+                features,
+            });
             rs_dep_map.insert(name, Dependency::Simple(version));
         } else {
             vlog!(V::QQ, "Cargo search couldn't find crate [{dep_name}]");
         }
     }
 
-    // Generate combined toml block if any dependencies were found
+    // Generate both simple and full-featured toml blocks if any dependencies were found
     if !found_deps.is_empty() {
-        let mut toml_block = String::from("/*[toml]\n[dependencies]\n");
-        for (name, version) in found_deps {
-            let dep_line = format!("{} = \"{}\"\n", name, version);
-            toml_block.push_str(&dep_line);
+        // Simple block
+        let mut simple_block = String::from("/*[toml]\n[dependencies]\n");
+        for dep in &found_deps {
+            let dep_line = format!("{} = \"{}\"\n", dep.name, dep.version);
+            simple_block.push_str(&dep_line);
         }
-        toml_block.push_str("*/");
+        simple_block.push_str("*/");
 
-        let styled_block = Style::from(&Lvl::EMPH).paint(&toml_block);
+        // Full-featured block
+        let mut featured_block = String::from("/*[toml]\n[dependencies]\n");
+        for dep in &found_deps {
+            if let Some(features) = &dep.features {
+                let features_str = features
+                    .iter()
+                    .map(|f| format!("\"{}\"", f))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let dep_line = format!(
+                    "{} = {{ version = \"{}\", features = [{}] }}\n",
+                    dep.name, dep.version, features_str
+                );
+                featured_block.push_str(&dep_line);
+            } else {
+                // Use simple format for dependencies without features
+                let dep_line = format!("{} = \"{}\"\n", dep.name, dep.version);
+                featured_block.push_str(&dep_line);
+            }
+        }
+        featured_block.push_str("*/");
+
+        let styled_simple = Style::from(&Lvl::EMPH).paint(&simple_block);
+        let styled_featured = Style::from(&Lvl::EMPH).paint(&featured_block);
         vlog!(
             V::N,
-            "\nYou can copy the following toml block into your script:\n\n{}\n",
-            styled_block
+            "\nYou can copy one of the following toml blocks into your script:\n\nSimple version:\n{}\n\nFull-featured version:\n{}\n",
+            styled_simple,
+            styled_featured
         );
     }
 }

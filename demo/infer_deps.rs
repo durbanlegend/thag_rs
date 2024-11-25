@@ -1,13 +1,19 @@
+/*
+# [dependencies]
+# crokey = "1.1.0"
+# crossterm = "0.28.1"
+# serde = { version = "1.0.130", features = ["derive"] }
+*/
 /*[toml]
 [dependencies]
-crokey = "1.1.0"
-crossterm = "0.28.1"
-serde = { version = "1.0.130", features = ["derive"] }
+crokey = { version = "1.1.0", features = ["default"] }
+crossterm = { version = "0.28.1", features = ["bracketed-paste", "default", "use-dev-tty"] }
 */
 
-/// Published example of combiner from `crokey` crate.
-//# Purpose: Demo key combiner.
-//# Categories: crates, technique
+/// Interactively test dependency inferency. This script was arbitrarily copied from
+/// demo/crokey_print_key.rs.
+//# Purpose: Test thag manifest module's dependency inference.
+//# Categories: crates, technique, testing
 use {
     crokey::*,
     crossterm::{

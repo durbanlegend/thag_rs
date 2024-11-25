@@ -3,7 +3,6 @@
 crokey = "1.1.0"
 crossterm = "0.28.0"
 serde = { version = "1.0.130", features = ["derive"] }
-toml = "0.5"
 */
 
 /// Published example of KeyCombination from `crokey` crate.

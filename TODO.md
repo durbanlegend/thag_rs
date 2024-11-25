@@ -33,7 +33,6 @@ find_extern_crates_ast
 count_main_methods
 extract_functions   - TODO
 `transform` section of generate - Make reformat of source configurable.
-BuildState::pre-configure - factor out fns so I can profile them.
 Try running tests without debug or debug_timings.
 validate_state only when feature minimal not engaged - instead switched off debug and debug-assertions in Cargo.toml
 
@@ -50,7 +49,7 @@ https://raw.githubusercontent.com/durbanlegend/thag_rs/3f52d4c4590c0573ad130727e
 thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
-- [ ]  Perf: combine multiple finder.visit_* into one in code_utils so the AST is only traversed once.
+- [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?

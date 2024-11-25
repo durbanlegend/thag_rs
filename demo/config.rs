@@ -1,6 +1,11 @@
 /*[toml]
 [dependencies]
 dirs = "5.0"
+edit = "0.1.5"
+firestorm = "0.5.1"
+home = "0.5.9"
+log = "0.4.22"
+mockall = "0.13.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_json = "1.0"
@@ -8,91 +13,154 @@ serde_with = "3.9"
 strum = "0.26"
 strum_macros = "0.26"
 supports-color = "3.0.0"
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "4b0e49bbf916c81d947d970afbb71f0cd7059b7e"}
 toml = "0.8"
 */
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
 //# Purpose: Develop a configuration file implementation for `thag_rs`.
 //# Categories: prototype, technique
+use edit::edit_file;
+use firestorm::{profile_fn, profile_method};
+use home;
+use log;
+use mockall::{automock, predicate::str};
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
-use std::fs;
-use std::path::PathBuf;
-use strum_macros::EnumString;
+#[cfg(target_os = "windows")]
+use std::env;
+use std::{
+    fs::{self, OpenOptions},
+    io::Write,
+    path::PathBuf,
+};
+use thag_rs::{debug_log, lazy_static_var, ColorSupport, TermTheme, ThagResult, Verbosity};
 
-#[derive(Clone, Copy, Debug, Deserialize, EnumString)]
-#[strum(serialize_all = "snake_case")]
-pub enum Verbosity {
-    Quieter,
-    Quiet,
-    Normal,
-    Verbose,
+/// Initializes and returns the configuration.
+#[allow(clippy::module_name_repetitions)]
+pub fn maybe_config() -> Option<Config> {
+    profile_fn!(maybe_config);
+    lazy_static_var!(Option<Config>, maybe_load_config()).clone()
 }
 
-#[derive(Debug, Deserialize, EnumString)]
-#[strum(serialize_all = "snake_case")]
-pub enum ColorSupport {
-    Xterm256,
-    Ansi16,
-    None,
+fn maybe_load_config() -> Option<Config> {
+    profile_fn!(maybe_load_config);
+    // eprintln!("In maybe_load_config, should not see this message more than once");
+    let maybe_config = load(&RealContext::new());
+    if let Some(config) = maybe_config {
+        // debug_log!("Loaded config: {config:?}");
+        return Some(config);
+    }
+    None::<Config>
 }
 
-#[derive(Debug, Deserialize, EnumString)]
-#[strum(serialize_all = "snake_case")]
-pub enum TermTheme {
-    Light,
-    Dark,
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Config {
+    pub logging: Logging,
+    pub colors: Colors,
+    pub proc_macros: ProcMacros,
+    pub misc: Misc,
 }
 
-#[allow(dead_code)]
-#[derive(Debug, Deserialize)]
-struct Config {
-    logging: LoggingConfig,
-    colors: ColorsConfig,
-}
-
-#[allow(dead_code)]
 #[serde_as]
-#[derive(Debug, Deserialize)]
-struct LoggingConfig {
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Logging {
     #[serde_as(as = "DisplayFromStr")]
-    default_verbosity: Verbosity,
+    pub default_verbosity: Verbosity,
 }
 
-#[allow(dead_code)]
 #[serde_as]
-#[derive(Debug, Deserialize)]
-struct ColorsConfig {
+#[derive(Clone, Debug, Default, Deserialize)]
+pub struct Colors {
     #[serde_as(as = "DisplayFromStr")]
-    color_support: ColorSupport,
+    #[serde(default)]
+    pub color_support: ColorSupport,
+    #[serde(default)]
     #[serde_as(as = "DisplayFromStr")]
-    term_theme: TermTheme,
+    pub term_theme: TermTheme,
 }
 
-fn get_config_path() -> PathBuf {
-    if cfg!(target_os = "windows") {
-        dirs::config_dir()
-            .unwrap()
-            .join("thag_rs")
-            .join("config.toml")
-    } else {
-        dirs::home_dir()
-            .unwrap()
-            .join(".config")
-            .join("thag_rs")
-            .join("config.toml")
+#[serde_as]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct ProcMacros {
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub proc_macro_crate_path: Option<String>,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Misc {
+    #[serde_as(as = "DisplayFromStr")]
+    pub unquote: bool,
+}
+
+#[automock]
+pub trait Context {
+    fn get_config_path(&self) -> PathBuf;
+    fn is_real(&self) -> bool;
+}
+
+/// A struct for use in normal execution, as opposed to use in testing.
+#[derive(Debug, Default)]
+pub struct RealContext {
+    pub base_dir: PathBuf,
+}
+
+impl RealContext {
+    /// Creates a new [`RealContext`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if it fails to resolve the $APPDATA path.
+    #[cfg(target_os = "windows")]
+    #[must_use]
+    pub fn new() -> Self {
+        let base_dir =
+            PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"));
+        Self { base_dir }
+    }
+
+    /// Creates a new [`RealContext`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if it fails to resolve the home directory.
+    #[cfg(not(target_os = "windows"))]
+    #[must_use]
+    pub fn new() -> Self {
+        profile_method!(new_real_contexr);
+        let base_dir = home::home_dir()
+            .expect("Error resolving home::home_dir()")
+            .join(".config");
+        Self { base_dir }
     }
 }
 
-fn load_config() -> Option<Config> {
-    let config_path = get_config_path();
-    println!("config_path={config_path:?}");
+impl Context for RealContext {
+    fn get_config_path(&self) -> PathBuf {
+        profile_method!(get_config_path);
+
+        self.base_dir.join("thag_rs").join("config.toml")
+    }
+
+    fn is_real(&self) -> bool {
+        true
+    }
+}
+
+#[must_use]
+pub fn load(context: &dyn Context) -> Option<Config> {
+    profile_fn!(load);
+    let config_path = context.get_config_path();
+
+    debug_log!("config_path={config_path:?}");
 
     if config_path.exists() {
         let config_str = fs::read_to_string(config_path).ok()?;
-        eprintln!("config_str={config_str}");
-        let config: Result<Config, toml::de::Error> = toml::from_str(&config_str);
-        eprintln!("config={config:#?}");
         let config: Config = toml::from_str(&config_str).ok()?;
         Some(config)
     } else {
@@ -100,14 +168,63 @@ fn load_config() -> Option<Config> {
     }
 }
 
+/// Open the configuration file in an editor.
+/// # Errors
+/// Will return `Err` if there is an error editing the file.
+/// # Panics
+/// Will panic if it can't create the parent directory for the configuration.
+#[allow(clippy::unnecessary_wraps)]
+pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
+    profile_fn!(edit);
+    let config_path = context.get_config_path();
+
+    debug_log!("config_path={config_path:?}");
+
+    let exists = config_path.exists();
+    if !exists {
+        let dir_path = &config_path.parent().ok_or("Can't create directory")?;
+        fs::create_dir_all(dir_path)?;
+    }
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&config_path)?;
+    if !exists {
+        let text = r#"# Please set up the config file as follows:
+# 1. Follow the link below to the template on Github.
+# 2. Copy the config file template contents using the "Raw (Copy raw file)" icon in the viewer.
+# 3. Paste the contents in here.
+# 4. Make the configuration changes you want. Ensure you un-comment the options you want.
+# 5. Save the file.
+# 6. Exit or tab away to return.
+#
+# https://github.com/durbanlegend/thag_rs/blob/master/assets/config.toml.template
+"#;
+        file.write_all(text.as_bytes())?;
+    }
+    eprintln!("About to edit {config_path:#?}");
+    if context.is_real() {
+        edit_file(&config_path)?;
+    }
+    Ok(Some(String::from("End of edit")))
+}
+
+/// Main function for use by testing or the script runner.
+#[allow(dead_code)]
 fn main() {
-    if let Some(config) = load_config() {
-        println!("Loaded config: {:?}", config);
-        println!(
-            "default_verbosity={:?}, color_support={:?}, term_theme={:?}",
-            config.logging.default_verbosity, config.colors.color_support, config.colors.term_theme
+    let maybe_config = load(&RealContext::new());
+
+    if let Some(config) = maybe_config {
+        debug_log!("Loaded config: {config:?}");
+        debug_log!(
+            "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
+            config.logging.default_verbosity,
+            config.colors.color_support,
+            config.colors.term_theme
         );
     } else {
-        eprintln!("Configuration file not found or not valid.");
+        debug_log!("No configuration file found.");
     }
 }

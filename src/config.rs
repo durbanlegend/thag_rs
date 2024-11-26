@@ -37,6 +37,36 @@ pub struct Config {
     pub colors: Colors,
     pub proc_macros: ProcMacros,
     pub misc: Misc,
+    pub dependencies: Dependencies, // New section
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Dependencies {
+    pub exclude_unstable_features: bool,
+    pub exclude_std_feature: bool,
+    pub use_detailed_dependencies: bool,
+    // Could add more options like:
+    pub exclude_feature_patterns: Vec<String>,
+    pub always_include_features: Vec<String>,
+}
+
+impl Dependencies {
+    pub fn should_include_feature(&self, feature: &str) -> bool {
+        if self.always_include_features.contains(&feature.to_string()) {
+            return true;
+        }
+        if self.exclude_unstable_features && feature.contains("unstable") {
+            return false;
+        }
+        if self.exclude_std_feature && feature == "std" {
+            return false;
+        }
+        !self
+            .exclude_feature_patterns
+            .iter()
+            .any(|pattern| feature.contains(pattern))
+    }
 }
 
 #[serde_as]

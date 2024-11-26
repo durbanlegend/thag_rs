@@ -2,7 +2,6 @@
 [dependencies]
 crokey = "1.1.0"
 crossterm = "0.28.0"
-serde = { version = "1.0.130", features = ["derive"] }
 */
 
 /// Published example of KeyCombination from `crokey` crate.

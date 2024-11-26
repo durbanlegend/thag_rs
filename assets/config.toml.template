@@ -49,3 +49,19 @@ default_verbosity = "normal"
 # value. It does not affect well-formed programs or println! statements in snippets.
 # Valid values are: "true" or "false" (default).
 # unquote = "false"
+
+[dependencies]
+# Exclude features containing "unstable"
+exclude_unstable_features = true
+
+# Exclude the "std" feature
+exclude_std_feature = true
+
+# Use detailed dependency specifications with all features
+use_detailed_dependencies = false
+
+# Exclude features matching these patterns
+exclude_feature_patterns = ["experimental", "nightly"]
+
+# Always include these features even if they match exclude patterns
+always_include_features = ["derive"]

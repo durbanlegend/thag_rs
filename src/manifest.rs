@@ -1,7 +1,10 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 #[cfg(debug_assertions)]
 use crate::debug_timings;
+use crate::{
+    code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source},
+    config::Dependencies,
+}; // Valid if no circular dependency
 use crate::{cvprtln, debug_log, maybe_config, regex, vlog, BuildState, Lvl, ThagResult, V};
 use cargo_toml::{Dependency, DependencyDetail, Manifest};
 use firestorm::{profile_fn, profile_method, profile_section};
@@ -63,9 +66,8 @@ pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> Option<(St
         "1".to_string(),
     ];
 
-    let search_output = match runner.run_command("cargo", &args) {
-        Ok(output) => output,
-        Err(_) => return None,
+    let Ok(search_output) = runner.run_command("cargo", &args) else {
+        return None;
     };
 
     if !search_output.status.success() {
@@ -212,12 +214,14 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     profile_section!(merge_manifest);
     let merged_manifest = if let Some(ref mut rs_manifest) = build_state.rs_manifest {
         if !rs_inferred_deps.is_empty() {
+            #[cfg(debug_assertions)]
             debug_log!(
                 "rs_dep_map (before inferred) {:#?}",
                 rs_manifest.dependencies
             );
             search_deps(rs_inferred_deps, &mut rs_manifest.dependencies);
 
+            #[cfg(debug_assertions)]
             debug_log!(
                 "rs_dep_map (after inferred) {:#?}",
                 rs_manifest.dependencies
@@ -252,34 +256,53 @@ struct CrateInfo {
 }
 
 fn get_crate_features(name: &str) -> Option<Vec<String>> {
-    let output = Command::new("cargo")
-        .args(["lookup", name, "-t=features", "-f", "no-prefix"])
-        .output()
-        .ok()?;
+    use cargo_lookup::Query;
 
-    if output.status.success() {
-        let features_str = String::from_utf8_lossy(&output.stdout);
-        let features: Vec<String> = features_str
-            .trim()
-            .split_whitespace()
-            .map(String::from)
-            .collect();
-        if features.is_empty() {
-            None
-        } else {
-            Some(features)
+    let query: Query = match name.parse() {
+        Ok(q) => q,
+        Err(e) => {
+            debug_log!("Failed to parse query for crate {}: {}", name, e);
+            return None;
         }
-    } else {
-        None
+    };
+
+    match query.package() {
+        Ok(package) => {
+            let latest = package.into_latest()?;
+
+            // Collect features from both fields
+            let mut all_features: Vec<String> = latest.features.keys().cloned().collect();
+
+            // Add features2 if present
+            if let Some(features2) = latest.features2 {
+                all_features.extend(features2.keys().cloned());
+            }
+
+            if all_features.is_empty() {
+                None
+            } else {
+                all_features.sort();
+                Some(all_features)
+            }
+        }
+        Err(e) => {
+            debug_log!("Failed to get features for crate {}: {}", name, e);
+            None
+        }
     }
 }
 
 #[allow(clippy::missing_panics_doc)]
 pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
     profile_fn!(search_deps);
+
     if rs_inferred_deps.is_empty() {
         return;
     }
+
+    let config = maybe_config();
+    let binding = Dependencies::default();
+    let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
 
     let mut found_deps = Vec::new();
 
@@ -304,13 +327,31 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         let command_runner = RealCommandRunner;
 
         if let Some((name, version)) = cargo_search(&command_runner, &dep_name) {
-            let features = get_crate_features(&name);
+            let features = get_crate_features(&name).map(|features| {
+                features
+                    .into_iter()
+                    .filter(|f| dep_config.should_include_feature(f))
+                    .collect::<Vec<_>>()
+            });
+
+            if dep_config.use_detailed_dependencies {
+                let mut detail = cargo_toml::DependencyDetail {
+                    version: Some(version.clone()),
+                    ..Default::default()
+                };
+                if let Some(features) = features.clone() {
+                    detail.features = features;
+                }
+                rs_dep_map.insert(name.clone(), Dependency::Detailed(Box::new(detail)));
+            } else {
+                rs_dep_map.insert(name.clone(), Dependency::Simple(version.clone()));
+            }
+
             found_deps.push(CrateInfo {
-                name: name.clone(),
-                version: version.clone(),
+                name,
+                version,
                 features,
             });
-            rs_dep_map.insert(name, Dependency::Simple(version));
         } else {
             vlog!(V::QQ, "Cargo search couldn't find crate [{dep_name}]");
         }

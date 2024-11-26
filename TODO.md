@@ -18,12 +18,11 @@
 - [ ]  Try ThagDisplay trait and derive macro.
 - [ ]  Set up bank/proc_macros and only take best to demo.
 - [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
-- [ ]  In cargo search, generate a nice toml block
+- [ ]  In cargo search, optionally get all features. Config option to omit unstable features.
 - [ ]  Debug: No history edit function in stdin.
-- [ ]  Debug: repl history doesn't show unwanted HTML but it's in F7 (wrong file!) and can't get to beginning or get rid of it.
-         REPL history belongs in /Users/donf/.cargo/hist_staging.txt and stdin history in /Users/donf/.cargo/rs_stdin_history.json
+- [ ]  REPL history belongs in /Users/donf/.cargo/hist_staging.txt and stdin history in /Users/donf/.cargo/rs_stdin_history.json
          (check both).
-- [ ]  Debug: History older than max isn't being removed even though only .
+- [ ]  >>> Debug: History older than max isn't being removed even though only .
 
 - [ ]  Add a --test option
 find_use_renames_ast
@@ -49,6 +48,8 @@ https://raw.githubusercontent.com/durbanlegend/thag_rs/3f52d4c4590c0573ad130727e
 thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
+- [ ]  Configurable feature filtering and detailed dependencies.
+- [ ]  >>>Filter out releases with alpha or beta in the name.
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?

@@ -812,7 +812,7 @@ pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate:
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, clippy::missing_panics_doc)]
 pub fn script_key_handler(
     key_event: KeyEvent,
     maybe_term: &mut Option<&mut TermScopeGuard>,
@@ -919,16 +919,15 @@ pub fn script_key_handler(
                 textarea.cut();
                 let yank_text = textarea.yank_text();
                 assert_eq!(yank_text, textarea_contents);
-                if let Some(ref current_hist_entry) = &hist.get_current() {
+                if let Some(current_hist_entry) = &hist.get_current() {
                     assert_eq!(yank_text, current_hist_entry.contents());
                     let index = current_hist_entry.index;
                     hist.delete_entry(index);
-                    hist.entries.retain(|f| {
-                        f.contents().trim() != textarea_contents
-                    })
+                    hist.entries
+                        .retain(|f| f.contents().trim() != textarea_contents);
                 }
                 if let Some(ref hist_path) = history_path {
-                hist.save_to_file(hist_path)?;
+                    hist.save_to_file(hist_path)?;
                 }
                 Ok(KeyAction::Continue)
             } else {

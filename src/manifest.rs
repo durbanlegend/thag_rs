@@ -11,57 +11,52 @@ use cargo_toml::{Dependency, DependencyDetail, Manifest};
 use firestorm::{profile_fn, profile_section};
 use nu_ansi_term::Style;
 use regex::Regex;
+use semver::VersionReq;
 use serde_merge::omerge;
 #[cfg(debug_assertions)]
 use std::time::Instant;
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
-/// Attempt to find a matching dependency name and version from Cargo by searching by
-/// crate name and inspecting the first line of Cargo's response.
-/// # Errors
-/// Will return `Err` if the first line does not match the expected crate name and a valid version number.
 pub fn cargo_search(dep_crate: &str) -> Option<(String, String)> {
     profile_fn!(cargo_search);
-    #[cfg(debug_assertions)]
-    let start_search = Instant::now();
 
-    let dep_crate_styled = Style::from(&Lvl::EMPH).paint(dep_crate);
-    vlog!(
-        V::N,
-        "Looking up crate {dep_crate_styled} referenced in your script.",
-    );
+    // Try both original and hyphenated versions
+    let crate_variants = vec![dep_crate.to_string(), dep_crate.replace('_', "-")];
 
-    // Use cargo-lookup instead of cargo search
-    let query: Query = match dep_crate.parse() {
-        Ok(q) => q,
-        Err(e) => {
-            debug_log!("Failed to parse query for crate {}: {}", dep_crate, e);
-            return None;
-        }
-    };
+    for crate_name in crate_variants {
+        let query: Query = match crate_name.parse() {
+            Ok(q) => q,
+            Err(e) => {
+                debug_log!("Failed to parse query for crate {}: {}", crate_name, e);
+                continue;
+            }
+        };
 
-    match query.package() {
-        Ok(package) => {
-            let latest = package.into_latest()?;
-            let name = latest.name.clone();
-            let version = latest.vers.to_string();
+        match query.package() {
+            Ok(package) => {
+                // Request only stable versions (no pre-release)
+                let req = VersionReq::parse("*").unwrap(); // Match any version
+                let release = package.version(&req).filter(|r| r.vers.pre.is_empty()); // Filter out pre-releases
+                                                                                       // eprintln!("release={release:?}");
 
-            // Check if the name matches (considering hyphen/underscore conversion)
-            if name == dep_crate || name.replace('-', "_") == dep_crate {
-                #[cfg(debug_assertions)]
-                debug_timings(&start_search, "Completed lookup");
+                if let Some(release) = release {
+                    let name = release.name.clone();
+                    let version = release.vers.to_string();
 
-                Some((name, version))
-            } else {
-                debug_log!("Found non-matching crate name: {}", name);
-                None
+                    // Check if either variant matches
+                    if name == dep_crate || name == dep_crate.replace('_', "-") {
+                        return Some((name, version));
+                    }
+                }
+            }
+            Err(e) => {
+                debug_log!("Failed to look up crate {}: {}", crate_name, e);
+                continue;
             }
         }
-        Err(e) => {
-            debug_log!("Failed to look up crate {}: {}", dep_crate, e);
-            None
-        }
     }
+
+    None
 }
 
 /// Attempt to capture the dependency name and version from the first line returned by

@@ -67,6 +67,7 @@ thag_proc_macros = { version = "0.1.0", path = "src/proc_macros" }
 termbg = "0.6.1"
 side-by-side-diff = "0.1.2"
 cargo-lookup = "0.1.0"
+semver = "1.0.23"
 [target.'cfg(windows)'.dependencies]
 win32console = "0.1.5"
 winapi = "0.3.9"

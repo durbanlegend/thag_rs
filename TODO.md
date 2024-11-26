@@ -48,8 +48,7 @@ https://raw.githubusercontent.com/durbanlegend/thag_rs/3f52d4c4590c0573ad130727e
 thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
-- [ ]  Configurable feature filtering and detailed dependencies.
-- [ ]  >>>Filter out releases with alpha or beta in the name.
+- [ ]  Update Readme for new features.
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?

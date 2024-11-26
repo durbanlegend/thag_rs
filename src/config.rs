@@ -48,8 +48,11 @@ pub struct Dependencies {
     pub use_detailed_dependencies: bool,
     pub exclude_feature_patterns: Vec<String>,
     pub always_include_features: Vec<String>,
-    pub group_related_features: bool,    // New option
-    pub show_feature_dependencies: bool, // New option
+    pub group_related_features: bool,
+    pub show_feature_dependencies: bool,
+    pub exclude_prerelease: bool,        // New option
+    pub minimum_downloads: Option<u64>,  // New option
+    pub minimum_version: Option<String>, // New option
 }
 
 impl Dependencies {

@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest};
+    use semver::Version;
     use thag_rs::manifest::{capture_dep, cargo_search, configure_default, merge};
     use thag_rs::BuildState;
 
@@ -107,7 +108,7 @@ mod tests {
 
         merge(&mut build_state, rs_source)?;
 
-        eprintln!("merged manifest={:#?}", build_state.cargo_manifest);
+        // eprintln!("merged manifest={:#?}", build_state.cargo_manifest);
 
         if let Some(ref manifest) = build_state.cargo_manifest {
             assert_eq!(manifest.package().name(), "toml_block_name");
@@ -150,18 +151,12 @@ mod tests {
     }
 
     #[test]
-    fn test_manifest_cargo_search_valid_crate() {
+    fn test_manifest_search_valid_crate() {
         let result = cargo_search("serde");
         assert!(result.is_some());
         let (name, version) = result.unwrap();
         assert_eq!(name, "serde");
-        assert!(version.starts_with("1.")); // Version check is less strict
-    }
-
-    #[test]
-    fn test_manifest_cargo_search_nonexistent_crate() {
-        let result = cargo_search("definitely_not_a_real_crate_name");
-        assert!(result.is_none());
+        assert!(Version::parse(&version).unwrap().pre.is_empty());
     }
 
     #[test]
@@ -170,7 +165,12 @@ mod tests {
         assert!(result.is_some());
         let (name, version) = result.unwrap();
         assert_eq!(name, "nu-ansi-term");
-        assert!(version.starts_with("0.")); // Version check is less strict
-        assert!(version.as_str() >= "0.50.1");
+        assert!(Version::parse(&version).unwrap().pre.is_empty());
+    }
+
+    #[test]
+    fn test_manifest_cargo_search_nonexistent_crate() {
+        let result = cargo_search("definitely_not_a_real_crate_name");
+        assert!(result.is_none());
     }
 }

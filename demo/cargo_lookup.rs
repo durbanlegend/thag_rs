@@ -20,6 +20,8 @@ fn main() -> Result<()> {
 
     let query: Query = args[1].parse()?;
     let latest = query.package()?.into_latest().unwrap();
+    println!("version={}", latest.vers);
+
     let features: BTreeMap<String, Vec<String>> = latest.features;
     let maybe_features2: Option<BTreeMap<String, Vec<String>>> = latest.features2;
 

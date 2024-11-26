@@ -6,49 +6,21 @@ use crate::{
     config::Dependencies,
 }; // Valid if no circular dependency
 use crate::{cvprtln, debug_log, maybe_config, regex, vlog, BuildState, Lvl, ThagResult, V};
+use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Manifest};
-use firestorm::{profile_fn, profile_method, profile_section};
-use mockall::automock;
+use firestorm::{profile_fn, profile_section};
 use nu_ansi_term::Style;
 use regex::Regex;
 use serde_merge::omerge;
 #[cfg(debug_assertions)]
 use std::time::Instant;
-use std::{
-    collections::BTreeMap,
-    io::{self, BufRead},
-    path::PathBuf,
-    process::{Command, Output},
-    str::FromStr,
-};
-
-/// A trait to allow mocking of the command for testing purposes.
-#[automock]
-pub trait CommandRunner {
-    /// Run the Cargo search, real or mocked.
-    /// # Errors
-    /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
-    fn run_command(&self, program: &str, args: &[String]) -> io::Result<Output>;
-}
-
-/// A struct for use in actual running of the command, as opposed to use in testing.
-pub struct RealCommandRunner;
-
-impl CommandRunner for RealCommandRunner {
-    /// Run the Cargo search, real or mocked.
-    /// # Errors
-    /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
-    fn run_command(&self, program: &str, args: &[String]) -> io::Result<Output> {
-        profile_method!(run_command);
-        Command::new(program).args(args).output()
-    }
-}
+use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
 /// Attempt to find a matching dependency name and version from Cargo by searching by
 /// crate name and inspecting the first line of Cargo's response.
 /// # Errors
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
-pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> Option<(String, String)> {
+pub fn cargo_search(dep_crate: &str) -> Option<(String, String)> {
     profile_fn!(cargo_search);
     #[cfg(debug_assertions)]
     let start_search = Instant::now();
@@ -56,48 +28,37 @@ pub fn cargo_search<R: CommandRunner>(runner: &R, dep_crate: &str) -> Option<(St
     let dep_crate_styled = Style::from(&Lvl::EMPH).paint(dep_crate);
     vlog!(
         V::N,
-        "Doing a Cargo search for crate {dep_crate_styled} referenced in your script.",
+        "Looking up crate {dep_crate_styled} referenced in your script.",
     );
 
-    let args = vec![
-        "search".to_string(),
-        dep_crate.to_string(),
-        "--limit".to_string(),
-        "1".to_string(),
-    ];
-
-    let Ok(search_output) = runner.run_command("cargo", &args) else {
-        return None;
+    // Use cargo-lookup instead of cargo search
+    let query: Query = match dep_crate.parse() {
+        Ok(q) => q,
+        Err(e) => {
+            debug_log!("Failed to parse query for crate {}: {}", dep_crate, e);
+            return None;
+        }
     };
 
-    if !search_output.status.success() {
-        #[allow(unused_variables)]
-        let error_msg = String::from_utf8_lossy(&search_output.stderr);
-        error_msg.lines().for_each(|line| {
-            debug_log!("{line}");
-        });
-        return None;
-    }
+    match query.package() {
+        Ok(package) => {
+            let latest = package.into_latest()?;
+            let name = latest.name.clone();
+            let version = latest.vers.to_string();
 
-    let first_line = search_output.stdout.lines().map_while(Result::ok).next()?;
+            // Check if the name matches (considering hyphen/underscore conversion)
+            if name == dep_crate || name.replace('-', "_") == dep_crate {
+                #[cfg(debug_assertions)]
+                debug_timings(&start_search, "Completed lookup");
 
-    debug_log!("first_line={first_line}");
-
-    match capture_dep(&first_line) {
-        Ok((name, version)) if name == dep_crate || name.replace('-', "_") == dep_crate => {
-            #[cfg(debug_assertions)]
-            debug_timings(&start_search, "Completed search");
-
-            Some((name, version))
+                Some((name, version))
+            } else {
+                debug_log!("Found non-matching crate name: {}", name);
+                None
+            }
         }
-        Ok((name, _)) => {
-            debug_log!(
-                "First line of cargo search for crate {dep_crate} found non-matching crate {name}"
-            );
-            None
-        }
-        Err(err) => {
-            debug_log!("Failure! err={err}");
+        Err(e) => {
+            debug_log!("Failed to look up crate {}: {}", dep_crate, e);
             None
         }
     }
@@ -255,9 +216,16 @@ struct CrateInfo {
     features: Option<Vec<String>>,
 }
 
-fn get_crate_features(name: &str) -> Option<Vec<String>> {
-    use cargo_lookup::Query;
+fn clean_features(features: Vec<String>) -> Vec<String> {
+    let mut features: Vec<String> = features
+        .into_iter()
+        .filter(|f| !f.contains('/')) // Filter out features with slashes
+        .collect();
+    features.sort();
+    features
+}
 
+fn get_crate_features(name: &str) -> Option<Vec<String>> {
     let query: Query = match name.parse() {
         Ok(q) => q,
         Err(e) => {
@@ -281,8 +249,7 @@ fn get_crate_features(name: &str) -> Option<Vec<String>> {
             if all_features.is_empty() {
                 None
             } else {
-                all_features.sort();
-                Some(all_features)
+                Some(clean_features(all_features))
             }
         }
         Err(e) => {
@@ -324,9 +291,8 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
 
         #[cfg(debug_assertions)]
         debug_log!("Starting Cargo search for key dep_name [{dep_name}]");
-        let command_runner = RealCommandRunner;
 
-        if let Some((name, version)) = cargo_search(&command_runner, &dep_name) {
+        if let Some((name, version)) = cargo_search(&dep_name) {
             let features = get_crate_features(&name).map(|features| {
                 features
                     .into_iter()

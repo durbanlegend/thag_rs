@@ -1,11 +1,7 @@
 #[cfg(test)]
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest};
-    use mockall::predicate::*;
-    use std::process::Output;
-    use thag_rs::manifest::{
-        capture_dep, cargo_search, configure_default, merge, MockCommandRunner,
-    };
+    use thag_rs::manifest::{capture_dep, cargo_search, configure_default, merge};
     use thag_rs::BuildState;
 
     // Set environment variables before running tests
@@ -19,47 +15,15 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
     }
 
-    fn successful_exit_status() -> std::process::ExitStatus {
-        #[cfg(unix)]
-        {
-            use std::os::unix::process::ExitStatusExt;
-            std::process::ExitStatus::from_raw(0)
-        }
-
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::ExitStatusExt;
-            std::process::ExitStatus::from_raw(0)
-        }
-    }
-
     #[test]
     fn test_manifest_cargo_search_success() {
         set_up();
-        let output = Output {
-            status: successful_exit_status(),
-            stdout: b"serde = \"1.0.203\"".to_vec(),
-            stderr: Vec::new(),
-        };
-
-        let mut mock_runner = MockCommandRunner::new();
-        let args: Vec<String> = vec![
-            "search".to_string(),
-            "serde".to_string(),
-            "--limit".to_string(),
-            "1".to_string(),
-        ];
-
-        mock_runner
-            .expect_run_command()
-            .with(eq("cargo"), eq(args))
-            .returning(move |_, _| Ok(output.clone()));
-
-        let option = cargo_search(&mock_runner, "serde");
+        let option = cargo_search("serde");
         assert!(option.is_some());
         let (name, version) = option.unwrap();
         assert_eq!(name, "serde");
-        assert_eq!(version, "1.0.203");
+        assert!(version.starts_with("1.0."));
+        assert!(version.as_str() >= "1.0.215");
     }
 
     #[test]
@@ -99,22 +63,6 @@ mod tests {
         assert_eq!(package.version.get().unwrap(), &"0.0.1".to_string());
         assert!(matches!(package.edition.get().unwrap(), Edition::E2021));
     }
-
-    // #[test]
-    // fn test_manifest_cargo_search_success() {
-    //     // This is a mocked test. In a real test environment, you should mock Command to simulate Cargo behavior.
-    //     let output = r#"serde = "1.0.203""#;
-    //     let mut search_command = NamedTempFile::new().unwrap();
-    //     writeln!(search_command, "{}", output).unwrap();
-    //     search_command.flush().unwrap();
-
-    //     // Mocking Command::output
-    //     let result = cargo_search("serde");
-    //     assert!(result.is_ok());
-    //     let (name, version) = result.unwrap();
-    //     assert_eq!(name, "serde");
-    //     assert_eq!(version, "1.0.203");
-    // }
 
     #[test]
     fn test_manifest_merge_manifest() -> Result<(), Box<dyn std::error::Error>> {
@@ -199,5 +147,30 @@ mod tests {
         }
 
         Ok(())
+    }
+
+    #[test]
+    fn test_manifest_cargo_search_valid_crate() {
+        let result = cargo_search("serde");
+        assert!(result.is_some());
+        let (name, version) = result.unwrap();
+        assert_eq!(name, "serde");
+        assert!(version.starts_with("1.")); // Version check is less strict
+    }
+
+    #[test]
+    fn test_manifest_cargo_search_nonexistent_crate() {
+        let result = cargo_search("definitely_not_a_real_crate_name");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_manifest_cargo_search_hyphenated() {
+        let result = cargo_search("nu_ansi_term");
+        assert!(result.is_some());
+        let (name, version) = result.unwrap();
+        assert_eq!(name, "nu-ansi-term");
+        assert!(version.starts_with("0.")); // Version check is less strict
+        assert!(version.as_str() >= "0.50.1");
     }
 }

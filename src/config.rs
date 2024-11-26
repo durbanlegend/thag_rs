@@ -46,9 +46,10 @@ pub struct Dependencies {
     pub exclude_unstable_features: bool,
     pub exclude_std_feature: bool,
     pub use_detailed_dependencies: bool,
-    // Could add more options like:
     pub exclude_feature_patterns: Vec<String>,
     pub always_include_features: Vec<String>,
+    pub group_related_features: bool,    // New option
+    pub show_feature_dependencies: bool, // New option
 }
 
 impl Dependencies {

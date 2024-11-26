@@ -40,6 +40,7 @@ pub struct Config {
     pub dependencies: Dependencies, // New section
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Dependencies {
@@ -56,6 +57,7 @@ pub struct Dependencies {
 }
 
 impl Dependencies {
+    #[must_use]
     pub fn should_include_feature(&self, feature: &str) -> bool {
         if self.always_include_features.contains(&feature.to_string()) {
             return true;

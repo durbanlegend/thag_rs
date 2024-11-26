@@ -21,7 +21,8 @@ use std::{
     time::{Duration, Instant},
 };
 use strum::Display;
-use syn::{self, visit::Visit, ItemMod, UseRename, UseTree};
+use syn::ItemUse;
+use syn::{self, visit::Visit, ItemMod, TypePath, UseRename, UseTree};
 
 /// An abstract syntax tree wrapper for use with syn.
 #[derive(Clone, Debug, Display)]
@@ -86,22 +87,22 @@ struct BuildPaths {
 
 #[derive(Debug, Default)]
 pub struct CratesFinder {
-    pub use_crates: Vec<String>,
+    pub crates: Vec<String>,
 }
 
 impl<'a> Visit<'a> for CratesFinder {
-    fn visit_item_use(&mut self, node: &'a syn::ItemUse) {
+    fn visit_item_use(&mut self, node: &'a ItemUse) {
         profile_method!(visit_item_use);
         // Handle simple case `use a as b;`
         if let UseTree::Rename(use_rename) = &node.tree {
             let node_name = use_rename.ident.to_string();
-            self.use_crates.push(node_name);
+            self.crates.push(node_name);
         } else {
             syn::visit::visit_item_use(self, node);
         }
     }
 
-    fn visit_use_tree(&mut self, node: &'a syn::UseTree) {
+    fn visit_use_tree(&mut self, node: &'a UseTree) {
         profile_method!(visit_use_tree);
         match node {
             UseTree::Group(_) => {
@@ -114,12 +115,36 @@ impl<'a> Visit<'a> for CratesFinder {
                     _ => unreachable!(),
                 };
                 // Only add if not capitalized
-                if !node_name.chars().next().map_or(false, char::is_uppercase) {
-                    self.use_crates.push(node_name);
+                if is_valid_crate_name(&node_name) {
+                    self.crates.push(node_name);
                 }
             }
             _ => (),
         }
+    }
+
+    fn visit_expr_path(&mut self, expr_path: &'a syn::ExprPath) {
+        if expr_path.path.segments.len() > 1 {
+            // must have the form a::b so not a variable
+            if let Some(first_seg) = expr_path.path.segments.first() {
+                let name = first_seg.ident.to_string();
+                if is_valid_crate_name(&name) {
+                    self.crates.push(name);
+                }
+            }
+        }
+        syn::visit::visit_expr_path(self, expr_path);
+    }
+
+    fn visit_type_path(&mut self, type_path: &'a TypePath) {
+        profile_method!(visit_type_path);
+        if let Some(first_seg) = type_path.path.segments.first() {
+            let name = first_seg.ident.to_string();
+            if is_valid_crate_name(&name) {
+                self.crates.push(name);
+            }
+        }
+        syn::visit::visit_type_path(self, type_path);
     }
 }
 
@@ -160,6 +185,21 @@ impl<'a> Visit<'a> for MetadataFinder {
     }
 }
 
+fn is_valid_crate_name(name: &str) -> bool {
+    // First check if it starts with uppercase
+    if name.chars().next().unwrap_or('_').is_uppercase() {
+        return false;
+    }
+
+    // Then check against known non-crate names (only lowercase ones needed)
+    const SKIP_NAMES: &[&str] = &[
+        "self", "super", "crate", "str", "line", "key", "style", "cmd", "e", "command", "error",
+        "matches", "split", "x",
+    ];
+
+    !SKIP_NAMES.contains(&name)
+}
+
 #[must_use]
 pub fn find_crates(syntax_tree: &Ast) -> Vec<String> {
     profile_fn!(find_crates);
@@ -170,7 +210,7 @@ pub fn find_crates(syntax_tree: &Ast) -> Vec<String> {
         Ast::Expr(ast) => crates_finder.visit_expr(ast),
     }
 
-    crates_finder.use_crates
+    crates_finder.crates
 }
 
 #[must_use]

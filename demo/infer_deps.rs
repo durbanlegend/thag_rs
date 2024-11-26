@@ -17,7 +17,7 @@
 use clap::{CommandFactory, Parser};
 use console::style;
 use rustyline::DefaultEditor;
-use shlex;
+// use shlex;
 use std::error::Error;
 use std::str::FromStr;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};

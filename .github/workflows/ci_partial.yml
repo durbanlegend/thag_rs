@@ -59,7 +59,7 @@ jobs:
       run: cargo build
 
     - name: Run tests
-      run: cargo test --no-fail-fast -p thag_rs test_termbg_ -- --nocapture --show-output
+      run: cargo test --no-fail-fast -p thag_rs check_cmd_args -- --nocapture --show-output
 
     - name: Upload test output log
       if: failure()  # Only upload if the test run fails

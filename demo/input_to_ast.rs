@@ -6,13 +6,7 @@ syn = {version = "2.0.87", features = ["extra-traits", "full", "parsing"] }
 /// Tries to convert input to a `syn` abstract syntax tree.
 //# Purpose: Debugging
 //# Categories: AST, crates, technique
-use std::borrow::Cow;
-use std::ffi::OsStr;
-use std::fmt;
-use std::fmt::Display;
-use std::io::{self, Read, Write};
-use std::path::Path;
-
+use std::io::{self, Read};
 use syn;
 
 fn read_stdin() -> Result<String, io::Error> {
@@ -23,9 +17,10 @@ fn read_stdin() -> Result<String, io::Error> {
     Ok(buffer)
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let content = read_stdin().expect("Problem reading input");
     println!("[{:#?}]", content);
     let syntax: syn::File = syn::parse_str(&content)?;
     println!("{:#?}", syntax);
+    Ok(())
 }

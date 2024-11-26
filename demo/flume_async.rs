@@ -8,12 +8,13 @@ eventual-fairness = ["select", "nanorand"]
 default = ["async", "select", "eventual-fairness"]
 
 [dependencies]
-async-std = { version = "1.12.0", features = ["attributes"] }
+async-std = { version = "1.13.0", features = ["attributes"] }
 spin1 = { package = "spin", version = "0.9.8", features = ["mutex"] }
-futures-sink = { version = "0.3", default_features = false, optional = true }
-futures-core = { version = "0.3", default_features = false, optional = true }
+futures-sink = { version = "0.3", default-features = false, optional = true }
+futures-core = { version = "0.3", default-features = false, optional = true }
 nanorand = { version = "0.7", features = ["getrandom"], optional = true }
-flume = "0.11.0"
+flume = "0.11"
+rustix = "0.37.19"
 */
 
 /// Published example from the `flume` channel crate.

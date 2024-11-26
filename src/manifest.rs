@@ -34,18 +34,44 @@ pub fn cargo_search(dep_crate: &str) -> Option<(String, String)> {
 
         match query.package() {
             Ok(package) => {
+                debug_log!(
+                    "Found package {} with {} releases",
+                    package.name(),
+                    package.releases().len()
+                );
+
                 // Request only stable versions (no pre-release)
-                let req = VersionReq::parse("*").unwrap(); // Match any version
-                let release = package.version(&req).filter(|r| r.vers.pre.is_empty()); // Filter out pre-releases
-                                                                                       // eprintln!("release={release:?}");
+                let req = VersionReq::parse("*").unwrap();
 
-                if let Some(release) = release {
-                    let name = release.name.clone();
-                    let version = release.vers.to_string();
+                // Log all available versions and their pre-release status
+                #[cfg(debug_assertions)]
+                for release in package.releases() {
+                    debug_log!(
+                        "Version {} {}",
+                        release.vers,
+                        if release.vers.pre.is_empty() {
+                            "(stable)"
+                        } else {
+                            "(pre-release)"
+                        }
+                    );
+                }
 
-                    // Check if either variant matches
-                    if name == dep_crate || name == dep_crate.replace('_', "-") {
-                        return Some((name, version));
+                let release = package.version(&req).filter(|r| r.vers.pre.is_empty());
+
+                match release {
+                    Some(r) => {
+                        debug_log!("Selected stable version: {}", r.vers);
+                        let name = r.name.clone();
+                        let version = r.vers.to_string();
+
+                        // Check if either variant matches
+                        if name == dep_crate || name == dep_crate.replace('_', "-") {
+                            return Some((name, version));
+                        }
+                    }
+                    None => {
+                        debug_log!("No stable version found for {}", crate_name);
                     }
                 }
             }

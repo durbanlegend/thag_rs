@@ -20,8 +20,8 @@ tui-textarea = { version = "0.6", features = ["search"] }
 /// E.g. `thag demo/stdin_main.rs`
 //# Purpose: Debugging.
 use thag_rs::errors::ThagError;
-use thag_rs::log;
 use thag_rs::logging::Verbosity;
+use thag_rs::vlog;
 
 use crossterm::event::{
     DisableMouseCapture,
@@ -138,7 +138,7 @@ impl EventReader for CrosstermEventReader {
 fn main() -> Result<(), ThagError> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
-        log!(Verbosity::Normal, "{line}");
+        vlog!(Verbosity::Normal, "{line}");
     }
     Ok(())
 }
@@ -339,7 +339,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
 //
 // If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
-    log!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+    vlog!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
 }

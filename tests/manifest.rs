@@ -2,7 +2,7 @@
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest};
     use semver::Version;
-    use thag_rs::manifest::{capture_dep, cargo_search, configure_default, merge};
+    use thag_rs::manifest::{capture_dep, cargo_lookup, configure_default, merge};
     use thag_rs::BuildState;
 
     // Set environment variables before running tests
@@ -17,9 +17,9 @@ mod tests {
     }
 
     #[test]
-    fn test_manifest_cargo_search_success() {
+    fn test_manifest_cargo_lookup_success() {
         set_up();
-        let option = cargo_search("serde");
+        let option = cargo_lookup("serde");
         assert!(option.is_some());
         let (name, version) = option.unwrap();
         assert_eq!(name, "serde");
@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn test_manifest_search_valid_crate() {
-        let result = cargo_search("serde");
+        let result = cargo_lookup("serde");
         assert!(result.is_some());
         let (name, version) = result.unwrap();
         assert_eq!(name, "serde");
@@ -160,8 +160,8 @@ mod tests {
     }
 
     #[test]
-    fn test_manifest_cargo_search_hyphenated() {
-        let result = cargo_search("nu_ansi_term");
+    fn test_manifest_cargo_lookup_hyphenated() {
+        let result = cargo_lookup("nu_ansi_term");
         assert!(result.is_some());
         let (name, version) = result.unwrap();
         assert_eq!(name, "nu-ansi-term");
@@ -169,8 +169,8 @@ mod tests {
     }
 
     #[test]
-    fn test_manifest_cargo_search_nonexistent_crate() {
-        let result = cargo_search("definitely_not_a_real_crate_name");
+    fn test_manifest_cargo_lookup_nonexistent_crate() {
+        let result = cargo_lookup("definitely_not_a_real_crate_name");
         assert!(result.is_none());
     }
 }

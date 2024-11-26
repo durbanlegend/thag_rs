@@ -13,12 +13,13 @@ use nu_ansi_term::Style;
 use regex::Regex;
 use semver::VersionReq;
 use serde_merge::omerge;
+
 #[cfg(debug_assertions)]
 use std::time::Instant;
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
-pub fn cargo_search(dep_crate: &str) -> Option<(String, String)> {
-    profile_fn!(cargo_search);
+pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
+    profile_fn!(cargo_lookup);
 
     // Try both original and hyphenated versions
     let crate_variants = vec![dep_crate.to_string(), dep_crate.replace('_', "-")];
@@ -313,7 +314,7 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         #[cfg(debug_assertions)]
         debug_log!("Starting Cargo search for key dep_name [{dep_name}]");
 
-        if let Some((name, version)) = cargo_search(&dep_name) {
+        if let Some((name, version)) = cargo_lookup(&dep_name) {
             let features = get_crate_features(&name).map(|features| {
                 features
                     .into_iter()

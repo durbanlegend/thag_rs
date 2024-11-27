@@ -8,9 +8,7 @@ updates:
   - package-ecosystem: "cargo" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
-      interval: "weekly"
-
-  - package-ecosystem: "github-actions" # See documentation for possible values
-    directory: "/" # Location of package manifests
-    schedule:
-      interval: "weekly"
+      interval: "daily"
+    # Add these settings:
+    rebase-strategy: "auto"
+    open-pull-requests-limit: 10

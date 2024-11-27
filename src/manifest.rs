@@ -285,6 +285,7 @@ fn get_crate_features(name: &str) -> Option<Vec<String>> {
 pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
     profile_fn!(search_deps);
 
+    eprintln!("In search_deps: rs_inferred_deps={rs_inferred_deps:#?}");
     if rs_inferred_deps.is_empty() {
         return;
     }
@@ -312,7 +313,7 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         }
 
         #[cfg(debug_assertions)]
-        debug_log!("Starting Cargo search for key dep_name [{dep_name}]");
+        debug_log!("Starting Cargo lookup for key dep_name [{dep_name}]");
 
         if let Some((name, version)) = cargo_lookup(&dep_name) {
             let features = get_crate_features(&name).map(|features| {
@@ -377,8 +378,8 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         }
         featured_block.push_str("*/");
 
-        let styled_simple = Style::from(&Lvl::EMPH).paint(&simple_block);
-        let styled_featured = Style::from(&Lvl::EMPH).paint(&featured_block);
+        let styled_simple = Style::from(&Lvl::SUBH).paint(&simple_block);
+        let styled_featured = Style::from(&Lvl::SUBH).paint(&featured_block);
         vlog!(
             V::N,
             "\nYou can copy one of the following toml blocks into your script:\n\nSimple version:\n{}\n\nFull-featured version:\n{}\n",

@@ -207,7 +207,7 @@ mod tests {
 
         // debug_log!("rs_manifest={rs_manifest:#?}");
 
-        eprintln!("rs_source={source}");
+        // eprintln!("rs_source={source}");
         if build_state.rs_manifest.is_none() {
             build_state.rs_manifest = Some(rs_manifest);
         }
@@ -231,11 +231,11 @@ mod tests {
 
         let mut build_state = setup_build_state(source);
 
-        eprintln!(
-            r#"In test_manifest_analyze_type_annotations: build_state.crates_finder ={:#?}
-build_state.metadata_finder={:#?}"#,
-            build_state.crates_finder, build_state.metadata_finder
-        );
+        //         eprintln!(
+        //             r#"In test_manifest_analyze_type_annotations: build_state.crates_finder ={:#?}
+        // build_state.metadata_finder={:#?}"#,
+        //             build_state.crates_finder, build_state.metadata_finder
+        //         );
         merge(&mut build_state, source).unwrap();
 
         let manifest = build_state.cargo_manifest.unwrap();
@@ -265,17 +265,17 @@ build_state.metadata_finder={:#?}"#,
         "#;
 
         let mut build_state = setup_build_state(source);
-        eprintln!(
-            r#"In test_manifest_analyze_expr_paths: build_state.crates_finder ={:#?}
-build_state.metadata_finder={:#?}"#,
-            build_state.crates_finder, build_state.metadata_finder
-        );
+        //         eprintln!(
+        //             r#"In test_manifest_analyze_expr_paths: build_state.crates_finder ={:#?}
+        // build_state.metadata_finder={:#?}"#,
+        //             build_state.crates_finder, build_state.metadata_finder
+        //         );
         merge(&mut build_state, source).unwrap();
         let manifest = build_state.cargo_manifest.unwrap();
-        eprintln!(
-            "In test_manifest_analyze_expr_paths: source={source}\ndeps={:#?}",
-            manifest.dependencies
-        );
+        // eprintln!(
+        //     "In test_manifest_analyze_expr_paths: source={source}\ndeps={:#?}",
+        //     manifest.dependencies
+        // );
 
         assert!(manifest.dependencies.contains_key("reqwest"));
         assert!(manifest.dependencies.contains_key("serde_json"));
@@ -302,20 +302,68 @@ build_state.metadata_finder={:#?}"#,
         "#;
 
         let mut build_state = setup_build_state(source);
-        eprintln!(
-            r#"In test_manifest_analyze_complex_paths: build_state.crates_finder = {:#?}
-build_state.metadata_finder={:#?}"#,
-            build_state.crates_finder, build_state.metadata_finder
-        );
+        //         eprintln!(
+        //             r#"In test_manifest_analyze_complex_paths: build_state.crates_finder = {:#?}
+        // build_state.metadata_finder={:#?}"#,
+        //             build_state.crates_finder, build_state.metadata_finder
+        //         );
         merge(&mut build_state, source).unwrap();
         let manifest = build_state.cargo_manifest.unwrap();
-        eprintln!(
-            "In test_manifest_analyze_complex_paths: source={source}\ndeps={:?}",
-            manifest.dependencies
-        );
+        // eprintln!(
+        //     "In test_manifest_analyze_complex_paths: source={source}\ndeps={:?}",
+        //     manifest.dependencies
+        // );
 
         assert!(manifest.dependencies.contains_key("tokio"));
         assert!(manifest.dependencies.contains_key("chrono"));
         assert!(!manifest.dependencies.contains_key("handle"));
+    }
+
+    #[test]
+    fn test_manifest_analyze_macros() {
+        let source = r#"
+            fn main() {
+                let json = serde_json::json!({ "key": "value" });
+                let query = sqlx::query!("SELECT * FROM users");
+                let sql = diesel::sql_query("SELECT 1");
+            }
+        "#;
+
+        let mut build_state = setup_build_state(source);
+        merge(&mut build_state, source).unwrap();
+
+        let manifest = build_state.cargo_manifest.unwrap();
+        assert!(manifest.dependencies.contains_key("serde_json"));
+        assert!(manifest.dependencies.contains_key("sqlx"));
+        assert!(manifest.dependencies.contains_key("diesel"));
+    }
+
+    #[test]
+    fn test_manifest_analyze_traits_and_types() {
+        let source = r#"
+            use tokio;
+
+            struct MyStream;
+
+            impl tokio::io::AsyncRead for MyStream {
+                type Error = diesel::result::Error;
+
+                async fn read(&mut self) -> Result<(), Self::Error> {
+                    Ok(())
+                }
+            }
+
+            fn process<T: serde::de::DeserializeOwned>(data: T) {
+                // ...
+            }
+        "#;
+
+        let mut build_state = setup_build_state(source);
+        merge(&mut build_state, source).unwrap();
+
+        let manifest = build_state.cargo_manifest.unwrap();
+        assert!(manifest.dependencies.contains_key("tokio"));
+        assert!(manifest.dependencies.contains_key("diesel"));
+        assert!(manifest.dependencies.contains_key("serde"));
     }
 }

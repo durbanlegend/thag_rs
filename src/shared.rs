@@ -128,7 +128,10 @@ impl<'a> Visit<'a> for CratesFinder {
             // must have the form a::b so not a variable
             if let Some(first_seg) = expr_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
+                #[cfg(debug_assertions)]
+                debug_log!("Found first seg {name} in expr_path={expr_path:#?}");
                 if is_valid_crate_name(&name) {
+                    eprintln!("... pushing {name} to crates");
                     self.crates.push(name);
                 }
             }
@@ -140,11 +143,77 @@ impl<'a> Visit<'a> for CratesFinder {
         profile_method!(visit_type_path);
         if let Some(first_seg) = type_path.path.segments.first() {
             let name = first_seg.ident.to_string();
+            #[cfg(debug_assertions)]
+            debug_log!("Found first seg {name} in type_path={type_path:#?}");
             if is_valid_crate_name(&name) {
+                #[cfg(debug_assertions)]
+                debug_log!("... pushing {name} to crates");
                 self.crates.push(name);
             }
         }
         syn::visit::visit_type_path(self, type_path);
+    }
+
+    // Handle macro invocations
+    fn visit_macro(&mut self, mac: &'a syn::Macro) {
+        // Get the macro path (e.g., "serde_json::json" from "serde_json::json!()")
+        if let Some(first_seg) = mac.path.segments.first() {
+            let name = first_seg.ident.to_string();
+            if is_valid_crate_name(&name) {
+                self.crates.push(name);
+            }
+        }
+        syn::visit::visit_macro(self, mac);
+    }
+
+    // Handle trait implementations
+    fn visit_item_impl(&mut self, item: &'a syn::ItemImpl) {
+        // Check the trait being implemented (if any)
+        if let Some((_, path, _)) = &item.trait_ {
+            if let Some(first_seg) = path.segments.first() {
+                let name = first_seg.ident.to_string();
+                if is_valid_crate_name(&name) {
+                    self.crates.push(name);
+                }
+            }
+        }
+
+        // Check the type being implemented for
+        if let syn::Type::Path(type_path) = &*item.self_ty {
+            if let Some(first_seg) = type_path.path.segments.first() {
+                let name = first_seg.ident.to_string();
+                if is_valid_crate_name(&name) {
+                    self.crates.push(name);
+                }
+            }
+        }
+        syn::visit::visit_item_impl(self, item);
+    }
+
+    // Handle associated types
+    fn visit_item_type(&mut self, item: &'a syn::ItemType) {
+        if let syn::Type::Path(type_path) = &*item.ty {
+            if let Some(first_seg) = type_path.path.segments.first() {
+                let name = first_seg.ident.to_string();
+                if is_valid_crate_name(&name) {
+                    self.crates.push(name);
+                }
+            }
+        }
+        syn::visit::visit_item_type(self, item);
+    }
+
+    // Handle generic bounds
+    fn visit_type_param_bound(&mut self, bound: &'a syn::TypeParamBound) {
+        if let syn::TypeParamBound::Trait(trait_bound) = bound {
+            if let Some(first_seg) = trait_bound.path.segments.first() {
+                let name = first_seg.ident.to_string();
+                if is_valid_crate_name(&name) {
+                    self.crates.push(name);
+                }
+            }
+        }
+        syn::visit::visit_type_param_bound(self, bound);
     }
 }
 
@@ -194,7 +263,7 @@ fn is_valid_crate_name(name: &str) -> bool {
     // Then check against known non-crate names (only lowercase ones needed)
     const SKIP_NAMES: &[&str] = &[
         "self", "super", "crate", "str", "line", "key", "style", "cmd", "e", "command", "error",
-        "matches", "split", "x",
+        "matches", "split", "x", "panic",
     ];
 
     !SKIP_NAMES.contains(&name)

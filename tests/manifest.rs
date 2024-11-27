@@ -2,7 +2,11 @@
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest};
     use semver::Version;
+    use std::path::PathBuf;
+    use std::time::Instant;
+    use thag_rs::code_utils::{self, to_ast};
     use thag_rs::manifest::{capture_dep, cargo_lookup, configure_default, merge};
+    use thag_rs::shared::{find_crates, find_metadata};
     use thag_rs::BuildState;
 
     // Set environment variables before running tests
@@ -172,5 +176,146 @@ mod tests {
     fn test_manifest_cargo_lookup_nonexistent_crate() {
         let result = cargo_lookup("definitely_not_a_real_crate_name");
         assert!(result.is_none());
+    }
+
+    fn setup_build_state(source: &str) -> BuildState {
+        let mut build_state = BuildState {
+            source_path: PathBuf::from("dummy_test.rs"),
+            source_stem: String::from("dummy_test"),
+            ast: None,
+            crates_finder: None,
+            metadata_finder: None,
+            cargo_manifest: None,
+            rs_manifest: None,
+            build_from_orig_source: false,
+            ..Default::default()
+        };
+
+        let source_path_string = build_state.source_path.to_string_lossy();
+
+        if build_state.ast.is_none() {
+            build_state.ast = to_ast(&source_path_string, source);
+        }
+
+        if let Some(ref ast) = build_state.ast {
+            build_state.crates_finder = Some(find_crates(ast));
+            build_state.metadata_finder = Some(find_metadata(ast));
+        }
+
+        let rs_manifest: Manifest =
+            { code_utils::extract_manifest(&source, Instant::now()) }.unwrap();
+
+        // debug_log!("rs_manifest={rs_manifest:#?}");
+
+        eprintln!("rs_source={source}");
+        if build_state.rs_manifest.is_none() {
+            build_state.rs_manifest = Some(rs_manifest);
+        }
+
+        build_state
+    }
+
+    #[test]
+    fn test_manifest_analyze_type_annotations() {
+        let source = r#"
+            struct MyStruct {
+                client: reqwest::Client,
+                pool: sqlx::PgPool,
+            }
+
+            fn process(data: serde_json::Value) -> anyhow::Result<()> {
+                let cache: redis::Client = redis::Client::new();
+                Ok(())
+            }
+        "#;
+
+        let mut build_state = setup_build_state(source);
+
+        eprintln!(
+            r#"In test_manifest_analyze_type_annotations: build_state.crates_finder ={:#?}
+build_state.metadata_finder={:#?}"#,
+            build_state.crates_finder, build_state.metadata_finder
+        );
+        merge(&mut build_state, source).unwrap();
+
+        let manifest = build_state.cargo_manifest.unwrap();
+        // eprintln!(
+        //     "In test_manifest_analyze_type_annotations: source={source}\ndeps={:#?}",
+        //     manifest.dependencies
+        // );
+        assert!(manifest.dependencies.contains_key("reqwest"));
+        assert!(manifest.dependencies.contains_key("sqlx"));
+        assert!(manifest.dependencies.contains_key("serde_json"));
+        assert!(manifest.dependencies.contains_key("anyhow"));
+        assert!(manifest.dependencies.contains_key("redis"));
+    }
+
+    #[test]
+    fn test_manifest_analyze_expr_paths() {
+        let source = r#"
+            fn main() {
+                // Should detect
+                let client = reqwest::Client::new();
+                let json = serde_json::json!({});
+
+                // Should not detect (single segment)
+                let response = client.get();
+                let data = json.to_string();
+            }
+        "#;
+
+        let mut build_state = setup_build_state(source);
+        eprintln!(
+            r#"In test_manifest_analyze_expr_paths: build_state.crates_finder ={:#?}
+build_state.metadata_finder={:#?}"#,
+            build_state.crates_finder, build_state.metadata_finder
+        );
+        merge(&mut build_state, source).unwrap();
+        let manifest = build_state.cargo_manifest.unwrap();
+        eprintln!(
+            "In test_manifest_analyze_expr_paths: source={source}\ndeps={:#?}",
+            manifest.dependencies
+        );
+
+        assert!(manifest.dependencies.contains_key("reqwest"));
+        assert!(manifest.dependencies.contains_key("serde_json"));
+        assert_eq!(manifest.dependencies.len(), 2);
+    }
+
+    #[test]
+    fn test_manifest_analyze_complex_paths() {
+        let source = r#"
+            use tokio;
+
+            async fn process() -> Result<(), Box<dyn std::error::Error>> {
+                // Multi-segment type annotation
+                let handle: tokio::task::JoinHandle<()> = tokio::spawn(async {
+                    // Multi-segment function call
+                    let time = chrono::Utc::now();
+                    println!("Time: {}", time);
+                });
+
+                // Single segment variable (should not detect 'handle')
+                handle.await?;
+                Ok(())
+            }
+        "#;
+
+        let mut build_state = setup_build_state(source);
+        eprintln!(
+            r#"In test_manifest_analyze_complex_paths: build_state.crates_finder = {:#?}
+build_state.metadata_finder={:#?}"#,
+            build_state.crates_finder, build_state.metadata_finder
+        );
+        merge(&mut build_state, source).unwrap();
+        let manifest = build_state.cargo_manifest.unwrap();
+        eprintln!(
+            "In test_manifest_analyze_complex_paths: source={source}\ndeps={:?}",
+            manifest.dependencies
+        );
+
+        assert!(manifest.dependencies.contains_key("tokio"));
+        assert!(manifest.dependencies.contains_key("chrono"));
+        assert!(!manifest.dependencies.contains_key("handle"));
     }
 }

@@ -1,6 +1,4 @@
 #[cfg(feature = "simplelog")]
-use log::info;
-#[cfg(feature = "simplelog")]
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
@@ -8,7 +6,7 @@ use std::{env::set_var, fs};
 #[cfg(feature = "simplelog")]
 use std::{fs::File, sync::OnceLock};
 use thag_rs::tui_editor::{normalize_newlines, History};
-use thag_rs::{ThagResult, TMPDIR};
+use thag_rs::{debug_log, ThagResult, TMPDIR};
 
 // Set environment variables before running tests
 fn set_up() {
@@ -35,7 +33,7 @@ fn init_logger() {
     LOGGER.get_or_init(|| {
         CombinedLogger::init(vec![
             TermLogger::new(
-                LevelFilter::Info,
+                LevelFilter::Debug,
                 Config::default(),
                 TerminalMode::Mixed,
                 ColorChoice::Auto,
@@ -47,7 +45,7 @@ fn init_logger() {
             ),
         ])
         .unwrap();
-        info!("Initialized simplelog");
+        debug_log!("Initialized simplelog");
     });
 
     #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active

@@ -23,7 +23,6 @@ toml = "0.8"
 use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use home;
-use log;
 use mockall::{automock, predicate::str};
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
@@ -34,7 +33,7 @@ use std::{
     io::Write,
     path::PathBuf,
 };
-use thag_rs::{debug_log, lazy_static_var, ColorSupport, TermTheme, ThagResult, Verbosity};
+use thag_rs::{lazy_static_var, ColorSupport, TermTheme, ThagResult, Verbosity};
 
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
@@ -61,6 +60,157 @@ pub struct Config {
     pub colors: Colors,
     pub proc_macros: ProcMacros,
     pub misc: Misc,
+    pub dependencies: Dependencies, // New section
+}
+
+#[allow(clippy::struct_excessive_bools)]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Dependencies {
+    pub exclude_unstable_features: bool,
+    pub exclude_std_feature: bool,
+    pub use_detailed_dependencies: bool,
+    pub always_include_features: Vec<String>,
+    pub group_related_features: bool,
+    pub show_feature_dependencies: bool,
+    pub exclude_prerelease: bool,        // New option
+    pub minimum_downloads: Option<u64>,  // New option
+    pub minimum_version: Option<String>, // New option
+    pub feature_overrides: HashMap<String, FeatureOverride>,
+    pub global_excluded_features: Vec<String>,
+}
+
+impl Dependencies {
+    pub fn filter_features(&self, crate_name: &str, features: Vec<String>) -> Vec<String> {
+        let mut filtered = features;
+
+        #[cfg(debug_assertions)]
+        debug_log!(
+            "Filtering features for crate {}: {:?}",
+            crate_name,
+            filtered
+        );
+
+        // Apply global exclusions
+        if !self.global_excluded_features.is_empty() {
+            #[cfg(debug_assertions)]
+            let before_len = filtered.len();
+            filtered = filtered
+                .into_iter()
+                .filter(|f| {
+                    let keep = !self
+                        .global_excluded_features
+                        .iter()
+                        .any(|ex| f.contains(ex));
+                    if !keep {
+                        debug_log!("Excluding feature '{}' due to global exclusion", f);
+                    }
+                    keep
+                })
+                .collect();
+            #[cfg(debug_assertions)]
+            if filtered.len() < before_len {
+                debug_log!(
+                    "Removed {} features due to global exclusions",
+                    before_len - filtered.len()
+                );
+            }
+        }
+
+        // Apply crate-specific overrides
+        if let Some(override_config) = self.feature_overrides.get(crate_name) {
+            #[cfg(debug_assertions)]
+            debug_log!("Applying overrides for crate {}", crate_name);
+
+            // Remove excluded features
+            let before_len = filtered.len();
+            filtered = filtered
+                .into_iter()
+                .filter(|f| {
+                    let keep = !override_config.excluded_features.contains(f);
+                    if !keep {
+                        debug_log!("Excluding feature '{}' due to crate-specific override", f);
+                    }
+                    keep
+                })
+                .collect();
+
+            // Add required features
+            for f in &override_config.required_features {
+                if !filtered.contains(f) {
+                    debug_log!("Adding required feature '{}'", f);
+                    filtered.push(f.clone());
+                }
+            }
+
+            // Replace excluded features with alternatives if any were excluded
+            if filtered.len() < before_len {
+                for f in &override_config.alternative_features {
+                    if !filtered.contains(f) {
+                        debug_log!("Adding alternative feature '{}'", f);
+                        filtered.push(f.clone());
+                    }
+                }
+            }
+        }
+
+        // Apply other existing filters
+        if self.exclude_unstable_features {
+            filtered = filtered
+                .into_iter()
+                .filter(|f| {
+                    let keep = !f.contains("unstable");
+                    if !keep {
+                        debug_log!("Excluding unstable feature '{}'", f);
+                    }
+                    keep
+                })
+                .collect();
+        }
+
+        if self.exclude_std_feature {
+            filtered = filtered
+                .into_iter()
+                .filter(|f| {
+                    let keep = f != "std";
+                    if !keep {
+                        debug_log!("Excluding std feature");
+                    }
+                    keep
+                })
+                .collect();
+        }
+
+        // Always include specified features
+        for f in &self.always_include_features {
+            if !filtered.contains(f) {
+                debug_log!("Adding always-included feature '{}'", f);
+                filtered.push(f.clone());
+            }
+        }
+
+        // Remove duplicates
+        filtered.sort();
+        filtered.dedup();
+
+        #[cfg(debug_assertions)]
+        debug_log!("Final features for {}: {:?}", crate_name, filtered);
+
+        filtered
+    }
+
+    // Make should_include_feature use filter_features
+    pub fn should_include_feature(&self, feature: &str, crate_name: &str) -> bool {
+        self.filter_features(crate_name, vec![feature.to_string()])
+            .contains(&feature.to_string())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct FeatureOverride {
+    pub excluded_features: Vec<String>,
+    pub required_features: Vec<String>,
+    pub alternative_features: Vec<String>,
 }
 
 #[serde_as]
@@ -157,11 +307,13 @@ pub fn load(context: &dyn Context) -> Option<Config> {
     profile_fn!(load);
     let config_path = context.get_config_path();
 
-    debug_log!("config_path={config_path:?}");
+    eprintln!("config_path={config_path:?}");
 
     if config_path.exists() {
         let config_str = fs::read_to_string(config_path).ok()?;
+        debug_log!("config_str={config_str:?}");
         let config: Config = toml::from_str(&config_str).ok()?;
+        debug_log!("config={config:?}");
         Some(config)
     } else {
         None
@@ -178,7 +330,7 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
     profile_fn!(edit);
     let config_path = context.get_config_path();
 
-    debug_log!("config_path={config_path:?}");
+    eprintln!("config_path={config_path:?}");
 
     let exists = config_path.exists();
     if !exists {
@@ -217,14 +369,12 @@ fn main() {
     let maybe_config = load(&RealContext::new());
 
     if let Some(config) = maybe_config {
-        debug_log!("Loaded config: {config:?}");
-        debug_log!(
+        eprintln!("Loaded config: {config:?}");
+        eprintln!(
             "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
-            config.logging.default_verbosity,
-            config.colors.color_support,
-            config.colors.term_theme
+            config.logging.default_verbosity, config.colors.color_support, config.colors.term_theme
         );
     } else {
-        debug_log!("No configuration file found.");
+        eprintln!("No configuration file found.");
     }
 }

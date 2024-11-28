@@ -1,10 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
+use crate::code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 #[cfg(debug_assertions)]
 use crate::debug_timings;
-use crate::{
-    code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source},
-    config::Dependencies,
-}; // Valid if no circular dependency
 use crate::{cvprtln, debug_log, maybe_config, regex, vlog, BuildState, Lvl, ThagResult, V};
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Manifest};
@@ -290,9 +287,11 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         return;
     }
 
-    let config = maybe_config();
-    let binding = Dependencies::default();
-    let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
+    // let config = maybe_config();
+    // let binding = Dependencies::default();
+    // let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
+    let config = maybe_config().expect("Config should be loaded");
+    let dep_config = &config.dependencies;
 
     let mut found_deps = Vec::new();
 
@@ -317,11 +316,14 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
 
         if let Some((name, version)) = cargo_lookup(&dep_name) {
             let features = get_crate_features(&name).map(|features| {
-                features
-                    .into_iter()
-                    .filter(|f| dep_config.should_include_feature(f))
-                    .collect::<Vec<_>>()
+                debug_log!("Original features for {}: {:?}", name, features);
+                let filtered = dep_config.filter_features(&name, features);
+                debug_log!("Filtered features for {}: {:?}", name, filtered);
+                debug_log!("Config used: {:#?}", dep_config);
+                filtered
             });
+
+            debug_log!("Final features for {}: {:?}", name, features);
 
             if dep_config.use_detailed_dependencies {
                 let mut detail = cargo_toml::DependencyDetail {
@@ -342,7 +344,7 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
                 features,
             });
         } else {
-            vlog!(V::QQ, "Cargo search couldn't find crate [{dep_name}]");
+            vlog!(V::QQ, "Cargo lookup couldn't find crate [{dep_name}]");
         }
     }
 

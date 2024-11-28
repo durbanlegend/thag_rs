@@ -61,7 +61,7 @@ exclude_std_feature = true
 use_detailed_dependencies = false
 
 # Exclude features matching these patterns
-exclude_feature_patterns = ["experimental", "nightly"]
+global_excluded_features = ["experimental", "nightly"]
 
 # Always include these features even if they match exclude patterns
 always_include_features = ["derive"]

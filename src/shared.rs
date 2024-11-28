@@ -157,10 +157,12 @@ impl<'a> Visit<'a> for CratesFinder {
     // Handle macro invocations
     fn visit_macro(&mut self, mac: &'a syn::Macro) {
         // Get the macro path (e.g., "serde_json::json" from "serde_json::json!()")
-        if let Some(first_seg) = mac.path.segments.first() {
-            let name = first_seg.ident.to_string();
-            if is_valid_crate_name(&name) {
-                self.crates.push(name);
+        if mac.path.segments.len() > 1 {
+            if let Some(first_seg) = mac.path.segments.first() {
+                let name = first_seg.ident.to_string();
+                if is_valid_crate_name(&name) {
+                    self.crates.push(name);
+                }
             }
         }
         syn::visit::visit_macro(self, mac);

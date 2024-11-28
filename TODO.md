@@ -23,6 +23,8 @@
 - [ ]  REPL history belongs in /Users/donf/.cargo/hist_staging.txt and stdin history in /Users/donf/.cargo/rs_stdin_history.json
          (check both).
 - [ ]  >>> Debug: History older than max isn't being removed even though only .
+- [ ]  Picking up "panic", "bool", "fs" in dependency inference.
+- [ ]  Add new thag config / CLI option for dependency inference: infer max (default) / infer min / respect toml / advise / ignore
 
 - [ ]  Add a --test option
 find_use_renames_ast
@@ -85,6 +87,7 @@ f=$d/Cargo.toml
 cargo expand --bin $stem --manifest-path=$f --theme=gruvbox-dark | sdiff $p - | less
 
 stem=proc_macro_host_port_const
+
 
 
 ## Low Priority

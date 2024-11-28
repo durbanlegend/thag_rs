@@ -214,12 +214,6 @@ async fn prompt_config() -> Result<ConfigBuilder, Box<dyn std::error::Error>> {
                 }
             }
             "Dependencies" => {
-                // if let Ok(dependency_config) = prompt_dependency_config().await? {
-                //     if let Some(_) = dependency_config {
-                //         // None means user escaped
-                //         config.dependencies = dependency_config;
-                //     }
-                // }
                 config.dependencies = Some(prompt_dependency_config().await?);
             }
             "Colors" => {
@@ -383,7 +377,11 @@ async fn prompt_dependency_config() -> Result<DependencyConfig, Box<dyn std::err
 
     if Confirm::new("Add crate-specific feature overrides?").prompt()? {
         let mut overrides = Vec::new();
-        while Confirm::new("Add another crate override?").prompt()? {
+        while if overrides.is_empty() {
+            true
+        } else {
+            Confirm::new("Add another crate override?").prompt()?
+        } {
             let crate_name = Text::new("Crate name:").prompt()?;
 
             let excluded = Text::new("Excluded features (comma-separated):").prompt()?;

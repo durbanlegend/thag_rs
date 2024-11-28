@@ -130,7 +130,7 @@ impl<'a> Visit<'a> for CratesFinder {
                 let name = first_seg.ident.to_string();
                 #[cfg(debug_assertions)]
                 debug_log!("Found first seg {name} in expr_path={expr_path:#?}");
-                if is_valid_crate_name(&name) {
+                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
                     eprintln!("... pushing {name} to crates");
                     self.crates.push(name);
                 }
@@ -265,7 +265,7 @@ fn is_valid_crate_name(name: &str) -> bool {
     // Then check against known non-crate names (only lowercase ones needed)
     const SKIP_NAMES: &[&str] = &[
         "self", "super", "crate", "str", "line", "key", "style", "cmd", "e", "command", "error",
-        "matches", "split", "x", "panic",
+        "matches", "split", "x", /*"panic", "bool", "fs",*/
     ];
 
     !SKIP_NAMES.contains(&name)

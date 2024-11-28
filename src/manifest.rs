@@ -199,7 +199,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
                 "rs_dep_map (before inferred) {:#?}",
                 rs_manifest.dependencies
             );
-            search_deps(rs_inferred_deps, &mut rs_manifest.dependencies);
+            lookup_deps(rs_inferred_deps, &mut rs_manifest.dependencies);
 
             #[cfg(debug_assertions)]
             debug_log!(
@@ -279,10 +279,11 @@ fn get_crate_features(name: &str) -> Option<Vec<String>> {
 }
 
 #[allow(clippy::missing_panics_doc)]
-pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
-    profile_fn!(search_deps);
+pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<String, Dependency>) {
+    profile_fn!(lookup_deps);
 
-    eprintln!("In search_deps: rs_inferred_deps={rs_inferred_deps:#?}");
+    #[cfg(debug_assertions)]
+    debug_log!("In lookup_deps: rs_inferred_deps={rs_inferred_deps:#?}");
     if rs_inferred_deps.is_empty() {
         return;
     }
@@ -362,20 +363,22 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         let mut featured_block = String::from("/*[toml]\n[dependencies]\n");
         for dep in &found_deps {
             if let Some(features) = &dep.features {
-                let features_str = features
-                    .iter()
-                    .map(|f| format!("\"{}\"", f))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                let dep_line = format!(
-                    "{} = {{ version = \"{}\", features = [{}] }}\n",
-                    dep.name, dep.version, features_str
-                );
-                featured_block.push_str(&dep_line);
+                if features.is_empty() {
+                    add_simple_feature(dep, &mut featured_block);
+                } else {
+                    let features_str = features
+                        .iter()
+                        .map(|f| format!("\"{}\"", f))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    let dep_line = format!(
+                        "{} = {{ version = \"{}\", features = [{}] }}\n",
+                        dep.name, dep.version, features_str
+                    );
+                    featured_block.push_str(&dep_line);
+                }
             } else {
-                // Use simple format for dependencies without features
-                let dep_line = format!("{} = \"{}\"\n", dep.name, dep.version);
-                featured_block.push_str(&dep_line);
+                add_simple_feature(dep, &mut featured_block);
             }
         }
         featured_block.push_str("*/");
@@ -389,6 +392,12 @@ pub fn search_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
             styled_featured
         );
     }
+}
+
+fn add_simple_feature(dep: &CrateInfo, featured_block: &mut String) {
+    // Use simple format for dependencies without features
+    let dep_line = format!("{} = \"{}\"\n", dep.name, dep.version);
+    featured_block.push_str(&dep_line);
 }
 
 fn proc_macros_magic(

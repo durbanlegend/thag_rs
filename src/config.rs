@@ -23,13 +23,21 @@ pub fn maybe_config() -> Option<Config> {
 fn maybe_load_config() -> Option<Config> {
     profile_fn!(maybe_load_config);
     eprintln!("In maybe_load_config, should not see this message more than once");
-    let maybe_config = load(&RealContext::new());
-    if let Some(config) = maybe_config {
-        debug_log!("Loaded config: {config:?}");
-        return Some(config);
+
+    match load(&RealContext::new()) {
+        Ok(Some(config)) => {
+            eprintln!("Loaded config: {config:?}");
+            Some(config)
+        }
+        Ok(None) => {
+            eprintln!("No config file found");
+            None
+        }
+        Err(e) => {
+            eprintln!("Failed to load config: {}", e);
+            None
+        }
     }
-    debug_log!("Config not loaded!!!");
-    None::<Config>
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -38,8 +46,8 @@ pub struct Config {
     pub logging: Logging,
     pub colors: Colors,
     pub proc_macros: ProcMacros,
-    pub misc: Misc,
     pub dependencies: Dependencies, // New section
+    pub misc: Misc,
 }
 
 #[allow(clippy::struct_excessive_bools)]
@@ -106,7 +114,8 @@ impl Dependencies {
             filtered = filtered
                 .into_iter()
                 .filter(|f| {
-                    let keep = !override_config.excluded_features.contains(f);
+                    let keep = self.always_include_features.contains(f)
+                        || !override_config.excluded_features.contains(f);
                     if !keep {
                         debug_log!("Excluding feature '{}' due to crate-specific override", f);
                     }
@@ -138,7 +147,7 @@ impl Dependencies {
             filtered = filtered
                 .into_iter()
                 .filter(|f| {
-                    let keep = !f.contains("unstable");
+                    let keep = !f.contains("unstable") || self.always_include_features.contains(f);
                     if !keep {
                         debug_log!("Excluding unstable feature '{}'", f);
                     }
@@ -151,21 +160,13 @@ impl Dependencies {
             filtered = filtered
                 .into_iter()
                 .filter(|f| {
-                    let keep = f != "std";
+                    let keep = f != "std" || self.always_include_features.contains(f);
                     if !keep {
                         debug_log!("Excluding std feature");
                     }
                     keep
                 })
                 .collect();
-        }
-
-        // Always include specified features
-        for f in &self.always_include_features {
-            if !filtered.contains(f) {
-                debug_log!("Adding always-included feature '{}'", f);
-                filtered.push(f.clone());
-            }
         }
 
         // Remove duplicates
@@ -282,20 +283,26 @@ impl Context for RealContext {
 }
 
 #[must_use]
-pub fn load(context: &dyn Context) -> Option<Config> {
+pub fn load(context: &dyn Context) -> ThagResult<Option<Config>> {
     profile_fn!(load);
     let config_path = context.get_config_path();
 
     debug_log!("config_path={config_path:?}");
 
     if config_path.exists() {
-        let config_str = fs::read_to_string(config_path).ok()?;
-        debug_log!("config_str={config_str:?}");
-        let config: Config = toml::from_str(&config_str).ok()?;
-        debug_log!("config={config:?}");
-        Some(config)
+        let config_str = fs::read_to_string(&config_path)
+            .map_err(|e| format!("Failed to read config file: {}", e))?;
+
+        match toml::from_str(&config_str) {
+            Ok(config) => Ok(Some(config)),
+            Err(e) => Err(format!(
+                "Failed to parse config file: {}\nConfig content:\n{}",
+                e, config_str
+            )
+            .into()),
+        }
     } else {
-        None
+        Ok(None)
     }
 }
 
@@ -347,7 +354,7 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
 fn main() {
     let maybe_config = load(&RealContext::new());
 
-    if let Some(config) = maybe_config {
+    if let Ok(Some(config)) = maybe_config {
         debug_log!("Loaded config: {config:?}");
         debug_log!(
             "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",

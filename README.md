@@ -2,7 +2,6 @@
 
 [![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://crates.io/crates/thag_rs)
 [![Crates.io size](https://img.shields.io/crates/size/thag_rs)](https://img.shields.io/crates/size/thag_rs)
-[![Documentation](https://docs.rs/thag_rs/badge.svg)](https://docs.rs/\n)
 [![Build Status](https://github.com/durbanlegend/thag_rs/workflows/CI/badge.svg)](https://github.com/durbanlegend/thag_rs/actions)
 <img src="https://img.shields.io/badge/rustc-stable+-green.svg" alt="supported rustc stable" />
 <a href="https://deps.rs/repo/github/durbanlegend/thag_rs"><img src="https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg" alt="dependency status"/></a>
@@ -10,14 +9,18 @@
 
 ## Intro
 
-`thag_rs` (command `thag`) is a versatile cross-platform script runner and REPL for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
+`thag_rs` (command `thag`) is a versatile cross-platform **script runner**, **expression evaluator** and **REPL** for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
 It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while being as simple and convenient to use as possible.
-It also supports scripting via shebangs, building executables from your snippets, a loop-filter mode and plain or edited standard input.
+A front-end called `thag_url` lets you run scripts directly from a **URL**, such as **Github**, **GitLab**, **BitBucket** or **Rust playground** scripts.
 
-If you import dependencies via explicit `use` statements, `thag_rs` will usually be able to resolve them for you automatically by doing a Cargo search and inserting a basic `<dependency> = "<current version>"` entry in the Cargo.toml file it generates behind the scenes.
-Alternatively, you can embed any valid Cargo manifest info, such as features, specific versions, private repos, optimisation levels etc., in a "toml block" comment.
+`thag_rs`  also supports scripting via **shebangs**, building lightning-fast **commands** from your snippets, a **loop-filter mode** and **standard input**.
+You can **paste and run** scripts via a basic editor, or you can even edit standard input.
 
-`thag_rs` includes a demo library of over 200 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
+**Dependency inference.** `thag_rs` aims to **resolve dependencies automatically** for you by analysing the syntax tree doing a Cargo lookup and inserting dependency entries in the Cargo.toml file it generates behind the scenes.
+Alternatively, you can **embed any valid Cargo manifest info**, such as features, specific versions, private repos, optimisation levels etc., in a "toml block" comment.
+**You have control** of the level of assistance you prefer.
+
+**Starter kit.** `thag_rs` includes a demo library of over 200 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
 ## Quick start: ways to run the `thag` command
 
@@ -156,14 +159,15 @@ Loop mode also accepts the following optional arguments supplying surrounding co
 --end   (-E)    for specifying any summary or final logic to run after the loop.
 ```
 
-Note: This is a Rust issue not a `thag_rs` issue, but in general if you are planning to pipe Rust output, it's probably a good idea to use `writeln!(io::stdout())`,
+Note: In general if you are planning to **pipe Rust output**, it's probably a good idea to use `writeln!(io::stdout())`,
 rather than `println!`, since (as at edition 2021) `println!` panics if it encounters an error, and this
-includes the broken pipe error from a head command. See `https://github.com/BurntSushi/advent-of-code/issues/17`.
+includes the broken pipe error from a head command. **This is a Rust issue not a `thag_rs` issue.**
+See `https://github.com/BurntSushi/advent-of-code/issues/17`.
 For an example of tolerating a broken pipe, see
 `demo/thag_from_rust_script.rs`.
 
 ### * As an executable:
-The --executable (-x) option builds your script in release mode and moves it to ~/.cargo/bin/, which is recommended to be in your path.
+The --executable (-x) option builds your script in **release mode** and moves it to ~/.cargo/bin/, which is recommended to be in your path.
 
 ```bash
 thag -x my_script.rs                                            # Long form: --executable
@@ -176,7 +180,7 @@ You can of course use an OS command to rename the executable if you so desire.
 
 However, it's probably best to rename your source in the first place so you don't lose track of where the command came from if you want to update it.
 
-I recommend building an executable over using a shebang because it will be faster on several counts:
+I **recommend building an executable over using a shebang** because it will be faster on several counts:
 
 - It cuts out the middleman (`thag`)
 - You only incur the build overhead once up front
@@ -195,7 +199,7 @@ Hopefully the help screen is self-explanatory:
 
 ![Help](assets/helpt.png)
 
-You can enter `thag` arguments and options in any order. If your script or dynamic run accepts arguments of its own, they must come after the `thag` arguments and separated from them by a double dash (`--`). In other words, the common convention imposed by `clap`.
+`thag_rs` uses a **standard `clap` CLI**. You can enter `thag` arguments and options in any order. If your script or dynamic run accepts arguments of its own, they must come after the `thag` arguments and separated from them by a double dash (`--`). In other words, the common convention imposed by `clap`.
 
 ## Overview
 
@@ -206,24 +210,25 @@ _— The Rust Reference_
 
 * Runs serious Rust scripts (not just the "Hello, world!" variety) with no need to create a project.
 * Aims to be the most capable and reliable script runner for Rust code.
-* A choice of modes - bearing in mind the importance of expressions in Rust:
-    * expression mode for small, basic expressions on the fly.
-    * REPL mode offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
-    * stdin mode accepts larger scripts or programs on the fly, as typed, pasted or piped input.
-    * edit mode is stdin mode with the addition of basic TUI (terminal user interface) in-place editing, with or without piped input.
-    * the classic script mode runs an .rs file consisting of a valid Rust snippet or program.
+* A choice of modes:
+    * **Expression mode** for small individual expressions on the fly.
+    * **REPL mode** offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
+    If REPL mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the REPL editor.
+    * **Stdin mode** accepts larger scripts and programs on the fly, as typed, pasted or piped input or as URLs (via `thag_url`).
+    * **Edit mode** via a basic TUI (terminal user interface) editor, with optional `thag_url` or other piped input.
+    * the classic **script mode** runs an .rs file consisting of a valid Rust snippet or program.
 
-  If the REPL mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the REPL editor.
-* Dependency inference from imports, with generation of minimal and maximal toml blocks for pasting into your Rust source script.
-* Any valid Cargo.toml input may be specified in the toml block, e.g.:
+
+* **Dependency inference** from code, with generation of minimal and maximal toml blocks for pasting into your Rust source script.
+* **Any valid Cargo.toml **input may be specified in the toml block, e.g.:
   - Specific features of dependencies for advanced functionality
   - Local path and git dependencies
   - A [profile.dev] with a non-default optimisation level
   - A [[bin]] to rename the executable output.
-* You can use a shebang to write scripts in Rust, or better yet...
-* For more speed and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
-* `thag_rs` supports a personal library of code samples for reuse. The downloadable starter set in the demo subdirectory contains over 200 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and colour handling, and CLI and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
-* Automatic support for light or dark backgrounds and a 16- or 256- colour palette for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows prior to the Windows Terminal 1.22 Preview of August 2024, interrogating the terminal is not supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` currently defaults to basic Ansi-16 colours and dark mode support. However, the dark mode colours it uses have been chosen to work well with most light modes.
+* You can use a **shebang** to write scripts in Rust, or better yet...
+* For **more speed** and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
+* `thag_rs` supports a personal library of code samples for reuse. The downloadable **starter set** in the demo subdirectory contains over 200 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and colour handling, and CLI and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
+* Automatic support for **light or dark backgrounds** and a **16- or 256- colour palette** for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows prior to the Windows Terminal 1.22 Preview of August 2024, interrogating the terminal is not supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` currently defaults to basic Ansi-16 colours and dark mode support. However, the dark mode colours it uses have been chosen to work well with most light modes.
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from `thag_rs`. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
 
 ### * Getting started:
@@ -251,7 +256,7 @@ If your code does not successfully parse into an AST because of a coding error, 
 
 You may provide optional valid (Cargo.toml) metadata in a toml block as described below. `thag_rs` uses `cargo_toml` to parse any metadata into a manifest struct, merges in any dependencies, features or patches inferred from the AST, and then uses `toml` to write out the dedicated Cargo.toml file that Cargo needs to build the script. Finally, in the case of snippets and expressions, it uses `quote` to embed the logic in a well-formed program template and `prettyplease` to format it, and finally invokes Cargo to build it.
 
-All of this happens quite fast: the real bottleneck will be the familiar Cargo build process downloading and compiling your dependencies on the initial build. Cargo build output will be displayed in real time by default so that there are no mystery delays. If you rerun the compiled script it should be lightning fast.
+All of this happens quite fast: the real bottleneck will be the familiar Cargo build process downloading and compiling your dependencies on the initial build. Cargo build output will be displayed in real time by default so that there are no mystery delays. If you rerun the compiled script it should be almost immediate.
 
 In this way `thag_rs` attempts to handle any valid (or invalid) Rust script, be it a program, snippet or expression. It will try to generate a dedicated Cargo.toml for your script from `use` statements in your code, although for speed and precision I recommend that you embed your own in a toml block:
 ```/*
@@ -260,7 +265,7 @@ In this way `thag_rs` attempts to handle any valid (or invalid) Rust script, be 
 ...
 */
 ```
-at the start of the script, as you will see done in most of the demos. To help with this, after each successful Cargo search `thag_rs `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. (As in the second `--expr` example above.) It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` there is no specific limit on what valid Cargo code you can place in the toml block.
+at the start of the script, as you will see done in most of the demos. To help with this, after each successful Cargo lookup `thag_rs `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. (As in the second `--expr` example above.) It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` there is no specific limit on what valid Cargo code you can place in the toml block.
 
 `thag_rs` aims to be as comprehensive as possible without sacrificing speed and transparency. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
 

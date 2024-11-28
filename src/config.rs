@@ -26,7 +26,7 @@ fn maybe_load_config() -> Option<Config> {
 
     match load(&RealContext::new()) {
         Ok(Some(config)) => {
-            eprintln!("Loaded config: {config:?}");
+            // eprintln!("Loaded config: {config:?}");
             Some(config)
         }
         Ok(None) => {
@@ -350,12 +350,14 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
 }
 
 /// Main function for use by testing or the script runner.
-#[allow(dead_code)]
+#[allow(dead_code, unused_variables)]
 fn main() {
     let maybe_config = load(&RealContext::new());
 
     if let Ok(Some(config)) = maybe_config {
-        debug_log!("Loaded config: {config:?}");
+        // #[cfg(debug_assertions)]
+        // debug_log!("Loaded config: {config:?}");
+        #[cfg(debug_assertions)]
         debug_log!(
             "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
             config.logging.default_verbosity,

@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-#[cfg(debug_assertions)]
+// #[cfg(debug_assertions)]
 use crate::debug_log;
 use crate::{
     modified_since_compiled, vlog, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
@@ -96,6 +96,7 @@ impl<'a> Visit<'a> for CratesFinder {
         // Handle simple case `use a as b;`
         if let UseTree::Rename(use_rename) = &node.tree {
             let node_name = use_rename.ident.to_string();
+            eprintln!("visit_item_use pushing {node_name} to crates");
             self.crates.push(node_name);
         } else {
             syn::visit::visit_item_use(self, node);
@@ -115,7 +116,8 @@ impl<'a> Visit<'a> for CratesFinder {
                     _ => unreachable!(),
                 };
                 // Only add if not capitalized
-                if is_valid_crate_name(&node_name) {
+                if is_valid_crate_name(&node_name) && !self.crates.contains(&node_name) {
+                    eprintln!("visit_use_tree pushing {node_name} to crates");
                     self.crates.push(node_name);
                 }
             }
@@ -131,7 +133,7 @@ impl<'a> Visit<'a> for CratesFinder {
                 #[cfg(debug_assertions)]
                 debug_log!("Found first seg {name} in expr_path={expr_path:#?}");
                 if is_valid_crate_name(&name) && !self.crates.contains(&name) {
-                    eprintln!("... pushing {name} to crates");
+                    eprintln!("visit_expr_path pushing {name} to crates");
                     self.crates.push(name);
                 }
             }
@@ -141,14 +143,16 @@ impl<'a> Visit<'a> for CratesFinder {
 
     fn visit_type_path(&mut self, type_path: &'a TypePath) {
         profile_method!(visit_type_path);
-        if let Some(first_seg) = type_path.path.segments.first() {
-            let name = first_seg.ident.to_string();
-            #[cfg(debug_assertions)]
-            debug_log!("Found first seg {name} in type_path={type_path:#?}");
-            if is_valid_crate_name(&name) {
-                #[cfg(debug_assertions)]
-                debug_log!("... pushing {name} to crates");
-                self.crates.push(name);
+        if type_path.path.segments.len() > 1 {
+            if let Some(first_seg) = type_path.path.segments.first() {
+                let name = first_seg.ident.to_string();
+                // #[cfg(debug_assertions)]
+                debug_log!("Found first seg {name} in type_path={type_path:#?}");
+                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                    // #[cfg(debug_assertions)]
+                    eprintln!("visit_type_path pushing {name} to crates");
+                    self.crates.push(name);
+                }
             }
         }
         syn::visit::visit_type_path(self, type_path);
@@ -160,7 +164,8 @@ impl<'a> Visit<'a> for CratesFinder {
         if mac.path.segments.len() > 1 {
             if let Some(first_seg) = mac.path.segments.first() {
                 let name = first_seg.ident.to_string();
-                if is_valid_crate_name(&name) {
+                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                    eprintln!("visit_macro pushing {name} to crates");
                     self.crates.push(name);
                 }
             }
@@ -174,7 +179,8 @@ impl<'a> Visit<'a> for CratesFinder {
         if let Some((_, path, _)) = &item.trait_ {
             if let Some(first_seg) = path.segments.first() {
                 let name = first_seg.ident.to_string();
-                if is_valid_crate_name(&name) {
+                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                    eprintln!("visit_item_impl pushing {name} to crates (1)");
                     self.crates.push(name);
                 }
             }
@@ -184,7 +190,8 @@ impl<'a> Visit<'a> for CratesFinder {
         if let syn::Type::Path(type_path) = &*item.self_ty {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
-                if is_valid_crate_name(&name) {
+                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                    eprintln!("visit_item_impl pushing {name} to crates (2)");
                     self.crates.push(name);
                 }
             }
@@ -197,7 +204,8 @@ impl<'a> Visit<'a> for CratesFinder {
         if let syn::Type::Path(type_path) = &*item.ty {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
-                if is_valid_crate_name(&name) {
+                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                    eprintln!("visit_item_type pushing {name} to crates (2)");
                     self.crates.push(name);
                 }
             }
@@ -210,7 +218,8 @@ impl<'a> Visit<'a> for CratesFinder {
         if let syn::TypeParamBound::Trait(trait_bound) = bound {
             if let Some(first_seg) = trait_bound.path.segments.first() {
                 let name = first_seg.ident.to_string();
-                if is_valid_crate_name(&name) {
+                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                    eprintln!("visit_type_param_bound pushing {name} to crates (2)");
                     self.crates.push(name);
                 }
             }

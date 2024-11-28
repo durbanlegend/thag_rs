@@ -65,7 +65,7 @@ mod tests {
             .return_const(config_path.clone());
         mock_context.expect_is_real().return_const(false);
 
-        let config = load(&mock_context).expect("Failed to load config");
+        let config = load(&mock_context).expect("Failed to load config").unwrap();
 
         assert_eq!(config.logging.default_verbosity, Verbosity::Verbose);
         assert_eq!(config.colors.color_support, ColorSupport::Ansi16);
@@ -81,7 +81,7 @@ mod tests {
             .return_const(PathBuf::from("/non/existent/path/config.toml"));
         mock_context.expect_is_real().return_const(false);
 
-        let config = load(&mock_context);
+        let config = load(&mock_context).unwrap();
         assert!(
             config.is_none(),
             "Expected None when config file is not found"
@@ -103,10 +103,8 @@ mod tests {
         mock_context.expect_is_real().return_const(false);
 
         let config = load(&mock_context);
-        assert!(
-            config.is_none(),
-            "Expected None when config file format is invalid"
-        );
+        // eprintln!("config={config:#?}");
+        assert!(config.is_err());
     }
 
     // #[ignore = "Opens file and expects human interaction"]

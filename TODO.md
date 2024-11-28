@@ -48,9 +48,16 @@ https://raw.githubusercontent.com/durbanlegend/thag_rs/3f52d4c4590c0573ad130727e
 thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
-Which reminds me, maybe tomorrow I would like to try a fun task of writing a Rust script using the `inquire` crate to prompt the user to populate all the Config struct fields in turn, so as to build a config.toml file by using toml::to_string_pretty! to generate it from the struct. Ideally if we add doc comments (///) to the struct fields we could convert those to toml comments (#) in the config.toml file. Then I could build an executable from the script as we did with thag_url, which will hopefully be a useful tool to deploy with the crate.
+```rust
+// Example usage in prompts
+let version = Text::new("Enter minimum version:")
+    .with_validator(VersionValidator)
+    .prompt()?;
 
-Similarly I was thinking of another front-end command like thag_url, but again using `inquire`, this time to prompt the user through thag's CLI options and arguments so as to build a thag command and then invoke thag from process::Command as thag_url does. I know I'm jumping ahead but I need a bit of light relief soon, after this tough but rewarding exercise in dependency inference.
+let path = Text::new("Enter path:")
+    .with_validator(PathValidator)
+    .prompt()?;
+```
 
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.

@@ -14,19 +14,19 @@ toml = "0.8"
 //# Categories: crates, technique, tools
 use colored::Colorize;
 use inquire::error::CustomUserError;
-use inquire::validator::{CustomTypeValidator, Validation};
+use inquire::validator::Validation;
 use inquire::{Confirm, Select, Text};
 use serde::Serialize;
 use std::{fs, path::PathBuf};
+
+type Error = CustomUserError;
 
 // Custom validators
 #[derive(Clone)]
 struct VersionValidator;
 
-type Error = CustomUserError;
-
-impl CustomTypeValidator<String> for VersionValidator {
-    fn validate(&self, input: &String) -> Result<Validation, Error> {
+impl StringValidator for VersionValidator {
+    fn validate(&self, input: &str) -> Result<Validation, Error> {
         match semver::Version::parse(input) {
             Ok(_) => Ok(Validation::Valid),
             Err(_) => Ok(Validation::Invalid(
@@ -36,11 +36,13 @@ impl CustomTypeValidator<String> for VersionValidator {
     }
 }
 
+use inquire::validator::StringValidator;
+
 #[derive(Clone)]
 struct PathValidator;
 
-impl CustomTypeValidator<String> for PathValidator {
-    fn validate(&self, input: &String) -> Result<Validation, Error> {
+impl StringValidator for PathValidator {
+    fn validate(&self, input: &str) -> Result<Validation, Error> {
         let path = PathBuf::from(input);
         if path.exists() {
             Ok(Validation::Valid)
@@ -57,6 +59,15 @@ struct ConfigBuilder {
 
     #[doc = "Dependency handling settings"]
     dependencies: Option<DependencyConfig>,
+
+    #[doc = "Color settings"]
+    colors: Option<Colors>,
+
+    #[doc = "Proc macros configuration"]
+    proc_macros: Option<ProcMacros>,
+
+    #[doc = "Miscellaneous settings"]
+    misc: Option<Misc>,
 }
 
 impl ConfigBuilder {
@@ -94,6 +105,26 @@ impl ConfigBuilder {
 struct LoggingConfig {
     #[doc = "Default verbosity level (error, warn, info, debug)"]
     default_verbosity: Option<String>,
+}
+
+#[derive(Default, Serialize)]
+struct Colors {
+    #[doc = "Color support level (auto, always, never)"]
+    color_support: Option<String>,
+    #[doc = "Terminal theme (dark, light)"]
+    term_theme: Option<String>,
+}
+
+#[derive(Default, Serialize)]
+struct ProcMacros {
+    #[doc = "Path to proc macro crate"]
+    proc_macro_crate_path: Option<String>,
+}
+
+#[derive(Default, Serialize)]
+struct Misc {
+    #[doc = "Unquote option for string handling"]
+    unquote: Option<bool>,
 }
 
 #[derive(Default, Serialize)]
@@ -162,19 +193,62 @@ async fn prompt_config() -> Result<ConfigBuilder, Box<dyn std::error::Error>> {
             vec![
                 "Logging",
                 "Dependencies",
+                "Colors",
+                "Proc Macros",
+                "Misc Settings",
                 "Preview Configuration",
                 "Save and Exit",
                 "Cancel",
             ],
         )
+        .with_help_message("Use ↑↓ to navigate, Enter to select, Esc to go back")
         .prompt()?;
 
         match action {
             "Logging" => {
-                config.logging = Some(prompt_logging_config()?);
+                if let Ok(logging_config) = prompt_logging_config_with_escape() {
+                    if let Some(_) = logging_config {
+                        // None means user escaped
+                        config.logging = logging_config;
+                    }
+                }
             }
             "Dependencies" => {
+                // if let Ok(dependency_config) = prompt_dependency_config().await? {
+                //     if let Some(_) = dependency_config {
+                //         // None means user escaped
+                //         config.dependencies = dependency_config;
+                //     }
+                // }
                 config.dependencies = Some(prompt_dependency_config().await?);
+            }
+            "Colors" => {
+                // config.colors = Some(prompt_colors_config()?);
+                if let Ok(colors_config) = prompt_colors_config_with_escape() {
+                    if let Some(_) = colors_config {
+                        // None means user escaped
+                        config.colors = colors_config;
+                    }
+                }
+            }
+
+            "Proc Macros" => {
+                // config.proc_macros = Some(prompt_proc_macros_config()?);
+                if let Ok(proc_macros_config) = prompt_proc_macros_config_with_escape() {
+                    if let Some(_) = proc_macros_config {
+                        // None means user escaped
+                        config.proc_macros = proc_macros_config;
+                    }
+                }
+            }
+            "Misc Settings" => {
+                // config.misc = Some(prompt_misc_config()?);
+                if let Ok(misc_config) = prompt_misc_config_with_escape() {
+                    if let Some(_) = misc_config {
+                        // None means user escaped
+                        config.misc = misc_config;
+                    }
+                }
             }
             "Preview Configuration" => {
                 println!("{}", config.preview()?);
@@ -196,18 +270,88 @@ async fn prompt_config() -> Result<ConfigBuilder, Box<dyn std::error::Error>> {
     Ok(config)
 }
 
-fn prompt_logging_config() -> Result<LoggingConfig, Box<dyn std::error::Error>> {
-    let mut config = LoggingConfig::default();
-
+fn prompt_logging_config_with_escape() -> Result<Option<LoggingConfig>, Box<dyn std::error::Error>>
+{
     let level = Select::new(
         "Default verbosity level:",
         vec!["error", "warn", "info", "debug"],
     )
-    .prompt()?;
+    .with_help_message("Controls detail level of log messages (Esc to go back)")
+    .prompt_skippable()?; // prompt_skippable returns None if user hits Esc
 
-    config.default_verbosity = Some(level.to_string());
+    // If user escaped, return None
+    let Some(level) = level else {
+        return Ok(None);
+    };
 
-    Ok(config)
+    Ok(Some(LoggingConfig {
+        default_verbosity: Some(level.to_string()),
+    }))
+}
+
+fn prompt_colors_config_with_escape() -> Result<Option<Colors>, Box<dyn std::error::Error>> {
+    let color_support = Select::new("Color support:", vec!["auto", "always", "never"])
+        .with_help_message("When to use colored output (Esc to go back)")
+        .prompt_skippable()?;
+
+    let Some(color_support) = color_support else {
+        return Ok(None);
+    };
+
+    let term_theme = Select::new("Terminal theme:", vec!["dark", "light"])
+        .with_help_message("Choose theme based on your terminal background")
+        .prompt_skippable()?;
+
+    let Some(term_theme) = term_theme else {
+        return Ok(None);
+    };
+
+    Ok(Some(Colors {
+        color_support: Some(color_support.to_string()),
+        term_theme: Some(term_theme.to_string()),
+    }))
+}
+
+fn prompt_proc_macros_config_with_escape() -> Result<Option<ProcMacros>, Box<dyn std::error::Error>>
+{
+    let configure = Confirm::new("Configure proc macro path?")
+        .with_help_message("Set custom path for proc macro crates")
+        .prompt_skippable()?;
+
+    let Some(configure) = configure else {
+        return Ok(None);
+    };
+
+    if configure {
+        let path = Text::new("Proc macro crate path:")
+            .with_help_message("Path to directory containing proc macro crates")
+            .with_validator(PathValidator)
+            .prompt_skippable()?;
+
+        let Some(path) = path else {
+            return Ok(None);
+        };
+
+        Ok(Some(ProcMacros {
+            proc_macro_crate_path: Some(path),
+        }))
+    } else {
+        Ok(Some(ProcMacros::default()))
+    }
+}
+
+fn prompt_misc_config_with_escape() -> Result<Option<Misc>, Box<dyn std::error::Error>> {
+    let unquote = Confirm::new("Enable unquote option?")
+        .with_help_message("Controls string literal handling in scripts")
+        .prompt_skippable()?;
+
+    let Some(unquote) = unquote else {
+        return Ok(None);
+    };
+
+    Ok(Some(Misc {
+        unquote: Some(unquote),
+    }))
 }
 
 async fn prompt_dependency_config() -> Result<DependencyConfig, Box<dyn std::error::Error>> {

@@ -40,7 +40,7 @@ fn maybe_load_config() -> Option<Config> {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
     pub logging: Logging,
@@ -194,7 +194,7 @@ pub struct FeatureOverride {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Logging {
     #[serde_as(as = "DisplayFromStr")]
@@ -202,7 +202,7 @@ pub struct Logging {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Colors {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
@@ -213,7 +213,7 @@ pub struct Colors {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ProcMacros {
     #[serde_as(as = "Option<DisplayFromStr>")]
@@ -221,7 +221,7 @@ pub struct ProcMacros {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Misc {
     #[serde_as(as = "DisplayFromStr")]

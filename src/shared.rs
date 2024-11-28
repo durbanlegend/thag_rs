@@ -274,7 +274,7 @@ fn is_valid_crate_name(name: &str) -> bool {
     // Then check against known non-crate names (only lowercase ones needed)
     const SKIP_NAMES: &[&str] = &[
         "self", "super", "crate", "str", "line", "key", "style", "cmd", "e", "command", "error",
-        "matches", "split", "x", /*"panic", "bool", "fs",*/
+        "matches", "split", "x", "panic", "bool", "fs",
     ];
 
     !SKIP_NAMES.contains(&name)

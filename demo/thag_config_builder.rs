@@ -14,10 +14,11 @@ toml = "0.8"
 //# Categories: crates, technique, tools
 use colored::Colorize;
 use inquire::error::CustomUserError;
-use inquire::validator::Validation;
+use inquire::validator::{StringValidator, Validation};
 use inquire::{Confirm, Select, Text};
 use serde::Serialize;
 use std::{fs, path::PathBuf};
+use syn::{parse_file, Attribute, Item, Meta};
 
 type Error = CustomUserError;
 
@@ -36,8 +37,12 @@ impl StringValidator for VersionValidator {
     }
 }
 
-use inquire::validator::StringValidator;
+#[derive(Clone)]
+struct PathValidator;
 
+impl StringValidator for PathValidator {
+    fn validate(&self, input: &str) -> Result<Validation, Error> {
+        let path = PathBuf::from(input);
 #[derive(Clone)]
 struct PathValidator;
 

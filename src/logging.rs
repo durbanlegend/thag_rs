@@ -13,7 +13,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     LazyLock, Mutex,
 };
-use strum::EnumString;
+use strum::{Display, EnumString};
 
 use crate::{config::maybe_config, debug_log, vlog, Cli, ThagResult};
 
@@ -42,7 +42,9 @@ pub fn is_debug_logging_enabled() -> bool {
 }
 
 /// An enum of the supported verbosity levels.
-#[derive(Clone, Copy, Debug, Default, Deserialize, EnumString, PartialEq, PartialOrd, Eq)]
+#[derive(
+    Clone, Copy, Debug, Default, Deserialize, Display, EnumString, PartialEq, PartialOrd, Eq,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum Verbosity {
     Quieter = 0,

@@ -33,7 +33,10 @@ pub use colors::{
     coloring, Ansi16DarkStyle, Ansi16LightStyle, ColorSupport, Lvl, MessageLevel, TermTheme,
     Xterm256DarkStyle, Xterm256LightStyle,
 };
-pub use config::{load, maybe_config};
+pub use config::{
+    load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
+    ProcMacros,
+};
 pub use errors::{ThagError, ThagResult};
 pub use keys::KeyCombination;
 pub use logging::{get_verbosity, Verbosity, V};

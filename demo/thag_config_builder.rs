@@ -1,53 +1,93 @@
 /*[toml]
 [dependencies]
+colored = "2.1.0"
 dirs = "5.0"
 inquire = "0.7.5"
+semver = "1.0.23"
 serde = { version = "1.0.215", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
 toml = "0.8"
 */
 
 /// Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
 //# Purpose: Handy configuration file builder.
 //# Categories: crates, technique, tools
-use inquire::{Confirm, MultiSelect, Text};
+use colored::Colorize;
+use inquire::error::CustomUserError;
+use inquire::validator::{CustomTypeValidator, Validation};
+use inquire::{Confirm, Select, Text};
 use serde::Serialize;
-use std::fs;
+use std::{fs, path::PathBuf};
 
-/// Extracts doc comments from a type using rustdoc
-fn get_doc_comments<T>() -> Vec<(String, String)> {
-    let type_name = std::any::type_name::<T>();
-    let output = std::process::Command::new("rustdoc")
-        .args(["--document-private-items", "--output-format=json"])
-        .output()
-        .expect("Failed to run rustdoc");
+// Custom validators
+#[derive(Clone)]
+struct VersionValidator;
 
-    // Parse JSON output to extract doc comments
-    // (simplified for example, would need proper JSON parsing)
-    vec![] // Placeholder
-}
+type Error = CustomUserError;
 
-fn add_toml_comments(toml_str: &str, doc_comments: &[(String, String)]) -> String {
-    let mut result = String::new();
-    for line in toml_str.lines() {
-        // If line defines a field, find and add its doc comment
-        if let Some(field_name) = line.split('=').next().map(str::trim) {
-            if let Some((_, comment)) = doc_comments.iter().find(|(name, _)| name == field_name) {
-                result.push_str(&format!("# {}\n", comment));
-            }
+impl CustomTypeValidator<String> for VersionValidator {
+    fn validate(&self, input: &String) -> Result<Validation, Error> {
+        match semver::Version::parse(input) {
+            Ok(_) => Ok(Validation::Valid),
+            Err(_) => Ok(Validation::Invalid(
+                "Please enter a valid semver version (e.g., 1.0.0)".into(),
+            )),
         }
-        result.push_str(line);
-        result.push('\n');
     }
-    result
 }
 
-#[derive(Default, Serialize)]
+#[derive(Clone)]
+struct PathValidator;
+
+impl CustomTypeValidator<String> for PathValidator {
+    fn validate(&self, input: &String) -> Result<Validation, Error> {
+        let path = PathBuf::from(input);
+        if path.exists() {
+            Ok(Validation::Valid)
+        } else {
+            Ok(Validation::Invalid("Path does not exist".into()))
+        }
+    }
+}
+
+#[derive(Serialize, Default)]
 struct ConfigBuilder {
-    #[doc = "Control verbosity level of logging"]
+    #[doc = "Logging configuration"]
     logging: Option<LoggingConfig>,
 
-    #[doc = "Configure dependency handling"]
+    #[doc = "Dependency handling settings"]
     dependencies: Option<DependencyConfig>,
+}
+
+impl ConfigBuilder {
+    fn preview(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let toml_str = toml::to_string_pretty(&self)?;
+        Ok(format!(
+            "\nPreview of config.toml:\n{}\n{}\n{}\n",
+            "=".repeat(40).blue(),
+            toml_str.green(),
+            "=".repeat(40).blue()
+        ))
+    }
+
+    fn validate(&self) -> Result<(), String> {
+        if let Some(deps) = &self.dependencies {
+            // Check for conflicting settings
+            if let Some(ref features) = deps.always_include_features {
+                if let Some(ref excluded) = deps.global_excluded_features {
+                    let conflicts: Vec<_> =
+                        features.iter().filter(|f| excluded.contains(*f)).collect();
+                    if !conflicts.is_empty() {
+                        return Err(format!(
+                            "Features cannot be both always included and excluded: {:?}",
+                            conflicts
+                        ));
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Default, Serialize)]
@@ -83,73 +123,203 @@ struct FeatureOverride {
     required_features: Vec<String>,
 }
 
-fn prompt_config() -> Result<ConfigBuilder, Box<dyn std::error::Error>> {
+async fn prompt_feature_override() -> Result<(String, FeatureOverride), Box<dyn std::error::Error>>
+{
+    let crate_name = Text::new("Crate name:")
+        .with_help_message("Enter the name of the crate to override")
+        .prompt()?;
+
+    let excluded = Text::new("Excluded features (comma-separated):").prompt()?;
+    let excluded_features = excluded
+        .split(',')
+        .map(str::trim)
+        .map(String::from)
+        .collect::<Vec<_>>();
+
+    let required = Text::new("Required features (comma-separated):").prompt()?;
+    let required_features = required
+        .split(',')
+        .map(str::trim)
+        .map(String::from)
+        .collect();
+
+    Ok((
+        crate_name.clone(),
+        FeatureOverride {
+            crate_name,
+            excluded_features,
+            required_features,
+        },
+    ))
+}
+
+async fn prompt_config() -> Result<ConfigBuilder, Box<dyn std::error::Error>> {
     let mut config = ConfigBuilder::default();
 
-    if Confirm::new("Configure logging?").prompt()? {
-        let mut logging = LoggingConfig::default();
-
-        let level = inquire::Select::new(
-            "Default verbosity level:",
-            vec!["error", "warn", "info", "debug"],
+    loop {
+        let action = Select::new(
+            "Configure:",
+            vec![
+                "Logging",
+                "Dependencies",
+                "Preview Configuration",
+                "Save and Exit",
+                "Cancel",
+            ],
         )
         .prompt()?;
-        logging.default_verbosity = Some(level.to_string());
 
-        config.logging = Some(logging);
-    }
-
-    if Confirm::new("Configure dependency handling?").prompt()? {
-        let mut deps = DependencyConfig::default();
-
-        deps.exclude_unstable_features = Some(Confirm::new("Exclude unstable features?").prompt()?);
-
-        if Confirm::new("Configure always-included features?").prompt()? {
-            let features = Text::new("Enter features (comma-separated):").prompt()?;
-            deps.always_include_features = Some(
-                features
-                    .split(',')
-                    .map(str::trim)
-                    .map(String::from)
-                    .collect(),
-            );
+        match action {
+            "Logging" => {
+                config.logging = Some(prompt_logging_config()?);
+            }
+            "Dependencies" => {
+                config.dependencies = Some(prompt_dependency_config().await?);
+            }
+            "Preview Configuration" => {
+                println!("{}", config.preview()?);
+            }
+            "Save and Exit" => {
+                if let Err(e) = config.validate() {
+                    println!("{}", format!("Configuration Error: {}", e).red());
+                    continue;
+                }
+                break;
+            }
+            "Cancel" => {
+                return Err("Configuration cancelled".into());
+            }
+            _ => unreachable!(),
         }
-
-        // Similar prompts for other fields...
-
-        config.dependencies = Some(deps);
     }
 
     Ok(config)
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Welcome to thag config generator!");
+fn prompt_logging_config() -> Result<LoggingConfig, Box<dyn std::error::Error>> {
+    let mut config = LoggingConfig::default();
 
-    let config = prompt_config()?;
+    let level = Select::new(
+        "Default verbosity level:",
+        vec!["error", "warn", "info", "debug"],
+    )
+    .prompt()?;
 
-    // Generate TOML
+    config.default_verbosity = Some(level.to_string());
+
+    Ok(config)
+}
+
+async fn prompt_dependency_config() -> Result<DependencyConfig, Box<dyn std::error::Error>> {
+    let mut config = DependencyConfig::default();
+
+    config.exclude_unstable_features = Some(Confirm::new("Exclude unstable features?").prompt()?);
+
+    if Confirm::new("Configure always-included features?").prompt()? {
+        let features = Text::new("Enter features (comma-separated):").prompt()?;
+        config.always_include_features = Some(
+            features
+                .split(',')
+                .map(str::trim)
+                .map(String::from)
+                .collect(),
+        );
+    }
+
+    if Confirm::new("Configure globally excluded features?").prompt()? {
+        let features = Text::new("Enter features to exclude (comma-separated):").prompt()?;
+        config.global_excluded_features = Some(
+            features
+                .split(',')
+                .map(str::trim)
+                .map(String::from)
+                .collect(),
+        );
+    }
+
+    if Confirm::new("Add crate-specific feature overrides?").prompt()? {
+        let mut overrides = Vec::new();
+        while Confirm::new("Add another crate override?").prompt()? {
+            let crate_name = Text::new("Crate name:").prompt()?;
+
+            let excluded = Text::new("Excluded features (comma-separated):").prompt()?;
+            let excluded_features = excluded
+                .split(',')
+                .map(str::trim)
+                .map(String::from)
+                .collect();
+
+            let required = Text::new("Required features (comma-separated):").prompt()?;
+            let required_features = required
+                .split(',')
+                .map(str::trim)
+                .map(String::from)
+                .collect();
+
+            overrides.push(FeatureOverride {
+                crate_name,
+                excluded_features,
+                required_features,
+            });
+        }
+        if !overrides.is_empty() {
+            config.feature_overrides = Some(overrides);
+        }
+    }
+
+    Ok(config)
+}
+
+fn get_doc_comments<T>() -> Vec<(String, String)> {
+    // For now, just return empty vec
+    // We'll implement proper doc extraction later
+    Vec::new()
+}
+
+fn add_toml_comments(toml_str: &str, _doc_comments: &[(String, String)]) -> String {
+    // For now, just add some basic comments
+    format!("# Generated by thag_config_builder\n\n{}", toml_str)
+}
+
+fn save_config(config: &ConfigBuilder, path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    // Create backup if exists
+    if path.exists() {
+        let backup_path = path.with_extension("toml.bak");
+        fs::rename(path, &backup_path)?;
+        println!("{}", format!("Created backup at {:?}", backup_path).blue());
+    }
+
+    // Generate TOML with comments
     let toml_str = toml::to_string_pretty(&config)?;
-
-    // Add doc comments as TOML comments
     let doc_comments = get_doc_comments::<ConfigBuilder>();
     let final_config = add_toml_comments(&toml_str, &doc_comments);
 
-    // Save with backup
+    // Save
+    fs::create_dir_all(path.parent().unwrap())?;
+    fs::write(path, final_config)?;
+
+    println!("{}", format!("Configuration saved to {:?}", path).green());
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("{}", "Welcome to thag config generator!".bold());
+
+    let config = prompt_config().await?;
+
     let config_path = dirs::config_dir()
         .ok_or("Could not determine config directory")?
         .join("thag_rs")
         .join("config.toml");
 
-    if config_path.exists() {
-        let backup_path = config_path.with_extension("toml.bak");
-        fs::rename(&config_path, &backup_path)?;
-        println!("Created backup at {:?}", backup_path);
+    // Show final preview
+    println!("{}", config.preview()?);
+    if Confirm::new("Save this configuration?").prompt()? {
+        save_config(&config, &config_path)?;
+    } else {
+        println!("Configuration not saved.");
     }
 
-    fs::create_dir_all(config_path.parent().unwrap())?;
-    fs::write(&config_path, final_config)?;
-
-    println!("Configuration saved to {:?}", config_path);
     Ok(())
 }

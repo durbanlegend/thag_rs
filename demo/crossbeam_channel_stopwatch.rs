@@ -11,6 +11,7 @@ signal-hook = "0.3.17"
 /// Windows provided you run the script with the `--multimain (-m)` option.
 //# Purpose: showcase featured crates.
 //# Categories: crates
+#[cfg(windows)]
 use std::process;
 
 fn main() {

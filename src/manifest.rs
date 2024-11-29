@@ -15,6 +15,8 @@ use serde_merge::omerge;
 use std::time::Instant;
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
+#[allow(clippy::missing_panics_doc)]
+#[must_use]
 pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
     profile_fn!(cargo_lookup);
 
@@ -361,6 +363,7 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
 
         // Full-featured block
         let mut featured_block = String::from("/*[toml]\n[dependencies]\n");
+        let mut has_features = false;
         for dep in &found_deps {
             if let Some(features) = &dep.features {
                 if features.is_empty() {
@@ -376,6 +379,9 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
                         dep.name, dep.version, features_str
                     );
                     featured_block.push_str(&dep_line);
+                    if !has_features {
+                        has_features = true;
+                    }
                 }
             } else {
                 add_simple_feature(dep, &mut featured_block);
@@ -384,13 +390,21 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         featured_block.push_str("*/");
 
         let styled_simple = Style::from(&Lvl::SUBH).paint(&simple_block);
-        let styled_featured = Style::from(&Lvl::SUBH).paint(&featured_block);
-        vlog!(
-            V::N,
-            "\nYou can copy one of the following toml blocks into your script:\n\nSimple version:\n{}\n\nFull-featured version:\n{}\n",
-            styled_simple,
-            styled_featured
-        );
+        if has_features {
+            let styled_featured = Style::from(&Lvl::SUBH).paint(&featured_block);
+            vlog!(
+                V::N,
+                "\nYou can copy or merge one of the following toml blocks into your script:\n\nSimple version:\n{}\n\nFull-featured version:\n{}\n",
+                styled_simple,
+                styled_featured
+            );
+        } else {
+            vlog!(
+                V::N,
+                "\nYou can copy or merge the following toml block into your script:\n\nSimple version because no features found:\n{}\n",
+                styled_simple,
+            );
+        }
     }
 }
 

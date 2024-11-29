@@ -34,12 +34,13 @@ fn maybe_load_config() -> Option<Config> {
             None
         }
         Err(e) => {
-            eprintln!("Failed to load config: {}", e);
+            eprintln!("Failed to load config: {e}");
             None
         }
     }
 }
 
+/// Configuration categories
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
@@ -50,11 +51,14 @@ pub struct Config {
     pub misc: Misc,
 }
 
+/// Dependency handling
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Dependencies {
+    ///  Exclude features containing "unstable"
     pub exclude_unstable_features: bool,
+    /// # Exclude the "std" feature
     pub exclude_std_feature: bool,
     pub use_detailed_dependencies: bool,
     pub always_include_features: Vec<String>,
@@ -68,6 +72,7 @@ pub struct Dependencies {
 }
 
 impl Dependencies {
+    #[must_use]
     pub fn filter_features(&self, crate_name: &str, features: Vec<String>) -> Vec<String> {
         let mut filtered = features;
 
@@ -82,19 +87,16 @@ impl Dependencies {
         if !self.global_excluded_features.is_empty() {
             #[cfg(debug_assertions)]
             let before_len = filtered.len();
-            filtered = filtered
-                .into_iter()
-                .filter(|f| {
-                    let keep = !self
-                        .global_excluded_features
-                        .iter()
-                        .any(|ex| f.contains(ex));
-                    if !keep {
-                        debug_log!("Excluding feature '{}' due to global exclusion", f);
-                    }
-                    keep
-                })
-                .collect();
+            filtered.retain(|f| {
+                let keep = !self
+                    .global_excluded_features
+                    .iter()
+                    .any(|ex| f.contains(ex));
+                if !keep {
+                    debug_log!("Excluding feature '{}' due to global exclusion", f);
+                }
+                keep
+            });
             #[cfg(debug_assertions)]
             if filtered.len() < before_len {
                 debug_log!(
@@ -111,17 +113,14 @@ impl Dependencies {
 
             // Remove excluded features
             let before_len = filtered.len();
-            filtered = filtered
-                .into_iter()
-                .filter(|f| {
-                    let keep = self.always_include_features.contains(f)
-                        || !override_config.excluded_features.contains(f);
-                    if !keep {
-                        debug_log!("Excluding feature '{}' due to crate-specific override", f);
-                    }
-                    keep
-                })
-                .collect();
+            filtered.retain(|f| {
+                let keep = self.always_include_features.contains(f)
+                    || !override_config.excluded_features.contains(f);
+                if !keep {
+                    debug_log!("Excluding feature '{}' due to crate-specific override", f);
+                }
+                keep
+            });
 
             // Add required features
             for f in &override_config.required_features {
@@ -144,29 +143,23 @@ impl Dependencies {
 
         // Apply other existing filters
         if self.exclude_unstable_features {
-            filtered = filtered
-                .into_iter()
-                .filter(|f| {
-                    let keep = !f.contains("unstable") || self.always_include_features.contains(f);
-                    if !keep {
-                        debug_log!("Excluding unstable feature '{}'", f);
-                    }
-                    keep
-                })
-                .collect();
+            filtered.retain(|f| {
+                let keep = !f.contains("unstable") || self.always_include_features.contains(f);
+                if !keep {
+                    debug_log!("Excluding unstable feature '{}'", f);
+                }
+                keep
+            });
         }
 
         if self.exclude_std_feature {
-            filtered = filtered
-                .into_iter()
-                .filter(|f| {
-                    let keep = f != "std" || self.always_include_features.contains(f);
-                    if !keep {
-                        debug_log!("Excluding std feature");
-                    }
-                    keep
-                })
-                .collect();
+            filtered.retain(|f| {
+                let keep = f != "std" || self.always_include_features.contains(f);
+                if !keep {
+                    debug_log!("Excluding std feature");
+                }
+                keep
+            });
         }
 
         // Remove duplicates
@@ -180,6 +173,7 @@ impl Dependencies {
     }
 
     // Make should_include_feature use filter_features
+    #[must_use]
     pub fn should_include_feature(&self, feature: &str, crate_name: &str) -> bool {
         self.filter_features(crate_name, vec![feature.to_string()])
             .contains(&feature.to_string())
@@ -201,6 +195,13 @@ pub struct Logging {
     pub default_verbosity: Verbosity,
 }
 
+/// Color support override. Sets the terminal's color support level. The alternative is
+/// to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
+/// to interrogate the terminal, which could cause misbehaviour, or may choose a default,
+/// which might not take advantage of the full capabilities of the terminal.
+/// If the terminal can't handle your chosen level, this may cause unwanted control strings
+/// to be interleaved with the messages.
+/// If your terminal can handle 16m colors, choose xterm256
 #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Colors {
@@ -212,6 +213,7 @@ pub struct Colors {
     pub term_theme: TermTheme,
 }
 
+/// Loction of demo proc macros
 #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
@@ -220,6 +222,7 @@ pub struct ProcMacros {
     pub proc_macro_crate_path: Option<String>,
 }
 
+/// Miscellaneous configuration parameters
 #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
@@ -282,7 +285,13 @@ impl Context for RealContext {
     }
 }
 
-#[must_use]
+/// Load the existing configuration file, if one exists at the specified location.
+/// The absence of a configuration file is not an error.
+///
+/// # Errors
+///
+/// This function will return an error if it either finds a file and fails to read it,
+/// or reads the file and fails to parse it..
 pub fn load(context: &dyn Context) -> ThagResult<Option<Config>> {
     profile_fn!(load);
     let config_path = context.get_config_path();
@@ -291,13 +300,12 @@ pub fn load(context: &dyn Context) -> ThagResult<Option<Config>> {
 
     if config_path.exists() {
         let config_str = fs::read_to_string(&config_path)
-            .map_err(|e| format!("Failed to read config file: {}", e))?;
+            .map_err(|e| format!("Failed to read config file: {e}"))?;
 
         match toml::from_str(&config_str) {
             Ok(config) => Ok(Some(config)),
             Err(e) => Err(format!(
-                "Failed to parse config file: {}\nConfig content:\n{}",
-                e, config_str
+                "Failed to parse config file: {e}\nConfig content:\n{config_str}"
             )
             .into()),
         }

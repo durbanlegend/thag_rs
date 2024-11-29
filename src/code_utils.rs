@@ -99,16 +99,17 @@ pub fn read_file_contents(path: &Path) -> ThagResult<String> {
 /// Infer dependencies from AST-derived metadata to put in a Cargo.toml.
 #[must_use]
 pub fn infer_deps_from_ast(
-    use_crates: &[String],
+    crates_finder: &crate::shared::CratesFinder,
     metadata_finder: &crate::shared::MetadataFinder,
 ) -> Vec<String> {
     profile_fn!(infer_deps_from_ast);
     let mut dependencies = vec![];
-    dependencies.extend_from_slice(use_crates);
-    let to_remove: HashSet<String> = metadata_finder
+    dependencies.extend_from_slice(&crates_finder.crates);
+    let to_remove: HashSet<String> = crates_finder
         .names_to_exclude
         .iter()
         .cloned()
+        .chain(metadata_finder.names_to_exclude.iter().cloned())
         .chain(metadata_finder.mods_to_exclude.iter().cloned())
         .chain(BUILT_IN_CRATES.iter().map(Deref::deref).map(String::from))
         .collect();
@@ -147,7 +148,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     let modules = find_modules_source(code);
 
     let mut dependencies =
-        extract_and_wrap_uses(code).map_or_else(|_| vec![], |ast| find_crates(&ast));
+        extract_and_wrap_uses(code).map_or_else(|_| vec![], |ast| find_crates(&ast).crates);
     // eprintln!("dependencies (before)={dependencies:#?}");
 
     let to_remove: HashSet<String> = use_renames_to

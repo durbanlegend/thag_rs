@@ -85,9 +85,10 @@ struct BuildPaths {
     cargo_toml_path: PathBuf,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct CratesFinder {
     pub crates: Vec<String>,
+    pub names_to_exclude: Vec<String>,
 }
 
 impl<'a> Visit<'a> for CratesFinder {
@@ -109,16 +110,70 @@ impl<'a> Visit<'a> for CratesFinder {
             UseTree::Group(_) => {
                 syn::visit::visit_use_tree(self, node);
             }
-            UseTree::Path(_) | UseTree::Name(_) => {
-                let node_name = match node {
-                    UseTree::Path(p) => p.ident.to_string(),
-                    UseTree::Name(n) => n.ident.to_string(),
-                    _ => unreachable!(),
-                };
+            UseTree::Path(p) => {
+                let node_name = p.ident.to_string();
                 // Only add if not capitalized
                 if is_valid_crate_name(&node_name) && !self.crates.contains(&node_name) {
-                    eprintln!("visit_use_tree pushing {node_name} to crates");
+                    eprintln!("visit_use_tree pushing path name {node_name} to crates");
                     self.crates.push(node_name);
+                }
+                let use_tree = &*p.tree;
+                match use_tree {
+                    UseTree::Path(child) => {
+                        // if we have `use a::b::c;`, we want a to be recognised as
+                        // a crate while b and c are excluded, This takes care of b
+                        // when the parent node is a.
+                        let child_name = child.ident.to_string();
+                        if !self.names_to_exclude.contains(&child_name) {
+                            self.names_to_exclude.push(child_name);
+                        }
+                    }
+                    UseTree::Name(child) => {
+                        // if we have `use a::b::c;`, we want a to be recognised as
+                        // a crate while b and c are excluded, This takes care of c
+                        // when the parent node is b.
+                        let child_name = child.ident.to_string();
+                        if !self.names_to_exclude.contains(&child_name) {
+                            self.names_to_exclude.push(child_name);
+                        }
+                    }
+                    UseTree::Group(group) => {
+                        for child in &group.items {
+                            // if we have `use a::{b, c};`, we want a to be recognised as
+                            // a crate while b and c are excluded, This takes care of b and c
+                            // when the parent node is a.
+                            match child {
+                                UseTree::Path(child) => {
+                                    // if we have `use a::b::c;`, we want a to be recognised as
+                                    // a crate while b and c are excluded, This takes care of b
+                                    // when the parent node is a.
+                                    let child_name = child.ident.to_string();
+                                    if !self.names_to_exclude.contains(&child_name) {
+                                        self.names_to_exclude.push(child_name);
+                                    }
+                                }
+                                UseTree::Name(child) => {
+                                    // if we have `use a::b::c;`, we want a to be recognised as
+                                    // a crate while b and c are excluded, This takes care of c
+                                    // when the parent node is b.
+                                    let child_name = child.ident.to_string();
+                                    if !self.names_to_exclude.contains(&child_name) {
+                                        self.names_to_exclude.push(child_name);
+                                    }
+                                }
+                                _ => (),
+                            }
+                        }
+                    }
+                    _ => (),
+                }
+                syn::visit::visit_use_tree(self, node);
+            }
+            UseTree::Name(n) => {
+                let node_name = n.ident.to_string();
+                eprintln!("visit_use_tree pushing end name {node_name} to names_to_exclude");
+                if !self.names_to_exclude.contains(&node_name) {
+                    self.names_to_exclude.push(node_name);
                 }
             }
             _ => (),
@@ -126,6 +181,7 @@ impl<'a> Visit<'a> for CratesFinder {
     }
 
     fn visit_expr_path(&mut self, expr_path: &'a syn::ExprPath) {
+        profile_method!(visit_expr_path);
         if expr_path.path.segments.len() > 1 {
             // must have the form a::b so not a variable
             if let Some(first_seg) = expr_path.path.segments.first() {
@@ -160,6 +216,7 @@ impl<'a> Visit<'a> for CratesFinder {
 
     // Handle macro invocations
     fn visit_macro(&mut self, mac: &'a syn::Macro) {
+        profile_method!(visit_macro);
         // Get the macro path (e.g., "serde_json::json" from "serde_json::json!()")
         if mac.path.segments.len() > 1 {
             if let Some(first_seg) = mac.path.segments.first() {
@@ -175,6 +232,7 @@ impl<'a> Visit<'a> for CratesFinder {
 
     // Handle trait implementations
     fn visit_item_impl(&mut self, item: &'a syn::ItemImpl) {
+        profile_method!(visit_item_impl);
         // Check the trait being implemented (if any)
         if let Some((_, path, _)) = &item.trait_ {
             if let Some(first_seg) = path.segments.first() {
@@ -201,6 +259,7 @@ impl<'a> Visit<'a> for CratesFinder {
 
     // Handle associated types
     fn visit_item_type(&mut self, item: &'a syn::ItemType) {
+        profile_method!(visit_item_type);
         if let syn::Type::Path(type_path) = &*item.ty {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
@@ -215,6 +274,7 @@ impl<'a> Visit<'a> for CratesFinder {
 
     // Handle generic bounds
     fn visit_type_param_bound(&mut self, bound: &'a syn::TypeParamBound) {
+        profile_method!(visit_type_param_bound);
         if let syn::TypeParamBound::Trait(trait_bound) = bound {
             if let Some(first_seg) = trait_bound.path.segments.first() {
                 let name = first_seg.ident.to_string();
@@ -266,22 +326,22 @@ impl<'a> Visit<'a> for MetadataFinder {
 }
 
 fn is_valid_crate_name(name: &str) -> bool {
+    const SKIP_NAMES: &[&str] = &[
+        "self", "super", "crate", "str", "line", "key", "style", "cmd", "e", "command", "error",
+        "matches", "split", "x", "panic", "bool", "fs",
+    ];
+
     // First check if it starts with uppercase
     if name.chars().next().unwrap_or('_').is_uppercase() {
         return false;
     }
 
     // Then check against known non-crate names (only lowercase ones needed)
-    const SKIP_NAMES: &[&str] = &[
-        "self", "super", "crate", "str", "line", "key", "style", "cmd", "e", "command", "error",
-        "matches", "split", "x", "panic", "bool", "fs",
-    ];
-
     !SKIP_NAMES.contains(&name)
 }
 
 #[must_use]
-pub fn find_crates(syntax_tree: &Ast) -> Vec<String> {
+pub fn find_crates(syntax_tree: &Ast) -> CratesFinder {
     profile_fn!(find_crates);
     let mut crates_finder = CratesFinder::default();
 
@@ -290,7 +350,7 @@ pub fn find_crates(syntax_tree: &Ast) -> Vec<String> {
         Ast::Expr(ast) => crates_finder.visit_expr(ast),
     }
 
-    crates_finder.crates
+    crates_finder
 }
 
 #[must_use]
@@ -327,7 +387,7 @@ pub struct BuildState {
     pub must_build: bool,
     pub build_from_orig_source: bool,
     pub ast: Option<Ast>,
-    pub crates_finder: Option<Vec<String>>,
+    pub crates_finder: Option<CratesFinder>,
     pub metadata_finder: Option<MetadataFinder>,
 }
 
@@ -538,7 +598,7 @@ impl BuildState {
         script_state: &ScriptState,
         flags: &ExecutionFlags,
     ) -> ThagResult<()> {
-        profile_fn!(determine_build_requirements);
+        profile_method!(determine_build_requirements);
         // Case 1: Force generation and building
         if flags.is_dynamic
             || flags.is_repl
@@ -579,7 +639,7 @@ impl BuildState {
 
     #[cfg(debug_assertions)]
     fn validate_state(&self, proc_flags: &ProcFlags) {
-        profile_fn!(validate_state);
+        profile_method!(validate_state);
         // Validate build/check/executable/expand flags
         if proc_flags.contains(ProcFlags::BUILD)
             | proc_flags.contains(ProcFlags::CHECK)

@@ -256,6 +256,24 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ---
 
+### Script: cargo_lookup.rs
+
+**Description:**  Explore querying crates.io information for a crate.
+
+ Format: `thag demo/cargo_lookup.rs -- <crate_name>`
+
+**Purpose:** proof of concept
+
+**Crates:** `cargo_lookup`
+
+**Type:** Program
+
+**Categories:** crates, technique
+
+**Link:** [cargo_lookup.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.rs)
+
+---
+
 ### Script: cargo_output.rs
 
 **Description:**  Run a command (in this case a cargo search for the `log` crate),
@@ -549,10 +567,18 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 ### Script: config.rs
 
 **Description:**  Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
+ Initializes and returns the configuration.
+ A struct for use in normal execution, as opposed to use in testing.
+ Open the configuration file in an editor.
+ # Errors
+ Will return `Err` if there is an error editing the file.
+ # Panics
+ Will panic if it can't create the parent directory for the configuration.
+ Main function for use by testing or the script runner.
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
-**Crates:** `serde`, `serde_with`, `strum_macros`
+**Crates:** `edit`, `firestorm`, `home`, `mockall`, `serde`, `serde_with`, `thag_rs`
 
 **Type:** Program
 
@@ -2107,6 +2133,24 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ---
 
+### Script: infer_deps.rs
+
+**Description:**  Interactively test dependency inferency. This script was arbitrarily copied from
+ demo/repl_partial_match.rs.
+ Experiment with matching REPL commands with a partial match of any length.
+
+**Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
+
+**Crates:** `clap`, `console`, `rustyline`, `strum`
+
+**Type:** Program
+
+**Categories:** crates, REPL, technique
+
+**Link:** [infer_deps.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs)
+
+---
+
 ### Script: inline_colorization.rs
 
 **Description:**  Published simple example from `inline_colorization` crate. Simple effective inline
@@ -2132,7 +2176,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Crates:** `syn`
 
-**Type:** Snippet
+**Type:** Program
 
 **Categories:** AST, crates, technique
 
@@ -3358,6 +3402,22 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ---
 
+### Script: semver_exclude_prerelease.rs
+
+**Description:**  Prototype of excluding pre-release crates from cargo queries.
+
+**Purpose:** Prototype technique for `thag_rs`.
+
+**Crates:** `semver`
+
+**Type:** Program
+
+**Categories:** prototype, technique
+
+**Link:** [semver_exclude_prerelease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude_prerelease.rs)
+
+---
+
 ### Script: side_by_side_diff.rs
 
 **Description:**  Published example from `side-by-side-diff` crate.
@@ -3838,6 +3898,37 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ---
 
+### Script: thag_config_builder.rs
+
+**Description:**  Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
+
+**Purpose:** Handy configuration file builder.
+
+**Crates:** `colored`, `inquire`, `serde`, `syn`
+
+**Type:** Program
+
+**Categories:** crates, technique, tools
+
+**Link:** [thag_config_builder.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder.rs)
+
+---
+
+### Script: thag_config_builder_new.rs
+
+**Description:** 
+**Purpose:** 
+
+**Crates:** `colored`, `inquire`, `syn`, `thag_rs`
+
+**Type:** Program
+
+**Categories:** missing
+
+**Link:** [thag_config_builder_new.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder_new.rs)
+
+---
+
 ### Script: thag_crokey_print_key.rs
 
 **Description:**  Published example of KeyCombination from `crokey` crate, modified to use
@@ -3874,6 +3965,21 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ---
 
+### Script: thag_prompt.rs
+
+**Description:** 
+**Purpose:** 
+
+**Crates:** `inquire`
+
+**Type:** Program
+
+**Categories:** missing
+
+**Link:** [thag_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs)
+
+---
+
 ### Script: thag_to_rust_script.rs
 
 **Description:**  Converts embedded manifest format from `thag` to `rust-script`.
@@ -3885,6 +3991,21 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, tools
 
 **Link:** [thag_to_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_script.rs)
+
+---
+
+### Script: thag_url.rs
+
+**Description:** 
+**Purpose:** 
+
+**Crates:** `url`
+
+**Type:** Program
+
+**Categories:** missing
+
+**Link:** [thag_url.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs)
 
 ---
 

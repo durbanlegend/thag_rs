@@ -8,8 +8,10 @@ use crate::debug_timings;
 #[cfg(target_os = "windows")]
 use crate::escape_path_for_windows;
 use crate::{
-    cvprtln, debug_log, shared::find_crates, vlog, Ast, BuildState, Cli, Lvl, ThagError,
-    ThagResult, BUILT_IN_CRATES, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
+    cvprtln, debug_log,
+    shared::{find_crates, find_metadata},
+    vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult, BUILT_IN_CRATES, DYNAMIC_SUBDIR,
+    TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use cargo_toml::{Edition, Manifest};
 use firestorm::{profile_fn, profile_method, profile_section};
@@ -138,42 +140,39 @@ pub fn infer_deps_from_ast(
 pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     profile_fn!(infer_deps_from_source);
 
+    if code.trim().is_empty() {
+        return vec![];
+    }
+
+    let maybe_ast = extract_and_wrap_uses(code);
+    let mut dependencies = maybe_ast.map_or_else(
+        |_| {
+            cvprtln!(
+                Lvl::ERR,
+                V::QQ,
+                "Could not parse code into an abstract syntax tree"
+            );
+            vec![]
+        },
+        |ast| {
+            let crates_finder = find_crates(&ast);
+            let metadata_finder = find_metadata(&ast);
+            infer_deps_from_ast(&crates_finder, &metadata_finder)
+        },
+    );
+
     let macro_use_regex: &Regex = regex!(r"(?m)^[\s]*#\[macro_use\((\w+)\)");
     let extern_crate_regex: &Regex = regex!(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)");
 
-    let (use_renames_from, use_renames_to) = find_use_renames_source(code);
-    // eprintln!("use_renames_from={use_renames_from:#?}");
-    // eprintln!("use_renames_to={use_renames_to:#?}");
-
     let modules = find_modules_source(code);
 
-    let mut dependencies =
-        extract_and_wrap_uses(code).map_or_else(|_| vec![], |ast| find_crates(&ast).crates);
-    // eprintln!("dependencies (before)={dependencies:#?}");
-
-    let to_remove: HashSet<String> = use_renames_to
-        .iter()
-        .cloned()
-        .chain(modules.iter().cloned())
-        .chain(BUILT_IN_CRATES.iter().map(Deref::deref).map(String::from))
-        .collect();
-    // eprintln!("to_remove={to_remove:#?}");
-
-    dependencies.retain(|e| !to_remove.contains(e));
+    dependencies.retain(|e| !modules.contains(e));
     // eprintln!("dependencies (after)={dependencies:#?}");
-
-    // Similar checks for other regex patterns
-    for crate_name in use_renames_from {
-        println!("dependency={crate_name}");
-        if !to_remove.contains(&crate_name) {
-            dependencies.push(crate_name);
-        }
-    }
 
     for cap in macro_use_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
         // eprintln!("macro-use crate_name={crate_name:#?}");
-        if !to_remove.contains(&crate_name) {
+        if !modules.contains(&crate_name) {
             dependencies.push(crate_name);
         }
     }
@@ -181,16 +180,11 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     for cap in extern_crate_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
         // eprintln!("extern-crate crate_name={crate_name:#?}");
-        if !to_remove.contains(&crate_name) {
+        if !modules.contains(&crate_name) {
             dependencies.push(crate_name);
         }
     }
-
-    // Deduplicate the list of dependencies
     dependencies.sort();
-    dependencies.dedup();
-
-    println!("dependencies from source={dependencies:#?}");
     dependencies
 }
 
@@ -452,7 +446,7 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     let start_ast = Instant::now();
     #[allow(clippy::option_if_let_else)]
     if let Ok(tree) = {
-        profile_section!(parse_file);
+        profile_section!(to_ast_syn_parse_file);
         syn::parse_file(source_code)
     } {
         #[cfg(debug_assertions)]
@@ -461,7 +455,10 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
         #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))
-    } else if let Ok(tree) = extract_ast_expr(source_code) {
+    } else if let Ok(tree) = {
+        profile_section!(to_ast_syn_parse_expr);
+        extract_ast_expr(source_code)
+    } {
         #[cfg(debug_assertions)]
         cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::Expr");
         #[cfg(debug_assertions)]

@@ -125,6 +125,9 @@ impl<'a> Visit<'a> for CratesFinder {
                         // when the parent node is a.
                         let child_name = child.ident.to_string();
                         if !self.names_to_exclude.contains(&child_name) {
+                            eprintln!(
+                                "visit_use_tree pushing mid name {child_name} to names_to_exclude"
+                            );
                             self.names_to_exclude.push(child_name);
                         }
                     }
@@ -134,6 +137,9 @@ impl<'a> Visit<'a> for CratesFinder {
                         // when the parent node is b.
                         let child_name = child.ident.to_string();
                         if !self.names_to_exclude.contains(&child_name) {
+                            eprintln!(
+                                "visit_use_tree pushing end name {child_name} to names_to_exclude (1)"
+                            );
                             self.names_to_exclude.push(child_name);
                         }
                     }
@@ -149,6 +155,9 @@ impl<'a> Visit<'a> for CratesFinder {
                                     // when the parent node is a.
                                     let child_name = child.ident.to_string();
                                     if !self.names_to_exclude.contains(&child_name) {
+                                        eprintln!(
+                                            "visit_use_tree pushing member name {child_name} to names_to_exclude"
+                                        );
                                         self.names_to_exclude.push(child_name);
                                     }
                                 }
@@ -158,6 +167,8 @@ impl<'a> Visit<'a> for CratesFinder {
                                     // when the parent node is b.
                                     let child_name = child.ident.to_string();
                                     if !self.names_to_exclude.contains(&child_name) {
+                                        eprintln!(
+                                            "visit_use_tree pushing grpend name {child_name} to names_to_exclude");
                                         self.names_to_exclude.push(child_name);
                                     }
                                 }
@@ -171,9 +182,9 @@ impl<'a> Visit<'a> for CratesFinder {
             }
             UseTree::Name(n) => {
                 let node_name = n.ident.to_string();
-                eprintln!("visit_use_tree pushing end name {node_name} to names_to_exclude");
-                if !self.names_to_exclude.contains(&node_name) {
-                    self.names_to_exclude.push(node_name);
+                if !self.crates.contains(&node_name) {
+                    eprintln!("visit_use_tree pushing end name {node_name} to crates (2)");
+                    self.crates.push(node_name);
                 }
             }
             _ => (),
@@ -279,7 +290,7 @@ impl<'a> Visit<'a> for CratesFinder {
             if let Some(first_seg) = trait_bound.path.segments.first() {
                 let name = first_seg.ident.to_string();
                 if is_valid_crate_name(&name) && !self.crates.contains(&name) {
-                    eprintln!("visit_type_param_bound pushing {name} to crates (2)");
+                    eprintln!("visit_type_param_bound pushing first {name} to crates");
                     self.crates.push(name);
                 }
             }
@@ -299,6 +310,10 @@ pub struct MetadataFinder {
 impl<'a> Visit<'a> for MetadataFinder {
     fn visit_use_rename(&mut self, node: &'a UseRename) {
         profile_method!(visit_use_rename);
+        eprintln!(
+            "visit_use_rename pushing {} to names_to_exclude",
+            node.rename
+        );
         self.names_to_exclude.push(node.rename.to_string());
         syn::visit::visit_use_rename(self, node);
     }

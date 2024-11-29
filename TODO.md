@@ -25,7 +25,6 @@
 - [ ]  >>> Debug: History older than max isn't being removed even though only .
 - [ ]  Picking up "panic", "bool", "fs" in dependency inference.
 - [ ]  Add new thag config / CLI option for dependency inference: infer max (default) / infer min / respect toml / advise / ignore
-
 - [ ]  Add a --test option
 find_use_renames_ast
 find_modules_ast
@@ -50,17 +49,7 @@ https://raw.githubusercontent.com/durbanlegend/thag_rs/3f52d4c4590c0573ad130727e
 thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
-```rust
-// Example usage in prompts
-let version = Text::new("Enter minimum version:")
-    .with_validator(VersionValidator)
-    .prompt()?;
-
-let path = Text::new("Enter path:")
-    .with_validator(PathValidator)
-    .prompt()?;
-```
-
+- [ ]  Consider "magic" substitution of latest git with say rev = "$latest" inn toml block.
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output.

@@ -3,7 +3,7 @@
 syn = {version = "2.0.87", features = ["extra-traits", "full", "parsing"] }
 */
 
-/// Tries to convert input to a `syn` abstract syntax tree.
+/// Tries to convert input to a `syn` abstract syntax tree (syn::File).
 //# Purpose: Debugging
 //# Categories: AST, crates, technique
 use std::io::{self, Read};

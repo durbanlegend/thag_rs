@@ -1,4 +1,4 @@
-/*[toml]
+/*
 [dependencies]
 dirs = "5.0"
 edit = "0.1.5"
@@ -13,8 +13,14 @@ serde_with = "3.9"
 strum = "0.26"
 strum_macros = "0.26"
 supports-color = "3.0.0"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "4b0e49bbf916c81d947d970afbb71f0cd7059b7e"}
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "aebb9ecc21f3b2d1ad03b13f3e4f03cd1f78070b"}
 toml = "0.8"
+*/
+/*[toml]
+[dependencies]
+log = "0.4.22"
+# thag_rs = { path = "/Users/donf/projects/thag_rs" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "aebb9ecc21f3b2d1ad03b13f3e4f03cd1f78070b"}
 */
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
@@ -24,16 +30,21 @@ use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use home;
 use mockall::{automock, predicate::str};
-use serde::Deserialize;
+use nu_ansi_term;
+use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 #[cfg(target_os = "windows")]
 use std::env;
 use std::{
+    collections::HashMap,
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
 };
-use thag_rs::{lazy_static_var, ColorSupport, TermTheme, ThagResult, Verbosity};
+use thag_rs::{
+    cvprtln, debug_log, lazy_static_var, vlog, ColorSupport, Lvl, TermTheme, ThagResult, Verbosity,
+    V,
+};
 
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
@@ -53,7 +64,7 @@ fn maybe_load_config() -> Option<Config> {
     None::<Config>
 }
 
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
     pub logging: Logging,
@@ -64,7 +75,7 @@ pub struct Config {
 }
 
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Dependencies {
     pub exclude_unstable_features: bool,
@@ -206,7 +217,7 @@ impl Dependencies {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FeatureOverride {
     pub excluded_features: Vec<String>,
     pub required_features: Vec<String>,
@@ -214,7 +225,7 @@ pub struct FeatureOverride {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Logging {
     #[serde_as(as = "DisplayFromStr")]
@@ -222,7 +233,7 @@ pub struct Logging {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Colors {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
@@ -233,7 +244,7 @@ pub struct Colors {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ProcMacros {
     #[serde_as(as = "Option<DisplayFromStr>")]
@@ -241,7 +252,7 @@ pub struct ProcMacros {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Misc {
     #[serde_as(as = "DisplayFromStr")]
@@ -365,11 +376,16 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
 
 /// Main function for use by testing or the script runner.
 #[allow(dead_code)]
-fn main() {
+fn main() -> ThagResult<()> {
     let maybe_config = load(&RealContext::new());
 
     if let Some(config) = maybe_config {
-        eprintln!("Loaded config: {config:?}");
+        cvprtln!(Lvl::EMPH, V::QQ, "Loaded config:");
+        let toml = &toml::to_string_pretty(&config)?;
+        for line in toml.lines() {
+            cvprtln!(Lvl::BRI, V::QQ, "{line}");
+        }
+        eprintln!();
         eprintln!(
             "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
             config.logging.default_verbosity, config.colors.color_support, config.colors.term_theme
@@ -377,4 +393,5 @@ fn main() {
     } else {
         eprintln!("No configuration file found.");
     }
+    Ok(())
 }

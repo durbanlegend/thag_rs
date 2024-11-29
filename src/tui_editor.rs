@@ -929,10 +929,8 @@ pub fn script_key_handler(
                 if let Some(ref hist_path) = history_path {
                     hist.save_to_file(hist_path)?;
                 }
-                Ok(KeyAction::Continue)
-            } else {
-                Ok(KeyAction::Continue)
             }
+            Ok(KeyAction::Continue)
         }
         key!(f6) => {
             // Edit history
@@ -1147,11 +1145,11 @@ pub fn save_if_changed(
     Ok(())
 }
 
-/// Save a `TextArea` to history if it has changed.
-///
-/// # Errors
-///
-/// This function will bubble up any i/o errors encuntered.
+// Save a `TextArea` to history if it has changed.
+//
+// # Errors
+//
+// This function will bubble up any i/o errors encuntered.
 // pub fn remove_current_from_history(
 //     hist: &mut History,
 //     textarea: &mut TextArea<'_>,

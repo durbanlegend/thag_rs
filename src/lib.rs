@@ -27,7 +27,8 @@ pub mod tui_editor;
 pub use builder::{execute, gen_build_run, process_expr};
 pub use cmd_args::{get_args, get_proc_flags, validate_args, Cli, ProcFlags};
 pub use code_utils::{
-    create_temp_source_file, extract_ast_expr, extract_manifest, modified_since_compiled,
+    create_temp_source_file, disentangle, extract_ast_expr, extract_manifest,
+    modified_since_compiled,
 };
 pub use colors::{
     coloring, Ansi16DarkStyle, Ansi16LightStyle, ColorSupport, Lvl, MessageLevel, TermTheme,
@@ -39,6 +40,7 @@ pub use config::{
 };
 pub use errors::{ThagError, ThagResult};
 pub use keys::KeyCombination;
+pub use log;
 pub use logging::{get_verbosity, Verbosity, V};
 #[cfg(debug_assertions)]
 pub use shared::debug_timings;

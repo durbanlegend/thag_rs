@@ -13,14 +13,14 @@ serde_with = "3.9"
 strum = "0.26"
 strum_macros = "0.26"
 supports-color = "3.0.0"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "aebb9ecc21f3b2d1ad03b13f3e4f03cd1f78070b"}
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "79582b0a889bca191a15a9d85f7d4c0ab5fbab69"}
 toml = "0.8"
 */
 /*[toml]
 [dependencies]
 log = "0.4.22"
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "aebb9ecc21f3b2d1ad03b13f3e4f03cd1f78070b"}
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "79582b0a889bca191a15a9d85f7d4c0ab5fbab69"}
 */
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.

@@ -2,7 +2,7 @@
 [dependencies]
 bitflags = "2.5.0"
 clap = { version = "4.5.7", features = ["cargo", "derive"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "aebb9ecc21f3b2d1ad03b13f3e4f03cd1f78070b"}
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "79582b0a889bca191a15a9d85f7d4c0ab5fbab69"}
 */
 
 /// A prototype of the cmd_args module of thag_rs itself.

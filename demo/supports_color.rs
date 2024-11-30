@@ -10,11 +10,6 @@ supports-color= "3.0.0"
 /// serious work, but it can wreak havoc with your program's output.
 //# Purpose: Demo featured crate doing its job.
 //# Categories: crates
-use crossterm::{
-    cursor::{MoveTo, Show},
-    terminal::{Clear, ClearType},
-    ExecutableCommand,
-};
 use std::io::{stdout, Write};
 use supports_color::Stream;
 

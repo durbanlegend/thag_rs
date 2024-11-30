@@ -264,6 +264,7 @@ fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String
                     _ => {}
                 }
             } // ... rest of match arms stay the same ...
+            &_ => todo!(), // ... rest of match arms stay the same ...
         }
     }
 }

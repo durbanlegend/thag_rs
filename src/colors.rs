@@ -129,7 +129,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
                     ColorSupport::Xterm256 | ColorSupport::Ansi16 | ColorSupport::None => {
                         Some(config.colors.color_support.clone())
                     }
-                    ColorSupport::Default => get_color_level(),
+                    ColorSupport::AutoDetect => get_color_level(),
                 }
             })
     );
@@ -139,7 +139,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
         maybe_config().map_or_else(
             || { resolve_term_theme().unwrap_or_default() },
             |config| {
-                if matches!(&config.colors.term_theme, &TermTheme::None) {
+                if matches!(&config.colors.term_theme, &TermTheme::AutoDetect) {
                     resolve_term_theme().unwrap_or_default()
                 } else {
                     config.colors.term_theme
@@ -487,11 +487,15 @@ macro_rules! cvprtln {
 #[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
 pub enum ColorSupport {
+    /// Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
     Xterm256,
+    /// Basic 16-color support
     Ansi16,
+    /// No color support
     None,
+    /// Auto-detect from terminal
     #[default]
-    Default,
+    AutoDetect,
 }
 
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
@@ -500,8 +504,9 @@ pub enum ColorSupport {
 #[strum(serialize_all = "snake_case")]
 pub enum TermTheme {
     Light,
-    Dark,
     #[default]
+    Dark,
+    AutoDetect,
     None,
 }
 

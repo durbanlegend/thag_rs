@@ -97,7 +97,7 @@ impl<'a> Visit<'a> for CratesFinder {
         // Handle simple case `use a as b;`
         if let UseTree::Rename(use_rename) = &node.tree {
             let node_name = use_rename.ident.to_string();
-            eprintln!("visit_item_use pushing {node_name} to crates");
+            // debug_log_item_use pushing {node_name} to crates");
             self.crates.push(node_name);
         } else {
             syn::visit::visit_item_use(self, node);
@@ -114,7 +114,7 @@ impl<'a> Visit<'a> for CratesFinder {
                 let node_name = p.ident.to_string();
                 // Only add if not capitalized
                 if is_valid_crate_name(&node_name) && !self.crates.contains(&node_name) {
-                    eprintln!("visit_use_tree pushing path name {node_name} to crates");
+                    // debug_log_use_tree pushing path name {node_name} to crates");
                     self.crates.push(node_name);
                 }
                 let use_tree = &*p.tree;
@@ -125,9 +125,7 @@ impl<'a> Visit<'a> for CratesFinder {
                         // when the parent node is a.
                         let child_name = child.ident.to_string();
                         if !self.names_to_exclude.contains(&child_name) {
-                            eprintln!(
-                                "visit_use_tree pushing mid name {child_name} to names_to_exclude"
-                            );
+                            // debug_log("visit_use_tree pushing mid name {child_name} to names_to_exclude");
                             self.names_to_exclude.push(child_name);
                         }
                     }
@@ -137,9 +135,7 @@ impl<'a> Visit<'a> for CratesFinder {
                         // when the parent node is b.
                         let child_name = child.ident.to_string();
                         if !self.names_to_exclude.contains(&child_name) {
-                            eprintln!(
-                                "visit_use_tree pushing end name {child_name} to names_to_exclude (1)"
-                            );
+                            // debug_log("visit_use_tree pushing end name {child_name} to names_to_exclude (1)");
                             self.names_to_exclude.push(child_name);
                         }
                     }
@@ -155,9 +151,7 @@ impl<'a> Visit<'a> for CratesFinder {
                                     // when the parent node is a.
                                     let child_name = child.ident.to_string();
                                     if !self.names_to_exclude.contains(&child_name) {
-                                        eprintln!(
-                                            "visit_use_tree pushing member name {child_name} to names_to_exclude"
-                                        );
+                                        // debug_log("visit_use_tree pushing member name {child_name} to names_to_exclude");
                                         self.names_to_exclude.push(child_name);
                                     }
                                 }
@@ -167,8 +161,7 @@ impl<'a> Visit<'a> for CratesFinder {
                                     // when the parent node is b.
                                     let child_name = child.ident.to_string();
                                     if !self.names_to_exclude.contains(&child_name) {
-                                        eprintln!(
-                                            "visit_use_tree pushing grpend name {child_name} to names_to_exclude");
+                                        // debug_log("visit_use_tree pushing grpend name {child_name} to names_to_exclude");
                                         self.names_to_exclude.push(child_name);
                                     }
                                 }
@@ -183,7 +176,7 @@ impl<'a> Visit<'a> for CratesFinder {
             UseTree::Name(n) => {
                 let node_name = n.ident.to_string();
                 if !self.crates.contains(&node_name) {
-                    eprintln!("visit_use_tree pushing end name {node_name} to crates (2)");
+                    // debug_log("visit_use_tree pushing end name {node_name} to crates (2)");
                     self.crates.push(node_name);
                 }
             }
@@ -200,7 +193,7 @@ impl<'a> Visit<'a> for CratesFinder {
                 #[cfg(debug_assertions)]
                 debug_log!("Found first seg {name} in expr_path={expr_path:#?}");
                 if is_valid_crate_name(&name) && !self.crates.contains(&name) {
-                    eprintln!("visit_expr_path pushing {name} to crates");
+                    // debug_log("visit_expr_path pushing {name} to crates");
                     self.crates.push(name);
                 }
             }
@@ -217,7 +210,7 @@ impl<'a> Visit<'a> for CratesFinder {
                 debug_log!("Found first seg {name} in type_path={type_path:#?}");
                 if is_valid_crate_name(&name) && !self.crates.contains(&name) {
                     // #[cfg(debug_assertions)]
-                    eprintln!("visit_type_path pushing {name} to crates");
+                    // debug_log("visit_type_path pushing {name} to crates");
                     self.crates.push(name);
                 }
             }
@@ -233,7 +226,7 @@ impl<'a> Visit<'a> for CratesFinder {
             if let Some(first_seg) = mac.path.segments.first() {
                 let name = first_seg.ident.to_string();
                 if is_valid_crate_name(&name) && !self.crates.contains(&name) {
-                    eprintln!("visit_macro pushing {name} to crates");
+                    // debug_log("visit_macro pushing {name} to crates");
                     self.crates.push(name);
                 }
             }
@@ -249,7 +242,7 @@ impl<'a> Visit<'a> for CratesFinder {
             if let Some(first_seg) = path.segments.first() {
                 let name = first_seg.ident.to_string();
                 if is_valid_crate_name(&name) && !self.crates.contains(&name) {
-                    eprintln!("visit_item_impl pushing {name} to crates (1)");
+                    // debug_log("visit_item_impl pushing {name} to crates (1)");
                     self.crates.push(name);
                 }
             }
@@ -260,7 +253,7 @@ impl<'a> Visit<'a> for CratesFinder {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
                 if is_valid_crate_name(&name) && !self.crates.contains(&name) {
-                    eprintln!("visit_item_impl pushing {name} to crates (2)");
+                    // debug_log("visit_item_impl pushing {name} to crates (2)");
                     self.crates.push(name);
                 }
             }
@@ -275,7 +268,7 @@ impl<'a> Visit<'a> for CratesFinder {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
                 if is_valid_crate_name(&name) && !self.crates.contains(&name) {
-                    eprintln!("visit_item_type pushing {name} to crates (2)");
+                    // debug_log("visit_item_type pushing {name} to crates (2)");
                     self.crates.push(name);
                 }
             }
@@ -290,7 +283,7 @@ impl<'a> Visit<'a> for CratesFinder {
             if let Some(first_seg) = trait_bound.path.segments.first() {
                 let name = first_seg.ident.to_string();
                 if is_valid_crate_name(&name) && !self.crates.contains(&name) {
-                    eprintln!("visit_type_param_bound pushing first {name} to crates");
+                    // debug_log("visit_type_param_bound pushing first {name} to crates");
                     self.crates.push(name);
                 }
             }

@@ -44,10 +44,15 @@ fn maybe_load_config() -> Option<Config> {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
+    /// Logging options
     pub logging: Logging,
+    /// Color options
     pub colors: Colors,
+    /// Proc macros directory location, e.g. demo/proc_macros
     pub proc_macros: ProcMacros,
+    /// Dependency options
     pub dependencies: Dependencies, // New section
+    /// Miscellaneous options
     pub misc: Misc,
 }
 
@@ -56,15 +61,18 @@ pub struct Config {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Dependencies {
-    ///  Exclude features containing "unstable"
+    /// Exclude features containing "unstable"
     pub exclude_unstable_features: bool,
-    /// # Exclude the "std" feature
+    /// Exclude the "std" feature
     pub exclude_std_feature: bool,
+    /// Detailed dependencies with features vs simple `name = "version"`
     pub use_detailed_dependencies: bool,
+    /// Features that should always be included if present, e.g. `derive`
     pub always_include_features: Vec<String>,
     pub group_related_features: bool,
     pub show_feature_dependencies: bool,
-    pub exclude_prerelease: bool,        // New option
+    /// Exclude releases with pre-release markers such as -beta.
+    pub exclude_prerelease: bool, // New option
     pub minimum_downloads: Option<u64>,  // New option
     pub minimum_version: Option<String>, // New option
     pub feature_overrides: HashMap<String, FeatureOverride>,
@@ -187,10 +195,12 @@ pub struct FeatureOverride {
     pub alternative_features: Vec<String>,
 }
 
+/// Doc comment on config::Logging
 #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Logging {
+    /// Doc comment on config::Logging::default_verbosity
     #[serde_as(as = "DisplayFromStr")]
     pub default_verbosity: Verbosity,
 }

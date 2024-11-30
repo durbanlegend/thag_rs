@@ -5,6 +5,8 @@ dirs = "5.0"
 inquire = "0.7.5"
 semver = "1.0.23"
 serde = { version = "1.0.215", features = ["derive"] }
+strum = { version = "0.26.3", features = ["derive"] }
+syn = { version = "2.0.90", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 thag_rs = { path = "/Users/donf/projects/thag_rs/" }
 toml = "0.8"
@@ -16,13 +18,11 @@ toml = "0.8"
 use inquire::error::CustomUserError;
 use inquire::validator::{StringValidator, Validation};
 use inquire::{Confirm, Select, Text};
-// use serde::{Deserialize, Serialize};
-// use serde_with::DisplayFromStr;
 use std::collections::HashMap;
 use std::fmt::Display;
-// use std::fs::{create_dir_all, rename};
 use std::fs;
 use std::path::PathBuf;
+use strum::IntoEnumIterator;
 use syn::{parse_file, Attribute, Item, Meta};
 use thag_rs::{
     maybe_config, ColorSupport, Colors, Config, Dependencies, FeatureOverride, Logging, Misc,
@@ -81,29 +81,17 @@ trait PromptableEnum: Sized + Display + Clone {
 
 impl PromptableEnum for Verbosity {
     fn variants() -> Vec<Self> {
-        vec![
-            Self::Quieter,
-            Self::Quiet,
-            Self::Normal,
-            Self::Verbose,
-            Self::Debug,
-        ]
+        Self::iter().collect()
     }
 
     fn display_name(&self) -> &'static str {
-        match self {
-            Self::Quieter => "quieter",
-            Self::Quiet => "quiet",
-            Self::Normal => "normal",
-            Self::Verbose => "verbose",
-            Self::Debug => "debug",
-        }
+        self.into()
     }
 }
 
 impl PromptableEnum for ColorSupport {
     fn variants() -> Vec<Self> {
-        vec![Self::Xterm256, Self::Ansi16, Self::None, Self::Default]
+        vec![Self::Xterm256, Self::Ansi16, Self::None, Self::AutoDetect]
     }
 
     fn display_name(&self) -> &'static str {
@@ -111,7 +99,7 @@ impl PromptableEnum for ColorSupport {
             Self::Xterm256 => "xterm256",
             Self::Ansi16 => "ansi16",
             Self::None => "none",
-            Self::Default => "default",
+            Self::AutoDetect => "default",
         }
     }
 }
@@ -125,6 +113,7 @@ impl PromptableEnum for TermTheme {
         match self {
             Self::Light => "light",
             Self::Dark => "dark",
+            Self::AutoDetect => "auto_detect",
             Self::None => "none",
         }
     }
@@ -176,9 +165,10 @@ fn get_doc_comments<T>() -> Vec<(String, String)> {
     };
 
     let mut comments = Vec::new();
+    // eprintln!("syntax.items={:#?}", syntax.items);
     extract_doc_comments(&syntax.items, "", &mut comments);
 
-    println!("Found {} doc comments:", comments.len());
+    eprintln!("Found {} doc comments:", comments.len());
     for (path, comment) in &comments {
         println!("  {}: {}", path, comment);
     }
@@ -201,8 +191,6 @@ fn find_source_file(type_name: &str) -> Option<PathBuf> {
         project_root.join("src").join("main.rs"),
         // Add your actual config.rs location
         project_root.join("src").join("shared.rs"),
-        // Try parent directory too
-        project_root.parent()?.join("src").join("config.rs"),
     ];
 
     println!("Checking paths:");
@@ -216,12 +204,36 @@ fn find_source_file(type_name: &str) -> Option<PathBuf> {
 fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String, String)>) {
     for item in items {
         match item {
+            Item::Struct(item_struct) => {
+                let struct_name = item_struct.ident.to_string();
+                eprintln!("Found item struct={struct_name}");
+                let struct_docs = extract_attrs_docs(&item_struct.attrs);
+                eprintln!("struct_docs={struct_docs:#?}");
+                if !struct_docs.is_empty() {
+                    comments.push((format!("{}{}", prefix, struct_name), struct_docs.join("\n")));
+                }
+
+                // Process struct fields
+                for field in &item_struct.fields {
+                    if let Some(ident) = &field.ident {
+                        let field_docs = extract_attrs_docs(&field.attrs);
+                        eprintln!("field_docs={field_docs:#?}");
+                        if !field_docs.is_empty() {
+                            comments.push((
+                                format!("{}{}.{}", prefix, struct_name, ident),
+                                field_docs.join("\n"),
+                            ));
+                        }
+                    }
+                }
+            }
             Item::Enum(item_enum) => {
                 let enum_name = item_enum.ident.to_string();
-                println!("Processing enum: {}", enum_name); // Debug
+                println!("Found item enum: {}", enum_name); // Debug
 
                 // Get enum-level docs
                 let enum_docs = extract_attrs_docs(&item_enum.attrs);
+                eprintln!("enum_docs={enum_docs:#?}");
                 if !enum_docs.is_empty() {
                     comments.push((format!("{}{}", prefix, enum_name), enum_docs.join("\n")));
                 }
@@ -229,9 +241,10 @@ fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String
                 // Process variants
                 for variant in &item_enum.variants {
                     let variant_name = variant.ident.to_string();
-                    println!("  Processing variant: {}", variant_name); // Debug
+                    println!("Processing variant: {}", variant_name); // Debug
 
                     let variant_docs = extract_attrs_docs(&variant.attrs);
+                    eprintln!("variant_docs={variant_docs:#?}");
                     if !variant_docs.is_empty() {
                         comments.push((
                             format!("{}{}::{}", prefix, enum_name, variant_name),
@@ -241,6 +254,7 @@ fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String
                 }
 
                 // If this is Verbosity, ColorSupport, or TermTheme, add to a special section
+                eprintln!("enum_name={}", enum_name.as_str());
                 match enum_name.as_str() {
                     "Verbosity" | "ColorSupport" | "TermTheme" => {
                         comments.push((
@@ -264,7 +278,9 @@ fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String
                     _ => {}
                 }
             } // ... rest of match arms stay the same ...
-            &_ => todo!(), // ... rest of match arms stay the same ...
+            &_ => {
+                // eprintln!("Found unimplemented item = {item:#?}");
+            } // ... rest of match arms stay the same ...
         }
     }
 }
@@ -280,7 +296,9 @@ fn extract_attrs_docs(attrs: &[Attribute]) -> Vec<String> {
                         ..
                     }) = &meta.value
                     {
-                        return Some(s.value().trim().to_string());
+                        let attr_doc = s.value().trim().to_string();
+                        eprintln!("attr_doc={attr_doc}");
+                        return Some(attr_doc);
                     }
                 }
             }
@@ -292,9 +310,12 @@ fn extract_attrs_docs(attrs: &[Attribute]) -> Vec<String> {
 fn add_doc_comments(toml_str: &str, doc_comments: &[(String, String)]) -> String {
     let mut result = String::from("# Generated by thag_config_builder\n\n");
 
+    eprintln!("toml_str={toml_str}");
+    eprintln!("doc_comments={doc_comments:#?}");
     // Add top-level Config comment
     if let Some((_, comment)) = doc_comments.iter().find(|(path, _)| path == "Config") {
         for line in comment.lines() {
+            eprintln!("Pushing top-level comment line={line}");
             result.push_str(&format!("# {}\n", line));
         }
         result.push('\n');
@@ -305,17 +326,23 @@ fn add_doc_comments(toml_str: &str, doc_comments: &[(String, String)]) -> String
     for line in toml_str.lines() {
         let trimmed = line.trim();
 
+        eprintln!("trimmed={trimmed}");
+
         // Handle section headers
         if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            eprintln!("... is section header");
             current_section = trimmed[1..trimmed.len() - 1].to_string();
+
+            eprintln!("Looking for doc comment key matching {current_section}");
 
             // Add section comment
             if let Some((_, comment)) = doc_comments
                 .iter()
-                .find(|(path, _)| path == &current_section)
+                .find(|(path, _)| path.to_lowercase() == current_section.to_lowercase())
             {
                 result.push('\n');
                 for line in comment.lines() {
+                    eprintln!("Pushing section header comment line={line}");
                     result.push_str(&format!("# {}\n", line));
                 }
             }
@@ -330,9 +357,13 @@ fn add_doc_comments(toml_str: &str, doc_comments: &[(String, String)]) -> String
             let full_path = format!("{}.{}", current_section, field_name);
 
             // Add field comment
-            if let Some((_, comment)) = doc_comments.iter().find(|(path, _)| path == &full_path) {
+            if let Some((_, comment)) = doc_comments
+                .iter()
+                .find(|(path, _)| path.to_lowercase() == full_path.to_lowercase())
+            {
                 result.push_str("# \n"); // Add spacing
                 for line in comment.lines() {
+                    eprintln!("Pushing field comment line={line}");
                     result.push_str(&format!("# {}\n", line));
                 }
             }
@@ -340,24 +371,27 @@ fn add_doc_comments(toml_str: &str, doc_comments: &[(String, String)]) -> String
             // Add enum options if this is an enum field
             let field_type = match current_section.as_str() {
                 "logging" if field_name == "default_verbosity" => Some("verbosity"),
-                "colors" if field_name == "color_support" => Some("colorsupport"),
-                "colors" if field_name == "term_theme" => Some("termtheme"),
+                "colors" if field_name == "color_support" => Some("color_support"),
+                "colors" if field_name == "term_theme" => Some("term_theme"),
                 _ => None,
             };
 
+            eprintln!("field_type={field_type:#?}");
+
             if let Some(enum_type) = field_type {
-                if let Some((_, options)) = doc_comments
-                    .iter()
-                    .find(|(path, _)| path == &format!("{}_options", enum_type))
-                {
+                if let Some((_, options)) = doc_comments.iter().find(|(path, _)| {
+                    path.to_lowercase() == format!("{}_options", enum_type).to_lowercase()
+                }) {
                     result.push_str("# \n");
                     for line in options.lines() {
+                        eprintln!("Pushing enum options comment line={line}");
                         result.push_str(&format!("# {}\n", line));
                     }
                 }
             }
         }
 
+        eprintln!("Pushing config line={line}");
         result.push_str(line);
         result.push('\n');
     }
@@ -630,7 +664,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         current: config.clone(),
     };
 
-    println!("{}", builder.preview()?);
+    let preview = builder.preview()?;
+    println!("{}", preview);
 
     if Confirm::new("Save this configuration?").prompt()? {
         // Create backup if exists
@@ -641,7 +676,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         fs::create_dir_all(config_path.parent().unwrap())?;
-        fs::write(&config_path, builder.preview()?)?;
+        fs::write(&config_path, preview)?;
         println!(
             "{}",
             format!("Configuration saved to {:?}", config_path).green()

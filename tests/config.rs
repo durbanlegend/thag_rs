@@ -69,7 +69,7 @@ mod tests {
 
         assert_eq!(config.logging.default_verbosity, Verbosity::Verbose);
         assert_eq!(config.colors.color_support, ColorSupport::Ansi16);
-        assert_eq!(config.colors.term_theme, TermTheme::AutoDetect);
+        assert_eq!(config.colors.term_theme, TermTheme::Dark);
     }
 
     #[test]

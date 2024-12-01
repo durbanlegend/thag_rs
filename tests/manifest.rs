@@ -1,4 +1,3 @@
-@ -1,369 +1,576 @@
 #[cfg(test)]
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest};
@@ -18,8 +17,8 @@ mod tests {
     }
 
     fn init_logger() {
-            let _ = env_logger::builder().is_test(true).try_init();
-        }
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
 
     #[test]
     fn test_manifest_cargo_lookup_success() {

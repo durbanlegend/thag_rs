@@ -59,7 +59,7 @@ jobs:
       run: cargo build
 
     - name: Run tests
-      run: RUST_BACKTRACE=1 cargo test --no-fail-fast -p thag_rs check_analyze_snipper_1  -- --nocapture --show-output
+      run: RUST_BACKTRACE=1 cargo test --no-fail-fast -p thag_rs check_analyze_snippet_1  -- --nocapture --show-output
 
     - name: Upload test output log
       if: failure()  # Only upload if the test run fails

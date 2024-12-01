@@ -1,4 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
+use documented::{Documented, DocumentedVariants};
 #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
 use env_logger::{Builder, Env};
 use firestorm::{profile_fn, profile_method};
@@ -49,6 +50,8 @@ pub fn is_debug_logging_enabled() -> bool {
     Default,
     Deserialize,
     Display,
+    Documented,
+    DocumentedVariants,
     EnumIter,
     EnumString,
     IntoStaticStr,

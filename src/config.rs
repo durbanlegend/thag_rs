@@ -1,4 +1,5 @@
 use crate::{debug_log, lazy_static_var, ColorSupport, TermTheme, ThagResult, Verbosity};
+use documented::{Documented, DocumentedFields};
 use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use mockall::{automock, predicate::str};
@@ -41,24 +42,24 @@ fn maybe_load_config() -> Option<Config> {
 }
 
 /// Configuration categories
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
 #[serde(default)]
 pub struct Config {
-    /// Logging options
+    /// Logging configuration
     pub logging: Logging,
-    /// Color options
+    /// Color settings
     pub colors: Colors,
-    /// Proc macros directory location, e.g. demo/proc_macros
+    /// Proc macros directory location, e.g. `demo/proc_macros`
     pub proc_macros: ProcMacros,
-    /// Dependency options
+    /// Dependency handling settings
     pub dependencies: Dependencies, // New section
-    /// Miscellaneous options
+    /// Miscellaneous settings
     pub misc: Misc,
 }
 
 /// Dependency handling
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
 #[serde(default)]
 pub struct Dependencies {
     /// Exclude features containing "unstable"
@@ -69,13 +70,17 @@ pub struct Dependencies {
     pub use_detailed_dependencies: bool,
     /// Features that should always be included if present, e.g. `derive`
     pub always_include_features: Vec<String>,
+    /// TODO Group related features together
     pub group_related_features: bool,
+    /// TODO Show feature dependencies
     pub show_feature_dependencies: bool,
     /// Exclude releases with pre-release markers such as -beta.
     pub exclude_prerelease: bool, // New option
-    pub minimum_downloads: Option<u64>,  // New option
-    pub minimum_version: Option<String>, // New option
+    // pub minimum_downloads: Option<u64>,  // New option
+    // pub minimum_version: Option<String>, // New option
+    /// Crate-level feature overrides
     pub feature_overrides: HashMap<String, FeatureOverride>,
+    /// Features that should always be excluded
     pub global_excluded_features: Vec<String>,
 }
 
@@ -197,28 +202,30 @@ pub struct FeatureOverride {
 
 /// Doc comment on config::Logging
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
 #[serde(default)]
 pub struct Logging {
-    /// Doc comment on config::Logging::default_verbosity
+    /// TODO: Doc comment on config::Logging::default_verbosity
     #[serde_as(as = "DisplayFromStr")]
     pub default_verbosity: Verbosity,
 }
 
-/// Color support override. Sets the terminal's color support level. The alternative is
-/// to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
-/// to interrogate the terminal, which could cause misbehaviour, or may choose a default,
-/// which might not take advantage of the full capabilities of the terminal.
-/// If the terminal can't handle your chosen level, this may cause unwanted control strings
-/// to be interleaved with the messages.
-/// If your terminal can handle 16m colors, choose xterm256
+/// Terminal color settings
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Documented, DocumentedFields, Serialize)]
 pub struct Colors {
+    /// Color support override. Sets the terminal's color support level. The alternative is
+    /// to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
+    /// to interrogate the terminal, which could cause misbehaviour, or may choose a default,
+    /// which might not take advantage of the full capabilities of the terminal.
+    /// If the terminal can't handle your chosen level, this may cause unwanted control strings
+    /// to be interleaved with the messages.
+    /// If your terminal can handle 16m colors, choose xterm256
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
     pub color_support: ColorSupport,
     #[serde(default)]
+    /// Light or dark terminal background override
     #[serde_as(as = "DisplayFromStr")]
     pub term_theme: TermTheme,
 }
@@ -234,9 +241,10 @@ pub struct ProcMacros {
 
 /// Miscellaneous configuration parameters
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Documented, DocumentedFields, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Misc {
+    /// Strip double quotes from around string literals returned by snippets
     #[serde_as(as = "DisplayFromStr")]
     pub unquote: bool,
 }

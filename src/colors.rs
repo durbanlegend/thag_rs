@@ -6,6 +6,7 @@ use crate::{
     config, debug_log, generate_styles, lazy_static_var, maybe_config, vlog, ThagResult, V,
 };
 use crossterm::terminal::{self, is_raw_mode_enabled};
+use documented::{Documented, DocumentedVariants};
 use firestorm::{profile_fn, profile_method, profile_section};
 use log::debug;
 use nu_ansi_term::{Color, Style};
@@ -16,7 +17,7 @@ use serde::Deserialize;
 use std::env;
 use std::sync::OnceLock;
 use std::{fmt::Display, str::FromStr};
-use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
+use strum::{Display, EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
 
@@ -484,7 +485,20 @@ macro_rules! cvprtln {
 /// An enum to categorise the current terminal's level of colour support as detected, configured
 /// or defaulted. We fold `TrueColor` into Xterm256 as we're not interested in more than 256
 /// colours just for messages.
-#[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq, Eq)]
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Deserialize,
+    Display,
+    Documented,
+    DocumentedVariants,
+    EnumIter,
+    EnumString,
+    IntoStaticStr,
+    PartialEq,
+    Eq,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum ColorSupport {
     /// Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
@@ -500,14 +514,29 @@ pub enum ColorSupport {
 
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
 /// or defaulted.
-#[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq, Eq)]
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Deserialize,
+    Documented,
+    DocumentedVariants,
+    Display,
+    EnumIter,
+    EnumString,
+    IntoStaticStr,
+    PartialEq,
+    Eq,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum TermTheme {
+    /// Light background terminal
     Light,
+    /// Dark background terminal (default)
     #[default]
     Dark,
+    /// Let `thag` autodetect the background luminosity
     AutoDetect,
-    None,
 }
 
 /// An enum to categorise the supported message types for display.

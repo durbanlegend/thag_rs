@@ -15,15 +15,16 @@ toml = "0.8"
 /// Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
 //# Purpose: Handy configuration file builder.
 //# Categories: crates, technique, tools
+use documented::{Documented, DocumentedVariants};
 use inquire::error::CustomUserError;
 use inquire::validator::{StringValidator, Validation};
 use inquire::{Confirm, Select, Text};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs;
-use std::path::PathBuf;
-use strum::IntoEnumIterator;
-use syn::{parse_file, Attribute, Item, Meta};
+use std::path::{Path, PathBuf};
+use strum::{IntoEnumIterator, IntoStaticStr};
+use syn::{parse_file, Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTree};
 use thag_rs::{
     maybe_config, ColorSupport, Colors, Config, Dependencies, FeatureOverride, Logging, Misc,
     ProcMacros, TermTheme, Verbosity,
@@ -73,13 +74,11 @@ impl ConfigBuilder {
 }
 
 // Helper trait for DisplayFromStr types
-#[allow(dead_code)]
-trait PromptableEnum: Sized + Display + Clone {
-    fn variants() -> Vec<Self>;
-    fn display_name(&self) -> &'static str;
-}
-
-impl PromptableEnum for Verbosity {
+trait PromptableEnum:
+    Sized + Display + Clone + IntoEnumIterator + DocumentedVariants + Into<&'static str>
+// where
+//     &str: for<'a> From<&'a Self>,
+{
     fn variants() -> Vec<Self> {
         Self::iter().collect()
     }
@@ -87,37 +86,17 @@ impl PromptableEnum for Verbosity {
     fn display_name(&self) -> &'static str {
         self.into()
     }
-}
 
-impl PromptableEnum for ColorSupport {
-    fn variants() -> Vec<Self> {
-        vec![Self::Xterm256, Self::Ansi16, Self::None, Self::AutoDetect]
-    }
-
-    fn display_name(&self) -> &'static str {
-        match self {
-            Self::Xterm256 => "xterm256",
-            Self::Ansi16 => "ansi16",
-            Self::None => "none",
-            Self::AutoDetect => "default",
-        }
+    fn get_docs() -> Vec<(&'static str, &'static str)> {
+        Self::iter()
+            .map(|variant| (variant.display_name(), variant.get_variant_docs()))
+            .collect()
     }
 }
 
-impl PromptableEnum for TermTheme {
-    fn variants() -> Vec<Self> {
-        vec![Self::Light, Self::Dark, Self::None]
-    }
-
-    fn display_name(&self) -> &'static str {
-        match self {
-            Self::Light => "light",
-            Self::Dark => "dark",
-            Self::AutoDetect => "auto_detect",
-            Self::None => "none",
-        }
-    }
-}
+impl PromptableEnum for Verbosity {}
+impl PromptableEnum for ColorSupport {}
+impl PromptableEnum for TermTheme {}
 
 // Generic prompt function for DisplayFromStr types
 fn prompt_enum<T: PromptableEnum>(
@@ -133,40 +112,118 @@ fn prompt_enum<T: PromptableEnum>(
         .map_err(Into::into)
 }
 
+struct ModuleInfo {
+    items: Vec<Item>,
+    uses: Vec<(String, String)>, // (name, path)
+}
+
+fn collect_modules(project_root: &Path) -> HashMap<String, ModuleInfo> {
+    let mut modules = HashMap::new();
+
+    // Start with main modules
+    for entry in ["config.rs", "logging.rs", "colors.rs"].iter() {
+        let path = project_root.join("src").join(entry);
+        if path.exists() {
+            if let Ok(source) = fs::read_to_string(&path) {
+                if let Ok(syntax) = parse_file(&source) {
+                    let module_name = entry.trim_end_matches(".rs").to_string();
+                    let mut uses = Vec::new();
+
+                    // Collect use declarations
+                    for item in &syntax.items {
+                        if let Item::Use(use_item) = item {
+                            if let Some((name, path)) = extract_use_path(use_item) {
+                                uses.push((name, path));
+                            }
+                        }
+                    }
+
+                    modules.insert(
+                        module_name,
+                        ModuleInfo {
+                            items: syntax.items,
+                            uses,
+                        },
+                    );
+                }
+            }
+        }
+    }
+
+    modules
+}
+
+fn extract_use_path(use_item: &ItemUse) -> Option<(String, String)> {
+    fn process_use_tree(tree: &UseTree, base_path: &str) -> Vec<(String, String)> {
+        match tree {
+            // Simple path like "use crate::logging::Verbosity"
+            UseTree::Path(use_path) => {
+                let new_base = if base_path.is_empty() {
+                    use_path.ident.to_string()
+                } else {
+                    format!("{}::{}", base_path, use_path.ident)
+                };
+                process_use_tree(&use_path.tree, &new_base)
+            }
+
+            // Named item like "use crate::logging::Verbosity as VerbosityLevel"
+            UseTree::Rename(rename) => {
+                vec![(rename.rename.to_string(), format!("{}", base_path))]
+            }
+
+            // Simple name like the "Verbosity" in "use crate::logging::Verbosity"
+            UseTree::Name(name) => {
+                vec![(name.ident.to_string(), base_path.to_string())]
+            }
+
+            // Group like "use crate::logging::{Verbosity, ColorSupport}"
+            UseTree::Group(group) => group
+                .items
+                .iter()
+                .flat_map(|tree| process_use_tree(tree, base_path))
+                .collect(),
+
+            // Global import like "use *"
+            UseTree::Glob(_) => Vec::new(),
+        }
+    }
+
+    // Get the full path
+    let full_path = use_item.tree.clone();
+    let results = process_use_tree(&full_path, "");
+
+    // We're primarily interested in enum imports
+    results.into_iter().find(|(name, _)| {
+        // Basic heuristic: enum names typically start with uppercase
+        !name.is_empty() && name.chars().next().unwrap().is_uppercase()
+    })
+}
+
 fn get_doc_comments<T>() -> Vec<(String, String)> {
-    let type_name = std::any::type_name::<T>();
-    println!("Looking for doc comments for type: {}", type_name);
+    let _type_name = std::any::type_name::<T>();
+    let project_root = std::env::current_dir().expect("Could not get current directory");
 
-    let source_path = match find_source_file(type_name) {
-        Some(path) => {
-            println!("Found source file: {:?}", path);
-            path
-        }
-        None => {
-            println!("Could not find source file");
-            return Vec::new();
-        }
-    };
-
-    let source = match fs::read_to_string(&source_path) {
-        Ok(s) => s,
-        Err(e) => {
-            println!("Could not read source file: {}", e);
-            return Vec::new();
-        }
-    };
-
-    let syntax = match parse_file(&source) {
-        Ok(syn) => syn,
-        Err(e) => {
-            println!("Could not parse source file: {}", e);
-            return Vec::new();
-        }
-    };
-
+    let modules = collect_modules(&project_root);
     let mut comments = Vec::new();
-    // eprintln!("syntax.items={:#?}", syntax.items);
-    extract_doc_comments(&syntax.items, "", &mut comments);
+
+    // Process config.rs first
+    if let Some(config_module) = modules.get("config") {
+        extract_doc_comments(&config_module.items, "", &mut comments);
+
+        // For each field that's an enum type, look up its module
+        for (field_path, type_name) in find_enum_fields(&config_module.items) {
+            if let Some(module_name) = find_enum_module(&type_name, &config_module.uses, &modules) {
+                if let Some(module_info) = modules.get(&module_name) {
+                    // Find and extract enum documentation
+                    if let Some(enum_docs) = extract_enum_docs(&module_info.items, &type_name) {
+                        let key = format!("{}_type", field_path).to_lowercase();
+                        eprintln!("Pushing ({key}, {enum_docs} to comments");
+                        comments.push((key, enum_docs));
+                    }
+                }
+            }
+        }
+    }
 
     eprintln!("Found {} doc comments:", comments.len());
     for (path, comment) in &comments {
@@ -174,6 +231,90 @@ fn get_doc_comments<T>() -> Vec<(String, String)> {
     }
 
     comments
+}
+
+fn find_enum_fields(items: &[Item]) -> Vec<(String, String)> {
+    let mut fields = Vec::new();
+
+    for item in items {
+        if let Item::Struct(struct_item) = item {
+            let struct_name = struct_item.ident.to_string();
+
+            for field in &struct_item.fields {
+                if let Some(field_name) = &field.ident {
+                    if let syn::Type::Path(type_path) = &field.ty {
+                        if let Some(last_seg) = type_path.path.segments.last() {
+                            fields.push((
+                                format!("{}.{}", struct_name, field_name),
+                                last_seg.ident.to_string(),
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fields
+}
+
+fn find_enum_module(
+    type_name: &str,
+    uses: &[(String, String)],
+    modules: &HashMap<String, ModuleInfo>,
+) -> Option<String> {
+    // Find which module contains the enum definition
+    // First check use declarations
+    for (name, path) in uses {
+        if name == type_name {
+            // Extract module name from path
+            return path.split("::").nth(1).map(String::from);
+        }
+    }
+
+    // Then check each module directly
+    for (module_name, module_info) in modules {
+        if contains_enum(&module_info.items, type_name) {
+            return Some(module_name.clone());
+        }
+    }
+
+    None
+}
+
+fn contains_enum(items: &[Item], enum_name: &str) -> bool {
+    items.iter().any(|item| {
+        if let Item::Enum(enum_item) = item {
+            enum_item.ident == enum_name
+        } else {
+            false
+        }
+    })
+}
+
+fn extract_enum_docs(items: &[Item], enum_name: &str) -> Option<String> {
+    for item in items {
+        if let Item::Enum(enum_item) = item {
+            if enum_item.ident == enum_name {
+                let mut docs = extract_attrs_docs(&enum_item.attrs);
+                docs.push("\nAvailable options:".to_string());
+
+                for variant in &enum_item.variants {
+                    let variant_docs = extract_attrs_docs(&variant.attrs);
+                    let x = if variant_docs.is_empty() {
+                        "No documentation"
+                    } else {
+                        &variant_docs.join("\n    ")
+                    };
+                    docs.push(format!("  {} - {x}", variant.ident));
+                }
+
+                return Some(docs.join("\n"));
+            }
+        }
+    }
+
+    None
 }
 
 fn find_source_file(type_name: &str) -> Option<PathBuf> {
@@ -210,77 +351,65 @@ fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String
                 let struct_docs = extract_attrs_docs(&item_struct.attrs);
                 eprintln!("struct_docs={struct_docs:#?}");
                 if !struct_docs.is_empty() {
-                    comments.push((format!("{}{}", prefix, struct_name), struct_docs.join("\n")));
+                    comments.push((
+                        format!("{}{}", prefix, struct_name).to_lowercase(),
+                        struct_docs.join("\n"),
+                    ));
                 }
 
                 // Process struct fields
                 for field in &item_struct.fields {
                     if let Some(ident) = &field.ident {
+                        // Get field docs
                         let field_docs = extract_attrs_docs(&field.attrs);
                         eprintln!("field_docs={field_docs:#?}");
                         if !field_docs.is_empty() {
                             comments.push((
-                                format!("{}{}.{}", prefix, struct_name, ident),
+                                format!("{}{}.{}", prefix, struct_name, ident).to_lowercase(),
                                 field_docs.join("\n"),
                             ));
+                        }
+
+                        // Try to get field type docs (for enums)
+                        if let syn::Type::Path(type_path) = &field.ty {
+                            if let Some(last_seg) = type_path.path.segments.last() {
+                                let type_name = last_seg.ident.to_string();
+                                comments.push((
+                                    format!("{}{}.{}_type", prefix, struct_name, ident)
+                                        .to_lowercase(),
+                                    type_name,
+                                ));
+                            }
                         }
                     }
                 }
             }
             Item::Enum(item_enum) => {
                 let enum_name = item_enum.ident.to_string();
-                println!("Found item enum: {}", enum_name); // Debug
+                eprintln!("Found item enum={enum_name}");
 
                 // Get enum-level docs
-                let enum_docs = extract_attrs_docs(&item_enum.attrs);
-                eprintln!("enum_docs={enum_docs:#?}");
-                if !enum_docs.is_empty() {
-                    comments.push((format!("{}{}", prefix, enum_name), enum_docs.join("\n")));
-                }
+                let mut enum_docs = extract_attrs_docs(&item_enum.attrs);
 
-                // Process variants
+                // Add variant documentation
+                enum_docs.push("\nAvailable options:".to_string());
                 for variant in &item_enum.variants {
-                    let variant_name = variant.ident.to_string();
-                    println!("Processing variant: {}", variant_name); // Debug
-
                     let variant_docs = extract_attrs_docs(&variant.attrs);
-                    eprintln!("variant_docs={variant_docs:#?}");
-                    if !variant_docs.is_empty() {
-                        comments.push((
-                            format!("{}{}::{}", prefix, enum_name, variant_name),
-                            variant_docs.join("\n"),
+                    let variant_name = variant.ident.to_string();
+                    if variant_docs.is_empty() {
+                        enum_docs.push(format!("  {} - No documentation", variant_name));
+                    } else {
+                        enum_docs.push(format!(
+                            "  {} - {}",
+                            variant_name,
+                            variant_docs.join("\n    ")
                         ));
                     }
                 }
 
-                // If this is Verbosity, ColorSupport, or TermTheme, add to a special section
-                eprintln!("enum_name={}", enum_name.as_str());
-                match enum_name.as_str() {
-                    "Verbosity" | "ColorSupport" | "TermTheme" => {
-                        comments.push((
-                            format!("{}_options", enum_name.to_lowercase()),
-                            format!(
-                                "Available options for {}:\n{}",
-                                enum_name,
-                                item_enum
-                                    .variants
-                                    .iter()
-                                    .map(|v| format!(
-                                        "  {} - {}",
-                                        v.ident,
-                                        extract_attrs_docs(&v.attrs).join("\n    ")
-                                    ))
-                                    .collect::<Vec<_>>()
-                                    .join("\n")
-                            ),
-                        ));
-                    }
-                    _ => {}
-                }
-            } // ... rest of match arms stay the same ...
-            &_ => {
-                // eprintln!("Found unimplemented item = {item:#?}");
-            } // ... rest of match arms stay the same ...
+                comments.push((enum_name.to_lowercase(), enum_docs.join("\n")));
+            }
+            _ => {}
         }
     }
 }
@@ -307,91 +436,50 @@ fn extract_attrs_docs(attrs: &[Attribute]) -> Vec<String> {
         .collect()
 }
 
-fn add_doc_comments(toml_str: &str, doc_comments: &[(String, String)]) -> String {
+fn add_enum_docs<T: PromptableEnum>(result: &mut String, field_name: &str) {
+    result.push_str(&format!("# Available options for {}:\n", field_name));
+    for (name, docs) in T::get_docs() {
+        result.push_str(&format!("#   {} - {}\n", name, docs));
+    }
+    result.push('\n');
+}
+
+fn add_doc_comments(toml_str: &str, current: &Config) -> String {
     let mut result = String::from("# Generated by thag_config_builder\n\n");
 
-    eprintln!("toml_str={toml_str}");
-    eprintln!("doc_comments={doc_comments:#?}");
-    // Add top-level Config comment
-    if let Some((_, comment)) = doc_comments.iter().find(|(path, _)| path == "Config") {
-        for line in comment.lines() {
-            eprintln!("Pushing top-level comment line={line}");
-            result.push_str(&format!("# {}\n", line));
-        }
-        result.push('\n');
-    }
-
-    let mut current_section = String::new();
+    // Add Config documentation
+    result.push_str(&format!("# {}\n\n", Config::DOCS));
 
     for line in toml_str.lines() {
         let trimmed = line.trim();
 
-        eprintln!("trimmed={trimmed}");
-
-        // Handle section headers
-        if trimmed.starts_with('[') && trimmed.ends_with(']') {
-            eprintln!("... is section header");
-            current_section = trimmed[1..trimmed.len() - 1].to_string();
-
-            eprintln!("Looking for doc comment key matching {current_section}");
-
-            // Add section comment
-            if let Some((_, comment)) = doc_comments
-                .iter()
-                .find(|(path, _)| path.to_lowercase() == current_section.to_lowercase())
-            {
-                result.push('\n');
-                for line in comment.lines() {
-                    eprintln!("Pushing section header comment line={line}");
-                    result.push_str(&format!("# {}\n", line));
-                }
-            }
-
-            result.push_str(line);
-            result.push('\n');
-            continue;
-        }
-
-        // Handle field definitions
-        if let Some(field_name) = trimmed.split('=').next().map(str::trim) {
-            let full_path = format!("{}.{}", current_section, field_name);
-
-            // Add field comment
-            if let Some((_, comment)) = doc_comments
-                .iter()
-                .find(|(path, _)| path.to_lowercase() == full_path.to_lowercase())
-            {
-                result.push_str("# \n"); // Add spacing
-                for line in comment.lines() {
-                    eprintln!("Pushing field comment line={line}");
-                    result.push_str(&format!("# {}\n", line));
-                }
-            }
-
-            // Add enum options if this is an enum field
-            let field_type = match current_section.as_str() {
-                "logging" if field_name == "default_verbosity" => Some("verbosity"),
-                "colors" if field_name == "color_support" => Some("color_support"),
-                "colors" if field_name == "term_theme" => Some("term_theme"),
-                _ => None,
-            };
-
-            eprintln!("field_type={field_type:#?}");
-
-            if let Some(enum_type) = field_type {
-                if let Some((_, options)) = doc_comments.iter().find(|(path, _)| {
-                    path.to_lowercase() == format!("{}_options", enum_type).to_lowercase()
-                }) {
-                    result.push_str("# \n");
-                    for line in options.lines() {
-                        eprintln!("Pushing enum options comment line={line}");
-                        result.push_str(&format!("# {}\n", line));
-                    }
-                }
+        // Add section documentation
+        if trimmed.starts_with('[') {
+            let section = trimmed.trim_matches(|c| c == '[' || c == ']');
+            match section {
+                "logging" => result.push_str(&format!("# {}\n", Logging::DOCS)),
+                "colors" => result.push_str(&format!("# {}\n", Colors::DOCS)),
+                "dependencies" => result.push_str(&format!("# {}\n", Dependencies::DOCS)),
+                "proc_macros" => result.push_str(&format!("# {}\n", ProcMacros::DOCS)),
+                "misc" => result.push_str(&format!("# {}\n", Misc::DOCS)),
+                _ => {}
             }
         }
 
-        eprintln!("Pushing config line={line}");
+        // Add enum documentation before relevant fields
+        match trimmed {
+            s if s.starts_with("default_verbosity =") => {
+                add_enum_docs::<Verbosity>(&mut result, "Verbosity");
+            }
+            s if s.starts_with("color_support =") => {
+                add_enum_docs::<ColorSupport>(&mut result, "ColorSupport");
+            }
+            s if s.starts_with("term_theme =") => {
+                add_enum_docs::<TermTheme>(&mut result, "TermTheme");
+            }
+            _ => {}
+        }
+
         result.push_str(line);
         result.push('\n');
     }
@@ -686,4 +774,59 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use syn::parse_quote;
+
+    #[test]
+    fn test_simple_use() {
+        let use_item: ItemUse = parse_quote! {
+            use crate::logging::Verbosity;
+        };
+        let result = extract_use_path(&use_item);
+        assert_eq!(
+            result,
+            Some(("Verbosity".to_string(), "crate::logging".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_renamed_use() {
+        let use_item: ItemUse = parse_quote! {
+            use crate::logging::Verbosity as VerbosityLevel;
+        };
+        let result = extract_use_path(&use_item);
+        assert_eq!(
+            result,
+            Some((
+                "VerbosityLevel".to_string(),
+                "crate::logging::Verbosity".to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_grouped_use() {
+        let use_item: ItemUse = parse_quote! {
+            use crate::logging::{Verbosity, ColorSupport};
+        };
+        let result = extract_use_path(&use_item);
+        assert!(result.is_some());
+        // Should find either Verbosity or ColorSupport
+        let (name, path) = result.unwrap();
+        assert!(name == "Verbosity" || name == "ColorSupport");
+        assert_eq!(path, "crate::logging");
+    }
+
+    #[test]
+    fn test_ignore_non_enum() {
+        let use_item: ItemUse = parse_quote! {
+            use std::io;
+        };
+        let result = extract_use_path(&use_item);
+        assert!(result.is_none());
+    }
 }

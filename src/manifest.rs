@@ -2,7 +2,9 @@
 use crate::code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 #[cfg(debug_assertions)]
 use crate::debug_timings;
-use crate::{cvprtln, debug_log, maybe_config, regex, vlog, BuildState, Lvl, ThagResult, V};
+use crate::{
+    cvprtln, debug_log, maybe_config, regex, vlog, BuildState, Dependencies, Lvl, ThagResult, V,
+};
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Manifest};
 use firestorm::{profile_fn, profile_section};
@@ -290,11 +292,11 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         return;
     }
 
-    // let config = maybe_config();
-    // let binding = Dependencies::default();
-    // let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
-    let config = maybe_config().expect("Config should be loaded");
-    let dep_config = &config.dependencies;
+    let config = maybe_config();
+    let binding = Dependencies::default();
+    let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
+    // let config = maybe_config().expect("Config should be loaded");
+    // let dep_config = &config.dependencies;
 
     let mut found_deps = Vec::new();
 

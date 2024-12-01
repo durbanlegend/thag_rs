@@ -31,7 +31,7 @@ fn maybe_load_config() -> Option<Config> {
             Some(config)
         }
         Ok(None) => {
-            eprintln!("No config file found");
+            eprintln!("No config file found - this is allowed");
             None
         }
         Err(e) => {
@@ -314,7 +314,7 @@ pub fn load(context: &dyn Context) -> ThagResult<Option<Config>> {
     profile_fn!(load);
     let config_path = context.get_config_path();
 
-    debug_log!("config_path={config_path:?}");
+    eprintln!("config_path={config_path:?}");
 
     if config_path.exists() {
         let config_str = fs::read_to_string(&config_path)

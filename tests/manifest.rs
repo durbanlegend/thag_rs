@@ -156,6 +156,8 @@ mod tests {
 
     #[test]
     fn test_manifest_search_valid_crate() {
+        set_up();
+        init_logger();
         let result = cargo_lookup("serde");
         assert!(result.is_some());
         let (name, version) = result.unwrap();
@@ -165,6 +167,8 @@ mod tests {
 
     #[test]
     fn test_manifest_cargo_lookup_hyphenated() {
+        set_up();
+        init_logger();
         let result = cargo_lookup("nu_ansi_term");
         assert!(result.is_some());
         let (name, version) = result.unwrap();
@@ -174,6 +178,8 @@ mod tests {
 
     #[test]
     fn test_manifest_cargo_lookup_nonexistent_crate() {
+        set_up();
+        init_logger();
         let result = cargo_lookup("definitely_not_a_real_crate_name");
         assert!(result.is_none());
     }
@@ -217,6 +223,8 @@ mod tests {
 
     #[test]
     fn test_manifest_analyze_type_annotations() {
+        set_up();
+        init_logger();
         let source = r#"
             struct MyStruct {
                 client: reqwest::Client,
@@ -252,6 +260,8 @@ mod tests {
 
     #[test]
     fn test_manifest_analyze_expr_paths() {
+        set_up();
+        init_logger();
         let source = r#"
             fn main() {
                 // Should detect
@@ -284,6 +294,8 @@ mod tests {
 
     #[test]
     fn test_manifest_analyze_complex_paths() {
+        set_up();
+        init_logger();
         let source = r#"
             use tokio;
 
@@ -321,6 +333,8 @@ mod tests {
 
     #[test]
     fn test_manifest_analyze_macros() {
+        set_up();
+        init_logger();
         let source = r#"
             fn main() {
                 let json = serde_json::json!({ "key": "value" });
@@ -340,6 +354,8 @@ mod tests {
 
     #[test]
     fn test_manifest_analyze_traits_and_types() {
+        set_up();
+        init_logger();
         let source = r#"
             use tokio;
 

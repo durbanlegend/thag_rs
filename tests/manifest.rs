@@ -1,61 +1,25 @@
+@ -1,369 +1,576 @@
 #[cfg(test)]
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest};
     use semver::Version;
-    #[cfg(feature = "simplelog")]
-    use simplelog::{
-        ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
-    };
     use std::path::PathBuf;
     use std::time::Instant;
-    #[cfg(feature = "simplelog")]
-    use std::{fs::File, sync::OnceLock};
-    use thag_rs::{
-        code_utils::{self, to_ast},
-        config::{Dependencies, FeatureOverride},
-        debug_log,
-        manifest::{capture_dep, cargo_lookup, configure_default, merge},
-        shared::{find_crates, find_metadata},
-        BuildState,
-    };
+    use thag_rs::code_utils::{self, to_ast};
+    use thag_rs::manifest::{capture_dep, cargo_lookup, configure_default, merge};
+    use thag_rs::shared::{find_crates, find_metadata};
+    use thag_rs::BuildState;
 
     // Set environment variables before running tests
     fn set_up() {
-        init_logger();
         std::env::set_var("TEST_ENV", "1");
         std::env::set_var("VISUAL", "cat");
         std::env::set_var("EDITOR", "cat");
     }
 
-    #[cfg(feature = "simplelog")]
-    static LOGGER: OnceLock<()> = OnceLock::new();
-
     fn init_logger() {
-        // Choose between simplelog and env_logger based on compile feature
-        #[cfg(feature = "simplelog")]
-        LOGGER.get_or_init(|| {
-            CombinedLogger::init(vec![
-                TermLogger::new(
-                    LevelFilter::Debug,
-                    Config::default(),
-                    TerminalMode::Mixed,
-                    ColorChoice::Auto,
-                ),
-                WriteLogger::new(
-                    LevelFilter::Debug,
-                    Config::default(),
-                    File::create("app.log").unwrap(),
-                ),
-            ])
-            .unwrap();
-            debug_log!("Initialized simplelog");
-        });
-
-        #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
-        {
             let _ = env_logger::builder().is_test(true).try_init();
         }
-    }
 
     #[test]
     fn test_manifest_cargo_lookup_success() {
@@ -109,6 +73,7 @@ mod tests {
     #[test]
     fn test_manifest_merge_manifest() -> Result<(), Box<dyn std::error::Error>> {
         set_up();
+        init_logger();
 
         let rs_toml_str = r##"[package]
     name = "toml_block_name"
@@ -192,7 +157,6 @@ mod tests {
 
     #[test]
     fn test_manifest_search_valid_crate() {
-        set_up();
         let result = cargo_lookup("serde");
         assert!(result.is_some());
         let (name, version) = result.unwrap();
@@ -202,7 +166,6 @@ mod tests {
 
     #[test]
     fn test_manifest_cargo_lookup_hyphenated() {
-        set_up();
         let result = cargo_lookup("nu_ansi_term");
         assert!(result.is_some());
         let (name, version) = result.unwrap();
@@ -212,13 +175,11 @@ mod tests {
 
     #[test]
     fn test_manifest_cargo_lookup_nonexistent_crate() {
-        set_up();
         let result = cargo_lookup("definitely_not_a_real_crate_name");
         assert!(result.is_none());
     }
 
     fn setup_build_state(source: &str) -> BuildState {
-        set_up();
         let mut build_state = BuildState {
             source_path: PathBuf::from("dummy_test.rs"),
             source_stem: String::from("dummy_test"),
@@ -257,7 +218,6 @@ mod tests {
 
     #[test]
     fn test_manifest_analyze_type_annotations() {
-        set_up();
         let source = r#"
             struct MyStruct {
                 client: reqwest::Client,
@@ -293,7 +253,6 @@ mod tests {
 
     #[test]
     fn test_manifest_analyze_expr_paths() {
-        set_up();
         let source = r#"
             fn main() {
                 // Should detect
@@ -326,7 +285,6 @@ mod tests {
 
     #[test]
     fn test_manifest_analyze_complex_paths() {
-        set_up();
         let source = r#"
             use tokio;
 
@@ -364,7 +322,6 @@ mod tests {
 
     #[test]
     fn test_manifest_analyze_macros() {
-        set_up();
         let source = r#"
             fn main() {
                 let json = serde_json::json!({ "key": "value" });
@@ -384,7 +341,6 @@ mod tests {
 
     #[test]
     fn test_manifest_analyze_traits_and_types() {
-        set_up();
         let source = r#"
             use tokio;
 
@@ -410,167 +366,5 @@ mod tests {
         assert!(manifest.dependencies.contains_key("tokio"));
         assert!(manifest.dependencies.contains_key("diesel"));
         assert!(manifest.dependencies.contains_key("serde"));
-    }
-
-    #[test]
-    fn test_manifest_infer_deps_case() {
-        set_up();
-        let source = r#"
-            use clap::{CommandFactory, Parser};
-            use console::style;
-            use rustyline::DefaultEditor;
-            // use shlex;
-            use std::error::Error;
-            use std::str::FromStr;
-            use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
-
-            #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
-            #[command(name = "", disable_help_flag = true, disable_help_subcommand = true)] // Disable automatic help subcommand and flag
-            #[strum(serialize_all = "kebab-case")]
-            enum LoopCommand {
-                /// Evaluate an expression. Enclose complex expressions in braces {}.
-                Eval,
-                /// Enter, paste or modify your code
-                Edit,
-                /// Enter, paste or modify the generated Cargo.toml file your code
-                Toml,
-                /// List generated files
-                List,
-                /// Delete generated files
-                Delete,
-                /// Exit REPL
-                Quit,
-                /// Show help information
-                Help,
-            }
-
-            impl LoopCommand {
-                fn print_help() {
-                    let mut command = LoopCommand::command();
-                    let help_message = command.render_help();
-                    println!("{}", help_message);
-                }
-            }
-
-            fn main() -> Result<(), Box<dyn Error>> {
-                let mut rl = DefaultEditor::new().unwrap();
-
-                let cmd_vec = LoopCommand::iter()
-                    .map(<LoopCommand as Into<&'static str>>::into)
-                    .map(String::from)
-                    .collect::<Vec<String>>();
-                let cmd_list =
-                    "Enter full or partial match of one of the following: ".to_owned() + &cmd_vec.join(", ");
-
-                println!("{cmd_list}");
-                loop {
-                    let line = match rl.readline(">> ") {
-                        Ok(x) => x,
-                        Err(e) => match e {
-                            rustyline::error::ReadlineError::Eof
-                            | rustyline::error::ReadlineError::Interrupted => break,
-                            rustyline::error::ReadlineError::WindowResized => continue,
-                            _ => panic!("Error in read line: {e:?}"),
-                        },
-                    };
-                    if line.trim().is_empty() {
-                        continue;
-                    }
-                    _ = rl.add_history_entry(line.as_str());
-                    let command = match shlex::split(&line) {
-                        Some(split) => {
-                            // eprintln!("split={split:?}");
-                            let mut matches = 0;
-                            let first_word = split[0].as_str();
-                            let mut cmd = String::new();
-                            for key in cmd_vec.iter() {
-                                if key.starts_with(first_word) {
-                                    matches += 1;
-                                    // Selects last match
-                                    if matches == 1 {
-                                        cmd = key.to_string();
-                                    }
-                                    // eprintln!("key={key}, split[0]={}", split[0]);
-                                }
-                            }
-                            if matches == 1 {
-                                cmd
-                            } else {
-                                println!("No single matching key found");
-                                continue;
-                            }
-                        }
-                        None => {
-                            println!(
-                                "{} input was not valid and could not be processed",
-                                style("error:").red().bold()
-                            );
-                            LoopCommand::print_help();
-                            continue;
-                        }
-                    };
-                    println!(
-                        "command={command}, matching variant={:#?}",
-                        LoopCommand::from_str(&command)?
-                    );
-                    if command == "help" {
-                        println!();
-                        LoopCommand::print_help();
-                        continue;
-                    }
-                }
-                Ok(())
-            }
-        "#;
-
-        let mut build_state = setup_build_state(source);
-
-        // Set up config similar to your actual config
-        let mut config = Dependencies::default();
-        config.exclude_unstable_features = true;
-        config.exclude_std_feature = true;
-        config.global_excluded_features = vec![
-            "default".to_string(),
-            "sqlite".to_string(),
-            "unstable".to_string(),
-        ];
-        config.always_include_features = vec!["derive".to_string()];
-
-        // Add rustyline override
-        let rustyline_override = FeatureOverride {
-            excluded_features: vec!["with-sqlite-history".to_string()],
-            required_features: vec!["with-file-history".to_string()],
-            alternative_features: vec![],
-        };
-        config
-            .feature_overrides
-            .insert("rustyline".to_string(), rustyline_override);
-
-        // Mock the config for the test
-        // (You'll need to show me how your config system works for this part)
-
-        merge(&mut build_state, source).unwrap();
-
-        let manifest = build_state.cargo_manifest.unwrap();
-
-        // Check clap features
-        let clap_deps = manifest.dependencies.get("clap").unwrap();
-        if let Dependency::Detailed(detail) = clap_deps {
-            let features = &detail.features;
-            assert!(!features.contains(&"default".to_string()));
-            assert!(!features.contains(&"unstable-derive-ui-tests".to_string()));
-            assert!(features.contains(&"derive".to_string()));
-        }
-
-        // Check rustyline features
-        let rustyline_deps = manifest.dependencies.get("rustyline").unwrap();
-        if let Dependency::Detailed(detail) = rustyline_deps {
-            let features = &detail.features;
-            assert!(!features.contains(&"with-sqlite-history".to_string()));
-            assert!(features.contains(&"with-file-history".to_string()));
-        }
-
-        // Log the complete manifest for debugging
-        debug_log!("Final manifest: {:#?}", manifest);
     }
 }

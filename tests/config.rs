@@ -5,13 +5,15 @@ mod tests {
         ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
     };
     use std::path::PathBuf;
+    use std::sync::Arc;
     #[cfg(feature = "simplelog")]
     use std::{fs::File, sync::OnceLock};
     use thag_rs::{
         colors::{ColorSupport, TermTheme},
-        config::{self, Dependencies, FeatureOverride, MockContext},
+        config::{self, Dependencies, FeatureOverride, MockContext, RealContext},
         debug_log, load,
         logging::Verbosity,
+        Context,
     };
 
     #[cfg(feature = "simplelog")]
@@ -44,8 +46,16 @@ mod tests {
         }
     }
 
+    // Set environment variables before running tests
+    fn set_up() {
+        std::env::set_var("TEST_ENV", "1");
+        std::env::set_var("VISUAL", "cat");
+        std::env::set_var("EDITOR", "cat");
+    }
+
     #[test]
     fn test_config_load_config_success() {
+        set_up();
         init_logger();
         let config_content = r#"
             [logging]
@@ -59,13 +69,23 @@ mod tests {
         let config_path = temp_dir.path().join("config.toml");
         std::fs::write(&config_path, config_content).expect("Failed to write to temp config file");
 
-        let mut mock_context = MockContext::default();
-        mock_context
-            .expect_get_config_path()
-            .return_const(config_path.clone());
-        mock_context.expect_is_real().return_const(false);
+        let get_context = || -> Arc<dyn Context> {
+            let context: Arc<dyn Context> = if std::env::var("TEST_ENV").is_ok() {
+                let mut mock_context = MockContext::default();
+                mock_context
+                    .expect_get_config_path()
+                    .return_const(config_path.clone());
+                mock_context.expect_is_real().return_const(false);
+                Arc::new(mock_context)
+            } else {
+                Arc::new(RealContext::new())
+            };
+            context
+        };
 
-        let config = load(&mock_context).expect("Failed to load config").unwrap();
+        let config = load(&get_context())
+            .expect("Failed to load config")
+            .unwrap();
 
         assert_eq!(config.logging.default_verbosity, Verbosity::Verbose);
         assert_eq!(config.colors.color_support, ColorSupport::Ansi16);
@@ -74,35 +94,55 @@ mod tests {
 
     #[test]
     fn test_config_load_config_file_not_found() {
+        set_up();
         init_logger();
-        let mut mock_context = MockContext::default();
-        mock_context
-            .expect_get_config_path()
-            .return_const(PathBuf::from("/non/existent/path/config.toml"));
-        mock_context.expect_is_real().return_const(false);
 
-        let config = load(&mock_context).unwrap();
+        let get_context = || -> Arc<dyn Context> {
+            let context: Arc<dyn Context> = if std::env::var("TEST_ENV").is_ok() {
+                let mut mock_context = MockContext::default();
+                mock_context
+                    .expect_get_config_path()
+                    .return_const(PathBuf::from("/non/existent/path/config.toml"));
+                mock_context.expect_is_real().return_const(false);
+                Arc::new(mock_context)
+            } else {
+                Arc::new(RealContext::new())
+            };
+            context
+        };
+
+        let config = load(&get_context()).expect("Failed to load config");
+
         assert!(
             config.is_none(),
-            "Expected None when config file is not found"
+            "Expected None when config file is not found, found {config:#?}"
         );
     }
 
     #[test]
     fn test_config_load_config_invalid_format() {
+        set_up();
         init_logger();
         let config_content = r#"invalid = toml"#;
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let config_path = temp_dir.path().join("config.toml");
         std::fs::write(&config_path, config_content).expect("Failed to write to temp config file");
 
-        let mut mock_context = MockContext::default();
-        mock_context
-            .expect_get_config_path()
-            .return_const(config_path.clone());
-        mock_context.expect_is_real().return_const(false);
+        let get_context = || -> Arc<dyn Context> {
+            let context: Arc<dyn Context> = if std::env::var("TEST_ENV").is_ok() {
+                let mut mock_context = MockContext::default();
+                mock_context
+                    .expect_get_config_path()
+                    .return_const(config_path.clone());
+                mock_context.expect_is_real().return_const(false);
+                Arc::new(mock_context)
+            } else {
+                Arc::new(RealContext::new())
+            };
+            context
+        };
 
-        let config = load(&mock_context);
+        let config = load(&get_context());
         // eprintln!("config={config:#?}");
         assert!(config.is_err());
     }
@@ -110,6 +150,7 @@ mod tests {
     // #[ignore = "Opens file and expects human interaction"]
     #[test]
     fn test_config_edit_creates_config_file_if_not_exists() {
+        set_up();
         init_logger();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let config_path = temp_dir.path().join("config.toml");
@@ -133,6 +174,7 @@ mod tests {
     }
 
     fn create_test_config() -> Dependencies {
+        set_up();
         init_logger();
         let mut config = Dependencies::default();
         config.exclude_unstable_features = true;
@@ -154,6 +196,7 @@ mod tests {
 
     #[test]
     fn test_config_filter_features_global_exclusions() {
+        set_up();
         init_logger();
         let config = create_test_config();
         let features = vec![
@@ -170,6 +213,7 @@ mod tests {
 
     #[test]
     fn test_config_filter_features_crate_specific() {
+        set_up();
         init_logger();
         let config = create_test_config();
         let features = vec![
@@ -186,6 +230,7 @@ mod tests {
 
     #[test]
     fn test_config_should_include_feature() {
+        set_up();
         init_logger();
         let config = create_test_config();
         assert!(!config.should_include_feature("default", "some_crate"));

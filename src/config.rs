@@ -9,9 +9,11 @@ use serde_with::{serde_as, DisplayFromStr};
 use std::env;
 use std::{
     collections::HashMap,
+    env::current_dir,
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
+    sync::Arc,
 };
 
 /// Initializes and returns the configuration.
@@ -25,7 +27,9 @@ fn maybe_load_config() -> Option<Config> {
     profile_fn!(maybe_load_config);
     eprintln!("In maybe_load_config, should not see this message more than once");
 
-    match load(&RealContext::new()) {
+    let context = get_context();
+
+    match load(&context) {
         Ok(Some(config)) => {
             // eprintln!("Loaded config: {config:?}");
             Some(config)
@@ -39,6 +43,22 @@ fn maybe_load_config() -> Option<Config> {
             None
         }
     }
+}
+
+pub fn get_context() -> Arc<dyn Context> {
+    let context: Arc<dyn Context> = if std::env::var("TEST_ENV").is_ok() {
+        let current_dir = current_dir().expect("Could not get current dir");
+        let config_path = current_dir.clone().join("tests/assets").join("config.toml");
+        let mut mock_context = MockContext::default();
+        mock_context
+            .expect_get_config_path()
+            .return_const(config_path.clone());
+        mock_context.expect_is_real().return_const(false);
+        Arc::new(mock_context)
+    } else {
+        Arc::new(RealContext::new())
+    };
+    context
 }
 
 /// Configuration categories
@@ -310,7 +330,7 @@ impl Context for RealContext {
 ///
 /// This function will return an error if it either finds a file and fails to read it,
 /// or reads the file and fails to parse it..
-pub fn load(context: &dyn Context) -> ThagResult<Option<Config>> {
+pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     profile_fn!(load);
     let config_path = context.get_config_path();
 
@@ -378,7 +398,7 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
 /// Main function for use by testing or the script runner.
 #[allow(dead_code, unused_variables)]
 fn main() {
-    let maybe_config = load(&RealContext::new());
+    let maybe_config = load(&get_context());
 
     if let Ok(Some(config)) = maybe_config {
         // #[cfg(debug_assertions)]

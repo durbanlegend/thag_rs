@@ -33,7 +33,7 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
     let source_stem: &str = source_name
         .strip_suffix(thag_rs::RS_SUFFIX)
         .expect("Problem stripping Rust suffix");
-    let current_dir = current_dir().expect("Could not get current dir");
+    let current_dir = std::env::current_dir().expect("Could not get current dir");
     let working_dir_path = current_dir.clone();
     let cargo_home = home::cargo_home().expect("Could not get Cargo home");
     let target_dir_path = TMPDIR.join("thag_rs").join(source_stem);

@@ -54,7 +54,7 @@ pub struct Cli {
     pub filter: Option<String>,
     /// Optional manifest info for --loop in Cargo.toml format, such as a `[dependencies]` section
     //  clap issue 4707 may prevent `requires` from working, as I've experienced.
-    #[arg(short = 'T', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "CARGO-TOML")]
+    #[arg(short = 'M', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "CARGO-TOML")]
     pub toml: Option<String>,
     /// Optional pre-loop Rust statements for --loop, somewhat like awk BEGIN
     //  clap issue 4707 may prevent `requires` from working, as I've experienced.
@@ -257,7 +257,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         profile_section!(loop_assert);
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
             if args.toml.is_some() {
-                eprintln!("Option --toml (-T) requires --loop (-l)");
+                eprintln!("Option --toml (-M) requires --loop (-l)");
             }
             if args.begin.is_some() {
                 eprintln!("Option --begin (-B) requires --loop (-l)");

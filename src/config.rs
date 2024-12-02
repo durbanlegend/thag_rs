@@ -79,7 +79,7 @@ pub struct Config {
 
 /// Dependency handling
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
+#[derive(Clone, Debug, Deserialize, Serialize, Documented, DocumentedFields)]
 #[serde(default)]
 pub struct Dependencies {
     /// Exclude features containing "unstable"
@@ -102,6 +102,22 @@ pub struct Dependencies {
     pub feature_overrides: HashMap<String, FeatureOverride>,
     /// Features that should always be excluded
     pub global_excluded_features: Vec<String>,
+}
+
+impl Default for Dependencies {
+    fn default() -> Self {
+        Dependencies {
+            exclude_unstable_features: true,
+            exclude_std_feature: true,
+            use_detailed_dependencies: true,
+            always_include_features: vec!["derive".to_string()],
+            group_related_features: true,
+            show_feature_dependencies: true,
+            exclude_prerelease: true,
+            feature_overrides: HashMap]<String, FeatureOverride>::new(),
+            global_excluded_features: vec![],
+        }
+    }
 }
 
 impl Dependencies {
@@ -220,12 +236,12 @@ pub struct FeatureOverride {
     pub alternative_features: Vec<String>,
 }
 
-/// Doc comment on config::Logging
+/// Logging settings
 #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
 #[serde(default)]
 pub struct Logging {
-    /// TODO: Doc comment on config::Logging::default_verbosity
+    /// Default verbosity setting
     #[serde_as(as = "DisplayFromStr")]
     pub default_verbosity: Verbosity,
 }
@@ -250,11 +266,12 @@ pub struct Colors {
     pub term_theme: TermTheme,
 }
 
-/// Loction of demo proc macros
+/// Demo proc macro settings
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Documented, DocumentedFields, Serialize)]
 #[serde(default)]
 pub struct ProcMacros {
+    /// Absolute or relative path to demo proc macros crate, e.g. demo/proc_macros.
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub proc_macro_crate_path: Option<String>,
 }

@@ -8,14 +8,17 @@ serde = { version = "1.0.215", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "3a32b298a06553f5d3fe43bde3672060c84c61a9" }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "3a32b298a06553f5d3fe43bde3672060c84c61a9" }
+thag_rs = { path = "/Users/donf/projects/thag_rs/" }
 toml = "0.8"
 */
 
 /// Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
 //# Purpose: Handy configuration file builder.
 //# Categories: crates, technique, tools
-use documented::{Documented, DocumentedVariants};
+// use convert_case::{Case, Casing};
+use convert_case::{Converter, Pattern};
+use documented::{Documented, DocumentedFields, DocumentedVariants};
 use inquire::error::CustomUserError;
 use inquire::validator::{StringValidator, Validation};
 use inquire::{Confirm, Select, Text};
@@ -317,31 +320,6 @@ fn extract_enum_docs(items: &[Item], enum_name: &str) -> Option<String> {
     None
 }
 
-fn find_source_file(type_name: &str) -> Option<PathBuf> {
-    // Split type path to get module path
-    let parts: Vec<_> = type_name.split("::").collect();
-    println!("Type path parts: {:?}", parts);
-
-    let project_root = std::env::current_dir().ok()?;
-    println!("Project root: {:?}", project_root);
-
-    // Try various possible locations
-    let possible_paths = vec![
-        project_root.join("src").join("config.rs"),
-        project_root.join("src").join("lib.rs"),
-        project_root.join("src").join("main.rs"),
-        // Add your actual config.rs location
-        project_root.join("src").join("shared.rs"),
-    ];
-
-    println!("Checking paths:");
-    for path in &possible_paths {
-        println!("  {:?} exists: {}", path, path.exists());
-    }
-
-    possible_paths.into_iter().find(|p| p.exists())
-}
-
 fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String, String)>) {
     for item in items {
         match item {
@@ -437,7 +415,7 @@ fn extract_attrs_docs(attrs: &[Attribute]) -> Vec<String> {
 }
 
 fn add_enum_docs<T: PromptableEnum>(result: &mut String, field_name: &str) {
-    result.push_str(&format!("# Available options for {field_name}:\n"));
+    result.push_str(&format!("\n# Available options for {field_name}:\n"));
     for (name, docs) in T::get_docs() {
         result.push_str(&format!("#   {} - {}\n", name, docs));
     }
@@ -483,7 +461,7 @@ fn add_doc_comments(toml_str: &str, doc_comments: Vec<(String, String)>) -> Stri
                 add_enum_docs::<TermTheme>(&mut result, "TermTheme");
             }
             s => {
-                let maybe_setting = &trimmed.split_once(' ');
+                let maybe_setting = &s.split_once(' ');
                 if let Some((setting, _)) = maybe_setting {
                     let key = format!("{section}.{setting}");
                     eprintln!("Trying to match key {key}");
@@ -500,51 +478,6 @@ fn add_doc_comments(toml_str: &str, doc_comments: Vec<(String, String)>) -> Stri
     }
 
     result
-}
-
-fn extract_field_path(line: &str) -> Option<String> {
-    let line = line.trim();
-    if line.is_empty() || line.starts_with('#') {
-        return None;
-    }
-
-    // Handle section headers [section]
-    if line.starts_with('[') && line.ends_with(']') {
-        return Some(line[1..line.len() - 1].to_string());
-    }
-
-    // Handle field definitions field = value
-    if let Some(idx) = line.find('=') {
-        return Some(line[..idx].trim().to_string());
-    }
-
-    None
-}
-
-fn prompt_verbosity(current: &Verbosity) -> Result<Option<Verbosity>, Box<dyn std::error::Error>> {
-    prompt_enum(
-        "Verbosity level:",
-        "quieter (0) < quiet (1) < normal (2) < verbose (3) < debug (4)",
-        current,
-    )
-}
-
-fn prompt_color_support(
-    current: &ColorSupport,
-) -> Result<Option<ColorSupport>, Box<dyn std::error::Error>> {
-    prompt_enum(
-        "Color support:",
-        "xterm256 (full color) / ansi16 (basic) / none (disabled) / default (auto-detect)",
-        current,
-    )
-}
-
-fn prompt_term_theme(current: &TermTheme) -> Result<Option<TermTheme>, Box<dyn std::error::Error>> {
-    prompt_enum(
-        "Terminal theme:",
-        "light/dark background, or none for no adjustment",
-        current,
-    )
 }
 
 fn prompt_logging_config(current: &Logging) -> Result<Option<Logging>, Box<dyn std::error::Error>> {
@@ -594,58 +527,206 @@ fn prompt_dependencies_config(
 ) -> Result<Option<Dependencies>, Box<dyn std::error::Error>> {
     let mut config = current.clone();
 
-    config.exclude_unstable_features = Confirm::new("Exclude unstable features?")
-        .with_default(current.exclude_unstable_features)
-        .prompt_skippable()?
-        .unwrap_or(current.exclude_unstable_features);
+    loop {
+        let options = vec![
+            "Show Current Settings",
+            "Unstable Features",
+            "Std Feature",
+            "Global Exclusions",
+            "Always Included Features",
+            "Feature Overrides",
+            "Save and Return",
+            "Cancel",
+        ];
 
-    config.exclude_std_feature = Confirm::new("Exclude std feature?")
-        .with_default(current.exclude_std_feature)
-        .prompt_skippable()?
-        .unwrap_or(current.exclude_std_feature);
+        let action = Select::new("Configure Dependencies:", options)
+            .with_help_message("Use ↑↓ to navigate, Enter to select, Esc to go back")
+            .prompt_skippable()?;
 
-    if Confirm::new("Configure feature overrides?").prompt()? {
-        config.feature_overrides = HashMap::new(); // Start fresh if user wants to configure
-        while if config.feature_overrides.is_empty() {
-            true
-        } else {
-            Confirm::new("Add another crate override?").prompt()?
-        } {
-            let crate_name = Text::new("Crate name:").prompt()?;
+        let Some(action) = action else {
+            return Ok(None);
+        };
 
-            let excluded = Text::new("Excluded features (comma-separated):").prompt()?;
-            let excluded_features = excluded
-                .split(',')
-                .map(str::trim)
-                .map(String::from)
-                .collect();
+        match action {
+            "Show Current Settings" => {
+                println!("\nCurrent Settings:");
+                let max_len = Dependencies::FIELD_NAMES
+                    .iter()
+                    .map(|k| k.len())
+                    .max()
+                    .unwrap_or(0);
 
-            let required = Text::new("Required features (comma-separated):").prompt()?;
-            let required_features = required
-                .split(',')
-                .map(str::trim)
-                .map(String::from)
-                .collect();
+                for field_name in Dependencies::FIELD_NAMES {
+                    let doc = Dependencies::get_field_docs(field_name)
+                        .unwrap_or("No documentation available");
+                    match *field_name {
+                        // "exclude_unstable_features" => println!(
+                        //     "  Exclude unstable features: {} ({})",
+                        //     config.exclude_unstable_features, doc
+                        // ),
+                        // "exclude_std_feature" => println!(
+                        //     "  Exclude std feature: {} ({})",
+                        //     config.exclude_std_feature, doc
+                        // ),
+                        // "always_include_features" => println!(
+                        //     "  Always include features: {:?} ({})",
+                        //     config.always_include_features, doc
+                        // ),
+                        // "global_excluded_features" => println!(
+                        //     "  Global exclusions: {:?} ({})",
+                        //     config.global_excluded_features, doc
+                        // ),
+                        // "feature_overrides" => println!(
+                        //     "  Feature overrides: {} crates configured ({})",
+                        //     config.feature_overrides.len(),
+                        //     doc
+                        // ),
+                        _ => {
+                            let conv = Converter::new()
+                                .set_delim(" ")
+                                .set_pattern(Pattern::Sentence);
+                            println!(
+                                "  {:<width$}: {}",
+                                conv.convert(field_name),
+                                doc,
+                                width = max_len + 2
+                            )
+                        }
+                    }
+                }
+                println!();
+            }
+            "Unstable Features" => {
+                if let Some(value) = Confirm::new("Exclude unstable features?")
+                    .with_default(config.exclude_unstable_features)
+                    .with_help_message(
+                        Dependencies::get_field_docs("exclude_unstable_features")
+                            .unwrap_or("No documentation available"),
+                    )
+                    .prompt_skippable()?
+                {
+                    config.exclude_unstable_features = value;
+                }
+            }
+            "Std Feature" => {
+                if let Some(value) = Confirm::new("Exclude std feature?")
+                    .with_default(config.exclude_std_feature)
+                    .with_help_message(
+                        Dependencies::get_field_docs("exclude_std_feature")
+                            .unwrap_or("No documentation available"),
+                    )
+                    .prompt_skippable()?
+                {
+                    config.exclude_std_feature = value;
+                }
+            }
+            "Global Exclusions" => {
+                let doc = Dependencies::get_field_docs("global_excluded_features")
+                    .unwrap_or("No documentation available");
+                let current = config.global_excluded_features.join(", ");
 
-            let alternative = Text::new("Alternative features (comma-separated):").prompt()?;
-            let alternative_features = alternative
-                .split(',')
-                .map(str::trim)
-                .map(String::from)
-                .collect();
+                if let Some(input) = Text::new("Enter global exclusions (comma-separated):")
+                    .with_default(&current)
+                    .with_help_message(doc)
+                    .prompt_skippable()?
+                {
+                    config.global_excluded_features = input
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|s| !s.is_empty())
+                        .map(String::from)
+                        .collect();
+                }
+            }
+            "Always Included Features" => {
+                let doc = Dependencies::get_field_docs("always_include_features")
+                    .unwrap_or("No documentation available");
+                let current = config.always_include_features.join(", ");
 
-            config.feature_overrides.insert(
-                crate_name,
-                FeatureOverride {
-                    excluded_features,
-                    required_features,
-                    alternative_features,
-                },
-            );
+                if let Some(input) =
+                    Text::new("Enter features to always include (comma-separated):")
+                        .with_default(&current)
+                        .with_help_message(doc)
+                        .prompt_skippable()?
+                {
+                    config.always_include_features = if input.trim().is_empty() {
+                        vec!["derive".to_string()]
+                    } else {
+                        input
+                            .split(',')
+                            .map(str::trim)
+                            .filter(|s| !s.is_empty())
+                            .map(String::from)
+                            .collect()
+                    };
+                }
+            }
+            "Feature Overrides" => {
+                if let Some(overrides) = prompt_feature_overrides()? {
+                    config.feature_overrides = overrides;
+                }
+            }
+            "Save and Return" => {
+                return Ok(Some(config));
+            }
+            "Cancel" => {
+                return Ok(None);
+            }
+            _ => unreachable!(),
         }
     }
+}
 
-    Ok(Some(config))
+fn prompt_feature_overrides(
+) -> Result<Option<HashMap<String, FeatureOverride>>, Box<dyn std::error::Error>> {
+    let mut overrides = HashMap::new();
+
+    while Confirm::new("Add crate override?")
+        .with_help_message("Press Esc to finish")
+        .prompt_skippable()?
+        .unwrap_or(false)
+    {
+        let crate_name = match Text::new("Crate name:").prompt_skippable()? {
+            Some(name) => name,
+            None => return Ok(None),
+        };
+
+        let excluded = match Text::new("Excluded features (comma-separated):")
+            .with_help_message("Features to exclude for this crate")
+            .prompt_skippable()?
+        {
+            Some(ex) => ex,
+            None => return Ok(None),
+        };
+
+        let required = match Text::new("Required features (comma-separated):")
+            .with_help_message("Features to always include for this crate")
+            .prompt_skippable()?
+        {
+            Some(req) => req,
+            None => return Ok(None),
+        };
+
+        overrides.insert(
+            crate_name,
+            FeatureOverride {
+                excluded_features: excluded
+                    .split(',')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .map(String::from)
+                    .collect(),
+                required_features: required
+                    .split(',')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .map(String::from)
+                    .collect(),
+            },
+        );
+    }
+
+    Ok(Some(overrides))
 }
 
 fn prompt_misc_config(current: &Misc) -> Result<Option<Misc>, Box<dyn std::error::Error>> {

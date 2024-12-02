@@ -185,7 +185,7 @@ mod tests {
         let rustyline_override = FeatureOverride {
             excluded_features: vec!["with-sqlite-history".to_string()],
             required_features: vec!["with-file-history".to_string()],
-            alternative_features: vec![],
+            // alternative_features: vec![],
         };
 
         config

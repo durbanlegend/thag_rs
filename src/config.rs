@@ -9,7 +9,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use std::env;
 use std::{
     collections::HashMap,
-    env::current_dir,
+    env::{current_dir, var},
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
@@ -45,8 +45,14 @@ fn maybe_load_config() -> Option<Config> {
     }
 }
 
+/// Gets the real or mock context according to whether test mode is detected via the `TEST_ENV` sstem variable.
+///
+/// # Panics
+///
+/// Panics if there is any issue accessing the current directory, e.g. if it doesn't exist or we don't have sufficient permissions to access it.
+#[must_use]
 pub fn get_context() -> Arc<dyn Context> {
-    let context: Arc<dyn Context> = if std::env::var("TEST_ENV").is_ok() {
+    let context: Arc<dyn Context> = if var("TEST_ENV").is_ok() {
         let current_dir = current_dir().expect("Could not get current dir");
         let config_path = current_dir.clone().join("tests/assets").join("config.toml");
         let mut mock_context = MockContext::default();
@@ -90,15 +96,11 @@ pub struct Dependencies {
     pub use_detailed_dependencies: bool,
     /// Features that should always be included if present, e.g. `derive`
     pub always_include_features: Vec<String>,
-    /// TODO Group related features together
-    pub group_related_features: bool,
-    /// TODO Show feature dependencies
-    pub show_feature_dependencies: bool,
     /// Exclude releases with pre-release markers such as -beta.
     pub exclude_prerelease: bool, // New option
     // pub minimum_downloads: Option<u64>,  // New option
     // pub minimum_version: Option<String>, // New option
-    /// Crate-level feature overrides
+    /// Crate-specific feature overrides
     pub feature_overrides: HashMap<String, FeatureOverride>,
     /// Features that should always be excluded
     pub global_excluded_features: Vec<String>,
@@ -111,8 +113,6 @@ impl Default for Dependencies {
             exclude_std_feature: true,
             use_detailed_dependencies: true,
             always_include_features: vec!["derive".to_string()],
-            group_related_features: true,
-            show_feature_dependencies: true,
             exclude_prerelease: true,
             feature_overrides: HashMap::<String, FeatureOverride>::new(),
             global_excluded_features: vec![],
@@ -161,7 +161,7 @@ impl Dependencies {
             debug_log!("Applying overrides for crate {}", crate_name);
 
             // Remove excluded features
-            let before_len = filtered.len();
+            // let before_len = filtered.len();
             filtered.retain(|f| {
                 let keep = self.always_include_features.contains(f)
                     || !override_config.excluded_features.contains(f);
@@ -176,16 +176,6 @@ impl Dependencies {
                 if !filtered.contains(f) {
                     debug_log!("Adding required feature '{}'", f);
                     filtered.push(f.clone());
-                }
-            }
-
-            // Replace excluded features with alternatives if any were excluded
-            if filtered.len() < before_len {
-                for f in &override_config.alternative_features {
-                    if !filtered.contains(f) {
-                        debug_log!("Adding alternative feature '{}'", f);
-                        filtered.push(f.clone());
-                    }
                 }
             }
         }
@@ -233,7 +223,7 @@ impl Dependencies {
 pub struct FeatureOverride {
     pub excluded_features: Vec<String>,
     pub required_features: Vec<String>,
-    pub alternative_features: Vec<String>,
+    // pub alternative_features: Vec<String>,
 }
 
 /// Logging settings

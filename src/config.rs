@@ -114,7 +114,7 @@ impl Default for Dependencies {
             group_related_features: true,
             show_feature_dependencies: true,
             exclude_prerelease: true,
-            feature_overrides: HashMap]<String, FeatureOverride>::new(),
+            feature_overrides: HashMap::<String, FeatureOverride>::new(),
             global_excluded_features: vec![],
         }
     }

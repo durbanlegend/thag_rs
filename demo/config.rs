@@ -5,7 +5,8 @@ edit = "0.1.5"
 firestorm = "0.5.1"
 home = "0.5.9"
 log = "0.4.22"
-mockall = "0.13.1"
+# mockall = "0.13.1"
+mockall = { version = "0.13.1", default-features = true, features = [], optional = false }
 serde = { version = "1.0", features = ["derive"] }
 # serde_derive = "1.0"
 serde_json = "1.0"

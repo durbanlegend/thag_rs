@@ -58,6 +58,17 @@ jobs:
     - name: Build
       run: cargo build
 
+    - name: Show Rust version and active toolchain
+      run: |
+        rustc --version
+        rustup show
+
+    - name: Show cargo tree with features
+      run: cargo tree -f "{p} {f}"
+
+    - name: Show mockall dependencies specifically
+      run: cargo tree -p mockall
+
     - name: Run tests
       run: RUST_BACKTRACE=1 cargo test --no-fail-fast -p thag_rs check_config_rs -- --nocapture --show-output
 

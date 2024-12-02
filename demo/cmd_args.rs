@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 bitflags = "2.5.0"
-clap = { version = "4.5.7", features = ["cargo", "derive"] }
+clap = { version = "4.5.21", features = ["cargo", "derive"] }
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "79582b0a889bca191a15a9d85f7d4c0ab5fbab69"}
 */
 

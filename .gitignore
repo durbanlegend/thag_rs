@@ -36,3 +36,4 @@ demo/proc_macro_const_demo copy.rs
 demo/proc_macros/target/
 install_thag_protocol.sh
 thag.html
+demo/thag_config_builder copy.rs

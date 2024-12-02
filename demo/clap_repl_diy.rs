@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.3", features = ["derive"] }
+clap = { version = "4.5.21", features = ["derive"] }
 shlex = "0.1.1"
 */
 

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.7", features = ["cargo"] }
+clap = { version = "4.5.21", features = ["cargo"] }
 */
 
 /// Published example from `clap` tutorial (builder)

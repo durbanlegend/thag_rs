@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
+strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
 */
 
 /// Partially worked-out solution to colouring and styling messages based on the level of

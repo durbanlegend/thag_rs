@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.17", features = ["cargo", "derive"] }
+clap = { version = "4.5.21", features = ["cargo", "derive"] }
 lazy_static = "1.5.0"
 regex = "1.10.6"
 repl-block = "0.10.0"

@@ -28,3 +28,7 @@ assert_eq!(
     AlwaysPlay::F6.get_variant_docs(),
     "But only if you are white."
 );
+
+for field_name in AlwaysPlay::FIELD_NAMES {
+    println!("field_name={field_name}, field_doc={:#?}", AlwaysPlay::get_field_docs(field_name));
+}

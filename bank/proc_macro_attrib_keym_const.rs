@@ -1,12 +1,12 @@
 /*[toml]
 [dependencies]
-#syn = { version = "2.0.87", features = ["extra-traits", "full"] }
-syn = { version = "2.0.87", features = ["full"] }
+#syn = { version = "2.0.90", features = ["extra-traits", "full"] }
+syn = { version = "2.0.90", features = ["full"] }
 */
 
 #![allow(dead_code, unused_variables)]
 // Magic import expanded by thag_rs.
-use thag_demo_proc_macros::use_mappings;
+use thag_bank_proc_macros::use_mappings;
 
 // Put this in tui_editor with #[macro_export]
 macro_rules! base_data {

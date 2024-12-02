@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.87", features = ["full", "visit"] }
+syn = { version = "2.0.90", features = ["full", "visit"] }
 */
 
 use syn::visit::Visit;

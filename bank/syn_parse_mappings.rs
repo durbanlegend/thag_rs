@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
 quote = "1.0.37"
-serde = { version = "1.0.204", features = ["derive"] }
-syn = { version = "2.0.87", features = ["extra-traits", "full", "parsing", "printing"] }
+serde = { version = "1.0.215", features = ["derive"] }
+syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "printing"] }
 */
 
 use quote::quote;

@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 bitflags = "2.5.0"
-clap = { version = "4.5.3", features = ["derive"] }
+clap = { version = "4.5.21", features = ["derive"] }
 */
 
 /// Basic CLI example using clap.

@@ -1,12 +1,12 @@
 /*
 # [toml]
 # [dependencies]
-# clap = { version = "4.5.7", features = ["cargo", "derive"] }
+# clap = { version = "4.5.21", features = ["cargo", "derive"] }
 # #clap-repl = "0.1.1"
 # console = "0.15.8"
 # rustyline = { version = "14.0.0", features=["with-file-history", "default"] }
 # shlex = "1.3.0"
-# strum = { version = "0.26.2", features = ["derive"] }
+# strum = { version = "0.26.3", features = ["derive"] }
 */
 /// Interactively test dependency inferency. This script was arbitrarily copied from
 /// demo/repl_partial_match.rs.

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-syn = {version = "2.0.87", features = ["extra-traits", "full", "parsing"] }
+syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing"] }
 */
 
 /// Tries to convert input to a `syn` abstract syntax tree (syn::File).

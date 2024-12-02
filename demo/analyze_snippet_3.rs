@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.87", features = ["extra-traits", "full", "visit"] }
+syn = { version = "2.0.90", features = ["extra-traits", "full", "visit"] }
 quote = "1.0.37"
 */
 

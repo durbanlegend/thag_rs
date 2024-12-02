@@ -5,7 +5,7 @@ color-eyre = "0.6.3"
 inquire = "0.7.5"
 interactive-clap = "0.3.1"
 shell-words = "1.1.0"
-strum = { version = "0.24", features = ["derive"] }
+strum = { version = "0.26.3", features = ["derive"] }
 strum_macros = "0.24"
 */
 

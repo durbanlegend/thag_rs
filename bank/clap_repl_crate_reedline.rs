@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.7", features = ["cargo", "derive"] }
+clap = { version = "4.5.21", features = ["cargo", "derive"] }
 clap-repl = { path = "/Users/donf/projects/clap-repl" }
 
 [dependencies.nu-ansi-term]

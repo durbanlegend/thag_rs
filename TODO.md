@@ -19,6 +19,7 @@
 - [ ]  Set up bank/proc_macros and only take best to demo.
 - [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
 - [ ]  In cargo search, optionally get all features. Config option to omit unstable features.
+        Add feature overrides config option default-features true/false
 - [ ]  Debug: No history edit function in stdin.
 - [ ]  REPL history belongs in /Users/donf/.cargo/hist_staging.txt and stdin history in /Users/donf/.cargo/rs_stdin_history.json
          (check both).
@@ -51,6 +52,7 @@ thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
 - [ ]  Consider "magic" substitution of latest git with say rev = "$latest" inn toml block.
 - [ ]  Add --test (-T) option to run #[test]s defined in script.
+- [ ]  Add --clippy (-T <LINT>) option to run clippy on script.
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output.

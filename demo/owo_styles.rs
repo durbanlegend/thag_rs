@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = "0.28.1"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.2", features = ["derive"] }
+strum = { version = "0.26.3", features = ["derive"] }
 termbg = "0.5.2"
 */
 

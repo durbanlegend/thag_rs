@@ -8,8 +8,8 @@ serde = { version = "1.0.215", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "3a32b298a06553f5d3fe43bde3672060c84c61a9" }
-thag_rs = { path = "/Users/donf/projects/thag_rs/" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "4288f833c6e2b75115c1f4615e5f41b569abcdc4" }
+# thag_rs = { path = "/Users/donf/projects/thag_rs/" }
 toml = "0.8"
 */
 

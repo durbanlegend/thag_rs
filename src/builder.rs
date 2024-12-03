@@ -103,7 +103,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
         is_repl,
         args,
         &working_dir_path,
-        &repl_source_path,
+        repl_source_path.as_ref(),
         is_dynamic,
     )?;
 
@@ -118,7 +118,7 @@ fn resolve_script_dir_path(
     is_repl: bool,
     args: &Cli,
     working_dir_path: &Path,
-    repl_source_path: &Option<PathBuf>,
+    repl_source_path: Option<&PathBuf>,
     is_dynamic: bool,
 ) -> ThagResult<PathBuf> {
     profile_fn!(resolve_script_dir_path);

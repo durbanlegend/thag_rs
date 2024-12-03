@@ -1,20 +1,23 @@
 use crate::{debug_log, lazy_static_var, ColorSupport, TermTheme, ThagResult, Verbosity};
-use documented::{Documented, DocumentedFields};
+use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use mockall::{automock, predicate::str};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+// use std::collections::HashSet;
 #[cfg(target_os = "windows")]
 use std::env;
 use std::{
     collections::HashMap,
     env::{current_dir, var},
+    error::Error,
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
     sync::Arc,
 };
+use strum::{Display, EnumString};
 
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
@@ -83,6 +86,51 @@ pub struct Config {
     pub misc: Misc,
 }
 
+impl Config {
+    /// Load the user's config file, or if there is none, load the default.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered.
+    pub fn load_or_create_default() -> Result<Self, Box<dyn Error>> {
+        let config_dir = if let Some(cargo_home) = std::env::var_os("CARGO_HOME") {
+            PathBuf::from(cargo_home).join(".config").join("thag_rs")
+        } else {
+            dirs::config_dir()
+                .ok_or("Could not determine config directory")?
+                .join("thag_rs")
+        };
+
+        let config_path = config_dir.join("config.toml");
+
+        if !config_path.exists() {
+            fs::create_dir_all(&config_dir)?;
+
+            // Try to find default config in different locations
+            let default_config = if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
+                // First try cargo-dist installed location
+                let dist_config = PathBuf::from(cargo_home)
+                    .join("assets")
+                    .join("default_config.toml");
+
+                if dist_config.exists() {
+                    fs::read_to_string(dist_config)?
+                } else {
+                    // Fallback to embedded config
+                    include_str!("../assets/default_config.toml").to_string()
+                }
+            } else {
+                include_str!("../assets/default_config.toml").to_string()
+            };
+
+            fs::write(&config_path, default_config)?;
+        }
+
+        let config_str = fs::read_to_string(&config_path)?;
+        Ok(toml::from_str(&config_str)?)
+    }
+}
+
 /// Dependency handling
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Deserialize, Serialize, Documented, DocumentedFields)]
@@ -104,6 +152,10 @@ pub struct Dependencies {
     pub feature_overrides: HashMap<String, FeatureOverride>,
     /// Features that should always be excluded
     pub global_excluded_features: Vec<String>,
+    /// How much `thag_rs` should intervene in inferring dependencies from code.
+    pub inference_level: DependencyInference,
+    /// `false` specifies a detailed dependency with `default-features = false`.
+    pub default_features: bool,
 }
 
 impl Default for Dependencies {
@@ -116,14 +168,16 @@ impl Default for Dependencies {
             exclude_prerelease: true,
             feature_overrides: HashMap::<String, FeatureOverride>::new(),
             global_excluded_features: vec![],
+            inference_level: DependencyInference::Custom,
+            default_features: true,
         }
     }
 }
 
 impl Dependencies {
     #[must_use]
-    pub fn filter_features(&self, crate_name: &str, features: Vec<String>) -> Vec<String> {
-        let mut filtered = features;
+    pub fn filter_features(&self, crate_name: &str, features: &[String]) -> Vec<String> {
+        let mut filtered = features.to_owned();
 
         #[cfg(debug_assertions)]
         debug_log!(
@@ -208,24 +262,97 @@ impl Dependencies {
         #[cfg(debug_assertions)]
         debug_log!("Final features for {}: {:?}", crate_name, filtered);
 
-        filtered
+        filtered.clone()
     }
 
     // Make should_include_feature use filter_features
     #[must_use]
     pub fn should_include_feature(&self, feature: &str, crate_name: &str) -> bool {
-        self.filter_features(crate_name, vec![feature.to_string()])
+        self.filter_features(crate_name, &[feature.to_string()])
             .contains(&feature.to_string())
     }
+
+    // New method for custom features based on overrides
+    #[must_use]
+    pub fn apply_override_features(
+        &self,
+        crate_name: &str,
+        all_features: &[String],
+    ) -> (Vec<String>, bool) {
+        if let Some(override_config) = self.feature_overrides.get(crate_name) {
+            // Return both the features and default-features flag
+            (
+                all_features
+                    .iter()
+                    .filter(|f| {
+                        override_config.required_features.contains(f)
+                            || !override_config.excluded_features.contains(f)
+                    })
+                    .cloned()
+                    .collect(),
+                override_config.default_features,
+            )
+        } else {
+            (all_features.to_vec(), true)
+        }
+    }
+
+    // Method to get features based on inference level
+    #[must_use]
+    pub fn get_features_for_inference_level(
+        &self,
+        crate_name: &str,
+        all_features: &[String],
+        level: &DependencyInference,
+    ) -> (Option<Vec<String>>, bool) {
+        match level {
+            DependencyInference::None | DependencyInference::Minimal => (None, true),
+            DependencyInference::Custom => {
+                let (features, default_features) =
+                    self.apply_override_features(crate_name, all_features);
+                (Some(features), default_features)
+            }
+            DependencyInference::Maximal => (
+                Some(self.filter_features(crate_name, all_features)),
+                self.default_features,
+            ),
+        }
+    }
+
+    // #[must_use]
+    // pub fn apply_override_features(
+    //     &self,
+    //     crate_name: &str,
+    //     all_features: Vec<String>,
+    // ) -> Vec<String> {
+    //     if let Some(override_config) = self.feature_overrides.get(crate_name) {
+    //         // Build HashSet in one pass
+    //         let final_features: HashSet<String> = all_features
+    //             .into_iter()
+    //             .filter(|f| {
+    //                 override_config.required_features.contains(f)
+    //                     || (f == "default" && override_config.default_features.unwrap_or(true))
+    //                     || !override_config.excluded_features.contains(f)
+    //             })
+    //             .collect();
+
+    //         // Convert back to Vec
+    //         final_features.into_iter().collect()
+    //     } else {
+    //         all_features
+    //     }
+    // }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FeatureOverride {
+    /// Features to be excluded for crate
     pub excluded_features: Vec<String>,
+    /// Features required for crate
     pub required_features: Vec<String>,
-    // pub alternative_features: Vec<String>,
+    /// Whether to use default features
+    pub default_features: bool,
 }
-
 /// Logging settings
 #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
@@ -234,6 +361,33 @@ pub struct Logging {
     /// Default verbosity setting
     #[serde_as(as = "DisplayFromStr")]
     pub default_verbosity: Verbosity,
+}
+
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Deserialize,
+    Serialize,
+    EnumString,
+    Display,
+    PartialEq,
+    Eq,
+    Documented,
+    DocumentedVariants,
+)]
+/// Dependency inference level
+#[strum(serialize_all = "snake_case")]
+pub enum DependencyInference {
+    /// Don't infer any dependencies
+    None,
+    /// Basic dependencies without features
+    Minimal,
+    /// Use config.toml feature overrides
+    #[default]
+    Custom,
+    /// Include all features not excluded by config
+    Maximal,
 }
 
 /// Terminal color settings

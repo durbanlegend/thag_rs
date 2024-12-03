@@ -1,14 +1,18 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source}; // Valid if no circular dependency
 #[cfg(debug_assertions)]
 use crate::debug_timings;
+use crate::{
+    code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source},
+    config::DependencyInference,
+    Verbosity::Verbose,
+}; // Valid if no circular dependency
 use crate::{
     cvprtln, debug_log, maybe_config, regex, vlog, BuildState, Dependencies, Lvl, ThagResult, V,
 };
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Manifest};
 use firestorm::{profile_fn, profile_section};
-use nu_ansi_term::Style;
+// use nu_ansi_term::Style;
 use regex::Regex;
 use semver::VersionReq;
 use serde_merge::omerge;
@@ -295,117 +299,67 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
     let config = maybe_config();
     let binding = Dependencies::default();
     let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
-    // let config = maybe_config().expect("Config should be loaded");
-    // let dep_config = &config.dependencies;
-
-    let mut found_deps = Vec::new();
+    let inference_level = &dep_config.inference_level/*.unwrap_or_default() */;
+    // let mut found_deps: std::vec::Vec<String> = Vec::new();
+    eprintln!("inference_level={inference_level:#?}");
 
     for dep_name in rs_inferred_deps {
-        if rs_dep_map.contains_key(&dep_name)
-            || rs_dep_map.contains_key(&dep_name.replace('_', "-"))
-            || ["crate", "macro_rules"].contains(&dep_name.as_str())
-        {
-            continue;
-        }
-
-        if &dep_name == "thag_demo_proc_macros" {
-            proc_macros_magic(rs_dep_map, &dep_name, "demo");
-            continue;
-        } else if &dep_name == "thag_bank_proc_macros" {
-            proc_macros_magic(rs_dep_map, &dep_name, "bank");
-            continue;
-        }
-
-        #[cfg(debug_assertions)]
-        debug_log!("Starting Cargo lookup for key dep_name [{dep_name}]");
-
         if let Some((name, version)) = cargo_lookup(&dep_name) {
-            let features = get_crate_features(&name).map(|features| {
-                debug_log!("Original features for {}: {:?}", name, features);
-                let filtered = dep_config.filter_features(&name, features);
-                debug_log!("Filtered features for {}: {:?}", name, filtered);
-                debug_log!("Config used: {:#?}", dep_config);
-                filtered
-            });
+            let features = get_crate_features(&name);
 
-            debug_log!("Final features for {}: {:?}", name, features);
-
-            if dep_config.use_detailed_dependencies {
-                let mut detail = cargo_toml::DependencyDetail {
-                    version: Some(version.clone()),
-                    ..Default::default()
-                };
-                if let Some(features) = features.clone() {
-                    detail.features = features;
+            match inference_level {
+                DependencyInference::None => {
+                    // Skip dependency entirely
+                    continue;
                 }
-                rs_dep_map.insert(name.clone(), Dependency::Detailed(Box::new(detail)));
-            } else {
-                rs_dep_map.insert(name.clone(), Dependency::Simple(version.clone()));
-            }
-
-            found_deps.push(CrateInfo {
-                name,
-                version,
-                features,
-            });
-        } else {
-            vlog!(V::QQ, "Cargo lookup couldn't find crate [{dep_name}]");
-        }
-    }
-
-    // Generate both simple and full-featured toml blocks if any dependencies were found
-    if !found_deps.is_empty() {
-        // Simple block
-        let mut simple_block = String::from("/*[toml]\n[dependencies]\n");
-        for dep in &found_deps {
-            let dep_line = format!("{} = \"{}\"\n", dep.name, dep.version);
-            simple_block.push_str(&dep_line);
-        }
-        simple_block.push_str("*/");
-
-        // Full-featured block
-        let mut featured_block = String::from("/*[toml]\n[dependencies]\n");
-        let mut has_features = false;
-        for dep in &found_deps {
-            if let Some(features) = &dep.features {
-                if features.is_empty() {
-                    add_simple_dependency(dep, &mut featured_block);
-                } else {
-                    let features_str = features
-                        .iter()
-                        .map(|f| format!("\"{}\"", f))
-                        .collect::<Vec<_>>()
-                        .join(", ");
-                    let dep_line = format!(
-                        "{} = {{ version = \"{}\", features = [{}] }}\n",
-                        dep.name, dep.version, features_str
-                    );
-                    featured_block.push_str(&dep_line);
-                    if !has_features {
-                        has_features = true;
+                DependencyInference::Minimal => {
+                    // Just add basic dependency
+                    rs_dep_map.insert(name.clone(), Dependency::Simple(version.clone()));
+                }
+                DependencyInference::Custom => {
+                    if let Some(ref all_features) = features {
+                        // let (features, default_features) =
+                        //     dep_config.apply_override_features(&name, &all_features);
+                        if let (Some(final_features), default_features) = dep_config
+                            .get_features_for_inference_level(&name, all_features, inference_level)
+                        {
+                            let detail = DependencyDetail {
+                                version: Some(version.clone()),
+                                features: final_features,
+                                default_features,
+                                ..Default::default()
+                            };
+                            rs_dep_map.insert(name.clone(), Dependency::Detailed(Box::new(detail)));
+                        }
                     }
                 }
-            } else {
-                add_simple_dependency(dep, &mut featured_block);
+                DependencyInference::Maximal => {
+                    if let Some(ref all_features) = features {
+                        // let (features, default_features) =
+                        //     dep_config.apply_override_features(&name, &all_features);
+                        if let (Some(final_features), default_features) = dep_config
+                            .get_features_for_inference_level(&name, all_features, inference_level)
+                        {
+                            let detail = DependencyDetail {
+                                version: Some(version.clone()),
+                                features: final_features,
+                                default_features,
+                                ..Default::default()
+                            };
+                            rs_dep_map.insert(name.clone(), Dependency::Detailed(Box::new(detail)));
+                        }
+                    }
+                }
             }
-        }
-        featured_block.push_str("*/");
 
-        let styled_simple = Style::from(&Lvl::SUBH).paint(&simple_block);
-        if has_features {
-            let styled_featured = Style::from(&Lvl::SUBH).paint(&featured_block);
-            vlog!(
-                V::N,
-                "\nYou can copy or merge one of the following toml blocks into your script:\n\nSimple version:\n{}\n\nFull-featured version:\n{}\n",
-                styled_simple,
-                styled_featured
-            );
-        } else {
-            vlog!(
-                V::N,
-                "\nYou can copy or merge the following toml block into your script:\n\nSimple version because no features found:\n{}\n",
-                styled_simple,
-            );
+            // Maybe show different toml blocks based on verbosity
+            if config
+                .as_ref()
+                .map_or(false, |c| c.logging.default_verbosity >= Verbose)
+            {
+                dbg!();
+                show_all_toml_variants(&name, &version, features.as_ref(), dep_config);
+            }
         }
     }
 }
@@ -414,6 +368,64 @@ fn add_simple_dependency(dep: &CrateInfo, featured_block: &mut String) {
     // Use simple format for dependencies without features
     let dep_line = format!("{} = \"{}\"\n", dep.name, dep.version);
     featured_block.push_str(&dep_line);
+}
+
+fn show_all_toml_variants(
+    name: &str,
+    version: &str,
+    features: Option<&Vec<String>>,
+    dep_config: &Dependencies,
+) {
+    if let Some(all_features) = features {
+        println!("\nAvailable dependency configurations for {}:", name);
+
+        println!("\nMinimal:");
+        println!("{} = \"{}\"\n", name, version);
+
+        if let (Some(custom_features), default_features) = dep_config
+            .get_features_for_inference_level(name, all_features, &DependencyInference::Custom)
+        {
+            let maybe_default_features = if default_features {
+                ""
+            } else {
+                ", default-features = false "
+            };
+            println!("Custom (from config):");
+            println!(
+                "{} = {{ version = \"{}{maybe_default_features}\", features = [{}] }}\n",
+                name,
+                version,
+                custom_features
+                    .iter()
+                    .map(|f| format!("\"{}\"", f))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+        }
+
+        if let (Some(max_features), default_features) = dep_config.get_features_for_inference_level(
+            name,
+            all_features,
+            &DependencyInference::Maximal,
+        ) {
+            let maybe_default_features = if default_features {
+                ""
+            } else {
+                ", default-features = false "
+            };
+            println!("Maximal:");
+            println!(
+                "{} = {{ version = \"{}{maybe_default_features}\", features = [{}] }}\n",
+                name,
+                version,
+                max_features
+                    .iter()
+                    .map(|f| format!("\"{}\"", f))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+        }
+    }
 }
 
 fn proc_macros_magic(

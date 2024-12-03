@@ -97,7 +97,7 @@ pub struct FileDialog<'a> {
 }
 
 // impl<FilePattern> FileDialog<'_, FilePattern> {
-impl<'a> FileDialog<'a> {
+impl FileDialog<'_> {
     /// Create a new file dialog.
     ///
     /// The width and height are the size of the file dialog in percent of the terminal size. They

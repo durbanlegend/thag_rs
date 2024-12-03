@@ -31,6 +31,7 @@ cargo-lookup = "0.1.0"
 cargo_toml = "0.20.5"
 clap = { version = "4.5.21", features = ["cargo", "derive"] }
 crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
+dirs = "5.0.1"
 documented = "0.9.1"
 edit = "0.1.5"
 env_logger = { version = "0.11.5", optional = true }
@@ -140,3 +141,7 @@ install-updater = false
 [[workspace.metadata.dist.extra-artifacts]]
 artifacts = ["demo.zip"]
 build = ["sh", "-c", "zip demo.zip demo/*"]
+
+[[workspace.metadata.dist.extra-artifacts]]
+artifacts = ["assets/default_config.toml"]
+build = ["sh", "-c", "mkdir -p assets && cp src/default_config.toml assets/"]

@@ -369,7 +369,7 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
         for dep in &found_deps {
             if let Some(features) = &dep.features {
                 if features.is_empty() {
-                    add_simple_feature(dep, &mut featured_block);
+                    add_simple_dependency(dep, &mut featured_block);
                 } else {
                     let features_str = features
                         .iter()
@@ -386,7 +386,7 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
                     }
                 }
             } else {
-                add_simple_feature(dep, &mut featured_block);
+                add_simple_dependency(dep, &mut featured_block);
             }
         }
         featured_block.push_str("*/");
@@ -410,7 +410,7 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
     }
 }
 
-fn add_simple_feature(dep: &CrateInfo, featured_block: &mut String) {
+fn add_simple_dependency(dep: &CrateInfo, featured_block: &mut String) {
     // Use simple format for dependencies without features
     let dep_line = format!("{} = \"{}\"\n", dep.name, dep.version);
     featured_block.push_str(&dep_line);

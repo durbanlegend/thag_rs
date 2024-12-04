@@ -36,16 +36,6 @@ color_support = "xterm256"
 # proc_macro_crate_path = "/Users/donf/projects/thag_rs/demo/proc_macros"
 # proc_macro_crate_path = "demo/proc_macros"
 
-[misc]
-# User's preferred text unquote behaviour. By default, thag_rs will not strip double quotes
-# from text values returned by snippets. Setting this to true will override this behaviour.
-# In turn, this user default may be overridden on the command line by specifying --unquote
-# (-u) true/false (default true).
-# This behaviour only applies to snippets that explicitly or implicitly return a string
-# value. It does not affect well-formed programs or println! statements in snippets.
-# Valid values are: "true" or "false" (default).
-unquote = "true"
-
 [dependencies]
 # Exclude features containing "unstable"
 exclude_unstable_features = true
@@ -164,8 +154,12 @@ excluded_features = [""]
 required_features = ["consoleapi", "processenv", "winbase"]
 default_features = true
 
-# Miscellaneous configuration parameters
 [misc]
-
-# Strip double quotes from around string literals returned by snippets
+# User's preferred text unquote behaviour. By default, thag_rs will not strip double quotes
+# from text values returned by snippets. Setting this to true will override this behaviour.
+# In turn, this user default may be overridden on the command line by specifying --unquote
+# (-u) true/false (default true).
+# This behaviour only applies to snippets that explicitly or implicitly return a string
+# value. It does not affect well-formed programs or println! statements in snippets.
+# Valid values are: "true" or "false" (default).
 unquote = "true"

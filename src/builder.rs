@@ -555,7 +555,7 @@ pub fn generate(
 
     // Remove any existing Cargo.lock as this may raise spurious compatibility issues with new dependency versions.
     let lock_path = &build_state.target_dir_path.join("Cargo.lock");
-    eprintln!("Lock path {lock_path:?} exists? - {}", lock_path.exists());
+    // eprintln!("Lock path {lock_path:?} exists? - {}", lock_path.exists());
     if lock_path.exists() {
         fs::remove_file(lock_path)?;
     }

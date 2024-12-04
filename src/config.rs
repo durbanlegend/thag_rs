@@ -1,8 +1,12 @@
-use crate::{debug_log, lazy_static_var, ColorSupport, TermTheme, ThagResult, Verbosity};
+use crate::{
+    cprtln, cvprtln, debug_log, lazy_static_var, ColorSupport, Lvl, TermTheme, ThagResult,
+    Verbosity, V,
+};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use mockall::{automock, predicate::str};
+use nu_ansi_term::Style;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 // use std::collections::HashSet;
@@ -28,22 +32,25 @@ pub fn maybe_config() -> Option<Config> {
 
 fn maybe_load_config() -> Option<Config> {
     profile_fn!(maybe_load_config);
-    eprintln!("In maybe_load_config, should not see this message more than once");
+    // eprintln!("In maybe_load_config, should not see this message more than once");
 
     let context = get_context();
 
     match load(&context) {
-        Ok(Some(config)) => {
-            // eprintln!("Loaded config: {config:?}");
-            Some(config)
-        }
+        Ok(Some(config)) => Some(config),
         Ok(None) => {
             eprintln!("No config file found - this is allowed");
             None
         }
         Err(e) => {
-            eprintln!("Failed to load config: {e}");
-            None
+            // too early to use cvprtln since colour mappings aren't configured yet.
+            cprtln!(
+                &Style::from(nu_ansi_term::Color::LightRed),
+                "Failed to load config: {e}"
+            );
+            // sleep(Duration::from_secs(1));
+            // println!("Failed to load config: {e}");
+            std::process::exit(1);
         }
     }
 }
@@ -57,7 +64,7 @@ fn maybe_load_config() -> Option<Config> {
 pub fn get_context() -> Arc<dyn Context> {
     let context: Arc<dyn Context> = if var("TEST_ENV").is_ok() {
         let current_dir = current_dir().expect("Could not get current dir");
-        let config_path = current_dir.clone().join("tests/assets").join("config.toml");
+        let config_path = current_dir.join("tests/assets").join("config.toml");
         let mut mock_context = MockContext::default();
         mock_context
             .expect_get_config_path()
@@ -160,7 +167,7 @@ pub struct Dependencies {
 
 impl Default for Dependencies {
     fn default() -> Self {
-        Dependencies {
+        Self {
             exclude_unstable_features: true,
             exclude_std_feature: true,
             use_detailed_dependencies: true,
@@ -227,6 +234,9 @@ impl Dependencies {
 
             // Add required features
             for f in &override_config.required_features {
+                if f.is_empty() {
+                    continue;
+                }
                 if !filtered.contains(f) {
                     debug_log!("Adding required feature '{}'", f);
                     filtered.push(f.clone());
@@ -255,7 +265,7 @@ impl Dependencies {
             });
         }
 
-        // Remove duplicates
+        // Sort and remove duplicates
         filtered.sort();
         filtered.dedup();
 
@@ -279,22 +289,55 @@ impl Dependencies {
         crate_name: &str,
         all_features: &[String],
     ) -> (Vec<String>, bool) {
-        if let Some(override_config) = self.feature_overrides.get(crate_name) {
-            // Return both the features and default-features flag
-            (
-                all_features
-                    .iter()
-                    .filter(|f| {
-                        override_config.required_features.contains(f)
-                            || !override_config.excluded_features.contains(f)
-                    })
-                    .cloned()
-                    .collect(),
-                override_config.default_features,
-            )
-        } else {
-            (all_features.to_vec(), true)
-        }
+        eprintln!("self.feature_overrides={:#?}", self.feature_overrides);
+        let (mut custom_features, default_features) = self.feature_overrides.get(crate_name).map_or_else(|| {
+            let intersection = self.always_include_features.iter().filter(|item| all_features.contains(item))
+                .cloned()
+                .collect();
+            (intersection, true)
+        }, |override_config| {
+            let mut custom_features = self.always_include_features.clone();
+
+            cvprtln!(
+                &Lvl::EMPH,
+                V::N,
+                "crate={crate_name} required features={:#?}, always_include_features={:#?}",
+                override_config.required_features, self.always_include_features
+            );
+
+            for feature in &override_config.required_features {
+                if feature.is_empty() {
+                    continue;
+                }
+                // Validate required features exist
+                if all_features.contains(feature) {
+                    custom_features.push(feature.clone());
+                    cvprtln!(
+                        &Lvl::EMPH,
+                        V::N,
+                        "crate={crate_name} including feature {feature}"
+                    );
+                } else {
+                    cvprtln!(
+                        &Lvl::WARN,
+                        V::QQ,
+                        "Configured feature `{}` does not exist in crate {}. Available features are:",
+                        feature,
+                        crate_name
+                    );
+                    for available in all_features {
+                        cvprtln!(&Lvl::BRI, V::QQ, "{}", available);
+                    }
+                }
+            };
+            (custom_features, override_config.default_features)
+        });
+
+        // Sort and remove duplicates
+        custom_features.sort();
+        custom_features.dedup();
+
+        (custom_features, default_features)
     }
 
     // Method to get features based on inference level
@@ -318,30 +361,6 @@ impl Dependencies {
             ),
         }
     }
-
-    // #[must_use]
-    // pub fn apply_override_features(
-    //     &self,
-    //     crate_name: &str,
-    //     all_features: Vec<String>,
-    // ) -> Vec<String> {
-    //     if let Some(override_config) = self.feature_overrides.get(crate_name) {
-    //         // Build HashSet in one pass
-    //         let final_features: HashSet<String> = all_features
-    //             .into_iter()
-    //             .filter(|f| {
-    //                 override_config.required_features.contains(f)
-    //                     || (f == "default" && override_config.default_features.unwrap_or(true))
-    //                     || !override_config.excluded_features.contains(f)
-    //             })
-    //             .collect();
-
-    //         // Convert back to Vec
-    //         final_features.into_iter().collect()
-    //     } else {
-    //         all_features
-    //     }
-    // }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -504,7 +523,8 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
         match toml::from_str(&config_str) {
             Ok(config) => Ok(Some(config)),
             Err(e) => Err(format!(
-                "Failed to parse config file: {e}\nConfig content:\n{config_str}"
+                // "Failed to parse config file: {e}\nConfig content:\n{config_str}"
+                "Failed to parse config file: {e}"
             )
             .into()),
         }

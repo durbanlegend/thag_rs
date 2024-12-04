@@ -20,6 +20,7 @@
 - [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
 - [ ]  In cargo search, optionally get all features. Config option to omit unstable features.
         Add feature overrides config option default-features true/false
+        Update thag_config_builder to accept dependencies inference level and default features, as well as Option<> booleans.
 - [ ]  Debug: No history edit function in stdin.
 - [ ]  REPL history belongs in /Users/donf/.cargo/hist_staging.txt and stdin history in /Users/donf/.cargo/rs_stdin_history.json
          (check both).
@@ -51,6 +52,8 @@ thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
 - [ ]  Consider "magic" substitution of latest git with say rev = "$latest" inn toml block.
+- [ ]  Reinstate fn proc_macros_magic
+- [ ]  Wrap settings in cofig::Dependencies in Options, e.g. default_features (default -> true)
 - [ ]  Add --test (-T) option to run #[test]s defined in script.
 - [ ]  Add --clippy (-T <LINT>) option to run clippy on script.
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.

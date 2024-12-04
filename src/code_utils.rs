@@ -215,6 +215,7 @@ fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
 }
 
 /// Identify use ... as statements for inclusion in / exclusion from Cargo.toml metadata.
+///
 /// Include the "from" name and exclude the "to" name.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
@@ -305,6 +306,7 @@ fn extract_toml_block(input: &str) -> Option<String> {
 }
 
 /// Parse a Rust expression source string into a syntax tree.
+///
 /// Although this is primarily intended for incomplete snippets and expressions, if it finds a fully-fledged program that
 /// could equally be parsed with `syn::parse_file`, it should succeed anyway by wrapping it in braces. However that is the
 /// snippet path and is not encouraged as it is likely to process and wrap the code unnecessarily.

@@ -185,6 +185,7 @@ mod tests {
         let rustyline_override = FeatureOverride {
             excluded_features: vec!["with-sqlite-history".to_string()],
             required_features: vec!["with-file-history".to_string()],
+            default_features: true,
             // alternative_features: vec![],
         };
 
@@ -199,7 +200,7 @@ mod tests {
         set_up();
         init_logger();
         let config = create_test_config();
-        let features = vec![
+        let features = &[
             "default".to_string(),
             "derive".to_string(),
             "std".to_string(),
@@ -216,7 +217,7 @@ mod tests {
         set_up();
         init_logger();
         let config = create_test_config();
-        let features = vec![
+        let features = &[
             "with-sqlite-history".to_string(),
             "derive".to_string(),
             "with-fuzzy".to_string(),

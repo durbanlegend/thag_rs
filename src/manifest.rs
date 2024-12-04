@@ -4,7 +4,7 @@ use crate::debug_timings;
 use crate::{
     code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source},
     config::DependencyInference,
-    Verbosity::Verbose,
+    get_verbosity,
 }; // Valid if no circular dependency
 use crate::{
     cvprtln, debug_log, maybe_config, regex, vlog, BuildState, Dependencies, Lvl, ThagResult, V,
@@ -50,18 +50,18 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
                 let req = VersionReq::parse("*").unwrap();
 
                 // Log all available versions and their pre-release status
-                #[cfg(debug_assertions)]
-                for release in package.releases() {
-                    debug_log!(
-                        "Version {} {}",
-                        release.vers,
-                        if release.vers.pre.is_empty() {
-                            "(stable)"
-                        } else {
-                            "(pre-release)"
-                        }
-                    );
-                }
+                // #[cfg(debug_assertions)]
+                // for release in package.releases() {
+                //     debug_log!(
+                //         "Version {} {}",
+                //         release.vers,
+                //         if release.vers.pre.is_empty() {
+                //             "(stable)"
+                //         } else {
+                //             "(pre-release)"
+                //         }
+                //     );
+                // }
 
                 let release = package.version(&req).filter(|r| r.vers.pre.is_empty());
 
@@ -234,13 +234,8 @@ fn call_omerge(
     rs_manifest: &mut Manifest,
 ) -> Result<Manifest, crate::ThagError> {
     profile_fn!(call_omerge);
+    // eprintln!("cargo_manifest={cargo_manifest:#?}, rs_manifest={rs_manifest:#?}");
     Ok(omerge(cargo_manifest, rs_manifest)?)
-}
-
-struct CrateInfo {
-    name: String,
-    version: String,
-    features: Option<Vec<String>>,
 }
 
 fn clean_features(features: Vec<String>) -> Vec<String> {
@@ -291,7 +286,7 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
     profile_fn!(lookup_deps);
 
     #[cfg(debug_assertions)]
-    debug_log!("In lookup_deps: rs_inferred_deps={rs_inferred_deps:#?}");
+    eprintln!("In lookup_deps: rs_inferred_deps={rs_inferred_deps:#?}");
     if rs_inferred_deps.is_empty() {
         return;
     }
@@ -304,6 +299,14 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
     eprintln!("inference_level={inference_level:#?}");
 
     for dep_name in rs_inferred_deps {
+        if &dep_name == "thag_demo_proc_macros" {
+            proc_macros_magic(rs_dep_map, &dep_name, "demo");
+            continue;
+        } else if &dep_name == "thag_bank_proc_macros" {
+            proc_macros_magic(rs_dep_map, &dep_name, "bank");
+            continue;
+        }
+
         if let Some((name, version)) = cargo_lookup(&dep_name) {
             let features = get_crate_features(&name);
 
@@ -316,58 +319,42 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
                     // Just add basic dependency
                     rs_dep_map.insert(name.clone(), Dependency::Simple(version.clone()));
                 }
-                DependencyInference::Custom => {
+                DependencyInference::Custom | DependencyInference::Maximal => {
+                    eprintln!("crate={name}, features.is_some()? {}", features.is_some());
                     if let Some(ref all_features) = features {
-                        // let (features, default_features) =
-                        //     dep_config.apply_override_features(&name, &all_features);
-                        if let (Some(final_features), default_features) = dep_config
-                            .get_features_for_inference_level(&name, all_features, inference_level)
+                        let features_for_inference_level = dep_config
+                            .get_features_for_inference_level(&name, all_features, inference_level);
+                        eprintln!("features_for_inference_level={features_for_inference_level:#?}");
+                        if let (Some(final_features), default_features) =
+                            features_for_inference_level
                         {
-                            let detail = DependencyDetail {
-                                version: Some(version.clone()),
-                                features: final_features,
-                                default_features,
-                                ..Default::default()
-                            };
-                            rs_dep_map.insert(name.clone(), Dependency::Detailed(Box::new(detail)));
-                        }
-                    }
-                }
-                DependencyInference::Maximal => {
-                    if let Some(ref all_features) = features {
-                        // let (features, default_features) =
-                        //     dep_config.apply_override_features(&name, &all_features);
-                        if let (Some(final_features), default_features) = dep_config
-                            .get_features_for_inference_level(&name, all_features, inference_level)
-                        {
-                            let detail = DependencyDetail {
-                                version: Some(version.clone()),
-                                features: final_features,
-                                default_features,
-                                ..Default::default()
-                            };
-                            rs_dep_map.insert(name.clone(), Dependency::Detailed(Box::new(detail)));
+                            // let detail = DependencyDetail {
+                            //     version: Some(version.clone()),
+                            //     features: final_features,
+                            //     default_features,
+                            //     ..Default::default()
+                            // };
+                            rs_dep_map.entry(name.clone()).or_insert_with(|| {
+                                Dependency::Detailed(Box::new(DependencyDetail {
+                                    version: Some(version.clone()),
+                                    features: final_features,
+                                    default_features,
+                                    ..Default::default()
+                                }))
+                            });
                         }
                     }
                 }
             }
 
             // Maybe show different toml blocks based on verbosity
-            if config
-                .as_ref()
-                .map_or(false, |c| c.logging.default_verbosity >= Verbose)
-            {
+            let verbosity = get_verbosity();
+            if verbosity >= V::N {
                 dbg!();
                 show_all_toml_variants(&name, &version, features.as_ref(), dep_config);
             }
         }
     }
-}
-
-fn add_simple_dependency(dep: &CrateInfo, featured_block: &mut String) {
-    // Use simple format for dependencies without features
-    let dep_line = format!("{} = \"{}\"\n", dep.name, dep.version);
-    featured_block.push_str(&dep_line);
 }
 
 fn show_all_toml_variants(

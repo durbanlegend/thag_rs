@@ -80,10 +80,12 @@ generate_styles!(
     (Ansi16DarkStyle, Dark, Ansi16)
 );
 
-/// Returns lazy static color values. Converted from `lazy_static` implementation
-/// in accordance with the example provided in the `lazy_static` Readme. Converted
-/// for the learning experience and to facilitate handling errors and the unwelcome
-/// side-effects of calling crates (in particular `termbg`) that switch off raw mode.
+/// Returns lazy static color values.
+///
+/// Converted from `lazy_static` implementation in accordance with the example provided
+/// in the `lazy_static` Readme. Converted for the learning experience and to facilitate
+/// handling errors and the unwelcome side-effects of calling crates (in particular
+/// `termbg`) that switch off raw mode.
 ///
 /// # Errors
 ///
@@ -461,7 +463,7 @@ macro_rules! cprtln {
         // Qualified form to avoid imports in calling code.
         let painted = style.paint(content);
         let verbosity = $crate::logging::get_verbosity();
-        vlog!(verbosity, "{painted}");
+        $crate::vlog!(verbosity, "{painted}");
     }};
 }
 
@@ -483,7 +485,9 @@ macro_rules! cvprtln {
 }
 
 /// An enum to categorise the current terminal's level of colour support as detected, configured
-/// or defaulted. We fold `TrueColor` into Xterm256 as we're not interested in more than 256
+/// or defaulted.
+///
+/// We fold `TrueColor` into Xterm256 as we're not interested in more than 256
 /// colours just for messages.
 #[derive(
     Clone,

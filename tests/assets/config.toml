@@ -67,11 +67,105 @@ global_excluded_features = [
 # Always include these features even if they match exclude patterns
 always_include_features = ["derive"]
 # Crate-specific feature handling
+[dependencies.feature_overrides.async-std]
+excluded_features = [""]
+required_features = ["attributes"]
+default_features = true
+
+[dependencies.feature_overrides.clap]
+excluded_features = [""]
+required_features = ["cargo"]
+default_features = true
+
+[dependencies.feature_overrides.hyper]
+excluded_features = [""]
+required_features = ["full"]
+default_features = true
+
+[dependencies.feature_overrides.iced]
+excluded_features = [""]
+required_features = ["image", "debug"]
+default_features = true
+
+[dependencies.feature_overrides.nanorand]
+excluded_features = [""]
+required_features = ["getrandom"]
+default_features = true
+
+[dependencies.feature_overrides.nu-ansi-term]
+excluded_features = [""]
+required_features = ["derive_serde_style"]
+default_features = true
+
+[dependencies.feature_overrides.owo-colors]
+excluded_features = [""]
+required_features = ["supports-colors"]
+default_features = true
+
+[dependencies.feature_overrides.proc-macro2]
+excluded_features = [""]
+required_features = ["span-locations"]
+default_features = true
+
+[dependencies.feature_overrides.ratatui]
+excluded_features = [""]
+required_features = ["crossterm"]
+default_features = true
+
+[dependencies.feature_overrides.reqwest]
+excluded_features = [""]
+required_features = ["blocking", "json"]
+default_features = true
+
+[dependencies.feature_overrides.rug]
+excluded_features = [""]
+required_features = ["integer", "std"]
+default_features = true
+
 [dependencies.feature_overrides.rustyline]
 excluded_features = ["with-sqlite-history"]
-required_features = ["with-file-history"]
-alternative_features = ["with-file-history"]
+required_features = [""]
+default_features = true
+
+[dependencies.feature_overrides.spin1]
+excluded_features = [""]
+required_features = ["mutex"]
+default_features = true
+
+[dependencies.feature_overrides.strum]
+excluded_features = [""]
+required_features = ["derive"]
+default_features = true
+
+[dependencies.feature_overrides.syn]
+excluded_features = [""]
+required_features = [
+    "extra-traits",
+    "fold",
+    "full",
+    "parsing",
+    "visit",
+    "visit-mut",
+]
+default_features = false
+
 [dependencies.feature_overrides.tokio]
 excluded_features = ["unstable-async-driver"]
-required_features = ["rt", "macros"]
-alternative_features = []
+required_features = ["full"]
+default_features = true
+
+[dependencies.feature_overrides.tui-textarea]
+excluded_features = [""]
+required_features = ["crossterm", "search"]
+default_features = true
+
+[dependencies.feature_overrides.winapi]
+excluded_features = [""]
+required_features = ["consoleapi", "processenv", "winbase"]
+default_features = true
+
+# Miscellaneous configuration parameters
+[misc]
+
+# Strip double quotes from around string literals returned by snippets
+unquote = "true"

@@ -339,6 +339,7 @@ fn is_valid_crate_name(name: &str) -> bool {
         "matches", "split", "x", "panic", "bool", "fs",
     ];
 
+    profile_fn!(is_valid_crate_name);
     // First check if it starts with uppercase
     if name.chars().next().unwrap_or('_').is_uppercase() {
         return false;

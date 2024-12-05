@@ -487,7 +487,6 @@ type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
 #[must_use]
 pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
-    profile_fn!(extract_inner_attribs);
     let inner_attrib_regex: &Regex = regex!(r"(?m)^[\s]*#!\[.+\]");
 
     profile_fn!(extract_inner_attribs);
@@ -718,6 +717,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 
     impl<'ast> Visit<'ast> for FindFns {
         fn visit_item_fn(&mut self, i: &'ast syn::ItemFn) {
+            profile_method!(extract_functions_visit_item_fn);
             // if is_debug_logging_enabled() {
             //     debug_log!("Node={:#?}", node);
             //     debug_log!("Ident={}", node.sig.ident);

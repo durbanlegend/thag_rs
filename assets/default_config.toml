@@ -46,9 +46,6 @@ exclude_unstable_features = true
 # Exclude the "std" feature
 exclude_std_feature = true
 
-# Detailed dependencies with features vs simple `name = "version"`
-use_detailed_dependencies = true
-
 # Features that should always be included if present, e.g. `derive`
 always_include_features = ["derive"]
 

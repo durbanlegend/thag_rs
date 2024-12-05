@@ -3,7 +3,7 @@ use crate::{config::maybe_config, ThagError, ThagResult, RS_SUFFIX};
 use bitflags::bitflags;
 // use clap::builder::styling::{Ansi256Color, AnsiColor, Color, Style};
 use clap::{ArgGroup /*, ColorChoice */, Parser};
-use firestorm::{profile_fn, profile_section};
+use firestorm::{profile_fn, profile_method, profile_section};
 use std::{fmt, str};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and REPL.
@@ -184,12 +184,14 @@ bitflags! {
 
 impl fmt::Debug for ProcFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        profile_method!(proc_flags_fmt_debug);
         bitflags::parser::to_writer(self, f)
     }
 }
 
 impl fmt::Display for ProcFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        profile_method!(proc_flags_fmt_display);
         bitflags::parser::to_writer(self, f)
     }
 }
@@ -198,6 +200,7 @@ impl str::FromStr for ProcFlags {
     type Err = bitflags::parser::ParseError;
 
     fn from_str(flags: &str) -> Result<Self, Self::Err> {
+        profile_method!(proc_flags_from_str);
         bitflags::parser::from_str(flags)
     }
 }

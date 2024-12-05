@@ -8,8 +8,8 @@ serde = { version = "1.0.215", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "4288f833c6e2b75115c1f4615e5f41b569abcdc4" }
-# thag_rs = { path = "/Users/donf/projects/thag_rs/" }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "4288f833c6e2b75115c1f4615e5f41b569abcdc4" }
+thag_rs = { path = "/Users/donf/projects/thag_rs/" }
 toml = "0.8"
 */
 
@@ -28,11 +28,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use strum::IntoEnumIterator;
 use syn::{parse_file, Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTree};
+use thag_rs::config::DependencyInference;
 use thag_rs::{
     maybe_config, ColorSupport, Colors, Config, Dependencies, FeatureOverride, Logging, Misc,
     ProcMacros, TermTheme, Verbosity,
 };
-
 type Error = CustomUserError;
 
 #[derive(Clone)]
@@ -530,6 +530,8 @@ fn prompt_dependencies_config(
     loop {
         let options = vec![
             "Show Current Settings",
+            "Inference Level",      // New option
+            "Exclude Pre-releases", // New option
             "Unstable Features",
             "Std Feature",
             "Global Exclusions",
@@ -560,27 +562,13 @@ fn prompt_dependencies_config(
                     let doc = Dependencies::get_field_docs(field_name)
                         .unwrap_or("No documentation available");
                     match *field_name {
-                        // "exclude_unstable_features" => println!(
-                        //     "  Exclude unstable features: {} ({})",
-                        //     config.exclude_unstable_features, doc
-                        // ),
-                        // "exclude_std_feature" => println!(
-                        //     "  Exclude std feature: {} ({})",
-                        //     config.exclude_std_feature, doc
-                        // ),
-                        // "always_include_features" => println!(
-                        //     "  Always include features: {:?} ({})",
-                        //     config.always_include_features, doc
-                        // ),
-                        // "global_excluded_features" => println!(
-                        //     "  Global exclusions: {:?} ({})",
-                        //     config.global_excluded_features, doc
-                        // ),
-                        // "feature_overrides" => println!(
-                        //     "  Feature overrides: {} crates configured ({})",
-                        //     config.feature_overrides.len(),
-                        //     doc
-                        // ),
+                        "inference_level" => {
+                            println!("  Inference level: {:?} ({})", config.inference_level, doc)
+                        }
+                        "exclude_prerelease" => println!(
+                            "  Exclude pre-releases: {} ({})",
+                            config.exclude_prerelease, doc
+                        ),
                         _ => {
                             let conv = Converter::new()
                                 .set_delim(" ")
@@ -595,6 +583,44 @@ fn prompt_dependencies_config(
                     }
                 }
                 println!();
+            }
+            "Inference Level" => {
+                let options = vec![
+                    DependencyInference::None,
+                    DependencyInference::Minimal,
+                    DependencyInference::Custom,
+                    DependencyInference::Maximal,
+                ];
+
+                // Find index of current value
+                let current_index = options
+                    .iter()
+                    .position(|x| x == &config.inference_level)
+                    .unwrap_or(2); // Default to Custom if not found
+
+                let level = Select::new("Dependency inference level:", options)
+                    .with_starting_cursor(current_index)
+                    .with_help_message(
+                        Dependencies::get_field_docs("inference_level")
+                            .unwrap_or("No documentation available"),
+                    )
+                    .prompt_skippable()?;
+
+                if let Some(level) = level {
+                    config.inference_level = level;
+                }
+            }
+            "Exclude Pre-releases" => {
+                if let Some(value) = Confirm::new("Exclude pre-release versions?")
+                    .with_default(config.exclude_prerelease)
+                    .with_help_message(
+                        Dependencies::get_field_docs("exclude_prerelease")
+                            .unwrap_or("No documentation available"),
+                    )
+                    .prompt_skippable()?
+                {
+                    config.exclude_prerelease = value;
+                }
             }
             "Unstable Features" => {
                 if let Some(value) = Confirm::new("Exclude unstable features?")
@@ -691,11 +717,25 @@ fn prompt_feature_overrides(
             None => return Ok(None),
         };
 
+        let default_features = match Confirm::new("Use default features?")
+            .with_help_message("Include crate's default feature set")
+            .prompt_skippable()?
+        {
+            Some(df) => Some(df),
+            None => return Ok(None),
+        };
+
         let excluded = match Text::new("Excluded features (comma-separated):")
             .with_help_message("Features to exclude for this crate")
             .prompt_skippable()?
         {
-            Some(ex) => ex,
+            Some(ex) => Some(
+                ex.split(',')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .map(String::from)
+                    .collect(),
+            ),
             None => return Ok(None),
         };
 
@@ -703,25 +743,22 @@ fn prompt_feature_overrides(
             .with_help_message("Features to always include for this crate")
             .prompt_skippable()?
         {
-            Some(req) => req,
+            Some(req) => Some(
+                req.split(',')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .map(String::from)
+                    .collect(),
+            ),
             None => return Ok(None),
         };
 
         overrides.insert(
             crate_name,
             FeatureOverride {
-                excluded_features: excluded
-                    .split(',')
-                    .map(str::trim)
-                    .filter(|s| !s.is_empty())
-                    .map(String::from)
-                    .collect(),
-                required_features: required
-                    .split(',')
-                    .map(str::trim)
-                    .filter(|s| !s.is_empty())
-                    .map(String::from)
-                    .collect(),
+                excluded_features: excluded,
+                required_features: required,
+                default_features,
             },
         );
     }

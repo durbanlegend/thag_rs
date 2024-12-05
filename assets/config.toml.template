@@ -50,9 +50,6 @@ exclude_unstable_features = true
 # Exclude the "std" feature
 exclude_std_feature = true
 
-# Use detailed dependency specifications with all features
-use_detailed_dependencies = false
-
 # Feature organization
 group_related_features = true
 show_feature_dependencies = true

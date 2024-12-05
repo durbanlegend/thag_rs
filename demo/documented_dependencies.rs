@@ -16,8 +16,6 @@ pub struct Dependencies {
     pub exclude_unstable_features: bool,
     /// Exclude the "std" feature
     pub exclude_std_feature: bool,
-    /// Detailed dependencies with features vs simple `name = "version"`
-    pub use_detailed_dependencies: bool,
     /// Features that should always be included if present, e.g. `derive`
     pub always_include_features: Vec<String>,
     /// Exclude releases with pre-release markers such as -beta.
@@ -35,7 +33,6 @@ impl Default for Dependencies {
         Dependencies {
             exclude_unstable_features: true,
             exclude_std_feature: true,
-            use_detailed_dependencies: true,
             always_include_features: vec!["derive".to_string()],
             exclude_prerelease: true,
             feature_overrides: HashMap::<String, FeatureOverride>::new(),

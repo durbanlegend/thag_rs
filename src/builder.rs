@@ -198,7 +198,7 @@ fn process(
     script_state: &ScriptState,
     start: Instant,
 ) -> ThagResult<()> {
-    // profile_fn!(process);
+    profile_fn!(process);
     let is_repl = args.repl;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
@@ -274,6 +274,7 @@ pub fn process_expr(
     proc_flags: &ProcFlags,
     start: &Instant,
 ) -> ThagResult<()> {
+    profile_fn!(process_expr);
     // let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(args, proc_flags, build_state, start);
@@ -518,7 +519,7 @@ pub fn generate(
     rs_source: Option<&str>,
     proc_flags: &ProcFlags,
 ) -> ThagResult<()> {
-    // profile_fn!(generate);
+    profile_fn!(generate);
     let start_gen = Instant::now();
 
     if is_debug_logging_enabled() {

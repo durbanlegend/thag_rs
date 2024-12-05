@@ -183,9 +183,9 @@ mod tests {
         config.always_include_features = vec!["derive".to_string()];
 
         let rustyline_override = FeatureOverride {
-            excluded_features: vec!["with-sqlite-history".to_string()],
-            required_features: vec!["with-file-history".to_string()],
-            default_features: true,
+            excluded_features: Some(vec!["with-sqlite-history".to_string()]),
+            required_features: Some(vec!["with-file-history".to_string()]),
+            default_features: Some(true),
             // alternative_features: vec![],
         };
 
@@ -205,7 +205,7 @@ mod tests {
             "derive".to_string(),
             "std".to_string(),
         ];
-        let filtered = config.filter_features("some_crate", features);
+        let filtered = config.filter_maximal_features("some_crate", features);
         assert!(!filtered.contains(&"default".to_string()));
         assert!(filtered.contains(&"derive".to_string())); // Always included
         assert!(!filtered.contains(&"std".to_string()));
@@ -222,7 +222,7 @@ mod tests {
             "derive".to_string(),
             "with-fuzzy".to_string(),
         ];
-        let filtered = config.filter_features("rustyline", features);
+        let filtered = config.filter_maximal_features("rustyline", features);
         assert!(!filtered.contains(&"with-sqlite-history".to_string()));
         assert!(filtered.contains(&"with-file-history".to_string())); // Required
         assert!(filtered.contains(&"derive".to_string()));
@@ -238,5 +238,34 @@ mod tests {
         assert!(config.should_include_feature("derive", "some_crate"));
         assert!(!config.should_include_feature("with-sqlite-history", "rustyline"));
         assert!(config.should_include_feature("with-file-history", "rustyline"));
+    }
+
+    #[test]
+    fn test_config_validation() {
+        // Test valid config
+        let config = r#"
+            [dependencies]
+            inference_level = "custom"
+            exclude_unstable_features = true
+
+            [dependencies.feature_overrides.clap]
+            required_features = ["derive"]
+            excluded_features = ["unstable"]
+            default_features = true
+        "#;
+
+        assert!(validate_config_format(config).is_ok());
+
+        // Test invalid config
+        let invalid_config = r#"
+            [dependencies]
+            inference_level = "Custom"  # Wrong case
+
+            [dependencies.feature_overrides.tokio]
+            required_features = ["rt"]
+            excluded_features = ["rt"]  # Conflict
+        "#;
+
+        assert!(validate_config_format(invalid_config).is_err());
     }
 }

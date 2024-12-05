@@ -168,6 +168,7 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 ];
 
 /// REPL mode lets you type or paste a Rust expression to be evaluated.
+///
 /// Start by choosing the eval option and entering your expression. Expressions between matching braces,
 /// brackets, parens or quotes may span multiple lines.
 /// If valid, the expression will be converted into a Rust program, and built and run using Cargo.

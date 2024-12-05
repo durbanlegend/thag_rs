@@ -239,6 +239,7 @@ fn call_omerge(
 }
 
 fn clean_features(features: Vec<String>) -> Vec<String> {
+    profile_fn!(clean_features);
     let mut features: Vec<String> = features
         .into_iter()
         .filter(|f| !f.contains('/')) // Filter out features with slashes
@@ -248,6 +249,7 @@ fn clean_features(features: Vec<String>) -> Vec<String> {
 }
 
 fn get_crate_features(name: &str) -> Option<Vec<String>> {
+    profile_fn!(get_crate_features);
     let query: Query = match name.parse() {
         Ok(q) => q,
         Err(e) => {
@@ -320,11 +322,11 @@ pub fn lookup_deps(rs_inferred_deps: Vec<String>, rs_dep_map: &mut BTreeMap<Stri
                     rs_dep_map.insert(name.clone(), Dependency::Simple(version.clone()));
                 }
                 DependencyInference::Custom | DependencyInference::Maximal => {
-                    eprintln!("crate={name}, features.is_some()? {}", features.is_some());
+                    // eprintln!("crate={name}, features.is_some()? {}", features.is_some());
                     if let Some(ref all_features) = features {
                         let features_for_inference_level = dep_config
                             .get_features_for_inference_level(&name, all_features, inference_level);
-                        eprintln!("features_for_inference_level={features_for_inference_level:#?}");
+                        // eprintln!("features_for_inference_level={features_for_inference_level:#?}");
                         if let (Some(final_features), default_features) =
                             features_for_inference_level
                         {
@@ -363,6 +365,7 @@ fn show_all_toml_variants(
     features: Option<&Vec<String>>,
     dep_config: &Dependencies,
 ) {
+    profile_fn!(show_all_toml_variants);
     if let Some(all_features) = features {
         println!("\nAvailable dependency configurations for {}:", name);
 

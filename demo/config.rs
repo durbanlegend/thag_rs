@@ -70,7 +70,6 @@ pub struct Config {
 pub struct Dependencies {
     pub exclude_unstable_features: bool,
     pub exclude_std_feature: bool,
-    pub use_detailed_dependencies: bool,
     pub always_include_features: Vec<String>,
     pub group_related_features: bool,
     pub show_feature_dependencies: bool,

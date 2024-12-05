@@ -574,12 +574,14 @@ impl Lvl {
 
 impl From<&Lvl> for u8 {
     fn from(message_level: &Lvl) -> Self {
+        profile_method!(u8_from_lvl);
         Self::from(&XtermColor::from(message_level))
     }
 }
 
 impl From<&XtermColor> for Color {
     fn from(xterm_color: &XtermColor) -> Self {
+        profile_method!(color_from_xterm_color);
         Self::Fixed(u8::from(xterm_color))
     }
 }
@@ -587,6 +589,7 @@ impl From<&XtermColor> for Color {
 impl From<&XtermColor> for u8 {
     #[allow(clippy::too_many_lines)]
     fn from(xterm_color: &XtermColor) -> Self {
+        profile_method!(u8_from_xterm_color);
         match xterm_color {
             XtermColor::UserBlack => 0,
             XtermColor::UserRed => 1,
@@ -927,6 +930,7 @@ impl From<&Lvl> for MessageStyle {
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for XtermColor {
     fn from(message_style: &MessageStyle) -> Self {
+        profile_method!(xterm_color_from_message_style);
         match *message_style {
             MessageStyle::Ansi16LightError => Self::UserRed,
             MessageStyle::Ansi16LightWarning => Self::UserMagenta,
@@ -970,6 +974,7 @@ impl From<&MessageStyle> for XtermColor {
 
 impl From<&Lvl> for XtermColor {
     fn from(message_level: &Lvl) -> Self {
+        profile_method!(xterm_color_from_lvl);
         Self::from(&MessageStyle::from(message_level))
     }
 }
@@ -1035,7 +1040,7 @@ impl From<&MessageLevel> for Style {
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for RataStyle {
     fn from(message_style: &MessageStyle) -> Self {
-        profile_method!(ratastyle_from_msg_style);
+        profile_method!(rata_style_from_msg_style);
         match *message_style {
             MessageStyle::Ansi16LightError => Self::from(RataColor::Red).bold(),
             MessageStyle::Ansi16LightWarning => Self::from(RataColor::Magenta).bold(),
@@ -1119,7 +1124,7 @@ impl From<&MessageStyle> for RataStyle {
 
 impl From<&MessageLevel> for RataStyle {
     fn from(lvl: &MessageLevel) -> Self {
-        profile_method!(ratastyle_from_lvl);
+        profile_method!(rata_style_from_lvl);
         Self::from(&MessageStyle::from(lvl))
     }
 }

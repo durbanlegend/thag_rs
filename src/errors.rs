@@ -35,7 +35,8 @@ pub enum ThagError {
     TomlDe(TomlDeError), // For TOML deserialization errors
     TomlSer(TomlSerError), // For TOML serialization errors
     Toml(CargoTomlError), // For cargo_toml errors
-    UnsupportedTerm,
+    UnsupportedTerm,     // For terminal interrogation
+    Validation(String),  // For config.toml and similar validation
 }
 
 impl From<FromUtf8Error> for ThagError {
@@ -162,6 +163,7 @@ impl std::fmt::Display for ThagError {
             Self::TomlSer(e) => write!(f, "{e:?}"),
             Self::Toml(e) => write!(f, "{e:?}"),
             Self::UnsupportedTerm => write!(f, "Unsupported terminal type"),
+            Self::Validation(e) => write!(f, "{e:?}"),
         }
     }
 }
@@ -191,6 +193,7 @@ impl Error for ThagError {
             Self::TomlDe(ref e) => Some(e),
             Self::TomlSer(ref e) => Some(e),
             Self::Toml(ref e) => Some(e),
+            Self::Validation(ref _e) => Some(self),
         }
     }
 }

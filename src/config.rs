@@ -397,6 +397,7 @@ pub struct Logging {
 )]
 /// Dependency inference level
 #[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")] // Add this line
 pub enum DependencyInference {
     /// Don't infer any dependencies
     None,

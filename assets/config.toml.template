@@ -26,31 +26,24 @@ default_verbosity = "normal"
 # "dark" is generally a safe choice as the colors should be legible even for a light theme
 # term_theme = "dark"
 
-# User default highlight colors for the selected character and line in TUI editors. It is
-# tricky to find decent contrasting colours that are legible for all themes, so thag_rs
-# offers you a choice of two.
-# In the editor itself you can toggle between these options with Ctrl-t, but the current
-# option allows you to override the system default if the other option works better for
-# you. The choice is between:
-# yellow_blue:  the dark theme default of black on yellow for the selected character and white on
-#               blue for the rest of the selected line, and
-# red_white:    the light theme default of white on light red for the selected character and
-#               black on white for the rest of the selected line.
+[proc_macros]
+# Allows user to specify a manifest directory path for the thag_demo_proc_macro crate. This is
+# a prerequisite for the `thag_rs` proc-macros feature.
 #
-# Valid values are: "yellow_blue" or "red_white".
-# tui_selection_bg = "yellow_blue"
-
-[misc]
-# User's preferred text unquote behaviour. By default, thag_rs will not strip double quotes
-# from text values returned by snippets. Setting this to true will override this behaviour.
-# In turn, this user default may be overridden on the command line by specifying --unquote
-# (-u) true/false (default true).
-# This behaviour only applies to snippets that implicitly return a string
-# value. It does not affect well-formed programs or println! statements in snippets.
-# Valid values are: "true" or "false" (default).
-# unquote = "false"
+# Specify a valid absolute or relative path string if required, e.g. "/Users/thag/projects/thag_rs/demo/proc_macros/Cargo.toml".
+# Relative paths should be relative to the current working directory.
+# A single forward slash is the required path separator in all environments including Windows.
+# Default value: "demo/proc_macros".
+# proc_macro_crate_path = "/Users/donf/projects/thag_rs/demo/proc_macros"
+# proc_macro_crate_path = "demo/proc_macros"
 
 [dependencies]
+
+# How much `thag_rs` should intervene in inferring dependencies from code.
+# Options are "maximal", "minimal" and "custom".
+# Default is "custom". Sensible defaults are built in.
+inference_level = "custom"
+
 # Exclude features containing "unstable"
 exclude_unstable_features = true
 
@@ -60,8 +53,124 @@ exclude_std_feature = true
 # Use detailed dependency specifications with all features
 use_detailed_dependencies = false
 
-# Exclude features matching these patterns
-global_excluded_features = ["experimental", "nightly"]
+# Feature organization
+group_related_features = true
+show_feature_dependencies = true
+# Global feature exclusions
+global_excluded_features = [
+    "default",
+    "experimental",
+    "unstable",
+    "nightly",
+    "sqlite",
+]
 
 # Always include these features even if they match exclude patterns
 always_include_features = ["derive"]
+# Crate-specific feature handling
+[dependencies.feature_overrides.async-std]
+excluded_features = [""]
+required_features = ["attributes"]
+default_features = true
+
+[dependencies.feature_overrides.clap]
+excluded_features = [""]
+required_features = ["cargo"]
+default_features = true
+
+[dependencies.feature_overrides.hyper]
+excluded_features = [""]
+required_features = ["full"]
+default_features = true
+
+[dependencies.feature_overrides.iced]
+excluded_features = [""]
+required_features = ["image", "debug"]
+default_features = true
+
+[dependencies.feature_overrides.nanorand]
+excluded_features = [""]
+required_features = ["getrandom"]
+default_features = true
+
+[dependencies.feature_overrides.nu-ansi-term]
+excluded_features = [""]
+required_features = ["derive_serde_style"]
+default_features = true
+
+[dependencies.feature_overrides.owo-colors]
+excluded_features = [""]
+required_features = ["supports-colors"]
+default_features = true
+
+[dependencies.feature_overrides.proc-macro2]
+excluded_features = [""]
+required_features = ["span-locations"]
+default_features = true
+
+[dependencies.feature_overrides.ratatui]
+excluded_features = [""]
+required_features = ["crossterm"]
+default_features = true
+
+[dependencies.feature_overrides.reqwest]
+excluded_features = [""]
+required_features = ["blocking", "json"]
+default_features = true
+
+[dependencies.feature_overrides.rug]
+excluded_features = [""]
+required_features = ["integer", "std"]
+default_features = true
+
+[dependencies.feature_overrides.rustyline]
+excluded_features = ["with-sqlite-history"]
+required_features = [""]
+default_features = true
+
+[dependencies.feature_overrides.spin1]
+excluded_features = [""]
+required_features = ["mutex"]
+default_features = true
+
+[dependencies.feature_overrides.strum]
+excluded_features = [""]
+required_features = ["derive"]
+default_features = true
+
+[dependencies.feature_overrides.syn]
+excluded_features = [""]
+required_features = [
+    "extra-traits",
+    "fold",
+    "full",
+    "parsing",
+    "visit",
+    "visit-mut",
+]
+default_features = false
+
+[dependencies.feature_overrides.tokio]
+excluded_features = ["unstable-async-driver"]
+required_features = ["full"]
+default_features = true
+
+[dependencies.feature_overrides.tui-textarea]
+excluded_features = [""]
+required_features = ["crossterm", "search"]
+default_features = true
+
+[dependencies.feature_overrides.winapi]
+excluded_features = [""]
+required_features = ["consoleapi", "processenv", "winbase"]
+default_features = true
+
+[misc]
+# User's preferred text unquote behaviour. By default, thag_rs will not strip double quotes
+# from text values returned by snippets. Setting this to true will override this behaviour.
+# In turn, this user default may be overridden on the command line by specifying --unquote
+# (-u) true/false (default true).
+# This behaviour only applies to snippets that explicitly or implicitly return a string
+# value. It does not affect well-formed programs or println! statements in snippets.
+# Valid values are: "true" or "false" (default).
+# unquote = "false"

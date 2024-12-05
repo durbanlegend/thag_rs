@@ -1,6 +1,11 @@
 [logging]
-# User's preferred default verbosity. Overrides system default of "normal".
-# Valid values are "verbose", "normal", "quiet" and "quieter".
+# Available options for Verbosity:
+#   quieter - Minimal output, suitable for piping to another process
+#   quiet - Less detailed output
+#   normal - Standard output level
+#   verbose - More detailed output
+#   debug - Maximum detail for debugging
+
 default_verbosity = "normal"
 
 [colors]
@@ -12,10 +17,11 @@ default_verbosity = "normal"
 # to be interleaved with the messages.
 # If your terminal can handle 16m colors, choose xterm256
 # Valid values are:
-# "xterm256" for 256 or more colors (including 16m)
-# "ansi16"   for basic color support
-# "none"     no color support or no color desired
-color_support = "xterm256"
+# "xterm256"    for 256 or more colors (including 16m)
+# "ansi16"      for basic color support
+# "none"        color support not available or not desired
+# "default"     (default value) let thag_rs figure it out
+# color_support = "ansi16"
 
 # Terminal light/dark override. Tells thag_rs whether you are using a light or dark theme,
 # instead of letting thag_rs interrogate the terminal, which could cause misbehaviour
@@ -37,16 +43,28 @@ color_support = "xterm256"
 # proc_macro_crate_path = "demo/proc_macros"
 
 [dependencies]
+
+# How much `thag_rs` should intervene in inferring dependencies from code.
+# Options are "maximal", "minimal" and "custom".
+# Default is "custom". Sensible defaults are built in.
+inference_level = "custom"
+
 # Exclude features containing "unstable"
 exclude_unstable_features = true
+
 # Exclude the "std" feature
 exclude_std_feature = true
-# Use detailed dependency specifications with all features
+
+# Detailed dependencies with features vs simple `name = "version"`
 use_detailed_dependencies = true
-# Feature organization
-group_related_features = true
-show_feature_dependencies = true
-# Global feature exclusions
+
+# Features that should always be included if present, e.g. `derive`
+always_include_features = ["derive"]
+
+# Exclude releases with pre-release markers such as -beta.
+exclude_prerelease = true
+
+# Features that should always be excluded
 global_excluded_features = [
     "default",
     "experimental",

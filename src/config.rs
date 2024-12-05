@@ -685,7 +685,7 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of edit")))
 }
 
-fn validate_config_format(content: &str) -> Result<(), ThagError> {
+pub fn validate_config_format(content: &str) -> Result<(), ThagError> {
     profile_fn!(validate_config_format);
     // Try to parse as generic TOML first
     let doc = content

@@ -4,13 +4,15 @@ mod tests {
     use simplelog::{
         ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
     };
-    use std::path::PathBuf;
     use std::sync::Arc;
+    use std::{env::current_dir, path::PathBuf};
     #[cfg(feature = "simplelog")]
     use std::{fs::File, sync::OnceLock};
     use thag_rs::{
         colors::{ColorSupport, TermTheme},
-        config::{self, Dependencies, FeatureOverride, MockContext, RealContext},
+        config::{
+            self, validate_config_format, Dependencies, FeatureOverride, MockContext, RealContext,
+        },
         debug_log, load,
         logging::Verbosity,
         Context,
@@ -57,17 +59,8 @@ mod tests {
     fn test_config_load_config_success() {
         set_up();
         init_logger();
-        let config_content = r#"
-            [logging]
-            default_verbosity = "verbose"
-
-            [colors]
-            color_support = "ansi16"
-            #term_theme = "dark"
-        "#;
-        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
-        let config_path = temp_dir.path().join("config.toml");
-        std::fs::write(&config_path, config_content).expect("Failed to write to temp config file");
+        let current_dir = current_dir().unwrap();
+        let config_path = current_dir.join("tests").join("assets").join("config.toml");
 
         let get_context = || -> Arc<dyn Context> {
             let context: Arc<dyn Context> = if std::env::var("TEST_ENV").is_ok() {
@@ -87,9 +80,9 @@ mod tests {
             .expect("Failed to load config")
             .unwrap();
 
-        assert_eq!(config.logging.default_verbosity, Verbosity::Verbose);
-        assert_eq!(config.colors.color_support, ColorSupport::Ansi16);
-        assert_eq!(config.colors.term_theme, TermTheme::Dark);
+        assert_eq!(config.logging.default_verbosity, Verbosity::Normal);
+        assert_eq!(config.colors.color_support, ColorSupport::default());
+        assert_eq!(config.colors.term_theme, TermTheme::default());
     }
 
     #[test]
@@ -114,8 +107,8 @@ mod tests {
         let config = load(&get_context()).expect("Failed to load config");
 
         assert!(
-            config.is_none(),
-            "Expected None when config file is not found, found {config:#?}"
+            config.is_some(),
+            "Expected to load default config when config file is not found"
         );
     }
 
@@ -205,7 +198,7 @@ mod tests {
             "derive".to_string(),
             "std".to_string(),
         ];
-        let filtered = config.filter_maximal_features("some_crate", features);
+        let filtered = config.filter_maximal_features("some_crate", features).0;
         assert!(!filtered.contains(&"default".to_string()));
         assert!(filtered.contains(&"derive".to_string())); // Always included
         assert!(!filtered.contains(&"std".to_string()));
@@ -222,7 +215,7 @@ mod tests {
             "derive".to_string(),
             "with-fuzzy".to_string(),
         ];
-        let filtered = config.filter_maximal_features("rustyline", features);
+        let filtered = config.filter_maximal_features("rustyline", features).0;
         assert!(!filtered.contains(&"with-sqlite-history".to_string()));
         assert!(filtered.contains(&"with-file-history".to_string())); // Required
         assert!(filtered.contains(&"derive".to_string()));

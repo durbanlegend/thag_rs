@@ -312,11 +312,11 @@ impl Dependencies {
                 // Validate required features exist
                 if all_features.contains(feature) {
                     custom_features.push(feature.clone());
-                    cvprtln!(
-                        &Lvl::EMPH,
-                        V::N,
-                        "crate={crate_name} including feature {feature}"
-                    );
+                    // cvprtln!(
+                    //     &Lvl::EMPH,
+                    //     V::N,
+                    //     "crate={crate_name} including feature {feature}"
+                    // );
                 } else {
                     cvprtln!(
                         &Lvl::WARN,

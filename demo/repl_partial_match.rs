@@ -41,10 +41,8 @@ enum LoopCommand {
 impl LoopCommand {
     fn print_help() {
         let mut command = LoopCommand::command();
-        let mut buf = Vec::new();
-        command.write_help(&mut buf).unwrap();
-        let help_message = String::from_utf8(buf).unwrap();
-        println!("{}", help_message);
+        let help_message = command.render_help();
+        println!("{help_message}");
     }
 }
 
@@ -73,37 +71,34 @@ fn main() -> Result<(), Box<dyn Error>> {
             continue;
         }
         _ = rl.add_history_entry(line.as_str());
-        let command = match shlex::split(&line) {
-            Some(split) => {
-                // eprintln!("split={split:?}");
-                let mut matches = 0;
-                let first_word = split[0].as_str();
-                let mut cmd = String::new();
-                for key in cmd_vec.iter() {
-                    if key.starts_with(first_word) {
-                        matches += 1;
-                        // Selects last match
-                        if matches == 1 {
-                            cmd = key.to_string();
-                        }
-                        // eprintln!("key={key}, split[0]={}", split[0]);
+        let command = if let Some(split) = shlex::split(&line) {
+            // eprintln!("split={split:?}");
+            let mut matches = 0;
+            let first_word = split[0].as_str();
+            let mut cmd = String::new();
+            for key in &cmd_vec {
+                if key.starts_with(first_word) {
+                    matches += 1;
+                    // Selects last match
+                    if matches == 1 {
+                        cmd = key.to_string();
                     }
-                }
-                if matches == 1 {
-                    cmd
-                } else {
-                    println!("No single matching key found");
-                    continue;
+                    // eprintln!("key={key}, split[0]={}", split[0]);
                 }
             }
-            None => {
-                println!(
-                    "{} input was not valid and could not be processed",
-                    style("error:").red().bold()
-                );
-                LoopCommand::print_help();
+        	if matches == 1 {
+                cmd
+            } else {
+                println!("No single matching key found");
                 continue;
             }
+        } else {
+            println!(
+                "{} input was not valid and could not be processed",
+                style("error:").red().bold()
+            );
+            LoopCommand::print_help();
+            continue;
         };
         println!(
             "command={command}, matching variant={:#?}",

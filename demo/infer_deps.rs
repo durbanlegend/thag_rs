@@ -9,7 +9,7 @@
 # strum = { version = "0.26.3", features = ["derive"] }
 */
 /// Interactively test dependency inferency. This script was arbitrarily copied from
-/// demo/repl_partial_match.rs.
+/// `demo/repl_partial_match.rs`.
 //# Purpose: Test thag manifest module's dependency inference.
 //# Categories: crates, technique, testing
 /// Experiment with matching REPL commands with a partial match of any length.
@@ -46,7 +46,7 @@ impl LoopCommand {
     fn print_help() {
         let mut command = LoopCommand::command();
         let help_message = command.render_help();
-        println!("{}", help_message);
+        println!("{help_message}");
     }
 }
 
@@ -75,37 +75,34 @@ fn main() -> Result<(), Box<dyn Error>> {
             continue;
         }
         _ = rl.add_history_entry(line.as_str());
-        let command = match shlex::split(&line) {
-            Some(split) => {
-                // eprintln!("split={split:?}");
-                let mut matches = 0;
-                let first_word = split[0].as_str();
-                let mut cmd = String::new();
-                for key in cmd_vec.iter() {
-                    if key.starts_with(first_word) {
-                        matches += 1;
-                        // Selects last match
-                        if matches == 1 {
-                            cmd = key.to_string();
-                        }
-                        // eprintln!("key={key}, split[0]={}", split[0]);
+        let command = if let Some(split) = shlex::split(&line) {
+            // eprintln!("split={split:?}");
+            let mut matches = 0;
+            let first_word = split[0].as_str();
+            let mut cmd = String::new();
+            for key in &cmd_vec {
+                if key.starts_with(first_word) {
+                    matches += 1;
+                    // Selects last match
+                    if matches == 1 {
+                        cmd = key.to_string();
                     }
-                }
-                if matches == 1 {
-                    cmd
-                } else {
-                    println!("No single matching key found");
-                    continue;
+                    // eprintln!("key={key}, split[0]={}", split[0]);
                 }
             }
-            None => {
-                println!(
-                    "{} input was not valid and could not be processed",
-                    style("error:").red().bold()
-                );
-                LoopCommand::print_help();
+            if matches == 1 {
+                cmd
+            } else {
+                println!("No single matching key found");
                 continue;
             }
+        } else {
+            println!(
+                "{} input was not valid and could not be processed",
+                style("error:").red().bold()
+            );
+            LoopCommand::print_help();
+            continue;
         };
         println!(
             "command={command}, matching variant={:#?}",

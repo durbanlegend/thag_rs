@@ -578,7 +578,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
-**Crates:** `edit`, `firestorm`, `home`, `mockall`, `serde`, `serde_with`, `thag_rs`
+**Crates:** `edit`, `firestorm`, `home`, `mockall`, `nu_ansi_term`, `serde`, `serde_with`, `thag_rs`
 
 **Type:** Program
 
@@ -973,6 +973,40 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, technique, tools
 
 **Link:** [dethagomizer.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs)
+
+---
+
+### Script: documented.rs
+
+**Description:**  Published example from the `documented` crate.
+ Trying is the first step to failure.
+
+**Purpose:** Explore making docs available at runtime.
+
+**Crates:** `documented`
+
+**Type:** Snippet
+
+**Categories:** crates, exploration, technique
+
+**Link:** [documented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs)
+
+---
+
+### Script: documented_dependencies.rs
+
+**Description:**  Use the `documented` crate to iterate through struct fields and their docs at runtime.
+ Dependency handling
+
+**Purpose:** Prototype for `thag_config_builder`.
+
+**Crates:** `documented`, `phf`, `serde`, `serde_with`
+
+**Type:** Snippet
+
+**Categories:** crates, prototype, technique
+
+**Link:** [documented_dependencies.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dependencies.rs)
 
 ---
 
@@ -2136,7 +2170,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 ### Script: infer_deps.rs
 
 **Description:**  Interactively test dependency inferency. This script was arbitrarily copied from
- demo/repl_partial_match.rs.
+ `demo/repl_partial_match.rs`.
  Experiment with matching REPL commands with a partial match of any length.
 
 **Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
@@ -2168,9 +2202,9 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ---
 
-### Script: input_to_ast.rs
+### Script: input_expr_to_ast.rs
 
-**Description:**  Tries to convert input to a `syn` abstract syntax tree.
+**Description:**  Tries to convert input to a `syn` abstract syntax tree (syn::Expr).
 
 **Purpose:** Debugging
 
@@ -2180,7 +2214,23 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Categories:** AST, crates, technique
 
-**Link:** [input_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_to_ast.rs)
+**Link:** [input_expr_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_ast.rs)
+
+---
+
+### Script: input_file_to_ast.rs
+
+**Description:**  Tries to convert input to a `syn` abstract syntax tree (syn::File).
+
+**Purpose:** Debugging
+
+**Crates:** `syn`
+
+**Type:** Program
+
+**Categories:** AST, crates, technique
+
+**Link:** [input_file_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_ast.rs)
 
 ---
 
@@ -2330,6 +2380,20 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** exploration, technique
 
 **Link:** [loop_pre_post.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs)
+
+---
+
+### Script: macro_fn_lazy_static.rs
+
+**Description:**  Demo of a generic macro to generate lazy static variables without the `lazy_static` crate.
+
+**Purpose:** Demonstrate a technique
+
+**Type:** Program
+
+**Categories:** educational, technique
+
+**Link:** [macro_fn_lazy_static.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_static.rs)
 
 ---
 
@@ -2505,12 +2569,13 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ### Script: owo_cli_color_support.rs
 
-**Description:**  Demo the use of a command-line interface to override the colour support to be provided.
- The owo-colors "supports-colors" feature must be enabled.
+**Description:**  Published example from `clap` tutorial (derive), with added displays.
 
-**Purpose:** Demo setting colour support via a very simple CLI.
+ E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
 
-**Crates:** `clap`, `owo_colors`
+**Purpose:** Demonstrate `clap` CLI using the derive option
+
+**Crates:** `clap`
 
 **Type:** Program
 
@@ -2785,20 +2850,19 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ---
 
-### Script: proc_macro_function_like_basic.rs
+### Script: proc_macro_functionlike_basic.rs
 
-**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
- `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
+**Description:**  Testing the `category_enum` proc macro for use with `demo/gen_readme.rs` and `demo/filter_demos.rs`/
 
-**Purpose:** Sample model of a basic function-like proc macro.
+**Purpose:** Test the proof of concept and potentially the implementation.
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** proc_macros, technique, tools
 
-**Link:** [proc_macro_function_like_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_function_like_basic.rs)
+**Link:** [proc_macro_functionlike_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_functionlike_basic.rs)
 
 ---
 
@@ -3550,7 +3614,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Purpose:** Demo featured crate doing its job.
 
-**Crates:** `crossterm`, `supports_color`
+**Crates:** `supports_color`
 
 **Type:** Snippet
 
@@ -3904,28 +3968,13 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Purpose:** Handy configuration file builder.
 
-**Crates:** `colored`, `inquire`, `serde`, `syn`
+**Crates:** `colored`, `convert_case`, `documented`, `inquire`, `strum`, `super`, `syn`, `thag_rs`
 
 **Type:** Program
 
 **Categories:** crates, technique, tools
 
 **Link:** [thag_config_builder.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder.rs)
-
----
-
-### Script: thag_config_builder_new.rs
-
-**Description:** 
-**Purpose:** 
-
-**Crates:** `colored`, `inquire`, `syn`, `thag_rs`
-
-**Type:** Program
-
-**Categories:** missing
-
-**Link:** [thag_config_builder_new.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder_new.rs)
 
 ---
 
@@ -3967,14 +4016,15 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ### Script: thag_prompt.rs
 
-**Description:** 
-**Purpose:** 
+**Description:**  Early prototype of prompted `thag` prompting front-end.
+
+**Purpose:** Ultimately, to provide a prompt-driven fromt-end to the `thag` command.
 
 **Crates:** `inquire`
 
 **Type:** Program
 
-**Categories:** missing
+**Categories:** prototype, tools
 
 **Link:** [thag_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs)
 
@@ -3996,14 +4046,15 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ### Script: thag_url.rs
 
-**Description:** 
-**Purpose:** 
+**Description:**  `thag` front-end to run scripts from URLs.
+
+**Purpose:** A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
 
 **Crates:** `url`
 
 **Type:** Program
 
-**Categories:** missing
+**Categories:** technique, tools
 
 **Link:** [thag_url.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs)
 

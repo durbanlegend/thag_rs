@@ -187,7 +187,7 @@ pub fn configure_log() {
 
     configure_simplelog();
     // info!("Initialized simplelog");  // interferes with testing
-    vlog!(V::N, "Initialized simplelog");
+    vlog!(V::V, "Initialized simplelog");
 }
 
 /// Configure log level

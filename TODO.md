@@ -51,10 +51,13 @@ https://raw.githubusercontent.com/durbanlegend/thag_rs/3f52d4c4590c0573ad130727e
 thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
-- [ ]  Consider "magic" substitution of latest git with say rev = "$latest" inn toml block.
-- [ ]  Add --test (-T) option to run #[test]s defined in script.
+- [ ]  Consider "magic" substitution of latest git with say rev = "$latest" in toml block.
 - [ ]  Add --infer dependencies (-i <maximal/minimal/custom/none>) option to control dependency inference.
-- [ ]  Add --clippy (-L <LINT>) option to run clippy on script.
+- [ ]  Consider a disable option?
+- [ ]  Add --test (-T) option to run #[test]s defined in script & add --clippy (-L <LINT>) option to run clippy on script.
+       - or rather, add a generic "cargo" option so user can run any cargo command on the
+         script's "project" directory and thag will provide the --manifest-path option.
+       - Fold expand (-X) option into this?
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output.

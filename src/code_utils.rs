@@ -536,6 +536,7 @@ use std::io;
 use std::io::prelude::*;
 
 #[doc = "Wrapped snippet in main method to make it a program."]
+#[allow(clippy::unnecessary_wraps)]
 fn main() -> Result<(), Box<dyn Error>> {{
 {body}
 Ok(())

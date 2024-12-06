@@ -1,3 +1,4 @@
+#![allow(clippy::module_name_repetitions)]
 // From https://github.com/tdimitrov/rust-proc-macro-post
 use proc_macro2::TokenStream;
 use quote::quote;

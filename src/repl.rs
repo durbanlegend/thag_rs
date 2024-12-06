@@ -715,7 +715,7 @@ pub fn edit_history<R: EventReader + Debug>(
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 pub fn history_key_handler(
     key_event: KeyEvent,
-    _maybe_term: &mut ManagedTerminal,
+    _maybe_term: Option<&mut ManagedTerminal>,
     // maybe_save_path: &mut Option<&mut PathBuf>,
     textarea: &mut TextArea,
     edit_data: &mut EditData,

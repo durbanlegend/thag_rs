@@ -71,21 +71,14 @@ impl ManagedTerminal<'_> {
 ///
 /// # Errors
 ///
-pub fn resolve_term<'a>() -> ThagResult<ManagedTerminal<'a>> {
+pub fn resolve_term<'a>() -> ThagResult<Option<ManagedTerminal<'a>>> {
     profile_fn!(resolve_term);
-    let mut stdout = std::io::stdout().lock();
 
     if var("TEST_ENV").is_ok() {
-        return Ok(ManagedTerminal {
-            terminal: guard(
-                Terminal::new(CrosstermBackend::new(stdout))?,
-                Box::new(|term| {
-                    reset_term(term).expect("Error resetting terminal");
-                }),
-            ),
-        });
+        return Ok(None);
     }
 
+    let mut stdout = std::io::stdout().lock();
     enable_raw_mode()?;
 
     crossterm::execute!(
@@ -98,14 +91,14 @@ pub fn resolve_term<'a>() -> ThagResult<ManagedTerminal<'a>> {
     let backend = CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend)?;
 
-    Ok(ManagedTerminal {
+    Ok(Some(ManagedTerminal {
         terminal: guard(
             terminal,
             Box::new(|term| {
                 reset_term(term).expect("Error resetting terminal");
             }),
         ),
-    })
+    }))
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -496,7 +489,7 @@ where
     R: EventReader + Debug,
     F: Fn(
         KeyEvent,
-        &mut ManagedTerminal,
+        Option<&mut ManagedTerminal>,
         &mut TextArea,
         &mut EditData,
         &mut bool,
@@ -567,64 +560,68 @@ where
             event_reader.read_event()?
         } else {
             // Real-world interaction
-            maybe_term
-                .draw(|f| {
-                    // Get the size of the available terminal area
-                    let area = f.area();
+            maybe_term.as_mut().map_or_else(
+                || Err("Logic issue unwrapping term we wrapped ourselves".into()),
+                |term| {
+                    term.draw(|f| {
+                        // Get the size of the available terminal area
+                        let area = f.area();
 
-                    // Ensure there's enough height for both the textarea and the status line
-                    if area.height > 1 {
-                        let chunks = Layout::default()
-                            .direction(Direction::Vertical)
-                            .constraints(
-                                [
-                                    Constraint::Min(area.height - 3), // Editor area takes up the rest
-                                    Constraint::Length(3),            // Status line gets 1 line
-                                ]
-                                .as_ref(),
-                            )
-                            .split(area);
+                        // Ensure there's enough height for both the textarea and the status line
+                        if area.height > 1 {
+                            let chunks = Layout::default()
+                                .direction(Direction::Vertical)
+                                .constraints(
+                                    [
+                                        Constraint::Min(area.height - 3), // Editor area takes up the rest
+                                        Constraint::Length(3),            // Status line gets 1 line
+                                    ]
+                                    .as_ref(),
+                                )
+                                .split(area);
 
-                        // Render the textarea in the first chunk
-                        f.render_widget(&textarea, chunks[0]);
+                            // Render the textarea in the first chunk
+                            f.render_widget(&textarea, chunks[0]);
 
-                        // Render the status line in the second chunk
-                        let status_block = Block::default()
-                            .borders(Borders::ALL)
-                            .title("Status")
-                            .style(Style::default().fg(Color::White))
-                            .title_style(display.title_style);
+                            // Render the status line in the second chunk
+                            let status_block = Block::default()
+                                .borders(Borders::ALL)
+                                .title("Status")
+                                .style(Style::default().fg(Color::White))
+                                .title_style(display.title_style);
 
-                        let status_text = Paragraph::new::<&str>(status_message.as_ref())
-                            .block(status_block)
-                            .style(Style::default().fg(Color::White));
+                            let status_text = Paragraph::new::<&str>(status_message.as_ref())
+                                .block(status_block)
+                                .style(Style::default().fg(Color::White));
 
-                        f.render_widget(status_text, chunks[1]);
+                            f.render_widget(status_text, chunks[1]);
 
-                        if popup {
-                            display_popup(
-                                &adjusted_mappings,
-                                TITLE_TOP,
-                                TITLE_BOTTOM,
-                                max_key_len,
-                                max_desc_len,
-                                f,
-                            );
-                        };
-                        highlight_selection(&mut textarea, tui_highlight_fg);
-                        // status_message = String::new();
-                    }
-                })
-                .map_err(|e| {
-                    eprintln!("Error drawing terminal: {e:?}");
-                    e
-                })?;
+                            if popup {
+                                display_popup(
+                                    &adjusted_mappings,
+                                    TITLE_TOP,
+                                    TITLE_BOTTOM,
+                                    max_key_len,
+                                    max_desc_len,
+                                    f,
+                                );
+                            };
+                            highlight_selection(&mut textarea, tui_highlight_fg);
+                            // status_message = String::new();
+                        }
+                    })
+                    .map_err(|e| {
+                        eprintln!("Error drawing terminal: {e:?}");
+                        e
+                    })?;
 
-            // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
-            dbg!();
-            let event = event_reader.read_event();
-            dbg!();
-            event.map_err(Into::<ThagError>::into)?
+                    // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
+                    dbg!();
+                    let event = event_reader.read_event();
+                    dbg!();
+                    event.map_err(Into::<ThagError>::into)
+                },
+            )?
         };
 
         if let Paste(ref data) = event {
@@ -770,9 +767,11 @@ where
                     };
                     if var("TEST_ENV").is_err() {
                         #[allow(clippy::option_if_let_else)]
-                        maybe_term.draw(|_| {
-                            highlight_selection(&mut textarea, tui_highlight_fg);
-                        })?;
+                        if let Some(ref mut term) = maybe_term {
+                            term.draw(|_| {
+                                highlight_selection(&mut textarea, tui_highlight_fg);
+                            })?;
+                        }
                     }
                 }
                 _ => {
@@ -780,8 +779,7 @@ where
                     // Call the key_handler closure to process events
                     let key_action = key_handler(
                         key_event,
-                        &mut maybe_term,
-                        // &mut edit_data.save_path.as_deref_mut(),
+                        maybe_term.as_mut(),
                         &mut textarea,
                         edit_data,
                         &mut popup,
@@ -838,7 +836,7 @@ pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate:
 #[allow(clippy::too_many_lines, clippy::missing_panics_doc)]
 pub fn script_key_handler(
     key_event: KeyEvent,
-    maybe_term: &mut ManagedTerminal,
+    maybe_term: Option<&mut ManagedTerminal>,
     textarea: &mut TextArea,
     edit_data: &mut EditData,
     popup: &mut bool,
@@ -979,27 +977,31 @@ fn wipe_textarea(
 }
 
 fn save_as(
-    term: &mut ManagedTerminal<'_>,
+    maybe_term: Option<&mut ManagedTerminal<'_>>,
     textarea: &mut TextArea<'_>,
     saved: &mut bool,
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
-    let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
-    save_dialog.open();
-    let mut status = Status::Incomplete;
-    while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
-        term.draw(|f| save_dialog.draw(f))?;
-        if let Event::Key(key) = event::read()? {
-            status = save_dialog.handle_input(key)?;
+    if let Some(term) = maybe_term {
+        let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
+        save_dialog.open();
+        let mut status = Status::Incomplete;
+        while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
+            term.draw(|f| save_dialog.draw(f))?;
+            if let Event::Key(key) = event::read()? {
+                status = save_dialog.handle_input(key)?;
+            }
         }
-    }
 
-    if let Some(ref to_rs_path) = save_dialog.selected_file {
-        save_source_file(to_rs_path, textarea, saved)?;
-        status_message.clear();
-        status_message.push_str(&format!("Saved to {}", to_rs_path.display()));
+        if let Some(ref to_rs_path) = save_dialog.selected_file {
+            save_source_file(to_rs_path, textarea, saved)?;
+            status_message.clear();
+            status_message.push_str(&format!("Saved to {}", to_rs_path.display()));
 
-        Ok(KeyAction::Save)
+            Ok(KeyAction::Save)
+        } else {
+            Ok(KeyAction::Continue)
+        }
     } else {
         Ok(KeyAction::Continue)
     }

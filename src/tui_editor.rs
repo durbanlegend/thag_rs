@@ -79,7 +79,9 @@ pub fn resolve_term<'a>() -> ThagResult<ManagedTerminal<'a>> {
         return Ok(ManagedTerminal {
             terminal: guard(
                 Terminal::new(CrosstermBackend::new(stdout))?,
-                Box::new(|_| ()),
+                Box::new(|term| {
+                    reset_term(term).expect("Error resetting terminal");
+                }),
             ),
         });
     }
@@ -1169,6 +1171,7 @@ pub fn normalize_newlines(input: &str) -> String {
 /// # Errors
 ///
 /// This function will bubble up any `ratatui` or `crossterm` errors encountered.
+// TODO: move to shared or tui_editor?
 pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>) -> ThagResult<()> {
     profile_fn!(reset_term);
     disable_raw_mode()?;

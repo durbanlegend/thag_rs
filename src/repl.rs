@@ -651,7 +651,9 @@ pub fn edit_history<R: EventReader + Debug>(
     staging_path: &Path,
     event_reader: &R,
 ) -> ThagResult<bool> {
+    dbg!();
     let mut staging_path_buf = staging_path.to_path_buf();
+    dbg!();
     let mut edit_data = EditData {
         return_text: false,
         initial_content,
@@ -659,16 +661,19 @@ pub fn edit_history<R: EventReader + Debug>(
         history_path: None,
         history: None::<History>,
     };
+    dbg!();
     let binding = [
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
+    dbg!();
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: RataStyle::from(&Lvl::HEAD).bold(),
         remove_keys: &["F7", "F8"],
         add_keys: &binding,
     };
+    dbg!();
     let (key_action, _maybe_text) = tui_edit(
         event_reader,
         &mut edit_data,
@@ -685,6 +690,7 @@ pub fn edit_history<R: EventReader + Debug>(
             )
         },
     )?;
+    dbg!();
     Ok(match key_action {
         KeyAction::Quit(saved) => saved,
         KeyAction::Save

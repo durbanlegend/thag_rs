@@ -504,6 +504,7 @@ where
         &mut String,
     ) -> ThagResult<KeyAction>,
 {
+    dbg!();
     // Initialize state variables
     let mut popup = false;
     let mut tui_highlight_fg: Lvl = Lvl::EMPH;
@@ -511,6 +512,7 @@ where
     let mut status_message: String = String::default(); // Add status message variable
 
     let mut maybe_term = resolve_term()?;
+    dbg!();
 
     // Create the TextArea from initial content
     let mut textarea = TextArea::from(edit_data.initial_content.lines());
@@ -533,6 +535,7 @@ where
 
     // Apply initial highlights
     highlight_selection(&mut textarea, tui_highlight_fg);
+    dbg!();
 
     let remove = display.remove_keys;
     let add = display.add_keys;
@@ -555,6 +558,7 @@ where
             });
 
     // Event loop for handling key events
+    dbg!();
     loop {
         maybe_enable_raw_mode()?;
         let test_env = &var("TEST_ENV");
@@ -617,7 +621,9 @@ where
                 })?;
 
             // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
+            dbg!();
             let event = event_reader.read_event();
+            dbg!();
             event.map_err(Into::<ThagError>::into)?
         };
 
@@ -770,6 +776,7 @@ where
                     }
                 }
                 _ => {
+                    dbg!();
                     // Call the key_handler closure to process events
                     let key_action = key_handler(
                         key_event,
@@ -782,6 +789,7 @@ where
                         &mut status_message,
                     )?;
                     // eprintln!("key_action={key_action:?}");
+                    dbg!();
                     match key_action {
                         KeyAction::AbandonChanges => break Ok((key_action, None::<Vec<String>>)),
                         KeyAction::Quit(_)
@@ -804,10 +812,12 @@ where
                 }
             }
         } else {
+            dbg!();
             // println!("You typed {key_combination:?} which represents nothing yet"/*, key.blue()*/);
             let input = Input::from(event);
             textarea.input(input);
         }
+        dbg!();
     }
 }
 

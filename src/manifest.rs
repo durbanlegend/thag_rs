@@ -300,7 +300,7 @@ pub fn lookup_deps(rs_inferred_deps: &[String], rs_dep_map: &mut BTreeMap<String
     let inference_level = &dep_config.inference_level;
     let style_emph = Style::from(&Lvl::EMPH);
     let styled_inference_level = Style::from(&Lvl::SUBH).paint(inference_level.to_string());
-    let recommended_inference_level = "custom";
+    let recommended_inference_level = "config";
     let styled_recommended_inference_level = style_emph.paint(recommended_inference_level);
     // Hack: use reset string \x1b[0m here to avoid mystery white-on-white bug.
     cvprtln!(
@@ -319,9 +319,9 @@ pub fn lookup_deps(rs_inferred_deps: &[String], rs_dep_map: &mut BTreeMap<String
             continue;
         }
 
-        new_inferred_deps.push(dep_name.clone());
-
         if let Some((name, version)) = cargo_lookup(dep_name) {
+            // Only do it after lookup in case the found crate name has hyphens instead of the underscores it has in code.
+            new_inferred_deps.push(name.clone());
             let features = get_crate_features(&name);
 
             match inference_level {
@@ -333,7 +333,7 @@ pub fn lookup_deps(rs_inferred_deps: &[String], rs_dep_map: &mut BTreeMap<String
                     // Just add basic dependency
                     rs_dep_map.insert(name.clone(), Dependency::Simple(version.clone()));
                 }
-                DependencyInference::Custom | DependencyInference::Maximal => {
+                DependencyInference::Config | DependencyInference::Maximal => {
                     // eprintln!("crate={name}, features.is_some()? {}", features.is_some());
                     if let Some(ref all_features) = features {
                         let features_for_inference_level = dep_config
@@ -376,10 +376,24 @@ pub fn lookup_deps(rs_inferred_deps: &[String], rs_dep_map: &mut BTreeMap<String
     if get_verbosity() < V::V {
         return;
     }
-    if matches!(inference_level, DependencyInference::None) {
+    if matches!(inference_level, DependencyInference::None) || new_inferred_deps.is_empty() {
         // No generated manifest info to show.
         return;
     }
+    display_toml_info(
+        existing_toml_block,
+        new_inferred_deps,
+        rs_dep_map,
+        inference_level,
+    );
+}
+
+fn display_toml_info(
+    existing_toml_block: bool,
+    new_inferred_deps: Vec<String>,
+    rs_dep_map: &mut BTreeMap<String, Dependency>,
+    inference_level: &DependencyInference,
+) {
     let mut toml_block = String::new();
     if !existing_toml_block {
         toml_block.push_str("/*[toml]\n[dependencies]\n");
@@ -489,7 +503,7 @@ fn proc_macros_magic(
     cvprtln!(
         Lvl::BRI,
         V::V,
-        r#"Found magic import `{dep_name}`: attempting to generate path dependency from proc_macros.proc_macro_crate_path in config file ".../config.toml"."#
+        r#"Found magic import `{dep_name}`: attempting to generate path dependency from `proc_macros.(...)proc_macro_crate_path` in config file ".../config.toml"."#
     );
     let default_proc_macros_dir = format!("{dir_name}/proc_macros");
     let maybe_magic_proc_macros_dir = maybe_config().map_or_else(
@@ -500,15 +514,21 @@ fn proc_macros_magic(
             Some(default_proc_macros_dir.clone())
         },
         |config| {
-            debug_log!("Found config.proc_macros()={:#?}", config.proc_macros);
-            config.proc_macros.proc_macro_crate_path
+            debug_log!("Found config.proc_macros={:#?}", config.proc_macros);
+            if dep_name == "thag_demo_proc_macros" {
+                config.proc_macros.demo_proc_macro_crate_path
+            } else if dep_name == "thag_bank_proc_macros" {
+                config.proc_macros.bank_proc_macro_crate_path
+            } else {
+                None
+            }
         },
     );
     let magic_proc_macros_dir = maybe_magic_proc_macros_dir.as_ref().map_or_else(|| {
         cvprtln!(
             Lvl::BRI,
             V::V,
-            r#"Missing `config.proc_macros.proc_macro_crate_path` in config file for "use {dep_name};": defaulting to "{default_proc_macros_dir}"."#
+            r#"No `config.proc_macros.proc_macro_crate_path` in config file for "use {dep_name};": defaulting to "{default_proc_macros_dir}"."#
         );
         default_proc_macros_dir
     }, |proc_macros_dir| {

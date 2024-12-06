@@ -32,23 +32,23 @@ default_verbosity = "normal"
 # term_theme = "dark"
 
 [proc_macros]
-# Allows user to specify a manifest directory path for the thag_demo_proc_macro crate. This is
-# a prerequisite for the `thag_rs` proc-macros feature.
+# Allows user to specify manifest directory paths for the thag_demo_proc_macro crate and the
+# internal `bank` equivalent. This is a prerequisite for the `thag_rs` proc-macros feature.
 #
 # Specify a valid absolute or relative path string if required, e.g. "/Users/thag/projects/thag_rs/demo/proc_macros/Cargo.toml".
 # Relative paths should be relative to the current working directory.
 # A single forward slash is the required path separator in all environments including Windows.
-# Default value: "demo/proc_macros".
-# proc_macro_crate_path = "/Users/donf/projects/thag_rs/demo/proc_macros"
-# proc_macro_crate_path = "demo/proc_macros"
+# Default value: "<dir>/proc_macros".
+bank_proc_macro_crate_path = "bank/proc_macros"
+demo_proc_macro_crate_path = "demo/proc_macros"
 
 [dependencies]
 
 # Specifies to what extent `thag_rs` should intervene in inferring dependencies from references to crates
 # in the script code, including but not limited to imports (`use` statements).
-# Options are "maximal", "minimal", "custom" (recommended) and "none".
-# Default is "custom". It has sensible settings built into the default config.toml for some popular crates.
-inference_level = "custom"
+# Options are "maximal", "minimal", "config" (recommended) and "none".
+# Default is "config". It has sensible settings built into the default config.toml for some popular crates.
+inference_level = "config"
 
 # Exclude features containing "unstable"
 exclude_unstable_features = true

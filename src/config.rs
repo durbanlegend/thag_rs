@@ -146,7 +146,7 @@ impl Default for Dependencies {
             exclude_prerelease: true,
             feature_overrides: HashMap::<String, FeatureOverride>::new(),
             global_excluded_features: vec![],
-            inference_level: DependencyInference::Custom,
+            inference_level: DependencyInference::Config,
         }
     }
 }
@@ -269,22 +269,22 @@ impl Dependencies {
             .contains(&feature.to_string())
     }
 
-    // New method for custom features based on overrides
+    // New method for config features based on overrides
     #[must_use]
-    pub fn apply_custom_features(
+    pub fn apply_config_features(
         &self,
         crate_name: &str,
         all_features: &[String],
     ) -> (Vec<String>, bool) {
-        profile_method!(apply_custom_features);
+        profile_method!(apply_config_features);
         // eprintln!("self.feature_overrides={:#?}", self.feature_overrides);
-        let (mut custom_features, default_features) = self.feature_overrides.get(crate_name).map_or_else(|| {
+        let (mut config_features, default_features) = self.feature_overrides.get(crate_name).map_or_else(|| {
             let intersection = self.always_include_features.iter().filter(|item| all_features.contains(item))
                 .cloned()
                 .collect();
             (intersection, true)
         }, |override_config| {
-            let mut custom_features = self.always_include_features.clone();
+            let mut config_features = self.always_include_features.clone();
 
             // cvprtln!(
             //     &Lvl::EMPH,
@@ -300,7 +300,7 @@ impl Dependencies {
                     }
                     // Validate required features exist
                     if all_features.contains(feature) {
-                        custom_features.push(feature.clone());
+                        config_features.push(feature.clone());
                         // cvprtln!(
                         //     &Lvl::EMPH,
                         //     V::N,
@@ -320,14 +320,14 @@ impl Dependencies {
                     }
                 };
             }
-            (custom_features, override_config.default_features.unwrap_or(true))
+            (config_features, override_config.default_features.unwrap_or(true))
         });
 
         // Sort and remove duplicates
-        custom_features.sort();
-        custom_features.dedup();
+        config_features.sort();
+        config_features.dedup();
 
-        (custom_features, default_features)
+        (config_features, default_features)
     }
 
     // Method to get features based on inference level
@@ -341,9 +341,9 @@ impl Dependencies {
         profile_method!(get_features_for_inference_level);
         match level {
             DependencyInference::None | DependencyInference::Minimal => (None, true),
-            DependencyInference::Custom => {
+            DependencyInference::Config => {
                 let (features, default_features) =
-                    self.apply_custom_features(crate_name, all_features);
+                    self.apply_config_features(crate_name, all_features);
                 (Some(features), default_features)
             }
             DependencyInference::Maximal => {
@@ -442,9 +442,18 @@ pub enum DependencyInference {
     Minimal,
     /// Use config.toml feature overrides
     #[default]
-    Custom,
+    Config,
     /// Include all features not excluded by config
     Maximal,
+}
+
+pub type Infer = DependencyInference;
+
+impl Infer {
+    pub const NONE: Self = Self::None;
+    pub const MIN: Self = Self::Minimal;
+    pub const CONF: Self = Self::Config;
+    pub const MAX: Self = Self::Maximal;
 }
 
 // Custom deserializer to provide better error messages
@@ -458,10 +467,10 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
         match s.to_lowercase().as_str() {
             "none" => Ok(Self::None),
             "minimal" => Ok(Self::Minimal),
-            "custom" => Ok(Self::Custom),
+            "config" => Ok(Self::Config),
             "maximal" => Ok(Self::Maximal),
             _ => Err(de::Error::custom(format!(
-                "Invalid dependency inference level '{s}'. Expected one of: none, minimal, custom, maximal"
+                "Invalid dependency inference level '{s}'. Expected one of: none, minimal, config, maximal"
             ))),
         }
     }
@@ -492,9 +501,12 @@ pub struct Colors {
 #[derive(Clone, Debug, Default, Deserialize, Documented, DocumentedFields, Serialize)]
 #[serde(default)]
 pub struct ProcMacros {
+    /// Absolute or relative path to bank proc macros crate, e.g. bank/proc_macros.
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub bank_proc_macro_crate_path: Option<String>,
     /// Absolute or relative path to demo proc macros crate, e.g. demo/proc_macros.
     #[serde_as(as = "Option<DisplayFromStr>")]
-    pub proc_macro_crate_path: Option<String>,
+    pub demo_proc_macro_crate_path: Option<String>,
 }
 
 /// Miscellaneous configuration parameters
@@ -628,7 +640,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     profile_fn!(load);
     let config_path = context.get_config_path();
 
-    eprintln!("config_path={config_path:?}");
+    debug_log!("config_path={config_path:?}");
 
     if !config_path.exists() {
         return Ok(Some(Config::default()));

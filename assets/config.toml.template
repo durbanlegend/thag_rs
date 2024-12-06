@@ -39,9 +39,10 @@ default_verbosity = "normal"
 
 [dependencies]
 
-# How much `thag_rs` should intervene in inferring dependencies from code.
-# Options are "maximal", "minimal" and "custom".
-# Default is "custom". Sensible defaults are built in.
+# Specifies to what extent `thag_rs` should intervene in inferring dependencies from references to crates
+# in the script code, including but not limited to imports (`use` statements).
+# Options are "maximal", "minimal", "custom" (recommended) and "none".
+# Default is "custom". It has sensible settings built into the default config.toml for some popular crates.
 inference_level = "custom"
 
 # Exclude features containing "unstable"

@@ -52,10 +52,9 @@ thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
 - [ ]  Consider "magic" substitution of latest git with say rev = "$latest" inn toml block.
-- [ ]  Reinstate fn proc_macros_magic
-- [ ]  Wrap settings in cofig::Dependencies in Options, e.g. default_features (default -> true)
 - [ ]  Add --test (-T) option to run #[test]s defined in script.
-- [ ]  Add --clippy (-T <LINT>) option to run clippy on script.
+- [ ]  Add --infer dependencies (-i <maximal/minimal/custom/none>) option to control dependency inference.
+- [ ]  Add --clippy (-L <LINT>) option to run clippy on script.
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output.

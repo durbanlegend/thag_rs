@@ -1,15 +1,17 @@
 /*[toml]
 [dependencies]
 colored = "2.1.0"
+convert_case = "0.6.0"
 dirs = "5.0"
+documented = "0.9.1"
 inquire = "0.7.5"
 semver = "1.0.23"
 serde = { version = "1.0.215", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
-tokio = { version = "1", features = ["full"] }
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "29dec5630ea60c87c010fe4a3aed46386757f83f" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs/" }
+tokio = { version = "1", features = ["full"] }
 toml = "0.8"
 */
 

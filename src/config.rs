@@ -202,11 +202,10 @@ impl Dependencies {
             // let before_len = filtered.len();
             filtered.retain(|f| {
                 let keep = self.always_include_features.contains(f) || {
-                    if let Some(ref excluded_features) = override_config.excluded_features {
-                        !excluded_features.contains(f)
-                    } else {
-                        true
-                    }
+                    override_config
+                        .excluded_features
+                        .as_ref()
+                        .map_or(true, |excluded_features| !excluded_features.contains(f))
                 };
                 if !keep {
                     debug_log!("Excluding feature '{}' due to crate-specific override", f);
@@ -685,6 +684,11 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of edit")))
 }
 
+/// Validate the content of the `config.toml` file.
+///
+/// # Errors
+///
+/// This function will bubble up any Toml parsing errors encountered.
 pub fn validate_config_format(content: &str) -> Result<(), ThagError> {
     profile_fn!(validate_config_format);
     // Try to parse as generic TOML first

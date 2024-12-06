@@ -1,4 +1,7 @@
-use crate::{config::maybe_config, ThagError, ThagResult, RS_SUFFIX};
+use crate::{
+    config::{maybe_config, DependencyInference},
+    ThagError, ThagResult, RS_SUFFIX,
+};
 
 use bitflags::bitflags;
 // use clap::builder::styling::{Ansi256Color, AnsiColor, Color, Style};
@@ -23,7 +26,7 @@ use std::{fmt, str};
 #[command(group(
             ArgGroup::new("norun_options")
                 .required(false)
-                .args(&["generate", "build", "check", "executable", "expand"]),
+                .args(&["generate", "build", "check", "executable", "expand", "cargo"]),
         ))]
 pub struct Cli {
     /// Optional path of a script to run (`path`/`stem`.rs)
@@ -32,7 +35,7 @@ pub struct Cli {
     #[arg(last = true, requires = "script")]
     pub args: Vec<String>,
     /// Force the generation and build steps, even if the script is unchanged since a previous build. Required if there are updates to dependencies.
-    #[arg(short, long, help_heading = Some("Script Options"))]
+    #[arg(short, long, requires = "script", help_heading = Some("Processing Options"))]
     pub force: bool,
     // /// Don't run the script after generating and building
     // #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin"]))]
@@ -65,7 +68,7 @@ pub struct Cli {
     #[arg(short = 'E', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "POST-LOOP")]
     pub end: Option<String>,
     /// Required if multiple main methods are valid for the current script
-    #[arg(short, long, help_heading = Some("Script Options"))]
+    #[arg(short, long, help_heading = Some("Processing Options"))]
     pub multimain: bool,
     /// Display timings
     #[arg(short, long, help_heading = Some("Output Options"))]
@@ -120,6 +123,14 @@ pub struct Cli {
     /// Edit the configuration file
     #[arg(short = 'C', long, conflicts_with_all(["generate", "build", "executable"]))]
     pub config: bool,
+    /// TODO: Set the level of dependency inference: none, min, config (default, recommended), max.
+    /// 'thag` infers dependencies from imports and Rust paths (`x::y::z`), and specifies their features.
+    #[arg(short = 'i', long, help_heading = Some("Processing Options"))]
+    pub infer: Option<DependencyInference>,
+    /// TODO: Just generate script, unless unchanged from a previous build, and run the specified
+    /// Cargo subcommand against the generated project `temp_dir`/`thag_rs`/`stem`. E.g. `thag demo/hello.rs -A tree`
+    #[arg(short = 'A', long, help_heading = Some("No-run Options"))]
+    pub cargo: Option<String>,
 }
 
 /// Getter for clap command-line arguments

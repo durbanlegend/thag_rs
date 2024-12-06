@@ -15,9 +15,9 @@ use crate::stdin::{edit, read};
 use crate::VERSION;
 use crate::{
     coloring, cvprtln, debug_log, display_timings, get_proc_flags, manifest, maybe_config, regex,
-    repeat_dash, validate_args, vlog, Ast, BuildState, Cli, CrosstermEventReader, Lvl, ProcFlags,
-    ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME,
-    REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V,
+    repeat_dash, validate_args, vlog, Ast, BuildState, Cli, CrosstermEventReader, Dependencies,
+    Lvl, ProcFlags, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
+    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
@@ -198,7 +198,7 @@ fn process(
     script_state: &ScriptState,
     start: Instant,
 ) -> ThagResult<()> {
-    profile_fn!(process);
+    // profile_fn!(process);
     let is_repl = args.repl;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
@@ -600,109 +600,169 @@ fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
     prettyplease::unparse(syntax_tree)
 }
 
-/// Build the Rust program using Cargo (with manifest path)
+/// Call Cargo to build, check or expand the prepared script.
+///
 /// # Errors
-/// Will return `Err` if there is an error composing the Cargo TOML path or running the Cargo build command.
-/// # Panics
-/// Will panic if the cargo build process fails to spawn or if it can't move the executable.
+///
+/// This function will bubble up any errors encountered.
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     let start_build = Instant::now();
-    let quiet = proc_flags.contains(ProcFlags::QUIET);
-    let quieter = proc_flags.contains(ProcFlags::QUIETER);
-    let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
-    let check = proc_flags.contains(ProcFlags::CHECK);
-    let expand = proc_flags.contains(ProcFlags::EXPAND);
-
+    profile_fn!(build);
     vlog!(V::V, "BBBBBBBB In build");
 
-    let cargo_toml_path_str = code_utils::path_to_str(&build_state.cargo_toml_path)?;
-
-    let mut cargo_command = Command::new("cargo");
-    let cargo_subcommand = if check {
-        "check"
-    } else if expand {
-        "expand"
+    if proc_flags.contains(ProcFlags::EXPAND) {
+        handle_expand(proc_flags, build_state)
     } else {
-        "build"
-    };
-
-    let mut args = vec![cargo_subcommand, "--manifest-path", &cargo_toml_path_str];
-    if quiet || quieter {
-        args.push("--quiet");
-    }
-    if executable {
-        args.push("--release");
-    } else if expand {
-        args.push("--bin");
-        args.push(&build_state.source_stem);
-        args.push("--theme=gruvbox-dark");
-    }
-
-    cargo_command.args(&args);
-
-    vlog!(
-        V::N,
-        "{} {} ...",
-        if check {
-            "Checking"
-        } else if expand {
-            "Expanding"
-        } else {
-            "Building"
-        },
-        Style::from(&Lvl::EMPH).paint(&build_state.source_name)
-    );
-
-    if quieter | expand {
-        // Pipe output
-        cargo_command
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped());
-    } else {
-        // Redirect stdout and stderr to inherit from the parent process (terminal)
-        cargo_command
-            .stdout(std::process::Stdio::inherit())
-            .stderr(std::process::Stdio::inherit());
-    }
-
-    if expand {
-        // Capture expanded output
-        let output = cargo_command.output()?; // This waits for the command to finish
-        if !output.status.success() {
-            eprintln!(
-                "Error running `cargo expand`: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-            return Err("Expansion failed".into());
-        }
-
-        // Capture expanded source as String
-        let expanded_source = String::from_utf8(output.stdout)?;
-
-        // Read the unexpanded source
-        let unexpanded_path = get_source_path(build_state);
-        let unexpanded_source = std::fs::read_to_string(unexpanded_path)?;
-
-        let max_width = if let Ok((width, _height)) = crossterm::terminal::size() {
-            (width - 22) / 2
-        } else {
-            80
-        };
-        // Compare the sources
-        let diff = create_side_by_side_diff(&unexpanded_source, &expanded_source, max_width.into());
-        println!("{diff}");
-    } else {
-        let status = cargo_command.spawn()?.wait()?;
-        if !status.success() {
-            return Err("Build failed".into());
-        }
-        if executable {
-            deploy_executable(build_state)?;
-        }
-    }
+        handle_build_or_check(proc_flags, build_state)
+    }?;
 
     display_timings(&start_build, "Completed build", proc_flags);
     Ok(())
+}
+
+fn create_cargo_command(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<Command> {
+    profile_fn!(create_cargo_command);
+    let cargo_toml_path_str = code_utils::path_to_str(&build_state.cargo_toml_path)?;
+    let mut cargo_command = Command::new("cargo");
+
+    let args = build_command_args(proc_flags, build_state, &cargo_toml_path_str);
+    cargo_command.args(&args);
+
+    configure_command_output(&mut cargo_command, proc_flags);
+    Ok(cargo_command)
+}
+
+fn build_command_args(
+    proc_flags: &ProcFlags,
+    build_state: &BuildState,
+    cargo_toml_path: &str,
+) -> Vec<String> {
+    profile_fn!(build_command_args);
+    let mut args = vec![
+        get_cargo_subcommand(proc_flags).to_string(),
+        "--manifest-path".to_string(),
+        cargo_toml_path.to_string(),
+    ];
+
+    if proc_flags.contains(ProcFlags::QUIET) || proc_flags.contains(ProcFlags::QUIETER) {
+        args.push("--quiet".to_string());
+    }
+
+    if proc_flags.contains(ProcFlags::EXECUTABLE) {
+        args.push("--release".to_string());
+    } else if proc_flags.contains(ProcFlags::EXPAND) {
+        args.extend_from_slice(&[
+            "--bin".to_string(),
+            build_state.source_stem.clone(),
+            "--theme=gruvbox-dark".to_string(),
+        ]);
+    }
+
+    args
+}
+
+fn get_cargo_subcommand(proc_flags: &ProcFlags) -> &'static str {
+    profile_fn!(get_cargo_subcommand);
+    if proc_flags.contains(ProcFlags::CHECK) {
+        "check"
+    } else if proc_flags.contains(ProcFlags::EXPAND) {
+        "expand"
+    } else {
+        "build"
+    }
+}
+
+fn configure_command_output(command: &mut Command, proc_flags: &ProcFlags) {
+    profile_fn!(configure_command_output);
+    if proc_flags.contains(ProcFlags::QUIETER) || proc_flags.contains(ProcFlags::EXPAND) {
+        command
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+    } else {
+        command
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit());
+    }
+}
+
+fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
+    profile_fn!(handle_expand);
+    let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
+    let output = cargo_command.output()?;
+
+    if !output.status.success() {
+        eprintln!(
+            "Error running `cargo expand`: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return Err("Expansion failed".into());
+    }
+
+    display_expansion_diff(output.stdout, build_state)?;
+    Ok(())
+}
+
+fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
+    profile_fn!(handle_build_or_check);
+    let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
+    let status = cargo_command.spawn()?.wait()?;
+
+    if !status.success() {
+        display_build_failure();
+        return Err("Build failed".into());
+    }
+
+    if proc_flags.contains(ProcFlags::EXECUTABLE) {
+        deploy_executable(build_state)?;
+    }
+    Ok(())
+}
+
+fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResult<()> {
+    profile_fn!(display_expansion_diff);
+    let expanded_source = String::from_utf8(stdout)?;
+    let unexpanded_path = get_source_path(build_state);
+    let unexpanded_source = std::fs::read_to_string(unexpanded_path)?;
+
+    let max_width = if let Ok((width, _height)) = crossterm::terminal::size() {
+        (width - 22) / 2
+    } else {
+        80
+    };
+
+    let diff = create_side_by_side_diff(&unexpanded_source, &expanded_source, max_width.into());
+    println!("{diff}");
+    Ok(())
+}
+
+fn display_build_failure() {
+    profile_fn!(display_build_failure);
+    cvprtln!(&Lvl::ERR, V::N, "Build failed");
+    let config = maybe_config();
+    let binding = Dependencies::default();
+    let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
+    let inference_level = &dep_config.inference_level;
+
+    let advice = match inference_level {
+        config::DependencyInference::None => "You are running without dependency inference.",
+        config::DependencyInference::Minimal => "You may be missing features or `thag` may not be picking up dependencies.",
+        config::DependencyInference::Custom => "You may need to tweak your custom feature overrides or 'toml` block",
+        config::DependencyInference::Maximal => "It may be that maximal dependency inference is specifying conflicting features. Consider trying `custom` or failing that, a `toml` block",
+    };
+
+    cvprtln!(
+        &Lvl::EMPH,
+        V::N,
+        r#"Dependency inference_level={inference_level:#?}
+If the problem is a dependency error, consider the following advice:
+{advice}
+{}"#,
+        if matches!(inference_level, config::DependencyInference::Custom) {
+            ""
+        } else {
+            "Consider running with dependency inference_level configured as `custom` or an embedded `toml` block."
+        }
+    );
 }
 
 fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {

@@ -755,12 +755,13 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
     is_unit_type
 }
 
-/// Recursively alternate with function `is_stmt_unit_type` until we drill down through
-/// all the blocks, loops and if-conditions to find the last executable statement and
-/// determine if it returns a unit type or a value worth printing.
-///
-/// This function finds the last statement in a given expression and determines if it
+/// Finds the last statement in a given expression and determines if it
 /// returns a unit type.
+///
+/// This function recursively alternates with function `is_stmt_unit_type` to drill down
+/// through all the blocks, loops and if-conditions to find the last executable statement
+/// so as to determine if it returns a unit type or a value worth printing.
+///
 /// # Panics
 /// Will panic if an unexpected expression type is found in the elso branch of an if-statement.
 #[allow(clippy::too_many_lines)]
@@ -960,8 +961,10 @@ pub fn is_path_unit_type<S: BuildHasher>(
     None
 }
 
-/// Recursively alternate with function `is_last_stmt_unit` until we drill down through
-/// all the blocks, loops and if-conditions to find the last executable statement and
+/// Determine whether the return type of a given statement is unit (the empty tuple `()`).
+///
+/// Recursively alternates with function `is_last_stmt_unit` to drill down through all
+/// the blocks, loops and if-conditions to identify the last executable statement so as to
 /// determine if it returns a unit type or a value worth printing.
 pub fn is_stmt_unit_type<S: BuildHasher>(
     stmt: &Stmt,

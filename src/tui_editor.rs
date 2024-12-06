@@ -19,7 +19,7 @@ use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
 use ratatui::text::Line;
 use ratatui::widgets::{block::Block, Borders, Clear, Paragraph};
-use ratatui::Terminal;
+use ratatui::{CompletedFrame, Frame, Terminal};
 use regex::Regex;
 use scopeguard::{guard, ScopeGuard};
 use serde::{Deserialize, Serialize};
@@ -35,13 +35,31 @@ use std::{
 };
 use tui_textarea::{CursorMove, Input, TextArea};
 
-pub type BackEnd = CrosstermBackend<std::io::StdoutLock<'static>>;
-pub type Term = Terminal<BackEnd>;
-pub type ResetTermClosure = Box<dyn FnOnce(Term)>;
-pub type TermScopeGuard = ScopeGuard<Term, ResetTermClosure>;
-
 pub const TITLE_TOP: &str = "Key bindings - subject to your terminal settings";
 pub const TITLE_BOTTOM: &str = "Ctrl+l to hide";
+
+pub type BackEnd<'a> = CrosstermBackend<std::io::StdoutLock<'a>>;
+pub type Term<'a> = Terminal<BackEnd<'a>>;
+pub type ResetTermClosure<'a> = Box<dyn FnOnce(Term<'a>)>;
+pub type TermScopeGuard<'a> = ScopeGuard<Term<'a>, ResetTermClosure<'a>>;
+
+pub struct ManagedTerminal<'a> {
+    terminal: TermScopeGuard<'a>,
+}
+
+impl ManagedTerminal<'_> {
+    /// Draw to the terminal.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if there is an issue drawing to the terminal.
+    pub fn draw<F>(&mut self, f: F) -> std::io::Result<CompletedFrame>
+    where
+        F: FnOnce(&mut Frame<'_>),
+    {
+        self.terminal.draw(f)
+    }
+}
 
 /// Determine whether a terminal is in use (as opposed to testing or headless CI), and
 /// if so, wrap it in a scopeguard in order to reset it regardless of success or failure.
@@ -53,36 +71,41 @@ pub const TITLE_BOTTOM: &str = "Ctrl+l to hide";
 ///
 /// # Errors
 ///
-pub fn resolve_term() -> ThagResult<Option<TermScopeGuard>> {
+pub fn resolve_term<'a>() -> ThagResult<ManagedTerminal<'a>> {
     profile_fn!(resolve_term);
-    let maybe_term = if var("TEST_ENV").is_ok() {
-        None
-    } else {
-        let mut stdout = std::io::stdout().lock();
+    let mut stdout = std::io::stdout().lock();
 
-        enable_raw_mode()?;
+    if var("TEST_ENV").is_ok() {
+        return Ok(ManagedTerminal {
+            terminal: guard(
+                Terminal::new(CrosstermBackend::new(stdout))?,
+                Box::new(|term| {
+                    reset_term(term).expect("Error resetting terminal");
+                }),
+            ),
+        });
+    }
 
-        crossterm::execute!(
-            stdout,
-            EnterAlternateScreen,
-            EnableMouseCapture,
-            EnableBracketedPaste
-        )?;
+    enable_raw_mode()?;
 
-        let backend = CrosstermBackend::new(stdout);
-        let terminal = Terminal::new(backend)?;
+    crossterm::execute!(
+        stdout,
+        EnterAlternateScreen,
+        EnableMouseCapture,
+        EnableBracketedPaste
+    )?;
 
-        // Box the closure explicitly as `Box<dyn FnOnce>`
-        let term = guard(
+    let backend = CrosstermBackend::new(stdout);
+    let terminal = Terminal::new(backend)?;
+
+    Ok(ManagedTerminal {
+        terminal: guard(
             terminal,
             Box::new(|term| {
                 reset_term(term).expect("Error resetting terminal");
-            }) as ResetTermClosure,
-        );
-
-        Some(term)
-    };
-    Ok(maybe_term)
+            }),
+        ),
+    })
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -473,7 +496,7 @@ where
     R: EventReader + Debug,
     F: Fn(
         KeyEvent,
-        &mut Option<&mut TermScopeGuard>,
+        &mut ManagedTerminal,
         &mut TextArea,
         &mut EditData,
         &mut bool,
@@ -540,66 +563,62 @@ where
             event_reader.read_event()?
         } else {
             // Real-world interaction
-            maybe_term.as_mut().map_or_else(
-                || Err("Logic issue unwrapping term we wrapped ourselves".into()),
-                |term| {
-                    term.draw(|f| {
-                        // Get the size of the available terminal area
-                        let area = f.area();
+            maybe_term
+                .draw(|f| {
+                    // Get the size of the available terminal area
+                    let area = f.area();
 
-                        // Ensure there's enough height for both the textarea and the status line
-                        if area.height > 1 {
-                            let chunks = Layout::default()
-                                .direction(Direction::Vertical)
-                                .constraints(
-                                    [
-                                        Constraint::Min(area.height - 3), // Editor area takes up the rest
-                                        Constraint::Length(3),            // Status line gets 1 line
-                                    ]
-                                    .as_ref(),
-                                )
-                                .split(area);
+                    // Ensure there's enough height for both the textarea and the status line
+                    if area.height > 1 {
+                        let chunks = Layout::default()
+                            .direction(Direction::Vertical)
+                            .constraints(
+                                [
+                                    Constraint::Min(area.height - 3), // Editor area takes up the rest
+                                    Constraint::Length(3),            // Status line gets 1 line
+                                ]
+                                .as_ref(),
+                            )
+                            .split(area);
 
-                            // Render the textarea in the first chunk
-                            f.render_widget(&textarea, chunks[0]);
+                        // Render the textarea in the first chunk
+                        f.render_widget(&textarea, chunks[0]);
 
-                            // Render the status line in the second chunk
-                            let status_block = Block::default()
-                                .borders(Borders::ALL)
-                                .title("Status")
-                                .style(Style::default().fg(Color::White))
-                                .title_style(display.title_style);
+                        // Render the status line in the second chunk
+                        let status_block = Block::default()
+                            .borders(Borders::ALL)
+                            .title("Status")
+                            .style(Style::default().fg(Color::White))
+                            .title_style(display.title_style);
 
-                            let status_text = Paragraph::new::<&str>(status_message.as_ref())
-                                .block(status_block)
-                                .style(Style::default().fg(Color::White));
+                        let status_text = Paragraph::new::<&str>(status_message.as_ref())
+                            .block(status_block)
+                            .style(Style::default().fg(Color::White));
 
-                            f.render_widget(status_text, chunks[1]);
+                        f.render_widget(status_text, chunks[1]);
 
-                            if popup {
-                                display_popup(
-                                    &adjusted_mappings,
-                                    TITLE_TOP,
-                                    TITLE_BOTTOM,
-                                    max_key_len,
-                                    max_desc_len,
-                                    f,
-                                );
-                            };
-                            highlight_selection(&mut textarea, tui_highlight_fg);
-                            // status_message = String::new();
-                        }
-                    })
-                    .map_err(|e| {
-                        eprintln!("Error drawing terminal: {e:?}");
-                        e
-                    })?;
+                        if popup {
+                            display_popup(
+                                &adjusted_mappings,
+                                TITLE_TOP,
+                                TITLE_BOTTOM,
+                                max_key_len,
+                                max_desc_len,
+                                f,
+                            );
+                        };
+                        highlight_selection(&mut textarea, tui_highlight_fg);
+                        // status_message = String::new();
+                    }
+                })
+                .map_err(|e| {
+                    eprintln!("Error drawing terminal: {e:?}");
+                    e
+                })?;
 
-                    // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
-                    let event = event_reader.read_event();
-                    event.map_err(Into::<ThagError>::into)
-                },
-            )?
+            // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
+            let event = event_reader.read_event();
+            event.map_err(Into::<ThagError>::into)?
         };
 
         if let Paste(ref data) = event {
@@ -707,16 +726,12 @@ where
                     textarea.move_cursor(CursorMove::Head);
                 }
                 key!(f9) => {
-                    if maybe_term.is_some() {
-                        crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
-                        textarea.remove_line_number();
-                    }
+                    crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
+                    textarea.remove_line_number();
                 }
                 key!(f10) => {
-                    if maybe_term.is_some() {
-                        crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
-                        textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
-                    }
+                    crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
+                    textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
                 }
                 key!(alt - '<') | key!(ctrl - alt - p) | key!(ctrl - alt - up) => {
                     textarea.move_cursor(CursorMove::Top);
@@ -749,18 +764,16 @@ where
                     };
                     if var("TEST_ENV").is_err() {
                         #[allow(clippy::option_if_let_else)]
-                        if let Some(ref mut term) = maybe_term {
-                            term.draw(|_| {
-                                highlight_selection(&mut textarea, tui_highlight_fg);
-                            })?;
-                        }
+                        maybe_term.draw(|_| {
+                            highlight_selection(&mut textarea, tui_highlight_fg);
+                        })?;
                     }
                 }
                 _ => {
                     // Call the key_handler closure to process events
                     let key_action = key_handler(
                         key_event,
-                        &mut maybe_term.as_mut(),
+                        &mut maybe_term,
                         // &mut edit_data.save_path.as_deref_mut(),
                         &mut textarea,
                         edit_data,
@@ -815,7 +828,7 @@ pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate:
 #[allow(clippy::too_many_lines, clippy::missing_panics_doc)]
 pub fn script_key_handler(
     key_event: KeyEvent,
-    maybe_term: &mut Option<&mut TermScopeGuard>,
+    maybe_term: &mut ManagedTerminal,
     textarea: &mut TextArea,
     edit_data: &mut EditData,
     popup: &mut bool,
@@ -835,61 +848,20 @@ pub fn script_key_handler(
     #[allow(clippy::unnested_or_patterns)]
     match key_combination {
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
-        key!(ctrl - d) => {
-            if let Some(ref hist_path) = history_path {
-                let history = &mut edit_data.history;
-                if let Some(hist) = history {
-                    preserve(textarea, hist, hist_path)?;
-                };
-            }
-            Ok(KeyAction::Submit)
-        }
+        key!(ctrl - d) => save_and_submit(history_path.as_ref(), edit_data, textarea),
         key!(ctrl - s) | key!(ctrl - alt - s) => {
             // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
             if matches!(key_combination, key!(ctrl - s)) {
-                if let Some(ref mut save_path) = edit_data.save_path {
-                    if let Some(ref hist_path) = history_path {
-                        let history = &mut edit_data.history;
-                        if let Some(hist) = history {
-                            preserve(textarea, hist, hist_path)?;
-                        };
-                        let result = save_source_file(save_path, textarea, saved);
-                        match result {
-                            Ok(()) => {
-                                status_message.clear();
-                                status_message
-                                    .push_str(&format!("Saved to {}", save_path.display()));
-                            }
-                            Err(e) => return Err(e),
-                            // None => return Err(ThagError::Logic(
-                            //     "Should be testing for maybe_save_path.is_some() before calling map on it.",
-                            // )),
-                        }
-                    }
-                }
+                save(
+                    edit_data,
+                    history_path.as_ref(),
+                    textarea,
+                    saved,
+                    status_message,
+                )?;
                 Ok(KeyAction::Save)
-            } else if let Some(term) = maybe_term {
-                let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
-                save_dialog.open();
-                let mut status = Status::Incomplete;
-                while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
-                    term.draw(|f| save_dialog.draw(f))?;
-                    if let Event::Key(key) = event::read()? {
-                        status = save_dialog.handle_input(key)?;
-                    }
-                }
-
-                if let Some(ref to_rs_path) = save_dialog.selected_file {
-                    save_source_file(to_rs_path, textarea, saved)?;
-                    status_message.clear();
-                    status_message.push_str(&format!("Saved to {}", to_rs_path.display()));
-
-                    Ok(KeyAction::Save)
-                } else {
-                    Ok(KeyAction::Continue)
-                }
             } else {
-                Ok(KeyAction::Continue)
+                save_as(maybe_term, textarea, saved, status_message)
             }
         }
         key!(ctrl - l) => {
@@ -912,24 +884,7 @@ pub fn script_key_handler(
             if textarea.is_empty() {
                 return Ok(KeyAction::Continue);
             }
-            if let Some(ref mut hist) = edit_data.history {
-                let _in_hist = !&hist.at_end();
-                let textarea_contents = textarea.lines().to_vec().join("\n");
-                textarea.select_all();
-                textarea.cut();
-                let yank_text = textarea.yank_text();
-                assert_eq!(yank_text, textarea_contents);
-                if let Some(current_hist_entry) = &hist.get_current() {
-                    assert_eq!(yank_text, current_hist_entry.contents());
-                    let index = current_hist_entry.index;
-                    hist.delete_entry(index);
-                    hist.entries
-                        .retain(|f| f.contents().trim() != textarea_contents);
-                }
-                if let Some(ref hist_path) = history_path {
-                    hist.save_to_file(hist_path)?;
-                }
-            }
+            wipe_textarea(edit_data, textarea, history_path.as_ref())?;
             Ok(KeyAction::Continue)
         }
         key!(f6) => {
@@ -938,30 +893,13 @@ pub fn script_key_handler(
             Ok(KeyAction::Continue)
         }
         key!(f7) => {
-            if let Some(ref mut hist) = edit_data.history {
-                if hist.at_end() && textarea.is_empty() {
-                    if let Some(entry) = &hist.get_last() {
-                        debug_log!("F7 (1) found entry {entry:?}");
-                        paste_to_textarea(textarea, entry);
-                    }
-                } else {
-                    save_if_changed(hist, textarea, &history_path)?;
-                    if let Some(entry) = &hist.get_previous() {
-                        debug_log!("F7 (2) found entry {entry:?}");
-                        paste_to_textarea(textarea, entry);
-                    }
-                }
-            }
+            // Scroll up in history
+            prev_hist(edit_data, textarea, history_path.as_ref())?;
             Ok(KeyAction::Continue)
         }
         key!(f8) => {
-            if let Some(ref mut hist) = edit_data.history {
-                // save_if_changed(hist, textarea, &history_path)?;
-                if let Some(entry) = hist.get_next() {
-                    debug_log!("F8 found entry {entry:?}");
-                    paste_to_textarea(textarea, entry);
-                }
-            }
+            // Scroll down in history
+            next_hist(edit_data, textarea);
             Ok(KeyAction::Continue)
         }
         _ => {
@@ -970,6 +908,131 @@ pub fn script_key_handler(
             Ok(KeyAction::Continue)
         }
     }
+}
+
+fn next_hist(edit_data: &mut EditData<'_>, textarea: &mut TextArea<'_>) {
+    if let Some(ref mut hist) = edit_data.history {
+        // save_if_changed(hist, textarea, &history_path)?;
+        if let Some(entry) = hist.get_next() {
+            debug_log!("F8 found entry {entry:?}");
+            paste_to_textarea(textarea, entry);
+        }
+    }
+}
+
+fn prev_hist(
+    edit_data: &mut EditData<'_>,
+    textarea: &mut TextArea<'_>,
+    history_path: Option<&PathBuf>,
+) -> ThagResult<()> {
+    if let Some(ref mut hist) = edit_data.history {
+        if hist.at_end() && textarea.is_empty() {
+            if let Some(entry) = &hist.get_last() {
+                debug_log!("F7 (1) found entry {entry:?}");
+                paste_to_textarea(textarea, entry);
+            }
+        } else {
+            save_if_changed(hist, textarea, history_path)?;
+            if let Some(entry) = &hist.get_previous() {
+                debug_log!("F7 (2) found entry {entry:?}");
+                paste_to_textarea(textarea, entry);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn wipe_textarea(
+    edit_data: &mut EditData<'_>,
+    textarea: &mut TextArea<'_>,
+    history_path: Option<&PathBuf>,
+) -> ThagResult<()> {
+    if let Some(ref mut hist) = edit_data.history {
+        let _in_hist = !&hist.at_end();
+        let textarea_contents = textarea.lines().to_vec().join("\n");
+        textarea.select_all();
+        textarea.cut();
+        let yank_text = textarea.yank_text();
+        assert_eq!(yank_text, textarea_contents);
+        if let Some(current_hist_entry) = &hist.get_current() {
+            assert_eq!(yank_text, current_hist_entry.contents());
+            let index = current_hist_entry.index;
+            hist.delete_entry(index);
+            hist.entries
+                .retain(|f| f.contents().trim() != textarea_contents);
+        }
+        if let Some(hist_path) = history_path {
+            hist.save_to_file(hist_path)?;
+        }
+    }
+    Ok(())
+}
+
+fn save_as(
+    term: &mut ManagedTerminal<'_>,
+    textarea: &mut TextArea<'_>,
+    saved: &mut bool,
+    status_message: &mut String,
+) -> ThagResult<KeyAction> {
+    let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
+    save_dialog.open();
+    let mut status = Status::Incomplete;
+    while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
+        term.draw(|f| save_dialog.draw(f))?;
+        if let Event::Key(key) = event::read()? {
+            status = save_dialog.handle_input(key)?;
+        }
+    }
+
+    if let Some(ref to_rs_path) = save_dialog.selected_file {
+        save_source_file(to_rs_path, textarea, saved)?;
+        status_message.clear();
+        status_message.push_str(&format!("Saved to {}", to_rs_path.display()));
+
+        Ok(KeyAction::Save)
+    } else {
+        Ok(KeyAction::Continue)
+    }
+}
+
+fn save(
+    edit_data: &mut EditData<'_>,
+    history_path: Option<&PathBuf>,
+    textarea: &mut TextArea<'_>,
+    saved: &mut bool,
+    status_message: &mut String,
+) -> ThagResult<()> {
+    if let Some(ref mut save_path) = edit_data.save_path {
+        if let Some(hist_path) = history_path {
+            let history = &mut edit_data.history;
+            if let Some(hist) = history {
+                preserve(textarea, hist, hist_path)?;
+            };
+            let result = save_source_file(save_path, textarea, saved);
+            match result {
+                Ok(()) => {
+                    status_message.clear();
+                    status_message.push_str(&format!("Saved to {}", save_path.display()));
+                }
+                Err(e) => return Err(e),
+            }
+        }
+    }
+    Ok(())
+}
+
+fn save_and_submit(
+    history_path: Option<&PathBuf>,
+    edit_data: &mut EditData<'_>,
+    textarea: &mut TextArea<'_>,
+) -> ThagResult<KeyAction> {
+    if let Some(hist_path) = history_path {
+        let history = &mut edit_data.history;
+        if let Some(hist) = history {
+            preserve(textarea, hist, hist_path)?;
+        };
+    }
+    Ok(KeyAction::Submit)
 }
 
 /// Enable raw mode, but not if in test mode, because that will cause the dreaded rightward drift
@@ -1119,8 +1182,8 @@ pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>)
 pub fn save_if_changed(
     hist: &mut History,
     textarea: &mut TextArea<'_>,
-    history_path: &Option<PathBuf>,
-) -> Result<(), ThagError> {
+    history_path: Option<&PathBuf>,
+) -> ThagResult<()> {
     profile_fn!(save_if_changed);
     debug_log!("save_if_changed...");
     if textarea.is_empty() {
@@ -1137,7 +1200,7 @@ pub fn save_if_changed(
         }
         if entry.contents() != copy_text {
             hist.update_entry(index, &copy_text);
-            if let Some(ref hist_path) = history_path {
+            if let Some(hist_path) = history_path {
                 hist.save_to_file(hist_path)?;
             }
         }
@@ -1154,7 +1217,7 @@ pub fn save_if_changed(
 //     hist: &mut History,
 //     textarea: &mut TextArea<'_>,
 //     history_path: &Option<PathBuf>,
-// ) -> Result<(), ThagError> {
+// ) -> ThagResult<()> {
 //     profile_fn!(save_if_changed);
 //     debug_log!("save_if_changed...");
 //     if textarea.is_empty() {

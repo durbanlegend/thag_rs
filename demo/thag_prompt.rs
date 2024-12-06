@@ -3,7 +3,10 @@
 inquire = "0.7.5"
 */
 
-use inquire::{Confirm, MultiSelect, Text};
+/// Early prototype of prompting front-end for `thag`.
+//# Purpose: Ultimately, to provide a prompt-driven fromt-end to the `thag` command.
+//# Categories: prototype, tools
+use inquire::{MultiSelect, Text};
 use std::process::Command;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

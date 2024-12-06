@@ -3,6 +3,9 @@
 url = "2.5.4"
 */
 
+/// `thag` front-end to run scripts from URLs.
+//# Purpose: A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
+//# Categories: technique, tools
 use std::error::Error;
 use std::fmt;
 use std::process::{Command, Stdio};

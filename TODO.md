@@ -11,7 +11,31 @@
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile time.
-- [ ]  Make key_handler a trait method? Or a closure?
+- [ ]  Make key_handler a trait method?
+        trait KeyHandler {
+          fn handle_keys(
+              key_event: KeyEvent,
+              maybe_term: Option<&mut ManagedTerminal>,
+              textarea: &mut TextArea,
+              edit_data: &mut EditData,
+              popup: &mut bool,
+              saved: &mut bool,
+              status_message: &mut String,
+          ) -> ThagResult<KeyAction>;
+        }
+        struct ScriptContent;
+        impl KeyHandler for ScriptContent {
+            // (Current script_key_handler)
+            fn handle_keys(
+              key_event: KeyEvent,
+              maybe_term: Option<&mut ManagedTerminal>,
+              textarea: &mut TextArea,
+              edit_data: &mut EditData,
+              popup: &mut bool,
+              saved: &mut bool,
+              status_message: &mut String,
+          ) -> ThagResult<KeyAction>;
+        }
 - [ ]  Add FAQ? See Usage notes in Readme.
 - [ ]  Try pre-building colour mappings
 - [ ]  New test for local paths in demo files and maybe even main Cargo.toml.
@@ -24,7 +48,7 @@
 - [ ]  Debug: No history edit function in stdin.
 - [ ]  REPL history belongs in /Users/donf/.cargo/hist_staging.txt and stdin history in /Users/donf/.cargo/rs_stdin_history.json
          (check both).
-- [ ]  >>> Debug: History older than max isn't being removed even though only .
+- [ ]  >>> Debug: History older than max isn't being removed even though only 25 allowed.
 - [ ]  Picking up "panic", "bool", "fs" in dependency inference.
 - [ ]  Add new thag config / CLI option for dependency inference: infer max (default) / infer min / respect toml / advise / ignore
 - [ ]  Add a --test option
@@ -57,7 +81,7 @@ thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 - [ ]  Add --test (-T) option to run #[test]s defined in script & add --clippy (-L <LINT>) option to run clippy on script.
        - or rather, add a generic "cargo" option so user can run any cargo command on the
          script's "project" directory and thag will provide the --manifest-path option.
-       - Fold expand (-X) option into this?
+       - Make --expand (-X) option a helper command thag_expand.
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output.

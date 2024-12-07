@@ -124,7 +124,7 @@ pub struct Cli {
     #[arg(short = 'C', long, conflicts_with_all(["generate", "build", "executable"]))]
     pub config: bool,
     /// TODO: Set the level of dependency inference: none, min, config (default, recommended), max.
-    /// 'thag` infers dependencies from imports and Rust paths (`x::y::z`), and specifies their features.
+    /// `thag` infers dependencies from imports and Rust paths (`x::y::z`), and specifies their features.
     #[arg(short = 'i', long, help_heading = Some("Processing Options"))]
     pub infer: Option<DependencyInference>,
     /// TODO: Just generate script, unless unchanged from a previous build, and run the specified
@@ -190,6 +190,8 @@ bitflags! {
         const UNQUOTE       = 524_288;
         const CONFIG        = 1_048_576;
         const EXPAND        = 2_097_152;
+        const CARGO         = 4_194_304;
+        const INFER         = 8_388_608;
     }
 }
 

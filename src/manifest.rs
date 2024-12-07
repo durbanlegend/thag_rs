@@ -382,7 +382,7 @@ pub fn lookup_deps(rs_inferred_deps: &[String], rs_dep_map: &mut BTreeMap<String
     }
     display_toml_info(
         existing_toml_block,
-        new_inferred_deps,
+        &new_inferred_deps,
         rs_dep_map,
         inference_level,
     );
@@ -390,7 +390,7 @@ pub fn lookup_deps(rs_inferred_deps: &[String], rs_dep_map: &mut BTreeMap<String
 
 fn display_toml_info(
     existing_toml_block: bool,
-    new_inferred_deps: Vec<String>,
+    new_inferred_deps: &[String],
     rs_dep_map: &mut BTreeMap<String, Dependency>,
     inference_level: &DependencyInference,
 ) {
@@ -398,7 +398,7 @@ fn display_toml_info(
     if !existing_toml_block {
         toml_block.push_str("/*[toml]\n[dependencies]\n");
     }
-    for dep_name in &new_inferred_deps {
+    for dep_name in new_inferred_deps {
         // eprintln!("dep_name={dep_name}");
         let value = rs_dep_map.get(dep_name);
         match value {

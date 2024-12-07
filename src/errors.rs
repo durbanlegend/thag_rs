@@ -1,3 +1,4 @@
+use crate::disentangle;
 use bitflags::parser::ParseError as BitFlagsParseError;
 use cargo_toml::Error as CargoTomlError;
 use clap::error::Error as ClapError;
@@ -132,38 +133,42 @@ impl From<Box<dyn Error>> for ThagError {
 impl std::fmt::Display for ThagError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::BitFlagsParse(e) => write!(f, "{e:?}"),
+            // Use display formatting instead of debug formatting where possible
+            Self::BitFlagsParse(e) => write!(f, "{e}"),
             Self::Cancelled => write!(f, "Cancelled"),
-            Self::ClapError(e) => write!(f, "{e:?}"),
+            Self::ClapError(e) => write!(f, "{e}"),
             Self::Command(s) | Self::Logic(s) | Self::NoneOption(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
                 Ok(())
             }
-            Self::Dyn(e) => write!(f, "{e:?}"),
+            Self::Dyn(e) => write!(f, "{e}"),
             Self::FromStr(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
                 Ok(())
             }
-            Self::FromUtf8(e) => write!(f, "{e:?}"),
-            Self::Io(e) => write!(f, "{e:?}"),
-            Self::LockMutexGuard(e) => write!(f, "{e:?}"),
-            Self::OsString(o) => {
-                writeln!(f, "{o:#?}")?;
+            Self::FromUtf8(e) => write!(f, "{e}"),
+            Self::Io(e) => write!(f, "{e}"),
+            Self::LockMutexGuard(e) => write!(f, "{e}"),
+            Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
+            Self::Reedline(e) => write!(f, "{e}"),
+            Self::SerdeMerge(e) => write!(f, "{e}"),
+            Self::StrumParse(e) => write!(f, "{e}"),
+            Self::Syn(e) => write!(f, "{e}"),
+            Self::TomlDe(e) => write!(f, "{e}"),
+            Self::TomlSer(e) => write!(f, "{e}"),
+            // Self::Toml(e) => write!(f, "{e}"),
+            Self::Toml(e) => {
+                // Extract the actual error message without all the nested structure
+                let msg = e.to_string();
+                write!(f, "TOML error: {}", disentangle(msg.as_str()))?;
                 Ok(())
             }
-            Self::Reedline(e) => write!(f, "{e:?}"),
-            Self::SerdeMerge(e) => write!(f, "{e:?}"),
-            Self::StrumParse(e) => write!(f, "{e:?}"),
-            Self::Syn(e) => write!(f, "{e:?}"),
-            Self::TomlDe(e) => write!(f, "{e:?}"),
-            Self::TomlSer(e) => write!(f, "{e:?}"),
-            Self::Toml(e) => write!(f, "{e:?}"),
             Self::UnsupportedTerm => write!(f, "Unsupported terminal type"),
-            Self::Validation(e) => write!(f, "{e:?}"),
+            Self::Validation(e) => write!(f, "{e}"),
         }
     }
 }

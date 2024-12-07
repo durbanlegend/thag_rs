@@ -29,8 +29,11 @@ pub fn main() -> ThagResult<()> {
         })?;
     } else {
         // Regular execution when profiling is not enabled
-        execute(&mut args.borrow_mut())?; // Use borrow_mut to get a mutable reference
+        let result = execute(&mut args.borrow_mut()); // Use borrow_mut to get a mutable reference
+        match result {
+            Ok(_) => (),
+            Err(e) => println!("{e}"),
+        }
     }
-
     Ok(())
 }

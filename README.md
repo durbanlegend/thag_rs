@@ -9,21 +9,57 @@
 
 ## Intro
 
-`thag_rs` (command `thag`) is a multi-purpose cross-platform developer tool for Rust. It's a **script runner**, **expression evaluator** and **REPL** for Rust expressions, snippets, and programs.
-It allows you to run and test Rust code from the command line for rapid prototyping and exploration.
-It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while being as simple and convenient to use as possible.
-It even allows you to run any appropriate Cargo subcommand such as **clippy**, **tree** or **test** against your script. An **expand** option shows you the macro-expanded version of
-your script side-by-side with the the unexpanded original (this requires the `cargo-expand` crate to be installed).
-A front-end called `thag_url` lets you run scripts directly from a **URL**, such as **Github**, **GitLab**, **BitBucket** or **Rust playground** scripts.
+Introducing `thag_rs` (command `thag`) - a Swiss Army knife for Rust development. `thag` combines a script runner, expression evaluator, and REPL into one tool,
+then adds an array of smart features.
 
-`thag_rs`  also supports scripting via **shebangs**, building lightning-fast **commands** from your snippets, a **loop-filter mode** and **standard input**.
-You can **paste and run** scripts via a basic editor, or you can even edit standard input.
+🚀 **Core Powers:**
 
-**Dependency inference.** `thag_rs` aims to **resolve dependencies automatically** for you by analysing the syntax tree doing a Cargo lookup and inserting dependency entries in the Cargo.toml file it generates behind the scenes.
-Alternatively, you can **embed any valid Cargo manifest info**, such as features, specific versions, private repos, optimisation levels etc., in a "toml block" comment.
-**You have control** of the level of assistance you prefer.
+- Run Rust code straight from the command line
 
-**Starter kit.** `thag_rs` includes a demo library of over 230 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
+- Evaluate expressions on the fly
+
+- Interactive REPL mode for rapid prototyping
+
+- Uses AST analysis to understand your code
+
+- Optionally embed custom Cargo manifest settings in "toml block" comments
+
+- Shebang support for true scripting
+
+- Loop-filter mode for data processing
+
+🎯 **Smart Features:**
+
+- Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`)
+
+- You're in control: dependency inference (max/min/config/none) and/or toml block
+
+- Who needs shebangs?: build instant commands from your snippets and programs
+
+- Execute scripts directly from URLs (GitHub, GitLab, BitBucket, Rust Playground)
+
+- Paste-and-run with built-in TUI editor
+
+- Code evolution path from REPL to edit-submit loop to saved scripts
+
+- Edit-submit standard input
+
+- Integrate your favourite editor (VS Code, Helix, Zed, vim, nano etc.)
+
+- Run any Cargo command (clippy, tree, test) against your scripts.
+(Yes, you can even include unit tests in your scripts)
+
+- View macro expansions side-by-side with your base script
+
+- Proc macro development support, including proc macro starter kit and an "intercept-and-debug" option to show an expanded view of your proc macro
+
+- Automated inclusion of `derive` or other dependency features
+
+💡 **Getting Started:**
+
+Jump into `thag`'s collection of 230+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible. Got a cool script to share? We'd love to see it (under MIT/Apache 2 license)!
+
+Whether you're prototyping, learning, or building tools, `thag_rs` adapts to your style - from quick one-liners to full-featured programs.
 
 ## Quick start: ways to run the `thag` command
 

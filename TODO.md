@@ -51,14 +51,6 @@
 - [ ]  >>> Debug: History older than max isn't being removed even though only 25 allowed.
 - [ ]  Picking up "panic", "bool", "fs" in dependency inference.
 - [ ]  Add new thag config / CLI option for dependency inference: infer max (default) / infer min / respect toml / advise / ignore
-- [ ]  Add a --test option
-find_use_renames_ast
-find_modules_ast
-find_use_crates_ast
-find_extern_crates_ast
-count_main_methods
-extract_functions   - TODO
-`transform` section of generate - Make reformat of source configurable.
 Try running tests without debug or debug_timings.
 validate_state only when feature minimal not engaged - instead switched off debug and debug-assertions in Cargo.toml
 
@@ -78,8 +70,9 @@ thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 - [ ]  Consider "magic" substitution of latest git with say rev = "$latest" in toml block.
 - [ ]  Add --infer dependencies (-i <maximal/minimal/custom/none>) option to control dependency inference.
 - [ ]  Consider a disable option?
-- [ ]  Add --cargo (-A) option to Readme.
+- [ ]  Add detais of --cargo (-A) option to Readme - maybe make a helper command `thag_cargo` first
        - Make --expand (-X) option a helper command thag_expand.
+- [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output.

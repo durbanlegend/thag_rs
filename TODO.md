@@ -78,9 +78,7 @@ thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 - [ ]  Consider "magic" substitution of latest git with say rev = "$latest" in toml block.
 - [ ]  Add --infer dependencies (-i <maximal/minimal/custom/none>) option to control dependency inference.
 - [ ]  Consider a disable option?
-- [ ]  Add --test (-T) option to run #[test]s defined in script & add --clippy (-L <LINT>) option to run clippy on script.
-       - or rather, add a generic "cargo" option so user can run any cargo command on the
-         script's "project" directory and thag will provide the --manifest-path option.
+- [ ]  Add --cargo (-A) option to Readme.
        - Make --expand (-X) option a helper command thag_expand.
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.

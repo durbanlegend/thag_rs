@@ -639,7 +639,7 @@ fn build_command_args(
 ) -> Vec<String> {
     profile_fn!(build_command_args);
     let mut args = vec![
-        get_cargo_subcommand(proc_flags).to_string(),
+        get_cargo_subcommand(proc_flags, build_state).to_string(),
         "--manifest-path".to_string(),
         cargo_toml_path.to_string(),
     ];
@@ -656,17 +656,22 @@ fn build_command_args(
             build_state.source_stem.clone(),
             "--theme=gruvbox-dark".to_string(),
         ]);
+    } else if proc_flags.contains(ProcFlags::CARGO) {
+        args.extend_from_slice(&build_state.args[1..]);
     }
 
     args
 }
 
-fn get_cargo_subcommand(proc_flags: &ProcFlags) -> &'static str {
+fn get_cargo_subcommand(proc_flags: &ProcFlags, build_state: &BuildState) -> &'static str {
     profile_fn!(get_cargo_subcommand);
     if proc_flags.contains(ProcFlags::CHECK) {
         "check"
     } else if proc_flags.contains(ProcFlags::EXPAND) {
         "expand"
+    } else if proc_flags.contains(ProcFlags::CARGO) {
+        // Convert to owned String then get static str to avoid lifetime issues
+        Box::leak(build_state.args[0].clone().into_boxed_str())
     } else {
         "build"
     }
@@ -688,6 +693,9 @@ fn configure_command_output(command: &mut Command, proc_flags: &ProcFlags) {
 fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     profile_fn!(handle_expand);
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
+
+    eprintln!("cargo_command={cargo_command:#?}");
+
     let output = cargo_command.output()?;
 
     if !output.status.success() {
@@ -705,6 +713,9 @@ fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult
 fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     profile_fn!(handle_build_or_check);
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
+
+    eprintln!("cargo_command={cargo_command:#?}");
+
     let status = cargo_command.spawn()?.wait()?;
 
     if !status.success() {

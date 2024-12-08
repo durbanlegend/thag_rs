@@ -59,9 +59,9 @@ struct ExecutionFlags {
 }
 
 impl ExecutionFlags {
-    const fn new(proc_flags: &ProcFlags, args: &Cli) -> Self {
+    const fn new(proc_flags: &ProcFlags, cli: &Cli) -> Self {
         let is_repl = proc_flags.contains(ProcFlags::REPL);
-        let is_expr = args.expression.is_some();
+        let is_expr = cli.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
         let is_edit = proc_flags.contains(ProcFlags::EDIT);
         // let is_url = proc_flags.contains(ProcFlags::URL); // TODO reinstate
@@ -401,6 +401,7 @@ pub struct BuildState {
     pub ast: Option<Ast>,
     pub crates_finder: Option<CratesFinder>,
     pub metadata_finder: Option<MetadataFinder>,
+    pub args: Vec<String>,
 }
 
 impl BuildState {
@@ -415,7 +416,7 @@ impl BuildState {
     ///
     /// # Arguments
     /// * `proc_flags` - Processing flags that control build and execution behavior
-    /// * `args` - Command-line arguments parsed from the CLI
+    /// * `cli` - Command-line arguments parsed from the CLI
     /// * `script_state` - Current state of the script being processed
     ///
     /// # Returns
@@ -435,13 +436,13 @@ impl BuildState {
     /// # Example
     /// ```ignore
     /// let proc_flags = ProcFlags::default();
-    /// let args = Cli::parse();
+    /// let cli = Cli::parse();
     /// let script_state = ScriptState::new("example.rs");
-    /// let build_state = BuildState::pre_configure(&proc_flags, &args, &script_state)?;
+    /// let build_state = BuildState::pre_configure(&proc_flags, &cli, &script_state)?;
     /// ```
     pub fn pre_configure(
         proc_flags: &ProcFlags,
-        args: &Cli,
+        cli: &Cli,
         script_state: &ScriptState,
     ) -> ThagResult<Self> {
         profile_method!(pre_configure);
@@ -450,13 +451,13 @@ impl BuildState {
         let (source_name, source_stem) = Self::extract_script_info(script_state)?;
 
         // 2. Determine execution mode flags
-        let execution_flags = ExecutionFlags::new(proc_flags, args);
+        let execution_flags = ExecutionFlags::new(proc_flags, cli);
 
         // 3. Set up directory paths
         let paths = Self::set_up_paths(&execution_flags, script_state, &source_name, &source_stem)?;
 
         // 4. Create initial build state
-        let mut build_state = Self::create_initial_state(paths, source_name, source_stem);
+        let mut build_state = Self::create_initial_state(paths, source_name, source_stem, cli);
 
         // 5. Determine build requirements
         build_state.determine_build_requirements(proc_flags, script_state, &execution_flags)?;
@@ -585,7 +586,12 @@ impl BuildState {
         })
     }
 
-    fn create_initial_state(paths: BuildPaths, source_name: String, source_stem: String) -> Self {
+    fn create_initial_state(
+        paths: BuildPaths,
+        source_name: String,
+        source_stem: String,
+        cli: &Cli,
+    ) -> Self {
         profile_fn!(create_initial_state);
         Self {
             working_dir_path: paths.working_dir_path,
@@ -600,6 +606,7 @@ impl BuildState {
             ast: None,
             crates_finder: None,
             metadata_finder: None,
+            args: cli.args.clone(),
             ..Default::default()
         }
     }
@@ -626,7 +633,10 @@ impl BuildState {
         if proc_flags.contains(ProcFlags::NORUN) {
             self.must_build = proc_flags.contains(ProcFlags::BUILD)
                 || proc_flags.contains(ProcFlags::EXECUTABLE)
-                || proc_flags.contains(ProcFlags::EXPAND);
+                // For EXPAND and CARGO, "build" step (becoming a bit of a misnomer)
+                // is needed to run their alternative Cargo commands
+                || proc_flags.contains(ProcFlags::EXPAND)
+                || proc_flags.contains(ProcFlags::CARGO);
             self.must_gen = self.must_build
                 || proc_flags.contains(ProcFlags::GENERATE)
                 || !self.cargo_toml_path.exists();
@@ -657,6 +667,7 @@ impl BuildState {
             | proc_flags.contains(ProcFlags::CHECK)
             | proc_flags.contains(ProcFlags::EXECUTABLE)
             | proc_flags.contains(ProcFlags::EXPAND)
+            | proc_flags.contains(ProcFlags::CARGO)
         {
             assert!(self.must_gen & self.must_build & proc_flags.contains(ProcFlags::NORUN));
         }
@@ -666,8 +677,8 @@ impl BuildState {
             assert!(self.must_gen & self.must_build);
         }
 
-        // Validate expand flag
-        if proc_flags.contains(ProcFlags::EXPAND) {
+        // Validate expand and cargo flags
+        if proc_flags.contains(ProcFlags::EXPAND) | proc_flags.contains(ProcFlags::CARGO) {
             assert!(self.must_gen & self.must_build & proc_flags.contains(ProcFlags::NORUN));
         }
 

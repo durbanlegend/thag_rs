@@ -127,10 +127,10 @@ pub struct Cli {
     /// `thag` infers dependencies from imports and Rust paths (`x::y::z`), and specifies their features.
     #[arg(short = 'i', long, help_heading = Some("Processing Options"))]
     pub infer: Option<DependencyInference>,
-    /// TODO: Just generate script, unless unchanged from a previous build, and run the specified
+    /// Just generate script, unless unchanged from a previous build, and run the specified
     /// Cargo subcommand against the generated project `temp_dir`/`thag_rs`/`stem`. E.g. `thag demo/hello.rs -A tree`
-    #[arg(short = 'A', long, help_heading = Some("No-run Options"))]
-    pub cargo: Option<String>,
+    #[arg(short = 'A', long, requires = "script", help_heading = Some("No-run Options"))]
+    pub cargo: bool,
 }
 
 /// Getter for clap command-line arguments
@@ -247,7 +247,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
         proc_flags.set(
             ProcFlags::NORUN,
-            args.generate | args.build | args.check | args.executable | args.expand,
+            args.generate | args.build | args.check | args.executable | args.expand | args.cargo,
         );
         proc_flags.set(ProcFlags::NORMAL, args.normal);
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
@@ -258,6 +258,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::LOOP, is_loop);
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
         proc_flags.set(ProcFlags::EXPAND, args.expand);
+        proc_flags.set(ProcFlags::CARGO, args.cargo);
 
         profile_section!(config_loop_assert);
         let unquote = args.unquote.map_or_else(

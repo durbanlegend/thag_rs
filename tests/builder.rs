@@ -63,6 +63,7 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
         ast: None,
         crates_finder: None,
         metadata_finder: None,
+        args: vec![],
     }
 }
 
@@ -70,11 +71,11 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
 // #[sequential]
 fn test_builder_execute_dynamic_script() {
     set_up();
-    let mut args = create_sample_cli(Some(
+    let mut cli = create_sample_cli(Some(
         "tests/assets/determine_if_known_type_trait_t.rs".to_string(),
     ));
-    args.force = true;
-    let result = execute(&mut args);
+    cli.force = true;
+    let result = execute(&mut cli);
     assert!(result.is_ok());
 }
 
@@ -82,9 +83,9 @@ fn test_builder_execute_dynamic_script() {
 // with a message that the current cursor position can't be found.
 // #[test]
 // fn test_builder_execute_repl_script() {
-// let mut args = create_sample_cli(None);
-// args.repl = true;
-//     let result = execute(args);
+// let mut cli = create_sample_cli(None);
+// cli.repl = true;
+//     let result = execute(cli);
 //     assert!(result.is_ok());
 // }
 
@@ -213,6 +214,7 @@ name = "bitflags_t"
         ast: None,
         crates_finder: None,
         metadata_finder: None,
+        args: vec![],
     };
     dbg!(&build_state);
     let proc_flags = ProcFlags::empty();
@@ -244,10 +246,10 @@ fn test_builder_run_script() {
     assert!(!target_path.exists());
 
     // Generate and build executable, and check it exists.
-    let mut args = create_sample_cli(Some("tests/assets/fib_fac_dashu_t.rs".to_string()));
-    args.generate = true;
-    args.build = true;
-    let result = execute(&mut args);
+    let mut cli = create_sample_cli(Some("tests/assets/fib_fac_dashu_t.rs".to_string()));
+    cli.generate = true;
+    cli.build = true;
+    let result = execute(&mut cli);
     assert!(result.is_ok());
     println!("target_path={target_path:#?}");
     assert!(target_path.exists());

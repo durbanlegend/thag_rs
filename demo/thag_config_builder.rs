@@ -9,7 +9,7 @@ semver = "1.0.23"
 serde = { version = "1.0.215", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "29dec5630ea60c87c010fe4a3aed46386757f83f" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "1d665b6c1dca651fc80e49e7bf4f2f96980e6468" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs/" }
 tokio = { version = "1", features = ["full"] }
 toml = "0.8"
@@ -58,16 +58,16 @@ struct ConfigBuilder {
 }
 
 impl ConfigBuilder {
-    fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    fn new() -> Self {
         let system_defaults = Config::default();
         let user_config = maybe_config();
-        let current = user_config.clone().unwrap_or_else(Config::default);
+        let current = user_config.clone().unwrap_or_default();
 
-        Ok(Self {
+        Self {
             system_defaults,
             user_config,
             current,
-        })
+        }
     }
 
     fn preview(&self) -> Result<String, Box<dyn std::error::Error>> {
@@ -126,7 +126,7 @@ fn collect_modules(project_root: &Path) -> HashMap<String, ModuleInfo> {
     let mut modules = HashMap::new();
 
     // Start with main modules
-    for entry in ["config.rs", "logging.rs", "colors.rs"].iter() {
+    for entry in &["config.rs", "logging.rs", "colors.rs"] {
         let path = project_root.join("src").join(entry);
         if path.exists() {
             if let Ok(source) = fs::read_to_string(&path) {
@@ -166,14 +166,14 @@ fn extract_use_path(use_item: &ItemUse) -> Option<(String, String)> {
                 let new_base = if base_path.is_empty() {
                     use_path.ident.to_string()
                 } else {
-                    format!("{}::{}", base_path, use_path.ident)
+                    format!("{base_path}::{}", use_path.ident)
                 };
                 process_use_tree(&use_path.tree, &new_base)
             }
 
             // Named item like "use crate::logging::Verbosity as VerbosityLevel"
             UseTree::Rename(rename) => {
-                vec![(rename.rename.to_string(), format!("{}", base_path))]
+                vec![(rename.rename.to_string(), base_path.to_string())]
             }
 
             // Simple name like the "Verbosity" in "use crate::logging::Verbosity"
@@ -221,7 +221,7 @@ fn get_doc_comments<T>() -> Vec<(String, String)> {
                 if let Some(module_info) = modules.get(&module_name) {
                     // Find and extract enum documentation
                     if let Some(enum_docs) = extract_enum_docs(&module_info.items, &type_name) {
-                        let key = format!("{}_type", field_path).to_lowercase();
+                        let key = format!("{field_path}_type").to_lowercase();
                         eprintln!("Pushing ({key}, {enum_docs} to comments");
                         comments.push((key, enum_docs));
                     }
@@ -232,7 +232,7 @@ fn get_doc_comments<T>() -> Vec<(String, String)> {
 
     eprintln!("Found {} doc comments:", comments.len());
     for (path, comment) in &comments {
-        println!("  {}: {}", path, comment);
+        println!("  {path}: {comment}");
     }
 
     comments
@@ -250,7 +250,7 @@ fn find_enum_fields(items: &[Item]) -> Vec<(String, String)> {
                     if let syn::Type::Path(type_path) = &field.ty {
                         if let Some(last_seg) = type_path.path.segments.last() {
                             fields.push((
-                                format!("{}.{}", struct_name, field_name),
+                                format!("{struct_name}.{field_name}"),
                                 last_seg.ident.to_string(),
                             ));
                         }
@@ -332,7 +332,7 @@ fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String
                 eprintln!("struct_docs={struct_docs:#?}");
                 if !struct_docs.is_empty() {
                     comments.push((
-                        format!("{}{}", prefix, struct_name).to_lowercase(),
+                        format!("{prefix}{struct_name}").to_lowercase(),
                         struct_docs.join("\n"),
                     ));
                 }
@@ -345,7 +345,7 @@ fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String
                         eprintln!("field_docs={field_docs:#?}");
                         if !field_docs.is_empty() {
                             comments.push((
-                                format!("{}{}.{}", prefix, struct_name, ident).to_lowercase(),
+                                format!("{prefix}{struct_name}.{ident}").to_lowercase(),
                                 field_docs.join("\n"),
                             ));
                         }
@@ -355,8 +355,7 @@ fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String
                             if let Some(last_seg) = type_path.path.segments.last() {
                                 let type_name = last_seg.ident.to_string();
                                 comments.push((
-                                    format!("{}{}.{}_type", prefix, struct_name, ident)
-                                        .to_lowercase(),
+                                    format!("{prefix}{struct_name}.{ident}_type").to_lowercase(),
                                     type_name,
                                 ));
                             }
@@ -377,11 +376,10 @@ fn extract_doc_comments(items: &[Item], prefix: &str, comments: &mut Vec<(String
                     let variant_docs = extract_attrs_docs(&variant.attrs);
                     let variant_name = variant.ident.to_string();
                     if variant_docs.is_empty() {
-                        enum_docs.push(format!("  {} - No documentation", variant_name));
+                        enum_docs.push(format!("  {variant_name} - No documentation"));
                     } else {
                         enum_docs.push(format!(
-                            "  {} - {}",
-                            variant_name,
+                            "  {variant_name} - {}",
                             variant_docs.join("\n    ")
                         ));
                     }
@@ -419,7 +417,7 @@ fn extract_attrs_docs(attrs: &[Attribute]) -> Vec<String> {
 fn add_enum_docs<T: PromptableEnum>(result: &mut String, field_name: &str) {
     result.push_str(&format!("\n# Available options for {field_name}:\n"));
     for (name, docs) in T::get_docs() {
-        result.push_str(&format!("#   {} - {}\n", name, docs));
+        result.push_str(&format!("#   {name} - {docs}\n"));
     }
     result.push('\n');
 }
@@ -524,6 +522,7 @@ fn prompt_colors_config(current: &Colors) -> Result<Option<Colors>, Box<dyn std:
     }))
 }
 
+#[allow(clippy::too_many_lines)]
 fn prompt_dependencies_config(
     current: &Dependencies,
 ) -> Result<Option<Dependencies>, Box<dyn std::error::Error>> {
@@ -565,22 +564,21 @@ fn prompt_dependencies_config(
                         .unwrap_or("No documentation available");
                     match *field_name {
                         "inference_level" => {
-                            println!("  Inference level: {:?} ({})", config.inference_level, doc)
+                            println!("  Inference level: {:?} ({doc})", config.inference_level);
                         }
                         "exclude_prerelease" => println!(
-                            "  Exclude pre-releases: {} ({})",
-                            config.exclude_prerelease, doc
+                            "  Exclude pre-releases: {} ({doc})",
+                            config.exclude_prerelease
                         ),
                         _ => {
                             let conv = Converter::new()
                                 .set_delim(" ")
                                 .set_pattern(Pattern::Sentence);
                             println!(
-                                "  {:<width$}: {}",
+                                "  {:<width$}: {doc}",
                                 conv.convert(field_name),
-                                doc,
                                 width = max_len + 2
-                            )
+                            );
                         }
                     }
                 }
@@ -590,7 +588,7 @@ fn prompt_dependencies_config(
                 let options = vec![
                     DependencyInference::None,
                     DependencyInference::Minimal,
-                    DependencyInference::Custom,
+                    DependencyInference::Config,
                     DependencyInference::Maximal,
                 ];
 
@@ -598,7 +596,7 @@ fn prompt_dependencies_config(
                 let current_index = options
                     .iter()
                     .position(|x| x == &config.inference_level)
-                    .unwrap_or(2); // Default to Custom if not found
+                    .unwrap_or(2); // Default to Config if not found
 
                 let level = Select::new("Dependency inference level:", options)
                     .with_starting_cursor(current_index)
@@ -714,9 +712,8 @@ fn prompt_feature_overrides(
         .prompt_skippable()?
         .unwrap_or(false)
     {
-        let crate_name = match Text::new("Crate name:").prompt_skippable()? {
-            Some(name) => name,
-            None => return Ok(None),
+        let Some(crate_name) = Text::new("Crate name:").prompt_skippable()? else {
+            return Ok(None);
         };
 
         let default_features = match Confirm::new("Use default features?")
@@ -783,26 +780,25 @@ fn prompt_misc_config(current: &Misc) -> Result<Option<Misc>, Box<dyn std::error
 fn prompt_proc_macros_config(
     _current: &ProcMacros,
 ) -> Result<Option<ProcMacros>, Box<dyn std::error::Error>> {
-    let path = if Confirm::new("Configure proc macro path?").prompt()? {
-        let input = Text::new("Proc macro crate path:")
-            .with_help_message("Path to directory containing proc macro crates")
+    let path = if Confirm::new("Configure demo proc macro path?").prompt()? {
+        Text::new("demo proc macro crate path:")
+            .with_help_message("Path to directory containing demo proc macro crates")
             .with_validator(PathValidator)
-            .prompt_skippable()?;
-
-        input
+            .prompt_skippable()?
     } else {
         None
     };
 
     Ok(Some(ProcMacros {
-        proc_macro_crate_path: path,
+        bank_proc_macro_crate_path: None,
+        demo_proc_macro_crate_path: path,
     }))
 }
 
 use colored::Colorize;
 
 fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
-    let builder = ConfigBuilder::new()?;
+    let builder = ConfigBuilder::new();
     let mut config = builder.current.clone();
 
     loop {
@@ -855,7 +851,7 @@ fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
                     current: config.clone(),
                 }
                 .preview()?;
-                println!("\n{}", preview);
+                println!("\n{preview}");
             }
             "Save and Exit" => {
                 break;
@@ -888,21 +884,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let preview = builder.preview()?;
-    println!("{}", preview);
+    println!("{preview}");
 
     if Confirm::new("Save this configuration?").prompt()? {
         // Create backup if exists
         if config_path.exists() {
             let backup_path = config_path.with_extension("toml.bak");
             fs::rename(&config_path, &backup_path)?;
-            println!("{}", format!("Created backup at {:?}", backup_path).blue());
+            println!("{}", format!("Created backup at {backup_path:?}").blue());
         }
 
         fs::create_dir_all(config_path.parent().unwrap())?;
         fs::write(&config_path, preview)?;
         println!(
             "{}",
-            format!("Configuration saved to {:?}", config_path).green()
+            format!("Configuration saved to {config_path:?}").green()
         );
     } else {
         println!("Configuration not saved.");

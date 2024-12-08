@@ -9,8 +9,11 @@
 
 ## Intro
 
-`thag_rs` (command `thag`) is a versatile cross-platform **script runner**, **expression evaluator** and **REPL** for Rust expressions, snippets, and programs. It's a developer tool that allows you to run and test Rust code from the command line for rapid prototyping and exploration.
+`thag_rs` (command `thag`) is a multi-purpose cross-platform developer tool for Rust. It's a **script runner**, **expression evaluator** and **REPL** for Rust expressions, snippets, and programs.
+It allows you to run and test Rust code from the command line for rapid prototyping and exploration.
 It aims to handle cases that are beyond the scope of the Rust playground or the average script runner, while being as simple and convenient to use as possible.
+It even allows you to run any appropriate Cargo subcommand such as **clippy**, **tree** or **test** against your script. An **expand** option shows you the macro-expanded version of
+your script side-by-side with the the unexpanded original (this requires the `cargo-expand` crate to be installed).
 A front-end called `thag_url` lets you run scripts directly from a **URL**, such as **Github**, **GitLab**, **BitBucket** or **Rust playground** scripts.
 
 `thag_rs`  also supports scripting via **shebangs**, building lightning-fast **commands** from your snippets, a **loop-filter mode** and **standard input**.
@@ -20,7 +23,7 @@ You can **paste and run** scripts via a basic editor, or you can even edit stand
 Alternatively, you can **embed any valid Cargo manifest info**, such as features, specific versions, private repos, optimisation levels etc., in a "toml block" comment.
 **You have control** of the level of assistance you prefer.
 
-**Starter kit.** `thag_rs` includes a demo library of over 200 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
+**Starter kit.** `thag_rs` includes a demo library of over 230 sample scripts, documented in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md). If you've got something good to share, do feel free to offer it, subject to the MIT / Apache 2 licence terms.
 
 ## Quick start: ways to run the `thag` command
 

@@ -2,6 +2,7 @@
 use cargo_toml::Manifest;
 use thag_rs::builder::{build, generate, run};
 use thag_rs::cmd_args::Cli;
+use thag_rs::config::DependencyInference;
 use thag_rs::{code_utils, escape_path_for_windows, execute, TMPDIR};
 use thag_rs::{BuildState, ProcFlags};
 // use sequential_test::sequential;
@@ -63,6 +64,7 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
         ast: None,
         crates_finder: None,
         metadata_finder: None,
+        infer: DependencyInference::None,
         args: vec![],
     }
 }
@@ -214,6 +216,7 @@ name = "bitflags_t"
         ast: None,
         crates_finder: None,
         metadata_finder: None,
+        infer: DependencyInference::None,
         args: vec![],
     };
     dbg!(&build_state);

@@ -340,13 +340,13 @@ impl Dependencies {
     ) -> (Option<Vec<String>>, bool) {
         profile_method!(get_features_for_inference_level);
         match level {
-            DependencyInference::None | DependencyInference::Minimal => (None, true),
+            DependencyInference::None | DependencyInference::Min => (None, true),
             DependencyInference::Config => {
                 let (features, default_features) =
                     self.apply_config_features(crate_name, all_features);
                 (Some(features), default_features)
             }
-            DependencyInference::Maximal => {
+            DependencyInference::Max => {
                 let (features, default_features) =
                     self.filter_maximal_features(crate_name, all_features);
                 (Some(features), default_features)
@@ -439,22 +439,22 @@ pub enum DependencyInference {
     /// Don't infer any dependencies
     None,
     /// Basic dependencies without features
-    Minimal,
+    Min,
     /// Use config.toml feature overrides
     #[default]
     Config,
     /// Include all features not excluded by config
-    Maximal,
+    Max,
 }
 
-pub type Infer = DependencyInference;
+// pub type Infer = DependencyInference;
 
-impl Infer {
-    pub const NONE: Self = Self::None;
-    pub const MIN: Self = Self::Minimal;
-    pub const CONF: Self = Self::Config;
-    pub const MAX: Self = Self::Maximal;
-}
+// impl Infer {
+//     pub const NONE: Self = Self::None;
+//     pub const MIN: Self = Self::Min;
+//     pub const CONF: Self = Self::Config;
+//     pub const MAX: Self = Self::Max;
+// }
 
 // Custom deserializer to provide better error messages
 impl<'de> de::Deserialize<'de> for DependencyInference {
@@ -466,9 +466,9 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
         let s = String::deserialize(deserializer)?;
         match s.to_lowercase().as_str() {
             "none" => Ok(Self::None),
-            "minimal" => Ok(Self::Minimal),
+            "minimal" => Ok(Self::Min),
             "config" => Ok(Self::Config),
-            "maximal" => Ok(Self::Maximal),
+            "maximal" => Ok(Self::Max),
             _ => Err(de::Error::custom(format!(
                 "Invalid dependency inference level '{s}'. Expected one of: none, minimal, config, maximal"
             ))),

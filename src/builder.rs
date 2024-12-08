@@ -756,9 +756,9 @@ fn display_build_failure() {
 
     let advice = match inference_level {
         config::DependencyInference::None => "You are running without dependency inference.",
-        config::DependencyInference::Minimal => "You may be missing features or `thag` may not be picking up dependencies.",
+        config::DependencyInference::Min => "You may be missing features or `thag` may not be picking up dependencies.",
         config::DependencyInference::Config => "You may need to tweak your config feature overrides or 'toml` block",
-        config::DependencyInference::Maximal => "It may be that maximal dependency inference is specifying conflicting features. Consider trying `config` or failing that, a `toml` block",
+        config::DependencyInference::Max => "It may be that maximal dependency inference is specifying conflicting features. Consider trying `config` or failing that, a `toml` block",
     };
 
     cvprtln!(

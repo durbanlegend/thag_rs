@@ -28,6 +28,11 @@ use std::{fmt, str};
                 .required(false)
                 .args(&["generate", "build", "check", "executable", "expand", "cargo"]),
         ))]
+// #[command(group(
+//             ArgGroup::new("dep_in")
+//                 .required(false)
+//                 .args(&["none", "min", "config", "max"]),
+//         ))]
 pub struct Cli {
     /// Optional path of a script to run (`path`/`stem`.rs)
     pub script: Option<String>,
@@ -123,7 +128,7 @@ pub struct Cli {
     /// Edit the configuration file
     #[arg(short = 'C', long, conflicts_with_all(["generate", "build", "executable"]))]
     pub config: bool,
-    /// TODO: Set the level of dependency inference: none, min, config (default, recommended), max.
+    /// Set the level of dependency inference: none, min, config (default, recommended), max.
     /// `thag` infers dependencies from imports and Rust paths (`x::y::z`), and specifies their features.
     #[arg(short = 'i', long, help_heading = Some("Processing Options"))]
     pub infer: Option<DependencyInference>,
@@ -231,6 +236,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();
+    let is_infer = args.infer.is_some();
     profile_section!(init_config_loop_assert);
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
@@ -259,6 +265,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
         proc_flags.set(ProcFlags::EXPAND, args.expand);
         proc_flags.set(ProcFlags::CARGO, args.cargo);
+        proc_flags.set(ProcFlags::INFER, is_infer);
 
         profile_section!(config_loop_assert);
         let unquote = args.unquote.map_or_else(

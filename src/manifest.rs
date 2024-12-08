@@ -206,7 +206,11 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
                 "rs_dep_map (before inferred) {:#?}",
                 rs_manifest.dependencies
             );
-            lookup_deps(&rs_inferred_deps, &mut rs_manifest.dependencies);
+            lookup_deps(
+                &build_state.infer,
+                &rs_inferred_deps,
+                &mut rs_manifest.dependencies,
+            );
 
             #[cfg(debug_assertions)]
             debug_log!(
@@ -283,7 +287,11 @@ fn get_crate_features(name: &str) -> Option<Vec<String>> {
 }
 
 #[allow(clippy::missing_panics_doc)]
-pub fn lookup_deps(rs_inferred_deps: &[String], rs_dep_map: &mut BTreeMap<String, Dependency>) {
+pub fn lookup_deps(
+    inference_level: &DependencyInference,
+    rs_inferred_deps: &[String],
+    rs_dep_map: &mut BTreeMap<String, Dependency>,
+) {
     profile_fn!(lookup_deps);
 
     #[cfg(debug_assertions)]
@@ -297,7 +305,7 @@ pub fn lookup_deps(rs_inferred_deps: &[String], rs_dep_map: &mut BTreeMap<String
     let config = maybe_config();
     let binding = Dependencies::default();
     let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
-    let inference_level = &dep_config.inference_level;
+    // let inference_level = &dep_config.inference_level;
     let style_emph = Style::from(&Lvl::EMPH);
     let styled_inference_level = Style::from(&Lvl::SUBH).paint(inference_level.to_string());
     let recommended_inference_level = "config";
@@ -329,11 +337,11 @@ pub fn lookup_deps(rs_inferred_deps: &[String], rs_dep_map: &mut BTreeMap<String
                     // Skip dependency entirely
                     continue;
                 }
-                DependencyInference::Minimal => {
+                DependencyInference::Min => {
                     // Just add basic dependency
                     rs_dep_map.insert(name.clone(), Dependency::Simple(version.clone()));
                 }
-                DependencyInference::Config | DependencyInference::Maximal => {
+                DependencyInference::Config | DependencyInference::Max => {
                     // eprintln!("crate={name}, features.is_some()? {}", features.is_some());
                     if let Some(ref all_features) = features {
                         let features_for_inference_level = dep_config

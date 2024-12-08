@@ -34,7 +34,7 @@ then adds an array of smart features.
 
 - You're in control: dependency inference (max/min/config/none) and/or toml block
 
-- Who needs shebangs?: build instant commands from your snippets and programs
+- Beyond shebangs: build instant commands from your snippets and programs
 
 - Execute scripts directly from URLs (GitHub, GitLab, BitBucket, Rust Playground)
 

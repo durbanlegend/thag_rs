@@ -1,6 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
+use crate::config::DependencyInference;
 // #[cfg(debug_assertions)]
-use crate::debug_log;
+use crate::{debug_log, maybe_config, Dependencies};
 use crate::{
     modified_since_compiled, vlog, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
     TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
@@ -401,6 +402,7 @@ pub struct BuildState {
     pub ast: Option<Ast>,
     pub crates_finder: Option<CratesFinder>,
     pub metadata_finder: Option<MetadataFinder>,
+    pub infer: DependencyInference,
     pub args: Vec<String>,
 }
 
@@ -593,6 +595,7 @@ impl BuildState {
         cli: &Cli,
     ) -> Self {
         profile_fn!(create_initial_state);
+
         Self {
             working_dir_path: paths.working_dir_path,
             source_stem,
@@ -606,6 +609,15 @@ impl BuildState {
             ast: None,
             crates_finder: None,
             metadata_finder: None,
+            infer: if let Some(ref infer) = cli.infer {
+                infer.clone()
+            } else {
+                let config = maybe_config();
+                let binding = Dependencies::default();
+                let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
+                let infer = &dep_config.inference_level;
+                infer.clone()
+            },
             args: cli.args.clone(),
             ..Default::default()
         }

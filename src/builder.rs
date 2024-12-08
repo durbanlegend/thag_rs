@@ -694,7 +694,7 @@ fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult
     profile_fn!(handle_expand);
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    eprintln!("cargo_command={cargo_command:#?}");
+    // eprintln!("cargo_command={cargo_command:#?}");
 
     let output = cargo_command.output()?;
 
@@ -714,7 +714,7 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
     profile_fn!(handle_build_or_check);
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    eprintln!("cargo_command={cargo_command:#?}");
+    // eprintln!("cargo_command={cargo_command:#?}");
 
     let status = cargo_command.spawn()?.wait()?;
 

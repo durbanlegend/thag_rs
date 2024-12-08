@@ -339,7 +339,7 @@ pub fn lookup_deps(
                 }
                 DependencyInference::Min => {
                     // Just add basic dependency
-                    rs_dep_map.insert(name.clone(), Dependency::Simple(version.clone()));
+                    insert_simple(rs_dep_map, name, version);
                 }
                 DependencyInference::Config | DependencyInference::Max => {
                     // eprintln!("crate={name}, features.is_some()? {}", features.is_some());
@@ -364,27 +364,25 @@ pub fn lookup_deps(
                                     ..Default::default()
                                 }))
                             });
+                        } else {
+                            insert_simple(rs_dep_map, name, version);
                         }
+                    } else {
+                        insert_simple(rs_dep_map, name, version);
                     }
                 }
             }
-
-            // Maybe show different toml blocks based on verbosity
-            // let verbosity = get_verbosity();
-            // if verbosity >= V::V {
-            //     dbg!();
-            //     show_all_toml_variants(&name, &version, features.as_ref(), dep_config);
-            // }
-        }
-        if rs_dep_map.is_empty() {
-            return;
         }
     }
+    // Not sure we need this
+    // if rs_dep_map.is_empty() {
+    //     return;
+    // }
 
-    if get_verbosity() < V::V {
-        return;
-    }
-    if matches!(inference_level, DependencyInference::None) || new_inferred_deps.is_empty() {
+    if get_verbosity() < V::V
+        || matches!(inference_level, DependencyInference::None)
+        || new_inferred_deps.is_empty()
+    {
         // No generated manifest info to show.
         return;
     }
@@ -394,6 +392,12 @@ pub fn lookup_deps(
         rs_dep_map,
         inference_level,
     );
+}
+
+fn insert_simple(rs_dep_map: &mut BTreeMap<String, Dependency>, name: String, version: String) {
+    rs_dep_map
+        .entry(name.clone())
+        .or_insert_with(|| Dependency::Simple(version.clone()));
 }
 
 fn display_toml_info(

@@ -1,7 +1,8 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::config::DependencyInference;
-// #[cfg(debug_assertions)]
-use crate::{debug_log, maybe_config, Dependencies};
+#[cfg(debug_assertions)]
+use crate::debug_log;
+use crate::{maybe_config, Dependencies};
 use crate::{
     modified_since_compiled, vlog, DYNAMIC_SUBDIR, PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX,
     TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
@@ -195,7 +196,7 @@ impl<'a> Visit<'a> for CratesFinder {
             if let Some(first_seg) = expr_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
                 #[cfg(debug_assertions)]
-                // debug_log!("Found first seg {name} in expr_path={expr_path:#?}");
+                debug_log!("Found first seg {name} in expr_path={expr_path:#?}");
                 if is_valid_crate_name(&name) && !self.crates.contains(&name) {
                     // debug_log!("visit_expr_path pushing {name} to crates");
                     self.crates.push(name);

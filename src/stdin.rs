@@ -172,7 +172,9 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
-    vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+    if std::io::stdin().is_terminal() {
+        vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+    }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
 }

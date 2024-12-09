@@ -2817,6 +2817,23 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ---
 
+### Script: proc_macro_derive_doc_comment.rs
+
+**Description:**  Exploring exposing doc comments at runtime.
+ Example from https://www.reddit.com/r/rust/comments/pv5v3x/looking_for_a_minimal_example_on_how_to_parse_doc/
+
+**Purpose:** explore proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_derive_doc_comment.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_doc_comment.rs)
+
+---
+
 ### Script: proc_macro_derive_key_map_list.rs
 
 **Description:**  Use a derive proc macro to implement a table. from a base with additions and deletions.
@@ -2852,15 +2869,16 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ### Script: proc_macro_functionlike_basic.rs
 
-**Description:**  Testing the `category_enum` proc macro for use with `demo/gen_readme.rs` and `demo/filter_demos.rs`/
+**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
+ `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
 
-**Purpose:** Test the proof of concept and potentially the implementation.
+**Purpose:** Sample model of a basic function-like proc macro.
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique, tools
+**Categories:** proc_macros, technique
 
 **Link:** [proc_macro_functionlike_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_functionlike_basic.rs)
 
@@ -3962,6 +3980,39 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ---
 
+### Script: thag_cargo.rs
+
+**Description:**  `thag` prompted front-end command to run cargo commands on scripts. It is recommended to compile this with -x.
+ Prompts the use to select a Rust script and a cargo command to run against the script's generated project, and
+ and invokes `thag` with the --cargo option to run it.
+
+**Purpose:** A user-friendly interface to the `thag` `--cargo` option.
+
+**Crates:** `inquire`
+
+**Type:** Program
+
+**Categories:** technique, tools
+
+**Link:** [thag_cargo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs)
+
+---
+
+### Script: thag_clippy.rs
+
+**Description:** 
+**Purpose:** 
+
+**Crates:** `colored`, `inquire`
+
+**Type:** Program
+
+**Categories:** missing
+
+**Link:** [thag_clippy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs)
+
+---
+
 ### Script: thag_config_builder.rs
 
 **Description:**  Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
@@ -4016,7 +4067,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ### Script: thag_prompt.rs
 
-**Description:**  Early prototype of prompted `thag` prompting front-end.
+**Description:**  Early prototype of prompting front-end for `thag`.
 
 **Purpose:** Ultimately, to provide a prompt-driven fromt-end to the `thag` command.
 
@@ -4046,7 +4097,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ### Script: thag_url.rs
 
-**Description:**  `thag` front-end to run scripts from URLs.
+**Description:**  `thag` front-end command to run scripts from URLs. It is recommended to compile this with -x.
 
 **Purpose:** A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
 

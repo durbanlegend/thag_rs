@@ -68,14 +68,18 @@ thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
 - [ ]  Consider "magic" substitution of latest git with say rev = "$latest" in toml block.
-- [ ]  Add --infer dependencies (-i <maximal/minimal/custom/none>) option to control dependency inference.
 - [ ]  Consider a disable option?
-- [ ]  Add detais of --cargo (-A) option to Readme - maybe make a helper command `thag_cargo` first
+- [ ]  Add details of --cargo (-A) option to Readme and `thag_cargo`
        - Make --expand (-X) option a helper command thag_expand.
+       - Document thag_cargo and thag_clippy in the Readme.
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
-- [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output.
+- [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output - rather fix bad output at source - done?
+- [ ]  Use cargo-dist to build and distribute thag front-end commands.
+- [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
+- [ ]  Make thag_url more user-friendly in reporting errors, e.g. invalid URL. Also --stdin suppress this if possible:
+        Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?

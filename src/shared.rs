@@ -16,6 +16,7 @@ use home::home_dir;
 use mockall::automock;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
+use std::clone::Clone;
 use std::{
     convert::Into,
     option::Option,
@@ -610,15 +611,16 @@ impl BuildState {
             ast: None,
             crates_finder: None,
             metadata_finder: None,
-            infer: if let Some(ref infer) = cli.infer {
-                infer.clone()
-            } else {
-                let config = maybe_config();
-                let binding = Dependencies::default();
-                let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
-                let infer = &dep_config.inference_level;
-                infer.clone()
-            },
+            infer: cli.infer.as_ref().map_or(
+                {
+                    let config = maybe_config();
+                    let binding = Dependencies::default();
+                    let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
+                    let infer = &dep_config.inference_level;
+                    infer.clone()
+                },
+                Clone::clone,
+            ),
             args: cli.args.clone(),
             ..Default::default()
         }

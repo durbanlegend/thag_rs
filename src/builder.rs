@@ -736,7 +736,7 @@ fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResu
     let unexpanded_source = std::fs::read_to_string(unexpanded_path)?;
 
     let max_width = if let Ok((width, _height)) = crossterm::terminal::size() {
-        (width - 22) / 2
+        (width - 26) / 2
     } else {
         80
     };

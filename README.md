@@ -9,8 +9,11 @@
 
 ## Intro
 
-Introducing `thag_rs` (command `thag`) - a Swiss Army knife for Rust development. `thag` combines a script runner, expression evaluator, and REPL into one tool,
+Introducing `thag_rs` (command `thag`) - a Swiss Army knife of productivity tools for Rust development. `thag` combines a script runner, expression evaluator, and REPL into one tool,
 then adds an array of smart features.
+
+`thag`'s mission is to remove obstacles to productivity by giving you a selection of tools
+and examples to make it as quick and easy as possible to figure stuff out without tedious setup.
 
 🚀 **Core Powers:**
 
@@ -24,7 +27,7 @@ then adds an array of smart features.
 
 - Optionally embed custom Cargo manifest settings in "toml block" comments
 
-- Shebang support for true scripting
+- Shebang support for true scripting (but you can do better: read on...)
 
 - Loop-filter mode for data processing
 
@@ -40,7 +43,7 @@ then adds an array of smart features.
 
 - Paste-and-run with built-in TUI editor
 
-- Code evolution path from REPL to edit-submit loop to saved scripts
+- An evolution path for your code from REPL to edit-submit loop to saved scripts
 
 - Edit-submit standard input
 

@@ -3,12 +3,13 @@
 url = "2.5.4"
 */
 
-/// `thag` front-end to run scripts from URLs.
+/// `thag` front-end command to run scripts from URLs. It is recommended to compile this with -x.
 //# Purpose: A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
 //# Categories: technique, tools
 use std::error::Error;
 use std::fmt;
 use std::process::{Command, Stdio};
+use std::string::ToString;
 use url::Url;
 
 #[derive(Debug)]
@@ -31,24 +32,26 @@ enum SourceType {
 }
 
 fn detect_source_type(url: &Url) -> SourceType {
-    match url.host_str() {
-        Some(host) => match host {
-            "github.com" => SourceType::GitHub,
-            "gitlab.com" => SourceType::GitLab,
-            "bitbucket.org" => SourceType::Bitbucket,
-            "play.rust-lang.org" => SourceType::RustPlayground,
-            _ => SourceType::Raw,
-        },
-        None => SourceType::Raw,
-    }
+    url.host_str().map_or(SourceType::Raw, |host| match host {
+        "github.com" => SourceType::GitHub,
+        "gitlab.com" => SourceType::GitLab,
+        "bitbucket.org" => SourceType::Bitbucket,
+        "play.rust-lang.org" => SourceType::RustPlayground,
+        _ => SourceType::Raw,
+    })
 }
 
 fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
-    let url = Url::parse(url_str).map_err(|e| UrlError(format!("Invalid URL: {}", e)))?;
+    let url = Url::parse(url_str).map_err(|e| UrlError(format!("Invalid URL: {e}")))?;
 
     match detect_source_type(&url) {
         SourceType::GitHub => {
             let path = url.path();
+
+            if path.contains("/raw/") {
+                return Ok(url_str.to_string());
+            }
+
             if !path.contains("/blob/") {
                 return Err(UrlError(
                     "GitHub URL must contain '/blob/' in path".to_string(),
@@ -59,9 +62,11 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
                     "Invalid GitHub URL format: expected user/repo/blob/path".to_string(),
                 ));
             }
-            Ok(url_str
+            let raw_url = url_str
                 .replace("github.com", "raw.githubusercontent.com")
-                .replace("/blob/", "/"))
+                .replace("/blob/", "/");
+            eprintln!("raw_url={raw_url}");
+            Ok(raw_url)
         }
         SourceType::GitLab => {
             let path = url.path();
@@ -104,8 +109,7 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
             }
 
             Ok(format!(
-                "https://gist.githubusercontent.com/rust-play/{}/raw",
-                gist_id
+                "https://gist.githubusercontent.com/rust-play/{gist_id}/raw"
             ))
         }
         SourceType::Raw => Ok(url_str.to_string()),
@@ -128,7 +132,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut additional_args = Vec::new();
     let mut found_separator = false;
 
-    while let Some(arg) = iter.next() {
+    for arg in iter.by_ref() {
         match arg.as_str() {
             "-s" | "-d" => {
                 if url.is_empty() {
@@ -153,7 +157,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Collect remaining args after --
     if found_separator {
-        additional_args.extend(iter.map(|s| s.to_string()));
+        additional_args.extend(iter.map(ToString::to_string));
     }
 
     if url.is_empty() {
@@ -186,10 +190,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn print_usage(program: &str) {
-    eprintln!(
-        "Usage: {} [-s|-d] <url> [-- <additional_thag_args>]",
-        program
-    );
+    eprintln!("Usage: {program} [-s|-d] <url> [-- <additional_thag_args>]");
     eprintln!("Supported sources:");
     eprintln!("  - GitHub (github.com)");
     eprintln!("  - GitLab (gitlab.com)");
@@ -197,14 +198,8 @@ fn print_usage(program: &str) {
     eprintln!("  - Rust Playground (play.rust-lang.org)");
     eprintln!("  - Raw URLs (direct links to raw content)");
     eprintln!("\nExamples:");
-    eprintln!(
-        "  {} -d https://github.com/user/repo/blob/master/script.rs -- -m",
-        program
-    );
-    eprintln!(
-        "  {} https://github.com/user/repo/blob/master/script.rs -v",
-        program
-    );
+    eprintln!("  {program} -d https://github.com/user/repo/blob/master/script.rs -- -m");
+    eprintln!("  {program} https://github.com/user/repo/blob/master/script.rs -v");
 }
 
 #[cfg(test)]
@@ -212,11 +207,17 @@ mod tests {
     use crate::*;
 
     #[test]
-    fn test_github_url() {
+    fn test_github_blob_url() {
         let url = "https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs";
         let expected =
             "https://raw.githubusercontent.com/durbanlegend/thag_rs/master/demo/hello.rs";
         assert_eq!(convert_to_raw_url(url).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_github_raw_url() {
+        let raw_url = "https://github.com/mikaelmello/inquire/raw/refs/heads/main/inquire/examples/complex_autocompletion.rs";
+        assert_eq!(convert_to_raw_url(raw_url).unwrap().as_str(), raw_url);
     }
 
     #[test]
@@ -233,7 +234,7 @@ mod tests {
         let url =
             "https://bitbucket.org/atlassian/atlaskit-mk-2/src/master/build/docs/src/md/index.ts";
         let expected =
-            "https://bitbucket.org/atlassian/atlaskit-mk-2/raw/master/build/docs/src/md/index.ts";
+            "https://bitbucket.org/atlassian/atlaskit-mk-2/raw/master/build/docs/raw/md/index.ts";
         assert_eq!(convert_to_raw_url(url).unwrap(), expected);
     }
 

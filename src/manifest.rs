@@ -294,8 +294,8 @@ pub fn lookup_deps(
 ) {
     profile_fn!(lookup_deps);
 
-    #[cfg(debug_assertions)]
-    eprintln!("In lookup_deps: rs_inferred_deps={rs_inferred_deps:#?}");
+    // #[cfg(debug_assertions)]
+    // eprintln!("In lookup_deps: rs_inferred_deps={rs_inferred_deps:#?}");
     if rs_inferred_deps.is_empty() {
         return;
     }
@@ -396,8 +396,8 @@ pub fn lookup_deps(
 
 fn insert_simple(rs_dep_map: &mut BTreeMap<String, Dependency>, name: String, version: String) {
     rs_dep_map
-        .entry(name.clone())
-        .or_insert_with(|| Dependency::Simple(version.clone()));
+        .entry(name)
+        .or_insert_with(|| Dependency::Simple(version));
 }
 
 fn display_toml_info(

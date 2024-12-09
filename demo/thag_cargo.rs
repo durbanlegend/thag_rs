@@ -1,7 +1,11 @@
-use inquire::{Select, Text};
+/// `thag` prompted front-end command to run Cargo commands on scripts. It is recommended to compile this to an executable with -x.
+/// Prompts the user to select a Rust script and a cargo command to run against the script's generated project, and
+/// and invokes `thag` with the --cargo option to run it.
+//# Purpose: A user-friendly interface to the `thag` `--cargo` option.
+//# Categories: technique, tools
+use inquire::{Confirm, Select, Text};
 use std::{env, path::PathBuf, process::Command};
 
-#[derive(Debug)]
 struct FileNavigator {
     current_dir: PathBuf,
     history: Vec<PathBuf>,
@@ -9,9 +13,8 @@ struct FileNavigator {
 
 impl FileNavigator {
     fn new() -> Self {
-        let current_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
         Self {
-            current_dir,
+            current_dir: env::current_dir().unwrap_or_else(|_| PathBuf::from(".")),
             history: Vec::new(),
         }
     }
@@ -19,49 +22,42 @@ impl FileNavigator {
     fn list_items(&self) -> Vec<String> {
         let mut items = vec!["..".to_string()]; // Parent directory
 
-        // Add directories first
-        let mut dirs: Vec<_> = self
-            .current_dir
-            .read_dir()
+        // Add directories
+        let mut dirs: Vec<_> = std::fs::read_dir(&self.current_dir)
             .into_iter()
             .flatten()
             .flatten()
             .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
+            .filter(|entry| !entry.file_name().to_string_lossy().starts_with('.')) // Optional: hide hidden dirs
             .map(|entry| entry.file_name().to_string_lossy().into_owned())
             .collect();
         dirs.sort();
-        items.extend(dirs.into_iter().map(|d| format!("📁 {}", d)));
+        items.extend(dirs.into_iter().map(|d| format!("📁 {d}")));
 
-        // Then add .rs files
-        let mut files: Vec<_> = self
-            .current_dir
-            .read_dir()
+        // Add .rs files
+        let mut files: Vec<_> = std::fs::read_dir(&self.current_dir)
             .into_iter()
             .flatten()
             .flatten()
             .filter(|entry| {
                 entry.file_type().map(|ft| ft.is_file()).unwrap_or(false)
-                    && entry
-                        .path()
-                        .extension()
-                        .map(|ext| ext == "rs")
-                        .unwrap_or(false)
+                    && entry.path().extension().is_some_and(|ext| ext == "rs")
             })
             .map(|entry| entry.file_name().to_string_lossy().into_owned())
             .collect();
         files.sort();
-        items.extend(files.into_iter().map(|f| format!("📄 {}", f)));
+        items.extend(files.into_iter().map(|f| format!("📄 {f}")));
 
         items
     }
 
-    fn navigate(&mut self, selection: &str) -> Result<Option<PathBuf>, Box<dyn std::error::Error>> {
+    fn navigate(&mut self, selection: &str) -> Option<PathBuf> {
         if selection == ".." {
             if let Some(parent) = self.current_dir.parent() {
                 self.history.push(self.current_dir.clone());
                 self.current_dir = parent.to_path_buf();
             }
-            Ok(None)
+            None
         } else {
             let clean_name = selection.trim_start_matches(['📁', '📄', ' ']);
             let new_path = self.current_dir.join(clean_name);
@@ -69,9 +65,9 @@ impl FileNavigator {
             if new_path.is_dir() {
                 self.history.push(self.current_dir.clone());
                 self.current_dir = new_path;
-                Ok(None)
+                None
             } else {
-                Ok(Some(new_path))
+                Some(new_path)
             }
         }
     }
@@ -82,20 +78,27 @@ fn select_script() -> Result<PathBuf, Box<dyn std::error::Error>> {
 
     loop {
         let items = navigator.list_items();
+
         let selection = Select::new(
             &format!("Current dir: {}", navigator.current_dir.display()),
             items,
         )
-        .with_help_message("Navigate to a Rust script (↑↓ to move, Enter to select)")
+        .with_help_message("↑↓ navigate, Enter select")
+        .with_page_size(20)
         .prompt()?;
 
-        if let Some(script_path) = navigator.navigate(&selection)? {
-            return Ok(script_path);
+        if let Some(script_path) = navigator.navigate(&selection) {
+            if Confirm::new(&format!("Use {}?", script_path.display()))
+                .with_default(true)
+                .prompt()?
+            {
+                return Ok(script_path);
+            }
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct CargoCommand {
     subcommand: String,
     args: Vec<String>,
@@ -103,23 +106,119 @@ struct CargoCommand {
 
 impl CargoCommand {
     fn prompt() -> Result<Self, Box<dyn std::error::Error>> {
-        let subcommands = vec![
-            "tree", "check", "build", "doc", "test", "clippy",
-            // Add more as needed
-        ];
+        let subcommands = CargoSubcommand::all();
 
-        let subcommand = Select::new("Cargo subcommand:", subcommands.to_vec())
+        // Show subcommands with descriptions
+        let formatted_commands: Vec<String> = subcommands
+            .iter()
+            .enumerate()
+            .map(|(i, cmd)| format!("{}. {}: {}", i, cmd.name, cmd.description))
+            .collect();
+
+        let subcommand = Select::new("Cargo subcommand:", formatted_commands)
             .with_help_message("Select cargo subcommand to run")
             .prompt()?;
 
+        // Extract index from the selection
+        let index = subcommand
+            .split('.')
+            .next()
+            .and_then(|s| s.parse::<usize>().ok())
+            .ok_or("Invalid selection")?;
+
+        let selected_cmd = subcommands[index].clone();
+
+        // Show common arguments for selected command
+        println!("\nCommon arguments for {}:", selected_cmd.name);
+        for (arg, desc) in &selected_cmd.common_args {
+            println!("  {arg} - {desc}");
+        }
+
         let args = Text::new("Additional arguments:")
-            .with_help_message("e.g., '-i syn' for tree, '--all-features' for check")
+            .with_help_message("Space-separated arguments (press Tab to see common args)")
+            .with_autocomplete(move |input: &str| {
+                Ok(selected_cmd
+                    .common_args
+                    .iter()
+                    .map(|(arg, _)| *arg)
+                    .filter(|arg| arg.starts_with(input))
+                    .map(String::from)
+                    .collect())
+            })
             .prompt()?;
 
         Ok(Self {
-            subcommand: subcommand.to_string(),
+            subcommand: selected_cmd.name,
             args: args.split_whitespace().map(String::from).collect(),
         })
+    }
+}
+
+#[derive(Clone, Debug)]
+struct CargoSubcommand {
+    name: String,
+    description: &'static str,
+    common_args: Vec<(&'static str, &'static str)>, // (arg, description)
+}
+
+impl CargoSubcommand {
+    fn all() -> Vec<Self> {
+        vec![
+            Self {
+                name: "tree".to_string(),
+                description: "Display dependency tree",
+                common_args: vec![
+                    ("-i", "Invert dependencies"),
+                    ("--target", "Filter dependencies by target"),
+                    ("--no-default-features", "Exclude default features"),
+                    ("--all-features", "Include all features"),
+                    ("-p", "Package to inspect"),
+                ],
+            },
+            Self {
+                name: "check".to_string(),
+                description: "Check compilation without producing binary",
+                common_args: vec![
+                    ("--all-features", "Enable all features"),
+                    ("--no-default-features", "Disable default features"),
+                    ("--features", "Space or comma separated list of features"),
+                    ("--verbose", "Use verbose output"),
+                ],
+            },
+            Self {
+                name: "clippy".to_string(),
+                description: "Run clippy lints",
+                common_args: vec![
+                    ("--all-targets", "Check all targets"),
+                    ("--fix", "Automatically apply lint suggestions"),
+                    ("--no-deps", "Skip checking dependencies"),
+                    ("-W", "Set lint warnings, e.g., -W clippy::pedantic"),
+                ],
+            },
+            Self {
+                name: "doc".to_string(),
+                description: "Build documentation",
+                common_args: vec![
+                    ("--no-deps", "Don't build docs for dependencies"),
+                    ("--document-private-items", "Document private items"),
+                    ("--open", "Open docs in browser after building"),
+                ],
+            },
+            Self {
+                name: "expand".to_string(),
+                description: "Show result of macro expansion",
+                common_args: vec![("--verbose", "Use verbose output")],
+            },
+            Self {
+                name: "test".to_string(),
+                description: "Run tests",
+                common_args: vec![
+                    ("--no-run", "Compile but don't run tests"),
+                    ("--test", "Test name to run"),
+                    ("--", "Arguments for test binary"),
+                ],
+            },
+        ]
     }
 }
 

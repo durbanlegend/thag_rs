@@ -1,10 +1,18 @@
+/*[toml]
+[dependencies]
+atty = "0.2.14"
+inquire = "0.7.5"
+rustix = "0.38.42"
+tempfile = "3.14.0"
+*/
 /// `thag` prompted front-end command to run Cargo commands on scripts. It is recommended to compile this to an executable with -x.
 /// Prompts the user to select a Rust script and a cargo command to run against the script's generated project, and
 /// and invokes `thag` with the --cargo option to run it.
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option.
 //# Categories: technique, tools
 use inquire::{Confirm, Select, Text};
-use std::{env, path::PathBuf, process::Command};
+use rustix::path::Arg;
+use std::{env, error::Error, path::PathBuf, process::Command};
 
 struct FileNavigator {
     current_dir: PathBuf,
@@ -75,6 +83,7 @@ impl FileNavigator {
 
 fn select_script() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let mut navigator = FileNavigator::new();
+    println!("Select a Rust script to analyze:");
 
     loop {
         let items = navigator.list_items();
@@ -222,9 +231,41 @@ impl CargoSubcommand {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Select a Rust script to analyze:");
-    let script_path = select_script()?;
+fn get_script_mode() -> ScriptMode {
+    if atty::isnt(atty::Stream::Stdin) {
+        // We're receiving input via pipe
+        ScriptMode::Stdin
+    } else if std::env::args().len() > 1 {
+        // We have command line arguments (likely a file path)
+        ScriptMode::File
+    } else {
+        // Interactive mode
+        ScriptMode::Interactive
+    }
+}
+
+enum ScriptMode {
+    Stdin,
+    File,
+    Interactive,
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let script_path = match get_script_mode() {
+        ScriptMode::Stdin => {
+            eprintln!("This tool cannot be run with stdin input. Please provide a file path or run interactively.");
+            std::process::exit(1);
+        }
+        ScriptMode::File => {
+            // Get the file path from args
+            let args: Vec<String> = std::env::args().collect();
+            PathBuf::from(args[1].clone())
+        }
+        ScriptMode::Interactive => {
+            // Use the file selector
+            select_script()?
+        }
+    };
 
     println!("\nConfigure cargo command:");
     let cargo_cmd = CargoCommand::prompt()?;

@@ -277,21 +277,22 @@ impl Dependencies {
         all_features: &[String],
     ) -> (Vec<String>, bool) {
         profile_method!(apply_config_features);
-        // eprintln!("self.feature_overrides={:#?}", self.feature_overrides);
+
         let (mut config_features, default_features) = self.feature_overrides.get(crate_name).map_or_else(|| {
-            let intersection = self.always_include_features.iter().filter(|item| all_features.contains(item))
+            // Only include features from always_include_features that exist in all_features
+            let intersection: Vec<String> = self.always_include_features
+                .iter()
+                .filter(|feature| all_features.contains(*feature))
                 .cloned()
                 .collect();
             (intersection, true)
         }, |override_config| {
-            let mut config_features = self.always_include_features.clone();
-
-            // cvprtln!(
-            //     &Lvl::EMPH,
-            //     V::N,
-            //     "crate={crate_name}, required features={:#?}, always_include_features={:#?}",
-            //     override_config.required_features, self.always_include_features
-            // );
+            // Only include features from always_include_features that exist in all_features
+            let mut config_features: Vec<String> = self.always_include_features
+                .iter()
+                .filter(|feature| all_features.contains(*feature))
+                .cloned()
+                .collect();
 
             if let Some(ref required_features) = &override_config.required_features {
                 for feature in required_features {
@@ -301,11 +302,6 @@ impl Dependencies {
                     // Validate required features exist
                     if all_features.contains(feature) {
                         config_features.push(feature.clone());
-                        // cvprtln!(
-                        //     &Lvl::EMPH,
-                        //     V::N,
-                        //     "crate={crate_name} including feature {feature}"
-                        // );
                     } else {
                         cvprtln!(
                             &Lvl::WARN,
@@ -318,7 +314,7 @@ impl Dependencies {
                             cvprtln!(&Lvl::BRI, V::QQ, "{}", available);
                         }
                     }
-                };
+                }
             }
             (config_features, override_config.default_features.unwrap_or(true))
         });

@@ -5,7 +5,7 @@ clap = { version = "4.5.21", features = ["cargo", "derive"] }
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "79582b0a889bca191a15a9d85f7d4c0ab5fbab69"}
 */
 
-/// A prototype of the cmd_args module of thag_rs itself.
+/// A prototype of the `cmd_args` module of thag_rs itself.
 ///
 /// E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 //# Purpose: Prototype CLI.

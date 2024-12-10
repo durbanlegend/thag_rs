@@ -302,20 +302,25 @@ pub fn lookup_deps(
 
     let existing_toml_block = !&rs_dep_map.is_empty();
     let mut new_inferred_deps: Vec<String> = vec![];
-    let config = maybe_config();
-    let binding = Dependencies::default();
-    let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
-    // let inference_level = &dep_config.inference_level;
-    let style_emph = Style::from(&Lvl::EMPH);
-    let styled_inference_level = Style::from(&Lvl::SUBH).paint(inference_level.to_string());
-    let recommended_inference_level = "config";
-    let styled_recommended_inference_level = style_emph.paint(recommended_inference_level);
+    let recomm_style = Style::from(&Lvl::SUBH);
+    let recomm_inf_level = &DependencyInference::Config;
+    let actual_style = if inference_level == recomm_inf_level {
+        recomm_style
+    } else {
+        Style::from(&Lvl::EMPH)
+    };
+    let styled_inference_level = actual_style.paint(inference_level.to_string());
+    let styled_recomm_inf_level = recomm_style.paint(recomm_inf_level.to_string());
     // Hack: use reset string \x1b[0m here to avoid mystery white-on-white bug.
     cvprtln!(
         &Lvl::NORM,
         V::V,
-        "\x1b[0mDependency inference_level={styled_inference_level}, recommended={styled_recommended_inference_level}"
+        "\x1b[0mRecommended dependency inference_level={styled_recomm_inf_level}, actual={styled_inference_level}"
     );
+
+    let config = maybe_config();
+    let binding = Dependencies::default();
+    let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
     for dep_name in rs_inferred_deps {
         if dep_name == "thag_demo_proc_macros" {
             proc_macros_magic(rs_dep_map, dep_name, "demo");
@@ -431,10 +436,10 @@ fn display_toml_info(
                     let maybe_default_features = if dep.default_features {
                         ""
                     } else {
-                        ", default-features = false "
+                        ", default-features = false"
                     };
                     let dep_line = format!(
-                        "{} = {{ version = \"{}{maybe_default_features}\", features = [{}] }}\n",
+                        "{} = {{ version = \"{}\"{maybe_default_features}, features = [{}] }}\n",
                         dep_name,
                         dep.version
                             .as_ref()

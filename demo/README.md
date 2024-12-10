@@ -3982,13 +3982,13 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ### Script: thag_cargo.rs
 
-**Description:**  `thag` prompted front-end command to run cargo commands on scripts. It is recommended to compile this with -x.
- Prompts the use to select a Rust script and a cargo command to run against the script's generated project, and
+**Description:**  `thag` prompted front-end command to run Cargo commands on scripts. It is recommended to compile this to an executable with -x.
+ Prompts the user to select a Rust script and a cargo command to run against the script's generated project, and
  and invokes `thag` with the --cargo option to run it.
 
 **Purpose:** A user-friendly interface to the `thag` `--cargo` option.
 
-**Crates:** `inquire`
+**Crates:** `inquire`, `rustix`
 
 **Type:** Program
 
@@ -4000,14 +4000,17 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 ### Script: thag_clippy.rs
 
-**Description:** 
-**Purpose:** 
+**Description:**  `thag` prompted front-end command to run `clippy` on scripts. It is recommended to compile this to an executable with -x.
+ Prompts the user to select a Rust script and one or more Clippy lints to run against the script's generated project, and
+ and invokes `thag` with the --cargo option to run it.
+
+**Purpose:** A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
 
 **Crates:** `colored`, `inquire`
 
 **Type:** Program
 
-**Categories:** missing
+**Categories:** technique, tools
 
 **Link:** [thag_clippy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs)
 
@@ -4101,7 +4104,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Purpose:** A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
 
-**Crates:** `url`
+**Crates:** `syn`, `tinyget`, `url`
 
 **Type:** Program
 

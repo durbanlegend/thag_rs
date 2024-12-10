@@ -3,6 +3,7 @@
 # Valid values are "debug", "verbose", "normal", "quiet" and "quieter".
 default_verbosity = "normal"
 
+# Terminal color settings
 [colors]
 # Color support override. Sets the terminal's color support level. The alternative is
 # to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
@@ -12,10 +13,10 @@ default_verbosity = "normal"
 # to be interleaved with the messages.
 # If your terminal can handle 16m colors, choose xterm256
 # Valid values are:
-# "xterm256"    for 256 or more colors (including 16m)
-# "ansi16"      for basic color support
-# "none"        color support not available or not desired
-# "default"     (default value) let thag_rs figure it out
+#   xterm256 - Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
+#   ansi16 - Basic 16-color support
+#   none - No color support
+#   auto_detect - Auto-detect from terminal
 # color_support = "ansi16"
 
 # Terminal light/dark override. Tells thag_rs whether you are using a light or dark theme,
@@ -38,6 +39,7 @@ default_verbosity = "normal"
 bank_proc_macro_crate_path = "bank/proc_macros"
 demo_proc_macro_crate_path = "demo/proc_macros"
 
+# Dependency handling
 [dependencies]
 
 # Specifies to what extent `thag_rs` should intervene in inferring dependencies from references to crates
@@ -52,9 +54,9 @@ exclude_unstable_features = true
 # Exclude the "std" feature
 exclude_std_feature = true
 
-# Feature organization
-group_related_features = true
-show_feature_dependencies = true
+# Always include these features even if they match exclude patterns
+always_include_features = ["derive"]
+
 # Global feature exclusions
 global_excluded_features = [
     "default",
@@ -64,13 +66,9 @@ global_excluded_features = [
     "sqlite",
 ]
 
-# Always include these features even if they match exclude patterns
-always_include_features = ["derive"]
 # Crate-specific feature handling
 [dependencies.feature_overrides.async-std]
-excluded_features = [""]
 required_features = ["attributes"]
-default_features = true
 
 [dependencies.feature_overrides.clap]
 excluded_features = [""]

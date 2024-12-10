@@ -1,3 +1,10 @@
+/*[toml]
+[dependencies]
+atty = "0.2.14"
+colored = "2.1.0"
+inquire = "0.7.5"
+rustix = { version = "0.38.42", features = ["fs"] }
+*/
 /// `thag` prompted front-end command to run `clippy` on scripts. It is recommended to compile this to an executable with -x.
 /// Prompts the user to select a Rust script and one or more Clippy lints to run against the script's generated project, and
 /// and invokes `thag` with the --cargo option to run it.
@@ -5,6 +12,7 @@
 //# Categories: technique, tools
 use colored::Colorize;
 use inquire::{Confirm, MultiSelect, Select};
+use rustix::path::Arg;
 use std::{env, error::Error, path::PathBuf, process::Command};
 
 #[derive(Debug, Clone)] // Added Clone
@@ -27,7 +35,7 @@ impl LintLevel {
     const fn color(&self) -> colored::Color {
         match self {
             Self::Basic => colored::Color::Green,
-            Self::Style => colored::Color::Blue,
+            Self::Style => colored::Color::Cyan,
             Self::Extra => colored::Color::Yellow,
             Self::Strict => colored::Color::Red,
             Self::Deprecated => colored::Color::BrightBlack,
@@ -219,9 +227,41 @@ fn select_lint_groups() -> Result<Vec<ClippyLintGroup>, Box<dyn Error>> {
     Ok(selected_groups)
 }
 
+fn get_script_mode() -> ScriptMode {
+    if atty::isnt(atty::Stream::Stdin) {
+        // We're receiving input via pipe
+        ScriptMode::Stdin
+    } else if std::env::args().len() > 1 {
+        // We have command line arguments (likely a file path)
+        ScriptMode::File
+    } else {
+        // Interactive mode
+        ScriptMode::Interactive
+    }
+}
+
+enum ScriptMode {
+    Stdin,
+    File,
+    Interactive,
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("{}", "Select a Rust script to analyze with Clippy:".bold());
-    let script_path = select_script()?.display().to_string();
+    let script_path = match get_script_mode() {
+        ScriptMode::Stdin => {
+            eprintln!("This tool cannot be run with stdin input. Please provide a file path or run interactively.");
+            std::process::exit(1);
+        }
+        ScriptMode::File => {
+            // Get the file path from args
+            let args: Vec<String> = std::env::args().collect();
+            PathBuf::from(args[1].clone())
+        }
+        ScriptMode::Interactive => {
+            // Use the file selector
+            select_script()?
+        }
+    };
 
     println!("\n{}", "Select lint groups to apply:".bold());
     match select_lint_groups() {
@@ -232,7 +272,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                     "\nNo lint groups selected. Using default Clippy checks.".yellow()
                 );
                 println!("\n{}", "Command to run:".bold());
-                println!("thag --cargo {} -- clippy", script_path.blue());
+                println!(
+                    "thag --cargo {} -- clippy",
+                    script_path.display().to_string().bright_cyan()
+                );
             } else {
                 // Group selected lints by level
                 let mut by_level: Vec<(&str, Vec<&ClippyLintGroup>)> = Vec::new();
@@ -279,12 +322,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 // Display the command
                 let command = format!(
                     "thag --cargo {} -- clippy -- {}",
-                    script_path,
+                    script_path.display(),
                     warn_flags.join(" ")
                 );
                 println!("\n{}", "Command to run:".bold());
-                println!("{}", command.blue());
+                println!("{}", command.cyan());
 
+                let script_path = script_path.display().to_string();
                 // Execute the command
                 let mut thag_args = vec!["--cargo", &script_path, "--", "clippy", "--"];
                 thag_args.extend(warn_flags.iter().map(String::as_str));

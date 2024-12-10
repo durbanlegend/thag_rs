@@ -1,27 +1,16 @@
 /*[toml]
 [dependencies]
+syn = { version = "2.0.90", default-features = false, features = ["derive", "parsing", "full"] }
+tempfile = "3.14.0"
+tinyget = { version = "1.0.2", features = ["https"] }
 url = "2.5.4"
 */
-
 /// `thag` front-end command to run scripts from URLs. It is recommended to compile this with -x.
 //# Purpose: A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
 //# Categories: technique, tools
-use std::error::Error;
-use std::fmt;
-use std::process::{Command, Stdio};
-use std::string::ToString;
+use std::{error::Error, io::Write, process::Command, string::ToString};
+use syn::{parse_file, Expr};
 use url::Url;
-
-#[derive(Debug)]
-struct UrlError(String);
-
-impl fmt::Display for UrlError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl Error for UrlError {}
 
 enum SourceType {
     GitHub,
@@ -29,6 +18,106 @@ enum SourceType {
     Bitbucket,
     RustPlayground,
     Raw,
+}
+
+#[derive(Debug)]
+enum UrlError {
+    Http(String),
+    ParseError(String),
+    SyntaxError(String),
+}
+
+impl std::fmt::Display for UrlError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Http(msg) => write!(f, "HTTP Error: {msg}"),
+            Self::ParseError(msg) => write!(f, "Parse Error: {msg}"),
+            Self::SyntaxError(msg) => write!(f, "Syntax Error: {msg}"),
+        }
+    }
+}
+
+impl Error for UrlError {}
+
+fn validate_rust_content(content: &str) -> Result<(), UrlError> {
+    // Try parsing as a complete file first
+    if parse_file(content).is_ok() {
+        return Ok(());
+    }
+
+    // Try parsing as an expression
+    // if syn::parse_str::<syn::Expr>(content).is_ok() {
+    //     return Ok(());
+    // }
+    if extract_ast_expr(content).is_ok() {
+        return Ok(());
+    }
+
+    eprintln!("content={content}");
+    // If parsing failed, format the content for better error display
+    let temp_file = tempfile::NamedTempFile::new()
+        .map_err(|e| UrlError::ParseError(format!("Failed to create temp file: {e}")))?;
+
+    std::fs::write(temp_file.path(), content)
+        .map_err(|e| UrlError::ParseError(format!("Failed to write content: {e}")))?;
+
+    // Run rustfmt on the content
+    let output = Command::new("rustfmt")
+        .arg("--edition")
+        .arg("2021")
+        .arg(temp_file.path())
+        .output()
+        .map_err(|e| UrlError::ParseError(format!("Failed to run rustfmt: {e}")))?;
+
+    // Display formatted content
+    println!("Invalid Rust syntax. Formatted content:");
+    println!("----------------------------------------");
+    println!("{}", String::from_utf8_lossy(&output.stdout));
+    println!("----------------------------------------");
+
+    Err(UrlError::SyntaxError(
+        "Content is not valid Rust code".to_string(),
+    ))
+}
+
+pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
+    let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
+    if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
+        // Try putting the expression in braces.
+        let string = format!(r"{{{rs_source}}}");
+        let str = string.as_str();
+        // vlog!(V::N, "str={str}");
+
+        expr = syn::parse_str::<Expr>(str);
+    }
+    expr
+}
+
+fn fetch_and_validate(url: &str) -> Result<String, UrlError> {
+    let response = tinyget::get(url)
+        .send()
+        .map_err(|e| UrlError::Http(format!("Failed to fetch URL: {e}")))?;
+
+    // eprintln!(
+    //     "response={response:#?}, response.status_code={}",
+    //     response.status_code
+    // );
+
+    if response.status_code != 200 {
+        return Err(UrlError::Http(format!(
+            "HTTP {} - {}",
+            response.status_code, response.reason_phrase
+        )));
+    }
+
+    let content = response
+        .as_str()
+        .map_err(|e| UrlError::Http(format!("Failed to read response: {e}")))?;
+
+    // Validate content before returning
+    validate_rust_content(content)?;
+
+    Ok(content.to_string())
 }
 
 fn detect_source_type(url: &Url) -> SourceType {
@@ -42,7 +131,7 @@ fn detect_source_type(url: &Url) -> SourceType {
 }
 
 fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
-    let url = Url::parse(url_str).map_err(|e| UrlError(format!("Invalid URL: {e}")))?;
+    let url = Url::parse(url_str).map_err(|e| UrlError::ParseError(format!("Invalid URL: {e}")))?;
 
     match detect_source_type(&url) {
         SourceType::GitHub => {
@@ -53,12 +142,12 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
             }
 
             if !path.contains("/blob/") {
-                return Err(UrlError(
+                return Err(UrlError::SyntaxError(
                     "GitHub URL must contain '/blob/' in path".to_string(),
                 ));
             }
             if path.split('/').count() < 4 {
-                return Err(UrlError(
+                return Err(UrlError::SyntaxError(
                     "Invalid GitHub URL format: expected user/repo/blob/path".to_string(),
                 ));
             }
@@ -71,12 +160,12 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
         SourceType::GitLab => {
             let path = url.path();
             if !path.contains("/-/blob/") {
-                return Err(UrlError(
+                return Err(UrlError::SyntaxError(
                     "GitLab URL must contain '/-/blob/' in path".to_string(),
                 ));
             }
             if path.split('/').count() < 5 {
-                return Err(UrlError(
+                return Err(UrlError::SyntaxError(
                     "Invalid GitLab URL format: expected user/repo/-/blob/path".to_string(),
                 ));
             }
@@ -85,12 +174,12 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
         SourceType::Bitbucket => {
             let path = url.path();
             if !path.contains("/src/") {
-                return Err(UrlError(
+                return Err(UrlError::SyntaxError(
                     "Bitbucket URL must contain '/src/' in path".to_string(),
                 ));
             }
             if path.split('/').count() < 4 {
-                return Err(UrlError(
+                return Err(UrlError::SyntaxError(
                     "Invalid Bitbucket URL format: expected user/repo/src/path".to_string(),
                 ));
             }
@@ -101,11 +190,13 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
                 .query_pairs()
                 .find(|(key, _)| key == "gist")
                 .map(|(_, value)| value.to_string())
-                .ok_or_else(|| UrlError("No gist ID found in Playground URL".to_string()))?;
+                .ok_or_else(|| {
+                    UrlError::SyntaxError("No gist ID found in Playground URL".to_string())
+                })?;
 
             if gist_id.len() != 32 {
                 // Standard GitHub gist ID length
-                return Err(UrlError("Invalid gist ID format".to_string()));
+                return Err(UrlError::SyntaxError("Invalid gist ID format".to_string()));
             }
 
             Ok(format!(
@@ -125,6 +216,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         std::process::exit(1);
     }
 
+    eprintln!("args={args:#?}");
+
     // Parse arguments
     let mut iter = args.iter().skip(1); // skip program name
     let mut thag_mode = String::from("-s"); // default
@@ -143,6 +236,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             "--" => {
                 found_separator = true;
+                additional_args.push("--".to_string());
                 break;
             }
             arg => {
@@ -167,26 +261,46 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let raw_url = convert_to_raw_url(&url)?;
 
-    // Create the curl command
-    let curl = Command::new("curl")
-        .args(["-sL", &raw_url])
-        .stdout(Stdio::piped())
-        .spawn()?;
+    match fetch_and_validate(&raw_url) {
+        Ok(content) => {
+            // Create the Command with piped stdin
+            let mut child = Command::new("thag")
+                .arg(thag_mode)
+                .args(&additional_args)
+                .stdin(std::process::Stdio::piped())
+                .spawn()?;
 
-    // Build thag command with all arguments
-    let mut thag_command = Command::new("thag");
-    thag_command.arg(&thag_mode);
-    thag_command.args(&additional_args);
-    thag_command.stdin(curl.stdout.unwrap());
+            eprintln!("additional_args={additional_args:#?}");
+            //
+            // Write to stdin
+            if let Some(mut stdin) = child.stdin.take() {
+                stdin.write_all(content.as_bytes())?;
+                // stdin is dropped here, closing the pipe
+            }
 
-    // Run thag
-    let status = thag_command.status()?;
+            // Wait for thag to complete
+            let status = child.wait()?;
 
-    if !status.success() {
-        std::process::exit(status.code().unwrap_or(1));
+            if !status.success() {
+                std::process::exit(status.code().unwrap_or(1));
+            }
+            Ok(())
+        }
+        Err(e) => {
+            match e {
+                UrlError::Http(ref msg) => {
+                    eprintln!("Failed to fetch content: {msg}");
+                }
+                UrlError::ParseError(ref msg) => {
+                    eprintln!("Failed to process content: {msg}");
+                }
+                UrlError::SyntaxError(ref msg) => {
+                    eprintln!("Invalid Rust code: {msg}");
+                }
+            }
+            std::process::exit(1);
+        }
     }
-
-    Ok(())
 }
 
 fn print_usage(program: &str) {

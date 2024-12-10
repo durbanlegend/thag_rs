@@ -54,14 +54,31 @@
 Try running tests without debug or debug_timings.
 validate_state only when feature minimal not engaged - instead switched off debug and debug-assertions in Cargo.toml
 
-[thag](</Users/donf/.cargo/bin/thag?-r>)
+[thag](./../../.cargo/bin/thag?-r)
+
+[thag_url](<./../../../.cargo/bin/thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs>)
 
 [Run this script with thag](thag://github.com/near-cli-rs/interactive-clap/blob/master/examples/advanced_struct.rs)
 
-Run this example:
+##
+    thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
+
+
+<details>
+<summary>Run this example</summary>
+
 ```bash
-thag -u https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10
 ```
+</details>
+
+Clipboard.js:
+<div class="run-example">
+    <code>thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10</code>
+    <button class="copy-button" data-clipboard-text="thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10">Copy</button>
+</div>
+
+
 https://raw.githubusercontent.com/durbanlegend/thag_rs/3f52d4c4590c0573ad130727e746161029fdae57/demo/in_place.rs#L1C1-L24C2
 
 thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
@@ -78,8 +95,8 @@ thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output - rather fix bad output at source - done?
 - [ ]  Use cargo-dist to build and distribute thag front-end commands.
 - [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
-- [ ]  Make thag_url more user-friendly in reporting errors, e.g. invalid URL. Also --stdin suppress this if possible:
-        Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done
+- [ ]  Make thag_url more user-friendly in reporting errors, e.g. invalid URL.
+        - make it prompted.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?

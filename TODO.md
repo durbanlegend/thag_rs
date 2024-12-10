@@ -54,6 +54,113 @@
 Try running tests without debug or debug_timings.
 validate_state only when feature minimal not engaged - instead switched off debug and debug-assertions in Cargo.toml
 
+### Full clipboard.js example
+
+<div class="run-example">
+<pre><code>thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10</code></pre>
+<button class="copy-button" onclick="copyCommand(this)">Copy command</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
+<script>
+function copyCommand(button) {
+    const code = button.previousElementSibling.textContent;
+    navigator.clipboard.writeText(code).then(function() {
+        button.textContent = 'Copied!';
+        setTimeout(() => button.textContent = 'Copy command', 2000);
+    });
+}
+</script>
+
+<style>
+.run-example {
+    background: #f5f5f5;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+.copy-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+.copy-button:hover {
+    background: #45a049;
+}
+pre {
+    margin: 0;
+    white-space: pre-wrap;
+}
+</style>
+
+### Simpler example
+
+```markdown
+Run this example:
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10
+```
+
+<details>
+<summary>Why run this example?</summary>
+
+This example demonstrates matrix-based Fibonacci calculation. The argument (10) specifies how many numbers to calculate.
+</details>
+```
+
+### md_snippet_gen.rs output
+
+Run this example:
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10
+```
+
+<details>
+<summary>About this example</summary>
+
+Matrix-based Fibonacci calculation example
+</details>
+
+
+Run this example:
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/hello.rs
+```
+
+<details>
+<summary>About this example</summary>
+
+Simple hello world example
+</details>
+
+
+### Gemini recommended
+
+   ```bash
+   thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10
+   ```
+
+### ChatGPT
+
+## Run thag_url
+
+Click the button to copy the command:
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10
+<button onclick="copyToClipboard()">Copy</button>
+
+<script> function copyToClipboard() { const code = `thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10`; navigator.clipboard.writeText(code).then(() => { alert("Command copied to clipboard!"); }, (err) => { console.error("Error copying text: ", err); }); } </script>
+```
+
+### End
+
 [thag](./../../.cargo/bin/thag?-r)
 
 [thag_url](<./../../../.cargo/bin/thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs>)

@@ -19,12 +19,12 @@ warp = "0.3.7"
 //# Categories: technique, tools
 use edit;
 // use regex::Regex;
-use inquire::{MultiSelect, Select};
-use std::process::Command;
+use inquire::{MultiSelect, Select, Text};
 use std::{
     collections::HashMap,
     fs::{self, read_dir},
     path::{Path, PathBuf},
+    process::Command,
 };
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use thag_demo_proc_macros::category_enum;
@@ -38,6 +38,60 @@ category_enum! {} // This will generate the Category enum
 enum FilterLogic {
     Or,
     And,
+}
+
+#[derive(Debug)]
+enum OutputFormat {
+    Html,
+    MarkdownPager,
+    MarkdownFile,
+}
+
+fn get_markdown_output_choice() -> OutputFormat {
+    Select::new(
+        "How would you like to view the Markdown?",
+        vec!["Display in pager", "Save to file"],
+    )
+    .with_starting_cursor(0)
+    .prompt()
+    .map(|s| match s {
+        "Save to file" => OutputFormat::MarkdownFile,
+        _ => OutputFormat::MarkdownPager,
+    })
+    .unwrap_or(OutputFormat::MarkdownPager)
+}
+
+fn get_user_preferences() -> (FilterLogic, Vec<Category>, OutputFormat) {
+    // First get the filter logic
+    let logic = Select::new("Select filter logic:", vec!["OR", "AND"])
+        .with_starting_cursor(0)
+        .prompt()
+        .map(|s| match s {
+            "AND" => FilterLogic::And,
+            _ => FilterLogic::Or,
+        })
+        .unwrap_or(FilterLogic::Or);
+
+    // Then get category selections
+    let categories = Category::iter().collect::<Vec<_>>();
+    let selections = MultiSelect::new("Select categories:", categories)
+        .prompt()
+        .unwrap_or_default();
+
+    // Finally get output format preference
+    let format = Select::new("Select output format:", vec!["HTML", "Markdown"])
+        .with_starting_cursor(0)
+        .prompt()
+        .map(|s| match s {
+            "Markdown" => {
+                // If Markdown is selected, ask for output preference
+                get_markdown_output_choice()
+            }
+            _ => OutputFormat::Html,
+        })
+        .unwrap_or(OutputFormat::Html);
+
+    (logic, selections, format)
 }
 
 fn get_category_filters() -> (FilterLogic, Vec<Category>) {
@@ -63,15 +117,13 @@ fn get_category_filters() -> (FilterLogic, Vec<Category>) {
 #[tokio::main]
 async fn main() {
     let scripts_dir = Path::new("demo");
-    let (logic, categories) = get_category_filters();
+    let (logic, categories, format) = get_user_preferences();
 
-    // Convert categories to strings for display and filtering
     let category_strings: Vec<String> = categories
         .iter()
         .map(|c| c.to_string().to_lowercase())
         .collect();
 
-    // Collect metadata and filter by categories
     let metadata = collect_all_metadata(scripts_dir)
         .into_iter()
         .filter(|meta| match logic {
@@ -87,29 +139,39 @@ async fn main() {
         })
         .collect::<Vec<_>>();
 
-    // Generate HTML report
-    // Use category_strings for display
-    let html_report = generate_html_report(&category_strings.join(", "), &metadata);
+    match format {
+        OutputFormat::MarkdownPager => {
+            let markdown = output_markdown(&category_strings.join(", "), &metadata);
+            display_in_pager(&markdown);
+        }
+        OutputFormat::MarkdownFile => {
+            let markdown = output_markdown(&category_strings.join(", "), &metadata);
+            match save_markdown_to_file(markdown) {
+                Ok(path) => println!("Markdown file saved successfully to: {}", path.display()),
+                Err(e) => eprintln!("Error saving file: {}", e),
+            }
+        }
+        OutputFormat::Html => {
+            let html_report = generate_html_report(&category_strings.join(", "), &metadata);
 
-    // Serve via HTTPS
-    let edit_route =
-        warp::path("edit")
-            .and(warp::path::param::<String>())
-            .map(move |script_name: String| {
-                let script_path = Path::new(&scripts_dir).join(&script_name);
-                if edit::edit_file(&script_path).is_ok() {
-                    format!("Editing script: {}", script_name)
-                } else {
-                    format!("Failed to edit script: {}", script_name)
-                }
-            });
+            let edit_route = warp::path("edit").and(warp::path::param::<String>()).map(
+                move |script_name: String| {
+                    let script_path = Path::new(&scripts_dir).join(&script_name);
+                    if edit::edit_file(&script_path).is_ok() {
+                        format!("Editing script: {}", script_name)
+                    } else {
+                        format!("Failed to edit script: {}", script_name)
+                    }
+                },
+            );
 
-    let html_route = warp::path::end().map(move || warp::reply::html(html_report.clone()));
-    let routes = html_route.or(edit_route);
+            let html_route = warp::path::end().map(move || warp::reply::html(html_report.clone()));
+            let routes = html_route.or(edit_route);
 
-    println!("Serving web page on http://127.0.0.1:8081");
-    // warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
-    warp::serve(routes).run(([127, 0, 0, 1], 8081)).await;
+            println!("Serving web page on http://127.0.0.1:8081");
+            warp::serve(routes).run(([127, 0, 0, 1], 8081)).await;
+        }
+    }
 }
 
 // Function to generate HTML content
@@ -129,6 +191,22 @@ fn generate_html_report(categories_str: &str, metadata_list: &[ScriptMetadata]) 
                             background: #007bff; color: white;
                             text-decoration: none; border-radius: 3px; }
                 .edit-link:hover { background: #0056b3; }
+                .categories-header {
+                    font-size: 1.5em;
+                    margin: 20px 0;
+                    padding: 10px;
+                    background: #f8f9fa;
+                    border-radius: 5px;
+                }
+                .category-highlight {
+                    display: inline-block;
+                    padding: 2px 8px;
+                    margin: 0 2px;
+                    background: #e9ecef;
+                    border-radius: 3px;
+                    font-weight: bold;
+                    color: #495057;
+                }
             </style>
         </head>
         <body>
@@ -136,9 +214,18 @@ fn generate_html_report(categories_str: &str, metadata_list: &[ScriptMetadata]) 
         .to_string(),
     );
 
+    html.push_str("<h1>thag_rs Demo Scripts</h1>");
+
+    // Enhanced categories display
+    let highlighted_categories = categories_str
+        .split(", ")
+        .map(|cat| format!("<span class=\"category-highlight\">{}</span>", cat))
+        .collect::<Vec<_>>()
+        .join(" ");
+
     html.push_str(&format!(
-        "<h1>thag_rs Demo Scripts</h1><p>Matching categories: {}</p>",
-        categories_str
+        "<div class=\"categories-header\">Matching categories: {}</div>",
+        highlighted_categories
     ));
 
     for meta in metadata_list {
@@ -181,10 +268,14 @@ fn generate_html_report(categories_str: &str, metadata_list: &[ScriptMetadata]) 
 }
 
 fn output_markdown(categories_str: &str, metadata_list: &[ScriptMetadata]) -> String {
-    let mut md = format!(
-        "# thag_rs Demo Scripts\n\nMatching categories: {}\n\n",
-        categories_str
-    );
+    let mut md = String::from("# thag_rs Demo Scripts\n\n");
+
+    // Enhanced categories display
+    md.push_str(&format!("## Matching categories\n\n"));
+    for category in categories_str.split(", ") {
+        md.push_str(&format!("- **{}**\n", category));
+    }
+    md.push_str("\n---\n\n");
 
     for meta in metadata_list {
         md.push_str(&format!("## {}\n\n", meta.script));
@@ -241,6 +332,19 @@ struct ScriptMetadata {
     // script_type: Option<String>,
     description: Option<String>,
     categories: Vec<String>, // New field for categories
+}
+
+fn save_markdown_to_file(content: String) -> std::io::Result<PathBuf> {
+    // Get the directory to save to
+    let default_dir = std::env::current_dir()?;
+    let save_path = Text::new("Enter filename (with .md extension):")
+        .with_default("demo_scripts.md")
+        .prompt()
+        .map(|filename| default_dir.join(filename))
+        .unwrap_or_else(|_| default_dir.join("demo_scripts.md"));
+
+    fs::write(&save_path, content)?;
+    Ok(save_path)
 }
 
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {

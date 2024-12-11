@@ -9,6 +9,7 @@ syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "visi
 /// traversal. This version expects the script contents to consist of a Rust expression.
 //# Purpose: Prototype.
 //# Categories: AST, crates, prototype, technique
+//# Sample arguments: `-- demo/just_a_test_expression.rs`
 use std::{env, fs, path::PathBuf};
 
 fn main() {

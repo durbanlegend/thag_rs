@@ -7,6 +7,8 @@ tui-scrollview = "0.4"
 */
 
 /// Published example from `tui-scrollview` crate. Toml entries from crate's Cargo.toml.
+///
+/// Not suitable for running from a URL.
 //# Purpose: Explore TUI editing
 //# Categories: crates, exploration, technique
 use std::io::{self, stdout};

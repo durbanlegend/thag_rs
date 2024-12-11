@@ -10,10 +10,13 @@ syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "visi
 /// traversal. This version expects the script contents to consist of a full-fledged Rust program.
 //# Purpose: Prototype.
 //# Categories: AST, crates, prototype, technique
+//# Sample arguments: `-- demo/syn_visit_extern_crate_file.rs`
+// Do not remove: extern crate for a self test
+extern crate syn;
 use std::{env, fs, path::PathBuf};
 
 fn main() {
-    use ::syn::{visit::*, *};
+    use syn::{visit::*, *};
 
     let mut args = env::args_os();
     let _ = args.next(); // executable name

@@ -14,6 +14,7 @@ ibig = "0.3.6"
 ///
 //# Purpose: Demonstrate instrumenting scripts for benchmarking.
 //# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};
 use std::env;
 use std::iter::{successors, Successors, Take};

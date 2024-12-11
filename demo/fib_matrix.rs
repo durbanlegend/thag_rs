@@ -8,6 +8,7 @@
 ///
 //# Purpose: Demo an alternative to the standard computation for Fibonacci numbers.
 //# Categories: educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use std::env;
 
 fn fibonacci_matrix(n: u128) -> u128 {

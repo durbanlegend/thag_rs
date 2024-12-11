@@ -5,7 +5,7 @@ edit = "0.1.5"
 regex = "1.10.5"
 syn = "2"
 # thag_rs = "0.1.7"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "cedce80a5faaab83ef172682e196065ccce892d8" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "ad07d461c3b20c837d901adeb7b46371bf79646f" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
 # tokio = "1.41.1"
 tokio = { version = "1", features = ["full"] }
@@ -24,39 +24,9 @@ use std::{
     fs::{self, read_dir},
     path::{Path, PathBuf},
 };
-// use syn;
 use thag_rs::code_utils;
-// use thag_rs::shared::Ast;
 use tokio;
 use warp::Filter;
-
-// /// An abstract syntax tree wrapper for use with syn.
-// #[derive(Clone, Debug, Display)]
-// pub enum Ast {
-//     File(syn::File),
-//     Expr(syn::Expr),
-//     // None,
-// }
-
-// impl Ast {
-//     #[must_use]
-//     pub const fn is_file(&self) -> bool {
-//         match self {
-//             Self::File(_) => true,
-//             Self::Expr(_) => false,
-//         }
-//     }
-// }
-
-// /// Required to use quote! macro to generate code to resolve expression.
-// impl ToTokens for Ast {
-//     fn to_tokens(&self, tokens: &mut TokenStream) {
-//         match self {
-//             Self::File(file) => file.to_tokens(tokens),
-//             Self::Expr(expr) => expr.to_tokens(tokens),
-//         }
-//     }
-// }
 
 #[tokio::main]
 async fn main() {
@@ -220,20 +190,6 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
         None => code_utils::infer_deps_from_source(&content),
     };
 
-    // lazy_static! {
-    //     static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
-    // }
-    // let main_methods = match maybe_syntax_tree {
-    //     Some(ref ast) => code_utils::count_main_methods(ast),
-    //     None => RE.find_iter(&content).count(),
-    // };
-
-    // let script_type = if main_methods >= 1 {
-    //     "Program"
-    // } else {
-    //     "Snippet"
-    // };
-
     let script = format!(
         "{}",
         file_path
@@ -286,41 +242,3 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
 
     all_metadata
 }
-
-// /// Format a Rust source file in situ using rustfmt.
-// /// # Panics
-// /// Will panic if the `rustfmt` failed.
-// fn rustfmt(source_path_str: &str) {
-//     if std::process::Command::new("rustfmt")
-//         .arg("--version")
-//         .output()
-//         .is_ok()
-//     {
-//         // Run rustfmt on the source file
-//         let mut command = std::process::Command::new("rustfmt");
-//         command.arg("--edition");
-//         command.arg("2021");
-//         command.arg(source_path_str);
-//         command
-//             .stdout(std::process::Stdio::inherit())
-//             .stderr(std::process::Stdio::inherit());
-//         let output = command.output().expect("Failed to run rustfmt");
-
-//         if output.status.success() {
-//             eprintln!("Successfully formatted {} with rustfmt.", source_path_str);
-//             eprintln!(
-//                 "{}\n{}",
-//                 source_path_str,
-//                 String::from_utf8_lossy(&output.stdout)
-//             );
-//         } else {
-//             eprintln!(
-//                 "Failed to format {} with rustfmt\n{}",
-//                 source_path_str,
-//                 String::from_utf8_lossy(&output.stderr)
-//             );
-//         }
-//     } else {
-//         eprintln!("`rustfmt` not found. Please install it to use this script.");
-//     }
-// }

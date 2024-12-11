@@ -23,6 +23,7 @@ ibig = "0.3.6"
 /// algorithms.
 //# Purpose: Demo snippets with functions and closures, `ibig` cross-platform big-number crate.
 //# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 50`
 use ibig::{ubig, UBig};
 use std::env;
 use std::io::Read;

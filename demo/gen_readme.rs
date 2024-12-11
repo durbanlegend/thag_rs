@@ -26,7 +26,7 @@ use regex::Regex;
 use std::{
     collections::HashMap,
     fs::{self, read_dir, File},
-    io::Write,
+    io::Write as OtherWrite,
     path::{Path, PathBuf},
 };
 use thag_rs::{code_utils, lazy_static_var};
@@ -41,9 +41,11 @@ struct ScriptMetadata {
     crates: Vec<String>,
     script_type: Option<String>,
     description: Option<String>,
-    categories: Vec<String>, // New field for categories
+    categories: Vec<String>,
+    sample_args: Option<String>,
 }
 
+// Generates all_categories()
 category_enum! {}
 
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
@@ -73,6 +75,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     let mut doc = false;
     let mut purpose = false;
     let mut categories = vec!["missing".to_string()]; // Default to "general"
+    let mut sample_args: Option<String> = None;
 
     for line in content.clone().lines() {
         if line.starts_with("//#") {
@@ -94,6 +97,19 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
                             "One or more invalid categories found in {}",
                             file_path.display()
                         );
+                    }
+                    "sample arguments" => {
+                        // Extract content between backticks, if present
+                        let value = value.trim();
+                        sample_args = if let Some(quoted) = value.strip_prefix('`') {
+                            if let Some(args) = quoted.strip_suffix('`') {
+                                Some(args.to_string())
+                            } else {
+                                Some(quoted.to_string())
+                            }
+                        } else {
+                            Some(value.to_string())
+                        };
                     }
                     _ => {}
                 }
@@ -164,7 +180,8 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
         crates,
         script_type: Some(script_type.to_string()),
         description: description.cloned(),
-        categories, // Add categories to metadata
+        categories,
+        sample_args,
     })
 }
 
@@ -239,13 +256,82 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path, boilerp
         writeln!(file, "**Categories:** {}\n", metadata.categories.join(", ")).unwrap(); // Include categories
         writeln!(
             file,
-            "**Link:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/demo/{})\n",
+            "**Link:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/demo/{})",
             metadata.script, metadata.script
         )
         .unwrap();
+
+        // let example = Example::new(
+        //     "https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs",
+        //     vec!["10".to_string()],
+        //     Some("Matrix-based Fibonacci calculation example".to_string()),
+        // );
+        // writeln!(
+        //     file,
+        //     "**Run this example:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/demo/{})\n",
+        //     metadata.script, metadata.script
+        // )
+        // .unwrap();
+        let run_section = generate_run_section(metadata);
+        writeln!(file, "{run_section}").unwrap();
         writeln!(file, "---\n").unwrap();
     }
 }
+
+fn generate_run_section(metadata: &ScriptMetadata) -> String {
+    let mut md = String::new();
+    md.push_str("\n**Run this example:**\n\n");
+    md.push_str("```bash\n");
+
+    let base_url = "https://github.com/durbanlegend/thag_rs/blob/master/demo";
+    let command = if let Some(args) = &metadata.sample_args {
+        format!("thag_url {}/{} {}", base_url, metadata.script, args)
+    } else {
+        format!("thag_url {}/{}", base_url, metadata.script)
+    };
+
+    md.push_str(&command);
+    md.push_str("\n```\n");
+
+    md
+}
+
+// struct Example {
+//     url: String,
+//     args: Vec<String>,
+//     description: Option<String>,
+// }
+
+// impl Example {
+//     fn new(url: impl Into<String>, args: Vec<String>, description: Option<String>) -> Self {
+//         Self {
+//             url: url.into(),
+//             args,
+//             description,
+//         }
+//     }
+
+//     fn to_command(&self) -> String {
+//         if self.args.is_empty() {
+//             format!("thag_url {}", self.url)
+//         } else {
+//             format!("thag_url {} -- {}", self.url, self.args.join(" "))
+//         }
+//     }
+
+//     fn generate_markdown(&self) -> String {
+//         let mut md = String::new();
+//         md.push_str("Run this example:\n\n```bash\n");
+//         md.push_str(&self.to_command());
+//         md.push_str("\n```\n");
+//         if let Some(desc) = &self.description {
+//             md.push_str("\n<details>\n<summary>About this example</summary>\n\n");
+//             md.push_str(desc);
+//             md.push_str("\n</details>\n");
+//         }
+//         md
+//     }
+// }
 
 fn main() {
     profile_fn!(main);
@@ -254,19 +340,19 @@ fn main() {
     let boilerplate_path = Path::new("assets/boilerplate.md");
 
     // Check if firestorm profiling is enabled
-    if firestorm::enabled() {
-        // Profile the `execute` function
-        // Use borrow_mut to get a mutable reference
-        firestorm::bench("./flames/", || {
-            let all_metadata = collect_all_metadata(scripts_dir);
-            generate_readme(&all_metadata, output_path, boilerplate_path);
-        })
-        .unwrap();
-    } else {
-        // Regular execution when profiling is not enabled
-        let all_metadata = collect_all_metadata(scripts_dir);
-        generate_readme(&all_metadata, output_path, boilerplate_path);
-    }
+    // if firestorm::enabled() {
+    //     // Profile the `execute` function
+    //     // Use borrow_mut to get a mutable reference
+    //     firestorm::bench("./flames/", || {
+    //         let all_metadata = collect_all_metadata(scripts_dir);
+    //         generate_readme(&all_metadata, output_path, boilerplate_path);
+    //     })
+    //     .unwrap();
+    // } else {
+    // Regular execution when profiling is not enabled
+    let all_metadata = collect_all_metadata(scripts_dir);
+    generate_readme(&all_metadata, output_path, boilerplate_path);
+    // }
 
     println!("demo/README.md generated successfully.");
 }

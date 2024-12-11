@@ -13,7 +13,7 @@ ibig = "0.3.6"
 /// The implementation is thanks to GPT-4.
 //# Purpose: Demo snippet, `ibig` crate, factorial using `std::iter::Product` trait, workaround for implementing an external trait on an external crate.
 //# Categories: big_numbers, educational, math, recreational, technique
-
+//# Sample arguments: `-- 50`
 use ibig::{ubig, UBig};
 use std::env;
 use std::iter::{successors, Product};

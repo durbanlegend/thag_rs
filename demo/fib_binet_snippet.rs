@@ -9,6 +9,7 @@
 ///
 //# Purpose: Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers..
 //# Categories: educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use std::env;
 
 let args: Vec<String> = env::args().collect();

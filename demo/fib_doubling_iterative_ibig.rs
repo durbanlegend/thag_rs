@@ -21,6 +21,7 @@ ibig = "0.3.6"
 /// normal multiplication formula.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 //# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use ibig::ubig;
 use std::collections::{HashMap, HashSet};
 use std::env;

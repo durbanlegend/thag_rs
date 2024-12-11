@@ -14,6 +14,7 @@ rug = "1.24.1"
 ///
 //# Purpose: Demo a very fast precise computation for large individual Fibonacci numbers.
 //# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 
 use rug::ops::Pow;
 use rug::Integer;

@@ -1,107 +1,68 @@
-/*[toml]
-[dependencies]
-hyper = { version = "1", features = ["full"] }
-tokio = { version = "1", features = ["full"] }
-pretty_env_logger = "0.5"
-http-body-util = "0.1"
-bytes = "1"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-form_urlencoded = "1"
-http = "1"
-futures-util = { version = "0.3", default-features = false }
-pin-project-lite = "0.2.14"
-*/
-
 #![deny(warnings)]
-#![warn(rust_2018_idioms)]
-use bytes::Bytes;
-use http_body_util::{BodyExt, Empty};
-use hyper::Request;
-use std::env;
-use tokio::io::{self, AsyncWriteExt as _};
-use tokio::net::TcpStream;
 
-use crate::support::TokioIo;
-
-// A simple type alias so as to DRY.
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
-
-/// Published echo-server HTTP client example from the `hyper` crate,
+/// Published simple hello HTTP server example from the `hyper` crate,
 /// with the referenced modules `support` and `tokiort` refactored
 /// into the script, while respecting their original structure and
 /// redundancies.
-/// You can run the `hyper_echo_server.rs` demo as the HTTP server on
-/// another command line and connect to it on port 3000:
-/// `thag demo/hyper_client.rs -- http://127.0.0.1:3000`.
-/// Or use any other available HTTP server.
-//# Purpose: Demo `hyper` HTTP client, and incorporating separate modules into the script.
+//# Purpose: Demo `hyper` HTTP hello server, and incorporating separate modules into the script.
 //# Categories: async, crates, technique
-//# Sample arguments: `-- http://127.0.0.1:3000`
-#[tokio::main]
-async fn main() -> Result<()> {
-    pretty_env_logger::init();
+use std::convert::Infallible;
+use std::net::SocketAddr;
 
-    // Some simple CLI args requirements...
-    let url = match env::args().nth(1) {
-        Some(url) => url,
-        None => {
-            println!("Usage: client <url>");
-            return Ok(());
-        }
-    };
+use bytes::Bytes;
+use http_body_util::Full;
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper::{Request, Response};
+use tokio::net::TcpListener;
 
-    // HTTPS requires picking a TLS implementation, so give a better
-    // warning if the user tries to request an 'https' URL.
-    let url = url.parse::<hyper::Uri>().unwrap();
-    if url.scheme_str() != Some("http") {
-        println!("This example only works with 'http' URLs.");
-        return Ok(());
-    }
+use support::{TokioIo, TokioTimer};
 
-    fetch_url(url).await
+// An async function that consumes a request, does nothing with it and returns a
+// response.
+async fn hello(_: Request<impl hyper::body::Body>) -> Result<Response<Full<Bytes>>, Infallible> {
+    Ok(Response::new(Full::new(Bytes::from("Hello World!"))))
 }
 
-async fn fetch_url(url: hyper::Uri) -> Result<()> {
-    let host = url.host().expect("uri has no host");
-    let port = url.port_u16().unwrap_or(80);
-    let addr = format!("{}:{}", host, port);
-    let stream = TcpStream::connect(addr).await?;
-    let io = TokioIo::new(stream);
+#[tokio::main]
+pub async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pretty_env_logger::init();
 
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            println!("Connection failed: {:?}", err);
-        }
-    });
+    // This address is localhost
+    let addr: SocketAddr = ([127, 0, 0, 1], 3000).into();
 
-    let authority = url.authority().unwrap().clone();
+    // Bind to the port and listen for incoming TCP connections
+    let listener = TcpListener::bind(addr).await?;
+    println!("Listening on http://{}", addr);
+    loop {
+        // When an incoming TCP connection is received grab a TCP stream for
+        // client<->server communication.
+        //
+        // Note, this is a .await point, this loop will loop forever but is not a busy loop. The
+        // .await point allows the Tokio runtime to pull the task off of the thread until the task
+        // has work to do. In this case, a connection arrives on the port we are listening on and
+        // the task is woken up, at which point the task is then put back on a thread, and is
+        // driven forward by the runtime, eventually yielding a TCP stream.
+        let (tcp, _) = listener.accept().await?;
+        // Use an adapter to access something implementing `tokio::io` traits as if they implement
+        // `hyper::rt` IO traits.
+        let io = TokioIo::new(tcp);
 
-    let path = url.path();
-    let req = Request::builder()
-        .uri(path)
-        .header(hyper::header::HOST, authority.as_str())
-        .body(Empty::<Bytes>::new())?;
-
-    let mut res = sender.send_request(req).await?;
-
-    println!("Response: {}", res.status());
-    println!("Headers: {:#?}\n", res.headers());
-
-    // Stream the body, writing each chunk to stdout as we get it
-    // (instead of buffering and printing at the end).
-    println!("Response body:");
-    while let Some(next) = res.frame().await {
-        let frame = next?;
-        if let Some(chunk) = frame.data_ref() {
-            io::stdout().write_all(&chunk).await?;
-        }
+        // Spin up a new task in Tokio so we can continue to listen for new TCP connection on the
+        // current task without waiting for the processing of the HTTP1 connection we just received
+        // to finish
+        tokio::task::spawn(async move {
+            // Handle the connection from the client using HTTP1 and pass any
+            // HTTP requests received on that connection to the `hello` function
+            if let Err(err) = http1::Builder::new()
+                .timer(TokioTimer::new())
+                .serve_connection(io, service_fn(hello))
+                .await
+            {
+                println!("Error serving connection: {:?}", err);
+            }
+        });
     }
-
-    println!("\n\nDone!\n");
-
-    Ok(())
 }
 
 mod support {

@@ -14,6 +14,7 @@ clap = { version = "4.5.21", features = ["cargo", "derive"] }
 /// Incorrect behaviour is that the command runs without an error.
 //# Purpose: test if the error exists, then periodically to see if it persists.
 //# Categories: crates, testing
+//# Sample arguments: `-- --write --show-hex`
 use clap::{ArgGroup, Parser};
 
 #[derive(Parser, Debug)]

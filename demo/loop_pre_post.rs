@@ -1,4 +1,3 @@
-use std::env;
 /// Exploring the possibility of incorporating a line processor similar
 /// to `rust-script`'s `--loop` or `runner`'s `--lines`, but with pre-
 /// and post-loop logic analogous to `awk`. I got GPT to do me this
@@ -6,13 +5,15 @@ use std::env;
 /// P.S.: This was since implemented as `--loop`.
 //# Purpose: Evaluate expression logic for line processing.
 //# Categories: exploration, technique
+//# Sample arguments: `-- 'dummy prelude' 'dummy main' 'dummy post' # ... and hit Enter then Ctrl-d`
+use std::env;
 use std::io::{self, BufRead};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 4 {
-        eprintln!("Usage: thag_rs <prelude_code> <main_code> <post_code>");
+        eprintln!("Usage: thag demo/loop_pre_post.rs <prelude_code> <main_code> <post_code>");
         return Ok(());
     }
 

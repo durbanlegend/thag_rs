@@ -12,6 +12,7 @@ ibig = "0.3.6"
 /// cache as soon as it's safe to do so.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 //# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use ibig::ubig;
 use std::collections::{HashMap, HashSet};
 use std::env;

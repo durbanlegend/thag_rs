@@ -2,6 +2,7 @@
 /// Rust primitives.
 //# Purpose: Demo fast limited-scale factorial using Rust primitives and std::iter::Product trait.
 //# Categories: educational, math, recreational, technique
+//# Sample arguments: `-- 34`
 use std::env;
 use std::io::Result;
 

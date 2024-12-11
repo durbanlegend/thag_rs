@@ -9,6 +9,7 @@ clap = { version = "4.5.21", features = ["derive"] }
 /// E.g. `thag -t demo/cmd_args_clap.rs -- -atv hello.sh`
 //# Purpose: For comparison with `demo/cmd_args_bpaf_gpt.rs`.
 //# Categories: CLI, crates, technique
+//# Sample arguments: `-- -atv hello.sh`
 use bitflags::bitflags;
 use clap::Parser;
 use core::{fmt, str};

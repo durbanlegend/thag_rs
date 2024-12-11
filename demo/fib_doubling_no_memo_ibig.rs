@@ -9,6 +9,7 @@ ibig = "0.3.6"
 ///
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.
 //# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};
 use std::env;
 use std::time::Instant;

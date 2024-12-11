@@ -11,6 +11,7 @@ dashu = "0.4.2"
 ///
 //# Purpose: Demo snippet, `dashu` crate, factorial using `std::iter::Product` trait.
 //# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 50`
 
 use dashu::ubig;
 use dashu::integer::UBig;

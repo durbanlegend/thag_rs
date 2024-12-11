@@ -7,6 +7,7 @@ itertools = "0.13.0"
 ///
 //# Purpose: Demo using a big-number crate to avoid the size limitations of primitive integers.
 //# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};
 use itertools::iterate;
 use std::env;

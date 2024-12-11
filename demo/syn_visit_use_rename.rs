@@ -11,6 +11,7 @@ syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "visi
 /// to consist of a full-fledged Rust program.
 //# Purpose: Prototype.
 //# Categories: AST, crates, prototype, technique
+//# Sample arguments: `-- demo/crossbeam_epoch_sanitize.rs`
 use std::{env, fs, path::PathBuf};
 
 fn main() {
@@ -29,7 +30,7 @@ fn main() {
     struct FindCrates;
     impl<'ast> Visit<'ast> for FindCrates {
         fn visit_use_rename(&mut self, node: &'ast syn::UseRename) {
-            println!("{}", node.rename);
+            println!("Crate alias for exclusion: {}", node.rename);
         }
     }
 

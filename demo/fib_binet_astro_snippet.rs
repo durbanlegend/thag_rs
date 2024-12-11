@@ -18,6 +18,7 @@ astro-float = "0.9.4"
 ///
 //# Purpose: Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers, also `astro-float` crate..
 //# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use astro_float::{expr, BigFloat, Consts, RoundingMode};
 use astro_float::ctx::Context;
 use std::env;

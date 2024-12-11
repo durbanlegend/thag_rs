@@ -72,7 +72,7 @@ pub fn function_like_basic(input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
 pub fn derive_custom_model(input: TokenStream) -> TokenStream {
-    derive_custom_model_impl(input)
+    intercept_and_debug(true, input, |tokens| derive_custom_model_impl(tokens))
 }
 
 #[proc_macro_derive(IntoStringHashMap)]
@@ -112,7 +112,10 @@ pub fn organizing_code_tokenstream(input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(DeriveConst, attributes(adjust, use_mappings))]
 pub fn organizing_code_const(input: TokenStream) -> TokenStream {
-    organizing_code_const_impl(input.into()).unwrap().into()
+    // organizing_code_const_impl(input.into()).unwrap().into()
+    intercept_and_debug(true, input, |tokens| {
+        organizing_code_const_impl(tokens.into()).unwrap().into()
+    })
 }
 
 #[proc_macro_attribute]

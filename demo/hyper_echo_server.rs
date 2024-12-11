@@ -26,7 +26,7 @@ use tokio::net::TcpListener;
 
 use crate::support::TokioIo;
 
-/// Published simple echo HTTP server example from the client crate,
+/// Published simple echo HTTP server example from the `hyper` crate,
 /// with the referenced modules `support` and `tokiort` refactored
 /// into the script, while respecting their original structure and
 /// redundancies.

@@ -91,6 +91,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [analyze_snippet_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_1.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_1.rs
+```
+
 ---
 
 ### Script: analyze_snippet_2.rs
@@ -110,6 +116,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** AST, technique
 
 **Link:** [analyze_snippet_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_2.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_2.rs
+```
 
 ---
 
@@ -133,6 +145,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [analyze_snippet_3.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_3.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_3.rs
+```
+
 ---
 
 ### Script: any.rs
@@ -151,6 +169,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [any.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs
+```
+
 ---
 
 ### Script: bitflags.rs
@@ -167,6 +191,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [bitflags.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs
+```
+
 ---
 
 ### Script: borrow_wrapped.rs
@@ -181,6 +211,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** technique
 
 **Link:** [borrow_wrapped.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped.rs
+```
 
 ---
 
@@ -200,6 +236,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [bpaf_cargo_show_asm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_show_asm.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_show_asm.rs
+```
+
 ---
 
 ### Script: bpaf_cmd_chain.rs
@@ -217,6 +259,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** CLI, crates, technique
 
 **Link:** [bpaf_cmd_chain.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain.rs
+```
 
 ---
 
@@ -236,6 +284,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [bpaf_derive.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs
+```
+
 ---
 
 ### Script: cargo_capture_output.rs
@@ -254,6 +308,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [cargo_capture_output.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_capture_output.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_capture_output.rs
+```
+
 ---
 
 ### Script: cargo_lookup.rs
@@ -262,7 +322,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
  Format: `thag demo/cargo_lookup.rs -- <crate_name>`
 
-**Purpose:** proof of concept
+**Purpose:** Proof of concept
 
 **Crates:** `cargo_lookup`
 
@@ -271,6 +331,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, technique
 
 **Link:** [cargo_lookup.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.rs -- serde
+```
 
 ---
 
@@ -290,6 +356,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [cargo_output.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.rs
+```
+
 ---
 
 ### Script: clap_enum_strum.rs
@@ -306,6 +378,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** CLI, crates, technique
 
 **Link:** [clap_enum_strum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_strum.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_strum.rs
+```
 
 ---
 
@@ -325,6 +403,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [clap_num_arg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.rs
+```
+
 ---
 
 ### Script: clap_repl_crate_rustyline.rs
@@ -342,13 +426,18 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [clap_repl_crate_rustyline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crate_rustyline.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crate_rustyline.rs
+```
+
 ---
 
 ### Script: clap_repl_diy.rs
 
-**Description:**  Example from the clap cookbook, not using the clap-repl crate.
- Can't find a keybinding to navigate history, unlike
- clap_repl_rustyline.rs and unlike clap_repl_reedline.rs.
+**Description:**  Example from the clap cookbook, not using the `clap-repl` crate.
+ Can't find a keybinding to navigate history, unlike `clap_repl_crate_rustyline.rs`.
 
 **Purpose:** Demo building a repl using `clap` directly.
 
@@ -360,13 +449,19 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [clap_repl_diy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.rs
+```
+
 ---
 
 ### Script: clap_tut_builder_01_quick.rs
 
 **Description:**  Published example from `clap` tutorial (builder)
 
- E.g.  `thag_rs demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
+ E.g.  `thag demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
 
 **Purpose:** Demonstrate `clap` CLI using the builder option
 
@@ -377,6 +472,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** CLI, crates, technique
 
 **Link:** [clap_tut_builder_01_quick.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_builder_01_quick.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_builder_01_quick.rs
+```
 
 ---
 
@@ -396,6 +497,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [clap_tut_derive_03_04_subcommands.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_03_04_subcommands.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+```
+
 ---
 
 ### Script: clap_tut_derive_04_01_enum.rs
@@ -413,6 +520,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** CLI, crates, technique
 
 **Link:** [clap_tut_derive_04_01_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_01_enum.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_01_enum.rs -- fast
+```
 
 ---
 
@@ -432,11 +545,17 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [clap_tut_derive_04_03_relations.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_03_relations.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt
+```
+
 ---
 
 ### Script: cmd_args.rs
 
-**Description:**  A prototype of the cmd_args module of thag_rs itself.
+**Description:**  A prototype of the `cmd_args` module of thag_rs itself.
 
  E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
 
@@ -449,6 +568,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** CLI, crates, prototype, technique
 
 **Link:** [cmd_args.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+```
 
 ---
 
@@ -469,6 +594,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [cmd_args_bpaf_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_gpt.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_gpt.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+```
+
 ---
 
 ### Script: cmd_args_clap.rs
@@ -487,6 +618,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [cmd_args_clap.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.rs -- -atv hello.sh
+```
+
 ---
 
 ### Script: color_contrast.rs
@@ -504,6 +641,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** technique
 
 **Link:** [color_contrast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast.rs
+```
 
 ---
 
@@ -524,6 +667,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs
+```
+
 ---
 
 ### Script: colors_old.rs
@@ -543,6 +692,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [colors_old.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs
+```
+
 ---
 
 ### Script: colors_orig.rs
@@ -561,6 +716,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** prototype, technique
 
 **Link:** [colors_orig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_orig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_orig.rs
+```
 
 ---
 
@@ -586,6 +747,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [config.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs
+```
+
 ---
 
 ### Script: count_main_methods.rs
@@ -605,6 +772,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [count_main_methods.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_methods.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_methods.rs
+```
+
 ---
 
 ### Script: create_next_file.rs
@@ -622,6 +795,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [create_next_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_file.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_file.rs
+```
+
 ---
 
 ### Script: crokey_deser.rs
@@ -637,6 +816,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, technique
 
 **Link:** [crokey_deser.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.rs
+```
 
 ---
 
@@ -654,6 +839,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key.rs
+```
+
 ---
 
 ### Script: crokey_print_key_no_combiner.rs
@@ -669,6 +860,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, technique
 
 **Link:** [crokey_print_key_no_combiner.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key_no_combiner.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key_no_combiner.rs
+```
 
 ---
 
@@ -688,6 +885,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [crossbeam_channel_fibonacci.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_fibonacci.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_fibonacci.rs
+```
+
 ---
 
 ### Script: crossbeam_channel_matching.rs
@@ -704,6 +907,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates
 
 **Link:** [crossbeam_channel_matching.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_matching.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_matching.rs
+```
 
 ---
 
@@ -723,6 +932,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates
 
 **Link:** [crossbeam_channel_stopwatch.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_stopwatch.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_stopwatch.rs
+```
 
 ---
 
@@ -747,6 +962,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [crossbeam_epoch_sanitize.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoch_sanitize.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoch_sanitize.rs
+```
+
 ---
 
 ### Script: crossterm.rs
@@ -764,6 +985,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, technique
 
 **Link:** [crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs
+```
 
 ---
 
@@ -785,6 +1012,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [crossterm_alternate_screen.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alternate_screen.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alternate_screen.rs -- true
+```
+
 ---
 
 ### Script: crossterm_command_macro.rs
@@ -805,6 +1038,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [crossterm_command_macro.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_command_macro.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_command_macro.rs
+```
+
 ---
 
 ### Script: crossterm_event_read.rs
@@ -823,6 +1062,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, technique
 
 **Link:** [crossterm_event_read.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_event_read.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_event_read.rs
+```
 
 ---
 
@@ -846,6 +1091,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [crossterm_key_events.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_events.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_events.rs
+```
+
 ---
 
 ### Script: ctrlc_demo.rs
@@ -861,6 +1112,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, technique
 
 **Link:** [ctrlc_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs
+```
 
 ---
 
@@ -882,6 +1139,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [curl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs
+```
+
 ---
 
 ### Script: darling_consume_fields.rs
@@ -898,6 +1161,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, exploration, technique
 
 **Link:** [darling_consume_fields.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs
+```
 
 ---
 
@@ -916,6 +1185,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [darling_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs
+```
+
 ---
 
 ### Script: derive_deftly.rs
@@ -931,6 +1206,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, exploration, technique
 
 **Link:** [derive_deftly.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.rs
+```
 
 ---
 
@@ -953,6 +1234,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [dethag_re.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs
+```
+
 ---
 
 ### Script: dethagomizer.rs
@@ -974,6 +1261,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [dethagomizer.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs
+```
+
 ---
 
 ### Script: documented.rs
@@ -990,6 +1283,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, exploration, technique
 
 **Link:** [documented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs
+```
 
 ---
 
@@ -1008,6 +1307,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [documented_dependencies.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dependencies.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dependencies.rs
+```
+
 ---
 
 ### Script: download_demo_dir.rs
@@ -1023,6 +1328,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, technique, tools
 
 **Link:** [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_dir.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_dir.rs
+```
 
 ---
 
@@ -1061,6 +1372,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [duration_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snippet.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snippet.rs
+```
+
 ---
 
 ### Script: edit.rs
@@ -1079,6 +1396,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs
+```
+
 ---
 
 ### Script: egui_code_editor.rs
@@ -1094,6 +1417,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, prototype
 
 **Link:** [egui_code_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_editor.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_editor.rs
+```
 
 ---
 
@@ -1116,6 +1445,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [enum_select.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs
+```
+
 ---
 
 ### Script: factorial_dashu_product.rs
@@ -1136,6 +1471,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** big_numbers, educational, math, recreational, technique
 
 **Link:** [factorial_dashu_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dashu_product.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dashu_product.rs -- 50
+```
 
 ---
 
@@ -1170,6 +1511,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [factorial_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig.rs -- 50
+```
+
 ---
 
 ### Script: factorial_ibig_product.rs
@@ -1193,6 +1540,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [factorial_ibig_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs -- 50
+```
+
 ---
 
 ### Script: factorial_main_u128_product.rs
@@ -1208,6 +1561,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [factorial_main_u128_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main_u128_product.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main_u128_product.rs -- 34
+```
+
 ---
 
 ### Script: fib_4784969_cpp_ibig.rs
@@ -1217,7 +1576,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
  digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
  edging out `fibo` at this scale.
 
- E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
+ E.g.: `thag demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 
 
 **Purpose:** Demo 3 very fast Fibonacci algorithms, though still 7-11 times slower than `rug`.
@@ -1230,6 +1589,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_4784969_cpp_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_ibig.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_ibig.rs -- 50
+```
+
 ---
 
 ### Script: fib_4784969_cpp_rug.rs
@@ -1241,7 +1606,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
  The `rug` crate runs blindingly fast, but I for one found it very difficult to get this to compile.
 
- E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
+ E.g.: `thag demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 
 
 **Purpose:** Demo 3 very fast Fibonacci algorithms (F(4784969) in 0.33 to 0.58 sec for me).
@@ -1253,6 +1618,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** big_numbers, educational, math, recreational, technique
 
 **Link:** [fib_4784969_cpp_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_rug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_rug.rs -- 50
+```
 
 ---
 
@@ -1279,6 +1650,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs -- 90
+```
+
 ---
 
 ### Script: fib_basic_ibig.rs
@@ -1295,6 +1672,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** big_numbers, educational, math, recreational, technique
 
 **Link:** [fib_basic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig.rs -- 100
+```
 
 ---
 
@@ -1322,6 +1705,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** big_numbers, educational, math, recreational, technique
 
 **Link:** [fib_big_clap_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_rug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_rug.rs -- 100
+```
 
 ---
 
@@ -1351,6 +1740,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_binet_astro_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astro_snippet.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astro_snippet.rs -- 100
+```
+
 ---
 
 ### Script: fib_binet_snippet.rs
@@ -1373,6 +1768,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_binet_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snippet.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snippet.rs -- 100
+```
+
 ---
 
 ### Script: fib_classic_ibig.rs
@@ -1392,6 +1793,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** big_numbers, educational, math, recreational, technique
 
 **Link:** [fib_classic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig.rs -- 100
+```
 
 ---
 
@@ -1417,6 +1824,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_classic_ibig_instrumented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig_instrumented.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig_instrumented.rs -- 100
+```
+
 ---
 
 ### Script: fib_dashu_snippet.rs
@@ -1439,6 +1852,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** big_numbers, educational, math, recreational, technique
 
 **Link:** [fib_dashu_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snippet.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snippet.rs -- 100
+```
 
 ---
 
@@ -1471,6 +1890,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_doubling_iterative_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_ibig.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_ibig.rs -- 100
+```
+
 ---
 
 ### Script: fib_doubling_iterative_purge_ibig.rs
@@ -1492,6 +1917,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** big_numbers, educational, math, recreational, technique
 
 **Link:** [fib_doubling_iterative_purge_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_ibig.rs -- 100
+```
 
 ---
 
@@ -1517,6 +1948,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_doubling_iterative_purge_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_rug.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_rug.rs -- 100
+```
+
 ---
 
 ### Script: fib_doubling_no_memo_ibig.rs
@@ -1535,6 +1972,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** big_numbers, educational, math, recreational, technique
 
 **Link:** [fib_doubling_no_memo_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig.rs -- 100
+```
 
 ---
 
@@ -1588,6 +2031,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** big_numbers, educational, math, recreational, technique
 
 **Link:** [fib_doubling_no_memo_ibig_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_1.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_1.rs -- 100
+```
 
 ---
 
@@ -1643,6 +2092,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_doubling_no_memo_ibig_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_2.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_2.rs -- 100
+```
+
 ---
 
 ### Script: fib_doubling_recursive_ibig.rs
@@ -1682,6 +2137,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_doubling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_recursive_ibig.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_recursive_ibig.rs -- 100
+```
+
 ---
 
 ### Script: fib_matrix.rs
@@ -1702,6 +2163,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** educational, math, recreational, technique
 
 **Link:** [fib_matrix.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs -- 100
+```
 
 ---
 
@@ -1735,6 +2202,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_matrix_dashu.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_dashu.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_dashu.rs -- 100
+```
+
 ---
 
 ### Script: fib_matrix_ibig.rs
@@ -1767,6 +2240,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_matrix_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibig.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibig.rs -- 100
+```
+
 ---
 
 ### Script: fib_matrix_rug.rs
@@ -1791,6 +2270,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_matrix_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug.rs -- 100
+```
+
 ---
 
 ### Script: fib_quadrupling_recursive_ibig.rs
@@ -1811,6 +2296,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fib_quadrupling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadrupling_recursive_ibig.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadrupling_recursive_ibig.rs -- 100
+```
+
 ---
 
 ### Script: filter_demos.rs
@@ -1829,6 +2320,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [filter_demos.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/filter_demos.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/filter_demos.rs
+```
+
 ---
 
 ### Script: fizz_buzz_blandy_orendorff.rs
@@ -1845,6 +2342,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [fizz_buzz_blandy_orendorff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs
+```
+
 ---
 
 ### Script: fizz_buzz_gpt.rs
@@ -1858,6 +2361,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** educational, technique
 
 **Link:** [fizz_buzz_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.rs
+```
 
 ---
 
@@ -1876,6 +2385,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [flume_async.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs
+```
+
 ---
 
 ### Script: flume_perf.rs
@@ -1889,6 +2404,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, technique
 
 **Link:** [flume_perf.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs
+```
 
 ---
 
@@ -1907,6 +2428,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [flume_select.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.rs
+```
+
 ---
 
 ### Script: gen_names.rs
@@ -1923,6 +2450,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** technique
 
 **Link:** [gen_names.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs
+```
 
 ---
 
@@ -1943,6 +2476,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [gen_readme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme.rs
+```
+
 ---
 
 ### Script: git_dependency.rs
@@ -1961,6 +2500,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [git_dependency.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency.rs
+```
+
 ---
 
 ### Script: git_dependency_snippet.rs
@@ -1977,6 +2522,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [git_dependency_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency_snippet.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency_snippet.rs
+```
+
 ---
 
 ### Script: gpt_clap_derive.rs
@@ -1992,6 +2543,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** CLI, crates, technique
 
 **Link:** [gpt_clap_derive.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_derive.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_derive.rs -- -bgtv dummy_script.rs
+```
 
 ---
 
@@ -2013,6 +2570,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [gpt_lazy_static_theme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_lazy_static_theme.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_lazy_static_theme.rs
+```
+
 ---
 
 ### Script: hello.rs
@@ -2026,6 +2589,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** basic
 
 **Link:** [hello.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
+```
 
 ---
 
@@ -2041,6 +2610,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [hello_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs
+```
+
 ---
 
 ### Script: hello_minimal.rs
@@ -2054,6 +2629,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** basic
 
 **Link:** [hello_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.rs
+```
 
 ---
 
@@ -2072,6 +2653,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [history_debug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.rs
+```
+
 ---
 
 ### Script: hyper_client.rs
@@ -2082,7 +2669,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
  redundancies.
  You can run the `hyper_echo_server.rs` demo as the HTTP server on
  another command line and connect to it on port 3000:
- `thag_rs demo/hyper_client.rs -- http://127.0.0.1:3000`.
+ `thag demo/hyper_client.rs -- http://127.0.0.1:3000`.
  Or use any other available HTTP server.
 
 **Purpose:** Demo `hyper` HTTP client, and incorporating separate modules into the script.
@@ -2095,11 +2682,17 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [hyper_client.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.rs -- http://127.0.0.1:3000
+```
+
 ---
 
 ### Script: hyper_echo_server.rs
 
-**Description:**  Published simple echo HTTP server example from the client crate,
+**Description:**  Published simple echo HTTP server example from the `hyper` crate,
  with the referenced modules `support` and `tokiort` refactored
  into the script, while respecting their original structure and
  redundancies.
@@ -2117,6 +2710,37 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [hyper_echo_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_server.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_server.rs
+```
+
+---
+
+### Script: hyper_hello_server.rs
+
+**Description:**  Published simple hello HTTP server example from the `hyper` crate,
+ with the referenced modules `support` and `tokiort` refactored
+ into the script, while respecting their original structure and
+ redundancies.
+
+**Purpose:** Demo `hyper` HTTP hello server, and incorporating separate modules into the script.
+
+**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
+
+**Type:** Program
+
+**Categories:** async, crates, technique
+
+**Link:** [hyper_hello_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_hello_server.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_hello_server.rs
+```
+
 ---
 
 ### Script: ibig_big_integers.rs
@@ -2132,6 +2756,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** big_numbers, crates, technique
 
 **Link:** [ibig_big_integers.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integers.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integers.rs
+```
 
 ---
 
@@ -2149,6 +2779,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [iced_tour.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs
+```
+
 ---
 
 ### Script: in_place.rs
@@ -2164,6 +2800,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** async, crates, technique
 
 **Link:** [in_place.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs
+```
 
 ---
 
@@ -2183,6 +2825,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [infer_deps.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs
+```
+
 ---
 
 ### Script: inline_colorization.rs
@@ -2200,6 +2848,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [inline_colorization.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_colorization.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_colorization.rs
+```
+
 ---
 
 ### Script: input_expr_to_ast.rs
@@ -2216,6 +2870,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [input_expr_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_ast.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_ast.rs
+```
+
 ---
 
 ### Script: input_file_to_ast.rs
@@ -2231,6 +2891,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** AST, crates, technique
 
 **Link:** [input_file_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_ast.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_ast.rs
+```
 
 ---
 
@@ -2265,6 +2931,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [interactive_clap_adv_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_clap_adv_struct.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_clap_adv_struct.rs
+```
+
 ---
 
 ### Script: iter.rs
@@ -2278,6 +2950,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** basic
 
 **Link:** [iter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs
+```
 
 ---
 
@@ -2294,6 +2972,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, technique
 
 **Link:** [json.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs
+```
 
 ---
 
@@ -2312,6 +2996,36 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [json_parse.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs
+```
+
+---
+
+### Script: just_a_test_expression.rs
+
+**Description:**  This is an arbitrary expression for use by scripts like `demo/syn_visit_extern_crate_expr.rs`
+ and `demo/syn_visit_use_path_expr.rs`.
+ Don't remove the surrounding braces, because those serve to make it an expression.
+
+**Purpose:** Prototype.
+
+**Crates:** `syn`
+
+**Type:** Snippet
+
+**Categories:** AST, crates, prototype, technique
+
+**Link:** [just_a_test_expression.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_expression.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_expression.rs
+```
+
 ---
 
 ### Script: list_files.rs
@@ -2326,6 +3040,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** basic, technique
 
 **Link:** [list_files.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs
+```
 
 ---
 
@@ -2345,6 +3065,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [loop_closure.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.rs
+```
+
 ---
 
 ### Script: loop_expr.rs
@@ -2362,6 +3088,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** exploration, technique
 
 **Link:** [loop_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs
+```
 
 ---
 
@@ -2381,6 +3113,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [loop_pre_post.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs -- 'dummy prelude' 'dummy main' 'dummy post' # ... and hit Enter then Ctrl-d
+```
+
 ---
 
 ### Script: macro_fn_lazy_static.rs
@@ -2394,6 +3132,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** educational, technique
 
 **Link:** [macro_fn_lazy_static.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_static.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_static.rs
+```
 
 ---
 
@@ -2410,6 +3154,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [macro_gen_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum.rs
+```
+
 ---
 
 ### Script: macro_gen_styles_enum.rs
@@ -2423,6 +3173,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** macros, technique
 
 **Link:** [macro_gen_styles_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styles_enum.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styles_enum.rs
+```
 
 ---
 
@@ -2443,6 +3199,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** macros, technique
 
 **Link:** [macro_lazy_static_var_advanced.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced.rs
+```
 
 ---
 
@@ -2470,6 +3232,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [macro_lazy_static_var_advanced_alt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced_alt.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced_alt.rs
+```
+
 ---
 
 ### Script: macro_lazy_static_var_error_handling.rs
@@ -2484,6 +3252,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** macros, technique
 
 **Link:** [macro_lazy_static_var_error_handling.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_error_handling.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_error_handling.rs
+```
 
 ---
 
@@ -2503,6 +3277,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [macro_lazy_static_var_errs.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_errs.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_errs.rs
+```
+
 ---
 
 ### Script: macro_print.rs
@@ -2518,6 +3298,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** macros, technique, type_identification
 
 **Link:** [macro_print.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs
+```
 
 ---
 
@@ -2535,6 +3321,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [merge_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs
+```
+
 ---
 
 ### Script: mock_edit.rs
@@ -2551,6 +3343,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [mock_edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs
+```
+
 ---
 
 ### Script: multiline_err.rs
@@ -2564,6 +3362,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** error_handling, technique
 
 **Link:** [multiline_err.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.rs
+```
 
 ---
 
@@ -2583,6 +3387,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [owo_cli_color_support.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_support.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_support.rs -- add patrick
+```
+
 ---
 
 ### Script: owo_msg_colors_1_basic_gpt.rs
@@ -2600,6 +3410,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, exploration
 
 **Link:** [owo_msg_colors_1_basic_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_1_basic_gpt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_1_basic_gpt.rs
+```
 
 ---
 
@@ -2623,6 +3439,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [owo_msg_colors_2_adv_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_2_adv_gpt.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_2_adv_gpt.rs
+```
+
 ---
 
 ### Script: owo_styles.rs
@@ -2638,6 +3460,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, exploration, technique
 
 **Link:** [owo_styles.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_styles.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_styles.rs
+```
 
 ---
 
@@ -2656,6 +3484,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [parse_script_rs_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_rs_toml.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_rs_toml.rs
+```
+
 ---
 
 ### Script: parse_toml.rs
@@ -2672,11 +3506,20 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [parse_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs
+```
+
 ---
 
 ### Script: pomprt_completion.rs
 
 **Description:**  Published example from `pomprt` crate.
+
+ Not suitable for running from a URL. Run locally and enter simple shell commands like `ls -l` at the prompt.
+ `Ctrl-d` to terminate.
 
 **Purpose:** Demo of `pomprt` readline implementation.
 
@@ -2685,6 +3528,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates
 
 **Link:** [pomprt_completion.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/pomprt_completion.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/pomprt_completion.rs
+```
 
 ---
 
@@ -2699,6 +3548,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** AST, crates, technique
 
 **Link:** [prettyplease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.rs
+```
 
 ---
 
@@ -2717,6 +3572,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_attribute_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_attribute_basic.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_attribute_basic.rs
+```
+
 ---
 
 ### Script: proc_macro_category_enum.rs
@@ -2734,6 +3595,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_category_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_category_enum.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_category_enum.rs
+```
+
 ---
 
 ### Script: proc_macro_const_demo.rs
@@ -2750,6 +3617,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_const_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo.rs
+```
+
 ---
 
 ### Script: proc_macro_const_demo_debug.rs
@@ -2765,6 +3638,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** proc_macros, technique
 
 **Link:** [proc_macro_const_demo_debug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_debug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_debug.rs
+```
 
 ---
 
@@ -2783,6 +3662,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_const_demo_expand.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_expand.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_expand.rs
+```
+
 ---
 
 ### Script: proc_macro_derive_basic.rs
@@ -2799,6 +3684,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_derive_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_basic.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_basic.rs
+```
+
 ---
 
 ### Script: proc_macro_derive_custom_model.rs
@@ -2814,6 +3705,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** proc_macros, technique
 
 **Link:** [proc_macro_derive_custom_model.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_custom_model.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_custom_model.rs
+```
 
 ---
 
@@ -2832,6 +3729,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_derive_doc_comment.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_doc_comment.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_doc_comment.rs
+```
+
 ---
 
 ### Script: proc_macro_derive_key_map_list.rs
@@ -2849,6 +3752,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_derive_key_map_list.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs
+```
+
 ---
 
 ### Script: proc_macro_expander_demo.rs
@@ -2864,6 +3773,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** proc_macros, technique
 
 **Link:** [proc_macro_expander_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_expander_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_expander_demo.rs
+```
 
 ---
 
@@ -2882,6 +3797,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_functionlike_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_functionlike_basic.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_functionlike_basic.rs
+```
+
 ---
 
 ### Script: proc_macro_host_port_const.rs
@@ -2897,6 +3818,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** proc_macros, technique
 
 **Link:** [proc_macro_host_port_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_host_port_const.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_host_port_const.rs
+```
 
 ---
 
@@ -2914,6 +3841,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_organizing_code.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code.rs
+```
+
 ---
 
 ### Script: proc_macro_organizing_code_const.rs
@@ -2929,6 +3862,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** proc_macros, technique
 
 **Link:** [proc_macro_organizing_code_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_const.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_const.rs
+```
 
 ---
 
@@ -2946,6 +3885,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_organizing_code_tokenstream.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs
+```
+
 ---
 
 ### Script: proc_macro_repeat_dash.rs
@@ -2961,6 +3906,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** proc_macros, technique
 
 **Link:** [proc_macro_repeat_dash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_repeat_dash.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_repeat_dash.rs
+```
 
 ---
 
@@ -2978,6 +3929,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [proc_macro_string_concat.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_string_concat.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_string_concat.rs
+```
+
 ---
 
 ### Script: profiling_puffin_demo.rs
@@ -2992,6 +3949,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates
 
 **Link:** [profiling_puffin_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puffin_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puffin_demo.rs
+```
 
 ---
 
@@ -3008,6 +3971,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates
 
 **Link:** [puffin_profiler_egui.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profiler_egui.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profiler_egui.rs
+```
 
 ---
 
@@ -3044,6 +4013,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [py_thag.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs
+```
+
 ---
 
 ### Script: ratatui_user_input.rs
@@ -3059,6 +4034,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates
 
 **Link:** [ratatui_user_input.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input.rs
+```
 
 ---
 
@@ -3078,6 +4059,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [readline_crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_crossterm.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_crossterm.rs
+```
+
 ---
 
 ### Script: reedline_basic_keybindings.rs
@@ -3093,6 +4080,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, REPL, technique
 
 **Link:** [reedline_basic_keybindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic_keybindings.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic_keybindings.rs
+```
 
 ---
 
@@ -3110,6 +4103,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [reedline_completions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_completions.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_completions.rs
+```
+
 ---
 
 ### Script: reedline_event_listener.rs
@@ -3125,6 +4124,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, REPL, technique
 
 **Link:** [reedline_event_listener.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event_listener.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event_listener.rs
+```
 
 ---
 
@@ -3142,6 +4147,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [reedline_highlighter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highlighter.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highlighter.rs
+```
+
 ---
 
 ### Script: reedline_hinter.rs
@@ -3158,6 +4169,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [reedline_hinter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinter.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinter.rs
+```
+
 ---
 
 ### Script: reedline_history.rs
@@ -3173,6 +4190,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, REPL, technique
 
 **Link:** [reedline_history.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_history.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_history.rs
+```
 
 ---
 
@@ -3193,6 +4216,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [reedline_ide_completions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_completions.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_completions.rs
+```
+
 ---
 
 ### Script: reedline_list_bindings.rs
@@ -3209,6 +4238,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, REPL, technique
 
 **Link:** [reedline_list_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_bindings.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_bindings.rs
+```
 
 ---
 
@@ -3227,6 +4262,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [reedline_multiline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multiline.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multiline.rs
+```
+
 ---
 
 ### Script: reedline_read_stdin.rs
@@ -3242,6 +4283,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, REPL, technique
 
 **Link:** [reedline_read_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_stdin.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_stdin.rs
+```
 
 ---
 
@@ -3259,6 +4306,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [reedline_repl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.rs
+```
+
 ---
 
 ### Script: reedline_repl_context.rs
@@ -3275,6 +4328,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, REPL, technique
 
 **Link:** [reedline_repl_context.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_context.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_context.rs
+```
 
 ---
 
@@ -3297,6 +4356,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [reedline_show_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_bindings.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_bindings.rs
+```
+
 ---
 
 ### Script: reedline_stdin.rs
@@ -3313,6 +4378,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [reedline_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin.rs
+```
+
 ---
 
 ### Script: reedline_transient_prompt.rs
@@ -3328,6 +4399,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, REPL, technique
 
 **Link:** [reedline_transient_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_transient_prompt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_transient_prompt.rs
+```
 
 ---
 
@@ -3348,6 +4425,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [regex_capture_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_toml.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_toml.rs
+```
+
 ---
 
 ### Script: repl_block.rs
@@ -3364,6 +4447,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [repl_block.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs
+```
+
 ---
 
 ### Script: repl_partial_match.rs
@@ -3379,6 +4468,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, REPL, technique
 
 **Link:** [repl_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_match.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_match.rs
+```
 
 ---
 
@@ -3402,6 +4497,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [rug_arbitrary_precision_nums.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rug_arbitrary_precision_nums.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rug_arbitrary_precision_nums.rs
+```
+
 ---
 
 ### Script: rustfmt.rs
@@ -3420,6 +4521,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [rustfmt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs
+```
+
 ---
 
 ### Script: rustfmt_stdin.rs
@@ -3434,6 +4541,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [rustfmt_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs
+```
+
 ---
 
 ### Script: rustlings_smart_pointers_rc1.rs
@@ -3447,6 +4560,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** educational
 
 **Link:** [rustlings_smart_pointers_rc1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smart_pointers_rc1.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smart_pointers_rc1.rs
+```
 
 ---
 
@@ -3463,6 +4582,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, REPL, technique
 
 **Link:** [rustyline_compl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_compl.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_compl.rs
+```
 
 ---
 
@@ -3482,6 +4607,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [rustyline_full.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full.rs
+```
+
 ---
 
 ### Script: semver_exclude_prerelease.rs
@@ -3497,6 +4628,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** prototype, technique
 
 **Link:** [semver_exclude_prerelease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude_prerelease.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude_prerelease.rs
+```
 
 ---
 
@@ -3514,6 +4651,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [side_by_side_diff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_diff.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_diff.rs
+```
+
 ---
 
 ### Script: slog_expressions.rs
@@ -3529,6 +4672,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates
 
 **Link:** [slog_expressions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressions.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressions.rs
+```
 
 ---
 
@@ -3546,6 +4695,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [snippet_import_scope.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import_scope.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import_scope.rs
+```
+
 ---
 
 ### Script: snippet_name_clash.rs
@@ -3561,6 +4716,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, educational
 
 **Link:** [snippet_name_clash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs
+```
 
 ---
 
@@ -3580,6 +4741,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, prototype, technique
 
 **Link:** [stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs
+```
 
 ---
 
@@ -3602,6 +4769,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [stdin_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
+```
+
 ---
 
 ### Script: structopt_cli_gpt.rs
@@ -3619,6 +4792,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** CLI, crates, technique
 
 **Link:** [structopt_cli_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_gpt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_gpt.rs -- -- -Vt dummy.rs 1 2 3
+```
 
 ---
 
@@ -3640,6 +4819,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color.rs
+```
+
 ---
 
 ### Script: supports_color_win.rs
@@ -3655,14 +4840,23 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [supports_color_win.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color_win.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color_win.rs
+```
+
 ---
 
 ### Script: syn_dump_syntax.rs
 
 **Description:**  Published example from the `syn` crate. Description "Parse a Rust source file
  into a `syn::File` and print out a debug representation of the syntax tree."
- Pass it the absolute or relative path of any Rust source file, e.g. its own
+
+ Pass it the absolute or relative path of any Rust PROGRAM source file, e.g. its own
  path that you passed to the script runner to invoke it.
+
+ NB: Pick a script that is a valid program (containing `fn main()` as opposed to a snippet).
 
 **Purpose:** show off the power of `syn`.
 
@@ -3673,6 +4867,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** AST, crates, technique
 
 **Link:** [syn_dump_syntax.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax.rs -- demo/hello_main.rs
+```
 
 ---
 
@@ -3703,6 +4903,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [syn_quote.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs
+```
+
 ---
 
 ### Script: syn_remove_attributes.rs
@@ -3719,6 +4925,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** AST, crates, prototype, technique
 
 **Link:** [syn_remove_attributes.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_attributes.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_attributes.rs
+```
 
 ---
 
@@ -3739,6 +4951,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [syn_visit_extern_crate_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_expr.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_expr.rs -- demo/just_a_test_expression.rs
+```
+
 ---
 
 ### Script: syn_visit_extern_crate_file.rs
@@ -3758,6 +4976,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [syn_visit_extern_crate_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_file.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_file.rs -- demo/syn_visit_extern_crate_file.rs
+```
+
 ---
 
 ### Script: syn_visit_node_type.rs
@@ -3766,6 +4990,7 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
  in answer to a question asked on the Rust users forum. The discussion and Playground link are to be found here:
  https://users.rust-lang.org/t/writing-proc-macros-with-syn-is-there-a-way-to-visit-parts-of-the-ast-that-match-a-given-format/54733/4
  (This content is dual-licensed under the MIT and Apache 2.0 licenses according to the Rust forum terms of service.)
+ I've embellished it to show how it can be formatted with `prettyplease` if parsed as a `syn::File`.
 
 **Purpose:** Demo programmatically modifying Rust source code using `syn` and `quote`.
 
@@ -3776,6 +5001,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** AST, crates, technique
 
 **Link:** [syn_visit_node_type.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node_type.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node_type.rs
+```
 
 ---
 
@@ -3796,6 +5027,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [syn_visit_use_path_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_expr.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_expr.rs -- demo/just_a_test_expression.rs
+```
+
 ---
 
 ### Script: syn_visit_use_path_file.rs
@@ -3814,6 +5051,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** AST, crates, prototype, technique
 
 **Link:** [syn_visit_use_path_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_file.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_file.rs -- demo/syn_visit_use_path_file.rs
+```
 
 ---
 
@@ -3835,6 +5078,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs -- demo/crossbeam_epoch_sanitize.rs
+```
+
 ---
 
 ### Script: syn_visit_use_tree_file.rs
@@ -3854,6 +5103,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [syn_visit_use_tree_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs -- demo/syn_visit_use_tree_file.rs
+```
+
 ---
 
 ### Script: tempfile.rs
@@ -3867,6 +5122,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates
 
 **Link:** [tempfile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
+```
 
 ---
 
@@ -3887,6 +5148,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [term_detection_pack.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/term_detection_pack.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/term_detection_pack.rs
+```
+
 ---
 
 ### Script: termbg.rs
@@ -3905,6 +5172,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/termbg.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/termbg.rs
+```
+
 ---
 
 ### Script: terminal_light.rs
@@ -3919,6 +5192,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates
 
 **Link:** [terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light.rs
+```
 
 ---
 
@@ -3937,6 +5216,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [terminal_light_fading.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_fading.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_fading.rs
+```
+
 ---
 
 ### Script: terminal_light_skins.rs
@@ -3953,6 +5238,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates
 
 **Link:** [terminal_light_skins.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_skins.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_skins.rs
+```
 
 ---
 
@@ -3978,6 +5269,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [test_clap_4707.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707.rs -- --write --show-hex
+```
+
 ---
 
 ### Script: thag_cargo.rs
@@ -3996,6 +5293,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [thag_cargo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs
+```
+
 ---
 
 ### Script: thag_clippy.rs
@@ -4006,13 +5309,19 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Purpose:** A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
 
-**Crates:** `colored`, `inquire`
+**Crates:** `colored`, `inquire`, `rustix`
 
 **Type:** Program
 
 **Categories:** technique, tools
 
 **Link:** [thag_clippy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs
+```
 
 ---
 
@@ -4030,6 +5339,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [thag_config_builder.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder.rs
+```
+
 ---
 
 ### Script: thag_crokey_print_key.rs
@@ -4046,6 +5361,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** crates, testing
 
 **Link:** [thag_crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_crokey_print_key.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_crokey_print_key.rs
+```
 
 ---
 
@@ -4066,6 +5387,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [thag_from_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust_script.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust_script.rs
+```
+
 ---
 
 ### Script: thag_prompt.rs
@@ -4082,6 +5409,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [thag_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs
+```
+
 ---
 
 ### Script: thag_to_rust_script.rs
@@ -4096,6 +5429,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [thag_to_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_script.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_script.rs
+```
+
 ---
 
 ### Script: thag_url.rs
@@ -4104,13 +5443,19 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Purpose:** A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
 
-**Crates:** `syn`, `tinyget`, `url`
+**Crates:** `syn`, `url`
 
 **Type:** Program
 
 **Categories:** technique, tools
 
 **Link:** [thag_url.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs
+```
 
 ---
 
@@ -4130,6 +5475,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [time_cookbook.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.rs
+```
+
 ---
 
 ### Script: tlborm_callbacks.rs
@@ -4143,6 +5494,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** educational, technique
 
 **Link:** [tlborm_callbacks.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs
+```
 
 ---
 
@@ -4161,6 +5518,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [tokio_hello_short.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_short.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_short.rs
+```
+
 ---
 
 ### Script: tokio_hello_world.rs
@@ -4178,11 +5541,19 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs
+```
+
 ---
 
 ### Script: tui_scrollview.rs
 
 **Description:**  Published example from `tui-scrollview` crate. Toml entries from crate's Cargo.toml.
+
+ Not suitable for running from a URL.
 
 **Purpose:** Explore TUI editing
 
@@ -4194,6 +5565,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [tui_scrollview.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_scrollview.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_scrollview.rs
+```
+
 ---
 
 ### Script: tui_ta_editor.rs
@@ -4203,6 +5580,8 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
  cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
  or default to a standard editor. A more minimalist version is used to edit stdin input in
  the `--edit (-d)` option of `thag_rs`.
+
+ Not suitable for running from a URL.
 
 **Purpose:** Demo and explore TUI editor and featured crates, including `crossterm`.
 
@@ -4214,12 +5593,19 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.rs -- demo/hello.rs demo/hello_minimal.rs
+```
+
 ---
 
 ### Script: tui_ta_editor_profile.rs
 
 **Description:**  The same script as `demo/tui_ta_editor.rs`, but with `firestorm` profiling.
 
+ Not suitable for running from a URL.
  To see the profiling flamegraph after exiting the program, look in dir `flames` under the `env::temp_dir()`
  for your operating system. Note that due to an apparent bug in `firestorm`, the `Editor::run` method currently
  executes twice, so it will need to be closed a second time.
@@ -4234,11 +5620,19 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_profile.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_profile.rs -- demo/hello.rs demo/hello_minimal.rs
+```
+
 ---
 
 ### Script: tui_ta_minimal.rs
 
 **Description:**  Demo a very minimal and not very useful TUI (text user interface) editor based on the featured crates.
+
+ Not suitable for running from a URL.
 
 **Purpose:** Demo TUI editor and featured crates, including `crossterm`, and the use of the `scopeguard` crate to reset the terminal when it goes out of scope.
 
@@ -4250,12 +5644,20 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs
+```
+
 ---
 
 ### Script: tui_ta_vim.rs
 
 **Description:**  Published basic `vim` editor example from crate `tui-textarea`. Mildly tweaked
  to use `ratatui::crossterm` re-exports instead of `crossterm` directly.
+
+ Not suitable for running from a URL.
 
 **Purpose:** Demo TUI `vim` editor and featured crates, including `crossterm`.
 
@@ -4267,6 +5669,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [tui_ta_vim.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_vim.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_vim.rs
+```
+
 ---
 
 ### Script: tui_tokio_editor_gpt.rs
@@ -4275,6 +5683,8 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
  `tokio` and the `crossterm` / `ratatui` / `tui-textarea` stack. provides a blank editor
  screen on which you can capture lines of data. `Ctrl-D` closes the editor and simply
  prints the captured data.
+
+ Not suitable for running from a URL.
 
 **Purpose:** Exploring options for editing input. e.g. for a REPL.
 
@@ -4285,6 +5695,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** async, crates, educational, exploration, technique
 
 **Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_tokio_editor_gpt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_tokio_editor_gpt.rs
+```
 
 ---
 
@@ -4303,6 +5719,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** type_identification, technique
 
 **Link:** [type_of_at_compile_time_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_1.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_1.rs
+```
 
 ---
 
@@ -4329,6 +5751,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [type_of_at_compile_time_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_2.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_2.rs
+```
+
 ---
 
 ### Script: type_of_at_run_time.rs
@@ -4346,6 +5774,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [type_of_at_run_time.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run_time.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run_time.rs
+```
+
 ---
 
 ### Script: ubig_product_gpt.rs
@@ -4362,6 +5796,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [ubig_product_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_gpt.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_gpt.rs
+```
+
 ---
 
 ### Script: unzip.rs
@@ -4376,6 +5816,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [unzip.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs
+```
+
 ---
 
 ### Script: win_test_control.rs
@@ -4389,6 +5835,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** testing
 
 **Link:** [win_test_control.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_control.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_control.rs
+```
 
 ---
 
@@ -4406,6 +5858,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [win_test_supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_supports_color.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_supports_color.rs
+```
+
 ---
 
 ### Script: win_test_termbg.rs
@@ -4421,6 +5879,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** testing
 
 **Link:** [win_test_termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg.rs
+```
 
 ---
 
@@ -4440,6 +5904,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [win_test_termbg_reset.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_reset.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_reset.rs
+```
+
 ---
 
 ### Script: win_test_termbg_thag.rs
@@ -4456,6 +5926,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Link:** [win_test_termbg_thag.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_thag.rs)
 
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_thag.rs
+```
+
 ---
 
 ### Script: win_test_terminal_light.rs
@@ -4469,6 +5945,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** testing
 
 **Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs
+```
 
 ---
 
@@ -4502,6 +5984,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 **Categories:** testing
 
 **Link:** [win_test_vt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs
+```
 
 ---
 

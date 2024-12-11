@@ -10,6 +10,7 @@ syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "visi
 /// traversal. This version expects the script contents to consist of a full-fledged Rust program.
 //# Purpose: Protorype.
 //# Categories: AST, crates, prototype, technique
+//# Sample arguments: `-- demo/syn_visit_use_path_file.rs`
 use std::{env, fs, path::PathBuf};
 
 fn main() {

@@ -1,5 +1,52 @@
 # TODO List
 
+# With details (compact):
+
+**Run this example:** `thag_url https://github.com/user/repo/script.rs -- arg1 arg2`
+
+Expected output: *calculates first 10 Fibonacci numbers*
+
+# With details (expanded):
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/user/repo/script.rs -- arg1 arg2
+```
+<details>
+<summary>What this does</summary>
+
+- Reads input: *from command line*
+- Expects: *two numeric arguments*
+- Outputs: *calculates first 10 Fibonacci numbers*
+- Uses crates: *num, rand*
+</details>
+
+# With quick options:
+
+**Run this example:**
+
+```bash
+# Basic usage
+thag_url https://github.com/user/repo/script.rs -- 10
+
+# With debugging
+thag_url https://github.com/user/repo/script.rs -d -- 10
+```
+
+# With related examples:
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/user/repo/script.rs -- 10
+```
+**Related examples:**
+- [Using big integers](link-to-big-int-version.rs)
+- [Interactive version](link-to-interactive.rs)
+
+
+
 ## High Priority
 
 ## Medium Priority
@@ -54,148 +101,14 @@
 Try running tests without debug or debug_timings.
 validate_state only when feature minimal not engaged - instead switched off debug and debug-assertions in Cargo.toml
 
-### Full clipboard.js example
-
-<div class="run-example">
-<pre><code>thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10</code></pre>
-<button class="copy-button" onclick="copyCommand(this)">Copy command</button>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
-<script>
-function copyCommand(button) {
-    const code = button.previousElementSibling.textContent;
-    navigator.clipboard.writeText(code).then(function() {
-        button.textContent = 'Copied!';
-        setTimeout(() => button.textContent = 'Copy command', 2000);
-    });
-}
-</script>
-
-<style>
-.run-example {
-    background: #f5f5f5;
-    padding: 10px;
-    border-radius: 4px;
-    margin: 10px 0;
-}
-.copy-button {
-    background: #4CAF50;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-    margin-top: 5px;
-}
-.copy-button:hover {
-    background: #45a049;
-}
-pre {
-    margin: 0;
-    white-space: pre-wrap;
-}
-</style>
-
-### Simpler example
-
-```markdown
-Run this example:
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10
-```
-
-<details>
-<summary>Why run this example?</summary>
-
-This example demonstrates matrix-based Fibonacci calculation. The argument (10) specifies how many numbers to calculate.
-</details>
-```
-
-### md_snippet_gen.rs output
-
-Run this example:
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10
-```
-
-<details>
-<summary>About this example</summary>
-
-Matrix-based Fibonacci calculation example
-</details>
-
-
-Run this example:
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/hello.rs
-```
-
-<details>
-<summary>About this example</summary>
-
-Simple hello world example
-</details>
-
-
-### Gemini recommended
-
-   ```bash
-   thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10
-   ```
-
-### ChatGPT
-
-## Run thag_url
-
-Click the button to copy the command:
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10
-<button onclick="copyToClipboard()">Copy</button>
-
-<script> function copyToClipboard() { const code = `thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10`; navigator.clipboard.writeText(code).then(() => { alert("Command copied to clipboard!"); }, (err) => { console.error("Error copying text: ", err); }); } </script>
-```
-
-### End
-
-[thag](./../../.cargo/bin/thag?-r)
-
-[thag_url](<./../../../.cargo/bin/thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs>)
-
-[Run this script with thag](thag://github.com/near-cli-rs/interactive-clap/blob/master/examples/advanced_struct.rs)
-
-##
-    thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
-
-
-<details>
-<summary>Run this example</summary>
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10
-```
-</details>
-
-Clipboard.js:
-<div class="run-example">
-    <code>thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10</code>
-    <button class="copy-button" data-clipboard-text="thag_url https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs -- 10">Copy</button>
-</div>
-
-
-https://raw.githubusercontent.com/durbanlegend/thag_rs/3f52d4c4590c0573ad130727e746161029fdae57/demo/in_place.rs#L1C1-L24C2
-
-thag://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
-
 - [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
 - [ ]  Consider "magic" substitution of latest git with say rev = "$latest" in toml block.
 - [ ]  Consider a disable option?
 - [ ]  Add details of --cargo (-A) option to Readme and `thag_cargo`
        - Make --expand (-X) option a helper command thag_expand.
        - Document thag_cargo and thag_clippy in the Readme.
+- [ ]  Add inquire for filter_demos.rs
+- [ ]  Look at attributes as a possible way to switch on expansion for derive macros
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.

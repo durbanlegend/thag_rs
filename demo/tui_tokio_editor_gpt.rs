@@ -11,6 +11,8 @@ tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 /// prints the captured data.
 //# Purpose: Exploring options for editing input. e.g. for a REPL.
 //# Categories: async, crates, educational, exploration, technique
+///
+/// Not suitable for running from a URL.
 use ratatui::crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,

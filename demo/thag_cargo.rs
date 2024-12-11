@@ -280,6 +280,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     args.extend(cargo_cmd.args);
 
     println!("\nRunning: thag {}", args.join(" "));
+    // println!("Command to run: {cargo_cmd}");
 
     let status = Command::new("thag").args(&args).status()?;
 

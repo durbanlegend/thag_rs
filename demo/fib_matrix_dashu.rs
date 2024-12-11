@@ -22,6 +22,7 @@ dashu = "0.4.2"
 ///
 //# Purpose: Demo a very fast precise computation for large individual Fibonacci numbers.
 //# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use dashu::ubig;
 use dashu::integer::UBig;
 use std::env;

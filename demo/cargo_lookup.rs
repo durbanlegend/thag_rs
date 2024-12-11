@@ -9,8 +9,9 @@ use std::env;
 /// Explore querying crates.io information for a crate.
 ///
 /// Format: `thag demo/cargo_lookup.rs -- <crate_name>`
-//# Purpose: proof of concept
+//# Purpose: Proof of concept
 //# Categories: crates, technique
+//# Sample arguments: `-- serde`
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {

@@ -48,6 +48,7 @@ thag_url https://github.com/user/repo/script.rs -- 10
 
 
 ## High Priority
+- [ ]  Sort and flesh out keywords (u16 etc) in shared::is_valid_crate_name. (make HashSet? phf?)
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.
@@ -97,7 +98,6 @@ thag_url https://github.com/user/repo/script.rs -- 10
          (check both).
 - [ ]  >>> Debug: History older than max isn't being removed even though only 25 allowed.
 - [ ]  Picking up "panic", "bool", "fs" in dependency inference.
-- [ ]  Add new thag config / CLI option for dependency inference: infer max (default) / infer min / respect toml / advise / ignore
 Try running tests without debug or debug_timings.
 validate_state only when feature minimal not engaged - instead switched off debug and debug-assertions in Cargo.toml
 
@@ -107,7 +107,6 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Add details of --cargo (-A) option to Readme and `thag_cargo`
        - Make --expand (-X) option a helper command thag_expand.
        - Document thag_cargo and thag_clippy in the Readme.
-- [ ]  Add inquire for filter_demos.rs
 - [ ]  Look at attributes as a possible way to switch on expansion for derive macros
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
@@ -115,8 +114,9 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output - rather fix bad output at source - done?
 - [ ]  Use cargo-dist to build and distribute thag front-end commands.
 - [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
-- [ ]  Make thag_url more user-friendly in reporting errors, e.g. invalid URL.
-        - make it prompted.
+- [ ]  Split out thag_core:
+          lazy_static_var, regex, debug_log
+          shared and core_utils: AST processing?
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?

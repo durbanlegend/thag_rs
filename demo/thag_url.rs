@@ -7,7 +7,7 @@ url = "2.5.4"
 */
 /// `thag` front-end command to run scripts from URLs. It is recommended to compile this with -x.
 //# Purpose: A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
-//# Categories: technique, tools
+//# Categories: technique, thag_front_ends, tools
 use std::{error::Error, io::Write, process::Command, string::ToString};
 use syn::{parse_file, Expr};
 use url::Url;

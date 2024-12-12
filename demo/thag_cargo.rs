@@ -9,7 +9,7 @@ tempfile = "3.14.0"
 /// Prompts the user to select a Rust script and a cargo command to run against the script's generated project, and
 /// and invokes `thag` with the --cargo option to run it.
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option.
-//# Categories: technique, tools
+//# Categories: technique, thag_front_ends, tools
 use inquire::{Confirm, Select, Text};
 use rustix::path::Arg;
 use std::{env, error::Error, path::PathBuf, process::Command};

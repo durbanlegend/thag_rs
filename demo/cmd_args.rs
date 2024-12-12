@@ -2,7 +2,6 @@
 [dependencies]
 bitflags = "2.5.0"
 clap = { version = "4.5.21", features = ["cargo", "derive"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "79582b0a889bca191a15a9d85f7d4c0ab5fbab69"}
 */
 
 /// A prototype of the `cmd_args` module of thag_rs itself.
@@ -11,10 +10,22 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "79582b0a889b
 //# Purpose: Prototype CLI.
 //# Categories: CLI, crates, prototype, technique
 //# Sample arguments: `-- -gbrtv demo/hello.rs -- -fq Hello world`
-use bitflags::bitflags;
+use bitflags::{bitflags, parser::ParseError};
 use clap::{ArgGroup, Parser};
 use std::{error::Error, fmt, str};
-use thag_rs::{errors::ThagError, logging::Verbosity, vlog, RS_SUFFIX};
+
+pub const RS_SUFFIX: &str = ".rs";
+
+#[derive(Debug)]
+struct ParseFlagsError(ParseError);
+
+impl std::fmt::Display for ParseFlagsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Failed to parse flags: {}", self.0)
+    }
+}
+
+impl std::error::Error for ParseFlagsError {}
 
 // thag_rs script runner and REPL
 #[allow(clippy::struct_excessive_bools)]
@@ -255,18 +266,15 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
 
         // Check all good
         let formatted = proc_flags.to_string();
-        let parsed = formatted.parse::<ProcFlags>()?;
+        let parsed = formatted
+            .parse::<ProcFlags>()
+            .map_err(|e| Box::new(ParseFlagsError(e)) as Box<dyn std::error::Error>)?;
 
         assert_eq!(proc_flags, parsed);
 
-        Ok::<ProcFlags, ThagError>(proc_flags)
+        Ok::<ProcFlags, Box<dyn Error>>(proc_flags)
     }?;
     Ok(proc_flags)
-}
-
-#[allow(dead_code)]
-fn type_of<T>(_x: &T) -> String {
-    std::any::type_name::<T>().to_string()
 }
 
 #[allow(dead_code)]
@@ -274,40 +282,40 @@ fn main() {
     let opt = Cli::parse();
 
     if opt.verbose {
-        vlog!(Verbosity::Normal, "Verbosity enabled");
+        println!("Verbosity enabled");
     }
 
     if opt.timings {
-        vlog!(Verbosity::Normal, "Timings enabled");
+        println!("Timings enabled");
     }
 
     if opt.generate {
-        vlog!(Verbosity::Normal, "Generate option selected");
+        println!("Generate option selected");
     }
 
     if opt.build {
-        vlog!(Verbosity::Normal, "Build option selected");
+        println!("Build option selected");
     }
 
     if opt.force {
-        vlog!(Verbosity::Normal, "Force option selected");
+        println!("Force option selected");
     }
 
     if opt.executable {
-        vlog!(Verbosity::Normal, "Executable option selected");
+        println!("Executable option selected");
     }
 
-    vlog!(Verbosity::Normal, "Unquote={:#?}", opt.unquote);
+    println!("Unquote={:#?}", opt.unquote);
 
     if opt.executable {
-        vlog!(Verbosity::Normal, "Config option selected");
+        println!("Config option selected");
     }
 
-    vlog!(Verbosity::Normal, "Script to run: {:?}", opt.script);
+    println!("Script to run: {:?}", opt.script);
     if !opt.args.is_empty() {
-        vlog!(Verbosity::Normal, "With arguments:");
+        println!("With arguments:");
         for arg in &opt.args {
-            vlog!(Verbosity::Normal, "{arg}");
+            println!("{arg}");
         }
     }
 

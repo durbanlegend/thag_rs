@@ -10,7 +10,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_with = "3.11.0"
 toml = "0.8.19"
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "79582b0a889bca191a15a9d85f7d4c0ab5fbab69"}
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 */
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.

@@ -1,16 +1,16 @@
 /*[toml]
 [dependencies]
+convert_case = "0.6.0"
 # To switch off, use version without features = ["enable_system_time"]
 # If on, prepare for function to run twice for some reason!
-# firestorm = "0.5.1"
-firestorm = { version = "0.5.1", features = ["enable_system_time"] }
 lazy_static = "1.4.0"
 log = "0.4.22"
 regex = "1.10.5"
+strum = { version = "0.26.3", features = ["derive"] }
 # thag_proc_macros = { version = "0.1.0", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
-thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", rev = "ae819fc549a9d6a40d4907f6f981815c25882bfa" }
+thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = "0.1.7"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "ae819fc549a9d6a40d4907f6f981815c25882bfa" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
 */
 
@@ -20,16 +20,14 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "ae819fc549a9
 /// Strategy and grunt work thanks to ChatGPT.
 //# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
 //# Categories: technique, tools
-use firestorm::profile_fn;
-use lazy_static::lazy_static;
-use regex::Regex;
+use convert_case::{Case, Casing};
 use std::{
     collections::HashMap,
     fs::{self, read_dir, File},
     io::Write as OtherWrite,
     path::{Path, PathBuf},
 };
-use thag_rs::{code_utils, lazy_static_var};
+use thag_rs::{code_utils, lazy_static_var, regex, shared};
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::category_enum;
@@ -49,7 +47,6 @@ struct ScriptMetadata {
 category_enum! {}
 
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
-    profile_fn!(parse_metadata);
     // Lazy static variable from the categories defined in macro category_enum!.
     let valid_categories = lazy_static_var!(Vec<String>, {
         let valid_categories = all_categories();
@@ -93,7 +90,13 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
                         // eprintln!("{}: categories={categories:?}", file_path.display());
                         // Check all the categories are valid
                         assert!(
-                            categories.iter().all(|cat| valid_categories.contains(cat)),
+                            categories.iter().all(|cat| {
+                                let found = valid_categories.contains(&cat.to_case(Case::Snake));
+                                if !found {
+                                    eprintln!("Unknown or invalid category {cat}");
+                                }
+                                found
+                            }),
                             "One or more invalid categories found in {}",
                             file_path.display()
                         );
@@ -138,18 +141,22 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     }
 
     let maybe_syntax_tree = code_utils::to_ast(file_path_str, &content);
-
-    let crates = match maybe_syntax_tree {
-        Some(ref ast) => code_utils::infer_deps_from_ast(&ast),
-        None => code_utils::infer_deps_from_source(&content),
-    };
-
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
-    }
-    let main_methods = match maybe_syntax_tree {
-        Some(ref ast) => code_utils::count_main_methods(ast),
-        None => RE.find_iter(&content).count(),
+    let (crates, main_methods) = match maybe_syntax_tree {
+        Some(ref ast) => {
+            let crates_finder = shared::find_crates(&ast);
+            let metadata_finder = shared::find_metadata(&ast);
+            (
+                code_utils::infer_deps_from_ast(&crates_finder, &metadata_finder),
+                metadata_finder.main_count,
+            )
+        }
+        None => {
+            let re = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
+            (
+                code_utils::infer_deps_from_source(&content),
+                re.find_iter(&content).count(),
+            )
+        }
     };
 
     let script_type = if main_methods >= 1 {
@@ -186,7 +193,6 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
 }
 
 fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
-    profile_fn!(collect_all_metadata);
     let mut all_metadata = Vec::new();
 
     let scripts = read_dir(scripts_dir).expect("Error reading scripts");
@@ -214,7 +220,6 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
 }
 
 fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path, boilerplate_path: &Path) {
-    profile_fn!(generate_readme);
     let mut file = File::create(output_path).unwrap();
 
     // Read boilerplate content
@@ -296,63 +301,14 @@ fn generate_run_section(metadata: &ScriptMetadata) -> String {
     md
 }
 
-// struct Example {
-//     url: String,
-//     args: Vec<String>,
-//     description: Option<String>,
-// }
-
-// impl Example {
-//     fn new(url: impl Into<String>, args: Vec<String>, description: Option<String>) -> Self {
-//         Self {
-//             url: url.into(),
-//             args,
-//             description,
-//         }
-//     }
-
-//     fn to_command(&self) -> String {
-//         if self.args.is_empty() {
-//             format!("thag_url {}", self.url)
-//         } else {
-//             format!("thag_url {} -- {}", self.url, self.args.join(" "))
-//         }
-//     }
-
-//     fn generate_markdown(&self) -> String {
-//         let mut md = String::new();
-//         md.push_str("Run this example:\n\n```bash\n");
-//         md.push_str(&self.to_command());
-//         md.push_str("\n```\n");
-//         if let Some(desc) = &self.description {
-//             md.push_str("\n<details>\n<summary>About this example</summary>\n\n");
-//             md.push_str(desc);
-//             md.push_str("\n</details>\n");
-//         }
-//         md
-//     }
-// }
-
 fn main() {
-    profile_fn!(main);
     let scripts_dir = Path::new("demo");
     let output_path = Path::new("demo/README.md");
     let boilerplate_path = Path::new("assets/boilerplate.md");
 
-    // Check if firestorm profiling is enabled
-    // if firestorm::enabled() {
-    //     // Profile the `execute` function
-    //     // Use borrow_mut to get a mutable reference
-    //     firestorm::bench("./flames/", || {
-    //         let all_metadata = collect_all_metadata(scripts_dir);
-    //         generate_readme(&all_metadata, output_path, boilerplate_path);
-    //     })
-    //     .unwrap();
-    // } else {
     // Regular execution when profiling is not enabled
     let all_metadata = collect_all_metadata(scripts_dir);
     generate_readme(&all_metadata, output_path, boilerplate_path);
-    // }
 
     println!("demo/README.md generated successfully.");
 }

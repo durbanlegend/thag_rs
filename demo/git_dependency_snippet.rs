@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = "0.1.7"
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 */
 
 /// `demo/git_dependency.rs` done as a snippet, just because.

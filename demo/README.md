@@ -441,7 +441,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crat
 
 **Purpose:** Demo building a repl using `clap` directly.
 
-**Crates:** `clap`
+**Crates:** `clap`, `shlex`
 
 **Type:** Program
 
@@ -561,7 +561,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_deriv
 
 **Purpose:** Prototype CLI.
 
-**Crates:** `bitflags`, `clap`, `thag_rs`
+**Crates:** `bitflags`, `clap`
 
 **Type:** Program
 
@@ -684,7 +684,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs
 
 **Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
-**Crates:** `lazy_static`, `strum`, `supports_color`, `termbg`, `thag_rs`
+**Crates:** `lazy_static`, `nu_ansi_term`, `strum`, `supports_color`, `termbg`, `thag_rs`
 
 **Type:** Program
 
@@ -739,7 +739,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_orig.rs
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
-**Crates:** `edit`, `firestorm`, `home`, `mockall`, `nu_ansi_term`, `serde`, `serde_with`, `thag_rs`
+**Crates:** `edit`, `firestorm`, `home`, `mockall`, `nu_ansi_term`, `serde`, `serde_with`, `thag_rs`, `toml`
 
 **Type:** Program
 
@@ -1390,6 +1390,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snipp
 
 **Purpose:** Demo of edit crate to invoke preferred editor.
 
+**Crates:** `edit`
+
 **Type:** Snippet
 
 **Categories:** crates, technique
@@ -1410,7 +1412,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs
 
 **Purpose:** Prototype a native-mode editor using the `egui` crate.
 
-**Crates:** `eframe`, `env_logger`
+**Crates:** `eframe`, `egui`, `egui_extras`, `env_logger`
 
 **Type:** Program
 
@@ -2312,7 +2314,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadruplin
 
 **Purpose:** Allow user to select scripts by category.
 
-**Crates:** `edit`, `thag_rs`, `tokio`, `warp`
+**Crates:** `edit`, `inquire`, `strum`, `thag_demo_proc_macros`, `thag_rs`, `tokio`, `warp`
 
 **Type:** Program
 
@@ -2377,7 +2379,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.
 
 **Purpose:** demo of async and channel programming and of `flume` in particular.
 
-**Crates:** `flume`
+**Crates:** `async_std`, `flume`
 
 **Type:** Program
 
@@ -2398,6 +2400,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs
 **Description:**  Published example from the `flume` channel crate.
 
 **Purpose:** demo of channel programming and of `flume` in particular.
+
+**Crates:** `flume`
 
 **Type:** Program
 
@@ -2468,7 +2472,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs
 
 **Purpose:** Document demo scripts in a demo/README.md as a guide to the user.
 
-**Crates:** `firestorm`, `lazy_static`, `regex`, `thag_demo_proc_macros`, `thag_rs`
+**Crates:** `convert_case`, `thag_demo_proc_macros`, `thag_rs`
 
 **Type:** Program
 
@@ -2674,7 +2678,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.
 
 **Purpose:** Demo `hyper` HTTP client, and incorporating separate modules into the script.
 
-**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
+**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `pretty_env_logger`, `tokio`
 
 **Type:** Program
 
@@ -2727,7 +2731,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_ser
 
 **Purpose:** Demo `hyper` HTTP hello server, and incorporating separate modules into the script.
 
-**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
+**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `pretty_env_logger`, `tokio`
 
 **Type:** Program
 
@@ -2771,7 +2775,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integ
 
 **Purpose:** Show that `thag_rs` can handle product demos.
 
-**Crates:** `iced`
+**Crates:** `console_error_panic_hook`, `console_log`, `iced`, `tracing_subscriber`
 
 **Type:** Program
 
@@ -2817,7 +2821,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs
 
 **Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
 
-**Crates:** `clap`, `console`, `rustyline`, `strum`
+**Crates:** `clap`, `console`, `rustyline`, `shlex`, `strum`
 
 **Type:** Program
 
@@ -2866,7 +2870,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_coloriz
 
 **Type:** Program
 
-**Categories:** AST, crates, technique
+**Categories:** AST, crates, technique, tools
 
 **Link:** [input_expr_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_ast.rs)
 
@@ -2888,7 +2892,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_
 
 **Type:** Program
 
-**Categories:** AST, crates, technique
+**Categories:** AST, crates, technique, tools
 
 **Link:** [input_file_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_ast.rs)
 
@@ -3010,13 +3014,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs
  and `demo/syn_visit_use_path_expr.rs`.
  Don't remove the surrounding braces, because those serve to make it an expression.
 
-**Purpose:** Prototype.
+**Purpose:** Testing.
 
 **Crates:** `syn`
 
 **Type:** Snippet
 
-**Categories:** AST, crates, prototype, technique
+**Categories:** testing
 
 **Link:** [just_a_test_expression.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_expression.rs)
 
@@ -3523,6 +3527,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs
 
 **Purpose:** Demo of `pomprt` readline implementation.
 
+**Crates:** `pomprt`
+
 **Type:** Program
 
 **Categories:** crates
@@ -3542,6 +3548,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/pomprt_complet
 **Description:**  Published example from `prettyplease` Readme.
 
 **Purpose:** Demo featured crate.
+
+**Crates:** `prettyplease`, `syn`
 
 **Type:** Program
 
@@ -3944,6 +3952,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_str
 
 **Purpose:** Demo featured crates.
 
+**Crates:** `eframe`, `egui`, `env_logger`, `log`, `profiling`, `puffin`, `puffin_egui`
+
 **Type:** Program
 
 **Categories:** crates
@@ -3964,7 +3974,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puff
 
 **Purpose:** Demo featured crate.
 
-**Crates:** `eframe`
+**Crates:** `eframe`, `puffin`, `puffin_egui`
 
 **Type:** Program
 
@@ -4006,6 +4016,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profile
  So let's work out the 3 child triples of (3, 4, 5).
 
 **Purpose:** Recreational, educational.
+
+**Crates:** `io`
 
 **Type:** Snippet
 
@@ -4461,7 +4473,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs
 
 **Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
 
-**Crates:** `clap`, `console`, `rustyline`, `strum`
+**Crates:** `clap`, `console`, `rustyline`, `shlex`, `strum`
 
 **Type:** Program
 
@@ -4575,7 +4587,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smar
 
 **Purpose:** Demo using `thag_rs` to run a basic REPL as a script.
 
-**Crates:** `rustyline`
+**Crates:** `env_logger`, `rustyline`
 
 **Type:** Program
 
@@ -4599,7 +4611,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_comp
 
 **Purpose:** Explore `rustyline` crate.
 
-**Crates:** `rustyline`
+**Crates:** `env_logger`, `rustyline`
 
 **Type:** Program
 
@@ -4706,7 +4718,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import
 ### Script: snippet_name_clash.rs
 
 **Description:**  Demo scope of import statements. Two conflicting imports with the same name
- coexisting in the same println! invocation. Demonstrates that when wrapping
+ coexisting in the same `println!` invocation. Demonstrates that when wrapping
  a snippet we can't assume it's OK to pull the imports up to the top level.
 
 **Purpose:** Prototype to confirm leaving imports in situ when wrapping snippets.
@@ -4761,7 +4773,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs
 
 **Purpose:** Debugging.
 
-**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
+**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 
@@ -4860,7 +4872,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color
 
 **Purpose:** show off the power of `syn`.
 
-**Crates:** `colored`
+**Crates:** `colored`, `syn`
 
 **Type:** Program
 
@@ -5117,6 +5129,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_
 
 **Purpose:** Demo featured crate.
 
+**Crates:** `tempfile`
+
 **Type:** Program
 
 **Categories:** crates
@@ -5140,7 +5154,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
 
 **Purpose:** Allow checking of terminals on platforms to be supported, also test reliability of different crates.
 
-**Crates:** `crossterm`, `log`, `simplelog`, `supports_color`, `thag_rs`
+**Crates:** `crossterm`, `log`, `simplelog`, `supports_color`, `terminal_light`, `thag_rs`
 
 **Type:** Snippet
 
@@ -5187,6 +5201,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/termbg.rs
 
 **Purpose:** Demo terminal-light interrogating the background color. Results will vary with OS and terminal type.
 
+**Crates:** `terminal_light`
+
 **Type:** Snippet
 
 **Categories:** crates
@@ -5208,7 +5224,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light
 
 **Purpose:** Mostly recreational.
 
-**Crates:** `coolor`, `crossterm`
+**Crates:** `coolor`, `crossterm`, `terminal_light`
 
 **Type:** Program
 
@@ -5231,7 +5247,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light
 
 **Purpose:** Demo of the `terminal-light` crate.
 
-**Crates:** `coolor`, `crossterm`
+**Crates:** `coolor`, `crossterm`, `terminal_light`
 
 **Type:** Program
 
@@ -5285,11 +5301,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707
 
 **Purpose:** A user-friendly interface to the `thag` `--cargo` option.
 
-**Crates:** `inquire`, `rustix`
+**Crates:** `atty`, `inquire`, `rustix`
 
 **Type:** Program
 
-**Categories:** technique, tools
+**Categories:** technique, thag_front_ends, tools
 
 **Link:** [thag_cargo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs)
 
@@ -5309,11 +5325,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs
 
 **Purpose:** A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
 
-**Crates:** `colored`, `inquire`, `rustix`
+**Crates:** `atty`, `colored`, `inquire`, `rustix`
 
 **Type:** Program
 
-**Categories:** technique, tools
+**Categories:** technique, thag_front_ends, tools
 
 **Link:** [thag_clippy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs)
 
@@ -5331,7 +5347,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs
 
 **Purpose:** Handy configuration file builder.
 
-**Crates:** `colored`, `convert_case`, `documented`, `inquire`, `strum`, `super`, `syn`, `thag_rs`
+**Crates:** `colored`, `convert_case`, `dirs`, `documented`, `inquire`, `strum`, `syn`, `thag_rs`, `toml`
 
 **Type:** Program
 
@@ -5405,7 +5421,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 **Type:** Program
 
-**Categories:** prototype, tools
+**Categories:** prototype, thag_front_ends, tools
 
 **Link:** [thag_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs)
 
@@ -5443,11 +5459,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_s
 
 **Purpose:** A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
 
-**Crates:** `syn`, `url`
+**Crates:** `syn`, `tempfile`, `tinyget`, `url`
 
 **Type:** Program
 
-**Categories:** technique, tools
+**Categories:** technique, thag_front_ends, tools
 
 **Link:** [thag_url.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs)
 
@@ -5462,7 +5478,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs
 ### Script: time_cookbook.rs
 
 **Description:**  Simple time demo pasted directly from Rust cookbook. Run without -q to show how
- `thag_rs` will find the missing chrono manifest entry and display a specimen
+ `thag_rs` will find the missing `chrono` manifest entry and display a specimen
  toml block you can paste in at the top of the script.
 
 **Purpose:** Demo cut and paste from a web source with Cargo search and specimen toml block generation.
@@ -5557,7 +5573,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Purpose:** Explore TUI editing
 
-**Crates:** `color_eyre`, `ratatui`, `tui_scrollview`
+**Crates:** `color_eyre`, `lipsum`, `ratatui`, `tui_scrollview`
 
 **Type:** Program
 
@@ -5636,7 +5652,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_
 
 **Purpose:** Demo TUI editor and featured crates, including `crossterm`, and the use of the `scopeguard` crate to reset the terminal when it goes out of scope.
 
-**Crates:** `ratatui`, `tui_textarea`
+**Crates:** `ratatui`, `scopeguard`, `tui_textarea`
 
 **Type:** Program
 
@@ -5896,7 +5912,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termb
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
-**Crates:** `crossterm`
+**Crates:** `crossterm`, `termbg`
 
 **Type:** Program
 
@@ -5939,6 +5955,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termb
 **Description:**  This seems to "reliably" swallow the very first character entered in Window, prior to `termbg` 0.6.0..
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
+
+**Crates:** `terminal_light`
 
 **Type:** Program
 

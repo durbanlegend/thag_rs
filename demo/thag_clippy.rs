@@ -9,7 +9,7 @@ rustix = { version = "0.38.42", features = ["fs"] }
 /// Prompts the user to select a Rust script and one or more Clippy lints to run against the script's generated project, and
 /// and invokes `thag` with the --cargo option to run it.
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
-//# Categories: technique, tools
+//# Categories: technique, thag_front_ends, tools
 use colored::Colorize;
 use inquire::{Confirm, MultiSelect, Select};
 use rustix::path::Arg;

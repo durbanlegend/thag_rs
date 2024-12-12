@@ -194,7 +194,7 @@ pub fn configure_log() {
 ///
 /// # Panics
 ///
-/// Panics if it can't create athe log file app.log in the current working directory.
+/// Panics if it can't create the log file app.log in the current working directory.
 #[cfg(not(feature = "env_logger"))]
 fn configure_simplelog() {
     profile_fn!(configure_simplelog);

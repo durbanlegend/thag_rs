@@ -1,11 +1,3 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28.1"
-simplelog = "0.12.2"
-#termbg = "0.6"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "6c5bff14435ebf308795dc5b62e04ea8e8d1e99e" }
-*/
-
 /// Published example from `termbg` readme.
 ///
 /// Detects the light or dark theme in use, as well as the colours in use.
@@ -13,7 +5,6 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "6c5bff14435e
 //# Categories: crates
 use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 use std::env;
-use thag_rs::termbg;
 
 // termbg sends an operating system command (OSC) to interrogate the screen
 // but with side effects which we undo here.

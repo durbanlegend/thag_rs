@@ -353,7 +353,8 @@ pub fn gen_build_run(
             build_state.metadata_finder = Some(find_metadata(ast));
         }
 
-        let main_methods = build_state.metadata_finder.as_ref().map_or_else(
+        let metadata_finder = build_state.metadata_finder.as_ref();
+        let main_methods = metadata_finder.map_or_else(
             || {
                 let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
                 re.find_iter(&rs_source).count()

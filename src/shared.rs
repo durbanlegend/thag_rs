@@ -14,6 +14,7 @@ use crossterm::event::Event;
 use firestorm::{profile_fn, profile_method};
 use home::home_dir;
 use mockall::automock;
+use phf::phf_set;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use std::clone::Clone;
@@ -26,6 +27,22 @@ use std::{
 use strum::Display;
 use syn::ItemUse;
 use syn::{self, visit::Visit, ItemMod, TypePath, UseRename, UseTree};
+
+static FILTER_WORDS: phf::Set<&'static str> = phf_set! {
+    // Numeric primitives
+    "f32", "f64",
+    "i8", "i16", "i32", "i64", "i128", "isize",
+    "u8", "u16", "u32", "u64", "u128", "usize",
+
+    // Core types
+    "bool", "str",
+
+    // Common std modules that might appear in paths
+    "error", "fs",
+
+    // Rust keywords that might appear in paths
+    "self", "super", "crate"
+};
 
 /// An abstract syntax tree wrapper for use with syn.
 #[derive(Clone, Debug, Display)]
@@ -115,7 +132,7 @@ impl<'a> Visit<'a> for CratesFinder {
             }
             UseTree::Path(p) => {
                 let node_name = p.ident.to_string();
-                if is_valid_crate_name(&node_name) && !self.crates.contains(&node_name) {
+                if !should_filter_dependency(&node_name) && !self.crates.contains(&node_name) {
                     // debug_log!("use_tree pushing path name {node_name} to crates");
                     self.crates.push(node_name.clone());
                 }
@@ -126,7 +143,9 @@ impl<'a> Visit<'a> for CratesFinder {
                         // a crate while b and c are excluded, This takes care of b
                         // when the parent node is a.
                         let child_name = child.ident.to_string();
-                        if !self.names_to_exclude.contains(&child_name) {
+                        if child_name != node_name  // e.g. the second quote in quote::quote
+                            && !self.names_to_exclude.contains(&child_name)
+                        {
                             // debug_log!(
                             //     "visit_use_tree pushing mid name {child_name} to names_to_exclude",
                             // );
@@ -138,8 +157,9 @@ impl<'a> Visit<'a> for CratesFinder {
                         // a crate while b and c are excluded, This takes care of c
                         // when the parent node is b.
                         let child_name = child.ident.to_string();
-                        if !self.names_to_exclude.contains(&child_name) {
-                            // debug_log!("visit_use_tree pushing end name {child_name} to names_to_exclude (1)");
+                        if child_name != node_name  // e.g. the second quote in quote::quote
+                            && !self.names_to_exclude.contains(&child_name)
+                        {
                             self.names_to_exclude.push(child_name);
                         }
                     }
@@ -154,8 +174,9 @@ impl<'a> Visit<'a> for CratesFinder {
                                     // a crate while b and c are excluded, This takes care of b
                                     // when the parent node is a.
                                     let child_name = child.ident.to_string();
-                                    if !self.names_to_exclude.contains(&child_name) {
-                                        // debug_log!("visit_use_tree pushing member name {child_name} to names_to_exclude");
+                                    if child_name != node_name  // e.g. the second quote in quote::quote
+                                        && !self.names_to_exclude.contains(&child_name)
+                                    {
                                         self.names_to_exclude.push(child_name);
                                     }
                                 }
@@ -198,7 +219,7 @@ impl<'a> Visit<'a> for CratesFinder {
                 let name = first_seg.ident.to_string();
                 #[cfg(debug_assertions)]
                 debug_log!("Found first seg {name} in expr_path={expr_path:#?}");
-                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
                     // debug_log!("visit_expr_path pushing {name} to crates");
                     self.crates.push(name);
                 }
@@ -214,7 +235,7 @@ impl<'a> Visit<'a> for CratesFinder {
                 let name = first_seg.ident.to_string();
                 // #[cfg(debug_assertions)]
                 // debug_log!("Found first seg {name} in type_path={type_path:#?}");
-                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
                     // #[cfg(debug_assertions)]
                     // debug_log!("visit_type_path pushing {name} to crates");
                     self.crates.push(name);
@@ -231,7 +252,7 @@ impl<'a> Visit<'a> for CratesFinder {
         if mac.path.segments.len() > 1 {
             if let Some(first_seg) = mac.path.segments.first() {
                 let name = first_seg.ident.to_string();
-                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
                     // debug_log!("visit_macro pushing {name} to crates");
                     self.crates.push(name);
                 }
@@ -247,7 +268,7 @@ impl<'a> Visit<'a> for CratesFinder {
         if let Some((_, path, _)) = &item.trait_ {
             if let Some(first_seg) = path.segments.first() {
                 let name = first_seg.ident.to_string();
-                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
                     // debug_log!("visit_item_impl pushing {name} to crates (1)");
                     self.crates.push(name);
                 }
@@ -258,7 +279,7 @@ impl<'a> Visit<'a> for CratesFinder {
         if let syn::Type::Path(type_path) = &*item.self_ty {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
-                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
                     // debug_log!("visit_item_impl pushing {name} to crates (2)");
                     self.crates.push(name);
                 }
@@ -273,7 +294,7 @@ impl<'a> Visit<'a> for CratesFinder {
         if let syn::Type::Path(type_path) = &*item.ty {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
-                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
                     // debug_log!("visit_item_type pushing {name} to crates (2)");
                     self.crates.push(name);
                 }
@@ -288,7 +309,7 @@ impl<'a> Visit<'a> for CratesFinder {
         if let syn::TypeParamBound::Trait(trait_bound) = bound {
             if let Some(first_seg) = trait_bound.path.segments.first() {
                 let name = first_seg.ident.to_string();
-                if is_valid_crate_name(&name) && !self.crates.contains(&name) {
+                if !should_filter_dependency(&name) && !self.crates.contains(&name) {
                     // debug_log!("visit_type_param_bound pushing first {name} to crates");
                     self.crates.push(name);
                 }
@@ -309,10 +330,10 @@ pub struct MetadataFinder {
 impl<'a> Visit<'a> for MetadataFinder {
     fn visit_use_rename(&mut self, node: &'a UseRename) {
         profile_method!(visit_use_rename);
-        eprintln!(
-            "visit_use_rename pushing {} to names_to_exclude",
-            node.rename
-        );
+        // eprintln!(
+        //     "visit_use_rename pushing {} to names_to_exclude",
+        //     node.rename
+        // );
         self.names_to_exclude.push(node.rename.to_string());
         syn::visit::visit_use_rename(self, node);
     }
@@ -339,20 +360,30 @@ impl<'a> Visit<'a> for MetadataFinder {
     }
 }
 
-fn is_valid_crate_name(name: &str) -> bool {
-    const SKIP_NAMES: &[&str] = &[
-        "self", "super", "crate", "str", "line", "key", "style", "cmd", "e", "command", "error",
-        "matches", "split", "x", "panic", "bool", "fs",
-    ];
+// fn is_valid_crate_name(name: &str) -> bool {
+//     const SKIP_NAMES: &[&str] = &[
+//         "bool", "cmd", "command", "crate", "e", "error", "f32", "f64", "fs", "key", "line",
+//         "matches", "panic", "self", "split", "str", "style", "super", "u128", "u32", "u64", "u8",
+//         "x",
+//     ];
 
-    profile_fn!(is_valid_crate_name);
-    // First check if it starts with uppercase
-    if name.chars().next().unwrap_or('_').is_uppercase() {
-        return false;
+//     profile_fn!(is_valid_crate_name);
+//     // First check if it starts with uppercase
+//     if name.chars().next().unwrap_or('_').is_uppercase() {
+//         return false;
+//     }
+
+//     // Then check against known non-crate names (only lowercase ones needed)
+//     !SKIP_NAMES.contains(&name)
+// }
+
+pub fn should_filter_dependency(name: &str) -> bool {
+    // Filter out capitalized names
+    if name.chars().next().map_or(false, |c| c.is_uppercase()) {
+        return true;
     }
 
-    // Then check against known non-crate names (only lowercase ones needed)
-    !SKIP_NAMES.contains(&name)
+    FILTER_WORDS.contains(name)
 }
 
 #[must_use]

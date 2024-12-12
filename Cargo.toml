@@ -43,6 +43,7 @@ home = "0.5.9"
 log = "0.4.22"
 mockall = "0.13.1"
 nu-ansi-term = "0.50.1"
+phf = "0.11.2"
 prettyplease = "0.2.25"
 proc-macro2 = "1.0.89"
 quote = "1.0.37"
@@ -105,12 +106,18 @@ format_snippet = []
 
 [dev-dependencies]
 assert_cmd = "2.0.16"
+criterion = "0.5.1"
 either = "1.13.0"
 env_logger = "0.11.5"
+lazy_static = "1.5.0"
 predicates = "3.1.2"
 sequential-test = "0.2.4"
 tempfile = "3.14.0"
 test-generator = "0.3.1"
+
+[[bench]]
+name = "filter_bench"
+harness = false
 
 [workspace]
 members = ["src/proc_macros"]

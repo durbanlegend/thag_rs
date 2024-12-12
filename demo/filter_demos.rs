@@ -22,6 +22,7 @@ use edit;
 use inquire::{MultiSelect, Select, Text};
 use std::{
     collections::HashMap,
+    env::current_dir,
     fs::{self, read_dir},
     path::{Path, PathBuf},
     process::Command,
@@ -146,7 +147,8 @@ async fn main() {
         }
         OutputFormat::MarkdownFile => {
             let markdown = output_markdown(&category_strings.join(", "), &metadata);
-            match save_markdown_to_file(markdown) {
+            let default_name = generate_default_filename(&categories, &logic);
+            match save_markdown_to_file(markdown, default_name, &logic) {
                 Ok(path) => println!("Markdown file saved successfully to: {}", path.display()),
                 Err(e) => eprintln!("Error saving file: {}", e),
             }
@@ -334,17 +336,160 @@ struct ScriptMetadata {
     categories: Vec<String>, // New field for categories
 }
 
-fn save_markdown_to_file(content: String) -> std::io::Result<PathBuf> {
-    // Get the directory to save to
-    let default_dir = std::env::current_dir()?;
-    let save_path = Text::new("Enter filename (with .md extension):")
-        .with_default("demo_scripts.md")
-        .prompt()
-        .map(|filename| default_dir.join(filename))
-        .unwrap_or_else(|_| default_dir.join("demo_scripts.md"));
+struct FileNavigator {
+    current_dir: PathBuf,
+    history: Vec<PathBuf>,
+}
 
-    fs::write(&save_path, content)?;
-    Ok(save_path)
+impl FileNavigator {
+    fn new() -> Self {
+        Self {
+            current_dir: current_dir().unwrap_or_else(|_| PathBuf::from(".")),
+            history: Vec::new(),
+        }
+    }
+
+    fn list_items(&self) -> Vec<String> {
+        let mut items = vec!["*SELECT CURRENT DIRECTORY*".to_string(), "..".to_string()];
+
+        // Add directories
+        let mut dirs: Vec<_> = std::fs::read_dir(&self.current_dir)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
+            .filter(|entry| !entry.file_name().to_string_lossy().starts_with('.'))
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .collect();
+        dirs.sort();
+        items.extend(dirs.into_iter().map(|d| format!("📁 {d}")));
+
+        // Add .md files
+        let mut files: Vec<_> = std::fs::read_dir(&self.current_dir)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter(|entry| {
+                entry.file_type().map(|ft| ft.is_file()).unwrap_or(false)
+                    && entry.path().extension().is_some_and(|ext| ext == "md")
+            })
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .collect();
+        files.sort();
+        items.extend(files.into_iter().map(|f| format!("📄 {f}")));
+
+        items
+    }
+
+    fn navigate(&mut self, selection: &str) -> Option<PathBuf> {
+        if selection == ".." {
+            if let Some(parent) = self.current_dir.parent() {
+                self.history.push(self.current_dir.clone());
+                self.current_dir = parent.to_path_buf();
+            }
+            None
+        } else {
+            let clean_name = selection.trim_start_matches(['📁', '📄', ' ']);
+            let new_path = self.current_dir.join(clean_name);
+
+            if new_path.is_dir() {
+                self.history.push(self.current_dir.clone());
+                self.current_dir = new_path;
+                None
+            } else {
+                Some(new_path)
+            }
+        }
+    }
+
+    fn current_path(&self) -> &PathBuf {
+        &self.current_dir
+    }
+}
+
+fn generate_default_filename(categories: &[Category], logic: &FilterLogic) -> String {
+    let logic_str = match logic {
+        FilterLogic::And => "and",
+        FilterLogic::Or => "or",
+    };
+
+    let category_abbrevs: Vec<String> = categories
+        .iter()
+        .map(|cat| {
+            let cat_str = cat.to_string().to_lowercase();
+            cat_str.chars().take(3).collect::<String>()
+        })
+        .collect();
+
+    format!(
+        "demo_{}.md",
+        category_abbrevs.join(&format!("_{}_", logic_str))
+    )
+}
+
+fn save_markdown_to_file(
+    content: String,
+    default_name: String,
+    logic: &FilterLogic,
+) -> std::io::Result<PathBuf> {
+    let mut navigator = FileNavigator::new();
+    let mut selected_dir = None;
+
+    println!("Select destination directory (use arrow keys and Enter to navigate):");
+
+    loop {
+        let items = navigator.list_items();
+        let selection = Select::new(
+            &format!("Current directory: {}", navigator.current_path().display()),
+            items,
+        )
+        .with_help_message("Press Enter to navigate, Space to select current directory")
+        .prompt();
+
+        match selection {
+            Ok(sel) => {
+                if sel == "." || sel == "*SELECT CURRENT DIRECTORY*" {
+                    // User selected current directory
+                    selected_dir = Some(navigator.current_path().to_path_buf());
+                    break;
+                } else if let Some(path) = navigator.navigate(&sel) {
+                    // If a file is selected, ignore it and continue navigation
+                    continue;
+                }
+            }
+            Err(inquire::error::InquireError::OperationCanceled)
+            | Err(inquire::error::InquireError::OperationInterrupted) => {
+                // User wants to cancel the whole operation
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Selection cancelled",
+                ));
+            }
+            Err(_) => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Unexpected error",
+                ))
+            }
+        }
+    }
+
+    if let Some(dir) = selected_dir {
+        // Get filename
+        let filename = Text::new("Enter filename:")
+            .with_default(&default_name)
+            .prompt()
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+
+        let full_path = dir.join(filename);
+        fs::write(&full_path, content)?;
+        Ok(full_path)
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "No directory selected",
+        ))
+    }
 }
 
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {

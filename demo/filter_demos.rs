@@ -7,7 +7,7 @@ regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive"] }
 syn = "2"
 # thag_rs = "0.1.7"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "ad07d461c3b20c837d901adeb7b46371bf79646f" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
 # tokio = "1.41.1"
 tokio = { version = "1", features = ["full"] }
@@ -36,10 +36,148 @@ use warp::Filter;
 
 category_enum! {} // This will generate the Category enum
 
-#[derive(Debug, Display)]
+#[derive(Clone, Debug, Display)]
 enum FilterLogic {
-    Or,
     And,
+    Or,
+    All,
+}
+
+impl FilterLogic {
+    fn prompt_text(&self) -> &'static str {
+        match self {
+            FilterLogic::And => "AND (restrictive filtering)",
+            FilterLogic::Or => "OR (inclusive filtering)",
+            FilterLogic::All => "ALL (no filtering)",
+        }
+    }
+
+    fn simple_text(&self) -> &'static str {
+        match self {
+            FilterLogic::And => "and",
+            FilterLogic::Or => "or",
+            FilterLogic::All => "all",
+        }
+    }
+}
+
+#[derive(Debug)]
+struct FilterPreferences {
+    category_logic: FilterLogic,
+    crate_logic: FilterLogic,
+    combination_logic: FilterLogic,
+}
+
+#[derive(Debug, Clone)]
+struct LogicChoice {
+    logic: FilterLogic,
+    description: &'static str,
+}
+
+impl std::fmt::Display for LogicChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.description)
+    }
+}
+
+impl LogicChoice {
+    fn new(logic: FilterLogic, description: &'static str) -> Self {
+        Self { logic, description }
+    }
+}
+
+fn get_user_preferences(
+    available_crates: &BTreeSet<String>,
+) -> (FilterPreferences, Vec<Category>, Vec<String>, OutputFormat) {
+    let choices = vec![
+        LogicChoice::new(FilterLogic::Or, "OR (inclusive filtering)"),
+        LogicChoice::new(FilterLogic::And, "AND (restrictive filtering)"),
+        LogicChoice::new(FilterLogic::All, "ALL (no filtering)"),
+    ];
+
+    let category_logic = Select::new("Select category filtering logic:", choices)
+        .with_help_message("Choose how to filter categories")
+        .prompt()
+        .map(|choice| choice.logic)
+        .unwrap_or(FilterLogic::All);
+
+    let categories = if !matches!(category_logic, FilterLogic::All) {
+        MultiSelect::new("Select categories:", Category::iter().collect::<Vec<_>>())
+            .prompt()
+            .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
+    // Then get crate logic and selections
+    let crate_logic = Select::new(
+        "Select crate filtering logic:",
+        vec![FilterLogic::Or, FilterLogic::And, FilterLogic::All],
+    )
+    .with_formatter(&|logic| logic.value.prompt_text().to_string())
+    .prompt()
+    .unwrap_or(FilterLogic::All);
+
+    let selected_crates =
+        if !matches!(crate_logic, FilterLogic::All) && !available_crates.is_empty() {
+            MultiSelect::new(
+                "Select crates to filter by:",
+                available_crates.iter().cloned().collect::<Vec<_>>(),
+            )
+            .prompt()
+            .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+
+    // Only ask for combination logic if both filters are active
+    let combination_logic = if !matches!(category_logic, FilterLogic::All)
+        && !matches!(crate_logic, FilterLogic::All)
+    {
+        let choices = vec![
+            LogicChoice::new(FilterLogic::Or, "OR (inclusive filtering)"),
+            LogicChoice::new(FilterLogic::And, "AND (restrictive filtering)"),
+        ];
+
+        Select::new("How should categories and crates be combined?", choices)
+            .with_help_message("Choose how to combine the category and crate filters")
+            .prompt()
+            .map(|choice| choice.logic)
+            .unwrap_or(FilterLogic::And)
+    } else {
+        FilterLogic::Or // Default, though it won't be used if either is All
+    };
+
+    // Finally get output format preference as before
+    let format = Select::new("Select output format:", vec!["HTML", "Markdown"])
+        .with_starting_cursor(0)
+        .prompt()
+        .map(|s| match s {
+            "Markdown" => Select::new(
+                "How would you like to view the Markdown?",
+                vec!["Display in pager", "Save to file"],
+            )
+            .with_starting_cursor(0)
+            .prompt()
+            .map(|s| match s {
+                "Save to file" => OutputFormat::MarkdownFile,
+                _ => OutputFormat::MarkdownPager,
+            })
+            .unwrap_or(OutputFormat::MarkdownPager),
+            _ => OutputFormat::Html,
+        })
+        .unwrap_or(OutputFormat::Html);
+
+    (
+        FilterPreferences {
+            category_logic,
+            crate_logic,
+            combination_logic,
+        },
+        categories,
+        selected_crates,
+        format,
+    )
 }
 
 #[derive(Debug)]
@@ -49,61 +187,45 @@ enum OutputFormat {
     MarkdownFile,
 }
 
-fn get_user_preferences(
-    available_crates: &BTreeSet<String>,
-) -> (FilterLogic, Vec<Category>, Vec<String>, OutputFormat) {
-    // First get the filter logic
-    let logic = Select::new("Select filter logic:", vec!["OR", "AND"])
-        .with_starting_cursor(0)
-        .prompt()
-        .map(|s| match s {
-            "AND" => FilterLogic::And,
-            _ => FilterLogic::Or,
-        })
-        .unwrap_or(FilterLogic::Or);
-
-    // Then get category selections
-    let categories = Category::iter().collect::<Vec<_>>();
-    let category_selections = MultiSelect::new("Select categories:", categories)
-        .prompt()
-        .unwrap_or_default();
-
-    // Then get crate selections
-    let crate_selections = if !available_crates.is_empty() {
-        MultiSelect::new(
-            "Select crates to filter by:",
-            available_crates.iter().cloned().collect::<Vec<_>>(),
-        )
-        .prompt()
-        .unwrap_or_default()
-    } else {
-        Vec::new()
+fn apply_filters(
+    meta: &ScriptMetadata,
+    prefs: &FilterPreferences,
+    category_strings: &[String],
+    selected_crates: &[String],
+) -> bool {
+    let category_match = match prefs.category_logic {
+        FilterLogic::All => true, // No category filtering
+        FilterLogic::Or => category_strings.iter().any(|cat| {
+            meta.categories
+                .iter()
+                .any(|meta_cat| meta_cat.to_lowercase() == *cat)
+        }),
+        FilterLogic::And => category_strings.iter().all(|cat| {
+            meta.categories
+                .iter()
+                .any(|meta_cat| meta_cat.to_lowercase() == *cat)
+        }),
     };
 
-    // Finally get output format preference
-    let format = Select::new("Select output format:", vec!["HTML", "Markdown"])
-        .with_starting_cursor(0)
-        .prompt()
-        .map(|s| match s {
-            "Markdown" => {
-                // If Markdown selected, ask for output preference
-                Select::new(
-                    "How would you like to view the Markdown?",
-                    vec!["Display in pager", "Save to file"],
-                )
-                .with_starting_cursor(0)
-                .prompt()
-                .map(|s| match s {
-                    "Save to file" => OutputFormat::MarkdownFile,
-                    _ => OutputFormat::MarkdownPager,
-                })
-                .unwrap_or(OutputFormat::MarkdownPager)
-            }
-            _ => OutputFormat::Html,
-        })
-        .unwrap_or(OutputFormat::Html);
+    let crate_match = match prefs.crate_logic {
+        FilterLogic::All => true, // No crate filtering
+        FilterLogic::Or => selected_crates.iter().any(|c| meta.crates.contains(c)),
+        FilterLogic::And => selected_crates.iter().all(|c| meta.crates.contains(c)),
+    };
 
-    (logic, category_selections, crate_selections, format)
+    // If both are ALL, include everything
+    if matches!(prefs.category_logic, FilterLogic::All)
+        && matches!(prefs.crate_logic, FilterLogic::All)
+    {
+        true
+    } else {
+        // Otherwise use the chosen combination logic
+        match prefs.combination_logic {
+            FilterLogic::Or => category_match || crate_match,
+            FilterLogic::And => category_match && crate_match,
+            FilterLogic::All => unreachable!(), // ALL isn't an option for combination_logic
+        }
+    }
 }
 
 #[tokio::main]
@@ -120,7 +242,8 @@ async fn main() {
         .collect();
 
     // Get user preferences including output format
-    let (logic, categories, selected_crates, format) = get_user_preferences(&available_crates);
+    let (filter_prefs, categories, selected_crates, format) =
+        get_user_preferences(&available_crates);
 
     // Convert categories to strings for filtering
     let category_strings: Vec<String> = categories
@@ -128,55 +251,36 @@ async fn main() {
         .map(|c| c.to_string().to_lowercase())
         .collect();
 
-    // Filter metadata based on both categories and crates
+    // Filter metadata
     let metadata = all_metadata
         .into_iter()
-        .filter(|meta| match logic {
-            FilterLogic::Or => {
-                let matches_categories = category_strings.is_empty()
-                    || meta
-                        .categories
-                        .iter()
-                        .any(|cat| category_strings.contains(&cat.to_lowercase()));
-                let matches_crates = selected_crates.is_empty()
-                    || meta.crates.iter().any(|c| selected_crates.contains(c));
-                matches_categories || matches_crates
-            }
-            FilterLogic::And => {
-                let matches_categories = category_strings.is_empty()
-                    || meta
-                        .categories
-                        .iter()
-                        .any(|cat| category_strings.contains(&cat.to_lowercase()));
-                let matches_crates = selected_crates.is_empty()
-                    || selected_crates
-                        .iter()
-                        .all(|selected| meta.crates.contains(selected));
-                matches_categories && matches_crates
-            }
-        })
+        .filter(|meta| apply_filters(meta, &filter_prefs, &category_strings, &selected_crates))
         .collect::<Vec<_>>();
 
-    // Create filter description for display
-    let (categories_desc, crates_desc) =
-        create_filter_description(&category_strings, &selected_crates, &logic);
+    // Create filter description
+    let (categories_desc, crates_desc, combination_op) =
+        create_filter_description(&category_strings, &selected_crates, &filter_prefs);
 
     // Handle different output formats
     match format {
         OutputFormat::MarkdownPager => {
-            let markdown = output_markdown(&categories_desc, &crates_desc, &metadata);
+            let markdown =
+                output_markdown(&categories_desc, &crates_desc, &combination_op, &metadata);
             display_in_pager(&markdown);
         }
         OutputFormat::MarkdownFile => {
-            let markdown = output_markdown(&categories_desc, &crates_desc, &metadata);
-            let default_name = generate_default_filename(&categories, &selected_crates, &logic);
+            let markdown =
+                output_markdown(&categories_desc, &crates_desc, &combination_op, &metadata);
+            let default_name =
+                generate_default_filename(&categories, &selected_crates, &filter_prefs);
             match save_markdown_to_file(markdown, default_name) {
                 Ok(path) => println!("Markdown file saved successfully to: {}", path.display()),
                 Err(e) => eprintln!("Error saving file: {}", e),
             }
         }
         OutputFormat::Html => {
-            let html_report = generate_html_report(&categories_desc, &crates_desc, &metadata);
+            let html_report =
+                generate_html_report(&categories_desc, &crates_desc, &combination_op, &metadata);
             let edit_route = warp::path("edit").and(warp::path::param::<String>()).map(
                 move |script_name: String| {
                     let script_path = Path::new(&scripts_dir).join(&script_name);
@@ -200,27 +304,30 @@ async fn main() {
 fn create_filter_description(
     category_strings: &[String],
     selected_crates: &[String],
-    logic: &FilterLogic,
-) -> (String, String) {
-    // Returns (categories_desc, crates_desc)
-    let categories_desc = if category_strings.is_empty() {
-        "all".to_string()
-    } else {
-        category_strings.join(&format!(" {} ", logic.to_string().to_lowercase()))
+    filter_prefs: &FilterPreferences,
+) -> (String, String, String) {
+    // Added combination operator
+    let categories_desc = match filter_prefs.category_logic {
+        FilterLogic::All => "all".to_string(),
+        _ if category_strings.is_empty() => "none".to_string(),
+        _ => category_strings.join(&format!(" {} ", filter_prefs.category_logic.simple_text())),
     };
 
-    let crates_desc = if selected_crates.is_empty() {
-        "all".to_string()
-    } else {
-        selected_crates.join(&format!(" {} ", logic.to_string().to_lowercase()))
+    let crates_desc = match filter_prefs.crate_logic {
+        FilterLogic::All => "all".to_string(),
+        _ if selected_crates.is_empty() => "none".to_string(),
+        _ => selected_crates.join(&format!(" {} ", filter_prefs.crate_logic.simple_text())),
     };
 
-    (categories_desc, crates_desc)
+    let combination_op = filter_prefs.combination_logic.simple_text().to_uppercase();
+
+    (categories_desc, crates_desc, combination_op)
 }
 
 fn generate_html_report(
     categories_desc: &str,
     crates_desc: &str,
+    combination_op: &str,
     metadata_list: &[ScriptMetadata],
 ) -> String {
     let mut html = String::from(
@@ -264,29 +371,38 @@ fn generate_html_report(
                 gap: 10px;
                 align-items: start;
             }
-            </style>
-        </head>
-        <body>
-    "#
+            .combination-op {
+                 font-weight: bold;
+                 margin: 10px 0;
+                 /*padding-left: 100px;   Match the grid layout of filter-line */
+             }
+         </style>
+     </head>
+     <body>
+ "#
         .to_string(),
     );
 
     html.push_str("<h1>thag_rs Demo Scripts</h1>");
-    html.push_str("<h2>Matching categories and crates:</h2>");
+    html.push_str(&format!(
+        "<h2>Matching categories {} crates:</h2>",
+        combination_op
+    ));
     html.push_str(&format!(
         r#"
         <div class="filter-description">
             <div class="filter-line">
-                <span>categories:</span>
+                <span><b>categories:</b></span>
                 <span>{}</span>
             </div>
+            <div class="combination-op">{}</div>
             <div class="filter-line">
-                <span>crates:</span>
+                <span><b>crates:</b></span>
                 <span>{}</span>
             </div>
         </div>
     "#,
-        categories_desc, crates_desc
+        categories_desc, combination_op, crates_desc
     ));
 
     // Rest of the HTML generation...
@@ -332,12 +448,17 @@ fn generate_html_report(
 fn output_markdown(
     categories_desc: &str,
     crates_desc: &str,
+    combination_op: &str,
     metadata_list: &[ScriptMetadata],
 ) -> String {
     let mut md = String::from("# thag_rs Demo Scripts\n\n");
-    md.push_str("## Matching categories and crates:\n\n");
-    md.push_str(&format!("categories: {}\n\n", categories_desc));
-    md.push_str(&format!("crates:     {}\n\n", crates_desc));
+    md.push_str(&format!(
+        "## Matching categories {} crates:\n\n",
+        combination_op
+    ));
+    md.push_str(&format!("**categories:** {}\n\n", categories_desc));
+    md.push_str(&format!("{}\n\n", combination_op));
+    md.push_str(&format!("**crates:**     {}\n\n", crates_desc));
 
     for meta in metadata_list {
         md.push_str(&format!("## {}\n\n", meta.script));
@@ -469,14 +590,9 @@ impl FileNavigator {
 fn generate_default_filename(
     categories: &[Category],
     selected_crates: &[String],
-    logic: &FilterLogic,
+    filter_prefs: &FilterPreferences,
 ) -> String {
-    let logic_str = match logic {
-        FilterLogic::And => "and",
-        FilterLogic::Or => "or",
-    };
-
-    let parts: Vec<String> = categories
+    let mut parts: Vec<String> = categories
         .iter()
         .map(|cat| {
             cat.to_string()
@@ -496,7 +612,8 @@ fn generate_default_filename(
         return "demo_all.md".to_string();
     }
 
-    // parts.sort(); // Optional: sort for consistent ordering
+    parts.sort();
+    let logic_str = filter_prefs.combination_logic.simple_text();
     format!("demo_{}.md", parts.join(&format!("_{}_", logic_str)))
 }
 

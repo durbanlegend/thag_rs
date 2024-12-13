@@ -1,8 +1,10 @@
 /*[toml]
 [dependencies]
 edit = "0.1.5"
+inquire = "0.7.5"
 #log = "0.4.22"
 regex = "1.10.5"
+strum = { version = "0.26.3", features = ["derive"] }
 syn = "2"
 # thag_rs = "0.1.7"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "ad07d461c3b20c837d901adeb7b46371bf79646f" }
@@ -21,21 +23,20 @@ use edit;
 // use regex::Regex;
 use inquire::{MultiSelect, Select, Text};
 use std::{
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     env::current_dir,
     fs::{self, read_dir},
     path::{Path, PathBuf},
     process::Command,
 };
-use strum::{Display, EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use thag_demo_proc_macros::category_enum;
-use thag_rs::{code_utils, regex, shared};
+use thag_rs::{code_utils, lazy_static_var, regex, shared};
 use tokio;
 use warp::Filter;
 
 category_enum! {} // This will generate the Category enum
 
-#[derive(Debug)]
+#[derive(Debug, Display)]
 enum FilterLogic {
     Or,
     And,
@@ -48,21 +49,9 @@ enum OutputFormat {
     MarkdownFile,
 }
 
-fn get_markdown_output_choice() -> OutputFormat {
-    Select::new(
-        "How would you like to view the Markdown?",
-        vec!["Display in pager", "Save to file"],
-    )
-    .with_starting_cursor(0)
-    .prompt()
-    .map(|s| match s {
-        "Save to file" => OutputFormat::MarkdownFile,
-        _ => OutputFormat::MarkdownPager,
-    })
-    .unwrap_or(OutputFormat::MarkdownPager)
-}
-
-fn get_user_preferences() -> (FilterLogic, Vec<Category>, OutputFormat) {
+fn get_user_preferences(
+    available_crates: &BTreeSet<String>,
+) -> (FilterLogic, Vec<Category>, Vec<String>, OutputFormat) {
     // First get the filter logic
     let logic = Select::new("Select filter logic:", vec!["OR", "AND"])
         .with_starting_cursor(0)
@@ -75,9 +64,21 @@ fn get_user_preferences() -> (FilterLogic, Vec<Category>, OutputFormat) {
 
     // Then get category selections
     let categories = Category::iter().collect::<Vec<_>>();
-    let selections = MultiSelect::new("Select categories:", categories)
+    let category_selections = MultiSelect::new("Select categories:", categories)
         .prompt()
         .unwrap_or_default();
+
+    // Then get crate selections
+    let crate_selections = if !available_crates.is_empty() {
+        MultiSelect::new(
+            "Select crates to filter by:",
+            available_crates.iter().cloned().collect::<Vec<_>>(),
+        )
+        .prompt()
+        .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
 
     // Finally get output format preference
     let format = Select::new("Select output format:", vec!["HTML", "Markdown"])
@@ -85,76 +86,110 @@ fn get_user_preferences() -> (FilterLogic, Vec<Category>, OutputFormat) {
         .prompt()
         .map(|s| match s {
             "Markdown" => {
-                // If Markdown is selected, ask for output preference
-                get_markdown_output_choice()
+                // If Markdown selected, ask for output preference
+                Select::new(
+                    "How would you like to view the Markdown?",
+                    vec!["Display in pager", "Save to file"],
+                )
+                .with_starting_cursor(0)
+                .prompt()
+                .map(|s| match s {
+                    "Save to file" => OutputFormat::MarkdownFile,
+                    _ => OutputFormat::MarkdownPager,
+                })
+                .unwrap_or(OutputFormat::MarkdownPager)
             }
             _ => OutputFormat::Html,
         })
         .unwrap_or(OutputFormat::Html);
 
-    (logic, selections, format)
-}
-
-fn get_category_filters() -> (FilterLogic, Vec<Category>) {
-    // First ask about AND/OR
-    let logic = Select::new("Select filter logic:", vec!["OR", "AND"])
-        .with_starting_cursor(0)
-        .prompt()
-        .map(|s| match s {
-            "AND" => FilterLogic::And,
-            _ => FilterLogic::Or,
-        })
-        .unwrap_or(FilterLogic::Or);
-
-    // Then do multi-select of categories
-    let categories = Category::iter().collect::<Vec<_>>();
-    let selections = MultiSelect::new("Select categories:", categories)
-        .prompt()
-        .unwrap_or_default();
-
-    (logic, selections)
+    (logic, category_selections, crate_selections, format)
 }
 
 #[tokio::main]
 async fn main() {
     let scripts_dir = Path::new("demo");
-    let (logic, categories, format) = get_user_preferences();
 
+    // Collect all metadata first
+    let all_metadata = collect_all_metadata(scripts_dir);
+
+    // Build unique set of crates
+    let available_crates: BTreeSet<String> = all_metadata
+        .iter()
+        .flat_map(|meta| meta.crates.clone())
+        .collect();
+
+    // Get user preferences including output format
+    let (logic, categories, selected_crates, format) = get_user_preferences(&available_crates);
+
+    // Convert categories to strings for filtering
     let category_strings: Vec<String> = categories
         .iter()
         .map(|c| c.to_string().to_lowercase())
         .collect();
 
-    let metadata = collect_all_metadata(scripts_dir)
+    // Filter metadata based on both categories and crates
+    let metadata = all_metadata
         .into_iter()
         .filter(|meta| match logic {
-            FilterLogic::Or => meta
-                .categories
-                .iter()
-                .any(|cat| category_strings.contains(&cat.to_lowercase())),
-            FilterLogic::And => category_strings.iter().all(|selected| {
-                meta.categories
-                    .iter()
-                    .any(|cat| cat.to_lowercase() == *selected)
-            }),
+            FilterLogic::Or => {
+                let matches_categories = category_strings.is_empty()
+                    || meta
+                        .categories
+                        .iter()
+                        .any(|cat| category_strings.contains(&cat.to_lowercase()));
+                let matches_crates = selected_crates.is_empty()
+                    || meta.crates.iter().any(|c| selected_crates.contains(c));
+                matches_categories || matches_crates
+            }
+            FilterLogic::And => {
+                let matches_categories = category_strings.is_empty()
+                    || meta
+                        .categories
+                        .iter()
+                        .any(|cat| category_strings.contains(&cat.to_lowercase()));
+                let matches_crates = selected_crates.is_empty()
+                    || selected_crates
+                        .iter()
+                        .all(|selected| meta.crates.contains(selected));
+                matches_categories && matches_crates
+            }
         })
         .collect::<Vec<_>>();
 
+    // Create filter description for display
+    let filter_description = {
+        let mut desc = Vec::new();
+        let logic_str = format!(" {logic} ");
+        if !category_strings.is_empty() {
+            desc.push(format!("categories: {}", category_strings.join(&logic_str)));
+        }
+        if !selected_crates.is_empty() {
+            desc.push(format!("crates: {}", selected_crates.join(&logic_str)));
+        }
+        println!(
+            "filter_description={}",
+            desc.join(&format!(" {} ", &logic_str))
+        );
+        desc.join(&format!(" {} ", &logic_str))
+    };
+
+    // Handle different output formats
     match format {
         OutputFormat::MarkdownPager => {
-            let markdown = output_markdown(&category_strings.join(", "), &metadata);
+            let markdown = output_markdown(&filter_description, &metadata);
             display_in_pager(&markdown);
         }
         OutputFormat::MarkdownFile => {
-            let markdown = output_markdown(&category_strings.join(", "), &metadata);
-            let default_name = generate_default_filename(&categories, &logic);
-            match save_markdown_to_file(markdown, default_name, &logic) {
+            let markdown = output_markdown(&filter_description, &metadata);
+            let default_name = generate_default_filename(&categories, &selected_crates, &logic);
+            match save_markdown_to_file(markdown, default_name) {
                 Ok(path) => println!("Markdown file saved successfully to: {}", path.display()),
                 Err(e) => eprintln!("Error saving file: {}", e),
             }
         }
         OutputFormat::Html => {
-            let html_report = generate_html_report(&category_strings.join(", "), &metadata);
+            let html_report = generate_html_report(&filter_description, &metadata);
 
             let edit_route = warp::path("edit").and(warp::path::param::<String>()).map(
                 move |script_name: String| {
@@ -226,7 +261,7 @@ fn generate_html_report(categories_str: &str, metadata_list: &[ScriptMetadata]) 
         .join(" ");
 
     html.push_str(&format!(
-        "<div class=\"categories-header\">Matching categories: {}</div>",
+        "<div class=\"categories-header\">Matching categories and crates: {}</div>",
         highlighted_categories
     ));
 
@@ -270,7 +305,7 @@ fn generate_html_report(categories_str: &str, metadata_list: &[ScriptMetadata]) 
 }
 
 fn output_markdown(categories_str: &str, metadata_list: &[ScriptMetadata]) -> String {
-    let mut md = String::from("# thag_rs Demo Scripts\n\n");
+    let mut md = String::from("# thag_rs demo scripts\n\n");
 
     // Enhanced categories display
     md.push_str(&format!("## Matching categories\n\n"));
@@ -407,37 +442,47 @@ impl FileNavigator {
     }
 }
 
-fn generate_default_filename(categories: &[Category], logic: &FilterLogic) -> String {
+fn generate_default_filename(
+    categories: &[Category],
+    selected_crates: &[String],
+    logic: &FilterLogic,
+) -> String {
     let logic_str = match logic {
         FilterLogic::And => "and",
         FilterLogic::Or => "or",
     };
 
-    let category_abbrevs: Vec<String> = categories
+    let parts: Vec<String> = categories
         .iter()
         .map(|cat| {
-            let cat_str = cat.to_string().to_lowercase();
-            cat_str.chars().take(3).collect::<String>()
+            cat.to_string()
+                .to_lowercase()
+                .chars()
+                .take(3)
+                .collect::<String>()
         })
+        .chain(
+            selected_crates
+                .iter()
+                .map(|crate_name| crate_name.chars().take(3).collect::<String>()),
+        )
         .collect();
 
-    format!(
-        "demo_{}.md",
-        category_abbrevs.join(&format!("_{}_", logic_str))
-    )
+    if parts.is_empty() {
+        return "demo_all.md".to_string();
+    }
+
+    // parts.sort(); // Optional: sort for consistent ordering
+    format!("demo_{}.md", parts.join(&format!("_{}_", logic_str)))
 }
 
-fn save_markdown_to_file(
-    content: String,
-    default_name: String,
-    logic: &FilterLogic,
-) -> std::io::Result<PathBuf> {
+fn save_markdown_to_file(content: String, default_name: String) -> std::io::Result<PathBuf> {
     let mut navigator = FileNavigator::new();
-    let mut selected_dir = None;
+    // let mut selected_dir = None;
 
     println!("Select destination directory (use arrow keys and Enter to navigate):");
 
-    loop {
+    let selected_dir = loop {
         let items = navigator.list_items();
         let selection = Select::new(
             &format!("Current directory: {}", navigator.current_path().display()),
@@ -450,9 +495,9 @@ fn save_markdown_to_file(
             Ok(sel) => {
                 if sel == "." || sel == "*SELECT CURRENT DIRECTORY*" {
                     // User selected current directory
-                    selected_dir = Some(navigator.current_path().to_path_buf());
-                    break;
-                } else if let Some(path) = navigator.navigate(&sel) {
+                    // selected_dir = Some(navigator.current_path().to_path_buf());
+                    break Some(navigator.current_path().to_path_buf());
+                } else if let Some(_path) = navigator.navigate(&sel) {
                     // If a file is selected, ignore it and continue navigation
                     continue;
                 }
@@ -472,7 +517,7 @@ fn save_markdown_to_file(
                 ))
             }
         }
-    }
+    };
 
     if let Some(dir) = selected_dir {
         // Get filename
@@ -624,4 +669,24 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
     all_metadata.sort_by(|a, b| a.script.partial_cmp(&b.script).unwrap());
 
     all_metadata
+}
+
+mod tests {
+    use crate::generate_default_filename;
+    use crate::FilterLogic;
+
+    #[test]
+    fn test_filename_generation() {
+        // Test setup would depend on your Category enum implementation
+        let categories = vec![/* your category values */];
+        let crates = vec!["tokio".to_string(), "serde".to_string()];
+        let logic = FilterLogic::And;
+
+        let filename = generate_default_filename(&categories, &crates, &logic);
+        // Assert based on expected output
+        assert!(filename.starts_with("demo_"));
+        assert!(filename.ends_with(".md"));
+        assert!(filename.contains("tok"));
+        assert!(filename.contains("ser"));
+    }
 }

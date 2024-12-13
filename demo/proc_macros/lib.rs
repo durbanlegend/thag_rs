@@ -54,9 +54,25 @@ pub fn attribute_basic(_attr: TokenStream, input: TokenStream) -> TokenStream {
     intercept_and_debug(cfg!(feature = "expand"), input, attribute_basic_impl)
 }
 
-#[proc_macro_derive(DeriveBasic)]
+#[proc_macro_derive(DeriveBasic, attributes(expand_macro))]
 pub fn derive_basic(input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), input, derive_basic_impl)
+    let input_clone = input.clone();
+    let check_input = parse_macro_input!(input as DeriveInput);
+
+    // If the `expand` featre is enabled, check if the `expand_macro` attribute
+    // is present
+    #[cfg(feature = "expand")]
+    let should_expand = check_input
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("expand_macro"));
+    #[cfg(not(feature = "expand"))]
+    let should_expand = false;
+
+    intercept_and_debug(should_expand, input_clone, |tokens| {
+        derive_basic_impl(tokens)
+    })
+    // intercept_and_debug(cfg!(feature = "expand"), input, derive_basic_impl)
 }
 
 #[proc_macro]
@@ -318,7 +334,13 @@ where
 /// such as filtering demo scripts or generating reports.
 #[proc_macro]
 pub fn category_enum(input: TokenStream) -> TokenStream {
-    intercept_and_debug(false, input, |tokens| category_enum_impl(tokens))
+    // Parse the input to check for the `expand_macro` attribute
+    let should_expand = input.clone().into_iter().any(|token| {
+        // Very basic check - you might want something more robust
+        token.to_string().contains("expand_macro")
+    });
+
+    intercept_and_debug(should_expand, input, |tokens| category_enum_impl(tokens))
 }
 
 #[proc_macro_derive(DocComment)]

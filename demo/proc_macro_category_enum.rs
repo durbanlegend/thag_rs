@@ -23,7 +23,9 @@ macro_rules! lazy_static_var {
 }
 
 fn main() {
-    category_enum!();
+    category_enum! {
+        #[expand_macro]
+    };
 
     let variant = Category::from_str("educational");
     println!("variant={variant:#?}");

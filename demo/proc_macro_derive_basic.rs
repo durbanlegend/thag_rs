@@ -7,6 +7,7 @@
 use thag_demo_proc_macros::DeriveBasic;
 
 #[derive(Debug, DeriveBasic)]
+#[expand_macro]
 struct MyStruct {
     field: String,
 }

@@ -44,6 +44,7 @@ enum FilterLogic {
 }
 
 impl FilterLogic {
+    #[allow(dead_code)]
     fn prompt_text(&self) -> &'static str {
         match self {
             FilterLogic::And => "AND (restrictive filtering)",
@@ -86,98 +87,203 @@ impl LogicChoice {
     }
 }
 
+struct EscapeState {
+    pressed: bool,
+}
+
+impl EscapeState {
+    fn new() -> Self {
+        Self { pressed: false }
+    }
+
+    fn handle_escape(&mut self) -> Result<(), &'static str> {
+        if self.pressed {
+            Err("Operation cancelled")
+        } else {
+            self.pressed = true;
+            println!("Press Esc again to exit, or continue to retry");
+            Ok(())
+        }
+    }
+
+    fn reset(&mut self) {
+        self.pressed = false;
+    }
+}
+
 fn get_user_preferences(
     available_crates: &BTreeSet<String>,
-) -> (FilterPreferences, Vec<Category>, Vec<String>, OutputFormat) {
-    let choices = vec![
-        LogicChoice::new(FilterLogic::Or, "OR (inclusive filtering)"),
-        LogicChoice::new(FilterLogic::And, "AND (restrictive filtering)"),
-        LogicChoice::new(FilterLogic::All, "ALL (no filtering)"),
-    ];
+) -> Result<(FilterPreferences, Vec<Category>, Vec<String>, OutputFormat), &'static str> {
+    let mut escape_state = EscapeState::new();
 
-    let category_logic = Select::new("Select category filtering logic:", choices)
-        .with_help_message("Choose how to filter categories")
-        .prompt()
-        .map(|choice| choice.logic)
-        .unwrap_or(FilterLogic::All);
+    loop {
+        // Reset escape flag at the start of each attempt
+        escape_state.reset();
 
-    let categories = if !matches!(category_logic, FilterLogic::All) {
-        MultiSelect::new("Select categories:", Category::iter().collect::<Vec<_>>())
-            .prompt()
-            .unwrap_or_default()
-    } else {
-        Vec::new()
-    };
+        // Category logic
+        let choices = vec![
+            LogicChoice::new(FilterLogic::Or, "OR (inclusive filtering)"),
+            LogicChoice::new(FilterLogic::And, "AND (restrictive filtering)"),
+            LogicChoice::new(FilterLogic::All, "ALL (no filtering)"),
+        ];
 
-    // Then get crate logic and selections
-    let crate_logic = Select::new(
-        "Select crate filtering logic:",
-        vec![FilterLogic::Or, FilterLogic::And, FilterLogic::All],
-    )
-    .with_formatter(&|logic| logic.value.prompt_text().to_string())
-    .prompt()
-    .unwrap_or(FilterLogic::All);
+        let category_logic = match Select::new("Select category filtering logic:", choices).prompt()
+        {
+            Ok(choice) => choice.logic,
+            Err(
+                inquire::error::InquireError::OperationCanceled
+                | inquire::error::InquireError::OperationInterrupted,
+            ) => {
+                escape_state.handle_escape()?;
+                continue;
+            }
+            Err(_) => return Err("Unexpected error"),
+        };
 
-    let selected_crates =
-        if !matches!(crate_logic, FilterLogic::All) && !available_crates.is_empty() {
-            MultiSelect::new(
-                "Select crates to filter by:",
-                available_crates.iter().cloned().collect::<Vec<_>>(),
-            )
-            .prompt()
-            .unwrap_or_default()
+        escape_state.reset();
+
+        // Categories
+        let categories = if !matches!(category_logic, FilterLogic::All) {
+            match MultiSelect::new("Select categories:", Category::iter().collect::<Vec<_>>())
+                .prompt()
+            {
+                Ok(cats) => cats,
+                Err(
+                    inquire::error::InquireError::OperationCanceled
+                    | inquire::error::InquireError::OperationInterrupted,
+                ) => {
+                    escape_state.handle_escape()?;
+                    continue;
+                }
+                Err(_) => return Err("Unexpected error"),
+            }
         } else {
             Vec::new()
         };
 
-    // Only ask for combination logic if both filters are active
-    let combination_logic = if !matches!(category_logic, FilterLogic::All)
-        && !matches!(crate_logic, FilterLogic::All)
-    {
-        let choices = vec![
+        escape_state.reset();
+
+        // Crate logic
+        let crate_choices = vec![
             LogicChoice::new(FilterLogic::Or, "OR (inclusive filtering)"),
             LogicChoice::new(FilterLogic::And, "AND (restrictive filtering)"),
+            LogicChoice::new(FilterLogic::All, "ALL (no filtering)"),
         ];
 
-        Select::new("How should categories and crates be combined?", choices)
-            .with_help_message("Choose how to combine the category and crate filters")
-            .prompt()
-            .map(|choice| choice.logic)
-            .unwrap_or(FilterLogic::And)
-    } else {
-        FilterLogic::Or // Default, though it won't be used if either is All
-    };
+        let crate_logic = match Select::new("Select crate filtering logic:", crate_choices).prompt()
+        {
+            Ok(choice) => choice.logic,
+            Err(
+                inquire::error::InquireError::OperationCanceled
+                | inquire::error::InquireError::OperationInterrupted,
+            ) => {
+                escape_state.handle_escape()?;
+                continue;
+            }
+            Err(_) => return Err("Unexpected error"),
+        };
 
-    // Finally get output format preference as before
-    let format = Select::new("Select output format:", vec!["HTML", "Markdown"])
-        .with_starting_cursor(0)
-        .prompt()
-        .map(|s| match s {
-            "Markdown" => Select::new(
-                "How would you like to view the Markdown?",
-                vec!["Display in pager", "Save to file"],
-            )
-            .with_starting_cursor(0)
-            .prompt()
-            .map(|s| match s {
-                "Save to file" => OutputFormat::MarkdownFile,
-                _ => OutputFormat::MarkdownPager,
-            })
-            .unwrap_or(OutputFormat::MarkdownPager),
-            _ => OutputFormat::Html,
-        })
-        .unwrap_or(OutputFormat::Html);
+        escape_state.reset();
 
-    (
-        FilterPreferences {
-            category_logic,
-            crate_logic,
-            combination_logic,
-        },
-        categories,
-        selected_crates,
-        format,
-    )
+        // Selected crates
+        let selected_crates =
+            if !matches!(crate_logic, FilterLogic::All) && !available_crates.is_empty() {
+                match MultiSelect::new(
+                    "Select crates to filter by:",
+                    available_crates.iter().cloned().collect::<Vec<_>>(),
+                )
+                .prompt()
+                {
+                    Ok(crates) => crates,
+                    Err(
+                        inquire::error::InquireError::OperationCanceled
+                        | inquire::error::InquireError::OperationInterrupted,
+                    ) => {
+                        escape_state.handle_escape()?;
+                        continue;
+                    }
+                    Err(_) => return Err("Unexpected error"),
+                }
+            } else {
+                Vec::new()
+            };
+
+        escape_state.reset();
+
+        // Combination logic
+        let combination_logic = if !matches!(category_logic, FilterLogic::All)
+            || !matches!(crate_logic, FilterLogic::All)
+        {
+            let choices = vec![
+                LogicChoice::new(FilterLogic::Or, "OR (inclusive filtering)"),
+                LogicChoice::new(FilterLogic::And, "AND (restrictive filtering)"),
+            ];
+
+            match Select::new("How should categories and crates be combined?", choices).prompt() {
+                Ok(choice) => choice.logic,
+                Err(
+                    inquire::error::InquireError::OperationCanceled
+                    | inquire::error::InquireError::OperationInterrupted,
+                ) => {
+                    escape_state.handle_escape()?;
+                    continue;
+                }
+                Err(_) => return Err("Unexpected error"),
+            }
+        } else {
+            FilterLogic::Or
+        };
+
+        escape_state.reset();
+
+        // Output format
+        let format = match Select::new("Select output format:", vec!["HTML", "Markdown"]).prompt() {
+            Ok(s) => match s {
+                "Markdown" => {
+                    match Select::new(
+                        "How would you like to view the Markdown?",
+                        vec!["Display in pager", "Save to file"],
+                    )
+                    .prompt()
+                    {
+                        Ok(s) => match s {
+                            "Save to file" => OutputFormat::MarkdownFile,
+                            _ => OutputFormat::MarkdownPager,
+                        },
+                        Err(
+                            inquire::error::InquireError::OperationCanceled
+                            | inquire::error::InquireError::OperationInterrupted,
+                        ) => {
+                            escape_state.handle_escape()?;
+                            continue;
+                        }
+                        Err(_) => return Err("Unexpected error"),
+                    }
+                }
+                _ => OutputFormat::Html,
+            },
+            Err(
+                inquire::error::InquireError::OperationCanceled
+                | inquire::error::InquireError::OperationInterrupted,
+            ) => {
+                escape_state.handle_escape()?;
+                continue;
+            }
+            Err(_) => return Err("Unexpected error"),
+        };
+
+        // If we got here, everything succeeded
+        return Ok((
+            FilterPreferences {
+                category_logic,
+                crate_logic,
+                combination_logic,
+            },
+            categories,
+            selected_crates,
+            format,
+        ));
+    }
 }
 
 #[derive(Debug)]
@@ -241,9 +347,15 @@ async fn main() {
         .flat_map(|meta| meta.crates.clone())
         .collect();
 
-    // Get user preferences including output format
+    // Get user preferences with error handling
     let (filter_prefs, categories, selected_crates, format) =
-        get_user_preferences(&available_crates);
+        match get_user_preferences(&available_crates) {
+            Ok(prefs) => prefs,
+            Err(e) => {
+                eprintln!("{}", e);
+                return;
+            }
+        };
 
     // Convert categories to strings for filtering
     let category_strings: Vec<String> = categories

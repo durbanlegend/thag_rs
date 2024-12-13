@@ -158,30 +158,17 @@ async fn main() {
         .collect::<Vec<_>>();
 
     // Create filter description for display
-    let filter_description = {
-        let mut desc = Vec::new();
-        let logic_str = format!(" {logic} ");
-        if !category_strings.is_empty() {
-            desc.push(format!("categories: {}", category_strings.join(&logic_str)));
-        }
-        if !selected_crates.is_empty() {
-            desc.push(format!("crates: {}", selected_crates.join(&logic_str)));
-        }
-        println!(
-            "filter_description={}",
-            desc.join(&format!(" {} ", &logic_str))
-        );
-        desc.join(&format!(" {} ", &logic_str))
-    };
+    let (categories_desc, crates_desc) =
+        create_filter_description(&category_strings, &selected_crates, &logic);
 
     // Handle different output formats
     match format {
         OutputFormat::MarkdownPager => {
-            let markdown = output_markdown(&filter_description, &metadata);
+            let markdown = output_markdown(&categories_desc, &crates_desc, &metadata);
             display_in_pager(&markdown);
         }
         OutputFormat::MarkdownFile => {
-            let markdown = output_markdown(&filter_description, &metadata);
+            let markdown = output_markdown(&categories_desc, &crates_desc, &metadata);
             let default_name = generate_default_filename(&categories, &selected_crates, &logic);
             match save_markdown_to_file(markdown, default_name) {
                 Ok(path) => println!("Markdown file saved successfully to: {}", path.display()),
@@ -189,8 +176,7 @@ async fn main() {
             }
         }
         OutputFormat::Html => {
-            let html_report = generate_html_report(&filter_description, &metadata);
-
+            let html_report = generate_html_report(&categories_desc, &crates_desc, &metadata);
             let edit_route = warp::path("edit").and(warp::path::param::<String>()).map(
                 move |script_name: String| {
                     let script_path = Path::new(&scripts_dir).join(&script_name);
@@ -211,8 +197,32 @@ async fn main() {
     }
 }
 
-// Function to generate HTML content
-fn generate_html_report(categories_str: &str, metadata_list: &[ScriptMetadata]) -> String {
+fn create_filter_description(
+    category_strings: &[String],
+    selected_crates: &[String],
+    logic: &FilterLogic,
+) -> (String, String) {
+    // Returns (categories_desc, crates_desc)
+    let categories_desc = if category_strings.is_empty() {
+        "all".to_string()
+    } else {
+        category_strings.join(&format!(" {} ", logic.to_string().to_lowercase()))
+    };
+
+    let crates_desc = if selected_crates.is_empty() {
+        "all".to_string()
+    } else {
+        selected_crates.join(&format!(" {} ", logic.to_string().to_lowercase()))
+    };
+
+    (categories_desc, crates_desc)
+}
+
+fn generate_html_report(
+    categories_desc: &str,
+    crates_desc: &str,
+    metadata_list: &[ScriptMetadata],
+) -> String {
     let mut html = String::from(
         r#"
         <html>
@@ -220,30 +230,40 @@ fn generate_html_report(categories_str: &str, metadata_list: &[ScriptMetadata]) 
             <title>Demo Scripts</title>
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
             <style>
-                body { max-width: 800px; margin: 0 auto; padding: 20px; }
-                .script-item { margin-bottom: 2em; padding: 1em; border-radius: 5px; }
-                .script-item:hover { background: #f5f5f5; }
-                .metadata-label { font-weight: bold; color: #555; }
-                .edit-link { display: inline-block; padding: 5px 15px;
-                            background: #007bff; color: white;
-                            text-decoration: none; border-radius: 3px; }
-                .edit-link:hover { background: #0056b3; }
-                .categories-header {
-                    font-size: 1.5em;
-                    margin: 20px 0;
-                    padding: 10px;
-                    background: #f8f9fa;
-                    border-radius: 5px;
-                }
-                .category-highlight {
-                    display: inline-block;
-                    padding: 2px 8px;
-                    margin: 0 2px;
-                    background: #e9ecef;
-                    border-radius: 3px;
-                    font-weight: bold;
-                    color: #495057;
-                }
+            body { max-width: 800px; margin: 0 auto; padding: 20px; }
+            .script-item { margin-bottom: 2em; padding: 1em; border-radius: 5px; }
+            .script-item:hover { background: #f5f5f5; }
+            .metadata-label { font-weight: bold; color: #555; }
+            .edit-link { display: inline-block; padding: 5px 15px;
+                        background: #007bff; color: white;
+                        text-decoration: none; border-radius: 3px; }
+            .edit-link:hover { background: #0056b3; }
+            .categories-header {
+                font-size: 1.5em;
+                margin: 20px 0;
+                padding: 10px;
+                background: #f8f9fa;
+                border-radius: 5px;
+            }
+            .category-highlight {
+                display: inline-block;
+                padding: 2px 8px;
+                margin: 0 2px;
+                background: #e9ecef;
+                border-radius: 3px;
+                font-weight: bold;
+                color: #495057;
+            }
+            .filter-description {
+                margin: 20px 0;
+                font-family: monospace;
+            }
+            .filter-line {
+                display: grid;
+                grid-template-columns: 100px 1fr;
+                gap: 10px;
+                align-items: start;
+            }
             </style>
         </head>
         <body>
@@ -252,19 +272,24 @@ fn generate_html_report(categories_str: &str, metadata_list: &[ScriptMetadata]) 
     );
 
     html.push_str("<h1>thag_rs Demo Scripts</h1>");
-
-    // Enhanced categories display
-    let highlighted_categories = categories_str
-        .split(", ")
-        .map(|cat| format!("<span class=\"category-highlight\">{}</span>", cat))
-        .collect::<Vec<_>>()
-        .join(" ");
-
+    html.push_str("<h2>Matching categories and crates:</h2>");
     html.push_str(&format!(
-        "<div class=\"categories-header\">Matching categories and crates: {}</div>",
-        highlighted_categories
+        r#"
+        <div class="filter-description">
+            <div class="filter-line">
+                <span>categories:</span>
+                <span>{}</span>
+            </div>
+            <div class="filter-line">
+                <span>crates:</span>
+                <span>{}</span>
+            </div>
+        </div>
+    "#,
+        categories_desc, crates_desc
     ));
 
+    // Rest of the HTML generation...
     for meta in metadata_list {
         html.push_str(&format!(
             r#"
@@ -304,15 +329,15 @@ fn generate_html_report(categories_str: &str, metadata_list: &[ScriptMetadata]) 
     html
 }
 
-fn output_markdown(categories_str: &str, metadata_list: &[ScriptMetadata]) -> String {
-    let mut md = String::from("# thag_rs demo scripts\n\n");
-
-    // Enhanced categories display
-    md.push_str(&format!("## Matching categories\n\n"));
-    for category in categories_str.split(", ") {
-        md.push_str(&format!("- **{}**\n", category));
-    }
-    md.push_str("\n---\n\n");
+fn output_markdown(
+    categories_desc: &str,
+    crates_desc: &str,
+    metadata_list: &[ScriptMetadata],
+) -> String {
+    let mut md = String::from("# thag_rs Demo Scripts\n\n");
+    md.push_str("## Matching categories and crates:\n\n");
+    md.push_str(&format!("categories: {}\n\n", categories_desc));
+    md.push_str(&format!("crates:     {}\n\n", crates_desc));
 
     for meta in metadata_list {
         md.push_str(&format!("## {}\n\n", meta.script));
@@ -339,7 +364,6 @@ fn output_markdown(categories_str: &str, metadata_list: &[ScriptMetadata]) -> St
         ));
         md.push_str("---\n\n");
     }
-
     md
 }
 
@@ -671,6 +695,7 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
     all_metadata
 }
 
+#[cfg(test)]
 mod tests {
     use crate::generate_default_filename;
     use crate::FilterLogic;

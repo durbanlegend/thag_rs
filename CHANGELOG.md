@@ -2,6 +2,369 @@
 
 All notable changes to this project will be documented in this file.
 
+# v0.1.8 (2024-12-15)
+
+### Highlights
+
+v0.1.8 brings some next-level enhancements for doing more with your scripts with less effort, such as running scripts straight from URLs,
+and helping you develop or get started with proc macros. And as ever, although it can't speed up Cargo builds, `thag` always aims to achieve
+near-ludicrous speed in its own operations.
+
+- Proc macro development support including macro expansion for debugging:
+    - The starter kit now includes a new local crate `demo/proc_macros` with a `lib.rs` and demo proc macros in their own modules that you
+        can adapt or add to.
+    - lib.rs features a function `intercept_and_debug` that allows you to display the expansion of your proc macro/s in your build
+        output. You can currently switch expansion on or off for a given proc macro by a hard-coded boolean in demo/proc_macros/lib.rs,
+        or by enabling the `macro-debug` feature in demo/proc_macros/Cargo.toml, or by including an `expand_macro` attribute in the
+        caller's proc macro invocation, or by a combination of feature and attribute.
+    - the new expand (-X) command-line option shows the full expansion of the script, including all macros, side by side with
+        the source script.
+- Enhanced dependency inference means you often don't need a `toml` block at all.
+    - infer dependencies from more code points including command invocations, function signatures etc.
+    - configure feature inclusion and exclusion at global and individual crate level.
+    - configurable options max, min, config (recomm/default), none.
+    - support added for detailed dependency format: selects simple or detailed format for each dependency as appropriate.
+    - --verbose option shows results of dependency inference that can be pasted as a new toml block or into an existing one, as the case may be.
+- New command-line options:
+    --cargo (-A) runs any valid cargo subcommand against the generated script, e.g. `test`, `clippy`, `tree`, `doc` etc.
+    --infer (-i) overrides configured or system default dependency inference level
+    --expand (-X) shows script source and expanded source side by side. Requires you to have installed crate `cargo-expand`.
+- Enhancements to generated demo/README.md:
+    - Demo script classification by category
+    - New **Run this example:** code block for most scripts that you can copy and paste to the command line to run the script directly from its
+        GitHub URL (not provided for a few scripts that use `termbg` or need to run in terminal mode.)
+        Requires you to have compiled `demo/thag_url.rs` to a command, which is done by `thag demo/thag_url.rs -x`.
+- `thag` now helps you debug malformed scripts that can't be parsed into an AST, by seamlessly calling `rustfmt` to display the errors.
+- "Demo" starter kit now includes handy new tools that you're encouraged to compile to commands with --executable (-x):
+    - Front-end helper scripts
+    - thag_cargo (demo/thag_cargo.rs) - uses `inquire` crate to allow user to pick a demo script and a Cargo command to run against it.
+    - thag_clippy (demo/thag_clippy.rs) - uses `inquire` crate to allow user to pick a demo script and one or more Clippy lint groups
+        to run against it, e.g. `correctness` or `pedantic`.
+    - thag_url (demo/thag_url.rs) - runs scripts from URLs. Converts source code URLs from GitHub, Rust playground, Gitlab and BitBucket where
+        necessary, downloads the source, checks validity and passes it to `thag` with --stdin (default) or --edit options to run.
+        `thag` dependency inference helps ensure that many such scripts will compile and run without the need to manually specify manifest info.
+    - Config file builder "config_builder" (demo/config_builder.rs) - uses `inquire` crate with the current active `thag_rs` structs and enums
+        to guide the user through the process of building a config.toml file that precisely matches their needs.
+    - Fast report generator "filter_demos" (demo/filter_demos.rs) - helps you quickly find demos of interest. It uses the `inquire` crate to
+        allow the user to select script categories and/or crates of interest, with a choice of And/Or/All logic. It displays them either as HTML
+        via HTTP, or as markdown to a pager (`less`) or to a `.md` file with sensible default naming.
+- Now over 230 demo scripts including 22 in demo/proc_macros.
+- Enhanced help screen
+- Code quality improvements
+- New lazy_static_var! macro to define lazy statics using std::sync::OnceLock.
+- Make extensive use of From trait in colors module colour conversions.
+- New and updated unit tests.
+- Dependency bumps.
+
+- [Merge pull request #71 from durbanlegend/staging](https://github.com/durbanlegend/thag_rs/commit/5f3ebd597a91bce50d03074d92b8b740d0b19e30)
+- [Exploratory changes for proc macro support.](https://github.com/durbanlegend/thag_rs/commit/e5fab56e03e5f4a47a56995ca358e790bb55a9d8)
+- [Diagnose Ubuntu CI failure and attempt cleanup](https://github.com/durbanlegend/thag_rs/commit/d65b1aed47527f267fcc88f111bec6164b31c8a0)
+- [Proc macro naming and new examples](https://github.com/durbanlegend/thag_rs/commit/2b7f62c1e82727319c3c19f8f051609cd9560f49)
+- [Try to work around ci_ubuntu.yml naming issue](https://github.com/durbanlegend/thag_rs/commit/f076da42a8d13e5be99de4bb86d17d0d11baa838)
+- [Merge pull request #72 from durbanlegend/Staging_temp](https://github.com/durbanlegend/thag_rs/commit/1c3757855b0262954724082275c5a705e8e9efc2)
+- [Merge pull request #73 from durbanlegend/main](https://github.com/durbanlegend/thag_rs/commit/49d10d35fefd17ccdbeacaec8aed856b9cf70f13)
+- [Proc macro working experiments](https://github.com/durbanlegend/thag_rs/commit/2cd1c2a8752b9e8fc3a76b83e65e34193a343c85)
+- [Merge pull request #74 from durbanlegend/main](https://github.com/durbanlegend/thag_rs/commit/f5fc195dd5a8e821ac8752c4e979b5ae95e79747)
+- [Bump actions/upload-artifact from 3 to 4](https://github.com/durbanlegend/thag_rs/commit/0f4e5537d8bc109b848d9566920a8403be6d8f65)
+- [Bump tempfile from 3.13.0 to 3.14.0](https://github.com/durbanlegend/thag_rs/commit/7a4835e5db7eb48e6ce45c34c92185db4a8da6f8)
+- [Bank changes in GPT array join proc macro](https://github.com/durbanlegend/thag_rs/commit/5f121ac29fdc3d46305b8d364fc976d97ac5d791)
+- [Merge pull request #75 from durbanlegend/dependabot/github_actions/actions/upload-artifact-4](https://github.com/durbanlegend/thag_rs/commit/2417ef15154d01c2314fd3fd3a075e6bacaa2b63)
+- [Merge pull request #76 from durbanlegend/dependabot/cargo/tempfile-3.14.0](https://github.com/durbanlegend/thag_rs/commit/4807649becab80705dc793e0ca5a9bcffecc4455)
+- [Add custom expression demo and attribution](https://github.com/durbanlegend/thag_rs/commit/ef2a43c9512f74704734dab572083e95b556c5de)
+- [Add experimental "holy grail" proc macro](https://github.com/durbanlegend/thag_rs/commit/a040cb28435dc06a46120dc0421b6da744382126)
+- [Fix demo scripts failing on latest thag_rs "0.1.7"](https://github.com/durbanlegend/thag_rs/commit/c2ad844a397485461d620c5674a88d4df74b385d)
+- [code_utils fixes and testing for nested `use`](https://github.com/durbanlegend/thag_rs/commit/54dde6fc134a8531eda0373061c86ccdd93d7cd5)
+- [Fixes and stronger tests for dependency inference.](https://github.com/durbanlegend/thag_rs/commit/d7a3ae8269f4d06e7eae5bed518a2c451644d697)
+- [Fix edit_history replacing LF in multi-line REPL history entries with \n](https://github.com/durbanlegend/thag_rs/commit/efdae73a0acc6ead4d6a6ffa64be13c957ab6877)
+- [Revert normalize_newlines, debug repl hist](https://github.com/durbanlegend/thag_rs/commit/b810cebd3c49588861da9a04326fe415368b4d76)
+- [Use termbg 0.6.1 in place of our termbg module](https://github.com/durbanlegend/thag_rs/commit/434ac15121e83a08c748799f844c37ca6d3f1ab6)
+- [Revert "Work around reedline KeyCombination being unavailable"](https://github.com/durbanlegend/thag_rs/commit/73ae023dca71dacd11b28dbef3f4bf458da8cfc7)
+- [Working prototype of integrated proc macro expansion](https://github.com/durbanlegend/thag_rs/commit/12ec6dec0c16d56a0f70f334015196c6151c2eee)
+- [Fix file_dialog saving to 1st subdir if present.](https://github.com/durbanlegend/thag_rs/commit/d57cb48e7d9dd1638dbeb942312be045df2b9d8d)
+- [Merge pull request #77 from durbanlegend/main](https://github.com/durbanlegend/thag_rs/commit/c233e3d090ffd7c58b2cad8d0b9a57b6543773ca)
+- [Bump mockall from 0.13.0 to 0.13.1](https://github.com/durbanlegend/thag_rs/commit/4506b6883fc30ef7f8c5ac1c9a27a0bd3ecadbf9)
+- [Bump serde_json from 1.0.132 to 1.0.133](https://github.com/durbanlegend/thag_rs/commit/5973c7ad5aec3fd7dabe6c0f9429e73e0daf12b9)
+- [Bump reedline from 0.36.0 to 0.37.0](https://github.com/durbanlegend/thag_rs/commit/255717688b4308975eb88a1cd581a5de0f7b29b6)
+- [Bump clap from 4.5.20 to 4.5.21](https://github.com/durbanlegend/thag_rs/commit/7d9429b8c201e4341fffc87c042d8a9ce08f2783)
+- [Bump termbg from 0.6.0 to 0.6.1](https://github.com/durbanlegend/thag_rs/commit/2c5f49bbd4252082237950c50552e1d75f2ae4aa)
+- [Lazy static macro, increased proc macro support.](https://github.com/durbanlegend/thag_rs/commit/e3c0f1bb32bfcf0d4d4c2df797838e13548dd520)
+- [Merge pull request #78 from durbanlegend/dependabot/cargo/mockall-0.13.1](https://github.com/durbanlegend/thag_rs/commit/7d344020e129dd24257a2aa93ae0d2ddc50c665d)
+- [Merge pull request #79 from durbanlegend/dependabot/cargo/serde_json-1.0.133](https://github.com/durbanlegend/thag_rs/commit/30385bc8d45d33a8f0f5fce21bf99d053fa72e54)
+- [Merge pull request #80 from durbanlegend/dependabot/cargo/reedline-0.37.0](https://github.com/durbanlegend/thag_rs/commit/a503f89c9a5bd9c4890f69c32772b81b8b229ea8)
+- [Merge pull request #81 from durbanlegend/dependabot/cargo/clap-4.5.21](https://github.com/durbanlegend/thag_rs/commit/b4c2734577466ef49ded3f30e673dc1b184cddce)
+- [Merge pull request #82 from durbanlegend/dependabot/cargo/termbg-0.6.1](https://github.com/durbanlegend/thag_rs/commit/3f52d4c4590c0573ad130727e746161029fdae57)
+- [Merge pull request #83 from durbanlegend/temp_staging](https://github.com/durbanlegend/thag_rs/commit/a4933ffc96c7a42c8038489c36f7c49b26b07c5c)
+- [Fix Windows issue caused by refactor.](https://github.com/durbanlegend/thag_rs/commit/43d256ff3945be3e2918cb8d2a6d780c1808d411)
+- [Add category "categories" to gen_readme.rs.](https://github.com/durbanlegend/thag_rs/commit/39775f83d946ad1e7fc886884d84c43f1f39ded7)
+- [Category tweaks and proc macro documentation](https://github.com/durbanlegend/thag_rs/commit/911299fc3c819effe4befe4c4a865e71d9a96e4f)
+- [Combine AST visitors, refactor BuildState::pre_configure](https://github.com/durbanlegend/thag_rs/commit/3555bd1a5ff3a34282594761b8dc948f3ef89d56)
+- [Don't format snippets by default](https://github.com/durbanlegend/thag_rs/commit/30d183bac815e84b87b6cf6b7d4dbabd82396ca9)
+- [Performance tweaks from AST exercise and profiling](https://github.com/durbanlegend/thag_rs/commit/92c0188e82e70747a1e7477e4048c935f48d9cdf)
+- [Works with github, rust-playground & raw.](https://github.com/durbanlegend/thag_rs/commit/62ca90c91ed8496a74cfa8d3519b6999038ab1a8)
+- [Revert to original disabling of raw mode after read](https://github.com/durbanlegend/thag_rs/commit/5ad6b848b2aea1507692d0d2c7f797a522d3a9b5)
+- [Enhance dependency inference.](https://github.com/durbanlegend/thag_rs/commit/1dbfeee95e8b1d7733f7c486cc1113ef7ff86547)
+- [Further enhance dependency inference.](https://github.com/durbanlegend/thag_rs/commit/bfba6722ab8a71c1def9bb78a017f15a36958849)
+- [Tests for type annotations, expr_paths & complex paths](https://github.com/durbanlegend/thag_rs/commit/0d00a5296330472ffdd487aee98d34ea2c0e21c4)
+- [Dependency inference: work in progress](https://github.com/durbanlegend/thag_rs/commit/2744254978317ea1a59f1e113002ff3c7e24f313)
+- [Create thag_config_builder.rs](https://github.com/durbanlegend/thag_rs/commit/985b2d65754770f82ec5cbcda54d914735cdf9a1)
+- [Dependency inference debugging cont.](https://github.com/durbanlegend/thag_rs/commit/aebb9ecc21f3b2d1ad03b13f3e4f03cd1f78070b)
+- [Revert "Try default maximal"](https://github.com/durbanlegend/thag_rs/commit/9ea9817924a531cd772fb642aa6ed7a00c24c59e)
+- [Config file building and dependency inference](https://github.com/durbanlegend/thag_rs/commit/b7b46076f9e50c931988d8b98f322099867bbcbb)
+- [Update & align dependency versions of demo &  bank scripts](https://github.com/durbanlegend/thag_rs/commit/4288f833c6e2b75115c1f4615e5f41b569abcdc4)
+- [Debug dependency inference](https://github.com/durbanlegend/thag_rs/commit/c678ff49f1851a9b2f886781b3801f70fd752268)
+- [Fix dependency inference_level case (to lower)](https://github.com/durbanlegend/thag_rs/commit/70df2e97e39d6fb1a0cb9add3325db6d85391c69)
+- [Tweaks for dependency inference communication with user](https://github.com/durbanlegend/thag_rs/commit/d0588eb38306d5b0b6ea7fa34cf2bbcf08a61082)
+- [Refactoring changes per clippy.](https://github.com/durbanlegend/thag_rs/commit/6d714febbe287c7da183a9c4577d62276fd08901)
+- [Revert "Don't involve crossterm in test environment"](https://github.com/durbanlegend/thag_rs/commit/8dfceb618870e8a3a4a1ea98a3397a2794b6bfbb)
+- [Wrap ManagedTerminal in Option as before](https://github.com/durbanlegend/thag_rs/commit/f40eff9cfbc83948181c860399e3190367032e91)
+- [Rename dependency inference "Custom" variant to "Config"](https://github.com/durbanlegend/thag_rs/commit/6c344bb7a85aedc30e171a0561e33dd68e806873)
+- [Add command arguments for 2 new features](https://github.com/durbanlegend/thag_rs/commit/f1f819b441ae0305e3e19c546cd58f65c5781823)
+- [Get --cargo (-A) option working](https://github.com/durbanlegend/thag_rs/commit/a13bbb07c7b5fa6f810580ff5d204d92c29a890f)
+- [Update and revise Readme intro with input from Claude.](https://github.com/durbanlegend/thag_rs/commit/eb31647b92fa3b5232230d7cf29e59d4c8a86936)
+- [Get dependency inference CLI option working](https://github.com/durbanlegend/thag_rs/commit/2181f5bbdeae83f195a8b9aa6245cd803536fca0)
+- [Enhance thag_cargo & _url, new _clippy.](https://github.com/durbanlegend/thag_rs/commit/9603a73c7ad0ad1f540d6f756742f19cba225caa)
+- [Enhancements: thag_url, _cargo, _clippy](https://github.com/durbanlegend/thag_rs/commit/ad07d461c3b20c837d901adeb7b46371bf79646f)
+- [Update TODO.md](https://github.com/durbanlegend/thag_rs/commit/08d7a02340b21889ab6cfcdb85cacf139a4be565)
+- [Implement inquire for filter_demos](https://github.com/durbanlegend/thag_rs/commit/1df1c8871b080bc56397330a45fd25968943cf4f)
+- [gen_readme.rs exclude some scripts from thag_url](https://github.com/durbanlegend/thag_rs/commit/ab6ec961bfca5d0cf29921f2e3926f272223307d)
+
+### Notes
+
+- Bring develop branch in line with main via staging
+
+- Fix PartialOrd impl for KeydisplayLine in shared.rs as per main, per clippy::pedantic.
+
+- Need to save space after error: failed to build archive at `/home/runner/work/thag_rs/thag_rs/target/debug/deps/libthag_rs-307b233473d04cea.rlib`: No space left on device (os error 28)
+
+- Move repl command test from stdin to repl suite.
+
+- GitHub not picking up name change.
+
+- Update develop from main
+
+- Apply further main branch updates to develop branch.
+
+- concat_arrays thanks to ChatGPT
+
+- Update develop branch from V0.1.7 corrections
+
+- Bumps [actions/upload-artifact](https://github.com/actions/upload-artifact) from 3 to 4.
+   [Release notes](https://github.com/actions/upload-artifact/releases)
+   [Commits](https://github.com/actions/upload-artifact/compare/v3...v4)
+
+  --
+  updated-dependencies:
+   dependency-name: actions/upload-artifact
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bumps [tempfile](https://github.com/Stebalien/tempfile) from 3.13.0 to 3.14.0.
+   [Changelog](https://github.com/Stebalien/tempfile/blob/master/CHANGELOG.md)
+   [Commits](https://github.com/Stebalien/tempfile/compare/v3.13.0...v3.14.0)
+
+  --
+  updated-dependencies:
+   dependency-name: tempfile
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Back-end compiles but we need to pass in 2 string arrays, not one.
+
+- Bump actions/upload-artifact from 3 to 4
+
+- Bump tempfile from 3.13.0 to 3.14.0
+
+- All from same source
+
+- Renamed from math
+
+- E.g. crate::log renamed to vlog.
+
+- Version that uses source analysis because script does not ield an AST.
+
+- Fix: Source version: collect imports into a block and parse to an AST.
+  Fix: pick up rename `from` crate.
+  Start using smarter bulk filtering.
+
+- Changed to convert \n etc back to true LF char 0xa (10_u8).
+  Remove redundant copy of normalize_newlines in stdin.
+  Replace normalize_newlines logic by latest from demo dethag_re.rs. Since it now also unescapes double quotes, rename it to the more accurate technical term "dethagomize".
+  Move macro get_max_key_len from shared to tui_editor.
+
+- Add 2 new trait impls to colors, split stdin test to add tui_editor test to reflect relocated functions.
+
+- Functionally almost identical after my PR released as 0.6.1.
+
+- This reverts commit 90e3a1dedad87021f10edb4bb0daec82301fc436.
+
+- Uses demo/proc_macros/lib::intercept_and_debug, enabled by expand feature of demo/proc_macros.
+
+- Remove annoying debug log of theme value each time logging selects a colour.
+
+- Merge dependency bumps from main
+
+- Bumps [mockall](https://github.com/asomers/mockall) from 0.13.0 to 0.13.1.
+   [Changelog](https://github.com/asomers/mockall/blob/master/CHANGELOG.md)
+   [Commits](https://github.com/asomers/mockall/compare/v0.13.0...v0.13.1)
+
+  --
+  updated-dependencies:
+   dependency-name: mockall
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bumps [serde_json](https://github.com/serde-rs/json) from 1.0.132 to 1.0.133.
+   [Release notes](https://github.com/serde-rs/json/releases)
+   [Commits](https://github.com/serde-rs/json/compare/v1.0.132...v1.0.133)
+
+  --
+  updated-dependencies:
+   dependency-name: serde_json
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bumps [reedline](https://github.com/nushell/reedline) from 0.36.0 to 0.37.0.
+   [Release notes](https://github.com/nushell/reedline/releases)
+   [Commits](https://github.com/nushell/reedline/compare/v0.36.0...v0.37.0)
+
+  --
+  updated-dependencies:
+   dependency-name: reedline
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bumps [clap](https://github.com/clap-rs/clap) from 4.5.20 to 4.5.21.
+   [Release notes](https://github.com/clap-rs/clap/releases)
+   [Changelog](https://github.com/clap-rs/clap/blob/master/CHANGELOG.md)
+   [Commits](https://github.com/clap-rs/clap/compare/clap_complete-v4.5.20...clap_complete-v4.5.21)
+
+  --
+  updated-dependencies:
+   dependency-name: clap
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bumps [termbg](https://github.com/dalance/termbg) from 0.6.0 to 0.6.1.
+   [Changelog](https://github.com/dalance/termbg/blob/master/CHANGELOG.md)
+   [Commits](https://github.com/dalance/termbg/compare/v0.6.0...v0.6.1)
+
+  --
+  updated-dependencies:
+   dependency-name: termbg
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Small proc macro constant repeat_dash.
+
+- Bump mockall from 0.13.0 to 0.13.1
+
+- Bump serde_json from 1.0.132 to 1.0.133
+
+- Bump reedline from 0.36.0 to 0.37.0
+
+- Bump clap from 4.5.20 to 4.5.21
+
+- Bump termbg from 0.6.0 to 0.6.1
+
+- Bump dependencies
+
+- get_source_path was moved from manifest to code_utils; move needed import too.
+
+- To improve searchability.
+
+- Split category_enum into its own module like the others.
+
+- Help from Claude 3.5
+
+- Profiling shows that it's expensive.
+
+- Roll out comprehensive profiling.
+
+- gitlab and bitbucket are still untested
+
+- Because raw mode interferes with carriage return, causing each line of print to start in the column after the one where the previous line ended.
+
+- Other minor tweaks.
+
+- With a lot of help from Claude 3.5 Sonnet, to say the least.
+
+- Expr::Macro not working as not yet implemented.
+
+- Config loading is broken.
+
+- Mostly Claude 3.5 Sonnet.
+
+- Some unit tests still failing.
+
+- This reverts commit c74c9df9fa16dea6ca3c83e93bd058a05fd5d8bd.
+
+- Basically working but plenty more to do to avoid bringing in unwanted features.
+
+- In the first instance to help with determining crate-level overrides for dependency inference.
+
+- Especially issues with Custom not respecting existing toml block or always_include_features. Also reinstate proc_macros_magic invocations.
+
+- Update and align different versions of config.toml and its template.
+
+- Show diagnostics and advice in Verbose+ mode.
+
+- Kudos to Claude Sonnet 3.5.
+
+- This reverts commit ec3aa1e778b301313db519ee57cb58b73612c227.
+
+- To shield headless CI environment from crossterm.
+
+- More accurate naming, and Custom sounds like extra work which it need not be.
+
+- Dependency inference level and Cargo command interface for generated project.
+
+- Incorporate script args into BuildState.
+  Rename Cli instances from args to cli to avoid confusion with script args (Cli::args).
+
+- Reflect new --cargo (-A) feature.
+
+- -infer (-i)
+
+- New demo derive macro example for exposing enum comments.
+  Suppress stdin request for data if piped input.
+
+- config.toml instances and template
+
+- Before clearing out experimental markdown embeds for thag_url.
+
+- Wrangling Claude Sonnet 3.5
+
+- demo/input_expr_to_ast.rs wrap script in braces to guarantee expr.
+
+# v0.1.7 (2024-11-11)
+
+- [Fixes for release 0.1.6 not working](https://github.com/durbanlegend/thag_rs/commit/ebc87a205869da5ee32467e7bae77e17d04752f4)
+
+### Notes
+
+- Back out unnecessary thag_proc_macro changes, no need to publish a new release of that.
+
 # v0.1.6 (2024-11-06)
 
 ### Highlights

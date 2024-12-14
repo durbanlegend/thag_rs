@@ -282,6 +282,18 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path, boilerp
 
 fn generate_run_section(metadata: &ScriptMetadata) -> String {
     let mut md = String::new();
+    if metadata.crates.contains(&"termbg".to_string())
+        || metadata.crates.contains(&"tui_scrollview".to_string())
+        || if let Some(docs) = &metadata.description {
+            docs.contains(&"Not suitable for running from a URL.".to_string())
+        } else {
+            false
+        }
+    {
+        md.push_str("\n**Not suitable to be run from a URL.**\n\n");
+        return md;
+    }
+
     md.push_str("\n**Run this example:**\n\n");
     md.push_str("```bash\n");
 

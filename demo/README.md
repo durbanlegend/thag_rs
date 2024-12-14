@@ -667,11 +667,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 **Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs
-```
 
 ---
 
@@ -692,11 +689,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs
 
 **Link:** [colors_old.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs
-```
 
 ---
 
@@ -717,11 +711,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs
 
 **Link:** [colors_orig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_orig.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_orig.rs
-```
 
 ---
 
@@ -2576,11 +2567,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_deriv
 
 **Link:** [gpt_lazy_static_theme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_lazy_static_theme.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_lazy_static_theme.rs
-```
 
 ---
 
@@ -3417,11 +3405,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Link:** [owo_msg_colors_1_basic_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_1_basic_gpt.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_1_basic_gpt.rs
-```
 
 ---
 
@@ -3445,11 +3430,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors
 
 **Link:** [owo_msg_colors_2_adv_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_2_adv_gpt.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_2_adv_gpt.rs
-```
 
 ---
 
@@ -3467,11 +3449,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors
 
 **Link:** [owo_styles.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_styles.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_styles.rs
-```
 
 ---
 
@@ -3537,11 +3516,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs
 
 **Link:** [pomprt_completion.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/pomprt_completion.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/pomprt_completion.rs
-```
 
 ---
 
@@ -5164,11 +5140,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
 
 **Link:** [term_detection_pack.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/term_detection_pack.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/term_detection_pack.rs
-```
 
 ---
 
@@ -5188,11 +5161,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/term_detection
 
 **Link:** [termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/termbg.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/termbg.rs
-```
 
 ---
 
@@ -5583,11 +5553,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Link:** [tui_scrollview.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_scrollview.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_scrollview.rs
-```
 
 ---
 
@@ -5611,11 +5578,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_scrollview
 
 **Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.rs -- demo/hello.rs demo/hello_minimal.rs
-```
 
 ---
 
@@ -5638,11 +5602,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.
 
 **Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_profile.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_profile.rs -- demo/hello.rs demo/hello_minimal.rs
-```
 
 ---
 
@@ -5662,11 +5623,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_
 
 **Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs
-```
 
 ---
 
@@ -5687,11 +5645,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal
 
 **Link:** [tui_ta_vim.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_vim.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_vim.rs
-```
 
 ---
 
@@ -5714,11 +5669,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_vim.rs
 
 **Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_tokio_editor_gpt.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_tokio_editor_gpt.rs
-```
 
 ---
 
@@ -5898,11 +5850,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_suppo
 
 **Link:** [win_test_termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg.rs)
 
-**Run this example:**
+**Not suitable to be run from a URL.**
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg.rs
-```
 
 ---
 

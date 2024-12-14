@@ -1,9 +1,6 @@
 /*[toml]
 [dependencies]
 convert_case = "0.6.0"
-# To switch off, use version without features = ["enable_system_time"]
-# If on, prepare for function to run twice for some reason!
-lazy_static = "1.4.0"
 log = "0.4.22"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive"] }
@@ -97,7 +94,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
                                 }
                                 found
                             }),
-                            "One or more invalid categories found in {}",
+                            "One or more invalid categories found in {} - or this version of gen_readme may be out of date.",
                             file_path.display()
                         );
                     }

@@ -1489,7 +1489,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dash
  are executed and compared to ensure they agree before printing out the value.
  Closures and functions are effectively interchangeable here.
 
- `let foo = |args| -> T {};` is equivalent to `fn foo(args) -> T {}`
+ `let foo = |args| -> T {};` is equivalent to `fn foo(args) -> T {}`.
 
  See also `demo/factorial_ibig_product.rs` for yet another version where we implement
  the `std::iter::Product` trait on a wrapped `ibig::UBig` in order to use the
@@ -1809,7 +1809,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ib
 **Description:**  Same script as `demo/fib_basic_ibig.rs` with basic instrumentation added for benchmarking
  against other fibonacci scripts.
  Scripts can then be selected and run sequentially.
- E.g. an apples-with-apples comparison of different algorithms implemented using the ``ibig` crate:
+
+ E.g. an apples-with-apples comparison of different algorithms implemented using the `ibig` crate:
+
  `ls -1 demo/fib*ibig*.rs | grep -v fib_basic_ibig.rs | while read f; do echo $f; thag_rs -t $f -- 10000000; done`
 
  See https://en.wikipedia.org/wiki/Fibonacci_sequence.
@@ -2314,7 +2316,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadruplin
 
 **Purpose:** Allow user to select scripts by category.
 
-**Crates:** `edit`, `inquire`, `strum`, `thag_demo_proc_macros`, `thag_rs`, `tokio`, `warp`
+**Crates:** `edit`, `inquire`, `thag_demo_proc_macros`, `thag_rs`, `tokio`, `warp`
 
 **Type:** Program
 
@@ -5154,7 +5156,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
 
 **Purpose:** Allow checking of terminals on platforms to be supported, also test reliability of different crates.
 
-**Crates:** `crossterm`, `log`, `simplelog`, `supports_color`, `terminal_light`, `thag_rs`
+**Crates:** `crossterm`, `log`, `simplelog`, `supports_color`, `termbg`, `terminal_light`
 
 **Type:** Snippet
 
@@ -5178,7 +5180,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/term_detection
 
 **Purpose:** Demo theme detection with `termbg`
 
-**Crates:** `simplelog`, `thag_rs`
+**Crates:** `simplelog`, `termbg`
 
 **Type:** Program
 
@@ -5900,52 +5902,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_suppo
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg.rs
-```
-
----
-
-### Script: win_test_termbg_reset.rs
-
-**Description:**  This still seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
- The `crossterm` reset doesn't seem to help. My disappointment is immeasurable and
- my day is ruined.
-
-**Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
-
-**Crates:** `crossterm`, `termbg`
-
-**Type:** Program
-
-**Categories:** testing
-
-**Link:** [win_test_termbg_reset.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_reset.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_reset.rs
-```
-
----
-
-### Script: win_test_termbg_thag.rs
-
-**Description:**  This seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
-
-**Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
-
-**Crates:** `thag_rs`
-
-**Type:** Program
-
-**Categories:** testing
-
-**Link:** [win_test_termbg_thag.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_thag.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_thag.rs
 ```
 
 ---

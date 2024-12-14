@@ -28,12 +28,5 @@ bank/derive_deluxe_expanded.rs
 bank/derive_debug_alt1.rs
 bank/derive_debug_alt2.rs
 bank/derive_debug_alt3.rs
-Project_Notes.md
-demo/gen_readme_proc_macros.rs
-demo/proc_macros/README.md
-src/proc_macros/Cargo copy.toml
-demo/proc_macro_const_demo copy.rs
-demo/proc_macros/target/
 install_thag_protocol.sh
-thag.html
-demo/thag_config_builder copy.rs
+demo/proc_macros/target/.rustc_info.json

@@ -8,7 +8,7 @@ ibig = "0.3.6"
 /// are executed and compared to ensure they agree before printing out the value.
 /// Closures and functions are effectively interchangeable here.
 ///
-/// `let foo = |args| -> T {};` is equivalent to `fn foo(args) -> T {}`
+/// `let foo = |args| -> T {};` is equivalent to `fn foo(args) -> T {}`.
 ///
 /// See also `demo/factorial_ibig_product.rs` for yet another version where we implement
 /// the `std::iter::Product` trait on a wrapped `ibig::UBig` in order to use the

@@ -411,7 +411,7 @@ fn insert_simple(rs_dep_map: &mut BTreeMap<String, Dependency>, name: String, ve
 fn display_toml_info(
     existing_toml_block: bool,
     new_inferred_deps: &[String],
-    rs_dep_map: &mut BTreeMap<String, Dependency>,
+    rs_dep_map: &BTreeMap<String, Dependency>,
     inference_level: &DependencyInference,
 ) {
     let mut toml_block = String::new();

@@ -360,26 +360,10 @@ impl<'a> Visit<'a> for MetadataFinder {
     }
 }
 
-// fn is_valid_crate_name(name: &str) -> bool {
-//     const SKIP_NAMES: &[&str] = &[
-//         "bool", "cmd", "command", "crate", "e", "error", "f32", "f64", "fs", "key", "line",
-//         "matches", "panic", "self", "split", "str", "style", "super", "u128", "u32", "u64", "u8",
-//         "x",
-//     ];
-
-//     profile_fn!(is_valid_crate_name);
-//     // First check if it starts with uppercase
-//     if name.chars().next().unwrap_or('_').is_uppercase() {
-//         return false;
-//     }
-
-//     // Then check against known non-crate names (only lowercase ones needed)
-//     !SKIP_NAMES.contains(&name)
-// }
-
+#[must_use]
 pub fn should_filter_dependency(name: &str) -> bool {
     // Filter out capitalized names
-    if name.chars().next().map_or(false, |c| c.is_uppercase()) {
+    if name.chars().next().map_or(false, char::is_uppercase) {
         return true;
     }
 
@@ -642,8 +626,8 @@ impl BuildState {
             ast: None,
             crates_finder: None,
             metadata_finder: None,
-            infer: cli.infer.as_ref().map_or(
-                {
+            infer: cli.infer.as_ref().map_or_else(
+                || {
                     let config = maybe_config();
                     let binding = Dependencies::default();
                     let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);

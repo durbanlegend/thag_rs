@@ -3,7 +3,7 @@
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
 termbg = "0.6.0"
-thag_rs = "0.1.8"
+thag_rs = "0.1.9"
 */
 
 #![allow(clippy::implicit_return)]

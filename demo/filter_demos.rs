@@ -6,7 +6,7 @@ inquire = "0.7.5"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive"] }
 syn = "2"
-# thag_rs = "0.1.8"
+# thag_rs = "0.1.9"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "main" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
 # tokio = "1.41.1"

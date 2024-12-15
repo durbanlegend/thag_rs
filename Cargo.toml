@@ -1,7 +1,7 @@
 [package]
 description = "A versatile cross-platform script runner and REPL for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
 name = "thag_rs"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -29,7 +29,7 @@ eula = false
 [dependencies]
 bitflags = "2.6.0"
 cargo-lookup = "0.1.0"
-cargo_toml = "0.20.5"
+cargo_toml = "0.21.0"
 clap = { version = "4.5.23", features = ["cargo", "derive"] }
 crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
 dirs = "5.0.1"

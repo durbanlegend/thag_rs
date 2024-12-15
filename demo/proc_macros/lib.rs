@@ -59,7 +59,7 @@ pub fn derive_basic(input: TokenStream) -> TokenStream {
     let input_clone = input.clone();
     let check_input = parse_macro_input!(input as DeriveInput);
 
-    // If the `expand` featre is enabled, check if the `expand_macro` attribute
+    // If the `expand` feature is enabled, check if the `expand_macro` attribute
     // is present
     #[cfg(feature = "expand")]
     let should_expand = check_input

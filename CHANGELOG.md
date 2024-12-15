@@ -497,7 +497,7 @@ near-ludicrous speed in its own operations.
 
 - From 0.1.4 to 0.1.5 and branch = "develop" to implicit main.
 
-- Add darling_comsume_fields.rs
+- Add darling_consume_fields.rs
 
 - Test broken termbg 0.5.2 against fixed 0.6.0. Script bank\termbg_bug.rs has app.log for features=simplelog, which if run under Windows 1.22+ should show it was answered with an RGB value, or if run under an earlier version, should show no response was  received.
 

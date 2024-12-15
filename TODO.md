@@ -80,7 +80,7 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Check dead code & other #(!)[allow(...)]; look into factoring over-long gen_build_run
 - [ ]  Look for code smells
 - [ ]  Look into fuzzing the tests such as test_merge_manifest.
-- [ ]  Do gen_readme version for demo/proc_macros, curently demo/gen_readme_proc_macro.rs
+- [ ]  Do gen_readme version for demo/proc_macros, currently demo/gen_readme_proc_macro.rs
 - [ ]  Consider dropping our termbg module if termbg 0.6.1 is working fine.
 - [ ]  Testing fib scripts: ls -1 demo/fib_*.rs | grep -v basic | grep -v binet | while read f; do echo $f;  cargo run -- $f -qq -- 100 | grep 354224848179261915075 || echo "...failed"; done
 stem=macro_lazy_static_var_advanced
@@ -126,7 +126,7 @@ stem=proc_macro_host_port_const
 - [ ] Run `gen_readme`
 - [ ] Run `typos` command.
 - [ ] Run `vale README.md --no-wrap` and `vale demo/README.md --no-wrap`.
-- [ ] Run cargo msrv find, and update the MSRV in README.md.
+- [ ] Run `cargo msrv find`, and update the MSRV in README.md.
 - [ ] NB NB: If there have been any changes to thag_proc_macros since its last published release, bump its version number
       in src/proc_macros/Cargo.toml and also in its dependency entry in the main Cargo.toml. as this will be used in
       the crates.io version

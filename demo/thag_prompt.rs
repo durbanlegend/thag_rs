@@ -4,7 +4,7 @@ inquire = "0.7.5"
 */
 
 /// Early prototype of prompting front-end for `thag`.
-//# Purpose: Ultimately, to provide a prompt-driven fromt-end to the `thag` command.
+//# Purpose: Ultimately, to provide a prompt-driven front-end to the `thag` command.
 //# Categories: prototype, thag_front_ends, tools
 use inquire::{MultiSelect, Text};
 use std::process::Command;

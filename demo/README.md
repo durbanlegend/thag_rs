@@ -5387,7 +5387,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 **Description:**  Early prototype of prompting front-end for `thag`.
 
-**Purpose:** Ultimately, to provide a prompt-driven fromt-end to the `thag` command.
+**Purpose:** Ultimately, to provide a prompt-driven front-end to the `thag` command.
 
 **Crates:** `inquire`
 

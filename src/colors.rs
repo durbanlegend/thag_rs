@@ -154,7 +154,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     (color_support.as_ref(), term_theme)
 }
 
-/// A macro to generate mappings from the supported messsage levels to the initialised terminal theme and colour support level.
+/// A macro to generate mappings from the supported message levels to the initialised terminal theme and colour support level.
 ///
 /// It will generate all possible trait implementations for a given style enum <S> such as
 /// `Xterm256LightStyle`, as well as an `init_styles` function that will be used to map any given message

@@ -2,11 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-# v0.1.8 (2024-12-15)
+# v0.1.9 (2024-12-15)
 
 ### Highlights
 
-v0.1.8 brings some next-level enhancements for doing more with your scripts with less effort, such as running scripts straight from URLs,
+v0.1.9 brings some next-level enhancements for doing more with your scripts with less effort, such as running scripts straight from URLs,
 and helping you develop or get started with proc macros. And as ever, although it can't speed up Cargo builds, `thag` always aims to achieve
 near-ludicrous speed in its own operations.
 

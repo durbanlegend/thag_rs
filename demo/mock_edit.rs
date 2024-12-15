@@ -22,7 +22,7 @@ impl EventReader for CrosstermEventReader {
 
     fn poll(&self, timeout: Duration) -> ThagResult<bool> {
             crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
-        }
+    }
 }
 
 let mut event_reader = MockEventReader::new();

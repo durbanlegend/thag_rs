@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 /// Published exercise solution from the `rustlings` crate.
 //# Purpose: Demo one way to preserve your `rustlings` solutions, for reference or as katas.
 //# Categories: educational
@@ -11,7 +12,6 @@ use std::rc::Rc;
 #[derive(Debug)]
 struct Sun;
 
-#[allow(dead_code)]
 #[derive(Debug)]
 enum Planet {
     Mercury(Rc<Sun>),
@@ -37,8 +37,6 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
-
     #[test]
     fn rc1() {
         let sun = Rc::new(Sun);

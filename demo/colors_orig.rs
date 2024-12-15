@@ -5,7 +5,7 @@ log = "0.4.22"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 thag_rs = "0.1.7"
 
-strum = { version = "0.26.2", features = ["derive"] }
+strum = { version = "0.26.3", features = ["derive"] }
 supports-color= "3.0.0"
 termbg = "0.5.2"
 */

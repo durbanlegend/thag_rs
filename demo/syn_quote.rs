@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 quote = "1.0.37"
-syn = { version = "2.0.87", features = ["full"] }
+syn = { version = "2.0.90", features = ["full"] }
 */
 
 /// Prototype of a simple partial expression evaluator. It solicits a Rust expression and embeds
@@ -19,6 +19,7 @@ syn = { version = "2.0.87", features = ["full"] }
 /// and it will do the same because `thag_rs` will detect and evaluate an expression in
 /// essentially the same way as this script does.
 //# Purpose: demo expression evaluation (excluding compilation and execution) using the `syn` and `quote` crates.
+//# Categories: AST, crates, prototype, technique
 use quote::quote;
 use std::io::Read;
 use syn::{self, Expr};

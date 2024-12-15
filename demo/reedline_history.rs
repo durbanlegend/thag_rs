@@ -5,6 +5,7 @@ reedline = "0.36.0"
 
 /// Published example from `reedline` crate.
 //# Purpose: Demo `reedline` file-backed history.
+//# Categories: crates, REPL, technique
 // Create a reedline object with history support, including history size limits.
 // cargo run --example history
 //

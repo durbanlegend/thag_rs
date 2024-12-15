@@ -7,11 +7,11 @@ thag_rs = "0.1.7"
 
 /// Used to debug a doctest.
 //# Purpose: Debugging script.
+//# Categories: crates, technique, testing
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use mockall::{automock, predicate::str};
 use std::time::Duration;
-use thag_rs::stdin::edit;
-use thag_rs::{EventReader, MockEventReader, ThagError, ThagResult};
+use thag_rs::{stdin::edit, EventReader, MockEventReader, ThagResult, ThagError};
 
 pub struct CrosstermEventReader;
 
@@ -21,7 +21,7 @@ impl EventReader for CrosstermEventReader {
     }
 
     fn poll(&self, timeout: Duration) -> ThagResult<bool> {
-        crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
+            crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
     }
 }
 

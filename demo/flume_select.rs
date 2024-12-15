@@ -9,8 +9,8 @@ default = ["async", "select", "eventual-fairness"]
 
 [dependencies]
 spin1 = { package = "spin", version = "0.9.8", features = ["mutex"] }
-futures-sink = { version = "0.3", default_features = false, optional = true }
-futures-core = { version = "0.3", default_features = false, optional = true }
+futures-sink = { version = "0.3", default-features = false, optional = true }
+futures-core = { version = "0.3", default-features = false, optional = true }
 nanorand = { version = "0.7", features = ["getrandom"], optional = true }
 flume = "0.11.0"
 */
@@ -21,6 +21,7 @@ use flume::Selector;
 /// Published example from the `flume` channel crate.
 /// Must be run with --multimain (-m) option to allow multiple main methods.
 //# Purpose: demo of async and channel programming and of `flume` in particular.
+//# Categories: async, crates, technique
 #[cfg(feature = "select")]
 fn main() {
     // Create two channels

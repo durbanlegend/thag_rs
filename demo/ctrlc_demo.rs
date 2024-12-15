@@ -8,6 +8,7 @@ use std::sync::mpsc::channel;
 
 /// Published example from `ctrlc` crate: "Cross platform handling of Ctrl-C signals."
 //# Purpose: Demo one option for intercepting Ctrl-C.
+//# Categories: crates, technique
 fn main() {
     let (tx, rx) = channel();
 

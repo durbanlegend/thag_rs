@@ -1,14 +1,13 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay};
 use crate::{
-    debug_log, regex, vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError,
-    ThagResult, V,
+    debug_log, vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError, ThagResult, V,
 };
 use clap::Parser;
 use edit::edit_file;
+use firestorm::profile_fn;
 use mockall::predicate::str;
 use ratatui::style::{Color, Modifier, Style};
-use regex::Regex;
 use std::{
     fmt::Debug,
     fs::OpenOptions,
@@ -125,7 +124,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     let add_keys = [
         KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
-        KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
+        // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
     let display = KeyDisplay {
         title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",
@@ -173,7 +172,9 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
-    vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+    if std::io::stdin().is_terminal() {
+        vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+    }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
 }
@@ -195,19 +196,10 @@ pub fn read() -> Result<String, std::io::Error> {
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
+    profile_fn!(read_to_string);
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)
-}
-
-/// Convert the different newline sequences for Windows and other platforms into the common
-/// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
-/// it stands).
-#[must_use]
-pub fn normalize_newlines(input: &str) -> String {
-    let re: &Regex = regex!(r"\r\n?");
-
-    re.replace_all(input, "\n").to_string()
 }
 
 /// Open the history file in an editor.

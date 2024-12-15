@@ -3,7 +3,7 @@
 /// falling foul of the borrow checker.
 
 //# Purpose: Demo a borrow-checker-friendly technique for accessing a wrapped value.
-//# Crates:
+//# Categories: technique
 
 #[derive(Clone, Debug)]
 struct MyStruct {

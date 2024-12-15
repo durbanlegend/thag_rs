@@ -26,4 +26,5 @@
 //:     1209600s
 //:
 //# Purpose: Demonstrate that some fairly subtle moves are possible even with the simplest of snippets.
+//# Categories: technique
 std::time::Duration::from_weeks(2)

@@ -3,6 +3,7 @@
 # Valid values are "debug", "verbose", "normal", "quiet" and "quieter".
 default_verbosity = "normal"
 
+# Terminal color settings
 [colors]
 # Color support override. Sets the terminal's color support level. The alternative is
 # to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
@@ -12,10 +13,10 @@ default_verbosity = "normal"
 # to be interleaved with the messages.
 # If your terminal can handle 16m colors, choose xterm256
 # Valid values are:
-# "xterm256"    for 256 or more colors (including 16m)
-# "ansi16"      for basic color support
-# "none"        color support not available or not desired
-# "default"     (default value) let thag_rs figure it out
+#   xterm256 - Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
+#   ansi16 - Basic 16-color support
+#   none - No color support
+#   auto_detect - Auto-detect from terminal
 # color_support = "ansi16"
 
 # Terminal light/dark override. Tells thag_rs whether you are using a light or dark theme,
@@ -26,26 +27,147 @@ default_verbosity = "normal"
 # "dark" is generally a safe choice as the colors should be legible even for a light theme
 # term_theme = "dark"
 
-# User default highlight colors for the selected character and line in TUI editors. It is
-# tricky to find decent contrasting colours that are legible for all themes, so thag_rs
-# offers you a choice of two.
-# In the editor itself you can toggle between these options with Ctrl-t, but the current
-# option allows you to override the system default if the other option works better for
-# you. The choice is between:
-# yellow_blue:  the dark theme default of black on yellow for the selected character and white on
-#               blue for the rest of the selected line, and
-# red_white:    the light theme default of white on light red for the selected character and
-#               black on white for the rest of the selected line.
+# Demo proc macro settings
+[proc_macros]
+# Allows user to specify manifest directory paths for the thag_demo_proc_macro crate and the
+# internal `bank` equivalent. This is a prerequisite for the `thag_rs` proc-macros feature.
 #
-# Valid values are: "yellow_blue" or "red_white".
-# tui_selection_bg = "yellow_blue"
+# Specify a valid absolute or relative path string if required, e.g. "/Users/thag/projects/thag_rs/demo/proc_macros/Cargo.toml".
+# Relative paths should be relative to the current working directory.
+# A single forward slash is the required path separator in all environments including Windows.
+# Default value: "<dir>/proc_macros".
+bank_proc_macro_crate_path = "bank/proc_macros"
+demo_proc_macro_crate_path = "demo/proc_macros"
+
+# Dependency handling
+[dependencies]
+
+# Specifies to what extent `thag_rs` should intervene in inferring dependencies from references to crates
+# in the script code, including but not limited to imports (`use` statements).
+# Options are "maximal", "minimal", "config" (recommended) and "none".
+# Default is "config". It has sensible settings built into the default config.toml for some popular crates.
+inference_level = "config"
+
+# Exclude features containing "unstable"
+exclude_unstable_features = true
+
+# Exclude the "std" feature
+exclude_std_feature = true
+
+# Always include these features even if they match exclude patterns
+always_include_features = ["derive"]
+
+# Global feature exclusions
+global_excluded_features = [
+    "default",
+    "experimental",
+    "unstable",
+    "nightly",
+    "sqlite",
+]
+
+# Crate-specific feature handling
+[dependencies.feature_overrides.async-std]
+required_features = ["attributes"]
+
+[dependencies.feature_overrides.clap]
+excluded_features = [""]
+required_features = ["cargo"]
+default_features = true
+
+[dependencies.feature_overrides.hyper]
+excluded_features = [""]
+required_features = ["full"]
+default_features = true
+
+[dependencies.feature_overrides.iced]
+excluded_features = [""]
+required_features = ["image", "debug"]
+default_features = true
+
+[dependencies.feature_overrides.nanorand]
+excluded_features = [""]
+required_features = ["getrandom"]
+default_features = true
+
+[dependencies.feature_overrides.nu-ansi-term]
+excluded_features = [""]
+required_features = ["derive_serde_style"]
+default_features = true
+
+[dependencies.feature_overrides.owo-colors]
+excluded_features = [""]
+required_features = ["supports-colors"]
+default_features = true
+
+[dependencies.feature_overrides.proc-macro2]
+excluded_features = [""]
+required_features = ["span-locations"]
+default_features = true
+
+[dependencies.feature_overrides.ratatui]
+excluded_features = [""]
+required_features = ["crossterm"]
+default_features = true
+
+[dependencies.feature_overrides.reqwest]
+excluded_features = [""]
+required_features = ["blocking", "json"]
+default_features = true
+
+[dependencies.feature_overrides.rug]
+excluded_features = [""]
+required_features = ["integer", "std"]
+default_features = true
+
+[dependencies.feature_overrides.rustyline]
+excluded_features = ["with-sqlite-history"]
+required_features = [""]
+default_features = true
+
+[dependencies.feature_overrides.spin1]
+excluded_features = [""]
+required_features = ["mutex"]
+default_features = true
+
+[dependencies.feature_overrides.strum]
+excluded_features = [""]
+required_features = ["derive"]
+default_features = true
+
+[dependencies.feature_overrides.syn]
+excluded_features = [""]
+required_features = [
+    "extra-traits",
+    "fold",
+    "full",
+    "parsing",
+    "visit",
+    "visit-mut",
+]
+default_features = false
+
+[dependencies.feature_overrides.tokio]
+excluded_features = ["unstable-async-driver"]
+required_features = ["full"]
+default_features = true
+
+[dependencies.feature_overrides.tui-textarea]
+excluded_features = [""]
+required_features = ["crossterm", "search"]
+default_features = true
+
+[dependencies.feature_overrides.winapi]
+excluded_features = [""]
+required_features = ["consoleapi", "processenv", "winbase"]
+default_features = true
 
 [misc]
 # User's preferred text unquote behaviour. By default, thag_rs will not strip double quotes
 # from text values returned by snippets. Setting this to true will override this behaviour.
 # In turn, this user default may be overridden on the command line by specifying --unquote
 # (-u) true/false (default true).
-# This behaviour only applies to snippets that implicitly return a string
+# This behaviour only applies to snippets that explicitly or implicitly return a string
 # value. It does not affect well-formed programs or println! statements in snippets.
 # Valid values are: "true" or "false" (default).
 # unquote = "false"

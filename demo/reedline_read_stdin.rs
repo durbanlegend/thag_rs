@@ -5,6 +5,7 @@ reedline = "0.36.0"
 
 /// Basic exploration of reading a line from stdin with `reedline`.
 //# Purpose: Exploring how to render prompts and read lines of input.
+//# Categories: crates, REPL, technique
 use reedline::{Prompt, Reedline, Signal};
 use std::borrow::Cow;
 use std::io;

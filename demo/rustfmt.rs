@@ -7,6 +7,7 @@ rfd = "0.14.1"
 /// (`Rusty File Dialogs`) cross-platform file chooser to select the file to format. The code
 /// for both was AI-generated because I find AI very handy for this kind of grunt work.
 //# Purpose: Demo file chooser and calling an external program, in this case the Rust formatter.
+//# Categories: crates, technique
 use rfd::FileDialog;
 use std::error::Error;
 use std::process::Command;

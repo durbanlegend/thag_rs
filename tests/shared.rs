@@ -6,8 +6,11 @@ use std::time::Instant;
 use thag_rs::manifest;
 
 use thag_rs::cmd_args::{Cli, ProcFlags};
+#[cfg(debug_assertions)]
+use thag_rs::shared::debug_timings;
 use thag_rs::shared::{
-    debug_timings, display_timings, escape_path_for_windows, Ast, BuildState, ScriptState,
+    display_timings, escape_path_for_windows, should_filter_dependency, Ast, BuildState,
+    ScriptState,
 };
 
 // Set environment variables before running tests
@@ -223,10 +226,10 @@ fn test_shared_script_state_getters() {
 }
 
 #[test]
+#[cfg(debug_assertions)]
 fn test_shared_debug_timings() {
     set_up();
     let start = Instant::now();
-    #[cfg(debug_assertions)]
     debug_timings(&start, "test_process");
     // No direct assertion, this just ensures the function runs without panic
 }
@@ -256,4 +259,38 @@ fn test_shared_escape_path_for_windows() {
         let escaped_path = escape_path_for_windows(path);
         assert_eq!(escaped_path, path);
     }
+}
+
+#[test]
+fn test_shared_dep_filter_numeric_primitives() {
+    assert!(should_filter_dependency("f32"));
+    assert!(should_filter_dependency("i64"));
+    assert!(should_filter_dependency("usize"));
+}
+
+#[test]
+fn test_shared_dep_filter_core_types() {
+    assert!(should_filter_dependency("bool"));
+    assert!(should_filter_dependency("str"));
+}
+
+#[test]
+fn test_shared_dep_filter_keywords() {
+    assert!(should_filter_dependency("self"));
+    assert!(should_filter_dependency("super"));
+    assert!(should_filter_dependency("crate"));
+}
+
+#[test]
+fn test_shared_dep_filter_real_crates_not_filtered() {
+    assert!(!should_filter_dependency("serde"));
+    assert!(!should_filter_dependency("tokio"));
+    assert!(!should_filter_dependency("rand"));
+}
+
+#[test]
+fn test_shared_dep_filter_capitalized_names() {
+    assert!(should_filter_dependency("String"));
+    assert!(should_filter_dependency("Result"));
+    assert!(should_filter_dependency("Option"));
 }

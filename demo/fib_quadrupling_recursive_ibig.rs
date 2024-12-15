@@ -9,6 +9,8 @@ ibig = "0.3.6"
 /// purposes stick to the doubling algorithm.
 ///
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and memoization.
+//# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use ibig::{ibig, IBig};
 use std::collections::HashMap;
 use std::time::Instant;

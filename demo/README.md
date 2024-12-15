@@ -67,9 +67,11 @@ which will give identical output to the above.
 
 ##### Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.
 
+### TODO: check:
+For detailed documentation on the `category_enum` procedural macro, see [category_enum](proc_macros/docs/category_enum.md).
+
 ***
 ## Detailed script listing
-
 
 ### Script: analyze_snippet_1.rs
 
@@ -85,7 +87,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** AST, technique
+
 **Link:** [analyze_snippet_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_1.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_1.rs
+```
 
 ---
 
@@ -103,7 +113,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** AST, technique
+
 **Link:** [analyze_snippet_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_2.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_2.rs
+```
 
 ---
 
@@ -123,7 +141,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** AST, technique
+
 **Link:** [analyze_snippet_3.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_3.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_3.rs
+```
 
 ---
 
@@ -139,7 +165,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** type_identification, technique
+
 **Link:** [any.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs
+```
 
 ---
 
@@ -153,7 +187,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, exploration, technique
+
 **Link:** [bitflags.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs
+```
 
 ---
 
@@ -166,14 +208,21 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** technique
+
 **Link:** [borrow_wrapped.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped.rs
+```
 
 ---
 
 ### Script: bpaf_cargo_show_asm.rs
 
 **Description:**  Published example from `https://github.com/pacak/bpaf/src/docs2/derive_show_asm.md`
-
 
  E.g. `thag demo/bpaf_cargo_show_asm.rs -- -h`
 
@@ -183,7 +232,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [bpaf_cargo_show_asm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_show_asm.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_show_asm.rs
+```
 
 ---
 
@@ -199,7 +256,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [bpaf_cmd_chain.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain.rs
+```
 
 ---
 
@@ -215,7 +280,63 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [bpaf_derive.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs
+```
+
+---
+
+### Script: cargo_capture_output.rs
+
+**Description:**  Run a command (in this case a cargo search for the `log` crate),
+ and capture and print its stdout and stderr concurrently in a
+ separate thread.
+
+**Purpose:** Demo process::Command with output capture.
+
+**Crates:** `env_logger`, `log`
+
+**Type:** Program
+
+**Categories:** technique
+
+**Link:** [cargo_capture_output.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_capture_output.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_capture_output.rs
+```
+
+---
+
+### Script: cargo_lookup.rs
+
+**Description:**  Explore querying crates.io information for a crate.
+
+ Format: `thag demo/cargo_lookup.rs -- <crate_name>`
+
+**Purpose:** Proof of concept
+
+**Crates:** `cargo_lookup`
+
+**Type:** Program
+
+**Categories:** crates, technique
+
+**Link:** [cargo_lookup.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.rs -- serde
+```
 
 ---
 
@@ -231,7 +352,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** technique
+
 **Link:** [cargo_output.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.rs
+```
 
 ---
 
@@ -246,7 +375,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [clap_enum_strum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_strum.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_strum.rs
+```
 
 ---
 
@@ -262,7 +399,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [clap_num_arg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.rs
+```
 
 ---
 
@@ -277,23 +422,38 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** REPL, technique
+
 **Link:** [clap_repl_crate_rustyline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crate_rustyline.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crate_rustyline.rs
+```
 
 ---
 
 ### Script: clap_repl_diy.rs
 
-**Description:**  Example from the clap cookbook, not using the clap-repl crate.
- Can't find a keybinding to navigate history, unlike
- clap_repl_rustyline.rs and unlike clap_repl_reedline.rs.
+**Description:**  Example from the clap cookbook, not using the `clap-repl` crate.
+ Can't find a keybinding to navigate history, unlike `clap_repl_crate_rustyline.rs`.
 
 **Purpose:** Demo building a repl using `clap` directly.
 
-**Crates:** `clap`
+**Crates:** `clap`, `shlex`
 
 **Type:** Program
 
+**Categories:** REPL, technique
+
 **Link:** [clap_repl_diy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.rs
+```
 
 ---
 
@@ -301,7 +461,7 @@ which will give identical output to the above.
 
 **Description:**  Published example from `clap` tutorial (builder)
 
- E.g.  `thag_rs demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
+ E.g.  `thag demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
 
 **Purpose:** Demonstrate `clap` CLI using the builder option
 
@@ -309,7 +469,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [clap_tut_builder_01_quick.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_builder_01_quick.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_builder_01_quick.rs
+```
 
 ---
 
@@ -325,7 +493,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [clap_tut_derive_03_04_subcommands.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_03_04_subcommands.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+```
 
 ---
 
@@ -341,7 +517,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [clap_tut_derive_04_01_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_01_enum.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_01_enum.rs -- fast
+```
 
 ---
 
@@ -357,38 +541,39 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [clap_tut_derive_04_03_relations.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_03_relations.rs)
 
----
+**Run this example:**
 
-### Script: cli_partial_match.rs
-
-**Description:**  Experiment with matching REPL commands with a partial match of any length.
-
-**Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
-
-**Crates:** `clap`, `console`, `rustyline`, `strum`
-
-**Type:** Program
-
-**Link:** [cli_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cli_partial_match.rs)
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt
+```
 
 ---
 
 ### Script: cmd_args.rs
 
-**Description:**  A prototype of the cmd_args module of thag_rs itself.
+**Description:**  A prototype of the `cmd_args` module of thag_rs itself.
 
  E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
- Getter for clap command-line arguments
 
 **Purpose:** Prototype CLI.
 
-**Crates:** `bitflags`, `clap`, `thag_rs`
+**Crates:** `bitflags`, `clap`
 
 **Type:** Program
 
+**Categories:** CLI, crates, prototype, technique
+
 **Link:** [cmd_args.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+```
 
 ---
 
@@ -405,7 +590,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [cmd_args_bpaf_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_gpt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_gpt.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+```
 
 ---
 
@@ -421,7 +614,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [cmd_args_clap.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.rs -- -atv hello.sh
+```
 
 ---
 
@@ -437,7 +638,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** technique
+
 **Link:** [color_contrast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast.rs
+```
 
 ---
 
@@ -447,7 +656,6 @@ which will give identical output to the above.
  We just borrow the main method here and add all the necessary dependencies and imports.
 
  E.g. `thag demo/colors.rs`
- Main function for use by testing or the script runner.
 
 **Purpose:** Test the look of the various colours.
 
@@ -455,7 +663,12 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** testing
+
 **Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -468,11 +681,16 @@ which will give identical output to the above.
 
 **Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
-**Crates:** `lazy_static`, `strum`, `supports_color`, `termbg`, `thag_rs`
+**Crates:** `lazy_static`, `nu_ansi_term`, `strum`, `supports_color`, `termbg`, `thag_rs`
 
 **Type:** Program
 
+**Categories:** prototype, technique
+
 **Link:** [colors_old.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -489,21 +707,42 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** prototype, technique
+
 **Link:** [colors_orig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_orig.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
 ### Script: config.rs
 
 **Description:**  Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
+ Initializes and returns the configuration.
+ A struct for use in normal execution, as opposed to use in testing.
+ Open the configuration file in an editor.
+ # Errors
+ Will return `Err` if there is an error editing the file.
+ # Panics
+ Will panic if it can't create the parent directory for the configuration.
+ Main function for use by testing or the script runner.
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
-**Crates:** `serde`, `serde_with`, `strum_macros`
+**Crates:** `edit`, `firestorm`, `home`, `mockall`, `nu_ansi_term`, `serde`, `serde_with`, `thag_rs`, `toml`
 
 **Type:** Program
 
+**Categories:** prototype, technique
+
 **Link:** [config.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs
+```
 
 ---
 
@@ -520,7 +759,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** AST, prototype, technique
+
 **Link:** [count_main_methods.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_methods.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_methods.rs
+```
 
 ---
 
@@ -535,24 +782,37 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** technique
+
 **Link:** [create_next_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_file.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_file.rs
+```
 
 ---
 
 ### Script: crokey_deser.rs
 
 **Description:**  Published example of serde deserialisation from `crokey` crate.
- This is an example of a configuration structure which contains
- a map from KeyEvent to String.
- An example of what could be a configuration file
 
 **Purpose:** Demo loading keybindings from a file.
 
-**Crates:** `crokey`, `serde`
+**Crates:** `crokey`, `serde`, `toml`
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [crokey_deser.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.rs
+```
 
 ---
 
@@ -566,7 +826,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key.rs
+```
 
 ---
 
@@ -580,7 +848,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [crokey_print_key_no_combiner.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key_no_combiner.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key_no_combiner.rs
+```
 
 ---
 
@@ -596,7 +872,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [crossbeam_channel_fibonacci.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_fibonacci.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_fibonacci.rs
+```
 
 ---
 
@@ -611,7 +895,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [crossbeam_channel_matching.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_matching.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_matching.rs
+```
 
 ---
 
@@ -619,9 +911,8 @@ which will give identical output to the above.
 
 **Description:**  `crossbeam-channel` published example.
 
- Prints the elapsed time every 1 second and quits on `Ctrl+C`.
- You can reinstate the separate main method for Windows provided you
- run the script with the `--multimain (-m)` option.
+ Prints the elapsed time every 1 second and quits on `Ctrl+C`. You can reinstate the separate main method for
+ Windows provided you run the script with the `--multimain (-m)` option.
 
 **Purpose:** showcase featured crates.
 
@@ -629,7 +920,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [crossbeam_channel_stopwatch.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_stopwatch.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_stopwatch.rs
+```
 
 ---
 
@@ -650,7 +949,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [crossbeam_epoch_sanitize.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoch_sanitize.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoch_sanitize.rs
+```
 
 ---
 
@@ -666,7 +973,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs
+```
 
 ---
 
@@ -684,7 +999,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [crossterm_alternate_screen.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alternate_screen.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alternate_screen.rs -- true
+```
 
 ---
 
@@ -702,7 +1025,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [crossterm_command_macro.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_command_macro.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_command_macro.rs
+```
 
 ---
 
@@ -719,7 +1050,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [crossterm_event_read.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_event_read.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_event_read.rs
+```
 
 ---
 
@@ -739,7 +1078,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [crossterm_key_events.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_events.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_events.rs
+```
 
 ---
 
@@ -749,9 +1096,19 @@ which will give identical output to the above.
 
 **Purpose:** Demo one option for intercepting Ctrl-C.
 
+**Crates:** `ctrlc`
+
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [ctrlc_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs
+```
 
 ---
 
@@ -769,7 +1126,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [curl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs
+```
 
 ---
 
@@ -784,7 +1149,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, exploration, technique
+
 **Link:** [darling_consume_fields.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs
+```
 
 ---
 
@@ -799,13 +1172,43 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, exploration, technique
+
 **Link:** [darling_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs
+```
+
+---
+
+### Script: derive_deftly.rs
+
+**Description:**  Introductory example from the `derive-deftly` user guide.
+
+**Purpose:** Explore proc macro alternatives.
+
+**Crates:** `derive_deftly`
+
+**Type:** Snippet
+
+**Categories:** crates, exploration, technique
+
+**Link:** [derive_deftly.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.rs
+```
 
 ---
 
 ### Script: dethag_re.rs
 
-**Description:**  Unescape \n and \\" markers in a string to convert the wall of text to readable lines.
+**Description:**  Unescape `\n` and `\\` markers in a string to convert the wall of text to readable lines.
  This version using regex may be more reliable than the classic approach using .lines().
  However, at time of writing, `regex` is a 248kB crate, which makes the binary of this
  module more than 5 time larger than that of `thagomizer`.
@@ -818,7 +1221,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique, tools
+
 **Link:** [dethag_re.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs
+```
 
 ---
 
@@ -837,7 +1248,61 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique, tools
+
 **Link:** [dethagomizer.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs
+```
+
+---
+
+### Script: documented.rs
+
+**Description:**  Published example from the `documented` crate.
+ Trying is the first step to failure.
+
+**Purpose:** Explore making docs available at runtime.
+
+**Crates:** `documented`
+
+**Type:** Snippet
+
+**Categories:** crates, exploration, technique
+
+**Link:** [documented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs
+```
+
+---
+
+### Script: documented_dependencies.rs
+
+**Description:**  Use the `documented` crate to iterate through struct fields and their docs at runtime.
+ Dependency handling
+
+**Purpose:** Prototype for `thag_config_builder`.
+
+**Crates:** `documented`, `phf`, `serde`, `serde_with`
+
+**Type:** Snippet
+
+**Categories:** crates, prototype, technique
+
+**Link:** [documented_dependencies.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dependencies.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dependencies.rs
+```
 
 ---
 
@@ -851,7 +1316,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique, tools
+
 **Link:** [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_dir.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_dir.rs
+```
 
 ---
 
@@ -886,7 +1359,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** technique
+
 **Link:** [duration_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snippet.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snippet.rs
+```
 
 ---
 
@@ -900,9 +1381,19 @@ which will give identical output to the above.
 
 **Purpose:** Demo of edit crate to invoke preferred editor.
 
+**Crates:** `edit`
+
 **Type:** Snippet
 
+**Categories:** crates, technique
+
 **Link:** [edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs
+```
 
 ---
 
@@ -912,9 +1403,19 @@ which will give identical output to the above.
 
 **Purpose:** Prototype a native-mode editor using the `egui` crate.
 
+**Crates:** `eframe`, `egui`, `egui_extras`, `env_logger`
+
 **Type:** Program
 
+**Categories:** crates, prototype
+
 **Link:** [egui_code_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_editor.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_editor.rs
+```
 
 ---
 
@@ -933,7 +1434,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, prototype, technique
+
 **Link:** [enum_select.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs
+```
 
 ---
 
@@ -952,7 +1461,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [factorial_dashu_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dashu_product.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dashu_product.rs -- 50
+```
 
 ---
 
@@ -963,7 +1480,7 @@ which will give identical output to the above.
  are executed and compared to ensure they agree before printing out the value.
  Closures and functions are effectively interchangeable here.
 
- `let foo = |args| -> T {};` is equivalent to `fn foo(args) -> T {}`
+ `let foo = |args| -> T {};` is equivalent to `fn foo(args) -> T {}`.
 
  See also `demo/factorial_ibig_product.rs` for yet another version where we implement
  the `std::iter::Product` trait on a wrapped `ibig::UBig` in order to use the
@@ -983,7 +1500,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [factorial_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig.rs -- 50
+```
 
 ---
 
@@ -1004,7 +1529,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [factorial_ibig_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs -- 50
+```
 
 ---
 
@@ -1017,7 +1550,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** educational, math, recreational, technique
+
 **Link:** [factorial_main_u128_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main_u128_product.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main_u128_product.rs -- 34
+```
 
 ---
 
@@ -1028,7 +1569,7 @@ which will give identical output to the above.
  digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
  edging out `fibo` at this scale.
 
- E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
+ E.g.: `thag demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 
 
 **Purpose:** Demo 3 very fast Fibonacci algorithms, though still 7-11 times slower than `rug`.
@@ -1037,7 +1578,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_4784969_cpp_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_ibig.rs -- 50
+```
 
 ---
 
@@ -1050,7 +1599,7 @@ which will give identical output to the above.
 
  The `rug` crate runs blindingly fast, but I for one found it very difficult to get this to compile.
 
- E.g.: `thag_rs demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
+ E.g.: `thag demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 
 
 **Purpose:** Demo 3 very fast Fibonacci algorithms (F(4784969) in 0.33 to 0.58 sec for me).
@@ -1059,7 +1608,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_4784969_cpp_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_rug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_rug.rs -- 50
+```
 
 ---
 
@@ -1082,7 +1639,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** educational, math, recreational, technique
+
 **Link:** [fib_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs -- 90
+```
 
 ---
 
@@ -1097,7 +1662,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_basic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig.rs -- 100
+```
 
 ---
 
@@ -1122,7 +1695,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_big_clap_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_rug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_rug.rs -- 100
+```
 
 ---
 
@@ -1148,7 +1729,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_binet_astro_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astro_snippet.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astro_snippet.rs -- 100
+```
 
 ---
 
@@ -1168,7 +1757,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** educational, math, recreational, technique
+
 **Link:** [fib_binet_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snippet.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snippet.rs -- 100
+```
 
 ---
 
@@ -1186,7 +1783,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_classic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig.rs -- 100
+```
 
 ---
 
@@ -1195,7 +1800,9 @@ which will give identical output to the above.
 **Description:**  Same script as `demo/fib_basic_ibig.rs` with basic instrumentation added for benchmarking
  against other fibonacci scripts.
  Scripts can then be selected and run sequentially.
- E.g. an apples-with-apples comparison of different algorithms implemented using the ``ibig` crate:
+
+ E.g. an apples-with-apples comparison of different algorithms implemented using the `ibig` crate:
+
  `ls -1 demo/fib*ibig*.rs | grep -v fib_basic_ibig.rs | while read f; do echo $f; thag_rs -t $f -- 10000000; done`
 
  See https://en.wikipedia.org/wiki/Fibonacci_sequence.
@@ -1208,7 +1815,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_classic_ibig_instrumented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig_instrumented.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig_instrumented.rs -- 100
+```
 
 ---
 
@@ -1229,7 +1844,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_dashu_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snippet.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snippet.rs -- 100
+```
 
 ---
 
@@ -1258,7 +1881,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_doubling_iterative_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_ibig.rs -- 100
+```
 
 ---
 
@@ -1278,7 +1909,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_doubling_iterative_purge_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_ibig.rs -- 100
+```
 
 ---
 
@@ -1300,7 +1939,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_doubling_iterative_purge_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_rug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_rug.rs -- 100
+```
 
 ---
 
@@ -1317,7 +1964,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_doubling_no_memo_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig.rs -- 100
+```
 
 ---
 
@@ -1368,7 +2023,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_doubling_no_memo_ibig_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_1.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_1.rs -- 100
+```
 
 ---
 
@@ -1420,7 +2083,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_doubling_no_memo_ibig_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_2.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_2.rs -- 100
+```
 
 ---
 
@@ -1457,7 +2128,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_doubling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_recursive_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_recursive_ibig.rs -- 100
+```
 
 ---
 
@@ -1476,7 +2155,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** educational, math, recreational, technique
+
 **Link:** [fib_matrix.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs -- 100
+```
 
 ---
 
@@ -1506,7 +2193,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_matrix_dashu.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_dashu.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_dashu.rs -- 100
+```
 
 ---
 
@@ -1536,7 +2231,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_matrix_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibig.rs -- 100
+```
 
 ---
 
@@ -1558,7 +2261,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_matrix_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug.rs -- 100
+```
 
 ---
 
@@ -1576,7 +2287,39 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, math, recreational, technique
+
 **Link:** [fib_quadrupling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadrupling_recursive_ibig.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadrupling_recursive_ibig.rs -- 100
+```
+
+---
+
+### Script: filter_demos.rs
+
+**Description:**  Select demo scripts and generate and serve HTML report.
+
+ Strategy and grunt work thanks to ChatGPT.
+
+**Purpose:** Allow user to select scripts by category.
+
+**Crates:** `edit`, `inquire`, `thag_demo_proc_macros`, `thag_rs`, `tokio`, `warp`
+
+**Type:** Program
+
+**Categories:** technique, tools
+
+**Link:** [filter_demos.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/filter_demos.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/filter_demos.rs
+```
 
 ---
 
@@ -1590,7 +2333,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** educational, technique
+
 **Link:** [fizz_buzz_blandy_orendorff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs
+```
 
 ---
 
@@ -1602,7 +2353,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** educational, technique
+
 **Link:** [fizz_buzz_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.rs
+```
 
 ---
 
@@ -1613,9 +2372,19 @@ which will give identical output to the above.
 
 **Purpose:** demo of async and channel programming and of `flume` in particular.
 
+**Crates:** `async_std`, `flume`
+
 **Type:** Program
 
+**Categories:** async, crates, technique
+
 **Link:** [flume_async.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs
+```
 
 ---
 
@@ -1625,9 +2394,19 @@ which will give identical output to the above.
 
 **Purpose:** demo of channel programming and of `flume` in particular.
 
+**Crates:** `flume`
+
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [flume_perf.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs
+```
 
 ---
 
@@ -1642,7 +2421,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** async, crates, technique
+
 **Link:** [flume_select.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.rs
+```
 
 ---
 
@@ -1657,7 +2444,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** technique
+
 **Link:** [gen_names.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs
+```
 
 ---
 
@@ -1670,11 +2465,19 @@ which will give identical output to the above.
 
 **Purpose:** Document demo scripts in a demo/README.md as a guide to the user.
 
-**Crates:** `lazy_static`, `regex`, `thag_rs`
+**Crates:** `convert_case`, `thag_demo_proc_macros`, `thag_rs`
 
 **Type:** Program
 
+**Categories:** technique, tools
+
 **Link:** [gen_readme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme.rs
+```
 
 ---
 
@@ -1690,7 +2493,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** technique
+
 **Link:** [git_dependency.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency.rs
+```
 
 ---
 
@@ -1704,7 +2515,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** technique
+
 **Link:** [git_dependency_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency_snippet.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency_snippet.rs
+```
 
 ---
 
@@ -1718,7 +2537,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [gpt_clap_derive.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_derive.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_derive.rs -- -bgtv dummy_script.rs
+```
 
 ---
 
@@ -1736,7 +2563,12 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [gpt_lazy_static_theme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_lazy_static_theme.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -1748,7 +2580,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** basic
+
 **Link:** [hello.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
+```
 
 ---
 
@@ -1760,7 +2600,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** basic
+
 **Link:** [hello_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs
+```
 
 ---
 
@@ -1772,7 +2620,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** basic
+
 **Link:** [hello_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.rs
+```
 
 ---
 
@@ -1783,11 +2639,19 @@ which will give identical output to the above.
 
 **Purpose:** Debug and demo history ordering.
 
-**Crates:** `regex`, `serde`
+**Crates:** `regex`, `serde`, `serde_json`
 
 **Type:** Snippet
 
+**Categories:** testing
+
 **Link:** [history_debug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.rs
+```
 
 ---
 
@@ -1799,22 +2663,30 @@ which will give identical output to the above.
  redundancies.
  You can run the `hyper_echo_server.rs` demo as the HTTP server on
  another command line and connect to it on port 3000:
- `thag_rs demo/hyper_client.rs -- http://127.0.0.1:3000`.
+ `thag demo/hyper_client.rs -- http://127.0.0.1:3000`.
  Or use any other available HTTP server.
 
 **Purpose:** Demo `hyper` HTTP client, and incorporating separate modules into the script.
 
-**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `tokio`
+**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `pretty_env_logger`, `tokio`
 
 **Type:** Program
 
+**Categories:** async, crates, technique
+
 **Link:** [hyper_client.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.rs -- http://127.0.0.1:3000
+```
 
 ---
 
 ### Script: hyper_echo_server.rs
 
-**Description:**  Published simple echo HTTP server example from the client crate,
+**Description:**  Published simple echo HTTP server example from the `hyper` crate,
  with the referenced modules `support` and `tokiort` refactored
  into the script, while respecting their original structure and
  redundancies.
@@ -1828,7 +2700,40 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** async, crates, technique
+
 **Link:** [hyper_echo_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_server.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_server.rs
+```
+
+---
+
+### Script: hyper_hello_server.rs
+
+**Description:**  Published simple hello HTTP server example from the `hyper` crate,
+ with the referenced modules `support` and `tokiort` refactored
+ into the script, while respecting their original structure and
+ redundancies.
+
+**Purpose:** Demo `hyper` HTTP hello server, and incorporating separate modules into the script.
+
+**Crates:** `bytes`, `http_body_util`, `hyper`, `pin_project_lite`, `pretty_env_logger`, `tokio`
+
+**Type:** Program
+
+**Categories:** async, crates, technique
+
+**Link:** [hyper_hello_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_hello_server.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_hello_server.rs
+```
 
 ---
 
@@ -1842,7 +2747,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** big_numbers, crates, technique
+
 **Link:** [ibig_big_integers.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integers.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integers.rs
+```
 
 ---
 
@@ -1852,11 +2765,19 @@ which will give identical output to the above.
 
 **Purpose:** Show that `thag_rs` can handle product demos.
 
-**Crates:** `iced`
+**Crates:** `console_error_panic_hook`, `console_log`, `iced`, `tracing_subscriber`
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [iced_tour.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs
+```
 
 ---
 
@@ -1870,7 +2791,39 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** async, crates, technique
+
 **Link:** [in_place.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs
+```
+
+---
+
+### Script: infer_deps.rs
+
+**Description:**  Interactively test dependency inferency. This script was arbitrarily copied from
+ `demo/repl_partial_match.rs`.
+ Experiment with matching REPL commands with a partial match of any length.
+
+**Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
+
+**Crates:** `clap`, `console`, `rustyline`, `shlex`, `strum`
+
+**Type:** Program
+
+**Categories:** crates, REPL, technique
+
+**Link:** [infer_deps.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs
+```
 
 ---
 
@@ -1885,19 +2838,98 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** async, crates, technique
+
 **Link:** [inline_colorization.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_colorization.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_colorization.rs
+```
 
 ---
 
-### Script: input_to_ast.rs
+### Script: input_expr_to_ast.rs
 
-**Description:**  Tries to convert input to a `syn` abstract syntax tree.
+**Description:**  Tries to convert input to a `syn` abstract syntax tree (syn::Expr).
 
 **Purpose:** Debugging
 
-**Type:** Snippet
+**Crates:** `syn`
 
-**Link:** [input_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_to_ast.rs)
+**Type:** Program
+
+**Categories:** AST, crates, technique, tools
+
+**Link:** [input_expr_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_ast.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_ast.rs
+```
+
+---
+
+### Script: input_file_to_ast.rs
+
+**Description:**  Tries to convert input to a `syn` abstract syntax tree (syn::File).
+
+**Purpose:** Debugging
+
+**Crates:** `syn`
+
+**Type:** Program
+
+**Categories:** AST, crates, technique, tools
+
+**Link:** [input_file_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_ast.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_ast.rs
+```
+
+---
+
+### Script: interactive_clap_adv_struct.rs
+
+**Description:**  Published example from the `interactive-clap` crate. I've adapted the run instractions below for use with `thag_rs`:
+
+ This example shows additional functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
+
+```
+ thag demo/interactive_clap_adv_struct.rs (without parameters) => entered interactive mode
+ thag demo/interactive_clap_adv_struct.rs -- --age-full-years 30 --first-name QWE --second-name QWERTY --favorite-color red
+                                    => cli_args: CliArgs { age: Some(30), first_name: Some("QWE"), second_name: Some("QWERTY"), favorite_color: Some(Red) }
+ thag demo/interactive_clap_adv_struct.rs -- --first-name QWE --second-name QWERTY --favorite-color red
+                                    => cli_args: CliArgs { age: None, first_name: Some("QWE"), second_name: Some("QWERTY"), favorite_color: Some(Red) }
+```
+
+ To learn more about the parameters, use "help" flag:
+
+```
+  thag demo/interactive_clap_adv_struct.rs -- --help
+```
+
+
+**Purpose:** Demo featured crate.
+
+**Crates:** `clap`, `color_eyre`, `inquire`, `interactive_clap`, `shell_words`, `strum`
+
+**Type:** Program
+
+**Categories:** CLI, crates, technique
+
+**Link:** [interactive_clap_adv_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_clap_adv_struct.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_clap_adv_struct.rs
+```
 
 ---
 
@@ -1909,7 +2941,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** basic
+
 **Link:** [iter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs
+```
 
 ---
 
@@ -1923,7 +2963,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** crates, technique
+
 **Link:** [json.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs
+```
 
 ---
 
@@ -1938,7 +2986,39 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** crates, technique
+
 **Link:** [json_parse.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs
+```
+
+---
+
+### Script: just_a_test_expression.rs
+
+**Description:**  This is an arbitrary expression for use by scripts like `demo/syn_visit_extern_crate_expr.rs`
+ and `demo/syn_visit_use_path_expr.rs`.
+ Don't remove the surrounding braces, because those serve to make it an expression.
+
+**Purpose:** Testing.
+
+**Crates:** `syn`
+
+**Type:** Snippet
+
+**Categories:** testing
+
+**Link:** [just_a_test_expression.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_expression.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_expression.rs
+```
 
 ---
 
@@ -1951,7 +3031,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** basic, technique
+
 **Link:** [list_files.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs
+```
 
 ---
 
@@ -1967,7 +3055,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** exploration, technique
+
 **Link:** [loop_closure.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.rs
+```
 
 ---
 
@@ -1983,7 +3079,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** exploration, technique
+
 **Link:** [loop_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs
+```
 
 ---
 
@@ -1999,7 +3103,35 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** exploration, technique
+
 **Link:** [loop_pre_post.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs -- 'dummy prelude' 'dummy main' 'dummy post' # ... and hit Enter then Ctrl-d
+```
+
+---
+
+### Script: macro_fn_lazy_static.rs
+
+**Description:**  Demo of a generic macro to generate lazy static variables without the `lazy_static` crate.
+
+**Purpose:** Demonstrate a technique
+
+**Type:** Program
+
+**Categories:** educational, technique
+
+**Link:** [macro_fn_lazy_static.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_static.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_static.rs
+```
 
 ---
 
@@ -2012,7 +3144,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** macros, technique
+
 **Link:** [macro_gen_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum.rs
+```
 
 ---
 
@@ -2024,7 +3164,118 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** macros, technique
+
 **Link:** [macro_gen_styles_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styles_enum.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styles_enum.rs
+```
+
+---
+
+### Script: macro_lazy_static_var_advanced.rs
+
+**Description:**  Demo of an advanced generic macro to generate lazy static variables.
+ See also `demo/macro_lazy_static_var_errs.rs` for a more meaningful usage example.
+ match my_lazy_var {
+     Ok(value) => println!("Initialized value: {}", value),
+     Err(e) => eprintln!("Failed to initialize: {}", e),
+ }
+ ```
+
+**Purpose:** Demonstrate a handy alternative to the `lazy_static` crate.
+
+**Type:** Program
+
+**Categories:** macros, technique
+
+**Link:** [macro_lazy_static_var_advanced.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced.rs
+```
+
+---
+
+### Script: macro_lazy_static_var_advanced_alt.rs
+
+**Description:**  Demo of an advanced generic macro to generate lazy static variables.
+ See also `demo/macro_lazy_static_var_errs.rs` for a more meaningful usage example.
+ A generic macro for lazily initializing a static variable using `OnceLock`.
+
+ # Parameters
+ - `$static_var`: The static variable name.
+ - `$init_fn`: The initialization function, which is only called once.
+ - $name: todo()
+
+ # Example
+ ```rust
+ let my_lazy_var = lazy_static_var!(HashMap<usize, &'static str>, { /* initialization */ });
+ ```
+
+**Purpose:** Demonstrate a handy alternative to the `lazy_static` crate.
+
+**Type:** Program
+
+**Categories:** macros, technique
+
+**Link:** [macro_lazy_static_var_advanced_alt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced_alt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced_alt.rs
+```
+
+---
+
+### Script: macro_lazy_static_var_error_handling.rs
+
+**Description:**  Demo of an advanced generic macro to generate lazy static variables.
+ See also `demo/macro_lazy_static_var_errs.rs` for a more meaningful usage example.
+
+**Purpose:** Demonstrate a handy alternative to the `lazy_static` crate.
+
+**Type:** Program
+
+**Categories:** macros, technique
+
+**Link:** [macro_lazy_static_var_error_handling.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_error_handling.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_error_handling.rs
+```
+
+---
+
+### Script: macro_lazy_static_var_errs.rs
+
+**Description:**  Demo of a generic macro to generate lazy static variables.
+ Sometimes you need to call a function repeatedly and it makes sense for it to lazily initialise a
+ variable that it will use each time. I got you fam!
+
+ See also `demo/macro_lazy_static_var_advanced.rs` for a more advanced form of the macro.
+
+**Purpose:** Demonstrate a handy alternative to the `lazy_static` crate.
+
+**Type:** Program
+
+**Categories:** macros, technique
+
+**Link:** [macro_lazy_static_var_errs.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_errs.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_errs.rs
+```
 
 ---
 
@@ -2038,7 +3289,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** macros, technique, type_identification
+
 **Link:** [macro_print.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs
+```
 
 ---
 
@@ -2052,7 +3311,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, prototype, technique
+
 **Link:** [merge_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs
+```
 
 ---
 
@@ -2066,7 +3333,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** crates, technique, testing
+
 **Link:** [mock_edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs
+```
 
 ---
 
@@ -2078,22 +3353,39 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** error_handling, technique
+
 **Link:** [multiline_err.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.rs
+```
 
 ---
 
 ### Script: owo_cli_color_support.rs
 
-**Description:**  Demo the use of a command-line interface to override the colour support to be provided.
- The owo-colors "supports-colors" feature must be enabled.
+**Description:**  Published example from `clap` tutorial (derive), with added displays.
 
-**Purpose:** Demo setting colour support via a very simple CLI.
+ E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
 
-**Crates:** `clap`, `owo_colors`
+**Purpose:** Demonstrate `clap` CLI using the derive option
+
+**Crates:** `clap`
 
 **Type:** Program
 
+**Categories:** CLI, crates, technique
+
 **Link:** [owo_cli_color_support.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_support.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_support.rs -- add patrick
+```
 
 ---
 
@@ -2109,7 +3401,12 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, exploration
+
 **Link:** [owo_msg_colors_1_basic_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_1_basic_gpt.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -2129,7 +3426,12 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, prototype, technique
+
 **Link:** [owo_msg_colors_2_adv_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_2_adv_gpt.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -2143,7 +3445,12 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, exploration, technique
+
 **Link:** [owo_styles.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_styles.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -2158,7 +3465,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** prototype, technique
+
 **Link:** [parse_script_rs_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_rs_toml.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_rs_toml.rs
+```
 
 ---
 
@@ -2172,7 +3487,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** prototype
+
 **Link:** [parse_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs
+```
 
 ---
 
@@ -2180,11 +3503,21 @@ which will give identical output to the above.
 
 **Description:**  Published example from `pomprt` crate.
 
+ Not suitable for running from a URL. Run locally and enter simple shell commands like `ls -l` at the prompt.
+ `Ctrl-d` to terminate.
+
 **Purpose:** Demo of `pomprt` readline implementation.
+
+**Crates:** `pomprt`
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [pomprt_completion.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/pomprt_completion.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -2194,9 +3527,399 @@ which will give identical output to the above.
 
 **Purpose:** Demo featured crate.
 
+**Crates:** `prettyplease`, `syn`
+
 **Type:** Program
 
+**Categories:** AST, crates, technique
+
 **Link:** [prettyplease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.rs
+```
+
+---
+
+### Script: proc_macro_attribute_basic.rs
+
+**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
+ `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
+
+**Purpose:** Sample model of a basic attribute proc macro.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_attribute_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_attribute_basic.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_attribute_basic.rs
+```
+
+---
+
+### Script: proc_macro_category_enum.rs
+
+**Description:**  Try generating category enum.
+ Testing the `category_enum` proc macro for use with `demo/gen_readme.rs` and `demo/filter_demos.rs`/
+
+**Purpose:** Test the proof of concept and potentially the implementation.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** missing
+
+**Link:** [proc_macro_category_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_category_enum.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_category_enum.rs
+```
+
+---
+
+### Script: proc_macro_const_demo.rs
+
+**Description:**  Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`
+
+**Purpose:** Demo the use of proc macros to generate constants at compile time
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_const_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo.rs
+```
+
+---
+
+### Script: proc_macro_const_demo_debug.rs
+
+**Description:**  Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
+
+**Purpose:** Second working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_expand.rs`.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_const_demo_debug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_debug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_debug.rs
+```
+
+---
+
+### Script: proc_macro_const_demo_expand.rs
+
+**Description:**  Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
+ Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`.
+
+**Purpose:** First working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_debug.rs`.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_const_demo_expand.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_expand.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_expand.rs
+```
+
+---
+
+### Script: proc_macro_derive_basic.rs
+
+**Description:**  Exploring expansion
+
+**Purpose:** explore proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_derive_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_basic.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_basic.rs
+```
+
+---
+
+### Script: proc_macro_derive_custom_model.rs
+
+**Description:**  Published example from `https://github.com/anshulsanghi-blog/macros-handbook`
+
+**Purpose:** explore derive proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_derive_custom_model.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_custom_model.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_custom_model.rs
+```
+
+---
+
+### Script: proc_macro_derive_doc_comment.rs
+
+**Description:**  Exploring exposing doc comments at runtime.
+ Example from https://www.reddit.com/r/rust/comments/pv5v3x/looking_for_a_minimal_example_on_how_to_parse_doc/
+
+**Purpose:** explore proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_derive_doc_comment.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_doc_comment.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_doc_comment.rs
+```
+
+---
+
+### Script: proc_macro_derive_key_map_list.rs
+
+**Description:**  Use a derive proc macro to implement a table. from a base with additions and deletions.
+ Not very useful currently: the dream is to generate a constant and get mappings as a variable.
+
+**Purpose:** explore derive proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_derive_key_map_list.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs
+```
+
+---
+
+### Script: proc_macro_expander_demo.rs
+
+**Description:**  Published example from crate `expander`
+
+**Purpose:** debug proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_expander_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_expander_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_expander_demo.rs
+```
+
+---
+
+### Script: proc_macro_functionlike_basic.rs
+
+**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
+ `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
+
+**Purpose:** Sample model of a basic function-like proc macro.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_functionlike_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_functionlike_basic.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_functionlike_basic.rs
+```
+
+---
+
+### Script: proc_macro_host_port_const.rs
+
+**Description:**  Demo example generated by ChatGPT, followed by intensive debugging of the `syn` logic in the proc macro.
+
+**Purpose:** Demo the use of proc macros to generate constants at compile time
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_host_port_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_host_port_const.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_host_port_const.rs
+```
+
+---
+
+### Script: proc_macro_organizing_code.rs
+
+**Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
+
+**Purpose:** explore proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_organizing_code.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code.rs
+```
+
+---
+
+### Script: proc_macro_organizing_code_const.rs
+
+**Description:**  Experimental - work in progress
+
+**Purpose:** investigate the possibility of generating a useful constant.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_organizing_code_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_const.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_const.rs
+```
+
+---
+
+### Script: proc_macro_organizing_code_tokenstream.rs
+
+**Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
+
+**Purpose:** explore proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_organizing_code_tokenstream.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs
+```
+
+---
+
+### Script: proc_macro_repeat_dash.rs
+
+**Description:**  Exploring expansion: function-like proc macro.
+
+**Purpose:** explore proc macros
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_repeat_dash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_repeat_dash.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_repeat_dash.rs
+```
+
+---
+
+### Script: proc_macro_string_concat.rs
+
+**Description:**  Published example from `https://github.com/redmcg/const_gen_proc_macro`
+
+**Purpose:** Use proc macros to generate constants at compile time
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Snippet
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_string_concat.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_string_concat.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_string_concat.rs
+```
 
 ---
 
@@ -2207,9 +3930,19 @@ which will give identical output to the above.
 
 **Purpose:** Demo featured crates.
 
+**Crates:** `eframe`, `egui`, `env_logger`, `log`, `profiling`, `puffin`, `puffin_egui`
+
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [profiling_puffin_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puffin_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puffin_demo.rs
+```
 
 ---
 
@@ -2219,11 +3952,19 @@ which will give identical output to the above.
 
 **Purpose:** Demo featured crate.
 
-**Crates:** `eframe`
+**Crates:** `eframe`, `puffin`, `puffin_egui`
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [puffin_profiler_egui.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profiler_egui.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profiler_egui.rs
+```
 
 ---
 
@@ -2254,9 +3995,19 @@ which will give identical output to the above.
 
 **Purpose:** Recreational, educational.
 
+**Crates:** `io`
+
 **Type:** Snippet
 
+**Categories:** educational, math, recreational
+
 **Link:** [py_thag.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs
+```
 
 ---
 
@@ -2270,7 +4021,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [ratatui_user_input.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input.rs
+```
 
 ---
 
@@ -2286,7 +4045,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [readline_crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_crossterm.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_crossterm.rs
+```
 
 ---
 
@@ -2300,7 +4067,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_basic_keybindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic_keybindings.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic_keybindings.rs
+```
 
 ---
 
@@ -2314,7 +4089,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_completions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_completions.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_completions.rs
+```
 
 ---
 
@@ -2328,7 +4111,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_event_listener.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event_listener.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event_listener.rs
+```
 
 ---
 
@@ -2342,7 +4133,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_highlighter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highlighter.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highlighter.rs
+```
 
 ---
 
@@ -2356,7 +4155,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_hinter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinter.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinter.rs
+```
 
 ---
 
@@ -2370,7 +4177,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_history.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_history.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_history.rs
+```
 
 ---
 
@@ -2387,7 +4202,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_ide_completions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_completions.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_completions.rs
+```
 
 ---
 
@@ -2402,7 +4225,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_list_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_bindings.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_bindings.rs
+```
 
 ---
 
@@ -2417,7 +4248,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_multiline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multiline.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multiline.rs
+```
 
 ---
 
@@ -2431,7 +4270,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_read_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_stdin.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_stdin.rs
+```
 
 ---
 
@@ -2445,7 +4292,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_repl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.rs
+```
 
 ---
 
@@ -2460,7 +4315,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_repl_context.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_context.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_context.rs
+```
 
 ---
 
@@ -2479,7 +4342,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_show_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_bindings.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_bindings.rs
+```
 
 ---
 
@@ -2493,7 +4364,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin.rs
+```
 
 ---
 
@@ -2507,7 +4386,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [reedline_transient_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_transient_prompt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_transient_prompt.rs
+```
 
 ---
 
@@ -2518,13 +4405,21 @@ which will give identical output to the above.
  problematic than line-by-line parsing (see `demo/parse_script_rs_toml.rs`)
  See also `demo/regex_capture_toml.rs`.
 
-**Purpose:** Prototype
+**Purpose:** Prototype, technique
 
 **Crates:** `regex`
 
 **Type:** Program
 
+**Categories:** prototype
+
 **Link:** [regex_capture_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_toml.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_toml.rs
+```
 
 ---
 
@@ -2538,7 +4433,37 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [repl_block.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs
+```
+
+---
+
+### Script: repl_partial_match.rs
+
+**Description:**  Experiment with matching REPL commands with a partial match of any length.
+
+**Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
+
+**Crates:** `clap`, `console`, `rustyline`, `shlex`, `strum`
+
+**Type:** Program
+
+**Categories:** crates, REPL, technique
+
+**Link:** [repl_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_match.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_match.rs
+```
 
 ---
 
@@ -2547,7 +4472,7 @@ which will give identical output to the above.
 **Description:**  Published example from the `rug` crate, showcasing the use of the crate. I added the
  last line to return a tuple of the state of the values of interest, as a quick way
  of displaying them.
- 
+
  Won't work with default Windows 11 because of `rug` crate.
  On Linux you may need to install the m4 package.
 
@@ -2558,7 +4483,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** crates, technique
+
 **Link:** [rug_arbitrary_precision_nums.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rug_arbitrary_precision_nums.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rug_arbitrary_precision_nums.rs
+```
 
 ---
 
@@ -2574,7 +4507,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [rustfmt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs
+```
 
 ---
 
@@ -2586,7 +4527,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, technique
+
 **Link:** [rustfmt_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs
+```
 
 ---
 
@@ -2596,11 +4545,17 @@ which will give identical output to the above.
 
 **Purpose:** Demo one way to preserve your `rustlings` solutions, for reference or as katas.
 
-**Crates:** `super`
-
 **Type:** Program
 
+**Categories:** educational
+
 **Link:** [rustlings_smart_pointers_rc1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smart_pointers_rc1.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smart_pointers_rc1.rs
+```
 
 ---
 
@@ -2610,11 +4565,19 @@ which will give identical output to the above.
 
 **Purpose:** Demo using `thag_rs` to run a basic REPL as a script.
 
-**Crates:** `rustyline`
+**Crates:** `env_logger`, `rustyline`
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [rustyline_compl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_compl.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_compl.rs
+```
 
 ---
 
@@ -2626,11 +4589,63 @@ which will give identical output to the above.
 
 **Purpose:** Explore `rustyline` crate.
 
-**Crates:** `rustyline`
+**Crates:** `env_logger`, `rustyline`
 
 **Type:** Program
 
+**Categories:** crates, REPL, technique
+
 **Link:** [rustyline_full.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full.rs
+```
+
+---
+
+### Script: semver_exclude_prerelease.rs
+
+**Description:**  Prototype of excluding pre-release crates from cargo queries.
+
+**Purpose:** Prototype technique for `thag_rs`.
+
+**Crates:** `semver`
+
+**Type:** Program
+
+**Categories:** prototype, technique
+
+**Link:** [semver_exclude_prerelease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude_prerelease.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude_prerelease.rs
+```
+
+---
+
+### Script: side_by_side_diff.rs
+
+**Description:**  Published example from `side-by-side-diff` crate.
+
+**Purpose:** Explore integrated side by side diffs.
+
+**Crates:** `side_by_side_diff`
+
+**Type:** Program
+
+**Categories:** crates, exploration
+
+**Link:** [side_by_side_diff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_diff.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_diff.rs
+```
 
 ---
 
@@ -2640,11 +4655,19 @@ which will give identical output to the above.
 
 **Purpose:** Demo a popular logging crate.
 
-**Crates:** `slog`
+**Crates:** `slog`, `slog_term`
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [slog_expressions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressions.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressions.rs
+```
 
 ---
 
@@ -2658,21 +4681,37 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** crates, educational
+
 **Link:** [snippet_import_scope.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import_scope.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import_scope.rs
+```
 
 ---
 
 ### Script: snippet_name_clash.rs
 
 **Description:**  Demo scope of import statements. Two conflicting imports with the same name
- coexisting in the same println! invocation. Demonstrates that when wrapping
+ coexisting in the same `println!` invocation. Demonstrates that when wrapping
  a snippet we can't assume it's OK to pull the imports up to the top level.
 
 **Purpose:** Prototype to confirm leaving imports in situ when wrapping snippets.
 
 **Type:** Snippet
 
+**Categories:** crates, educational
+
 **Link:** [snippet_name_clash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs
+```
 
 ---
 
@@ -2689,7 +4728,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, prototype, technique
+
 **Link:** [stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs
+```
 
 ---
 
@@ -2704,11 +4751,19 @@ which will give identical output to the above.
 
 **Purpose:** Debugging.
 
-**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `serde`, `thag_rs`, `tui_textarea`
+**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 
+**Categories:** testing
+
 **Link:** [stdin_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
+```
 
 ---
 
@@ -2724,25 +4779,41 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** CLI, crates, technique
+
 **Link:** [structopt_cli_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_gpt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_gpt.rs -- -- -Vt dummy.rs 1 2 3
+```
 
 ---
 
 ### Script: supports_color.rs
 
 **Description:**  Demo of crate `supports-color` that `thag_rs` uses to detect the level of
- colour support of the terminal in use. I've added the `clear_screen` method
- because from testing I suspect that `supports-color` may mess with the terminal
+ colour support of the terminal in use.
+ Caution: from testing I suspect that `supports-color` may mess with the terminal
  settings. Obviously that doesn't matter in a demo that exists before doing
  serious work, but it can wreak havoc with your program's output.
 
 **Purpose:** Demo featured crate doing its job.
 
-**Crates:** `crossterm`, `supports_color`
+**Crates:** `supports_color`
 
 **Type:** Snippet
 
+**Categories:** crates
+
 **Link:** [supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color.rs
+```
 
 ---
 
@@ -2755,7 +4826,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** crates, prototype
+
 **Link:** [supports_color_win.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color_win.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color_win.rs
+```
 
 ---
 
@@ -2763,16 +4842,27 @@ which will give identical output to the above.
 
 **Description:**  Published example from the `syn` crate. Description "Parse a Rust source file
  into a `syn::File` and print out a debug representation of the syntax tree."
- Pass it the absolute or relative path of any Rust source file, e.g. its own
+
+ Pass it the absolute or relative path of any Rust PROGRAM source file, e.g. its own
  path that you passed to the script runner to invoke it.
+
+ NB: Pick a script that is a valid program (containing `fn main()` as opposed to a snippet).
 
 **Purpose:** show off the power of `syn`.
 
-**Crates:** `colored`
+**Crates:** `colored`, `syn`
 
 **Type:** Program
 
+**Categories:** AST, crates, technique
+
 **Link:** [syn_dump_syntax.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax.rs -- demo/hello_main.rs
+```
 
 ---
 
@@ -2799,7 +4889,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** AST, crates, prototype, technique
+
 **Link:** [syn_quote.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs
+```
 
 ---
 
@@ -2814,7 +4912,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** AST, crates, prototype, technique
+
 **Link:** [syn_remove_attributes.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_attributes.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_attributes.rs
+```
 
 ---
 
@@ -2825,13 +4931,21 @@ which will give identical output to the above.
  to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
  traversal. This version expects the script contents to consist of a Rust expression.
 
-**Purpose:** Demo featured crate.
+**Purpose:** Prototype.
 
 **Crates:** `syn`
 
 **Type:** Program
 
+**Categories:** AST, crates, prototype, technique
+
 **Link:** [syn_visit_extern_crate_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_expr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_expr.rs -- demo/just_a_test_expression.rs
+```
 
 ---
 
@@ -2842,13 +4956,21 @@ which will give identical output to the above.
  to process the nodes representing `extern crate` statements and fn `visit_file` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
 
-**Purpose:** Demo featured crate.
+**Purpose:** Prototype.
 
 **Crates:** `syn`
 
 **Type:** Program
 
+**Categories:** AST, crates, prototype, technique
+
 **Link:** [syn_visit_extern_crate_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_file.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_file.rs -- demo/syn_visit_extern_crate_file.rs
+```
 
 ---
 
@@ -2858,6 +4980,7 @@ which will give identical output to the above.
  in answer to a question asked on the Rust users forum. The discussion and Playground link are to be found here:
  https://users.rust-lang.org/t/writing-proc-macros-with-syn-is-there-a-way-to-visit-parts-of-the-ast-that-match-a-given-format/54733/4
  (This content is dual-licensed under the MIT and Apache 2.0 licenses according to the Rust forum terms of service.)
+ I've embellished it to show how it can be formatted with `prettyplease` if parsed as a `syn::File`.
 
 **Purpose:** Demo programmatically modifying Rust source code using `syn` and `quote`.
 
@@ -2865,7 +4988,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** AST, crates, technique
+
 **Link:** [syn_visit_node_type.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node_type.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node_type.rs
+```
 
 ---
 
@@ -2876,13 +5007,21 @@ which will give identical output to the above.
  to process the nodes representing `use` statements and fn `visit_expr` to initiate the tree
  traversal. This version expects the script contents to consist of a Rust expression.
 
-**Purpose:** Demo featured crate.
+**Purpose:** Prototype.
 
 **Crates:** `syn`
 
 **Type:** Program
 
+**Categories:** AST, crates, prototype, technique
+
 **Link:** [syn_visit_use_path_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_expr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_expr.rs -- demo/just_a_test_expression.rs
+```
 
 ---
 
@@ -2893,13 +5032,21 @@ which will give identical output to the above.
  to process the nodes representing `use` statements and fn `visit_file` to initiate the tree
  traversal. This version expects the script contents to consist of a full-fledged Rust program.
 
-**Purpose:** Demo featured crate.
+**Purpose:** Protorype.
 
 **Crates:** `syn`
 
 **Type:** Program
 
+**Categories:** AST, crates, prototype, technique
+
 **Link:** [syn_visit_use_path_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_file.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_file.rs -- demo/syn_visit_use_path_file.rs
+```
 
 ---
 
@@ -2911,13 +5058,21 @@ which will give identical output to the above.
  statements and fn `visit_file` to initiate the tree traversal. This version expects the script contents
  to consist of a full-fledged Rust program.
 
-**Purpose:** Demo featured crate.
+**Purpose:** Prototype.
 
 **Crates:** `syn`
 
 **Type:** Program
 
+**Categories:** AST, crates, prototype, technique
+
 **Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs -- demo/crossbeam_epoch_sanitize.rs
+```
 
 ---
 
@@ -2934,7 +5089,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** AST, crates, prototype, technique
+
 **Link:** [syn_visit_use_tree_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs -- demo/syn_visit_use_tree_file.rs
+```
 
 ---
 
@@ -2944,9 +5107,19 @@ which will give identical output to the above.
 
 **Purpose:** Demo featured crate.
 
+**Crates:** `tempfile`
+
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [tempfile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
+```
 
 ---
 
@@ -2959,11 +5132,16 @@ which will give identical output to the above.
 
 **Purpose:** Allow checking of terminals on platforms to be supported, also test reliability of different crates.
 
-**Crates:** `crossterm`, `log`, `simplelog`, `supports_color`, `thag_rs`
+**Crates:** `crossterm`, `log`, `simplelog`, `supports_color`, `termbg`, `terminal_light`
 
 **Type:** Snippet
 
+**Categories:** crates, tools
+
 **Link:** [term_detection_pack.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/term_detection_pack.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -2973,13 +5151,18 @@ which will give identical output to the above.
 
  Detects the light or dark theme in use, as well as the colours in use.
 
-**Purpose:** Demo theme detection with `termbg` and clearing terminal state with `crossterm`.
+**Purpose:** Demo theme detection with `termbg`
 
-**Crates:** `simplelog`, `thag_rs`
+**Crates:** `simplelog`, `termbg`
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/termbg.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -2990,11 +5173,19 @@ which will give identical output to the above.
 
 **Purpose:** Demo terminal-light interrogating the background color. Results will vary with OS and terminal type.
 
-**Crates:** `crossterm`
+**Crates:** `terminal_light`
 
 **Type:** Snippet
 
+**Categories:** crates
+
 **Link:** [terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light.rs
+```
 
 ---
 
@@ -3005,11 +5196,19 @@ which will give identical output to the above.
 
 **Purpose:** Mostly recreational.
 
-**Crates:** `coolor`, `crossterm`
+**Crates:** `coolor`, `crossterm`, `terminal_light`
 
 **Type:** Program
 
+**Categories:** crates, recreational
+
 **Link:** [terminal_light_fading.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_fading.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_fading.rs
+```
 
 ---
 
@@ -3020,11 +5219,19 @@ which will give identical output to the above.
 
 **Purpose:** Demo of the `terminal-light` crate.
 
-**Crates:** `coolor`, `crossterm`
+**Crates:** `coolor`, `crossterm`, `terminal_light`
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [terminal_light_skins.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_skins.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_skins.rs
+```
 
 ---
 
@@ -3032,8 +5239,13 @@ which will give identical output to the above.
 
 **Description:**  Minimal reproducible code posted by user `mkeeter` to demonstrate `clap` issue 4707
  which we are experiencing at time of creation of this script.
+ https://github.com/clap-rs/clap/issues/4707
 
  To reproduce the error, run `cargo run demo/test_clap_4707.rs -- --write --show-hex`
+ Correct behaviour would be:
+ error: the following required arguments were not provided:
+  --read
+ Incorrect behaviour is that the command runs without an error.
 
 **Purpose:** test if the error exists, then periodically to see if it persists.
 
@@ -3041,7 +5253,85 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, testing
+
 **Link:** [test_clap_4707.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707.rs -- --write --show-hex
+```
+
+---
+
+### Script: thag_cargo.rs
+
+**Description:**  `thag` prompted front-end command to run Cargo commands on scripts. It is recommended to compile this to an executable with -x.
+ Prompts the user to select a Rust script and a cargo command to run against the script's generated project, and
+ and invokes `thag` with the --cargo option to run it.
+
+**Purpose:** A user-friendly interface to the `thag` `--cargo` option.
+
+**Crates:** `atty`, `inquire`, `rustix`
+
+**Type:** Program
+
+**Categories:** technique, thag_front_ends, tools
+
+**Link:** [thag_cargo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs
+```
+
+---
+
+### Script: thag_clippy.rs
+
+**Description:**  `thag` prompted front-end command to run `clippy` on scripts. It is recommended to compile this to an executable with -x.
+ Prompts the user to select a Rust script and one or more Clippy lints to run against the script's generated project, and
+ and invokes `thag` with the --cargo option to run it.
+
+**Purpose:** A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
+
+**Crates:** `atty`, `colored`, `inquire`, `rustix`
+
+**Type:** Program
+
+**Categories:** technique, thag_front_ends, tools
+
+**Link:** [thag_clippy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs
+```
+
+---
+
+### Script: thag_config_builder.rs
+
+**Description:**  Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
+
+**Purpose:** Handy configuration file builder.
+
+**Crates:** `colored`, `convert_case`, `dirs`, `documented`, `inquire`, `strum`, `syn`, `thag_rs`, `toml`
+
+**Type:** Program
+
+**Categories:** crates, technique, tools
+
+**Link:** [thag_config_builder.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder.rs
+```
 
 ---
 
@@ -3056,7 +5346,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, testing
+
 **Link:** [thag_crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_crokey_print_key.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_crokey_print_key.rs
+```
 
 ---
 
@@ -3073,7 +5371,37 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, tools
+
 **Link:** [thag_from_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust_script.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust_script.rs
+```
+
+---
+
+### Script: thag_prompt.rs
+
+**Description:**  Early prototype of prompting front-end for `thag`.
+
+**Purpose:** Ultimately, to provide a prompt-driven fromt-end to the `thag` command.
+
+**Crates:** `inquire`
+
+**Type:** Program
+
+**Categories:** prototype, thag_front_ends, tools
+
+**Link:** [thag_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs
+```
 
 ---
 
@@ -3085,14 +5413,44 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, tools
+
 **Link:** [thag_to_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_script.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_script.rs
+```
+
+---
+
+### Script: thag_url.rs
+
+**Description:**  `thag` front-end command to run scripts from URLs. It is recommended to compile this with -x.
+
+**Purpose:** A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
+
+**Crates:** `syn`, `tempfile`, `tinyget`, `url`
+
+**Type:** Program
+
+**Categories:** technique, thag_front_ends, tools
+
+**Link:** [thag_url.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs
+```
 
 ---
 
 ### Script: time_cookbook.rs
 
 **Description:**  Simple time demo pasted directly from Rust cookbook. Run without -q to show how
- `thag_rs` will find the missing chrono manifest entry and display a specimen
+ `thag_rs` will find the missing `chrono` manifest entry and display a specimen
  toml block you can paste in at the top of the script.
 
 **Purpose:** Demo cut and paste from a web source with Cargo search and specimen toml block generation.
@@ -3101,7 +5459,35 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** basic
+
 **Link:** [time_cookbook.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.rs
+```
+
+---
+
+### Script: tlborm_callbacks.rs
+
+**Description:**  `Callbacks` example from `The Little Book of Rust Macros`
+
+**Purpose:** Demo macro callbacks.
+
+**Type:** Program
+
+**Categories:** educational, technique
+
+**Link:** [tlborm_callbacks.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs
+```
 
 ---
 
@@ -3116,7 +5502,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** async, educational, technique
+
 **Link:** [tokio_hello_short.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_short.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_short.rs
+```
 
 ---
 
@@ -3131,7 +5525,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** async, educational, technique
+
 **Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs
+```
 
 ---
 
@@ -3139,13 +5541,20 @@ which will give identical output to the above.
 
 **Description:**  Published example from `tui-scrollview` crate. Toml entries from crate's Cargo.toml.
 
+ Not suitable for running from a URL.
+
 **Purpose:** Explore TUI editing
 
-**Crates:** `color_eyre`, `ratatui`, `tui_scrollview`
+**Crates:** `color_eyre`, `lipsum`, `ratatui`, `tui_scrollview`
 
 **Type:** Program
 
+**Categories:** crates, exploration, technique
+
 **Link:** [tui_scrollview.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_scrollview.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -3157,13 +5566,20 @@ which will give identical output to the above.
  or default to a standard editor. A more minimalist version is used to edit stdin input in
  the `--edit (-d)` option of `thag_rs`.
 
-**Purpose:** Demo TUI editor and featured crates, including `crossterm`.
+ Not suitable for running from a URL.
+
+**Purpose:** Demo and explore TUI editor and featured crates, including `crossterm`.
 
 **Crates:** `ratatui`, `tui_textarea`
 
 **Type:** Program
 
+**Categories:** crates, exploration, technique
+
 **Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -3171,6 +5587,7 @@ which will give identical output to the above.
 
 **Description:**  The same script as `demo/tui_ta_editor.rs`, but with `firestorm` profiling.
 
+ Not suitable for running from a URL.
  To see the profiling flamegraph after exiting the program, look in dir `flames` under the `env::temp_dir()`
  for your operating system. Note that due to an apparent bug in `firestorm`, the `Editor::run` method currently
  executes twice, so it will need to be closed a second time.
@@ -3181,7 +5598,12 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** crates, exploration, technique
+
 **Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_profile.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -3189,13 +5611,20 @@ which will give identical output to the above.
 
 **Description:**  Demo a very minimal and not very useful TUI (text user interface) editor based on the featured crates.
 
+ Not suitable for running from a URL.
+
 **Purpose:** Demo TUI editor and featured crates, including `crossterm`, and the use of the `scopeguard` crate to reset the terminal when it goes out of scope.
 
-**Crates:** `ratatui`, `tui_textarea`
+**Crates:** `ratatui`, `scopeguard`, `tui_textarea`
 
 **Type:** Program
 
+**Categories:** crates, exploration, technique
+
 **Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -3204,13 +5633,20 @@ which will give identical output to the above.
 **Description:**  Published basic `vim` editor example from crate `tui-textarea`. Mildly tweaked
  to use `ratatui::crossterm` re-exports instead of `crossterm` directly.
 
+ Not suitable for running from a URL.
+
 **Purpose:** Demo TUI `vim` editor and featured crates, including `crossterm`.
 
 **Crates:** `ratatui`, `tui_textarea`
 
 **Type:** Program
 
+**Categories:** crates
+
 **Link:** [tui_ta_vim.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_vim.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -3221,13 +5657,20 @@ which will give identical output to the above.
  screen on which you can capture lines of data. `Ctrl-D` closes the editor and simply
  prints the captured data.
 
+ Not suitable for running from a URL.
+
 **Purpose:** Exploring options for editing input. e.g. for a REPL.
 
 **Crates:** `ratatui`, `tokio`, `tui_textarea`
 
 **Type:** Program
 
+**Categories:** async, crates, educational, exploration, technique
+
 **Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_tokio_editor_gpt.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -3243,7 +5686,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** type_identification, technique
+
 **Link:** [type_of_at_compile_time_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_1.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_1.rs
+```
 
 ---
 
@@ -3266,7 +5717,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** type_identification, technique
+
 **Link:** [type_of_at_compile_time_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_2.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_2.rs
+```
 
 ---
 
@@ -3281,7 +5740,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** type_identification, technique
+
 **Link:** [type_of_at_run_time.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run_time.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run_time.rs
+```
 
 ---
 
@@ -3295,7 +5762,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** big_numbers, educational, reference, technique
+
 **Link:** [ubig_product_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_gpt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_gpt.rs
+```
 
 ---
 
@@ -3307,7 +5782,15 @@ which will give identical output to the above.
 
 **Type:** Snippet
 
+**Categories:** technique
+
 **Link:** [unzip.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs
+```
 
 ---
 
@@ -3319,7 +5802,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** testing
+
 **Link:** [win_test_control.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_control.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_control.rs
+```
 
 ---
 
@@ -3333,7 +5824,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** testing
+
 **Link:** [win_test_supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_supports_color.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_supports_color.rs
+```
 
 ---
 
@@ -3343,39 +5842,16 @@ which will give identical output to the above.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
+**Crates:** `termbg`
+
 **Type:** Program
+
+**Categories:** testing
 
 **Link:** [win_test_termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg.rs)
 
----
+**Not suitable to be run from a URL.**
 
-### Script: win_test_termbg_reset.rs
-
-**Description:**  This still seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
- The `crossterm` reset doesn't seem to help. My disappointment is immeasurable and
- my day is ruined.
-
-**Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
-
-**Crates:** `crossterm`
-
-**Type:** Program
-
-**Link:** [win_test_termbg_reset.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_reset.rs)
-
----
-
-### Script: win_test_termbg_thag.rs
-
-**Description:**  This seems to "reliably" swallow the very first character entered in Windows, prior to `termbg` 0.6.0.
-
-**Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
-
-**Crates:** `thag_rs`
-
-**Type:** Program
-
-**Link:** [win_test_termbg_thag.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg_thag.rs)
 
 ---
 
@@ -3385,9 +5861,19 @@ which will give identical output to the above.
 
 **Purpose:** Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 
+**Crates:** `terminal_light`
+
 **Type:** Program
 
+**Categories:** testing
+
 **Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs
+```
 
 ---
 
@@ -3405,7 +5891,7 @@ which will give identical output to the above.
  https://github.com/Textualize/rich/issues/140.
  Also, but out of scope of this script, there is no good fallback detection method provided by Windows,
  as per my comments in the adapted module `thag_rs::termbg`. Unless you have WT 1.22 or higher as above,
- the best bet for supporting colour schemes other than the default black is to fallback to using a
+ the best bet for supporting colour schemes other than the default black is to fall back to using a
  configuration file (as we do) or allowing the user to specify the theme in real time.
  Finally, the `termbg` crate was swallowing the first character of input in Windows and causing a
  "rightward march" of log output due to suppression of carriage returns in all environments. I've
@@ -3418,7 +5904,15 @@ which will give identical output to the above.
 
 **Type:** Program
 
+**Categories:** testing
+
 **Link:** [win_test_vt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs
+```
 
 ---
 

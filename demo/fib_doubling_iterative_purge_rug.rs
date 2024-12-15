@@ -13,6 +13,8 @@ rug = "1.24.1"
 /// change: that we reduce bloat as best we can  by purging redundant entries from the memo
 /// cache as soon as it's safe to do so.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
+//# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use rug::ops::Pow;
 use rug::{Assign, Integer};
 use std::collections::{HashMap, HashSet};

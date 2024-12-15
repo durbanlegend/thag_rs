@@ -4,7 +4,7 @@ crossterm = "0.28.1"
 enum-assoc = "1.1.0"
 log = "0.4.22"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.2", features = ["derive", "strum_macros", "phf"] }
+strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
 termbg = "0.5.2"
 */
@@ -15,6 +15,7 @@ termbg = "0.5.2"
 /// backgrounds to see how some of the same colours "pop" when shown against a light or dark theme
 /// and how some virtually or literally disappear when not well matched to the theme.
 //# Purpose: Demo detection of terminal colour support and dark or light theme, colouring and styling of messages, use of `strum` crate to get enum variant from string, and AI-generated code.
+//# Categories: crates, prototype, technique
 use enum_assoc::Assoc;
 use log::debug;
 use owo_ansi::xterm as owo_xterm;

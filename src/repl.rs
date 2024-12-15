@@ -2,23 +2,24 @@
 use crate::builder::process_expr;
 use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
 use crate::tui_editor::{
-    script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, TermScopeGuard,
+    script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, ManagedTerminal,
 };
 use crate::{
-    cprtln, cvprtln, get_verbosity, key, regex, vlog, BuildState, Cli, CrosstermEventReader,
-    EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError, ThagResult, V,
+    cprtln, cvprtln, get_verbosity, key, lazy_static_var, regex, vlog, BuildState, Cli,
+    CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError,
+    ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
 use crossterm::event::{KeyEvent, KeyEventKind};
 use edit::edit_file;
-use firestorm::profile_fn;
-use nu_ansi_term::Style as NuStyle;
-use ratatui::style::{Style, Stylize};
+use firestorm::{profile_fn, profile_method};
+use nu_ansi_term::{Color, Style as NuStyle};
+use ratatui::style::{Style as RataStyle, Stylize};
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
-    EditCommand, Emacs, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers, Keybindings,
-    MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline,
-    ReedlineEvent, ReedlineMenu, Signal,
+    EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
+    Keybindings, MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch,
+    PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
 use std::borrow::Cow;
@@ -28,7 +29,6 @@ use std::fs::{self, read_to_string, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::OnceLock;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use tui_textarea::{Input, TextArea};
@@ -168,16 +168,19 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 ];
 
 /// REPL mode lets you type or paste a Rust expression to be evaluated.
+///
 /// Start by choosing the eval option and entering your expression. Expressions between matching braces,
 /// brackets, parens or quotes may span multiple lines.
 /// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
 /// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
 /// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
 /// comment block of the form
+/// ``` rust
 /// /*[toml]
 /// [dependencies]
 /// ...
 /// */
+/// ```
 /// From here they will be extracted to a dedicated Cargo.toml file.
 /// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
 /// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
@@ -220,6 +223,7 @@ pub enum ReplCommand {
 
 impl ReplCommand {
     fn print_help() {
+        profile_method!(print_help);
         let mut command = Self::command();
         // let mut buf = Vec::new();
         // command.write_help(&mut buf).unwrap();
@@ -233,18 +237,22 @@ impl ReplCommand {
 pub struct ReplPrompt(pub &'static str);
 impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
+        profile_method!(render_prompt_left);
         Cow::Owned(self.0.to_string())
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
+        profile_method!(render_prompt_right);
         Cow::Owned(String::new())
     }
 
     fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<str> {
+        profile_method!(render_prompt_indicator);
         Cow::Owned("> ".to_string())
     }
 
     fn render_prompt_multiline_indicator(&self) -> Cow<str> {
+        profile_method!(render_prompt_multiline_indicator);
         Cow::Borrowed(DEFAULT_MULTILINE_INDICATOR)
     }
 
@@ -252,6 +260,7 @@ impl Prompt for ReplPrompt {
         &self,
         history_search: PromptHistorySearch,
     ) -> Cow<str> {
+        profile_method!(render_prompt_history_search_indicator);
         let prefix = match history_search.status {
             PromptHistorySearchStatus::Passing => "",
             PromptHistorySearchStatus::Failing => "failing ",
@@ -264,7 +273,18 @@ impl Prompt for ReplPrompt {
     }
 }
 
+fn get_heading_style() -> &'static NuStyle {
+    profile_fn!(get_heading_style);
+    lazy_static_var!(NuStyle, NuStyle::from(&Lvl::HEAD))
+}
+
+fn get_subhead_style() -> &'static NuStyle {
+    profile_fn!(get_subhead_style);
+    lazy_static_var!(NuStyle, NuStyle::from(&Lvl::SUBH))
+}
+
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
+    profile_fn!(add_menu_keybindings);
     keybindings.add_binding(
         KeyModifiers::NONE,
         KeyCode::Tab,
@@ -330,8 +350,12 @@ pub fn run_repl(
     // println!("{:#?}", keybindings.get_keybindings());
 
     let edit_mode = Box::new(Emacs::new(keybindings.clone()));
-
-    // let highlighter = Box::<ExampleHighlighter>::default();
+    let mut highlighter = Box::new(ExampleHighlighter::new(cmd_vec.clone()));
+    highlighter.change_colors(
+        Color::from(&Lvl::HEAD),
+        Color::from(&Lvl::EMPH),
+        Color::from(&Lvl::NORM),
+    );
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
@@ -339,19 +363,39 @@ pub fn run_repl(
         ))
         .with_history(history)
         .with_history_exclusion_prefix(Some("q".into()))
-        // .with_highlighter(highlighter)
+        .with_highlighter(highlighter)
         .with_completer(completer)
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
 
     let bindings = keybindings.get_keybindings();
+    let reedline_events = bindings.values().cloned().collect::<Vec<ReedlineEvent>>();
+    let max_cmd_len = get_max_cmd_len(&reedline_events);
 
     let prompt = ReplPrompt("repl");
     let cmd_list = &cmd_vec.join(", ");
-
-    // let mut hist = line_editor.with_history(history);
     disp_repl_banner(cmd_list);
-    // let hist_str = read_to_string(&history_path)?;
+
+    // Collect and format key bindings while user is taking in the display banner
+    // NB: Can't extract this to a method either, because reedline does not expose KeyCombination.
+    let named_reedline_events = bindings
+        .iter()
+        .map(|(key_combination, reedline_event)| {
+            let key_modifiers = key_combination.modifier;
+            let key_code = key_combination.key_code;
+            let modifier = format_key_modifier(key_modifiers);
+            let key = format_key_code(key_code);
+            let key_desc = format!("{modifier}{key}");
+            (key_desc, reedline_event)
+        })
+        // .cloned()
+        .collect::<Vec<(String, &ReedlineEvent)>>();
+    let formatted_bindings = format_bindings(&named_reedline_events, max_cmd_len);
+
+    // Determine the length of the longest key description for padding
+    let max_key_len = lazy_static_var!(usize, get_max_key_len(formatted_bindings), deref);
+    // eprintln!("max_key_len={max_key_len}");
+
     loop {
         let sig = line_editor.read_line(&prompt)?;
         let input: &str = match sig {
@@ -441,31 +485,6 @@ pub fn run_repl(
                         )?;
                     }
                     ReplCommand::Keys => {
-                        let reedline_events =
-                            bindings.values().cloned().collect::<Vec<ReedlineEvent>>();
-                        let max_cmd_len = get_max_cmd_len(&reedline_events);
-
-                        // Collect and format key bindings
-                        // NB: Can't extract this to a method either, because reedline does not expose KeyCombination.
-                        let named_reedline_events = bindings
-                            .iter()
-                            .map(|(key_combination, reedline_event)| {
-                                let key_modifiers = key_combination.modifier;
-                                let key_code = key_combination.key_code;
-                                let modifier = format_key_modifier(key_modifiers);
-                                let key = format_key_code(key_code);
-                                let key_desc = format!("{}{}", modifier, key);
-                                (key_desc, reedline_event)
-                            })
-                            // .cloned()
-                            .collect::<Vec<(String, &ReedlineEvent)>>();
-                        let formatted_bindings =
-                            format_bindings(&named_reedline_events, max_cmd_len);
-
-                        // Determine the length of the longest key description for padding
-                        let max_key_len = get_max_key_len(formatted_bindings);
-                        // eprintln!("max_key_len={max_key_len}");
-
                         show_key_bindings(formatted_bindings, max_key_len);
                     }
                 }
@@ -490,11 +509,13 @@ pub fn process_source(
     proc_flags: &ProcFlags,
     start: Instant,
 ) -> ThagResult<()> {
+    profile_fn!(process_source);
     let rs_manifest = extract_manifest(rs_source, Instant::now())?;
     build_state.rs_manifest = Some(rs_manifest);
     let maybe_ast = extract_ast_expr(rs_source);
     if let Ok(expr_ast) = maybe_ast {
-        process_expr(expr_ast, build_state, rs_source, args, proc_flags, &start)?;
+        build_state.ast = Some(crate::Ast::Expr(expr_ast));
+        process_expr(build_state, rs_source, args, proc_flags, &start)?;
     } else {
         cprtln!(&(&Lvl::ERR).into(), "Error parsing code: {maybe_ast:#?}");
     };
@@ -530,12 +551,12 @@ fn tui(
     let add_keys = [
         KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
-        KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
+        // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
     let display = KeyDisplay {
-        title: "Edit REPL script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: Style::from(&Lvl::SUBH).bold(),
+        title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
+        title_style: RataStyle::from(&Lvl::SUBH).bold(),
         remove_keys: &[""; 0],
         add_keys: &add_keys,
     };
@@ -601,12 +622,23 @@ fn review_history(
         eprintln!("saved_history={saved_history}");
         history_mut.clear()?;
         for line in saved_history.lines() {
-            // eprintln!("saving line={line}");
-            let _ = history_mut.save(HistoryItem::from_command_line(line))?;
+            let entry = decode(line);
+            // eprintln!("saving entry={entry}");
+            let _ = history_mut.save(HistoryItem::from_command_line(entry))?;
         }
         history_mut.sync()?;
     }
     Ok(())
+}
+
+/// Convert the `reedline` file-backed history newline sequence <\n> into the '\n' (0xa) character for which it stands.
+#[must_use]
+#[allow(clippy::missing_panics_doc)]
+pub fn decode(input: &str) -> String {
+    profile_fn!(decode);
+    let re = regex!(r"(<\\n>)");
+    let lf = std::str::from_utf8(&[10_u8]).unwrap();
+    re.replace_all(input, lf).to_string()
 }
 
 /// Edit the history.
@@ -629,11 +661,11 @@ pub fn edit_history<R: EventReader + Debug>(
     };
     let binding = [
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
-        KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
+        // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: Style::from(&Lvl::HEAD).bold(),
+        title_style: RataStyle::from(&Lvl::HEAD).bold(),
         remove_keys: &["F7", "F8"],
         add_keys: &binding,
     };
@@ -677,7 +709,7 @@ pub fn edit_history<R: EventReader + Debug>(
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 pub fn history_key_handler(
     key_event: KeyEvent,
-    _maybe_term: &mut Option<&mut TermScopeGuard>,
+    _maybe_term: Option<&mut ManagedTerminal>,
     // maybe_save_path: &mut Option<&mut PathBuf>,
     textarea: &mut TextArea,
     edit_data: &mut EditData,
@@ -685,6 +717,7 @@ pub fn history_key_handler(
     saved: &mut bool,
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
+    profile_fn!(history_key_handler);
     // Make sure for Windows
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
@@ -731,6 +764,7 @@ fn save_file(
     maybe_save_path: &Option<&mut PathBuf>,
     textarea: &TextArea<'_>,
 ) -> ThagResult<String> {
+    profile_fn!(save_file);
     let staging_path = maybe_save_path.as_ref().ok_or("Missing save_path")?;
     let staging_file = OpenOptions::new()
         .read(true)
@@ -746,27 +780,28 @@ fn save_file(
     Ok(staging_path.display().to_string())
 }
 
+/// Return the maximum length of the key descriptor for a set of styled and
+/// formatted key / description bindings to be displayed on screen.
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
-    static MAX_KEY_LEN: OnceLock<usize> = OnceLock::new();
-    *MAX_KEY_LEN.get_or_init(|| {
-        formatted_bindings
-            .iter()
-            .map(|(key_desc, _)| {
-                let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
-                let key_desc = format!("{key_desc}");
-                key_desc.len()
-            })
-            .max()
-            .unwrap_or(0)
-    })
+    profile_fn!(get_max_key_len);
+    let style: NuStyle = *get_heading_style();
+    formatted_bindings
+        .iter()
+        .map(|(key_desc, _)| {
+            let key_desc = style.paint(key_desc);
+            let key_desc = format!("{key_desc}");
+            key_desc.len()
+        })
+        .max()
+        .unwrap_or(0)
 }
 
 fn format_bindings(
     named_reedline_events: &[(String, &ReedlineEvent)],
     max_cmd_len: usize,
 ) -> &'static Vec<(String, String)> {
-    static FORMATTED_BINDINGS: OnceLock<Vec<(String, String)>> = OnceLock::new();
-    FORMATTED_BINDINGS.get_or_init(|| {
+    profile_fn!(format_bindings);
+    lazy_static_var!(Vec<(String, String)>, {
         let mut formatted_bindings = named_reedline_events
             .iter()
             .filter_map(|(key_desc, reedline_event)| {
@@ -791,40 +826,46 @@ fn format_bindings(
 }
 
 fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
+    profile_fn!(get_max_cmd_len);
     // Calculate max command len for padding
-    static MAX_CMD_LEN: OnceLock<usize> = OnceLock::new();
-    *MAX_CMD_LEN.get_or_init(|| {
-        // Determine the length of the longest command for padding
-        // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
-        let max_cmd_len = reedline_events
-            .iter()
-            .map(|reedline_event| {
-                if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
-                    edit_cmds
-                        .iter()
-                        .map(|cmd| {
-                            let key_desc = NuStyle::from(&Lvl::SUBH).paint(format!("{cmd:?}"));
-                            let key_desc = format!("{key_desc}");
-                            key_desc.len()
-                        })
-                        .max()
-                        .unwrap_or(0)
-                } else if !format!("{reedline_event}").starts_with("UntilFound") {
-                    let event_desc = NuStyle::from(&Lvl::SUBH).paint(format!("{reedline_event:?}"));
-                    let event_desc = format!("{event_desc}");
-                    event_desc.len()
-                } else {
-                    0
-                }
-            })
-            .max()
-            .unwrap_or(0);
-        // Add 2 bytes of padding
-        max_cmd_len + 2
-    })
+    lazy_static_var!(
+        usize,
+        {
+            // Determine the length of the longest command for padding
+            // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
+            let style = get_subhead_style();
+            let max_cmd_len = reedline_events
+                .iter()
+                .map(|reedline_event| {
+                    if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                        edit_cmds
+                            .iter()
+                            .map(|cmd| {
+                                let key_desc = style.paint(format!("{cmd:?}"));
+                                let key_desc = format!("{key_desc}");
+                                key_desc.len()
+                            })
+                            .max()
+                            .unwrap_or(0)
+                    } else if !format!("{reedline_event}").starts_with("UntilFound") {
+                        let event_desc = style.paint(format!("{reedline_event:?}"));
+                        let event_desc = format!("{event_desc}");
+                        event_desc.len()
+                    } else {
+                        0
+                    }
+                })
+                .max()
+                .unwrap_or(0);
+            // Add 2 bytes of padding
+            max_cmd_len + 2
+        },
+        deref
+    )
 }
 
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
+    profile_fn!(show_key_bindings);
     println!();
     cprtln!(
         &(&Lvl::EMPH).into(),
@@ -832,10 +873,11 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
     );
 
     // Print the formatted and sorted key bindings
+    let style = get_heading_style();
     for (key_desc, cmd_desc) in formatted_bindings {
-        let key_desc = NuStyle::from(&Lvl::HEAD).paint(key_desc);
+        let key_desc = style.paint(key_desc);
         let key_desc = format!("{key_desc}");
-        println!("{:<width$}    {}", key_desc, cmd_desc, width = max_key_len);
+        println!("{key_desc:<width$}    {cmd_desc}", width = max_key_len);
     }
     println!();
 }
@@ -843,6 +885,7 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
 // Helper function to convert KeyModifiers to string
 #[must_use]
 pub fn format_key_modifier(modifier: KeyModifiers) -> String {
+    profile_fn!(format_key_modifier);
     let mut modifiers = Vec::new();
     if modifier.contains(KeyModifiers::CONTROL) {
         modifiers.push("CONTROL");
@@ -864,6 +907,7 @@ pub fn format_key_modifier(modifier: KeyModifiers) -> String {
 // Helper function to convert KeyCode to string
 #[must_use]
 pub fn format_key_code(key_code: KeyCode) -> String {
+    profile_fn!(format_key_code);
     match key_code {
         KeyCode::Backspace => "Backspace".to_string(),
         KeyCode::Enter => "Enter".to_string(),
@@ -901,16 +945,15 @@ pub fn format_key_code(key_code: KeyCode) -> String {
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
-    static EVENT_DESC_MAP: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
-    let event_desc_map = EVENT_DESC_MAP.get_or_init(|| {
-        let mut map = HashMap::new();
-        for entry in EVENT_DESCS {
-            map.insert(entry[0], entry[1]);
-        }
-        map
+    profile_fn!(format_non_edit_events);
+    let event_desc_map = lazy_static_var!(HashMap<&'static str, &'static str>, {
+        EVENT_DESCS
+            .iter()
+            .map(|[k, d]| (*k, *d))
+            .collect::<HashMap<&'static str, &'static str>>()
     });
 
-    let event_highlight = NuStyle::from(&Lvl::SUBH).paint(event_name);
+    let event_highlight = get_subhead_style().paint(event_name);
     let event_highlight = format!("{event_highlight}");
     let event_desc = format!(
         "{:<max_cmd_len$} {}",
@@ -923,128 +966,137 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 /// Helper function to format `EditCommand` and include its doc comments
 /// # Panics
 /// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
-#[allow(clippy::too_many_lines)]
 #[must_use]
-pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) -> String {
-    static CMD_DESC_MAP: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
-    let cmd_desc_map: &HashMap<&str, &str> = CMD_DESC_MAP.get_or_init(|| {
-        let mut map = HashMap::new();
-        for entry in CMD_DESCS {
-            map.insert(entry[0], entry[1]);
-        }
-        map
-    });
+pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> String {
+    profile_fn!(format_edit_commands);
+    let cmd_desc_map: &HashMap<&str, &str> =
+        lazy_static_var!(HashMap<&'static str, &'static str>, {
+            CMD_DESCS
+                .iter()
+                .map(|[k, d]| (*k, *d))
+                .collect::<HashMap<&'static str, &'static str>>()
+        });
+    let cmd_descriptions = edit_cmds
+        .iter()
+        .map(|cmd| format_cmd_desc(cmd, cmd_desc_map, max_cmd_len))
+        .collect::<Vec<String>>();
 
-    let mut cmd_descriptions = Vec::new();
-
-    for cmd in edit_cmds {
-        let cmd_highlight = NuStyle::from(&Lvl::SUBH).paint(format!("{cmd:?}"));
-        let cmd_highlight = format!("{cmd_highlight}");
-        let cmd_desc = match cmd {
-            EditCommand::MoveToStart { select }
-            | EditCommand::MoveToLineStart { select }
-            | EditCommand::MoveToEnd { select }
-            | EditCommand::MoveToLineEnd { select }
-            | EditCommand::MoveLeft { select }
-            | EditCommand::MoveRight { select }
-            | EditCommand::MoveWordLeft { select }
-            | EditCommand::MoveBigWordLeft { select }
-            | EditCommand::MoveWordRight { select }
-            | EditCommand::MoveWordRightStart { select }
-            | EditCommand::MoveBigWordRightStart { select }
-            | EditCommand::MoveWordRightEnd { select }
-            | EditCommand::MoveBigWordRightEnd { select } => format!(
-                "{:<max_cmd_len$} {}{}",
-                cmd_highlight,
-                cmd_desc_map
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&""),
-                if *select {
-                    ". Select the text between the current cursor position and destination"
-                } else {
-                    ", without selecting"
-                }
-            ),
-            EditCommand::InsertString(_)
-            | EditCommand::InsertNewline
-            | EditCommand::ReplaceChar(_)
-            | EditCommand::ReplaceChars(_, _)
-            | EditCommand::Backspace
-            | EditCommand::Delete
-            | EditCommand::CutChar
-            | EditCommand::BackspaceWord
-            | EditCommand::DeleteWord
-            | EditCommand::Clear
-            | EditCommand::ClearToLineEnd
-            | EditCommand::Complete
-            | EditCommand::CutCurrentLine
-            | EditCommand::CutFromStart
-            | EditCommand::CutFromLineStart
-            | EditCommand::CutToEnd
-            | EditCommand::CutToLineEnd
-            | EditCommand::CutWordLeft
-            | EditCommand::CutBigWordLeft
-            | EditCommand::CutWordRight
-            | EditCommand::CutBigWordRight
-            | EditCommand::CutWordRightToNext
-            | EditCommand::CutBigWordRightToNext
-            | EditCommand::PasteCutBufferBefore
-            | EditCommand::PasteCutBufferAfter
-            | EditCommand::UppercaseWord
-            | EditCommand::InsertChar(_)
-            | EditCommand::CapitalizeChar
-            | EditCommand::SwitchcaseChar
-            | EditCommand::SwapWords
-            | EditCommand::SwapGraphemes
-            | EditCommand::Undo
-            | EditCommand::Redo
-            | EditCommand::CutRightUntil(_)
-            | EditCommand::CutRightBefore(_)
-            | EditCommand::CutLeftUntil(_)
-            | EditCommand::CutLeftBefore(_)
-            | EditCommand::CutSelection
-            | EditCommand::CopySelection
-            | EditCommand::Paste
-            | EditCommand::SelectAll
-            | EditCommand::LowercaseWord => format!(
-                "{:<max_cmd_len$} {}",
-                cmd_highlight,
-                cmd_desc_map.get(format!("{cmd:?}").as_str()).unwrap_or(&"")
-            ),
-            EditCommand::MoveRightUntil { c: _, select }
-            | EditCommand::MoveRightBefore { c: _, select }
-            | EditCommand::MoveLeftUntil { c: _, select }
-            | EditCommand::MoveLeftBefore { c: _, select } => format!(
-                "{:<max_cmd_len$} {}. {}",
-                cmd_highlight,
-                cmd_desc_map
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&""),
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            EditCommand::MoveToPosition { position, select } => format!(
-                "{:<max_cmd_len$} {} {} {}",
-                cmd_highlight,
-                cmd_desc_map
-                    .get(format!("{cmd:?}").split_once(' ').unwrap().0)
-                    .unwrap_or(&""),
-                position,
-                if *select {
-                    "Select the text between the current cursor position and destination"
-                } else {
-                    "without selecting"
-                }
-            ),
-            // Add other EditCommand variants and their descriptions here
-            _ => format!("{:<width$}", cmd_highlight, width = max_cmd_len + 2),
-        };
-        cmd_descriptions.push(cmd_desc);
-    }
     cmd_descriptions.join(", ")
+}
+
+#[allow(clippy::too_many_lines)]
+fn format_cmd_desc(
+    cmd: &EditCommand,
+    cmd_desc_map: &HashMap<&str, &str>,
+    max_cmd_len: usize,
+) -> String {
+    profile_fn!(format_cmd_desc);
+    let style = get_subhead_style();
+
+    let cmd_highlight = style.paint(format!("{cmd:?}"));
+    let cmd_highlight = format!("{cmd_highlight}");
+    match cmd {
+        EditCommand::MoveToStart { select }
+        | EditCommand::MoveToLineStart { select }
+        | EditCommand::MoveToEnd { select }
+        | EditCommand::MoveToLineEnd { select }
+        | EditCommand::MoveLeft { select }
+        | EditCommand::MoveRight { select }
+        | EditCommand::MoveWordLeft { select }
+        | EditCommand::MoveBigWordLeft { select }
+        | EditCommand::MoveWordRight { select }
+        | EditCommand::MoveWordRightStart { select }
+        | EditCommand::MoveBigWordRightStart { select }
+        | EditCommand::MoveWordRightEnd { select }
+        | EditCommand::MoveBigWordRightEnd { select } => format!(
+            "{:<max_cmd_len$} {}{}",
+            cmd_highlight,
+            cmd_desc_map
+                .get(format!("{cmd:?}").split_once(' ').unwrap().0)
+                .unwrap_or(&""),
+            if *select {
+                ". Select the text between the current cursor position and destination"
+            } else {
+                ", without selecting"
+            }
+        ),
+        EditCommand::InsertString(_)
+        | EditCommand::InsertNewline
+        | EditCommand::ReplaceChar(_)
+        | EditCommand::ReplaceChars(_, _)
+        | EditCommand::Backspace
+        | EditCommand::Delete
+        | EditCommand::CutChar
+        | EditCommand::BackspaceWord
+        | EditCommand::DeleteWord
+        | EditCommand::Clear
+        | EditCommand::ClearToLineEnd
+        | EditCommand::Complete
+        | EditCommand::CutCurrentLine
+        | EditCommand::CutFromStart
+        | EditCommand::CutFromLineStart
+        | EditCommand::CutToEnd
+        | EditCommand::CutToLineEnd
+        | EditCommand::CutWordLeft
+        | EditCommand::CutBigWordLeft
+        | EditCommand::CutWordRight
+        | EditCommand::CutBigWordRight
+        | EditCommand::CutWordRightToNext
+        | EditCommand::CutBigWordRightToNext
+        | EditCommand::PasteCutBufferBefore
+        | EditCommand::PasteCutBufferAfter
+        | EditCommand::UppercaseWord
+        | EditCommand::InsertChar(_)
+        | EditCommand::CapitalizeChar
+        | EditCommand::SwitchcaseChar
+        | EditCommand::SwapWords
+        | EditCommand::SwapGraphemes
+        | EditCommand::Undo
+        | EditCommand::Redo
+        | EditCommand::CutRightUntil(_)
+        | EditCommand::CutRightBefore(_)
+        | EditCommand::CutLeftUntil(_)
+        | EditCommand::CutLeftBefore(_)
+        | EditCommand::CutSelection
+        | EditCommand::CopySelection
+        | EditCommand::Paste
+        | EditCommand::SelectAll
+        | EditCommand::LowercaseWord => format!(
+            "{:<max_cmd_len$} {}",
+            cmd_highlight,
+            cmd_desc_map.get(format!("{cmd:?}").as_str()).unwrap_or(&"")
+        ),
+        EditCommand::MoveRightUntil { c: _, select }
+        | EditCommand::MoveRightBefore { c: _, select }
+        | EditCommand::MoveLeftUntil { c: _, select }
+        | EditCommand::MoveLeftBefore { c: _, select } => format!(
+            "{:<max_cmd_len$} {}. {}",
+            cmd_highlight,
+            cmd_desc_map
+                .get(format!("{cmd:?}").split_once(' ').unwrap().0)
+                .unwrap_or(&""),
+            if *select {
+                "Select the text between the current cursor position and destination"
+            } else {
+                "without selecting"
+            }
+        ),
+        EditCommand::MoveToPosition { position, select } => format!(
+            "{:<max_cmd_len$} {} {} {}",
+            cmd_highlight,
+            cmd_desc_map
+                .get(format!("{cmd:?}").split_once(' ').unwrap().0)
+                .unwrap_or(&""),
+            position,
+            if *select {
+                "Select the text between the current cursor position and destination"
+            } else {
+                "without selecting"
+            }
+        ),
+        // Add other EditCommand variants and their descriptions here
+        _ => format!("{:<width$}", cmd_highlight, width = max_cmd_len + 2),
+    }
 }
 
 /// Delete the temporary files used by the current REPL instance.
@@ -1052,6 +1104,7 @@ pub fn format_edit_commands(edit_cmds: &Vec<EditCommand>, max_cmd_len: usize) ->
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
 pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
+    profile_fn!(delete);
     // let build_state = &context.build_state;
     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
     if clean_up.is_ok()
@@ -1107,6 +1160,7 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
 
 /// Display the REPL banner.
 pub fn disp_repl_banner(cmd_list: &str) {
+    profile_fn!(disp_repl_banner);
     cvprtln!(
         Lvl::HEAD,
         get_verbosity(),
@@ -1136,6 +1190,7 @@ pub fn disp_repl_banner(cmd_list: &str) {
 /// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
 pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
+    profile_fn!(list);
     let source_path = &build_state.source_path;
     if source_path.exists() {
         vlog!(V::QQ, "File: {source_path:?}");

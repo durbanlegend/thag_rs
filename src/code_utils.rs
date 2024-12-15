@@ -3,27 +3,33 @@
     clippy::implicit_return,
     clippy::missing_trait_methods
 )]
+#[cfg(debug_assertions)]
+use crate::debug_timings;
+#[cfg(target_os = "windows")]
+use crate::escape_path_for_windows;
 use crate::{
-    cvprtln, debug_log, debug_timings, vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult,
-    DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
+    cvprtln, debug_log,
+    shared::{find_crates, find_metadata},
+    vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult, BUILT_IN_CRATES, DYNAMIC_SUBDIR,
+    TEMP_SCRIPT_NAME, TMPDIR, V,
 };
-
 use cargo_toml::{Edition, Manifest};
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_method, profile_section};
 use regex::Regex;
 use std::{
     any::Any,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs::{self, remove_dir_all, remove_file, OpenOptions},
     hash::BuildHasher,
     io::{self, BufRead, Write},
+    ops::Deref,
     option::Option,
     path::{Path, PathBuf},
-    process::{self, Output},
+    process::{self, Command, Output},
     time::{Instant, SystemTime},
 };
-
 use syn::{
+    parse_file,
     visit::Visit,
     visit_mut::{self, VisitMut},
     AttrStyle,
@@ -31,9 +37,8 @@ use syn::{
         AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, DivAssign, MulAssign, RemAssign,
         ShlAssign, ShrAssign, SubAssign,
     },
-    Expr, ExprBlock, File, Item, ItemExternCrate, ItemMod, ReturnType, Stmt,
+    Expr, ExprBlock, File, Item, ReturnType, Stmt,
     Type::Tuple,
-    UseRename, UseTree,
 };
 
 // From burntsushi at `https://github.com/rust-lang/regex/issues/709`
@@ -54,7 +59,7 @@ struct RemoveInnerAttributes {
 
 impl VisitMut for RemoveInnerAttributes {
     fn visit_expr_block_mut(&mut self, expr_block: &mut ExprBlock) {
-        profile_fn!(visit_expr_block_mut);
+        profile_method!(visit_expr_block_mut);
         // Count inner attributes
         self.found = expr_block
             .attrs
@@ -93,36 +98,33 @@ pub fn read_file_contents(path: &Path) -> ThagResult<String> {
     Ok(fs::read_to_string(path)?)
 }
 
-/// Infer dependencies from the abstract syntax tree to put in a Cargo.toml.
+/// Infer dependencies from AST-derived metadata to put in a Cargo.toml.
 #[must_use]
-pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
+pub fn infer_deps_from_ast(
+    crates_finder: &crate::shared::CratesFinder,
+    metadata_finder: &crate::shared::MetadataFinder,
+) -> Vec<String> {
     profile_fn!(infer_deps_from_ast);
-    let use_crates = find_use_crates_ast(syntax_tree);
-    let extern_crates = find_extern_crates_ast(syntax_tree);
-    let use_renames = find_use_renames_ast(syntax_tree);
-    let modules = find_modules_ast(syntax_tree);
+    let mut dependencies = vec![];
+    dependencies.extend_from_slice(&crates_finder.crates);
+    let to_remove: HashSet<String> = crates_finder
+        .names_to_exclude
+        .iter()
+        .cloned()
+        .chain(metadata_finder.names_to_exclude.iter().cloned())
+        .chain(metadata_finder.mods_to_exclude.iter().cloned())
+        .chain(BUILT_IN_CRATES.iter().map(Deref::deref).map(String::from))
+        .collect();
+    // eprintln!("to_remove={to_remove:#?}");
 
-    let mut dependencies = Vec::new();
-    let built_in_crates = ["std", "core", "alloc", "collections", "fmt", "crate"];
+    dependencies.retain(|e| !to_remove.contains(e));
+    // eprintln!("dependencies (after)={dependencies:#?}");
 
-    for crate_name in use_crates {
-        filter_deps_ast(
-            &crate_name,
-            &built_in_crates,
-            &use_renames,
-            &modules,
-            &mut dependencies,
-        );
-    }
-
-    for crate_name in extern_crates {
-        filter_deps_ast(
-            &crate_name,
-            &built_in_crates,
-            &use_renames,
-            &modules,
-            &mut dependencies,
-        );
+    // Similar check for other regex pattern
+    for crate_name in &metadata_finder.extern_crates {
+        if !&to_remove.contains(crate_name) {
+            dependencies.push(crate_name.to_owned());
+        }
     }
 
     // Deduplicate the list of dependencies
@@ -130,140 +132,6 @@ pub fn infer_deps_from_ast(syntax_tree: &Ast) -> Vec<String> {
     dependencies.dedup();
 
     dependencies
-}
-
-/// Filter out crates that don't need to be added as dependencies: abstract syntax tree-based version.
-fn filter_deps_ast(
-    crate_name: &str,
-    built_in_crates: &[&str; 6],
-    use_renames: &[String],
-    modules: &[String],
-    dependencies: &mut Vec<String>,
-) {
-    profile_fn!(filter_deps_ast);
-    let crate_name_string = crate_name.to_string();
-    // Filter out "crate" entries
-    if !built_in_crates.contains(&crate_name)
-        && !use_renames.contains(&crate_name_string)
-        && !modules.contains(&crate_name_string)
-    {
-        dependencies.push(crate_name_string);
-    }
-}
-
-/// Identify use ... as statements for exclusion from Cargo.toml metadata: abstract syntax tree-based version.
-fn find_use_renames_ast(syntax_tree: &Ast) -> Vec<String> {
-    #[derive(Default)]
-    struct FindCrates {
-        use_renames: Vec<String>,
-    }
-    impl<'a> Visit<'a> for FindCrates {
-        fn visit_use_rename(&mut self, node: &'a UseRename) {
-            profile_fn!(visit_use_rename);
-            self.use_renames.push(node.rename.to_string());
-        }
-    }
-
-    profile_fn!(find_use_renames_ast);
-    let mut finder = FindCrates::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    debug_log!("use_renames from ast={:#?}", finder.use_renames);
-    finder.use_renames
-}
-
-/// Identify modules for filtering use statements from Cargo.toml metadata: abstract syntax tree-based version.
-fn find_modules_ast(syntax_tree: &Ast) -> Vec<String> {
-    #[derive(Default)]
-    struct FindMods {
-        modules: Vec<String>,
-    }
-    impl<'a> Visit<'a> for FindMods {
-        fn visit_item_mod(&mut self, node: &'a ItemMod) {
-            profile_fn!(visit_item_mod);
-            self.modules.push(node.ident.to_string());
-        }
-    }
-
-    profile_fn!(find_modules_ast);
-    let mut finder = FindMods::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    debug_log!("modules from ast={:#?}", finder.modules);
-    finder.modules
-}
-
-/// Identify use crate statements for inclusion in Cargo.toml metadata: abstract syntax tree-based version.
-fn find_use_crates_ast(syntax_tree: &Ast) -> Vec<String> {
-    #[derive(Default)]
-    struct FindCrates {
-        use_crates: Vec<String>,
-    }
-    impl<'a> Visit<'a> for FindCrates {
-        fn visit_use_tree(&mut self, node: &'a syn::UseTree) {
-            profile_fn!(visit_use_tree);
-            let maybe_node_name = match node {
-                UseTree::Path(use_path) => Some(use_path.ident.to_string()),
-                UseTree::Name(use_name) => Some(use_name.ident.to_string()),
-                _ => None,
-            };
-            // See for instance Constraint and Keyword in demo/tui_scrollview.rs.
-            if let Some(node_name) = maybe_node_name {
-                if let Some(c) = node_name.chars().nth(0) {
-                    if c.is_uppercase() {
-                        debug_log!("Assuming capitalised use name {} is not a crate", node_name);
-                        return;
-                    }
-                }
-                self.use_crates.push(node_name);
-            }
-        }
-    }
-
-    profile_fn!(find_use_crates_ast);
-    let mut finder = FindCrates::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    debug_log!("use_crates from ast={:#?}", finder.use_crates);
-    finder.use_crates
-}
-
-/// Identify extern crate stxatements for inclusion in Cargo.toml metadata: abstract syntax tree-based version.
-fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
-    #[derive(Default)]
-    struct FindCrates {
-        extern_crates: Vec<String>,
-    }
-
-    impl<'a> Visit<'a> for FindCrates {
-        fn visit_item_extern_crate(&mut self, node: &'a ItemExternCrate) {
-            profile_fn!(visit_item_extern_crate);
-            self.extern_crates.push(node.ident.to_string());
-        }
-    }
-
-    profile_fn!(find_extern_crates_ast);
-    let mut finder = FindCrates::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    debug_log!("extern_crates from ast={:#?}", finder.extern_crates);
-    finder.extern_crates
 }
 
 /// Infer dependencies from source code to put in a Cargo.toml.
@@ -271,124 +139,116 @@ fn find_extern_crates_ast(syntax_tree: &Ast) -> Vec<String> {
 #[must_use]
 pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     profile_fn!(infer_deps_from_source);
-    let use_regex: &Regex = regex!(r"(?m)^[\s]*use\s+([^;{]+)");
+
+    if code.trim().is_empty() {
+        return vec![];
+    }
+
+    let maybe_ast = extract_and_wrap_uses(code);
+    let mut dependencies = maybe_ast.map_or_else(
+        |_| {
+            cvprtln!(
+                Lvl::ERR,
+                V::QQ,
+                "Could not parse code into an abstract syntax tree"
+            );
+            vec![]
+        },
+        |ast| {
+            let crates_finder = find_crates(&ast);
+            let metadata_finder = find_metadata(&ast);
+            infer_deps_from_ast(&crates_finder, &metadata_finder)
+        },
+    );
+
     let macro_use_regex: &Regex = regex!(r"(?m)^[\s]*#\[macro_use\((\w+)\)");
     let extern_crate_regex: &Regex = regex!(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)");
 
-    debug_log!("In code_utils::infer_deps_from_source");
-    let use_renames = find_use_renames_source(code);
     let modules = find_modules_source(code);
 
-    let mut dependencies = Vec::new();
-
-    let built_in_crates = [
-        "std",
-        "core",
-        "alloc",
-        "collections",
-        "fmt",
-        "crate",
-        "super",
-    ];
-
-    for cap in use_regex.captures_iter(code) {
-        let crate_name = cap[1].to_string();
-
-        debug_log!("dependency={crate_name}");
-        filter_deps_source(
-            &crate_name,
-            &built_in_crates,
-            &use_renames,
-            &modules,
-            &mut dependencies,
-        );
-    }
-
-    // Similar checks for other regex patterns
+    dependencies.retain(|e| !modules.contains(e));
+    // eprintln!("dependencies (after)={dependencies:#?}");
 
     for cap in macro_use_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
-        filter_deps_source(
-            &crate_name,
-            &built_in_crates,
-            &use_renames,
-            &modules,
-            &mut dependencies,
-        );
+        // eprintln!("macro-use crate_name={crate_name:#?}");
+        if !modules.contains(&crate_name) {
+            dependencies.push(crate_name);
+        }
     }
 
     for cap in extern_crate_regex.captures_iter(code) {
         let crate_name = cap[1].to_string();
-        filter_deps_source(
-            &crate_name,
-            &built_in_crates,
-            &use_renames,
-            &modules,
-            &mut dependencies,
-        );
+        // eprintln!("extern-crate crate_name={crate_name:#?}");
+        if !modules.contains(&crate_name) {
+            dependencies.push(crate_name);
+        }
     }
-    // Deduplicate the list of dependencies
     dependencies.sort();
-    dependencies.dedup();
-
-    debug_log!("dependencies from source={dependencies:#?}");
     dependencies
 }
 
-/// Filter out crates that don't need to be added as dependencies: fallback version using regex on source code.
-fn filter_deps_source(
-    crate_name: &str,
-    built_in_crates: &[&str; 7],
-    use_renames: &[String],
-    modules: &[String],
-    dependencies: &mut Vec<String>,
-) {
-    profile_fn!(filter_deps_source);
+// Function to extract use statements and wrap in braces for parsing
+fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
+    profile_fn!(extract_and_wrap_uses);
+    // Step 1: Capture `use` statements
+    let use_simple_regex: &Regex = regex!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
+    let use_nested_regex: &Regex = regex!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
 
-    debug_log!("crate_name={crate_name}");
-    let dep = if crate_name.contains(':') {
-        crate_name.split_once(':').unwrap().0
-    } else {
-        crate_name
-    };
+    let mut use_statements: Vec<String> = vec![];
 
-    let dep_string = dep.to_owned();
-
-    debug_log!("dep_string={dep_string}, built_in_crates={built_in_crates:#?}, use_renames={use_renames:#?}, modules={modules:#?}");
-    if !built_in_crates.contains(&dep)
-        && !use_renames.contains(&dep_string)
-        && !modules.contains(&dep_string)
-    {
-        dependencies.push(dep_string);
+    for cap in use_simple_regex.captures_iter(source) {
+        let use_string = cap[1].to_string();
+        use_statements.push(use_string);
     }
+    for cap in use_nested_regex.captures_iter(source) {
+        let use_string = cap[1].to_string();
+        use_statements.push(use_string);
+    }
+
+    // Step 2: Parse as `syn::File`
+    let ast: File = parse_file(&use_statements.join("\n"))?;
+    // eprintln!("ast={ast:#?}");
+
+    // Return wrapped in `Ast::File`
+    Ok(Ast::File(ast))
 }
 
-/// Identify use ... as statements for exclusion from Cargo.toml metadata.
+/// Identify use ... as statements for inclusion in / exclusion from Cargo.toml metadata.
+///
+/// Include the "from" name and exclude the "to" name.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
-pub fn find_use_renames_source(code: &str) -> Vec<String> {
+pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {
     profile_fn!(find_use_renames_source);
 
     debug_log!("In code_utils::find_use_renames_source");
-    let use_as_regex: &Regex = regex!(r"(?m)^\s*use\s+.+as\s+(\w+)");
+    let use_as_regex: &Regex = regex!(r"(?m)^\s*use\s+(\w+).*? as\s+(\w+)");
 
-    let mut use_renames: Vec<String> = vec![];
+    let mut use_renames_from: Vec<String> = vec![];
+    let mut use_renames_to: Vec<String> = vec![];
 
     for cap in use_as_regex.captures_iter(code) {
-        let use_rename = cap[1].to_string();
+        let from_name = cap[1].to_string();
+        let to_name = cap[2].to_string();
 
-        debug_log!("use_rename={use_rename}");
-        use_renames.push(use_rename);
+        debug_log!("use_rename: from={from_name}, to={to_name}");
+        use_renames_from.push(from_name);
+        use_renames_to.push(to_name);
     }
 
-    debug_log!("use_renames from source={use_renames:#?}");
-    use_renames
+    use_renames_from.sort();
+    use_renames_from.dedup();
+
+    debug_log!("use_renames from source: from={use_renames_from:#?}, to={use_renames_to:#?}");
+    (use_renames_from, use_renames_to)
 }
 
 /// Identify mod statements for exclusion from Cargo.toml metadata.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn find_modules_source(code: &str) -> Vec<String> {
+    profile_fn!(find_modules_source);
     let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
 
     debug_log!("In code_utils::find_use_renames_source");
@@ -413,8 +273,10 @@ pub fn extract_manifest(
     rs_full_source: &str,
     #[allow(unused_variables)] start_parsing_rs: Instant,
 ) -> ThagResult<Manifest> {
+    profile_fn!(extract_manifest);
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
+    profile_section!(parse_and_set_edition);
     let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
         // debug_log!("rs_toml_str={rs_toml_str}");
         Manifest::from_str(&rs_toml_str)?
@@ -422,35 +284,42 @@ pub fn extract_manifest(
         Manifest::from_str("")?
     };
 
-    if let Some(package) = rs_manifest.package.as_mut() {
-        package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
+    {
+        profile_section!(set_edition);
+        if let Some(package) = rs_manifest.package.as_mut() {
+            package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
+        }
     }
 
     // debug_log!("rs_manifest={rs_manifest:#?}");
 
+    #[cfg(debug_assertions)]
     debug_timings(&start_parsing_rs, "extract_manifest parsed source");
     Ok(rs_manifest)
 }
 
 fn extract_toml_block(input: &str) -> Option<String> {
+    profile_fn!(extract_toml_block);
     let re: &Regex = regex!(r"(?s)/\*\[toml\](.*?)\*/");
     re.captures(input)
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
 }
 
 /// Parse a Rust expression source string into a syntax tree.
+///
 /// Although this is primarily intended for incomplete snippets and expressions, if it finds a fully-fledged program that
 /// could equally be parsed with `syn::parse_file`, it should succeed anyway by wrapping it in braces. However that is the
 /// snippet path and is not encouraged as it is likely to process and wrap the code unnecessarily.
 /// # Errors
 /// Will return `Err` if there is any error encountered by the `syn` crate trying to parse the source string into an AST.
 pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
+    profile_fn!(extract_ast_expr);
     let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
     if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
         // Try putting the expression in braces.
         let string = format!(r"{{{rs_source}}}");
         let str = string.as_str();
-        // log!(V::N, "str={str}");
+        // vlog!(V::N, "str={str}");
 
         expr = syn::parse_str::<Expr>(str);
     }
@@ -461,6 +330,7 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
 /// # Errors
 /// Will return `Err` if there is any error caused by invalid characters in the path name.
 pub fn path_to_str(path: &Path) -> ThagResult<String> {
+    profile_fn!(path_to_str);
     let string = path
         .to_path_buf()
         .into_os_string()
@@ -475,6 +345,7 @@ pub fn path_to_str(path: &Path) -> ThagResult<String> {
 #[inline]
 pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
+    profile_fn!(reassemble);
     map.fold(String::new(), |mut output, b| {
         let _ = writeln!(output, "{b}");
         output
@@ -485,6 +356,7 @@ pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
 #[inline]
 #[must_use]
 pub fn disentangle(text_wall: &str) -> String {
+    profile_fn!(disentangle);
     reassemble(text_wall.lines())
 }
 
@@ -493,6 +365,7 @@ pub fn disentangle(text_wall: &str) -> String {
 /// # Errors
 /// Will return `Err` if the stdout or stderr is not found captured as expected.
 pub fn display_output(output: &Output) -> ThagResult<()> {
+    profile_fn!(display_output);
     // Read the captured output from the pipe
     // let stdout = output.stdout;
 
@@ -565,65 +438,43 @@ pub fn modified_since_compiled(
     Ok(most_recent)
 }
 
-/// Count the number of `main()` methods in an abstract syntax tree.
-#[must_use]
-pub fn count_main_methods(syntax_tree: &Ast) -> usize {
-    #[derive(Default)]
-    struct FindMainFns {
-        main_method_count: usize,
-    }
-
-    impl<'a> Visit<'a> for FindMainFns {
-        fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
-            profile_fn!(visit_item_fn);
-            if node.sig.ident == "main" && node.sig.inputs.is_empty() {
-                self.main_method_count += 1;
-            }
-        }
-    }
-
-    profile_fn!(count_main_methods);
-    let mut finder = FindMainFns::default();
-
-    match syntax_tree {
-        Ast::File(ast) => finder.visit_file(ast),
-        Ast::Expr(ast) => finder.visit_expr(ast),
-    }
-
-    debug_log!(
-        "In count_main_methods: finder.main_method_count={}",
-        finder.main_method_count
-    );
-
-    finder.main_method_count
-}
-
 /// Parse the code into an abstract syntax tree for inspection
 /// if possible (should work if the code will compile)
 #[must_use]
 pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     profile_fn!(to_ast);
 
+    #[cfg(debug_assertions)]
     let start_ast = Instant::now();
     #[allow(clippy::option_if_let_else)]
-    if let Ok(tree) = syn::parse_file(source_code) {
+    if let Ok(tree) = {
+        profile_section!(to_ast_syn_parse_file);
+        syn::parse_file(source_code)
+    } {
         #[cfg(debug_assertions)]
         cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::File");
 
+        #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))
-    } else if let Ok(tree) = extract_ast_expr(source_code) {
+    } else if let Ok(tree) = {
+        profile_section!(to_ast_syn_parse_expr);
+        extract_ast_expr(source_code)
+    } {
         #[cfg(debug_assertions)]
         cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::Expr");
+        #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
         cvprtln!(
             &Lvl::WARN,
             V::QQ,
-            "Error parsing syntax tree for `{sourch_path_string}`. Using regex to help you debug the script."
+            "Error parsing syntax tree for `{sourch_path_string}`. Using `rustfmt` to help you debug the script."
         );
+        rustfmt(sourch_path_string);
 
+        #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed unsuccessful AST parse");
         None
     }
@@ -636,7 +487,6 @@ type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
 #[must_use]
 pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
-
     let inner_attrib_regex: &Regex = regex!(r"(?m)^[\s]*#!\[.+\]");
 
     profile_fn!(extract_inner_attribs);
@@ -686,6 +536,7 @@ use std::io;
 use std::io::prelude::*;
 
 #[doc = "Wrapped snippet in main method to make it a program."]
+#[allow(clippy::unnecessary_wraps)]
 fn main() -> Result<(), Box<dyn Error>> {{
 {body}
 Ok(())
@@ -724,6 +575,7 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> ThagResult<fs::Fil
 /// # Errors
 /// Will return Err if it can't create the `rs_dyn` directory.
 pub fn create_temp_source_file() -> ThagResult<PathBuf> {
+    profile_fn!(create_temp_source_file);
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
@@ -866,6 +718,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 
     impl<'ast> Visit<'ast> for FindFns {
         fn visit_item_fn(&mut self, i: &'ast syn::ItemFn) {
+            profile_method!(extract_functions_visit_item_fn);
             // if is_debug_logging_enabled() {
             //     debug_log!("Node={:#?}", node);
             //     debug_log!("Ident={}", node.sig.ident);
@@ -875,6 +728,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
                 .insert(i.sig.ident.to_string(), i.sig.output.clone());
         }
     }
+    profile_fn!(extract_functions);
 
     let mut finder = FindFns::default();
     finder.visit_expr(expr);
@@ -889,6 +743,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 pub fn is_unit_return_type(expr: &Expr) -> bool {
     profile_fn!(is_unit_return_type);
 
+    #[cfg(debug_assertions)]
     let start = Instant::now();
 
     let function_map = extract_functions(expr);
@@ -896,16 +751,18 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
     // debug_log!("function_map={function_map:#?}");
     let is_unit_type = is_last_stmt_unit_type(expr, &function_map);
 
+    #[cfg(debug_assertions)]
     debug_timings(&start, "Determined probable snippet return type");
     is_unit_type
 }
 
-/// Recursively alternate with function `is_stmt_unit_type` until we drill down through
-/// all the blocks, loops and if-conditions to find the last executable statement and
-/// determine if it returns a unit type or a value worth printing.
-///
-/// This function finds the last statement in a given expression and determines if it
+/// Finds the last statement in a given expression and determines if it
 /// returns a unit type.
+///
+/// This function recursively alternates with function `is_stmt_unit_type` to drill down
+/// through all the blocks, loops and if-conditions to find the last executable statement
+/// so as to determine if it returns a unit type or a value worth printing.
+///
 /// # Panics
 /// Will panic if an unexpected expression type is found in the elso branch of an if-statement.
 #[allow(clippy::too_many_lines)]
@@ -917,7 +774,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
 ) -> bool {
     profile_fn!(is_last_stmt_unit_type);
 
-    debug_log!("%%%%%%%% expr={expr:#?}");
+    // debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
         Expr::ForLoop(for_loop) => {
             // debug_log!("%%%%%%%% Expr::ForLoop(for_loop))");
@@ -1060,7 +917,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             false
         }
         Expr::Return(ref expr_return) => {
-            debug_log!("%%%%%%%% expr_return={expr_return:#?}");
+            // debug_log!("%%%%%%%% expr_return={expr_return:#?}");
             expr_return.expr.is_none()
         }
         _ => {
@@ -1105,8 +962,10 @@ pub fn is_path_unit_type<S: BuildHasher>(
     None
 }
 
-/// Recursively alternate with function `is_last_stmt_unit` until we drill down through
-/// all the blocks, loops and if-conditions to find the last executable statement and
+/// Determine whether the return type of a given statement is unit (the empty tuple `()`).
+///
+/// Recursively alternates with function `is_last_stmt_unit` to drill down through all
+/// the blocks, loops and if-conditions to identify the last executable statement so as to
 /// determine if it returns a unit type or a value worth printing.
 pub fn is_stmt_unit_type<S: BuildHasher>(
     stmt: &Stmt,
@@ -1181,4 +1040,59 @@ pub fn is_main_fn_returning_unit(file: &File) -> ThagResult<bool> {
     }
 
     Err("No main function found".into())
+}
+
+#[must_use]
+pub fn get_source_path(build_state: &BuildState) -> String {
+    profile_fn!(get_source_path);
+    let binding: &PathBuf = if build_state.build_from_orig_source {
+        &build_state.source_path
+    } else {
+        &build_state.target_dir_path.join(&build_state.source_name)
+    };
+
+    #[cfg(target_os = "windows")]
+    let src_path = escape_path_for_windows(binding.to_string_lossy().as_ref());
+
+    #[cfg(not(target_os = "windows"))]
+    let src_path = binding.to_string_lossy().into_owned();
+    src_path
+}
+
+/// Format a Rust source file in situ using rustfmt. For user diagnostic assistance only.
+/// # Panics
+/// Will panic if the `rustfmt` failed.
+fn rustfmt(source_path_str: &str) {
+    profile_fn!(rustfmt);
+    if Command::new("rustfmt").arg("--version").output().is_ok() {
+        // Run rustfmt on the source file
+        let mut command = Command::new("rustfmt");
+        command.arg("--edition");
+        command.arg("2021");
+        command.arg(source_path_str);
+        command
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit());
+        let output = command.output().expect("Failed to run rustfmt");
+
+        if output.status.success() {
+            debug_log!("Successfully formatted {} with rustfmt.", source_path_str);
+            debug_log!(
+                "{}\n{}",
+                source_path_str,
+                String::from_utf8_lossy(&output.stdout)
+            );
+        } else {
+            debug_log!(
+                "Failed to format {} with rustfmt\n{}",
+                source_path_str,
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+    } else {
+        vlog!(
+            V::QQ,
+            "`rustfmt` not found. Please install it to use this script."
+        );
+    }
 }

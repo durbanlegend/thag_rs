@@ -1,10 +1,13 @@
 /*[toml]
 [dependencies]
-lazy_static = "1.4.0"
+convert_case = "0.6.0"
 log = "0.4.22"
 regex = "1.10.5"
-# thag_rs = "0.1.5"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "d72662f489acefd84d1637ae792e54ce6641ed86" }
+strum = { version = "0.26.3", features = ["derive"] }
+# thag_proc_macros = { version = "0.1.0", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+# thag_rs = "0.1.7"
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
 */
 
@@ -13,14 +16,18 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "d72662f489ac
 ///
 /// Strategy and grunt work thanks to ChatGPT.
 //# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
-use lazy_static::lazy_static;
-use regex::Regex;
-use std::collections::HashMap;
-use std::fs::{self, read_dir, File};
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use thag_rs::code_utils;
-use thag_rs::debug_log;
+//# Categories: technique, tools
+use convert_case::{Case, Casing};
+use std::{
+    collections::HashMap,
+    fs::{self, read_dir, File},
+    io::Write as OtherWrite,
+    path::{Path, PathBuf},
+};
+use thag_rs::{code_utils, lazy_static_var, regex, shared};
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
+use thag_demo_proc_macros::category_enum;
 
 #[derive(Debug)]
 struct ScriptMetadata {
@@ -29,15 +36,29 @@ struct ScriptMetadata {
     crates: Vec<String>,
     script_type: Option<String>,
     description: Option<String>,
+    categories: Vec<String>,
+    sample_args: Option<String>,
 }
 
+// Generates all_categories()
+category_enum! {}
+
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
+    // Lazy static variable from the categories defined in macro category_enum!.
+    let valid_categories = lazy_static_var!(Vec<String>, {
+        let valid_categories = all_categories();
+        // eprintln!("valid_categories={valid_categories:?}");
+        valid_categories
+    });
     let mut content = fs::read_to_string(file_path).ok()?;
 
-    content = if content.starts_with("#!") {
+    content = if content.starts_with("#!") && !(content.starts_with("#![")) {
         let split_once = content.split_once('\n');
-        let (shebang, rust_code) = split_once.expect("Failed to strip shebang");
-        debug_log!("Successfully stripped shebang {shebang}");
+        let (_shebang, rust_code) = split_once.expect("Failed to strip shebang");
+        // eprintln!(
+        //     "Successfully stripped shebang {shebang} from {}",
+        //     file_path.display()
+        // );
         rust_code.to_string()
     } else {
         content
@@ -47,15 +68,50 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     let mut lines = Vec::<String>::new();
     let mut doc = false;
     let mut purpose = false;
+    let mut categories = vec!["missing".to_string()]; // Default to "general"
+    let mut sample_args: Option<String> = None;
 
     for line in content.clone().lines() {
         if line.starts_with("//#") {
             let parts: Vec<&str> = line[3..].splitn(2, ':').collect();
             if parts.len() == 2 {
                 let keyword = parts[0].trim();
-                metadata.insert(keyword.to_lowercase(), parts[1].trim().to_string());
-                if !purpose && keyword == "Purpose" {
-                    purpose = true;
+                let value = parts[1].trim().to_string();
+                match keyword.to_lowercase().as_str() {
+                    "purpose" => {
+                        metadata.insert("purpose".to_string(), value);
+                        purpose = true;
+                    }
+                    "categories" => {
+                        categories = value.split(',').map(|cat| cat.trim().to_string()).collect();
+                        // eprintln!("{}: categories={categories:?}", file_path.display());
+                        // Check all the categories are valid
+                        assert!(
+                            categories.iter().all(|cat| {
+                                let found = valid_categories.contains(&cat.to_case(Case::Snake));
+                                if !found {
+                                    eprintln!("Unknown or invalid category {cat}");
+                                }
+                                found
+                            }),
+                            "One or more invalid categories found in {} - or this version of gen_readme may be out of date.",
+                            file_path.display()
+                        );
+                    }
+                    "sample arguments" => {
+                        // Extract content between backticks, if present
+                        let value = value.trim();
+                        sample_args = if let Some(quoted) = value.strip_prefix('`') {
+                            if let Some(args) = quoted.strip_suffix('`') {
+                                Some(args.to_string())
+                            } else {
+                                Some(quoted.to_string())
+                            }
+                        } else {
+                            Some(value.to_string())
+                        };
+                    }
+                    _ => {}
                 }
             }
         } else if line.starts_with("///") || line.starts_with("//:") {
@@ -82,18 +138,22 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     }
 
     let maybe_syntax_tree = code_utils::to_ast(file_path_str, &content);
-
-    let crates = match maybe_syntax_tree {
-        Some(ref ast) => code_utils::infer_deps_from_ast(&ast),
-        None => code_utils::infer_deps_from_source(&content),
-    };
-
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)").unwrap();
-    }
-    let main_methods = match maybe_syntax_tree {
-        Some(ref ast) => code_utils::count_main_methods(ast),
-        None => RE.find_iter(&content).count(),
+    let (crates, main_methods) = match maybe_syntax_tree {
+        Some(ref ast) => {
+            let crates_finder = shared::find_crates(&ast);
+            let metadata_finder = shared::find_metadata(&ast);
+            (
+                code_utils::infer_deps_from_ast(&crates_finder, &metadata_finder),
+                metadata_finder.main_count,
+            )
+        }
+        None => {
+            let re = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
+            (
+                code_utils::infer_deps_from_source(&content),
+                re.find_iter(&content).count(),
+            )
+        }
     };
 
     let script_type = if main_methods >= 1 {
@@ -124,6 +184,8 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
         crates,
         script_type: Some(script_type.to_string()),
         description: description.cloned(),
+        categories,
+        sample_args,
     })
 }
 
@@ -154,83 +216,16 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
     all_metadata
 }
 
-fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path) {
+fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path, boilerplate_path: &Path) {
     let mut file = File::create(output_path).unwrap();
-    writeln!(file, r#"## Running the scripts
 
-`thag_rs` uses `clap` for a standard command-line interface. Try `thag --help` (or -h) if
-you get stuck.
+    // Read boilerplate content
+    let boilerplate = fs::read_to_string(boilerplate_path)
+        .unwrap_or_else(|_| "## Running the scripts\n\n...".to_string()); // Fallback content if the file is missing
 
-### In its simplest form:
-
-
-    thag <path to script>
-
-###### E.g.:
-
-    thag demo/hello.rs
-
-### Passing options and arguments to a script:
-
-Use `--` to separate options and arguments meant for the script from those meant for `thag` itself.
-
-###### E.g.:
-
-demo/fib_dashu_snippet.rs expects to be passed an integer _n_ and will compute the _nth_ number in the
-Fibonacci sequence.
-
-     thag demo/fib_dashu_snippet.rs -- 100
-
-### Full syntax:
-
-    thag [THAG OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
-
-###### E.g.:
-
-`demo/clap_tut_builder_01.rs` is a published example from the `clap` crate.
-Its command-line signature looks like this:
-
-    clap_tut_builder_01 [OPTIONS] [name] [COMMAND]
-
-The arguments in their short form are:
-
-    `-c <config_file>`      an optional configuration file
-    `-d` / `-dd` / `ddd`    debug, at increasing levels of verbosity
-    [name]                  an optional filename
-    [COMMAND]               a command (e.g. test) to run
-
-If we were to compile `clap_tut_builder_01` as an executable (`-x` option) and then run it, we might pass
-it some parameters like this:
-
-    clap_tut_builder_01 -dd -c my.cfg my_file test -l
-
-and get output like this:
-
-    Value for name: my_file
-    Value for config: my.cfg
-    Debug mode is on
-    Printing testing lists...
-
-Running the source from `thag` looks similar, we just replace `clap_tut_builder_01` by `thag demo/clap_tut_builder_01.rs --`:
-
-*thag demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
-
-Any parameters for `thag` should go before the `--`, e.g. we may choose use -qq to suppress `thag` messages:
-
-    thag demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
-
-which will give identical output to the above.
-
-
-
-##### Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.
-
-***
-## Detailed script listing
-
-"#
-    )
-    .unwrap();
+    // Write boilerplate to README
+    writeln!(file, "{}", boilerplate).unwrap();
+    writeln!(file, "***\n## Detailed script listing\n").unwrap();
 
     for metadata in metadata_list {
         writeln!(file, "### Script: {}\n", metadata.script).unwrap();
@@ -260,22 +255,69 @@ which will give identical output to the above.
             metadata.script_type.as_ref().unwrap_or(&String::new())
         )
         .unwrap();
+        writeln!(file, "**Categories:** {}\n", metadata.categories.join(", ")).unwrap(); // Include categories
         writeln!(
             file,
-            "**Link:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/demo/{})\n",
+            "**Link:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/demo/{})",
             metadata.script, metadata.script
         )
         .unwrap();
+
+        // let example = Example::new(
+        //     "https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs",
+        //     vec!["10".to_string()],
+        //     Some("Matrix-based Fibonacci calculation example".to_string()),
+        // );
+        // writeln!(
+        //     file,
+        //     "**Run this example:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/demo/{})\n",
+        //     metadata.script, metadata.script
+        // )
+        // .unwrap();
+        let run_section = generate_run_section(metadata);
+        writeln!(file, "{run_section}").unwrap();
         writeln!(file, "---\n").unwrap();
     }
+}
+
+fn generate_run_section(metadata: &ScriptMetadata) -> String {
+    let mut md = String::new();
+    if metadata.crates.contains(&"termbg".to_string())
+        || metadata.crates.contains(&"tui_scrollview".to_string())
+        || if let Some(docs) = &metadata.description {
+            docs.contains(&"Not suitable for running from a URL.".to_string())
+        } else {
+            false
+        }
+    {
+        md.push_str("\n**Not suitable to be run from a URL.**\n\n");
+        return md;
+    }
+
+    md.push_str("\n**Run this example:**\n\n");
+    md.push_str("```bash\n");
+
+    let base_url = "https://github.com/durbanlegend/thag_rs/blob/master/demo";
+    let command = if let Some(args) = &metadata.sample_args {
+        format!("thag_url {}/{} {}", base_url, metadata.script, args)
+    } else {
+        format!("thag_url {}/{}", base_url, metadata.script)
+    };
+
+    md.push_str(&command);
+    md.push_str("\n```\n");
+
+    md
 }
 
 fn main() {
     let scripts_dir = Path::new("demo");
     let output_path = Path::new("demo/README.md");
+    let boilerplate_path = Path::new("assets/boilerplate.md");
 
+    // Regular execution when profiling is not enabled
     let all_metadata = collect_all_metadata(scripts_dir);
-    generate_readme(&all_metadata, output_path);
+    generate_readme(&all_metadata, output_path, boilerplate_path);
 
     println!("demo/README.md generated successfully.");
 }

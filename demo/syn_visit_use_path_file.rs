@@ -1,14 +1,16 @@
 /*[toml]
 [dependencies]
 quote = "1.0.37"
-syn = { version = "2.0.87", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
+syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
 */
 
 /// Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
 /// Rust source program passed to the script. Specifically the combination of fn `visit_use_path`
 /// to process the nodes representing `use` statements and fn `visit_file` to initiate the tree
 /// traversal. This version expects the script contents to consist of a full-fledged Rust program.
-//# Purpose: Demo featured crate.
+//# Purpose: Protorype.
+//# Categories: AST, crates, prototype, technique
+//# Sample arguments: `-- demo/syn_visit_use_path_file.rs`
 use std::{env, fs, path::PathBuf};
 
 fn main() {

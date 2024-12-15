@@ -1,9 +1,11 @@
+use crate::disentangle;
 use bitflags::parser::ParseError as BitFlagsParseError;
 use cargo_toml::Error as CargoTomlError;
 use clap::error::Error as ClapError;
 use reedline::ReedlineError;
 use serde_merge::error::Error as SerdeMergeError;
 use std::borrow::Cow;
+use std::string::FromUtf8Error;
 use std::sync::{MutexGuard, PoisonError as LockError};
 use std::{error::Error, io};
 use strum::ParseError as StrumParseError;
@@ -21,6 +23,7 @@ pub enum ThagError {
     Command(&'static str),             // For errors during Cargo build or program execution
     Dyn(Box<dyn Error>), // For boxed dynamic errors from 3rd parties (firestorm in first instance)
     FromStr(Cow<'static, str>), // For simple errors from a string
+    FromUtf8(FromUtf8Error), // For simple errors from a utf8 array
     Io(std::io::Error),  // For I/O errors
     LockMutexGuard(&'static str), // For lock errors with MutexGuard
     Logic(&'static str), // For logic errors
@@ -33,10 +36,15 @@ pub enum ThagError {
     TomlDe(TomlDeError), // For TOML deserialization errors
     TomlSer(TomlSerError), // For TOML serialization errors
     Toml(CargoTomlError), // For cargo_toml errors
-    UnsupportedTerm,
+    UnsupportedTerm,     // For terminal interrogation
+    Validation(String),  // For config.toml and similar validation
 }
 
-impl ThagError {}
+impl From<FromUtf8Error> for ThagError {
+    fn from(err: FromUtf8Error) -> Self {
+        Self::FromUtf8(err)
+    }
+}
 
 impl From<io::Error> for ThagError {
     fn from(err: io::Error) -> Self {
@@ -125,36 +133,42 @@ impl From<Box<dyn Error>> for ThagError {
 impl std::fmt::Display for ThagError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::BitFlagsParse(e) => write!(f, "{e:?}"),
+            // Use display formatting instead of debug formatting where possible
+            Self::BitFlagsParse(e) => write!(f, "{e}"),
             Self::Cancelled => write!(f, "Cancelled"),
-            Self::ClapError(e) => write!(f, "{e:?}"),
+            Self::ClapError(e) => write!(f, "{e}"),
             Self::Command(s) | Self::Logic(s) | Self::NoneOption(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
                 Ok(())
             }
-            Self::Dyn(e) => write!(f, "{e:?}"),
+            Self::Dyn(e) => write!(f, "{e}"),
             Self::FromStr(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
                 Ok(())
             }
-            Self::Io(e) => write!(f, "{e:?}"),
-            Self::LockMutexGuard(e) => write!(f, "{e:?}"),
-            Self::OsString(o) => {
-                writeln!(f, "{o:#?}")?;
+            Self::FromUtf8(e) => write!(f, "{e}"),
+            Self::Io(e) => write!(f, "{e}"),
+            Self::LockMutexGuard(e) => write!(f, "{e}"),
+            Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
+            Self::Reedline(e) => write!(f, "{e}"),
+            Self::SerdeMerge(e) => write!(f, "{e}"),
+            Self::StrumParse(e) => write!(f, "{e}"),
+            Self::Syn(e) => write!(f, "{e}"),
+            Self::TomlDe(e) => write!(f, "{e}"),
+            Self::TomlSer(e) => write!(f, "{e}"),
+            // Self::Toml(e) => write!(f, "{e}"),
+            Self::Toml(e) => {
+                // Extract the actual error message without all the nested structure
+                let msg = e.to_string();
+                write!(f, "TOML error: {}", disentangle(msg.as_str()))?;
                 Ok(())
             }
-            Self::Reedline(e) => write!(f, "{e:?}"),
-            Self::SerdeMerge(e) => write!(f, "{e:?}"),
-            Self::StrumParse(e) => write!(f, "{e:?}"),
-            Self::Syn(e) => write!(f, "{e:?}"),
-            Self::TomlDe(e) => write!(f, "{e:?}"),
-            Self::TomlSer(e) => write!(f, "{e:?}"),
-            Self::Toml(e) => write!(f, "{e:?}"),
             Self::UnsupportedTerm => write!(f, "Unsupported terminal type"),
+            Self::Validation(e) => write!(f, "{e}"),
         }
     }
 }
@@ -171,6 +185,7 @@ impl Error for ThagError {
             Self::Command(_e) => Some(self),
             Self::Dyn(e) => Some(&**e),
             Self::FromStr(ref _e) => Some(self),
+            Self::FromUtf8(e) => Some(e),
             Self::Io(ref e) => Some(e),
             Self::LockMutexGuard(_e) => Some(self),
             Self::Logic(_e) => Some(self),
@@ -183,6 +198,7 @@ impl Error for ThagError {
             Self::TomlDe(ref e) => Some(e),
             Self::TomlSer(ref e) => Some(e),
             Self::Toml(ref e) => Some(e),
+            Self::Validation(ref _e) => Some(self),
         }
     }
 }

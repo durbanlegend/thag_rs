@@ -1,12 +1,13 @@
 /*[toml]
 [dependencies]
 crokey = "1.0.1"
-serde = { version = "1.0.130", features = ["derive"] }
-toml = "0.5"
+serde = { version = "1.0.215", features = ["derive"] }
+toml = "0.8.19"
 */
 
 /// Published example of serde deserialisation from `crokey` crate.
 //# Purpose: Demo loading keybindings from a file.
+//# Categories: crates, technique
 use {
     crokey::{
         crossterm::{
@@ -14,20 +15,20 @@ use {
             style::Stylize,
             terminal,
         },
-        *,
+        key, KeyCombination, KeyCombinationFormat,
     },
     serde::Deserialize,
     std::collections::HashMap,
+    toml,
 };
 
-/// This is an example of a configuration structure which contains
-/// a map from KeyEvent to String.
+// This is an example of a configuration structure which contains a map from KeyEvent to String.
 #[derive(Deserialize)]
 struct Config {
     keybindings: HashMap<KeyCombination, String>,
 }
 
-/// An example of what could be a configuration file
+// An example of what could be a configuration file
 static CONFIG_TOML: &str = r#"
 [keybindings]
 a = "aardvark"

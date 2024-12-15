@@ -1,9 +1,13 @@
 #![allow(clippy::implicit_return)]
 #![expect(unused)]
+use crate::config::Config;
 use crate::termbg::{terminal, theme, Theme};
-use crate::{config, debug_log, generate_styles, maybe_config, vlog, ThagResult, V};
+use crate::{
+    config, debug_log, generate_styles, lazy_static_var, maybe_config, vlog, ThagResult, V,
+};
 use crossterm::terminal::{self, is_raw_mode_enabled};
-use firestorm::profile_fn;
+use documented::{Documented, DocumentedVariants};
+use firestorm::{profile_fn, profile_method, profile_section};
 use log::debug;
 use nu_ansi_term::{Color, Style};
 use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
@@ -13,7 +17,7 @@ use serde::Deserialize;
 use std::env;
 use std::sync::OnceLock;
 use std::{fmt::Display, str::FromStr};
-use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
+use strum::{Display, EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
 
@@ -76,10 +80,12 @@ generate_styles!(
     (Ansi16DarkStyle, Dark, Ansi16)
 );
 
-/// Returns lazy static color values. Converted from `lazy_static` implementation
-/// in accordance with the example provided in the `lazy_static` Readme. Converted
-/// for the learning experience and to facilitate handling errors and the unwelcome
-/// side-effects of calling crates (in particular `termbg`) that switch off raw mode.
+/// Returns lazy static color values.
+///
+/// Converted from `lazy_static` implementation in accordance with the example provided
+/// in the `lazy_static` Readme. Converted for the learning experience and to facilitate
+/// handling errors and the unwelcome side-effects of calling crates (in particular
+/// `termbg`) that switch off raw mode.
 ///
 /// # Errors
 ///
@@ -87,8 +93,6 @@ generate_styles!(
 pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     profile_fn!(coloring);
 
-    pub static COLOR_SUPPORT: OnceLock<Option<ColorSupport>> = OnceLock::new();
-    pub static TERM_THEME: OnceLock<TermTheme> = OnceLock::new();
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
         debug_log!("Avoiding supports_color for testing");
@@ -119,7 +123,8 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
         }
     }
 
-    let color_support = COLOR_SUPPORT.get_or_init(|| {
+    let color_support = lazy_static_var!(
+        Option<ColorSupport>,
         maybe_config()
             .as_ref()
             .map_or_else(get_color_level, |config| {
@@ -127,36 +132,37 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
                     ColorSupport::Xterm256 | ColorSupport::Ansi16 | ColorSupport::None => {
                         Some(config.colors.color_support.clone())
                     }
-                    ColorSupport::Default => get_color_level(),
+                    ColorSupport::AutoDetect => get_color_level(),
                 }
             })
-    });
+    );
 
-    let term_theme = TERM_THEME.get_or_init(|| {
+    let term_theme = lazy_static_var!(
+        TermTheme,
         maybe_config().map_or_else(
-            || {
-                // eprintln!(
-                //     "######## default mode: about to call resolve_term_theme().unwrap_or_default()"
-                // );
-                resolve_term_theme().unwrap_or_default()
-            },
+            || { resolve_term_theme().unwrap_or_default() },
             |config| {
-                // eprintln!(
-                //     "######## config.colors.term_theme={:?}",
-                //     &config.colors.term_theme
-                // );
-                if matches!(&config.colors.term_theme, &TermTheme::None) {
+                if matches!(&config.colors.term_theme, &TermTheme::AutoDetect) {
                     resolve_term_theme().unwrap_or_default()
                 } else {
                     config.colors.term_theme
                 }
             },
         )
-    });
-    debug_log!("######## term_theme={term_theme:?}");
+    );
+    // debug_log!("######## term_theme={term_theme:?}");
     (color_support.as_ref(), term_theme)
 }
 
+/// A macro to generate mappings from the supported messsage levels to the initialised terminal theme and colour support level.
+///
+/// It will generate all possible trait implementations for a given style enum <S> such as
+/// `Xterm256LightStyle`, as well as an `init_styles` function that will be used to map any given message
+/// level to the actual terminal theme and colour support level encountered on initialisation.
+///
+/// From<&Lvl> for <S>.
+/// From<S> for <Style>.
+///
 #[macro_export]
 macro_rules! generate_styles {
     (
@@ -167,7 +173,7 @@ macro_rules! generate_styles {
         $(
             impl From<&Lvl> for $style_enum {
                 fn from(message_level: &Lvl) -> Self {
-                    profile_fn!(style_enum_from_lvl);
+                    profile_method!(style_enum_from_lvl);
 
                     // dbg!(&$style_enum::Warning);
                     // dbg!(&message_level);
@@ -189,7 +195,7 @@ macro_rules! generate_styles {
             impl From<&$style_enum> for Style {
                 #[must_use]
                 fn from(style_enum: &$style_enum) -> Self {
-                    profile_fn!(style_from_style_enum);
+                    profile_method!(style_from_style_enum);
                     match style_enum {
                         $style_enum::Error => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Error))).bold(),
                         $style_enum::Warning => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Warning))).bold(),
@@ -209,8 +215,9 @@ macro_rules! generate_styles {
             term_theme: &TermTheme,
             color_support: Option<&ColorSupport>,
         ) -> fn(Lvl) -> Style {
-            profile_fn!(init_styles);
+            use std::sync::OnceLock;
             static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
+            profile_fn!(init_styles);
 
             *STYLE_MAPPING.get_or_init(|| match (term_theme, color_support) {
                 $(
@@ -223,25 +230,6 @@ macro_rules! generate_styles {
         }
     };
 }
-
-/// Generates the alternative style mapping enums.
-pub fn gen_mappings(
-    term_theme: &TermTheme,
-    color_support: Option<&ColorSupport>,
-) -> fn(Lvl) -> Style {
-    profile_fn!(gen_mappings);
-    static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
-    *STYLE_MAPPING.get_or_init(|| {
-        // Call init_styles to ensure styles are initialized on first access
-        init_styles(term_theme, color_support)
-    })
-}
-
-// #[cfg(target_os = "windows")]
-// fn resolve_term_theme() -> ThagResult<TermTheme> {
-//     profile_fn!(resolve_term_theme);
-//     Ok(TermTheme::Dark)
-// }
 
 // #[cfg(not(target_os = "windows"))]
 fn resolve_term_theme() -> ThagResult<TermTheme> {
@@ -461,12 +449,13 @@ pub fn get_style(
     color_support: Option<&ColorSupport>,
 ) -> Style {
     // dbg!();
-    let mapping = gen_mappings(term_theme, color_support);
+    let mapping = init_styles(term_theme, color_support);
     // dbg!(&mapping);
     mapping(*message_level)
 }
 
-/// A version of println that prints an entire message in colour or otherwise styled.
+/// A line print macro that prints a styled and coloured message.
+///
 /// Format: `cprtln!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! cprtln {
@@ -476,10 +465,16 @@ macro_rules! cprtln {
         // Qualified form to avoid imports in calling code.
         let painted = style.paint(content);
         let verbosity = $crate::logging::get_verbosity();
-        vlog!(verbosity, "{painted}");
+        $crate::vlog!(verbosity, "{painted}");
     }};
 }
 
+/// A line print macro that conditionally prints a message using `cprtln` if the current global verbosity
+/// is at least as verbose as the `Verbosity` (alias `V`) level passed in.
+///
+/// The message will be styled and coloured according to the `MessageLevel` (alias `Lvl`) passed in.
+///
+/// Format: `cvprtln!(level: Lvl, verbosity: V, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! cvprtln {
     ($level:expr, $verbosity:expr, $($arg:tt)*) => {{
@@ -492,27 +487,62 @@ macro_rules! cvprtln {
 }
 
 /// An enum to categorise the current terminal's level of colour support as detected, configured
-/// or defaulted. We fold `TrueColor` into Xterm256 as we're not interested in more than 256
+/// or defaulted.
+///
+/// We fold `TrueColor` into Xterm256 as we're not interested in more than 256
 /// colours just for messages.
-#[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq, Eq)]
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Deserialize,
+    Display,
+    Documented,
+    DocumentedVariants,
+    EnumIter,
+    EnumString,
+    IntoStaticStr,
+    PartialEq,
+    Eq,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum ColorSupport {
+    /// Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
     Xterm256,
+    /// Basic 16-color support
     Ansi16,
+    /// No color support
     None,
+    /// Auto-detect from terminal
     #[default]
-    Default,
+    AutoDetect,
 }
 
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
 /// or defaulted.
-#[derive(Clone, Debug, Default, Deserialize, EnumString, Display, PartialEq, Eq)]
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    Deserialize,
+    Documented,
+    DocumentedVariants,
+    Display,
+    EnumIter,
+    EnumString,
+    IntoStaticStr,
+    PartialEq,
+    Eq,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum TermTheme {
+    /// Light background terminal
     Light,
-    Dark,
+    /// Dark background terminal (default)
     #[default]
-    None,
+    Dark,
+    /// Let `thag` autodetect the background luminosity
+    AutoDetect,
 }
 
 /// An enum to categorise the supported message types for display.
@@ -546,12 +576,14 @@ impl Lvl {
 
 impl From<&Lvl> for u8 {
     fn from(message_level: &Lvl) -> Self {
-        Self::from(&XtermColor::from(&MessageStyle::from(message_level)))
+        profile_method!(u8_from_lvl);
+        Self::from(&XtermColor::from(message_level))
     }
 }
 
 impl From<&XtermColor> for Color {
     fn from(xterm_color: &XtermColor) -> Self {
+        profile_method!(color_from_xterm_color);
         Self::Fixed(u8::from(xterm_color))
     }
 }
@@ -559,6 +591,7 @@ impl From<&XtermColor> for Color {
 impl From<&XtermColor> for u8 {
     #[allow(clippy::too_many_lines)]
     fn from(xterm_color: &XtermColor) -> Self {
+        profile_method!(u8_from_xterm_color);
         match xterm_color {
             XtermColor::UserBlack => 0,
             XtermColor::UserRed => 1,
@@ -868,21 +901,25 @@ pub enum MessageStyle {
 
 impl From<&Lvl> for MessageStyle {
     fn from(message_level: &Lvl) -> Self {
-        profile_fn!(msg_style_from_lvl);
+        profile_method!(msg_style_from_lvl);
         let message_style: Self = {
             let (maybe_color_support, term_theme) = coloring();
             maybe_color_support.map_or(Self::Ansi16DarkNormal, |color_support| {
-                let color_qual = color_support.to_string().to_lowercase();
-                let theme_qual = term_theme.to_string().to_lowercase();
-                let msg_level_qual = message_level.to_string().to_lowercase();
+                let color_qual = color_support.to_string();
+                let theme_qual = term_theme.to_string();
+                let msg_level_qual = message_level.to_string();
                 // #[cfg(debug_assertions)]
                 // debug_log!(
                 //     "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
                 // );
-                Self::from_str(&format!(
-                    "{}_{}_{}",
-                    &color_qual, &theme_qual, &msg_level_qual
-                ))
+                profile_section!(format_and_get_variant);
+                Self::from_str(
+                    &format!(
+                        "{color_support}_{term_theme}_{message_level}" //,
+                                                                       // &color_qual, &theme_qual, &msg_level_qual
+                    )
+                    .to_lowercase(),
+                )
                 .unwrap_or(Self::Ansi16DarkNormal)
             })
         };
@@ -895,6 +932,7 @@ impl From<&Lvl> for MessageStyle {
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for XtermColor {
     fn from(message_style: &MessageStyle) -> Self {
+        profile_method!(xterm_color_from_message_style);
         match *message_style {
             MessageStyle::Ansi16LightError => Self::UserRed,
             MessageStyle::Ansi16LightWarning => Self::UserMagenta,
@@ -936,10 +974,17 @@ impl From<&MessageStyle> for XtermColor {
     }
 }
 
+impl From<&Lvl> for XtermColor {
+    fn from(message_level: &Lvl) -> Self {
+        profile_method!(xterm_color_from_lvl);
+        Self::from(&MessageStyle::from(message_level))
+    }
+}
+
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for Style {
     fn from(message_style: &MessageStyle) -> Self {
-        profile_fn!(style_from_msg_style);
+        profile_method!(style_from_msg_style);
         match *message_style {
             MessageStyle::Ansi16LightError => Color::Red.bold(),
             MessageStyle::Ansi16LightWarning => Color::Magenta.bold(),
@@ -989,7 +1034,7 @@ impl From<&MessageStyle> for Style {
 
 impl From<&MessageLevel> for Style {
     fn from(lvl: &MessageLevel) -> Self {
-        profile_fn!(style_from_lvl);
+        profile_method!(style_from_lvl);
         Self::from(&MessageStyle::from(lvl))
     }
 }
@@ -997,7 +1042,7 @@ impl From<&MessageLevel> for Style {
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for RataStyle {
     fn from(message_style: &MessageStyle) -> Self {
-        profile_fn!(ratastyle_from_msg_style);
+        profile_method!(rata_style_from_msg_style);
         match *message_style {
             MessageStyle::Ansi16LightError => Self::from(RataColor::Red).bold(),
             MessageStyle::Ansi16LightWarning => Self::from(RataColor::Magenta).bold(),
@@ -1081,8 +1126,15 @@ impl From<&MessageStyle> for RataStyle {
 
 impl From<&MessageLevel> for RataStyle {
     fn from(lvl: &MessageLevel) -> Self {
-        profile_fn!(ratastyle_from_lvl);
+        profile_method!(rata_style_from_lvl);
         Self::from(&MessageStyle::from(lvl))
+    }
+}
+
+impl From<&MessageLevel> for Color {
+    fn from(lvl: &MessageLevel) -> Self {
+        profile_method!(color_from_lvl);
+        Self::from(&XtermColor::from(&MessageStyle::from(lvl)))
     }
 }
 
@@ -1184,6 +1236,7 @@ pub fn main() {
 /// An enum of the colours in a 256-colour palette, per the naming in `https://docs.rs/owo-colors/latest/owo_colors/colors/xterm/index.html#`.
 #[warn(dead_code)]
 #[derive(Display, EnumIter)]
+#[strum(use_phf)]
 pub enum XtermColor {
     UserBlack,
     UserRed,

@@ -1,7 +1,13 @@
+/*[toml]
+[dependencies]
+chrono = "0.4.38"
+*/
+
 /// Simple time demo pasted directly from Rust cookbook. Run without -q to show how
-/// `thag_rs` will find the missing chrono manifest entry and display a specimen
+/// `thag_rs` will find the missing `chrono` manifest entry and display a specimen
 /// toml block you can paste in at the top of the script.
 //# Purpose: Demo cut and paste from a web source with Cargo search and specimen toml block generation.
+//# Categories: basic
 use chrono::{DateTime, Utc};
 
 fn main() {

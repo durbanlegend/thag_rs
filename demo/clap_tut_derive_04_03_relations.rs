@@ -1,12 +1,14 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.7", features = ["cargo", "derive"] }
+clap = { version = "4.5.21", features = ["cargo", "derive"] }
 */
 
 /// Published example from `clap` tutorial (derive), with added displays.
 ///
 /// E.g. `thag demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt`
 //# Purpose: Demonstrate `clap` CLI using the derive option
+//# Categories: CLI, crates, technique
+//# Sample arguments: `-- --major -c config.toml --spec-in input.txt`
 use clap::{ArgGroup, Parser};
 
 #[derive(Parser)]

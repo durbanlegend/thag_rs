@@ -1,13 +1,14 @@
 /*[toml]
 [dependencies]
 regex = "1.10.6"
-serde = { version = "1.0.208", features = ["derive"] }
+serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.132"
 */
 
 /// Debug the history handling logic of the `stdin` module and display the effects.
 /// Using this abstraction because displays don't work nicely in a TUI editor.
 //# Purpose: Debug and demo history ordering.
+//# Categories: testing
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json;

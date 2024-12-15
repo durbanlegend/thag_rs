@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.87", features = ["extra-traits", "full", "visit"] }
+syn = { version = "2.0.90", features = ["extra-traits", "full", "visit"] }
 quote = "1.0.37"
 */
 
@@ -16,6 +16,7 @@ use syn::{parse_str, Expr, ReturnType, Stmt};
 /// I've commented out ChatGPT's brute-force parse of &block.stmts and replaced it with a syn::Visit
 /// implementation that can handle embedded functions.
 //# Purpose: Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.
+//# Categories: AST, technique
 fn main() {
     // Function or closure, comment out either to test the other
     let code = r#"

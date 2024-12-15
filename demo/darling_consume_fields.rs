@@ -15,6 +15,7 @@ syn = "2.0.87"
 /// Published example from `darling` crate showing parsing for derive input.
 /// Extended to show formatted version of emitted code.
 //# Purpose: Explore `darling` crate.
+//# Categories: crates, exploration, technique
 use darling::{ast, FromDeriveInput, FromField, FromMeta};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};

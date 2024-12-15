@@ -4,7 +4,11 @@ pomprt = "0.5.3"
 */
 
 /// Published example from `pomprt` crate.
+///
+/// Not suitable for running from a URL. Run locally and enter simple shell commands like `ls -l` at the prompt.
+/// `Ctrl-d` to terminate.
 //# Purpose: Demo of `pomprt` readline implementation.
+//# Categories: crates
 // pomprt, a line editor prompt library
 // Copyright (c) 2023 rini
 //

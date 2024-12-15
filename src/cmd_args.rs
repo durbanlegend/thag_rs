@@ -1,9 +1,12 @@
-use crate::{config::maybe_config, debug_log, ThagError, ThagResult, RS_SUFFIX};
+use crate::{
+    config::{maybe_config, DependencyInference},
+    ThagError, ThagResult, RS_SUFFIX,
+};
 
 use bitflags::bitflags;
 // use clap::builder::styling::{Ansi256Color, AnsiColor, Color, Style};
 use clap::{ArgGroup /*, ColorChoice */, Parser};
-use firestorm::profile_fn;
+use firestorm::{profile_fn, profile_method, profile_section};
 use std::{fmt, str};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and REPL.
@@ -20,6 +23,16 @@ use std::{fmt, str};
                 .required(false)
                 .args(&["quiet", "normal", "verbose"]),
         ))]
+#[command(group(
+            ArgGroup::new("norun_options")
+                .required(false)
+                .args(&["generate", "build", "check", "executable", "expand", "cargo"]),
+        ))]
+// #[command(group(
+//             ArgGroup::new("dep_in")
+//                 .required(false)
+//                 .args(&["none", "min", "config", "max"]),
+//         ))]
 pub struct Cli {
     /// Optional path of a script to run (`path`/`stem`.rs)
     pub script: Option<String>,
@@ -27,7 +40,7 @@ pub struct Cli {
     #[arg(last = true, requires = "script")]
     pub args: Vec<String>,
     /// Force the generation and build steps, even if the script is unchanged since a previous build. Required if there are updates to dependencies.
-    #[arg(short, long, help_heading = Some("Script Options"))]
+    #[arg(short, long, requires = "script", help_heading = Some("Processing Options"))]
     pub force: bool,
     // /// Don't run the script after generating and building
     // #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin"]))]
@@ -47,9 +60,9 @@ pub struct Cli {
     /// Run the given filter expression in a loop against every line of stdin, with optional pre- and/or post-loop logic via -T, -B and -E.
     #[arg(short = 'l', long = "loop", help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
     pub filter: Option<String>,
-    /// Optional manifest info for --loop in Cargo.toml format, such as a [dependencies] section
+    /// Optional manifest info for --loop in Cargo.toml format, such as a `[dependencies]` section
     //  clap issue 4707 may prevent `requires` from working, as I've experienced.
-    #[arg(short = 'T', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "CARGO-TOML")]
+    #[arg(short = 'M', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "CARGO-TOML")]
     pub toml: Option<String>,
     /// Optional pre-loop Rust statements for --loop, somewhat like awk BEGIN
     //  clap issue 4707 may prevent `requires` from working, as I've experienced.
@@ -60,7 +73,7 @@ pub struct Cli {
     #[arg(short = 'E', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "POST-LOOP")]
     pub end: Option<String>,
     /// Required if multiple main methods are valid for the current script
-    #[arg(short, long, help_heading = Some("Script Options"))]
+    #[arg(short, long, help_heading = Some("Processing Options"))]
     pub multimain: bool,
     /// Display timings
     #[arg(short, long, help_heading = Some("Output Options"))]
@@ -75,7 +88,7 @@ pub struct Cli {
     #[arg(short, long, help_heading = Some("Output Options"), action = clap::ArgAction::Count)]
     pub quiet: u8,
     /// Just generate individual Cargo.toml and any required Rust scaffolding for script, unless script unchanged from a previous build.
-    #[arg(short, long = "gen"/*, requires = "norun"*/, help_heading = Some("No-run Options"), default_value_ifs([
+    #[arg(short, long = "gen", help_heading = Some("No-run Options"), default_value_ifs([
         /*("force", "true", "true"),*/
         ("expression", "_", "true"),
         ("executable", "true", "true"),
@@ -83,7 +96,7 @@ pub struct Cli {
     ]))]
     pub generate: bool,
     /// Just build script (generating first if necessary), unless unchanged from a previous build
-    #[arg(short, long/*, requires = "norun"*/, help_heading = Some("No-run Options"), default_value_ifs([
+    #[arg(short, long, help_heading = Some("No-run Options"), default_value_ifs([
         /*("force", "true", "true"),*/
         ("expression", "_", "true"),
         ("executable", "true", "true"),
@@ -94,12 +107,17 @@ pub struct Cli {
     pub executable: bool,
     /// Just cargo check script, unless unchanged from a previous build. Less thorough than build.
     /// Used by integration test to check all demo scripts
-    #[arg(short, long, help_heading = Some("No-run Options"), conflicts_with_all(["build", "executable"]))]
+    #[arg(short, long, help_heading = Some("No-run Options"))]
     pub check: bool,
+    /// Just generate script, unless unchanged from a previous build, and show the version with expanded
+    /// macros side by side with the original version.
+    /// Requires the `cargo-expand` crate to be installed.
+    #[arg(short = 'X', long, help_heading = Some("No-run Options"))]
+    pub expand: bool,
     /// Strip double quotes from string result of expression (true/false). Default: config value / false.
     #[arg(
         short,
-        long, help_heading = Some("Dynamic Options (no script)"),
+        long, help_heading = Some("Output Options"),
         // require_equals = true,
         action = clap::ArgAction::Set,
         num_args = 0..=1,
@@ -110,6 +128,14 @@ pub struct Cli {
     /// Edit the configuration file
     #[arg(short = 'C', long, conflicts_with_all(["generate", "build", "executable"]))]
     pub config: bool,
+    /// Set the level of dependency inference: none, min, config (default, recommended), max.
+    /// `thag` infers dependencies from imports and Rust paths (`x::y::z`), and specifies their features.
+    #[arg(short = 'i', long, help_heading = Some("Processing Options"))]
+    pub infer: Option<DependencyInference>,
+    /// Just generate script, unless unchanged from a previous build, and run the specified
+    /// Cargo subcommand against the generated project `temp_dir`/`thag_rs`/`stem`. E.g. `thag demo/hello.rs -A tree`
+    #[arg(short = 'A', long, requires = "script", help_heading = Some("No-run Options"))]
+    pub cargo: bool,
 }
 
 /// Getter for clap command-line arguments
@@ -168,17 +194,22 @@ bitflags! {
         const QUIETER       = 262_144;
         const UNQUOTE       = 524_288;
         const CONFIG        = 1_048_576;
+        const EXPAND        = 2_097_152;
+        const CARGO         = 4_194_304;
+        const INFER         = 8_388_608;
     }
 }
 
 impl fmt::Debug for ProcFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        profile_method!(proc_flags_fmt_debug);
         bitflags::parser::to_writer(self, f)
     }
 }
 
 impl fmt::Display for ProcFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        profile_method!(proc_flags_fmt_display);
         bitflags::parser::to_writer(self, f)
     }
 }
@@ -187,6 +218,7 @@ impl str::FromStr for ProcFlags {
     type Err = bitflags::parser::ParseError;
 
     fn from_str(flags: &str) -> Result<Self, Self::Err> {
+        profile_method!(proc_flags_from_str);
         bitflags::parser::from_str(flags)
     }
 }
@@ -204,6 +236,8 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();
+    let is_infer = args.infer.is_some();
+    profile_section!(init_config_loop_assert);
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
         // eprintln!("args={args:#?}");
@@ -219,7 +253,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
         proc_flags.set(
             ProcFlags::NORUN,
-            args.generate | args.build | args.check | args.executable,
+            args.generate | args.build | args.check | args.executable | args.expand | args.cargo,
         );
         proc_flags.set(ProcFlags::NORMAL, args.normal);
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
@@ -229,38 +263,25 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::EDIT, args.edit);
         proc_flags.set(ProcFlags::LOOP, is_loop);
         proc_flags.set(ProcFlags::EXECUTABLE, args.executable);
+        proc_flags.set(ProcFlags::EXPAND, args.expand);
+        proc_flags.set(ProcFlags::CARGO, args.cargo);
+        proc_flags.set(ProcFlags::INFER, is_infer);
 
+        profile_section!(config_loop_assert);
         let unquote = args.unquote.map_or_else(
-            || {
-                maybe_config().map_or_else(
-                    || {
-                        debug_log!(
-                            "Found no arg or config file, returning default unquote = false"
-                        );
-                        false
-                    },
-                    |config| {
-                        debug_log!(
-                            "maybe_config()={:?}, returning config.misc.unquote={}",
-                            maybe_config(),
-                            config.misc.unquote
-                        );
-                        config.misc.unquote
-                    },
-                )
-            },
+            || maybe_config().map_or_else(|| false, |config| config.misc.unquote),
             |unquote| {
-                debug_log!("args.unquote={:?}", args.unquote);
+                // debug_log!("args.unquote={:?}", args.unquote);
                 unquote
             },
         );
         proc_flags.set(ProcFlags::UNQUOTE, unquote);
-
         proc_flags.set(ProcFlags::CONFIG, args.config);
 
+        profile_section!(loop_assert);
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
             if args.toml.is_some() {
-                eprintln!("Option --toml (-T) requires --loop (-l)");
+                eprintln!("Option --toml (-M) requires --loop (-l)");
             }
             if args.begin.is_some() {
                 eprintln!("Option --begin (-B) requires --loop (-l)");
@@ -271,11 +292,14 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
             return Err("Missing --loop option".into());
         }
 
-        // Check all good
-        let formatted = proc_flags.to_string();
-        let parsed = formatted.parse::<ProcFlags>()?;
-
-        assert_eq!(proc_flags, parsed);
+        #[cfg(debug_assertions)]
+        {
+            profile_section!(assert);
+            // Check all good
+            let formatted = proc_flags.to_string();
+            let parsed = formatted.parse::<ProcFlags>()?;
+            assert_eq!(proc_flags, parsed);
+        }
 
         Ok::<ProcFlags, ThagError>(proc_flags)
     }?;

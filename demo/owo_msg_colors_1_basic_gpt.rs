@@ -9,6 +9,7 @@ termbg = "0.5.2"
 /// This one uses basic Ansi 16 colours. Try it on dark vs light
 /// backgrounds to see how some of the colours change.
 //# Purpose: May be of use to some. Demo featured crates.
+//# Categories: crates, exploration
 use crossterm::{
     cursor::{MoveTo, Show},
     terminal::{Clear, ClearType},

@@ -16,7 +16,7 @@ profile-with-optick = ["profiling/profile-with-optick"]
 
 /// Published demo from the `profiling` crate using the `puffin` profiler.
 //# Purpose: Demo featured crates.
-
+//# Categories: crates
 //
 // Example of marking up all functions on an impl block
 //

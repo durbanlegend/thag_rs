@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = "0.1.5"
+thag_rs = "0.1.7"
 
 lazy_static = "1.4.0"
 regex = "1.10.4"
@@ -13,6 +13,7 @@ tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
 ///
 /// E.g. `thag demo/stdin.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
+//# Categories: crates, prototype, technique
 use lazy_static::lazy_static;
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::{

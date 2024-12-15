@@ -8,7 +8,7 @@ ibig = "0.3.6"
 /// are executed and compared to ensure they agree before printing out the value.
 /// Closures and functions are effectively interchangeable here.
 ///
-/// `let foo = |args| -> T {};` is equivalent to `fn foo(args) -> T {}`
+/// `let foo = |args| -> T {};` is equivalent to `fn foo(args) -> T {}`.
 ///
 /// See also `demo/factorial_ibig_product.rs` for yet another version where we implement
 /// the `std::iter::Product` trait on a wrapped `ibig::UBig` in order to use the
@@ -22,6 +22,8 @@ ibig = "0.3.6"
 /// only run one algorithm while others are slowed down by running and comparing two different
 /// algorithms.
 //# Purpose: Demo snippets with functions and closures, `ibig` cross-platform big-number crate.
+//# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 50`
 use ibig::{ubig, UBig};
 use std::env;
 use std::io::Read;

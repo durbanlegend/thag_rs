@@ -1,16 +1,17 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.7", features = ["cargo", "derive"] }
+clap = { version = "4.5.21", features = ["cargo", "derive"] }
 clap-repl = "0.1.1"
 console = "0.15.8"
 rustyline = "14.0.0"
 quote = "1.0.37"
-syn = { version = "2.0.87", features = ["full"] }
+syn = { version = "2.0.90", features = ["full"] }
 */
 
 /// Older version of published clap_repl crate example, modified to prototype a
 /// (dummy) Rust REPL.
 //# Purpose: Yet another REPL demo, this time using `rustyline`.
+//# Categories: REPL, technique
 use clap::Parser;
 use clap_repl::ClapEditor;
 use console::style;

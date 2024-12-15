@@ -43,6 +43,8 @@ ibig = "0.3.6"
 ///
 ///           = Fn+1(Fn+1 + 2Fn)                    // i.e. b(b+2a)
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.
+//# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};
 use std::env;
 use std::time::Instant;

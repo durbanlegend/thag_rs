@@ -1,15 +1,16 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.7", features = ["cargo", "derive"] }
+clap = { version = "4.5.21", features = ["cargo", "derive"] }
 clap-repl = "0.1.1"
 console = "0.15.8"
 rustyline = { version = "14.0.0", features=["with-file-history", "default"] }
 shlex = "1.3.0"
-strum = { version = "0.26.2", features = ["derive"] }
+strum = { version = "0.26.3", features = ["derive"] }
 */
 
 /// Experiment with matching REPL commands with a partial match of any length.
 //# Purpose: Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
+//# Categories: crates, REPL, technique
 use clap::{CommandFactory, Parser};
 use console::style;
 use rustyline::DefaultEditor;
@@ -40,10 +41,8 @@ enum LoopCommand {
 impl LoopCommand {
     fn print_help() {
         let mut command = LoopCommand::command();
-        let mut buf = Vec::new();
-        command.write_help(&mut buf).unwrap();
-        let help_message = String::from_utf8(buf).unwrap();
-        println!("{}", help_message);
+        let help_message = command.render_help();
+        println!("{help_message}");
     }
 }
 
@@ -72,37 +71,34 @@ fn main() -> Result<(), Box<dyn Error>> {
             continue;
         }
         _ = rl.add_history_entry(line.as_str());
-        let command = match shlex::split(&line) {
-            Some(split) => {
-                // eprintln!("split={split:?}");
-                let mut matches = 0;
-                let first_word = split[0].as_str();
-                let mut cmd = String::new();
-                for key in cmd_vec.iter() {
-                    if key.starts_with(first_word) {
-                        matches += 1;
-                        // Selects last match
-                        if matches == 1 {
-                            cmd = key.to_string();
-                        }
-                        // eprintln!("key={key}, split[0]={}", split[0]);
+        let command = if let Some(split) = shlex::split(&line) {
+            // eprintln!("split={split:?}");
+            let mut matches = 0;
+            let first_word = split[0].as_str();
+            let mut cmd = String::new();
+            for key in &cmd_vec {
+                if key.starts_with(first_word) {
+                    matches += 1;
+                    // Selects last match
+                    if matches == 1 {
+                        cmd = key.to_string();
                     }
-                }
-                if matches == 1 {
-                    cmd
-                } else {
-                    println!("No single matching key found");
-                    continue;
+                    // eprintln!("key={key}, split[0]={}", split[0]);
                 }
             }
-            None => {
-                println!(
-                    "{} input was not valid and could not be processed",
-                    style("error:").red().bold()
-                );
-                LoopCommand::print_help();
+        	if matches == 1 {
+                cmd
+            } else {
+                println!("No single matching key found");
                 continue;
             }
+        } else {
+            println!(
+                "{} input was not valid and could not be processed",
+                style("error:").red().bold()
+            );
+            LoopCommand::print_help();
+            continue;
         };
         println!(
             "command={command}, matching variant={:#?}",

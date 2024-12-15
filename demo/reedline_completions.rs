@@ -5,6 +5,7 @@ reedline = "0.36.0"
 
 /// Published example from `reedline` crate.
 //# Purpose: demo featured crates.
+//# Categories: crates, REPL, technique
 //
 // "t" [Tab] will allow you to select the completions "test" and "this is the reedline crate"
 // [Enter] to select the chosen alternative

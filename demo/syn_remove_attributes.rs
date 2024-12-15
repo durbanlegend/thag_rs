@@ -1,12 +1,13 @@
 /*[toml]
 [dependencies]
 quote = "1.0.37"
-syn = { version = "2.0.87", features = ["fold", "extra-traits", "full", "parsing", "visit-mut"] }
+syn = { version = "2.0.90", features = ["fold", "extra-traits", "full", "parsing", "visit-mut"] }
 */
 
 /// Prototype of removing an inner attribute (`#![...]`) from a syntax tree. Requires the `visit-mut'
 /// feature of `syn`.
 //# Purpose: Demonstrate making changes to a `syn` AST.
+//# Categories: AST, crates, prototype, technique
 use quote::quote;
 use syn::visit_mut::{self, VisitMut};
 use syn::{AttrStyle, ExprBlock};

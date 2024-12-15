@@ -14,6 +14,8 @@ itertools = "0.12.1"
 ///
 /// As the number of Fibonacci examples here shows, this took me down a Fibonacci rabbit hole.
 //# Purpose: Demo fast small-scale fibonacci using Rust primitives and `itertools` crate.
+//# Categories: educational, math, recreational, technique
+//# Sample arguments: `-- 90`
 use itertools::iterate;
 use std::env;
 

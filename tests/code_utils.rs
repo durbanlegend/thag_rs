@@ -1,23 +1,55 @@
 #[cfg(test)]
 mod tests {
-    use thag_rs::code_utils::extract_inner_attribs;
-    use thag_rs::code_utils::find_modules_source;
-    use thag_rs::code_utils::find_use_renames_source;
-    use thag_rs::code_utils::infer_deps_from_ast;
-    use thag_rs::code_utils::infer_deps_from_source;
-    use thag_rs::code_utils::is_last_stmt_unit_type;
-    use thag_rs::code_utils::is_path_unit_type;
-    use thag_rs::code_utils::is_stmt_unit_type;
-    use thag_rs::code_utils::path_to_str;
-    use thag_rs::code_utils::read_file_contents;
-    use thag_rs::code_utils::wrap_snippet;
-    use thag_rs::extract_manifest;
-
-    use std::io::Write;
-    use std::path::Path;
-    use std::time::Instant;
+    use std::{io::Write, path::Path, time::Instant};
     use tempfile::NamedTempFile;
-    use thag_rs::Ast;
+    use thag_rs::{
+        code_utils::{
+            extract_inner_attribs, find_modules_source, find_use_renames_source,
+            infer_deps_from_ast, infer_deps_from_source, is_last_stmt_unit_type, is_path_unit_type,
+            is_stmt_unit_type, path_to_str, read_file_contents, wrap_snippet,
+        },
+        extract_manifest,
+        shared::{find_crates, find_metadata},
+        Ast,
+    };
+
+    // Example AST representing use and extern crate statements
+    const IMPORTS: &str = r#"
+        extern crate foo;
+        use bar::baz;
+        mod glorp;
+        use {
+            crokey::{
+                crossterm::{
+                    event::{read, Event},
+                    style::Stylize,
+                    terminal,
+                },
+                key, KeyCombination, KeyCombinationFormat,
+            },
+            glorp::thagomize,
+            serde::Deserialize,
+            std::collections::HashMap,
+            toml,
+        };
+        use owo_ansi::xterm as owo_xterm;
+        use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
+        use owo_colors::colors::{self as owo_ansi, Magenta};
+        use owo_colors::{AnsiColors, Style, XtermColors};
+        use owo_xterm::Black;
+        use snarf as qux;
+        use std::fmt;
+        use qux::corge;
+        "#;
+    const EXPECTED_CRATES: &[&str] = &[
+        "bar",
+        "crokey",
+        "foo",
+        "owo_colors",
+        "serde",
+        "snarf",
+        "toml",
+    ];
 
     // Set environment variables before running tests
     fn set_up() {
@@ -53,13 +85,27 @@ mod tests {
             extern crate foo;
             use bar::baz;
             use std::fmt;
+            use glorp;
             "#,
         )
         .unwrap();
         let ast = Ast::File(ast);
+        let crates_finder = Some(find_crates(&ast)).unwrap();
+        let metadata_finder = Some(find_metadata(&ast)).unwrap();
+        let deps = infer_deps_from_ast(&crates_finder, &metadata_finder);
+        assert_eq!(deps, vec!["bar", "foo", "glorp"]);
+    }
 
-        let deps = infer_deps_from_ast(&ast);
-        assert_eq!(deps, vec!["bar", "foo"]);
+    #[test]
+    fn test_code_utils_infer_deps_from_nested_ast() {
+        set_up();
+        // Example AST representing use and extern crate statements
+        let file = syn::parse_file(IMPORTS).unwrap();
+        let ast = Ast::File(file);
+        let crates_finder = Some(find_crates(&ast)).unwrap();
+        let metadata_finder = Some(find_metadata(&ast)).unwrap();
+        let deps = infer_deps_from_ast(&crates_finder, &metadata_finder);
+        assert_eq!(&deps, EXPECTED_CRATES);
     }
 
     #[test]
@@ -69,10 +115,19 @@ mod tests {
             extern crate foo;
             use bar::baz;
             use std::fmt;
+            mod glorp;
+            use snarf;
             "#;
 
         let deps = infer_deps_from_source(source_code);
-        assert_eq!(deps, vec!["bar", "foo"]);
+        assert_eq!(deps, vec!["bar", "foo", "snarf"]);
+    }
+
+    #[test]
+    fn test_code_utils_infer_deps_from_nested_source() {
+        set_up();
+        let deps = infer_deps_from_source(IMPORTS);
+        assert_eq!(&deps, EXPECTED_CRATES);
     }
 
     #[test]
@@ -122,10 +177,12 @@ mod tests {
         let source_code = r#"
             use foo as bar;
             use std::fmt;
+            use baz::qux as corge;
             "#;
 
-        let use_renames = find_use_renames_source(source_code);
-        assert_eq!(use_renames, vec!["bar"]);
+        let (use_renames_from, use_renames_to) = find_use_renames_source(source_code);
+        assert_eq!(use_renames_from, vec!["baz", "foo"]);
+        assert_eq!(use_renames_to, vec!["bar", "corge"]);
     }
 
     #[test]

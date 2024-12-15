@@ -7,6 +7,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 
 /// Published example from the `tempfile` readme.
 //# Purpose: Demo featured crate.
+//# Categories: crates
 fn main() {
     // Write
     let mut tmpfile: File = tempfile::tempfile().unwrap();

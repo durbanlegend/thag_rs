@@ -6,6 +6,7 @@ serde_merge = "0.1.3"
 
 /// Prototype of comprehensive merge of script toml metadata with defaults.
 //# Purpose: Develop for inclusion in main project.
+//# Categories: crates, prototype, technique
 use cargo_toml::{Edition, Manifest};
 use serde_merge::omerge;
 

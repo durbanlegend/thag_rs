@@ -6,6 +6,7 @@ reedline-repl-rs = "1.1.1"
 /// Published example from `reedline-repl-rs` crate. This one uses the
 /// `clap` builder pattern; there is also one using the`clap` derive pattern.
 //# Purpose: Evaluation of featured crate and of using clap to structure command input.
+//# Categories: crates, REPL, technique
 // Example using Repl with Context
 use reedline_repl_rs::clap::{Arg, ArgMatches, Command};
 use reedline_repl_rs::{Repl, Result};

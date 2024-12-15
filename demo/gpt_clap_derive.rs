@@ -1,12 +1,15 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.7", features = ["derive"] }
+clap = { version = "4.5.21", features = ["derive"] }
 */
 
 use clap::Parser;
 
 /// GPT-generated CLI using the `clap` crate.
 //# Purpose: Demonstrate `clap` CLI using the derive option.
+//# Categories: CLI, crates, technique
+//# Sample arguments: `-- -bgtv dummy_script.rs`
+
 // Script Runner
 #[derive(Debug, Parser)]
 #[clap(version = "1.0", author = "Your Name")]

@@ -4,6 +4,7 @@ use std::any::Any;
 /// Debug, and printing using the Display or Debug trait accordingly. Worked out with recourse
 /// to ChatGPT for suggestions and macro authoring.
 //# Purpose: May be interesting or useful.
+//# Categories: macros, technique, type_identification
 macro_rules! generate_displayable_fn {
     ($func_name:ident, $($t:ty),*) => {
         fn $func_name(s: &(dyn Any + std::marker::Send)) -> bool {

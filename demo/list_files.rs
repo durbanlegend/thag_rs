@@ -5,6 +5,7 @@ use std::path::PathBuf;
 /// Demo listing files on disk. If you want a sorted list, you will need to amend the
 /// program to collect the entries into a Vec and sort that.
 //# Purpose: Simple demonstration.
+//# Categories: basic, technique
 fn display_file_if_exists(path: &PathBuf) -> io::Result<()> {
     if path.exists() {
         println!("File: {:?}", path);

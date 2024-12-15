@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.7", features = ["cargo", "derive"] }
-serde = { version = "1.0.204", features = ["derive"] }
-strum = { version = "0.26.2", features = ["derive"] }
+clap = { version = "4.5.21", features = ["cargo", "derive"] }
+serde = { version = "1.0.215", features = ["derive"] }
+strum = { version = "0.26.3", features = ["derive"] }
 */
 
 use clap::{Parser, ValueEnum};
@@ -37,6 +37,7 @@ enum Opt {
 /// Exploring using clap with an enum, in conjunction with strum.
 /// E.g. `thag demo/clap_enum_strum.rs -- variant-num2`
 //# Purpose: Simple demo of featured crates, contrasting how they expose variants.
+//# Categories: CLI, crates, technique
 fn main() {
     let cli = Cli::parse();
 

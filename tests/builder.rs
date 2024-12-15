@@ -2,6 +2,7 @@
 use cargo_toml::Manifest;
 use thag_rs::builder::{build, generate, run};
 use thag_rs::cmd_args::Cli;
+use thag_rs::config::DependencyInference;
 use thag_rs::{code_utils, escape_path_for_windows, execute, TMPDIR};
 use thag_rs::{BuildState, ProcFlags};
 // use sequential_test::sequential;
@@ -33,7 +34,7 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
     let source_stem: &str = source_name
         .strip_suffix(thag_rs::RS_SUFFIX)
         .expect("Problem stripping Rust suffix");
-    let current_dir = current_dir().expect("Could not get current dir");
+    let current_dir = std::env::current_dir().expect("Could not get current dir");
     let working_dir_path = current_dir.clone();
     let cargo_home = home::cargo_home().expect("Could not get Cargo home");
     let target_dir_path = TMPDIR.join("thag_rs").join(source_stem);
@@ -60,6 +61,11 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
         must_gen: true,
         must_build: true,
         build_from_orig_source: false,
+        ast: None,
+        crates_finder: None,
+        metadata_finder: None,
+        infer: DependencyInference::None,
+        args: vec![],
     }
 }
 
@@ -67,11 +73,11 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
 // #[sequential]
 fn test_builder_execute_dynamic_script() {
     set_up();
-    let mut args = create_sample_cli(Some(
+    let mut cli = create_sample_cli(Some(
         "tests/assets/determine_if_known_type_trait_t.rs".to_string(),
     ));
-    args.force = true;
-    let result = execute(&mut args);
+    cli.force = true;
+    let result = execute(&mut cli);
     assert!(result.is_ok());
 }
 
@@ -79,9 +85,9 @@ fn test_builder_execute_dynamic_script() {
 // with a message that the current cursor position can't be found.
 // #[test]
 // fn test_builder_execute_repl_script() {
-// let mut args = create_sample_cli(None);
-// args.repl = true;
-//     let result = execute(args);
+// let mut cli = create_sample_cli(None);
+// cli.repl = true;
+//     let result = execute(cli);
 //     assert!(result.is_ok());
 // }
 
@@ -207,6 +213,11 @@ name = "bitflags_t"
         must_gen: true,
         must_build: true,
         build_from_orig_source: false,
+        ast: None,
+        crates_finder: None,
+        metadata_finder: None,
+        infer: DependencyInference::None,
+        args: vec![],
     };
     dbg!(&build_state);
     let proc_flags = ProcFlags::empty();
@@ -238,10 +249,10 @@ fn test_builder_run_script() {
     assert!(!target_path.exists());
 
     // Generate and build executable, and check it exists.
-    let mut args = create_sample_cli(Some("tests/assets/fib_fac_dashu_t.rs".to_string()));
-    args.generate = true;
-    args.build = true;
-    let result = execute(&mut args);
+    let mut cli = create_sample_cli(Some("tests/assets/fib_fac_dashu_t.rs".to_string()));
+    cli.generate = true;
+    cli.build = true;
+    let result = execute(&mut cli);
     assert!(result.is_ok());
     println!("target_path={target_path:#?}");
     assert!(target_path.exists());

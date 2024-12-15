@@ -3,6 +3,14 @@
 owo-colors = "4.0.0"
 */
 
+/// Prototype of selecting message colours by matching against different enums
+/// according to the terminal's detected colour support and light or dark theme.
+/// (Detection itself is not part of the demo).
+/// This approach was rejected as it is simpler to use a single large enum and
+/// use the `strum` crate's `EnumString` derive macro to select the required
+/// variant from a composite string of the colour support, theme and message level.
+//# Purpose: Demo prototyping different solutions using AI to provide the sample implementations.
+//# Categories: crates, prototype, technique
 use owo_colors::colors::{Blue, Green};
 use owo_colors::Style;
 
@@ -62,13 +70,6 @@ fn select_message_style(color_support: &str, theme: &str) -> Box<dyn GetMessageS
     }
 }
 
-/// Prototype of selecting message colours by matching against different enums
-/// according to the terminal's detected colour support and light or dark theme.
-/// (Detection itself is not part of the demo).
-/// This approach was rejected as it is simpler to use a single large enum and
-/// use the `strum` crate's `EnumString` derive macro to select the required
-/// variant from a composite string of the colour support, theme and message level.
-//# Purpose: Demo prototyping different solutions using AI to provide the sample implementations.
 fn main() {
     // Example usage
     let color_support = "ansi16"; // Example: retrieved from runtime

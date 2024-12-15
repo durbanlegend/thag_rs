@@ -1,9 +1,10 @@
-/*[toml]
-[dependencies]
-thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
-*/
-
-use thag_proc_macros::DeriveKeyMapList;
+/// Use a derive proc macro to implement a table. from a base with additions and deletions.
+/// Not very useful currently: the dream is to generate a constant and get mappings as a variable.
+//# Purpose: explore derive proc macros
+//# Categories: proc_macros, technique
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
+use thag_demo_proc_macros::DeriveKeyMapList;
 
 const MAPPINGS: [(i32, &str, &str); 7] = [
     (10, "Key bindings", "Description"),

@@ -4,6 +4,7 @@
 /// going to be checked by the compiler anyway. Compare with `demo/loop_expr.rs`.
 /// P.S.: This was since implemented as `--loop`.
 //# Purpose: Evaluate closure logic for line processing.
+//# Categories: exploration, technique
 use std::io::Read;
 
 let mut n = 0;

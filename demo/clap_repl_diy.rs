@@ -1,13 +1,13 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.3", features = ["derive"] }
+clap = { version = "4.5.21", features = ["derive"] }
 shlex = "0.1.1"
 */
 
-/// Example from the clap cookbook, not using the clap-repl crate.
-/// Can't find a keybinding to navigate history, unlike
-/// clap_repl_rustyline.rs and unlike clap_repl_reedline.rs.
+/// Example from the clap cookbook, not using the `clap-repl` crate.
+/// Can't find a keybinding to navigate history, unlike `clap_repl_crate_rustyline.rs`.
 //# Purpose: Demo building a repl using `clap` directly.
+//# Categories: REPL, technique
 use std::io::Write;
 
 use clap::{Parser, Subcommand};

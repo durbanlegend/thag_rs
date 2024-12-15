@@ -1,34 +1,40 @@
 use crate::code_utils::{
-    self, build_loop, create_temp_source_file, extract_ast_expr, extract_manifest,
-    read_file_contents, remove_inner_attributes, strip_curly_braces, to_ast, wrap_snippet,
-    write_source,
+    self, build_loop, create_temp_source_file, extract_manifest, get_source_path,
+    read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
-use crate::colors::gen_mappings;
+use crate::code_utils::{extract_ast_expr, to_ast};
+use crate::colors::init_styles;
 use crate::config::{self, RealContext};
+#[cfg(debug_assertions)]
+use crate::debug_timings;
 use crate::logging::is_debug_logging_enabled;
 use crate::repl::run_repl;
+use crate::shared::{find_crates, find_metadata};
 use crate::stdin::{edit, read};
+#[cfg(debug_assertions)]
+use crate::VERSION;
 use crate::{
-    coloring, cvprtln, debug_log, debug_timings, display_timings, get_proc_flags, manifest,
-    maybe_config, regex, validate_args, vlog, Ast, BuildState, Cli, CrosstermEventReader, Lvl,
-    ProcFlags, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
-    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V, VERSION,
+    coloring, cvprtln, debug_log, display_timings, get_proc_flags, manifest, maybe_config, regex,
+    repeat_dash, validate_args, vlog, Ast, BuildState, Cli, CrosstermEventReader, Dependencies,
+    Lvl, ProcFlags, ScriptState, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
+    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use cargo_toml::Manifest;
 use firestorm::{profile_fn, profile_section};
+#[cfg(debug_assertions)]
 use log::{log_enabled, Level::Debug};
 use nu_ansi_term::Style;
 use regex::Regex;
-use std::env::current_dir;
-use std::string::ToString;
+use side_by_side_diff::create_side_by_side_diff;
 use std::{
+    env::current_dir,
     fs::{self, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
     process::Command,
+    string::ToString,
     time::Instant,
 };
-use syn::Expr;
 
 /// Execute the script runner.
 /// # Errors
@@ -48,11 +54,12 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
 
     let proc_flags = get_proc_flags(args)?;
 
+    #[cfg(debug_assertions)]
     if log_enabled!(Debug) {
         log_init_setup(start, args, &proc_flags);
     }
 
-    gen_mappings(term_theme, maybe_color_support);
+    init_styles(term_theme, maybe_color_support);
 
     // set_verbosity(args)?;
 
@@ -96,7 +103,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
         is_repl,
         args,
         &working_dir_path,
-        &repl_source_path,
+        repl_source_path.as_ref(),
         is_dynamic,
     )?;
 
@@ -111,7 +118,7 @@ fn resolve_script_dir_path(
     is_repl: bool,
     args: &Cli,
     working_dir_path: &Path,
-    repl_source_path: &Option<PathBuf>,
+    repl_source_path: Option<&PathBuf>,
     is_dynamic: bool,
 ) -> ThagResult<PathBuf> {
     profile_fn!(resolve_script_dir_path);
@@ -251,16 +258,9 @@ fn process(
         let expr_ast = extract_ast_expr(&rs_source)?;
 
         debug_log!("expr_ast={expr_ast:#?}");
-        process_expr(
-            expr_ast,
-            &mut build_state,
-            &rs_source,
-            args,
-            proc_flags,
-            &start,
-        )
+        process_expr(&mut build_state, &rs_source, args, proc_flags, &start)
     } else {
-        gen_build_run(args, proc_flags, &mut build_state, None::<Ast>, &start)
+        gen_build_run(args, proc_flags, &mut build_state, &start)
     }
 }
 
@@ -268,20 +268,21 @@ fn process(
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
 pub fn process_expr(
-    expr_ast: Expr,
     build_state: &mut BuildState,
     rs_source: &str,
     args: &Cli,
     proc_flags: &ProcFlags,
     start: &Instant,
 ) -> ThagResult<()> {
-    let syntax_tree = Some(Ast::Expr(expr_ast));
+    profile_fn!(process_expr);
+    // let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
-    let result = gen_build_run(args, proc_flags, build_state, syntax_tree, start);
+    let result = gen_build_run(args, proc_flags, build_state, start);
     vlog!(V::N, "{result:?}");
     Ok(())
 }
 
+#[cfg(debug_assertions)]
 fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
     profile_fn!(log_init_setup);
     debug_log_config();
@@ -296,6 +297,7 @@ fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
     }
 }
 
+#[cfg(debug_assertions)]
 fn debug_log_config() {
     profile_fn!(debug_log_config);
     debug_log!("PACKAGE_NAME={PACKAGE_NAME}");
@@ -315,7 +317,6 @@ pub fn gen_build_run(
     args: &Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
-    syntax_tree: Option<Ast>,
     start: &Instant,
 ) -> ThagResult<()> {
     // Instrument the entire function
@@ -344,30 +345,21 @@ pub fn gen_build_run(
         // let sourch_path_string = source_path.display().to_string();
         let sourch_path_string = source_path.to_string_lossy();
         // let mut rs_source = read_file_contents(&build_state.source_path)?;
-        let mut syntax_tree: Option<Ast> = if syntax_tree.is_none() {
-            to_ast(&sourch_path_string, &rs_source)
-        } else {
-            syntax_tree
-        };
-
-        if syntax_tree.is_none() {
-            cvprtln!(
-                Lvl::WARN,
-                V::QQ,
-                "If no useful error messages are shown below, try `rustfmt {0}` or `rustc {0}`.",
-                source_path
-                    .strip_prefix(current_dir()?)
-                    .map_err(|e| e.to_string())?
-                    .display()
-            );
+        if build_state.ast.is_none() {
+            build_state.ast = to_ast(&sourch_path_string, &rs_source);
         }
-        // debug_log!("syntax_tree={syntax_tree:#?}");
+        if let Some(ref ast) = build_state.ast {
+            build_state.crates_finder = Some(find_crates(ast));
+            build_state.metadata_finder = Some(find_metadata(ast));
+        }
 
-        let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
-
-        let main_methods = syntax_tree.as_ref().map_or_else(
-            || re.find_iter(&rs_source).count(),
-            code_utils::count_main_methods,
+        let metadata_finder = build_state.metadata_finder.as_ref();
+        let main_methods = metadata_finder.map_or_else(
+            || {
+                let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
+                re.find_iter(&rs_source).count()
+            },
+            |metadata_finder| metadata_finder.main_count,
         );
         let has_main = match main_methods {
             0 => false,
@@ -388,7 +380,7 @@ pub fn gen_build_run(
         // NB build scripts that are well-formed programs from the original source.
         // Fun fact: Rust compiler will ignore shebangs:
         // https://neosmart.net/blog/self-compiling-rust-code/
-        let is_file = syntax_tree.as_ref().map_or(false, Ast::is_file);
+        let is_file = build_state.ast.as_ref().map_or(false, Ast::is_file);
         build_state.build_from_orig_source = has_main && args.script.is_some() && is_file;
 
         debug_log!(
@@ -408,7 +400,7 @@ pub fn gen_build_run(
         // debug_log!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
-            manifest::merge(build_state, &rs_source, &syntax_tree)?;
+            manifest::merge(build_state, &rs_source)?;
         }
 
         // println!("build_state={build_state:#?}");
@@ -423,12 +415,13 @@ pub fn gen_build_run(
             // let start_quote = Instant::now();
 
             // Remove any inner attributes from the syntax tree
-            let found = if let Some(Ast::Expr(syn::Expr::Block(ref mut expr_block))) = syntax_tree {
-                // Apply the RemoveInnerAttributes visitor to the expression block
-                remove_inner_attributes(expr_block)
-            } else {
-                false
-            };
+            let found =
+                if let Some(Ast::Expr(syn::Expr::Block(ref mut expr_block))) = build_state.ast {
+                    // Apply the RemoveInnerAttributes visitor to the expression block
+                    remove_inner_attributes(expr_block)
+                } else {
+                    false
+                };
 
             let (inner_attribs, body) = if found {
                 code_utils::extract_inner_attribs(&rs_source)
@@ -436,7 +429,7 @@ pub fn gen_build_run(
                 (String::new(), rs_source)
             };
 
-            let rust_code = syntax_tree.as_ref().map_or(body, |syntax_tree_ref| {
+            let rust_code = build_state.ast.as_ref().map_or(body, |syntax_tree_ref| {
                 let returns_unit = match syntax_tree_ref {
                     Ast::Expr(expr) => code_utils::is_unit_return_type(expr),
                     Ast::File(_) => true, // Trivially true since we're here because there's no main
@@ -495,7 +488,7 @@ pub fn gen_build_run(
     } else {
         let build_qualifier =
             if proc_flags.contains(ProcFlags::NORUN) && !proc_flags.contains(ProcFlags::BUILD) {
-                "Skipping cargo build step because --norun specified without --build."
+                "Skipping cargo build step because --gen specified without --build."
             } else {
                 "Skipping unnecessary cargo build step. Use --force (-f) to override."
             };
@@ -527,7 +520,7 @@ pub fn generate(
     rs_source: Option<&str>,
     proc_flags: &ProcFlags,
 ) -> ThagResult<()> {
-    // profile_fn!(generate);
+    profile_fn!(generate);
     let start_gen = Instant::now();
 
     if is_debug_logging_enabled() {
@@ -547,15 +540,24 @@ pub fn generate(
     vlog!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {
-        profile_section!(transform);
-        let syntax_tree = syn_parse_file(rs_source)?;
-        let rs_source = prettyplease_unparse(&syntax_tree);
-        write_source(&target_rs_path, &rs_source)?;
+        profile_section!(transform_snippet);
+        // TODO make this configurable
+        let rs_source: &str = {
+            #[cfg(feature = "format_snippet")]
+            {
+                let syntax_tree = syn_parse_file(rs_source)?;
+                prettyplease_unparse(&syntax_tree)
+            }
+            #[cfg(not(feature = "format_snippet"))]
+            rs_source.expect("Logic error retrieving rs_source")
+        };
+
+        write_source(&target_rs_path, rs_source)?;
     }
 
     // Remove any existing Cargo.lock as this may raise spurious compatibility issues with new dependency versions.
     let lock_path = &build_state.target_dir_path.join("Cargo.lock");
-    eprintln!("Lock path {lock_path:?} exists? - {}", lock_path.exists());
+    // eprintln!("Lock path {lock_path:?} exists? - {}", lock_path.exists());
     if lock_path.exists() {
         fs::remove_file(lock_path)?;
     }
@@ -585,6 +587,7 @@ pub fn generate(
 }
 
 #[inline]
+#[cfg(feature = "format_snippet")]
 fn syn_parse_file(rs_source: Option<&str>) -> ThagResult<syn::File> {
     profile_fn!(syn_parse_file);
     let syntax_tree = syn::parse_file(rs_source.ok_or("Logic error retrieving rs_source")?)?;
@@ -592,80 +595,186 @@ fn syn_parse_file(rs_source: Option<&str>) -> ThagResult<syn::File> {
 }
 
 #[inline]
+#[cfg(feature = "format_snippet")]
 fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
     profile_fn!(prettyplease_unparse);
     prettyplease::unparse(syntax_tree)
 }
 
-/// Build the Rust program using Cargo (with manifest path)
+/// Call Cargo to build, check or expand the prepared script.
+///
 /// # Errors
-/// Will return `Err` if there is an error composing the Cargo TOML path or running the Cargo build command.
-/// # Panics
-/// Will panic if the cargo build process fails to spawn or if it can't move the executable.
+///
+/// This function will bubble up any errors encountered.
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
-    // profile_fn!(build);
-
     let start_build = Instant::now();
-    let quiet = proc_flags.contains(ProcFlags::QUIET);
-    let quieter = proc_flags.contains(ProcFlags::QUIETER);
-    let executable = proc_flags.contains(ProcFlags::EXECUTABLE);
-    let check = proc_flags.contains(ProcFlags::CHECK);
+    profile_fn!(build);
+    vlog!(V::V, "BBBBBBBB In build");
 
-    debug_log!("BBBBBBBB In build");
+    if proc_flags.contains(ProcFlags::EXPAND) {
+        handle_expand(proc_flags, build_state)
+    } else {
+        handle_build_or_check(proc_flags, build_state)
+    }?;
 
+    display_timings(&start_build, "Completed build", proc_flags);
+    Ok(())
+}
+
+fn create_cargo_command(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<Command> {
+    profile_fn!(create_cargo_command);
     let cargo_toml_path_str = code_utils::path_to_str(&build_state.cargo_toml_path)?;
-
     let mut cargo_command = Command::new("cargo");
-    let cargo_subcommand = if check { "check" } else { "build" };
-    // Rustc writes to std
-    let mut args = vec![cargo_subcommand, "--manifest-path", &cargo_toml_path_str];
-    if quiet || quieter {
-        args.push("--quiet");
+
+    let args = build_command_args(proc_flags, build_state, &cargo_toml_path_str);
+    cargo_command.args(&args);
+
+    configure_command_output(&mut cargo_command, proc_flags);
+    Ok(cargo_command)
+}
+
+fn build_command_args(
+    proc_flags: &ProcFlags,
+    build_state: &BuildState,
+    cargo_toml_path: &str,
+) -> Vec<String> {
+    profile_fn!(build_command_args);
+    let mut args = vec![
+        get_cargo_subcommand(proc_flags, build_state).to_string(),
+        "--manifest-path".to_string(),
+        cargo_toml_path.to_string(),
+    ];
+
+    if proc_flags.contains(ProcFlags::QUIET) || proc_flags.contains(ProcFlags::QUIETER) {
+        args.push("--quiet".to_string());
     }
-    if executable {
-        args.push("--release");
+
+    if proc_flags.contains(ProcFlags::EXECUTABLE) {
+        args.push("--release".to_string());
+    } else if proc_flags.contains(ProcFlags::EXPAND) {
+        args.extend_from_slice(&[
+            "--bin".to_string(),
+            build_state.source_stem.clone(),
+            "--theme=gruvbox-dark".to_string(),
+        ]);
+    } else if proc_flags.contains(ProcFlags::CARGO) {
+        args.extend_from_slice(&build_state.args[1..]);
     }
 
-    cargo_command.args(&args); // .current_dir(build_dir);
+    args
+}
 
-    // Show sign of life in case build takes a while
-    vlog!(
-        V::N,
-        "{} {} ...",
-        if check { "Checking" } else { "Building" },
-        Style::from(&Lvl::EMPH).paint(&build_state.source_name)
-    );
+fn get_cargo_subcommand(proc_flags: &ProcFlags, build_state: &BuildState) -> &'static str {
+    profile_fn!(get_cargo_subcommand);
+    if proc_flags.contains(ProcFlags::CHECK) {
+        "check"
+    } else if proc_flags.contains(ProcFlags::EXPAND) {
+        "expand"
+    } else if proc_flags.contains(ProcFlags::CARGO) {
+        // Convert to owned String then get static str to avoid lifetime issues
+        Box::leak(build_state.args[0].clone().into_boxed_str())
+    } else {
+        "build"
+    }
+}
 
-    if quieter {
-        // Pipe output
-        cargo_command
+fn configure_command_output(command: &mut Command, proc_flags: &ProcFlags) {
+    profile_fn!(configure_command_output);
+    if proc_flags.contains(ProcFlags::QUIETER) || proc_flags.contains(ProcFlags::EXPAND) {
+        command
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped());
     } else {
-        // Redirect stdout and stderr to inherit from the parent process (terminal)
-        cargo_command
+        command
             .stdout(std::process::Stdio::inherit())
             .stderr(std::process::Stdio::inherit());
     }
+}
 
-    // Execute the command and handle the result
-    let output = cargo_command.spawn()?;
+fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
+    profile_fn!(handle_expand);
+    let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    // Wait for the process to finish
-    let exit_status = output.wait_with_output()?;
+    // eprintln!("cargo_command={cargo_command:#?}");
 
-    if exit_status.status.success() {
-        debug_log!("Build succeeded");
-        if executable {
-            deploy_executable(build_state)?;
-        }
-    } else {
+    let output = cargo_command.output()?;
+
+    if !output.status.success() {
+        eprintln!(
+            "Error running `cargo expand`: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return Err("Expansion failed".into());
+    }
+
+    display_expansion_diff(output.stdout, build_state)?;
+    Ok(())
+}
+
+fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
+    profile_fn!(handle_build_or_check);
+    let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
+
+    // eprintln!("cargo_command={cargo_command:#?}");
+
+    let status = cargo_command.spawn()?.wait()?;
+
+    if !status.success() {
+        display_build_failure();
         return Err("Build failed".into());
+    }
+
+    if proc_flags.contains(ProcFlags::EXECUTABLE) {
+        deploy_executable(build_state)?;
+    }
+    Ok(())
+}
+
+fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResult<()> {
+    profile_fn!(display_expansion_diff);
+    let expanded_source = String::from_utf8(stdout)?;
+    let unexpanded_path = get_source_path(build_state);
+    let unexpanded_source = std::fs::read_to_string(unexpanded_path)?;
+
+    let max_width = if let Ok((width, _height)) = crossterm::terminal::size() {
+        (width - 26) / 2
+    } else {
+        80
     };
 
-    display_timings(&start_build, "Completed build", proc_flags);
-
+    let diff = create_side_by_side_diff(&unexpanded_source, &expanded_source, max_width.into());
+    println!("{diff}");
     Ok(())
+}
+
+fn display_build_failure() {
+    profile_fn!(display_build_failure);
+    cvprtln!(&Lvl::ERR, V::N, "Build failed");
+    let config = maybe_config();
+    let binding = Dependencies::default();
+    let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
+    let inference_level = &dep_config.inference_level;
+
+    let advice = match inference_level {
+        config::DependencyInference::None => "You are running without dependency inference.",
+        config::DependencyInference::Min => "You may be missing features or `thag` may not be picking up dependencies.",
+        config::DependencyInference::Config => "You may need to tweak your config feature overrides or 'toml` block",
+        config::DependencyInference::Max => "It may be that maximal dependency inference is specifying conflicting features. Consider trying `config` or failing that, a `toml` block",
+    };
+
+    cvprtln!(
+        &Lvl::EMPH,
+        V::N,
+        r#"Dependency inference_level={inference_level:#?}
+If the problem is a dependency error, consider the following advice:
+{advice}
+{}"#,
+        if matches!(inference_level, config::DependencyInference::Config) {
+            ""
+        } else {
+            "Consider running with dependency inference_level configured as `config` or an embedded `toml` block."
+        }
+    );
 }
 
 fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
@@ -715,15 +824,16 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     debug_log!("executable_path={executable_path:#?}, output_path={output_path:#?}");
     fs::rename(executable_path, output_path)?;
 
-    let dash_line = "-".repeat(FLOWER_BOX_LEN);
-    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
+    // let dash_line = "-".repeat(&FLOWER_BOX_LEN);
+    repeat_dash!(70);
+    cvprtln!(Lvl::EMPH, V::Q, "{DASH_LINE}");
 
     vlog!(
         V::QQ,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
     );
 
-    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
+    cvprtln!(Lvl::EMPH, V::Q, "{DASH_LINE}");
     Ok(())
 }
 

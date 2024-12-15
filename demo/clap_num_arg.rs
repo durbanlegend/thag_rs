@@ -9,6 +9,7 @@ use clap::{Arg, Command};
 ///
 /// E.g. `thag demo/clap_num_arg.rs -- 45`
 //# Purpose: Basic demo of `clap` parsing a numeric argument
+//# Categories: CLI, crates, technique
 fn main() {
     let matches = Command::new("clap_num_arg")
         .arg(

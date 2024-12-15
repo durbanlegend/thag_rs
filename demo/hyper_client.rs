@@ -33,9 +33,11 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 /// redundancies.
 /// You can run the `hyper_echo_server.rs` demo as the HTTP server on
 /// another command line and connect to it on port 3000:
-/// `thag_rs demo/hyper_client.rs -- http://127.0.0.1:3000`.
+/// `thag demo/hyper_client.rs -- http://127.0.0.1:3000`.
 /// Or use any other available HTTP server.
 //# Purpose: Demo `hyper` HTTP client, and incorporating separate modules into the script.
+//# Categories: async, crates, technique
+//# Sample arguments: `-- http://127.0.0.1:3000`
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
@@ -89,6 +91,7 @@ async fn fetch_url(url: hyper::Uri) -> Result<()> {
 
     // Stream the body, writing each chunk to stdout as we get it
     // (instead of buffering and printing at the end).
+    println!("Response body:");
     while let Some(next) = res.frame().await {
         let frame = next?;
         if let Some(chunk) = frame.data_ref() {
@@ -96,7 +99,7 @@ async fn fetch_url(url: hyper::Uri) -> Result<()> {
         }
     }
 
-    println!("\n\nDone!");
+    println!("\n\nDone!\n");
 
     Ok(())
 }

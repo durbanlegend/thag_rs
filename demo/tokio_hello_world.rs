@@ -23,6 +23,7 @@ use std::error::Error;
 /// Published example from `tokio` crate. Before running, start a server: `ncat -l 6142`
 /// in another terminal.
 //# Purpose: Demo running `tokio` from `thag_rs`.
+//# Categories: async, educational, technique
 #[tokio::main]
 // To start a server that this client can talk to on port 6142, you can use this command:
 pub async fn main() -> Result<(), Box<dyn Error>> {

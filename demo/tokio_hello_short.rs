@@ -14,6 +14,7 @@ use std::error::Error;
 /// Published example from `tokio` crate, with comments removed to work with `thag_rs` `repl` feature.
 /// Before running, start a server: `ncat -l 6142` in another terminal.
 //# Purpose: Demo running `tokio` from `thag_rs`.
+//# Categories: async, educational, technique
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn Error>> {
     let mut stream = TcpStream::connect("127.0.0.1:6142").await?;

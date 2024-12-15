@@ -9,6 +9,8 @@ ratatui = "0.28.1"
 ///
 /// Url: https://docs.rs/crossterm/latest/crossterm/
 //# Purpose: Demo `crossterm` command API.
+//# Categories: crates, technique
+//# Sample arguments: `-- true`
 use std::{
     env,
     io::{stderr, Result},

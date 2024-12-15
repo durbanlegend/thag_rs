@@ -6,6 +6,7 @@ reedline = "0.36.0"
 
 /// Published demo from `reedline` crate.
 //# Purpose: Demo the use of a transient minimal prompt `! ` for returned history.
+//# Categories: crates, REPL, technique
 // Create a reedline object with a transient prompt.
 // cargo run --example transient_prompt
 //

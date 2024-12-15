@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.87", features = ["extra-traits", "full", "visit"] }
+syn = { version = "2.0.90", features = ["extra-traits", "full", "visit"] }
 */
 
 use syn::{parse_str, Expr, Stmt};
@@ -11,6 +11,7 @@ use syn::{parse_str, Expr, Stmt};
 ///
 /// Part 1: After some back and forth with ChatGPT suggesting solutions it finally generates essentially this.
 //# Purpose: Demo use of `syn` AST to analyse code and use of AI LLM dialogue to flesh out ideas and provide code.
+//# Categories: AST, technique
 fn main() {
     let snippet = r#"
         use inline_colorization::{color_red, color_reset, style_reset, style_underline};

@@ -1,31 +1,43 @@
 #![allow(clippy::uninlined_format_args)]
 
+#[cfg(debug_assertions)]
+use thag_rs::debug_timings;
 use thag_rs::logging::{configure_log, set_verbosity};
-use thag_rs::{debug_timings, execute, get_args, ThagResult};
+use thag_rs::{execute, get_args, ThagResult};
 
 use std::cell::RefCell;
+#[cfg(debug_assertions)]
 use std::time::Instant;
 
 pub fn main() -> ThagResult<()> {
+    #[cfg(debug_assertions)]
     let start = Instant::now();
-    let args = RefCell::new(get_args()); // Wrap args in a RefCell
+    let cli = RefCell::new(get_args()); // Wrap args in a RefCell
 
-    set_verbosity(&args.borrow())?;
+    set_verbosity(&cli.borrow())?;
 
     configure_log();
+    #[cfg(debug_assertions)]
     debug_timings(&start, "Configured logging");
 
     // Check if firestorm profiling is enabled
     if firestorm::enabled() {
         // Profile the `execute` function
-        // Use borrow_mut to get a mutable reference
         firestorm::bench("./flames/", || {
-            execute(&mut args.borrow_mut()).expect("Error calling execute() in firestorm profiler");
+            handle(&cli);
         })?;
     } else {
         // Regular execution when profiling is not enabled
-        execute(&mut args.borrow_mut())?; // Use borrow_mut to get a mutable reference
+        handle(&cli);
     }
-
     Ok(())
+}
+
+fn handle(cli: &RefCell<thag_rs::Cli>) {
+    // Use borrow_mut to get a mutable reference
+    let result = execute(&mut cli.borrow_mut());
+    match result {
+        Ok(()) => (),
+        Err(e) => println!("{e}"),
+    }
 }

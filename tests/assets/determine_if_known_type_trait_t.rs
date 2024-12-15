@@ -1,6 +1,6 @@
 /// Most upvoted and recommended answer on Stack Overflow page:
 /// https://stackoverflow.com/questions/34214136/how-do-i-match-the-type-of-an-expression-in-a-rust-macro/34214916#34214916
-/// seems to work very well provided all the types encountered are anticipated.
+/// Seems to work very well provided all the types encountered are anticipated.
 
 trait Attribute {
     fn process(&self);

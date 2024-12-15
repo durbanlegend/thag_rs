@@ -11,6 +11,7 @@ termbg = "0.5.2"
 /// was added manually later. This prototype is one of many that was incorporated
 /// into `thag_rs`.
 //# Purpose: Demo theme detection with `termbg`, clearing terminal state with `crossterm` and setting it as a static enum value using `lazy_static`.
+//# Categories: crates, technique
 use crossterm::{
     cursor::{MoveTo, Show},
     terminal::{Clear, ClearType},

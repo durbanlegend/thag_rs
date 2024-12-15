@@ -5,6 +5,7 @@
 /// Place any command-line options and/or arguments for the script at the end after a -- as shown.
 ///
 //# Purpose: Convenience for any `rust-script` user who wants to try out `thag`.
+//# Categories: crates, tools
 use std::io::{self, Read, Write};
 
 fn read_stdin() -> Result<String, io::Error> {

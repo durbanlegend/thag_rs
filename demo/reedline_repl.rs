@@ -5,6 +5,7 @@ reedline-repl-rs = "1.1.1"
 
 /// Published example from `reedline-repl-rs` crate.
 //# Purpose: Explore the suitability of this crate for a Rust REPL. Conclusion: it's more geared to commands.
+//# Categories: crates, REPL, technique
 // Subcommands example
 use reedline_repl_rs::clap::{Arg, ArgAction, ArgMatches, Command};
 use reedline_repl_rs::{Repl, Result};

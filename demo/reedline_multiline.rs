@@ -8,6 +8,7 @@ reedline = "0.36.0"
 /// Exploratory prototype of REPL support for multi-line expressions. Based on published example
 /// `custom_prompt.rs` in `reedline` crate.
 //# Purpose: Explore options for handling multi-line expressions in a REPL.
+//# Categories: crates, REPL, technique
 use nu_ansi_term::{Color, Style};
 use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,

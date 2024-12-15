@@ -1,17 +1,19 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.7", features = ["cargo"] }
+clap = { version = "4.5.21", features = ["cargo"] }
 */
 
 /// Published example from `clap` tutorial (builder)
 ///
-/// E.g.  `thag_rs demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
+/// E.g.  `thag demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
 //# Purpose: Demonstrate `clap` CLI using the builder option
+//# Categories: CLI, crates, technique
 use std::path::PathBuf;
 
 use clap::{arg, command, value_parser, ArgAction, Command};
 
 //# Purpose: Demonstrate `clap` CLI using the builder option
+//# Categories: CLI, crates, technique
 fn main() {
     let matches = command!() // requires `cargo` feature
         .arg(arg!([name] "Optional name to operate on"))

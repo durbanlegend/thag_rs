@@ -5,6 +5,7 @@
 */
 
 //# Purpose: Demo CLI alternative to clap crate
+//# Categories: CLI, crates, technique
 
 /// Example from bpaf crate docs2/src/adjacent_command/derive.rs.
 ///

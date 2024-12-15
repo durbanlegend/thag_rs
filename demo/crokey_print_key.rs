@@ -2,12 +2,11 @@
 [dependencies]
 crokey = "1.1.0"
 crossterm = "0.28.1"
-serde = { version = "1.0.130", features = ["derive"] }
-toml = "0.5"
 */
 
 /// Published example of combiner from `crokey` crate.
 //# Purpose: Demo key combiner.
+//# Categories: crates, technique
 use {
     crokey::*,
     crossterm::{

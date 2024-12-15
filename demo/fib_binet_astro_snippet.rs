@@ -17,6 +17,8 @@ astro-float = "0.9.4"
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo closed-form Fibonacci computation and the limitations of calculations based on irrational numbers, also `astro-float` crate..
+//# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use astro_float::{expr, BigFloat, Consts, RoundingMode};
 use astro_float::ctx::Context;
 use std::env;

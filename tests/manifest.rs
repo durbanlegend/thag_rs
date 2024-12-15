@@ -1,11 +1,12 @@
 #[cfg(test)]
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest};
-    use mockall::predicate::*;
-    use std::process::Output;
-    use thag_rs::manifest::{
-        capture_dep, cargo_search, configure_default, merge, MockCommandRunner,
-    };
+    use semver::Version;
+    use std::path::PathBuf;
+    use std::time::Instant;
+    use thag_rs::code_utils::{self, to_ast};
+    use thag_rs::manifest::{capture_dep, cargo_lookup, configure_default, merge};
+    use thag_rs::shared::{find_crates, find_metadata};
     use thag_rs::BuildState;
 
     // Set environment variables before running tests
@@ -19,47 +20,15 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
     }
 
-    fn successful_exit_status() -> std::process::ExitStatus {
-        #[cfg(unix)]
-        {
-            use std::os::unix::process::ExitStatusExt;
-            std::process::ExitStatus::from_raw(0)
-        }
-
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::ExitStatusExt;
-            std::process::ExitStatus::from_raw(0)
-        }
-    }
-
     #[test]
-    fn test_manifest_cargo_search_success() {
+    fn test_manifest_cargo_lookup_success() {
         set_up();
-        let output = Output {
-            status: successful_exit_status(),
-            stdout: b"serde = \"1.0.203\"".to_vec(),
-            stderr: Vec::new(),
-        };
-
-        let mut mock_runner = MockCommandRunner::new();
-        let args: Vec<String> = vec![
-            "search".to_string(),
-            "serde".to_string(),
-            "--limit".to_string(),
-            "1".to_string(),
-        ];
-
-        mock_runner
-            .expect_run_command()
-            .with(eq("cargo"), eq(args))
-            .returning(move |_, _| Ok(output.clone()));
-
-        let result = cargo_search(&mock_runner, "serde");
-        assert!(result.is_ok());
-        let (name, version) = result.unwrap();
+        let option = cargo_lookup("serde");
+        assert!(option.is_some());
+        let (name, version) = option.unwrap();
         assert_eq!(name, "serde");
-        assert_eq!(version, "1.0.203");
+        assert!(version.starts_with("1.0."));
+        assert!(version.as_str() >= "1.0.215");
     }
 
     #[test]
@@ -99,22 +68,6 @@ mod tests {
         assert_eq!(package.version.get().unwrap(), &"0.0.1".to_string());
         assert!(matches!(package.edition.get().unwrap(), Edition::E2021));
     }
-
-    // #[test]
-    // fn test_manifest_cargo_search_success() {
-    //     // This is a mocked test. In a real test environment, you should mock Command to simulate Cargo behavior.
-    //     let output = r#"serde = "1.0.203""#;
-    //     let mut search_command = NamedTempFile::new().unwrap();
-    //     writeln!(search_command, "{}", output).unwrap();
-    //     search_command.flush().unwrap();
-
-    //     // Mocking Command::output
-    //     let result = cargo_search("serde");
-    //     assert!(result.is_ok());
-    //     let (name, version) = result.unwrap();
-    //     assert_eq!(name, "serde");
-    //     assert_eq!(version, "1.0.203");
-    // }
 
     #[test]
     fn test_manifest_merge_manifest() -> Result<(), Box<dyn std::error::Error>> {
@@ -157,10 +110,9 @@ mod tests {
         extern crate serde_derive;
         "#;
 
-        let syntax_tree = None;
-        merge(&mut build_state, rs_source, &syntax_tree)?;
+        merge(&mut build_state, rs_source)?;
 
-        eprintln!("merged manifest={:#?}", build_state.cargo_manifest);
+        // eprintln!("merged manifest={:#?}", build_state.cargo_manifest);
 
         if let Some(ref manifest) = build_state.cargo_manifest {
             assert_eq!(manifest.package().name(), "toml_block_name");
@@ -200,5 +152,234 @@ mod tests {
         }
 
         Ok(())
+    }
+
+    #[test]
+    fn test_manifest_search_valid_crate() {
+        set_up();
+        init_logger();
+        let result = cargo_lookup("serde");
+        assert!(result.is_some());
+        let (name, version) = result.unwrap();
+        assert_eq!(name, "serde");
+        assert!(Version::parse(&version).unwrap().pre.is_empty());
+    }
+
+    #[test]
+    fn test_manifest_cargo_lookup_hyphenated() {
+        set_up();
+        init_logger();
+        let result = cargo_lookup("nu_ansi_term");
+        assert!(result.is_some());
+        let (name, version) = result.unwrap();
+        assert_eq!(name, "nu-ansi-term");
+        assert!(Version::parse(&version).unwrap().pre.is_empty());
+    }
+
+    #[test]
+    fn test_manifest_cargo_lookup_nonexistent_crate() {
+        set_up();
+        init_logger();
+        let result = cargo_lookup("definitely_not_a_real_crate_name");
+        assert!(result.is_none());
+    }
+
+    fn setup_build_state(source: &str) -> BuildState {
+        let mut build_state = BuildState {
+            source_path: PathBuf::from("dummy_test.rs"),
+            source_stem: String::from("dummy_test"),
+            ast: None,
+            crates_finder: None,
+            metadata_finder: None,
+            cargo_manifest: None,
+            rs_manifest: None,
+            build_from_orig_source: false,
+            ..Default::default()
+        };
+
+        let source_path_string = build_state.source_path.to_string_lossy();
+
+        if build_state.ast.is_none() {
+            build_state.ast = to_ast(&source_path_string, source);
+        }
+
+        if let Some(ref ast) = build_state.ast {
+            build_state.crates_finder = Some(find_crates(ast));
+            build_state.metadata_finder = Some(find_metadata(ast));
+        }
+
+        let rs_manifest: Manifest =
+            { code_utils::extract_manifest(&source, Instant::now()) }.unwrap();
+
+        // debug_log!("rs_manifest={rs_manifest:#?}");
+
+        // eprintln!("rs_source={source}");
+        if build_state.rs_manifest.is_none() {
+            build_state.rs_manifest = Some(rs_manifest);
+        }
+
+        build_state
+    }
+
+    #[test]
+    fn test_manifest_analyze_type_annotations() {
+        set_up();
+        init_logger();
+        let source = r#"
+            struct MyStruct {
+                client: reqwest::Client,
+                pool: sqlx::PgPool,
+            }
+
+            fn process(data: serde_json::Value) -> anyhow::Result<()> {
+                let cache: redis::Client = redis::Client::new();
+                Ok(())
+            }
+        "#;
+
+        let mut build_state = setup_build_state(source);
+
+        //         eprintln!(
+        //             r#"In test_manifest_analyze_type_annotations: build_state.crates_finder ={:#?}
+        // build_state.metadata_finder={:#?}"#,
+        //             build_state.crates_finder, build_state.metadata_finder
+        //         );
+        merge(&mut build_state, source).unwrap();
+
+        let manifest = build_state.cargo_manifest.unwrap();
+        // eprintln!(
+        //     "In test_manifest_analyze_type_annotations: source={source}\ndeps={:#?}",
+        //     manifest.dependencies
+        // );
+        assert!(manifest.dependencies.contains_key("reqwest"));
+        assert!(manifest.dependencies.contains_key("sqlx"));
+        assert!(manifest.dependencies.contains_key("serde_json"));
+        assert!(manifest.dependencies.contains_key("anyhow"));
+        assert!(manifest.dependencies.contains_key("redis"));
+    }
+
+    #[test]
+    fn test_manifest_analyze_expr_paths() {
+        set_up();
+        init_logger();
+        let source = r#"
+            fn main() {
+                // Should detect
+                let client = reqwest::Client::new();
+                let json = serde_json::json!({});
+
+                // Should not detect (single segment)
+                let response = client.get();
+                let data = json.to_string();
+            }
+        "#;
+
+        let mut build_state = setup_build_state(source);
+        //         eprintln!(
+        //             r#"In test_manifest_analyze_expr_paths: build_state.crates_finder ={:#?}
+        // build_state.metadata_finder={:#?}"#,
+        //             build_state.crates_finder, build_state.metadata_finder
+        //         );
+        merge(&mut build_state, source).unwrap();
+        let manifest = build_state.cargo_manifest.unwrap();
+        // eprintln!(
+        //     "In test_manifest_analyze_expr_paths: source={source}\ndeps={:#?}",
+        //     manifest.dependencies
+        // );
+
+        assert!(manifest.dependencies.contains_key("reqwest"));
+        assert!(manifest.dependencies.contains_key("serde_json"));
+        assert_eq!(manifest.dependencies.len(), 2);
+    }
+
+    #[test]
+    fn test_manifest_analyze_complex_paths() {
+        set_up();
+        init_logger();
+        let source = r#"
+            use tokio;
+
+            async fn process() -> Result<(), Box<dyn std::error::Error>> {
+                // Multi-segment type annotation
+                let handle: tokio::task::JoinHandle<()> = tokio::spawn(async {
+                    // Multi-segment function call
+                    let time = chrono::Utc::now();
+                    println!("Time: {}", time);
+                });
+
+                // Single segment variable (should not detect 'handle')
+                handle.await?;
+                Ok(())
+            }
+        "#;
+
+        let mut build_state = setup_build_state(source);
+        //         eprintln!(
+        //             r#"In test_manifest_analyze_complex_paths: build_state.crates_finder = {:#?}
+        // build_state.metadata_finder={:#?}"#,
+        //             build_state.crates_finder, build_state.metadata_finder
+        //         );
+        merge(&mut build_state, source).unwrap();
+        let manifest = build_state.cargo_manifest.unwrap();
+        // eprintln!(
+        //     "In test_manifest_analyze_complex_paths: source={source}\ndeps={:?}",
+        //     manifest.dependencies
+        // );
+
+        assert!(manifest.dependencies.contains_key("tokio"));
+        assert!(manifest.dependencies.contains_key("chrono"));
+        assert!(!manifest.dependencies.contains_key("handle"));
+    }
+
+    #[test]
+    fn test_manifest_analyze_macros() {
+        set_up();
+        init_logger();
+        let source = r#"
+            fn main() {
+                let json = serde_json::json!({ "key": "value" });
+                let query = sqlx::query!("SELECT * FROM users");
+                let sql = diesel::sql_query("SELECT 1");
+            }
+        "#;
+
+        let mut build_state = setup_build_state(source);
+        merge(&mut build_state, source).unwrap();
+
+        let manifest = build_state.cargo_manifest.unwrap();
+        assert!(manifest.dependencies.contains_key("serde_json"));
+        assert!(manifest.dependencies.contains_key("sqlx"));
+        assert!(manifest.dependencies.contains_key("diesel"));
+    }
+
+    #[test]
+    fn test_manifest_analyze_traits_and_types() {
+        set_up();
+        init_logger();
+        let source = r#"
+            use tokio;
+
+            struct MyStream;
+
+            impl tokio::io::AsyncRead for MyStream {
+                type Error = diesel::result::Error;
+
+                async fn read(&mut self) -> Result<(), Self::Error> {
+                    Ok(())
+                }
+            }
+
+            fn process<T: serde::de::DeserializeOwned>(data: T) {
+                // ...
+            }
+        "#;
+
+        let mut build_state = setup_build_state(source);
+        merge(&mut build_state, source).unwrap();
+
+        let manifest = build_state.cargo_manifest.unwrap();
+        assert!(manifest.dependencies.contains_key("tokio"));
+        assert!(manifest.dependencies.contains_key("diesel"));
+        assert!(manifest.dependencies.contains_key("serde"));
     }
 }

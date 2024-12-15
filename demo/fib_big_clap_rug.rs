@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.3", features = ["derive"] }
+clap = { version = "4.5.21", features = ["derive"] }
 rug = { version = "1.24.0", features = ["integer"] }
 */
 
@@ -17,6 +17,8 @@ rug = { version = "1.24.0", features = ["integer"] }
 /// Using `clap` here is complete overkill, but this is just a demo.
 /// On Linux you may need to install the m4 package.
 //# Purpose: Demonstrate snippets, closures, `clap` builder and a fast non-recursive fibonacci algorithm using the `successors`.
+//# Categories: big_numbers, educational, math, recreational, technique
+//# Sample arguments: `-- 100`
 use clap::{Arg, Command};
 use rug::Integer;
 use std::iter::{successors, Successors, Take};

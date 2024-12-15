@@ -21,6 +21,7 @@
 //:
 //: So let's work out the 3 child triples of (3, 4, 5).
 //# Purpose: Recreational, educational.
+//# Categories: educational, math, recreational
 
 println!("Pythagorean triples are sets of 3 integers a, b and c that correspond to the dimensions of a right-angled triangle.");
 println!("As if it isn't neat enough that such triangles exist, they form a tree structure and you can derive them all from the classic (3, 4, 5) triangle.");

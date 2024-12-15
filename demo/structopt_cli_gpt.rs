@@ -7,6 +7,8 @@ structopt = "0.3.26"
 /// crate is in maintenance mode, its features having been integrated
 /// into `clap`.
 //# Purpose: Demonstrate `structopt` CLI.
+//# Categories: CLI, crates, technique
+//# Sample arguments: `-- -- -Vt dummy.rs 1 2 3`
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]

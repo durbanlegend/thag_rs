@@ -2,12 +2,11 @@
 [dependencies]
 crokey = "1.1.0"
 crossterm = "0.28.0"
-serde = { version = "1.0.130", features = ["derive"] }
-toml = "0.5"
 */
 
 /// Published example of KeyCombination from `crokey` crate.
 //# Purpose: Demo key combination without Combiner.
+//# Categories: crates, technique
 use {
     crokey::*,
     crossterm::{
@@ -19,11 +18,11 @@ use {
 
 pub fn main() {
     let fmt = KeyCombinationFormat::default();
-    terminal::enable_raw_mode().unwrap();
     println!("Type any key combination (remember that your terminal intercepts many ones)");
     loop {
+        terminal::enable_raw_mode().unwrap();
         let e = read();
-        // terminal::disable_raw_mode().unwrap();
+        terminal::disable_raw_mode().unwrap();
         match e {
             Ok(Event::Key(key_event)) => {
                 if key_event.kind == KeyEventKind::Release {

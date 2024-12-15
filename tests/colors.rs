@@ -6,7 +6,7 @@ mod tests {
     use thag_rs::colors::TermTheme;
     use thag_rs::colors::{ColorSupport, MessageStyle, XtermColor};
     use thag_rs::termbg::{self, Theme};
-    use thag_rs::{cprtln, vlog, Lvl};
+    use thag_rs::{cprtln, Lvl};
 
     // Set environment variables before running tests
     fn set_up() {
@@ -49,7 +49,7 @@ mod tests {
             Some(ColorSupport::Ansi16) => {
                 assert!(!color_level.unwrap().has_16m && !color_level.unwrap().has_256);
             }
-            Some(ColorSupport::Default) => assert!(color_level.is_none()),
+            Some(ColorSupport::AutoDetect) => assert!(color_level.is_none()),
             Some(ColorSupport::None) => assert!(color_level.is_none()),
             None => {
                 assert!(color_level.is_none());
@@ -118,7 +118,7 @@ mod tests {
                         let expected_style = Color::Magenta.bold();
                         assert_eq!(style, expected_style);
                     }
-                    ColorSupport::Default => assert_eq!(style, nu_ansi_term::Style::default()),
+                    ColorSupport::AutoDetect => assert_eq!(style, nu_ansi_term::Style::default()),
                     ColorSupport::None => assert_eq!(style, nu_ansi_term::Style::default()),
                 },
                 Ok(Theme::Dark) | Err(_) => match color_support {
@@ -130,7 +130,7 @@ mod tests {
                         let expected_style = Color::Yellow.bold();
                         assert_eq!(style, expected_style);
                     }
-                    ColorSupport::Default => assert_eq!(style, nu_ansi_term::Style::default()),
+                    ColorSupport::AutoDetect => assert_eq!(style, nu_ansi_term::Style::default()),
                     ColorSupport::None => assert_eq!(style, nu_ansi_term::Style::default()),
                 },
             }
@@ -154,7 +154,7 @@ mod tests {
     fn test_colors_nu_color_println_macro() {
         // Test the nu_color_println macro
         set_up();
-        let content = "Test message from test_nu_color_println_macro";
+        let content = "Test message from test_colors_nu_color_println_macro";
         let output = format!("\u{1b}[1m{content}\u{1b}[0m");
         let style = nu_ansi_term::Style::new().bold();
         cprtln!(&style, "{}", content);

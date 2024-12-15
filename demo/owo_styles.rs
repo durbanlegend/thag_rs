@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = "0.28.1"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.2", features = ["derive"] }
+strum = { version = "0.26.3", features = ["derive"] }
 termbg = "0.5.2"
 */
 
@@ -18,6 +18,7 @@ use termbg::Theme;
 /// An early exploration of the idea of adaptive message colouring according to the terminal theme.
 
 //# Purpose: Demo a simple example of adaptive message colouring, and the featured crates.
+//# Categories: crates, exploration, technique
 pub trait ThemeStyle {
     fn get_style(&self) -> Style;
 }

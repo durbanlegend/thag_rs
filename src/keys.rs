@@ -2,6 +2,7 @@
 /// Copyright (c) 2022 Canop
 ///
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use firestorm::{profile_fn, profile_method};
 use strict::OneToThree;
 
 /// A Key combination wraps from one to three standard keys with optional modifiers
@@ -16,6 +17,7 @@ pub struct KeyCombination {
 /// otherwise if the char is uppercase, return true.
 /// If the key is the '\r' or '\n' char, change it to `KeyCode::Enter`.
 fn normalize_key_code(code: &mut KeyCode, modifiers: KeyModifiers) -> bool {
+    profile_fn!(normalize_key_code);
     if matches!(code, KeyCode::Char('\r' | '\n')) {
         *code = KeyCode::Enter;
     } else if modifiers.contains(KeyModifiers::SHIFT) {
@@ -43,6 +45,7 @@ impl KeyCombination {
     /// case where the modifier isn't mentioned but the key is uppercase.
     #[must_use]
     pub fn normalized(mut self) -> Self {
+        profile_method!(normalized);
         let mut shift = normalize_key_code(self.codes.first_mut(), self.modifiers);
         if let Some(ref mut code) = self.codes.get_mut(1) {
             shift |= normalize_key_code(code, self.modifiers);
@@ -59,6 +62,7 @@ impl KeyCombination {
 
 impl From<KeyEvent> for KeyCombination {
     fn from(key_event: KeyEvent) -> Self {
+        profile_method!(from);
         let raw = Self {
             codes: key_event.code.into(),
             modifiers: key_event.modifiers,
@@ -67,6 +71,8 @@ impl From<KeyEvent> for KeyCombination {
     }
 }
 
+/// A macro that calls the private `key` proc macro to create a `KeyCombination` from an idiomatic shorthand.
+/// Directly borrowed from the `crokey` crate.
 #[macro_export]
 macro_rules! key {
     ($($tt:tt)*) => {

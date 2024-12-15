@@ -5,6 +5,7 @@ ibig = "0.3.6"
 
 /// Implement trait std::iter::Product for `ibig::UBig`. Example provided by GPT.
 //# Purpose: Educational / reference.
+//# Categories: big_numbers, educational, reference, technique
 use ibig::{ubig, UBig};
 use std::iter::Product;
 use std::ops::{Deref, DerefMut};

@@ -8,6 +8,7 @@ crossterm = "0.28.1"
 /// A fun published example from the `terminal-light` crate. "Demonstrate mixing
 /// any ANSI color with the background."
 //# Purpose: Mostly recreational.
+//# Categories: crates, recreational
 use {
     coolor::*,
     crossterm::{
@@ -18,7 +19,6 @@ use {
     },
     std::io::{stdout, Write},
 };
-
 
 fn print_color(ansi: AnsiColor) {
     print!("{}", "█".with(style::Color::AnsiValue(ansi.code)));

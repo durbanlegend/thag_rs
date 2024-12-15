@@ -3,15 +3,6 @@
 name = "term_detection_pack"
 features = ["simplelog"]
 version = "0.0.1"
-
-[dependencies]
-crossterm = "0.28.1"
-log = "0.4.22"
-simplelog = { version = "0.12.2" }
-supports-color= "3.0.0"
-#termbg = "0.6"
-terminal-light = "1.4.0"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "6c5bff14435ebf308795dc5b62e04ea8e8d1e99e" }
 */
 
 /// A basic tool I cobbled together that uses different crates to a) test terminal
@@ -19,6 +10,7 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "6c5bff14435e
 /// theme is in use and c) determine the level of colour supported reported by
 /// the terminal.
 //# Purpose: Allow checking of terminals on platforms to be supported, also test reliability of different crates.
+//# Categories: crates, tools
 use crossterm::{
     cursor::{MoveTo, Show},
     terminal::{Clear, ClearType},
@@ -28,7 +20,7 @@ use log::info;
 use std::io::stdout;
 use std::fs::File;
 use supports_color::Stream;
-use thag_rs::termbg;
+use termbg;
 // use thag_rs::config::Config;
 use simplelog::{Config, ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger};
 

@@ -4724,7 +4724,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_c
 
 **Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
-**Crates:** `lazy_static`, `ratatui`, `regex`, `thag_rs`, `tui_textarea`
+**Crates:** `anyhow`, `lazy_static`, `ratatui`, `regex`, `tui_textarea`
 
 **Type:** Program
 

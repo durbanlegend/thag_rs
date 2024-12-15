@@ -21,7 +21,6 @@ use std::io::stdout;
 use std::fs::File;
 use supports_color::Stream;
 use termbg;
-// use thag_rs::config::Config;
 use simplelog::{Config, ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger};
 
 CombinedLogger::init(vec![

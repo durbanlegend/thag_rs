@@ -1,13 +1,12 @@
 /*[toml]
 [dependencies]
-thag_rs = "0.1.7"
-
 lazy_static = "1.4.0"
 regex = "1.10.4"
 ratatui = "0.29.0"
 tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
 */
 
+use anyhow::{anyhow, Context, Result};
 /// A version of `thag_rs`'s `stdin` module to handle standard input editor input. Like the `colors`
 /// module, `stdin` was originally developed here as a separate script and integrated as a module later.
 ///
@@ -30,21 +29,18 @@ use ratatui::widgets::block::Block;
 use ratatui::widgets::{Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use regex::Regex;
-use std::error::Error;
 use std::io::{self, IsTerminal};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
-use thag_rs::errors::ThagError;
-
 #[allow(dead_code)]
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     for line in &edit_stdin()? {
         println!("{line}");
     }
     Ok(())
 }
 
-pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
+pub fn edit_stdin() -> Result<Vec<String>> {
     let input = std::io::stdin();
 
     let initial_content = if input.is_terminal() {
@@ -67,7 +63,8 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
         EnableBracketedPaste
     )?;
     let backend = CrosstermBackend::new(stdout);
-    let mut term = Terminal::new(backend)?;
+    let mut term =
+        Terminal::new(backend).with_context(|| format!("Failed to initialise terminal"))?;
     let mut textarea = TextArea::from(initial_content.lines());
 
     textarea.set_block(
@@ -91,7 +88,8 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
             }
             apply_highlights(alt_highlights, &mut textarea);
         })?;
-        let event = ratatui::crossterm::event::read()?;
+        let event =
+            ratatui::crossterm::event::read().with_context(|| format!("Failed to read event"))?;
         if let Paste(data) = event {
             textarea.insert_str(normalize_newlines(&data));
         } else {
@@ -102,8 +100,8 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
                     ctrl: true,
                     ..
                 } => {
-                    reset_term(term)?;
-                    return Err(Box::new(ThagError::Cancelled));
+                    reset_term(term).with_context(|| format!("Failed to reset term"))?;
+                    return Err(anyhow!("Cancelled"));
                 }
                 Input {
                     key: Key::Char('d'),
@@ -123,7 +121,8 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
                     alt_highlights = !alt_highlights;
                     term.draw(|_| {
                         apply_highlights(alt_highlights, &mut textarea);
-                    })?;
+                    })
+                    .with_context(|| format!("Failed to draw"))?;
                 }
 
                 input => {
@@ -132,17 +131,20 @@ pub fn edit_stdin() -> Result<Vec<String>, Box<dyn Error>> {
             }
         }
     }
-    reset_term(term)?;
+    reset_term(term).with_context(|| format!("Failed to reset term"))?;
 
     Ok(textarea.lines().to_vec())
 }
 
 // Prompt for and read Rust source code from stdin.
-pub fn read_stdin() -> Result<String, std::io::Error> {
+pub fn read_stdin() -> Result<String> {
     println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     use std::io::Read;
     let mut buffer = String::new();
-    std::io::stdin().lock().read_to_string(&mut buffer)?;
+    std::io::stdin()
+        .lock()
+        .read_to_string(&mut buffer)
+        .with_context(|| format!("Failed to read from stdin"))?;
     Ok(buffer)
 }
 
@@ -173,9 +175,7 @@ fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
 //     textarea.insert_newline();
 // }
 
-fn reset_term(
-    mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>,
-) -> Result<(), Box<dyn Error>> {
+fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> Result<()> {
     disable_raw_mode()?;
     ratatui::crossterm::execute!(
         term.backend_mut(),

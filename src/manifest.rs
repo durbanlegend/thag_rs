@@ -333,6 +333,9 @@ pub fn lookup_deps(
         }
 
         if let Some((name, version)) = cargo_lookup(dep_name) {
+            if rs_dep_map.contains_key(&name) || rs_dep_map.contains_key(dep_name.as_str()) {
+                continue;
+            }
             // Only do it after lookup in case the found crate name has hyphens instead of the underscores it has in code.
             new_inferred_deps.push(name.clone());
             let features = get_crate_features(&name);

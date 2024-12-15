@@ -7,6 +7,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 # Include the demo directory in the crate packagename = "thag_rs"
 include = [
+    "assets/default_config.toml",
     "src/**",
     "Cargo.toml",
     "README.md",

@@ -127,6 +127,9 @@ near-ludicrous speed in its own operations.
 - [Update TODO.md](https://github.com/durbanlegend/thag_rs/commit/08d7a02340b21889ab6cfcdb85cacf139a4be565)
 - [Implement inquire for filter_demos](https://github.com/durbanlegend/thag_rs/commit/1df1c8871b080bc56397330a45fd25968943cf4f)
 - [gen_readme.rs exclude some scripts from thag_url](https://github.com/durbanlegend/thag_rs/commit/ab6ec961bfca5d0cf29921f2e3926f272223307d)
+- [Merge pull request #91 from durbanlegend/develop](https://github.com/durbanlegend/thag_rs/commit/da14783699d74d372944b0f5403b22b1e0da293a)
+- [Fix manifest false positive for adding crate](https://github.com/durbanlegend/thag_rs/commit/41838d530a65a20af131f6a0d95f65412aac62a9)
+- [Update readme images, clippy fixes](https://github.com/durbanlegend/thag_rs/commit/76f34d3fdc589cf58edac372d46c5e7e1986055a)
 
 ### Notes
 
@@ -356,6 +359,12 @@ near-ludicrous speed in its own operations.
 - Wrangling Claude Sonnet 3.5
 
 - demo/input_expr_to_ast.rs wrap script in braces to guarantee expr.
+
+- Merge develop branch (v0.1.8) into main in preparation for release
+
+- Cut down demo/stdin
+
+- clippy::pedantic and nursery.
 
 # v0.1.7 (2024-11-11)
 

@@ -151,3 +151,5 @@ build = ["sh", "-c", "zip demo.zip demo/*"]
 
 [[workspace.metadata.dist.extra-artifacts]]
 artifacts = ["assets/default_config.toml"]
+# no-op:
+build = ["true"]

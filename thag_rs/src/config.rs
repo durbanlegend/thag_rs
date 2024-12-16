@@ -74,10 +74,10 @@ impl Config {
                     fs::read_to_string(dist_config)?
                 } else {
                     // Fallback to embedded config
-                    include_str!("../assets/default_config.toml").to_string()
+                    include_str!("../../assets/default_config.toml").to_string()
                 }
             } else {
-                include_str!("../assets/default_config.toml").to_string()
+                include_str!("../../assets/default_config.toml").to_string()
             };
 
             fs::write(&config_path, default_config)?;

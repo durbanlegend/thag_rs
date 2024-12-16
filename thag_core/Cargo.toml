@@ -1,0 +1,36 @@
+[package]
+name = "thag_core"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "Core functionality for thag_rs script handling"
+
+[dependencies]
+dirs = "5.0.1"
+documented = "0.9.1"
+env_logger = { version = "0.11.5", optional = true }
+firestorm = { workspace = true }
+home = "0.5.9"
+log = "0.4.22"
+mockall = "0.13.1"
+nu-ansi-term = "0.50"
+serde = { version = "1.0.215", features = ["derive"] }
+serde_with = "3.11.0"
+simplelog = { version = "0.12.2", optional = true }
+strum = { version = "0.26.3", features = ["derive", "phf"] }
+syn = { version = "2.0.90", features = [
+    "extra-traits",
+    "full",
+    "visit",
+    "visit-mut",
+] }
+thiserror = "2.0"
+toml = "0.8.19"
+toml_edit = "0.22.22"
+
+[features]
+debug-logs = []
+nightly = []
+format_snippet = []
+default = ["simplelog"]
+profile = ["firestorm/enable_system_time"]

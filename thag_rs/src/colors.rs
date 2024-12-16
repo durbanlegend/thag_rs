@@ -7,7 +7,6 @@ use crate::{
 };
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use documented::{Documented, DocumentedVariants};
-use firestorm::{profile_fn, profile_method, profile_section};
 use log::debug;
 use nu_ansi_term::{Color, Style};
 use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
@@ -20,6 +19,7 @@ use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
+use thag_core::{profile, profile_method, profile_section};
 
 #[derive(Debug)]
 pub enum Xterm256LightStyle {
@@ -91,7 +91,7 @@ generate_styles!(
 ///
 /// This function will bubble up any i/o errors encountered.
 pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
-    profile_fn!(coloring);
+    profile!("coloring");
 
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
@@ -173,7 +173,7 @@ macro_rules! generate_styles {
         $(
             impl From<&Lvl> for $style_enum {
                 fn from(message_level: &Lvl) -> Self {
-                    profile_method!(style_enum_from_lvl);
+                    profile_method!();
 
                     // dbg!(&$style_enum::Warning);
                     // dbg!(&message_level);
@@ -195,7 +195,7 @@ macro_rules! generate_styles {
             impl From<&$style_enum> for Style {
                 #[must_use]
                 fn from(style_enum: &$style_enum) -> Self {
-                    profile_method!(style_from_style_enum);
+                    profile_method!();
                     match style_enum {
                         $style_enum::Error => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Error))).bold(),
                         $style_enum::Warning => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Warning))).bold(),
@@ -217,7 +217,7 @@ macro_rules! generate_styles {
         ) -> fn(Lvl) -> Style {
             use std::sync::OnceLock;
             static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
-            profile_fn!(init_styles);
+            profile!("init_styles");
 
             *STYLE_MAPPING.get_or_init(|| match (term_theme, color_support) {
                 $(
@@ -233,7 +233,7 @@ macro_rules! generate_styles {
 
 // #[cfg(not(target_os = "windows"))]
 fn resolve_term_theme() -> ThagResult<TermTheme> {
-    profile_fn!(resolve_term_theme);
+    profile!("resolve_term_theme");
     let raw_before = terminal::is_raw_mode_enabled()?;
     #[cfg(debug_assertions)]
     debug_log!("About to call termbg");
@@ -252,7 +252,7 @@ fn resolve_term_theme() -> ThagResult<TermTheme> {
 }
 
 fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
-    profile_fn!(maybe_restore_raw_status);
+    profile!("maybe_restore_raw_status");
     let raw_after = terminal::is_raw_mode_enabled()?;
     if raw_before == raw_after {
         debug_log!("No need to restore raw status");
@@ -264,7 +264,7 @@ fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
 }
 
 fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
-    profile_fn!(restore_raw_status);
+    profile!("restore_raw_status");
     if raw_before {
         terminal::enable_raw_mode()?;
     } else {
@@ -291,7 +291,7 @@ pub struct ColorLevel {
 
 #[cfg(target_os = "windows")]
 fn get_color_level() -> Option<ColorSupport> {
-    profile_fn!(get_color_level);
+    profile!("get_color_level");
     let color_level = translate_level(supports_color());
     match color_level {
         Some(color_level) => {
@@ -307,7 +307,7 @@ fn get_color_level() -> Option<ColorSupport> {
 
 #[cfg(not(target_os = "windows"))]
 fn get_color_level() -> Option<ColorSupport> {
-    profile_fn!(get_color_level);
+    profile!("get_color_level");
     #[cfg(debug_assertions)]
     debug_log!("About to call supports_color");
     let color_level = supports_color::on(Stream::Stdout);
@@ -322,7 +322,7 @@ fn get_color_level() -> Option<ColorSupport> {
 
 #[cfg(target_os = "windows")]
 fn env_force_color() -> usize {
-    profile_fn!(env_force_color);
+    profile!("env_force_color");
     if let Ok(force) = env::var("FORCE_COLOR") {
         match force.as_ref() {
             "true" | "" => 1,
@@ -338,7 +338,7 @@ fn env_force_color() -> usize {
 
 #[cfg(target_os = "windows")]
 fn env_no_color() -> bool {
-    profile_fn!(env_no_color);
+    profile!("env_no_color");
     match as_str(&env::var("NO_COLOR")) {
         Ok("0") | Err(_) => false,
         Ok(_) => true,
@@ -370,7 +370,7 @@ fn translate_level(level: usize) -> Option<ColorLevel> {
 
 #[cfg(target_os = "windows")]
 fn supports_color() -> usize {
-    profile_fn!(supports_color);
+    profile!("supports_color");
     let force_color = env_force_color();
     if force_color > 0 {
         force_color
@@ -430,7 +430,7 @@ fn check_256_color(term: &str) -> bool {
 /// palette to be chosen.
 #[must_use]
 pub fn get_term_theme() -> &'static TermTheme {
-    profile_fn!(get_term_theme);
+    profile!("get_term_theme");
     coloring().1
 }
 
@@ -576,14 +576,14 @@ impl Lvl {
 
 impl From<&Lvl> for u8 {
     fn from(message_level: &Lvl) -> Self {
-        profile_method!(u8_from_lvl);
+        profile_method!();
         Self::from(&XtermColor::from(message_level))
     }
 }
 
 impl From<&XtermColor> for Color {
     fn from(xterm_color: &XtermColor) -> Self {
-        profile_method!(color_from_xterm_color);
+        profile_method!();
         Self::Fixed(u8::from(xterm_color))
     }
 }
@@ -591,7 +591,7 @@ impl From<&XtermColor> for Color {
 impl From<&XtermColor> for u8 {
     #[allow(clippy::too_many_lines)]
     fn from(xterm_color: &XtermColor) -> Self {
-        profile_method!(u8_from_xterm_color);
+        profile_method!();
         match xterm_color {
             XtermColor::UserBlack => 0,
             XtermColor::UserRed => 1,
@@ -901,7 +901,7 @@ pub enum MessageStyle {
 
 impl From<&Lvl> for MessageStyle {
     fn from(message_level: &Lvl) -> Self {
-        profile_method!(msg_style_from_lvl);
+        profile_method!();
         let message_style: Self = {
             let (maybe_color_support, term_theme) = coloring();
             maybe_color_support.map_or(Self::Ansi16DarkNormal, |color_support| {
@@ -912,7 +912,7 @@ impl From<&Lvl> for MessageStyle {
                 // debug_log!(
                 //     "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
                 // );
-                profile_section!(format_and_get_variant);
+                profile_section!("format_and_get_variant");
                 Self::from_str(
                     &format!(
                         "{color_support}_{term_theme}_{message_level}" //,
@@ -932,7 +932,7 @@ impl From<&Lvl> for MessageStyle {
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for XtermColor {
     fn from(message_style: &MessageStyle) -> Self {
-        profile_method!(xterm_color_from_message_style);
+        profile_method!();
         match *message_style {
             MessageStyle::Ansi16LightError => Self::UserRed,
             MessageStyle::Ansi16LightWarning => Self::UserMagenta,
@@ -976,7 +976,7 @@ impl From<&MessageStyle> for XtermColor {
 
 impl From<&Lvl> for XtermColor {
     fn from(message_level: &Lvl) -> Self {
-        profile_method!(xterm_color_from_lvl);
+        profile_method!();
         Self::from(&MessageStyle::from(message_level))
     }
 }
@@ -984,7 +984,7 @@ impl From<&Lvl> for XtermColor {
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for Style {
     fn from(message_style: &MessageStyle) -> Self {
-        profile_method!(style_from_msg_style);
+        profile_method!();
         match *message_style {
             MessageStyle::Ansi16LightError => Color::Red.bold(),
             MessageStyle::Ansi16LightWarning => Color::Magenta.bold(),
@@ -1034,7 +1034,7 @@ impl From<&MessageStyle> for Style {
 
 impl From<&MessageLevel> for Style {
     fn from(lvl: &MessageLevel) -> Self {
-        profile_method!(style_from_lvl);
+        profile_method!();
         Self::from(&MessageStyle::from(lvl))
     }
 }
@@ -1042,7 +1042,7 @@ impl From<&MessageLevel> for Style {
 #[allow(clippy::match_same_arms)]
 impl From<&MessageStyle> for RataStyle {
     fn from(message_style: &MessageStyle) -> Self {
-        profile_method!(rata_style_from_msg_style);
+        profile_method!();
         match *message_style {
             MessageStyle::Ansi16LightError => Self::from(RataColor::Red).bold(),
             MessageStyle::Ansi16LightWarning => Self::from(RataColor::Magenta).bold(),
@@ -1126,14 +1126,14 @@ impl From<&MessageStyle> for RataStyle {
 
 impl From<&MessageLevel> for RataStyle {
     fn from(lvl: &MessageLevel) -> Self {
-        profile_method!(rata_style_from_lvl);
+        profile_method!();
         Self::from(&MessageStyle::from(lvl))
     }
 }
 
 impl From<&MessageLevel> for Color {
     fn from(lvl: &MessageLevel) -> Self {
-        profile_method!(color_from_lvl);
+        profile_method!();
         Self::from(&XtermColor::from(&MessageStyle::from(lvl)))
     }
 }

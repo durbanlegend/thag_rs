@@ -3,9 +3,9 @@ use crate::debug_log;
 use crate::error::{ThagError, ThagResult};
 use crate::lazy_static_var;
 use crate::logging::Verbosity;
+use crate::{profile, profile_method};
 use dirs;
 use documented::{Documented, DocumentedFields};
-use firestorm::{profile_fn, profile_method};
 use mockall::automock;
 use nu_ansi_term::Style;
 use serde::{Deserialize, Serialize};
@@ -66,7 +66,7 @@ impl Config {
     ///
     /// This function will bubble up any i/o errors encountered.
     pub fn load_or_create_default() -> ThagResult<Self> {
-        profile_method!(load_or_create_default);
+        profile_method!();
         let config_dir = if let Some(cargo_home) = std::env::var_os("CARGO_HOME") {
             PathBuf::from(cargo_home).join(".config").join("thag_rs")
         } else {
@@ -110,7 +110,7 @@ impl Config {
     ///
     /// This function will bubble up any errors encountered.
     pub fn load(path: &Path) -> ThagResult<Self> {
-        profile_method!(load);
+        profile_method!();
         let content = std::fs::read_to_string(path)?;
         let config: Self = toml::from_str(&content)?;
         validate_config_format(&content)?;
@@ -139,7 +139,7 @@ impl RealContext {
     #[cfg(target_os = "windows")]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!(new_real_contexr);
+        profile_method!();
         let base_dir =
             PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"));
         Self { base_dir }
@@ -153,7 +153,7 @@ impl RealContext {
     #[cfg(not(target_os = "windows"))]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!(new_real_contexr);
+        profile_method!();
         let base_dir = home::home_dir()
             .expect("Error resolving home::home_dir()")
             .join(".config");
@@ -163,7 +163,7 @@ impl RealContext {
 
 impl Context for RealContext {
     fn get_config_path(&self) -> PathBuf {
-        profile_method!(get_config_path);
+        profile_method!();
 
         self.base_dir.join("thag_rs").join("config.toml")
     }
@@ -176,12 +176,12 @@ impl Context for RealContext {
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
 pub fn maybe_config() -> Option<Config> {
-    profile_fn!(maybe_config);
+    profile!("maybe_config");
     lazy_static_var!(Option<Config>, maybe_load_config()).clone()
 }
 
 fn maybe_load_config() -> Option<Config> {
-    profile_fn!(maybe_load_config);
+    profile!("maybe_load_config");
     // eprintln!("In maybe_load_config, should not see this message more than once");
 
     let context = get_context();
@@ -211,7 +211,7 @@ fn maybe_load_config() -> Option<Config> {
 /// Panics if there is any issue accessing the current directory, e.g. if it doesn't exist or we don't have sufficient permissions to access it.
 #[must_use]
 pub fn get_context() -> Arc<dyn Context> {
-    profile_fn!(get_context);
+    profile!("get_context");
     let context: Arc<dyn Context> = if var("TEST_ENV").is_ok() {
         let current_dir = current_dir().expect("Could not get current dir");
         let config_path = current_dir.join("tests/assets").join("config.toml");
@@ -235,7 +235,7 @@ pub fn get_context() -> Arc<dyn Context> {
 /// This function will return an error if it either finds a file and fails to read it,
 /// or reads the file and fails to parse it.
 pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
-    profile_fn!(load);
+    profile!("load");
     let config_path = context.get_config_path();
 
     debug_log!("config_path={config_path:?}");
@@ -257,7 +257,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 ///
 /// This function will bubble up any Toml parsing errors encountered.
 pub fn validate_config_format(content: &str) -> ThagResult<()> {
-    profile_fn!(validate_config_format);
+    profile!("validate_config_format");
     // Try to parse as generic TOML first
     let doc = content
         .parse::<DocumentMut>()

@@ -21,4 +21,4 @@ syn = { version = "2.0", default-features = false, features = [
 
 [lib]
 proc-macro = true
-path = "lib.rs"
+path = "src/lib.rs"

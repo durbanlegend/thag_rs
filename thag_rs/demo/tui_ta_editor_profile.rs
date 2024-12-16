@@ -97,7 +97,7 @@ struct SearchBox<'a> {
 
 impl<'a> Default for SearchBox<'a> {
     fn default() -> Self {
-        profile_fn!(default);
+        profile!("default");
         let mut textarea = TextArea::default();
         textarea.set_block(Block::default().borders(Borders::ALL).title("Search"));
         Self {
@@ -110,12 +110,12 @@ impl<'a> Default for SearchBox<'a> {
 #[allow(dead_code)]
 impl<'a> SearchBox<'a> {
     fn open(&mut self) {
-        profile_fn!(open);
+        profile!("open");
         self.open = true;
     }
 
     fn close(&mut self) {
-        profile_fn!(close);
+        profile!("close");
         self.open = false;
         // Remove input for next search. Do not recreate `self.textarea` instance to keep undo history so that users can
         // restore previous input easily.
@@ -124,7 +124,7 @@ impl<'a> SearchBox<'a> {
     }
 
     fn height(&self) -> u16 {
-        profile_fn!(height);
+        profile!("height");
         if self.open {
             3
         } else {
@@ -133,7 +133,7 @@ impl<'a> SearchBox<'a> {
     }
 
     fn input(&mut self, input: Input) -> Option<&'_ str> {
-        profile_fn!(input);
+        profile!("input");
         match input {
             Input {
                 key: Key::Enter, ..
@@ -151,7 +151,7 @@ impl<'a> SearchBox<'a> {
     }
 
     fn set_error(&mut self, err: Option<impl Display>) {
-        profile_fn!(set_error);
+        profile!("set_error");
         let b = if let Some(err) = err {
             Block::default()
                 .borders(Borders::ALL)
@@ -174,7 +174,7 @@ struct Buffer<'a> {
 #[allow(dead_code)]
 impl<'a> Buffer<'a> {
     fn new(path: PathBuf) -> io::Result<Self> {
-        // profile_fn!(buffer_new);
+        // profile!("buffer_new");
         let mut textarea = if let Ok(md) = path.metadata() {
             if md.is_file() {
                 let mut textarea: TextArea = io::BufReader::new(fs::File::open(&path)?)
@@ -207,7 +207,7 @@ impl<'a> Buffer<'a> {
     }
 
     fn save(&mut self) -> io::Result<()> {
-        profile_fn!(save);
+        profile!("save");
         let mut f = io::BufWriter::new(fs::File::create(&self.path)?);
         for line in self.textarea.lines() {
             f.write_all(line.as_bytes())?;
@@ -227,7 +227,7 @@ struct Output<'a> {
 
 impl<'a> Output<'a> {
     fn new() -> Self {
-        profile_fn!(output_new);
+        profile!("output_new");
 
         let mut textarea = TextArea::default();
         textarea.set_style(Style::default().fg(Color::DarkGray));
@@ -263,7 +263,7 @@ impl<'a> Editor<'a> {
         I: Iterator,
         I::Item: Into<PathBuf>,
     {
-        // profile_fn!(editor_new);
+        // profile!("editor_new");
         let buffers = paths
             .map(|p| Buffer::new(p.into()))
             .collect::<io::Result<Vec<_>>>()?;
@@ -294,7 +294,7 @@ impl<'a> Editor<'a> {
 
     #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
     pub(crate) fn run(&mut self) -> io::Result<()> {
-        // profile_fn!(run);
+        // profile!("run");
         loop {
             let search_height = self.search.height();
             let layout = Layout::default()
@@ -539,7 +539,7 @@ impl<'a> Editor<'a> {
     }
 
     fn write_output(&mut self, msg: &str) {
-        profile_fn!(write_output);
+        profile!("write_output");
         self.output.textarea.insert_str(msg);
         self.output.textarea.insert_newline();
         self.output.modified = true;
@@ -547,7 +547,7 @@ impl<'a> Editor<'a> {
 }
 
 fn show_popup(f: &mut ratatui::prelude::Frame) {
-    profile_fn!(show_popup);
+    profile!("show_popup");
     let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
     let inner = area.inner(Margin {
         vertical: 2,
@@ -592,7 +592,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
 
 impl<'a> Drop for Editor<'a> {
     fn drop(&mut self) {
-        profile_fn!(drop);
+        profile!("drop");
         self.term.show_cursor().unwrap();
         disable_raw_mode().unwrap();
         ratatui::crossterm::execute!(
@@ -606,7 +606,7 @@ impl<'a> Drop for Editor<'a> {
 }
 
 fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
-    profile_fn!(cemtered_rect);
+    profile!("cemtered_rect");
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Max(max_height),

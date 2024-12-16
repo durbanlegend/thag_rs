@@ -5,6 +5,7 @@ use std::{
 use thiserror::Error;
 use toml::de::Error as TomlDeError;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Error, Debug)]
 pub enum ThagError {
     #[error("IO error: {0}")]

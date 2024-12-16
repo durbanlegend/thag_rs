@@ -36,7 +36,6 @@ dirs = "5.0.1"
 documented = "0.9.1"
 edit = "0.1.5"
 env_logger = { version = "0.11.5", optional = true }
-firestorm = { workspace = true }
 home = "0.5.9"
 log = "0.4.22"
 mockall = "0.13.1"
@@ -88,7 +87,7 @@ debug-logs = []
 nightly = []
 format_snippet = []
 default = ["simplelog"]
-profile = ["firestorm/enable_system_time", "thag_core/profile"]
+profile = ["thag_core/profile"]
 
 [dev-dependencies]
 assert_cmd = "2.0.16"

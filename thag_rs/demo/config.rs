@@ -39,12 +39,12 @@ use thag_rs::{
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
 pub fn maybe_config() -> Option<Config> {
-    profile_fn!(maybe_config);
+    profile!("maybe_config");
     lazy_static_var!(Option<Config>, maybe_load_config()).clone()
 }
 
 fn maybe_load_config() -> Option<Config> {
-    profile_fn!(maybe_load_config);
+    profile!("maybe_load_config");
     // eprintln!("In maybe_load_config, should not see this message more than once");
     let maybe_config = load(&RealContext::new());
     if let Some(config) = maybe_config {
@@ -282,7 +282,7 @@ impl RealContext {
     #[cfg(not(target_os = "windows"))]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!(new_real_contexr);
+        profile_method!();
         let base_dir = home::home_dir()
             .expect("Error resolving home::home_dir()")
             .join(".config");
@@ -292,7 +292,7 @@ impl RealContext {
 
 impl Context for RealContext {
     fn get_config_path(&self) -> PathBuf {
-        profile_method!(get_config_path);
+        profile_method!();
 
         self.base_dir.join("thag_rs").join("config.toml")
     }
@@ -304,7 +304,7 @@ impl Context for RealContext {
 
 #[must_use]
 pub fn load(context: &dyn Context) -> Option<Config> {
-    profile_fn!(load);
+    profile!("load");
     let config_path = context.get_config_path();
 
     eprintln!("config_path={config_path:?}");
@@ -327,7 +327,7 @@ pub fn load(context: &dyn Context) -> Option<Config> {
 /// Will panic if it can't create the parent directory for the configuration.
 #[allow(clippy::unnecessary_wraps)]
 pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
-    profile_fn!(edit);
+    profile!("edit");
     let config_path = context.get_config_path();
 
     eprintln!("config_path={config_path:?}");

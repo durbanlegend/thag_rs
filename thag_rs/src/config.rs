@@ -4,13 +4,11 @@ use crate::{
 };
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
-use firestorm::{profile_fn, profile_method};
 use mockall::{automock, predicate::str};
 use nu_ansi_term::Style;
+use serde::de;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
-// use std::collections::HashSet;
-use serde::de;
 #[cfg(target_os = "windows")]
 use std::env;
 use std::path::Path;
@@ -24,6 +22,7 @@ use std::{
     sync::Arc,
 };
 use strum::{Display, EnumString};
+use thag_core::{profile, profile_method};
 use toml_edit::DocumentMut;
 
 /// Configuration categories
@@ -49,7 +48,7 @@ impl Config {
     ///
     /// This function will bubble up any i/o errors encountered.
     pub fn load_or_create_default() -> Result<Self, Box<dyn Error>> {
-        profile_method!(load_or_create_default);
+        profile_method!();
         let config_dir = if let Some(cargo_home) = std::env::var_os("CARGO_HOME") {
             PathBuf::from(cargo_home).join(".config").join("thag_rs")
         } else {
@@ -93,7 +92,7 @@ impl Config {
     ///
     /// This function will bubble up any errors encountered.
     pub fn load(path: &Path) -> Result<Self, ThagError> {
-        profile_method!(load);
+        profile_method!();
         let content = std::fs::read_to_string(path)?;
         let config: Self = toml::from_str(&content)?;
         config.validate()?;
@@ -102,7 +101,7 @@ impl Config {
     }
 
     fn validate(&self) -> Result<(), ThagError> {
-        profile_method!(validate);
+        profile_method!();
         // Validate Dependencies section
         self.dependencies
             .validate()
@@ -138,7 +137,7 @@ pub struct Dependencies {
 
 impl Default for Dependencies {
     fn default() -> Self {
-        profile_method!(default);
+        profile_method!();
         Self {
             exclude_unstable_features: true,
             exclude_std_feature: true,
@@ -158,7 +157,7 @@ impl Dependencies {
         crate_name: &str,
         features: &[String],
     ) -> (Vec<String>, bool) {
-        profile_method!(filter_maximal_features);
+        profile_method!();
         let mut filtered = features.to_owned();
 
         #[cfg(debug_assertions)]
@@ -263,7 +262,7 @@ impl Dependencies {
     // Make should_include_feature use filter_features
     #[must_use]
     pub fn should_include_feature(&self, feature: &str, crate_name: &str) -> bool {
-        profile_method!(should_include_feature);
+        profile_method!();
         self.filter_maximal_features(crate_name, &[feature.to_string()])
             .0
             .contains(&feature.to_string())
@@ -276,7 +275,7 @@ impl Dependencies {
         crate_name: &str,
         all_features: &[String],
     ) -> (Vec<String>, bool) {
-        profile_method!(apply_config_features);
+        profile_method!();
 
         let (mut config_features, default_features) = self.feature_overrides.get(crate_name).map_or_else(|| {
             // Only include features from always_include_features that exist in all_features
@@ -334,7 +333,7 @@ impl Dependencies {
         all_features: &[String],
         level: &DependencyInference,
     ) -> (Option<Vec<String>>, bool) {
-        profile_method!(get_features_for_inference_level);
+        profile_method!();
         match level {
             DependencyInference::None | DependencyInference::Min => (None, true),
             DependencyInference::Config => {
@@ -351,7 +350,7 @@ impl Dependencies {
     }
 
     fn validate(&self) -> Result<(), String> {
-        profile_method!(validate);
+        profile_method!();
         // Validate feature overrides
         for (crate_name, override_config) in &self.feature_overrides {
             // Check for conflicts between required and excluded features
@@ -458,7 +457,7 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
     where
         D: de::Deserializer<'de>,
     {
-        profile_method!(deserialize);
+        profile_method!();
         let s = String::deserialize(deserializer)?;
         match s.to_lowercase().as_str() {
             "none" => Ok(Self::None),
@@ -536,7 +535,7 @@ impl RealContext {
     #[cfg(target_os = "windows")]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!(new_real_contexr);
+        profile_method!();
         let base_dir =
             PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"));
         Self { base_dir }
@@ -550,7 +549,7 @@ impl RealContext {
     #[cfg(not(target_os = "windows"))]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!(new_real_contexr);
+        profile_method!();
         let base_dir = home::home_dir()
             .expect("Error resolving home::home_dir()")
             .join(".config");
@@ -560,7 +559,7 @@ impl RealContext {
 
 impl Context for RealContext {
     fn get_config_path(&self) -> PathBuf {
-        profile_method!(get_config_path);
+        profile_method!();
 
         self.base_dir.join("thag_rs").join("config.toml")
     }
@@ -573,12 +572,12 @@ impl Context for RealContext {
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
 pub fn maybe_config() -> Option<Config> {
-    profile_fn!(maybe_config);
+    profile!("maybe_config");
     lazy_static_var!(Option<Config>, maybe_load_config()).clone()
 }
 
 fn maybe_load_config() -> Option<Config> {
-    profile_fn!(maybe_load_config);
+    profile!("maybe_load_config");
     // eprintln!("In maybe_load_config, should not see this message more than once");
 
     let context = get_context();
@@ -609,7 +608,7 @@ fn maybe_load_config() -> Option<Config> {
 /// Panics if there is any issue accessing the current directory, e.g. if it doesn't exist or we don't have sufficient permissions to access it.
 #[must_use]
 pub fn get_context() -> Arc<dyn Context> {
-    profile_fn!(get_context);
+    profile!("get_context");
     let context: Arc<dyn Context> = if var("TEST_ENV").is_ok() {
         let current_dir = current_dir().expect("Could not get current dir");
         let config_path = current_dir.join("tests/assets").join("config.toml");
@@ -633,7 +632,7 @@ pub fn get_context() -> Arc<dyn Context> {
 /// This function will return an error if it either finds a file and fails to read it,
 /// or reads the file and fails to parse it..
 pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
-    profile_fn!(load);
+    profile!("load");
     let config_path = context.get_config_path();
 
     debug_log!("config_path={config_path:?}");
@@ -656,7 +655,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 /// Will panic if it can't create the parent directory for the configuration.
 #[allow(clippy::unnecessary_wraps)]
 pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
-    profile_fn!(edit);
+    profile!("edit");
     let config_path = context.get_config_path();
 
     debug_log!("config_path={config_path:?}");
@@ -698,7 +697,7 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
 ///
 /// This function will bubble up any Toml parsing errors encountered.
 pub fn validate_config_format(content: &str) -> Result<(), ThagError> {
-    profile_fn!(validate_config_format);
+    profile!("validate_config_format");
     // Try to parse as generic TOML first
     let doc = content
         .parse::<DocumentMut>()

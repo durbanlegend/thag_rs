@@ -1,13 +1,13 @@
 #![allow(clippy::uninlined_format_args)]
 
+use std::cell::RefCell;
+#[cfg(debug_assertions)]
+use std::time::Instant;
+use thag_core::profiling;
 #[cfg(debug_assertions)]
 use thag_rs::debug_timings;
 use thag_rs::logging::{configure_log, set_verbosity};
 use thag_rs::{execute, get_args, ThagResult};
-
-use std::cell::RefCell;
-#[cfg(debug_assertions)]
-use std::time::Instant;
 
 pub fn main() -> ThagResult<()> {
     #[cfg(debug_assertions)]
@@ -20,16 +20,21 @@ pub fn main() -> ThagResult<()> {
     #[cfg(debug_assertions)]
     debug_timings(&start, "Configured logging");
 
-    // Check if firestorm profiling is enabled
-    if firestorm::enabled() {
-        // Profile the `execute` function
-        firestorm::bench("./flames/", || {
-            handle(&cli);
-        })?;
-    } else {
-        // Regular execution when profiling is not enabled
-        handle(&cli);
+    if cfg!(feature = "profile") {
+        println!("Enabling profiling..."); // Debug output
+        profiling::enable_profiling(true);
     }
+
+    // Check if firestorm profiling is enabled
+    // if firestorm::enabled() {
+    //     // Profile the `execute` function
+    //     firestorm::bench("./flames/", || {
+    //         handle(&cli);
+    //     })?;
+    // } else {
+    // Regular execution when profiling is not enabled
+    handle(&cli);
+    // }
     Ok(())
 }
 

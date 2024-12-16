@@ -9,7 +9,7 @@ description = "Core functionality for thag_rs script handling"
 dirs = "5.0.1"
 documented = "0.9.1"
 env_logger = { version = "0.11.5", optional = true }
-firestorm = { workspace = true }
+# firestorm = { workspace = true }
 home = "0.5.9"
 log = "0.4.22"
 mockall = "0.13.1"
@@ -24,6 +24,7 @@ syn = { version = "2.0.90", features = [
     "visit",
     "visit-mut",
 ] }
+thag_proc_macros = { path = "../thag_proc_macros", version = "0.1" }
 thiserror = "2.0"
 toml = "0.8.19"
 toml_edit = "0.22.22"
@@ -33,4 +34,4 @@ debug-logs = []
 nightly = []
 format_snippet = []
 default = ["simplelog"]
-profile = ["firestorm/enable_system_time"]
+profile = []            # Keep the feature, but now for our own profiling

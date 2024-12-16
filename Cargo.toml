@@ -3,7 +3,6 @@ members = ["thag_core", "thag_proc_macros", "thag_rs"]
 resolver = "2"
 
 [workspace.dependencies]
-firestorm = "0.5"
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]

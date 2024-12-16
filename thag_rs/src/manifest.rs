@@ -11,7 +11,6 @@ use crate::{
 };
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Manifest};
-use firestorm::{profile_fn, profile_section};
 use nu_ansi_term::Style;
 use regex::Regex;
 use semver::VersionReq;
@@ -19,11 +18,12 @@ use serde_merge::omerge;
 #[cfg(debug_assertions)]
 use std::time::Instant;
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
+use thag_core::{profile, profile_section};
 
 #[allow(clippy::missing_panics_doc)]
 #[must_use]
 pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
-    profile_fn!(cargo_lookup);
+    profile!("cargo_lookup");
 
     // Try both original and hyphenated versions
     let crate_variants = vec![dep_crate.to_string(), dep_crate.replace('_', "-")];
@@ -97,7 +97,7 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
 /// # Panics
 /// Will panic if the regular expression is malformed.
 pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
-    profile_fn!(capture_dep);
+    profile!("capture_dep");
 
     debug_log!("first_line={first_line}");
     let re: &Regex = regex!(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#);
@@ -120,7 +120,7 @@ pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
 pub fn configure_default(build_state: &BuildState) -> ThagResult<Manifest> {
-    profile_fn!(configure_default);
+    profile!("configure_default");
     let source_stem = &build_state.source_stem;
 
     let gen_src_path = get_source_path(build_state);
@@ -138,7 +138,7 @@ gen_src_path={gen_src_path}",
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
 pub fn default(source_stem: &str, gen_src_path: &str) -> ThagResult<Manifest> {
-    profile_fn!(default);
+    profile!("default");
     let cargo_manifest = format!(
         r##"[package]
 name = "{}"
@@ -171,7 +171,7 @@ edition = "2021"
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
 pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
-    profile_fn!(merge);
+    profile!("merge");
     #[cfg(debug_assertions)]
     let start_merge_manifest = Instant::now();
 
@@ -186,7 +186,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     //     .as_ref()
     //     .map_or_else(|| infer_deps_from_source(rs_source), infer_deps_from_ast);
 
-    profile_section!(infer_deps_and_merge);
+    profile_section!("infer_deps_and_merge");
     let rs_inferred_deps = if let Some(ref use_crates) = build_state.crates_finder {
         build_state.metadata_finder.as_ref().map_or_else(
             || infer_deps_from_source(rs_source),
@@ -198,7 +198,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
 
     // debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
 
-    profile_section!(merge_manifest);
+    profile_section!("merge_manifest");
     let merged_manifest = if let Some(ref mut rs_manifest) = build_state.rs_manifest {
         if !rs_inferred_deps.is_empty() {
             #[cfg(debug_assertions)]
@@ -236,13 +236,13 @@ fn call_omerge(
     cargo_manifest: &Manifest,
     rs_manifest: &mut Manifest,
 ) -> Result<Manifest, crate::ThagError> {
-    profile_fn!(call_omerge);
+    profile!("call_omerge");
     // eprintln!("cargo_manifest={cargo_manifest:#?}, rs_manifest={rs_manifest:#?}");
     Ok(omerge(cargo_manifest, rs_manifest)?)
 }
 
 fn clean_features(features: Vec<String>) -> Vec<String> {
-    profile_fn!(clean_features);
+    profile!("clean_features");
     let mut features: Vec<String> = features
         .into_iter()
         .filter(|f| !f.contains('/')) // Filter out features with slashes
@@ -252,7 +252,7 @@ fn clean_features(features: Vec<String>) -> Vec<String> {
 }
 
 fn get_crate_features(name: &str) -> Option<Vec<String>> {
-    profile_fn!(get_crate_features);
+    profile!("get_crate_features");
     let query: Query = match name.parse() {
         Ok(q) => q,
         Err(e) => {
@@ -292,7 +292,7 @@ pub fn lookup_deps(
     rs_inferred_deps: &[String],
     rs_dep_map: &mut BTreeMap<String, Dependency>,
 ) {
-    profile_fn!(lookup_deps);
+    profile!("lookup_deps");
 
     // #[cfg(debug_assertions)]
     // eprintln!("In lookup_deps: rs_inferred_deps={rs_inferred_deps:#?}");
@@ -482,7 +482,7 @@ fn display_toml_info(
 //     features: Option<&Vec<String>>,
 //     dep_config: &Dependencies,
 // ) {
-//     profile_fn!(show_all_toml_variants);
+//     profile!("show_all_toml_variants");
 //     if let Some(all_features) = features {
 //         println!("\nAvailable dependency configurations for {}:", name);
 
@@ -519,7 +519,7 @@ fn proc_macros_magic(
     dep_name: &str,
     dir_name: &str,
 ) {
-    profile_fn!(proc_macros_magic);
+    profile!("proc_macros_magic");
     cvprtln!(
         Lvl::BRI,
         V::V,

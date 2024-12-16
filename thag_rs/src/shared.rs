@@ -11,7 +11,6 @@ use crate::{Cli, ProcFlags};
 use crate::{ThagError, ThagResult};
 use cargo_toml::Manifest;
 use crossterm::event::Event;
-use firestorm::{profile_fn, profile_method};
 use home::home_dir;
 use mockall::automock;
 use phf::phf_set;
@@ -27,6 +26,7 @@ use std::{
 use strum::Display;
 use syn::ItemUse;
 use syn::{self, visit::Visit, ItemMod, TypePath, UseRename, UseTree};
+use thag_core::{profile, profile_method};
 
 static FILTER_WORDS: phf::Set<&'static str> = phf_set! {
     // Numeric primitives
@@ -65,7 +65,7 @@ impl Ast {
 /// Required to use quote! macro to generate code to resolve expression.
 impl ToTokens for Ast {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        profile_method!(to_tokens);
+        profile_method!();
         match self {
             Self::File(file) => file.to_tokens(tokens),
             Self::Expr(expr) => expr.to_tokens(tokens),
@@ -113,7 +113,7 @@ pub struct CratesFinder {
 
 impl<'a> Visit<'a> for CratesFinder {
     fn visit_item_use(&mut self, node: &'a ItemUse) {
-        profile_method!(visit_item_use);
+        profile_method!();
         // Handle simple case `use a as b;`
         if let UseTree::Rename(use_rename) = &node.tree {
             let node_name = use_rename.ident.to_string();
@@ -125,7 +125,7 @@ impl<'a> Visit<'a> for CratesFinder {
     }
 
     fn visit_use_tree(&mut self, node: &'a UseTree) {
-        profile_method!(visit_use_tree);
+        profile_method!();
         match node {
             UseTree::Group(_) => {
                 syn::visit::visit_use_tree(self, node);
@@ -212,7 +212,7 @@ impl<'a> Visit<'a> for CratesFinder {
     }
 
     fn visit_expr_path(&mut self, expr_path: &'a syn::ExprPath) {
-        profile_method!(visit_expr_path);
+        profile_method!();
         if expr_path.path.segments.len() > 1 {
             // must have the form a::b so not a variable
             if let Some(first_seg) = expr_path.path.segments.first() {
@@ -229,7 +229,7 @@ impl<'a> Visit<'a> for CratesFinder {
     }
 
     fn visit_type_path(&mut self, type_path: &'a TypePath) {
-        profile_method!(visit_type_path);
+        profile_method!();
         if type_path.path.segments.len() > 1 {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
@@ -247,7 +247,7 @@ impl<'a> Visit<'a> for CratesFinder {
 
     // Handle macro invocations
     fn visit_macro(&mut self, mac: &'a syn::Macro) {
-        profile_method!(visit_macro);
+        profile_method!();
         // Get the macro path (e.g., "serde_json::json" from "serde_json::json!()")
         if mac.path.segments.len() > 1 {
             if let Some(first_seg) = mac.path.segments.first() {
@@ -263,7 +263,7 @@ impl<'a> Visit<'a> for CratesFinder {
 
     // Handle trait implementations
     fn visit_item_impl(&mut self, item: &'a syn::ItemImpl) {
-        profile_method!(visit_item_impl);
+        profile_method!();
         // Check the trait being implemented (if any)
         if let Some((_, path, _)) = &item.trait_ {
             if let Some(first_seg) = path.segments.first() {
@@ -290,7 +290,7 @@ impl<'a> Visit<'a> for CratesFinder {
 
     // Handle associated types
     fn visit_item_type(&mut self, item: &'a syn::ItemType) {
-        profile_method!(visit_item_type);
+        profile_method!();
         if let syn::Type::Path(type_path) = &*item.ty {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
@@ -305,7 +305,7 @@ impl<'a> Visit<'a> for CratesFinder {
 
     // Handle generic bounds
     fn visit_type_param_bound(&mut self, bound: &'a syn::TypeParamBound) {
-        profile_method!(visit_type_param_bound);
+        profile_method!();
         if let syn::TypeParamBound::Trait(trait_bound) = bound {
             if let Some(first_seg) = trait_bound.path.segments.first() {
                 let name = first_seg.ident.to_string();
@@ -329,7 +329,7 @@ pub struct MetadataFinder {
 
 impl<'a> Visit<'a> for MetadataFinder {
     fn visit_use_rename(&mut self, node: &'a UseRename) {
-        profile_method!(visit_use_rename);
+        profile_method!();
         // eprintln!(
         //     "visit_use_rename pushing {} to names_to_exclude",
         //     node.rename
@@ -339,20 +339,20 @@ impl<'a> Visit<'a> for MetadataFinder {
     }
 
     fn visit_item_extern_crate(&mut self, node: &'a syn::ItemExternCrate) {
-        profile_method!(visit_item_extern_crate);
+        profile_method!();
         let crate_name = node.ident.to_string();
         self.extern_crates.push(crate_name);
         syn::visit::visit_item_extern_crate(self, node);
     }
 
     fn visit_item_mod(&mut self, node: &'a ItemMod) {
-        profile_method!(visit_item_mod);
+        profile_method!();
         self.mods_to_exclude.push(node.ident.to_string());
         syn::visit::visit_item_mod(self, node);
     }
 
     fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
-        profile_method!(visit_item_fn);
+        profile_method!();
         if node.sig.ident == "main" {
             self.main_count += 1; // Increment counter instead of setting bool
         }
@@ -372,7 +372,7 @@ pub fn should_filter_dependency(name: &str) -> bool {
 
 #[must_use]
 pub fn find_crates(syntax_tree: &Ast) -> CratesFinder {
-    profile_fn!(find_crates);
+    profile!("find_crates");
     let mut crates_finder = CratesFinder::default();
 
     match syntax_tree {
@@ -385,7 +385,7 @@ pub fn find_crates(syntax_tree: &Ast) -> CratesFinder {
 
 #[must_use]
 pub fn find_metadata(syntax_tree: &Ast) -> MetadataFinder {
-    profile_fn!(find_metadata);
+    profile!("find_metadata");
     let mut metadata_finder = MetadataFinder::default();
 
     match syntax_tree {
@@ -464,7 +464,7 @@ impl BuildState {
         cli: &Cli,
         script_state: &ScriptState,
     ) -> ThagResult<Self> {
-        profile_method!(pre_configure);
+        profile_method!();
 
         // 1. Validate and extract basic script info
         let (source_name, source_stem) = Self::extract_script_info(script_state)?;
@@ -489,7 +489,7 @@ impl BuildState {
     }
 
     fn extract_script_info(script_state: &ScriptState) -> ThagResult<(String, String)> {
-        profile_fn!(extract_script_info);
+        profile!("extract_script_info");
         let script = script_state
             .get_script()
             .ok_or(ThagError::NoneOption("No script specified"))?;
@@ -522,7 +522,7 @@ impl BuildState {
         source_name: &str,
         source_stem: &str,
     ) -> ThagResult<BuildPaths> {
-        profile_fn!(set_up_paths);
+        profile!("set_up_paths");
         // Working directory setup
         let working_dir_path = if flags.is_repl {
             TMPDIR.join(REPL_SUBDIR)
@@ -611,7 +611,7 @@ impl BuildState {
         source_stem: String,
         cli: &Cli,
     ) -> Self {
-        profile_fn!(create_initial_state);
+        profile!("create_initial_state");
 
         Self {
             working_dir_path: paths.working_dir_path,
@@ -647,7 +647,7 @@ impl BuildState {
         script_state: &ScriptState,
         flags: &ExecutionFlags,
     ) -> ThagResult<()> {
-        profile_method!(determine_build_requirements);
+        profile_method!();
         // Case 1: Force generation and building
         if flags.is_dynamic
             || flags.is_repl
@@ -691,7 +691,7 @@ impl BuildState {
 
     #[cfg(debug_assertions)]
     fn validate_state(&self, proc_flags: &ProcFlags) {
-        profile_method!(validate_state);
+        profile_method!();
         // Validate build/check/executable/expand flags
         if proc_flags.contains(ProcFlags::BUILD)
             | proc_flags.contains(ProcFlags::CHECK)
@@ -744,7 +744,7 @@ impl ScriptState {
     /// Return the script name wrapped in an Option.
     #[must_use]
     pub fn get_script(&self) -> Option<String> {
-        profile_method!(get_script);
+        profile_method!();
         match self {
             Self::Anonymous => None,
             Self::NamedEmpty { script, .. } | Self::Named { script, .. } => {
@@ -755,7 +755,7 @@ impl ScriptState {
     /// Return the script's directory path wrapped in an Option.
     #[must_use]
     pub fn get_script_dir_path(&self) -> Option<PathBuf> {
-        profile_method!(get_script_dir_path);
+        profile_method!();
         match self {
             Self::Anonymous => None,
             Self::Named {
@@ -773,7 +773,7 @@ impl ScriptState {
 #[inline]
 #[cfg(debug_assertions)]
 pub fn debug_timings(start: &Instant, process: &str) {
-    profile_fn!(debug_timings);
+    profile!("debug_timings");
     let dur = start.elapsed();
     debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
 }
@@ -781,7 +781,7 @@ pub fn debug_timings(start: &Instant, process: &str) {
 #[inline]
 /// Display method timings when either the --verbose or --timings option is chosen.
 pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
-    profile_fn!(display_timings);
+    profile!("display_timings");
     #[cfg(not(debug_assertions))]
     if !proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
         return;
@@ -802,14 +802,14 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
 #[inline]
 #[cfg(target_os = "windows")]
 pub fn escape_path_for_windows(path_str: &str) -> String {
-    profile_fn!(escape_path_for_windows);
+    profile!("escape_path_for_windows");
     path_str.replace('\\', "/")
 }
 
 #[must_use]
 #[cfg(not(target_os = "windows"))]
 pub fn escape_path_for_windows(path_str: &str) -> String {
-    profile_fn!(escape_path_for_windows);
+    profile!("escape_path_for_windows");
     path_str.to_string()
 }
 
@@ -822,14 +822,14 @@ pub struct KeyDisplayLine {
 
 impl PartialOrd for KeyDisplayLine {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        // profile_method!(partial_cmp);
+        // profile_method!();
         Some(self.cmp(other))
     }
 }
 
 impl Ord for KeyDisplayLine {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // profile_method!(cmp);
+        // profile_method!();
         usize::cmp(&self.seq, &other.seq)
     }
 }
@@ -864,12 +864,12 @@ pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
     fn read_event(&self) -> ThagResult<Event> {
-        profile_method!(read_event);
+        profile_method!();
         crossterm::event::read().map_err(Into::<ThagError>::into)
     }
 
     fn poll(&self, timeout: Duration) -> ThagResult<bool> {
-        profile_method!(poll);
+        profile_method!();
         crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
     }
 }

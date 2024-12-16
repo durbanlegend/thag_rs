@@ -13,7 +13,6 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
     LeaveAlternateScreen,
 };
-use firestorm::{profile_fn, profile_method};
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
@@ -33,6 +32,7 @@ use std::{
     self,
     fs::{self, OpenOptions},
 };
+use thag_core::{profile, profile_method};
 use tui_textarea::{CursorMove, Input, TextArea};
 
 pub const TITLE_TOP: &str = "Key bindings - subject to your terminal settings";
@@ -72,7 +72,7 @@ impl ManagedTerminal<'_> {
 /// # Errors
 ///
 pub fn resolve_term<'a>() -> ThagResult<Option<ManagedTerminal<'a>>> {
-    profile_fn!(resolve_term);
+    profile!("resolve_term");
 
     if var("TEST_ENV").is_ok() {
         return Ok(None);
@@ -109,14 +109,14 @@ pub struct Entry {
 
 impl Display for Entry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        profile_method!(fmt);
+        profile_method!();
         write!(f, "{:?}: {}", self.index, self.lines.join("\n"))
     }
 }
 
 impl Entry {
     pub fn new(index: usize, content: &str) -> Self {
-        profile_method!(new);
+        profile_method!();
         Self {
             index,
             lines: content.lines().map(String::from).collect(),
@@ -126,7 +126,7 @@ impl Entry {
     // Extracts string contents of entry for use in the editor
     #[must_use]
     pub fn contents(&self) -> String {
-        profile_method!(contents);
+        profile_method!();
         self.lines.join("\n")
     }
 }
@@ -140,7 +140,7 @@ pub struct History {
 impl History {
     #[must_use]
     pub fn new() -> Self {
-        profile_method!(new);
+        profile_method!();
         Self {
             current_index: None,
             entries: VecDeque::with_capacity(20),
@@ -149,7 +149,7 @@ impl History {
 
     #[must_use]
     pub fn load_from_file(path: &PathBuf) -> Self {
-        profile_method!(load_from_file);
+        profile_method!();
         let mut history = fs::read_to_string(path).map_or_else(
             |_| Self::default(),
             |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
@@ -177,7 +177,7 @@ impl History {
 
     #[must_use]
     pub fn at_start(&self) -> bool {
-        profile_method!(at_start);
+        profile_method!();
         debug_log!("at_start ...");
         self.current_index
             .map_or(true, |current_index| current_index == 0)
@@ -185,7 +185,7 @@ impl History {
 
     #[must_use]
     pub fn at_end(&self) -> bool {
-        profile_method!(at_end);
+        profile_method!();
         debug_log!("at_end ...");
         self.current_index.map_or(true, |current_index| {
             current_index == self.entries.len() - 1
@@ -193,7 +193,7 @@ impl History {
     }
 
     pub fn add_entry(&mut self, text: &str) {
-        profile_method!(add_entry);
+        profile_method!();
         let new_index = self.entries.len(); // Assign the next index based on current length
         let new_entry = Entry::new(new_index, text);
 
@@ -212,7 +212,7 @@ impl History {
     }
 
     pub fn update_entry(&mut self, index: usize, text: &str) {
-        profile_method!(update_entry);
+        profile_method!();
         debug_log!("update_entry for index {index}...");
         // Get a mutable reference to the entry at the specified index
         let current_index = self.current_index;
@@ -227,7 +227,7 @@ impl History {
     }
 
     pub fn delete_entry(&mut self, index: usize) {
-        profile_method!(delete_entry);
+        profile_method!();
         self.entries.retain(|entry| entry.index != index);
 
         // Reassign indices after deletion
@@ -247,7 +247,7 @@ impl History {
     ///
     /// This function will bubble up any i/o errors encountered writing the file.
     pub fn save_to_file(&mut self, path: &PathBuf) -> ThagResult<()> {
-        profile_method!(save_to_file);
+        profile_method!();
         self.reassign_indices();
         if let Ok(data) = serde_json::to_string(&self) {
             debug_log!("About to write data=({data}");
@@ -278,7 +278,7 @@ impl History {
     }
 
     pub fn get_current(&mut self) -> Option<&Entry> {
-        profile_method!(get_current);
+        profile_method!();
         if self.entries.is_empty() {
             return None;
         }
@@ -294,7 +294,7 @@ impl History {
     }
 
     pub fn get(&mut self, index: usize) -> Option<&Entry> {
-        profile_method!(get);
+        profile_method!();
         debug_log!("get({index})...");
         if !(0..self.entries.len()).contains(&index) {
             return None;
@@ -312,7 +312,7 @@ impl History {
     }
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut Entry> {
-        profile_method!(get_mut);
+        profile_method!();
         debug_log!("get_mut({index})...");
 
         if !(0..self.entries.len()).contains(&index) {
@@ -338,7 +338,7 @@ impl History {
     ///
     /// Panics if a logic error is detected, likely when reaching the oldest History entry.
     pub fn get_previous(&mut self) -> Option<&Entry> {
-        profile_method!(get_previous);
+        profile_method!();
         // let this = &mut *self;
         debug_log!("get_previous...");
         if self.entries.is_empty() {
@@ -379,7 +379,7 @@ impl History {
     ///
     /// Panics if a logic error is detected, likely when reaching the newest History entry.
     pub fn get_next(&mut self) -> Option<&Entry> {
-        profile_method!(get_next);
+        profile_method!();
         debug_log!("get_next...");
         let this = &mut *self;
         if this.entries.is_empty() {
@@ -416,7 +416,7 @@ impl History {
     }
 
     pub fn get_last(&mut self) -> Option<&Entry> {
-        profile_method!(get_last);
+        profile_method!();
         if self.entries.is_empty() {
             return None;
         }
@@ -426,7 +426,7 @@ impl History {
 
     // Reassign indices so that the newest entry has index 0, and the oldests has len - 1
     fn reassign_indices(&mut self) {
-        profile_method!(reassign_indices);
+        profile_method!();
         // let len = self.entries.len();
         for (i, entry) in self.entries.iter_mut().enumerate() {
             entry.index = i;
@@ -810,7 +810,7 @@ where
 }
 
 pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate::MessageLevel) {
-    profile_fn!(highlight_selection);
+    profile!("highlight_selection");
     textarea.set_selection_style(
         Style::default()
             .fg(Color::Indexed(u8::from(&tui_highlight_fg)))
@@ -833,7 +833,7 @@ pub fn script_key_handler(
     saved: &mut bool, // TODO decide if we need this
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
-    profile_fn!(script_key_handler);
+    profile!("script_key_handler");
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
@@ -1044,7 +1044,7 @@ fn save_and_submit(
 ///
 /// This function will bubble up any i/o errors encountered by `crossterm::enable_raw_mode`.
 pub fn maybe_enable_raw_mode() -> ThagResult<()> {
-    profile_fn!(maybe_enable_raw_mode);
+    profile!("maybe_enable_raw_mode");
     let test_env = &var("TEST_ENV");
     debug_log!("test_env={test_env:?}");
     if !test_env.is_ok() && !is_raw_mode_enabled()? {
@@ -1062,7 +1062,7 @@ pub fn display_popup(
     max_desc_len: u16,
     f: &mut ratatui::prelude::Frame<'_>,
 ) {
-    profile_fn!(display_popup);
+    profile!("display_popup");
     let num_filtered_rows = mappings.len();
     let block = Block::default()
         .borders(Borders::ALL)
@@ -1131,7 +1131,7 @@ pub fn display_popup(
 
 #[must_use]
 pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
-    profile_fn!(centered_rect);
+    profile!("centered_rect");
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Max(max_height),
@@ -1152,7 +1152,7 @@ pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 /// it stands).
 #[must_use]
 pub fn normalize_newlines(input: &str) -> String {
-    profile_fn!(normalize_newlines);
+    profile!("normalize_newlines");
     let re: &Regex = regex!(r"\r\n?");
 
     re.replace_all(input, "\n").to_string()
@@ -1165,7 +1165,7 @@ pub fn normalize_newlines(input: &str) -> String {
 /// This function will bubble up any `ratatui` or `crossterm` errors encountered.
 // TODO: move to shared or tui_editor?
 pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>) -> ThagResult<()> {
-    profile_fn!(reset_term);
+    profile!("reset_term");
     disable_raw_mode()?;
     crossterm::execute!(
         term.backend_mut(),
@@ -1186,7 +1186,7 @@ pub fn save_if_changed(
     textarea: &mut TextArea<'_>,
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
-    profile_fn!(save_if_changed);
+    profile!("save_if_changed");
     debug_log!("save_if_changed...");
     if textarea.is_empty() {
         debug_log!("nothing to save(1)...");
@@ -1220,7 +1220,7 @@ pub fn save_if_changed(
 //     textarea: &mut TextArea<'_>,
 //     history_path: &Option<PathBuf>,
 // ) -> ThagResult<()> {
-//     profile_fn!(save_if_changed);
+//     profile!("save_if_changed");
 //     debug_log!("save_if_changed...");
 //     if textarea.is_empty() {
 //         debug_log!("nothing to save(1)...");
@@ -1245,7 +1245,7 @@ pub fn save_if_changed(
 // }
 
 pub fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &Entry) {
-    profile_fn!(paste_to_textarea);
+    profile!("paste_to_textarea");
     textarea.select_all();
     textarea.cut();
     // 6
@@ -1262,7 +1262,7 @@ pub fn preserve(
     hist: &mut History,
     history_path: &PathBuf,
 ) -> ThagResult<()> {
-    profile_fn!(preserve);
+    profile!("preserve");
     debug_log!("preserve...");
     save_if_not_empty(textarea, hist);
     save_history(Some(&mut hist.clone()), Some(history_path))?;
@@ -1270,7 +1270,7 @@ pub fn preserve(
 }
 
 pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
-    profile_fn!(save_if_not_empty);
+    profile!("save_if_not_empty");
     debug_log!("save_if_not_empty...");
 
     let text = copy_text(textarea);
@@ -1281,7 +1281,7 @@ pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
 }
 
 pub fn copy_text(textarea: &mut TextArea<'_>) -> String {
-    profile_fn!(copy_text);
+    profile!("copy_text");
     textarea.select_all();
     textarea.copy();
     let text = textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
@@ -1297,7 +1297,7 @@ pub fn save_history(
     history: Option<&mut History>,
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
-    profile_fn!(save_history);
+    profile!("save_history");
     debug_log!("save_history...{history:?}");
     if let Some(hist) = history {
         if let Some(hist_path) = history_path {
@@ -1318,7 +1318,7 @@ pub fn save_source_file(
     textarea: &mut TextArea<'_>,
     saved: &mut bool,
 ) -> ThagResult<()> {
-    profile_fn!(save_source_file);
+    profile!("save_source_file");
     // Ensure newline at end
     textarea.move_cursor(CursorMove::Bottom);
     textarea.move_cursor(CursorMove::End);

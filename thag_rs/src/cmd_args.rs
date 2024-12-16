@@ -202,14 +202,14 @@ bitflags! {
 
 impl fmt::Debug for ProcFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        profile_method!();
+        profile_method!("fmt");
         bitflags::parser::to_writer(self, f)
     }
 }
 
 impl fmt::Display for ProcFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        profile_method!();
+        profile_method!("fmt");
         bitflags::parser::to_writer(self, f)
     }
 }
@@ -218,7 +218,7 @@ impl str::FromStr for ProcFlags {
     type Err = bitflags::parser::ParseError;
 
     fn from_str(flags: &str) -> Result<Self, Self::Err> {
-        profile_method!();
+        profile_method!("from_str");
         bitflags::parser::from_str(flags)
     }
 }

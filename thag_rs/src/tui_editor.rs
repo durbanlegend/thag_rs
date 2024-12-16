@@ -109,14 +109,14 @@ pub struct Entry {
 
 impl Display for Entry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        profile_method!();
+        profile_method!("fmt");
         write!(f, "{:?}: {}", self.index, self.lines.join("\n"))
     }
 }
 
 impl Entry {
     pub fn new(index: usize, content: &str) -> Self {
-        profile_method!();
+        profile_method!("new");
         Self {
             index,
             lines: content.lines().map(String::from).collect(),
@@ -126,7 +126,7 @@ impl Entry {
     // Extracts string contents of entry for use in the editor
     #[must_use]
     pub fn contents(&self) -> String {
-        profile_method!();
+        profile_method!("contents");
         self.lines.join("\n")
     }
 }
@@ -140,7 +140,7 @@ pub struct History {
 impl History {
     #[must_use]
     pub fn new() -> Self {
-        profile_method!();
+        profile_method!("new");
         Self {
             current_index: None,
             entries: VecDeque::with_capacity(20),
@@ -149,7 +149,7 @@ impl History {
 
     #[must_use]
     pub fn load_from_file(path: &PathBuf) -> Self {
-        profile_method!();
+        profile_method!("load_from_file");
         let mut history = fs::read_to_string(path).map_or_else(
             |_| Self::default(),
             |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
@@ -177,7 +177,7 @@ impl History {
 
     #[must_use]
     pub fn at_start(&self) -> bool {
-        profile_method!();
+        profile_method!("at_start");
         debug_log!("at_start ...");
         self.current_index
             .map_or(true, |current_index| current_index == 0)
@@ -185,7 +185,7 @@ impl History {
 
     #[must_use]
     pub fn at_end(&self) -> bool {
-        profile_method!();
+        profile_method!("at_end");
         debug_log!("at_end ...");
         self.current_index.map_or(true, |current_index| {
             current_index == self.entries.len() - 1
@@ -193,7 +193,7 @@ impl History {
     }
 
     pub fn add_entry(&mut self, text: &str) {
-        profile_method!();
+        profile_method!("add_entry");
         let new_index = self.entries.len(); // Assign the next index based on current length
         let new_entry = Entry::new(new_index, text);
 
@@ -212,7 +212,7 @@ impl History {
     }
 
     pub fn update_entry(&mut self, index: usize, text: &str) {
-        profile_method!();
+        profile_method!("update_entry");
         debug_log!("update_entry for index {index}...");
         // Get a mutable reference to the entry at the specified index
         let current_index = self.current_index;
@@ -227,7 +227,7 @@ impl History {
     }
 
     pub fn delete_entry(&mut self, index: usize) {
-        profile_method!();
+        profile_method!("delete_entry");
         self.entries.retain(|entry| entry.index != index);
 
         // Reassign indices after deletion
@@ -247,7 +247,7 @@ impl History {
     ///
     /// This function will bubble up any i/o errors encountered writing the file.
     pub fn save_to_file(&mut self, path: &PathBuf) -> ThagResult<()> {
-        profile_method!();
+        profile_method!("save_to_file(&mut self, path: &PathBuf) -> ThagResult<");
         self.reassign_indices();
         if let Ok(data) = serde_json::to_string(&self) {
             debug_log!("About to write data=({data}");
@@ -278,7 +278,7 @@ impl History {
     }
 
     pub fn get_current(&mut self) -> Option<&Entry> {
-        profile_method!();
+        profile_method!("get_current");
         if self.entries.is_empty() {
             return None;
         }
@@ -294,7 +294,7 @@ impl History {
     }
 
     pub fn get(&mut self, index: usize) -> Option<&Entry> {
-        profile_method!();
+        profile_method!("get");
         debug_log!("get({index})...");
         if !(0..self.entries.len()).contains(&index) {
             return None;
@@ -312,7 +312,7 @@ impl History {
     }
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut Entry> {
-        profile_method!();
+        profile_method!("get_mut");
         debug_log!("get_mut({index})...");
 
         if !(0..self.entries.len()).contains(&index) {
@@ -338,7 +338,7 @@ impl History {
     ///
     /// Panics if a logic error is detected, likely when reaching the oldest History entry.
     pub fn get_previous(&mut self) -> Option<&Entry> {
-        profile_method!();
+        profile_method!("get_previous");
         // let this = &mut *self;
         debug_log!("get_previous...");
         if self.entries.is_empty() {
@@ -379,7 +379,7 @@ impl History {
     ///
     /// Panics if a logic error is detected, likely when reaching the newest History entry.
     pub fn get_next(&mut self) -> Option<&Entry> {
-        profile_method!();
+        profile_method!("get_next");
         debug_log!("get_next...");
         let this = &mut *self;
         if this.entries.is_empty() {
@@ -416,7 +416,7 @@ impl History {
     }
 
     pub fn get_last(&mut self) -> Option<&Entry> {
-        profile_method!();
+        profile_method!("get_last");
         if self.entries.is_empty() {
             return None;
         }
@@ -426,7 +426,7 @@ impl History {
 
     // Reassign indices so that the newest entry has index 0, and the oldests has len - 1
     fn reassign_indices(&mut self) {
-        profile_method!();
+        profile_method!("reassign_indices");
         // let len = self.entries.len();
         for (i, entry) in self.entries.iter_mut().enumerate() {
             entry.index = i;

@@ -107,7 +107,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn new(width: u16, height: u16, mode: DialogMode) -> Result<Self> {
-        profile_method!();
+        profile_method!("new");
         let mut s = Self {
             width: cmp::min(width, 100),
             height: cmp::min(height, 100),
@@ -135,7 +135,7 @@ impl FileDialog<'_> {
     ///
     /// This function will return an error if there is a problem canonicalizing the directory.
     pub fn set_dir(&mut self, dir: &Path) -> Result<()> {
-        profile_method!();
+        profile_method!("set_dir(&mut self, dir: &Path) -> Result<");
         self.current_dir = dir.canonicalize()?;
         self.update_entries()
     }
@@ -146,7 +146,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn set_filter(&mut self, filter: FilePattern) -> Result<()> {
-        profile_method!();
+        profile_method!("set_filter(&mut self, filter: FilePattern) -> Result<");
         self.filter = Some(filter);
         self.update_entries()
     }
@@ -157,7 +157,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn reset_filter(&mut self) -> Result<()> {
-        profile_method!();
+        profile_method!("reset_filter(&mut self) -> Result<");
         self.filter.take();
         self.update_entries()
     }
@@ -170,21 +170,21 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn toggle_show_hidden(&mut self) -> Result<()> {
-        profile_method!();
+        profile_method!("toggle_show_hidden(&mut self) -> Result<");
         self.show_hidden = !self.show_hidden;
         self.update_entries()
     }
 
     /// Opens the file dialog.
     pub fn open(&mut self) {
-        profile_method!();
+        profile_method!("open");
         self.selected_file.take();
         self.open = true;
     }
 
     /// Closes the file dialog.
     pub fn close(&mut self) {
-        profile_method!();
+        profile_method!("close");
         self.open = false;
     }
 
@@ -196,7 +196,7 @@ impl FileDialog<'_> {
 
     /// Draws the file dialog in the TUI application.
     pub fn draw(&mut self, f: &mut Frame) {
-        profile_method!();
+        profile_method!("draw");
         if self.open {
             let area = centered_rect(self.width, self.height, f.area());
 
@@ -311,7 +311,7 @@ impl FileDialog<'_> {
 
     /// Goes to the next item in the file list.
     pub fn next(&mut self) {
-        profile_method!();
+        profile_method!("next");
         let i = match self.list_state.selected() {
             Some(i) => cmp::min(self.items.len() - 1, i + 1),
             None => cmp::min(self.items.len().saturating_sub(1), 1),
@@ -320,7 +320,7 @@ impl FileDialog<'_> {
     }
     /// Goes to the previous item in the file list.
     pub fn previous(&mut self) {
-        profile_method!();
+        profile_method!("previous");
         let i = self
             .list_state
             .selected()
@@ -333,7 +333,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn up(&mut self) -> Result<()> {
-        profile_method!();
+        profile_method!("up(&mut self) -> Result<");
         self.current_dir.pop();
         self.update_entries()
     }
@@ -348,7 +348,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn select(&mut self) -> Result<()> {
-        profile_method!();
+        profile_method!("select(&mut self) -> Result<");
         // Open mode logic (already correct)
         debug_log!("In select()");
         let Some(selected) = self.list_state.selected() else {
@@ -412,7 +412,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered.
     fn update_entries(&mut self) -> Result<()> {
-        profile_method!();
+        profile_method!("update_entries(&mut self) -> Result<");
         self.items = iter::once("..".to_string())
             .chain(
                 fs::read_dir(&self.current_dir)?
@@ -477,7 +477,7 @@ impl FileDialog<'_> {
     /// Panics if there is a logic error popping the last character out of the search buffer.
     #[allow(clippy::unnested_or_patterns)]
     pub fn handle_input(&mut self, key_event: KeyEvent) -> Result<Status> {
-        profile_method!();
+        profile_method!("handle_input");
         // Make sure for Windows
         if matches!(key_event.kind, KeyEventKind::Press) {
             debug_log!("key_event={key_event:#?}");

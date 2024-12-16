@@ -100,7 +100,7 @@ impl Logger {
 
     /// Log a message if it passes the verbosity filter.
     pub fn log(&self, verbosity: Verbosity, message: &str) {
-        profile_method!();
+        profile_method!("log");
         if verbosity as u8 <= self.verbosity as u8 {
             println!("{}", message);
         }
@@ -108,7 +108,7 @@ impl Logger {
 
     /// Set the verbosity level.
     pub fn set_verbosity(&mut self, verbosity: Verbosity) {
-        profile_method!();
+        profile_method!("set_verbosity");
         self.verbosity = verbosity;
 
         debug_log!("Verbosity set to {verbosity:?}");
@@ -116,7 +116,7 @@ impl Logger {
 
     /// Return the verbosity level
     pub fn verbosity(&mut self) -> Verbosity {
-        profile_method!();
+        profile_method!("verbosity");
         self.verbosity
     }
 }

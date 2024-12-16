@@ -608,7 +608,7 @@ fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
 /// This function will bubble up any errors encountered.
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     let start_build = Instant::now();
-    profile!("build");
+    // profile!("build");
     vlog!(V::V, "BBBBBBBB In build");
 
     if proc_flags.contains(ProcFlags::EXPAND) {
@@ -712,7 +712,7 @@ fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult
 }
 
 fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
-    profile!("handle_build_or_check");
+    // profile!("handle_build_or_check");
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
     // eprintln!("cargo_command={cargo_command:#?}");

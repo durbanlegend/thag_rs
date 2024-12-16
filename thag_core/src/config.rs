@@ -66,7 +66,7 @@ impl Config {
     ///
     /// This function will bubble up any i/o errors encountered.
     pub fn load_or_create_default() -> ThagResult<Self> {
-        profile_method!();
+        profile_method!("load_or_create_default");
         let config_dir = if let Some(cargo_home) = std::env::var_os("CARGO_HOME") {
             PathBuf::from(cargo_home).join(".config").join("thag_rs")
         } else {
@@ -110,7 +110,7 @@ impl Config {
     ///
     /// This function will bubble up any errors encountered.
     pub fn load(path: &Path) -> ThagResult<Self> {
-        profile_method!();
+        profile_method!("load");
         let content = std::fs::read_to_string(path)?;
         let config: Self = toml::from_str(&content)?;
         validate_config_format(&content)?;
@@ -139,7 +139,7 @@ impl RealContext {
     #[cfg(target_os = "windows")]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!();
+        profile_method!("new");
         let base_dir =
             PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"));
         Self { base_dir }
@@ -153,7 +153,7 @@ impl RealContext {
     #[cfg(not(target_os = "windows"))]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!();
+        profile_method!("new");
         let base_dir = home::home_dir()
             .expect("Error resolving home::home_dir()")
             .join(".config");
@@ -163,7 +163,7 @@ impl RealContext {
 
 impl Context for RealContext {
     fn get_config_path(&self) -> PathBuf {
-        profile_method!();
+        profile_method!("get_config_path");
 
         self.base_dir.join("thag_rs").join("config.toml")
     }

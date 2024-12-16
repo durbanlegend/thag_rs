@@ -59,7 +59,7 @@ struct RemoveInnerAttributes {
 
 impl VisitMut for RemoveInnerAttributes {
     fn visit_expr_block_mut(&mut self, expr_block: &mut ExprBlock) {
-        profile_method!();
+        profile_method!("visit_expr_block_mut");
         // Count inner attributes
         self.found = expr_block
             .attrs
@@ -718,7 +718,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 
     impl<'ast> Visit<'ast> for FindFns {
         fn visit_item_fn(&mut self, i: &'ast syn::ItemFn) {
-            profile_method!();
+            profile_method!("visit_item_fn");
             // if is_debug_logging_enabled() {
             //     debug_log!("Node={:#?}", node);
             //     debug_log!("Ident={}", node.sig.ident);

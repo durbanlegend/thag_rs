@@ -7,7 +7,7 @@ use std::time::Instant;
 pub use thag_proc_macros::profile;
 
 thread_local! {
-    static PROFILE_STACK: RefCell<Vec<&'static str>> = RefCell::new(Vec::new());
+    static PROFILE_STACK: RefCell<Vec<&'static str>> = const { RefCell::new(Vec::new()) };
 }
 
 static PROFILING_ENABLED: AtomicBool = AtomicBool::new(false);
@@ -29,20 +29,20 @@ impl Profile {
     #[must_use]
     pub fn new(name: &'static str) -> Self {
         let start = if is_profiling_enabled() {
-            println!("Creating profile for: {}", name); // Temporary debug output
+            // println!("Creating profile for: {name}"); // Temporary debug output
             PROFILE_STACK.with(|stack| {
                 stack.borrow_mut().push(name);
             });
             Some(Instant::now())
         } else {
-            println!("Profiling is disabled"); // Temporary debug output
+            // println!("Profiling is disabled"); // Temporary debug output
             None
         };
 
         Self { start, name }
     }
 
-    fn get_parent_stack(&self) -> String {
+    fn get_parent_stack() -> String {
         PROFILE_STACK.with(|stack| {
             let stack = stack.borrow();
             // Skip the last one (current function) and reverse the rest
@@ -68,14 +68,14 @@ impl Profile {
                     file,
                     "{};{} {}",
                     self.name,
-                    self.get_parent_stack(),
+                    Self::get_parent_stack(),
                     duration.as_micros()
                 ) {
-                    eprintln!("Failed to write profile data: {}", e);
+                    eprintln!("Failed to write profile data: {e}");
                 }
             }
             Err(e) => {
-                eprintln!("Failed to open profile file {}: {}", file_path, e);
+                eprintln!("Failed to open profile file {file_path}: {e}");
             }
         }
     }
@@ -111,9 +111,13 @@ macro_rules! profile_section {
 
 #[macro_export]
 macro_rules! profile_method {
-    () => {
-        let _profile = $crate::profiling::Profile::new(module_path!());
-    };
+    () => {{
+        const NAME: &'static str = concat!(module_path!(), "::", stringify!(profile_method));
+        let _profile = $crate::profiling::Profile::new(NAME);
+    }};
+    ($name:expr) => {{
+        let _profile = $crate::profiling::Profile::new($name);
+    }};
 }
 
 // Optional: A more detailed version that includes file and line information

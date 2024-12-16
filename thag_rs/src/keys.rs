@@ -45,7 +45,7 @@ impl KeyCombination {
     /// case where the modifier isn't mentioned but the key is uppercase.
     #[must_use]
     pub fn normalized(mut self) -> Self {
-        profile_method!();
+        profile_method!("normalized");
         let mut shift = normalize_key_code(self.codes.first_mut(), self.modifiers);
         if let Some(ref mut code) = self.codes.get_mut(1) {
             shift |= normalize_key_code(code, self.modifiers);
@@ -62,7 +62,7 @@ impl KeyCombination {
 
 impl From<KeyEvent> for KeyCombination {
     fn from(key_event: KeyEvent) -> Self {
-        profile_method!();
+        profile_method!("from");
         let raw = Self {
             codes: key_event.code.into(),
             modifiers: key_event.modifiers,

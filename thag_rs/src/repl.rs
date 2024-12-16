@@ -223,7 +223,7 @@ pub enum ReplCommand {
 
 impl ReplCommand {
     fn print_help() {
-        profile_method!();
+        profile_method!("print_help");
         let mut command = Self::command();
         // let mut buf = Vec::new();
         // command.write_help(&mut buf).unwrap();
@@ -237,22 +237,22 @@ impl ReplCommand {
 pub struct ReplPrompt(pub &'static str);
 impl Prompt for ReplPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
-        profile_method!();
+        profile_method!("render_prompt_left");
         Cow::Owned(self.0.to_string())
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
-        profile_method!();
+        profile_method!("render_prompt_right");
         Cow::Owned(String::new())
     }
 
     fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<str> {
-        profile_method!();
+        profile_method!("render_prompt_indicator");
         Cow::Owned("> ".to_string())
     }
 
     fn render_prompt_multiline_indicator(&self) -> Cow<str> {
-        profile_method!();
+        profile_method!("render_prompt_multiline_indicator");
         Cow::Borrowed(DEFAULT_MULTILINE_INDICATOR)
     }
 

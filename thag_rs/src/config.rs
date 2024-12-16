@@ -48,7 +48,7 @@ impl Config {
     ///
     /// This function will bubble up any i/o errors encountered.
     pub fn load_or_create_default() -> Result<Self, Box<dyn Error>> {
-        profile_method!();
+        profile_method!("load_or_create_default");
         let config_dir = if let Some(cargo_home) = std::env::var_os("CARGO_HOME") {
             PathBuf::from(cargo_home).join(".config").join("thag_rs")
         } else {
@@ -92,7 +92,7 @@ impl Config {
     ///
     /// This function will bubble up any errors encountered.
     pub fn load(path: &Path) -> Result<Self, ThagError> {
-        profile_method!();
+        profile_method!("load");
         let content = std::fs::read_to_string(path)?;
         let config: Self = toml::from_str(&content)?;
         config.validate()?;
@@ -101,7 +101,7 @@ impl Config {
     }
 
     fn validate(&self) -> Result<(), ThagError> {
-        profile_method!();
+        profile_method!("validate(&self) -> Result<");
         // Validate Dependencies section
         self.dependencies
             .validate()
@@ -137,7 +137,7 @@ pub struct Dependencies {
 
 impl Default for Dependencies {
     fn default() -> Self {
-        profile_method!();
+        profile_method!("default");
         Self {
             exclude_unstable_features: true,
             exclude_std_feature: true,
@@ -262,7 +262,7 @@ impl Dependencies {
     // Make should_include_feature use filter_features
     #[must_use]
     pub fn should_include_feature(&self, feature: &str, crate_name: &str) -> bool {
-        profile_method!();
+        profile_method!("should_include_feature");
         self.filter_maximal_features(crate_name, &[feature.to_string()])
             .0
             .contains(&feature.to_string())
@@ -350,7 +350,7 @@ impl Dependencies {
     }
 
     fn validate(&self) -> Result<(), String> {
-        profile_method!();
+        profile_method!("validate(&self) -> Result<");
         // Validate feature overrides
         for (crate_name, override_config) in &self.feature_overrides {
             // Check for conflicts between required and excluded features
@@ -535,7 +535,7 @@ impl RealContext {
     #[cfg(target_os = "windows")]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!();
+        profile_method!("new");
         let base_dir =
             PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"));
         Self { base_dir }
@@ -549,7 +549,7 @@ impl RealContext {
     #[cfg(not(target_os = "windows"))]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!();
+        profile_method!("new");
         let base_dir = home::home_dir()
             .expect("Error resolving home::home_dir()")
             .join(".config");
@@ -559,7 +559,7 @@ impl RealContext {
 
 impl Context for RealContext {
     fn get_config_path(&self) -> PathBuf {
-        profile_method!();
+        profile_method!("get_config_path");
 
         self.base_dir.join("thag_rs").join("config.toml")
     }

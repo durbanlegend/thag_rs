@@ -320,7 +320,7 @@ pub fn gen_build_run(
     start: &Instant,
 ) -> ThagResult<()> {
     // Instrument the entire function
-    // profile!("gen_build_run");
+    profile!("gen_build_run");
 
     if build_state.must_gen {
         let source_path: &Path = &build_state.source_path;

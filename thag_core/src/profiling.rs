@@ -49,40 +49,47 @@ impl Profile {
         Self { start, name }
     }
 
+    fn write_trace_event(&self, duration: std::time::Duration) {
+        if !is_profiling_enabled() {
+            return;
+        }
+
+        let micros = duration.as_micros();
+        if micros == 0 {
+            return;
+        }
+
+        let first_write = FIRST_WRITE.swap(false, Ordering::SeqCst);
+        if let Ok(mut file) = File::options()
+            .create(true)
+            .write(true)
+            .truncate(first_write)
+            .append(!first_write)
+            .open("thag-profile.folded")
+        {
+            // Current function is the leaf, followed by its parents
+            let parent_stack = Self::get_parent_stack();
+            let entry = if parent_stack.is_empty() {
+                self.name.to_string()
+            } else {
+                format!("{};{}", self.name, parent_stack)
+            };
+
+            writeln!(file, "{} {}", entry, micros).ok();
+        }
+    }
+
     fn get_parent_stack() -> String {
         PROFILE_STACK.with(|stack| {
             let stack = stack.borrow();
-            // Don't include the immediate parent in the child's stack
             stack
                 .iter()
                 .take(stack.len().saturating_sub(1))
-                .rev() // Reverse to get root->leaf order
+                .rev() // Reverse to get proper parent order
                 .copied()
                 .collect::<Vec<_>>()
                 .join(";")
         })
-    }
-
-    fn write_trace_event(&self, duration: std::time::Duration) {
-        if let Ok(mut file) = File::options()
-            .create(true)
-            .write(true)
-            .truncate(FIRST_WRITE.swap(false, Ordering::SeqCst))
-            .append(!FIRST_WRITE.load(Ordering::SeqCst))
-            .open("thag-profile.folded")
-        {
-            // Only write if there's actual time spent in this function
-            if duration.as_micros() > 0 {
-                writeln!(
-                    file,
-                    "{};{} {}",
-                    self.name,
-                    Self::get_parent_stack(),
-                    duration.as_micros()
-                )
-                .ok();
-            }
-        }
     }
 }
 
@@ -154,6 +161,7 @@ pub struct ProfileStats {
 }
 
 impl ProfileStats {
+    #[allow(clippy::cast_possible_truncation)]
     pub fn record(&mut self, func_name: &str, duration: std::time::Duration) {
         // Update per-function statistics
         *self.calls.entry(func_name.to_string()).or_default() += 1;

@@ -11,6 +11,7 @@ use inquire::{MultiSelect, Select};
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::process::Command;
 use thag_core::profiling::ProfileStats;
 
 #[derive(Default)]
@@ -19,45 +20,51 @@ struct ProcessedProfile {
     filtered_stacks: Vec<String>,
 }
 
-fn is_async_boundary(func_name: &str) -> bool {
-    // Known async boundaries
-    matches!(func_name,
-        "handle_build_or_check" |
-        "build" |
-        // Add other known async boundaries
-        _ if func_name.contains("spawn") ||
-            func_name.contains("wait") ||
-            func_name.contains("async")
-    )
-}
-
 fn process_profile_data(lines: &[String]) -> ProcessedProfile {
     let mut result = ProcessedProfile::default();
 
     for line in lines {
         if let Some((stack_part, time_str)) = line.rsplit_once(' ') {
             if let Ok(time) = time_str.parse::<u64>() {
-                let parts: Vec<&str> = stack_part.split(';').collect();
-                let func_name = parts[0];
+                // The stack is already in correct leaf->root order
+                // We don't need to reverse it
+                let parts: Vec<&str> = stack_part.split(';').map(str::trim).collect();
 
-                // Mark async boundaries in statistics
-                if is_async_boundary(func_name) {
-                    result.stats.async_boundaries.insert(func_name.to_string());
+                if !parts.is_empty() {
+                    // Store original line if time > 0
+                    if time > 0 {
+                        result
+                            .filtered_stacks
+                            .push(format!("{} {}", stack_part, time));
+                    }
+
+                    // Update statistics
+                    let func_name = parts[0]; // Leaf function
+                    if is_async_boundary(func_name) {
+                        result.stats.mark_async(func_name);
+                    }
+                    let duration = std::time::Duration::from_micros(time);
+                    result.stats.record(func_name, duration);
                 }
-
-                *result.stats.calls.entry(func_name.to_string()).or_default() += 1;
-                *result
-                    .stats
-                    .total_time
-                    .entry(func_name.to_string())
-                    .or_default() += time;
-
-                result.filtered_stacks.push(line.to_string());
             }
         }
     }
 
     result
+}
+
+fn is_async_boundary(func_name: &str) -> bool {
+    // Expanded list of async indicators
+    matches!(func_name.trim(),
+        "handle_build_or_check" |
+        "build" |
+        _ if func_name.contains("spawn") ||
+            func_name.contains("wait") ||
+            func_name.contains("async") ||
+            func_name.contains("process") ||
+            func_name.contains("command") ||
+            func_name.contains("exec")
+    )
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -67,7 +74,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let processed = process_profile_data(&lines);
 
-    let options = vec!["Generate Flamegraph", "Show Statistics", "Filter Functions"];
+    let options = vec![
+        "Generate Flamegraph",
+        "Show Statistics",
+        "Filter Functions",
+        "Show Async Boundaries",
+    ];
 
     let selection = Select::new("Select action:", options).prompt()?;
 
@@ -78,6 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let filtered = filter_functions(&processed.filtered_stacks)?;
             generate_flamegraph(&filtered)?;
         }
+        "Show Async Boundaries" => show_async_boundaries(&processed.stats),
         _ => println!("Unknown option"),
     }
 
@@ -96,21 +109,30 @@ fn generate_flamegraph(stacks: &[String]) -> Result<(), Box<dyn std::error::Erro
     opts.count_name = "μs".to_owned();
     opts.min_width = 0.1;
 
-    // Make sure each line is properly formatted as "stack time"
-    let formatted_stacks: Vec<String> = stacks
+    // Create formatted stacks with their original indices to maintain order
+    let mut formatted_with_index: Vec<(usize, String)> = stacks
         .iter()
-        .filter_map(|line| {
-            let parts: Vec<&str> = line.rsplitn(2, ' ').collect();
-            if parts.len() == 2 {
-                Some(format!("{} {}", parts[1], parts[0]))
-            } else {
-                None
-            }
+        .enumerate()
+        .filter_map(|(idx, line)| {
+            let (stack_part, time_str) = line.rsplit_once(' ')?;
+            let parts: Vec<&str> = stack_part.split(';').collect();
+            let reversed: Vec<&str> = parts.iter().rev().copied().collect();
+            Some((idx, format!("{} {}", reversed.join(";"), time_str)))
         })
         .collect();
 
-    if formatted_stacks.is_empty() {
-        return Err("No valid stack traces found".into());
+    // Sort by original index to maintain chronological order
+    formatted_with_index.sort_by_key(|(idx, _)| *idx);
+
+    // Extract just the formatted strings
+    let formatted_stacks: Vec<String> = formatted_with_index
+        .into_iter()
+        .map(|(_, stack)| stack)
+        .collect();
+
+    println!("\nChronologically ordered stacks:");
+    for stack in &formatted_stacks {
+        println!("{}", stack);
     }
 
     flamegraph::from_lines(
@@ -120,6 +142,23 @@ fn generate_flamegraph(stacks: &[String]) -> Result<(), Box<dyn std::error::Erro
     )?;
 
     println!("Flamegraph generated: flamegraph.svg");
+    open_in_browser("flamegraph.svg")?;
+    Ok(())
+}
+
+fn open_in_browser(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open").arg(path).spawn()?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd").args(["/C", "start", path]).spawn()?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open").arg(path).spawn()?;
+    }
     Ok(())
 }
 
@@ -127,6 +166,7 @@ fn show_statistics(stats: &ProfileStats) {
     println!("\nFunction Statistics:");
     println!("===================");
 
+    // Convert to vec for sorting
     let mut entries: Vec<_> = stats.calls.iter().collect();
     entries.sort_by_key(|(_, &calls)| std::cmp::Reverse(calls));
 
@@ -134,24 +174,31 @@ fn show_statistics(stats: &ProfileStats) {
         let total_time = stats.total_time.get(func).unwrap_or(&0);
         let avg_time = if calls > 0 { total_time / calls } else { 0 };
         println!(
-            "{}: {} calls, {} μs total, {} μs avg",
-            func, calls, total_time, avg_time
+            "{}{}: {} calls, {} μs total, {} μs avg",
+            func,
+            if stats.is_async_boundary(func) {
+                " (async)"
+            } else {
+                ""
+            },
+            calls,
+            total_time,
+            avg_time
         );
     }
 
-    // Show async boundaries separately
-    if !stats.async_boundaries.is_empty() {
-        println!("\nAsync Boundaries:");
-        println!("================");
-        for func in &stats.async_boundaries {
-            if let Some(&calls) = stats.calls.get(func) {
-                let total_time = stats.total_time.get(func).unwrap_or(&0);
-                println!(
-                    "{}: {} calls, {} μs total (includes subprocess time)",
-                    func, calls, total_time
-                );
-            }
-        }
+    // Show aggregate statistics
+    println!("\nAggregate Statistics:");
+    println!("Total calls: {}", stats.count());
+    println!("Total duration: {:?}", stats.total_duration());
+    if let Some(min) = stats.min_time() {
+        println!("Minimum duration: {:?}", min);
+    }
+    if let Some(max) = stats.max_time() {
+        println!("Maximum duration: {:?}", max);
+    }
+    if let Some(avg) = stats.average() {
+        println!("Average duration: {:?}", avg);
     }
 }
 
@@ -183,4 +230,19 @@ fn filter_functions(stacks: &[String]) -> Result<Vec<String>, inquire::InquireEr
         })
         .cloned()
         .collect())
+}
+
+fn show_async_boundaries(stats: &ProfileStats) {
+    println!("\nAsync Boundaries:");
+    println!("================");
+
+    for func_name in stats.async_boundaries.iter() {
+        if let Some(&calls) = stats.calls.get(func_name) {
+            let total_time = stats.total_time.get(func_name).unwrap_or(&0);
+            println!(
+                "{}: {} calls, {} μs total (includes subprocess time)",
+                func_name, calls, total_time
+            );
+        }
+    }
 }

@@ -464,7 +464,7 @@ impl BuildState {
         cli: &Cli,
         script_state: &ScriptState,
     ) -> ThagResult<Self> {
-        profile_method!();
+        profile_method!("pre_configure");
 
         // 1. Validate and extract basic script info
         let (source_name, source_stem) = Self::extract_script_info(script_state)?;
@@ -647,7 +647,7 @@ impl BuildState {
         script_state: &ScriptState,
         flags: &ExecutionFlags,
     ) -> ThagResult<()> {
-        profile_method!();
+        profile_method!("determine_build_requirements");
         // Case 1: Force generation and building
         if flags.is_dynamic
             || flags.is_repl

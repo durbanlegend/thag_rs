@@ -260,7 +260,7 @@ impl Prompt for ReplPrompt {
         &self,
         history_search: PromptHistorySearch,
     ) -> Cow<str> {
-        profile_method!();
+        profile_method!("render_prompt_history_search_indicator");
         let prefix = match history_search.status {
             PromptHistorySearchStatus::Passing => "",
             PromptHistorySearchStatus::Failing => "failing ",

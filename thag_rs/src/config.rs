@@ -157,7 +157,7 @@ impl Dependencies {
         crate_name: &str,
         features: &[String],
     ) -> (Vec<String>, bool) {
-        profile_method!();
+        profile_method!("filter_maximal_features");
         let mut filtered = features.to_owned();
 
         #[cfg(debug_assertions)]
@@ -275,7 +275,7 @@ impl Dependencies {
         crate_name: &str,
         all_features: &[String],
     ) -> (Vec<String>, bool) {
-        profile_method!();
+        profile_method!("apply_config_features");
 
         let (mut config_features, default_features) = self.feature_overrides.get(crate_name).map_or_else(|| {
             // Only include features from always_include_features that exist in all_features
@@ -333,7 +333,7 @@ impl Dependencies {
         all_features: &[String],
         level: &DependencyInference,
     ) -> (Option<Vec<String>>, bool) {
-        profile_method!();
+        profile_method!("get_features_for_inference_level");
         match level {
             DependencyInference::None | DependencyInference::Min => (None, true),
             DependencyInference::Config => {
@@ -457,7 +457,7 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
     where
         D: de::Deserializer<'de>,
     {
-        profile_method!();
+        profile_method!("deserialize");
         let s = String::deserialize(deserializer)?;
         match s.to_lowercase().as_str() {
             "none" => Ok(Self::None),

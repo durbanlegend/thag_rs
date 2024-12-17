@@ -6,14 +6,20 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 pub use thag_proc_macros::profile;
 
+static FIRST_WRITE: AtomicBool = AtomicBool::new(true);
+
 thread_local! {
     static PROFILE_STACK: RefCell<Vec<&'static str>> = const { RefCell::new(Vec::new()) };
 }
 
 static PROFILING_ENABLED: AtomicBool = AtomicBool::new(false);
 
+// Reset the first_write flag when profiling is enabled
 pub fn enable_profiling(enabled: bool) {
     PROFILING_ENABLED.store(enabled, Ordering::SeqCst);
+    if enabled {
+        FIRST_WRITE.store(true, Ordering::SeqCst);
+    }
 }
 
 pub fn is_profiling_enabled() -> bool {
@@ -45,11 +51,11 @@ impl Profile {
     fn get_parent_stack() -> String {
         PROFILE_STACK.with(|stack| {
             let stack = stack.borrow();
-            // Skip the last one (current function) and reverse the rest
+            // Don't include the immediate parent in the child's stack
             stack
                 .iter()
                 .take(stack.len().saturating_sub(1))
-                .rev()
+                .rev() // Reverse to get root->leaf order
                 .copied()
                 .collect::<Vec<_>>()
                 .join(";")
@@ -57,25 +63,23 @@ impl Profile {
     }
 
     fn write_trace_event(&self, duration: std::time::Duration) {
-        if !is_profiling_enabled() {
-            return;
-        }
-
-        let file_path = "thag-profile.folded";
-        match File::options().create(true).append(true).open(file_path) {
-            Ok(mut file) => {
-                if let Err(e) = writeln!(
+        if let Ok(mut file) = File::options()
+            .create(true)
+            .write(true)
+            .truncate(FIRST_WRITE.swap(false, Ordering::SeqCst))
+            .append(!FIRST_WRITE.load(Ordering::SeqCst))
+            .open("thag-profile.folded")
+        {
+            // Only write if there's actual time spent in this function
+            if duration.as_micros() > 0 {
+                writeln!(
                     file,
                     "{};{} {}",
                     self.name,
                     Self::get_parent_stack(),
                     duration.as_micros()
-                ) {
-                    eprintln!("Failed to write profile data: {e}");
-                }
-            }
-            Err(e) => {
-                eprintln!("Failed to open profile file {file_path}: {e}");
+                )
+                .ok();
             }
         }
     }

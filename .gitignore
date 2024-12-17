@@ -29,3 +29,4 @@ thag_rs/bank/termbg_resp.rs
 thag_rs/bank/tui_file_dialog2.rs
 thag_rs/bank_tui_rs_stdin_history.json
 thag-profile.folded
+thag_rs/demo/thag_profile_save.rs

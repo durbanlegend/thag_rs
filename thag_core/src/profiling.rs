@@ -1,5 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Write;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -140,31 +141,68 @@ macro_rules! profile_method_detailed {
     };
 }
 
-// Optional: Collection of timing statistics
 #[derive(Default)]
 pub struct ProfileStats {
+    pub calls: HashMap<String, u64>,
+    pub total_time: HashMap<String, u64>, // Store microseconds for each function
+    pub async_boundaries: HashSet<String>,
+    // Keep existing fields for backwards compatibility
     count: u64,
-    total_time: std::time::Duration,
+    duration_total: std::time::Duration,
     min_time: Option<std::time::Duration>,
     max_time: Option<std::time::Duration>,
 }
 
 impl ProfileStats {
-    pub fn record(&mut self, duration: std::time::Duration) {
+    pub fn record(&mut self, func_name: &str, duration: std::time::Duration) {
+        // Update per-function statistics
+        *self.calls.entry(func_name.to_string()).or_default() += 1;
+        *self.total_time.entry(func_name.to_string()).or_default() += duration.as_micros() as u64;
+
+        // Update aggregate statistics
         self.count += 1;
-        self.total_time += duration;
+        self.duration_total += duration;
         self.min_time = Some(self.min_time.map_or(duration, |min| min.min(duration)));
         self.max_time = Some(self.max_time.map_or(duration, |max| max.max(duration)));
+    }
+
+    pub fn mark_async(&mut self, func_name: &str) {
+        self.async_boundaries.insert(func_name.to_string());
     }
 
     #[must_use]
     pub fn average(&self) -> Option<std::time::Duration> {
         if self.count > 0 {
-            // Convert count to u32 for division
             let count = u32::try_from(self.count).unwrap_or(u32::MAX);
-            Some(self.total_time / count)
+            Some(self.duration_total / count)
         } else {
             None
         }
+    }
+
+    #[must_use]
+    pub fn is_async_boundary(&self, func_name: &str) -> bool {
+        self.async_boundaries.contains(func_name)
+    }
+
+    // Getter methods for private fields if needed
+    #[must_use]
+    pub fn count(&self) -> u64 {
+        self.count
+    }
+
+    #[must_use]
+    pub fn total_duration(&self) -> std::time::Duration {
+        self.duration_total
+    }
+
+    #[must_use]
+    pub fn min_time(&self) -> Option<std::time::Duration> {
+        self.min_time
+    }
+
+    #[must_use]
+    pub fn max_time(&self) -> Option<std::time::Duration> {
+        self.max_time
     }
 }

@@ -464,7 +464,8 @@ impl BuildState {
         cli: &Cli,
         script_state: &ScriptState,
     ) -> ThagResult<Self> {
-        profile_method!("pre_configure");
+        // profile_method!("pre_configure");
+        profile!("pre_configure");
 
         // 1. Validate and extract basic script info
         let (source_name, source_stem) = Self::extract_script_info(script_state)?;

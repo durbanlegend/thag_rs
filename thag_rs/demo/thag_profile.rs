@@ -108,29 +108,21 @@ fn generate_flamegraph(stacks: &[String]) -> Result<(), Box<dyn std::error::Erro
     opts.colors = Palette::Basic(BasicPalette::Aqua);
     opts.count_name = "μs".to_owned();
     opts.min_width = 0.1;
+    // opts.flame_chart = false;
+    opts.no_sort = true;
 
-    // Create formatted stacks with their original indices to maintain order
-    let mut formatted_with_index: Vec<(usize, String)> = stacks
+    // Just maintain the original order but ensure the stack parts are in root->leaf order
+    let formatted_stacks: Vec<String> = stacks
         .iter()
-        .enumerate()
-        .filter_map(|(idx, line)| {
+        .filter_map(|line| {
             let (stack_part, time_str) = line.rsplit_once(' ')?;
             let parts: Vec<&str> = stack_part.split(';').collect();
-            let reversed: Vec<&str> = parts.iter().rev().copied().collect();
-            Some((idx, format!("{} {}", reversed.join(";"), time_str)))
+            // Don't reverse the parts - keep them in original order
+            Some(format!("{} {}", stack_part, time_str))
         })
         .collect();
 
-    // Sort by original index to maintain chronological order
-    formatted_with_index.sort_by_key(|(idx, _)| *idx);
-
-    // Extract just the formatted strings
-    let formatted_stacks: Vec<String> = formatted_with_index
-        .into_iter()
-        .map(|(_, stack)| stack)
-        .collect();
-
-    println!("\nChronologically ordered stacks:");
+    println!("\nFormatted stacks:");
     for stack in &formatted_stacks {
         println!("{}", stack);
     }

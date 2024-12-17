@@ -36,17 +36,28 @@ impl Profile {
     #[must_use]
     pub fn new(name: &'static str) -> Self {
         let start = if is_profiling_enabled() {
-            // println!("Creating profile for: {name}"); // Temporary debug output
             PROFILE_STACK.with(|stack| {
                 stack.borrow_mut().push(name);
             });
             Some(Instant::now())
         } else {
-            // println!("Profiling is disabled"); // Temporary debug output
             None
         };
 
         Self { start, name }
+    }
+
+    fn get_parent_stack() -> String {
+        PROFILE_STACK.with(|stack| {
+            let stack = stack.borrow();
+            // Keep natural order (root->leaf) and exclude current function
+            stack
+                .iter()
+                .take(stack.len().saturating_sub(1))
+                .copied()
+                .collect::<Vec<_>>()
+                .join(";")
+        })
     }
 
     fn write_trace_event(&self, duration: std::time::Duration) {
@@ -67,29 +78,17 @@ impl Profile {
             .append(!first_write)
             .open("thag-profile.folded")
         {
-            // Current function is the leaf, followed by its parents
             let parent_stack = Self::get_parent_stack();
+            // Construct the full stack in root->leaf order
             let entry = if parent_stack.is_empty() {
                 self.name.to_string()
             } else {
-                format!("{};{}", self.name, parent_stack)
+                // Parent stack is already root->leaf, append current function
+                format!("{};{}", parent_stack, self.name)
             };
 
             writeln!(file, "{} {}", entry, micros).ok();
         }
-    }
-
-    fn get_parent_stack() -> String {
-        PROFILE_STACK.with(|stack| {
-            let stack = stack.borrow();
-            stack
-                .iter()
-                .take(stack.len().saturating_sub(1))
-                .rev() // Reverse to get proper parent order
-                .copied()
-                .collect::<Vec<_>>()
-                .join(";")
-        })
     }
 }
 

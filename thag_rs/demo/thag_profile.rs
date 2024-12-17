@@ -8,7 +8,7 @@ thag_core = { path = "/Users/donf/projects/thag_rs/thag_core" }
 
 use inferno::flamegraph::{self, color::BasicPalette, Options, Palette};
 use inquire::{MultiSelect, Select};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::process::Command;
@@ -108,32 +108,12 @@ fn generate_flamegraph(stacks: &[String]) -> Result<(), Box<dyn std::error::Erro
     opts.colors = Palette::Basic(BasicPalette::Aqua);
     opts.count_name = "μs".to_owned();
     opts.min_width = 0.1;
-    // opts.flame_chart = false;
-    opts.no_sort = true;
+    opts.flame_chart = true; // Enable flame chart mode for temporal ordering
 
-    // Just maintain the original order but ensure the stack parts are in root->leaf order
-    let formatted_stacks: Vec<String> = stacks
-        .iter()
-        .filter_map(|line| {
-            let (stack_part, time_str) = line.rsplit_once(' ')?;
-            let parts: Vec<&str> = stack_part.split(';').collect();
-            // Don't reverse the parts - keep them in original order
-            Some(format!("{} {}", stack_part, time_str))
-        })
-        .collect();
+    // Just pass the stacks directly, no need for sequence numbers
+    flamegraph::from_lines(&mut opts, stacks.iter().rev().map(String::as_str), output)?;
 
-    println!("\nFormatted stacks:");
-    for stack in &formatted_stacks {
-        println!("{}", stack);
-    }
-
-    flamegraph::from_lines(
-        &mut opts,
-        formatted_stacks.iter().map(String::as_str),
-        output,
-    )?;
-
-    println!("Flamegraph generated: flamegraph.svg");
+    println!("Flame chart generated: flamegraph.svg");
     open_in_browser("flamegraph.svg")?;
     Ok(())
 }
@@ -158,39 +138,20 @@ fn show_statistics(stats: &ProfileStats) {
     println!("\nFunction Statistics:");
     println!("===================");
 
-    // Convert to vec for sorting
     let mut entries: Vec<_> = stats.calls.iter().collect();
     entries.sort_by_key(|(_, &calls)| std::cmp::Reverse(calls));
 
     for (func, &calls) in entries {
         let total_time = stats.total_time.get(func).unwrap_or(&0);
-        let avg_time = if calls > 0 { total_time / calls } else { 0 };
+        let avg_time = if calls > 0 {
+            total_time / u128::from(calls)
+        } else {
+            0
+        };
         println!(
-            "{}{}: {} calls, {} μs total, {} μs avg",
-            func,
-            if stats.is_async_boundary(func) {
-                " (async)"
-            } else {
-                ""
-            },
-            calls,
-            total_time,
-            avg_time
+            "{}: {} calls, {} μs total, {} μs avg",
+            func, calls, total_time, avg_time
         );
-    }
-
-    // Show aggregate statistics
-    println!("\nAggregate Statistics:");
-    println!("Total calls: {}", stats.count());
-    println!("Total duration: {:?}", stats.total_duration());
-    if let Some(min) = stats.min_time() {
-        println!("Minimum duration: {:?}", min);
-    }
-    if let Some(max) = stats.max_time() {
-        println!("Maximum duration: {:?}", max);
-    }
-    if let Some(avg) = stats.average() {
-        println!("Average duration: {:?}", avg);
     }
 }
 

@@ -62,7 +62,7 @@ impl KeyCombination {
 
 impl From<KeyEvent> for KeyCombination {
     fn from(key_event: KeyEvent) -> Self {
-        profile_method!("from");
+        profile_method!("key_combo_from_key_event");
         let raw = Self {
             codes: key_event.code.into(),
             modifiers: key_event.modifiers,

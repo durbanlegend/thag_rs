@@ -3,8 +3,8 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Write;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Instant;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::time::{Instant, SystemTime};
 pub use thag_proc_macros::profile;
 
 static FIRST_WRITE: AtomicBool = AtomicBool::new(true);
@@ -14,12 +14,18 @@ thread_local! {
 }
 
 static PROFILING_ENABLED: AtomicBool = AtomicBool::new(false);
+static START_TIME: AtomicU64 = AtomicU64::new(0);
 
-// Reset the first_write flag when profiling is enabled
 pub fn enable_profiling(enabled: bool) {
     PROFILING_ENABLED.store(enabled, Ordering::SeqCst);
     if enabled {
         FIRST_WRITE.store(true, Ordering::SeqCst);
+        // Store start time when profiling is enabled
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_micros() as u64;
+        START_TIME.store(now, Ordering::SeqCst);
     }
 }
 
@@ -50,7 +56,6 @@ impl Profile {
     fn get_parent_stack() -> String {
         PROFILE_STACK.with(|stack| {
             let stack = stack.borrow();
-            // Keep natural order (root->leaf) and exclude current function
             stack
                 .iter()
                 .take(stack.len().saturating_sub(1))
@@ -78,15 +83,14 @@ impl Profile {
             .append(!first_write)
             .open("thag-profile.folded")
         {
-            let parent_stack = Self::get_parent_stack();
-            // Construct the full stack in root->leaf order
-            let entry = if parent_stack.is_empty() {
+            let stack = Self::get_parent_stack();
+            let entry = if stack.is_empty() {
                 self.name.to_string()
             } else {
-                // Parent stack is already root->leaf, append current function
-                format!("{};{}", parent_stack, self.name)
+                format!("{};{}", stack, self.name)
             };
 
+            // Write just the stack and duration
             writeln!(file, "{} {}", entry, micros).ok();
         }
     }
@@ -104,7 +108,6 @@ impl Drop for Profile {
     }
 }
 
-// Macro for convenient usage
 #[macro_export]
 macro_rules! profile {
     ($name:expr) => {
@@ -122,13 +125,13 @@ macro_rules! profile_section {
 
 #[macro_export]
 macro_rules! profile_method {
-    () => {{
+    () => {
         const NAME: &'static str = concat!(module_path!(), "::", stringify!(profile_method));
         let _profile = $crate::profiling::Profile::new(NAME);
-    }};
-    ($name:expr) => {{
+    };
+    ($name:expr) => {
         let _profile = $crate::profiling::Profile::new($name);
-    }};
+    };
 }
 
 // Optional: A more detailed version that includes file and line information
@@ -150,7 +153,7 @@ macro_rules! profile_method_detailed {
 #[derive(Default)]
 pub struct ProfileStats {
     pub calls: HashMap<String, u64>,
-    pub total_time: HashMap<String, u64>, // Store microseconds for each function
+    pub total_time: HashMap<String, u128>, // Change to u128 for microseconds
     pub async_boundaries: HashSet<String>,
     // Keep existing fields for backwards compatibility
     count: u64,
@@ -160,17 +163,9 @@ pub struct ProfileStats {
 }
 
 impl ProfileStats {
-    #[allow(clippy::cast_possible_truncation)]
     pub fn record(&mut self, func_name: &str, duration: std::time::Duration) {
-        // Update per-function statistics
         *self.calls.entry(func_name.to_string()).or_default() += 1;
-        *self.total_time.entry(func_name.to_string()).or_default() += duration.as_micros() as u64;
-
-        // Update aggregate statistics
-        self.count += 1;
-        self.duration_total += duration;
-        self.min_time = Some(self.min_time.map_or(duration, |min| min.min(duration)));
-        self.max_time = Some(self.max_time.map_or(duration, |max| max.max(duration)));
+        *self.total_time.entry(func_name.to_string()).or_default() += duration.as_micros();
     }
 
     pub fn mark_async(&mut self, func_name: &str) {

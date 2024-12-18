@@ -2073,42 +2073,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "thag_core"
-version = "0.1.0"
-dependencies = [
- "dirs",
- "documented",
- "env_logger",
- "home",
- "log",
- "mockall",
- "nu-ansi-term",
- "serde",
- "serde_with",
- "simplelog",
- "strum",
- "syn 2.0.90",
- "thag_proc_macros",
- "thiserror 2.0.7",
- "toml",
- "toml_edit",
-]
-
-[[package]]
-name = "thag_proc_macros"
-version = "0.1.1"
-dependencies = [
- "crossterm",
- "inline_colorization",
- "prettyplease",
- "proc-macro2 1.0.92",
- "quote 1.0.37",
- "strict",
- "syn 2.0.90",
-]
-
-[[package]]
-name = "thag_rs"
+name = "thag"
 version = "0.1.9"
 dependencies = [
  "assert_cmd",
@@ -2159,6 +2124,41 @@ dependencies = [
  "tui-textarea",
  "win32console",
  "winapi",
+]
+
+[[package]]
+name = "thag_core"
+version = "0.1.0"
+dependencies = [
+ "dirs",
+ "documented",
+ "env_logger",
+ "home",
+ "log",
+ "mockall",
+ "nu-ansi-term",
+ "serde",
+ "serde_with",
+ "simplelog",
+ "strum",
+ "syn 2.0.90",
+ "thag_proc_macros",
+ "thiserror 2.0.7",
+ "toml",
+ "toml_edit",
+]
+
+[[package]]
+name = "thag_proc_macros"
+version = "0.1.1"
+dependencies = [
+ "crossterm",
+ "inline_colorization",
+ "prettyplease",
+ "proc-macro2 1.0.92",
+ "quote 1.0.37",
+ "strict",
+ "syn 2.0.90",
 ]
 
 [[package]]

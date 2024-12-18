@@ -2,8 +2,11 @@
 name = "thag_core"
 version = "0.1.0"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
 description = "Core functionality for thag_rs script handling"
+# Inherit workspace package metadata
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 dirs = "5.0.1"

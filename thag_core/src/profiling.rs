@@ -7,6 +7,8 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Instant, SystemTime};
 pub use thag_proc_macros::profile;
 
+use crate::{ThagError, ThagResult};
+
 static FIRST_WRITE: AtomicBool = AtomicBool::new(true);
 
 thread_local! {
@@ -16,17 +18,27 @@ thread_local! {
 static PROFILING_ENABLED: AtomicBool = AtomicBool::new(false);
 static START_TIME: AtomicU64 = AtomicU64::new(0);
 
-pub fn enable_profiling(enabled: bool) {
+/// Enable `thag` profiling.
+///
+/// # Errors
+///
+/// This function will return an error if there's an overflow due to the time elapsed being too large for the field.
+pub fn enable_profiling(enabled: bool) -> ThagResult<()> {
     PROFILING_ENABLED.store(enabled, Ordering::SeqCst);
     if enabled {
         FIRST_WRITE.store(true, Ordering::SeqCst);
         // Store start time when profiling is enabled
-        let now = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_micros() as u64;
+        let Ok(now) = u64::try_from(
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_micros(),
+        ) else {
+            return Err(ThagError::FromStr("Time value too large".into()));
+        };
         START_TIME.store(now, Ordering::SeqCst);
     }
+    Ok(())
 }
 
 pub fn is_profiling_enabled() -> bool {
@@ -87,11 +99,11 @@ impl Profile {
             let entry = if stack.is_empty() {
                 self.name.to_string()
             } else {
-                format!("{};{}", stack, self.name)
+                format!("{stack};{}", self.name)
             };
 
             // Write just the stack and duration
-            writeln!(file, "{} {}", entry, micros).ok();
+            writeln!(file, "{entry} {micros}").ok();
         }
     }
 }

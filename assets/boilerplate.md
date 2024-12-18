@@ -1,6 +1,6 @@
 ## Running the scripts
 
-`thag_rs` uses `clap` for a standard command-line interface. Try `thag --help` (or -h) if
+`thag` uses `clap` for a standard command-line interface. Try `thag --help` (or -h) if
 you get stuck.
 
 ### In its simplest form:

@@ -1,6 +1,13 @@
 [workspace]
-members = ["thag_core", "thag_proc_macros", "thag_rs"]
+members = ["thag", "thag_core", "thag_proc_macros"]
 resolver = "2"
+
+[workspace.package]
+version = "0.1.9"
+authors = ["Don Forbes <don.forbes3@gmail.com>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/durbanlegend/thag_rs"
 
 [workspace.dependencies]
 

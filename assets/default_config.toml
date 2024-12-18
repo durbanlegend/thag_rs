@@ -35,7 +35,7 @@ term_theme = "dark"
 # Dependency handling
 [dependencies]
 
-# How much `thag_rs` should intervene in inferring dependencies from code.
+# How much `thag` should intervene in inferring dependencies from code.
 # Options are "maximal", "minimal" and "custom".
 # Default is "custom". Sensible defaults are built in.
 inference_level = "custom"

@@ -45,6 +45,12 @@ impl From<&'static str> for ThagError {
     }
 }
 
+impl From<String> for ThagError {
+    fn from(s: String) -> Self {
+        Self::FromStr(Cow::Owned(s))
+    }
+}
+
 impl From<TomlDeError> for ThagError {
     fn from(err: TomlDeError) -> Self {
         Self::TomlDe(err)

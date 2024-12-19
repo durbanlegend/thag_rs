@@ -94,48 +94,13 @@ cargo expand --bin $stem --manifest-path=$f --theme=gruvbox-dark | sdiff $p - | 
 
 stem=proc_macro_host_port_const
 
-failures:
-    check_filter_demos_rs
-    check_gen_readme_rs
-    check_proc_macro_attribute_basic_rs
-    check_proc_macro_category_enum_rs
-    check_proc_macro_const_demo_debug_rs
-    check_proc_macro_const_demo_expand_rs
-    check_proc_macro_const_demo_rs
-    check_proc_macro_derive_basic_rs
-    check_proc_macro_derive_custom_model_rs
-    check_proc_macro_derive_doc_comment_rs
-    check_proc_macro_derive_key_map_list_rs
-    check_proc_macro_expander_demo_rs
-    check_proc_macro_functionlike_basic_rs
-    check_proc_macro_host_port_const_rs
-    check_proc_macro_organizing_code_const_rs
-    check_proc_macro_organizing_code_rs
-    check_proc_macro_organizing_code_tokenstream_rs
-    check_proc_macro_repeat_dash_rs
-    check_proc_macro_string_concat_rs
-
-cargo run demo/filter_demos.rs
-cargo run demo/gen_readme.rs
-cargo run demo/proc_macro_attribute_basic.rs
-cargo run demo/proc_macro_category_enum.rs
-cargo run demo/proc_macro_const_demo_debug.rs
-cargo run demo/proc_macro_const_demo_expand.rs
-cargo run demo/proc_macro_const_demo.rs
-cargo run demo/proc_macro_derive_basic.rs
-cargo run demo/proc_macro_derive_custom_model.rs
-cargo run demo/proc_macro_derive_doc_comment.rs
-cargo run demo/proc_macro_derive_key_map_list.rs
-cargo run demo/proc_macro_expander_demo.rs
-cargo run demo/proc_macro_functionlike_basic.rs
-cargo run demo/proc_macro_host_port_const.rs
-cargo run demo/proc_macro_organizing_code_const.rs
-cargo run demo/proc_macro_organizing_code.rs
-cargo run demo/proc_macro_organizing_code_tokenstream.rs
-cargo run demo/proc_macro_repeat_dash.rs
-cargo run demo/proc_macro_string_concat.rs
-
-
+1989  cargo run -- -A demo/fib_doubling_iterative_purge_rug.rs -- build --features=profile
+1990  cargo run -- -A demo/fib_doubling_iterative_purge_rug.rs -- run -- 100
+d=/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/thag/fib_doubling_iterative_purge_rug
+1998  cd $d
+1999  cargo run --features=profile -- 100
+2000  ls -l
+2002  thag /Users/donf/projects/thag_rs/demo/thag_profile.rs
 
 ## Low Priority
 - [ ]  Debug Firestorm double invocation.

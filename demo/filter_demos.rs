@@ -2,14 +2,11 @@
 [dependencies]
 edit = "0.1.5"
 inquire = "0.7.5"
-#log = "0.4.22"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive"] }
 syn = "2"
-# thag_rs = "0.1.9"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "main" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
-# tokio = "1.41.1"
 tokio = { version = "1", features = ["full"] }
 warp = "0.3.7"
 */

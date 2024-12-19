@@ -3,7 +3,7 @@ use std::{
     sync::{MutexGuard, PoisonError as LockError},
 };
 use thiserror::Error;
-use toml::de::Error as TomlDeError;
+// use toml::de::Error as TomlDeError;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Error, Debug)]
@@ -29,6 +29,11 @@ pub enum ThagError {
     #[error("TOML deserialization error: {0}")]
     TomlDe(toml::de::Error), // For TOML deserialization errors
 
+    #[error("TOML serialization error: {0}")]
+    TomlSer(toml::ser::Error), // For TOML serialization errors
+
+    // #[error("Cargo TOML error: {0}")]
+    // Toml(cargo_toml::Error), // For cargo_toml errors
     #[error("Validation error: {0}")]
     Validation(String),
 }
@@ -51,9 +56,15 @@ impl From<String> for ThagError {
     }
 }
 
-impl From<TomlDeError> for ThagError {
-    fn from(err: TomlDeError) -> Self {
+impl From<toml::de::Error> for ThagError {
+    fn from(err: toml::de::Error) -> Self {
         Self::TomlDe(err)
+    }
+}
+
+impl From<toml::ser::Error> for ThagError {
+    fn from(err: toml::ser::Error) -> Self {
+        Self::TomlSer(err)
     }
 }
 

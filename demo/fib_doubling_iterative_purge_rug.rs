@@ -1,6 +1,11 @@
 /*[toml]
 [dependencies]
 rug = "1.24.1"
+thag_core = { path = "/Users/donf/projects/thag_rs/thag_core" }
+
+[features]
+default = []
+profile = ["thag_core/profile"]
 */
 
 /// Very fast non-recursive calculation of an individual Fibonacci number using the
@@ -21,8 +26,11 @@ use std::collections::{HashMap, HashSet};
 use std::env;
 use std::iter::successors;
 use std::time::Instant;
+use thag_core::profile;
+use thag_core::profiling;
 
 fn invert_order(n: usize, cached: usize) -> Vec<usize> {
+    profile!("invert_order");
     let mut required_indices = HashSet::new();
     let mut stack = vec![n];
 
@@ -57,6 +65,7 @@ fn invert_order(n: usize, cached: usize) -> Vec<usize> {
 }
 
 fn fib(n: usize, cached: usize, sorted_indices: &[usize]) -> Integer {
+    profile!("fib");
     if n <= cached {
         return successors(Some((Integer::from(0), Integer::from(1))), |(a, b)| {
             Some((b.clone(), (a + b).into()))
@@ -172,7 +181,12 @@ fn fib(n: usize, cached: usize, sorted_indices: &[usize]) -> Integer {
     fib_n
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    profile!("main");
+    if cfg!(feature = "profile") {
+        println!("Enabling profiling..."); // Debug output
+        profiling::enable_profiling(true)?;
+    }
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
         eprintln!("Usage: {} <n>", args[0]);
@@ -212,4 +226,5 @@ fn main() {
             fib_n % (Integer::from(10).pow(20))
         );
     }
+    Ok(())
 }

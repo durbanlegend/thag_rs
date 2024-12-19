@@ -3,10 +3,11 @@
 lazy_static = "1.5.0"
 log = "0.4.22"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-thag_rs = "0.1.9"
+# thag_rs = "0.1.9"
 strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
 supports-color= "3.0.0"
 termbg = "0.6"
+thag_core = { path = "/Users/donf/projects/thag_rs/thag_core" }
 */
 /// An older version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
 /// module, `colors` was originally developed here as a separate script and integrated as a module later.
@@ -19,7 +20,7 @@ use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
-use thag_rs::{debug_log, logging::Verbosity, vlog};
+use thag_core::{debug_log, logging::Verbosity, vlog};
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {

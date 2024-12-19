@@ -5385,14 +5385,25 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 ### Script: thag_profile.rs
 
-**Description:** 
-**Purpose:** 
+**Description:**  Profile graph/chart generator for the internal profiler of `thag_core`.
+
+ E.g.:
+
+```
+ thag demo/thag_profile.rs -x    # Compile this script as a command
+
+ cargo run --features thag/profile <path>/demo/time_cookbook.rs -f   # Profile a demo script
+
+ thag_profile    # Generate a flamechart or show stats for the new profile
+```
+
+**Purpose:** Low-footprint profiling.
 
 **Crates:** `inferno`, `inquire`, `thag_core`
 
 **Type:** Program
 
-**Categories:** missing
+**Categories:** tools
 
 **Link:** [thag_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_profile.rs)
 
@@ -5400,27 +5411,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_profile.rs
-```
-
----
-
-### Script: thag_profile_save.rs
-
-**Description:** 
-**Purpose:** 
-
-**Crates:** `inferno`, `inquire`
-
-**Type:** Program
-
-**Categories:** missing
-
-**Link:** [thag_profile_save.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_profile_save.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_profile_save.rs
 ```
 
 ---

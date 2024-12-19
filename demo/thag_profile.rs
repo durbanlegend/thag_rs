@@ -6,6 +6,19 @@ serde = { version = "1.0.216", features = ["derive"] }
 thag_core = { path = "/Users/donf/projects/thag_rs/thag_core" }
 */
 
+/// Profile graph/chart generator for the internal profiler of `thag_core`.
+///
+/// E.g.:
+///
+///```
+/// thag demo/thag_profile.rs -x    # Compile this script as a command
+///
+/// cargo run --features thag/profile <path>/demo/time_cookbook.rs -f   # Profile a demo script
+///
+/// thag_profile    # Generate a flamechart or show stats for the new profile
+///```
+//# Purpose: Low-footprint profiling.
+//# Categories: tools
 use inferno::flamegraph::{self, color::BasicPalette, Options, Palette};
 use inquire::{MultiSelect, Select};
 use std::collections::{HashMap, HashSet};

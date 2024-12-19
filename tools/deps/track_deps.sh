@@ -9,24 +9,24 @@ track_crate() {
 
     # Create log file if doesn't exist
     if [ ! -f "$LOG_FILE" ]; then
-        echo "Date,Direct Dependencies,Indirect Dependencies,Total Size" > "$LOG_FILE"
+        echo "Date,Direct Dependencies,Indirect Dependencies,Total Size (MB)" > "$LOG_FILE"
     fi
 
-    # Get counts
-    DIRECT_COUNT=$(cargo metadata --format-version=1 --no-deps | \
-        jq -r --arg name "$crate_name" '.packages[] | select(.name == $name) | .dependencies[] | .name' | \
-        wc -l)
+    # Get direct dependencies count
+    DIRECT_DEPS=$(cargo metadata --format-version=1 --no-deps | \
+        jq -r --arg name "$crate_name" '.packages[] | select(.name == $name) | .dependencies[] | .name')
+    DIRECT_COUNT=$(echo "$DIRECT_DEPS" | grep -c "^" || echo "0")
 
-    ALL_DEPS_COUNT=$(cargo metadata --format-version=1 | \
-        jq -r '.resolve.nodes[] | select(.id | contains("thag") | not) | .id' | \
-        cut -d' ' -f1 | sort -u | wc -l)
+    # Get transitive dependencies for this crate
+    ALL_DEPS=$(cargo metadata --format-version=1 | \
+        jq -r --arg name "$crate_name" \
+        '.resolve.nodes[] | select(.id | startswith($name)) | .deps[] | .name' | \
+        sort -u)
+    INDIRECT_COUNT=$(comm -23 <(echo "$ALL_DEPS" | sort) <(echo "$DIRECT_DEPS" | sort) | grep -c "^" || echo "0")
 
-    INDIRECT_COUNT=$((ALL_DEPS_COUNT - DIRECT_COUNT))
+    # Calculate size for this crate's dependencies
+    TOTAL_SIZE=$(find "../target/debug/deps" -name "lib${crate_name}*.rlib" -exec du -m {} + | awk '{sum += $1} END {print sum}')
 
-    # Get size
-    TOTAL_SIZE=$(find "../../target/debug/deps" -name "*.rlib" -exec du -m -c {} + | tail -n1 | cut -f1)
-
-    # Log data
     DATE=$(date +%Y-%m-%d)
     echo "$DATE,$DIRECT_COUNT,$INDIRECT_COUNT,$TOTAL_SIZE" >> "$LOG_FILE"
 
@@ -34,7 +34,7 @@ track_crate() {
     echo "Date: $DATE"
     echo "Direct Dependencies: $DIRECT_COUNT"
     echo "Indirect Dependencies: $INDIRECT_COUNT"
-    echo "Total Size: $TOTAL_SIZE MB"
+    echo "Total Size: ${TOTAL_SIZE}MB"
 }
 
 # Track each crate

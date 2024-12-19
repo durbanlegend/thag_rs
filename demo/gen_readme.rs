@@ -43,6 +43,11 @@ struct ScriptMetadata {
 // Generates all_categories()
 category_enum! {}
 
+fn get_script_dir() -> PathBuf {
+    let script_path = std::file!();
+    PathBuf::from(script_path).parent().unwrap().to_path_buf()
+}
+
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     // Lazy static variable from the categories defined in macro category_enum!.
     let valid_categories = lazy_static_var!(Vec<String>, {
@@ -311,13 +316,16 @@ fn generate_run_section(metadata: &ScriptMetadata) -> String {
 }
 
 fn main() {
-    let scripts_dir = Path::new("demo");
-    let output_path = Path::new("demo/README.md");
-    let boilerplate_path = Path::new("assets/boilerplate.md");
+    let script_dir = get_script_dir();
+    let project_root = script_dir.parent().unwrap(); // Goes up one level from demo/
+
+    // All paths relative to the script's location
+    let output_path = script_dir.join("README.md");
+    let boilerplate_path = project_root.join("assets").join("boilerplate.md");
 
     // Regular execution when profiling is not enabled
-    let all_metadata = collect_all_metadata(scripts_dir);
-    generate_readme(&all_metadata, output_path, boilerplate_path);
+    let all_metadata = collect_all_metadata(&script_dir);
+    generate_readme(&all_metadata, &output_path, &boilerplate_path);
 
     println!("demo/README.md generated successfully.");
 }

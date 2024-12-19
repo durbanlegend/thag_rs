@@ -7,7 +7,7 @@ use crate::{
     get_verbosity,
 }; // Valid if no circular dependency
 use crate::{
-    cvprtln, debug_log, maybe_config, regex, vlog, BuildState, Dependencies, Lvl, BuildResult, V,
+    cvprtln, debug_log, maybe_config, regex, vlog, BuildResult, BuildState, Dependencies, Lvl, V,
 };
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Manifest};

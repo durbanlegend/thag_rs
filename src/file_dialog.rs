@@ -1,3 +1,4 @@
+use crate::{profile, profile_method};
 /// Original is `https://github.com/flip1995/tui-rs-file-dialog/blob/master/src/lib.rs`
 /// Copyright (c) 2023 Philipp Krones
 /// Licence: MIT
@@ -6,7 +7,6 @@ use crossterm::{
     event::{KeyCode, KeyEvent, KeyEventKind},
     execute,
 };
-use firestorm::{profile_fn, profile_method};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},
@@ -24,12 +24,13 @@ use std::{
 };
 use tui_textarea::{Input, TextArea};
 
-use crate::{debug_log, key, key_mappings, lazy_static_var, Lvl};
-use crate::{shared::KeyDisplayLine, tui_editor::display_popup};
 use crate::{
-    tui_editor::{self, centered_rect},
-    KeyCombination,
+    debug_log, key_mappings, lazy_static_var,
+    shared::KeyDisplayLine,
+    tui_editor::{self, centered_rect, display_popup},
+    KeyCombination, Lvl,
 };
+use crokey::key;
 
 /// File dialog mode to distinguish between Open and Save dialogs
 #[derive(Debug, PartialEq, Eq)]
@@ -107,7 +108,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn new(width: u16, height: u16, mode: DialogMode) -> Result<Self> {
-        profile_method!(new);
+        profile_method!("new");
         let mut s = Self {
             width: cmp::min(width, 100),
             height: cmp::min(height, 100),
@@ -135,7 +136,7 @@ impl FileDialog<'_> {
     ///
     /// This function will return an error if there is a problem canonicalizing the directory.
     pub fn set_dir(&mut self, dir: &Path) -> Result<()> {
-        profile_method!(set_dir);
+        profile_method!("set_dir");
         self.current_dir = dir.canonicalize()?;
         self.update_entries()
     }
@@ -146,7 +147,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn set_filter(&mut self, filter: FilePattern) -> Result<()> {
-        profile_method!(set_filter);
+        profile_method!("set_filter");
         self.filter = Some(filter);
         self.update_entries()
     }
@@ -157,7 +158,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn reset_filter(&mut self) -> Result<()> {
-        profile_method!(reset_filter);
+        profile_method!("reset_filter");
         self.filter.take();
         self.update_entries()
     }
@@ -170,21 +171,21 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn toggle_show_hidden(&mut self) -> Result<()> {
-        profile_method!(toggle_show_hidden);
+        profile_method!("toggle_show_hidden");
         self.show_hidden = !self.show_hidden;
         self.update_entries()
     }
 
     /// Opens the file dialog.
     pub fn open(&mut self) {
-        profile_method!(open);
+        profile_method!("open");
         self.selected_file.take();
         self.open = true;
     }
 
     /// Closes the file dialog.
     pub fn close(&mut self) {
-        profile_method!(close);
+        profile_method!("close");
         self.open = false;
     }
 
@@ -196,7 +197,7 @@ impl FileDialog<'_> {
 
     /// Draws the file dialog in the TUI application.
     pub fn draw(&mut self, f: &mut Frame) {
-        profile_method!(draw);
+        profile_method!("draw");
         if self.open {
             let area = centered_rect(self.width, self.height, f.area());
 
@@ -311,7 +312,7 @@ impl FileDialog<'_> {
 
     /// Goes to the next item in the file list.
     pub fn next(&mut self) {
-        profile_method!(next);
+        profile_method!("next");
         let i = match self.list_state.selected() {
             Some(i) => cmp::min(self.items.len() - 1, i + 1),
             None => cmp::min(self.items.len().saturating_sub(1), 1),
@@ -320,7 +321,7 @@ impl FileDialog<'_> {
     }
     /// Goes to the previous item in the file list.
     pub fn previous(&mut self) {
-        profile_method!(previous);
+        profile_method!("previous");
         let i = self
             .list_state
             .selected()
@@ -333,7 +334,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn up(&mut self) -> Result<()> {
-        profile_method!(up);
+        profile_method!("up");
         self.current_dir.pop();
         self.update_entries()
     }
@@ -348,7 +349,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
     pub fn select(&mut self) -> Result<()> {
-        profile_method!(select);
+        profile_method!("select");
         // Open mode logic (already correct)
         debug_log!("In select()");
         let Some(selected) = self.list_state.selected() else {
@@ -412,7 +413,7 @@ impl FileDialog<'_> {
     ///
     /// This function will bubble up any i/o errors encountered.
     fn update_entries(&mut self) -> Result<()> {
-        profile_method!(update_entries);
+        profile_method!("update_entries");
         self.items = iter::once("..".to_string())
             .chain(
                 fs::read_dir(&self.current_dir)?
@@ -477,7 +478,7 @@ impl FileDialog<'_> {
     /// Panics if there is a logic error popping the last character out of the search buffer.
     #[allow(clippy::unnested_or_patterns)]
     pub fn handle_input(&mut self, key_event: KeyEvent) -> Result<Status> {
-        profile_method!(handle_input);
+        profile_method!("handle_input");
         // Make sure for Windows
         if matches!(key_event.kind, KeyEventKind::Press) {
             debug_log!("key_event={key_event:#?}");
@@ -546,7 +547,7 @@ impl FileDialog<'_> {
 }
 
 fn get_max_lengths(mappings: &[KeyDisplayLine]) -> (u16, u16) {
-    profile_fn!(get_max_lengths);
+    profile!("get_max_lengths");
     lazy_static_var!(
         (u16, u16),
         mappings
@@ -562,7 +563,7 @@ fn get_max_lengths(mappings: &[KeyDisplayLine]) -> (u16, u16) {
 
 /// Handle input in Save mode (for typing file name).
 fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
-    profile_fn!(handle_save_input);
+    profile!("handle_save_input");
     // Convert the KeyEvent into an Input that TextArea can handle
     let input = Input::from(key);
     text_area.input(input);

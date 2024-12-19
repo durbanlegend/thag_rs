@@ -10,9 +10,10 @@ pub mod colors;
 pub mod config;
 pub mod errors;
 pub mod file_dialog;
-pub mod keys;
+// pub mod keys;
 pub mod logging;
 pub mod manifest;
+pub mod profiling;
 pub mod repl;
 pub mod shared;
 pub mod stdin;
@@ -38,8 +39,8 @@ pub use config::{
     load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
     ProcMacros,
 };
+pub use crokey::KeyCombination;
 pub use errors::{ThagError, ThagResult};
-pub use keys::KeyCombination;
 pub use log;
 pub use logging::{get_verbosity, Verbosity, V};
 #[cfg(debug_assertions)]

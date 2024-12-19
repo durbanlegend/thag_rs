@@ -5383,6 +5383,38 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 ---
 
+### Script: thag_profile.rs
+
+**Description:**  Profile graph/chart generator for the internal profiler of `thag_core`.
+
+ E.g.:
+
+```
+ thag demo/thag_profile.rs -x    # Compile this script as a command
+
+ cargo run --features thag/profile <path>/demo/time_cookbook.rs -f   # Profile a demo script
+
+ thag_profile    # Generate a flamechart or show stats for the new profile
+```
+
+**Purpose:** Low-footprint profiling.
+
+**Crates:** `inferno`, `inquire`, `thag_core`
+
+**Type:** Program
+
+**Categories:** tools
+
+**Link:** [thag_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_profile.rs
+```
+
+---
+
 ### Script: thag_prompt.rs
 
 **Description:**  Early prototype of prompting front-end for `thag`.

@@ -21,23 +21,23 @@ pub enum ThagError {
     Cancelled,                         // For user electing to cancel
     ClapError(ClapError),              // For clap errors
     Command(&'static str),             // For errors during Cargo build or program execution
-    Dyn(Box<dyn Error>), // For boxed dynamic errors from 3rd parties (firestorm in first instance)
-    FromStr(Cow<'static, str>), // For simple errors from a string
-    FromUtf8(FromUtf8Error), // For simple errors from a utf8 array
-    Io(std::io::Error),  // For I/O errors
-    LockMutexGuard(&'static str), // For lock errors with MutexGuard
-    Logic(&'static str), // For logic errors
-    NoneOption(&'static str), // For unwrapping Options
-    OsString(std::ffi::OsString), // For unconvertible OsStrings
-    Reedline(ReedlineError), // For reedline errors
-    SerdeMerge(SerdeMergeError), // For serde_merge errors
-    StrumParse(StrumParseError), // For strum parse enum
-    Syn(SynError),       // For syn errors
-    TomlDe(TomlDeError), // For TOML deserialization errors
-    TomlSer(TomlSerError), // For TOML serialization errors
-    Toml(CargoTomlError), // For cargo_toml errors
-    UnsupportedTerm,     // For terminal interrogation
-    Validation(String),  // For config.toml and similar validation
+    Dyn(Box<dyn Error>),               // For boxed dynamic errors from 3rd parties
+    FromStr(Cow<'static, str>),        // For simple errors from a string
+    FromUtf8(FromUtf8Error),           // For simple errors from a utf8 array
+    Io(std::io::Error),                // For I/O errors
+    LockMutexGuard(&'static str),      // For lock errors with MutexGuard
+    Logic(&'static str),               // For logic errors
+    NoneOption(&'static str),          // For unwrapping Options
+    OsString(std::ffi::OsString),      // For unconvertible OsStrings
+    Reedline(ReedlineError),           // For reedline errors
+    SerdeMerge(SerdeMergeError),       // For serde_merge errors
+    StrumParse(StrumParseError),       // For strum parse enum
+    Syn(SynError),                     // For syn errors
+    TomlDe(TomlDeError),               // For TOML deserialization errors
+    TomlSer(TomlSerError),             // For TOML serialization errors
+    Toml(CargoTomlError),              // For cargo_toml errors
+    UnsupportedTerm,                   // For terminal interrogation
+    Validation(String),                // For config.toml and similar validation
 }
 
 impl From<FromUtf8Error> for ThagError {

@@ -8,13 +8,12 @@ use crate::debug_timings;
 #[cfg(target_os = "windows")]
 use crate::escape_path_for_windows;
 use crate::{
-    cvprtln, debug_log,
+    cvprtln, debug_log, profile, profile_method, profile_section,
     shared::{find_crates, find_metadata},
     vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult, BUILT_IN_CRATES, DYNAMIC_SUBDIR,
     TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use cargo_toml::{Edition, Manifest};
-use firestorm::{profile_fn, profile_method, profile_section};
 use regex::Regex;
 use std::{
     any::Any,
@@ -59,7 +58,7 @@ struct RemoveInnerAttributes {
 
 impl VisitMut for RemoveInnerAttributes {
     fn visit_expr_block_mut(&mut self, expr_block: &mut ExprBlock) {
-        profile_method!(visit_expr_block_mut);
+        profile_method!("visit_expr_block_mut");
         // Count inner attributes
         self.found = expr_block
             .attrs
@@ -82,7 +81,7 @@ impl VisitMut for RemoveInnerAttributes {
 /// Remove inner attributes (`#![...]`) from the part of the AST that will be wrapped in
 /// `fn main`, as they need to be promoted to the crate level.
 pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
-    profile_fn!(remove_inner_attributes);
+    profile!("remove_inner_attributes");
     let remove_inner_attributes = &mut RemoveInnerAttributes { found: false };
     remove_inner_attributes.visit_expr_block_mut(expr);
     remove_inner_attributes.found
@@ -92,7 +91,7 @@ pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
 /// # Errors
 /// Will return `Err` if there is any file system error reading from the file path.
 pub fn read_file_contents(path: &Path) -> ThagResult<String> {
-    profile_fn!(read_file_contents);
+    profile!("read_file_contents");
 
     debug_log!("Reading from {path:?}");
     Ok(fs::read_to_string(path)?)
@@ -104,7 +103,7 @@ pub fn infer_deps_from_ast(
     crates_finder: &crate::shared::CratesFinder,
     metadata_finder: &crate::shared::MetadataFinder,
 ) -> Vec<String> {
-    profile_fn!(infer_deps_from_ast);
+    profile!("infer_deps_from_ast");
     let mut dependencies = vec![];
     dependencies.extend_from_slice(&crates_finder.crates);
     let to_remove: HashSet<String> = crates_finder
@@ -138,7 +137,7 @@ pub fn infer_deps_from_ast(
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn infer_deps_from_source(code: &str) -> Vec<String> {
-    profile_fn!(infer_deps_from_source);
+    profile!("infer_deps_from_source");
 
     if code.trim().is_empty() {
         return vec![];
@@ -190,7 +189,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 
 // Function to extract use statements and wrap in braces for parsing
 fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
-    profile_fn!(extract_and_wrap_uses);
+    profile!("extract_and_wrap_uses");
     // Step 1: Capture `use` statements
     let use_simple_regex: &Regex = regex!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
     let use_nested_regex: &Regex = regex!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
@@ -220,7 +219,7 @@ fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {
-    profile_fn!(find_use_renames_source);
+    profile!("find_use_renames_source");
 
     debug_log!("In code_utils::find_use_renames_source");
     let use_as_regex: &Regex = regex!(r"(?m)^\s*use\s+(\w+).*? as\s+(\w+)");
@@ -248,7 +247,7 @@ pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn find_modules_source(code: &str) -> Vec<String> {
-    profile_fn!(find_modules_source);
+    profile!("find_modules_source");
     let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
 
     debug_log!("In code_utils::find_use_renames_source");
@@ -273,10 +272,10 @@ pub fn extract_manifest(
     rs_full_source: &str,
     #[allow(unused_variables)] start_parsing_rs: Instant,
 ) -> ThagResult<Manifest> {
-    profile_fn!(extract_manifest);
+    profile!("extract_manifest");
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
-    profile_section!(parse_and_set_edition);
+    profile_section!("parse_and_set_edition");
     let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
         // debug_log!("rs_toml_str={rs_toml_str}");
         Manifest::from_str(&rs_toml_str)?
@@ -285,7 +284,7 @@ pub fn extract_manifest(
     };
 
     {
-        profile_section!(set_edition);
+        profile_section!("set_edition");
         if let Some(package) = rs_manifest.package.as_mut() {
             package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
         }
@@ -299,7 +298,7 @@ pub fn extract_manifest(
 }
 
 fn extract_toml_block(input: &str) -> Option<String> {
-    profile_fn!(extract_toml_block);
+    profile!("extract_toml_block");
     let re: &Regex = regex!(r"(?s)/\*\[toml\](.*?)\*/");
     re.captures(input)
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
@@ -313,7 +312,7 @@ fn extract_toml_block(input: &str) -> Option<String> {
 /// # Errors
 /// Will return `Err` if there is any error encountered by the `syn` crate trying to parse the source string into an AST.
 pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
-    profile_fn!(extract_ast_expr);
+    profile!("extract_ast_expr");
     let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
     if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
         // Try putting the expression in braces.
@@ -330,7 +329,7 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
 /// # Errors
 /// Will return `Err` if there is any error caused by invalid characters in the path name.
 pub fn path_to_str(path: &Path) -> ThagResult<String> {
-    profile_fn!(path_to_str);
+    profile!("path_to_str");
     let string = path
         .to_path_buf()
         .into_os_string()
@@ -345,7 +344,7 @@ pub fn path_to_str(path: &Path) -> ThagResult<String> {
 #[inline]
 pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
-    profile_fn!(reassemble);
+    profile!("reassemble");
     map.fold(String::new(), |mut output, b| {
         let _ = writeln!(output, "{b}");
         output
@@ -356,7 +355,7 @@ pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
 #[inline]
 #[must_use]
 pub fn disentangle(text_wall: &str) -> String {
-    profile_fn!(disentangle);
+    profile!("disentangle");
     reassemble(text_wall.lines())
 }
 
@@ -365,7 +364,7 @@ pub fn disentangle(text_wall: &str) -> String {
 /// # Errors
 /// Will return `Err` if the stdout or stderr is not found captured as expected.
 pub fn display_output(output: &Output) -> ThagResult<()> {
-    profile_fn!(display_output);
+    profile!("display_output");
     // Read the captured output from the pipe
     // let stdout = output.stdout;
 
@@ -391,7 +390,7 @@ pub fn display_output(output: &Output) -> ThagResult<()> {
 pub fn modified_since_compiled(
     build_state: &BuildState,
 ) -> ThagResult<Option<(&PathBuf, SystemTime)>> {
-    profile_fn!(modified_since_compiled);
+    profile!("modified_since_compiled");
 
     let executable = &build_state.target_path;
     executable.try_exists()?;
@@ -442,13 +441,13 @@ pub fn modified_since_compiled(
 /// if possible (should work if the code will compile)
 #[must_use]
 pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
-    profile_fn!(to_ast);
+    profile!("to_ast");
 
     #[cfg(debug_assertions)]
     let start_ast = Instant::now();
     #[allow(clippy::option_if_let_else)]
     if let Ok(tree) = {
-        profile_section!(to_ast_syn_parse_file);
+        profile_section!("to_ast_syn_parse_file");
         syn::parse_file(source_code)
     } {
         #[cfg(debug_assertions)]
@@ -458,7 +457,7 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))
     } else if let Ok(tree) = {
-        profile_section!(to_ast_syn_parse_expr);
+        profile_section!("to_ast_syn_parse_expr");
         extract_ast_expr(source_code)
     } {
         #[cfg(debug_assertions)]
@@ -489,7 +488,7 @@ pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
     let inner_attrib_regex: &Regex = regex!(r"(?m)^[\s]*#!\[.+\]");
 
-    profile_fn!(extract_inner_attribs);
+    profile!("extract_inner_attribs");
 
     debug_log!("rs_source={rs_source}");
 
@@ -523,7 +522,7 @@ pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
 /// Convert a Rust code snippet into a program by wrapping it in a main method and other scaffolding.
 #[must_use]
 pub fn wrap_snippet(inner_attribs: &str, body: &str) -> String {
-    profile_fn!(wrap_snippet);
+    profile!("wrap_snippet");
 
     debug_log!("In wrap_snippet");
 
@@ -552,7 +551,7 @@ Ok(())
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
 pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> ThagResult<fs::File> {
-    profile_fn!(write_source);
+    profile!("write_source");
     let mut to_rs_file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -575,7 +574,7 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> ThagResult<fs::Fil
 /// # Errors
 /// Will return Err if it can't create the `rs_dyn` directory.
 pub fn create_temp_source_file() -> ThagResult<PathBuf> {
-    profile_fn!(create_temp_source_file);
+    profile!("create_temp_source_file");
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
@@ -597,7 +596,7 @@ pub fn create_temp_source_file() -> ThagResult<PathBuf> {
 /// Combine the elements of a loop filter into a well-formed program.
 #[must_use]
 pub fn build_loop(args: &Cli, filter: String) -> String {
-    profile_fn!(build_loop);
+    profile!("build_loop");
     let maybe_ast = extract_ast_expr(&filter);
     let returns_unit = maybe_ast.map_or_else(
         |_| {
@@ -658,7 +657,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 /// # Errors
 /// Will return `Err` if there is any error deleting the file.
 pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<()> {
-    profile_fn!(clean_up);
+    profile!("clean_up");
     // Delete the file
     remove_file(source_path)?;
 
@@ -670,7 +669,7 @@ pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<
 /// # Errors
 /// Will return `Err` if there is any error reading the directory.
 pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
-    profile_fn!(display_dir_contents);
+    profile!("display_dir_contents");
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
@@ -698,7 +697,7 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 /// an abstract syntax tree.
 #[must_use]
 pub fn strip_curly_braces(haystack: &str) -> Option<String> {
-    profile_fn!(strip_curly_braces);
+    profile!("strip_curly_braces");
     // Define the regex pattern
     let re: &Regex = regex!(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$");
 
@@ -718,7 +717,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 
     impl<'ast> Visit<'ast> for FindFns {
         fn visit_item_fn(&mut self, i: &'ast syn::ItemFn) {
-            profile_method!(extract_functions_visit_item_fn);
+            profile_method!("extract_functions_visit_item_fn");
             // if is_debug_logging_enabled() {
             //     debug_log!("Node={:#?}", node);
             //     debug_log!("Ident={}", node.sig.ident);
@@ -728,7 +727,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
                 .insert(i.sig.ident.to_string(), i.sig.output.clone());
         }
     }
-    profile_fn!(extract_functions);
+    profile!("extract_functions");
 
     let mut finder = FindFns::default();
     finder.visit_expr(expr);
@@ -741,7 +740,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 #[must_use]
 #[inline]
 pub fn is_unit_return_type(expr: &Expr) -> bool {
-    profile_fn!(is_unit_return_type);
+    profile!("is_unit_return_type");
 
     #[cfg(debug_assertions)]
     let start = Instant::now();
@@ -772,7 +771,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
     expr: &Expr,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> bool {
-    profile_fn!(is_last_stmt_unit_type);
+    profile!("is_last_stmt_unit_type");
 
     // debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
@@ -939,7 +938,7 @@ pub fn is_path_unit_type<S: BuildHasher>(
     path: &syn::PatPath,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> Option<bool> {
-    profile_fn!(is_path_unit_type);
+    profile!("is_path_unit_type");
     if let Some(ident) = path.path.get_ident() {
         if let Some(return_type) = function_map.get(&ident.to_string()) {
             return Some(match return_type {
@@ -971,7 +970,7 @@ pub fn is_stmt_unit_type<S: BuildHasher>(
     stmt: &Stmt,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> bool {
-    profile_fn!(is_stmt_unit_type);
+    profile!("is_stmt_unit_type");
 
     debug_log!("%%%%%%%% stmt={stmt:#?}");
     match stmt {
@@ -1025,7 +1024,7 @@ pub fn is_stmt_unit_type<S: BuildHasher>(
 /// # Errors
 /// Will return `Err` if there is any error parsing expressions
 pub fn is_main_fn_returning_unit(file: &File) -> ThagResult<bool> {
-    profile_fn!(is_main_fn_returning_unit);
+    profile!("is_main_fn_returning_unit");
 
     // Traverse the file to find the main function
     for item in &file.items {
@@ -1044,7 +1043,7 @@ pub fn is_main_fn_returning_unit(file: &File) -> ThagResult<bool> {
 
 #[must_use]
 pub fn get_source_path(build_state: &BuildState) -> String {
-    profile_fn!(get_source_path);
+    profile!("get_source_path");
     let binding: &PathBuf = if build_state.build_from_orig_source {
         &build_state.source_path
     } else {
@@ -1063,7 +1062,7 @@ pub fn get_source_path(build_state: &BuildState) -> String {
 /// # Panics
 /// Will panic if the `rustfmt` failed.
 fn rustfmt(source_path_str: &str) {
-    profile_fn!(rustfmt);
+    profile!("rustfmt");
     if Command::new("rustfmt").arg("--version").output().is_ok() {
         // Run rustfmt on the source file
         let mut command = Command::new("rustfmt");

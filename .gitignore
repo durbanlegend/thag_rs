@@ -30,3 +30,4 @@ bank/derive_debug_alt2.rs
 bank/derive_debug_alt3.rs
 install_thag_protocol.sh
 demo/proc_macros/target/.rustc_info.json
+thag-profile.folded

@@ -8,6 +8,7 @@ use thag_rs::{execute, get_args, ThagResult};
 use std::cell::RefCell;
 #[cfg(debug_assertions)]
 use std::time::Instant;
+use thag_rs::profiling;
 
 pub fn main() -> ThagResult<()> {
     #[cfg(debug_assertions)]
@@ -20,16 +21,11 @@ pub fn main() -> ThagResult<()> {
     #[cfg(debug_assertions)]
     debug_timings(&start, "Configured logging");
 
-    // Check if firestorm profiling is enabled
-    if firestorm::enabled() {
-        // Profile the `execute` function
-        firestorm::bench("./flames/", || {
-            handle(&cli);
-        })?;
-    } else {
-        // Regular execution when profiling is not enabled
-        handle(&cli);
+    if cfg!(feature = "profile") {
+        println!("Enabling profiling..."); // Debug output
+        profiling::enable_profiling(true)?;
     }
+    handle(&cli);
     Ok(())
 }
 

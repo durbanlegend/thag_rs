@@ -1,12 +1,9 @@
 use crate::{
     config::{maybe_config, DependencyInference},
-    ThagError, ThagResult, RS_SUFFIX,
+    profile, profile_method, profile_section, ThagError, ThagResult, RS_SUFFIX,
 };
-
 use bitflags::bitflags;
-// use clap::builder::styling::{Ansi256Color, AnsiColor, Color, Style};
 use clap::{ArgGroup /*, ColorChoice */, Parser};
-use firestorm::{profile_fn, profile_method, profile_section};
 use std::{fmt, str};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and REPL.
@@ -141,7 +138,7 @@ pub struct Cli {
 /// Getter for clap command-line arguments
 #[must_use]
 pub fn get_args() -> Cli {
-    profile_fn!(get_args);
+    profile!("get_args");
     Cli::parse()
 }
 
@@ -149,7 +146,7 @@ pub fn get_args() -> Cli {
 /// # Errors
 /// Will return `Err` if there is a missing script name or missing .rs suffix.
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
-    profile_fn!(validate_args);
+    profile!("validate_args");
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(format!("Script name {script} must end in {RS_SUFFIX}").into());
@@ -202,14 +199,14 @@ bitflags! {
 
 impl fmt::Debug for ProcFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        profile_method!(proc_flags_fmt_debug);
+        profile_method!("proc_flags_fmt_debug");
         bitflags::parser::to_writer(self, f)
     }
 }
 
 impl fmt::Display for ProcFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        profile_method!(proc_flags_fmt_display);
+        profile_method!("proc_flags_fmt_display");
         bitflags::parser::to_writer(self, f)
     }
 }
@@ -218,7 +215,7 @@ impl str::FromStr for ProcFlags {
     type Err = bitflags::parser::ParseError;
 
     fn from_str(flags: &str) -> Result<Self, Self::Err> {
-        profile_method!(proc_flags_from_str);
+        profile_method!("proc_flags_from_str");
         bitflags::parser::from_str(flags)
     }
 }
@@ -232,12 +229,12 @@ impl str::FromStr for ProcFlags {
 ///
 /// Will panic if the internal correctness check fails.
 pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
-    profile_fn!(get_proc_flags);
+    profile!("get_proc_flags");
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();
     let is_infer = args.infer.is_some();
-    profile_section!(init_config_loop_assert);
+    profile_section!("init_config_loop_assert");
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
         // eprintln!("args={args:#?}");
@@ -267,7 +264,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::CARGO, args.cargo);
         proc_flags.set(ProcFlags::INFER, is_infer);
 
-        profile_section!(config_loop_assert);
+        profile_section!("config_loop_assert");
         let unquote = args.unquote.map_or_else(
             || maybe_config().map_or_else(|| false, |config| config.misc.unquote),
             |unquote| {
@@ -278,7 +275,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::UNQUOTE, unquote);
         proc_flags.set(ProcFlags::CONFIG, args.config);
 
-        profile_section!(loop_assert);
+        profile_section!("loop_assert");
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
             if args.toml.is_some() {
                 eprintln!("Option --toml (-M) requires --loop (-l)");
@@ -294,7 +291,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
 
         #[cfg(debug_assertions)]
         {
-            profile_section!(assert);
+            profile_section!("assert");
             // Check all good
             let formatted = proc_flags.to_string();
             let parsed = formatted.parse::<ProcFlags>()?;

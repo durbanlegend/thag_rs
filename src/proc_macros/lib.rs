@@ -5,7 +5,8 @@ mod tui_keys;
 use crate::repeat_dash::repeat_dash_impl;
 use crate::tui_keys::key_impl;
 use proc_macro::TokenStream;
-use syn::parse_file;
+use quote::quote;
+use syn::{parse_file, parse_macro_input, ItemFn};
 
 // Not public API. This is internal and to be used only by `key!`.
 #[doc(hidden)]
@@ -47,4 +48,26 @@ where
     }
 
     output
+}
+
+#[proc_macro_attribute]
+pub fn profile(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ItemFn);
+    let fn_name = &input.sig.ident;
+    let attrs = &input.attrs;
+    let vis = &input.vis;
+    let sig = &input.sig;
+    let body = &input.block;
+
+    quote! {
+        #(#attrs)*
+        #vis #sig {
+            let _profile = ::thag_rs::Profile::new(concat!(
+                module_path!(), "::",
+                stringify!(#fn_name)
+            ));
+            #body
+        }
+    }
+    .into()
 }

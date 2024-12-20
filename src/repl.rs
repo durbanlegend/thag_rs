@@ -1,8 +1,10 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{
     builder::process_expr,
-    code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest},
-    cprtln, cvprtln, get_verbosity, lazy_static_var, profile, profile_method, regex,
+    code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
+    cprtln, cvprtln, get_verbosity, lazy_static_var,
+    manifest::extract,
+    profile, profile_method, regex,
     tui_editor::{
         script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
         ManagedTerminal,
@@ -511,7 +513,7 @@ pub fn process_source(
     start: Instant,
 ) -> ThagResult<()> {
     profile!("process_source");
-    let rs_manifest = extract_manifest(rs_source, Instant::now())?;
+    let rs_manifest = extract(rs_source, Instant::now())?;
     build_state.rs_manifest = Some(rs_manifest);
     let maybe_ast = extract_ast_expr(rs_source);
     if let Ok(expr_ast) = maybe_ast {

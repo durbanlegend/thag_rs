@@ -1,7 +1,12 @@
-use crate::disentangle;
+#[cfg(feature = "cargo_toml")]
+use crate::shared::disentangle;
+#[cfg(feature = "bitflags")]
 use bitflags::parser::ParseError as BitFlagsParseError;
+#[cfg(feature = "cargo_toml")]
 use cargo_toml::Error as CargoTomlError;
+#[cfg(feature = "clap")]
 use clap::error::Error as ClapError;
+#[cfg(feature = "reedline")]
 use reedline::ReedlineError;
 use serde_merge::error::Error as SerdeMergeError;
 use std::borrow::Cow;
@@ -9,35 +14,45 @@ use std::string::FromUtf8Error;
 use std::sync::{MutexGuard, PoisonError as LockError};
 use std::{error::Error, io};
 use strum::ParseError as StrumParseError;
+#[cfg(feature = "syn")]
 use syn::Error as SynError;
+#[cfg(feature = "toml")]
 use toml::de::Error as TomlDeError;
+#[cfg(feature = "toml")]
 use toml::ser::Error as TomlSerError;
 
 pub type ThagResult<T> = Result<T, ThagError>;
 
 #[derive(Debug)]
 pub enum ThagError {
+    #[cfg(feature = "bitflags")]
     BitFlagsParse(BitFlagsParseError), // For bitflags parse error
-    Cancelled,                         // For user electing to cancel
-    ClapError(ClapError),              // For clap errors
-    Command(&'static str),             // For errors during Cargo build or program execution
-    Dyn(Box<dyn Error>),               // For boxed dynamic errors from 3rd parties
-    FromStr(Cow<'static, str>),        // For simple errors from a string
-    FromUtf8(FromUtf8Error),           // For simple errors from a utf8 array
-    Io(std::io::Error),                // For I/O errors
-    LockMutexGuard(&'static str),      // For lock errors with MutexGuard
-    Logic(&'static str),               // For logic errors
-    NoneOption(&'static str),          // For unwrapping Options
-    OsString(std::ffi::OsString),      // For unconvertible OsStrings
-    Reedline(ReedlineError),           // For reedline errors
-    SerdeMerge(SerdeMergeError),       // For serde_merge errors
-    StrumParse(StrumParseError),       // For strum parse enum
-    Syn(SynError),                     // For syn errors
-    TomlDe(TomlDeError),               // For TOML deserialization errors
-    TomlSer(TomlSerError),             // For TOML serialization errors
-    Toml(CargoTomlError),              // For cargo_toml errors
-    UnsupportedTerm,                   // For terminal interrogation
-    Validation(String),                // For config.toml and similar validation
+    Cancelled, // For user electing to cancel
+    #[cfg(feature = "clap")]
+    ClapError(ClapError), // For clap errors
+    Command(&'static str), // For errors during Cargo build or program execution
+    Dyn(Box<dyn Error>), // For boxed dynamic errors from 3rd parties
+    FromStr(Cow<'static, str>), // For simple errors from a string
+    FromUtf8(FromUtf8Error), // For simple errors from a utf8 array
+    Io(std::io::Error), // For I/O errors
+    LockMutexGuard(&'static str), // For lock errors with MutexGuard
+    Logic(&'static str), // For logic errors
+    NoneOption(&'static str), // For unwrapping Options
+    OsString(std::ffi::OsString), // For unconvertible OsStrings
+    #[cfg(feature = "reedline")]
+    Reedline(ReedlineError), // For reedline errors
+    SerdeMerge(SerdeMergeError), // For serde_merge errors
+    StrumParse(StrumParseError), // For strum parse enum
+    #[cfg(feature = "syn")]
+    Syn(SynError), // For syn errors
+    #[cfg(feature = "toml")]
+    TomlDe(TomlDeError), // For TOML deserialization errors
+    #[cfg(feature = "toml")]
+    TomlSer(TomlSerError), // For TOML serialization errors
+    #[cfg(feature = "cargo_toml")]
+    Toml(CargoTomlError), // For cargo_toml errors
+    UnsupportedTerm, // For terminal interrogation
+    Validation(String), // For config.toml and similar validation
 }
 
 impl From<FromUtf8Error> for ThagError {
@@ -52,6 +67,7 @@ impl From<io::Error> for ThagError {
     }
 }
 
+#[cfg(feature = "clap")]
 impl From<ClapError> for ThagError {
     fn from(err: ClapError) -> Self {
         Self::ClapError(err)
@@ -64,18 +80,22 @@ impl From<StrumParseError> for ThagError {
     }
 }
 
+#[cfg(feature = "toml")]
 impl From<TomlDeError> for ThagError {
     fn from(err: TomlDeError) -> Self {
         Self::TomlDe(err)
     }
 }
 
+#[cfg(feature = "toml")]
 impl From<TomlSerError> for ThagError {
     fn from(err: TomlSerError) -> Self {
         Self::TomlSer(err)
     }
 }
 
+#[cfg(feature = "cargo_toml")]
+#[cfg(feature = "cargo_toml")]
 impl From<CargoTomlError> for ThagError {
     fn from(err: CargoTomlError) -> Self {
         Self::Toml(err)
@@ -94,6 +114,7 @@ impl From<&'static str> for ThagError {
     }
 }
 
+#[cfg(feature = "reedline")]
 impl From<ReedlineError> for ThagError {
     fn from(err: ReedlineError) -> Self {
         Self::Reedline(err)
@@ -106,6 +127,7 @@ impl From<SerdeMergeError> for ThagError {
     }
 }
 
+#[cfg(feature = "syn")]
 impl From<SynError> for ThagError {
     fn from(err: SynError) -> Self {
         Self::Syn(err)
@@ -118,6 +140,7 @@ impl<'a, T> From<LockError<MutexGuard<'a, T>>> for ThagError {
     }
 }
 
+#[cfg(feature = "bitflags")]
 impl From<BitFlagsParseError> for ThagError {
     fn from(err: BitFlagsParseError) -> Self {
         Self::BitFlagsParse(err)
@@ -134,8 +157,10 @@ impl std::fmt::Display for ThagError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             // Use display formatting instead of debug formatting where possible
+            #[cfg(feature = "bitflags")]
             Self::BitFlagsParse(e) => write!(f, "{e}"),
             Self::Cancelled => write!(f, "Cancelled"),
+            #[cfg(feature = "clap")]
             Self::ClapError(e) => write!(f, "{e}"),
             Self::Command(s) | Self::Logic(s) | Self::NoneOption(s) => {
                 for line in s.lines() {
@@ -154,13 +179,18 @@ impl std::fmt::Display for ThagError {
             Self::Io(e) => write!(f, "{e}"),
             Self::LockMutexGuard(e) => write!(f, "{e}"),
             Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
+            #[cfg(feature = "reedline")]
             Self::Reedline(e) => write!(f, "{e}"),
             Self::SerdeMerge(e) => write!(f, "{e}"),
             Self::StrumParse(e) => write!(f, "{e}"),
+            #[cfg(feature = "syn")]
             Self::Syn(e) => write!(f, "{e}"),
+            #[cfg(feature = "toml")]
             Self::TomlDe(e) => write!(f, "{e}"),
+            #[cfg(feature = "toml")]
             Self::TomlSer(e) => write!(f, "{e}"),
             // Self::Toml(e) => write!(f, "{e}"),
+            #[cfg(feature = "cargo_toml")]
             Self::Toml(e) => {
                 // Extract the actual error message without all the nested structure
                 let msg = e.to_string();
@@ -179,8 +209,10 @@ impl Error for ThagError {
             // The cause is the underlying implementation error type. Is implicitly
             // cast to the trait object `&error::Error`. This works because the
             // underlying type already implements the `Error` trait.
+            #[cfg(feature = "bitflags")]
             Self::BitFlagsParse(e) => Some(e),
             Self::Cancelled | Self::UnsupportedTerm => Some(self),
+            #[cfg(feature = "clap")]
             Self::ClapError(ref e) => Some(e),
             Self::Command(_e) => Some(self),
             Self::Dyn(e) => Some(&**e),
@@ -191,12 +223,17 @@ impl Error for ThagError {
             Self::Logic(_e) => Some(self),
             Self::NoneOption(_e) => Some(self),
             Self::OsString(ref _o) => Some(self),
+            #[cfg(feature = "reedline")]
             Self::Reedline(e) => Some(e),
             Self::SerdeMerge(ref e) => Some(e),
             Self::StrumParse(ref e) => Some(e),
+            #[cfg(feature = "syn")]
             Self::Syn(e) => Some(e),
+            #[cfg(feature = "toml")]
             Self::TomlDe(ref e) => Some(e),
+            #[cfg(feature = "toml")]
             Self::TomlSer(ref e) => Some(e),
+            #[cfg(feature = "cargo_toml")]
             Self::Toml(ref e) => Some(e),
             Self::Validation(ref _e) => Some(self),
         }

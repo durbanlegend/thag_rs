@@ -1,8 +1,9 @@
 #![allow(clippy::uninlined_format_args)]
 
+use thag_rs::cmd_args::set_verbosity;
 #[cfg(debug_assertions)]
 use thag_rs::debug_timings;
-use thag_rs::logging::{configure_log, set_verbosity};
+use thag_rs::logging::configure_log;
 use thag_rs::{execute, get_args, ThagResult};
 
 use std::cell::RefCell;
@@ -21,7 +22,7 @@ pub fn main() -> ThagResult<()> {
     #[cfg(debug_assertions)]
     debug_timings(&start, "Configured logging");
 
-    if cfg!(feature = "profile") {
+    if cfg!(feature = "profiling") {
         println!("Enabling profiling..."); // Debug output
         profiling::enable_profiling(true)?;
     }

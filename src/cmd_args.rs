@@ -1,5 +1,6 @@
 use crate::{
     config::{maybe_config, DependencyInference},
+    logging::{set_global_verbosity, Verbosity, V},
     profile, profile_method, profile_section, ThagError, ThagResult, RS_SUFFIX,
 };
 use bitflags::bitflags;
@@ -161,6 +162,31 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
         return Err("Missing script name".into());
     }
     Ok(())
+}
+
+#[inline]
+/// Determine the desired logging verbosity for the current execution.
+/// # Errors
+/// Will return `Err` if the logger mutex cannot be locked.
+pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
+    profile!("set_verbosity");
+
+    let verbosity = if args.verbose >= 2 {
+        Verbosity::Debug
+    } else if args.verbose == 1 {
+        Verbosity::Verbose
+    } else if args.quiet == 1 {
+        V::Quiet
+    } else if args.quiet >= 2 {
+        V::Quieter
+    } else if args.normal {
+        V::Normal
+    } else if let Some(config) = maybe_config() {
+        config.logging.default_verbosity
+    } else {
+        V::Normal
+    };
+    set_global_verbosity(verbosity)
 }
 
 bitflags! {

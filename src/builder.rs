@@ -1,26 +1,26 @@
 use crate::code_utils::{
-    self, build_loop, create_temp_source_file, extract_manifest, get_source_path,
-    read_file_contents, remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
+    self, build_loop, create_temp_source_file, get_source_path, read_file_contents,
+    remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
 };
 use crate::code_utils::{extract_ast_expr, to_ast};
 use crate::colors::init_styles;
-use crate::config::{self, RealContext};
+use crate::config::{self, DependencyInference, RealContext};
 #[cfg(debug_assertions)]
-use crate::debug_timings;
 use crate::logging::is_debug_logging_enabled;
+use crate::manifest::{extract, find_crates, find_metadata, CratesFinder, MetadataFinder};
 use crate::repl::run_repl;
-use crate::shared::{find_crates, find_metadata};
 use crate::stdin::{edit, read};
 #[cfg(debug_assertions)]
 use crate::VERSION;
 use crate::{
-    coloring, cvprtln, debug_log, display_timings, get_proc_flags, manifest, maybe_config, profile,
-    profile_section, regex, repeat_dash, validate_args, vlog, Ast, BuildState, Cli,
-    CrosstermEventReader, Dependencies, Lvl, ProcFlags, ScriptState, ThagResult, DYNAMIC_SUBDIR,
-    FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_SCRIPT_NAME,
-    TMPDIR, V,
+    coloring, cvprtln, debug_log, get_proc_flags, manifest, maybe_config, modified_since_compiled,
+    profile, profile_method, profile_section, regex, repeat_dash, shared, validate_args, vlog, Ast,
+    Cli, CrosstermEventReader, Dependencies, Lvl, ProcFlags, ThagError, ThagResult, DYNAMIC_SUBDIR,
+    FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME,
+    TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
 use cargo_toml::Manifest;
+use home::home_dir;
 #[cfg(debug_assertions)]
 use log::{log_enabled, Level::Debug};
 use nu_ansi_term::Style;
@@ -35,6 +35,416 @@ use std::{
     string::ToString,
     time::Instant,
 };
+
+#[cfg(feature = "full_build")]
+struct ExecutionFlags {
+    is_repl: bool,
+    is_dynamic: bool,
+}
+
+#[cfg(feature = "full_build")]
+impl ExecutionFlags {
+    const fn new(proc_flags: &ProcFlags, cli: &Cli) -> Self {
+        let is_repl = proc_flags.contains(ProcFlags::REPL);
+        let is_expr = cli.expression.is_some();
+        let is_stdin = proc_flags.contains(ProcFlags::STDIN);
+        let is_edit = proc_flags.contains(ProcFlags::EDIT);
+        // let is_url = proc_flags.contains(ProcFlags::URL); // TODO reinstate
+        let is_loop = proc_flags.contains(ProcFlags::LOOP);
+        let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
+
+        Self {
+            is_repl,
+            is_dynamic,
+        }
+    }
+}
+
+#[cfg(feature = "full_build")]
+struct BuildPaths {
+    working_dir_path: PathBuf,
+    source_path: PathBuf,
+    source_dir_path: PathBuf,
+    cargo_home: PathBuf,
+    target_dir_path: PathBuf,
+    target_path: PathBuf,
+    cargo_toml_path: PathBuf,
+}
+
+/// A struct to encapsulate the attributes of the current build as needed by the various
+/// functions co-operating in the generation, build and execution of the code.
+#[derive(Clone, Debug, Default)]
+#[cfg(feature = "full_build")]
+pub struct BuildState {
+    #[allow(dead_code)]
+    pub working_dir_path: PathBuf,
+    pub source_stem: String,
+    pub source_name: String,
+    #[allow(dead_code)]
+    pub source_dir_path: PathBuf,
+    pub source_path: PathBuf,
+    pub cargo_home: PathBuf,
+    pub target_dir_path: PathBuf,
+    pub target_path: PathBuf,
+    pub cargo_toml_path: PathBuf,
+    pub rs_manifest: Option<Manifest>,
+    pub cargo_manifest: Option<Manifest>,
+    pub must_gen: bool,
+    pub must_build: bool,
+    pub build_from_orig_source: bool,
+    pub ast: Option<Ast>,
+    pub crates_finder: Option<CratesFinder>,
+    pub metadata_finder: Option<MetadataFinder>,
+    pub infer: DependencyInference,
+    pub args: Vec<String>,
+}
+
+#[cfg(feature = "full_build")]
+impl BuildState {
+    /// Configures a new `BuildState` instance based on processing flags, CLI arguments, and script state.
+    ///
+    /// This function coordinates the complete setup process by:
+    /// 1. Extracting and validating script information
+    /// 2. Determining execution mode flags
+    /// 3. Setting up all required directory paths
+    /// 4. Creating the initial build state
+    /// 5. Determining build requirements
+    ///
+    /// # Arguments
+    /// * `proc_flags` - Processing flags that control build and execution behavior
+    /// * `cli` - Command-line arguments parsed from the CLI
+    /// * `script_state` - Current state of the script being processed
+    ///
+    /// # Returns
+    /// * `ThagResult<Self>` - Configured `BuildState` instance if successful
+    ///
+    /// # Errors
+    /// Returns a `ThagError` if:
+    /// * No script is specified in the script state
+    /// * Script filename is invalid or cannot be converted to a string
+    /// * Unable to strip .rs suffix from script name
+    /// * Cannot resolve working directory or home directory
+    /// * Cannot resolve script directory path
+    /// * Script file does not exist at the specified path
+    /// * Cannot resolve parent directory of script
+    /// * Cannot determine if source has been modified since last compilation
+    ///
+    /// # Example
+    /// ```ignore
+    /// let proc_flags = ProcFlags::default();
+    /// let cli = Cli::parse();
+    /// let script_state = ScriptState::new("example.rs");
+    /// let build_state = BuildState::pre_configure(&proc_flags, &cli, &script_state)?;
+    /// ```
+    pub fn pre_configure(
+        proc_flags: &ProcFlags,
+        cli: &Cli,
+        script_state: &ScriptState,
+    ) -> ThagResult<Self> {
+        profile!("pre_configure");
+
+        // 1. Validate and extract basic script info
+        let (source_name, source_stem) = Self::extract_script_info(script_state)?;
+
+        // 2. Determine execution mode flags
+        let execution_flags = ExecutionFlags::new(proc_flags, cli);
+
+        // 3. Set up directory paths
+        let paths = Self::set_up_paths(&execution_flags, script_state, &source_name, &source_stem)?;
+
+        // 4. Create initial build state
+        let mut build_state = Self::create_initial_state(paths, source_name, source_stem, cli);
+
+        // 5. Determine build requirements
+        build_state.determine_build_requirements(proc_flags, script_state, &execution_flags)?;
+
+        // 6. Validate state (debug only)
+        #[cfg(debug_assertions)]
+        build_state.validate_state(proc_flags);
+
+        Ok(build_state)
+    }
+
+    fn extract_script_info(script_state: &ScriptState) -> ThagResult<(String, String)> {
+        profile!("extract_script_info");
+        let script = script_state
+            .get_script()
+            .ok_or(ThagError::NoneOption("No script specified"))?;
+
+        let path = Path::new(&script);
+        let filename = path
+            .file_name()
+            .ok_or(ThagError::NoneOption("No filename specified"))?;
+
+        let source_name = filename
+            .to_str()
+            .ok_or(ThagError::NoneOption(
+                "Error converting filename to a string",
+            ))?
+            .to_string();
+
+        let source_stem = source_name
+            .strip_suffix(RS_SUFFIX)
+            .ok_or_else(|| -> ThagError {
+                format!("Error stripping suffix from {source_name}").into()
+            })?
+            .to_string();
+
+        Ok((source_name, source_stem))
+    }
+
+    fn set_up_paths(
+        flags: &ExecutionFlags,
+        script_state: &ScriptState,
+        source_name: &str,
+        source_stem: &str,
+    ) -> ThagResult<BuildPaths> {
+        profile!("set_up_paths");
+        // Working directory setup
+        let working_dir_path = if flags.is_repl {
+            TMPDIR.join(REPL_SUBDIR)
+        } else {
+            std::env::current_dir()?.canonicalize()?
+        };
+
+        // Script path setup
+        let script_path = if flags.is_repl {
+            script_state
+                .get_script_dir_path()
+                .ok_or("Missing script path")?
+                .join(source_name)
+        } else if flags.is_dynamic {
+            script_state
+                .get_script_dir_path()
+                .ok_or("Missing script path")?
+                .join(TEMP_SCRIPT_NAME)
+        } else {
+            working_dir_path.join(script_state.get_script().unwrap()) // Safe due to prior validation
+        };
+
+        // Source path setup and validation
+        let source_path = script_path.canonicalize()?;
+        if !source_path.exists() {
+            return Err(format!(
+                "No script named {source_stem} or {source_name} in path {source_path:?}"
+            )
+            .into());
+        }
+
+        // Source directory path
+        let source_dir_path = source_path
+            .parent()
+            .ok_or("Problem resolving to parent directory")?
+            .to_path_buf();
+
+        // Cargo home setup
+        let cargo_home = PathBuf::from(match std::env::var("CARGO_HOME") {
+            Ok(string) if string != String::new() => string,
+            _ => {
+                let home_dir = home_dir().ok_or("Can't resolve home directory")?;
+                home_dir.join(".cargo").display().to_string()
+            }
+        });
+
+        // Target directory setup
+        let target_dir_path = if flags.is_repl {
+            script_state
+                .get_script_dir_path()
+                .ok_or("Missing ScriptState::NamedEmpty.repl_path")?
+                .join(TEMP_DIR_NAME)
+        } else if flags.is_dynamic {
+            TMPDIR.join(DYNAMIC_SUBDIR)
+        } else {
+            TMPDIR.join(PACKAGE_NAME).join(source_stem)
+        };
+
+        // Target path setup
+        let mut target_path = target_dir_path.join("target").join("debug");
+        #[cfg(target_os = "windows")]
+        {
+            target_path = target_path.join(format!("{source_stem}.exe"));
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            target_path = target_path.join(source_stem);
+        }
+
+        let cargo_toml_path = target_dir_path.join(TOML_NAME);
+
+        Ok(BuildPaths {
+            working_dir_path,
+            source_path,
+            source_dir_path,
+            cargo_home,
+            target_dir_path,
+            target_path,
+            cargo_toml_path,
+        })
+    }
+
+    fn create_initial_state(
+        paths: BuildPaths,
+        source_name: String,
+        source_stem: String,
+        cli: &Cli,
+    ) -> Self {
+        profile!("create_initial_state");
+
+        Self {
+            working_dir_path: paths.working_dir_path,
+            source_stem,
+            source_name,
+            source_dir_path: paths.source_dir_path,
+            source_path: paths.source_path,
+            cargo_home: paths.cargo_home,
+            target_dir_path: paths.target_dir_path,
+            target_path: paths.target_path,
+            cargo_toml_path: paths.cargo_toml_path,
+            ast: None,
+            crates_finder: None,
+            metadata_finder: None,
+            infer: cli.infer.as_ref().map_or_else(
+                || {
+                    let config = maybe_config();
+                    let binding = Dependencies::default();
+                    let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
+                    let infer = &dep_config.inference_level;
+                    infer.clone()
+                },
+                Clone::clone,
+            ),
+            args: cli.args.clone(),
+            ..Default::default()
+        }
+    }
+
+    fn determine_build_requirements(
+        &mut self,
+        proc_flags: &ProcFlags,
+        script_state: &ScriptState,
+        flags: &ExecutionFlags,
+    ) -> ThagResult<()> {
+        profile_method!("determine_build_requirements");
+        // Case 1: Force generation and building
+        if flags.is_dynamic
+            || flags.is_repl
+            || proc_flags.contains(ProcFlags::FORCE)
+            || proc_flags.contains(ProcFlags::CHECK)
+        {
+            self.must_gen = true;
+            self.must_build = true;
+            return Ok(());
+        }
+
+        // Case 2: No-run mode
+        if proc_flags.contains(ProcFlags::NORUN) {
+            self.must_build = proc_flags.contains(ProcFlags::BUILD)
+                || proc_flags.contains(ProcFlags::EXECUTABLE)
+                // For EXPAND and CARGO, "build" step (becoming a bit of a misnomer)
+                // is needed to run their alternative Cargo commands
+                || proc_flags.contains(ProcFlags::EXPAND)
+                || proc_flags.contains(ProcFlags::CARGO);
+            self.must_gen = self.must_build
+                || proc_flags.contains(ProcFlags::GENERATE)
+                || !self.cargo_toml_path.exists();
+            return Ok(());
+        }
+
+        // Case 3: Check if build is needed due to state or modifications
+        if matches!(script_state, ScriptState::NamedEmpty { .. })
+            || !self.target_path.exists()
+            || modified_since_compiled(self)?.is_some()
+        {
+            self.must_gen = true;
+            self.must_build = true;
+            return Ok(());
+        }
+
+        // Default case: no generation or building needed
+        self.must_gen = false;
+        self.must_build = false;
+        Ok(())
+    }
+
+    #[cfg(debug_assertions)]
+    fn validate_state(&self, proc_flags: &ProcFlags) {
+        profile_method!("validate_state");
+        // Validate build/check/executable/expand flags
+        if proc_flags.contains(ProcFlags::BUILD)
+            | proc_flags.contains(ProcFlags::CHECK)
+            | proc_flags.contains(ProcFlags::EXECUTABLE)
+            | proc_flags.contains(ProcFlags::EXPAND)
+            | proc_flags.contains(ProcFlags::CARGO)
+        {
+            assert!(self.must_gen & self.must_build & proc_flags.contains(ProcFlags::NORUN));
+        }
+
+        // Validate force flag
+        if proc_flags.contains(ProcFlags::FORCE) {
+            assert!(self.must_gen & self.must_build);
+        }
+
+        // Validate expand and cargo flags
+        if proc_flags.contains(ProcFlags::EXPAND) | proc_flags.contains(ProcFlags::CARGO) {
+            assert!(self.must_gen & self.must_build & proc_flags.contains(ProcFlags::NORUN));
+        }
+
+        // Validate build dependency
+        if self.must_build {
+            assert!(self.must_gen);
+        }
+
+        // Log the final state in debug mode
+        debug_log!("build_state={self:#?}");
+    }
+}
+
+/// An enum to encapsulate the type of script in play.
+#[derive(Debug)]
+pub enum ScriptState {
+    /// Repl with no script name provided by user
+    #[allow(dead_code)]
+    Anonymous,
+    /// Repl with script name.
+    NamedEmpty {
+        script: String,
+        script_dir_path: PathBuf,
+    },
+    /// Script name provided by user
+    Named {
+        script: String,
+        script_dir_path: PathBuf,
+    },
+}
+
+impl ScriptState {
+    /// Return the script name wrapped in an Option.
+    #[must_use]
+    pub fn get_script(&self) -> Option<String> {
+        profile_method!("get_script");
+        match self {
+            Self::Anonymous => None,
+            Self::NamedEmpty { script, .. } | Self::Named { script, .. } => {
+                Some(script.to_string())
+            }
+        }
+    }
+    /// Return the script's directory path wrapped in an Option.
+    #[must_use]
+    pub fn get_script_dir_path(&self) -> Option<PathBuf> {
+        profile_method!("get_script_dir_path");
+        match self {
+            Self::Anonymous => None,
+            Self::Named {
+                script_dir_path, ..
+            } => Some(script_dir_path.clone()),
+            Self::NamedEmpty {
+                script_dir_path: script_path,
+                ..
+            } => Some(script_path.clone()),
+        }
+    }
+}
 
 /// Execute the script runner.
 /// # Errors
@@ -244,7 +654,7 @@ fn process(
 
         vlog!(V::V, "rs_source={rs_source}");
 
-        let rs_manifest = extract_manifest(&rs_source, Instant::now())
+        let rs_manifest = extract(&rs_source, Instant::now())
             // .map_err(|_err| "Error parsing rs_source")
             ?;
         build_state.rs_manifest = Some(rs_manifest);
@@ -387,7 +797,7 @@ pub fn gen_build_run(
             build_state.build_from_orig_source
         );
 
-        let rs_manifest: Manifest = { extract_manifest(&rs_source, start_parsing_rs) }?;
+        let rs_manifest: Manifest = { extract(&rs_source, start_parsing_rs) }?;
 
         // debug_log!("rs_manifest={rs_manifest:#?}");
 
@@ -522,6 +932,7 @@ pub fn generate(
     profile!("generate");
     let start_gen = Instant::now();
 
+    #[cfg(debug_assertions)]
     if is_debug_logging_enabled() {
         debug_log!("In generate, proc_flags={proc_flags}");
         debug_log!(
@@ -569,7 +980,7 @@ pub fn generate(
 
     debug_log!(
         "cargo_manifest_str: {}",
-        code_utils::disentangle(cargo_manifest_str)
+        shared::disentangle(cargo_manifest_str)
     );
 
     // Create or truncate the Cargo.toml file and write the content
@@ -876,4 +1287,31 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     display_timings(&start_run, "Completed run", proc_flags);
 
     Ok(())
+}
+
+/// Developer method to log method timings.
+#[inline]
+#[cfg(debug_assertions)]
+pub fn debug_timings(start: &Instant, process: &str) {
+    profile!("debug_timings");
+    let dur = start.elapsed();
+    debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
+}
+
+#[inline]
+/// Display method timings when either the --verbose or --timings option is chosen.
+pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
+    profile!("display_timings");
+    #[cfg(not(debug_assertions))]
+    if !proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
+        return;
+    }
+    let dur = start.elapsed();
+    let msg = format!("{process} in {}.{}s", dur.as_secs(), dur.subsec_millis());
+
+    #[cfg(debug_assertions)]
+    debug_log!("{msg}");
+    if proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
+        vlog!(V::QQ, "{msg}");
+    }
 }

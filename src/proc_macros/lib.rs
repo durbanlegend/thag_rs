@@ -1,19 +1,10 @@
 #![allow(clippy::missing_panics_doc)]
 mod repeat_dash;
-mod tui_keys;
 
 use crate::repeat_dash::repeat_dash_impl;
-use crate::tui_keys::key_impl;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_file, parse_macro_input, ItemFn};
-
-// Not public API. This is internal and to be used only by `key!`.
-#[doc(hidden)]
-#[proc_macro]
-pub fn key(input: TokenStream) -> TokenStream {
-    key_impl(input)
-}
 
 #[proc_macro]
 pub fn repeat_dash(input: TokenStream) -> TokenStream {

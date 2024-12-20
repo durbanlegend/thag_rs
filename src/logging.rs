@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::{config::maybe_config, debug_log, profile, profile_method, vlog, Cli, ThagResult};
+use crate::{debug_log, profile, profile_method, vlog, ThagResult};
 use documented::{Documented, DocumentedVariants};
 #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
 use env_logger::{Builder, Env};
@@ -121,31 +121,6 @@ impl Logger {
 
 pub static LOGGER: LazyLock<Mutex<Logger>> = LazyLock::new(|| Mutex::new(Logger::new(V::N)));
 
-#[inline]
-/// Determine the desired logging verbosity for the current execution.
-/// # Errors
-/// Will return `Err` if the logger mutex cannot be locked.
-pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
-    profile!("set_verbosity");
-
-    let verbosity = if args.verbose >= 2 {
-        Verbosity::Debug
-    } else if args.verbose == 1 {
-        Verbosity::Verbose
-    } else if args.quiet == 1 {
-        V::Quiet
-    } else if args.quiet >= 2 {
-        V::Quieter
-    } else if args.normal {
-        V::Normal
-    } else if let Some(config) = maybe_config() {
-        config.logging.default_verbosity
-    } else {
-        V::Normal
-    };
-    set_global_verbosity(verbosity)
-}
-
 /// Set the logging verbosity for the current execution.
 /// # Errors
 /// Will return `Err` if the logger mutex cannot be locked.
@@ -179,7 +154,7 @@ pub fn configure_log() {
 /// # Panics
 ///
 /// Panics if it can't create the log file app.log in the current working directory.
-#[cfg(not(feature = "env_logger"))]
+#[cfg(feature = "simplelog")]
 pub fn configure_log() {
     profile!("configure_log");
 
@@ -193,7 +168,7 @@ pub fn configure_log() {
 /// # Panics
 ///
 /// Panics if it can't create the log file app.log in the current working directory.
-#[cfg(not(feature = "env_logger"))]
+#[cfg(feature = "simplelog")]
 fn configure_simplelog() {
     profile!("configure_simplelog");
     CombinedLogger::init(vec![

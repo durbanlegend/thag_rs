@@ -8,27 +8,27 @@ use crate::debug_timings;
 #[cfg(target_os = "windows")]
 use crate::escape_path_for_windows;
 use crate::{
-    cvprtln, debug_log, profile, profile_method, profile_section,
-    shared::{find_crates, find_metadata},
-    vlog, Ast, BuildState, Cli, Lvl, ThagError, ThagResult, BUILT_IN_CRATES, DYNAMIC_SUBDIR,
-    TEMP_SCRIPT_NAME, TMPDIR, V,
+    cvprtln, debug_log, profile, profile_method, profile_section, vlog, BuildState, Cli, Lvl,
+    ThagError, ThagResult, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
-use cargo_toml::{Edition, Manifest};
+use proc_macro2::TokenStream;
+use quote::ToTokens;
 use regex::Regex;
 use std::{
     any::Any,
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fs::{self, remove_dir_all, remove_file, OpenOptions},
     hash::BuildHasher,
     io::{self, BufRead, Write},
-    ops::Deref,
     option::Option,
     path::{Path, PathBuf},
     process::{self, Command, Output},
     time::{Instant, SystemTime},
 };
+use strum::Display;
+#[cfg(feature = "full_build")]
+use syn::{self};
 use syn::{
-    parse_file,
     visit::Visit,
     visit_mut::{self, VisitMut},
     AttrStyle,
@@ -39,6 +39,38 @@ use syn::{
     Expr, ExprBlock, File, Item, ReturnType, Stmt,
     Type::Tuple,
 };
+
+/// An abstract syntax tree wrapper for use with syn.
+#[derive(Clone, Debug, Display)]
+#[cfg(feature = "full_build")]
+pub enum Ast {
+    File(syn::File),
+    Expr(syn::Expr),
+    // None,
+}
+
+#[cfg(feature = "full_build")]
+impl Ast {
+    #[must_use]
+    pub const fn is_file(&self) -> bool {
+        match self {
+            Self::File(_) => true,
+            Self::Expr(_) => false,
+        }
+    }
+}
+
+/// Required to use quote! macro to generate code to resolve expression.
+#[cfg(feature = "full_build")]
+impl ToTokens for Ast {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        profile_method!("to_tokens");
+        match self {
+            Self::File(file) => file.to_tokens(tokens),
+            Self::Expr(expr) => expr.to_tokens(tokens),
+        }
+    }
+}
 
 // From burntsushi at `https://github.com/rust-lang/regex/issues/709`
 #[macro_export]
@@ -97,213 +129,6 @@ pub fn read_file_contents(path: &Path) -> ThagResult<String> {
     Ok(fs::read_to_string(path)?)
 }
 
-/// Infer dependencies from AST-derived metadata to put in a Cargo.toml.
-#[must_use]
-pub fn infer_deps_from_ast(
-    crates_finder: &crate::shared::CratesFinder,
-    metadata_finder: &crate::shared::MetadataFinder,
-) -> Vec<String> {
-    profile!("infer_deps_from_ast");
-    let mut dependencies = vec![];
-    dependencies.extend_from_slice(&crates_finder.crates);
-    let to_remove: HashSet<String> = crates_finder
-        .names_to_exclude
-        .iter()
-        .cloned()
-        .chain(metadata_finder.names_to_exclude.iter().cloned())
-        .chain(metadata_finder.mods_to_exclude.iter().cloned())
-        .chain(BUILT_IN_CRATES.iter().map(Deref::deref).map(String::from))
-        .collect();
-    // eprintln!("to_remove={to_remove:#?}");
-
-    dependencies.retain(|e| !to_remove.contains(e));
-    // eprintln!("dependencies (after)={dependencies:#?}");
-
-    // Similar check for other regex pattern
-    for crate_name in &metadata_finder.extern_crates {
-        if !&to_remove.contains(crate_name) {
-            dependencies.push(crate_name.to_owned());
-        }
-    }
-
-    // Deduplicate the list of dependencies
-    dependencies.sort();
-    dependencies.dedup();
-
-    dependencies
-}
-
-/// Infer dependencies from source code to put in a Cargo.toml.
-/// Fallback version for when an abstract syntax tree cannot be parsed.
-#[must_use]
-pub fn infer_deps_from_source(code: &str) -> Vec<String> {
-    profile!("infer_deps_from_source");
-
-    if code.trim().is_empty() {
-        return vec![];
-    }
-
-    let maybe_ast = extract_and_wrap_uses(code);
-    let mut dependencies = maybe_ast.map_or_else(
-        |_| {
-            cvprtln!(
-                Lvl::ERR,
-                V::QQ,
-                "Could not parse code into an abstract syntax tree"
-            );
-            vec![]
-        },
-        |ast| {
-            let crates_finder = find_crates(&ast);
-            let metadata_finder = find_metadata(&ast);
-            infer_deps_from_ast(&crates_finder, &metadata_finder)
-        },
-    );
-
-    let macro_use_regex: &Regex = regex!(r"(?m)^[\s]*#\[macro_use\((\w+)\)");
-    let extern_crate_regex: &Regex = regex!(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)");
-
-    let modules = find_modules_source(code);
-
-    dependencies.retain(|e| !modules.contains(e));
-    // eprintln!("dependencies (after)={dependencies:#?}");
-
-    for cap in macro_use_regex.captures_iter(code) {
-        let crate_name = cap[1].to_string();
-        // eprintln!("macro-use crate_name={crate_name:#?}");
-        if !modules.contains(&crate_name) {
-            dependencies.push(crate_name);
-        }
-    }
-
-    for cap in extern_crate_regex.captures_iter(code) {
-        let crate_name = cap[1].to_string();
-        // eprintln!("extern-crate crate_name={crate_name:#?}");
-        if !modules.contains(&crate_name) {
-            dependencies.push(crate_name);
-        }
-    }
-    dependencies.sort();
-    dependencies
-}
-
-// Function to extract use statements and wrap in braces for parsing
-fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
-    profile!("extract_and_wrap_uses");
-    // Step 1: Capture `use` statements
-    let use_simple_regex: &Regex = regex!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
-    let use_nested_regex: &Regex = regex!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
-
-    let mut use_statements: Vec<String> = vec![];
-
-    for cap in use_simple_regex.captures_iter(source) {
-        let use_string = cap[1].to_string();
-        use_statements.push(use_string);
-    }
-    for cap in use_nested_regex.captures_iter(source) {
-        let use_string = cap[1].to_string();
-        use_statements.push(use_string);
-    }
-
-    // Step 2: Parse as `syn::File`
-    let ast: File = parse_file(&use_statements.join("\n"))?;
-    // eprintln!("ast={ast:#?}");
-
-    // Return wrapped in `Ast::File`
-    Ok(Ast::File(ast))
-}
-
-/// Identify use ... as statements for inclusion in / exclusion from Cargo.toml metadata.
-///
-/// Include the "from" name and exclude the "to" name.
-/// Fallback version for when an abstract syntax tree cannot be parsed.
-#[must_use]
-pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {
-    profile!("find_use_renames_source");
-
-    debug_log!("In code_utils::find_use_renames_source");
-    let use_as_regex: &Regex = regex!(r"(?m)^\s*use\s+(\w+).*? as\s+(\w+)");
-
-    let mut use_renames_from: Vec<String> = vec![];
-    let mut use_renames_to: Vec<String> = vec![];
-
-    for cap in use_as_regex.captures_iter(code) {
-        let from_name = cap[1].to_string();
-        let to_name = cap[2].to_string();
-
-        debug_log!("use_rename: from={from_name}, to={to_name}");
-        use_renames_from.push(from_name);
-        use_renames_to.push(to_name);
-    }
-
-    use_renames_from.sort();
-    use_renames_from.dedup();
-
-    debug_log!("use_renames from source: from={use_renames_from:#?}, to={use_renames_to:#?}");
-    (use_renames_from, use_renames_to)
-}
-
-/// Identify mod statements for exclusion from Cargo.toml metadata.
-/// Fallback version for when an abstract syntax tree cannot be parsed.
-#[must_use]
-pub fn find_modules_source(code: &str) -> Vec<String> {
-    profile!("find_modules_source");
-    let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
-
-    debug_log!("In code_utils::find_use_renames_source");
-
-    let mut modules: Vec<String> = vec![];
-
-    for cap in module_regex.captures_iter(code) {
-        let module = cap[1].to_string();
-
-        debug_log!("module={module}");
-        modules.push(module);
-    }
-
-    debug_log!("modules from source={modules:#?}");
-    modules
-}
-
-/// Extract embedded Cargo.toml metadata from a Rust source string.
-/// # Errors
-/// Will return `Err` if there is any error in parsing the toml data into a manifest.
-pub fn extract_manifest(
-    rs_full_source: &str,
-    #[allow(unused_variables)] start_parsing_rs: Instant,
-) -> ThagResult<Manifest> {
-    profile!("extract_manifest");
-    let maybe_rs_toml = extract_toml_block(rs_full_source);
-
-    profile_section!("parse_and_set_edition");
-    let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
-        // debug_log!("rs_toml_str={rs_toml_str}");
-        Manifest::from_str(&rs_toml_str)?
-    } else {
-        Manifest::from_str("")?
-    };
-
-    {
-        profile_section!("set_edition");
-        if let Some(package) = rs_manifest.package.as_mut() {
-            package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
-        }
-    }
-
-    // debug_log!("rs_manifest={rs_manifest:#?}");
-
-    #[cfg(debug_assertions)]
-    debug_timings(&start_parsing_rs, "extract_manifest parsed source");
-    Ok(rs_manifest)
-}
-
-fn extract_toml_block(input: &str) -> Option<String> {
-    profile!("extract_toml_block");
-    let re: &Regex = regex!(r"(?s)/\*\[toml\](.*?)\*/");
-    re.captures(input)
-        .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
-}
-
 /// Parse a Rust expression source string into a syntax tree.
 ///
 /// Although this is primarily intended for incomplete snippets and expressions, if it finds a fully-fledged program that
@@ -338,25 +163,6 @@ pub fn path_to_str(path: &Path) -> ThagResult<String> {
 
     debug_log!("path_to_str={string}");
     Ok(string)
-}
-
-/// Reassemble an Iterator of lines from the disentangle function to a string of text.
-#[inline]
-pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
-    use std::fmt::Write;
-    profile!("reassemble");
-    map.fold(String::new(), |mut output, b| {
-        let _ = writeln!(output, "{b}");
-        output
-    })
-}
-
-/// Unescape \n markers to convert a string of raw text to readable lines.
-#[inline]
-#[must_use]
-pub fn disentangle(text_wall: &str) -> String {
-    profile!("disentangle");
-    reassemble(text_wall.lines())
 }
 
 #[warn(dead_code)]

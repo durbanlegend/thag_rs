@@ -3,7 +3,7 @@
 inferno = "0.12.0"
 inquire = "0.7.5"
 serde = { version = "1.0.216", features = ["derive"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs" }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["minimal", "simplelog"] }
 */
 
 /// Profile graph/chart generator for the internal profiler of `thag_core`.
@@ -39,7 +39,7 @@ fn process_profile_data(lines: &[String]) -> ProcessedProfile {
     for line in lines {
         if let Some((stack_part, time_str)) = line.rsplit_once(' ') {
             if let Ok(time) = time_str.parse::<u64>() {
-                // The stack is already in correct leaf->root order
+                // The stack is already in correct order, root->leaf.
                 // We don't need to reverse it
                 let parts: Vec<&str> = stack_part.split(';').map(str::trim).collect();
 
@@ -88,7 +88,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let processed = process_profile_data(&lines);
 
     let options = vec![
-        "Generate Flamegraph",
+        "Generate & Show Flamegraph",
         "Show Statistics",
         "Filter Functions",
         "Show Async Boundaries",
@@ -97,7 +97,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let selection = Select::new("Select action:", options).prompt()?;
 
     match selection {
-        "Generate Flamegraph" => generate_flamegraph(&processed.filtered_stacks)?,
+        "Generate & Show Flamegraph" => generate_flamegraph(&processed.filtered_stacks)?,
         "Show Statistics" => show_statistics(&processed.stats),
         "Filter Functions" => {
             let filtered = filter_functions(&processed.filtered_stacks)?;

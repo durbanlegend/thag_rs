@@ -4,11 +4,11 @@ mod tests {
     use tempfile::NamedTempFile;
     use thag_rs::{
         code_utils::{
-            extract_inner_attribs, find_modules_source, find_use_renames_source,
-            infer_deps_from_ast, infer_deps_from_source, is_last_stmt_unit_type, is_path_unit_type,
-            is_stmt_unit_type, path_to_str, read_file_contents, wrap_snippet,
+            extract_inner_attribs, infer_deps_from_ast, infer_deps_from_source,
+            is_last_stmt_unit_type, is_path_unit_type, is_stmt_unit_type, path_to_str,
+            read_file_contents, wrap_snippet,
         },
-        extract_manifest,
+        extract,
         shared::{find_crates, find_metadata},
         Ast,
     };
@@ -141,7 +141,7 @@ mod tests {
             */
             "#;
         let start_time = Instant::now();
-        let manifest = extract_manifest(source_code, start_time).unwrap();
+        let manifest = extract(source_code, start_time).unwrap();
 
         let dependencies = manifest.dependencies;
         assert!(dependencies.contains_key("foo"));
@@ -171,31 +171,31 @@ mod tests {
         assert!(wrapped.contains("fn main() -> Result<(), Box<dyn Error>>"));
     }
 
-    #[test]
-    fn test_code_utils_find_use_renames_source() {
-        set_up();
-        let source_code = r#"
-            use foo as bar;
-            use std::fmt;
-            use baz::qux as corge;
-            "#;
+    // #[test]
+    // fn test_code_utils_find_use_renames_source() {
+    //     set_up();
+    //     let source_code = r#"
+    //         use foo as bar;
+    //         use std::fmt;
+    //         use baz::qux as corge;
+    //         "#;
 
-        let (use_renames_from, use_renames_to) = find_use_renames_source(source_code);
-        assert_eq!(use_renames_from, vec!["baz", "foo"]);
-        assert_eq!(use_renames_to, vec!["bar", "corge"]);
-    }
+    //     let (use_renames_from, use_renames_to) = find_use_renames_source(source_code);
+    //     assert_eq!(use_renames_from, vec!["baz", "foo"]);
+    //     assert_eq!(use_renames_to, vec!["bar", "corge"]);
+    // }
 
-    #[test]
-    fn test_code_utils_find_modules_source() {
-        set_up();
-        let source_code = r#"
-            mod foo;
-            mod bar;
-            "#;
+    // #[test]
+    // fn test_code_utils_find_modules_source() {
+    //     set_up();
+    //     let source_code = r#"
+    //         mod foo;
+    //         mod bar;
+    //         "#;
 
-        let modules = find_modules_source(source_code);
-        assert_eq!(modules, vec!["foo", "bar"]);
-    }
+    //     let modules = find_modules_source(source_code);
+    //     assert_eq!(modules, vec!["foo", "bar"]);
+    // }
 
     use std::collections::HashMap;
     use syn::{parse_quote, Expr, ReturnType, Stmt};

@@ -27,16 +27,17 @@ license = false
 eula = false
 
 [dependencies]
-bitflags = "2.6.0"
-cargo-lookup = "0.1.0"
-cargo_toml = "0.21.0"
-clap = { version = "4.5.23", features = ["cargo", "derive"] }
-crokey = "1.1.0"
-crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
+bitflags = { version = "2.6.0", optional = true }
+cargo-lookup = { version = "0.1.0", optional = true }
+cargo_toml = { version = "0.21.0", optional = true }
+clap = { version = "4.5.23", features = ["cargo", "derive"], optional = true }
+crokey = { version = "1.1.0", optional = true }
+crossterm = { version = "0.28.1", features = ["use-dev-tty"], optional = true }
 dirs = "5.0.1"
 documented = "0.9.1"
-edit = "0.1.5"
+edit = { version = "0.1.5", optional = true }
 env_logger = { version = "0.11.5", optional = true }
+toml = { version = "0.8.19", optional = true }
 # To switch off, use version without features = ["enable_system_time"]
 # If on, prepare for function to run twice for some reason!
 # firestorm = "0.5.1"
@@ -44,15 +45,15 @@ env_logger = { version = "0.11.5", optional = true }
 home = "0.5.11"
 log = "0.4.22"
 mockall = "0.13.1"
-nu-ansi-term = "0.50.1"
+nu-ansi-term = { version = "0.50.1", optional = true }
 phf = "0.11.2"
-prettyplease = "0.2.25"
+prettyplease = { version = "0.2.25", optional = true }
 proc-macro2 = "1.0.92"
 quote = "1.0.37"
-ratatui = "0.29.0"
-reedline = "0.37.0"
+ratatui = { version = "0.29.0", optional = true }
+reedline = { version = "0.37.0", optional = true }
 regex = "1.11.1"
-scopeguard = "1.2.0"
+scopeguard = { version = "1.2.0", optional = true }
 semver = "1.0.23"
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
@@ -62,18 +63,21 @@ side-by-side-diff = "0.1.2"
 simplelog = { version = "0.12.2", optional = true }
 strict = "0.2.0"
 strum = { version = "0.26.3", features = ["derive", "phf"] }
-supports-color = "3.0.2"
+supports-color = { version = "3.0.2", optional = true }
 syn = { version = "2.0.90", features = [
     "extra-traits",
     "full",
     "visit",
     "visit-mut",
-] }
-termbg = "0.6.1"
+], optional = true }
+termbg = { version = "0.6.1", optional = true }
 thag_proc_macros = { version = "0.1.1", path = "src/proc_macros" }
-toml = "0.8.19"
-toml_edit = "0.22.22"
-tui-textarea = { version = "0.7", features = ["crossterm", "search"] }
+toml_edit = { version = "0.22.22", optional = true }
+tui-textarea = { version = "0.7", features = [
+    "crossterm",
+    "search",
+], optional = true }
+
 [target.'cfg(windows)'.dependencies]
 win32console = "0.1.5"
 winapi = "0.3.9"
@@ -102,9 +106,63 @@ path = "src/bin/thag_rs.rs"
 [features]
 debug-logs = []
 nightly = []
-default = ["simplelog"]
 format_snippet = []
-profile = []
+default = ["full", "simplelog"]
+full = ["color_support", "full_build", "profiling", "repl", "simplelog", "tui"]
+# Logging features - these are mutually exclusive
+simplelog = ["dep:simplelog", "log_impl"]
+env_logger = ["dep:env_logger", "log_impl"]
+
+# Private feature to ensure only one logger is selected
+log_impl = []
+
+# Core features
+minimal = ["error_handling", "log_impl"] # Always available
+error_handling = []
+profiling = []                           # Our new profiling system
+
+color_support = [
+    "crossterm",
+    "minimal",
+    "nu-ansi-term",
+    "scopeguard",
+    "supports-color",
+    "termbg",
+]
+basic_color = [] # Simple ANSI colors for minimal builds
+
+# Build features
+full_build = [
+    "bitflags",
+    "cargo-lookup",
+    "cargo_toml",
+    "clap",
+    "minimal",
+    "prettyplease",
+    "syn",
+    "toml",
+    "toml_edit",
+] # Full dependency analysis
+basic_build = [] # Simple script running
+
+# Advanced features
+tui = [
+    "color_support",
+    "crokey",
+    "edit",
+    "full_build",
+    "ratatui",
+    "tui-textarea",
+]
+repl = ["reedline", "tui"]
+file_dialog = ["tui"]
+
+# Optional integrations
+# clipboard = ["arboard"]
+
+[package.metadata.cargo-features-validate]
+# Additional validation that logging feature is satisfied
+requires-any = [["simplelog", "env_logger"]]
 
 [dev-dependencies]
 assert_cmd = "2.0.16"
@@ -155,4 +213,4 @@ build = ["sh", "-c", "zip demo.zip demo/*"]
 [[workspace.metadata.dist.extra-artifacts]]
 artifacts = ["assets/default_config.toml"]
 # no-op:
-build = ["true"]
+build = ["true"] # UI features

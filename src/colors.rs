@@ -9,6 +9,7 @@ use crossterm::terminal::{self, is_raw_mode_enabled};
 use documented::{Documented, DocumentedVariants};
 use log::debug;
 use nu_ansi_term::{Color, Style};
+#[cfg(feature = "tui")]
 use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
 use scopeguard::defer;
 use serde::Deserialize;
@@ -1040,6 +1041,7 @@ impl From<&MessageLevel> for Style {
 }
 
 #[allow(clippy::match_same_arms)]
+#[cfg(feature = "tui")]
 impl From<&MessageStyle> for RataStyle {
     fn from(message_style: &MessageStyle) -> Self {
         profile_method!("rata_from_ms");
@@ -1124,6 +1126,7 @@ impl From<&MessageStyle> for RataStyle {
     }
 }
 
+#[cfg(feature = "tui")]
 impl From<&MessageLevel> for RataStyle {
     fn from(lvl: &MessageLevel) -> Self {
         profile_method!("rata_from_lvl");

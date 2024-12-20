@@ -4,7 +4,7 @@ use crate::{
     file_dialog::{DialogMode, FileDialog, Status},
     profile, profile_method, regex,
     stdin::edit_history,
-    EventReader, KeyCombination, KeyDisplayLine, Lvl, ThagError, ThagResult,
+    KeyCombination, Lvl, ThagError, ThagResult,
 };
 use crokey::key;
 use crossterm::event::{
@@ -16,6 +16,7 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
     LeaveAlternateScreen,
 };
+use mockall::automock;
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
@@ -25,15 +26,16 @@ use ratatui::{CompletedFrame, Frame, Terminal};
 use regex::Regex;
 use scopeguard::{guard, ScopeGuard};
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
-use std::convert::Into;
-use std::env::var;
-use std::fmt::{Debug, Display};
-use std::io::Write;
-use std::path::PathBuf;
 use std::{
     self,
+    collections::VecDeque,
+    convert::Into,
+    env::var,
+    fmt::{Debug, Display},
     fs::{self, OpenOptions},
+    io::Write,
+    path::PathBuf,
+    time::Duration,
 };
 use tui_textarea::{CursorMove, Input, TextArea};
 
@@ -44,6 +46,39 @@ pub type BackEnd<'a> = CrosstermBackend<std::io::StdoutLock<'a>>;
 pub type Term<'a> = Terminal<BackEnd<'a>>;
 pub type ResetTermClosure<'a> = Box<dyn FnOnce(Term<'a>)>;
 pub type TermScopeGuard<'a> = ScopeGuard<Term<'a>, ResetTermClosure<'a>>;
+
+/// A trait to allow mocking of the event reader for testing purposes.
+#[automock]
+pub trait EventReader {
+    /// Read a terminal event.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+    fn read_event(&self) -> ThagResult<Event>;
+    /// Poll for a terminal event.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+    fn poll(&self, timeout: Duration) -> ThagResult<bool>;
+}
+
+/// A struct to implement real-world use of the event reader, as opposed to use in testing.
+#[derive(Debug)]
+pub struct CrosstermEventReader;
+
+impl EventReader for CrosstermEventReader {
+    fn read_event(&self) -> ThagResult<Event> {
+        profile_method!("read_event");
+        crossterm::event::read().map_err(Into::<ThagError>::into)
+    }
+
+    fn poll(&self, timeout: Duration) -> ThagResult<bool> {
+        profile_method!("poll");
+        crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
+    }
+}
 
 pub struct ManagedTerminal<'a> {
     terminal: TermScopeGuard<'a>,
@@ -1434,3 +1469,31 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     ),
     (440, "F10", "Resume mouse capture and line numbers"),
 ];
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct KeyDisplayLine {
+    pub seq: usize,
+    pub keys: &'static str, // Or String if you plan to modify the keys later
+    pub desc: &'static str, // Or String for modifiability
+}
+
+impl PartialOrd for KeyDisplayLine {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        // profile_method!("partial_cmp");
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for KeyDisplayLine {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // profile_method!("cmp");
+        usize::cmp(&self.seq, &other.seq)
+    }
+}
+
+impl KeyDisplayLine {
+    #[must_use]
+    pub const fn new(seq: usize, keys: &'static str, desc: &'static str) -> Self {
+        Self { seq, keys, desc }
+    }
+}

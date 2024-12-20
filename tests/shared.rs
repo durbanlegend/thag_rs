@@ -123,7 +123,7 @@ fn test_shared_cargo_manifest_display() {
         plugin: false,
         proc_macro: false,
         harness: true,
-        edition: Edition::E2021,
+        edition: Some(Edition::E2021),
         crate_type: vec!["cdylib".to_string()],
         required_features: Vec::<String>::new(),
     });

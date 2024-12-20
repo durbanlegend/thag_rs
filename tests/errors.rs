@@ -37,6 +37,7 @@ fn test_errors_clap_error() {
         .unwrap_err();
     let build_run_err: ThagError = clap_err.into();
     match build_run_err {
+        #[cfg(feature = "clap")]
         ThagError::ClapError(_) => (),
         _ => panic!("Expected ThagError::ClapError variant"),
     }

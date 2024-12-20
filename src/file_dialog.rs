@@ -1,4 +1,11 @@
+use crate::{
+    debug_log, key_mappings, lazy_static_var,
+    tui_editor::{self, centered_rect, display_popup, KeyDisplayLine},
+    KeyCombination, Lvl,
+};
+#[cfg(feature = "profiling")]
 use crate::{profile, profile_method};
+use crokey::key;
 /// Original is `https://github.com/flip1995/tui-rs-file-dialog/blob/master/src/lib.rs`
 /// Copyright (c) 2023 Philipp Krones
 /// Licence: MIT
@@ -23,14 +30,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use tui_textarea::{Input, TextArea};
-
-use crate::{
-    debug_log, key_mappings, lazy_static_var,
-    shared::KeyDisplayLine,
-    tui_editor::{self, centered_rect, display_popup},
-    KeyCombination, Lvl,
-};
-use crokey::key;
 
 /// File dialog mode to distinguish between Open and Save dialogs
 #[derive(Debug, PartialEq, Eq)]

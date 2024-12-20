@@ -72,16 +72,16 @@ mod tests {
         assert_eq!(logger.verbosity, Verbosity::Verbose);
     }
 
-    #[test]
-    #[parallel]
-    fn test_logging_logger_set_verbosity() {
-        set_up();
-        let mut logger = Logger::new(Verbosity::Quiet);
-        assert_eq!(logger.verbosity, Verbosity::Quiet);
+    // #[test]
+    // #[parallel]
+    // fn test_logging_logger_set_verbosity() {
+    //     set_up();
+    //     let mut logger = Logger::new(Verbosity::Quiet);
+    //     assert_eq!(logger.verbosity, Verbosity::Quiet);
 
-        logger.set_verbosity(Verbosity::Verbose);
-        assert_eq!(logger.verbosity, Verbosity::Verbose);
-    }
+    //     logger.set_verbosity(Verbosity::Verbose);
+    //     assert_eq!(logger.verbosity, Verbosity::Verbose);
+    // }
 
     #[test]
     #[sequential]

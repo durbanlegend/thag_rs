@@ -12,6 +12,21 @@ use std::path::Path;
 /// Suggested command: `cargo test --features=simplelog -- --nocapture --test-threads=3
 /// You may want to adjust the test-threads value further depending on your hardware.
 fn main() {
+    // Check for mutually exclusive features
+    let simple = std::env::var("CARGO_FEATURE_SIMPLELOG").is_ok();
+    let env = std::env::var("CARGO_FEATURE_ENV_LOGGER").is_ok();
+
+    assert!(
+        !(simple && env),
+        "Features 'simplelog' and 'env_logger' are mutually exclusive"
+    );
+
+    // Ensure at least one logger is selected
+    assert!(
+        !(!simple && !env),
+        "One of 'simplelog' or 'env_logger' must be enabled"
+    );
+
     // Get the OUT_DIR environment variable
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
     // Note: Cargo suppresses build output. I've tried log and env_logger, ChatGPT, Gemini, Stack Overflow etc.

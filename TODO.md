@@ -61,6 +61,8 @@ validate_state only when feature minimal not engaged - instead switched off debu
        - Make --expand (-X) option a helper command thag_expand.
        - Document thag_cargo and thag_clippy in the Readme.
 - [ ]  Add profiling to capabilities for scripts.
+- [ ]  New modules: macros, minimal (disentangle)
+- [ ]  Rearrange tests to follow refactoring moves.
 - [ ]  Look at attributes as a possible way to switch on expansion for derive macros
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.

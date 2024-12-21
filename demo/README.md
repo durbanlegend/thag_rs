@@ -5399,7 +5399,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 **Purpose:** Low-footprint profiling.
 
-**Crates:** `inferno`, `inquire`, `thag_core`
+**Crates:** `inferno`, `inquire`, `thag_rs`
 
 **Type:** Program
 

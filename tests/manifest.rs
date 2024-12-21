@@ -1,13 +1,54 @@
 #[cfg(test)]
 mod tests {
-    use cargo_toml::{Dependency, Edition, Manifest};
+    use cargo_toml::{Dependency, Edition, Manifest, Product};
     use semver::Version;
+    use std::collections::BTreeMap;
     use std::path::PathBuf;
     use std::time::Instant;
-    use thag_rs::code_utils::{self, to_ast};
-    use thag_rs::manifest::{capture_dep, cargo_lookup, configure_default, merge};
-    use thag_rs::shared::{find_crates, find_metadata};
-    use thag_rs::BuildState;
+    use thag_rs::code_utils::to_ast;
+    use thag_rs::manifest::{
+        self, capture_dep, cargo_lookup, configure_default, extract, find_crates, find_metadata,
+        infer_deps_from_ast, infer_deps_from_source, merge, should_filter_dependency,
+    };
+    use thag_rs::{Ast, BuildState};
+
+    // Example AST representing use and extern crate statements
+    const IMPORTS: &str = r#"
+        extern crate foo;
+        use bar::baz;
+        mod glorp;
+        use {
+            crokey::{
+                crossterm::{
+                    event::{read, Event},
+                    style::Stylize,
+                    terminal,
+                },
+                key, KeyCombination, KeyCombinationFormat,
+            },
+            glorp::thagomize,
+            serde::Deserialize,
+            std::collections::HashMap,
+            toml,
+        };
+        use owo_ansi::xterm as owo_xterm;
+        use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
+        use owo_colors::colors::{self as owo_ansi, Magenta};
+        use owo_colors::{AnsiColors, Style, XtermColors};
+        use owo_xterm::Black;
+        use snarf as qux;
+        use std::fmt;
+        use qux::corge;
+        "#;
+    const EXPECTED_CRATES: &[&str] = &[
+        "bar",
+        "crokey",
+        "foo",
+        "owo_colors",
+        "serde",
+        "snarf",
+        "toml",
+    ];
 
     // Set environment variables before running tests
     fn set_up() {
@@ -208,8 +249,7 @@ mod tests {
             build_state.metadata_finder = Some(find_metadata(ast));
         }
 
-        let rs_manifest: Manifest =
-            { code_utils::extract_manifest(&source, Instant::now()) }.unwrap();
+        let rs_manifest: Manifest = { extract(&source, Instant::now()) }.unwrap();
 
         // debug_log!("rs_manifest={rs_manifest:#?}");
 
@@ -381,5 +421,218 @@ mod tests {
         assert!(manifest.dependencies.contains_key("tokio"));
         assert!(manifest.dependencies.contains_key("diesel"));
         assert!(manifest.dependencies.contains_key("serde"));
+    }
+
+    #[test]
+    fn test_manifest_cargo_manifest_from_str() {
+        set_up();
+        let toml_str = r#"
+            [package]
+            name = "example"
+            version = "0.1.0"
+            edition = "2021"
+
+            [dependencies]
+            serde = "1.0"
+
+            [features]
+            default = ["serde"]
+        "#;
+
+        let manifest: Manifest = Manifest::from_str(toml_str).unwrap();
+
+        let package = manifest.package.expect("Problem unwrapping package");
+        assert_eq!(package.name, "example");
+        assert_eq!(package.version.get().unwrap(), &"0.1.0".to_string());
+        assert!(matches!(package.edition.get().unwrap(), Edition::E2021));
+        assert_eq!(
+            manifest.dependencies.get("serde").unwrap(),
+            &Dependency::Simple("1.0".to_string())
+        );
+
+        println!(
+            r#"manifest.features.get("default").unwrap()={:#?}"#,
+            manifest.features.get("default").unwrap()
+        );
+        // assert_eq!(
+        //     manifest.features.get("default").unwrap(),
+        //     &vec![Feature::Simple("serde".to_string())]
+        // );
+    }
+
+    #[test]
+    fn test_manifest_cargo_manifest_display() {
+        set_up();
+        let mut manifest = manifest::default("example", "path/to/script").unwrap();
+
+        manifest
+            .dependencies
+            .insert("serde".to_string(), Dependency::Simple("1.0".to_string()));
+        manifest
+            .features
+            .insert("default".to_string(), vec!["serde".to_string()]);
+        manifest.patch.insert(
+            "a".to_string(),
+            [("b".to_string(), Dependency::Simple("1.0".to_string()))]
+                .iter()
+                .cloned()
+                .collect::<BTreeMap<String, Dependency>>(),
+        );
+        // manifest.workspace.insert(Workspace::<Value>::default());
+        manifest.workspace = None;
+        manifest.lib = Some(Product {
+            path: None,
+            name: None,
+            test: true,
+            doctest: true,
+            bench: true,
+            doc: true,
+            plugin: false,
+            proc_macro: false,
+            harness: true,
+            edition: Some(Edition::E2021),
+            crate_type: vec!["cdylib".to_string()],
+            required_features: Vec::<String>::new(),
+        });
+        println!("manifest={manifest:#?}");
+
+        let toml_str = toml::to_string(&manifest).unwrap();
+        let expected_toml_str = r#"[package]
+    name = "example"
+    version = "0.0.1"
+    edition = "2021"
+
+    [dependencies]
+    serde = "1.0"
+
+    [features]
+    default = ["serde"]
+
+    [patch.a]
+    b = "1.0"
+
+    [lib]
+    edition = "2021"
+    crate-type = ["cdylib"]
+    required-features = []
+
+    [[bin]]
+    path = "path/to/script"
+    name = "example"
+    edition = "2021"
+    required-features = []
+    "#;
+
+        println!("toml_str={toml_str}");
+        assert_eq!(
+            toml_str.replace(" ", "").replace("\n", ""),
+            expected_toml_str.replace(" ", "").replace("\n", "")
+        );
+    }
+
+    #[test]
+    fn test_manifest_infer_deps_from_ast() {
+        set_up();
+        // Example AST representing use and extern crate statements
+        let ast = syn::parse_file(
+            r#"
+            extern crate foo;
+            use bar::baz;
+            use std::fmt;
+            use glorp;
+            "#,
+        )
+        .unwrap();
+        let ast = Ast::File(ast);
+        let crates_finder = Some(find_crates(&ast)).unwrap();
+        let metadata_finder = Some(find_metadata(&ast)).unwrap();
+        let deps = infer_deps_from_ast(&crates_finder, &metadata_finder);
+        assert_eq!(deps, vec!["bar", "foo", "glorp"]);
+    }
+
+    #[test]
+    fn test_manifest_infer_deps_from_nested_ast() {
+        set_up();
+        // Example AST representing use and extern crate statements
+        let file = syn::parse_file(IMPORTS).unwrap();
+        let ast = Ast::File(file);
+        let crates_finder = Some(find_crates(&ast)).unwrap();
+        let metadata_finder = Some(find_metadata(&ast)).unwrap();
+        let deps = infer_deps_from_ast(&crates_finder, &metadata_finder);
+        assert_eq!(&deps, EXPECTED_CRATES);
+    }
+
+    #[test]
+    fn test_manifest_infer_deps_from_source() {
+        set_up();
+        let source_code = r#"
+            extern crate foo;
+            use bar::baz;
+            use std::fmt;
+            mod glorp;
+            use snarf;
+            "#;
+
+        let deps = infer_deps_from_source(source_code);
+        assert_eq!(deps, vec!["bar", "foo", "snarf"]);
+    }
+
+    #[test]
+    fn test_manifest_infer_deps_from_nested_source() {
+        set_up();
+        let deps = infer_deps_from_source(IMPORTS);
+        assert_eq!(&deps, EXPECTED_CRATES);
+    }
+
+    #[test]
+    fn test_manifest_extract() {
+        set_up();
+        let source_code = r#"
+            /*[toml]
+            [dependencies]
+            foo = "0.1"
+            bar = "0.2"
+            */
+            "#;
+        let start_time = Instant::now();
+        let manifest = extract(source_code, start_time).unwrap();
+
+        let dependencies = manifest.dependencies;
+        assert!(dependencies.contains_key("foo"));
+        assert!(dependencies.contains_key("bar"));
+    }
+
+    #[test]
+    fn test_manifest_dep_filter_numeric_primitives() {
+        assert!(should_filter_dependency("f32"));
+        assert!(should_filter_dependency("i64"));
+        assert!(should_filter_dependency("usize"));
+    }
+
+    #[test]
+    fn test_manifest_dep_filter_core_types() {
+        assert!(should_filter_dependency("bool"));
+        assert!(should_filter_dependency("str"));
+    }
+
+    #[test]
+    fn test_manifest_dep_filter_keywords() {
+        assert!(should_filter_dependency("self"));
+        assert!(should_filter_dependency("super"));
+        assert!(should_filter_dependency("crate"));
+    }
+
+    #[test]
+    fn test_manifest_dep_filter_real_crates_not_filtered() {
+        assert!(!should_filter_dependency("serde"));
+        assert!(!should_filter_dependency("tokio"));
+        assert!(!should_filter_dependency("rand"));
+    }
+
+    #[test]
+    fn test_manifest_dep_filter_capitalized_names() {
+        assert!(should_filter_dependency("String"));
+        assert!(should_filter_dependency("Result"));
+        assert!(should_filter_dependency("Option"));
     }
 }

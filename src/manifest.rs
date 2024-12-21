@@ -587,7 +587,7 @@ pub fn extract(
     rs_full_source: &str,
     #[allow(unused_variables)] start_parsing_rs: Instant,
 ) -> ThagResult<Manifest> {
-    profile!("extract_manifest");
+    profile!("extract");
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     profile_section!("parse_and_set_edition");

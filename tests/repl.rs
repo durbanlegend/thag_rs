@@ -9,7 +9,7 @@ mod tests {
     use thag_rs::repl::{delete, disp_repl_banner, list, parse_line, process_source};
     #[cfg(not(windows))]
     use thag_rs::repl::{edit, edit_history, toml, HISTORY_FILE};
-    use thag_rs::shared::BuildState;
+    use thag_rs::BuildState;
 
     use std::sync::Once;
     static INIT: Once = Once::new();

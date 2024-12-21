@@ -11,7 +11,11 @@ pub mod cmd_args;
 pub mod code_utils;
 #[cfg(feature = "color_support")]
 pub mod colors;
-#[cfg(any(feature = "basic_color", feature = "color_support"))]
+#[cfg(any(
+    feature = "basic_color",
+    feature = "color_support",
+    feature = "full_build"
+))]
 pub mod config;
 #[cfg(feature = "minimal")]
 pub mod errors;

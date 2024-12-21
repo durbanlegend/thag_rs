@@ -2150,7 +2150,6 @@ dependencies = [
  "serde_with",
  "side-by-side-diff",
  "simplelog",
- "strict",
  "strum",
  "supports-color",
  "syn 2.0.90",

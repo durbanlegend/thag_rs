@@ -8,6 +8,7 @@ use cargo_toml::Error as CargoTomlError;
 use clap::error::Error as ClapError;
 #[cfg(feature = "reedline")]
 use reedline::ReedlineError;
+#[cfg(feature = "serde_merge")]
 use serde_merge::error::Error as SerdeMergeError;
 use std::borrow::Cow;
 use std::string::FromUtf8Error;
@@ -41,6 +42,7 @@ pub enum ThagError {
     OsString(std::ffi::OsString), // For unconvertible OsStrings
     #[cfg(feature = "reedline")]
     Reedline(ReedlineError), // For reedline errors
+    #[cfg(feature = "serde_merge")]
     SerdeMerge(SerdeMergeError), // For serde_merge errors
     StrumParse(StrumParseError), // For strum parse enum
     #[cfg(feature = "syn")]
@@ -121,6 +123,7 @@ impl From<ReedlineError> for ThagError {
     }
 }
 
+#[cfg(feature = "serde_merge")]
 impl From<SerdeMergeError> for ThagError {
     fn from(err: SerdeMergeError) -> Self {
         Self::SerdeMerge(err)
@@ -181,6 +184,7 @@ impl std::fmt::Display for ThagError {
             Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
             #[cfg(feature = "reedline")]
             Self::Reedline(e) => write!(f, "{e}"),
+            #[cfg(feature = "serde_merge")]
             Self::SerdeMerge(e) => write!(f, "{e}"),
             Self::StrumParse(e) => write!(f, "{e}"),
             #[cfg(feature = "syn")]
@@ -225,6 +229,7 @@ impl Error for ThagError {
             Self::OsString(ref _o) => Some(self),
             #[cfg(feature = "reedline")]
             Self::Reedline(e) => Some(e),
+            #[cfg(feature = "serde_merge")]
             Self::SerdeMerge(ref e) => Some(e),
             Self::StrumParse(ref e) => Some(e),
             #[cfg(feature = "syn")]

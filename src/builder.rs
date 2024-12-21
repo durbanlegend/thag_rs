@@ -8,6 +8,7 @@ use crate::config::{self, DependencyInference, RealContext};
 #[cfg(debug_assertions)]
 use crate::logging::is_debug_logging_enabled;
 use crate::manifest::{extract, find_crates, find_metadata, CratesFinder, MetadataFinder};
+#[cfg(feature = "repl")]
 use crate::repl::run_repl;
 use crate::stdin::{edit, read};
 #[cfg(debug_assertions)]
@@ -617,8 +618,13 @@ fn process(
 
     let mut build_state = BuildState::pre_configure(proc_flags, args, script_state)?;
     if is_repl {
-        debug_log!("build_state.source_path={:?}", build_state.source_path);
-        run_repl(args, proc_flags, &mut build_state, start)
+        #[cfg(not(feature = "repl"))]
+        return Err("repl requires `repl` feature".into());
+        #[cfg(feature = "repl")]
+        {
+            debug_log!("build_state.source_path={:?}", build_state.source_path);
+            run_repl(args, proc_flags, &mut build_state, start)
+        }
     } else if is_dynamic {
         let rs_source = if is_expr {
             // Consumes the expression argument

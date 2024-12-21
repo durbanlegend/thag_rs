@@ -3,7 +3,7 @@ use crate::{
     tui_editor::{self, centered_rect, display_popup, KeyDisplayLine},
     KeyCombination, Lvl,
 };
-#[cfg(feature = "profiling")]
+// #[cfg(feature = "profiling")]
 use crate::{profile, profile_method};
 use crokey::key;
 /// Original is `https://github.com/flip1995/tui-rs-file-dialog/blob/master/src/lib.rs`

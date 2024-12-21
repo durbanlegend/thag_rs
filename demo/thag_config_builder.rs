@@ -9,8 +9,8 @@ semver = "1.0.23"
 serde = { version = "1.0.215", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", rev = "1d665b6c1dca651fc80e49e7bf4f2f96980e6468" }
-# thag_rs = { path = "/Users/donf/projects/thag_rs/" }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_support", "simplelog"] }
 tokio = { version = "1", features = ["full"] }
 toml = "0.8"
 */
@@ -587,9 +587,9 @@ fn prompt_dependencies_config(
             "Inference Level" => {
                 let options = vec![
                     DependencyInference::None,
-                    DependencyInference::Minimal,
+                    DependencyInference::Min,
                     DependencyInference::Config,
-                    DependencyInference::Maximal,
+                    DependencyInference::Max,
                 ];
 
                 // Find index of current value

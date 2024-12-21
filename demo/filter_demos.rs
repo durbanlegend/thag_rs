@@ -7,8 +7,8 @@ regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive"] }
 syn = "2"
 # thag_rs = "0.1.9"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "main" }
-# thag_rs = { path = "/Users/donf/projects/thag_rs" }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["basic_build", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["basic_build", "simplelog"] }
 # tokio = "1.41.1"
 tokio = { version = "1", features = ["full"] }
 warp = "0.3.7"
@@ -30,7 +30,7 @@ use std::{
     process::Command,
 };
 use thag_demo_proc_macros::category_enum;
-use thag_rs::{code_utils, lazy_static_var, regex, shared};
+use thag_rs::{code_utils, lazy_static_var, regex};
 use tokio;
 use warp::Filter;
 
@@ -855,8 +855,8 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
 
     let (crates, _main_methods) = match maybe_syntax_tree {
         Some(ref ast) => {
-            let crates_finder = shared::find_crates(&ast);
-            let metadata_finder = shared::find_metadata(&ast);
+            let crates_finder = code_utils::find_crates(&ast);
+            let metadata_finder = code_utils::find_metadata(&ast);
             (
                 code_utils::infer_deps_from_ast(&crates_finder, &metadata_finder),
                 metadata_finder.main_count,

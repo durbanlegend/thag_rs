@@ -3,18 +3,15 @@ use std::path::PathBuf;
 use std::{env, sync::LazyLock};
 
 // Re-export the modules
-#[cfg(any(feature = "basic_build", feature = "full_build"))]
+#[cfg(feature = "full_build")]
 pub mod builder;
-#[cfg(any(feature = "basic_build", feature = "full_build"))]
+#[cfg(feature = "full_build")]
 pub mod cmd_args;
 #[cfg(any(feature = "basic_build", feature = "full_build"))]
 pub mod code_utils;
 #[cfg(feature = "color_support")]
 pub mod colors;
-#[cfg(any(
-    feature = "color_support",
-    feature = "full_build"
-))]
+#[cfg(any(feature = "color_support", feature = "full_build"))]
 pub mod config;
 #[cfg(feature = "minimal")]
 pub mod errors;
@@ -22,7 +19,7 @@ pub mod errors;
 pub mod file_dialog;
 #[cfg(feature = "minimal")]
 pub mod logging;
-#[cfg(any(feature = "basic_build", feature = "full_build"))]
+#[cfg(feature = "full_build")]
 pub mod manifest;
 #[cfg(feature = "minimal")]
 pub mod profiling;
@@ -41,15 +38,17 @@ pub use termbg;
 pub mod tui_editor;
 
 // Re-export commonly used items for convenience
-#[cfg(any(feature = "basic_build", feature = "full_build"))]
+#[cfg(feature = "full_build")]
 #[cfg(debug_assertions)]
 pub use builder::debug_timings;
-#[cfg(any(feature = "basic_build", feature = "full_build"))]
+#[cfg(feature = "full_build")]
 pub use builder::{display_timings, execute, gen_build_run, process_expr, BuildState, ScriptState};
-#[cfg(any(feature = "basic_build", feature = "full_build"))]
+#[cfg(feature = "full_build")]
 pub use cmd_args::{get_args, get_proc_flags, validate_args, Cli, ProcFlags};
+#[cfg(feature = "full_build")]
+pub use code_utils::modified_since_compiled;
 #[cfg(any(feature = "basic_build", feature = "full_build"))]
-pub use code_utils::{create_temp_source_file, extract_ast_expr, modified_since_compiled, Ast};
+pub use code_utils::{create_temp_source_file, extract_ast_expr, Ast};
 #[cfg(feature = "color_support")]
 pub use colors::{
     coloring, Ansi16DarkStyle, Ansi16LightStyle, ColorSupport, Lvl, MessageLevel, TermTheme,
@@ -69,7 +68,7 @@ pub use log;
 // #[cfg(any(feature = "simplelog", feature = "env_logger"))]
 #[cfg(feature = "minimal")]
 pub use logging::{get_verbosity, Verbosity, V};
-#[cfg(any(feature = "basic_build", feature = "full_build"))]
+#[cfg(feature = "full_build")]
 pub use manifest::extract;
 #[cfg(feature = "minimal")]
 pub use profiling::Profile;

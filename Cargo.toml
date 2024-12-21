@@ -150,7 +150,7 @@ full_build = [
     "side-by-side-diff",
     "syn",
 ] # Full dependency analysis
-basic_build = [] # Simple script running
+basic_build = ["minimal", "quote", "syn"] # Simple script running
 
 # Advanced features
 tui = [

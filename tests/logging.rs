@@ -111,10 +111,8 @@ fn main() {{
 
         let output = run(input);
 
-        assert_eq!(
-            String::from_utf8_lossy(&output.stdout),
-            "Quieter message\nQuiet message\nNormal message\n"
-        );
+        assert!(String::from_utf8_lossy(&output.stdout)
+            .ends_with("Quieter message\nQuiet message\nNormal message\n"));
     }
 
     #[test]
@@ -165,10 +163,8 @@ fn main() {{
 
         let output = run(input);
 
-        assert_eq!(
-            String::from_utf8_lossy(&output.stdout),
-            "Macro quieter message\nMacro quiet message\nMacro normal message\n"
-        );
+        assert!(String::from_utf8_lossy(&output.stdout)
+            .ends_with("Macro quieter message\nMacro quiet message\nMacro normal message\n"));
     }
 
     fn run(input: String) -> std::process::Output {

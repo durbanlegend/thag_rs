@@ -6,7 +6,7 @@ serde = { version = "1.0.216", features = ["derive"] }
 thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["minimal", "simplelog"] }
 */
 
-/// Profile graph/chart generator for the internal profiler of `thag_core`.
+/// Profile graph/chart generator for the `thag` internal profiler.
 ///
 /// E.g.:
 ///

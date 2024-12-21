@@ -4,7 +4,7 @@ log = "0.4.22"
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 reqwest = { version = "0.12.4", features = ["blocking", "json"] }
 rfd = "0.14.1"
-thag_rs = "0.1.9"
+# thag_rs = "0.1.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 */

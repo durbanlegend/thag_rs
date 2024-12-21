@@ -1,4 +1,4 @@
-#[cfg(feature = "cargo_toml")]
+#[cfg(any(feature = "cargo_toml", feature = "toml"))]
 use crate::shared::disentangle;
 #[cfg(feature = "bitflags")]
 use bitflags::parser::ParseError as BitFlagsParseError;
@@ -32,7 +32,7 @@ pub enum ThagError {
     #[cfg(feature = "clap")]
     ClapError(ClapError), // For clap errors
     Command(&'static str), // For errors during Cargo build or program execution
-    Dyn(Box<dyn Error>), // For boxed dynamic errors from 3rd parties
+    Dyn(Box<dyn Error + Send + Sync + 'static>), // For boxed dynamic errors from 3rd parties
     FromStr(Cow<'static, str>), // For simple errors from a string
     FromUtf8(FromUtf8Error), // For simple errors from a utf8 array
     Io(std::io::Error), // For I/O errors
@@ -150,8 +150,8 @@ impl From<BitFlagsParseError> for ThagError {
     }
 }
 
-impl From<Box<dyn Error>> for ThagError {
-    fn from(err: Box<dyn Error>) -> Self {
+impl From<Box<dyn Error + Send + Sync + 'static>> for ThagError {
+    fn from(err: Box<dyn Error + Send + Sync + 'static>) -> Self {
         Self::Dyn(err)
     }
 }
@@ -190,15 +190,25 @@ impl std::fmt::Display for ThagError {
             #[cfg(feature = "syn")]
             Self::Syn(e) => write!(f, "{e}"),
             #[cfg(feature = "toml")]
-            Self::TomlDe(e) => write!(f, "{e}"),
+            Self::TomlDe(e) => {
+                // Extract the actual error message without all the nested structure
+                let msg = e.to_string();
+                write!(f, "toml::de::Error: {}", disentangle(msg.as_str()))?;
+                Ok(())
+            }
             #[cfg(feature = "toml")]
-            Self::TomlSer(e) => write!(f, "{e}"),
+            Self::TomlSer(e) => {
+                // Extract the actual error message without all the nested structure
+                let msg = e.to_string();
+                write!(f, "toml::ser::Error: {}", disentangle(msg.as_str()))?;
+                Ok(())
+            }
             // Self::Toml(e) => write!(f, "{e}"),
             #[cfg(feature = "cargo_toml")]
             Self::Toml(e) => {
                 // Extract the actual error message without all the nested structure
                 let msg = e.to_string();
-                write!(f, "TOML error: {}", disentangle(msg.as_str()))?;
+                write!(f, "cargo_toml error: {}", disentangle(msg.as_str()))?;
                 Ok(())
             }
             Self::UnsupportedTerm => write!(f, "Unsupported terminal type"),

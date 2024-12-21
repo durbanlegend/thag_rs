@@ -44,7 +44,7 @@ toml = { version = "0.8.19", optional = true }
 # firestorm = { version = "0.5.1", features = ["enable_system_time"] }
 home = "0.5.11"
 log = "0.4.22"
-mockall = "0.13.1"
+mockall = { version = "0.13.1", optional = true }
 nu-ansi-term = { version = "0.50.1", optional = true }
 phf = "0.11.2"
 prettyplease = { version = "0.2.25", optional = true }
@@ -125,6 +125,7 @@ color_support = [
     "crossterm",
     "edit",
     "minimal",
+    "mockall",
     "nu-ansi-term",
     "scopeguard",
     "serde_with",
@@ -133,7 +134,7 @@ color_support = [
     "toml",
     "toml_edit",
 ]
-basic_color = [] # Simple ANSI colors for minimal builds
+# basic_color = [] # Simple ANSI colors for minimal builds
 
 # Build features
 full_build = [

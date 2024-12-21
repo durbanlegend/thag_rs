@@ -12,7 +12,6 @@ pub mod code_utils;
 #[cfg(feature = "color_support")]
 pub mod colors;
 #[cfg(any(
-    feature = "basic_color",
     feature = "color_support",
     feature = "full_build"
 ))]
@@ -51,12 +50,12 @@ pub use builder::{display_timings, execute, gen_build_run, process_expr, BuildSt
 pub use cmd_args::{get_args, get_proc_flags, validate_args, Cli, ProcFlags};
 #[cfg(any(feature = "basic_build", feature = "full_build"))]
 pub use code_utils::{create_temp_source_file, extract_ast_expr, modified_since_compiled, Ast};
-#[cfg(any(feature = "basic_color", feature = "color_support"))]
+#[cfg(feature = "color_support")]
 pub use colors::{
     coloring, Ansi16DarkStyle, Ansi16LightStyle, ColorSupport, Lvl, MessageLevel, TermTheme,
     Xterm256DarkStyle, Xterm256LightStyle,
 };
-#[cfg(any(feature = "basic_color", feature = "color_support"))]
+#[cfg(feature = "color_support")]
 pub use config::{
     load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
     ProcMacros,

@@ -3,11 +3,11 @@
 crossterm = "0.28.1"
 log = "0.4.22"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-thag_rs = "0.1.9"
-
 strum = { version = "0.26.3", features = ["derive"] }
 supports-color= "3.0.0"
 termbg = "0.5.2"
+thag_rs = "0.1.9"
+
 */
 
 /// Original prototype of `thag_rs`'s `colors` module to style messages according

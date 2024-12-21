@@ -4,8 +4,8 @@ nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
 termbg = "0.6.0"
 # thag_rs = "0.1.9"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_support", "minimal", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_support", "minimal", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_support", "minimal", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_support", "minimal", "simplelog"] }
 */
 
 #![allow(clippy::implicit_return)]

@@ -406,6 +406,7 @@ pub struct FeatureOverride {
     /// Default: true, in line with the Cargo default.
     pub default_features: Option<bool>,
 }
+
 /// Logging settings
 #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]

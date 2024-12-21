@@ -7,16 +7,17 @@ use crate::colors::init_styles;
 use crate::config::{self, DependencyInference, RealContext};
 #[cfg(debug_assertions)]
 use crate::logging::is_debug_logging_enabled;
-use crate::manifest::{extract, find_crates, find_metadata, CratesFinder, MetadataFinder};
+use crate::manifest::extract;
 #[cfg(feature = "repl")]
 use crate::repl::run_repl;
 use crate::stdin::{edit, read};
 #[cfg(debug_assertions)]
 use crate::VERSION;
 use crate::{
-    coloring, cvprtln, debug_log, get_proc_flags, manifest, maybe_config, modified_since_compiled,
-    profile, profile_method, profile_section, regex, repeat_dash, shared, validate_args, vlog, Ast,
-    Cli, CrosstermEventReader, Dependencies, Lvl, ProcFlags, ThagError, ThagResult, DYNAMIC_SUBDIR,
+    coloring, cvprtln, debug_log, find_crates, find_metadata, get_proc_flags, manifest,
+    maybe_config, modified_since_compiled, profile, profile_method, profile_section, regex,
+    repeat_dash, shared, validate_args, vlog, Ast, Cli, CratesFinder, CrosstermEventReader,
+    Dependencies, Lvl, MetadataFinder, ProcFlags, ThagError, ThagResult, DYNAMIC_SUBDIR,
     FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME,
     TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };

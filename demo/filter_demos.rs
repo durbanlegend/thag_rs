@@ -117,8 +117,8 @@ fn get_user_preferences(
     let mut escape_state = EscapeState::new();
 
     loop {
-        // Reset escape flag at the start of each attempt
-        escape_state.reset();
+        // // Reset escape flag at the start of each attempt
+        // escape_state.reset();
 
         // Category logic
         let choices = vec![

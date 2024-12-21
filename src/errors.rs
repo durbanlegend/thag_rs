@@ -97,7 +97,6 @@ impl From<TomlSerError> for ThagError {
 }
 
 #[cfg(feature = "cargo_toml")]
-#[cfg(feature = "cargo_toml")]
 impl From<CargoTomlError> for ThagError {
     fn from(err: CargoTomlError) -> Self {
         Self::Toml(err)

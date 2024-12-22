@@ -73,10 +73,12 @@ syn = { version = "2.0.90", features = [
 termbg = { version = "0.6.1", optional = true }
 thag_proc_macros = { version = "0.1.1", path = "src/proc_macros" }
 toml_edit = { version = "0.22.22", optional = true }
+# `tui-textarea` is used for the `tui` feature`.
 tui-textarea = { version = "0.7", features = [
     "crossterm",
     "search",
 ], optional = true }
+document-features = "0.2.10"
 
 [target.'cfg(windows)'.dependencies]
 win32console = "0.1.5"
@@ -104,27 +106,55 @@ name = "thag"
 path = "src/bin/thag_rs.rs"
 
 [features]
+
+## Fringe feature enables debug logging.
 debug-logs = []
+
+## Fringe feature enables nightly Rust.
 nightly = []
+
+## Fringe feature enables formatting the code generated for a snippet, at the cost of some processing time.
 format_snippet = []
+
+## By default, `thag_rs` includes the full range of features and the `simplelog` crate (in lieu of `env_logger`).
 default = ["full", "simplelog"]
-full = ["color_support", "full_build", "profiling", "repl", "simplelog", "tui"]
+
+## Full house with fringe exceptions - combines the `build`, `color_support`, `core`, `repl` and `tui` features.
+full = ["build", "color_support", "core", "repl", "tui"]
+
 # Logging features - these are mutually exclusive
+## Choice of `simplelog` vs. `env_logger`.
 simplelog = ["dep:simplelog", "log_impl"]
+
+## Choice of `env_logger` vs. `simplelog`.
 env_logger = ["dep:env_logger", "log_impl"]
 
 # Private feature to ensure only one logger is selected
+## Logging with either `simplelog` or `env_logger`.
 log_impl = []
 
 # Core features
-minimal = ["error_handling", "log_impl"] # Always available
-error_handling = []
-profiling = []                           # Our new profiling system
+## Combines the `error_handling` and `log_impl` features.
+## Gives access to basic logging, error handling and profiling, including the following macros:
+## `cprtln`, `debug_log`, `lazy_static_var`, `profile`, `profile_method`, `profile_method_detailed`, `profile_section`, `regex`, `vlog`.
+core = ["error_handling", "log_impl"] # Always available
 
+## `ThagError` and `ThagResult` for handling errors consistently.
+error_handling = []
+
+# ## Fringe feature enables `thag_rs` basic lightweight profiling.
+profiling = []
+
+## Abstract Syntax Tree (`syn`) and dependency inference features.
+## Extends the `core` features and involves the `nu-ansi-term`, `quote` and `syn` dependencies.
+ast = ["core", "nu-ansi-term", "quote", "syn"] # Simple script running
+
+## Message colouring tailored to a choice of 9 message levels, in combination with your terminal's capabilities and current theme. Gives access to the `cvprtln` macro.
+## Involves the following dependencies: `crossterm`, `edit`, `core`, `mockall`, `nu-ansi-term`, `scopeguard`, `serde_with`, `supports-color`, `termbg`, `toml` and `toml_edit`.
 color_support = [
     "crossterm",
     "edit",
-    "minimal",
+    "core",
     "mockall",
     "nu-ansi-term",
     "scopeguard",
@@ -136,34 +166,33 @@ color_support = [
 ]
 # basic_color = [] # Simple ANSI colors for minimal builds
 
-# Build features
-full_build = [
+## Full build features. Involves the `color_support` and `core` features, and the following dependencies:
+## `bitflags`, `cargo-lookup`, `cargo_toml`, `clap`, `prettyplease`, `quote`, `serde_merge`, `side-by-side-diff` and `syn`.
+build = [
     "bitflags",
     "cargo-lookup",
     "cargo_toml",
     "clap",
     "color_support",
-    "minimal",
+    "core",
     "prettyplease",
     "quote",
     "serde_merge",
     "side-by-side-diff",
     "syn",
 ] # Full dependency analysis
-basic_build = ["minimal", "quote", "syn"] # Simple script running
 
 # Advanced features
-tui = [
-    "color_support",
-    "crokey",
-    "edit",
-    "full_build",
-    "ratatui",
-    "serde_json",
-    "tui-textarea",
-]
+## Provides a basic TUI editor with file_backed history for paste-and-run, stdin or promoted REPL expressions.
+## Involves the `build` feature and the following dependencies:
+## `crokey`, `edit`, `ratatui`, `serde_json` and `tui-textarea`.
+tui = ["crokey", "edit", "build", "ratatui", "serde_json", "tui-textarea"]
+
+## Provides a REPL function with file_backed history and the possibility to promote expressions to snippets and
+## from there save them as scripts if desired.
+## Involves the `tui` feature and the `reedline` dependency.
 repl = ["reedline", "tui"]
-file_dialog = ["tui"]
+# file_dialog = ["tui"]
 
 # Optional integrations
 # clipboard = ["arboard"]

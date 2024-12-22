@@ -1,4 +1,22 @@
 #![allow(clippy::module_name_repetitions)]
+//!
+//! Basic profiling for `thag_rs`, also (TODO) intended as an option for user scripts.
+//!
+//! Placing the following instruction at the start of your code will allow profiling to be enabled by running with `--features=profiling`.
+//!
+//! ```rust
+//!     if cfg!(feature = "profiling") {
+//!         println!("Enabling profiling..."); // Debug output
+//!         profiling::enable_profiling(true)?;
+//!     }
+//! ```
+//!
+//! Output will be in the form of a file called `thag-profile.folded` in the current working directory, abd may be
+//! displayed as statistics or as an `inferno` [flamechart](https://medium.com/performance-engineering-for-the-ordinary-barbie/profiling-flame-chart-vs-flame-graph-7b212ddf3a83)
+//! using the `demo/thag_profile.rs` script, which you may wish to compile to a command first by using the `-x` option.
+//!
+//! `demo/thag_profile.rs` also allows you to filter out unwanted events, e.g. to make it easier to drill down into the flamechart.
+//!
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -120,6 +138,19 @@ impl Drop for Profile {
     }
 }
 
+/// Profile the enclosing function if profiling is enabled. Normally code this at the
+/// start of the function, after any declarations. Pass the function name (or alternative
+/// identifier if you know what you're doing) as a string literal argument.
+///
+/// E.g.:
+///
+/// ```Rust
+/// fn foo(bar) {
+///     profile!("foo");
+///     ...
+/// }
+///
+/// ```
 #[macro_export]
 macro_rules! profile {
     ($name:expr) => {
@@ -127,7 +158,30 @@ macro_rules! profile {
     };
 }
 
-/// Profiles a specific section of code
+/// Profile a specific section of code if profiling is enabled.
+/// Pass a descriptive name as a string literal argument.
+///
+/// The scope of the section will include all following profiled
+/// sections until the end of the function, or the end of the enclosing
+/// block. Unfortunately you can't just enclose the section of code in
+/// a block at will without hiding them from the surrounding code, because
+/// the normal Rust rules apply. So it's strongly recommended that the
+/// section names be chosen to reflect the fact that the scope also includes
+/// the following named sections, e.g. "bar_and_baz" in the example below.
+///
+//// E.g.:
+///
+/// ```Rust
+/// fn foo() {
+///     profile!("foo");
+///     ...
+///     profile_section!("bar_and_baz");
+///     ...
+///     profile_section!("baz");
+///     ...
+/// }
+///
+/// ```
 #[macro_export]
 macro_rules! profile_section {
     ($name:expr) => {
@@ -135,6 +189,20 @@ macro_rules! profile_section {
     };
 }
 
+/// Profile the enclosing method if profiling is enabled. Pass a descriptive name
+/// as a string literal argument.
+///
+/// E.g.:
+///
+/// ```Rust
+/// impl Foo {}
+///     fn new() {
+///         profile_method!("Foo::new");
+///         ...
+///     }
+/// }
+///
+/// ```
 #[macro_export]
 macro_rules! profile_method {
     () => {
@@ -146,21 +214,22 @@ macro_rules! profile_method {
     };
 }
 
+// TODO: Maybe implement
 // Optional: A more detailed version that includes file and line information
-#[macro_export]
-macro_rules! profile_method_detailed {
-    () => {
-        let _profile = $crate::profiling::Profile::new(concat!(
-            module_path!(),
-            "::",
-            function_name!(),
-            " at ",
-            file!(),
-            ":",
-            line!()
-        ));
-    };
-}
+// #[macro_export]
+// macro_rules! profile_method_detailed {
+//     () => {
+//         let _profile = $crate::profiling::Profile::new(concat!(
+//             module_path!(),
+//             "::",
+//             function_name!(),
+//             " at ",
+//             file!(),
+//             ":",
+//             line!()
+//         ));
+//     };
+// }
 
 #[derive(Default)]
 pub struct ProfileStats {

@@ -1,17 +1,20 @@
 #[cfg(test)]
 use cargo_toml::Manifest;
 use quote::ToTokens;
-use std::env::current_dir;
-use std::fs::{self, OpenOptions};
-use std::io::Write;
-use std::path::PathBuf;
-use std::time::Instant;
-#[cfg(debug_assertions)]
-use thag_rs::builder::debug_timings;
+use std::{
+    env::current_dir,
+    fs::{self, OpenOptions},
+    io::Write,
+    path::PathBuf,
+    time::Instant,
+};
+use thag_rs::ast::Ast;
 use thag_rs::builder::{build, display_timings, generate, run, BuildState, ScriptState};
 use thag_rs::cmd_args::Cli;
-use thag_rs::code_utils::{self, Ast};
+use thag_rs::code_utils::{self};
 use thag_rs::config::DependencyInference;
+#[cfg(debug_assertions)]
+use thag_rs::debug_timings;
 use thag_rs::{escape_path_for_windows, execute, ProcFlags, TMPDIR};
 
 // Set environment variables before running tests

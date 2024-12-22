@@ -127,8 +127,8 @@ fn check_{test_name}() {{
             .arg({source_path:?})
             .output()
             .expect("Failed to execute command");
-
-        if !output.status.success() {{
+            let err_str = std::str::from_utf8(&output.stderr).expect("Can't parse stderr to &str");
+        if !output.status.success() || err_str.contains("error:") || err_str.contains("Build failed") {{
             panic!(
                 "Failed to build file: {source_name}\nstdout: {{}}\nstderr: {{}}",
                 String::from_utf8_lossy(&output.stdout),

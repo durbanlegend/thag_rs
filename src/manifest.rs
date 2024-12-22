@@ -2,9 +2,9 @@
 #[cfg(debug_assertions)]
 use crate::debug_timings;
 use crate::{
-    code_utils::get_source_path, config::DependencyInference, cvprtln, debug_log, find_crates,
-    find_metadata, get_verbosity, maybe_config, profile, profile_section, regex, vlog, Ast,
-    BuildState, CratesFinder, Dependencies, Lvl, MetadataFinder, ThagResult, BUILT_IN_CRATES, V,
+    ast, code_utils::get_source_path, config::DependencyInference, cvprtln, debug_log,
+    get_verbosity, maybe_config, profile, profile_section, regex, vlog, Ast, BuildState,
+    Dependencies, Lvl, ThagResult, BUILT_IN_CRATES, V,
 };
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
@@ -312,8 +312,8 @@ fn extract_toml_block(input: &str) -> Option<String> {
 /// Infer dependencies from AST-derived metadata to put in a Cargo.toml.
 #[must_use]
 pub fn infer_deps_from_ast(
-    crates_finder: &CratesFinder,
-    metadata_finder: &MetadataFinder,
+    crates_finder: &ast::CratesFinder,
+    metadata_finder: &ast::MetadataFinder,
 ) -> Vec<String> {
     profile!("infer_deps_from_ast");
     let mut dependencies = vec![];
@@ -367,8 +367,8 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
             vec![]
         },
         |ast| {
-            let crates_finder = find_crates(&ast);
-            let metadata_finder = find_metadata(&ast);
+            let crates_finder = ast::find_crates(&ast);
+            let metadata_finder = ast::find_metadata(&ast);
             infer_deps_from_ast(&crates_finder, &metadata_finder)
         },
     );

@@ -157,12 +157,12 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
 
 /// A macro to generate mappings from the supported message levels to the initialised terminal theme and colour support level.
 ///
-/// It will generate all possible trait implementations for a given style enum <S> such as
+/// It will generate all possible trait implementations for a given style enum `<S>` such as
 /// `Xterm256LightStyle`, as well as an `init_styles` function that will be used to map any given message
 /// level to the actual terminal theme and colour support level encountered on initialisation.
 ///
-/// From<&Lvl> for <S>.
-/// From<S> for <Style>.
+/// `From<&Lvl> for <S>`.
+/// `From<S> for <Style>`.
 ///
 #[macro_export]
 macro_rules! generate_styles {
@@ -453,21 +453,6 @@ pub fn get_style(
     let mapping = init_styles(term_theme, color_support);
     // dbg!(&mapping);
     mapping(*message_level)
-}
-
-/// A line print macro that prints a styled and coloured message.
-///
-/// Format: `cprtln!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
-#[macro_export]
-macro_rules! cprtln {
-    ($style:expr, $($arg:tt)*) => {{
-        let content = format!("{}", format_args!($($arg)*));
-        let style: &nu_ansi_term::Style = $style;
-        // Qualified form to avoid imports in calling code.
-        let painted = style.paint(content);
-        let verbosity = $crate::logging::get_verbosity();
-        $crate::vlog!(verbosity, "{painted}");
-    }};
 }
 
 /// A line print macro that conditionally prints a message using `cprtln` if the current global verbosity

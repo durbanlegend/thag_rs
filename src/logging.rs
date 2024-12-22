@@ -187,6 +187,8 @@ fn configure_simplelog() {
     .unwrap();
 }
 
+/// Logs a message if it passes the verbosity filter.
+///
 #[macro_export]
 macro_rules! vlog {
     ($verbosity:expr, $($arg:tt)*) => {
@@ -194,4 +196,19 @@ macro_rules! vlog {
             $crate::logging::LOGGER.lock().unwrap().log($verbosity, &format!($($arg)*))
         }
     };
+}
+
+/// A line print macro that prints a styled and coloured message.
+///
+/// Format: `cprtln!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
+#[macro_export]
+macro_rules! cprtln {
+    ($style:expr, $($arg:tt)*) => {{
+        let content = format!("{}", format_args!($($arg)*));
+        let style: &nu_ansi_term::Style = $style;
+        // Qualified form to avoid imports in calling code.
+        let painted = style.paint(content);
+        let verbosity = $crate::logging::get_verbosity();
+        $crate::vlog!(verbosity, "{painted}");
+    }};
 }

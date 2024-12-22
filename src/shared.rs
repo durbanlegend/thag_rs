@@ -1,5 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::profile;
+use crate::{debug_log, profile};
+use std::time::Instant;
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.
 #[inline]
@@ -37,7 +38,17 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.to_string()
 }
 
-/// Control debug logging
+//// Developer method to log method timings.
+#[inline]
+#[cfg(debug_assertions)]
+pub fn debug_timings(start: &Instant, process: &str) {
+    profile!("debug_timings");
+    let dur = start.elapsed();
+    debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
+}
+
+/// Debugging logger. Logs if the `debug-logs` feature is enabled or if runtime debug logging is enabled (e.g., via `-vv`)
+///
 #[macro_export]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
@@ -60,6 +71,17 @@ macro_rules! debug_log {
     };
 }
 
+/// Lazy-static variable generator.
+///
+/// Syntax:
+/// ```Rust
+///
+/// let my_var = lazy_static_var!(<T>, expr<T>) // for static ref
+/// // or
+/// let my_var = lazy_static_var!(<T>, expr<T>, deref) // for Deref value (not guaranteed)
+/// ```
+///
+/// NB: In order to avoid fighting the compiler, it is not recommended to make `my_var` uppercase.
 #[macro_export]
 macro_rules! lazy_static_var {
     ($type:ty, $init_fn:expr, deref) => {{
@@ -71,5 +93,25 @@ macro_rules! lazy_static_var {
         use std::sync::OnceLock;
         static GENERIC_LAZY: OnceLock<$type> = OnceLock::new();
         GENERIC_LAZY.get_or_init(|| $init_fn)
+    }};
+}
+
+/// Lazy-static regular expression generator.
+///
+/// From burntsushi at `https://github.com/rust-lang/regex/issues/709`
+/// Syntax:
+/// ```Rust
+///
+/// let re = regex!(<string literal>)
+/// ```
+///
+/// NB: In order to avoid fighting the compiler, it is not recommended to make `re` uppercase.
+#[macro_export]
+macro_rules! regex {
+    ($re:literal $(,)?) => {{
+        use {regex::Regex, std::sync::OnceLock};
+
+        static RE: OnceLock<Regex> = OnceLock::new();
+        RE.get_or_init(|| Regex::new($re).unwrap())
     }};
 }

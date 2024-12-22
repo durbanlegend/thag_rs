@@ -70,7 +70,6 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output - rather fix bad output at source - done?
 - [ ]  Use cargo-dist to build and distribute thag front-end commands.
 - [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
-- [ ]  Resolve duplication of dependency functions between code_utils and manifest, affecting demo/filter_demos.rs.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?

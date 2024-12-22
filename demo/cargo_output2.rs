@@ -10,7 +10,6 @@ log = "0.4.21"
 //# Purpose: Demo process::Command with output capture.
 //# Categories: technique
 use env_logger::Builder;
-use log::debug;
 use std::env;
 use std::ffi::OsStr;
 use std::io::Read;
@@ -33,8 +32,7 @@ fn main() {
     eprintln!("Running {:#?}", prog().unwrap());
     // Define the command and arguments
     let mut cmd = Command::new("cargo");
-    // cmd.args(["build", "--verbose"]);
-    cmd.args(["search", "log", "--limit", "1"]);
+    cmd.args(["run", "--", "-cvv", "demo/config.rs"]);
 
     // Redirect stdout to a pipe
     let mut child = cmd

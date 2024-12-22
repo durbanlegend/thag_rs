@@ -1,30 +1,22 @@
 use crate::code_utils::{
-    self, build_loop, create_temp_source_file, get_source_path, read_file_contents,
-    remove_inner_attributes, strip_curly_braces, wrap_snippet, write_source,
+    self, build_loop, create_temp_source_file, extract_ast_expr, get_source_path,
+    read_file_contents, remove_inner_attributes, strip_curly_braces, to_ast, wrap_snippet,
+    write_source,
 };
-use crate::code_utils::{extract_ast_expr, to_ast};
 use crate::colors::init_styles;
 use crate::config::{self, DependencyInference, RealContext};
-#[cfg(debug_assertions)]
-use crate::logging::is_debug_logging_enabled;
+use crate::debug_timings;
 use crate::manifest::extract;
-#[cfg(feature = "repl")]
-use crate::repl::run_repl;
 use crate::stdin::{edit, read};
-#[cfg(debug_assertions)]
-use crate::VERSION;
 use crate::{
-    coloring, cvprtln, debug_log, find_crates, find_metadata, get_proc_flags, manifest,
-    maybe_config, modified_since_compiled, profile, profile_method, profile_section, regex,
-    repeat_dash, shared, validate_args, vlog, Ast, Cli, CratesFinder, CrosstermEventReader,
-    Dependencies, Lvl, MetadataFinder, ProcFlags, ThagError, ThagResult, DYNAMIC_SUBDIR,
-    FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME,
-    TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
+    ast, coloring, cvprtln, debug_log, get_proc_flags, manifest, maybe_config,
+    modified_since_compiled, profile, profile_method, profile_section, regex, repeat_dash, shared,
+    validate_args, vlog, Ast, Cli, CrosstermEventReader, Dependencies, Lvl, ProcFlags, ThagError,
+    ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR,
+    RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
 use cargo_toml::Manifest;
 use home::home_dir;
-#[cfg(debug_assertions)]
-use log::{log_enabled, Level::Debug};
 use nu_ansi_term::Style;
 use regex::Regex;
 use side_by_side_diff::create_side_by_side_diff;
@@ -38,13 +30,22 @@ use std::{
     time::Instant,
 };
 
-#[cfg(feature = "full_build")]
+#[cfg(debug_assertions)]
+use {
+    crate::{logging::is_debug_logging_enabled, VERSION},
+    log::{log_enabled, Level::Debug},
+};
+
+#[cfg(feature = "repl")]
+use crate::repl::run_repl;
+
+#[cfg(feature = "build")]
 struct ExecutionFlags {
     is_repl: bool,
     is_dynamic: bool,
 }
 
-#[cfg(feature = "full_build")]
+#[cfg(feature = "build")]
 impl ExecutionFlags {
     const fn new(proc_flags: &ProcFlags, cli: &Cli) -> Self {
         let is_repl = proc_flags.contains(ProcFlags::REPL);
@@ -62,7 +63,7 @@ impl ExecutionFlags {
     }
 }
 
-#[cfg(feature = "full_build")]
+#[cfg(feature = "build")]
 struct BuildPaths {
     working_dir_path: PathBuf,
     source_path: PathBuf,
@@ -76,7 +77,7 @@ struct BuildPaths {
 /// A struct to encapsulate the attributes of the current build as needed by the various
 /// functions co-operating in the generation, build and execution of the code.
 #[derive(Clone, Debug, Default)]
-#[cfg(feature = "full_build")]
+#[cfg(feature = "build")]
 pub struct BuildState {
     #[allow(dead_code)]
     pub working_dir_path: PathBuf,
@@ -95,13 +96,13 @@ pub struct BuildState {
     pub must_build: bool,
     pub build_from_orig_source: bool,
     pub ast: Option<Ast>,
-    pub crates_finder: Option<CratesFinder>,
-    pub metadata_finder: Option<MetadataFinder>,
+    pub crates_finder: Option<ast::CratesFinder>,
+    pub metadata_finder: Option<ast::MetadataFinder>,
     pub infer: DependencyInference,
     pub args: Vec<String>,
 }
 
-#[cfg(feature = "full_build")]
+#[cfg(feature = "build")]
 impl BuildState {
     /// Configures a new `BuildState` instance based on processing flags, CLI arguments, and script state.
     ///
@@ -765,8 +766,8 @@ pub fn gen_build_run(
             build_state.ast = to_ast(&sourch_path_string, &rs_source);
         }
         if let Some(ref ast) = build_state.ast {
-            build_state.crates_finder = Some(find_crates(ast));
-            build_state.metadata_finder = Some(find_metadata(ast));
+            build_state.crates_finder = Some(ast::find_crates(ast));
+            build_state.metadata_finder = Some(ast::find_metadata(ast));
         }
 
         let metadata_finder = build_state.metadata_finder.as_ref();
@@ -1296,17 +1297,8 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     Ok(())
 }
 
-/// Developer method to log method timings.
-#[inline]
-#[cfg(debug_assertions)]
-pub fn debug_timings(start: &Instant, process: &str) {
-    profile!("debug_timings");
-    let dur = start.elapsed();
-    debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
-}
-
-#[inline]
 /// Display method timings when either the --verbose or --timings option is chosen.
+#[inline]
 pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
     profile!("display_timings");
     #[cfg(not(debug_assertions))]

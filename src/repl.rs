@@ -178,7 +178,7 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 /// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
 /// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
 /// comment block of the form
-/// ``` rust
+/// ``` rustdoc
 /// /*[toml]
 /// [dependencies]
 /// ...

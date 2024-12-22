@@ -1366,6 +1366,8 @@ pub fn save_source_file(
     Ok(())
 }
 
+/// Key mappings for display purposes via (Ctrl-l) in TUI editor and file dialog.
+///
 #[macro_export]
 macro_rules! key_mappings {
     (

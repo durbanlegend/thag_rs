@@ -6,6 +6,22 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_file, parse_macro_input, ItemFn};
 
+/// Generates a constant `DASH_LINE` consisting of a dash (hyphen) repeated the number of times specified by the integer literal argument `n`.
+///
+/// Syntax:
+///
+/// ```Rust
+///
+///     repeat_dash!(<n>);
+/// ```
+///
+/// E.g.:
+///
+/// ```Rust
+/// repeat_dash!(70);
+/// cvprtln!(Lvl::EMPH, V::Q, "{DASH_LINE}");
+/// ```
+///
 #[proc_macro]
 pub fn repeat_dash(input: TokenStream) -> TokenStream {
     // repeat_dash_impl(input)

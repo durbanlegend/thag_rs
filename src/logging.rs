@@ -187,17 +187,6 @@ fn configure_simplelog() {
     .unwrap();
 }
 
-/// Logs a message if it passes the verbosity filter.
-///
-#[macro_export]
-macro_rules! vlog {
-    ($verbosity:expr, $($arg:tt)*) => {
-        {
-            $crate::logging::LOGGER.lock().unwrap().log($verbosity, &format!($($arg)*))
-        }
-    };
-}
-
 /// A line print macro that prints a styled and coloured message.
 ///
 /// Format: `cprtln!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
@@ -211,4 +200,30 @@ macro_rules! cprtln {
         let verbosity = $crate::logging::get_verbosity();
         $crate::vlog!(verbosity, "{painted}");
     }};
+}
+/// Logs a message provided the verbosity value passed in is at least as great as the current
+/// verbosity level, which can be thought of as a cutoff level. This cutoff level is either
+/// specified by the user via `-v`, `-vv`, `-n`, `-q` or `-qq` or their long-form equivalents,
+/// or failing that, by the user's configured `default_verbosity` setting, or failing *that*,
+/// by the system default verbosity setting of `Normal`.
+///
+/// How this works may still seem counterintuitive depending on your intuitions, so here are
+/// some examples:
+///
+/// E.g. `vlog!(V::Q), "Hairy Rotter and the Philosopher's Stone Axe")` is an instruction
+/// to print at verbosity (V) settings down to and including `Quiet (Q)` level, so it will
+/// log the output as long as the user specified or defaulted to a verbosity other than
+/// `Quieter (QQ) (-qq)` for the current `thag` execution.
+///
+/// Conversely, specifying `vlog(V::V)` (or in long form, `vlog!(Verbosity::Verbose)`, is an
+/// instruction to print at verbosities down to and including `Verbose (V)`, so it will only
+/// log the output if the user specified or defaulted to verbosity `Verbose (V) (-v)` or
+/// `Debug (VV) (-vv)` for the current `thag` execution.
+#[macro_export]
+macro_rules! vlog {
+    ($verbosity:expr, $($arg:tt)*) => {
+        {
+            $crate::logging::LOGGER.lock().unwrap().log($verbosity, &format!($($arg)*))
+        }
+    };
 }

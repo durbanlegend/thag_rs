@@ -3,7 +3,7 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-#[allow(clippy::doc_markdown)]
+#[allow(clippy::doc_markdown, clippy::too_many_lines)]
 /// Create a separate test for each individual script in demo/, to ensure that it builds
 /// successfully. We don't try to run them for logistical reasons, but at least we
 /// identify undocumented and abandoned scripts. Given that there are so many of these scripts,

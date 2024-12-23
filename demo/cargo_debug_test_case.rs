@@ -4,11 +4,11 @@ env_logger = "0.11.3"
 log = "0.4.21"
 */
 
-/// Run a command (in this case a cargo search for the `log` crate),
+/// Run a command (in this case an integration test case to be debugged),
 /// and capture and print its stdout and stderr concurrently in a
 /// separate thread.
-//# Purpose: Demo process::Command with output capture.
-//# Categories: technique
+//# Purpose: Demo process::Command with output capture, debugging unit tests.
+//# Categories: technique, testing
 use env_logger::Builder;
 use std::env;
 use std::ffi::OsStr;
@@ -59,6 +59,23 @@ fn main() {
 
     println!("Captured stderr:\n{}", stderr_output);
 
-    // Wait for the child process to finish
-    child.wait().expect("failed to wait for child");
+    // Wait for the child process to finish and get the exit status
+    let status = child.wait().expect("failed to wait for child");
+
+    // Check both the status and scan the output for error indicators
+    if status.success()
+        && !stderr_output.contains("error:")
+        && !stderr_output.contains("Build failed")
+    {
+        println!("Command executed successfully");
+    } else {
+        eprintln!("Build failed!");
+        if let Some(code) = status.code() {
+            eprintln!("Exit code: {}", code);
+        }
+        // You might want to fail the test here
+        panic!("Build failed when it should have succeeded");
+        // Or if using a testing framework:
+        // assert!(false, "Build failed when it should have succeeded");
+    }
 }

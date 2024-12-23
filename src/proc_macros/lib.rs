@@ -11,7 +11,6 @@ use syn::{parse_file, parse_macro_input, ItemFn};
 /// Syntax:
 ///
 /// ```Rust
-///
 ///     repeat_dash!(<n>);
 /// ```
 ///

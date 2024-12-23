@@ -38,7 +38,7 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.to_string()
 }
 
-//// Developer method to log method timings.
+/// Developer method to log method timings.
 #[inline]
 #[cfg(debug_assertions)]
 pub fn debug_timings(start: &Instant, process: &str) {
@@ -75,7 +75,6 @@ macro_rules! debug_log {
 ///
 /// Syntax:
 /// ```Rust
-///
 /// let my_var = lazy_static_var!(<T>, expr<T>) // for static ref
 /// // or
 /// let my_var = lazy_static_var!(<T>, expr<T>, deref) // for Deref value (not guaranteed)
@@ -101,7 +100,6 @@ macro_rules! lazy_static_var {
 /// From burntsushi at `https://github.com/rust-lang/regex/issues/709`
 /// Syntax:
 /// ```Rust
-///
 /// let re = regex!(<string literal>)
 /// ```
 ///

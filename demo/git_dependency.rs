@@ -2,8 +2,8 @@
 [dependencies]
 # rev may be necessary to force cargo to update to the latest commit, see
 # https://github.com/rust-lang/cargo/issues/8555
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_support", "minimal", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_support", "minimal", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_support", "core", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_support", "core", "simplelog"] }
 */
 
 /// Demo the use of git dependencies in the toml block. Local path dependencies

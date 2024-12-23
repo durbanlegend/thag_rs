@@ -1,3 +1,45 @@
+//!
+//! The main driver for the `thag_rs` binary command `thag`, which controls execution based on input from
+//! the command line or caller and possibly from a script file or standard input.
+//!
+//! Preprocessing functions interpret the command-line arguments and processing flags, as pre-digested by
+//! the `cmd_args` module.
+//!
+//! The `execute` function does a preliminary assessment and invokes the `process` function, which starts
+//! by pre-configuring a `BuildState` struct instance to drive the build. In the case of script file input
+//! this includes individual target directory information under `temp_dir()` corresponding to the input
+//! filename. If standard input, edit or REPL command-line options were chosen, `process` will invoke the
+//! `stdin` or `repl` modules to solicit the script or expression input, otherwise it will obtain it from a
+//! script file path passed in as the main argument, or from a command-line argument such as `--expr (-e)`.
+//!
+//! Once the input is finalised, `builder` broadly speaking handles the three major processing stages,
+//! named `generate`, `build` and `run`. First a function called `gen_build_run` invokes the `ast` module to
+//! perform AST analysis of the input to extract explicit manifest information from an optional "toml" block
+//! embedded in script comments, as well as any dependencies inferred from the source and features inferred
+//! from configuration settings or system defaults. It invokes the `manifest` module to merge this manifest
+//! information into a Cargo manifest struct.
+//!
+//! From the AST analysis, `gen_build_run` also determines whether the script is an expression or snippet
+//! as opposed to a program. If so, it calls the `code_utils` module to wrap the snippet in a template with
+//! a main function to make a well-formed program. If the generated output is stale or does not yet exist,
+//! or if `force (-f)` was specified, it then calls fn `generate` to write out the manifest to the target
+//! directory as a Cargo.toml file. If the input was not a program it also writes out the wrapped input to
+//! the target directory as a `.rs` program file, optionally formatting it with `prettyplease`.
+//!
+//! The `build` stage invokes a Cargo command, which by default is `build`, but may be `check`, `expand` or
+//! another arbitrary Cargo subcommand that may be specified by the `--cargo (-A)` command line option. As
+//! with `generate`, a regular build is only invoked if the build output is stale or does not yet exist, or
+//! if `force (-f)` was specified. If the `--executable (-x)` option was specified, a Cargo release build
+//! is invoked and the executable output is moved to the user's `.cargo/bin` directory, which the user
+//! should ensure is in the execution path so that it can be run as a command without further ado.
+//!
+//! Finally, if a conflicting option is not specified, the `run` function invokes `cargo run` to run the
+//! built output. Note that because of the staleness checks, a normal script that has not been modified
+//! since it was last built (and not been cleared from `temp_dir()` by the operating system) will skip the
+//! generation and build steps and execute almost immediately, similarly to a Cargo `run`. In this case
+//! the `build` module  will display an informational message to this effect at normal verbosity levels.
+//!
+use crate::ast::is_unit_return_type;
 use crate::code_utils::{
     self, build_loop, create_temp_source_file, extract_ast_expr, get_source_path,
     read_file_contents, remove_inner_attributes, strip_curly_braces, to_ast, wrap_snippet,
@@ -848,7 +890,7 @@ pub fn gen_build_run(
 
             let rust_code = build_state.ast.as_ref().map_or(body, |syntax_tree_ref| {
                 let returns_unit = match syntax_tree_ref {
-                    Ast::Expr(expr) => code_utils::is_unit_return_type(expr),
+                    Ast::Expr(expr) => is_unit_return_type(expr),
                     Ast::File(_) => true, // Trivially true since we're here because there's no main
                 };
                 if returns_unit {

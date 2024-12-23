@@ -11,7 +11,7 @@
 //!     }
 //! ```
 //!
-//! Output will be in the form of a file called `thag-profile.folded` in the current working directory, abd may be
+//! Output will be in the form of a file called `thag-profile.folded` in the current working directory, and may be
 //! displayed as statistics or as an `inferno` [flamechart](https://medium.com/performance-engineering-for-the-ordinary-barbie/profiling-flame-chart-vs-flame-graph-7b212ddf3a83)
 //! using the `demo/thag_profile.rs` script, which you may wish to compile to a command first by using the `-x` option.
 //!
@@ -167,9 +167,9 @@ macro_rules! profile {
 /// a block at will without hiding them from the surrounding code, because
 /// the normal Rust rules apply. So it's strongly recommended that the
 /// section names be chosen to reflect the fact that the scope also includes
-/// the following named sections, e.g. "bar_and_baz" in the example below.
+/// the following named sections, e.g. `bar_and_baz` in the example below.
 ///
-//// E.g.:
+/// E.g.:
 ///
 /// ```Rust
 /// fn foo() {

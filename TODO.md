@@ -129,7 +129,7 @@ stem=proc_macro_host_port_const
 - [ ] Run `cargo msrv find`, and update the MSRV in README.md.
 - [ ] Check on https://deps.rs/repo/github/durbanlegend/thag_rs that all dependencies are up to date
       (can link from badge at top of README.md).
-- [ ] Once you're happy that you've tested all your script changes successsfully with CI.yml,
+- [ ] Once you're happy that you've tested all your script changes successfully with CI.yml,
       update all bank and demo scripts using thag to use latest release instead of develop branch if appropriate.
 - [ ] NB NB: If there have been any changes to thag_proc_macros since its last published release, bump its version number
       in src/proc_macros/Cargo.toml and also in its dependency entry in the main Cargo.toml. as this will be used in

@@ -91,7 +91,7 @@ pub mod code_utils;
 // Build System
 //-----------------------------------------------------------------------------
 /// Script building and execution
-/// #[cfg(feature = "build")]
+#[cfg(feature = "build")]
 pub mod builder;
 /// Command-line argument and processing flags handling
 #[cfg(feature = "build")]
@@ -133,7 +133,6 @@ pub mod repl;
 pub use {
     ast::{find_crates, find_metadata, Ast, CratesFinder, MetadataFinder},
     code_utils::to_ast,
-    shared::debug_timings,
 };
 
 #[cfg(feature = "build")]
@@ -163,7 +162,7 @@ pub use {
     log,
     logging::{get_verbosity, Verbosity, V},
     profiling::Profile,
-    shared::escape_path_for_windows,
+    shared::{debug_timings, escape_path_for_windows},
     thag_proc_macros::repeat_dash,
 };
 

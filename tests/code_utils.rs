@@ -2,9 +2,9 @@
 mod tests {
     use std::{io::Write, path::Path};
     use tempfile::NamedTempFile;
+    use thag_rs::ast::{is_last_stmt_unit_type, is_path_unit_type, is_stmt_unit_type};
     use thag_rs::code_utils::{
-        extract_inner_attribs, is_last_stmt_unit_type, is_path_unit_type, is_stmt_unit_type,
-        path_to_str, read_file_contents, wrap_snippet,
+        extract_inner_attribs, path_to_str, read_file_contents, wrap_snippet,
     };
 
     // Set environment variables before running tests

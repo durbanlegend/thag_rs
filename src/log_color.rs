@@ -339,8 +339,6 @@ macro_rules! clog_ghost {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crossterm::{cursor, terminal, ExecutableCommand};
-    use std::io::stdout;
     use std::sync::atomic::{AtomicBool, Ordering};
 
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
@@ -353,7 +351,6 @@ mod tests {
     }
 
     use std::io::Write;
-    // use std::sync::Mutex;
 
     thread_local! {
         static TEST_OUTPUT: std::cell::RefCell<Vec<String>> = std::cell::RefCell::new(Vec::new());
@@ -375,37 +372,6 @@ mod tests {
             output.borrow_mut().clear();
         });
     }
-
-    // lazy_static::lazy_static! {
-    //     static ref TEST_OUTPUT_LOCK: Mutex<()> = Mutex::new(());
-    // }
-
-    // fn init_test() {
-    //     let _lock = TEST_OUTPUT_LOCK.lock().unwrap();
-    //     // Ensure we're writing to a clean line
-    //     print!("\r\x1B[2K"); // CR + clear line
-    //     std::io::stdout().flush().unwrap();
-    // }
-
-    // fn init_test() {
-    //     // print!("\r");
-    //     // std::io::stdout().flush().unwrap();
-    //     // let mut stdout = stdout();
-    //     // let _ = stdout.execute(cursor::MoveToColumn(0));
-    //     // let _ = stdout.execute(terminal::Clear(terminal::ClearType::CurrentLine));
-    //     let raw_mode = terminal::is_raw_mode_enabled().unwrap_or(false);
-    //     eprintln!("Test starting. Raw mode: {}", raw_mode);
-
-    //     // Try both approaches
-    //     print!("\r");
-    //     std::io::stdout().flush().unwrap();
-
-    //     let mut stdout = stdout();
-    //     let _ = stdout.execute(cursor::MoveToColumn(0));
-    //     let _ = stdout.execute(terminal::Clear(terminal::ClearType::CurrentLine));
-
-    //     eprintln!("After cursor moves");
-    // }
 
     // Tests that need access to internal implementation
     #[test]

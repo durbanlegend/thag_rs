@@ -1,49 +1,8 @@
 #[cfg(test)]
-pub mod test_utils {
-    use std::cell::RefCell;
-    use std::io::Write;
-
-    thread_local! {
-        static TEST_OUTPUT: RefCell<Vec<String>> = RefCell::new(Vec::new());
-    }
-
-    pub fn init_test() {
-        TEST_OUTPUT.with(|output| {
-            output.borrow_mut().push(String::new());
-        });
-    }
-
-    pub fn write_test_output(text: &str) {
-        TEST_OUTPUT.with(|output| {
-            output.borrow_mut().last_mut().unwrap().push_str(text);
-        });
-    }
-
-    pub fn flush_test_output() {
-        TEST_OUTPUT.with(|output| {
-            let mut stdout = std::io::stdout();
-            for line in output.borrow().iter() {
-                writeln!(stdout, "{}", line).unwrap();
-            }
-            output.borrow_mut().clear();
-        });
-    }
-
-    // // Optional: implement Drop for automatic flushing
-    // pub struct TestGuard;
-
-    // impl Drop for TestGuard {
-    //     fn drop(&mut self) {
-    //         flush_test_output();
-    //     }
-    // }
-}
-
-#[cfg(test)]
 mod tests {
-    // use crate::test_utils::{init_test, write_test_output, TestGuard};
     use nu_ansi_term::{Color, Style};
     use std::io::Write;
+    use std::sync::Mutex;
     use std::time::{Duration, Instant};
     use supports_color::Stream;
     use thag_rs::colors::{self, XtermColor};
@@ -60,42 +19,34 @@ mod tests {
         std::io::stdout().flush().unwrap();
     }
 
-    // struct TestGuard;
-
-    // impl Drop for TestGuard {
-    //     fn drop(&mut self) {
-    //         // Reset terminal state
-    //         let _ = crossterm::terminal::disable_raw_mode();
-    //         let _ = crossterm::terminal::LeaveAlternateScreen;
-    //         let _ = std::io::stdout().flush();
-    //     }
-    // }
+    // Single mutex for terminal access
+    lazy_static::lazy_static! {
+        static ref TERMINAL_LOCK: Mutex<()> = Mutex::new(());
+    }
 
     struct TestGuard {
-        was_alternate: bool,
         was_raw: bool,
+        _lock: std::sync::MutexGuard<'static, ()>, // Hold lock for test duration
     }
 
     impl TestGuard {
         fn new() -> Self {
             use crossterm::{cursor, execute, terminal};
 
-            // Add timeout for terminal operations
-            let result = std::panic::catch_unwind(|| {
-                let mut stdout = std::io::stdout();
-                let _ = execute!(
-                    stdout,
-                    terminal::LeaveAlternateScreen,
-                    cursor::MoveToColumn(0),
-                    terminal::Clear(terminal::ClearType::CurrentLine)
-                );
-                let _ = stdout.flush();
-                terminal::is_raw_mode_enabled().unwrap_or(false)
-            });
+            // Get terminal lock first
+            let lock = TERMINAL_LOCK.lock().unwrap();
+
+            let mut stdout = std::io::stdout();
+            let _ = execute!(
+                stdout,
+                cursor::MoveToColumn(0),
+                terminal::Clear(terminal::ClearType::CurrentLine)
+            );
+            let _ = stdout.flush();
 
             Self {
-                was_alternate: false,
-                was_raw: result.unwrap_or(false),
+                was_raw: terminal::is_raw_mode_enabled().unwrap_or(false),
+                _lock: lock,
             }
         }
     }
@@ -105,15 +56,12 @@ mod tests {
             use crossterm::{cursor, execute, terminal};
             let mut stdout = std::io::stdout();
 
-            // Sequence cleanup operations with flushing
-            let _ = execute!(stdout, terminal::LeaveAlternateScreen);
-            let _ = stdout.flush();
-
+            // Restore raw mode if needed
             if !self.was_raw {
                 let _ = terminal::disable_raw_mode();
             }
-            let _ = stdout.flush();
 
+            // Just ensure cursor position and line clarity
             let _ = execute!(
                 stdout,
                 cursor::MoveToColumn(0),
@@ -122,53 +70,6 @@ mod tests {
             let _ = stdout.flush();
         }
     }
-
-    // use std::sync::Mutex;
-
-    // lazy_static::lazy_static! {
-    //     static ref TEST_OUTPUT_LOCK: Mutex<()> = Mutex::new(());
-    // }
-
-    // fn init_test() {
-    //     let _lock = TEST_OUTPUT_LOCK.lock().unwrap();
-    //     // Ensure we're writing to a clean line
-    //     print!("\r\x1B[2K"); // CR + clear line
-    //     std::io::stdout().flush().unwrap();
-    // }
-
-    // fn init_test() {
-    //     // print!("\x1B[1G\x1B[K");
-    //     // std::io::stdout().flush().unwrap();
-    //     use crossterm::cursor;
-    //     use crossterm::terminal;
-    //     use crossterm::ExecutableCommand;
-    //     use std::io::stdout;
-    //     // let is_raw = terminal::is_raw_mode_enabled();
-    //     // println!("is_raw={is_raw:#?}");
-    //     // let mut stdout = stdout();
-    //     // let _ = stdout.execute(cursor::MoveToColumn(0));
-    //     // let _ = stdout.execute(terminal::Clear(terminal::ClearType::CurrentLine));
-    //     let raw_mode = terminal::is_raw_mode_enabled().unwrap_or(false);
-    //     eprintln!("Test starting. Raw mode: {}", raw_mode);
-
-    //     // Try both approaches
-    //     print!("\r");
-    //     std::io::stdout().flush().unwrap();
-
-    //     let mut stdout = stdout();
-    //     let _ = stdout.execute(cursor::MoveToColumn(0));
-    //     let _ = stdout.execute(terminal::Clear(terminal::ClearType::CurrentLine));
-
-    //     eprintln!("After cursor moves");
-    // }
-
-    // Add this attribute to see if tests are being discovered
-    // #[test]
-    // #[ignore]
-    // fn test_log_color_debug_test_discovery() {
-    //     println!("Test module is being discovered");
-    //     assert!(true);
-    // }
 
     #[test]
     fn test_log_color_support_detection() {
@@ -196,9 +97,6 @@ mod tests {
                     assert!(color_level.is_none());
                 }
             }
-            let timeout = std::time::Duration::from_millis(1000);
-            let _theme = termbg::theme(timeout);
-            // ...
         });
 
         // Guard will clean up terminal state
@@ -252,9 +150,6 @@ mod tests {
                 let style = log_color.style_for_level(level);
                 assert_eq!(style, expected_style, "Style mismatch for {:?}", level);
             }
-            let timeout = std::time::Duration::from_millis(1000);
-            let _theme = termbg::theme(timeout);
-            // ...
         });
 
         // Guard will clean up terminal state
@@ -285,9 +180,6 @@ mod tests {
                     level
                 );
             }
-            let timeout = std::time::Duration::from_millis(1000);
-            let _theme = termbg::theme(timeout);
-            // ...
         });
 
         // Guard will clean up terminal state
@@ -324,9 +216,6 @@ mod tests {
                     let log_color = LogColor::from_config(&config);
                     assert_eq!(log_color.color_support, new_support);
                 }
-                let timeout = std::time::Duration::from_millis(1000);
-                let _theme = termbg::theme(timeout);
-                // ...
             });
             // Wait with timeout
             while start.elapsed() < timeout {
@@ -378,9 +267,6 @@ mod tests {
                         .paint(content)
                 )
             );
-            let timeout = std::time::Duration::from_millis(1000);
-            let _theme = termbg::theme(timeout);
-            // ...
         });
 
         // Guard will clean up terminal state
@@ -430,6 +316,7 @@ mod tests {
             };
 
             assert_eq!(first_theme, second_theme);
+            println!("first_theme={first_theme:#?}, second_theme={second_theme:#?}");
         });
 
         drop(guard);

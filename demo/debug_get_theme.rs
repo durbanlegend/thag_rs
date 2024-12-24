@@ -14,47 +14,25 @@ use std::io::Write;
 use std::time::{Duration, Instant};
 use thag_rs::log_color::{ColorSupport, LogColor, Theme};
 
-#[allow(dead_code)]
 struct TestGuard {
-    was_alternate: bool,
     was_raw: bool,
-    clear_screen: bool, // New flag
 }
 
 impl TestGuard {
-    fn new(clear_screen: bool) -> Self {
+    fn new() -> Self {
         use crossterm::{cursor, execute, terminal};
-        // let stdout = std::io::stdout();
 
-        // // Only clear if flag is set
-        // if clear_screen {
-        //     let _ = execute!(
-        //         stdout,
-        //         terminal::LeaveAlternateScreen,
-        //         cursor::MoveToColumn(0),
-        //         terminal::Clear(terminal::ClearType::CurrentLine)
-        //     );
-        // }
-
-        let result = std::panic::catch_unwind(|| {
-            let mut stdout = std::io::stdout();
-            // Only clear if flag is set
-            if clear_screen {
-                let _ = execute!(
-                    stdout,
-                    terminal::LeaveAlternateScreen,
-                    cursor::MoveToColumn(0),
-                    terminal::Clear(terminal::ClearType::CurrentLine)
-                );
-            }
-            let _ = stdout.flush();
-            terminal::is_raw_mode_enabled().unwrap_or(false)
-        });
+        // Just handle cursor and raw mode
+        let mut stdout = std::io::stdout();
+        let _ = execute!(
+            stdout,
+            cursor::MoveToColumn(0),
+            terminal::Clear(terminal::ClearType::CurrentLine)
+        );
+        let _ = stdout.flush();
 
         Self {
-            was_alternate: false,
-            was_raw: result.unwrap_or(false),
-            clear_screen,
+            was_raw: terminal::is_raw_mode_enabled().unwrap_or(false),
         }
     }
 }
@@ -64,29 +42,17 @@ impl Drop for TestGuard {
         use crossterm::{cursor, execute, terminal};
         let mut stdout = std::io::stdout();
 
-        // Sequence cleanup operations with flushing
-        // let _ = execute!(stdout, terminal::LeaveAlternateScreen);
-        let _ = stdout.flush();
-
+        // Restore raw mode if needed
         if !self.was_raw {
             let _ = terminal::disable_raw_mode();
         }
-        let _ = stdout.flush();
 
-        // let _ = execute!(
-        //     stdout,
-        //     cursor::MoveToColumn(0),
-        //     terminal::Clear(terminal::ClearType::CurrentLine)
-        // );
-        // Only clear if flag is set
-        if self.clear_screen {
-            let _ = execute!(
-                stdout,
-                terminal::LeaveAlternateScreen,
-                cursor::MoveToColumn(0),
-                terminal::Clear(terminal::ClearType::CurrentLine)
-            );
-        }
+        // Just ensure cursor position and line clarity
+        let _ = execute!(
+            stdout,
+            cursor::MoveToColumn(0),
+            terminal::Clear(terminal::ClearType::CurrentLine)
+        );
         let _ = stdout.flush();
     }
 }
@@ -94,12 +60,7 @@ impl Drop for TestGuard {
 fn main() {
     Builder::new().filter_level(log::LevelFilter::Debug).init();
 
-    let guard = TestGuard::new(
-        // Only clear in WezTerm
-        std::env::var("TERM_PROGRAM")
-            .map(|v| v == "WezTerm")
-            .unwrap_or(false),
-    );
+    let guard = TestGuard::new();
 
     let result = std::panic::catch_unwind(|| {
         // Use a shorter timeout for theme detection

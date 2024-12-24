@@ -57,19 +57,27 @@ impl LogColor {
             return self.theme;
         }
 
+        // Check cache first
         let detected = self.detected_theme.load(Ordering::Relaxed);
-        if detected == 0 {
-            let detected_theme = Self::detect_terminal_theme();
-            self.detected_theme.store(
-                if detected_theme == Theme::Light { 1 } else { 2 },
-                Ordering::Relaxed,
-            );
-            detected_theme
-        } else if detected == 1 {
-            Theme::Light
-        } else {
-            Theme::Dark
+        if detected != 0 {
+            // Return cached result
+            return if detected == 1 {
+                Theme::Light
+            } else {
+                Theme::Dark
+            };
         }
+
+        // Only try detection once
+        let theme = Self::detect_terminal_theme();
+        self.detected_theme.store(
+            match theme {
+                Theme::Light => 1,
+                Theme::Dark | Theme::AutoDetect => 2,
+            },
+            Ordering::Relaxed,
+        );
+        theme
     }
 
     fn detect_terminal_theme() -> Theme {

@@ -8,6 +8,18 @@ mod tests {
     use thag_rs::termbg::{self, Theme};
     use thag_rs::{cprtln, Lvl};
 
+    struct TestGuard;
+
+    impl Drop for TestGuard {
+        fn drop(&mut self) {
+            // Reset terminal state
+            let _ = crossterm::terminal::disable_raw_mode();
+            let _ = crossterm::terminal::LeaveAlternateScreen;
+            use std::io::Write;
+            let _ = std::io::stdout().flush();
+        }
+    }
+
     // Set environment variables before running tests
     fn set_up() {
         std::env::set_var("TEST_ENV", "1");
@@ -15,9 +27,28 @@ mod tests {
         std::env::set_var("EDITOR", "cat");
     }
 
+    fn init_test() {
+        // Try each of these separately:
+
+        // Version 1: Just stdout flush
+        // use std::io::Write;
+        // std::io::stdout().flush().unwrap();
+
+        // Version 2: Just carriage return
+        // print!("\r");
+
+        // Version 3: Just raw mode check
+        // let _raw = crossterm::terminal::is_raw_mode_enabled();
+
+        // Version 4: Just cursor movement
+        let _pos = crossterm::cursor::position();
+    }
+
     #[cfg(not(target_os = "windows"))]
     fn convert_theme(theme1: &Theme) -> TermTheme {
         set_up();
+        init_test();
+        let _guard = TestGuard;
         // Define how the equality is determined for `Theme`
         match theme1 {
             Theme::Light => TermTheme::Light,
@@ -25,10 +56,13 @@ mod tests {
         }
     }
 
+    // #[ignore = "Caused rightward drift of the test result printouts"]
     #[test]
     // supports_color::on(Stream) causes rightward drift
     fn test_colors_color_support() {
         set_up();
+        init_test();
+        let _guard = TestGuard;
         let color_level = supports_color::on(Stream::Stdout);
         // thag_rs::clear_screen();
         let color_support = match color_level {
@@ -62,6 +96,8 @@ mod tests {
     fn test_colors_term_theme() {
         // Test if TERM_THEME is set correctly
         set_up();
+        init_test();
+        let _guard = TestGuard;
         // Example test using the manual comparison function
         // let theme =
         //     termbg::theme(std::time::Duration::from_millis(100)).expect("Error getting theme");
@@ -78,6 +114,8 @@ mod tests {
     fn test_colors_message_style_display() {
         // Test the Display trait for MessageStyle
         set_up();
+        init_test();
+        let _guard = TestGuard;
         let style = MessageStyle::Ansi16LightError;
         assert_eq!(style.to_string(), "ansi16_light_error");
 
@@ -89,6 +127,8 @@ mod tests {
     fn test_colors_nu_color_get_color() {
         // Test the get_color method for XtermColor
         set_up();
+        init_test();
+        let _guard = TestGuard;
         let xterm_color = XtermColor::GuardsmanRed;
         assert_eq!(Color::from(&xterm_color), Color::Fixed(160));
     }
@@ -99,6 +139,8 @@ mod tests {
         use thag_rs::colors::coloring;
 
         set_up();
+        init_test();
+        let _guard = TestGuard;
         // Test style conversions
         // Was causing rightward drift of the test result printouts.
         let theme = termbg::theme(std::time::Duration::from_millis(100));
@@ -143,6 +185,8 @@ mod tests {
     fn test_colors_message_style_get_style() {
         // Test the get_style method for MessageStyle
         set_up();
+        init_test();
+        let _guard = TestGuard;
         let style = Style::from(&MessageStyle::Ansi16LightError);
         assert_eq!(style, Color::Red.bold());
 
@@ -154,6 +198,8 @@ mod tests {
     fn test_colors_nu_color_println_macro() {
         // Test the nu_color_println macro
         set_up();
+        init_test();
+        let _guard = TestGuard;
         let content = "Test message from test_colors_nu_color_println_macro";
         let output = format!("\u{1b}[1m{content}\u{1b}[0m");
         let style = nu_ansi_term::Style::new().bold();

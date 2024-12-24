@@ -5,8 +5,7 @@ use nu_ansi_term::{Color, Style};
 use std::io::{self, Write};
 use std::sync::atomic::{AtomicU8, Ordering};
 use supports_color::Stream;
-use termbg::{theme, Theme as TermbgTheme};
-// use termbg::terminal;
+use termbg::Theme as TermbgTheme;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LogLevel {
@@ -99,43 +98,30 @@ impl LogColor {
     }
 
     fn detect_theme_internal() -> Result<Theme, termbg::Error> {
-        // Use RAII guard to ensure raw mode is restored
-        struct RawModeGuard {
-            initial_state: bool,
-        }
-
+        // Create cleanup guard
+        struct RawModeGuard(bool);
         impl Drop for RawModeGuard {
             fn drop(&mut self) {
-                let restore_result = if self.initial_state {
-                    terminal::enable_raw_mode()
-                } else {
-                    terminal::disable_raw_mode()
-                };
-
-                if let Err(e) = restore_result {
-                    eprintln!(
-                        "\x1b[31mError restoring terminal state: {e}\n\
-                         Terminal may be corrupted. Try running 'reset'.\x1b[0m",
-                    );
+                if !self.0 {
+                    let _ = terminal::disable_raw_mode();
                 }
             }
         }
 
-        profile!("detect_theme_internal");
-
         // Save initial state
         let raw_before = terminal::is_raw_mode_enabled()?;
-        // println!("raw_before={raw_before}");
 
-        // Create guard that will restore state on scope exit
-        let _guard = RawModeGuard {
-            initial_state: raw_before,
-        };
+        // Ensure raw mode for detection
+        if !raw_before {
+            terminal::enable_raw_mode()?;
+        }
 
+        let _guard = RawModeGuard(raw_before);
+
+        // Now do theme detection
         let timeout = std::time::Duration::from_millis(1000);
-        let theme = theme(timeout)?;
+        let theme = termbg::theme(timeout)?;
 
-        // Convert termbg theme to our Theme enum
         Ok(match theme {
             TermbgTheme::Light => Theme::Light,
             TermbgTheme::Dark => Theme::Dark,

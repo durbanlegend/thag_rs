@@ -77,6 +77,9 @@ pub mod profiling;
 #[cfg(feature = "core")]
 pub mod shared;
 
+#[cfg(feature = "core")]
+pub mod log_color; // Alternative lightweight logging
+
 //-----------------------------------------------------------------------------
 // AST Analysis:
 //-----------------------------------------------------------------------------
@@ -159,7 +162,6 @@ pub use {
 #[cfg(feature = "core")]
 pub use {
     errors::{ThagError, ThagResult},
-    log,
     logging::{get_verbosity, Verbosity, V},
     profiling::Profile,
     shared::{debug_timings, escape_path_for_windows},

@@ -26,7 +26,9 @@ mod tests {
 
     // Helper to detect CI environment
     fn is_ci() -> bool {
-        std::env::var("CI").is_ok() || std::env::var("GITHUB_ACTIONS").is_ok()
+        std::env::var("CI").is_ok()
+            || std::env::var("GITHUB_ACTIONS").is_ok()
+            || std::env::var("TERM").map(|t| t == "dumb").unwrap_or(false)
     }
 
     struct TestGuard {
@@ -40,17 +42,16 @@ mod tests {
 
             let lock = TERMINAL_LOCK.lock().unwrap();
 
-            // Ensure we print a newline before potentially modifying terminal state
-            // println!();
             let mut stdout = std::io::stdout();
-            let _ = stdout.flush();
+            stdout.flush().unwrap();
 
+            // Move to start of line and clear
             let _ = execute!(
                 stdout,
                 cursor::MoveToColumn(0),
                 terminal::Clear(terminal::ClearType::CurrentLine)
             );
-            let _ = stdout.flush();
+            stdout.flush().unwrap();
 
             Self {
                 was_raw: terminal::is_raw_mode_enabled().unwrap_or(false),
@@ -74,8 +75,10 @@ mod tests {
                 cursor::MoveToColumn(0),
                 terminal::Clear(terminal::ClearType::CurrentLine)
             );
-            // println!(); // Ensure next line starts clean
-            let _ = stdout.flush();
+            stdout.flush().unwrap();
+
+            // Add newline to ensure test framework output starts on fresh line
+            println!();
         }
     }
 
@@ -280,7 +283,7 @@ mod tests {
 
     // Skip theme detection tests in CI
     #[test]
-    // #[cfg_attr(not(feature = "theme-detection"), ignore)]
+    #[cfg_attr(test, ignore = "Theme detection requires terminal")]
     fn test_log_color_theme_persistence() {
         if is_ci() {
             println!("Skipping theme detection test in CI environment");

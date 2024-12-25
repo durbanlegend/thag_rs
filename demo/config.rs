@@ -9,8 +9,8 @@ nu-ansi-term = "0.50.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "3.11.0"
 toml = "0.8.19"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_support", "core", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_support", "core", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_support", "core", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_support", "core", "simplelog"] }
 */
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.

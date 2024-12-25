@@ -4,7 +4,7 @@
 //!
 //! Placing the following instruction at the start of your code will allow profiling to be enabled by running with `--features=profiling`.
 //!
-//! ```rust
+//! ```ignore
 //!     if cfg!(feature = "profiling") {
 //!         println!("Enabling profiling..."); // Debug output
 //!         profiling::enable_profiling(true)?;

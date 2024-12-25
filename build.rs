@@ -161,7 +161,7 @@ fn check_{test_name}() {{
                 source_path = &path.to_str().expect("Failed to get source path"),
                 more_options = if multimain.contains(&source_name) {
                     "mq"
-                } else if (&source_name == "hyper_hello_server.rs" || &source_name == "just_a_test_expression.rs" {
+                } else if (&source_name == "hyper_hello_server.rs" || &source_name == "just_a_test_expression.rs") {
                     "v"
                 } else {
                     "q"

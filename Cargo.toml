@@ -33,16 +33,10 @@ cargo_toml = { version = "0.21.0", optional = true }
 clap = { version = "4.5.23", features = ["cargo", "derive"], optional = true }
 crokey = { version = "1.1.0", optional = true }
 crossterm = { version = "0.28.1", features = ["use-dev-tty"], optional = true }
-dirs = "5.0.1"
 documented = "0.9.1"
 edit = { version = "0.1.5", optional = true }
 env_logger = { version = "0.11.5", optional = true }
 toml = { version = "0.8.19", optional = true }
-# To switch off, use version without features = ["enable_system_time"]
-# If on, prepare for function to run twice for some reason!
-# firestorm = "0.5.1"
-# firestorm = { version = "0.5.1", features = ["enable_system_time"] }
-home = "0.5.11"
 log = "0.4.22"
 mockall = { version = "0.13.1", optional = true }
 nu-ansi-term = { version = "0.50.1", optional = true }
@@ -79,6 +73,7 @@ tui-textarea = { version = "0.7", features = [
     "search",
 ], optional = true }
 document-features = "0.2.10"
+directories = "5.0.1"
 
 [target.'cfg(windows)'.dependencies]
 win32console = "0.1.5"
@@ -88,6 +83,7 @@ winapi = "0.3.9"
 opt-level = 1           # Use slightly better optimizations.
 debug = true
 debug-assertions = true
+incremental = true
 
 [profile.release]
 debug = false
@@ -218,7 +214,7 @@ harness = false
 
 [workspace]
 members = ["src/proc_macros"]
-exclude = ["demo/proc_macros"]
+exclude = ["bank/proc_macros", "demo/proc_macros"]
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]

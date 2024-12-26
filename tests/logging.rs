@@ -36,7 +36,7 @@ mod tests {
     fn init_logger() {
         CombinedLogger::init(vec![
             TermLogger::new(
-                LevelFilter::Info,
+                LevelFilter::Debug,
                 Config::default(),
                 TerminalMode::Mixed,
                 ColorChoice::Auto,

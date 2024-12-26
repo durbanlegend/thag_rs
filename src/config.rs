@@ -1,6 +1,6 @@
 use crate::{
-    cprtln, cvprtln, debug_log, lazy_static_var, ColorSupport, Lvl, TermTheme, ThagError,
-    ThagResult, Verbosity, V,
+    cprtln, cvprtln, debug_log, get_home_dir_string, lazy_static_var, ColorSupport, Lvl, TermTheme,
+    ThagError, ThagResult, Verbosity, V,
 };
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
@@ -18,6 +18,7 @@ use std::{
     collections::HashMap,
     env::{current_dir, var},
     error::Error,
+    fmt::Debug,
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
@@ -48,30 +49,37 @@ impl Config {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered.
+    // pub fn load_or_create_default(context: &Arc<dyn Context>) -> Result<Self, Box<dyn Error>> {
     pub fn load_or_create_default() -> Result<Self, Box<dyn Error>> {
         profile_method!("load_or_create_default");
-        let config_dir = if let Some(cargo_home) = std::env::var_os("CARGO_HOME") {
-            PathBuf::from(cargo_home).join(".config").join("thag_rs")
-        } else {
-            dirs::config_dir()
-                .ok_or("Could not determine config directory")?
-                .join("thag_rs")
-        };
 
+        let base_dir = PathBuf::from(get_home_dir_string()?).join(".config");
+        let config_dir = base_dir.join(".config").join("thag_rs");
         let config_path = config_dir.join("config.toml");
 
+        println!(
+            "1. config_path={config_path:#?}, exists={}",
+            config_path.exists()
+        );
         if !config_path.exists() {
-            fs::create_dir_all(&config_dir)?;
+            let path = config_path
+                .parent()
+                .ok_or(ThagError::NoneOption("No parent for {config_path:#?}"))?;
+            fs::create_dir_all(path)?;
 
             // Try to find default config in different locations
             let default_config = if let Ok(cargo_home) = std::env::var("CARGO_HOME") {
-                // First try cargo-dist installed location
-                let dist_config = PathBuf::from(cargo_home)
+                // First try cargo installed assets location
+                let user_config = PathBuf::from(cargo_home)
                     .join("assets")
                     .join("default_config.toml");
 
-                if dist_config.exists() {
-                    fs::read_to_string(dist_config)?
+                println!(
+                    "2. dist_config={user_config:#?}, exists={}",
+                    user_config.exists()
+                );
+                if user_config.exists() {
+                    fs::read_to_string(user_config)?
                 } else {
                     // Fallback to embedded config
                     include_str!("../assets/default_config.toml").to_string()
@@ -80,11 +88,18 @@ impl Config {
                 include_str!("../assets/default_config.toml").to_string()
             };
 
+            println!("3. default_config={default_config}");
             fs::write(&config_path, default_config)?;
         }
 
+        println!(
+            "4. config_path={config_path:#?}, exists={}",
+            config_path.exists()
+        );
         let config_str = fs::read_to_string(&config_path)?;
-        Ok(toml::from_str(&config_str)?)
+        let maybe_config = toml::from_str(&config_str);
+        println!("5. maybe_config={maybe_config:#?}");
+        Ok(maybe_config?)
     }
 
     /// Load a configuration.
@@ -517,7 +532,7 @@ pub struct Misc {
 }
 
 #[automock]
-pub trait Context {
+pub trait Context: Debug {
     fn get_config_path(&self) -> PathBuf;
     fn is_real(&self) -> bool;
 }
@@ -551,10 +566,10 @@ impl RealContext {
     #[cfg(not(target_os = "windows"))]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!("new_real_contexr");
-        let base_dir = home::home_dir()
-            .expect("Error resolving home::home_dir()")
-            .join(".config");
+        profile_method!("new_real_context");
+        let base_dir =
+            PathBuf::from(crate::get_home_dir_string().expect("Could not find home directory"))
+                .join(".config");
         Self { base_dir }
     }
 }
@@ -575,7 +590,16 @@ impl Context for RealContext {
 #[allow(clippy::module_name_repetitions)]
 pub fn maybe_config() -> Option<Config> {
     profile!("maybe_config");
-    lazy_static_var!(Option<Config>, maybe_load_config()).clone()
+    lazy_static_var!(Option<Config>, {
+        let load_or_default = Config::load_or_create_default();
+        if let Ok(config) = load_or_default {
+            Some(config)
+        } else {
+            // Fallback strategy
+            maybe_load_config()
+        }
+    })
+    .clone()
 }
 
 fn maybe_load_config() -> Option<Config> {
@@ -640,6 +664,11 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     debug_log!("config_path={config_path:?}");
 
     if !config_path.exists() {
+        cprtln!(
+            &nu_ansi_term::Color::Fixed(171).bold(),
+            "Configuration file path {} not found. No config loaded. System defaults will be used.",
+            config_path.display()
+        );
         return Ok(Some(Config::default()));
     }
 

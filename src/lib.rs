@@ -132,6 +132,15 @@ pub mod tui_editor;
 #[cfg(feature = "repl")]
 pub mod repl;
 
+// #[cfg(feature = "core")]
+pub use {
+    errors::{ThagError, ThagResult},
+    logging::{get_verbosity, Verbosity, V},
+    profiling::Profile,
+    shared::{debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string},
+    thag_proc_macros::repeat_dash,
+};
+
 #[cfg(any(feature = "ast", feature = "build"))]
 pub use {
     ast::{find_crates, find_metadata, Ast, CratesFinder, MetadataFinder},
@@ -157,15 +166,6 @@ pub use {
         ProcMacros,
     },
     termbg,
-};
-
-#[cfg(feature = "core")]
-pub use {
-    errors::{ThagError, ThagResult},
-    logging::{get_verbosity, Verbosity, V},
-    profiling::Profile,
-    shared::{debug_timings, escape_path_for_windows},
-    thag_proc_macros::repeat_dash,
 };
 
 #[cfg(feature = "tui")]

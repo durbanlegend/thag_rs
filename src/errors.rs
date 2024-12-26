@@ -55,6 +55,7 @@ pub enum ThagError {
     Toml(CargoTomlError), // For cargo_toml errors
     UnsupportedTerm, // For terminal interrogation
     Validation(String), // For config.toml and similar validation
+    VarError(std::env::VarError), // For std::env::var errors
 }
 
 impl From<FromUtf8Error> for ThagError {
@@ -155,6 +156,12 @@ impl From<Box<dyn Error + Send + Sync + 'static>> for ThagError {
     }
 }
 
+impl From<std::env::VarError> for ThagError {
+    fn from(err: std::env::VarError) -> Self {
+        Self::VarError(err)
+    }
+}
+
 impl std::fmt::Display for ThagError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -212,6 +219,7 @@ impl std::fmt::Display for ThagError {
             }
             Self::UnsupportedTerm => write!(f, "Unsupported terminal type"),
             Self::Validation(e) => write!(f, "{e}"),
+            Self::VarError(e) => write!(f, "{e}"),
         }
     }
 }
@@ -250,6 +258,7 @@ impl Error for ThagError {
             #[cfg(feature = "cargo_toml")]
             Self::Toml(ref e) => Some(e),
             Self::Validation(ref _e) => Some(self),
+            Self::VarError(ref e) => Some(e),
         }
     }
 }

@@ -2,20 +2,26 @@
 mod tests {
     #[cfg(feature = "simplelog")]
     use simplelog::{
-        ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+        ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger,
     };
+    use {
+        std::{fs::File, sync::OnceLock},
+        thag_rs::get_home_dir_string,
+    };
+
+    use std::fs;
     use std::sync::Arc;
     use std::{env::current_dir, path::PathBuf};
-    #[cfg(feature = "simplelog")]
-    use std::{fs::File, sync::OnceLock};
+    // use thag_rs::config::get_context;
     use thag_rs::{
         colors::{ColorSupport, TermTheme},
         config::{
-            self, validate_config_format, Dependencies, FeatureOverride, MockContext, RealContext,
+            self, validate_config_format, Config, Dependencies, FeatureOverride, MockContext,
+            RealContext,
         },
         debug_log, load,
         logging::Verbosity,
-        Context,
+        Context, ThagResult,
     };
 
     #[cfg(feature = "simplelog")]
@@ -28,13 +34,13 @@ mod tests {
             CombinedLogger::init(vec![
                 TermLogger::new(
                     LevelFilter::Debug,
-                    Config::default(),
+                    simplelog::Config::default(),
                     TerminalMode::Mixed,
                     ColorChoice::Auto,
                 ),
                 WriteLogger::new(
                     LevelFilter::Debug,
-                    Config::default(),
+                    simplelog::Config::default(),
                     File::create("app.log").unwrap(),
                 ),
             ])
@@ -260,5 +266,47 @@ mod tests {
         "#;
 
         assert!(validate_config_format(invalid_config).is_err());
+    }
+
+    #[test]
+    fn test_config_load_or_create_default_when_config_doesnt_exist() -> ThagResult<()> {
+        let base_dir = PathBuf::from(get_home_dir_string()?).join(".config");
+        let config_dir = base_dir.join(".config").join("thag_rs");
+        let config_path = config_dir.join("config.toml");
+
+        // let config_path = PathBuf::from("test_config.toml");
+        // let default_config_path = PathBuf::from("../assets/default_config.toml");
+
+        // Clean up any existing test config file
+        if config_path.exists() {
+            fs::remove_file(&config_path).expect("Failed to remove existing test config");
+        }
+
+        // let context = get_context();
+        // eprintln!("context={context:#?}");
+
+        // let maybe_config = Config::load_or_create_default(&context);
+        let maybe_config = Config::load_or_create_default();
+
+        // Write test results to a file that will be visible in CI
+        let mut output = String::new();
+        output.push_str(&format!("maybe_config: {:?}\n", maybe_config));
+        output.push_str(&format!("config_path exists: {}\n", config_path.exists()));
+        if config_path.exists() {
+            let content = fs::read_to_string(&config_path).unwrap();
+            output.push_str(&format!("config content:\n{}\n", content));
+        }
+        fs::write("test_output.log", output).expect("Failed to write test output");
+
+        assert!(
+            maybe_config.is_ok(),
+            "Expected Ok result, got {:?}",
+            maybe_config
+        );
+        assert!(config_path.exists(), "Config file was not created");
+
+        // Clean up
+        fs::remove_file(&config_path)?;
+        Ok(())
     }
 }

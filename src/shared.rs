@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::{debug_log, profile};
-use std::time::Instant;
+use crate::{debug_log, profile, ThagResult};
+use std::{path::PathBuf, time::Instant};
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.
 #[inline]
@@ -112,4 +112,25 @@ macro_rules! regex {
         static RE: OnceLock<Regex> = OnceLock::new();
         RE.get_or_init(|| Regex::new($re).unwrap())
     }};
+}
+
+/// Get the user's home directory as a `String`.
+///
+/// # Errors
+///
+/// This function will return an error if it can't resolve the user directories.
+pub fn get_home_dir_string() -> ThagResult<String> {
+    let home_dir = &get_home_dir()?;
+    Ok(home_dir.display().to_string())
+}
+
+/// Get the user's home directory as a `PathBuf`.
+///
+/// # Errors
+///
+/// This function will return an error if it can't resolve the user directories.
+pub fn get_home_dir() -> ThagResult<PathBuf> {
+    let user_dirs = directories::UserDirs::new().ok_or("Can't resolve user directories")?;
+    let home_dir = user_dirs.home_dir();
+    Ok(home_dir.to_owned())
 }

@@ -32,3 +32,4 @@ install_thag_protocol.sh
 demo/proc_macros/target/.rustc_info.json
 thag-profile.folded
 *.dot
+test_output.log

@@ -521,10 +521,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6184e33543162437515c2e2b48714794e37845ec9851711914eec9d308f6ebe8"
 
 [[package]]
-name = "dirs"
+name = "directories"
 version = "5.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44c45a9d03d6676652bcb5e724c7e988de1acad23a711b5217ab9cbecbec2225"
+checksum = "9a49173b84e034382284f27f1af4dcbbd231ffa358c0fe316541a7337f376a35"
 dependencies = [
  "dirs-sys",
 ]
@@ -2117,12 +2117,10 @@ dependencies = [
 name = "thag_proc_macros"
 version = "0.1.1"
 dependencies = [
- "crossterm",
  "inline_colorization",
  "prettyplease",
  "proc-macro2 1.0.92",
  "quote 1.0.37",
- "strict",
  "syn 2.0.91",
 ]
 
@@ -2138,13 +2136,12 @@ dependencies = [
  "criterion",
  "crokey",
  "crossterm",
- "dirs",
+ "directories",
  "document-features",
  "documented",
  "edit",
  "either",
  "env_logger",
- "home",
  "lazy_static",
  "log",
  "mockall",

@@ -43,7 +43,8 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
         .expect("Problem stripping Rust suffix");
     let current_dir = std::env::current_dir().expect("Could not get current dir");
     let working_dir_path = current_dir.clone();
-    let cargo_home = home::cargo_home().expect("Could not get Cargo home");
+    let cargo_home_string = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
+    let cargo_home = PathBuf::from(cargo_home_string);
     let target_dir_path = TMPDIR.join("thag_rs").join(source_stem);
     fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
     let target_path = target_dir_path
@@ -150,7 +151,8 @@ fn test_builder_build_cargo_project() {
 
     let current_dir = current_dir().expect("Could not get current dir");
     let source_path = current_dir.join("tests/assets").join(source_name);
-    let cargo_home = home::cargo_home().expect("Could not get Cargo home");
+    let cargo_home_str = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
+    let cargo_home = PathBuf::from(cargo_home_str);
     let target_dir_path = TMPDIR.join("thag_rs").join(source_stem);
     fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
     let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");

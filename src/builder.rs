@@ -47,21 +47,21 @@ use crate::code_utils::{
 };
 use crate::colors::init_styles;
 use crate::config::{self, DependencyInference, RealContext};
-use crate::debug_timings;
 use crate::manifest::extract;
 use crate::stdin::{edit, read};
 use crate::{
-    ast, coloring, cvprtln, debug_log, get_proc_flags, manifest, maybe_config,
-    modified_since_compiled, profile, profile_method, profile_section, regex, repeat_dash, shared,
-    validate_args, vlog, Ast, Cli, CrosstermEventReader, Dependencies, Lvl, ProcFlags, ThagError,
-    ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR,
-    RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
+    ast, coloring, cvprtln, debug_log, debug_timings, get_home_dir, get_proc_flags, manifest,
+    maybe_config, modified_since_compiled, profile, profile_method, profile_section, regex,
+    repeat_dash, shared, validate_args, vlog, Ast, Cli, CrosstermEventReader, Dependencies, Lvl,
+    ProcFlags, ThagError, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
+    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME,
+    V,
 };
 use cargo_toml::Manifest;
-use home::home_dir;
 use nu_ansi_term::Style;
 use regex::Regex;
 use side_by_side_diff::create_side_by_side_diff;
+use std::env;
 use std::{
     env::current_dir,
     fs::{self, OpenOptions},
@@ -249,7 +249,7 @@ impl BuildState {
         let working_dir_path = if flags.is_repl {
             TMPDIR.join(REPL_SUBDIR)
         } else {
-            std::env::current_dir()?.canonicalize()?
+            env::current_dir()?.canonicalize()?
         };
 
         // Script path setup
@@ -283,12 +283,11 @@ impl BuildState {
             .to_path_buf();
 
         // Cargo home setup
-        let cargo_home = PathBuf::from(match std::env::var("CARGO_HOME") {
-            Ok(string) if string != String::new() => string,
-            _ => {
-                let home_dir = home_dir().ok_or("Can't resolve home directory")?;
-                home_dir.join(".cargo").display().to_string()
-            }
+        let cargo_home_var = env::var("CARGO_HOME")?;
+        let cargo_home = PathBuf::from(if cargo_home_var == String::new() {
+            get_home_dir()?.join(".cargo").display().to_string()
+        } else {
+            cargo_home_var
         });
 
         // Target directory setup
@@ -1240,7 +1239,7 @@ If the problem is a dependency error, consider the following advice:
 fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     profile!("deploy_executable");
     // Determine the output directory
-    let mut cargo_bin_path = home::home_dir().ok_or("Could not find home directory")?;
+    let mut cargo_bin_path = PathBuf::from(crate::get_home_dir_string()?);
     let cargo_bin_subdir = ".cargo/bin";
     cargo_bin_path.push(cargo_bin_subdir);
 

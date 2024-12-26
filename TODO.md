@@ -9,6 +9,9 @@
 - [ ]  Raise clear_screen as an issue on supports-color crate?
 - [ ]  Config option for formatting main?
 - [ ]  Config option for stdin -d highlighting preference, like repl.rs
+- [ ]  Config loading warn when defaulting to ../assets etc.
+         NB: document that user should save it under ~/.config.
+         Check if thag_config_builder does so, also thag -C.
 - [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile time.

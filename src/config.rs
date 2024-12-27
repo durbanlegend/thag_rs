@@ -13,19 +13,19 @@ use crate::{profile, profile_method};
 use serde::de;
 #[cfg(target_os = "windows")]
 use std::env;
-use std::path::Path;
 use std::{
     collections::HashMap,
     env::{current_dir, var},
     error::Error,
     fmt::Debug,
-    fs::{self, OpenOptions},
-    io::Write,
-    path::PathBuf,
+    fs,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 use strum::{Display, EnumString};
 use toml_edit::DocumentMut;
+
+const DEFAULT_CONFIG: &str = include_str!("../assets/default_config.toml");
 
 /// Configuration categories
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
@@ -53,11 +53,12 @@ impl Config {
     pub fn load_or_create_default() -> Result<Self, Box<dyn Error>> {
         profile_method!("load_or_create_default");
 
-        let base_dir = PathBuf::from(get_home_dir_string()?).join(".config");
+        let base_dir = PathBuf::from(get_home_dir_string()?);
         let config_dir = base_dir.join(".config").join("thag_rs");
         let config_path = config_dir.join("config.toml");
 
-        eprintln!(
+        #[cfg(debug_assertions)]
+        debug_log!(
             "1. config_path={config_path:#?}, exists={}",
             config_path.exists()
         );
@@ -74,7 +75,8 @@ impl Config {
                     .join("assets")
                     .join("default_config.toml");
 
-                eprintln!(
+                #[cfg(debug_assertions)]
+                debug_log!(
                     "2. dist_config={user_config:#?}, exists={}",
                     user_config.exists()
                 );
@@ -82,23 +84,26 @@ impl Config {
                     fs::read_to_string(user_config)?
                 } else {
                     // Fallback to embedded config
-                    include_str!("../assets/default_config.toml").to_string()
+                    DEFAULT_CONFIG.to_string()
                 }
             } else {
-                include_str!("../assets/default_config.toml").to_string()
+                DEFAULT_CONFIG.to_string()
             };
 
-            eprintln!("3. default_config={default_config}");
+            #[cfg(debug_assertions)]
+            debug_log!("3. default_config={default_config}");
             fs::write(&config_path, default_config)?;
         }
 
-        eprintln!(
+        #[cfg(debug_assertions)]
+        debug_log!(
             "4. config_path={config_path:#?}, exists={}",
             config_path.exists()
         );
         let config_str = fs::read_to_string(&config_path)?;
         let maybe_config = toml::from_str(&config_str);
-        eprintln!("5. maybe_config={maybe_config:#?}");
+        #[cfg(debug_assertions)]
+        debug_log!("5. maybe_config={maybe_config:#?}");
         Ok(maybe_config?)
     }
 
@@ -688,33 +693,22 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
     profile!("edit");
     let config_path = context.get_config_path();
-
     debug_log!("config_path={config_path:?}");
 
     let exists = config_path.exists();
     if !exists {
         let dir_path = &config_path.parent().ok_or("Can't create directory")?;
         fs::create_dir_all(dir_path)?;
+
+        cprtln!(
+            &nu_ansi_term::Color::Yellow.bold(),
+            "No configuration file found at {}. Creating one using system defaults...",
+            config_path.display()
+        );
+
+        fs::write(&config_path, DEFAULT_CONFIG)?;
     }
 
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(&config_path)?;
-    if !exists {
-        let text = r#"# Please set up the config file as follows:
-# 1. Follow the link below to the template on Github.
-# 2. Copy the config file template contents using the "Raw (Copy raw file)" icon in the viewer.
-# 3. Paste the contents in here.
-# 4. Make the configuration changes you want. Ensure you un-comment the options you want.
-# 5. Save the file.
-# 6. Exit or tab away to return.
-#
-# https://github.com/durbanlegend/thag_rs/blob/master/assets/config.toml.template
-"#;
-        file.write_all(text.as_bytes())?;
-    }
     eprintln!("About to edit {config_path:#?}");
     if context.is_real() {
         edit_file(&config_path)?;

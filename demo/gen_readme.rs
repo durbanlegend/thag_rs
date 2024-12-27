@@ -4,8 +4,8 @@ convert_case = "0.6.0"
 log = "0.4.22"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive"] }
-# thag_proc_macros = { version = "0.1.0", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
-thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "main" }
+thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+#   thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = "0.1.9"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "main" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs" }
@@ -27,7 +27,7 @@ use std::{
 use thag_rs::{code_utils, lazy_static_var, regex, shared};
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-use thag_demo_proc_macros::category_enum;
+use thag_proc_macros::category_enum;
 
 #[derive(Debug)]
 struct ScriptMetadata {

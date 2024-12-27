@@ -1,10 +1,105 @@
 #![allow(clippy::missing_panics_doc)]
+mod category_enum;
 mod repeat_dash;
 
+use crate::category_enum::category_enum_impl;
 use crate::repeat_dash::repeat_dash_impl;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_file, parse_macro_input, ItemFn};
+
+/// Generates a `Category` enum with predefined variants and utility implementations.
+///
+/// The `category_enum` macro defines an enum `Category` with a hardcoded set of variants.
+/// This ensures consistency across all callers and centralizes control over the available categories.
+///
+/// Additionally, it generates:
+/// - A `FromStr` implementation to parse strings into the `Category` enum.
+/// - A utility method `Category::all_categories()` to return a list of all available category names.
+///
+/// # Usage
+///
+/// Simply invoke the macro in your project:
+///
+/// ```rust
+/// use demo_proc_macros::category_enum;
+///
+/// category_enum!();
+/// ```
+///
+/// This generates:
+///
+/// ```rust
+/// pub enum Category {
+///     AST,
+///     CLI,
+///     REPL,
+///     Async,
+///     Basic,
+///     BigNumbers,
+///     Crates,
+///     Educational,
+///     ErrorHandling,
+///     Exploration,
+///     Macros,
+///     Math,
+///     ProcMacros,
+///     Prototype,
+///     Recreational,
+///     Reference,
+///     Technique,
+///     Testing,
+///     Tools,
+///     TypeIdentification,
+/// }
+///
+/// impl std::str::FromStr for Category {
+///     type Err = String;
+///
+///     fn from_str(s: &str) -> Result<Self, Self::Err> {
+///         match s {
+///             "AST" => Ok(Category::AST),
+///             "CLI" => Ok(Category::CLI),
+///             "REPL" => Ok(Category::REPL),
+///             "Async" => Ok(Category::Async),
+///             // ... other variants ...
+///             _ => Err(format!("Invalid category: {s}")),
+///         }
+///     }
+/// }
+///
+/// impl Category {
+///     pub fn all_categories() -> Vec<&'static str> {
+///         vec![
+///             "AST", "CLI", "REPL", "Async", "Basic", "BigNumbers", "Crates",
+///             "Educational", "ErrorHandling", "Exploration", "Macros", "Math",
+///             "ProcMacros", "Prototype", "Recreational", "Reference", "Technique",
+///             "Testing", "Tools", "TypeIdentification",
+///         ]
+///     }
+/// }
+/// ```
+///
+/// # Benefits
+///
+/// - Consistency: The hardcoded list ensures uniformity across all callers.
+/// - Convenience: Auto-generated utility methods simplify working with the categories.
+/// - Safety: Enums prevent invalid values at compile time.
+///
+/// # Use Cases
+///
+/// This macro is ideal for scenarios requiring centralized control over predefined categories,
+/// such as filtering demo scripts or generating reports.
+#[proc_macro]
+pub fn category_enum(input: TokenStream) -> TokenStream {
+    // Parse the input to check for the `expand_macro` attribute
+    let should_expand = input.clone().into_iter().any(|token| {
+        // Very basic check - you might want something more robust
+        token.to_string().contains("expand_macro")
+    });
+
+    intercept_and_debug(should_expand, &input, category_enum_impl)
+}
 
 /// Generates a constant `DASH_LINE` consisting of a dash (hyphen) repeated the number of times specified by the integer literal argument `n`.
 ///

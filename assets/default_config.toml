@@ -27,17 +27,33 @@ color_support = "xterm256"
 #   dark - Dark background terminal (default)
 #   auto_detect - Let `thag` autodetect the background luminosity
 
+# Terminal light/dark override. Tells thag_rs whether you are using a light or dark theme,
+# instead of letting thag_rs interrogate the terminal, which could cause misbehaviour
+# on Windows in particular, or choose a default, which if incorrect could compromise the
+# legibility of text.
+# Valid values are: "dark" or "light".
+# "dark" is generally a safe choice as the colors should be legible even for a light theme
 term_theme = "dark"
 
 # Demo proc macro settings
 [proc_macros]
+# Allows user to specify manifest directory paths for the thag_demo_proc_macro crate and the
+# internal `bank` equivalent. This is a prerequisite for the `thag_rs` proc-macros feature.
+#
+# Specify a valid absolute or relative path string if required, e.g. "/Users/thag/projects/thag_rs/demo/proc_macros/Cargo.toml".
+# Relative paths should be relative to the current working directory.
+# A single forward slash is the required path separator in all environments including Windows.
+# Default value: "<dir>/proc_macros".
+bank_proc_macro_crate_path = "/Users/donf/projects/thag_rs/bank/proc_macros"
+demo_proc_macro_crate_path = "/Users/donf/projects/thag_rs/demo/proc_macros"
 
 # Dependency handling
 [dependencies]
 
-# How much `thag_rs` should intervene in inferring dependencies from code.
-# Options are "max", "min" and "config".
-# Default is "config". Sensible defaults are built in.
+# Specifies to what extent `thag_rs` should intervene in inferring dependencies from references to crates
+# in the script code, including but not limited to imports (`use` statements).
+# Options are "max", "min", "config" (recommended) and "none".
+# Default is "config". It has sensible settings built into the default config.toml for some popular crates.
 inference_level = "config"
 
 # Exclude features containing "unstable"
@@ -61,78 +77,53 @@ global_excluded_features = [
     "sqlite",
 ]
 
+# Crate-specific feature handling
 [dependencies.feature_overrides.async-std]
-excluded_features = [""]
 required_features = ["attributes"]
-default_features = true
 
 [dependencies.feature_overrides.clap]
-excluded_features = [""]
 required_features = ["cargo"]
-default_features = true
 
 [dependencies.feature_overrides.hyper]
-excluded_features = [""]
 required_features = ["full"]
-default_features = true
 
 [dependencies.feature_overrides.iced]
-excluded_features = [""]
 required_features = ["image", "debug"]
-default_features = true
 
 [dependencies.feature_overrides.nanorand]
-excluded_features = [""]
 required_features = ["getrandom"]
-default_features = true
 
 [dependencies.feature_overrides.nu-ansi-term]
-excluded_features = [""]
 required_features = ["derive_serde_style"]
-default_features = true
 
 [dependencies.feature_overrides.owo-colors]
-excluded_features = [""]
 required_features = ["supports-colors"]
-default_features = true
 
 [dependencies.feature_overrides.proc-macro2]
-excluded_features = [""]
 required_features = ["span-locations"]
-default_features = true
 
 [dependencies.feature_overrides.ratatui]
-excluded_features = [""]
 required_features = ["crossterm"]
-default_features = true
 
 [dependencies.feature_overrides.reqwest]
-excluded_features = [""]
 required_features = ["blocking", "json"]
-default_features = true
 
 [dependencies.feature_overrides.rug]
-excluded_features = [""]
 required_features = ["integer", "std"]
-default_features = true
 
 [dependencies.feature_overrides.rustyline]
 excluded_features = ["with-sqlite-history"]
-required_features = ["with-file-history"]
-alternative_features = ["with-file-history"]
+
+[dependencies.feature_overrides.rustix]
+required_features = ["fs"]
 
 [dependencies.feature_overrides.spin1]
-excluded_features = [""]
 required_features = ["mutex"]
-default_features = true
 
 [dependencies.feature_overrides.strum]
-excluded_features = [""]
-required_features = ["derive", "strum_macros", "phf"]
-default_features = true
+required_features = ["derive"]
 
 [dependencies.feature_overrides.syn]
-excluded_features = [""]
 required_features = [
     "extra-traits",
     "fold",
@@ -146,17 +137,12 @@ default_features = false
 [dependencies.feature_overrides.tokio]
 excluded_features = ["unstable-async-driver"]
 required_features = ["full"]
-default_features = true
 
 [dependencies.feature_overrides.tui-textarea]
-excluded_features = [""]
 required_features = ["crossterm", "search"]
-alternative_features = [""]
 
 [dependencies.feature_overrides.winapi]
-excluded_features = [""]
 required_features = ["consoleapi", "processenv", "winbase"]
-alternative_features = [""]
 
 # Miscellaneous configuration parameters
 [misc]

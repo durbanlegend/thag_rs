@@ -16,7 +16,7 @@
 //! Simply invoke the macro in your project:
 //!
 //! ```rust
-//! use demo_proc_macros::category_enum;
+//! use thag_proc_macros::category_enum;
 //!
 //! category_enum!();
 //! ```
@@ -35,6 +35,7 @@
 //!     Educational,
 //!     ErrorHandling,
 //!     Exploration,
+//!     Filesystem,
 //!     Macros,
 //!     Math,
 //!     ProcMacros,
@@ -66,7 +67,7 @@
 //!     pub fn all_categories() -> Vec<&'static str> {
 //!         vec![
 //!             "AST", "CLI", "REPL", "Async", "Basic", "BigNumbers", "Crates",
-//!             "Educational", "ErrorHandling", "Exploration", "Macros", "Math",
+//!             "Educational", "ErrorHandling", "Exploration", "Filesystem", "Macros", "Math",
 //!             "ProcMacros", "Prototype", "Recreational", "Reference", "Technique",
 //!             "Testing", "Tools", "TypeIdentification",
 //!         ]

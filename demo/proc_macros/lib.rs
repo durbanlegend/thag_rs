@@ -1,11 +1,8 @@
 #![allow(clippy::missing_panics_doc, unused_imports)]
 //! Procedural macros for generating enums and utilities for managing script categories.
 //!
-//! For detailed documentation on the `category_enum` macro, see the
-//! [dedicated documentation](https://github.com/thag_rs/demo/proc_macros/docs/category_enum.md).
 mod attrib_key_map_list;
 mod attribute_basic;
-mod category_enum;
 mod const_demo;
 mod const_demo_grail;
 mod const_gen_str_demo;
@@ -25,7 +22,6 @@ mod repeat_dash;
 
 use crate::attrib_key_map_list::use_mappings_impl;
 use crate::attribute_basic::attribute_basic_impl;
-use crate::category_enum::category_enum_impl;
 use crate::const_demo::const_demo_impl;
 use crate::const_demo_grail::const_demo_grail_impl;
 use crate::const_gen_str_demo::string_concat_impl;
@@ -44,14 +40,16 @@ use crate::organizing_code_tokenstream::organizing_code_tokenstream_impl;
 use crate::repeat_dash::repeat_dash_impl;
 use proc_macro::TokenStream;
 use quote::quote;
+use std::fs;
+use std::path::Path;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_file, parse_macro_input, DeriveInput, ExprArray, Ident, LitInt, Token,
+    parse_file, parse_macro_input, DeriveInput, ExprArray, Ident, LitInt, LitStr, Token,
 };
 
 #[proc_macro_attribute]
 pub fn attribute_basic(_attr: TokenStream, input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), input, attribute_basic_impl)
+    intercept_and_debug(cfg!(feature = "expand"), &input, attribute_basic_impl)
 }
 
 #[proc_macro_derive(DeriveBasic, attributes(expand_macro))]
@@ -69,15 +67,15 @@ pub fn derive_basic(input: TokenStream) -> TokenStream {
     #[cfg(not(feature = "expand"))]
     let should_expand = false;
 
-    intercept_and_debug(should_expand, input_clone, |tokens| {
+    intercept_and_debug(should_expand, &input_clone, |tokens| {
         derive_basic_impl(tokens)
     })
-    // intercept_and_debug(cfg!(feature = "expand"), input, derive_basic_impl)
+    // intercept_and_debug(cfg!(feature = "expand"), &input, derive_basic_impl)
 }
 
 #[proc_macro]
 pub fn function_like_basic(input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), input, |_tokens| {
+    intercept_and_debug(cfg!(feature = "expand"), &input, |_tokens| {
         // Original macro logic
         let expanded = quote! {
             pub const VALUE: usize = 42;
@@ -88,7 +86,7 @@ pub fn function_like_basic(input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
 pub fn derive_custom_model(input: TokenStream) -> TokenStream {
-    intercept_and_debug(true, input, |tokens| derive_custom_model_impl(tokens))
+    intercept_and_debug(true, &input, |tokens| derive_custom_model_impl(tokens))
 }
 
 #[proc_macro_derive(IntoStringHashMap)]
@@ -129,7 +127,7 @@ pub fn organizing_code_tokenstream(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DeriveConst, attributes(adjust, use_mappings))]
 pub fn organizing_code_const(input: TokenStream) -> TokenStream {
     // organizing_code_const_impl(input.into()).unwrap().into()
-    intercept_and_debug(true, input, |tokens| {
+    intercept_and_debug(true, &input, |tokens| {
         organizing_code_const_impl(tokens.into()).unwrap().into()
     })
 }
@@ -150,7 +148,7 @@ pub fn use_mappings(attr: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn repeat_dash(input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), input, repeat_dash_impl)
+    intercept_and_debug(cfg!(feature = "expand"), &input, repeat_dash_impl)
 }
 
 #[proc_macro]
@@ -221,7 +219,7 @@ pub fn host_port_const(tokens: TokenStream) -> TokenStream {
     host_port_const_impl(tokens.into()).into()
 }
 
-fn intercept_and_debug<F>(expand: bool, input: TokenStream, proc_macro: F) -> TokenStream
+fn intercept_and_debug<F>(expand: bool, input: &TokenStream, proc_macro: F) -> TokenStream
 where
     F: Fn(TokenStream) -> TokenStream,
 {
@@ -250,100 +248,49 @@ where
     output
 }
 
-/// Generates a `Category` enum with predefined variants and utility implementations.
-///
-/// The `category_enum` macro defines an enum `Category` with a hardcoded set of variants.
-/// This ensures consistency across all callers and centralizes control over the available categories.
-///
-/// Additionally, it generates:
-/// - A `FromStr` implementation to parse strings into the `Category` enum.
-/// - A utility method `Category::all_categories()` to return a list of all available category names.
-///
-/// # Usage
-///
-/// Simply invoke the macro in your project:
-///
-/// ```rust
-/// use demo_proc_macros::category_enum;
-///
-/// category_enum!();
-/// ```
-///
-/// This generates:
-///
-/// ```rust
-/// pub enum Category {
-///     AST,
-///     CLI,
-///     REPL,
-///     Async,
-///     Basic,
-///     BigNumbers,
-///     Crates,
-///     Educational,
-///     ErrorHandling,
-///     Exploration,
-///     Macros,
-///     Math,
-///     ProcMacros,
-///     Prototype,
-///     Recreational,
-///     Reference,
-///     Technique,
-///     Testing,
-///     Tools,
-///     TypeIdentification,
-/// }
-///
-/// impl std::str::FromStr for Category {
-///     type Err = String;
-///
-///     fn from_str(s: &str) -> Result<Self, Self::Err> {
-///         match s {
-///             "AST" => Ok(Category::AST),
-///             "CLI" => Ok(Category::CLI),
-///             "REPL" => Ok(Category::REPL),
-///             "Async" => Ok(Category::Async),
-///             // ... other variants ...
-///             _ => Err(format!("Invalid category: {s}")),
-///         }
-///     }
-/// }
-///
-/// impl Category {
-///     pub fn all_categories() -> Vec<&'static str> {
-///         vec![
-///             "AST", "CLI", "REPL", "Async", "Basic", "BigNumbers", "Crates",
-///             "Educational", "ErrorHandling", "Exploration", "Macros", "Math",
-///             "ProcMacros", "Prototype", "Recreational", "Reference", "Technique",
-///             "Testing", "Tools", "TypeIdentification",
-///         ]
-///     }
-/// }
-/// ```
-///
-/// # Benefits
-///
-/// - Consistency: The hardcoded list ensures uniformity across all callers.
-/// - Convenience: Auto-generated utility methods simplify working with the categories.
-/// - Safety: Enums prevent invalid values at compile time.
-///
-/// # Use Cases
-///
-/// This macro is ideal for scenarios requiring centralized control over predefined categories,
-/// such as filtering demo scripts or generating reports.
-#[proc_macro]
-pub fn category_enum(input: TokenStream) -> TokenStream {
-    // Parse the input to check for the `expand_macro` attribute
-    let should_expand = input.clone().into_iter().any(|token| {
-        // Very basic check - you might want something more robust
-        token.to_string().contains("expand_macro")
-    });
-
-    intercept_and_debug(should_expand, input, |tokens| category_enum_impl(tokens))
-}
-
 #[proc_macro_derive(DocComment)]
 pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
-    intercept_and_debug(true, input, |tokens| derive_doc_comment_impl(tokens))
+    intercept_and_debug(true, &input, |tokens| derive_doc_comment_impl(tokens))
+}
+
+/// Basic file embedding handles a file.
+#[proc_macro]
+pub fn embed_file(input: TokenStream) -> TokenStream {
+    println!("The current directory is {:#?}", std::env::current_dir());
+    let pwd = std::env::var("PWD").expect("Could not resolve $PWD");
+    println!("PWD={pwd}");
+    let embed = parse_macro_input!(input as LitStr).value();
+    let path = std::path::PathBuf::from(pwd).join(&embed);
+    println!("path={path:#?}");
+    let content = fs::read_to_string(Path::new(&path)).expect("Failed to read file");
+
+    quote! {
+        #content
+    }
+    .into()
+}
+
+/// More advanced embedding can handle a directory.
+#[proc_macro]
+pub fn embed_dir(input: TokenStream) -> TokenStream {
+    let dir_path = parse_macro_input!(input as LitStr).value();
+    let dir = Path::new(&dir_path);
+
+    let mut embedded = quote! {};
+
+    for entry in fs::read_dir(dir).expect("Failed to read directory") {
+        if let Ok(entry) = entry {
+            let path = entry.path();
+            if path.is_file() {
+                let filename = path.file_name().unwrap().to_str().unwrap();
+                let content = fs::read_to_string(&path).expect("Failed to read file");
+
+                embedded.extend(quote! {
+                    const #filename: &str = #content;
+                });
+            }
+        }
+    }
+
+    embedded.into()
 }

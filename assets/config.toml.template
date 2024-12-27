@@ -71,72 +71,46 @@ global_excluded_features = [
 required_features = ["attributes"]
 
 [dependencies.feature_overrides.clap]
-excluded_features = [""]
 required_features = ["cargo"]
-default_features = true
 
 [dependencies.feature_overrides.hyper]
-excluded_features = [""]
 required_features = ["full"]
-default_features = true
 
 [dependencies.feature_overrides.iced]
-excluded_features = [""]
 required_features = ["image", "debug"]
-default_features = true
 
 [dependencies.feature_overrides.nanorand]
-excluded_features = [""]
 required_features = ["getrandom"]
-default_features = true
 
 [dependencies.feature_overrides.nu-ansi-term]
-excluded_features = [""]
 required_features = ["derive_serde_style"]
-default_features = true
 
 [dependencies.feature_overrides.owo-colors]
-excluded_features = [""]
 required_features = ["supports-colors"]
-default_features = true
 
 [dependencies.feature_overrides.proc-macro2]
-excluded_features = [""]
 required_features = ["span-locations"]
-default_features = true
 
 [dependencies.feature_overrides.ratatui]
-excluded_features = [""]
 required_features = ["crossterm"]
-default_features = true
 
 [dependencies.feature_overrides.reqwest]
-excluded_features = [""]
 required_features = ["blocking", "json"]
-default_features = true
 
 [dependencies.feature_overrides.rug]
-excluded_features = [""]
 required_features = ["integer", "std"]
-default_features = true
 
 [dependencies.feature_overrides.rustyline]
 excluded_features = ["with-sqlite-history"]
 required_features = [""]
-default_features = true
 
 [dependencies.feature_overrides.spin1]
-excluded_features = [""]
 required_features = ["mutex"]
-default_features = true
 
 [dependencies.feature_overrides.strum]
-excluded_features = [""]
 required_features = ["derive"]
-default_features = true
 
 [dependencies.feature_overrides.syn]
-excluded_features = [""]
 required_features = [
     "extra-traits",
     "fold",
@@ -150,17 +124,12 @@ default_features = false
 [dependencies.feature_overrides.tokio]
 excluded_features = ["unstable-async-driver"]
 required_features = ["full"]
-default_features = true
 
 [dependencies.feature_overrides.tui-textarea]
-excluded_features = [""]
 required_features = ["crossterm", "search"]
-default_features = true
 
 [dependencies.feature_overrides.winapi]
-excluded_features = [""]
 required_features = ["consoleapi", "processenv", "winbase"]
-default_features = true
 
 [misc]
 # User's preferred text unquote behaviour. By default, thag_rs will not strip double quotes

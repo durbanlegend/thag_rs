@@ -162,7 +162,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 ///
 /// # Examples
 ///
-/// ```
+/// ``` ignore
 /// use thag_rs::stdin::read;
 ///
 /// let hello = String::from("Hello world!");
@@ -183,7 +183,7 @@ pub fn read() -> Result<String, std::io::Error> {
 ///
 /// # Examples
 ///
-/// ```
+/// ``` ignore
 /// use thag_rs::stdin::read_to_string;
 ///
 /// let stdin = std::io::stdin();

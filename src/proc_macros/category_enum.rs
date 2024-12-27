@@ -1,3 +1,4 @@
+#![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
 use quote::quote;
 // use std::str::FromStr;
@@ -21,6 +22,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            Educational,
            ErrorHandling,
            Exploration,
+           Filesystem,
            Macros,
            Math,
            ProcMacros,
@@ -49,7 +51,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        /// let categories = Category::all_categories();
        /// assert_eq!(categories, vec![
        ///     "ast", "cli", "repl", "async", "basic", "big_numbers", "crates",
-       ///     "educational", "error_handling", "exploration", "macros", "math",
+       ///     "educational", "error_handling", "exploration", "filesystem", "macros", "math",
        ///     "proc_macros", "prototype", "recreational", "reference", "technique",
        ///     "testing", "thag_front_ends", "tools", "type_identification"
        /// ]);

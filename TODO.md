@@ -45,6 +45,7 @@
 - [ ]  New test for local paths in demo files and maybe even main Cargo.toml.
 - [ ]  Try ThagDisplay trait and derive macro.
 - [ ]  Set up bank/proc_macros and only take best to demo.
+- [ ]  Embed dirs
 - [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
 - [ ]  In cargo search, optionally get all features. Config option to omit unstable features.
         Add feature overrides config option default-features true/false

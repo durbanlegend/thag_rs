@@ -316,6 +316,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_capture_
 
 ---
 
+### Script: cargo_debug_test_case.rs
+
+**Description:**  Run a command (in this case an integration test case to be debugged),
+ and capture and print its stdout and stderr concurrently in a
+ separate thread.
+
+**Purpose:** Demo process::Command with output capture, debugging unit tests.
+
+**Crates:** `env_logger`, `log`
+
+**Type:** Program
+
+**Categories:** technique, testing
+
+**Link:** [cargo_debug_test_case.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_debug_test_case.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_debug_test_case.rs
+```
+
+---
+
 ### Script: cargo_lookup.rs
 
 **Description:**  Explore querying crates.io information for a crate.
@@ -1180,6 +1204,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consum
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs
+```
+
+---
+
+### Script: debug_get_theme.rs
+
+**Description:**  Debug an integration test case.
+
+**Purpose:** Demo debugging a test case without the Cargo harness.
+
+**Crates:** `crossterm`, `env_logger`, `log`, `thag_rs`
+
+**Type:** Program
+
+**Categories:** technique, testing
+
+**Link:** [debug_get_theme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/debug_get_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/debug_get_theme.rs
 ```
 
 ---
@@ -2307,7 +2353,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadruplin
 
 **Purpose:** Allow user to select scripts by category.
 
-**Crates:** `edit`, `inquire`, `thag_demo_proc_macros`, `thag_rs`, `tokio`, `warp`
+**Crates:** `edit`, `inquire`, `thag_proc_macros`, `thag_rs`, `tokio`, `warp`
 
 **Type:** Program
 
@@ -2465,7 +2511,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs
 
 **Purpose:** Document demo scripts in a demo/README.md as a guide to the user.
 
-**Crates:** `convert_case`, `thag_demo_proc_macros`, `thag_rs`
+**Crates:** `convert_case`, `thag_proc_macros`, `thag_rs`
 
 **Type:** Program
 
@@ -3573,7 +3619,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_att
 
 **Purpose:** Test the proof of concept and potentially the implementation.
 
-**Crates:** `thag_demo_proc_macros`
+**Crates:** `thag_proc_macros`
 
 **Type:** Program
 
@@ -3742,6 +3788,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_der
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs
+```
+
+---
+
+### Script: proc_macro_embed_file_demo.rs
+
+**Description:**  Demonstrates embedding a single file at compile time
+
+**Purpose:** demonstrate file embedding proc macro
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, filesystem
+
+**Link:** [proc_macro_embed_file_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_embed_file_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_embed_file_demo.rs
 ```
 
 ---
@@ -5335,29 +5403,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_bu
 
 ---
 
-### Script: thag_crokey_print_key.rs
-
-**Description:**  Published example of KeyCombination from `crokey` crate, modified to use
- basic `crokey` key combos embedded in `thag_rs` under MIT licence.
-
-**Purpose:** Test for stability and consistency across different platforms and terminals.
-
-**Crates:** `crossterm`, `thag_rs`
-
-**Type:** Program
-
-**Categories:** crates, testing
-
-**Link:** [thag_crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_crokey_print_key.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_crokey_print_key.rs
-```
-
----
-
 ### Script: thag_from_rust_script.rs
 
 **Description:**  Converts embedded manifest format from `rust-script` to `thag`.
@@ -5385,7 +5430,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 ### Script: thag_profile.rs
 
-**Description:**  Profile graph/chart generator for the internal profiler of `thag_core`.
+**Description:**  Profile graph/chart generator for the `thag` internal profiler.
 
  E.g.:
 

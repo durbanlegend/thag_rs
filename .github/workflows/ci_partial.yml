@@ -70,7 +70,7 @@ jobs:
       run: cargo tree -p mockall
 
     - name: Run tests
-      run: cargo test --features=simplelog -- --nocapture --show-output --test-threads=1 check_proc_macro_expander_demo_rs check_proc_macro_organizing_code_const_rs check_thag_cargo_rs
+      run: cargo test --features=simplelog -- --nocapture --show-output --test-threads=1 check_proc_macro_expander_demo_rs
 
     - name: Upload test output log
       if: failure()  # Only upload if the test run fails

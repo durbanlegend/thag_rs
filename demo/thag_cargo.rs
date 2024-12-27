@@ -2,8 +2,6 @@
 [dependencies]
 atty = "0.2.14"
 inquire = "0.7.5"
-rustix = "0.38.42"
-tempfile = "3.14.0"
 */
 /// `thag` prompted front-end command to run Cargo commands on scripts. It is recommended to compile this to an executable with -x.
 /// Prompts the user to select a Rust script and a cargo command to run against the script's generated project, and
@@ -11,7 +9,6 @@ tempfile = "3.14.0"
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option.
 //# Categories: technique, thag_front_ends, tools
 use inquire::{Confirm, Select, Text};
-use rustix::path::Arg;
 use std::{env, error::Error, path::PathBuf, process::Command};
 
 struct FileNavigator {

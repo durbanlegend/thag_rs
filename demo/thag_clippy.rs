@@ -3,7 +3,6 @@
 atty = "0.2.14"
 colored = "2.1.0"
 inquire = "0.7.5"
-rustix = { version = "0.38.42", features = ["fs"] }
 */
 /// `thag` prompted front-end command to run `clippy` on scripts. It is recommended to compile this to an executable with -x.
 /// Prompts the user to select a Rust script and one or more Clippy lints to run against the script's generated project, and
@@ -12,7 +11,6 @@ rustix = { version = "0.38.42", features = ["fs"] }
 //# Categories: technique, thag_front_ends, tools
 use colored::Colorize;
 use inquire::{Confirm, MultiSelect, Select};
-use rustix::path::Arg;
 use std::{env, error::Error, path::PathBuf, process::Command};
 
 #[derive(Debug, Clone)] // Added Clone

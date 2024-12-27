@@ -44,8 +44,8 @@ term_theme = "dark"
 # Relative paths should be relative to the current working directory.
 # A single forward slash is the required path separator in all environments including Windows.
 # Default value: "<dir>/proc_macros".
-bank_proc_macro_crate_path = "/Users/donf/projects/thag_rs/bank/proc_macros"
-demo_proc_macro_crate_path = "/Users/donf/projects/thag_rs/demo/proc_macros"
+bank_proc_macro_crate_path = "bank/proc_macros"
+demo_proc_macro_crate_path = "demo/proc_macros"
 
 # Dependency handling
 [dependencies]

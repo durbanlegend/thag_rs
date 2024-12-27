@@ -930,7 +930,7 @@ impl From<&MessageStyle> for XtermColor {
             MessageStyle::Ansi16LightDebug => Self::UserCyan,
             MessageStyle::Ansi16LightGhost => Self::UserCyan,
             MessageStyle::Ansi16DarkError => Self::UserBrightRed,
-            MessageStyle::Ansi16DarkWarning => Self::UserBrightYellow,
+            MessageStyle::Ansi16DarkWarning => Self::UserYellow,
             MessageStyle::Ansi16DarkEmphasis => Self::UserBrightCyan,
             MessageStyle::Ansi16DarkHeading => Self::UserBrightGreen,
             MessageStyle::Ansi16DarkSubheading => Self::UserBrightBlue,

@@ -77,9 +77,6 @@ pub mod profiling;
 #[cfg(feature = "core")]
 pub mod shared;
 
-#[cfg(feature = "core")]
-pub mod log_color; // Alternative lightweight logging
-
 //-----------------------------------------------------------------------------
 // AST Analysis:
 //-----------------------------------------------------------------------------
@@ -113,6 +110,8 @@ pub mod colors;
 /// Configuration loader
 #[cfg(any(feature = "color_support", feature = "build"))]
 pub mod config;
+#[cfg(feature = "color_support")]
+pub mod log_color; // Alternative lightweight logging
 
 /// TUI file dialog
 #[cfg(feature = "tui")]

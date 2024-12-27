@@ -57,7 +57,7 @@ impl Config {
         let config_dir = base_dir.join(".config").join("thag_rs");
         let config_path = config_dir.join("config.toml");
 
-        println!(
+        eprintln!(
             "1. config_path={config_path:#?}, exists={}",
             config_path.exists()
         );
@@ -74,7 +74,7 @@ impl Config {
                     .join("assets")
                     .join("default_config.toml");
 
-                println!(
+                eprintln!(
                     "2. dist_config={user_config:#?}, exists={}",
                     user_config.exists()
                 );
@@ -88,17 +88,17 @@ impl Config {
                 include_str!("../assets/default_config.toml").to_string()
             };
 
-            println!("3. default_config={default_config}");
+            eprintln!("3. default_config={default_config}");
             fs::write(&config_path, default_config)?;
         }
 
-        println!(
+        eprintln!(
             "4. config_path={config_path:#?}, exists={}",
             config_path.exists()
         );
         let config_str = fs::read_to_string(&config_path)?;
         let maybe_config = toml::from_str(&config_str);
-        println!("5. maybe_config={maybe_config:#?}");
+        eprintln!("5. maybe_config={maybe_config:#?}");
         Ok(maybe_config?)
     }
 

@@ -33,3 +33,4 @@ demo/proc_macros/target/.rustc_info.json
 thag-profile.folded
 *.dot
 test_output.log
+demo/proc_macros/target/debug

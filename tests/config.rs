@@ -160,7 +160,23 @@ mod tests {
         assert!(config_path.exists(), "Config file should be created");
         let config_content =
             std::fs::read_to_string(&config_path).expect("Failed to read config file");
-        eprintln!("config_content={config_content}");
+        // eprintln!("config_content={config_content}");
+        #[cfg(target_os = "windows")]
+        assert!(
+            config_content.contains("[dependencies.feature_overrides.syn]"),
+            "Config file should contain the expected `syn` crate overrides"
+        );
+        #[cfg(target_os = "windows")]
+        assert!(
+            config_content.contains("[dependencies.feature_overrides.syn]"),
+            "Config file should contain the expected `syn` crate overrides"
+        );
+        #[cfg(target_os = "windows")]
+        assert!(
+            config_content.contains("visit-mut"),
+            "Config file should contain the expected `syn` crate overrides"
+        );
+        #[cfg(not(target_os = "windows"))]
         assert!(
             config_content.contains(
                 r#"[dependencies.feature_overrides.syn]

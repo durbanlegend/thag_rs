@@ -6,8 +6,8 @@ inquire = "0.7.5"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive"] }
 syn = "2"
-thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
-# thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+# thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = "0.1.9"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "color_support", "simplelog"] }
 # thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "color_support", "simplelog"] }

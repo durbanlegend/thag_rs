@@ -173,7 +173,7 @@ fn configure_simplelog() {
     profile!("configure_simplelog");
     CombinedLogger::init(vec![
         TermLogger::new(
-            LevelFilter::Debug,
+            LevelFilter::Info,
             Config::default(),
             TerminalMode::Mixed,
             ColorChoice::Auto,

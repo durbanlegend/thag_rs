@@ -4,15 +4,10 @@ mod tests {
     use simplelog::{
         ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger,
     };
-    use {
-        std::{fs::File, sync::OnceLock},
-        thag_rs::get_home_dir_string,
-    };
-
-    use std::fs;
     use std::sync::Arc;
     use std::{env::current_dir, path::PathBuf};
-    // use thag_rs::config::get_context;
+    use std::{fs::File, sync::OnceLock};
+    use tempfile::TempDir;
     use thag_rs::{
         colors::{ColorSupport, TermTheme},
         config::{
@@ -165,9 +160,21 @@ mod tests {
         assert!(config_path.exists(), "Config file should be created");
         let config_content =
             std::fs::read_to_string(&config_path).expect("Failed to read config file");
+        eprintln!("config_content={config_content}");
         assert!(
-            config_content.contains("Please set up the config file as follows"),
-            "Config file should contain the template text"
+            config_content.contains(
+                r#"[dependencies.feature_overrides.syn]
+required_features = [
+    "extra-traits",
+    "fold",
+    "full",
+    "parsing",
+    "visit",
+    "visit-mut",
+]
+default_features = false"#
+            ),
+            "Config file should contain the expected `syn` crate overrides"
         );
         assert_eq!(result, Some(String::from("End of edit")));
     }
@@ -270,33 +277,20 @@ mod tests {
 
     #[test]
     fn test_config_load_or_create_default_when_config_doesnt_exist() -> ThagResult<()> {
-        let base_dir = PathBuf::from(get_home_dir_string()?).join(".config");
-        let config_dir = base_dir.join(".config").join("thag_rs");
-        let config_path = config_dir.join("config.toml");
+        // Create a temporary directory that will be automatically cleaned up when the test ends
+        let temp_dir = TempDir::new()?;
+        let mut mock_context = MockContext::new();
 
-        // let config_path = PathBuf::from("test_config.toml");
-        // let default_config_path = PathBuf::from("../assets/default_config.toml");
+        // Set up the config path inside the temporary directory
+        let config_path = temp_dir.path().join("thag_rs").join("config.toml");
 
-        // Clean up any existing test config file
-        if config_path.exists() {
-            fs::remove_file(&config_path).expect("Failed to remove existing test config");
-        }
+        mock_context
+            .expect_get_config_path()
+            .return_const(config_path.clone());
 
-        // let context = get_context();
-        // eprintln!("context={context:#?}");
+        mock_context.expect_is_real().return_const(false);
 
-        // let maybe_config = Config::load_or_create_default(&context);
-        let maybe_config = Config::load_or_create_default();
-
-        // Write test results to a file that will be visible in CI
-        let mut output = String::new();
-        output.push_str(&format!("maybe_config: {:?}\n", maybe_config));
-        output.push_str(&format!("config_path exists: {}\n", config_path.exists()));
-        if config_path.exists() {
-            let content = fs::read_to_string(&config_path).unwrap();
-            output.push_str(&format!("config content:\n{}\n", content));
-        }
-        fs::write("test_output.log", output).expect("Failed to write test output");
+        let maybe_config = Config::load_or_create_default(&mock_context);
 
         assert!(
             maybe_config.is_ok(),
@@ -305,8 +299,7 @@ mod tests {
         );
         assert!(config_path.exists(), "Config file was not created");
 
-        // Clean up
-        fs::remove_file(&config_path)?;
+        // TempDir will automatically clean up when it goes out of scope
         Ok(())
     }
 }

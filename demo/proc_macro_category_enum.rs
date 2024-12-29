@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 strum = { version = "0.26.3", features = ["derive", "phf"] }
+thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 */
 /// Try generating category enum.
 /// Testing the `category_enum` proc macro for use with `demo/gen_readme.rs` and `demo/filter_demos.rs`/

@@ -1,6 +1,6 @@
 use crate::{
-    cprtln, cvprtln, debug_log, get_home_dir_string, lazy_static_var, ColorSupport, Lvl, TermTheme,
-    ThagError, ThagResult, Verbosity, V,
+    cprtln, cvprtln, debug_log, lazy_static_var, ColorSupport, Lvl, TermTheme, ThagError,
+    ThagResult, Verbosity, V,
 };
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
@@ -49,19 +49,17 @@ impl Config {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered.
-    // pub fn load_or_create_default(context: &Arc<dyn Context>) -> Result<Self, Box<dyn Error>> {
-    pub fn load_or_create_default() -> Result<Self, Box<dyn Error>> {
+    pub fn load_or_create_default(ctx: &impl Context) -> Result<Self, Box<dyn Error>> {
         profile_method!("load_or_create_default");
 
-        let base_dir = PathBuf::from(get_home_dir_string()?);
-        let config_dir = base_dir.join(".config").join("thag_rs");
-        let config_path = config_dir.join("config.toml");
+        let config_path = ctx.get_config_path();
 
         #[cfg(debug_assertions)]
         debug_log!(
             "1. config_path={config_path:#?}, exists={}",
             config_path.exists()
         );
+
         if !config_path.exists() {
             let path = config_path
                 .parent()
@@ -596,7 +594,8 @@ impl Context for RealContext {
 pub fn maybe_config() -> Option<Config> {
     profile!("maybe_config");
     lazy_static_var!(Option<Config>, {
-        let load_or_default = Config::load_or_create_default();
+        let context = RealContext::new();
+        let load_or_default = Config::load_or_create_default(&context);
         if let Ok(config) = load_or_default {
             Some(config)
         } else {

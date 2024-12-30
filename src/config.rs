@@ -462,15 +462,6 @@ pub enum DependencyInference {
     Max,
 }
 
-// pub type Infer = DependencyInference;
-
-// impl Infer {
-//     pub const NONE: Self = Self::None;
-//     pub const MIN: Self = Self::Min;
-//     pub const CONF: Self = Self::Config;
-//     pub const MAX: Self = Self::Max;
-// }
-
 // Custom deserializer to provide better error messages
 impl<'de> de::Deserialize<'de> for DependencyInference {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -493,7 +484,7 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
 
 /// Terminal color settings
 #[serde_as]
-#[derive(Clone, Debug, Default, Deserialize, Documented, DocumentedFields, Serialize)]
+#[derive(Clone, Debug, Deserialize, Documented, DocumentedFields, Serialize)]
 pub struct Colors {
     /// Color support override. Sets the terminal's color support level. The alternative is
     /// to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
@@ -509,6 +500,15 @@ pub struct Colors {
     /// Light or dark terminal background override
     #[serde_as(as = "DisplayFromStr")]
     pub term_theme: TermTheme,
+}
+
+impl Default for Colors {
+    fn default() -> Self {
+        Self {
+            color_support: ColorSupport::AutoDetect,
+            term_theme: TermTheme::AutoDetect,
+        }
+    }
 }
 
 /// Demo proc macro settings

@@ -104,6 +104,9 @@ pub mod manifest;
 // UI and configuration:
 // Terminal-based user interface components
 //-----------------------------------------------------------------------------
+/// Assess terminal capabilities and current theme
+#[cfg(feature = "color_support")]
+mod color_support;
 /// Message coloring tailored to terminal capabilities and current theme
 #[cfg(feature = "color_support")]
 pub mod colors;
@@ -156,9 +159,10 @@ pub use {
 
 #[cfg(feature = "color_support")]
 pub use {
+    color_support::{ColorSupport, TermTheme},
     colors::{
-        coloring, Ansi16DarkStyle, Ansi16LightStyle, ColorSupport, Lvl, MessageLevel, TermTheme,
-        Xterm256DarkStyle, Xterm256LightStyle,
+        coloring, Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, Xterm256DarkStyle,
+        Xterm256LightStyle,
     },
     config::{
         load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,

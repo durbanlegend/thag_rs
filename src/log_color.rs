@@ -1,7 +1,6 @@
-// use crate::{debug_log, profile, ThagResult};
-use crate::{colors, config, profile, profile_method, Config, TermTheme};
+use crate::color_support::{ColorSupport, TermTheme};
+use crate::{config, profile, profile_method, Colors, Config};
 use crossterm::terminal;
-// use nu_ansi_term::{Color, Style};
 use std::io::{self, Write};
 use std::sync::atomic::{AtomicU8, Ordering};
 use supports_color::Stream;
@@ -24,17 +23,20 @@ impl Style {
         }
     }
 
-    #[must_use] pub fn bold(mut self) -> Self {
+    #[must_use]
+    pub fn bold(mut self) -> Self {
         self.bold = true;
         self
     }
 
-    #[must_use] pub fn italic(mut self) -> Self {
+    #[must_use]
+    pub fn italic(mut self) -> Self {
         self.italic = true;
         self
     }
 
-    #[must_use] pub fn normal(self) -> Self {
+    #[must_use]
+    pub fn normal(self) -> Self {
         self
     }
 
@@ -90,7 +92,8 @@ impl Color {
     const LIGHT_CYAN: &'static str = "\x1b[96m";
     const LIGHT_GRAY: &'static str = "\x1b[97m";
 
-    #[must_use] pub fn red() -> Style {
+    #[must_use]
+    pub fn red() -> Style {
         Style {
             foreground: Some(Self::RED),
             bold: false,
@@ -98,7 +101,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn green() -> Style {
+    #[must_use]
+    pub fn green() -> Style {
         Style {
             foreground: Some(Self::GREEN),
             bold: false,
@@ -106,7 +110,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn yellow() -> Style {
+    #[must_use]
+    pub fn yellow() -> Style {
         Style {
             foreground: Some(Self::YELLOW),
             bold: false,
@@ -114,7 +119,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn blue() -> Style {
+    #[must_use]
+    pub fn blue() -> Style {
         Style {
             foreground: Some(Self::BLUE),
             bold: false,
@@ -122,7 +128,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn magenta() -> Style {
+    #[must_use]
+    pub fn magenta() -> Style {
         Style {
             foreground: Some(Self::MAGENTA),
             bold: false,
@@ -130,7 +137,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn cyan() -> Style {
+    #[must_use]
+    pub fn cyan() -> Style {
         Style {
             foreground: Some(Self::CYAN),
             bold: false,
@@ -138,7 +146,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn white() -> Style {
+    #[must_use]
+    pub fn white() -> Style {
         Style {
             foreground: Some(Self::WHITE),
             bold: false,
@@ -146,7 +155,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn dark_gray() -> Style {
+    #[must_use]
+    pub fn dark_gray() -> Style {
         Style {
             foreground: Some(Self::DARK_GRAY),
             bold: false,
@@ -154,7 +164,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn light_yellow() -> Style {
+    #[must_use]
+    pub fn light_yellow() -> Style {
         Style {
             foreground: Some(Self::LIGHT_YELLOW),
             bold: false,
@@ -162,7 +173,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn light_cyan() -> Style {
+    #[must_use]
+    pub fn light_cyan() -> Style {
         Style {
             foreground: Some(Self::LIGHT_CYAN),
             bold: false,
@@ -170,7 +182,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn light_gray() -> Style {
+    #[must_use]
+    pub fn light_gray() -> Style {
         Style {
             foreground: Some(Self::LIGHT_GRAY),
             bold: false,
@@ -178,7 +191,8 @@ impl Color {
         }
     }
 
-    #[must_use] pub fn fixed(code: u8) -> Style {
+    #[must_use]
+    pub fn fixed(code: u8) -> Style {
         Style {
             foreground: Some(Box::leak(format!("\x1b[38;5;{code}m").into_boxed_str())),
             bold: false,
@@ -206,29 +220,22 @@ pub enum LogLevel {
     Ghost,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ColorSupport {
-    None,
-    Basic, // 16 colors
-    Full,  // 256 colors
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Theme {
-    Light,
-    Dark,
-    AutoDetect,
-}
+// #[derive(Debug, Clone, Copy, PartialEq)]
+// pub enum ColorSupport {
+//     None,
+//     Basic, // 16 colors
+//     Full,  // 256 colors
+// }
 
 pub struct LogColor {
     pub color_support: ColorSupport,
-    pub theme: Theme,
+    pub theme: TermTheme,
     pub detected_theme: AtomicU8, // 0 = undetected, 1 = light, 2 = dark
 }
 
 impl LogColor {
     #[must_use]
-    pub fn new(color_support: ColorSupport, theme: Theme) -> Self {
+    pub fn new(color_support: ColorSupport, theme: TermTheme) -> Self {
         profile_method!("LogColor::new");
         Self {
             color_support,
@@ -237,10 +244,10 @@ impl LogColor {
         }
     }
 
-    pub fn get_theme(&self) -> Theme {
+    pub fn get_theme(&self) -> TermTheme {
         profile_method!("LogColor::get_theme");
-        if self.theme != Theme::AutoDetect {
-            return self.theme;
+        if self.theme != TermTheme::AutoDetect {
+            return self.theme.clone();
         }
 
         // Check cache first
@@ -248,9 +255,9 @@ impl LogColor {
         if detected != 0 {
             // Return cached result
             return if detected == 1 {
-                Theme::Light
+                TermTheme::Light
             } else {
-                Theme::Dark
+                TermTheme::Dark
             };
         }
 
@@ -258,15 +265,15 @@ impl LogColor {
         let theme = Self::detect_terminal_theme();
         self.detected_theme.store(
             match theme {
-                Theme::Light => 1,
-                Theme::Dark | Theme::AutoDetect => 2,
+                TermTheme::Light => 1,
+                TermTheme::Dark | TermTheme::AutoDetect => 2,
             },
             Ordering::Relaxed,
         );
         theme
     }
 
-    fn detect_terminal_theme() -> Theme {
+    fn detect_terminal_theme() -> TermTheme {
         profile!("detect_terminal_theme");
 
         // Try to detect theme, handle errors gracefully
@@ -286,12 +293,12 @@ impl LogColor {
                 let _ = io::stderr().flush();
 
                 // 3. Fall back to safe default
-                Theme::Dark
+                TermTheme::Dark
             }
         }
     }
 
-    fn detect_theme_internal() -> Result<Theme, termbg::Error> {
+    fn detect_theme_internal() -> Result<TermTheme, termbg::Error> {
         // Create cleanup guard
         struct RawModeGuard(bool);
         impl Drop for RawModeGuard {
@@ -317,20 +324,22 @@ impl LogColor {
         let theme = termbg::theme(timeout)?;
 
         Ok(match theme {
-            TermbgTheme::Light => Theme::Light,
-            TermbgTheme::Dark => Theme::Dark,
+            TermbgTheme::Light => TermTheme::Light,
+            TermbgTheme::Dark => TermTheme::Dark,
         })
     }
 
     pub fn style_for_level(&self, level: LogLevel) -> Style {
         profile_method!("LogColor::style_for_level");
-        match (self.color_support, self.get_theme()) {
-            (ColorSupport::None, _) => Style::new(),
-            (ColorSupport::Basic, Theme::Light) => Self::basic_light_style(level),
-            (ColorSupport::Basic, Theme::Dark) => Self::basic_dark_style(level),
-            (ColorSupport::Full, Theme::Light) => Self::full_light_style(level),
-            (ColorSupport::Full, Theme::Dark) => Self::full_dark_style(level),
-            (_, Theme::AutoDetect) => unreachable!(), // Handled by get_theme
+        match (&self.color_support, &self.theme) {
+            (&ColorSupport::None, _) => Style::new(),
+            (&ColorSupport::Ansi16, &TermTheme::Light) => Self::basic_light_style(level),
+            (&ColorSupport::Ansi16, &TermTheme::Dark) => Self::basic_dark_style(level),
+            (&ColorSupport::Xterm256, &TermTheme::Light) => Self::full_light_style(level),
+            (&ColorSupport::Xterm256, &TermTheme::Dark) => Self::full_dark_style(level),
+            (_, &TermTheme::AutoDetect)  // Handled by get_theme
+            |
+            (&ColorSupport::AutoDetect, _) => unreachable!(), // Should be resolved before this point        }
         }
     }
 
@@ -394,39 +403,7 @@ impl LogColor {
             LogLevel::Ghost => Color::fixed(251).normal().italic(),
         }
     }
-}
 
-impl From<config::Colors> for (ColorSupport, Theme) {
-    fn from(colors: config::Colors) -> Self {
-        let color_support = match colors.color_support {
-            colors::ColorSupport::Xterm256 => ColorSupport::Full,
-            colors::ColorSupport::Ansi16 => ColorSupport::Basic,
-            colors::ColorSupport::None => ColorSupport::None,
-            colors::ColorSupport::AutoDetect => {
-                // Port existing auto-detection logic
-                if let Some(color_level) = supports_color::on(Stream::Stdout) {
-                    if color_level.has_16m || color_level.has_256 {
-                        ColorSupport::Full
-                    } else {
-                        ColorSupport::Basic
-                    }
-                } else {
-                    ColorSupport::None
-                }
-            }
-        };
-
-        let theme = match colors.term_theme {
-            TermTheme::Light => Theme::Light,
-            TermTheme::Dark => Theme::Dark,
-            TermTheme::AutoDetect => Theme::AutoDetect,
-        };
-
-        (color_support, theme)
-    }
-}
-
-impl LogColor {
     #[must_use]
     pub fn from_config(config: &Config) -> Self {
         let (color_support, theme) = config.colors.clone().into();
@@ -434,16 +411,39 @@ impl LogColor {
     }
 }
 
+impl From<config::Colors> for (ColorSupport, TermTheme) {
+    fn from(colors: Colors) -> Self {
+        let color_support = match colors.color_support {
+            ColorSupport::Xterm256 => ColorSupport::Xterm256,
+            ColorSupport::Ansi16 => ColorSupport::Ansi16,
+            ColorSupport::None => ColorSupport::None,
+            ColorSupport::AutoDetect => {
+                if let Some(color_level) = supports_color::on(Stream::Stdout) {
+                    if color_level.has_16m || color_level.has_256 {
+                        ColorSupport::Xterm256
+                    } else {
+                        ColorSupport::Ansi16
+                    }
+                } else {
+                    ColorSupport::None
+                }
+            }
+        };
+
+        (color_support, colors.term_theme)
+    }
+}
+
 // Global instance
 use std::sync::OnceLock;
 static INSTANCE: OnceLock<LogColor> = OnceLock::new();
 
-pub fn init(color_support: ColorSupport, theme: Theme) {
+pub fn init(color_support: ColorSupport, theme: TermTheme) {
     let _ = INSTANCE.set(LogColor::new(color_support, theme));
 }
 
 pub fn get() -> &'static LogColor {
-    INSTANCE.get_or_init(|| LogColor::new(ColorSupport::None, Theme::Dark))
+    INSTANCE.get_or_init(|| LogColor::new(ColorSupport::None, TermTheme::Dark))
 }
 
 // Convenience macros

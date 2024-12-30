@@ -24,17 +24,17 @@ impl Style {
         }
     }
 
-    pub fn bold(mut self) -> Self {
+    #[must_use] pub fn bold(mut self) -> Self {
         self.bold = true;
         self
     }
 
-    pub fn italic(mut self) -> Self {
+    #[must_use] pub fn italic(mut self) -> Self {
         self.italic = true;
         self
     }
 
-    pub fn normal(self) -> Self {
+    #[must_use] pub fn normal(self) -> Self {
         self
     }
 
@@ -90,7 +90,7 @@ impl Color {
     const LIGHT_CYAN: &'static str = "\x1b[96m";
     const LIGHT_GRAY: &'static str = "\x1b[97m";
 
-    pub fn red() -> Style {
+    #[must_use] pub fn red() -> Style {
         Style {
             foreground: Some(Self::RED),
             bold: false,
@@ -98,7 +98,7 @@ impl Color {
         }
     }
 
-    pub fn green() -> Style {
+    #[must_use] pub fn green() -> Style {
         Style {
             foreground: Some(Self::GREEN),
             bold: false,
@@ -106,7 +106,7 @@ impl Color {
         }
     }
 
-    pub fn yellow() -> Style {
+    #[must_use] pub fn yellow() -> Style {
         Style {
             foreground: Some(Self::YELLOW),
             bold: false,
@@ -114,7 +114,7 @@ impl Color {
         }
     }
 
-    pub fn blue() -> Style {
+    #[must_use] pub fn blue() -> Style {
         Style {
             foreground: Some(Self::BLUE),
             bold: false,
@@ -122,7 +122,7 @@ impl Color {
         }
     }
 
-    pub fn magenta() -> Style {
+    #[must_use] pub fn magenta() -> Style {
         Style {
             foreground: Some(Self::MAGENTA),
             bold: false,
@@ -130,7 +130,7 @@ impl Color {
         }
     }
 
-    pub fn cyan() -> Style {
+    #[must_use] pub fn cyan() -> Style {
         Style {
             foreground: Some(Self::CYAN),
             bold: false,
@@ -138,7 +138,7 @@ impl Color {
         }
     }
 
-    pub fn white() -> Style {
+    #[must_use] pub fn white() -> Style {
         Style {
             foreground: Some(Self::WHITE),
             bold: false,
@@ -146,7 +146,7 @@ impl Color {
         }
     }
 
-    pub fn dark_gray() -> Style {
+    #[must_use] pub fn dark_gray() -> Style {
         Style {
             foreground: Some(Self::DARK_GRAY),
             bold: false,
@@ -154,7 +154,7 @@ impl Color {
         }
     }
 
-    pub fn light_yellow() -> Style {
+    #[must_use] pub fn light_yellow() -> Style {
         Style {
             foreground: Some(Self::LIGHT_YELLOW),
             bold: false,
@@ -162,7 +162,7 @@ impl Color {
         }
     }
 
-    pub fn light_cyan() -> Style {
+    #[must_use] pub fn light_cyan() -> Style {
         Style {
             foreground: Some(Self::LIGHT_CYAN),
             bold: false,
@@ -170,7 +170,7 @@ impl Color {
         }
     }
 
-    pub fn light_gray() -> Style {
+    #[must_use] pub fn light_gray() -> Style {
         Style {
             foreground: Some(Self::LIGHT_GRAY),
             bold: false,
@@ -178,9 +178,9 @@ impl Color {
         }
     }
 
-    pub fn fixed(code: u8) -> Style {
+    #[must_use] pub fn fixed(code: u8) -> Style {
         Style {
-            foreground: Some(Box::leak(format!("\x1b[38;5;{}m", code).into_boxed_str())),
+            foreground: Some(Box::leak(format!("\x1b[38;5;{code}m").into_boxed_str())),
             bold: false,
             italic: false,
         }
@@ -343,7 +343,7 @@ impl LogColor {
             LogLevel::Heading => Color::blue().bold(),
             LogLevel::Subheading => Color::cyan().bold(),
             LogLevel::Emphasis => Color::green().bold(),
-            LogLevel::Bright => Color::green().into(),
+            LogLevel::Bright => Color::green(),
             LogLevel::Normal => Color::dark_gray().normal(),
             LogLevel::Debug => Color::cyan().normal(),
             LogLevel::Ghost => Color::cyan().italic(),
@@ -358,7 +358,7 @@ impl LogColor {
             LogLevel::Heading => Color::green().bold(),
             LogLevel::Subheading => Color::blue().bold(),
             LogLevel::Emphasis => Color::cyan().bold(),
-            LogLevel::Bright => Color::light_yellow().into(),
+            LogLevel::Bright => Color::light_yellow(),
             LogLevel::Normal => Color::white().normal(),
             LogLevel::Debug => Color::light_cyan().normal(),
             LogLevel::Ghost => Color::light_gray().italic(),
@@ -373,7 +373,7 @@ impl LogColor {
             LogLevel::Heading => Color::fixed(19).bold(),
             LogLevel::Subheading => Color::fixed(26).normal(),
             LogLevel::Emphasis => Color::fixed(173).bold(),
-            LogLevel::Bright => Color::fixed(46).into(),
+            LogLevel::Bright => Color::fixed(46),
             LogLevel::Normal => Color::fixed(16).normal(),
             LogLevel::Debug => Color::fixed(32).normal(),
             LogLevel::Ghost => Color::fixed(232).normal().italic(),
@@ -388,7 +388,7 @@ impl LogColor {
             LogLevel::Heading => Color::fixed(42).bold(),
             LogLevel::Subheading => Color::fixed(75).normal(),
             LogLevel::Emphasis => Color::fixed(173).bold(),
-            LogLevel::Bright => Color::fixed(3).into(),
+            LogLevel::Bright => Color::fixed(3),
             LogLevel::Normal => Color::fixed(231).normal(),
             LogLevel::Debug => Color::fixed(37).normal(),
             LogLevel::Ghost => Color::fixed(251).normal().italic(),

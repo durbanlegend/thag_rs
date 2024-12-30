@@ -9,14 +9,13 @@ mod tests {
     use std::{fs::File, sync::OnceLock};
     use tempfile::TempDir;
     use thag_rs::{
-        colors::{ColorSupport, TermTheme},
         config::{
             self, validate_config_format, Config, Dependencies, FeatureOverride, MockContext,
             RealContext,
         },
         debug_log, load,
         logging::Verbosity,
-        Context, ThagResult,
+        ColorSupport, Context, TermTheme, ThagResult,
     };
 
     #[cfg(feature = "simplelog")]

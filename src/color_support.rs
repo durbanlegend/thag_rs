@@ -2,30 +2,6 @@ use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 
-// /// Represents the level of color support available in the terminal
-// #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Serialize)]
-// pub enum ColorSupport {
-//     /// No color support
-//     None,
-//     /// Basic 16-color ANSI support
-//     Ansi16,
-//     /// 256-color support
-//     Xterm256,
-//     /// Auto-detect color support
-//     AutoDetect,
-// }
-
-// /// Represents the terminal theme (light or dark)
-// #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Serialize)]
-// pub enum TermTheme {
-//     /// Light theme
-//     Light,
-//     /// Dark theme
-//     Dark,
-//     /// Auto-detect theme
-//     AutoDetect,
-// }
-
 /// An enum to categorise the current terminal's level of colour support as detected, configured
 /// or defaulted.
 ///

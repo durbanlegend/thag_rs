@@ -160,10 +160,7 @@ pub use {
 #[cfg(feature = "color_support")]
 pub use {
     color_support::{ColorSupport, TermTheme},
-    colors::{
-        coloring, Ansi16DarkStyle, Ansi16LightStyle, Lvl, MessageLevel, Xterm256DarkStyle,
-        Xterm256LightStyle,
-    },
+    colors::{coloring, Lvl, MessageLevel},
     config::{
         load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
         ProcMacros,

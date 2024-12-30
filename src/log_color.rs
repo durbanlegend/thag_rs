@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use supports_color::Stream;
 use termbg::Theme as TermbgTheme;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Style {
     foreground: Option<&'static str>,
     bold: bool,
@@ -219,13 +219,6 @@ pub enum LogLevel {
     Debug,
     Ghost,
 }
-
-// #[derive(Debug, Clone, Copy, PartialEq)]
-// pub enum ColorSupport {
-//     None,
-//     Basic, // 16 colors
-//     Full,  // 256 colors
-// }
 
 pub struct LogColor {
     pub color_support: ColorSupport,
@@ -509,7 +502,7 @@ mod tests {
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
 
     impl LogColor {
-        fn with_mock_theme(color_support: ColorSupport, theme: Theme) -> Self {
+        fn with_mock_theme(color_support: ColorSupport, theme: TermTheme) -> Self {
             MOCK_THEME_DETECTION.store(true, Ordering::SeqCst);
             Self::new(color_support, theme)
         }
@@ -542,9 +535,9 @@ mod tests {
     #[test]
     fn test_log_color_theme_detection_with_mock() {
         init_test();
-        let log_color = LogColor::with_mock_theme(ColorSupport::Full, Theme::Dark);
+        let log_color = LogColor::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
         let detected = log_color.get_theme();
-        assert_eq!(detected, Theme::Dark);
+        assert_eq!(detected, TermTheme::Dark);
         println!();
         flush_test_output();
     }

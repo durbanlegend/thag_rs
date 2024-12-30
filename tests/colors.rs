@@ -2,10 +2,11 @@
 mod tests {
     use nu_ansi_term::{Color, Style};
     use supports_color::Stream;
-    #[cfg(not(target_os = "windows"))]
-    use thag_rs::colors::TermTheme;
-    use thag_rs::colors::{ColorSupport, MessageStyle, XtermColor};
+    use thag_rs::colors::{MessageStyle, XtermColor};
     use thag_rs::termbg::{self, Theme};
+    use thag_rs::ColorSupport;
+    #[cfg(not(target_os = "windows"))]
+    use thag_rs::TermTheme;
     use thag_rs::{cprtln, Lvl};
 
     struct TestGuard;

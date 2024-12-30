@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use nu_ansi_term::{Color, Style};
+    // use nu_ansi_term::{Color, Style};
     use std::io::Write;
     use std::sync::Mutex;
     use std::time::{Duration, Instant};
     use supports_color::Stream;
-    use thag_rs::colors::{self, XtermColor};
-    use thag_rs::config::Config;
-    use thag_rs::log_color::{ColorSupport, LogColor, LogLevel, Theme};
+    // use thag_rs::colors::XtermColor;
+    use thag_rs::log_color::{Color, LogColor, LogLevel, Style};
+    use thag_rs::{ColorSupport, TermTheme};
 
     fn set_up() {
         std::env::set_var("TEST_ENV", "1");
@@ -92,21 +92,22 @@ mod tests {
             let color_level = supports_color::on(Stream::Stdout);
 
             let color_support = match color_level {
-                Some(level) if level.has_16m || level.has_256 => ColorSupport::Full,
-                Some(_) => ColorSupport::Basic,
+                Some(level) if level.has_16m || level.has_256 => ColorSupport::Xterm256,
+                Some(_) => ColorSupport::Ansi16,
                 None => ColorSupport::None,
             };
 
             match color_support {
-                ColorSupport::Full => {
+                ColorSupport::Xterm256 => {
                     assert!(color_level.unwrap().has_16m || color_level.unwrap().has_256);
                 }
-                ColorSupport::Basic => {
+                ColorSupport::Ansi16 => {
                     assert!(!color_level.unwrap().has_16m && !color_level.unwrap().has_256);
                 }
                 ColorSupport::None => {
                     assert!(color_level.is_none());
                 }
+                ColorSupport::AutoDetect => unreachable!(), // since not set above
             }
         });
 
@@ -126,27 +127,15 @@ mod tests {
 
         // Run test with proper timeout handling
         let result = std::panic::catch_unwind(|| {
-            let log_color = LogColor::new(ColorSupport::Full, Theme::Light);
+            let log_color = LogColor::new(ColorSupport::Xterm256, TermTheme::Light);
 
             // Test each log level with expected styles
             let test_cases = vec![
-                (
-                    LogLevel::Error,
-                    Color::from(&XtermColor::GuardsmanRed).bold(),
-                ),
-                (
-                    LogLevel::Warning,
-                    Color::from(&XtermColor::DarkPurplePizzazz).bold(),
-                ),
-                (LogLevel::Normal, Color::from(&XtermColor::Black).normal()),
-                (
-                    LogLevel::Heading,
-                    Color::from(&XtermColor::MidnightBlue).bold(),
-                ),
-                (
-                    LogLevel::Ghost,
-                    Color::from(&XtermColor::DarkCodGray).normal().italic(),
-                ),
+                (LogLevel::Error, Color::fixed(160).bold()),
+                (LogLevel::Warning, Color::fixed(164).bold()),
+                (LogLevel::Normal, Color::fixed(16).normal()),
+                (LogLevel::Heading, Color::fixed(19).bold()),
+                (LogLevel::Ghost, Color::fixed(232).normal().italic()),
             ];
 
             for (level, expected_style) in test_cases {
@@ -171,7 +160,7 @@ mod tests {
 
         // Run test with proper timeout handling
         let result = std::panic::catch_unwind(|| {
-            let log_color = LogColor::new(ColorSupport::None, Theme::Light);
+            let log_color = LogColor::new(ColorSupport::None, TermTheme::Light);
 
             // All levels should return default style when color support is None
             for level in [LogLevel::Error, LogLevel::Warning, LogLevel::Normal] {
@@ -195,49 +184,6 @@ mod tests {
     }
 
     #[test]
-    fn test_log_color_config_conversion() {
-        set_up();
-        let guard = TestGuard::new();
-
-        // Add timeout for entire test
-        let result = std::panic::catch_unwind(|| {
-            let timeout = Duration::from_secs(5); // reasonable timeout
-            let start = Instant::now();
-            let handle = std::thread::spawn(|| {
-                // Test implementation here
-                let mut config = Config::default();
-
-                // Test each ColorSupport variant
-                let test_cases = vec![
-                    (colors::ColorSupport::Xterm256, ColorSupport::Full),
-                    (colors::ColorSupport::Ansi16, ColorSupport::Basic),
-                    (colors::ColorSupport::None, ColorSupport::None),
-                ];
-
-                for (old_support, new_support) in test_cases {
-                    config.colors.color_support = old_support;
-                    let log_color = LogColor::from_config(&config);
-                    assert_eq!(log_color.color_support, new_support);
-                }
-            });
-            // Wait with timeout
-            while start.elapsed() < timeout {
-                if handle.is_finished() {
-                    return handle.join().unwrap();
-                }
-                std::thread::sleep(Duration::from_millis(100));
-            }
-            panic!("Test timed out after {:?}", timeout);
-        });
-
-        drop(guard);
-
-        if let Err(e) = result {
-            std::panic::resume_unwind(e);
-        }
-    }
-
-    #[test]
     fn test_log_color_logging_macros() {
         set_up();
         let guard = TestGuard::new();
@@ -245,17 +191,14 @@ mod tests {
         // Run test with proper timeout handling
         let result = std::panic::catch_unwind(|| {
             let content = "Test message";
-            let log_color = LogColor::new(ColorSupport::Full, Theme::Light);
+            let log_color = LogColor::new(ColorSupport::Xterm256, TermTheme::Light);
 
             // Test error style
             let error_style = log_color.style_for_level(LogLevel::Error);
             let error_output = format!("{}", error_style.paint(content));
             assert_eq!(
                 error_output,
-                format!(
-                    "{}",
-                    Color::from(&XtermColor::GuardsmanRed).bold().paint(content)
-                )
+                format!("{}", Color::fixed(160).bold().paint(content))
             );
 
             // Test warning style
@@ -263,12 +206,7 @@ mod tests {
             let warn_output = format!("{}", warn_style.paint(content));
             assert_eq!(
                 warn_output,
-                format!(
-                    "{}",
-                    Color::from(&XtermColor::DarkPurplePizzazz)
-                        .bold()
-                        .paint(content)
-                )
+                format!("{}", Color::fixed(164).bold().paint(content))
             );
         });
 
@@ -283,7 +221,7 @@ mod tests {
 
     // Skip theme detection tests in CI
     #[test]
-    #[cfg_attr(test, ignore = "Theme detection requires terminal")]
+    // #[cfg_attr(test, ignore = "Theme detection requires terminal")]
     fn test_log_color_theme_persistence() {
         if is_ci() {
             println!("Skipping theme detection test in CI environment");
@@ -298,21 +236,21 @@ mod tests {
 
             // First theme detection with timeout
             let start = Instant::now();
-            let log_color1 = LogColor::new(ColorSupport::Full, Theme::AutoDetect);
+            let log_color1 = LogColor::new(ColorSupport::Xterm256, TermTheme::AutoDetect);
             let handle = std::thread::spawn(move || log_color1.get_theme());
             let first_theme = loop {
                 if handle.is_finished() {
                     break handle.join().unwrap();
                 }
                 if start.elapsed() > timeout {
-                    break Theme::Dark; // Default on timeout
+                    break TermTheme::Dark; // Default on timeout
                 }
                 std::thread::sleep(Duration::from_millis(10));
             };
 
             // Second theme detection
             let start = Instant::now();
-            let log_color2 = LogColor::new(ColorSupport::Full, Theme::AutoDetect);
+            let log_color2 = LogColor::new(ColorSupport::Xterm256, TermTheme::AutoDetect);
             let handle = std::thread::spawn(move || log_color2.get_theme());
 
             let second_theme = loop {
@@ -320,7 +258,7 @@ mod tests {
                     break handle.join().unwrap();
                 }
                 if start.elapsed() > timeout {
-                    break Theme::Dark; // Default on timeout
+                    break TermTheme::Dark; // Default on timeout
                 }
                 std::thread::sleep(Duration::from_millis(10));
             };

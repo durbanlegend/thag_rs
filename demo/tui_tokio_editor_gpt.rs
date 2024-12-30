@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-ratatui = "0.27.0"
-tokio = { version = "1", features = ["full"] }
-tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
+ratatui = { version = "0.29.0", features = ["crossterm"] }
+tokio = { version = "1.42.0", features = ["full"] }
+tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
 */
 
 /// GPT-provided demo of a very basic TUI (terminal user interface) editor using
@@ -75,7 +75,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Step 4: Main loop for TUI
     loop {
         terminal.draw(|f| {
-            let size = f.size();
+            let size = f.area();
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Percentage(100)].as_ref())

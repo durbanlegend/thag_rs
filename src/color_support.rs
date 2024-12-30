@@ -62,3 +62,34 @@ pub enum TermTheme {
     /// Let `thag` autodetect the background luminosity
     AutoDetect,
 }
+
+/// Represents different message/content levels for styling
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Level {
+    Error,
+    Warning,
+    Heading, // HEAD in the original
+    Subheading,
+    Emphasis,
+    Bright,
+    Normal,
+    Debug,
+    Ghost,
+}
+
+// We can implement conversions to u8 directly here
+impl From<&Level> for u8 {
+    fn from(level: &Level) -> u8 {
+        match level {
+            Level::Error => 160,     // GuardsmanRed
+            Level::Warning => 164,   // DarkPurplePizzazz
+            Level::Heading => 19,    // MidnightBlue
+            Level::Subheading => 26, // ScienceBlue
+            Level::Emphasis => 173,  // Copperfield
+            Level::Bright => 46,     // Green
+            Level::Normal => 16,     // Black
+            Level::Debug => 32,      // LochmaraBlue
+            Level::Ghost => 232,     // DarkCodGray
+        }
+    }
+}

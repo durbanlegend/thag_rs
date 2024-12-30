@@ -106,7 +106,7 @@ pub mod manifest;
 //-----------------------------------------------------------------------------
 /// Assess terminal capabilities and current theme
 #[cfg(feature = "color_support")]
-mod color_support;
+pub mod color_support;
 /// Message coloring tailored to terminal capabilities and current theme
 #[cfg(feature = "color_support")]
 pub mod colors;

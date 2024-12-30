@@ -1,5 +1,6 @@
 /*[toml]
 [dependencies]
+crossterm = "0.28.1"
 env_logger = "0.11.3"
 log = "0.4.21"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_support", "core", "simplelog"] }
@@ -13,7 +14,8 @@ use env_logger::Builder;
 // use std::ffi::OsStr;
 use std::io::Write;
 use std::time::{Duration, Instant};
-use thag_rs::log_color::{ColorSupport, LogColor, Theme};
+use thag_rs::color_support::{ColorSupport, TermTheme};
+use thag_rs::log_color::LogColor;
 
 struct TestGuard {
     was_raw: bool,
@@ -69,21 +71,21 @@ fn main() {
 
         // First theme detection with timeout
         let start = Instant::now();
-        let log_color1 = LogColor::new(ColorSupport::Full, Theme::AutoDetect);
+        let log_color1 = LogColor::new(ColorSupport::Xterm256, TermTheme::AutoDetect);
         let handle = std::thread::spawn(move || log_color1.get_theme());
         let first_theme = loop {
             if handle.is_finished() {
                 break handle.join().unwrap();
             }
             if start.elapsed() > timeout {
-                break Theme::Dark; // Default on timeout
+                break TermTheme::Dark; // Default on timeout
             }
             std::thread::sleep(Duration::from_millis(10));
         };
 
         // Second theme detection
         let start = Instant::now();
-        let log_color2 = LogColor::new(ColorSupport::Full, Theme::AutoDetect);
+        let log_color2 = LogColor::new(ColorSupport::Xterm256, TermTheme::AutoDetect);
         let handle = std::thread::spawn(move || log_color2.get_theme());
 
         let second_theme = loop {
@@ -91,7 +93,7 @@ fn main() {
                 break handle.join().unwrap();
             }
             if start.elapsed() > timeout {
-                break Theme::Dark; // Default on timeout
+                break TermTheme::Dark; // Default on timeout
             }
             std::thread::sleep(Duration::from_millis(10));
         };

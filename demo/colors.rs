@@ -12,9 +12,9 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 use nu_ansi_term::{Color, Style};
 use strum::IntoEnumIterator;
 use termbg::terminal;
-use thag_rs::colors::{coloring, ColorSupport, MessageStyle, XtermColor};
+use thag_rs::colors::{coloring, MessageStyle, XtermColor};
 use thag_rs::logging::V;
-use thag_rs::{cvprtln, vlog, Lvl};
+use thag_rs::{cvprtln, vlog, ColorSupport, Lvl};
 /// Runner for current version of `src/colors.rs`, as it's become too enmeshed with other modules to split out nicely.
 /// We just borrow the main method here and add all the necessary dependencies and imports.
 ///

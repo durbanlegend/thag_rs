@@ -7,10 +7,37 @@ use supports_color::Stream;
 use termbg::Theme as TermbgTheme;
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct ColorInfo {
+    pub ansi: &'static str,
+    pub index: Option<u8>, // Store the original color index if it exists
+}
+
+impl ColorInfo {
+    #[must_use]
+    pub fn new(ansi: &'static str, index: Option<u8>) -> Self {
+        Self { ansi, index }
+    }
+
+    #[must_use]
+    pub fn basic(ansi: &'static str) -> Self {
+        Self::new(ansi, None)
+    }
+
+    #[must_use]
+    pub fn indexed(index: u8) -> Self {
+        Self::new(
+            Box::leak(format!("\x1b[38;5;{index}m").into_boxed_str()),
+            Some(index),
+        )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Style {
-    foreground: Option<&'static str>,
-    bold: bool,
-    italic: bool,
+    pub foreground: Option<ColorInfo>,
+    pub bold: bool,
+    pub italic: bool,
+    pub dim: bool,
 }
 
 impl Style {
@@ -20,6 +47,7 @@ impl Style {
             foreground: None,
             bold: false,
             italic: false,
+            dim: false,
         }
     }
 
@@ -40,14 +68,20 @@ impl Style {
         self
     }
 
+    #[must_use]
+    pub fn dim(mut self) -> Self {
+        self.dim = true;
+        self
+    }
+
     pub fn paint<D>(&self, val: D) -> String
     where
         D: std::fmt::Display,
     {
         let mut result = String::new();
 
-        if let Some(fg) = self.foreground {
-            result.push_str(fg);
+        if let Some(ref fg) = self.foreground {
+            result.push_str(fg.ansi);
         }
         if self.bold {
             result.push_str("\x1b[1m");
@@ -55,10 +89,24 @@ impl Style {
         if self.italic {
             result.push_str("\x1b[3m");
         }
+        if self.dim {
+            result.push_str("\x1b[2m");
+        }
 
         result.push_str(&val.to_string());
         result.push_str("\x1b[0m");
         result
+    }
+
+    #[must_use]
+    pub fn with_color_index(index: u8) -> Self {
+        Self {
+            foreground: Some(ColorInfo {
+                ansi: Box::leak(format!("\x1b[38;5;{index}m").into_boxed_str()),
+                index: Some(index),
+            }),
+            ..Default::default()
+        }
     }
 }
 
@@ -95,117 +143,100 @@ impl Color {
     #[must_use]
     pub fn red() -> Style {
         Style {
-            foreground: Some(Self::RED),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::RED)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn green() -> Style {
         Style {
-            foreground: Some(Self::GREEN),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::GREEN)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn yellow() -> Style {
         Style {
-            foreground: Some(Self::YELLOW),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::YELLOW)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn blue() -> Style {
         Style {
-            foreground: Some(Self::BLUE),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::BLUE)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn magenta() -> Style {
         Style {
-            foreground: Some(Self::MAGENTA),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::MAGENTA)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn cyan() -> Style {
         Style {
-            foreground: Some(Self::CYAN),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::CYAN)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn white() -> Style {
         Style {
-            foreground: Some(Self::WHITE),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::WHITE)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn dark_gray() -> Style {
         Style {
-            foreground: Some(Self::DARK_GRAY),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::DARK_GRAY)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn light_yellow() -> Style {
         Style {
-            foreground: Some(Self::LIGHT_YELLOW),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::LIGHT_YELLOW)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn light_cyan() -> Style {
         Style {
-            foreground: Some(Self::LIGHT_CYAN),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::LIGHT_CYAN)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn light_gray() -> Style {
         Style {
-            foreground: Some(Self::LIGHT_GRAY),
-            bold: false,
-            italic: false,
+            foreground: Some(ColorInfo::basic(Self::LIGHT_GRAY)),
+            ..Default::default()
         }
     }
 
     #[must_use]
     pub fn fixed(code: u8) -> Style {
         Style {
-            foreground: Some(Box::leak(format!("\x1b[38;5;{code}m").into_boxed_str())),
-            bold: false,
-            italic: false,
+            // foreground: Some(Box::leak(format!("\x1b[38;5;{code}m").into_boxed_str())),
+            foreground: Some(ColorInfo::indexed(code)),
+            ..Default::default()
         }
     }
 }
-
-// impl From<Style> for Style {
-//     fn from(style: Style) -> Self {
-//         style
-//     }
-// }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LogLevel {

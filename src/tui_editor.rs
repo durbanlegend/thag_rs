@@ -880,7 +880,7 @@ where
     }
 }
 
-pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate::MessageLevel) {
+pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate::Lvl) {
     profile!("highlight_selection");
     textarea.set_selection_style(
         Style::default()

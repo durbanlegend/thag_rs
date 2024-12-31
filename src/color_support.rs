@@ -71,7 +71,8 @@ pub enum TermTheme {
 }
 
 /// Represents different message/content levels for styling
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq)]
+#[strum(serialize_all = "snake_case")]
 pub enum Level {
     Error,
     Warning,
@@ -82,6 +83,20 @@ pub enum Level {
     Normal,
     Debug,
     Ghost,
+}
+
+pub type Lvl = Level;
+
+impl Lvl {
+    pub const ERR: Self = Self::Error;
+    pub const WARN: Self = Self::Warning;
+    pub const EMPH: Self = Self::Emphasis;
+    pub const HEAD: Self = Self::Heading;
+    pub const SUBH: Self = Self::Subheading;
+    pub const BRI: Self = Self::Bright;
+    pub const NORM: Self = Self::Normal;
+    pub const DBUG: Self = Self::Debug;
+    pub const GHST: Self = Self::Ghost;
 }
 
 // We can implement conversions to u8 directly here
@@ -118,7 +133,7 @@ pub struct ColorLevel {
 }
 
 #[cfg(target_os = "windows")]
-fn get_color_level() -> Option<ColorSupport> {
+pub fn get_color_level() -> Option<ColorSupport> {
     profile!("get_color_level");
     let color_level = translate_level(supports_color());
     match color_level {

@@ -1,29 +1,31 @@
 #![allow(clippy::implicit_return)]
 #![expect(unused)]
-use crate::color_support::get_color_level;
-use crate::color_support::{resolve_term_theme, restore_raw_status};
+use crate::color_support::{get_color_level, resolve_term_theme, restore_raw_status};
 use crate::config::Config;
 use crate::{
-    config, debug_log, generate_styles, lazy_static_var, maybe_config, vlog, ColorSupport,
-    TermTheme, ThagResult, V,
+    config, debug_log, generate_styles, lazy_static_var, maybe_config, vlog, ColorSupport, Level,
+    Lvl, TermTheme, ThagResult, V,
 };
 use crate::{profile, profile_method, profile_section};
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use documented::{Documented, DocumentedVariants};
 use log::debug;
 use nu_ansi_term::{Color, Style};
-#[cfg(feature = "tui")]
-use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
 use scopeguard::defer;
 use serde::Deserialize;
-#[cfg(target_os = "windows")]
-use std::env;
 use std::sync::OnceLock;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
+use termbg::{terminal, theme, Theme};
+
+#[cfg(feature = "tui")]
+use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
+
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
-use termbg::{terminal, theme, Theme};
+
+#[cfg(target_os = "windows")]
+use std::env;
 
 #[derive(Debug)]
 pub enum Xterm256LightStyle {
@@ -295,26 +297,26 @@ pub enum MessageLevel {
     Ghost,
 }
 
-pub type Lvl = MessageLevel;
+// pub type Lvl = MessageLevel;
 
-impl Lvl {
-    pub const ERR: Self = Self::Error;
-    pub const WARN: Self = Self::Warning;
-    pub const EMPH: Self = Self::Emphasis;
-    pub const HEAD: Self = Self::Heading;
-    pub const SUBH: Self = Self::Subheading;
-    pub const BRI: Self = Self::Bright;
-    pub const NORM: Self = Self::Normal;
-    pub const DBUG: Self = Self::Debug;
-    pub const GHST: Self = Self::Ghost;
-}
+// impl Lvl {
+//     pub const ERR: Self = Self::Error;
+//     pub const WARN: Self = Self::Warning;
+//     pub const EMPH: Self = Self::Emphasis;
+//     pub const HEAD: Self = Self::Heading;
+//     pub const SUBH: Self = Self::Subheading;
+//     pub const BRI: Self = Self::Bright;
+//     pub const NORM: Self = Self::Normal;
+//     pub const DBUG: Self = Self::Debug;
+//     pub const GHST: Self = Self::Ghost;
+// }
 
-impl From<&Lvl> for u8 {
-    fn from(message_level: &Lvl) -> Self {
-        profile_method!("u8_from_lvl");
-        Self::from(&XtermColor::from(message_level))
-    }
-}
+// impl From<&Lvl> for u8 {
+//     fn from(message_level: &Lvl) -> Self {
+//         profile_method!("u8_from_lvl");
+//         Self::from(&XtermColor::from(message_level))
+//     }
+// }
 
 impl From<&XtermColor> for Color {
     fn from(xterm_color: &XtermColor) -> Self {
@@ -662,6 +664,34 @@ impl From<&Lvl> for MessageStyle {
     }
 }
 
+impl From<&MessageLevel> for MessageStyle {
+    fn from(message_level: &MessageLevel) -> Self {
+        profile_method!("ms_from_lvl");
+        let message_style: Self = {
+            let (maybe_color_support, term_theme) = coloring();
+            maybe_color_support.map_or(Self::Ansi16DarkNormal, |color_support| {
+                let color_qual = color_support.to_string();
+                let theme_qual = term_theme.to_string();
+                let msg_level_qual = message_level.to_string();
+                // #[cfg(debug_assertions)]
+                // debug_log!(
+                //     "Called from_str on {color_qual}_{theme_qual}_{msg_level_qual}, found {message_style:#?}",
+                // );
+                profile_section!("format_and_get_variant");
+                Self::from_str(
+                    &format!(
+                        "{color_support}_{term_theme}_{message_level}" //,
+                                                                       // &color_qual, &theme_qual, &msg_level_qual
+                    )
+                    .to_lowercase(),
+                )
+                .unwrap_or(Self::Ansi16DarkNormal)
+            })
+        };
+        message_style
+    }
+}
+
 /// An implementation to facilitate conversion to `ratatui` and potentially other
 /// color implementations.
 #[allow(clippy::match_same_arms)]
@@ -767,8 +797,8 @@ impl From<&MessageStyle> for Style {
     }
 }
 
-impl From<&MessageLevel> for Style {
-    fn from(lvl: &MessageLevel) -> Self {
+impl From<&Lvl> for Style {
+    fn from(lvl: &Lvl) -> Self {
         profile_method!("style_from_lvl");
         Self::from(&MessageStyle::from(lvl))
     }
@@ -868,10 +898,42 @@ impl From<&MessageLevel> for RataStyle {
     }
 }
 
+#[cfg(feature = "tui")]
+impl From<&Level> for RataStyle {
+    fn from(lvl: &Level) -> Self {
+        profile_method!("rata_from_lvl");
+        Self::from(&MessageLevel::from(lvl))
+    }
+}
+
+impl From<&Level> for MessageLevel {
+    fn from(lvl: &Level) -> Self {
+        profile_method!("msg_lvl_from_lvl");
+        match lvl {
+            Lvl::Error => Self::Error,
+            Lvl::Warning => Self::Warning,
+            Lvl::Emphasis => Self::Emphasis,
+            Lvl::Heading => Self::Heading,
+            Lvl::Subheading => Self::Subheading,
+            Lvl::Bright => Self::Bright,
+            Lvl::Normal => Self::Normal,
+            Lvl::Debug => Self::Debug,
+            Lvl::Ghost => Self::Ghost,
+        }
+    }
+}
+
 impl From<&MessageLevel> for Color {
     fn from(lvl: &MessageLevel) -> Self {
-        profile_method!("col_from_lvl");
+        profile_method!("col_from_msg_lvl");
         Self::from(&XtermColor::from(&MessageStyle::from(lvl)))
+    }
+}
+
+impl From<&Level> for Color {
+    fn from(lvl: &Level) -> Self {
+        profile_method!("col_from_lvl");
+        Self::from(&MessageLevel::from(lvl))
     }
 }
 

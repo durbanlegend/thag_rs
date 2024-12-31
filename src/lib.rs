@@ -159,8 +159,8 @@ pub use {
 
 #[cfg(feature = "color_support")]
 pub use {
-    color_support::{ColorSupport, Level, TermTheme},
-    colors::{coloring, Lvl, MessageLevel},
+    color_support::{ColorSupport, Level, Lvl, TermTheme},
+    colors::{coloring, MessageLevel},
     config::{
         load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
         ProcMacros,

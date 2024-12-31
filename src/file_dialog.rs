@@ -1,7 +1,9 @@
+use crate::log_color::initialize_log_color;
 use crate::{
     debug_log, key_mappings, lazy_static_var,
+    log_color::LogColor,
     tui_editor::{self, centered_rect, display_popup, KeyDisplayLine},
-    KeyCombination, Lvl,
+    KeyCombination, Level, Lvl,
 };
 // #[cfg(feature = "profiling")]
 use crate::{profile, profile_method};
@@ -16,7 +18,7 @@ use crossterm::{
 };
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style, Stylize},
+    style::{Color, Style, Stylize},
     text::Line,
     widgets::{Block, Borders, List, ListItem, ListState},
     Frame,
@@ -94,6 +96,7 @@ pub struct FileDialog<'a> {
     pub input: TextArea<'a>,
 
     pub buf: String,
+    log_color: &'static LogColor,
 }
 
 // impl<FilePattern> FileDialog<'_, FilePattern> {
@@ -124,6 +127,7 @@ impl FileDialog<'_> {
             input: TextArea::default(),
             title_bottom: "Ctrl+l to show keys",
             buf: String::new(),
+            log_color: initialize_log_color(),
         };
         s.update_entries()?;
         Ok(s)
@@ -220,11 +224,11 @@ impl FileDialog<'_> {
                 .title(title.clone())
                 .borders(Borders::ALL)
                 .border_style(if file_list_focus {
-                    Style::default()
-                        .fg(Color::Indexed(u8::from(&Lvl::HEAD)))
-                        .add_modifier(Modifier::BOLD)
+                    ratatui::style::Style::from(&self.log_color.style_for_level(Level::Heading))
                 } else {
-                    Style::default().fg(Color::DarkGray).dim()
+                    ratatui::style::Style::default()
+                        .fg(ratatui::style::Color::DarkGray)
+                        .dim()
                 })
                 .title_bottom(Line::from(self.title_bottom).centered());
             let list_items: Vec<ListItem> = self

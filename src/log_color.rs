@@ -1,6 +1,12 @@
-use crate::color_support::{ColorSupport, TermTheme};
-use crate::{config, profile, profile_method, Colors, Config};
-use crossterm::terminal;
+use crate::color_support::{
+    get_color_level, resolve_term_theme, restore_raw_status, ColorSupport, TermTheme,
+};
+use crate::{
+    config, debug_log, lazy_static_var, maybe_config, profile, profile_method, Colors, Config,
+    Level,
+};
+use crossterm::terminal::{self, is_raw_mode_enabled};
+use scopeguard::defer;
 use std::io::{self, Write};
 use std::sync::atomic::{AtomicU8, Ordering};
 use supports_color::Stream;
@@ -353,78 +359,74 @@ impl LogColor {
         })
     }
 
-    pub fn style_for_level(&self, level: LogLevel) -> Style {
+    pub fn style_for_level(&self, level: Level) -> Style {
         profile_method!("LogColor::style_for_level");
-        match (&self.color_support, &self.theme) {
-            (&ColorSupport::None, _) => Style::new(),
+        match (&self.color_support, &self.get_theme()) {
+            (&ColorSupport::None, _) => Style::default(),
             (&ColorSupport::Ansi16, &TermTheme::Light) => Self::basic_light_style(level),
             (&ColorSupport::Ansi16, &TermTheme::Dark) => Self::basic_dark_style(level),
             (&ColorSupport::Xterm256, &TermTheme::Light) => Self::full_light_style(level),
             (&ColorSupport::Xterm256, &TermTheme::Dark) => Self::full_dark_style(level),
-            (_, &TermTheme::AutoDetect)  // Handled by get_theme
-            |
-            (&ColorSupport::AutoDetect, _) => unreachable!(), // Should be resolved before this point        }
+            (_, &TermTheme::AutoDetect) => unreachable!(),
+            (&ColorSupport::AutoDetect, _) => unreachable!(),
         }
     }
 
-    fn basic_light_style(level: LogLevel) -> Style {
-        // Port existing Ansi16LightStyle logic
-        profile!("basic_light_style");
+    fn basic_light_style(level: Level) -> Style {
         match level {
-            LogLevel::Error => Color::red().bold(),
-            LogLevel::Warning => Color::magenta().bold(),
-            LogLevel::Heading => Color::blue().bold(),
-            LogLevel::Subheading => Color::cyan().bold(),
-            LogLevel::Emphasis => Color::green().bold(),
-            LogLevel::Bright => Color::green(),
-            LogLevel::Normal => Color::dark_gray().normal(),
-            LogLevel::Debug => Color::cyan().normal(),
-            LogLevel::Ghost => Color::cyan().italic(),
+            Level::Error => Color::red().bold(),
+            Level::Warning => Color::magenta().bold(),
+            Level::Heading => Color::blue().bold(),
+            Level::Subheading => Color::cyan().bold(),
+            Level::Emphasis => Color::green().bold(),
+            Level::Bright => Color::green(),
+            Level::Normal => Color::dark_gray(),
+            Level::Debug => Color::cyan(),
+            Level::Ghost => Color::cyan().italic(),
         }
     }
 
-    fn basic_dark_style(level: LogLevel) -> Style {
+    fn basic_dark_style(level: Level) -> Style {
         profile!("basic_dark_style");
         match level {
-            LogLevel::Error => Color::red().bold(),
-            LogLevel::Warning => Color::yellow().bold(),
-            LogLevel::Heading => Color::green().bold(),
-            LogLevel::Subheading => Color::blue().bold(),
-            LogLevel::Emphasis => Color::cyan().bold(),
-            LogLevel::Bright => Color::light_yellow(),
-            LogLevel::Normal => Color::white().normal(),
-            LogLevel::Debug => Color::light_cyan().normal(),
-            LogLevel::Ghost => Color::light_gray().italic(),
+            Level::Error => Color::red().bold(),
+            Level::Warning => Color::yellow().bold(),
+            Level::Heading => Color::green().bold(),
+            Level::Subheading => Color::blue().bold(),
+            Level::Emphasis => Color::cyan().bold(),
+            Level::Bright => Color::light_yellow(),
+            Level::Normal => Color::white().normal(),
+            Level::Debug => Color::light_cyan().normal(),
+            Level::Ghost => Color::light_gray().italic(),
         }
     }
 
-    fn full_light_style(level: LogLevel) -> Style {
-        profile!("full_light_style");
+    fn full_light_style(level: Level) -> Style {
         match level {
-            LogLevel::Error => Color::fixed(160).bold(),
-            LogLevel::Warning => Color::fixed(164).bold(),
-            LogLevel::Heading => Color::fixed(19).bold(),
-            LogLevel::Subheading => Color::fixed(26).normal(),
-            LogLevel::Emphasis => Color::fixed(173).bold(),
-            LogLevel::Bright => Color::fixed(46),
-            LogLevel::Normal => Color::fixed(16).normal(),
-            LogLevel::Debug => Color::fixed(32).normal(),
-            LogLevel::Ghost => Color::fixed(232).normal().italic(),
+            Level::Error => Color::fixed(160).bold(),
+            Level::Warning => Color::fixed(164).bold(),
+            Level::Heading => Color::fixed(19).bold(),
+            Level::Subheading => Color::fixed(26),
+            Level::Emphasis => Color::fixed(173).bold(),
+            Level::Bright => Color::fixed(46),
+            Level::Normal => Color::fixed(16),
+            Level::Debug => Color::fixed(32),
+            Level::Ghost => Color::fixed(232).italic(),
         }
     }
 
-    fn full_dark_style(level: LogLevel) -> Style {
+    fn full_dark_style(level: Level) -> Style {
         profile!("full_dark_style");
         match level {
-            LogLevel::Error => Color::fixed(1).bold(),
-            LogLevel::Warning => Color::fixed(171).bold(),
-            LogLevel::Heading => Color::fixed(42).bold(),
-            LogLevel::Subheading => Color::fixed(75).normal(),
-            LogLevel::Emphasis => Color::fixed(173).bold(),
-            LogLevel::Bright => Color::fixed(3),
-            LogLevel::Normal => Color::fixed(231).normal(),
-            LogLevel::Debug => Color::fixed(37).normal(),
-            LogLevel::Ghost => Color::fixed(251).normal().italic(),
+            Level::Error => Color::fixed(1).bold(),
+            Level::Warning => Color::fixed(171).bold(),
+            Level::Heading => Color::fixed(42).bold(),
+            Level::Subheading => Color::fixed(75).normal(),
+            Level::Emphasis => Color::fixed(173).bold(),
+            Level::Bright => Color::fixed(3),
+            Level::Normal => Color::fixed(231).normal(),
+            Level::Debug => Color::fixed(37).normal(),
+            Level::Ghost => Color::fixed(251).normal().italic(),
         }
     }
 
@@ -468,6 +470,73 @@ pub fn init(color_support: ColorSupport, theme: TermTheme) {
 
 pub fn get() -> &'static LogColor {
     INSTANCE.get_or_init(|| LogColor::new(ColorSupport::None, TermTheme::Dark))
+}
+
+pub fn initialize_log_color() -> &'static LogColor {
+    profile!("initialize_log_color");
+
+    if std::env::var("TEST_ENV").is_ok() {
+        #[cfg(debug_assertions)]
+        debug_log!("Avoiding supports_color for testing");
+        return lazy_static_var!(
+            LogColor,
+            LogColor::new(ColorSupport::Ansi16, TermTheme::Dark)
+        );
+    }
+
+    let raw_before = terminal::is_raw_mode_enabled();
+    if let Ok(raw_then) = raw_before {
+        defer! {
+            let raw_now = match is_raw_mode_enabled() {
+                Ok(val) => val,
+                Err(e) => {
+                    #[cfg(debug_assertions)]
+                    debug_log!("Failed to check raw mode status: {:?}", e);
+                    return;
+                }
+            };
+
+            if raw_now == raw_then {
+                #[cfg(debug_assertions)]
+                debug_log!("Raw mode status unchanged.");
+            } else if let Err(e) = restore_raw_status(raw_then) {
+                    #[cfg(debug_assertions)]
+                    debug_log!("Failed to restore raw mode: {:?}", e);
+            } else {
+                #[cfg(debug_assertions)]
+                debug_log!("Raw mode restored to previous state.");
+            }
+        }
+    }
+
+    lazy_static_var!(LogColor, {
+        let color_support = maybe_config()
+            .as_ref()
+            .map_or_else(get_color_level, |config| {
+                match config.colors.color_support {
+                    ColorSupport::Xterm256 | ColorSupport::Ansi16 | ColorSupport::None => {
+                        Some(config.colors.color_support.clone())
+                    }
+                    ColorSupport::AutoDetect => {
+                        Some(get_color_level().unwrap_or(ColorSupport::None))
+                    }
+                }
+            })
+            .unwrap_or(ColorSupport::None);
+
+        let term_theme = maybe_config().map_or_else(
+            || resolve_term_theme().unwrap_or_default(),
+            |config| {
+                if matches!(&config.colors.term_theme, &TermTheme::AutoDetect) {
+                    resolve_term_theme().unwrap_or_default()
+                } else {
+                    config.colors.term_theme
+                }
+            },
+        );
+
+        LogColor::new(color_support, term_theme)
+    })
 }
 
 // Convenience macros

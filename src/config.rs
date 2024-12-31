@@ -596,12 +596,7 @@ pub fn maybe_config() -> Option<Config> {
     lazy_static_var!(Option<Config>, {
         let context = RealContext::new();
         let load_or_default = Config::load_or_create_default(&context);
-        if let Ok(config) = load_or_default {
-            Some(config)
-        } else {
-            // Fallback strategy
-            maybe_load_config()
-        }
+        load_or_default.map_or_else(|_| maybe_load_config(), Some)
     })
     .clone()
 }

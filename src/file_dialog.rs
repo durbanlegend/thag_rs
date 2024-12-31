@@ -1,4 +1,4 @@
-use crate::log_color::initialize_log_color;
+use crate::log_color::initialize;
 use crate::{
     debug_log, key_mappings, lazy_static_var,
     log_color::LogColor,
@@ -127,7 +127,7 @@ impl FileDialog<'_> {
             input: TextArea::default(),
             title_bottom: "Ctrl+l to show keys",
             buf: String::new(),
-            log_color: initialize_log_color(),
+            log_color: initialize(),
         };
         s.update_entries()?;
         Ok(s)

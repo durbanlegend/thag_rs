@@ -6,6 +6,9 @@ use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use supports_color::Stream;
 use termbg::{theme, Theme};
 
+#[cfg(target_os = "windows")]
+use std::env;
+
 /// An enum to categorise the current terminal's level of colour support as detected, configured
 /// or defaulted.
 ///
@@ -68,7 +71,7 @@ pub enum TermTheme {
 }
 
 /// Represents different message/content levels for styling
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Level {
     Error,
     Warning,
@@ -83,7 +86,7 @@ pub enum Level {
 
 // We can implement conversions to u8 directly here
 impl From<&Level> for u8 {
-    fn from(level: &Level) -> u8 {
+    fn from(level: &Level) -> Self {
         match level {
             Level::Error => 160,     // GuardsmanRed
             Level::Warning => 164,   // DarkPurplePizzazz
@@ -131,6 +134,7 @@ fn get_color_level() -> Option<ColorSupport> {
 }
 
 #[cfg(not(target_os = "windows"))]
+#[must_use]
 pub fn get_color_level() -> Option<ColorSupport> {
     profile!("get_color_level");
     #[cfg(debug_assertions)]
@@ -251,6 +255,11 @@ fn check_256_color(term: &str) -> bool {
     term.ends_with("256") || term.ends_with("256color")
 }
 
+/// Calls `termbg` to resolve whether current terminal backfround is light or dark.
+///
+/// # Errors
+///
+/// This function will bubble up any errors returned by `termbg`.
 pub fn resolve_term_theme() -> ThagResult<TermTheme> {
     profile!("resolve_term_theme");
     let raw_before = terminal::is_raw_mode_enabled()?;
@@ -282,6 +291,11 @@ fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
     Ok(())
 }
 
+/// Restore the raw or cooked terminal status as saved in the boolean argument.
+///
+/// # Errors
+///
+/// This function will bubble up any errors returned by `crossterm`.
 pub fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
     profile!("restore_raw_status");
     if raw_before {

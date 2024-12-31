@@ -138,9 +138,11 @@ impl Drop for Profile {
     }
 }
 
-/// Profile the enclosing function if profiling is enabled. Normally code this at the
-/// start of the function, after any declarations. Pass the function name (or alternative
-/// identifier if you know what you're doing) as a string literal argument.
+/// Profile the enclosing function if profiling is enabled.
+///
+/// Normally code this at the start of the function, after any declarations.
+/// Pass the function name (or alternative identifier if you know what you're
+/// doing) as a string literal argument.
 ///
 /// E.g.:
 ///
@@ -270,22 +272,22 @@ impl ProfileStats {
 
     // Getter methods for private fields if needed
     #[must_use]
-    pub fn count(&self) -> u64 {
+    pub const fn count(&self) -> u64 {
         self.count
     }
 
     #[must_use]
-    pub fn total_duration(&self) -> std::time::Duration {
+    pub const fn total_duration(&self) -> std::time::Duration {
         self.duration_total
     }
 
     #[must_use]
-    pub fn min_time(&self) -> Option<std::time::Duration> {
+    pub const fn min_time(&self) -> Option<std::time::Duration> {
         self.min_time
     }
 
     #[must_use]
-    pub fn max_time(&self) -> Option<std::time::Duration> {
+    pub const fn max_time(&self) -> Option<std::time::Duration> {
         self.max_time
     }
 }

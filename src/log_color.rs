@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use supports_color::Stream;
 use termbg::Theme as TermbgTheme;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ColorInfo {
     pub ansi: &'static str,
     pub index: Option<u8>, // Store the original color index if it exists
@@ -20,12 +20,12 @@ pub struct ColorInfo {
 
 impl ColorInfo {
     #[must_use]
-    pub fn new(ansi: &'static str, index: Option<u8>) -> Self {
+    pub const fn new(ansi: &'static str, index: Option<u8>) -> Self {
         Self { ansi, index }
     }
 
     #[must_use]
-    pub fn basic(ansi: &'static str) -> Self {
+    pub const fn basic(ansi: &'static str) -> Self {
         Self::new(ansi, None)
     }
 
@@ -38,7 +38,7 @@ impl ColorInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Style {
     pub foreground: Option<ColorInfo>,
     pub bold: bool,
@@ -48,7 +48,7 @@ pub struct Style {
 
 impl Style {
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             foreground: None,
             bold: false,
@@ -58,24 +58,24 @@ impl Style {
     }
 
     #[must_use]
-    pub fn bold(mut self) -> Self {
+    pub const fn bold(mut self) -> Self {
         self.bold = true;
         self
     }
 
     #[must_use]
-    pub fn italic(mut self) -> Self {
+    pub const fn italic(mut self) -> Self {
         self.italic = true;
         self
     }
 
     #[must_use]
-    pub fn normal(self) -> Self {
+    pub const fn normal(self) -> Self {
         self
     }
 
     #[must_use]
-    pub fn dim(mut self) -> Self {
+    pub const fn dim(mut self) -> Self {
         self.dim = true;
         self
     }
@@ -244,7 +244,7 @@ impl Color {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogLevel {
     Error,
     Warning,
@@ -367,8 +367,7 @@ impl LogColor {
             (&ColorSupport::Ansi16, &TermTheme::Dark) => Self::basic_dark_style(level),
             (&ColorSupport::Xterm256, &TermTheme::Light) => Self::full_light_style(level),
             (&ColorSupport::Xterm256, &TermTheme::Dark) => Self::full_dark_style(level),
-            (_, &TermTheme::AutoDetect) => unreachable!(),
-            (&ColorSupport::AutoDetect, _) => unreachable!(),
+            (_, &TermTheme::AutoDetect) | (&ColorSupport::AutoDetect, _) => unreachable!(),
         }
     }
 
@@ -444,15 +443,13 @@ impl From<config::Colors> for (ColorSupport, TermTheme) {
             ColorSupport::Ansi16 => ColorSupport::Ansi16,
             ColorSupport::None => ColorSupport::None,
             ColorSupport::AutoDetect => {
-                if let Some(color_level) = supports_color::on(Stream::Stdout) {
+                supports_color::on(Stream::Stdout).map_or(ColorSupport::None, |color_level| {
                     if color_level.has_16m || color_level.has_256 {
                         ColorSupport::Xterm256
                     } else {
                         ColorSupport::Ansi16
                     }
-                } else {
-                    ColorSupport::None
-                }
+                })
             }
         };
 
@@ -472,8 +469,8 @@ pub fn get() -> &'static LogColor {
     INSTANCE.get_or_init(|| LogColor::new(ColorSupport::None, TermTheme::Dark))
 }
 
-pub fn initialize_log_color() -> &'static LogColor {
-    profile!("initialize_log_color");
+pub fn initialize() -> &'static LogColor {
+    profile!("initialize");
 
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]

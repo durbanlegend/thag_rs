@@ -202,10 +202,12 @@ macro_rules! cprtln {
     }};
 }
 /// Logs a message provided the verbosity value passed in is at least as great as the current
-/// verbosity level, which can be thought of as a cutoff level. This cutoff level is either
-/// specified by the user via `-v`, `-vv`, `-n`, `-q` or `-qq` or their long-form equivalents,
-/// or failing that, by the user's configured `default_verbosity` setting, or failing *that*,
-/// by the system default verbosity setting of `Normal`.
+/// verbosity level.
+///
+/// The current (global) verbosity level can be thought of as a cutoff level. This cutoff level
+/// is either specified by the user via `-v`, `-vv`, `-n`, `-q` or `-qq` or their long-form
+/// equivalents, or failing that, by the user's configured `default_verbosity` setting, or
+/// failing *that*, by the system default verbosity setting of `Normal`.
 ///
 /// How this works may still seem counterintuitive depending on your intuitions, so here are
 /// some examples:

@@ -69,6 +69,9 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Rearrange tests to follow refactoring moves.
 - [ ]  Look at attributes as a possible way to switch on expansion for derive macros
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
+- [ ]  Consider further refactor of log_color into term_aware vs log_color and eventually term_aware (incl supports_color) vs log_color?
+         And change feature name from color_support to term_aware or themed.
+- [ ]  Consider script to reverse-engineer xterm OSC sequences.
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output - rather fix bad output at source - done?

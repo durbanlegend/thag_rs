@@ -18,12 +18,9 @@ use {
 #[cfg(target_os = "windows")]
 use crate::escape_path_for_windows;
 
-#[cfg(feature = "color_support")]
-use crate::{cvprtln, Lvl};
-
 use crate::{
-    debug_log, profile, profile_method, profile_section, regex, vlog, Ast, ThagError, ThagResult,
-    DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
+    clog_emphasis, clog_warning, debug_log, profile, profile_method, profile_section, regex, vlog,
+    Ast, ThagError, ThagResult, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use regex::Regex;
 use std::{
@@ -216,12 +213,14 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     } {
         #[cfg(debug_assertions)]
         #[cfg(feature = "color_support")]
-        cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::File");
+        clog_emphasis!("Parsed to syn::File");
         #[cfg(not(feature = "color_support"))]
         vlog!(
             V::V,
             "{}",
-            &nu_ansi_term::Style::from(nu_ansi_term::Color::LightCyan).paint("Parsed to syn::File")
+            crate::Color::light_cyan()
+                .bold()
+                .paint("Parsed to syn::File")
         );
         #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
@@ -232,27 +231,30 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     } {
         #[cfg(debug_assertions)]
         #[cfg(feature = "color_support")]
-        cvprtln!(&Lvl::EMPH, V::V, "Parsed to syn::Expr");
+        clog_emphasis!("Parsed to syn::Expr");
         #[cfg(not(feature = "color_support"))]
         vlog!(
             V::V,
             "{}",
-            &nu_ansi_term::Style::from(nu_ansi_term::Color::LightCyan).paint("Parsed to syn::Expr")
+            crate::Color::light_cyan()
+                .bold()
+                .paint("Parsed to syn::Expr")
         );
         #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         Some(Ast::Expr(tree))
     } else {
         #[cfg(feature = "color_support")]
-        cvprtln!(
-            &Lvl::WARN,
-            V::QQ,
+        clog_warning!(
             "Error parsing syntax tree for `{sourch_path_string}`. Using `rustfmt` to help you debug the script."
         );
         #[cfg(not(feature = "color_support"))]
-        cprtln!(
-            &nu_ansi_term::Style::from(nu_ansi_term::Color::LightYellow),
-            "Error parsing syntax tree for `{sourch_path_string}`. Using `rustfmt` to help you debug the script."
+        vlog!(
+            V::V,
+            "{}",
+            crate::Color::light_yellow()
+                .bold()
+                .paint("Error parsing syntax tree for `{sourch_path_string}`. Using `rustfmt` to help you debug the script.")
         );
         rustfmt(sourch_path_string);
 

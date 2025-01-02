@@ -139,7 +139,9 @@ pub use {
     errors::{ThagError, ThagResult},
     logging::{get_verbosity, Verbosity, V},
     profiling::Profile,
-    shared::{debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string},
+    shared::{
+        debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, Color, Style,
+    },
     thag_proc_macros::repeat_dash,
 };
 

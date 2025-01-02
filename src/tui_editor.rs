@@ -482,8 +482,8 @@ pub struct EditData<'a> {
     pub history: Option<History>,
 }
 
-impl From<&crate::log_color::Style> for Style {
-    fn from(style: &crate::log_color::Style) -> Self {
+impl From<&crate::shared::Style> for Style {
+    fn from(style: &crate::shared::Style) -> Self {
         let mut rata_style = Self::default();
 
         // Convert the color if present

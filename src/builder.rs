@@ -50,15 +50,14 @@ use crate::config::{self, DependencyInference, RealContext};
 use crate::manifest::extract;
 use crate::stdin::{edit, read};
 use crate::{
-    ast, coloring, cvprtln, debug_log, debug_timings, get_home_dir, get_proc_flags, manifest,
-    maybe_config, modified_since_compiled, profile, profile_method, profile_section, regex,
-    repeat_dash, shared, validate_args, vlog, Ast, Cli, CrosstermEventReader, Dependencies, Lvl,
-    ProcFlags, ThagError, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
+    ast, coloring, cvprtln, debug_log, debug_timings, get_home_dir, get_proc_flags, log_color,
+    manifest, maybe_config, modified_since_compiled, profile, profile_method, profile_section,
+    regex, repeat_dash, shared, validate_args, vlog, Ast, Cli, CrosstermEventReader, Dependencies,
+    Lvl, ProcFlags, ThagError, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
     REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME,
     V,
 };
 use cargo_toml::Manifest;
-use nu_ansi_term::Style;
 use regex::Regex;
 use side_by_side_diff::create_side_by_side_diff;
 use std::env;
@@ -958,7 +957,9 @@ pub fn gen_build_run(
     let process = &format!(
         "{} completed processing script {}",
         PACKAGE_NAME,
-        Style::from(&Lvl::EMPH).paint(&build_state.source_name)
+        log_color::get()
+            .style_for_level(Lvl::EMPH)
+            .paint(&build_state.source_name)
     );
     display_timings(start, process, proc_flags);
     Ok(())

@@ -2,6 +2,8 @@
 /// directories.
 ///
 /// This requires a main method so that `thag` won't move the snippet to a location under temp_dir().
+///
+/// Not suitable for running from a URL.
 //# Purpose: demo technique
 //# Categories: basic, educational, technique
 fn main() {

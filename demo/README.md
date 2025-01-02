@@ -2849,6 +2849,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs
 
 ---
 
+### Script: include_str.rs
+
+**Description:**  Simple demo of `std::include_str` macro showing how to includes other files in demo or neighboring
+ directories.
+
+ This requires a main method so that `thag` won't move the snippet to a location under temp_dir().
+
+ Not suitable for running from a URL.
+
+**Purpose:** demo technique
+
+**Type:** Program
+
+**Categories:** basic, educational, technique
+
+**Link:** [include_str.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/include_str.rs)
+
+**Not suitable to be run from a URL.**
+
+
+---
+
 ### Script: infer_deps.rs
 
 **Description:**  Interactively test dependency inferency. This script was arbitrarily copied from
@@ -3788,28 +3810,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_der
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs
-```
-
----
-
-### Script: proc_macro_embed_file_demo.rs
-
-**Description:**  Demonstrates embedding a single file at compile time
-
-**Purpose:** demonstrate file embedding proc macro
-
-**Crates:** `thag_demo_proc_macros`
-
-**Type:** Program
-
-**Categories:** proc_macros, filesystem
-
-**Link:** [proc_macro_embed_file_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_embed_file_demo.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_embed_file_demo.rs
 ```
 
 ---
@@ -5341,7 +5341,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707
 
 **Purpose:** A user-friendly interface to the `thag` `--cargo` option.
 
-**Crates:** `atty`, `inquire`, `rustix`
+**Crates:** `atty`, `inquire`
 
 **Type:** Program
 
@@ -5365,7 +5365,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs
 
 **Purpose:** A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
 
-**Crates:** `atty`, `colored`, `inquire`, `rustix`
+**Crates:** `atty`, `colored`, `inquire`
 
 **Type:** Program
 

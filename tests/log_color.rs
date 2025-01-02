@@ -5,9 +5,8 @@ mod tests {
     use std::sync::Mutex;
     use std::time::{Duration, Instant};
     use supports_color::Stream;
-    // use thag_rs::colors::XtermColor;
-    use thag_rs::log_color::{Color, LogColor, LogLevel, Style};
-    use thag_rs::{ColorSupport, TermTheme};
+    use thag_rs::log_color::LogColor;
+    use thag_rs::{Color, ColorSupport, Level, Style, TermTheme};
 
     fn set_up() {
         std::env::set_var("TEST_ENV", "1");
@@ -131,11 +130,11 @@ mod tests {
 
             // Test each log level with expected styles
             let test_cases = vec![
-                (LogLevel::Error, Color::fixed(160).bold()),
-                (LogLevel::Warning, Color::fixed(164).bold()),
-                (LogLevel::Normal, Color::fixed(16).normal()),
-                (LogLevel::Heading, Color::fixed(19).bold()),
-                (LogLevel::Ghost, Color::fixed(232).normal().italic()),
+                (Level::Error, Color::fixed(160).bold()),
+                (Level::Warning, Color::fixed(164).bold()),
+                (Level::Normal, Color::fixed(16).normal()),
+                (Level::Heading, Color::fixed(19).bold()),
+                (Level::Ghost, Color::fixed(232).normal().italic()),
             ];
 
             for (level, expected_style) in test_cases {
@@ -163,7 +162,7 @@ mod tests {
             let log_color = LogColor::new(ColorSupport::None, TermTheme::Light);
 
             // All levels should return default style when color support is None
-            for level in [LogLevel::Error, LogLevel::Warning, LogLevel::Normal] {
+            for level in [Level::Error, Level::Warning, Level::Normal] {
                 let style = log_color.style_for_level(level);
                 assert_eq!(
                     style,
@@ -194,7 +193,7 @@ mod tests {
             let log_color = LogColor::new(ColorSupport::Xterm256, TermTheme::Light);
 
             // Test error style
-            let error_style = log_color.style_for_level(LogLevel::Error);
+            let error_style = log_color.style_for_level(Level::Error);
             let error_output = format!("{}", error_style.paint(content));
             assert_eq!(
                 error_output,
@@ -202,7 +201,7 @@ mod tests {
             );
 
             // Test warning style
-            let warn_style = log_color.style_for_level(LogLevel::Warning);
+            let warn_style = log_color.style_for_level(Level::Warning);
             let warn_output = format!("{}", warn_style.paint(content));
             assert_eq!(
                 warn_output,

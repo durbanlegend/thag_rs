@@ -1,16 +1,14 @@
 use crate::{
-    cprtln, cvprtln, debug_log, lazy_static_var, ColorSupport, Lvl, TermTheme, ThagError,
-    ThagResult, Verbosity, V,
+    clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, ColorSupport, Level, Lvl,
+    TermTheme, ThagError, ThagResult, Verbosity, V,
 };
+use crate::{profile, profile_method};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
 use mockall::{automock, predicate::str};
-use nu_ansi_term::Style;
+use serde::de;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
-// use std::collections::HashSet;
-use crate::{profile, profile_method};
-use serde::de;
 #[cfg(target_os = "windows")]
 use std::env;
 use std::{
@@ -614,11 +612,7 @@ fn maybe_load_config() -> Option<Config> {
             None
         }
         Err(e) => {
-            // too early to use cvprtln since colour mappings aren't configured yet.
-            cprtln!(
-                &Style::from(nu_ansi_term::Color::LightRed),
-                "Failed to load config: {e}"
-            );
+            clog_error!("Failed to load config: {e}");
             // sleep(Duration::from_secs(1));
             // println!("Failed to load config: {e}");
             std::process::exit(1);
@@ -663,8 +657,8 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     debug_log!("config_path={config_path:?}");
 
     if !config_path.exists() {
-        cprtln!(
-            &nu_ansi_term::Color::Fixed(171).bold(),
+        clog!(
+            Level::Warning,
             "Configuration file path {} not found. No config loaded. System defaults will be used.",
             config_path.display()
         );

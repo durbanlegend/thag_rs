@@ -9,7 +9,7 @@ use crate::{
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use scopeguard::defer;
 use std::io::{self, Write};
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use supports_color::Stream;
 use termbg::Theme as TermbgTheme;
 
@@ -217,6 +217,16 @@ impl From<config::Colors> for (ColorSupport, TermTheme) {
 use std::sync::OnceLock;
 static INSTANCE: OnceLock<LogColor> = OnceLock::new();
 
+pub static LOGGING_ENABLED: AtomicBool = AtomicBool::new(true);
+
+pub fn disable_logging() {
+    LOGGING_ENABLED.store(false, Ordering::SeqCst);
+}
+
+pub fn enable_logging() {
+    LOGGING_ENABLED.store(true, Ordering::SeqCst);
+}
+
 pub fn init(color_support: ColorSupport, theme: TermTheme) {
     let _ = INSTANCE.set(LogColor::new(color_support, theme));
 }
@@ -297,9 +307,11 @@ pub fn initialize() -> &'static LogColor {
 #[macro_export]
 macro_rules! clog {  // 'c' for colored logging
     ($level:expr, $($arg:tt)*) => {{
-        let logger = $crate::log_color::get();
-        let style = logger.style_for_level($level);
-        println!("{}", style.paint(format!($($arg)*)));
+        if $crate::log_color::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
+            let logger = $crate::log_color::get();
+            let style = logger.style_for_level($level);
+            println!("{}", style.paint(format!($($arg)*)));
+        }
     }};
 }
 
@@ -346,6 +358,77 @@ macro_rules! clog_debug {
 #[macro_export]
 macro_rules! clog_ghost {
     ($($arg:tt)*) => { $crate::clog!($crate::Level::Ghost, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog {
+    ($verbosity:expr, $level:expr, $($arg:tt)*) => {{
+        if $crate::log_color::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
+            let logger = $crate::logging::LOGGER.lock().unwrap();
+            let message = format!($($arg)*);
+
+            #[cfg(feature = "color_support")]
+            {
+                let color_logger = $crate::log_color::get();
+                let style = color_logger.style_for_level($level);
+                logger.log($verbosity, &style.paint(message));
+            }
+
+            #[cfg(not(feature = "color_support"))]
+            {
+                if verbosity as u8 <= self.verbosity as u8 {
+                    println!("{}", message);
+                }
+
+                logger.log($verbosity, &message);
+            }
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! cvlog_error {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Error, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_warning {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Warning, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_heading {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Heading, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_subheading {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Subheading, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_emphasis {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Emphasis, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_bright {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Bright, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_normal {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Normal, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_debug {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Debug, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_ghost {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Ghost, $($arg)*) };
 }
 
 #[cfg(test)]

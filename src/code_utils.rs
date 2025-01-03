@@ -19,8 +19,9 @@ use {
 use crate::escape_path_for_windows;
 
 use crate::{
-    clog_emphasis, clog_warning, debug_log, profile, profile_method, profile_section, regex, vlog,
-    Ast, ThagError, ThagResult, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
+    clog_emphasis, clog_warning, cvlog_emphasis, debug_log, profile, profile_method,
+    profile_section, regex, vlog, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME,
+    TMPDIR, V,
 };
 use regex::Regex;
 use std::{
@@ -212,16 +213,18 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
         syn::parse_file(source_code)
     } {
         #[cfg(debug_assertions)]
-        #[cfg(feature = "color_support")]
-        clog_emphasis!("Parsed to syn::File");
-        #[cfg(not(feature = "color_support"))]
-        vlog!(
-            V::V,
-            "{}",
-            crate::Color::light_cyan()
-                .bold()
-                .paint("Parsed to syn::File")
-        );
+        {
+            #[cfg(feature = "color_support")]
+            cvlog_emphasis!(V::V, "Parsed to syn::File");
+            #[cfg(not(feature = "color_support"))]
+            vlog!(
+                V::V,
+                "{}",
+                crate::Color::light_cyan()
+                    .bold()
+                    .paint("Parsed to syn::File")
+            );
+        }
         #[cfg(debug_assertions)]
         debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))

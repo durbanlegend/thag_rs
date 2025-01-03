@@ -107,7 +107,7 @@ impl From<&Level> for u8 {
         match level {
             Level::Error => 160,     // GuardsmanRed
             Level::Warning => 164,   // DarkPurplePizzazz
-            Level::Heading => 19,    // MidnightBlue
+            Level::Heading => 10,    // UserBrightGreen
             Level::Subheading => 26, // ScienceBlue
             Level::Emphasis => 173,  // Copperfield
             Level::Bright => 46,     // Green

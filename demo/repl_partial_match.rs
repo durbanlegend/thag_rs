@@ -1,9 +1,9 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.21", features = ["cargo", "derive"] }
+clap = { version = "4.5.23", features = ["cargo", "derive"] }
 clap-repl = "0.1.1"
 console = "0.15.8"
-rustyline = { version = "14.0.0", features=["with-file-history", "default"] }
+rustyline = { version = "12.0.0", features=["with-file-history", "default"] }
 shlex = "1.3.0"
 strum = { version = "0.26.3", features = ["derive"] }
 */
@@ -86,7 +86,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     // eprintln!("key={key}, split[0]={}", split[0]);
                 }
             }
-        	if matches == 1 {
+            if matches == 1 {
                 cmd
             } else {
                 println!("No single matching key found");

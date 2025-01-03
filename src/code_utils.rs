@@ -19,9 +19,8 @@ use {
 use crate::escape_path_for_windows;
 
 use crate::{
-    clog_emphasis, clog_warning, cvlog_emphasis, debug_log, profile, profile_method,
-    profile_section, regex, vlog, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME,
-    TMPDIR, V,
+    cvlog_emphasis, cvlog_warning, debug_log, profile, profile_method, profile_section, regex,
+    vlog, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use regex::Regex;
 use std::{
@@ -234,7 +233,7 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     } {
         #[cfg(debug_assertions)]
         #[cfg(feature = "color_support")]
-        clog_emphasis!("Parsed to syn::Expr");
+        cvlog_emphasis!(V::V, "Parsed to syn::Expr");
         #[cfg(not(feature = "color_support"))]
         vlog!(
             V::V,
@@ -248,7 +247,7 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
         Some(Ast::Expr(tree))
     } else {
         #[cfg(feature = "color_support")]
-        clog_warning!(
+        cvlog_warning!(V::V,
             "Error parsing syntax tree for `{sourch_path_string}`. Using `rustfmt` to help you debug the script."
         );
         #[cfg(not(feature = "color_support"))]

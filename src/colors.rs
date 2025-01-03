@@ -1,7 +1,6 @@
 #![allow(clippy::implicit_return)]
 #![expect(unused)]
 use crate::color_support::{get_color_level, resolve_term_theme, restore_raw_status};
-use crate::config::Config;
 use crate::{
     config, debug_log, generate_styles, lazy_static_var, maybe_config, vlog, ColorSupport, Level,
     Lvl, TermTheme, ThagResult, V,

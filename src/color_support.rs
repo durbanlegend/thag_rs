@@ -3,11 +3,13 @@ use crossterm::terminal;
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
-use supports_color::Stream;
 use termbg::{theme, Theme};
 
 #[cfg(target_os = "windows")]
 use std::env;
+
+#[cfg(not(target_os = "windows"))]
+use supports_color::Stream;
 
 /// An enum to categorise the current terminal's level of colour support as detected, configured
 /// or defaulted.

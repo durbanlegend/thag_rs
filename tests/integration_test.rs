@@ -26,15 +26,12 @@ fn test_script_runner_with_dependencies() -> Result<(), Box<dyn std::error::Erro
         script_file,
         r#"/*[toml]
 [dependencies]
-nu-ansi-term = "0.50.0"
 thag_rs = {{ path = {thag_rs_path:#?} }}
 */
-use nu_ansi_term::Style;
-use thag_rs::colors::Lvl;
-use thag_rs::vlog;
+use thag_rs::{{vlog, Color}};
 use thag_rs::logging::Verbosity;
 fn main() {{
-    vlog!(Verbosity::Normal, "Style::from(&Lvl::EMPH)={{:#?}}", Style::from(&Lvl::EMPH));
+    vlog!(Verbosity::Normal, "Color::light_cyan().bold()={{:#?}}", Color::light_cyan().bold());
 }}"#
     )?;
 

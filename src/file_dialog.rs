@@ -1,7 +1,6 @@
-use crate::log_color::initialize;
+use crate::styling::TermAttributes;
 use crate::{
     debug_log, key_mappings, lazy_static_var,
-    log_color::LogColor,
     tui_editor::{self, centered_rect, display_popup, KeyDisplayLine},
     KeyCombination, Level, Lvl,
 };
@@ -96,7 +95,7 @@ pub struct FileDialog<'a> {
     pub input: TextArea<'a>,
 
     pub buf: String,
-    log_color: &'static LogColor,
+    term_attrs: &'static TermAttributes,
 }
 
 // impl<FilePattern> FileDialog<'_, FilePattern> {
@@ -127,7 +126,7 @@ impl FileDialog<'_> {
             input: TextArea::default(),
             title_bottom: "Ctrl+l to show keys",
             buf: String::new(),
-            log_color: initialize(),
+            term_attrs: TermAttributes::get(),
         };
         s.update_entries()?;
         Ok(s)
@@ -224,7 +223,7 @@ impl FileDialog<'_> {
                 .title(title.clone())
                 .borders(Borders::ALL)
                 .border_style(if file_list_focus {
-                    ratatui::style::Style::from(&self.log_color.style_for_level(Level::Heading))
+                    ratatui::style::Style::from(&self.term_attrs.style_for_level(Level::Heading))
                 } else {
                     ratatui::style::Style::default()
                         .fg(ratatui::style::Color::DarkGray)

@@ -235,7 +235,7 @@ mod tests {
 
             // First theme detection with timeout
             let start = Instant::now();
-            let log_color1 = LogColor::new(ColorSupport::Xterm256, TermTheme::AutoDetect);
+            let log_color1 = LogColor::new(ColorSupport::Xterm256, TermTheme::Undetermined);
             let handle = std::thread::spawn(move || log_color1.get_theme());
             let first_theme = loop {
                 if handle.is_finished() {
@@ -249,7 +249,7 @@ mod tests {
 
             // Second theme detection
             let start = Instant::now();
-            let log_color2 = LogColor::new(ColorSupport::Xterm256, TermTheme::AutoDetect);
+            let log_color2 = LogColor::new(ColorSupport::Xterm256, TermTheme::Undetermined);
             let handle = std::thread::spawn(move || log_color2.get_theme());
 
             let second_theme = loop {

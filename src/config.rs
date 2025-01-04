@@ -504,7 +504,7 @@ impl Default for Colors {
     fn default() -> Self {
         Self {
             color_support: ColorSupport::AutoDetect,
-            term_theme: TermTheme::AutoDetect,
+            term_theme: TermTheme::Undetermined,
         }
     }
 }

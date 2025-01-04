@@ -76,6 +76,9 @@ pub mod profiling;
 /// Core: Shared functionality
 #[cfg(feature = "core")]
 pub mod shared;
+/// Core: Basic message styling
+#[cfg(feature = "core")]
+pub mod styling;
 
 //-----------------------------------------------------------------------------
 // AST Analysis:
@@ -139,11 +142,12 @@ pub use {
     errors::{ThagError, ThagResult},
     logging::{get_verbosity, Verbosity, V},
     profiling::Profile,
-    shared::{
-        debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, Color, Style,
-    },
+    shared::{debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string},
+    styling::{ColorSupport, Level, Lvl, TermTheme},
     thag_proc_macros::repeat_dash,
 };
+
+pub use styling::{Color, Style};
 
 #[cfg(any(feature = "ast", feature = "build"))]
 pub use {
@@ -161,7 +165,6 @@ pub use {
 
 #[cfg(feature = "color_support")]
 pub use {
-    color_support::{ColorSupport, Level, Lvl, TermTheme},
     colors::{coloring, MessageLevel},
     config::{
         load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,

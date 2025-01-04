@@ -1,8 +1,6 @@
+use crate::styling::{ColorSupport, TermTheme};
 use crate::{debug_log, profile, ThagResult};
 use crossterm::terminal;
-use documented::{Documented, DocumentedVariants};
-use serde::{Deserialize, Serialize};
-use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use termbg::{theme, Theme};
 
 #[cfg(target_os = "windows")]
@@ -10,113 +8,6 @@ use std::env;
 
 #[cfg(not(target_os = "windows"))]
 use supports_color::Stream;
-
-/// An enum to categorise the current terminal's level of colour support as detected, configured
-/// or defaulted.
-///
-/// We fold `TrueColor` into Xterm256 as we're not interested in more than 256
-/// colours just for messages.
-#[derive(
-    Clone,
-    Debug,
-    Default,
-    Deserialize,
-    Display,
-    Documented,
-    DocumentedVariants,
-    EnumIter,
-    EnumString,
-    IntoStaticStr,
-    PartialEq,
-    Eq,
-    Serialize,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum ColorSupport {
-    /// Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
-    Xterm256,
-    /// Basic 16-color support
-    Ansi16,
-    /// No color support
-    None,
-    /// Auto-detect from terminal
-    #[default]
-    AutoDetect,
-}
-
-/// An enum to categorise the current terminal's light or dark theme as detected, configured
-/// or defaulted.
-#[derive(
-    Clone,
-    Debug,
-    Default,
-    Deserialize,
-    Documented,
-    DocumentedVariants,
-    Display,
-    EnumIter,
-    EnumString,
-    IntoStaticStr,
-    PartialEq,
-    Eq,
-    Serialize,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum TermTheme {
-    /// Light background terminal
-    Light,
-    /// Dark background terminal (default)
-    #[default]
-    Dark,
-    /// Let `thag` autodetect the background luminosity
-    AutoDetect,
-}
-
-/// Represents different message/content levels for styling
-#[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq)]
-#[strum(serialize_all = "snake_case")]
-pub enum Level {
-    Error,
-    Warning,
-    Heading, // HEAD in the original
-    Subheading,
-    Emphasis,
-    Bright,
-    Normal,
-    Debug,
-    Ghost,
-}
-
-pub type Lvl = Level;
-
-impl Lvl {
-    pub const ERR: Self = Self::Error;
-    pub const WARN: Self = Self::Warning;
-    pub const EMPH: Self = Self::Emphasis;
-    pub const HEAD: Self = Self::Heading;
-    pub const SUBH: Self = Self::Subheading;
-    pub const BRI: Self = Self::Bright;
-    pub const NORM: Self = Self::Normal;
-    pub const DBUG: Self = Self::Debug;
-    pub const GHST: Self = Self::Ghost;
-}
-
-// We can implement conversions to u8 directly here
-impl From<&Level> for u8 {
-    fn from(level: &Level) -> Self {
-        match level {
-            Level::Error => 160,     // GuardsmanRed
-            Level::Warning => 164,   // DarkPurplePizzazz
-            Level::Heading => 10,    // UserBrightGreen
-            Level::Subheading => 26, // ScienceBlue
-            Level::Emphasis => 173,  // Copperfield
-            Level::Bright => 46,     // Green
-            Level::Normal => 16,     // Black
-            Level::Debug => 32,      // LochmaraBlue
-            Level::Ghost => 232,     // DarkCodGray
-        }
-    }
-}
 
 /// A struct of the color support details, borrowed from crate `supports-color` since we
 /// can't import it because the `level` field is indispensable but private.
@@ -153,6 +44,8 @@ pub fn get_color_level() -> Option<ColorSupport> {
 #[cfg(not(target_os = "windows"))]
 #[must_use]
 pub fn get_color_level() -> Option<ColorSupport> {
+    use crate::styling::ColorSupport;
+
     profile!("get_color_level");
     #[cfg(debug_assertions)]
     debug_log!("About to call supports_color");

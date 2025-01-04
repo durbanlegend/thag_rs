@@ -147,7 +147,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
         maybe_config().map_or_else(
             || { resolve_term_theme().unwrap_or_default() },
             |config| {
-                if matches!(&config.colors.term_theme, &TermTheme::AutoDetect) {
+                if matches!(&config.colors.term_theme, &TermTheme::Undetermined) {
                     resolve_term_theme().unwrap_or_default()
                 } else {
                     config.colors.term_theme

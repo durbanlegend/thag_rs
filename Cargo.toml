@@ -145,6 +145,23 @@ profiling = []
 ## Extends the `core` features and involves the `nu-ansi-term`, `quote` and `syn` dependencies.
 ast = ["core", "nu-ansi-term", "quote", "syn"] # Simple script running
 
+## Terminal attributes detection (new)
+## Involves the following dependencies (TODO check): `crossterm`, `edit`, `core`, `mockall`, `nu-ansi-term`, `scopeguard`, `serde_with`, `supports-color`, `termbg`, `toml` and `toml_edit`.
+color_detect = [
+    "crossterm",
+    "edit",
+    "core",
+    "mockall",
+    "nu-ansi-term",
+    "scopeguard",
+    "serde_with",
+    "supports-color",
+    "termbg",
+    "toml",
+    "toml_edit",
+]
+
+
 ## Message colouring tailored to a choice of 9 message levels, in combination with your terminal's capabilities and current theme. Gives access to the `cvprtln` macro.
 ## Involves the following dependencies: `crossterm`, `edit`, `core`, `mockall`, `nu-ansi-term`, `scopeguard`, `serde_with`, `supports-color`, `termbg`, `toml` and `toml_edit`.
 color_support = [

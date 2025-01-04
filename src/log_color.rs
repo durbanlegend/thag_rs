@@ -1,10 +1,8 @@
-use crate::color_support::{
-    get_color_level, resolve_term_theme, restore_raw_status, ColorSupport, TermTheme,
-};
-use crate::shared::{Color, Style};
+use crate::color_support::{get_color_level, resolve_term_theme, restore_raw_status};
+use crate::styling::{ColorSupport, TermTheme};
 use crate::{
-    config, debug_log, lazy_static_var, maybe_config, profile, profile_method, Colors, Config,
-    Level,
+    config, debug_log, lazy_static_var, maybe_config, profile, profile_method, Color, Colors,
+    Config, Level, Style,
 };
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use scopeguard::defer;
@@ -32,7 +30,7 @@ impl LogColor {
 
     pub fn get_theme(&self) -> TermTheme {
         profile_method!("LogColor::get_theme");
-        if self.theme != TermTheme::AutoDetect {
+        if self.theme != TermTheme::Undetermined {
             return self.theme.clone();
         }
 
@@ -52,7 +50,7 @@ impl LogColor {
         self.detected_theme.store(
             match theme {
                 TermTheme::Light => 1,
-                TermTheme::Dark | TermTheme::AutoDetect => 2,
+                TermTheme::Dark | TermTheme::Undetermined => 2,
             },
             Ordering::Relaxed,
         );
@@ -123,7 +121,7 @@ impl LogColor {
             (&ColorSupport::Ansi16, &TermTheme::Dark) => Self::basic_dark_style(level),
             (&ColorSupport::Xterm256, &TermTheme::Light) => Self::full_light_style(level),
             (&ColorSupport::Xterm256, &TermTheme::Dark) => Self::full_dark_style(level),
-            (_, &TermTheme::AutoDetect) | (&ColorSupport::AutoDetect, _) => unreachable!(),
+            (_, &TermTheme::Undetermined) | (&ColorSupport::AutoDetect, _) => unreachable!(),
         }
     }
 
@@ -290,7 +288,7 @@ pub fn initialize() -> &'static LogColor {
         let term_theme = maybe_config().map_or_else(
             || resolve_term_theme().unwrap_or_default(),
             |config| {
-                if matches!(&config.colors.term_theme, &TermTheme::AutoDetect) {
+                if matches!(&config.colors.term_theme, &TermTheme::Undetermined) {
                     resolve_term_theme().unwrap_or_default()
                 } else {
                     config.colors.term_theme
@@ -305,11 +303,11 @@ pub fn initialize() -> &'static LogColor {
 // Convenience macros
 
 #[macro_export]
-macro_rules! clog {  // 'c' for colored logging
+macro_rules! clog {
     ($level:expr, $($arg:tt)*) => {{
-        if $crate::log_color::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
-            let logger = $crate::log_color::get();
-            let style = logger.style_for_level($level);
+        if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
+            let attrs = $crate::styling::TermAttributes::get();
+            let style = attrs.style_for_level($level);
             println!("{}", style.paint(format!($($arg)*)));
         }
     }};
@@ -363,13 +361,13 @@ macro_rules! clog_ghost {
 #[macro_export]
 macro_rules! cvlog {
     ($verbosity:expr, $level:expr, $($arg:tt)*) => {{
-        if $crate::log_color::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
+        if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
             let logger = $crate::logging::LOGGER.lock().unwrap();
             let message = format!($($arg)*);
 
             #[cfg(feature = "color_support")]
             {
-                let color_logger = $crate::log_color::get();
+                let color_logger = $crate::styling::TermAttributes::get();
                 let style = color_logger.style_for_level($level);
                 logger.log($verbosity, &style.paint(message));
             }

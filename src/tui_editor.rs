@@ -1,10 +1,10 @@
 use crate::{
     code_utils::write_source,
-    color_support::Level,
     debug_log,
     file_dialog::{DialogMode, FileDialog, Status},
     profile, profile_method, regex,
     stdin::edit_history,
+    styling::Level,
     KeyCombination, Lvl, ThagError, ThagResult,
 };
 use crokey::key;
@@ -480,33 +480,6 @@ pub struct EditData<'a> {
     pub save_path: Option<&'a mut PathBuf>,
     pub history_path: Option<&'a PathBuf>,
     pub history: Option<History>,
-}
-
-impl From<&crate::shared::Style> for Style {
-    fn from(style: &crate::shared::Style) -> Self {
-        let mut rata_style = Self::default();
-
-        // Convert the color if present
-        if let Some(ref fg) = style.foreground {
-            if let Some(i) = fg.index {
-                rata_style = rata_style.fg(Color::Indexed(i));
-            }
-        }
-
-        // Apply modifiers
-        let mut modifiers = Modifier::empty();
-        if style.bold {
-            modifiers |= Modifier::BOLD;
-        }
-        if style.italic {
-            modifiers |= Modifier::ITALIC;
-        }
-        if style.dim {
-            modifiers |= Modifier::DIM;
-        }
-
-        rata_style.add_modifier(modifiers)
-    }
 }
 
 // Implement conversion to ratatui's Color

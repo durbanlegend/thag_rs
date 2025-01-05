@@ -116,8 +116,6 @@ pub mod colors;
 /// Configuration loader
 #[cfg(any(feature = "color_support", feature = "build"))]
 pub mod config;
-// #[cfg(feature = "color_support")]
-// pub mod log_color;
 /// Assess terminal capabilities and current theme
 #[cfg(feature = "color_detect")]
 pub mod terminal; // Alternative lightweight logging

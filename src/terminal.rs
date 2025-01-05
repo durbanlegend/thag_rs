@@ -4,12 +4,15 @@
 //! In particular, it manages raw mode status which can be affected by some detection operations.
 
 use crate::styling::{ColorSupport, TermTheme};
-use crate::terminal::{is_raw_mode_enabled, restore_raw_status};
+use crate::{profile, ThagResult};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use scopeguard::defer;
-use std::io;
-
-#[cfg(feature = "color_detect")]
+use std::sync::atomic::{AtomicU8, Ordering};
 use supports_color::Stream;
+use termbg::Theme as TermbgTheme;
+
+#[cfg(debug_assertions)]
+use crate::debug_log;
 
 static DETECTED_THEME: AtomicU8 = AtomicU8::new(0);
 
@@ -31,6 +34,8 @@ static DETECTED_THEME: AtomicU8 = AtomicU8::new(0);
 /// let support = detect_color_support();
 /// println!("Terminal color support: {:?}", support);
 /// ```
+#[must_use]
+#[allow(unused_variables)]
 pub fn detect_color_support() -> ColorSupport {
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
@@ -63,28 +68,19 @@ pub fn detect_color_support() -> ColorSupport {
         }
     }
 
-    #[cfg(feature = "color_detect")]
-    {
-        if let Some(color_level) = supports_color::on(Stream::Stdout) {
-            if color_level.has_16m || color_level.has_256 {
-                ColorSupport::Xterm256
-            } else {
-                ColorSupport::Ansi16
-            }
+    supports_color::on(Stream::Stdout).map_or(ColorSupport::None, |color_level| {
+        if color_level.has_16m || color_level.has_256 {
+            ColorSupport::Xterm256
         } else {
-            ColorSupport::None
+            ColorSupport::Ansi16
         }
-    }
-
-    #[cfg(not(feature = "color_detect"))]
-    ColorSupport::None
+    })
 }
 
 /// Detects the terminal's theme (light or dark)
 ///
-/// When the `color_detect` feature is enabled, this function attempts to detect
-/// the terminal's background theme using `termbg`. If detection fails or the
-/// feature is disabled, it defaults to `TermTheme::Dark`.
+/// This function attempts to detect the terminal's background theme using `termbg`.
+/// If detection fails it defaults to `TermTheme::Dark`.
 ///
 /// # Raw Mode Handling
 ///
@@ -99,52 +95,6 @@ pub fn detect_color_support() -> ColorSupport {
 /// let theme = detect_theme();
 /// println!("Terminal theme: {:?}", theme);
 /// ```
-// pub fn detect_theme() -> TermTheme {
-//     if std::env::var("TEST_ENV").is_ok() {
-//         return TermTheme::Dark;
-//     }
-
-//     let raw_before = is_raw_mode_enabled();
-//     if let Ok(raw_then) = raw_before {
-//         defer! {
-//             let raw_now = match is_raw_mode_enabled() {
-//                 Ok(val) => val,
-//                 Err(e) => {
-//                     #[cfg(debug_assertions)]
-//                     debug_log!("Failed to check raw mode status: {:?}", e);
-//                     return;
-//                 }
-//             };
-
-//             if raw_now == raw_then {
-//                 #[cfg(debug_assertions)]
-//                 debug_log!("Raw mode status unchanged.");
-//             } else if let Err(e) = restore_raw_status(raw_then) {
-//                 #[cfg(debug_assertions)]
-//                 debug_log!("Failed to restore raw mode: {:?}", e);
-//             } else {
-//                 #[cfg(debug_assertions)]
-//                 debug_log!("Raw mode restored to previous state.");
-//             }
-//         }
-//     }
-
-//     #[cfg(feature = "color_detect")]
-//     {
-//         if let Ok(bg) = termbg::theme() {
-//             match bg {
-//                 termbg::Theme::Light => TermTheme::Light,
-//                 termbg::Theme::Dark => TermTheme::Dark,
-//             }
-//         } else {
-//             TermTheme::Dark
-//         }
-//     }
-
-//     #[cfg(not(feature = "color_detect"))]
-//     TermTheme::Dark
-// }
-
 pub fn detect_theme() -> TermTheme {
     // Check cache first
     let detected = DETECTED_THEME.load(Ordering::Relaxed);
@@ -156,11 +106,11 @@ pub fn detect_theme() -> TermTheme {
         };
     }
 
-    let theme = detect_theme_internal();
+    let theme = detect_theme_internal().unwrap_or(TermTheme::Dark);
     DETECTED_THEME.store(
         match theme {
             TermTheme::Light => 1,
-            TermTheme::Dark => 2,
+            TermTheme::Dark | TermTheme::Undetermined => 2,
         },
         Ordering::Relaxed,
     );
@@ -173,17 +123,17 @@ fn detect_theme_internal() -> Result<TermTheme, termbg::Error> {
     impl Drop for RawModeGuard {
         fn drop(&mut self) {
             if !self.0 {
-                let _ = terminal::disable_raw_mode();
+                let _ = disable_raw_mode();
             }
         }
     }
 
     // Save initial state
-    let raw_before = terminal::is_raw_mode_enabled()?;
+    let raw_before = is_raw_mode_enabled()?;
 
     // Ensure raw mode for detection
     if !raw_before {
-        terminal::enable_raw_mode()?;
+        enable_raw_mode()?;
     }
 
     let _guard = RawModeGuard(raw_before);
@@ -196,4 +146,19 @@ fn detect_theme_internal() -> Result<TermTheme, termbg::Error> {
         TermbgTheme::Light => TermTheme::Light,
         TermbgTheme::Dark => TermTheme::Dark,
     })
+}
+
+/// Restore the raw or cooked terminal status as saved in the boolean argument.
+///
+/// # Errors
+///
+/// This function will bubble up any errors returned by `crossterm`.
+pub fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
+    profile!("restore_raw_status");
+    if raw_before {
+        enable_raw_mode()?;
+    } else {
+        disable_raw_mode()?;
+    }
+    Ok(())
 }

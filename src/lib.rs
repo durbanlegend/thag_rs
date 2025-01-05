@@ -116,8 +116,11 @@ pub mod colors;
 /// Configuration loader
 #[cfg(any(feature = "color_support", feature = "build"))]
 pub mod config;
-#[cfg(feature = "color_support")]
-pub mod log_color; // Alternative lightweight logging
+// #[cfg(feature = "color_support")]
+// pub mod log_color;
+/// Assess terminal capabilities and current theme
+#[cfg(feature = "color_detect")]
+pub mod terminal; // Alternative lightweight logging
 
 /// TUI file dialog
 #[cfg(feature = "tui")]
@@ -137,17 +140,15 @@ pub mod tui_editor;
 #[cfg(feature = "repl")]
 pub mod repl;
 
-// #[cfg(feature = "core")]
+#[cfg(feature = "core")]
 pub use {
     errors::{ThagError, ThagResult},
     logging::{get_verbosity, Verbosity, V},
     profiling::Profile,
     shared::{debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string},
-    styling::{ColorSupport, Level, Lvl, TermTheme},
+    styling::{Color, ColorSupport, Level, Lvl, Style, TermTheme},
     thag_proc_macros::repeat_dash,
 };
-
-pub use styling::{Color, Style};
 
 #[cfg(any(feature = "ast", feature = "build"))]
 pub use {

@@ -3,19 +3,18 @@
 crossterm = "0.28.1"
 env_logger = "0.11.3"
 log = "0.4.21"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_support", "core", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_support", "core", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "env_logger" ] }
 */
 
-/// Debug an integration test case.
+/// Debug an integration test case. This switches on debug logging
 //# Purpose: Demo debugging a test case without the Cargo harness.
 //# Categories: technique, testing
 use env_logger::Builder;
 // use std::ffi::OsStr;
 use std::io::Write;
 use std::time::{Duration, Instant};
-use thag_rs::color_support::{ColorSupport, TermTheme};
-use thag_rs::log_color::LogColor;
+use thag_rs::styling::{ColorInitStrategy, TermAttributes, TermTheme};
 
 struct TestGuard {
     was_raw: bool,
@@ -66,12 +65,14 @@ fn main() {
     let guard = TestGuard::new();
 
     let result = std::panic::catch_unwind(|| {
+        let strategy = ColorInitStrategy::Detect;
+
         // Use a shorter timeout for theme detection
         let timeout = Duration::from_millis(500);
 
         // First theme detection with timeout
         let start = Instant::now();
-        let log_color1 = LogColor::new(ColorSupport::Xterm256, TermTheme::AutoDetect);
+        let log_color1 = TermAttributes::initialize(strategy.clone());
         let handle = std::thread::spawn(move || log_color1.get_theme());
         let first_theme = loop {
             if handle.is_finished() {
@@ -85,7 +86,7 @@ fn main() {
 
         // Second theme detection
         let start = Instant::now();
-        let log_color2 = LogColor::new(ColorSupport::Xterm256, TermTheme::AutoDetect);
+        let log_color2 = TermAttributes::initialize(strategy);
         let handle = std::thread::spawn(move || log_color2.get_theme());
 
         let second_theme = loop {

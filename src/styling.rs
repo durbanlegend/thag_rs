@@ -2,10 +2,12 @@ use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::AtomicBool;
 // use std::sync::atomic::Ordering;
+use crate::profile_method;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 
-use crate::profile_method;
+#[cfg(feature = "color_detect")]
+use crate::terminal;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ColorInfo {
@@ -358,6 +360,7 @@ impl From<&Level> for u8 {
     }
 }
 
+#[derive(Clone)]
 #[non_exhaustive]
 pub enum ColorInitStrategy {
     Configure(ColorSupport, TermTheme),
@@ -379,7 +382,7 @@ pub static LOGGING_ENABLED: AtomicBool = AtomicBool::new(true);
 
 impl TermAttributes {
     /// Creates a new `TermAttributes` instance with specified support and theme
-    fn new(color_support: ColorSupport, theme: TermTheme) -> Self {
+    const fn new(color_support: ColorSupport, theme: TermTheme) -> Self {
         Self {
             color_support,
             theme,
@@ -423,6 +426,7 @@ impl TermAttributes {
         INSTANCE.get_or_init(|| Self::new(ColorSupport::Ansi16, TermTheme::Dark))
     }
 
+    #[must_use]
     pub fn get_theme(&self) -> TermTheme {
         if self.theme != TermTheme::Undetermined {
             return self.theme.clone();
@@ -524,28 +528,137 @@ impl TermAttributes {
     }
 }
 
-impl From<&Style> for ratatui::style::Style {
-    fn from(style: &Style) -> Self {
-        let mut rata_style = ratatui::style::Style::default();
+#[must_use]
+pub fn style_string(lvl: Level, string: &str) -> String {
+    TermAttributes::get().style_for_level(lvl).paint(string)
+}
 
-        if let Some(color_info) = &style.foreground {
-            if let Some(index) = color_info.index {
-                rata_style = rata_style.fg(ratatui::style::Color::Indexed(index));
+// Convenience macros
+#[macro_export]
+macro_rules! clog {
+    ($level:expr, $($arg:tt)*) => {{
+        if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
+            let attrs = $crate::styling::TermAttributes::get();
+            let style = attrs.style_for_level($level);
+            println!("{}", style.paint(format!($($arg)*)));
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! clog_error {
+    ($($arg:tt)*) => { $crate::clog!($crate::Level::Error, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! clog_warning {
+        ($($arg:tt)*) => { $crate::clog!($crate::Level::Warning, $($arg)*) };
+    }
+
+#[macro_export]
+macro_rules! clog_heading {
+    ($($arg:tt)*) => { $crate::clog!($crate::Level::Heading, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! clog_subheading {
+    ($($arg:tt)*) => { $crate::clog!($crate::Level::Subheading, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! clog_emphasis {
+    ($($arg:tt)*) => { $crate::clog!($crate::Level::Emphasis, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! clog_bright {
+    ($($arg:tt)*) => { $crate::clog!($crate::Level::Bright, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! clog_normal {
+    ($($arg:tt)*) => { $crate::clog!($crate::Level::Normal, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! clog_debug {
+    ($($arg:tt)*) => { $crate::clog!($crate::Level::Debug, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! clog_ghost {
+    ($($arg:tt)*) => { $crate::clog!($crate::Level::Ghost, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog {
+    ($verbosity:expr, $level:expr, $($arg:tt)*) => {{
+        if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
+            let logger = $crate::logging::LOGGER.lock().unwrap();
+            let message = format!($($arg)*);
+
+            #[cfg(feature = "color_support")]
+            {
+                let color_logger = $crate::styling::TermAttributes::get();
+                let style = color_logger.style_for_level($level);
+                logger.log($verbosity, &style.paint(message));
+            }
+
+            #[cfg(not(feature = "color_support"))]
+            {
+                if verbosity as u8 <= self.verbosity as u8 {
+                    println!("{}", message);
+                }
+
+                logger.log($verbosity, &message);
             }
         }
+    }};
+}
 
-        if style.bold {
-            rata_style = rata_style.add_modifier(ratatui::style::Modifier::BOLD);
-        }
-        if style.italic {
-            rata_style = rata_style.add_modifier(ratatui::style::Modifier::ITALIC);
-        }
-        if style.dim {
-            rata_style = rata_style.add_modifier(ratatui::style::Modifier::DIM);
-        }
+#[macro_export]
+macro_rules! cvlog_error {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Error, $($arg)*) };
+}
 
-        rata_style
-    }
+#[macro_export]
+macro_rules! cvlog_warning {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Warning, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_heading {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Heading, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_subheading {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Subheading, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_emphasis {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Emphasis, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_bright {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Bright, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_normal {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Normal, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_debug {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Debug, $($arg)*) };
+}
+
+#[macro_export]
+macro_rules! cvlog_ghost {
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Ghost, $($arg)*) };
 }
 
 #[cfg(test)]

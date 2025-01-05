@@ -19,8 +19,8 @@ use {
 use crate::escape_path_for_windows;
 
 use crate::{
-    cvlog_emphasis, cvlog_warning, debug_log, profile, profile_method, profile_section, regex,
-    vlog, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
+    cvlog_warning, debug_log, profile, profile_method, profile_section, regex, vlog, Ast,
+    ThagError, ThagResult, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use regex::Regex;
 use std::{
@@ -29,13 +29,15 @@ use std::{
     option::Option,
     path::{Path, PathBuf},
     process::{Command, Output},
-    time::Instant,
 };
 use syn::{
     self,
     visit_mut::{self, VisitMut},
     AttrStyle, Expr, ExprBlock,
 };
+
+#[cfg(debug_assertions)]
+use {crate::cvlog_emphasis, std::time::Instant};
 
 // To move inner attributes out of a syn AST for a snippet.
 struct RemoveInnerAttributes {

@@ -1,19 +1,13 @@
 //!
 //! AST analysis and dependency inference capability for `thag_rs`.
 //!
-use crate::{
-    clog, debug_log, debug_timings, profile, profile_method, regex, Level, ThagResult,
-    BUILT_IN_CRATES,
-};
-#[cfg(feature = "build")]
-use crate::{cvprtln, Lvl, V};
+use crate::{clog, debug_log, profile, profile_method, regex, Level, ThagResult, BUILT_IN_CRATES};
 use phf::phf_set;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use regex::Regex;
 use std::collections::HashSet;
 use std::ops::Deref;
-use std::time::Instant;
 use std::{
     collections::HashMap,
     hash::BuildHasher,
@@ -32,6 +26,12 @@ use syn::{
     Type::Tuple,
     TypePath, UseRename, UseTree,
 };
+
+#[cfg(feature = "build")]
+use crate::{cvprtln, Lvl, V};
+
+#[cfg(debug_assertions)]
+use {crate::debug_timings, std::time::Instant};
 
 pub(crate) static FILTER_WORDS: phf::Set<&'static str> = phf_set! {
     // Numeric primitives

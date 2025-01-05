@@ -48,14 +48,13 @@ use crate::code_utils::{
 use crate::colors::init_styles;
 use crate::config::{self, DependencyInference, RealContext};
 use crate::manifest::extract;
-use crate::stdin::{edit, read};
+use crate::styling::style_string;
 use crate::{
-    ast, coloring, cvprtln, debug_log, debug_timings, get_home_dir, get_proc_flags, log_color,
-    manifest, maybe_config, modified_since_compiled, profile, profile_method, profile_section,
-    regex, repeat_dash, shared, validate_args, vlog, Ast, Cli, CrosstermEventReader, Dependencies,
-    Lvl, ProcFlags, ThagError, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
-    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME,
-    V,
+    ast, coloring, cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
+    modified_since_compiled, profile, profile_method, profile_section, regex, repeat_dash, shared,
+    validate_args, vlog, Ast, Cli, Dependencies, Lvl, ProcFlags, ThagError, ThagResult,
+    DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX,
+    TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
 use cargo_toml::Manifest;
 use regex::Regex;
@@ -71,9 +70,15 @@ use std::{
     time::Instant,
 };
 
+#[cfg(feature = "tui")]
+use crate::{
+    stdin::{edit, read},
+    CrosstermEventReader,
+};
+
 #[cfg(debug_assertions)]
 use {
-    crate::{logging::is_debug_logging_enabled, VERSION},
+    crate::{debug_timings, logging::is_debug_logging_enabled, VERSION},
     log::{log_enabled, Level::Debug},
 };
 
@@ -680,24 +685,27 @@ fn process(
                 return Err("Missing expression for --loop option".into());
             };
             build_loop(args, filter)
-        } else if is_edit {
-            debug_log!("About to call stdin::edit()");
-            let event_reader = CrosstermEventReader;
-            let vec = edit(&event_reader)?;
-            debug_log!("vec={vec:#?}");
-            if vec.is_empty() {
-                // User chose Quit
-                return Ok(());
-            }
-            vec.join("\n")
         } else {
-            assert!(is_stdin);
+            #[cfg(not(feature = "tui"))]
+            return Err("`stdin` and `edit` options require `tui` feature".into());
+            #[cfg(feature = "tui")]
+            if is_edit {
+                debug_log!("About to call stdin::edit()");
+                let event_reader = CrosstermEventReader;
+                let vec = edit(&event_reader)?;
+                debug_log!("vec={vec:#?}");
+                if vec.is_empty() {
+                    // User chose Quit
+                    return Ok(());
+                }
+                vec.join("\n")
+            } else {
+                debug_log!("About to call stdin::read())");
+                let str = read()? + "\n";
 
-            debug_log!("About to call stdin::read())");
-            let str = read()? + "\n";
-
-            debug_log!("str={str}");
-            str
+                debug_log!("str={str}");
+                str
+            }
         };
 
         vlog!(V::V, "rs_source={rs_source}");
@@ -955,11 +963,8 @@ pub fn gen_build_run(
         run(proc_flags, &args.args, build_state)?;
     }
     let process = &format!(
-        "{} completed processing script {}",
-        PACKAGE_NAME,
-        log_color::get()
-            .style_for_level(Lvl::EMPH)
-            .paint(&build_state.source_name)
+        "{PACKAGE_NAME} completed processing script {}",
+        style_string(Lvl::EMPH, &build_state.source_name)
     );
     display_timings(start, process, proc_flags);
     Ok(())

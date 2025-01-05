@@ -16,10 +16,12 @@ fn main() {
     let simple = std::env::var("CARGO_FEATURE_SIMPLELOG").is_ok();
     let env = std::env::var("CARGO_FEATURE_ENV_LOGGER").is_ok();
 
+    eprintln!("simple={simple}; env={env}");
     assert!(
-        !(simple && env),
-        "Features 'simplelog' and 'env_logger' are mutually exclusive"
-    );
+        !(simple & env),
+        "Features 'simplelog' and 'env_logger' are mutually exclusive.\n\
+          Use --no-default-features when enabling env_logger.\n\
+          You will then have to explicitly list default features you still need, such as `full` for the bin or `core` for the lib"    );
 
     // Ensure at least one logger is selected
     assert!(

@@ -1,8 +1,8 @@
 use crate::color_support::{get_color_level, resolve_term_theme, restore_raw_status};
 use crate::styling::{ColorSupport, TermTheme};
 use crate::{
-    config, debug_log, lazy_static_var, maybe_config, profile, profile_method, Color, Colors,
-    Config, Level, Style,
+    config, lazy_static_var, maybe_config, profile, profile_method, Color, Colors, Config, Level,
+    Style,
 };
 use crossterm::terminal::{self, is_raw_mode_enabled};
 use scopeguard::defer;
@@ -10,6 +10,9 @@ use std::io::{self, Write};
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use supports_color::Stream;
 use termbg::Theme as TermbgTheme;
+
+#[cfg(debug_assertions)]
+use crate::debug_log;
 
 pub struct LogColor {
     pub color_support: ColorSupport,
@@ -233,6 +236,7 @@ pub fn get() -> &'static LogColor {
     INSTANCE.get_or_init(|| LogColor::new(ColorSupport::None, TermTheme::Dark))
 }
 
+#[allow(unused_variables)]
 pub fn initialize() -> &'static LogColor {
     profile!("initialize");
 
@@ -298,135 +302,6 @@ pub fn initialize() -> &'static LogColor {
 
         LogColor::new(color_support, term_theme)
     })
-}
-
-// Convenience macros
-
-#[macro_export]
-macro_rules! clog {
-    ($level:expr, $($arg:tt)*) => {{
-        if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
-            let attrs = $crate::styling::TermAttributes::get();
-            let style = attrs.style_for_level($level);
-            println!("{}", style.paint(format!($($arg)*)));
-        }
-    }};
-}
-
-#[macro_export]
-macro_rules! clog_error {
-    ($($arg:tt)*) => { $crate::clog!($crate::Level::Error, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! clog_warning {
-        ($($arg:tt)*) => { $crate::clog!($crate::Level::Warning, $($arg)*) };
-    }
-
-#[macro_export]
-macro_rules! clog_heading {
-    ($($arg:tt)*) => { $crate::clog!($crate::Level::Heading, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! clog_subheading {
-    ($($arg:tt)*) => { $crate::clog!($crate::Level::Subheading, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! clog_emphasis {
-    ($($arg:tt)*) => { $crate::clog!($crate::Level::Emphasis, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! clog_bright {
-    ($($arg:tt)*) => { $crate::clog!($crate::Level::Bright, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! clog_normal {
-    ($($arg:tt)*) => { $crate::clog!($crate::Level::Normal, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! clog_debug {
-    ($($arg:tt)*) => { $crate::clog!($crate::Level::Debug, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! clog_ghost {
-    ($($arg:tt)*) => { $crate::clog!($crate::Level::Ghost, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! cvlog {
-    ($verbosity:expr, $level:expr, $($arg:tt)*) => {{
-        if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
-            let logger = $crate::logging::LOGGER.lock().unwrap();
-            let message = format!($($arg)*);
-
-            #[cfg(feature = "color_support")]
-            {
-                let color_logger = $crate::styling::TermAttributes::get();
-                let style = color_logger.style_for_level($level);
-                logger.log($verbosity, &style.paint(message));
-            }
-
-            #[cfg(not(feature = "color_support"))]
-            {
-                if verbosity as u8 <= self.verbosity as u8 {
-                    println!("{}", message);
-                }
-
-                logger.log($verbosity, &message);
-            }
-        }
-    }};
-}
-
-#[macro_export]
-macro_rules! cvlog_error {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Error, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! cvlog_warning {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Warning, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! cvlog_heading {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Heading, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! cvlog_subheading {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Subheading, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! cvlog_emphasis {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Emphasis, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! cvlog_bright {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Bright, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! cvlog_normal {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Normal, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! cvlog_debug {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Debug, $($arg)*) };
-}
-
-#[macro_export]
-macro_rules! cvlog_ghost {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Ghost, $($arg)*) };
 }
 
 #[cfg(test)]

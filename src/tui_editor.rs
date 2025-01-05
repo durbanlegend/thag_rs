@@ -482,6 +482,30 @@ pub struct EditData<'a> {
     pub history: Option<History>,
 }
 
+impl From<&crate::styling::Style> for Style {
+    fn from(style: &crate::styling::Style) -> Self {
+        let mut rata_style = Self::default();
+
+        if let Some(color_info) = &style.foreground {
+            if let Some(index) = color_info.index {
+                rata_style = rata_style.fg(ratatui::style::Color::Indexed(index));
+            }
+        }
+
+        if style.bold {
+            rata_style = rata_style.add_modifier(ratatui::style::Modifier::BOLD);
+        }
+        if style.italic {
+            rata_style = rata_style.add_modifier(ratatui::style::Modifier::ITALIC);
+        }
+        if style.dim {
+            rata_style = rata_style.add_modifier(ratatui::style::Modifier::DIM);
+        }
+
+        rata_style
+    }
+}
+
 // Implement conversion to ratatui's Color
 impl From<&Level> for Color {
     fn from(level: &Level) -> Self {

@@ -12,13 +12,12 @@ use nu_ansi_term::Style;
 use regex::Regex;
 use semver::VersionReq;
 use serde_merge::omerge;
-#[cfg(debug_assertions)]
-use std::time::Instant;
 use std::{
     collections::{BTreeMap, HashSet},
     ops::Deref,
     path::PathBuf,
     str::FromStr,
+    time::Instant,
 };
 use syn::{parse_file, File};
 

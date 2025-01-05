@@ -1,20 +1,24 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::{debug_log, profile, profile_method, vlog, ThagResult};
+use crate::{debug_log, profile, profile_method, ThagResult};
 use documented::{Documented, DocumentedVariants};
-#[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
-use env_logger::{Builder, Env};
 use serde::Deserialize;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    LazyLock, Mutex,
+};
+use strum::{Display, EnumIter, EnumString, IntoStaticStr};
+
+#[cfg(feature = "simplelog")]
+use crate::vlog;
 #[cfg(feature = "simplelog")]
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
 #[cfg(feature = "simplelog")]
 use std::fs::File;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    LazyLock, Mutex,
-};
-use strum::{Display, EnumIter, EnumString, IntoStaticStr};
+
+#[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
+use env_logger::{Builder, Env};
 
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 
@@ -142,6 +146,7 @@ pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
 /// Configure log level
 #[cfg(feature = "env_logger")]
 pub fn configure_log() {
+    use log::info;
     profile!("configure_log");
 
     let env = Env::new().filter("RUST_LOG");

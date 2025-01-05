@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Array of feature combinations to test
-FEATURE_SETS=(
-    "--lib --no-default-features --features=core,simplelog"
-    "--no-default-features --features=build,simplelog"
-    "--features=ast"
-    "--features=color_detect"
-    "--features=color_support"
-    "--features=full"
-    "--features=tui"
-    "--lib --no-default-features --features=core,env_logger"
-    "--no-default-features --features=build,env_logger"
+# Array of checks to run
+CHECKS=(
+    "check-core"
+    "check-build"
+    "check-ast"
+    "check-detect"
+    "check-color-old"
+    "check-full"
+    "check-tui"
+    "check-core-alt"
+    "check-build-alt"
 )
 
 # Colors for output
@@ -20,10 +20,10 @@ NC='\033[0m' # No Color
 
 echo "Running clippy checks across feature combinations..."
 
-for features in "${FEATURE_SETS[@]}"; do
-    echo -e "\n${GREEN}Testing with: cargo clippy ${features}${NC}"
-    if ! cargo clippy ${features} -- -D warnings -W clippy::pedantic; then
-        echo -e "${RED}Clippy failed for feature set: ${features}${NC}"
+for check in "${CHECKS[@]}"; do
+    echo -e "\n${GREEN}Running: cargo ${check}${NC}"
+    if ! cargo ${check}; then
+        echo -e "${RED}Clippy failed for check: ${check}${NC}"
         exit 1
     fi
 done

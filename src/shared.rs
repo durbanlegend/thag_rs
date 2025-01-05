@@ -40,7 +40,6 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
 
 /// Developer method to log method timings.
 #[inline]
-#[cfg(debug_assertions)]
 pub fn debug_timings(start: &Instant, process: &str) {
     profile!("debug_timings");
     let dur = start.elapsed();

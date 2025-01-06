@@ -397,12 +397,12 @@ impl TermAttributes {
     /// use thag_rs::styling::{TermAttributes, ColorInitStrategy, ColorSupport, TermTheme};
     ///
     /// // Use default settings
-    /// let attrs = TermAttributes::initialize(ColorInitStrategy::Default);
+    /// let attrs = TermAttributes::initialize(&ColorInitStrategy::Default);
     ///
     /// // Configure explicitly
-    /// let attrs = TermAttributes::initialize(ColorInitStrategy::Configure(
-    ///     ColorSupport::Ansi16,
-    ///     TermTheme::Dark
+    /// let attrs = TermAttributes::initialize(&ColorInitStrategy::Configure(
+    ///     &ColorSupport::Ansi16,
+    ///     &TermTheme::Dark
     /// ));
     /// ```
     pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {

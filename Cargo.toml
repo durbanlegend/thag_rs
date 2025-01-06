@@ -68,7 +68,7 @@ syn = { version = "2.0.95", features = [
     "visit",
     "visit-mut",
 ] }
-termbg = "0.6.1"
+termbg = "0.6.2"
 thag_proc_macros = { version = "0.1.1", path = "src/proc_macros" }
 toml = "0.8.19"
 toml_edit = "0.22.22"

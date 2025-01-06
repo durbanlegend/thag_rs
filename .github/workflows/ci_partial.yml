@@ -70,7 +70,7 @@ jobs:
       run: cargo tree -p mockall
 
     - name: Run tests
-      run: cargo test --features=simplelog -- --nocapture --show-output --test-threads=1 test_config_edit_creates_config_file_if_not_exists check_proc_macro_embed_file_demo_rs check_proc_macro_organizing_code_const_rs
+      run: cargo test --no-fail-fast --features=simplelog -p thag_rs --doc -- --nocapture --show-output --test-threads=3
 
     - name: Upload test output log
       if: failure()  # Only upload if the test run fails

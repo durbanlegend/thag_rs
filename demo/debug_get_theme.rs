@@ -3,8 +3,12 @@
 crossterm = "0.28.1"
 env_logger = "0.11.3"
 log = "0.4.21"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "env_logger" ] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "env_logger" ] }
+
+[features]
+default = ["color_detect"]
+color_detect = ["thag_rs/color_detect"]
 */
 
 /// Debug an integration test case. This switches on debug logging
@@ -60,33 +64,42 @@ impl Drop for TestGuard {
 }
 
 fn main() {
-    Builder::new().filter_level(log::LevelFilter::Debug).init();
+    println!("Printing debug information from `termbg` theme detection:\n");
 
+    Builder::new().filter_level(log::LevelFilter::Debug).init();
     let guard = TestGuard::new();
 
     let result = std::panic::catch_unwind(|| {
+        #[cfg(feature = "color_detect")]
         let strategy = ColorInitStrategy::Detect;
+
+        #[cfg(not(feature = "color_detect"))]
+        let strategy = ColorInitStrategy::Default;
+
+        println!("First detection:\n");
 
         // Use a shorter timeout for theme detection
         let timeout = Duration::from_millis(500);
 
         // First theme detection with timeout
         let start = Instant::now();
-        let log_color1 = TermAttributes::initialize(strategy.clone());
+        let log_color1 = TermAttributes::initialize(&strategy);
         let handle = std::thread::spawn(move || log_color1.get_theme());
         let first_theme = loop {
             if handle.is_finished() {
                 break handle.join().unwrap();
             }
             if start.elapsed() > timeout {
-                break TermTheme::Dark; // Default on timeout
+                break &TermTheme::Dark; // Default on timeout
             }
             std::thread::sleep(Duration::from_millis(10));
         };
 
+        println!("\nSecond detection (cached):\n");
+
         // Second theme detection
         let start = Instant::now();
-        let log_color2 = TermAttributes::initialize(strategy);
+        let log_color2 = TermAttributes::initialize(&strategy);
         let handle = std::thread::spawn(move || log_color2.get_theme());
 
         let second_theme = loop {
@@ -94,7 +107,7 @@ fn main() {
                 break handle.join().unwrap();
             }
             if start.elapsed() > timeout {
-                break TermTheme::Dark; // Default on timeout
+                break &TermTheme::Dark; // Default on timeout
             }
             std::thread::sleep(Duration::from_millis(10));
         };

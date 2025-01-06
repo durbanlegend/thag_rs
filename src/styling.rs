@@ -363,7 +363,7 @@ impl From<&Level> for u8 {
 #[derive(Clone)]
 #[non_exhaustive]
 pub enum ColorInitStrategy {
-    Configure(ColorSupport, TermTheme),
+    Configure(&'static ColorSupport, &'static TermTheme),
     Default,
     #[cfg(feature = "color_detect")]
     Detect,
@@ -371,8 +371,8 @@ pub enum ColorInitStrategy {
 
 /// Manages terminal color attributes and styling based on terminal capabilities and theme
 pub struct TermAttributes {
-    color_support: ColorSupport,
-    theme: TermTheme,
+    color_support: &'static ColorSupport,
+    theme: &'static TermTheme,
 }
 
 /// Global instance of `TermAttributes`
@@ -382,7 +382,7 @@ pub static LOGGING_ENABLED: AtomicBool = AtomicBool::new(true);
 
 impl TermAttributes {
     /// Creates a new `TermAttributes` instance with specified support and theme
-    const fn new(color_support: ColorSupport, theme: TermTheme) -> Self {
+    const fn new(color_support: &'static ColorSupport, theme: &'static TermTheme) -> Self {
         Self {
             color_support,
             theme,
@@ -405,12 +405,12 @@ impl TermAttributes {
     ///     TermTheme::Dark
     /// ));
     /// ```
-    pub fn initialize(strategy: ColorInitStrategy) -> &'static Self {
+    pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
         INSTANCE.get_or_init(|| match strategy {
-            ColorInitStrategy::Configure(support, theme) => Self::new(support, theme),
-            ColorInitStrategy::Default => Self::new(ColorSupport::Ansi16, TermTheme::Dark),
+            &ColorInitStrategy::Configure(support, theme) => Self::new(support, theme),
+            &ColorInitStrategy::Default => Self::new(&ColorSupport::Ansi16, &TermTheme::Dark),
             #[cfg(feature = "color_detect")]
-            ColorInitStrategy::Detect => {
+            &ColorInitStrategy::Detect => {
                 let support = crate::terminal::detect_color_support();
                 let theme = crate::terminal::detect_theme();
                 Self::new(support, theme)
@@ -423,13 +423,13 @@ impl TermAttributes {
     /// This is a convenience method that initializes with `ColorInitStrategy::Default`
     /// if the instance hasn't been initialized yet.
     pub fn get() -> &'static Self {
-        INSTANCE.get_or_init(|| Self::new(ColorSupport::Ansi16, TermTheme::Dark))
+        INSTANCE.get_or_init(|| Self::new(&ColorSupport::Ansi16, &TermTheme::Dark))
     }
 
     #[must_use]
-    pub fn get_theme(&self) -> TermTheme {
-        if self.theme != TermTheme::Undetermined {
-            return self.theme.clone();
+    pub fn get_theme(&self) -> &'static TermTheme {
+        if self.theme != &TermTheme::Undetermined {
+            return self.theme;
         }
 
         #[cfg(feature = "color_detect")]
@@ -438,7 +438,7 @@ impl TermAttributes {
         }
 
         #[cfg(not(feature = "color_detect"))]
-        TermTheme::Dark
+        &TermTheme::Dark
     }
 
     /// Returns the appropriate style for the given message level
@@ -669,9 +669,12 @@ mod tests {
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
 
     impl TermAttributes {
-        fn with_mock_theme(color_support: ColorSupport, theme: TermTheme) -> Self {
+        fn with_mock_theme(
+            color_support: &'static ColorSupport,
+            theme: &'static TermTheme,
+        ) -> Self {
             MOCK_THEME_DETECTION.store(true, Ordering::SeqCst);
-            Self::new(color_support, theme)
+            Self::new(&color_support, &theme)
         }
     }
 
@@ -702,10 +705,9 @@ mod tests {
     #[test]
     fn test_styling_default_theme_with_mock() {
         init_test();
-        assert!(cfg!(not(feature = "color_detect")));
-        let term_attrs = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
+        let term_attrs = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
         let defaulted = term_attrs.get_theme();
-        assert_eq!(defaulted, TermTheme::Dark);
+        assert_eq!(defaulted, &TermTheme::Dark);
         println!();
         flush_test_output();
     }

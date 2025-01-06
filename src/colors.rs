@@ -95,6 +95,7 @@ generate_styles!(
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encountered.
+#[must_use]
 pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     profile!("coloring");
 
@@ -103,6 +104,12 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
         debug_log!("Avoiding supports_color for testing");
         return (Some(&ColorSupport::Ansi16), &TermTheme::Dark);
     }
+
+    (
+        Some(crate::terminal::detect_color_support()),
+        crate::terminal::detect_theme(),
+    )
+    /*
     let raw_before = terminal::is_raw_mode_enabled();
     if let Ok(raw_then) = raw_before {
         defer! {
@@ -157,6 +164,7 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     );
     // debug_log!("######## term_theme={term_theme:?}");
     (color_support.as_ref(), term_theme)
+    */
 }
 
 /// A macro to generate mappings from the supported message levels to the initialised terminal theme and colour support level.

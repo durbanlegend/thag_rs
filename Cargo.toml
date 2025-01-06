@@ -161,23 +161,9 @@ color_detect = [
     "toml_edit",
 ]
 
-
 ## Message colouring tailored to a choice of 9 message levels, in combination with your terminal's capabilities and current theme. Gives access to the `cvprtln` macro.
 ## Involves the following dependencies: `crossterm`, `edit`, `core`, `mockall`, `nu-ansi-term`, `scopeguard`, `serde_with`, `supports-color`, `termbg`, `toml` and `toml_edit`.
-color_support = [
-    "crossterm",
-    "edit",
-    "core",
-    "mockall",
-    "nu-ansi-term",
-    "scopeguard",
-    "serde_with",
-    "supports-color",
-    "termbg",
-    "toml",
-    "toml_edit",
-]
-# basic_color = [] # Simple ANSI colors for minimal builds
+color_support = ["color_detect"]
 
 ## Full build features. Involves the `color_support` and `core` features, and the following dependencies:
 ## `bitflags`, `cargo-lookup`, `cargo_toml`, `clap`, `prettyplease`, `quote`, `serde_merge`, `side-by-side-diff` and `syn`.

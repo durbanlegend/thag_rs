@@ -206,6 +206,7 @@ macro_rules! cprtln {
         $crate::vlog!(verbosity, "{painted}");
     }};
 }
+
 /// Logs a message provided the verbosity value passed in is at least as great as the current
 /// verbosity level.
 ///

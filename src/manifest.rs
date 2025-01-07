@@ -502,7 +502,7 @@ pub fn lookup_deps(
     let styled_recomm_inf_level = recomm_style.paint(recomm_inf_level.to_string());
     // Hack: use reset string \x1b[0m here to avoid mystery white-on-white bug.
     cvprtln!(
-        &Lvl::NORM,
+        Lvl::NORM,
         V::V,
         "\x1b[0mRecommended dependency inference_level={styled_recomm_inf_level}, actual={styled_inference_level}"
     );

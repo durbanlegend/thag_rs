@@ -1,9 +1,9 @@
 #![allow(clippy::implicit_return)]
 #![expect(unused)]
-use crate::color_support::{get_color_level, resolve_term_theme, restore_raw_status};
+// use crate::color_support::{get_color_level, resolve_term_theme, restore_raw_status};
 use crate::{
-    config, debug_log, generate_styles, lazy_static_var, maybe_config, vlog, ColorSupport, Level,
-    Lvl, TermTheme, ThagResult, V,
+    config, cvprtln, debug_log, generate_styles, lazy_static_var, maybe_config, vlog, ColorSupport,
+    Level, Lvl, TermTheme, ThagResult, V,
 };
 use crate::{profile, profile_method, profile_section};
 use crossterm::terminal::{self, is_raw_mode_enabled};
@@ -272,23 +272,6 @@ pub fn get_style(
     mapping(*message_level)
 }
 
-/// A line print macro that conditionally prints a message using `cprtln` if the current global verbosity
-/// is at least as verbose as the `Verbosity` (alias `V`) level passed in.
-///
-/// The message will be styled and coloured according to the `MessageLevel` (alias `Lvl`) passed in.
-///
-/// Format: `cvprtln!(level: Lvl, verbosity: V, "Lorem ipsum dolor {} amet", content: &str);`
-#[macro_export]
-macro_rules! cvprtln {
-    ($level:expr, $verbosity:expr, $($arg:tt)*) => {{
-        if $verbosity <= $crate::logging::get_verbosity() {
-            let (maybe_color_support, term_theme) = $crate::colors::coloring();
-            let style = $crate::colors::get_style(&$level, term_theme, maybe_color_support);
-            $crate::cprtln!(&style, $($arg)*);
-        }
-    }};
-}
-
 /// An enum to categorise the supported message types for display.
 #[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
@@ -303,27 +286,6 @@ pub enum MessageLevel {
     Debug,
     Ghost,
 }
-
-// pub type Lvl = MessageLevel;
-
-// impl Lvl {
-//     pub const ERR: Self = Self::Error;
-//     pub const WARN: Self = Self::Warning;
-//     pub const EMPH: Self = Self::Emphasis;
-//     pub const HEAD: Self = Self::Heading;
-//     pub const SUBH: Self = Self::Subheading;
-//     pub const BRI: Self = Self::Bright;
-//     pub const NORM: Self = Self::Normal;
-//     pub const DBUG: Self = Self::Debug;
-//     pub const GHST: Self = Self::Ghost;
-// }
-
-// impl From<&Lvl> for u8 {
-//     fn from(message_level: &Lvl) -> Self {
-//         profile_method!("u8_from_lvl");
-//         Self::from(&XtermColor::from(message_level))
-//     }
-// }
 
 impl From<&XtermColor> for Color {
     fn from(xterm_color: &XtermColor) -> Self {
@@ -1034,7 +996,7 @@ pub fn main() {
                 V::N,
                 "Colour support={support:?}, term_theme={term_theme:?}"
             );
-            cvprtln!(&Lvl::WARN, V::N, "Colored Warning message\n");
+            cvprtln!(Lvl::WARN, V::N, "Colored Warning message\n");
         }
     }
 }

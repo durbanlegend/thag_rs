@@ -82,22 +82,31 @@ impl Style {
         D: std::fmt::Display,
     {
         let mut result = String::new();
+        let mut needs_reset = false;
 
-        if let Some(ref fg) = self.foreground {
-            result.push_str(fg.ansi);
+        if let Some(color_info) = &self.foreground {
+            result.push_str(color_info.ansi);
+            needs_reset = true;
         }
         if self.bold {
             result.push_str("\x1b[1m");
+            needs_reset = true;
         }
         if self.italic {
             result.push_str("\x1b[3m");
+            needs_reset = true;
         }
         if self.dim {
             result.push_str("\x1b[2m");
+            needs_reset = true;
         }
 
         result.push_str(&val.to_string());
-        result.push_str("\x1b[0m");
+
+        if needs_reset {
+            result.push_str("\x1b[0m");
+        }
+
         result
     }
 
@@ -371,8 +380,8 @@ pub enum ColorInitStrategy {
 
 /// Manages terminal color attributes and styling based on terminal capabilities and theme
 pub struct TermAttributes {
-    color_support: &'static ColorSupport,
-    theme: &'static TermTheme,
+    pub color_support: &'static ColorSupport,
+    pub theme: &'static TermTheme,
 }
 
 /// Global instance of `TermAttributes`
@@ -457,13 +466,13 @@ impl TermAttributes {
     #[must_use]
     pub fn style_for_level(&self, level: Level) -> Style {
         profile_method!("TermAttrs::style_for_level");
-        match (&self.color_support, &self.theme) {
-            (&ColorSupport::None, _) => Style::default(),
-            (&ColorSupport::Ansi16, &TermTheme::Light) => Self::basic_light_style(level),
-            (&ColorSupport::Ansi16, &TermTheme::Dark) => Self::basic_dark_style(level),
-            (&ColorSupport::Xterm256, &TermTheme::Light) => Self::full_light_style(level),
-            (&ColorSupport::Xterm256, &TermTheme::Dark) => Self::full_dark_style(level),
-            (_, &TermTheme::Undetermined) | (&ColorSupport::AutoDetect, _) => unreachable!(),
+        match (self.color_support, self.theme) {
+            (ColorSupport::None, _) => Style::default(),
+            (ColorSupport::Ansi16, TermTheme::Light) => Self::basic_light_style(level),
+            (ColorSupport::Ansi16, TermTheme::Dark) => Self::basic_dark_style(level),
+            (ColorSupport::Xterm256, TermTheme::Light) => Self::full_light_style(level),
+            (ColorSupport::Xterm256, TermTheme::Dark) => Self::full_dark_style(level),
+            (_, TermTheme::Undetermined) | (ColorSupport::AutoDetect, _) => unreachable!(),
         }
     }
 
@@ -526,6 +535,18 @@ impl TermAttributes {
             Level::Ghost => Color::fixed(251).italic(),  // Silver
         }
     }
+
+    // /// Creates a new TermAttributes instance with specified support and theme for testing
+    // #[cfg(test)]
+    // pub fn with_mock_theme(
+    //     color_support: &'static ColorSupport,
+    //     theme: &'static TermTheme,
+    // ) -> Self {
+    //     Self {
+    //         color_support,
+    //         theme,
+    //     }
+    // }
 }
 
 #[must_use]
@@ -534,6 +555,25 @@ pub fn style_string(lvl: Level, string: &str) -> String {
 }
 
 // Convenience macros
+/// A line print macro that conditionally prints a message using `cprtln` if the current global verbosity
+/// is at least as verbose as the `Verbosity` (alias `V`) level passed in.
+///
+/// The message will be styled and coloured according to the `MessageLevel` (alias `Lvl`) passed in.
+///
+/// Format: `cvprtln!(&Level: Lvl, verbosity: V, "Lorem ipsum dolor {} amet", content: &str);`
+#[macro_export]
+macro_rules! cvprtln {
+    ($level:expr, $verbosity:expr, $($arg:tt)*) => {{
+        if $verbosity <= $crate::logging::get_verbosity() {
+            let term_attrs = $crate::styling::TermAttributes::get();
+            let style = term_attrs.style_for_level($level);
+            let content = format!($($arg)*);
+            let verbosity = $crate::logging::get_verbosity();
+            $crate::vlog!(verbosity, "{}", style.paint(content));
+        }
+    }};
+}
+
 #[macro_export]
 macro_rules! clog {
     ($level:expr, $($arg:tt)*) => {{
@@ -618,47 +658,47 @@ macro_rules! cvlog {
 
 #[macro_export]
 macro_rules! cvlog_error {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Error, $($arg)*) };
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::Level::Error, $verbosity, $($arg)*) };
 }
 
 #[macro_export]
 macro_rules! cvlog_warning {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Warning, $($arg)*) };
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::Level::Warning, $verbosity, $($arg)*) };
 }
 
 #[macro_export]
 macro_rules! cvlog_heading {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Heading, $($arg)*) };
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::Level::Heading, $verbosity, $($arg)*) };
 }
 
 #[macro_export]
 macro_rules! cvlog_subheading {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Subheading, $($arg)*) };
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::Level::Subheading, $verbosity, $($arg)*) };
 }
 
 #[macro_export]
 macro_rules! cvlog_emphasis {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Emphasis, $($arg)*) };
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::Level::Emphasis, $verbosity, $($arg)*) };
 }
 
 #[macro_export]
 macro_rules! cvlog_bright {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Bright, $($arg)*) };
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::Level::Bright, $verbosity, $($arg)*) };
 }
 
 #[macro_export]
 macro_rules! cvlog_normal {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Normal, $($arg)*) };
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::Level::Normal, $verbosity, $($arg)*) };
 }
 
 #[macro_export]
 macro_rules! cvlog_debug {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Debug, $($arg)*) };
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::Level::Debug, $verbosity, $($arg)*) };
 }
 
 #[macro_export]
 macro_rules! cvlog_ghost {
-    ($verbosity:expr, $($arg:tt)*) => { $crate::cvlog!($verbosity, $crate::Level::Ghost, $($arg)*) };
+    ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::Level::Ghost, $verbosity, $($arg)*) };
 }
 
 #[cfg(test)]
@@ -710,5 +750,95 @@ mod tests {
         assert_eq!(defaulted, &TermTheme::Dark);
         println!();
         flush_test_output();
+    }
+
+    #[test]
+    fn test_styling_no_color_support() {
+        let term_attrs = TermAttributes::with_mock_theme(&ColorSupport::None, &TermTheme::Dark);
+        let style = term_attrs.style_for_level(&Level::Error);
+        assert_eq!(style.paint("test"), "test"); // Should have no ANSI codes
+    }
+
+    #[test]
+    fn test_styling_color_support_levels() {
+        let none = TermAttributes::with_mock_theme(&ColorSupport::None, &TermTheme::Dark);
+        let basic = TermAttributes::with_mock_theme(&ColorSupport::Ansi16, &TermTheme::Dark);
+        let full = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
+
+        let test_level = &Level::Error;
+
+        // No color support should return plain text
+        assert_eq!(none.style_for_level(test_level).paint("test"), "test");
+
+        // Basic support should use ANSI 16 colors
+        assert!(basic
+            .style_for_level(test_level)
+            .paint("test")
+            .contains("\x1b[31m"));
+
+        // Full support should use 256 colors
+        assert!(full
+            .style_for_level(test_level)
+            .paint("test")
+            .contains("\x1b[38;5;1m"));
+    }
+
+    #[test]
+    fn test_styling_theme_variations() {
+        let attrs_light =
+            TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Light);
+        let attrs_dark = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
+
+        let heading_light = attrs_light.style_for_level(&Level::Heading).paint("test");
+        let heading_dark = attrs_dark.style_for_level(&Level::Heading).paint("test");
+
+        // Light and dark themes should produce different colors
+        assert_ne!(heading_light, heading_dark);
+    }
+
+    #[test]
+    fn test_styling_level_styling() {
+        let attrs = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
+
+        // Test each level has distinct styling
+        let styles: Vec<String> = vec![
+            Level::Error,
+            Level::Warning,
+            Level::Heading,
+            Level::Subheading,
+            Level::Emphasis,
+            Level::Bright,
+            Level::Normal,
+            Level::Debug,
+            Level::Ghost,
+        ]
+        .iter()
+        .map(|level| attrs.style_for_level(level).paint("test"))
+        .collect();
+
+        // Check that all styles are unique
+        for (i, style1) in styles.iter().enumerate() {
+            for (j, style2) in styles.iter().enumerate() {
+                if i != j {
+                    assert_ne!(
+                        style1, style2,
+                        "Styles for different levels should be distinct"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_styling_style_attributes() {
+        let attrs = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
+
+        // Error should be bold
+        let error_style = attrs.style_for_level(&Level::Error).paint("test");
+        assert!(error_style.contains("\x1b[1m"));
+
+        // Ghost should be italic
+        let ghost_style = attrs.style_for_level(&Level::Ghost).paint("test");
+        assert!(ghost_style.contains("\x1b[3m"));
     }
 }

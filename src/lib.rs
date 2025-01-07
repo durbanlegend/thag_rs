@@ -108,8 +108,8 @@ pub mod manifest;
 // Terminal-based user interface components
 //-----------------------------------------------------------------------------
 /// Assess terminal capabilities and current theme
-#[cfg(feature = "color_support")]
-pub mod color_support;
+// #[cfg(feature = "color_support")]
+// pub mod color_support;
 /// Message coloring tailored to terminal capabilities and current theme
 #[cfg(feature = "color_support")]
 pub mod colors;
@@ -164,7 +164,6 @@ pub use {
 
 #[cfg(feature = "color_support")]
 pub use {
-    colors::coloring,
     config::{
         load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
         ProcMacros,

@@ -320,14 +320,14 @@ impl Dependencies {
                         config_features.push(feature.clone());
                     } else {
                         cvprtln!(
-                            &Lvl::WARN,
+                            Lvl::WARN,
                             V::QQ,
                             "Configured feature `{}` does not exist in crate {}. Available features are:",
                             feature,
                             crate_name
                         );
                         for available in all_features {
-                            cvprtln!(&Lvl::BRI, V::QQ, "{}", available);
+                            cvprtln!(Lvl::BRI, V::QQ, "{}", available);
                         }
                     }
                 }

@@ -727,7 +727,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
         _ => {
             #[cfg(feature = "build")]
             cvprtln!(
-                &Lvl::WARN,
+                Lvl::WARN,
                 V::Q,
                 "Expression not catered for: {expr:#?}, wrapping expression in println!()"
             );

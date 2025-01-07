@@ -45,12 +45,11 @@ use crate::code_utils::{
     read_file_contents, remove_inner_attributes, strip_curly_braces, to_ast, wrap_snippet,
     write_source,
 };
-use crate::colors::init_styles;
 use crate::config::{self, DependencyInference, RealContext};
 use crate::manifest::extract;
 use crate::styling::style_string;
 use crate::{
-    ast, coloring, cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
+    ast, cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
     modified_since_compiled, profile, profile_method, profile_section, regex, repeat_dash, shared,
     validate_args, vlog, Ast, Cli, Dependencies, Lvl, ProcFlags, ThagError, ThagResult,
     DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX,
@@ -506,20 +505,12 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
 
     let start = Instant::now();
 
-    // Access lazy_static variables whose initialisation may have side-effects that could
-    // affect the behaviour of the terminal, to get these out of the way. (Belt and braces.)
-    let (maybe_color_support, term_theme) = coloring();
-
     let proc_flags = get_proc_flags(args)?;
 
     #[cfg(debug_assertions)]
     if log_enabled!(Debug) {
         log_init_setup(start, args, &proc_flags);
     }
-
-    init_styles(term_theme, maybe_color_support);
-
-    // set_verbosity(args)?;
 
     if args.config {
         config::edit(&RealContext::new())?;
@@ -1214,7 +1205,7 @@ fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResu
 
 fn display_build_failure() {
     profile!("display_build_failure");
-    cvprtln!(&Lvl::ERR, V::N, "Build failed");
+    cvprtln!(Lvl::ERR, V::N, "Build failed");
     let config = maybe_config();
     let binding = Dependencies::default();
     let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
@@ -1228,7 +1219,7 @@ fn display_build_failure() {
     };
 
     cvprtln!(
-        &Lvl::EMPH,
+        Lvl::EMPH,
         V::N,
         r#"Dependency inference_level={inference_level:#?}
 If the problem is a dependency error, consider the following advice:

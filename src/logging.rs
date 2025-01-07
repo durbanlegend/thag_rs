@@ -194,14 +194,12 @@ fn configure_simplelog() {
 
 /// A line print macro that prints a styled and coloured message.
 ///
-/// Format: `cprtln!(style: Option<Style>, "Lorem ipsum dolor {} amet", content: &str);`
+/// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
-        let style: &nu_ansi_term::Style = $style;
-        // Qualified form to avoid imports in calling code.
-        let painted = style.paint(content);
+        let painted = $style.paint(content);
         let verbosity = $crate::logging::get_verbosity();
         $crate::vlog!(verbosity, "{painted}");
     }};

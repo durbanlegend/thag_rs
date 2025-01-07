@@ -107,12 +107,6 @@ pub mod manifest;
 // UI and configuration:
 // Terminal-based user interface components
 //-----------------------------------------------------------------------------
-/// Assess terminal capabilities and current theme
-// #[cfg(feature = "color_support")]
-// pub mod color_support;
-/// Message coloring tailored to terminal capabilities and current theme
-#[cfg(feature = "color_support")]
-pub mod colors;
 /// Configuration loader
 #[cfg(any(feature = "color_support", feature = "build"))]
 pub mod config;

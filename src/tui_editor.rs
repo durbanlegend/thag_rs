@@ -20,7 +20,8 @@ use crossterm::terminal::{
 use mockall::automock;
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
-use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
+pub use ratatui::style::Style as RataStyle;
+use ratatui::style::{Color, Modifier, Styled, Stylize};
 use ratatui::text::Line;
 use ratatui::widgets::{block::Block, Borders, Clear, Paragraph};
 use ratatui::{CompletedFrame, Frame, Terminal};
@@ -482,7 +483,7 @@ pub struct EditData<'a> {
     pub history: Option<History>,
 }
 
-impl From<&crate::styling::Style> for Style {
+impl From<&crate::styling::Style> for RataStyle {
     fn from(style: &crate::styling::Style) -> Self {
         let mut rata_style = Self::default();
 
@@ -517,7 +518,7 @@ impl From<&Level> for Color {
 #[derive(Debug)]
 pub struct KeyDisplay<'a> {
     pub title: &'a str,
-    pub title_style: Style,
+    pub title_style: RataStyle,
     pub remove_keys: &'a [&'a str],
     pub add_keys: &'a [KeyDisplayLine],
 }
@@ -584,7 +585,7 @@ where
             .title_style(display.title_style),
     );
 
-    textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
+    textarea.set_line_number_style(RataStyle::default().fg(Color::DarkGray));
     textarea.move_cursor(CursorMove::Bottom);
     // New line with cursor at EOF for usability
     textarea.move_cursor(CursorMove::End);
@@ -651,12 +652,12 @@ where
                             let status_block = Block::default()
                                 .borders(Borders::ALL)
                                 .title("Status")
-                                .style(Style::default().fg(Color::White))
+                                .style(RataStyle::default().fg(Color::White))
                                 .title_style(display.title_style);
 
                             let status_text = Paragraph::new::<&str>(status_message.as_ref())
                                 .block(status_block)
-                                .style(Style::default().fg(Color::White));
+                                .style(RataStyle::default().fg(Color::White));
 
                             f.render_widget(status_text, chunks[1]);
 
@@ -796,7 +797,7 @@ where
                 }
                 key!(f10) => {
                     crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
-                    textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
+                    textarea.set_line_number_style(RataStyle::default().fg(Color::DarkGray));
                 }
                 key!(alt - '<') | key!(ctrl - alt - p) | key!(ctrl - alt - up) => {
                     textarea.move_cursor(CursorMove::Top);
@@ -880,7 +881,7 @@ where
 pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate::Lvl) {
     profile!("highlight_selection");
     textarea.set_selection_style(
-        Style::default()
+        RataStyle::default()
             .fg(Color::Indexed(u8::from(&tui_highlight_fg)))
             .bold(),
     );
@@ -1188,7 +1189,7 @@ pub fn display_popup(
                 .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
         } else {
             widget = widget.remove_modifier(Modifier::BOLD).set_style(
-                Style::default()
+                RataStyle::default()
                     .fg(Color::Indexed(u8::from(&Lvl::NORM)))
                     .not_bold(),
             );

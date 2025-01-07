@@ -275,12 +275,12 @@ pub enum ColorSupport {
     /// Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
     Xterm256,
     /// Basic 16-color support
+    #[default]
     Ansi16,
     /// No color support
     None,
-    /// Auto-detect from terminal
-    #[default]
-    AutoDetect,
+    /// Still to be determined or defaulted
+    Undetermined,
 }
 
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
@@ -372,7 +372,7 @@ impl From<&Level> for u8 {
 #[derive(Clone)]
 #[non_exhaustive]
 pub enum ColorInitStrategy {
-    Configure(&'static ColorSupport, &'static TermTheme),
+    Configure(ColorSupport, TermTheme),
     Default,
     #[cfg(feature = "color_detect")]
     Detect,
@@ -380,8 +380,8 @@ pub enum ColorInitStrategy {
 
 /// Manages terminal color attributes and styling based on terminal capabilities and theme
 pub struct TermAttributes {
-    pub color_support: &'static ColorSupport,
-    pub theme: &'static TermTheme,
+    pub color_support: ColorSupport,
+    pub theme: TermTheme,
 }
 
 /// Global instance of `TermAttributes`
@@ -391,7 +391,7 @@ pub static LOGGING_ENABLED: AtomicBool = AtomicBool::new(true);
 
 impl TermAttributes {
     /// Creates a new `TermAttributes` instance with specified support and theme
-    const fn new(color_support: &'static ColorSupport, theme: &'static TermTheme) -> Self {
+    const fn new(color_support: ColorSupport, theme: TermTheme) -> Self {
         Self {
             color_support,
             theme,
@@ -414,14 +414,14 @@ impl TermAttributes {
     ///     &TermTheme::Dark
     /// ));
     /// ```
-    pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
+    pub fn initialize(strategy: ColorInitStrategy) -> &'static Self {
         INSTANCE.get_or_init(|| match strategy {
-            &ColorInitStrategy::Configure(support, theme) => Self::new(support, theme),
-            &ColorInitStrategy::Default => Self::new(&ColorSupport::Ansi16, &TermTheme::Dark),
+            ColorInitStrategy::Configure(support, theme) => Self::new(support, theme),
+            ColorInitStrategy::Default => Self::new(ColorSupport::Ansi16, TermTheme::Dark),
             #[cfg(feature = "color_detect")]
-            &ColorInitStrategy::Detect => {
-                let support = crate::terminal::detect_color_support();
-                let theme = crate::terminal::detect_theme();
+            ColorInitStrategy::Detect => {
+                let support = crate::terminal::detect_color_support().clone();
+                let theme = crate::terminal::detect_theme().clone();
                 Self::new(support, theme)
             }
         })
@@ -432,22 +432,22 @@ impl TermAttributes {
     /// This is a convenience method that initializes with `ColorInitStrategy::Default`
     /// if the instance hasn't been initialized yet.
     pub fn get() -> &'static Self {
-        INSTANCE.get_or_init(|| Self::new(&ColorSupport::Ansi16, &TermTheme::Dark))
+        INSTANCE.get_or_init(|| Self::new(ColorSupport::Ansi16, TermTheme::Dark))
     }
 
     #[must_use]
-    pub fn get_theme(&self) -> &'static TermTheme {
-        if self.theme != &TermTheme::Undetermined {
-            return self.theme;
+    pub fn get_theme(&self) -> TermTheme {
+        if self.theme != TermTheme::Undetermined {
+            return self.theme.clone();
         }
 
         #[cfg(feature = "color_detect")]
         {
-            terminal::detect_theme()
+            terminal::detect_theme().clone()
         }
 
         #[cfg(not(feature = "color_detect"))]
-        &TermTheme::Dark
+        TermTheme::Dark
     }
 
     /// Returns the appropriate style for the given message level
@@ -466,13 +466,13 @@ impl TermAttributes {
     #[must_use]
     pub fn style_for_level(&self, level: Level) -> Style {
         profile_method!("TermAttrs::style_for_level");
-        match (self.color_support, self.theme) {
+        match (&self.color_support, &self.theme) {
             (ColorSupport::None, _) => Style::default(),
             (ColorSupport::Ansi16, TermTheme::Light) => Self::basic_light_style(level),
             (ColorSupport::Ansi16, TermTheme::Dark) => Self::basic_dark_style(level),
             (ColorSupport::Xterm256, TermTheme::Light) => Self::full_light_style(level),
             (ColorSupport::Xterm256, TermTheme::Dark) => Self::full_dark_style(level),
-            (_, TermTheme::Undetermined) | (ColorSupport::AutoDetect, _) => unreachable!(),
+            (_, TermTheme::Undetermined) | (ColorSupport::Undetermined, _) => unreachable!(),
         }
     }
 
@@ -755,7 +755,7 @@ mod tests {
     #[test]
     fn test_styling_no_color_support() {
         let term_attrs = TermAttributes::with_mock_theme(&ColorSupport::None, &TermTheme::Dark);
-        let style = term_attrs.style_for_level(&Level::Error);
+        let style = term_attrs.style_for_level(Level::Error);
         assert_eq!(style.paint("test"), "test"); // Should have no ANSI codes
     }
 
@@ -765,7 +765,7 @@ mod tests {
         let basic = TermAttributes::with_mock_theme(&ColorSupport::Ansi16, &TermTheme::Dark);
         let full = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
 
-        let test_level = &Level::Error;
+        let test_level = Level::Error;
 
         // No color support should return plain text
         assert_eq!(none.style_for_level(test_level).paint("test"), "test");
@@ -789,8 +789,8 @@ mod tests {
             TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Light);
         let attrs_dark = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
 
-        let heading_light = attrs_light.style_for_level(&Level::Heading).paint("test");
-        let heading_dark = attrs_dark.style_for_level(&Level::Heading).paint("test");
+        let heading_light = attrs_light.style_for_level(Level::Heading).paint("test");
+        let heading_dark = attrs_dark.style_for_level(Level::Heading).paint("test");
 
         // Light and dark themes should produce different colors
         assert_ne!(heading_light, heading_dark);
@@ -813,7 +813,7 @@ mod tests {
             Level::Ghost,
         ]
         .iter()
-        .map(|level| attrs.style_for_level(level).paint("test"))
+        .map(|level| attrs.style_for_level(*level).paint("test"))
         .collect();
 
         // Check that all styles are unique
@@ -834,11 +834,11 @@ mod tests {
         let attrs = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
 
         // Error should be bold
-        let error_style = attrs.style_for_level(&Level::Error).paint("test");
+        let error_style = attrs.style_for_level(Level::Error).paint("test");
         assert!(error_style.contains("\x1b[1m"));
 
         // Ghost should be italic
-        let ghost_style = attrs.style_for_level(&Level::Ghost).paint("test");
+        let ghost_style = attrs.style_for_level(Level::Ghost).paint("test");
         assert!(ghost_style.contains("\x1b[3m"));
     }
 }

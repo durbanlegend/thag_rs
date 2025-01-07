@@ -3,12 +3,11 @@
 use crate::debug_timings;
 use crate::{
     ast, code_utils::get_source_path, config::DependencyInference, cvprtln, debug_log,
-    get_verbosity, maybe_config, profile, profile_section, regex, vlog, Ast, BuildState,
-    Dependencies, Lvl, ThagResult, BUILT_IN_CRATES, V,
+    get_verbosity, maybe_config, profile, profile_section, regex, styling::TermAttributes, vlog,
+    Ast, BuildState, Dependencies, Level, Lvl, ThagResult, BUILT_IN_CRATES, V,
 };
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
-use nu_ansi_term::Style;
 use regex::Regex;
 use semver::VersionReq;
 use serde_merge::omerge;
@@ -483,20 +482,19 @@ pub fn lookup_deps(
 ) {
     profile!("lookup_deps");
 
-    // #[cfg(debug_assertions)]
-    // eprintln!("In lookup_deps: rs_inferred_deps={rs_inferred_deps:#?}");
     if rs_inferred_deps.is_empty() {
         return;
     }
 
     let existing_toml_block = !&rs_dep_map.is_empty();
     let mut new_inferred_deps: Vec<String> = vec![];
-    let recomm_style = Style::from(&Lvl::SUBH);
+    let term_attrs = TermAttributes::get();
+    let recomm_style = &term_attrs.style_for_level(Level::Subheading);
     let recomm_inf_level = &DependencyInference::Config;
     let actual_style = if inference_level == recomm_inf_level {
         recomm_style
     } else {
-        Style::from(&Lvl::EMPH)
+        &term_attrs.style_for_level(Level::Emphasis)
     };
     let styled_inference_level = actual_style.paint(inference_level.to_string());
     let styled_recomm_inf_level = recomm_style.paint(recomm_inf_level.to_string());
@@ -547,12 +545,6 @@ pub fn lookup_deps(
                         if let (Some(final_features), default_features) =
                             features_for_inference_level
                         {
-                            // let detail = DependencyDetail {
-                            //     version: Some(version.clone()),
-                            //     features: final_features,
-                            //     default_features,
-                            //     ..Default::default()
-                            // };
                             rs_dep_map.entry(name.clone()).or_insert_with(|| {
                                 Dependency::Detailed(Box::new(DependencyDetail {
                                     version: Some(version.clone()),
@@ -571,10 +563,6 @@ pub fn lookup_deps(
             }
         }
     }
-    // Not sure we need this
-    // if rs_dep_map.is_empty() {
-    //     return;
-    // }
 
     if get_verbosity() < V::V
         || matches!(inference_level, DependencyInference::None)
@@ -652,8 +640,11 @@ fn display_toml_info(
     if !existing_toml_block {
         toml_block.push_str("*/");
     }
-    let styled_toml_block = Style::from(&Lvl::SUBH).paint(&toml_block);
-    let styled_inference_level = Style::from(&Lvl::EMPH).paint(inference_level.to_string());
+    let term_attrs = TermAttributes::get();
+    let styled_toml_block = term_attrs.style_for_level(Lvl::SUBH).paint(&toml_block);
+    let styled_inference_level = term_attrs
+        .style_for_level(Lvl::EMPH)
+        .paint(inference_level.to_string());
     let wording = if existing_toml_block {
         format!("This is the {styled_inference_level} manifest information that was generated for this run. If you want to, you can merge it into the existing toml block at")
     } else {
@@ -664,44 +655,6 @@ fn display_toml_info(
         "\n{wording} the top of your script for faster execution in future:\n{styled_toml_block}\n"
     );
 }
-
-// fn show_all_toml_variants(
-//     name: &str,
-//     version: &str,
-//     features: Option<&Vec<String>>,
-//     dep_config: &Dependencies,
-// ) {
-//     profile!("show_all_toml_variants");
-//     if let Some(all_features) = features {
-//         println!("\nAvailable dependency configurations for {}:", name);
-
-//         println!("\nMinimal:");
-//         println!("{} = \"{}\"\n", name, version);
-
-//         if let (Some(max_features), default_features) = dep_config.get_features_for_inference_level(
-//             name,
-//             all_features,
-//             &DependencyInference::Maximal,
-//         ) {
-//             let maybe_default_features = if default_features {
-//                 ""
-//             } else {
-//                 ", default-features = false "
-//             };
-//             println!("Maximal:");
-//             println!(
-//                 "{} = {{ version = \"{}{maybe_default_features}\", features = [{}] }}\n",
-//                 name,
-//                 version,
-//                 max_features
-//                     .iter()
-//                     .map(|f| format!("\"{}\"", f))
-//                     .collect::<Vec<_>>()
-//                     .join(", ")
-//             );
-//         }
-//     }
-// }
 
 fn proc_macros_magic(
     rs_dep_map: &mut BTreeMap<String, Dependency>,

@@ -47,7 +47,7 @@ use crate::code_utils::{
 };
 use crate::config::{self, DependencyInference, RealContext};
 use crate::manifest::extract;
-use crate::styling::style_string;
+use crate::styling::{style_string, ColorInitStrategy, TermAttributes};
 use crate::{
     ast, cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
     modified_since_compiled, profile, profile_method, profile_section, regex, repeat_dash, shared,
@@ -504,6 +504,21 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     // profile!("execute");
 
     let start = Instant::now();
+
+    // Initialize TermAttributes for message styling
+    let strategy = if std::env::var("TEST_ENV").is_ok() {
+        #[cfg(debug_assertions)]
+        debug_log!("Avoiding colour detection for testing");
+        ColorInitStrategy::Default
+    } else if cfg!(feature = "color_detect") {
+        ColorInitStrategy::Detect
+    } else if let Some(config) = maybe_config() {
+        ColorInitStrategy::Configure(config.colors.color_support, config.colors.term_theme)
+    } else {
+        ColorInitStrategy::Default
+    };
+
+    TermAttributes::initialize(strategy);
 
     let proc_flags = get_proc_flags(args)?;
 

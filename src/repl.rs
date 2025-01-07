@@ -2,22 +2,22 @@
 use crate::{
     builder::process_expr,
     code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
-    cprtln, cvprtln, get_verbosity, lazy_static_var,
+    cvprtln, get_verbosity, lazy_static_var,
     manifest::extract,
     profile, profile_method, regex,
+    styling::{ColorInfo, TermAttributes},
     tui_editor::{
         script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
-        ManagedTerminal,
+        ManagedTerminal, RataStyle,
     },
     vlog, BuildState, Cli, CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl,
-    ProcFlags, ThagError, ThagResult, V,
+    ProcFlags, Style, ThagError, ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
 use crokey::key;
 use crossterm::event::{KeyEvent, KeyEventKind};
 use edit::edit_file;
-use nu_ansi_term::{Color, Style as NuStyle};
-use ratatui::style::{Style as RataStyle, Stylize};
+use nu_ansi_term::Color as NuColor;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
     EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
@@ -35,6 +35,35 @@ use std::str::FromStr;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use tui_textarea::{Input, TextArea};
+
+impl From<&ColorInfo> for NuColor {
+    fn from(color_info: &ColorInfo) -> Self {
+        if let Some(index) = color_info.index {
+            return Self::Fixed(index);
+        }
+
+        // Map basic ANSI colors
+        match color_info.ansi {
+            "\x1b[30m" => Self::Black,
+            "\x1b[31m" => Self::Red,
+            "\x1b[32m" => Self::Green,
+            "\x1b[33m" => Self::Yellow,
+            "\x1b[34m" => Self::Blue,
+            "\x1b[35m" => Self::Magenta,
+            "\x1b[36m" => Self::Cyan,
+            "\x1b[37m" => Self::White,
+            "\x1b[90m" => Self::DarkGray,
+            "\x1b[91m" => Self::LightRed,
+            "\x1b[92m" => Self::LightGreen,
+            "\x1b[93m" => Self::LightYellow,
+            "\x1b[94m" => Self::LightBlue,
+            "\x1b[95m" => Self::LightMagenta,
+            "\x1b[96m" => Self::LightCyan,
+            "\x1b[97m" => Self::LightGray,
+            _ => Self::Default,
+        }
+    }
+}
 
 pub const HISTORY_FILE: &str = "thag_repl_hist.txt";
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
@@ -276,14 +305,14 @@ impl Prompt for ReplPrompt {
     }
 }
 
-fn get_heading_style() -> &'static NuStyle {
+fn get_heading_style() -> &'static Style {
     profile!("get_heading_style");
-    lazy_static_var!(NuStyle, NuStyle::from(&Lvl::HEAD))
+    lazy_static_var!(Style, TermAttributes::get().style_for_level(Lvl::HEAD))
 }
 
-fn get_subhead_style() -> &'static NuStyle {
+fn get_subhead_style() -> &'static Style {
     profile!("get_subhead_style");
-    lazy_static_var!(NuStyle, NuStyle::from(&Lvl::SUBH))
+    lazy_static_var!(Style, TermAttributes::get().style_for_level(Lvl::SUBH))
 }
 
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
@@ -354,15 +383,38 @@ pub fn run_repl(
 
     let edit_mode = Box::new(Emacs::new(keybindings.clone()));
     let mut highlighter = Box::new(ExampleHighlighter::new(cmd_vec.clone()));
-    highlighter.change_colors(
-        Color::from(&Lvl::HEAD),
-        Color::from(&Lvl::EMPH),
-        Color::from(&Lvl::NORM),
-    );
+    let term_attrs = TermAttributes::get();
+    let nu_match = {
+        term_attrs
+            .style_for_level(Lvl::HEAD)
+            .foreground
+            .as_ref()
+            .map_or(NuColor::Green, NuColor::from)
+    };
+    let nu_notmatch = {
+        term_attrs
+            .style_for_level(Lvl::EMPH)
+            .foreground
+            .as_ref()
+            .map_or(NuColor::Red, NuColor::from)
+    };
+    let nu_neutral = {
+        term_attrs
+            .style_for_level(Lvl::NORM)
+            .foreground
+            .as_ref()
+            .map_or(NuColor::DarkGray, NuColor::from)
+    };
+    highlighter.change_colors(nu_match, nu_notmatch, nu_neutral);
+    let our_ghost = term_attrs.style_for_level(Lvl::Ghost);
+    let nu_ghost = our_ghost
+        .foreground
+        .as_ref()
+        .map_or(NuColor::LightGray, NuColor::from);
     let mut line_editor = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
         .with_hinter(Box::new(
-            DefaultHinter::default().with_style(NuStyle::from(&Lvl::Ghost).italic()),
+            DefaultHinter::default().with_style(nu_ghost.italic()),
         ))
         .with_history(history)
         .with_history_exclusion_prefix(Some("q".into()))
@@ -520,7 +572,11 @@ pub fn process_source(
         build_state.ast = Some(crate::Ast::Expr(expr_ast));
         process_expr(build_state, rs_source, args, proc_flags, &start)?;
     } else {
-        cprtln!(&(&Lvl::ERR).into(), "Error parsing code: {maybe_ast:#?}");
+        cvprtln!(
+            Lvl::ERR,
+            get_verbosity(),
+            "Error parsing code: {maybe_ast:#?}"
+        );
     };
     Ok(())
 }
@@ -557,9 +613,10 @@ fn tui(
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
+    let style = crate::styling::TermAttributes::get().style_for_level(Lvl::SUBH);
     let display = KeyDisplay {
         title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: RataStyle::from(&Lvl::SUBH).bold(),
+        title_style: RataStyle::from(&style),
         remove_keys: &[""; 0],
         add_keys: &add_keys,
     };
@@ -666,9 +723,10 @@ pub fn edit_history<R: EventReader + Debug>(
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
+    let style = crate::styling::TermAttributes::get().style_for_level(Lvl::SUBH);
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: RataStyle::from(&Lvl::HEAD).bold(),
+        title_style: RataStyle::from(&style),
         remove_keys: &["F7", "F8"],
         add_keys: &binding,
     };
@@ -787,12 +845,11 @@ fn save_file(
 /// formatted key / description bindings to be displayed on screen.
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
     profile!("get_max_key_len");
-    let style: NuStyle = *get_heading_style();
+    let style = get_heading_style();
     formatted_bindings
         .iter()
         .map(|(key_desc, _)| {
             let key_desc = style.paint(key_desc);
-            let key_desc = format!("{key_desc}");
             key_desc.len()
         })
         .max()
@@ -845,14 +902,12 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
                             .iter()
                             .map(|cmd| {
                                 let key_desc = style.paint(format!("{cmd:?}"));
-                                let key_desc = format!("{key_desc}");
                                 key_desc.len()
                             })
                             .max()
                             .unwrap_or(0)
                     } else if !format!("{reedline_event}").starts_with("UntilFound") {
                         let event_desc = style.paint(format!("{reedline_event:?}"));
-                        let event_desc = format!("{event_desc}");
                         event_desc.len()
                     } else {
                         0
@@ -870,8 +925,9 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
     profile!("show_key_bindings");
     println!();
-    cprtln!(
-        &(&Lvl::EMPH).into(),
+    cvprtln!(
+        Lvl::EMPH,
+        get_verbosity(),
         "Key bindings - subject to your terminal settings"
     );
 
@@ -879,7 +935,6 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
     let style = get_heading_style();
     for (key_desc, cmd_desc) in formatted_bindings {
         let key_desc = style.paint(key_desc);
-        let key_desc = format!("{key_desc}");
         println!("{key_desc:<width$}    {cmd_desc}", width = max_key_len);
     }
     println!();
@@ -957,7 +1012,6 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     });
 
     let event_highlight = get_subhead_style().paint(event_name);
-    let event_highlight = format!("{event_highlight}");
     let event_desc = format!(
         "{:<max_cmd_len$} {}",
         event_highlight,
@@ -997,7 +1051,6 @@ fn format_cmd_desc(
     let style = get_subhead_style();
 
     let cmd_highlight = style.paint(format!("{cmd:?}"));
-    let cmd_highlight = format!("{cmd_highlight}");
     match cmd {
         EditCommand::MoveToStart { select }
         | EditCommand::MoveToLineStart { select }

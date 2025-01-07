@@ -1,5 +1,5 @@
 use crate::{
-    clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, ColorSupport, Level, Lvl,
+    clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, Color, ColorSupport, Level, Lvl,
     TermTheme, ThagError, ThagResult, Verbosity, V,
 };
 use crate::{profile, profile_method};
@@ -503,7 +503,7 @@ pub struct Colors {
 impl Default for Colors {
     fn default() -> Self {
         Self {
-            color_support: ColorSupport::AutoDetect,
+            color_support: ColorSupport::Undetermined,
             term_theme: TermTheme::Undetermined,
         }
     }
@@ -689,7 +689,7 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
         fs::create_dir_all(dir_path)?;
 
         cprtln!(
-            &nu_ansi_term::Color::Yellow.bold(),
+            &Color::yellow().bold(), // using our Color type
             "No configuration file found at {}. Creating one using system defaults...",
             config_path.display()
         );

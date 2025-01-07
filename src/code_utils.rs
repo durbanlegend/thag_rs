@@ -3,8 +3,6 @@
     clippy::implicit_return,
     clippy::missing_trait_methods
 )]
-#[cfg(not(feature = "color_support"))]
-use crate::cprtln;
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;

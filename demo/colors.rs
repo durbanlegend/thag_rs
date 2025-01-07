@@ -111,7 +111,7 @@ pub fn main() {
                 V::N,
                 "Colour support={support:?}, term_theme={term_theme:?}"
             );
-            cvprtln!(&Lvl::WARN, V::N, "Colored Warning message\n");
+            cvprtln!(Lvl::WARN, V::N, "Colored Warning message\n");
         }
     }
 }

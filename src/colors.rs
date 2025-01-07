@@ -210,15 +210,15 @@ macro_rules! generate_styles {
                 fn from(style_enum: &$style_enum) -> Self {
                     profile_method!("style_from_style_enum");
                     match style_enum {
-                        $style_enum::Error => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Error))).bold(),
-                        $style_enum::Warning => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Warning))).bold(),
-                        $style_enum::Emphasis => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Emphasis))).bold(),
-                        $style_enum::Heading => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Heading))).bold(),
-                        $style_enum::Subheading => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Subheading))).bold(),
-                        $style_enum::Bright => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Bright))).bold(),
-                        $style_enum::Normal => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Normal))),
-                        $style_enum::Debug => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Debug))),
-                        $style_enum::Ghost => Style::from(nu_ansi_term::Color::Fixed(u8::from(&Lvl::Ghost))).italic(),
+                        $style_enum::Error => Style::from(Color::Fixed(u8::from(&Lvl::Error))).bold(),
+                        $style_enum::Warning => Style::from(Color::Fixed(u8::from(&Lvl::Warning))).bold(),
+                        $style_enum::Emphasis => Style::from(Color::Fixed(u8::from(&Lvl::Emphasis))).bold(),
+                        $style_enum::Heading => Style::from(Color::Fixed(u8::from(&Lvl::Heading))).bold(),
+                        $style_enum::Subheading => Style::from(Color::Fixed(u8::from(&Lvl::Subheading))).bold(),
+                        $style_enum::Bright => Style::from(Color::Fixed(u8::from(&Lvl::Bright))).bold(),
+                        $style_enum::Normal => Style::from(Color::Fixed(u8::from(&Lvl::Normal))),
+                        $style_enum::Debug => Style::from(Color::Fixed(u8::from(&Lvl::Debug))),
+                        $style_enum::Ghost => Style::from(Color::Fixed(u8::from(&Lvl::Ghost))).italic(),
                     }
                 }
             }

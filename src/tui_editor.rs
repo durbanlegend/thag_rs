@@ -1178,7 +1178,7 @@ pub fn display_popup(
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
         } else {
-            widget = widget.fg(Color::Indexed(u8::from(&Lvl::SUBH))).not_bold();
+            widget = widget.fg(Color::Indexed(u8::from(&Lvl::HEAD))).not_bold();
         }
         f.render_widget(widget, cells[0]);
         let mut widget = Paragraph::new(mappings[i].desc);
@@ -1190,7 +1190,7 @@ pub fn display_popup(
         } else {
             widget = widget.remove_modifier(Modifier::BOLD).set_style(
                 RataStyle::default()
-                    .fg(Color::Indexed(u8::from(&Lvl::NORM)))
+                    .fg(Color::Indexed(u8::from(&Lvl::BRI)))
                     .not_bold(),
             );
         }

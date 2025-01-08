@@ -28,16 +28,19 @@ mod tests {
     }
 
     #[test]
-    fn test_styling_term_attributes_init() {
+    fn test_styling_term_attributes_init_default() {
         // Test default initialization
-        let attrs = TermAttributes::initialize(&ColorInitStrategy::Default);
+        let attrs = TermAttributes::initialize(ColorInitStrategy::Default);
         assert!(matches!(attrs.color_support, ColorSupport::Ansi16));
         assert!(matches!(attrs.theme, TermTheme::Dark));
+    }
 
+    #[test]
+    fn test_styling_term_attributes_init_config() {
         // Test explicit configuration
-        let attrs = TermAttributes::initialize(&ColorInitStrategy::Configure(
-            &ColorSupport::Xterm256,
-            &TermTheme::Light,
+        let attrs = TermAttributes::initialize(ColorInitStrategy::Configure(
+            ColorSupport::Xterm256,
+            TermTheme::Light,
         ));
         eprintln!("attrs.color_support={0:#?}", attrs.color_support);
         assert!(matches!(attrs.color_support, ColorSupport::Xterm256));

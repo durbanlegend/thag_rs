@@ -410,8 +410,8 @@ impl TermAttributes {
     ///
     /// // Configure explicitly
     /// let attrs = TermAttributes::initialize(&ColorInitStrategy::Configure(
-    ///     &ColorSupport::Ansi16,
-    ///     &TermTheme::Dark
+    ///     ColorSupport::Ansi16,
+    ///     TermTheme::Dark
     /// ));
     /// ```
     pub fn initialize(strategy: ColorInitStrategy) -> &'static Self {
@@ -709,12 +709,9 @@ mod tests {
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
 
     impl TermAttributes {
-        fn with_mock_theme(
-            color_support: &'static ColorSupport,
-            theme: &'static TermTheme,
-        ) -> Self {
+        fn with_mock_theme(color_support: ColorSupport, theme: TermTheme) -> Self {
             MOCK_THEME_DETECTION.store(true, Ordering::SeqCst);
-            Self::new(&color_support, &theme)
+            Self::new(color_support, theme)
         }
     }
 
@@ -745,25 +742,25 @@ mod tests {
     #[test]
     fn test_styling_default_theme_with_mock() {
         init_test();
-        let term_attrs = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
+        let term_attrs = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
         let defaulted = term_attrs.get_theme();
-        assert_eq!(defaulted, &TermTheme::Dark);
+        assert_eq!(defaulted, TermTheme::Dark);
         println!();
         flush_test_output();
     }
 
     #[test]
     fn test_styling_no_color_support() {
-        let term_attrs = TermAttributes::with_mock_theme(&ColorSupport::None, &TermTheme::Dark);
+        let term_attrs = TermAttributes::with_mock_theme(ColorSupport::None, TermTheme::Dark);
         let style = term_attrs.style_for_level(Level::Error);
         assert_eq!(style.paint("test"), "test"); // Should have no ANSI codes
     }
 
     #[test]
     fn test_styling_color_support_levels() {
-        let none = TermAttributes::with_mock_theme(&ColorSupport::None, &TermTheme::Dark);
-        let basic = TermAttributes::with_mock_theme(&ColorSupport::Ansi16, &TermTheme::Dark);
-        let full = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
+        let none = TermAttributes::with_mock_theme(ColorSupport::None, TermTheme::Dark);
+        let basic = TermAttributes::with_mock_theme(ColorSupport::Ansi16, TermTheme::Dark);
+        let full = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
 
         let test_level = Level::Error;
 
@@ -785,9 +782,8 @@ mod tests {
 
     #[test]
     fn test_styling_theme_variations() {
-        let attrs_light =
-            TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Light);
-        let attrs_dark = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
+        let attrs_light = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Light);
+        let attrs_dark = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
 
         let heading_light = attrs_light.style_for_level(Level::Heading).paint("test");
         let heading_dark = attrs_dark.style_for_level(Level::Heading).paint("test");
@@ -798,7 +794,7 @@ mod tests {
 
     #[test]
     fn test_styling_level_styling() {
-        let attrs = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
+        let attrs = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
 
         // Test each level has distinct styling
         let styles: Vec<String> = vec![
@@ -831,7 +827,7 @@ mod tests {
 
     #[test]
     fn test_styling_style_attributes() {
-        let attrs = TermAttributes::with_mock_theme(&ColorSupport::Xterm256, &TermTheme::Dark);
+        let attrs = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
 
         // Error should be bold
         let error_style = attrs.style_for_level(Level::Error).paint("test");

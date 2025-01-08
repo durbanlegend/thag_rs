@@ -71,6 +71,7 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  Consider further refactor of log_color into term_aware vs log_color and eventually term_aware (incl supports_color) vs log_color?
          And change feature name from color_support to term_aware or themed.
+- [ ]  Fix u8 conversion.
 - [ ]  Consider script to reverse-engineer xterm OSC sequences.
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.

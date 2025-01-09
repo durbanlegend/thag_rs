@@ -213,50 +213,23 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     } {
         #[cfg(debug_assertions)]
         {
-            #[cfg(feature = "color_support")]
             cvlog_emphasis!(V::V, "Parsed to syn::File");
-            #[cfg(not(feature = "color_support"))]
-            vlog!(
-                V::V,
-                "{}",
-                crate::Color::light_cyan()
-                    .bold()
-                    .paint("Parsed to syn::File")
-            );
+            debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         }
-        #[cfg(debug_assertions)]
-        debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         Some(Ast::File(tree))
     } else if let Ok(tree) = {
         profile_section!("to_ast_syn_parse_expr");
         extract_ast_expr(source_code)
     } {
         #[cfg(debug_assertions)]
-        #[cfg(feature = "color_support")]
-        cvlog_emphasis!(V::V, "Parsed to syn::Expr");
-        #[cfg(not(feature = "color_support"))]
-        vlog!(
-            V::V,
-            "{}",
-            crate::Color::light_cyan()
-                .bold()
-                .paint("Parsed to syn::Expr")
-        );
-        #[cfg(debug_assertions)]
-        debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
+        {
+            cvlog_emphasis!(V::V, "Parsed to syn::Expr");
+            debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
+        }
         Some(Ast::Expr(tree))
     } else {
-        #[cfg(feature = "color_support")]
         cvlog_warning!(V::V,
             "Error parsing syntax tree for `{sourch_path_string}`. Using `rustfmt` to help you debug the script."
-        );
-        #[cfg(not(feature = "color_support"))]
-        vlog!(
-            V::V,
-            "{}",
-            crate::Color::light_yellow()
-                .bold()
-                .paint("Error parsing syntax tree for `{sourch_path_string}`. Using `rustfmt` to help you debug the script.")
         );
         rustfmt(sourch_path_string);
 

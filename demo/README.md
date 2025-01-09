@@ -4819,15 +4819,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_
 
 ### Script: styling_demo.rs
 
-**Description:**  Demonstrates the colour and styling options, of `thag_rs`.
-
- TODO: Demo the full 256-colour palette as per 'demo/colors*.rs`, perhaps using `owo-colors`.
+**Description:**  Demonstrates the colour and styling options of `thag_rs`.
+ Also demos the full 256-colour palette as per 'demo/colors*.rs`.
 
  E.g. `thag demo/styling_demo.rs`
 
 **Purpose:** Demonstrate and test the look of available colour palettes and styling settings.
 
-**Crates:** `ansi_term`, `strum`, `thag_rs`
+**Crates:** `nu_ansi_term`, `strum`, `thag_rs`
 
 **Type:** Program
 

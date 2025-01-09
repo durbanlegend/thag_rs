@@ -108,11 +108,10 @@ pub mod manifest;
 // Terminal-based user interface components
 //-----------------------------------------------------------------------------
 /// Configuration loader
-#[cfg(any(feature = "color_support", feature = "build"))]
 pub mod config;
 /// Assess terminal capabilities and current theme
 #[cfg(feature = "color_detect")]
-pub mod terminal; // Alternative lightweight logging
+pub mod terminal; // Colour support and theme detection
 
 /// TUI file dialog
 #[cfg(feature = "tui")]

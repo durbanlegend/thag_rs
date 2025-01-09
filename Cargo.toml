@@ -80,7 +80,7 @@ win32console = "0.1.5"
 winapi = "0.3.9"
 
 [profile.dev]
-opt-level = 1            # Use slightly better optimizations.
+# opt-level = 1            # Use slightly better optimizations.
 debug = false
 debug-assertions = false
 incremental = true
@@ -116,7 +116,7 @@ format_snippet = []
 default = ["full", "simplelog"]
 
 ## Full house with fringe exceptions - combines the `build`, `color_support`, `core`, `repl` and `tui` features.
-full = ["build", "color_support", "core", "repl", "tui"]
+full = ["build", "color_detect", "core", "repl", "tui"]
 
 # Logging features - these are mutually exclusive
 ## Choice of `simplelog` vs. `env_logger`.
@@ -161,18 +161,14 @@ color_detect = [
     "toml_edit",
 ]
 
-## Message colouring tailored to a choice of 9 message levels, in combination with your terminal's capabilities and current theme. Gives access to the `cvprtln` macro.
-## Involves the following dependencies: `crossterm`, `edit`, `core`, `mockall`, `nu-ansi-term`, `scopeguard`, `serde_with`, `supports-color`, `termbg`, `toml` and `toml_edit`.
-color_support = ["color_detect"]
-
-## Full build features. Involves the `color_support` and `core` features, and the following dependencies:
+## Full build features. Involves the `color_detect` and `core` features, and the following dependencies:
 ## `bitflags`, `cargo-lookup`, `cargo_toml`, `clap`, `prettyplease`, `quote`, `serde_merge`, `side-by-side-diff` and `syn`.
 build = [
     "bitflags",
     "cargo-lookup",
     "cargo_toml",
     "clap",
-    "color_support",
+    "color_detect",
     "core",
     "prettyplease",
     "quote",

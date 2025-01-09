@@ -408,10 +408,10 @@ impl TermAttributes {
     /// use thag_rs::styling::{TermAttributes, ColorInitStrategy, ColorSupport, TermTheme};
     ///
     /// // Use default settings
-    /// let attrs = TermAttributes::initialize(&ColorInitStrategy::Default);
+    /// let attrs = TermAttributes::initialize(ColorInitStrategy::Default);
     ///
     /// // Configure explicitly
-    /// let attrs = TermAttributes::initialize(&ColorInitStrategy::Configure(
+    /// let attrs = TermAttributes::initialize(ColorInitStrategy::Configure(
     ///     ColorSupport::Ansi16,
     ///     TermTheme::Dark
     /// ));
@@ -478,7 +478,7 @@ impl TermAttributes {
     /// ```
     /// use thag_rs::styling::{TermAttributes, Level};
     ///
-    /// let attrs = TermAttributes::get();
+    /// let attrs = TermAttributes::get_or_default();
     /// let error_style = attrs.style_for_level(Level::Error);
     /// println!("{}", error_style.paint("This is an error message"));
     /// ```

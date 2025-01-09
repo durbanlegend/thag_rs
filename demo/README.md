@@ -676,18 +676,22 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 ### Script: colors.rs
 
-**Description:**  Runner for current version of `src/colors.rs`, as it's become too enmeshed with other modules to split out nicely.
- We just borrow the main method here and add all the necessary dependencies and imports.
+**Description:**  The final version of `thag_rs`'s `colors` module to style messages according to their type.
+ Now superseded by the lighter-weight `styling` module. Like the `stdin` module, `colors`
+ was originally developed here as a separate script and integrated as a module later.
+
+ This demo is not guaranteed to be up to date with the current styling used by `thag` itself.
+ For that see `demo/styling_demo.rs`.
 
  E.g. `thag demo/colors.rs`
 
-**Purpose:** Test the look of the various colours.
+**Purpose:** Demonstrate and test the look of available colour palettes and styling settings.
 
-**Crates:** `nu_ansi_term`, `strum`, `termbg`, `thag_rs`
+**Crates:** `crossterm`, `documented`, `log`, `nu_ansi_term`, `ratatui`, `scopeguard`, `serde`, `strum`, `supports_color`, `termbg`, `thag_rs`
 
 **Type:** Program
 
-**Categories:** testing
+**Categories:** prototype, reference, testing
 
 **Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
 
@@ -709,7 +713,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 **Type:** Program
 
-**Categories:** prototype, technique
+**Categories:** prototype, reference, testing
 
 **Link:** [colors_old.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs)
 
@@ -731,7 +735,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 **Type:** Program
 
-**Categories:** prototype, technique
+**Categories:** prototype, reference, testing
 
 **Link:** [colors_orig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_orig.rs)
 
@@ -1210,7 +1214,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct
 
 ### Script: debug_get_theme.rs
 
-**Description:**  Debug an integration test case.
+**Description:**  Debug an integration test case. This switches on debug logging
 
 **Purpose:** Demo debugging a test case without the Cargo harness.
 
@@ -2523,52 +2527,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme.rs
-```
-
----
-
-### Script: git_dependency.rs
-
-**Description:**  Demo the use of git dependencies in the toml block. Local path dependencies
- work the same way, e.g. `thag_rs = { path = "<path/to-project>/thag_rs" },
- but obviously the path literal will be specific to your environment.
-
-**Purpose:** Demo `git` dependencies, explain `path` dependencies.
-
-**Crates:** `thag_rs`
-
-**Type:** Program
-
-**Categories:** technique
-
-**Link:** [git_dependency.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency.rs
-```
-
----
-
-### Script: git_dependency_snippet.rs
-
-**Description:**  `demo/git_dependency.rs` done as a snippet, just because.
-
-**Purpose:** Demo `git` dependencies as a snippet.
-
-**Crates:** `thag_rs`
-
-**Type:** Snippet
-
-**Categories:** technique
-
-**Link:** [git_dependency_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency_snippet.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency_snippet.rs
 ```
 
 ---
@@ -4855,6 +4813,32 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_gpt.rs -- -- -Vt dummy.rs 1 2 3
+```
+
+---
+
+### Script: styling_demo.rs
+
+**Description:**  Demonstrates the colour and styling options, of `thag_rs`.
+
+ TODO: Demo the full 256-colour palette as per 'demo/colors*.rs`, perhaps using `owo-colors`.
+
+ E.g. `thag demo/styling_demo.rs`
+
+**Purpose:** Demonstrate and test the look of available colour palettes and styling settings.
+
+**Crates:** `ansi_term`, `strum`, `thag_rs`
+
+**Type:** Program
+
+**Categories:** prototype, reference, testing
+
+**Link:** [styling_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/styling_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/styling_demo.rs
 ```
 
 ---

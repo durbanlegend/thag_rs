@@ -649,7 +649,7 @@ pub fn get_context() -> Arc<dyn Context> {
 /// # Errors
 ///
 /// This function will return an error if it either finds a file and fails to read it,
-/// or reads the file and fails to parse it..
+/// or reads the file and fails to parse it.
 pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     profile!("load");
     let config_path = context.get_config_path();

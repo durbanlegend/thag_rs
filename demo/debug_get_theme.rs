@@ -83,14 +83,14 @@ fn main() {
 
         // First theme detection with timeout
         let start = Instant::now();
-        let log_color1 = TermAttributes::initialize(&strategy);
+        let log_color1 = TermAttributes::initialize(strategy.clone());
         let handle = std::thread::spawn(move || log_color1.get_theme());
         let first_theme = loop {
             if handle.is_finished() {
                 break handle.join().unwrap();
             }
             if start.elapsed() > timeout {
-                break &TermTheme::Dark; // Default on timeout
+                break TermTheme::Dark; // Default on timeout
             }
             std::thread::sleep(Duration::from_millis(10));
         };
@@ -99,7 +99,7 @@ fn main() {
 
         // Second theme detection
         let start = Instant::now();
-        let log_color2 = TermAttributes::initialize(&strategy);
+        let log_color2 = TermAttributes::initialize(strategy);
         let handle = std::thread::spawn(move || log_color2.get_theme());
 
         let second_theme = loop {
@@ -107,7 +107,7 @@ fn main() {
                 break handle.join().unwrap();
             }
             if start.elapsed() > timeout {
-                break &TermTheme::Dark; // Default on timeout
+                break TermTheme::Dark; // Default on timeout
             }
             std::thread::sleep(Duration::from_millis(10));
         };

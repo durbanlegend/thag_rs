@@ -12,25 +12,20 @@ use crate::terminal;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ColorInfo {
     pub ansi: &'static str,
-    pub index: Option<u8>, // Store the original color index if it exists
+    pub index: u8, // Store the original color index
 }
 
 impl ColorInfo {
     #[must_use]
-    pub const fn new(ansi: &'static str, index: Option<u8>) -> Self {
+    pub const fn new(ansi: &'static str, index: u8) -> Self {
         Self { ansi, index }
-    }
-
-    #[must_use]
-    pub const fn basic(ansi: &'static str) -> Self {
-        Self::new(ansi, None)
     }
 
     #[must_use]
     pub fn indexed(index: u8) -> Self {
         Self::new(
             Box::leak(format!("\x1b[38;5;{index}m").into_boxed_str()),
-            Some(index),
+            index,
         )
     }
 }
@@ -115,7 +110,7 @@ impl Style {
         Self {
             foreground: Some(ColorInfo {
                 ansi: Box::leak(format!("\x1b[38;5;{index}m").into_boxed_str()),
-                index: Some(index),
+                index,
             }),
             ..Default::default()
         }
@@ -132,30 +127,38 @@ pub struct Color;
 
 #[allow(dead_code)]
 impl Color {
-    // Basic colors (ANSI 16)
-    const BLACK: &'static str = "\x1b[30m";
-    const RED: &'static str = "\x1b[31m";
-    const GREEN: &'static str = "\x1b[32m";
-    const YELLOW: &'static str = "\x1b[33m";
-    const BLUE: &'static str = "\x1b[34m";
-    const MAGENTA: &'static str = "\x1b[35m";
-    const CYAN: &'static str = "\x1b[36m";
-    const WHITE: &'static str = "\x1b[37m";
+    // Basic ANSI 16 colors (indices 0-15)
+    const BLACK: &'static str = "\x1b[30m"; // index 0
+    const RED: &'static str = "\x1b[31m"; // index 1
+    const GREEN: &'static str = "\x1b[32m"; // index 2
+    const YELLOW: &'static str = "\x1b[33m"; // index 3
+    const BLUE: &'static str = "\x1b[34m"; // index 4
+    const MAGENTA: &'static str = "\x1b[35m"; // index 5
+    const CYAN: &'static str = "\x1b[36m"; // index 6
+    const WHITE: &'static str = "\x1b[37m"; // index 7
 
-    // Bright colors
-    const DARK_GRAY: &'static str = "\x1b[90m";
-    const LIGHT_RED: &'static str = "\x1b[91m";
-    const LIGHT_GREEN: &'static str = "\x1b[92m";
-    const LIGHT_YELLOW: &'static str = "\x1b[93m";
-    const LIGHT_BLUE: &'static str = "\x1b[94m";
-    const LIGHT_MAGENTA: &'static str = "\x1b[95m";
-    const LIGHT_CYAN: &'static str = "\x1b[96m";
-    const LIGHT_GRAY: &'static str = "\x1b[97m";
+    // Bright colors (indices 8-15)
+    const DARK_GRAY: &'static str = "\x1b[90m"; // index 8
+    const LIGHT_RED: &'static str = "\x1b[91m"; // index 9
+    const LIGHT_GREEN: &'static str = "\x1b[92m"; // index 10
+    const LIGHT_YELLOW: &'static str = "\x1b[93m"; // index 11
+    const LIGHT_BLUE: &'static str = "\x1b[94m"; // index 12
+    const LIGHT_MAGENTA: &'static str = "\x1b[95m"; // index 13
+    const LIGHT_CYAN: &'static str = "\x1b[96m"; // index 14
+    const LIGHT_GRAY: &'static str = "\x1b[97m"; // index 15
+
+    #[must_use]
+    pub fn black() -> Style {
+        Style {
+            foreground: Some(ColorInfo::new(Self::BLACK, 0)),
+            ..Default::default()
+        }
+    }
 
     #[must_use]
     pub fn red() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::RED)),
+            foreground: Some(ColorInfo::new(Self::RED, 1)),
             ..Default::default()
         }
     }
@@ -163,7 +166,7 @@ impl Color {
     #[must_use]
     pub fn green() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::GREEN)),
+            foreground: Some(ColorInfo::new(Self::GREEN, 2)),
             ..Default::default()
         }
     }
@@ -171,7 +174,7 @@ impl Color {
     #[must_use]
     pub fn yellow() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::YELLOW)),
+            foreground: Some(ColorInfo::new(Self::YELLOW, 3)),
             ..Default::default()
         }
     }
@@ -179,7 +182,7 @@ impl Color {
     #[must_use]
     pub fn blue() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::BLUE)),
+            foreground: Some(ColorInfo::new(Self::BLUE, 4)),
             ..Default::default()
         }
     }
@@ -187,7 +190,7 @@ impl Color {
     #[must_use]
     pub fn magenta() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::MAGENTA)),
+            foreground: Some(ColorInfo::new(Self::MAGENTA, 5)),
             ..Default::default()
         }
     }
@@ -195,7 +198,7 @@ impl Color {
     #[must_use]
     pub fn cyan() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::CYAN)),
+            foreground: Some(ColorInfo::new(Self::CYAN, 6)),
             ..Default::default()
         }
     }
@@ -203,7 +206,7 @@ impl Color {
     #[must_use]
     pub fn white() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::WHITE)),
+            foreground: Some(ColorInfo::new(Self::WHITE, 7)),
             ..Default::default()
         }
     }
@@ -211,7 +214,7 @@ impl Color {
     #[must_use]
     pub fn dark_gray() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::DARK_GRAY)),
+            foreground: Some(ColorInfo::new(Self::DARK_GRAY, 8)),
             ..Default::default()
         }
     }
@@ -219,7 +222,7 @@ impl Color {
     #[must_use]
     pub fn light_yellow() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::LIGHT_YELLOW)),
+            foreground: Some(ColorInfo::new(Self::LIGHT_YELLOW, 11)),
             ..Default::default()
         }
     }
@@ -227,7 +230,7 @@ impl Color {
     #[must_use]
     pub fn light_cyan() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::LIGHT_CYAN)),
+            foreground: Some(ColorInfo::new(Self::LIGHT_CYAN, 14)),
             ..Default::default()
         }
     }
@@ -235,7 +238,7 @@ impl Color {
     #[must_use]
     pub fn light_gray() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::LIGHT_GRAY)),
+            foreground: Some(ColorInfo::new(Self::LIGHT_GRAY, 15)),
             ..Default::default()
         }
     }
@@ -352,20 +355,19 @@ impl Lvl {
     pub const GHST: Self = Self::Ghost;
 }
 
+impl Level {
+    #[must_use]
+    pub fn color_index(&self) -> u8 {
+        let term_attrs = TermAttributes::get_or_default();
+        let style = term_attrs.style_for_level(*self);
+        style.foreground.map_or(7, |color_info| color_info.index) // 7 = white as fallback
+    }
+}
+
 // We can implement conversions to u8 directly here
 impl From<&Level> for u8 {
     fn from(level: &Level) -> Self {
-        match level {
-            Level::Error => 160,     // GuardsmanRed
-            Level::Warning => 164,   // DarkPurplePizzazz
-            Level::Heading => 10,    // UserBrightGreen
-            Level::Subheading => 26, // ScienceBlue
-            Level::Emphasis => 173,  // Copperfield
-            Level::Bright => 46,     // Green
-            Level::Normal => 16,     // Black
-            Level::Debug => 32,      // LochmaraBlue
-            Level::Ghost => 232,     // DarkCodGray
-        }
+        level.color_index()
     }
 }
 
@@ -427,12 +429,29 @@ impl TermAttributes {
         })
     }
 
-    /// Gets or initializes the global `TermAttributes` instance with default settings
-    ///
-    /// This is a convenience method that initializes with `ColorInitStrategy::Default`
-    /// if the instance hasn't been initialized yet.
-    pub fn get() -> &'static Self {
+    pub fn is_initialized() -> bool {
+        INSTANCE.get().is_some()
+    }
+
+    /// Attempts to get the `TermAttributes` instance, returning None if not initialized
+    pub fn try_get() -> Option<&'static Self> {
+        INSTANCE.get()
+    }
+
+    /// Gets the `TermAttributes` instance or returns a default (Ansi16/Dark) instance
+    pub fn get_or_default() -> &'static Self {
         INSTANCE.get_or_init(|| Self::new(ColorSupport::Ansi16, TermTheme::Dark))
+    }
+
+    /// Gets the global `TermAttributes` instance, panicking if it hasn't been initialized
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `initialize` hasn't been called first
+    pub fn get() -> &'static Self {
+        INSTANCE
+            .get()
+            .expect("TermAttributes not initialized. Call initialize() first")
     }
 
     #[must_use]
@@ -477,7 +496,7 @@ impl TermAttributes {
     }
 
     /// Returns the style for basic (16-color) light theme
-    fn basic_light_style(level: Level) -> Style {
+    pub fn basic_light_style(level: Level) -> Style {
         match level {
             Level::Error => Color::red().bold(),
             Level::Warning => Color::magenta().bold(),
@@ -492,7 +511,7 @@ impl TermAttributes {
     }
 
     /// Returns the style for basic (16-color) dark theme
-    fn basic_dark_style(level: Level) -> Style {
+    pub fn basic_dark_style(level: Level) -> Style {
         match level {
             Level::Error => Color::red().bold(),
             Level::Warning => Color::yellow().bold(),
@@ -507,7 +526,7 @@ impl TermAttributes {
     }
 
     /// Returns the style for full (256-color) light theme
-    fn full_light_style(level: Level) -> Style {
+    pub fn full_light_style(level: Level) -> Style {
         match level {
             Level::Error => Color::fixed(160).bold(),    // GuardsmanRed
             Level::Warning => Color::fixed(164).bold(),  // DarkPurplePizzazz
@@ -522,7 +541,7 @@ impl TermAttributes {
     }
 
     /// Returns the style for full (256-color) dark theme
-    fn full_dark_style(level: Level) -> Style {
+    pub fn full_dark_style(level: Level) -> Style {
         match level {
             Level::Error => Color::fixed(1).bold(),      // UserRed
             Level::Warning => Color::fixed(171).bold(),  // LighterHeliotrope
@@ -551,7 +570,9 @@ impl TermAttributes {
 
 #[must_use]
 pub fn style_string(lvl: Level, string: &str) -> String {
-    TermAttributes::get().style_for_level(lvl).paint(string)
+    TermAttributes::get_or_default()
+        .style_for_level(lvl)
+        .paint(string)
 }
 
 // Convenience macros
@@ -565,7 +586,7 @@ pub fn style_string(lvl: Level, string: &str) -> String {
 macro_rules! cvprtln {
     ($level:expr, $verbosity:expr, $($arg:tt)*) => {{
         if $verbosity <= $crate::logging::get_verbosity() {
-            let term_attrs = $crate::styling::TermAttributes::get();
+            let term_attrs = $crate::styling::TermAttributes::get_or_default();
             let style = term_attrs.style_for_level($level);
             let content = format!($($arg)*);
             let verbosity = $crate::logging::get_verbosity();
@@ -578,7 +599,7 @@ macro_rules! cvprtln {
 macro_rules! clog {
     ($level:expr, $($arg:tt)*) => {{
         if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
-            let attrs = $crate::styling::TermAttributes::get();
+            let attrs = $crate::styling::TermAttributes::get_or_default();
             let style = attrs.style_for_level($level);
             println!("{}", style.paint(format!($($arg)*)));
         }

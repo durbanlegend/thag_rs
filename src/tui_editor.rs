@@ -488,9 +488,7 @@ impl From<&crate::styling::Style> for RataStyle {
         let mut rata_style = Self::default();
 
         if let Some(color_info) = &style.foreground {
-            if let Some(index) = color_info.index {
-                rata_style = rata_style.fg(ratatui::style::Color::Indexed(index));
-            }
+            rata_style = rata_style.fg(ratatui::style::Color::Indexed(color_info.index));
         }
 
         if style.bold {
@@ -1178,7 +1176,7 @@ pub fn display_popup(
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
         } else {
-            widget = widget.fg(Color::Indexed(u8::from(&Lvl::HEAD))).not_bold();
+            widget = widget.fg(Color::Indexed(u8::from(&Lvl::SUBH))).not_bold();
         }
         f.render_widget(widget, cells[0]);
         let mut widget = Paragraph::new(mappings[i].desc);
@@ -1190,7 +1188,7 @@ pub fn display_popup(
         } else {
             widget = widget.remove_modifier(Modifier::BOLD).set_style(
                 RataStyle::default()
-                    .fg(Color::Indexed(u8::from(&Lvl::BRI)))
+                    .fg(Color::Indexed(u8::from(&Lvl::NORM)))
                     .not_bold(),
             );
         }

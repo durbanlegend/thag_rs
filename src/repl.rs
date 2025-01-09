@@ -38,30 +38,7 @@ use tui_textarea::{Input, TextArea};
 
 impl From<&ColorInfo> for NuColor {
     fn from(color_info: &ColorInfo) -> Self {
-        if let Some(index) = color_info.index {
-            return Self::Fixed(index);
-        }
-
-        // Map basic ANSI colors
-        match color_info.ansi {
-            "\x1b[30m" => Self::Black,
-            "\x1b[31m" => Self::Red,
-            "\x1b[32m" => Self::Green,
-            "\x1b[33m" => Self::Yellow,
-            "\x1b[34m" => Self::Blue,
-            "\x1b[35m" => Self::Magenta,
-            "\x1b[36m" => Self::Cyan,
-            "\x1b[37m" => Self::White,
-            "\x1b[90m" => Self::DarkGray,
-            "\x1b[91m" => Self::LightRed,
-            "\x1b[92m" => Self::LightGreen,
-            "\x1b[93m" => Self::LightYellow,
-            "\x1b[94m" => Self::LightBlue,
-            "\x1b[95m" => Self::LightMagenta,
-            "\x1b[96m" => Self::LightCyan,
-            "\x1b[97m" => Self::LightGray,
-            _ => Self::Default,
-        }
+        Self::Fixed(color_info.index)
     }
 }
 
@@ -307,12 +284,18 @@ impl Prompt for ReplPrompt {
 
 fn get_heading_style() -> &'static Style {
     profile!("get_heading_style");
-    lazy_static_var!(Style, TermAttributes::get().style_for_level(Lvl::HEAD))
+    lazy_static_var!(
+        Style,
+        TermAttributes::get_or_default().style_for_level(Lvl::HEAD)
+    )
 }
 
 fn get_subhead_style() -> &'static Style {
     profile!("get_subhead_style");
-    lazy_static_var!(Style, TermAttributes::get().style_for_level(Lvl::SUBH))
+    lazy_static_var!(
+        Style,
+        TermAttributes::get_or_default().style_for_level(Lvl::SUBH)
+    )
 }
 
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
@@ -383,7 +366,7 @@ pub fn run_repl(
 
     let edit_mode = Box::new(Emacs::new(keybindings.clone()));
     let mut highlighter = Box::new(ExampleHighlighter::new(cmd_vec.clone()));
-    let term_attrs = TermAttributes::get();
+    let term_attrs = TermAttributes::get_or_default();
     let nu_match = {
         term_attrs
             .style_for_level(Lvl::HEAD)
@@ -613,7 +596,7 @@ fn tui(
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
-    let style = crate::styling::TermAttributes::get().style_for_level(Lvl::SUBH);
+    let style = crate::styling::TermAttributes::get_or_default().style_for_level(Lvl::SUBH);
     let display = KeyDisplay {
         title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: RataStyle::from(&style),
@@ -723,7 +706,7 @@ pub fn edit_history<R: EventReader + Debug>(
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
-    let style = crate::styling::TermAttributes::get().style_for_level(Lvl::SUBH);
+    let style = crate::styling::TermAttributes::get_or_default().style_for_level(Lvl::SUBH);
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: RataStyle::from(&style),

@@ -7,11 +7,55 @@ use crate::styling::{ColorSupport, TermTheme};
 use crate::{lazy_static_var, profile, ThagResult};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use scopeguard::defer;
+use std::io::{stdout, Write};
 use supports_color::Stream;
 use termbg::Theme as TermbgTheme;
 
 #[cfg(debug_assertions)]
 use crate::debug_log;
+
+// fn reset_terminal_state() {
+//     // Create a sequence that should work across terminals
+//     let reset_sequence = format!(
+//         "{}{}{}{}{}{}",
+//         "\x1B[s",    // Save cursor position
+//         "\x1B[?25h", // Show cursor
+//         "\x1B[?7h",  // Enable line wrap
+//         "\x1B[0m",   // Reset attributes
+//         "\x1B[r",    // Reset scroll region
+//         "\x1B[u"     // Restore cursor position
+//     );
+
+//     // Apply to main screen
+//     print!("\x1B[?1049l{}", reset_sequence);
+
+//     // Apply to alternate screen
+//     print!("\x1B[?1049h{}", reset_sequence);
+
+//     // Return to main screen
+//     print!("\x1B[?1049l");
+
+//     let _ = stdout().flush();
+// }
+
+fn reset_terminal_state() {
+    print!("\r");
+    let _ = stdout().flush();
+}
+
+struct TerminalStateGuard;
+
+impl TerminalStateGuard {
+    fn new() -> Self {
+        Self
+    }
+}
+
+impl Drop for TerminalStateGuard {
+    fn drop(&mut self) {
+        reset_terminal_state();
+    }
+}
 
 /// Detects the terminal's color support level
 ///
@@ -40,7 +84,11 @@ pub fn detect_color_support() -> &'static ColorSupport {
         return &ColorSupport::Ansi16;
     }
 
+    reset_terminal_state();
+
     lazy_static_var!(ColorSupport, {
+        let _guard = TerminalStateGuard::new();
+        println!("Checking colour support");
         let raw_before = is_raw_mode_enabled();
         if let Ok(raw_then) = raw_before {
             defer! {
@@ -95,19 +143,19 @@ pub fn detect_color_support() -> &'static ColorSupport {
 /// println!("Terminal theme: {:?}", theme);
 /// ```
 pub fn detect_theme() -> &'static TermTheme {
-    lazy_static_var!(
-        TermTheme,
+    lazy_static_var!(TermTheme, {
+        let _guard = TerminalStateGuard::new();
         detect_theme_internal().unwrap_or(TermTheme::Dark)
-    )
+    })
 }
 
 fn detect_theme_internal() -> Result<TermTheme, termbg::Error> {
-    // Create cleanup guard
     struct RawModeGuard(bool);
     impl Drop for RawModeGuard {
         fn drop(&mut self) {
             if !self.0 {
                 let _ = disable_raw_mode();
+                reset_terminal_state();
             }
         }
     }
@@ -123,7 +171,8 @@ fn detect_theme_internal() -> Result<TermTheme, termbg::Error> {
     let _guard = RawModeGuard(raw_before);
 
     // Now do theme detection
-    let timeout = std::time::Duration::from_millis(1000);
+    println!("Checking terminal theme");
+    let timeout = std::time::Duration::from_millis(500);
     let theme = termbg::theme(timeout)?;
 
     Ok(match theme {

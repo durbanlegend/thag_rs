@@ -16,7 +16,7 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 /// `reedline`, which was already using `nu_ansi_term`.
 ///
 //# Purpose: Demo older alternative implementation of `colors` module using `owo-colors`.
-//# Categories: prototype, technique
+//# Categories: prototype, reference, testing
 use log::debug;
 use owo_ansi::xterm as owo_xterm;
 use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};

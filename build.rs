@@ -121,8 +121,16 @@ fn main() {
 #[test]
 fn check_{test_name}() {{
     {{
+        // Reset terminal state at start
+        print!("\x1B[0m\x1B[?1049l"); // Reset all attributes and exit alternate screen
+
+        set_up();
+
         use std::process::Command;
         let output = Command::new("cargo")
+            // Suppress invoking termbg and supports_color on shared terminal.
+            // This should already be passed by default after call to set_up(), but just making sure.
+            .env("TEST_ENV", "1")
             .arg("run")
             .arg("--")
             .arg("-c{more_options}")
@@ -137,6 +145,9 @@ fn check_{test_name}() {{
                 String::from_utf8_lossy(&output.stderr)
             );
         }}
+        // eprintln!("{{output:?}}");
+        // eprintln!("stdout={{}}", String::from_utf8_lossy(&output.stdout));
+        // eprintln!("stderr={{}}", String::from_utf8_lossy(&output.stderr));
 
         // eprintln!("... finished {source_name}, starting cargo clean");
 
@@ -156,6 +167,9 @@ fn check_{test_name}() {{
         if let Err(e) = fs::remove_dir_all(&target_dir) {{
             eprintln!("Failed to remove directory {test_name}: {{}}, {{e:?}}", target_dir.display());
         }}
+
+        // Reset terminal state after
+        print!("\x1B[0m\x1B[?1049l");
     }}
 }}
 "#,

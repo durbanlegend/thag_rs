@@ -7,6 +7,7 @@ mod tests {
     use std::time::Instant;
     use thag_rs::code_utils::to_ast;
     use thag_rs::manifest::{self, capture_dep, cargo_lookup, configure_default, extract, merge};
+    use thag_rs::styling::{ColorInitStrategy, TermAttributes};
     use thag_rs::{find_crates, find_metadata, BuildState};
 
     // Set environment variables before running tests
@@ -18,6 +19,10 @@ mod tests {
 
     fn init_logger() {
         let _ = env_logger::builder().is_test(true).try_init();
+
+        if !TermAttributes::is_initialized() {
+            TermAttributes::initialize(ColorInitStrategy::Default);
+        }
     }
 
     #[test]

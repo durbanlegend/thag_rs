@@ -14,7 +14,7 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 ///
 /// E.g. `thag demo/colors_old.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
-//# Categories: prototype, technique
+//# Categories: prototype, reference, testing
 use lazy_static::lazy_static;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};

@@ -156,7 +156,7 @@ pub use {
     manifest::extract,
 };
 
-#[cfg(feature = "color_support")]
+#[cfg(feature = "color_detect")]
 pub use {
     config::{
         load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,

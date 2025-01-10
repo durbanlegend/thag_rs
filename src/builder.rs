@@ -1017,10 +1017,18 @@ pub fn generate(
             #[cfg(feature = "format_snippet")]
             {
                 let syntax_tree = syn_parse_file(rs_source)?;
-                prettyplease_unparse(&syntax_tree)
+                &prettyplease_unparse(&syntax_tree)
             }
             #[cfg(not(feature = "format_snippet"))]
-            rs_source.expect("Logic error retrieving rs_source")
+            {
+                if proc_flags.contains(ProcFlags::CARGO) {
+                    // Code needs to be human readable for clippy, test etc.
+                    let syntax_tree = syn_parse_file(rs_source)?;
+                    &prettyplease_unparse(&syntax_tree)
+                } else {
+                    rs_source.expect("Logic error retrieving rs_source")
+                }
+            }
         };
 
         write_source(&target_rs_path, rs_source)?;
@@ -1058,7 +1066,6 @@ pub fn generate(
 }
 
 #[inline]
-#[cfg(feature = "format_snippet")]
 fn syn_parse_file(rs_source: Option<&str>) -> ThagResult<syn::File> {
     profile!("syn_parse_file");
     let syntax_tree = syn::parse_file(rs_source.ok_or("Logic error retrieving rs_source")?)?;
@@ -1066,7 +1073,6 @@ fn syn_parse_file(rs_source: Option<&str>) -> ThagResult<syn::File> {
 }
 
 #[inline]
-#[cfg(feature = "format_snippet")]
 fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
     profile!("prettyplease_unparse");
     prettyplease::unparse(syntax_tree)

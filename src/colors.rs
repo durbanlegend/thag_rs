@@ -929,7 +929,6 @@ pub fn main() {
 
             println!();
 
-            // Convert to title case
             let term_theme_str = term_theme.to_string();
             println!("ANSI-16 color palette in use for {term_theme_str} theme:\n");
             for variant in MessageStyle::iter() {

@@ -102,56 +102,27 @@ name = "thag"
 path = "src/bin/thag_rs.rs"
 
 [features]
+# Core and Logging Features
+core = ["error_handling", "log_impl"] # Foundation for all features
+error_handling = []
+log_impl = []                         # Requires either simplelog or env_logger
 
-## Fringe feature enables debug logging.
-debug-logs = []
-
-## Fringe feature enables nightly Rust.
-nightly = []
-
-## Fringe feature enables formatting the code generated for a snippet, at the cost of some processing time.
-format_snippet = []
-
-## By default, `thag_rs` includes the full range of features and the `simplelog` crate (in lieu of `env_logger`).
-default = ["full", "simplelog"]
-
-## Full house with fringe exceptions - combines the `build`, `color_support`, `core`, `repl` and `tui` features.
-full = ["build", "color_detect", "core", "repl", "tui"]
-
-# Logging features - these are mutually exclusive
-## Choice of `simplelog` vs. `env_logger`.
+# Logging implementations (mutually exclusive)
 simplelog = ["dep:simplelog", "log_impl"]
-
-## Choice of `env_logger` vs. `simplelog`.
 env_logger = ["dep:env_logger", "log_impl"]
 
-# Private feature to ensure only one logger is selected
-## Logging with either `simplelog` or `env_logger`.
-log_impl = []
+# AST and Parsing
+ast = [
+    "core",  # Explicit dependency on core for logging
+    "quote",
+    "syn",
+]
 
-# Core features
-## Combines the `error_handling` and `log_impl` features.
-## Gives access to basic logging, error handling and profiling, including the following macros:
-## `cprtln`, `debug_log`, `lazy_static_var`, `profile`, `profile_method`, `profile_method_detailed`, `profile_section`, `regex`, `vlog`.
-core = ["error_handling", "log_impl"] # Always available
-
-## `ThagError` and `ThagResult` for handling errors consistently.
-error_handling = []
-
-# ## Fringe feature enables `thag_rs` basic lightweight profiling.
-profiling = []
-
-## Abstract Syntax Tree (`syn`) and dependency inference features.
-## Extends the `core` features and involves the `nu-ansi-term`, `quote` and `syn` dependencies.
-ast = ["core", "nu-ansi-term", "quote", "syn"] # Simple script running
-
-## Configuration support
+# Configuration and Color Support
 config = ["core", "edit", "mockall", "serde_with", "toml", "toml_edit"]
 
-## Terminal attributes detection (new)
-## Involves the following dependencies (TODO check): `crossterm`, `edit`, `core`, `mockall`, `nu-ansi-term`, `scopeguard`, `serde_with`, `supports-color`, `termbg`, `toml` and `toml_edit`.
 color_detect = [
-    "config",
+    "config",         # Brings in configuration support
     "crossterm",
     "nu-ansi-term",
     "scopeguard",
@@ -159,36 +130,104 @@ color_detect = [
     "termbg",
 ]
 
-## Full build features. Involves the `color_detect` and `core` features, and the following dependencies:
-## `bitflags`, `cargo-lookup`, `cargo_toml`, `clap`, `prettyplease`, `quote`, `serde_merge`, `side-by-side-diff` and `syn`.
+# Build and Analysis
 build = [
+    "ast",               # For syntax parsing
+    "color_detect",      # For terminal support
     "bitflags",
     "cargo-lookup",
     "cargo_toml",
     "clap",
-    "color_detect",
-    "core",
     "prettyplease",
-    "quote",
     "serde_merge",
     "side-by-side-diff",
-    "syn",
-] # Full dependency analysis
+]
 
-# Advanced features
-## Provides a basic TUI editor with file_backed history for paste-and-run, stdin or promoted REPL expressions.
-## Involves the `build` feature and the following dependencies:
-## `crokey`, `edit`, `ratatui`, `serde_json` and `tui-textarea`.
-tui = ["crokey", "edit", "build", "ratatui", "serde_json", "tui-textarea"]
+# UI Features
+tui = [
+    "build",        # Full build capabilities
+    "crokey",
+    "edit",
+    "ratatui",
+    "serde_json",
+    "tui-textarea",
+]
 
-## Provides a REPL function with file_backed history and the possibility to promote expressions to snippets and
-## from there save them as scripts if desired.
-## Involves the `tui` feature and the `reedline` dependency.
-repl = ["reedline", "tui"]
-# file_dialog = ["tui"]
+repl = [
+    "tui",          # Includes all TUI features
+    "nu-ansi-term",
+    "reedline",
+]
 
-# Optional integrations
-# clipboard = ["arboard"]
+# Feature Bundles
+full = ["repl"] # Simplified as repl includes everything
+
+# Default Configuration
+default = ["full", "simplelog"] # Full features with simplelog
+
+# Optional/Debug Features
+debug-logs = []
+nightly = []
+format_snippet = []
+profiling = []
+
+# Feature dependency tree:
+#
+# default
+# └── full
+#     └── repl
+#         └── tui
+#             └── build
+#                 ├── ast
+#                 │   ├── core  ★                # Fundamental feature set
+#                 │   │   ├── error_handling     # Error types and handling
+#                 │   │   └── log_impl           # Basic logging infrastructure
+#                 │   │       └── (simplelog | env_logger)
+#                 │   ├── quote
+#                 │   └── syn
+#                 └── color_detect
+#                     └── config
+#                         ├── core  ★ (shared)   # Core features required here too
+#                         ├── edit
+#                         ├── mockall
+#                         ├── serde_with
+#                         └── toml/toml_edit
+#
+# Core Feature Set (★):
+# - Basic logging and error handling
+# - Essential macros: cvprtln, cprtln, debug_log, lazy_static_var, vlog
+# - Profiling instrumentation macros: profile, profile_method, profile_section
+# - Fundamental types and traits
+#
+# Optional features:
+# - profiling     # Enables profiling output (instrumentation always available in core)
+# - debug-logs
+# - nightly
+# - format_snippet
+#
+# Common Usage Patterns:
+# 1. Just core functionality:
+#    features = ["core", "simplelog"]
+#
+# 2. Core with profiling enabled:
+#    features = ["core", "simplelog", "profiling"]
+#
+# 3. Core with color detection:
+#    features = ["core", "color_detect", "simplelog"]
+#
+# 4. Full functionality with profiling:
+#    features = ["full", "simplelog", "profiling"]
+#
+# Optional features can be added at any level:
+# - debug-logs
+# - nightly
+# - format_snippet
+# - profiling
+#
+# Note: When using without default features, must specify a logging implementation:
+# cargo add thag_rs --no-default-features --features="repl,simplelog"
+# or
+# cargo add thag_rs --no-default-features --features="repl,env_logger"
 
 [package.metadata.cargo-features-validate]
 # Additional validation that logging feature is satisfied

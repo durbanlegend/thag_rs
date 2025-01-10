@@ -57,12 +57,6 @@ pub fn main() {
     }
 
     // Section 2: ANSI-16 color palette using basic styles
-    // println!(
-    //     "{}",
-    //     header_style
-    //         .clone()
-    //         .paint("ANSI-16 color palette in use for {theme_str} theme:\n")
-    // );
     let header = format!("ANSI-16 color palette in use for {theme_str} theme:\n");
     print_header(&header);
     for level in Level::iter() {

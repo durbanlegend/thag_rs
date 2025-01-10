@@ -470,6 +470,71 @@ This crate is designed to be cross-platform and supports MacOS, Linux and Window
   - WSL2
 * GitHub Actions test each commit and PR on `ubuntu-latest`, `macos-latest` and `windows-latest`.
 
+### Using `thag_rs` as a library
+
+If you choose to use `thag-rs` functionality in your code, you can significantly reduce its footprint
+by choosing only the features you need
+
+#### Feature dependency tree:
+
+```
+ default
+ └── full
+     └── repl
+         └── tui
+             └── build
+                 ├── ast
+                 │   ├── core  ★                # Fundamental feature set
+                 │   │   ├── error_handling     # Error types and handling
+                 │   │   └── log_impl           # Basic logging infrastructure
+                 │   │       └── (simplelog | env_logger)
+                 │   ├── quote
+                 │   └── syn
+                 └── color_detect
+                     └── config
+                         ├── core  ★ (shared)   # Core features required here too
+                         ├── edit
+                         ├── mockall
+                         ├── serde_with
+                         └── toml/toml_edit
+
+ Core Feature Set (★):
+ - Basic logging and error handling
+ - Essential macros: cvprtln, cprtln, debug_log, lazy_static_var, vlog
+ - Profiling instrumentation macros: profile, profile_method, profile_section
+ - Fundamental types and traits
+
+ Optional features:
+ - profiling     # Enables profiling output (instrumentation always available in core)
+ - debug-logs
+ - nightly
+ - format_snippet
+
+ Common Usage Patterns:
+ 1. Just core functionality:
+    features = ["core", "simplelog"]
+
+ 2. Core with profiling enabled:
+    features = ["core", "simplelog", "profiling"]
+
+ 3. Core with color detection:
+    features = ["core", "color_detect", "simplelog"]
+
+ 4. Full functionality with profiling:
+    features = ["full", "simplelog", "profiling"]
+
+ Optional features can be added at any level:
+ - debug-logs
+ - nightly
+ - format_snippet
+ - profiling
+
+ Note: When using without default features, must specify a logging implementation:
+ cargo add thag_rs --no-default-features --features="repl,simplelog"
+ or
+ cargo add thag_rs --no-default-features --features="repl,env_logger"
+```
+
 ## Why "thag"?
 
 After the late Thag Simmons. A stone-age power tool for the grug brained developer to beat Rust code into submission. Why type long name when short sharp name do trick?

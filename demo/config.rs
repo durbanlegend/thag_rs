@@ -5,12 +5,11 @@ edit = "0.1.5"
 firestorm = "0.5.1"
 home = "0.5.9"
 mockall = "0.13.1"
-nu-ansi-term = "0.50.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "3.11.0"
 toml = "0.8.19"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_support", "core", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_support", "core", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
 */
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
@@ -20,7 +19,6 @@ use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use home;
 use mockall::{automock, predicate::str};
-use nu_ansi_term;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 #[cfg(target_os = "windows")]

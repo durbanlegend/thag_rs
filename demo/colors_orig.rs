@@ -1,14 +1,8 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
-log = "0.4.22"
-owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.3", features = ["derive"] }
-supports-color= "3.0.0"
-termbg = "0.5.2"
 # thag_rs = "0.1.9"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_support", "core", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_support", "core", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "simplelog"] }
 */
 
 /// Original prototype of `thag_rs`'s `colors` module to style messages according

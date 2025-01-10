@@ -76,7 +76,7 @@ pub mod profiling;
 /// Core: Shared functionality
 #[cfg(feature = "core")]
 pub mod shared;
-/// Core: Basic message styling
+/// Core: Message styling
 #[cfg(feature = "core")]
 pub mod styling;
 
@@ -133,6 +133,10 @@ pub mod repl;
 
 #[cfg(feature = "core")]
 pub use {
+    config::{
+        load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
+        ProcMacros,
+    },
     errors::{ThagError, ThagResult},
     logging::{get_verbosity, Verbosity, V},
     profiling::Profile,
@@ -156,13 +160,7 @@ pub use {
 };
 
 #[cfg(feature = "color_detect")]
-pub use {
-    config::{
-        load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
-        ProcMacros,
-    },
-    termbg,
-};
+pub use termbg;
 
 #[cfg(feature = "tui")]
 pub use {

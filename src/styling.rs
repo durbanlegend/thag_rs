@@ -36,6 +36,7 @@ pub struct Style {
     pub bold: bool,
     pub italic: bool,
     pub dim: bool,
+    pub underline: bool,
 }
 
 impl Style {
@@ -46,6 +47,7 @@ impl Style {
             bold: false,
             italic: false,
             dim: false,
+            underline: false,
         }
     }
 
@@ -72,6 +74,12 @@ impl Style {
         self
     }
 
+    #[must_use]
+    pub const fn underline(mut self) -> Self {
+        self.underline = true;
+        self
+    }
+
     pub fn paint<D>(&self, val: D) -> String
     where
         D: std::fmt::Display,
@@ -93,6 +101,10 @@ impl Style {
         }
         if self.dim {
             result.push_str("\x1b[2m");
+            needs_reset = true;
+        }
+        if self.underline {
+            result.push_str("\x1b[4m");
             needs_reset = true;
         }
 

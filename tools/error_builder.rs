@@ -236,10 +236,20 @@ fn generate_tests(module: &ErrorModule) -> String {
                     "            {}::{}(std::io::Error::new(std::io::ErrorKind::Other, \"test error\")).to_string(),\n",
                     module.name, variant.name
                 ));
+                // Use the actual display message format
+                output.push_str(&format!(
+                    "            \"{}\"\n",
+                    variant.display_message.replace("{}", "test error")
+                ));
             } else if wrapped == "String" {
                 output.push_str(&format!(
                     "            {}::{}(\"test error\".to_string()).to_string(),\n",
                     module.name, variant.name
+                ));
+                // Use the actual display message format
+                output.push_str(&format!(
+                    "            \"{}\"\n",
+                    variant.display_message.replace("{}", "test error")
                 ));
             } else {
                 // Add comment for custom wrapped types
@@ -260,12 +270,7 @@ fn generate_tests(module: &ErrorModule) -> String {
                 "            {}::{}.to_string(),\n",
                 module.name, variant.name
             ));
-        }
-
-        // Expected output
-        if variant.display_message.contains("{}") {
-            output.push_str("            \"test error\"\n");
-        } else {
+            // For variants without wrapped types, use the display message directly
             output.push_str(&format!("            \"{}\"\n", variant.display_message));
         }
         output.push_str("        );\n");
@@ -281,8 +286,8 @@ fn generate_tests(module: &ErrorModule) -> String {
                 "std::io::Error" => {
                     output.push_str("        let io_error = std::io::Error::new(std::io::ErrorKind::Other, \"test error\");\n");
                     output.push_str(&format!(
-                        "        let error: {} = io_error.into();\n",
-                        module.name
+                        "        let error = {}::{}(io_error);\n",
+                        module.name, variant.name
                     ));
                     output.push_str(&format!(
                         "        assert!(matches!(error, {}::{}(_)));\n",
@@ -302,7 +307,7 @@ fn generate_tests(module: &ErrorModule) -> String {
                 }
                 _ => {
                     output.push_str(&format!(
-                        "        // TODO: Add test for From<{}> implementation\n",
+                        "        // TODO: Add test for {} wrapped type\n",
                         wrapped
                     ));
                 }

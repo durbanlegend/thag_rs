@@ -34,3 +34,4 @@ thag-profile.folded
 *.dot
 test_output.log
 demo/proc_macros/target/debug
+bank/my_error*.rs

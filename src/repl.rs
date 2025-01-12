@@ -10,14 +10,15 @@ use crate::{
         script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
         ManagedTerminal, RataStyle,
     },
-    vlog, BuildState, Cli, CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl,
-    ProcFlags, Style, ThagError, ThagResult, V,
+    vlog, BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
+    KeyDisplayLine, Lvl, ProcFlags, Style, ThagError, ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
 use crokey::key;
 use crossterm::event::{KeyEvent, KeyEventKind};
 use edit::edit_file;
 use nu_ansi_term::Color as NuColor;
+use ratatui::style::Color;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
     EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
@@ -280,6 +281,17 @@ impl Prompt for ReplPrompt {
             prefix, history_search.term
         ))
     }
+
+    fn get_prompt_color(&self) -> reedline::Color {
+        if let Some(color_info) = TermAttributes::get_or_default()
+            .style_for_level(Lvl::NORM)
+            .foreground
+        {
+            Color::Indexed(color_info.index).into()
+        } else {
+            Color::Green.into()
+        }
+    }
 }
 
 fn get_heading_style() -> &'static Style {
@@ -365,46 +377,63 @@ pub fn run_repl(
     // println!("{:#?}", keybindings.get_keybindings());
 
     let edit_mode = Box::new(Emacs::new(keybindings.clone()));
-    let mut highlighter = Box::new(ExampleHighlighter::new(cmd_vec.clone()));
-    let term_attrs = TermAttributes::get_or_default();
-    let nu_match = {
-        term_attrs
-            .style_for_level(Lvl::HEAD)
-            .foreground
-            .as_ref()
-            .map_or(NuColor::Green, NuColor::from)
-    };
-    let nu_notmatch = {
-        term_attrs
-            .style_for_level(Lvl::EMPH)
-            .foreground
-            .as_ref()
-            .map_or(NuColor::Red, NuColor::from)
-    };
-    let nu_neutral = {
-        term_attrs
-            .style_for_level(Lvl::NORM)
-            .foreground
-            .as_ref()
-            .map_or(NuColor::DarkGray, NuColor::from)
-    };
-    highlighter.change_colors(nu_match, nu_notmatch, nu_neutral);
-    let our_ghost = term_attrs.style_for_level(Lvl::Ghost);
-    let nu_ghost = our_ghost
-        .foreground
-        .as_ref()
-        .map_or(NuColor::LightGray, NuColor::from);
-    let mut line_editor = Reedline::create()
+    let mut line_editor_builder = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
-        .with_hinter(Box::new(
-            DefaultHinter::default().with_style(nu_ghost.italic()),
-        ))
         .with_history(history)
         .with_history_exclusion_prefix(Some("q".into()))
-        .with_highlighter(highlighter)
         .with_completer(completer)
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
+
+    let term_attrs = TermAttributes::get_or_default();
+
+    // Only add highlighting if color support is available
+    if matches!(
+        term_attrs.color_support,
+        ColorSupport::None | ColorSupport::Undetermined
+    ) {
+        // Add default hinter without styling when no color support
+        line_editor_builder = line_editor_builder.with_hinter(Box::new(DefaultHinter::default()));
+    } else {
+        let mut highlighter = Box::new(ExampleHighlighter::new(cmd_vec.clone()));
+        let nu_match = {
+            term_attrs
+                .style_for_level(Lvl::SUBH)
+                .foreground
+                .as_ref()
+                .map_or(NuColor::Green, NuColor::from)
+        };
+        let nu_notmatch = {
+            term_attrs
+                .style_for_level(Lvl::EMPH)
+                .foreground
+                .as_ref()
+                .map_or(NuColor::Red, NuColor::from)
+        };
+        let nu_neutral = {
+            term_attrs
+                .style_for_level(Lvl::NORM)
+                .foreground
+                .as_ref()
+                .map_or(NuColor::DarkGray, NuColor::from)
+        };
+        highlighter.change_colors(nu_match, nu_notmatch, nu_neutral);
+
+        // Add highlighter to builder
+        line_editor_builder = line_editor_builder.with_highlighter(highlighter);
+
+        // Add styled hinter
+        let our_ghost = term_attrs.style_for_level(Lvl::Ghost);
+        let nu_ghost = our_ghost
+            .foreground
+            .as_ref()
+            .map_or(NuColor::LightGray, NuColor::from);
+        line_editor_builder = line_editor_builder.with_hinter(Box::new(
+            DefaultHinter::default().with_style(nu_ghost.italic()),
+        ));
+    }
+
+    let mut line_editor = line_editor_builder;
 
     let bindings = keybindings.get_keybindings();
     let reedline_events = bindings.values().cloned().collect::<Vec<ReedlineEvent>>();

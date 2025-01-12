@@ -1,8 +1,7 @@
 /*[toml]
 [dependencies]
-# log = "0.4.22"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "core", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "core", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
 */
 
 /// Demo of unit testing a non-snippet source file such as a library module using `thag --test-only (-T)`.

@@ -1,13 +1,15 @@
+use crate::{cvprtln, profile_method, V};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::AtomicBool;
-// use std::sync::atomic::Ordering;
-use crate::profile_method;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 
 #[cfg(feature = "color_detect")]
 use crate::terminal;
+
+#[cfg(debug_assertions)]
+use crate::debug_log;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ColorInfo {
@@ -430,7 +432,7 @@ impl TermAttributes {
     /// ));
     /// ```
     pub fn initialize(strategy: ColorInitStrategy) -> &'static Self {
-        INSTANCE.get_or_init(|| match strategy {
+        let term_attrs = INSTANCE.get_or_init(|| match strategy {
             ColorInitStrategy::Configure(support, theme) => Self::new(support, theme),
             ColorInitStrategy::Default => Self::new(ColorSupport::Ansi16, TermTheme::Dark),
             #[cfg(feature = "color_detect")]
@@ -439,7 +441,15 @@ impl TermAttributes {
                 let theme = crate::terminal::detect_theme().clone();
                 Self::new(support, theme)
             }
-        })
+        });
+        cvprtln!(
+            Lvl::Bright,
+            V::V,
+            "ColorSupport={:?}, TermTheme={:?}",
+            term_attrs.color_support,
+            term_attrs.theme
+        );
+        term_attrs
     }
 
     pub fn is_initialized() -> bool {
@@ -496,6 +506,7 @@ impl TermAttributes {
     /// println!("{}", error_style.paint("This is an error message"));
     /// ```
     #[must_use]
+    #[allow(unused_variables)]
     pub fn style_for_level(&self, level: Level) -> Style {
         profile_method!("TermAttrs::style_for_level");
         match (&self.color_support, &self.theme) {
@@ -504,7 +515,15 @@ impl TermAttributes {
             (ColorSupport::Ansi16, TermTheme::Dark) => Self::basic_dark_style(level),
             (ColorSupport::Xterm256, TermTheme::Light) => Self::full_light_style(level),
             (ColorSupport::Xterm256, TermTheme::Dark) => Self::full_dark_style(level),
-            (_, TermTheme::Undetermined) | (ColorSupport::Undetermined, _) => unreachable!(),
+            (support, theme) => {
+                #[cfg(debug_assertions)]
+                debug_log!(
+                    "Using default style due to undetermined settings: support={:?}, theme={:?}",
+                    support,
+                    theme
+                );
+                Style::default()
+            }
         }
     }
 
@@ -544,15 +563,15 @@ impl TermAttributes {
     #[must_use]
     pub fn full_light_style(level: Level) -> Style {
         match level {
-            Level::Error => Color::fixed(160).bold(),    // GuardsmanRed
-            Level::Warning => Color::fixed(164).bold(),  // DarkPurplePizzazz
-            Level::Heading => Color::fixed(19).bold(),   // MidnightBlue
-            Level::Subheading => Color::fixed(26),       // ScienceBlue
-            Level::Emphasis => Color::fixed(173).bold(), // Copperfield
-            Level::Bright => Color::fixed(46),           // Green
-            Level::Normal => Color::fixed(16),           // Black
-            Level::Debug => Color::fixed(32),            // LochmaraBlue
-            Level::Ghost => Color::fixed(232).italic(),  // DarkCodGray
+            Level::Error => Color::fixed(160).bold(),   // GuardsmanRed
+            Level::Warning => Color::fixed(164).bold(), // DarkPurplePizzazz
+            Level::Heading => Color::fixed(19).bold(),  // MidnightBlue
+            Level::Subheading => Color::fixed(26).bold(), // ScienceBlue
+            Level::Emphasis => Color::fixed(167).bold(), // RomanOrange
+            Level::Bright => Color::fixed(42).bold(),   // CaribbeanGreen
+            Level::Normal => Color::fixed(16),          // Black
+            Level::Debug => Color::fixed(32),           // LochmaraBlue
+            Level::Ghost => Color::fixed(232).italic(), // DarkCodGray
         }
     }
 
@@ -562,10 +581,10 @@ impl TermAttributes {
         match level {
             Level::Error => Color::fixed(1).bold(),      // UserRed
             Level::Warning => Color::fixed(171).bold(),  // LighterHeliotrope
-            Level::Heading => Color::fixed(42).bold(),   // CaribbeanGreen
-            Level::Subheading => Color::fixed(75),       // DarkMalibuBlue
+            Level::Heading => Color::fixed(33).bold(),   // AzureRadiance
+            Level::Subheading => Color::fixed(44),       // RobinEggBlue
             Level::Emphasis => Color::fixed(173).bold(), // Copperfield
-            Level::Bright => Color::fixed(3),            // UserYellow
+            Level::Bright => Color::fixed(118).italic(), // ChartreuseGreen
             Level::Normal => Color::fixed(231),          // White
             Level::Debug => Color::fixed(37),            // BondiBlue
             Level::Ghost => Color::fixed(251).italic(),  // Silver

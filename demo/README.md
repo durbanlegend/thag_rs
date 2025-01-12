@@ -5575,6 +5575,66 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs
 
 ---
 
+### Script: theme_dracula_dark.rs
+
+**Description:**  Prototype of styling with Dracula theme colours.
+
+**Purpose:** Investigate incorporating popular themes into styling.
+
+**Type:** Program
+
+**Categories:** technique
+
+**Link:** [theme_dracula_dark.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_dracula_dark.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_dracula_dark.rs
+```
+
+---
+
+### Script: theme_gruvbox_light.rs
+
+**Description:**  Prototype of styling with GruvBox Light theme colours.
+
+**Purpose:** Investigate incorporating popular themes into styling.
+
+**Type:** Program
+
+**Categories:** technique
+
+**Link:** [theme_gruvbox_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_gruvbox_light.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_gruvbox_light.rs
+```
+
+---
+
+### Script: theme_gruvbox_light_hard.rs
+
+**Description:**  Prototype of styling with GruvBox Light Hard theme colours.
+
+**Purpose:** Investigate incorporating popular themes into styling.
+
+**Type:** Program
+
+**Categories:** technique
+
+**Link:** [theme_gruvbox_light_hard.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_gruvbox_light_hard.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_gruvbox_light_hard.rs
+```
+
+---
+
 ### Script: time_cookbook.rs
 
 **Description:**  Simple time demo pasted directly from Rust cookbook. Run without -q to show how

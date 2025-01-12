@@ -44,7 +44,6 @@
 - [ ]  Try pre-building colour mappings
 - [ ]  New test for local paths in demo files and maybe even main Cargo.toml.
 - [ ]  Try ThagDisplay trait and derive macro.
-- [ ]  Set up bank/proc_macros and only take best to demo.
 - [ ]  Embed dirs
 - [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
 - [ ]  In cargo search, optionally get all features. Config option to omit unstable features.
@@ -65,9 +64,6 @@ validate_state only when feature minimal not engaged - instead switched off debu
        - Make --expand (-X) option a helper command thag_expand.
        - Document thag_cargo and thag_clippy in the Readme.
 - [ ]  Add profiling to capabilities for scripts.
-- [ ]  New modules: macros, minimal (disentangle)
-- [ ]  Rearrange tests to follow refactoring moves.
-- [ ]  Look at attributes as a possible way to switch on expansion for derive macros
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  Consider further refactor of log_color into term_aware vs log_color and eventually term_aware (incl supports_color) vs log_color?
          And change feature name from color_support to term_aware or themed.
@@ -76,8 +72,7 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
 - [ ]  Offer thag updates as a menu option.
-- [ ]  NB decouple color-detect feature from tui
-- [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output - rather fix bad output at source - done?
+- [ ]  Other front-ends: thag_test: call thag with dethag of bad output - rather fix bad output at source - done?
 - [ ]  Use cargo-dist to build and distribute thag front-end commands.
 - [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
 - [ ]  Documentation (cargo doc), e.g. for macros.
@@ -104,6 +99,9 @@ cargo expand --bin $stem --manifest-path=$f --theme=gruvbox-dark | sdiff $p - | 
 
 stem=proc_macro_host_port_const
 
+### Testing without ColorSupport::None
+thag -C -> change
+env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 
 
 ## Low Priority

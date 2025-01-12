@@ -1,6 +1,10 @@
 use std::env;
 use std::error::Error;
 
+/// AI-generated prototype tool to demonstrate themes and help implement their background
+/// colouring on terminal emulators.
+//# Purpose: Help get best use out of styling with popular themes.
+//# Categories: reference, technique, tools
 #[derive(Debug)]
 struct Theme {
     name: &'static str,
@@ -50,30 +54,12 @@ const GRUVBOX_LIGHT_HARD: Theme = Theme {
     description: "Light theme with high contrast and warm colors",
     xterm_background: 230,
     xterm_foreground: 237,
-    styles: &[
-        // Headers and Structure
-        ("heading1", "\x1b[1;38;5;124m"),   // Bold Red
-        ("heading2", "\x1b[1;38;5;100m"),   // Bold Green
-        ("subheading", "\x1b[1;38;5;172m"), // Bold Orange
-        // Alerts and Status
-        ("error", "\x1b[38;5;160m"),   // Bright Red
-        ("warning", "\x1b[38;5;214m"), // Bright Yellow
-        ("success", "\x1b[38;5;142m"), // Bright Green
-        ("info", "\x1b[38;5;66m"),     // Bright Blue
-        // Emphasis Levels
-        ("emphasis", "\x1b[1;38;5;126m"), // Bold Purple
-        ("bright", "\x1b[38;5;72m"),      // Bright Aqua
-        ("normal", "\x1b[38;5;239m"),     // Dark Gray
-        ("ghost", "\x1b[38;5;245m"),      // Medium Gray
-        // Debug and Development
-        ("debug", "\x1b[3;38;5;166m"), // Italic Orange
-        ("trace", "\x1b[38;5;246m"),   // Gray
-    ],
+    styles: DRACULA.styles, // Same style names, different colors
 };
 
-fn get_terminal_type() -> Option<String> {
-    env::var("TERM").ok()
-}
+// fn get_terminal_type() -> Option<String> {
+//     env::var("TERM").ok()
+// }
 
 enum TerminalEnv {
     Xorg,
@@ -206,8 +192,66 @@ fn demonstrate_theme_styles(theme: &Theme) {
     println!("-------------");
     for (style, example) in theme.styles {
         // This would use your actual styling logic
-        println!("{}: {}", style, example);
+        // println!("{}: {}", style, example);
+        print_styled(theme.name, style, example);
     }
+}
+
+fn print_styled(theme: &str, style: &str, text: &str) {
+    // Normalize theme name for matching
+    let theme_key = theme.to_lowercase().replace(' ', "-");
+    // eprintln!("theme_key={theme_key}, style={style}");
+
+    let style_code = match (theme_key.as_str(), style) {
+        // Dracula theme styles
+        ("dracula", "heading1") => "\x1b[1;38;5;212m", // Bold Pink
+        ("dracula", "heading2") => "\x1b[1;38;5;141m", // Bold Purple
+        ("dracula", "subheading") => "\x1b[1;38;5;117m", // Bold Cyan
+        ("dracula", "error") => "\x1b[38;5;203m",      // Red
+        ("dracula", "warning") => "\x1b[38;5;228m",    // Yellow
+        ("dracula", "success") => "\x1b[38;5;84m",     // Green
+        ("dracula", "info") => "\x1b[38;5;117m",       // Cyan
+        ("dracula", "emphasis") => "\x1b[1;38;5;141m", // Bold Purple
+        ("dracula", "bright") => "\x1b[38;5;117m",     // Cyan
+        ("dracula", "normal") => "\x1b[38;5;253m",     // Light Gray
+        ("dracula", "ghost") => "\x1b[2;38;5;244m",    // Dim Light Gray
+        ("dracula", "debug") => "\x1b[3;38;5;245m",    // Italic Medium Gray
+        ("dracula", "trace") => "\x1b[2;38;5;244m",    // Dim Light Gray
+
+        // Gruvbox Light Hard theme styles
+        ("gruvbox-light", "heading1") => "\x1b[1;38;5;124m", // Bold Red
+        ("gruvbox-light", "heading2") => "\x1b[1;38;5;106m", // Bold Green
+        ("gruvbox-light", "subheading") => "\x1b[1;38;5;172m", // Bold Orange
+        ("gruvbox-light", "error") => "\x1b[38;5;167m",      // Bright Red
+        ("gruvbox-light", "warning") => "\x1b[38;5;214m",    // Bright Yellow
+        ("gruvbox-light", "success") => "\x1b[38;5;142m",    // Bright Green
+        ("gruvbox-light", "info") => "\x1b[38;5;109m",       // Bright Blue
+        ("gruvbox-light", "emphasis") => "\x1b[1;38;5;132m", // Bold Purple
+        ("gruvbox-light", "bright") => "\x1b[38;5;108m",     // Bright Aqua
+        ("gruvbox-light", "normal") => "\x1b[38;5;237m",     // Dark Gray
+        ("gruvbox-light", "ghost") => "\x1b[38;5;245m",      // Medium Gray
+        ("gruvbox-light", "debug") => "\x1b[3;38;5;245m",    // Italic Orange
+        ("gruvbox-light", "trace") => "\x1b[38;5;243m",      // Gray
+
+        // Gruvbox Light Hard theme styles
+        ("gruvbox-light-hard", "heading1") => "\x1b[1;38;5;124m", // Bold Red
+        ("gruvbox-light-hard", "heading2") => "\x1b[1;38;5;100m", // Bold Green
+        ("gruvbox-light-hard", "subheading") => "\x1b[1;38;5;172m", // Bold Orange
+        ("gruvbox-light-hard", "error") => "\x1b[38;5;160m",      // Bright Red
+        ("gruvbox-light-hard", "warning") => "\x1b[38;5;214m",    // Bright Yellow
+        ("gruvbox-light-hard", "success") => "\x1b[38;5;142m",    // Bright Green
+        ("gruvbox-light-hard", "info") => "\x1b[38;5;66m",        // Bright Blue
+        ("gruvbox-light-hard", "emphasis") => "\x1b[1;38;5;126m", // Bold Purple
+        ("gruvbox-light-hard", "bright") => "\x1b[38;5;72m",      // Bright Aqua
+        ("gruvbox-light-hard", "normal") => "\x1b[38;5;239m",     // Dark Gray
+        ("gruvbox-light-hard", "ghost") => "\x1b[38;5;245m",      // Medium Gray
+        ("gruvbox-light-hard", "debug") => "\x1b[3;38;5;166m",    // Italic Orange
+        ("gruvbox-light-hard", "trace") => "\x1b[38;5;246m",      // Gray
+
+        _ => panic!("Not found"),
+    };
+    // eprintln!("style_code={style_code}, text={text}");
+    println!("{}{}\x1b[0m", style_code, text);
 }
 
 fn print_theme_info(theme: &Theme) {
@@ -232,10 +276,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         match args[1].to_lowercase().as_str() {
             "dracula" => print_theme_info(&DRACULA),
             "gruvbox-light" => print_theme_info(&GRUVBOX_LIGHT),
+            "gruvbox-light-hard" => print_theme_info(&GRUVBOX_LIGHT_HARD),
             "list" => {
                 println!("\nAvailable themes:");
                 println!("- dracula");
                 println!("- gruvbox-light");
+                println!("- gruvbox-light-hard");
             }
             _ => println!("Unknown theme. Use 'list' to see available themes."),
         }

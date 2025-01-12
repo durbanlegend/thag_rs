@@ -235,6 +235,19 @@ Putting it to use:
 
 ![XBuild](assets/xuset.png)
 
+### * Run `cargo test` in place:
+The --test-only (-T) is for scripts (not snippets) with embedded unit tests. (For snippets there's the --cargo (-A) option that accepts cargo subcommands including`test`).
+This option leaves the source script untouched but generates a temporary Cargo.toml for it in the usual way and invokes `cargo test` on this to run the internal unit tests.
+
+As usual, `thag` must rely on dependency inference and/or a toml block in the script for the manifest information.
+In the following example, `demo/config_with_tests.rs` demonstrates testing a copy of `thag`'s own `config` module with its unit tests embedded and minor adjustments to
+import statements and a small toml block for the `thag_rs` crate itself. In this case we pass the absolute path of a file via an environment variable to the unit test that
+needs it.
+
+```bash
+env TEST_CONFIG_PATH=/absolute/path/to/config.toml thag demo/config_with_tests.rs -Tvf -- --show-output --test-threads=3  # Long form: --test-only
+```
+
 ### * Command-line options
 
 Hopefully the help screen is self-explanatory:
@@ -478,61 +491,66 @@ by choosing only the features you need
 #### Feature dependency tree:
 
 ```
- default
- └── full
-     └── repl
-         └── tui
-             └── build
-                 ├── ast
-                 │   ├── core  ★                # Fundamental feature set
-                 │   │   ├── error_handling     # Error types and handling
-                 │   │   └── log_impl           # Basic logging infrastructure
-                 │   │       └── (simplelog | env_logger)
-                 │   ├── quote
-                 │   └── syn
-                 └── color_detect
-                     └── config
-                         ├── core  ★ (shared)   # Core features required here too
-                         ├── edit
-                         ├── mockall
-                         ├── serde_with
-                         └── toml/toml_edit
-
- Core Feature Set (★):
- - Basic logging and error handling
- - Essential macros: cvprtln, cprtln, debug_log, lazy_static_var, vlog
- - Profiling instrumentation macros: profile, profile_method, profile_section
- - Fundamental types and traits
-
- Optional features:
- - profiling     # Enables profiling output (instrumentation always available in core)
- - debug-logs
- - nightly
- - format_snippet
-
- Common Usage Patterns:
- 1. Just core functionality:
-    features = ["core", "simplelog"]
-
- 2. Core with profiling enabled:
-    features = ["core", "simplelog", "profiling"]
-
- 3. Core with color detection:
-    features = ["core", "color_detect", "simplelog"]
-
- 4. Full functionality with profiling:
-    features = ["full", "simplelog", "profiling"]
-
- Optional features can be added at any level:
- - debug-logs
- - nightly
- - format_snippet
- - profiling
-
- Note: When using without default features, must specify a logging implementation:
- cargo add thag_rs --no-default-features --features="repl,simplelog"
- or
- cargo add thag_rs --no-default-features --features="repl,env_logger"
+default
+└── full
+    ├── repl
+    │   └── tui
+    │       ├── build
+    │       │   ├── ast
+    │       │   │   ├── core  ★                # Fundamental feature set
+    │       │   │   │   ├── error_handling     # Error types and handling
+    │       │   │   │   ├── log_impl           # Basic logging infrastructure
+    │       │   │   │   │   └── (simplelog | env_logger)
+    │       │   │   │   └── styling            # Basic terminal styling
+    │       │   │   ├── quote
+    │       │   │   └── syn
+    │       │   ├── config
+    │       │   │   ├── core  ★ (shared)       # Core features required here too
+    │       │   │   ├── mockall
+    │       │   │   ├── serde_with
+    │       │   │   └── toml/toml_edit
+    │       │   └── crossterm                  # Terminal control
+    │       │
+    │       ├── ratatui                        # TUI framework
+    │       ├── tui-textarea                   # Text editing widget
+    │       ├── crokey                         # Keyboard handling
+    │       ├── serde_json                     # JSON support
+    │       └── scopeguard                     # Resource cleanup (shared with color_detect)
+    │
+    └── color_detect     # Optional terminal detection, only included in full
+        ├── crossterm    # (shared with build)
+        ├── scopeguard   # (shared with tui)
+        ├── supports-color
+        └── termbg
+Core Feature Set (★):
+- Basic logging and error handling
+- Essential macros: cprtln, debug_log, lazy_static_var, vlog, regex
+- Styling system and macros: cvprtln, style_for_level
+- Profiling instrumentation macros: profile, profile_method, profile_section
+- Fundamental types and traits
+Optional features:
+- profiling     # Enables profiling output (instrumentation always available in core)
+- debug-logs
+- nightly
+- format_snippet
+Common Usage Patterns:
+1. Just core functionality:
+   features = ["core", "simplelog"]
+2. Core with profiling enabled:
+   features = ["core", "simplelog", "profiling"]
+3. Core with color detection:
+   features = ["core", "color_detect", "simplelog"]
+4. Full functionality with profiling:
+   features = ["full", "simplelog", "profiling"]
+Optional features can be added at any level:
+- debug-logs
+- nightly
+- format_snippet
+- profiling
+Note: When using without default features, must specify a logging implementation:
+cargo add thag_rs --no-default-features --features="repl,simplelog"
+or
+cargo add thag_rs --no-default-features --features="repl,env_logger"
 ```
 
 ## Why "thag"?

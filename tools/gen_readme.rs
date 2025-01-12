@@ -1,14 +1,14 @@
 /*[toml]
 [dependencies]
 convert_case = "0.6.0"
-log = "0.4.22"
+heck = "0.5.0"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive"] }
 # thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
 thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = "0.1.9"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "main" }
-# thag_rs = { path = "/Users/donf/projects/thag_rs" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
 */
 
 /// This is the actual script used to collect demo script metadata and generate
@@ -17,14 +17,17 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "main" }
 /// Strategy and grunt work thanks to ChatGPT.
 //# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
 //# Categories: technique, tools
-use convert_case::{Case, Casing};
+use heck::ToSnakeCase;
 use std::{
     collections::HashMap,
     fs::{self, read_dir, File},
     io::Write as OtherWrite,
     path::{Path, PathBuf},
 };
-use thag_rs::{code_utils, lazy_static_var, regex, shared};
+use thag_rs::{
+    ast::{infer_deps_from_ast, infer_deps_from_source},
+    code_utils, find_crates, find_metadata, lazy_static_var, regex,
+};
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_proc_macros::category_enum;
@@ -88,7 +91,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
                         // Check all the categories are valid
                         assert!(
                             categories.iter().all(|cat| {
-                                let found = valid_categories.contains(&cat.to_case(Case::Snake));
+                                let found = valid_categories.contains(&cat.as_str().to_snake_case());
                                 if !found {
                                     eprintln!("Unknown or invalid category {cat}");
                                 }
@@ -140,17 +143,17 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     let maybe_syntax_tree = code_utils::to_ast(file_path_str, &content);
     let (crates, main_methods) = match maybe_syntax_tree {
         Some(ref ast) => {
-            let crates_finder = shared::find_crates(&ast);
-            let metadata_finder = shared::find_metadata(&ast);
+            let crates_finder = find_crates(&ast);
+            let metadata_finder = find_metadata(&ast);
             (
-                code_utils::infer_deps_from_ast(&crates_finder, &metadata_finder),
+                infer_deps_from_ast(&crates_finder, &metadata_finder),
                 metadata_finder.main_count,
             )
         }
         None => {
             let re = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
             (
-                code_utils::infer_deps_from_source(&content),
+                infer_deps_from_source(&content),
                 re.find_iter(&content).count(),
             )
         }

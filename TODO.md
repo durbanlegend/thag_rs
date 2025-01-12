@@ -75,6 +75,8 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Consider script to reverse-engineer xterm OSC sequences.
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
+- [ ]  Offer thag updates as a menu option.
+- [ ]  NB decouple color-detect feature from tui
 - [ ]  Other front-ends: thag_dethag: call thag with dethag of bad output - rather fix bad output at source - done?
 - [ ]  Use cargo-dist to build and distribute thag front-end commands.
 - [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
@@ -88,7 +90,7 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Check dead code & other #(!)[allow(...)]; look into factoring over-long gen_build_run
 - [ ]  Look for code smells
 - [ ]  Look into fuzzing the tests such as test_merge_manifest.
-- [ ]  Do gen_readme version for demo/proc_macros, currently demo/gen_readme_proc_macro.rs
+- [ ]  Extend gen_readme to do other dirs including tools and demo/proc_macros, currently demo/gen_readme_proc_macro.rs
 - [ ]  Consider dropping our termbg module if termbg 0.6.1 is working fine.
 - [ ]  Testing fib scripts: ls -1 demo/fib_*.rs | grep -v basic | grep -v binet | while read f; do echo $f;  cargo run -- $f -qq -- 100 | grep 354224848179261915075 || echo "...failed"; done
 stem=macro_lazy_static_var_advanced

@@ -121,23 +121,17 @@ ast = [
 # Configuration and Color Support
 config = ["core", "edit", "mockall", "serde_with", "toml", "toml_edit"]
 
-color_detect = [
-    "config",         # Brings in configuration support
-    "crossterm",
-    "nu-ansi-term",
-    "scopeguard",
-    "supports-color",
-    "termbg",
-]
+color_detect = ["crossterm", "scopeguard", "supports-color", "termbg"]
 
 # Build and Analysis
 build = [
     "ast",               # For syntax parsing
-    "color_detect",      # For terminal support
     "bitflags",
     "cargo-lookup",
     "cargo_toml",
     "clap",
+    "config",            # For terminal support
+    "crossterm",
     "prettyplease",
     "serde_merge",
     "side-by-side-diff",
@@ -147,7 +141,6 @@ build = [
 tui = [
     "build",        # Full build capabilities
     "crokey",
-    "edit",
     "ratatui",
     "serde_json",
     "tui-textarea",
@@ -159,8 +152,7 @@ repl = [
     "reedline",
 ]
 
-# Feature Bundles
-full = ["repl"] # Simplified as repl includes everything
+full = ["color_detect", "repl"] # Simplified as repl includes everything
 
 # Default Configuration
 default = ["full", "simplelog"] # Full features with simplelog
@@ -175,27 +167,39 @@ profiling = []
 #
 # default
 # └── full
-#     └── repl
-#         └── tui
-#             └── build
-#                 ├── ast
-#                 │   ├── core  ★                # Fundamental feature set
-#                 │   │   ├── error_handling     # Error types and handling
-#                 │   │   └── log_impl           # Basic logging infrastructure
-#                 │   │       └── (simplelog | env_logger)
-#                 │   ├── quote
-#                 │   └── syn
-#                 └── color_detect
-#                     └── config
-#                         ├── core  ★ (shared)   # Core features required here too
-#                         ├── edit
-#                         ├── mockall
-#                         ├── serde_with
-#                         └── toml/toml_edit
-#
+#     ├── repl
+#     │   └── tui
+#     │       ├── build
+#     │       │   ├── ast
+#     │       │   │   ├── core  ★                # Fundamental feature set
+#     │       │   │   │   ├── error_handling     # Error types and handling
+#     │       │   │   │   ├── log_impl           # Basic logging infrastructure
+#     │       │   │   │   │   └── (simplelog | env_logger)
+#     │       │   │   │   └── styling            # Basic terminal styling
+#     │       │   │   ├── quote
+#     │       │   │   └── syn
+#     │       │   ├── config
+#     │       │   │   ├── core  ★ (shared)       # Core features required here too
+#     │       │   │   ├── mockall
+#     │       │   │   ├── serde_with
+#     │       │   │   └── toml/toml_edit
+#     │       │   └── crossterm                  # Terminal control
+#     │       │
+#     │       ├── ratatui                        # TUI framework
+#     │       ├── tui-textarea                   # Text editing widget
+#     │       ├── crokey                         # Keyboard handling
+#     │       └── serde_json                     # JSON support
+#     │
+#     └── color_detect     # Optional terminal detection, only included in full
+#         ├── crossterm    # (shared with build)
+#         ├── scopeguard
+#         ├── supports-color
+#         └── termbg
+
 # Core Feature Set (★):
 # - Basic logging and error handling
-# - Essential macros: cvprtln, cprtln, debug_log, lazy_static_var, vlog
+# - Essential macros: cprtln, debug_log, lazy_static_var, regex, vlog
+# - Styling system and macros: cvprtln, style_for_level
 # - Profiling instrumentation macros: profile, profile_method, profile_section
 # - Fundamental types and traits
 #
@@ -282,4 +286,4 @@ build = ["sh", "-c", "zip demo.zip demo/*"]
 [[workspace.metadata.dist.extra-artifacts]]
 artifacts = ["assets/default_config.toml"]
 # no-op:
-build = ["true"] # UI features
+build = ["true"] # UI features# Feature Bundles

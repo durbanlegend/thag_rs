@@ -54,14 +54,14 @@ macro_rules! debug_log {
         // If the `debug-logs` feature is enabled, always log
         #[cfg(any(feature = "debug-logs", feature = "simplelog"))]
         {
-            log::debug!($($arg)*);
+            $crate::log::debug!($($arg)*);
         }
 
         // In all builds, log if runtime debug logging is enabled (e.g., via `-vv`)
         #[cfg(not(any(feature = "debug-logs", feature = "simplelog")))]
         {
             if $crate::logging::is_debug_logging_enabled() {
-                log::debug!($($arg)*);
+                $crate::log::debug!($($arg)*);
             } else {
                 // Avoid unused variable warnings in release mode if logging isn't enabled
                 let _ = format_args!($($arg)*);

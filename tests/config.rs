@@ -4,9 +4,12 @@ mod tests {
     use simplelog::{
         ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger,
     };
-    use std::sync::Arc;
-    use std::{env::current_dir, path::PathBuf};
-    use std::{fs::File, sync::OnceLock};
+    use std::{
+        env::current_dir,
+        fs::File,
+        path::PathBuf,
+        sync::{Arc, OnceLock},
+    };
     use tempfile::TempDir;
     use thag_rs::{
         config::{
@@ -154,7 +157,7 @@ mod tests {
             .return_const(config_path.clone());
         mock_context.expect_is_real().return_const(false);
 
-        let result = config::edit(&mock_context).expect("Failed to edit config");
+        let result = config::open(&mock_context).expect("Failed to edit config");
 
         assert!(config_path.exists(), "Config file should be created");
         let config_content =

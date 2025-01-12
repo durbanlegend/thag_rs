@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
 colored = "2.1.0"
-convert_case = "0.6.0"
 dirs = "5.0"
 documented = "0.9.1"
 inquire = "0.7.5"
@@ -18,8 +17,6 @@ toml = "0.8"
 /// Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
 //# Purpose: Handy configuration file builder.
 //# Categories: crates, technique, tools
-// use convert_case::{Case, Casing};
-use convert_case::{Converter, Pattern};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use inquire::error::CustomUserError;
 use inquire::validator::{StringValidator, Validation};

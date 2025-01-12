@@ -2,15 +2,15 @@
 
 # Array of checks to run
 CHECKS=(
-    "check-core"
-    "check-build"
     "check-ast"
-    "check-detect"
-    "check-color-old"
-    "check-full"
-    "check-tui"
-    "check-core-alt"
+    "check-build"
     "check-build-alt"
+    "check-core"
+    "check-core-alt"
+    "check-detect"
+    "check-full"
+    "check-repl"
+    "check-tui"
 )
 
 # Colors for output

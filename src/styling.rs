@@ -31,6 +31,7 @@ impl ColorInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Style {
     pub foreground: Option<ColorInfo>,
     pub bold: bool,
@@ -508,6 +509,7 @@ impl TermAttributes {
     }
 
     /// Returns the style for basic (16-color) light theme
+    #[must_use]
     pub fn basic_light_style(level: Level) -> Style {
         match level {
             Level::Error => Color::red().bold(),
@@ -523,6 +525,7 @@ impl TermAttributes {
     }
 
     /// Returns the style for basic (16-color) dark theme
+    #[must_use]
     pub fn basic_dark_style(level: Level) -> Style {
         match level {
             Level::Error => Color::red().bold(),
@@ -538,6 +541,7 @@ impl TermAttributes {
     }
 
     /// Returns the style for full (256-color) light theme
+    #[must_use]
     pub fn full_light_style(level: Level) -> Style {
         match level {
             Level::Error => Color::fixed(160).bold(),    // GuardsmanRed
@@ -553,6 +557,7 @@ impl TermAttributes {
     }
 
     /// Returns the style for full (256-color) dark theme
+    #[must_use]
     pub fn full_dark_style(level: Level) -> Style {
         match level {
             Level::Error => Color::fixed(1).bold(),      // UserRed

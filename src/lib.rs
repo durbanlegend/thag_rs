@@ -108,6 +108,7 @@ pub mod manifest;
 // Terminal-based user interface components
 //-----------------------------------------------------------------------------
 /// Configuration loader
+#[cfg(feature = "config")]
 pub mod config;
 /// Assess terminal capabilities and current theme
 #[cfg(feature = "color_detect")]
@@ -133,11 +134,8 @@ pub mod repl;
 
 #[cfg(feature = "core")]
 pub use {
-    config::{
-        load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
-        ProcMacros,
-    },
     errors::{ThagError, ThagResult},
+    log, // re-export log crate for debug_log
     logging::{get_verbosity, Verbosity, V},
     profiling::Profile,
     shared::{debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string},
@@ -161,6 +159,12 @@ pub use {
 
 #[cfg(feature = "color_detect")]
 pub use termbg;
+
+#[cfg(feature = "config")]
+pub use config::{
+    load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
+    ProcMacros,
+};
 
 #[cfg(feature = "tui")]
 pub use {

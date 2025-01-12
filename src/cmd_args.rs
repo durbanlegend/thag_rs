@@ -80,8 +80,8 @@ pub struct Cli {
     #[arg(short, long, help_heading = Some("Output Options"), action = clap::ArgAction::Count)]
     pub verbose: u8,
     /// Set normal verbosity. Only needed in the case of overriding a different configured value
-    #[arg(short = 'N', long = "normal verbosity", help_heading = Some("Output Options"))]
-    pub normal: bool,
+    #[arg(short = 'N', long = "normal", help_heading = Some("Output Options"))]
+    pub normal_verbosity: bool,
     /// Suppress unnecessary output. Double up to show only errors, or to pipe output to another command.
     #[arg(short, long, help_heading = Some("Output Options"), action = clap::ArgAction::Count)]
     pub quiet: u8,
@@ -134,6 +134,10 @@ pub struct Cli {
     /// Cargo subcommand against the generated project `temp_dir`/`thag_rs`/`stem`. E.g. `thag demo/hello.rs -A tree`
     #[arg(short = 'A', long, requires = "script", help_heading = Some("No-run Options"))]
     pub cargo: bool,
+    /// Test a module in isolation. Just generate the Cargo.toml and use it to run the internal unit tests without
+    /// wrapping or modifying the source code.
+    #[arg(short = 'T', long, requires = "script", help_heading = Some("No-run Options"))]
+    pub test_only: bool,
 }
 
 /// Getter for clap command-line arguments
@@ -179,7 +183,7 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
         V::Quiet
     } else if args.quiet >= 2 {
         V::Quieter
-    } else if args.normal {
+    } else if args.normal_verbosity {
         V::Normal
     } else if let Some(config) = maybe_config() {
         config.logging.default_verbosity
@@ -220,6 +224,7 @@ bitflags! {
         const EXPAND        = 2_097_152;
         const CARGO         = 4_194_304;
         const INFER         = 8_388_608;
+        const TEST_ONLY     = 16_777_216;
     }
 }
 
@@ -276,9 +281,15 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::TIMINGS, args.timings);
         proc_flags.set(
             ProcFlags::NORUN,
-            args.generate | args.build | args.check | args.executable | args.expand | args.cargo,
+            args.generate
+                | args.build
+                | args.check
+                | args.executable
+                | args.expand
+                | args.cargo
+                | args.test_only,
         );
-        proc_flags.set(ProcFlags::NORMAL, args.normal);
+        proc_flags.set(ProcFlags::NORMAL, args.normal_verbosity);
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
         proc_flags.set(ProcFlags::REPL, args.repl);
         proc_flags.set(ProcFlags::EXPR, is_expr);
@@ -289,6 +300,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::EXPAND, args.expand);
         proc_flags.set(ProcFlags::CARGO, args.cargo);
         proc_flags.set(ProcFlags::INFER, is_infer);
+        proc_flags.set(ProcFlags::TEST_ONLY, args.test_only);
 
         profile_section!("config_loop_assert");
         let unquote = args.unquote.map_or_else(

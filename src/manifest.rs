@@ -2,22 +2,19 @@
 #[cfg(debug_assertions)]
 use crate::debug_timings;
 use crate::{
-    ast, code_utils::get_source_path, config::DependencyInference, cvprtln, debug_log,
-    get_verbosity, maybe_config, profile, profile_section, regex, styling::TermAttributes, vlog,
-    Ast, BuildState, Dependencies, Level, Lvl, ThagResult, BUILT_IN_CRATES, V,
+    ast::{infer_deps_from_ast, infer_deps_from_source},
+    code_utils::get_source_path,
+    config::DependencyInference,
+    cvprtln, debug_log, get_verbosity, maybe_config, profile, profile_section, regex,
+    styling::TermAttributes,
+    vlog, Ast, BuildState, Dependencies, Level, Lvl, ThagResult, V,
 };
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
 use regex::Regex;
 use semver::VersionReq;
 use serde_merge::omerge;
-use std::{
-    collections::{BTreeMap, HashSet},
-    ops::Deref,
-    path::PathBuf,
-    str::FromStr,
-    time::Instant,
-};
+use std::{collections::BTreeMap, path::PathBuf, str::FromStr, time::Instant};
 use syn::{parse_file, File};
 
 #[allow(clippy::missing_panics_doc)]
@@ -305,97 +302,6 @@ fn extract_toml_block(input: &str) -> Option<String> {
     let re: &Regex = regex!(r"(?s)/\*\[toml\](.*?)\*/");
     re.captures(input)
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
-}
-
-/// Infer dependencies from AST-derived metadata to put in a Cargo.toml.
-#[must_use]
-pub fn infer_deps_from_ast(
-    crates_finder: &ast::CratesFinder,
-    metadata_finder: &ast::MetadataFinder,
-) -> Vec<String> {
-    profile!("infer_deps_from_ast");
-    let mut dependencies = vec![];
-    dependencies.extend_from_slice(&crates_finder.crates);
-
-    let to_remove: HashSet<String> = crates_finder
-        .names_to_exclude
-        .iter()
-        .cloned()
-        .chain(metadata_finder.names_to_exclude.iter().cloned())
-        .chain(metadata_finder.mods_to_exclude.iter().cloned())
-        .chain(BUILT_IN_CRATES.iter().map(Deref::deref).map(String::from))
-        .collect();
-    // eprintln!("to_remove={to_remove:#?}");
-
-    dependencies.retain(|e| !to_remove.contains(e));
-    // eprintln!("dependencies (after)={dependencies:#?}");
-
-    // Similar check for other regex pattern
-    for crate_name in &metadata_finder.extern_crates {
-        if !&to_remove.contains(crate_name) {
-            dependencies.push(crate_name.to_owned());
-        }
-    }
-
-    // Deduplicate the list of dependencies
-    dependencies.sort();
-    dependencies.dedup();
-
-    dependencies
-}
-
-/// Infer dependencies from source code to put in a Cargo.toml.
-/// Fallback version for when an abstract syntax tree cannot be parsed.
-#[must_use]
-pub fn infer_deps_from_source(code: &str) -> Vec<String> {
-    profile!("infer_deps_from_source");
-
-    if code.trim().is_empty() {
-        return vec![];
-    }
-
-    let maybe_ast = extract_and_wrap_uses(code);
-    let mut dependencies = maybe_ast.map_or_else(
-        |_| {
-            cvprtln!(
-                Lvl::ERR,
-                V::QQ,
-                "Could not parse code into an abstract syntax tree"
-            );
-            vec![]
-        },
-        |ast| {
-            let crates_finder = ast::find_crates(&ast);
-            let metadata_finder = ast::find_metadata(&ast);
-            infer_deps_from_ast(&crates_finder, &metadata_finder)
-        },
-    );
-
-    let macro_use_regex: &Regex = regex!(r"(?m)^[\s]*#\[macro_use\((\w+)\)");
-    let extern_crate_regex: &Regex = regex!(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)");
-
-    let modules = find_modules_source(code);
-
-    dependencies.retain(|e| !modules.contains(e));
-    // eprintln!("dependencies (after)={dependencies:#?}");
-
-    for cap in macro_use_regex.captures_iter(code) {
-        let crate_name = cap[1].to_string();
-        // eprintln!("macro-use crate_name={crate_name:#?}");
-        if !modules.contains(&crate_name) {
-            dependencies.push(crate_name);
-        }
-    }
-
-    for cap in extern_crate_regex.captures_iter(code) {
-        let crate_name = cap[1].to_string();
-        // eprintln!("extern-crate crate_name={crate_name:#?}");
-        if !modules.contains(&crate_name) {
-            dependencies.push(crate_name);
-        }
-    }
-    dependencies.sort();
-    dependencies
 }
 
 /// Extract the `use` statements from source and parse them to a `syn::File` in order to

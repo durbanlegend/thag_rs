@@ -1,7 +1,7 @@
 //!
 //! AST analysis and dependency inference capability for `thag_rs`.
 //!
-use crate::{clog, debug_log, profile, profile_method, regex, Level, ThagResult, BUILT_IN_CRATES};
+use crate::{debug_log, profile, profile_method, regex, ThagResult, BUILT_IN_CRATES};
 use phf::phf_set;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
@@ -27,7 +27,6 @@ use syn::{
     TypePath, UseRename, UseTree,
 };
 
-#[cfg(feature = "build")]
 use crate::{cvprtln, Lvl, V};
 
 #[cfg(debug_assertions)]
@@ -387,8 +386,9 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     let maybe_ast = extract_and_wrap_uses(code);
     let mut dependencies = maybe_ast.map_or_else(
         |_| {
-            clog!(
-                Level::Error,
+            cvprtln!(
+                Lvl::ERR,
+                V::QQ,
                 "Could not parse code into an abstract syntax tree"
             );
             vec![]
@@ -725,15 +725,9 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             expr_return.expr.is_none()
         }
         _ => {
-            #[cfg(feature = "build")]
             cvprtln!(
                 Lvl::WARN,
                 V::Q,
-                "Expression not catered for: {expr:#?}, wrapping expression in println!()"
-            );
-            #[cfg(not(feature = "build"))]
-            clog!(
-                Level::Warning,
                 "Expression not catered for: {expr:#?}, wrapping expression in println!()"
             );
             false

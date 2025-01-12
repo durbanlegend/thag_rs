@@ -758,7 +758,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
-**Crates:** `edit`, `firestorm`, `home`, `mockall`, `nu_ansi_term`, `serde`, `serde_with`, `thag_rs`, `toml`
+**Crates:** `edit`, `firestorm`, `home`, `mockall`, `serde`, `serde_with`, `thag_rs`, `toml`
 
 **Type:** Program
 
@@ -770,6 +770,74 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs
+```
+
+---
+
+### Script: config_with_tests.rs
+
+**Description:**  Demo of unit testing a non-snippet source file such as a library module using `thag --test-only (-T)`.
+
+ The unit tests must be in mod `tests` in the file.
+
+ `thag` will leave the file as is, but generate a temporary Cargo.toml for it in the usual way as a prerequisite for running `cargo test`.
+
+ `thag` will then invoke `cargo test` on the file, specifying the Cargo.toml location via `--manifest-path`.
+
+ `thag <filepath> -T [-- <cargo test options>]`
+
+ E.g.:
+
+ `TEST_CONFIG_PATH=/absolute/path/to/test/config.toml cargo run demo/config_with_tests.rs -Tv -- --nocapture --show-output`
+
+ Configuration categories
+ Dependency handling
+ Crate-specific feature overrides
+ Logging settings
+ Dependency inference level
+ Terminal color settings
+ Demo proc macro settings
+ Miscellaneous configuration parameters
+ A struct for use in normal execution, as opposed to use in testing.
+ Initializes and returns the configuration.
+ Gets the real or mock context according to whether test mode is detected via the `TEST_ENV` sstem variable.
+
+ # Panics
+
+ Panics if there is any issue accessing the current directory, e.g. if it doesn't exist or we don't have sufficient permissions to access it.
+ Load the existing configuration file, if one exists at the specified location.
+ The absence of a configuration file is not an error.
+
+ # Errors
+
+ This function will return an error if it either finds a file and fails to read it,
+ or reads the file and fails to parse it.
+ Open the configuration file in an editor.
+ # Errors
+ Will return `Err` if there is an error editing the file.
+ # Panics
+ Will panic if it can't create the parent directory for the configuration.
+ Validate the content of the `config.toml` file.
+
+ # Errors
+
+ This function will bubble up any Toml parsing errors encountered.
+ Main function for use by testing or the script runner.
+
+**Purpose:** Demonstrate unit testing a file in situ without wrapping it if it doesn't have a main method.
+
+**Crates:** `documented`, `edit`, `mockall`, `serde`, `serde_with`, `simplelog`, `strum`, `tempfile`, `thag_rs`, `toml`, `toml_edit`
+
+**Type:** Program
+
+**Categories:** technique, testing
+
+**Link:** [config_with_tests.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/config_with_tests.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config_with_tests.rs
 ```
 
 ---
@@ -4820,7 +4888,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_
 ### Script: styling_demo.rs
 
 **Description:**  Demonstrates the colour and styling options of `thag_rs`.
- Also demos the full 256-colour palette as per 'demo/colors*.rs`.
+ Also demos the full 256-colour palette as per `demo/colors*.rs`.
 
  E.g. `thag demo/styling_demo.rs`
 

@@ -46,7 +46,7 @@ fn reset_terminal_state() {
 struct TerminalStateGuard;
 
 impl TerminalStateGuard {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self
     }
 }

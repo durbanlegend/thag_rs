@@ -387,10 +387,10 @@ impl BuildState {
         if proc_flags.contains(ProcFlags::NORUN) {
             self.must_build = proc_flags.contains(ProcFlags::BUILD)
                 || proc_flags.contains(ProcFlags::EXECUTABLE)
-                // For EXPAND and CARGO, "build" step (becoming a bit of a misnomer)
+                // For EXPAND, CARGO and TEST, "build" step (becoming a bit of a misnomer)
                 // is needed to run their alternative Cargo commands
                 || proc_flags.contains(ProcFlags::EXPAND)
-                || proc_flags.contains(ProcFlags::CARGO);
+                || proc_flags.contains(ProcFlags::CARGO)|| proc_flags.contains(ProcFlags::TEST_ONLY);
             self.must_gen = self.must_build
                 || proc_flags.contains(ProcFlags::GENERATE)
                 || !self.cargo_toml_path.exists();
@@ -418,10 +418,11 @@ impl BuildState {
         profile_method!("validate_state");
         // Validate build/check/executable/expand flags
         if proc_flags.contains(ProcFlags::BUILD)
-            | proc_flags.contains(ProcFlags::CHECK)
-            | proc_flags.contains(ProcFlags::EXECUTABLE)
-            | proc_flags.contains(ProcFlags::EXPAND)
-            | proc_flags.contains(ProcFlags::CARGO)
+            || proc_flags.contains(ProcFlags::CHECK)
+            || proc_flags.contains(ProcFlags::EXECUTABLE)
+            || proc_flags.contains(ProcFlags::EXPAND)
+            || proc_flags.contains(ProcFlags::CARGO)
+            || proc_flags.contains(ProcFlags::TEST_ONLY)
         {
             assert!(self.must_gen & self.must_build & proc_flags.contains(ProcFlags::NORUN));
         }
@@ -429,11 +430,6 @@ impl BuildState {
         // Validate force flag
         if proc_flags.contains(ProcFlags::FORCE) {
             assert!(self.must_gen & self.must_build);
-        }
-
-        // Validate expand and cargo flags
-        if proc_flags.contains(ProcFlags::EXPAND) | proc_flags.contains(ProcFlags::CARGO) {
-            assert!(self.must_gen & self.must_build & proc_flags.contains(ProcFlags::NORUN));
         }
 
         // Validate build dependency
@@ -506,12 +502,20 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     let start = Instant::now();
 
     // Initialize TermAttributes for message styling
+    #[cfg(feature = "color_detect")]
     let strategy = if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
         debug_log!("Avoiding colour detection for testing");
         ColorInitStrategy::Default
-    } else if cfg!(feature = "color_detect") {
+    } else {
         ColorInitStrategy::Detect
+    };
+
+    #[cfg(not(feature = "color_detect"))]
+    let strategy = if std::env::var("TEST_ENV").is_ok() {
+        #[cfg(debug_assertions)]
+        debug_log!("Avoiding colour detection for testing");
+        ColorInitStrategy::Default
     } else if let Some(config) = maybe_config() {
         ColorInitStrategy::Configure(config.colors.color_support, config.colors.term_theme)
     } else {
@@ -528,7 +532,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     }
 
     if args.config {
-        config::edit(&RealContext::new())?;
+        config::open(&RealContext::new())?;
         return Ok(());
     }
 
@@ -784,6 +788,7 @@ fn debug_log_config() {
 /// # Panics
 /// Will panic if it fails to parse the shebang, if any.
 #[allow(clippy::too_many_lines)]
+#[allow(clippy::cognitive_complexity)]
 pub fn gen_build_run(
     args: &Cli,
     proc_flags: &ProcFlags,
@@ -824,27 +829,37 @@ pub fn gen_build_run(
             build_state.metadata_finder = Some(ast::find_metadata(ast));
         }
 
+        let test_only = proc_flags.contains(ProcFlags::TEST_ONLY);
         let metadata_finder = build_state.metadata_finder.as_ref();
-        let main_methods = metadata_finder.map_or_else(
-            || {
-                let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
-                re.find_iter(&rs_source).count()
-            },
-            |metadata_finder| metadata_finder.main_count,
-        );
-        let has_main = match main_methods {
-            0 => false,
-            1 => true,
-            _ => {
-                if args.multimain {
-                    true
-                } else {
-                    writeln!(
-                    &mut std::io::stderr(),
-                    "{main_methods} main methods found, only one allowed by default. Specify --multimain (-m) option to allow more"
-                )?;
-                    std::process::exit(1);
+        let main_methods = if test_only {
+            None
+        } else {
+            Some(metadata_finder.map_or_else(
+                || {
+                    let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
+                    re.find_iter(&rs_source).count()
+                },
+                |metadata_finder| metadata_finder.main_count,
+            ))
+        };
+        let has_main: Option<bool> = if test_only {
+            None
+        } else {
+            match main_methods {
+                Some(0) => Some(false),
+                Some(1) => Some(true),
+                Some(count) => {
+                    if args.multimain {
+                        Some(true)
+                    } else {
+                        writeln!(
+                        &mut std::io::stderr(),
+                        "{count} main methods found, only one allowed by default. Specify --multimain (-m) option to allow more"
+                    )?;
+                        std::process::exit(1);
+                    }
                 }
+                None => None,
             }
         };
 
@@ -852,10 +867,11 @@ pub fn gen_build_run(
         // Fun fact: Rust compiler will ignore shebangs:
         // https://neosmart.net/blog/self-compiling-rust-code/
         let is_file = build_state.ast.as_ref().map_or(false, Ast::is_file);
-        build_state.build_from_orig_source = has_main && args.script.is_some() && is_file;
+        build_state.build_from_orig_source =
+            (test_only || has_main == Some(true)) && args.script.is_some() && is_file;
 
         debug_log!(
-            "has_main={has_main}; build_state.build_from_orig_source={}",
+            "has_main={has_main:#?}; build_state.build_from_orig_source={}",
             build_state.build_from_orig_source
         );
 
@@ -875,8 +891,8 @@ pub fn gen_build_run(
         }
 
         // println!("build_state={build_state:#?}");
-        rs_source = if has_main {
-            // Strip off any enclosing braces, e.g.
+        rs_source = if test_only || has_main == Some(true) {
+            // Strip off any enclosing braces
             if rs_source.starts_with('{') {
                 strip_curly_braces(&rs_source).unwrap_or(rs_source)
             } else {
@@ -939,11 +955,12 @@ pub fn gen_build_run(
             wrap_snippet(&inner_attribs, &rust_code)
         };
 
-        let maybe_rs_source = if has_main && build_state.build_from_orig_source {
-            None
-        } else {
-            Some(rs_source.as_str())
-        };
+        let maybe_rs_source =
+            if (test_only || has_main == Some(true)) && build_state.build_from_orig_source {
+                None
+            } else {
+                Some(rs_source.as_str())
+            };
         generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
         cvprtln!(
@@ -1021,8 +1038,10 @@ pub fn generate(
             }
             #[cfg(not(feature = "format_snippet"))]
             {
-                if proc_flags.contains(ProcFlags::CARGO) {
-                    // Code needs to be human readable for clippy, test etc.
+                // Code needs to be human readable for clippy, test etc.
+                if proc_flags.contains(ProcFlags::CARGO)
+                    || proc_flags.contains(ProcFlags::TEST_ONLY)
+                {
                     let syntax_tree = syn_parse_file(rs_source)?;
                     &prettyplease_unparse(&syntax_tree)
                 } else {
@@ -1136,6 +1155,10 @@ fn build_command_args(
         ]);
     } else if proc_flags.contains(ProcFlags::CARGO) {
         args.extend_from_slice(&build_state.args[1..]);
+    } else if proc_flags.contains(ProcFlags::TEST_ONLY) && !build_state.args.is_empty() {
+        cvprtln!(Lvl::BRI, V::V, "build_state.args={:#?}", build_state.args);
+        args.push("--".to_string());
+        args.extend_from_slice(&build_state.args[..]);
     }
 
     args
@@ -1150,6 +1173,8 @@ fn get_cargo_subcommand(proc_flags: &ProcFlags, build_state: &BuildState) -> &'s
     } else if proc_flags.contains(ProcFlags::CARGO) {
         // Convert to owned String then get static str to avoid lifetime issues
         Box::leak(build_state.args[0].clone().into_boxed_str())
+    } else if proc_flags.contains(ProcFlags::TEST_ONLY) {
+        "test"
     } else {
         "build"
     }
@@ -1172,7 +1197,7 @@ fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult
     profile!("handle_expand");
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    // eprintln!("cargo_command={cargo_command:#?}");
+    cvprtln!(Lvl::BRI, V::V, "cargo_command={cargo_command:#?}");
 
     let output = cargo_command.output()?;
 
@@ -1192,7 +1217,7 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
     profile!("handle_build_or_check");
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    // eprintln!("cargo_command={cargo_command:#?}");
+    cvprtln!(Lvl::BRI, V::V, "cargo_command={cargo_command:#?}");
 
     let status = cargo_command.spawn()?.wait()?;
 

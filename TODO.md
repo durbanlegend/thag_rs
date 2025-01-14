@@ -99,6 +99,17 @@ cargo expand --bin $stem --manifest-path=$f --theme=gruvbox-dark | sdiff $p - | 
 
 stem=proc_macro_host_port_const
 
+These colors should be more vibrant than before, with:
+- Strong reds for errors and headings
+- Bright yellows for warnings
+- Rich greens for success messages
+- Clear blues for info
+- Distinct purples for emphasis
+- Aqua for bright highlights
+- Well-graduated grays for normal/subtle/ghost text
+- Orange for debug to make it stand out more
+
+
 ### Testing without ColorSupport::None
 thag -C -> change
 env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
@@ -167,3 +178,65 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ] Keep develop branch around and bring it up to date with main branch changes such as version number in Cargo.toml
         Use a temp staging branch like staging_temp, otherwise it will merge backwards into main for some reason while creating
         the pull request.
+
+
+1. **Phase 1: Parallel Structure**
+   ```rust
+   pub mod styling {
+       // Existing code
+       pub enum Level { ... }
+       pub fn basic_light_style(level: Level) -> TermAttributes { ... }
+
+       // New code (maybe in submodule?)
+       pub enum MessageType { ... }
+       pub enum Theme { ... }
+       // ... new theme structure
+   }
+   ```
+   - Keep existing functionality intact
+   - Introduce new types without breaking changes
+   - Map between old Levels and new MessageTypes
+
+2. **Phase 2: Theme Implementation**
+   - Implement the new theme system
+   - Create BasicLight/Dark themes that mirror current behavior
+   - Add conversion/compatibility layer:
+   ```rust
+   impl From<Level> for MessageType {
+       fn from(level: Level) -> Self {
+           match level {
+               Level::Error => MessageType::Error,
+               // ...
+           }
+       }
+   }
+   ```
+
+3. **Phase 3: Gradual Migration**
+   ```rust
+   pub fn basic_light_style(level: Level) -> TermAttributes {
+       // Use new theme system internally
+       let theme = Theme::BasicLight(default_config());
+       let msg_type: MessageType = level.into();
+       theme.style_for(msg_type).into()
+   }
+   ```
+   - Keep old API but use new implementation
+   - Add deprecation notices
+   - Document migration path for users
+
+4. **Phase 4: New API**
+   - Introduce new public API
+   - Mark old API as deprecated
+   - Provide migration guide
+
+5. **Phase 5: Cleanup**
+   - Remove old API in next major version
+   - Complete documentation
+   - Finalize theme implementations
+
+Key Considerations:
+- How to handle TermAttributes conversion
+- Maintaining color support detection
+- Terminal background detection
+- Configuration options

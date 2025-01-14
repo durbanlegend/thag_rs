@@ -15,13 +15,14 @@ default_verbosity = "normal"
 # which might not take advantage of the full capabilities of the terminal.
 # If the terminal can't handle your chosen level, this may cause unwanted control strings
 # to be interleaved with the messages.
-# If your terminal can handle 16m colors, choose xterm256
+# If your terminal can handle 16m colors, choose color256.
+# The aliases are the legacy names.
 # Available options for ColorSupport:
-#   xterm256 - Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
-#   ansi16 - Basic 16-color support
+#   color256 (alias xterm256) - Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
+#   basic (alias ansi16) - Basic 16-color support
 #   none - No color support
 #   undetermined - Still to be determined or defaulted
-color_support = "ansi16"
+color_support = "basic"
 
 # Terminal light/dark override. Tells thag_rs whether you are using a light or dark theme,
 # instead of letting thag_rs interrogate the terminal, which could cause misbehaviour
@@ -149,4 +150,4 @@ required_features = ["consoleapi", "processenv", "winbase"]
 # This behaviour only applies to snippets that explicitly or implicitly return a string
 # value. It does not affect well-formed programs or println! statements in snippets.
 # Valid values are: "true" or "false" (default).
-unquote = "true"
+unquote = true

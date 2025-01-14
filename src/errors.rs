@@ -47,6 +47,7 @@ pub enum ThagError {
     StrumParse(StrumParseError), // For strum parse enum
     #[cfg(feature = "syn")]
     Syn(SynError), // For syn errors
+    Theme(ThemeError), // For thag_rs::styling theme errors
     #[cfg(feature = "toml")]
     TomlDe(TomlDeError), // For TOML deserialization errors
     #[cfg(feature = "toml")]
@@ -80,6 +81,12 @@ impl From<ClapError> for ThagError {
 impl From<StrumParseError> for ThagError {
     fn from(err: StrumParseError) -> Self {
         Self::StrumParse(err)
+    }
+}
+
+impl From<ThemeError> for ThagError {
+    fn from(err: ThemeError) -> Self {
+        ThagError::Theme(err)
     }
 }
 
@@ -195,6 +202,7 @@ impl std::fmt::Display for ThagError {
             Self::StrumParse(e) => write!(f, "{e}"),
             #[cfg(feature = "syn")]
             Self::Syn(e) => write!(f, "{e}"),
+            Self::Theme(e) => write!(f, "{e}"),
             #[cfg(feature = "toml")]
             Self::TomlDe(e) => {
                 // Extract the actual error message without all the nested structure
@@ -251,6 +259,8 @@ impl Error for ThagError {
             Self::StrumParse(ref e) => Some(e),
             #[cfg(feature = "syn")]
             Self::Syn(e) => Some(e),
+            Self::Theme(ref e) => Some(e),
+            #[cfg(feature = "toml")]
             #[cfg(feature = "toml")]
             Self::TomlDe(ref e) => Some(e),
             #[cfg(feature = "toml")]
@@ -262,3 +272,31 @@ impl Error for ThagError {
         }
     }
 }
+
+#[derive(Debug)]
+pub enum ThemeError {
+    DarkThemeLightTerm,
+    InsufficientColorSupport,
+    LightThemeDarkTerm,
+}
+
+impl std::fmt::Display for ThemeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ThemeError::DarkThemeLightTerm => write!(
+                f,
+                "Only light themes may be selected for a light terminal background."
+            ),
+            ThemeError::InsufficientColorSupport => write!(
+                f,
+                "Configured or detected level of terminal colour support is insufficient for this theme."
+            ),
+            ThemeError::LightThemeDarkTerm => write!(
+                f,
+                "Only dark themes may be selected for a dark terminal background."
+            ),
+        }
+    }
+}
+
+impl std::error::Error for ThemeError {}

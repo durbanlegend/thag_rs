@@ -15,13 +15,16 @@ default_verbosity = "normal"
 
 # Terminal color settings
 [colors]
+# If your terminal can handle 16m colors, choose color256.
+# The aliases are the legacy names.
 # Available options for ColorSupport:
-#   xterm256 - Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
-#   ansi16 - Basic 16-color support
+#   color256 (alias xterm256) - Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
+#   basic (alias ansi16) - Basic 16-color support
 #   none - No color support
-#   auto_detect - Auto-detect from terminal
+#   undetermined - Still to be determined or defaulted
 
 color_support = "xterm256"
+
 # Available options for TermTheme:
 #   light - Light background terminal
 #   dark - Dark background terminal (default)
@@ -148,4 +151,4 @@ required_features = ["consoleapi", "processenv", "winbase"]
 [misc]
 
 # Strip double quotes from around string literals returned by snippets
-unquote = "true"
+unquote = true

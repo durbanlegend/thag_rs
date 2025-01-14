@@ -36,23 +36,22 @@ crossterm = { version = "0.28.1", features = ["use-dev-tty"], optional = true }
 documented = "0.9.1"
 edit = { version = "0.1.5", optional = true }
 env_logger = { version = "0.11.5", optional = true }
-toml = { version = "0.8.19", optional = true }
 log = "0.4.22"
 mockall = { version = "0.13.1", optional = true }
 nu-ansi-term = { version = "0.50.1", optional = true }
 phf = "0.11.2"
-prettyplease = { version = "0.2.25", optional = true }
-proc-macro2 = "1.0.92"
+prettyplease = { version = "0.2.29", optional = true }
+proc-macro2 = "1.0.93"
 quote = { version = "1.0.37", optional = true }
 ratatui = { version = "0.29.0", optional = true }
 reedline = { version = "0.37.0", optional = true }
 regex = "1.11.1"
 scopeguard = { version = "1.2.0", optional = true }
 semver = "1.0.23"
-serde = { version = "1.0.215", features = ["derive"] }
+serde = { version = "1.0.217", features = ["derive"] }
 serde_json = { version = "1.0.133", optional = true }
 serde_merge = { version = "0.1.3", optional = true }
-serde_with = { version = "3.11.0", optional = true }
+# serde_with = { version = "3.11.0", optional = true }
 side-by-side-diff = { version = "0.1.2", optional = true }
 simplelog = { version = "0.12.2", optional = true }
 # strict = "0.2.0"
@@ -66,6 +65,7 @@ syn = { version = "2.0.96", features = [
 ], optional = true }
 termbg = { version = "0.6.1", optional = true }
 thag_proc_macros = { version = "0.1.1", path = "src/proc_macros" }
+toml = { version = "0.8.19", optional = true }
 toml_edit = { version = "0.22.22", optional = true }
 # `tui-textarea` is used for the `tui` feature`.
 tui-textarea = { version = "0.7", features = [
@@ -119,7 +119,7 @@ ast = [
 ]
 
 # Configuration and Color Support
-config = ["core", "edit", "mockall", "serde_with", "toml", "toml_edit"]
+config = ["core", "edit", "mockall", "toml", "toml_edit"]
 
 color_detect = ["crossterm", "scopeguard", "supports-color", "termbg"]
 

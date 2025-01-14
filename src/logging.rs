@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{debug_log, profile, profile_method, ThagResult};
 use documented::{Documented, DocumentedVariants};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     LazyLock, Mutex,
@@ -51,6 +51,7 @@ pub fn is_debug_logging_enabled() -> bool {
     Debug,
     Default,
     Deserialize,
+    Serialize,
     Display,
     Documented,
     DocumentedVariants,
@@ -62,6 +63,7 @@ pub fn is_debug_logging_enabled() -> bool {
     Eq,
 )]
 #[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum Verbosity {
     /// Minimal output, suitable for piping to another process
     Quieter = 0,

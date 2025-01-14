@@ -139,8 +139,9 @@ mod tests {
         };
 
         let config = load(&get_context());
-        // eprintln!("config={config:#?}");
-        assert!(config.is_err());
+        // It's expected to fall back to a partial config now.
+        assert!(config.is_ok());
+        eprintln!("config={config:#?}");
     }
 
     // #[ignore = "Opens file and expects human interaction"]

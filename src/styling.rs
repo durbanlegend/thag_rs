@@ -1,3 +1,4 @@
+use crate::errors::ThemeError;
 use crate::{cvprtln, profile_method, V};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
@@ -275,6 +276,7 @@ impl Color {
 /// colours just for messages.
 #[derive(
     Clone,
+    Copy,
     Debug,
     Default,
     Deserialize,
@@ -285,16 +287,20 @@ impl Color {
     EnumString,
     IntoStaticStr,
     PartialEq,
+    PartialOrd,
     Eq,
     Serialize,
 )]
 #[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum ColorSupport {
     /// Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
-    Xterm256,
+    #[serde(alias = "xterm256")] // Accept old "256" value
+    Color256,
     /// Basic 16-color support
     #[default]
-    Ansi16,
+    #[serde(alias = "ansi16")] // Accept old "ansi16" value
+    Basic,
     /// No color support
     None,
     /// Still to be determined or defaulted
@@ -318,6 +324,7 @@ pub enum ColorSupport {
     Serialize,
 )]
 #[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum TermTheme {
     /// Light background terminal
     Light,
@@ -427,17 +434,17 @@ impl TermAttributes {
     ///
     /// // Configure explicitly
     /// let attrs = TermAttributes::initialize(ColorInitStrategy::Configure(
-    ///     ColorSupport::Ansi16,
+    ///     ColorSupport::Basic,
     ///     TermTheme::Dark
     /// ));
     /// ```
     pub fn initialize(strategy: ColorInitStrategy) -> &'static Self {
         let term_attrs = INSTANCE.get_or_init(|| match strategy {
             ColorInitStrategy::Configure(support, theme) => Self::new(support, theme),
-            ColorInitStrategy::Default => Self::new(ColorSupport::Ansi16, TermTheme::Dark),
+            ColorInitStrategy::Default => Self::new(ColorSupport::Basic, TermTheme::Dark),
             #[cfg(feature = "color_detect")]
             ColorInitStrategy::Detect => {
-                let support = crate::terminal::detect_color_support().clone();
+                let support = *crate::terminal::detect_color_support();
                 let theme = crate::terminal::detect_theme().clone();
                 Self::new(support, theme)
             }
@@ -461,9 +468,9 @@ impl TermAttributes {
         INSTANCE.get()
     }
 
-    /// Gets the `TermAttributes` instance or returns a default (Ansi16/Dark) instance
+    /// Gets the `TermAttributes` instance or returns a default (Basic/Dark) instance
     pub fn get_or_default() -> &'static Self {
-        INSTANCE.get_or_init(|| Self::new(ColorSupport::Ansi16, TermTheme::Dark))
+        INSTANCE.get_or_init(|| Self::new(ColorSupport::Basic, TermTheme::Dark))
     }
 
     /// Gets the global `TermAttributes` instance, panicking if it hasn't been initialized
@@ -511,10 +518,10 @@ impl TermAttributes {
         profile_method!("TermAttrs::style_for_level");
         match (&self.color_support, &self.theme) {
             (ColorSupport::None, _) => Style::default(),
-            (ColorSupport::Ansi16, TermTheme::Light) => Self::basic_light_style(level),
-            (ColorSupport::Ansi16, TermTheme::Dark) => Self::basic_dark_style(level),
-            (ColorSupport::Xterm256, TermTheme::Light) => Self::full_light_style(level),
-            (ColorSupport::Xterm256, TermTheme::Dark) => Self::full_dark_style(level),
+            (ColorSupport::Basic, TermTheme::Light) => Self::basic_light_style(level),
+            (ColorSupport::Basic, TermTheme::Dark) => Self::basic_dark_style(level),
+            (ColorSupport::Color256, TermTheme::Light) => Self::full_light_style(level),
+            (ColorSupport::Color256, TermTheme::Dark) => Self::full_dark_style(level),
             (support, theme) => {
                 #[cfg(debug_assertions)]
                 debug_log!(
@@ -609,6 +616,321 @@ pub fn style_string(lvl: Level, string: &str) -> String {
     TermAttributes::get_or_default()
         .style_for_level(lvl)
         .paint(string)
+}
+
+// New structures for Themes
+
+/// Defines the role (purpose and relative prominence) of a piece of text
+#[derive(Debug, Clone, Copy)]
+pub enum Role {
+    /// Primary heading, highest prominence
+    Heading1,
+    /// Secondary heading
+    Heading2,
+    /// Tertiary heading
+    Heading3,
+
+    /// Critical errors requiring immediate attention
+    Error,
+    /// Important cautions or potential issues
+    Warning,
+    /// Positive completion or status messages
+    Success,
+    /// General informational messages
+    Info,
+
+    /// Text that needs to stand out
+    Emphasis,
+    /// Code snippets or commands
+    Code,
+    /// Standard text, default prominence
+    Normal,
+    /// De-emphasized but clearly visible text
+    Subtle,
+    /// Completion suggestions or placeholder text (typically italic)
+    Hint,
+
+    /// Development/diagnostic information
+    Debug,
+    /// Detailed execution tracking
+    Trace,
+}
+
+impl From<Level> for Role {
+    fn from(level: Level) -> Self {
+        match level {
+            Level::Error => Role::Error,
+            Level::Warning => Role::Warning,
+            Level::Heading => Role::Heading1,
+            Level::Subheading => Role::Heading2,
+            Level::Emphasis => Role::Emphasis,
+            Level::Bright => Role::Info,   // Highlighting important info
+            Level::Normal => Role::Normal, // Default display style
+            Level::Debug => Role::Debug,
+            Level::Ghost => Role::Hint,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Palette {
+    heading1: Style,
+    heading2: Style,
+    heading3: Style,
+    error: Style,
+    warning: Style,
+    success: Style,
+    info: Style,
+    emphasis: Style,
+    code: Style,
+    normal: Style,
+    subtle: Style,
+    hint: Style,
+    debug: Style,
+    trace: Style,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TermBgLuma {
+    Light,
+    Dark,
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct ThemeConfig {
+    pub term_bg_luma: TermBgLuma,
+    pub min_color_support: ColorSupport,
+    pub palette: Palette,
+    pub background: Option<String>,
+    pub description: String,
+}
+
+#[non_exhaustive]
+pub enum Theme {
+    BasicLight(ThemeConfig),
+    BasicDark(ThemeConfig),
+    FullLight(ThemeConfig),
+    FullDark(ThemeConfig),
+    Dracula(ThemeConfig),
+    GruvboxLightHard(ThemeConfig),
+}
+
+impl Theme {
+    /// Creates a new theme instance after validating terminal compatibility.
+    ///
+    /// This method checks that:
+    /// 1. The theme's required background luminance matches the terminal's
+    /// 2. The terminal's color support meets the theme's minimum requirements
+    ///
+    /// # Arguments
+    /// * `theme` - The theme variant to instantiate
+    /// * `color_support` - Terminal's color capability (Basic, Color16, Color256)
+    /// * `term_bg_luma` - Terminal's background luminance (Light or Dark)
+    ///
+    /// # Returns
+    /// * `Ok(Theme)` - If the theme is compatible with the terminal
+    ///
+    /// # Errors
+    /// * `ThemeError::DarkThemeLightTerm` - If trying to use a dark theme with a light background
+    /// * `ThemeError::LightThemeDarkTerm` - If trying to use a light theme with a dark background
+    /// * `ThemeError::InsufficientColorSupport` - If terminal's color support is below theme's minimum requirement
+    ///
+    /// # Examples
+    /// ```
+    /// use thag_rs::errors::ThemeError;
+    /// use thag_rs::styling::{ColorSupport, Theme, TermBgLuma};
+    /// let theme = Theme::new(
+    ///     Theme::basic_light(),
+    ///     ColorSupport::Basic,
+    ///     TermBgLuma::Light
+    /// )?;
+    /// # Ok::<(), ThemeError>(())
+    pub fn new(
+        theme: Theme,
+        color_support: ColorSupport,
+        term_bg_luma: TermBgLuma,
+    ) -> Result<Theme, ThemeError> {
+        let config = theme.config();
+
+        if config.term_bg_luma != term_bg_luma {
+            return Err(match term_bg_luma {
+                TermBgLuma::Light => ThemeError::DarkThemeLightTerm,
+                TermBgLuma::Dark => ThemeError::LightThemeDarkTerm,
+            });
+        }
+        if color_support < config.min_color_support {
+            return Err(ThemeError::InsufficientColorSupport);
+        }
+
+        Ok(theme)
+    }
+
+    pub fn config(&self) -> &ThemeConfig {
+        match self {
+            Theme::BasicLight(config)
+            | Theme::BasicDark(config)
+            | Theme::FullLight(config)
+            | Theme::FullDark(config)
+            | Theme::Dracula(config)
+            | Theme::GruvboxLightHard(config) => config,
+        }
+    }
+}
+
+impl Theme {
+    #[must_use]
+    pub fn basic_light() -> Theme {
+        Theme::BasicLight(ThemeConfig {
+            term_bg_luma: TermBgLuma::Light,
+            min_color_support: ColorSupport::Basic,
+            palette: Palette {
+                // Current behavior mappings
+                error: Color::red().bold(),
+                warning: Color::magenta().bold(),
+                heading1: Color::blue().bold(), // Was Heading
+                heading2: Color::cyan().bold(), // Was Subheading
+                heading3: Color::cyan().bold(), // Match heading2 in basic
+                emphasis: Color::green().bold(),
+                info: Color::green(), // Was Bright
+                normal: Color::dark_gray(),
+
+                // New roles
+                success: Style::new(), // No decoration in basic
+                code: Style::new(),    // No decoration in basic
+                subtle: Style::new(),  // No decoration in basic
+
+                // Current behavior mappings
+                hint: Color::cyan().italic(), // Was Ghost
+                debug: Color::cyan(),
+                trace: Color::cyan(), // Match debug in basic
+            },
+            background: None,
+            description: "Basic light theme with minimal color usage".into(),
+        })
+    }
+
+    #[must_use]
+    pub fn basic_dark() -> Theme {
+        Theme::BasicDark(ThemeConfig {
+            term_bg_luma: TermBgLuma::Dark,
+            min_color_support: ColorSupport::Basic,
+            palette: Palette {
+                // Current behavior mappings
+                error: Color::red().bold(),
+                warning: Color::yellow().bold(),
+                heading1: Color::green().bold(), // Was Heading
+                heading2: Color::blue().bold(),  // Was Subheading
+                heading3: Color::blue().bold(),  // Match heading2 in basic
+                emphasis: Color::cyan().bold(),
+                info: Color::light_yellow(), // Was Bright
+                normal: Color::white(),
+
+                // New roles
+                success: Style::new(), // No decoration in basic
+                code: Style::new(),    // No decoration in basic
+                subtle: Style::new(),  // No decoration in basic
+
+                // Current behavior mappings
+                hint: Color::light_gray().italic(), // Was Ghost
+                debug: Color::light_cyan(),
+                trace: Color::light_cyan(), // Match debug in basic
+            },
+            background: None,
+            description: "Basic dark theme with minimal color usage".into(),
+        })
+    }
+
+    #[must_use]
+    pub fn full_light() -> Theme {
+        Theme::FullLight(ThemeConfig {
+            term_bg_luma: TermBgLuma::Light,
+            min_color_support: ColorSupport::Color256,
+            palette: Palette {
+                // Current behavior mappings
+                error: Color::fixed(160).bold(),    // GuardsmanRed
+                warning: Color::fixed(164).bold(),  // DarkPurplePizzazz
+                heading1: Color::fixed(19).bold(),  // MidnightBlue
+                heading2: Color::fixed(26).bold(),  // ScienceBlue
+                heading3: Color::fixed(26).bold(),  // Match heading2
+                emphasis: Color::fixed(167).bold(), // RomanOrange
+                info: Color::fixed(42).bold(),      // Was Bright: CaribbeanGreen
+                normal: Color::fixed(16),           // Black
+
+                // New roles
+                success: Style::new(), // No decoration initially
+                code: Style::new(),    // No decoration initially
+                subtle: Style::new(),  // No decoration initially
+
+                // Current behavior mappings
+                hint: Color::fixed(232).italic(), // Was Ghost: DarkCodGray
+                debug: Color::fixed(32),          // LochmaraBlue
+                trace: Color::fixed(32),          // Match debug
+            },
+            background: None,
+            description: "Full light theme with 256-color support".into(),
+        })
+    }
+
+    #[must_use]
+    pub fn full_dark() -> Theme {
+        Theme::FullDark(ThemeConfig {
+            term_bg_luma: TermBgLuma::Dark,
+            min_color_support: ColorSupport::Color256,
+            palette: Palette {
+                // Current behavior mappings
+                error: Color::fixed(1).bold(),      // UserRed
+                warning: Color::fixed(171).bold(),  // LighterHeliotrope
+                heading1: Color::fixed(33).bold(),  // AzureRadiance
+                heading2: Color::fixed(44),         // RobinEggBlue
+                heading3: Color::fixed(44),         // Match heading2
+                emphasis: Color::fixed(173).bold(), // Copperfield
+                info: Color::fixed(118).italic(),   // Was Bright: ChartreuseGreen
+                normal: Color::fixed(231),          // White
+
+                // New roles
+                success: Style::new(), // No decoration initially
+                code: Style::new(),    // No decoration initially
+                subtle: Style::new(),  // No decoration initially
+
+                // Current behavior mappings
+                hint: Color::fixed(251).italic(), // Was Ghost: Silver
+                debug: Color::fixed(37),          // BondiBlue
+                trace: Color::fixed(37),          // Match debug
+            },
+            background: None,
+            description: "Full dark theme with 256-color support".into(),
+        })
+    }
+
+    #[must_use]
+    pub fn style_for(&self, role: Role) -> &Style {
+        let palette = match self {
+            Theme::BasicLight(config)
+            | Theme::BasicDark(config)
+            | Theme::FullLight(config)
+            | Theme::FullDark(config)
+            | Theme::Dracula(config)
+            | Theme::GruvboxLightHard(config) => &config.palette,
+        };
+
+        match role {
+            Role::Error => &palette.error,
+            Role::Warning => &palette.warning,
+            Role::Heading1 => &palette.heading1,
+            Role::Heading2 => &palette.heading2,
+            Role::Heading3 => &palette.heading3,
+            Role::Success => &palette.success,
+            Role::Info => &palette.info,
+            Role::Emphasis => &palette.emphasis,
+            Role::Code => &palette.code,
+            Role::Normal => &palette.normal,
+            Role::Subtle => &palette.subtle,
+            Role::Hint => &palette.hint,
+            Role::Debug => &palette.debug,
+            Role::Trace => &palette.trace,
+        }
+    }
 }
 
 // Convenience macros
@@ -799,7 +1121,7 @@ mod tests {
     #[test]
     fn test_styling_default_theme_with_mock() {
         init_test();
-        let term_attrs = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
+        let term_attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermTheme::Dark);
         let defaulted = term_attrs.get_theme();
         assert_eq!(defaulted, TermTheme::Dark);
         println!();
@@ -816,8 +1138,8 @@ mod tests {
     #[test]
     fn test_styling_color_support_levels() {
         let none = TermAttributes::with_mock_theme(ColorSupport::None, TermTheme::Dark);
-        let basic = TermAttributes::with_mock_theme(ColorSupport::Ansi16, TermTheme::Dark);
-        let full = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
+        let basic = TermAttributes::with_mock_theme(ColorSupport::Basic, TermTheme::Dark);
+        let full = TermAttributes::with_mock_theme(ColorSupport::Color256, TermTheme::Dark);
 
         let test_level = Level::Error;
 
@@ -839,8 +1161,8 @@ mod tests {
 
     #[test]
     fn test_styling_theme_variations() {
-        let attrs_light = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Light);
-        let attrs_dark = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
+        let attrs_light = TermAttributes::with_mock_theme(ColorSupport::Color256, TermTheme::Light);
+        let attrs_dark = TermAttributes::with_mock_theme(ColorSupport::Color256, TermTheme::Dark);
 
         let heading_light = attrs_light.style_for_level(Level::Heading).paint("test");
         let heading_dark = attrs_dark.style_for_level(Level::Heading).paint("test");
@@ -851,7 +1173,7 @@ mod tests {
 
     #[test]
     fn test_styling_level_styling() {
-        let attrs = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
+        let attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermTheme::Dark);
 
         // Test each level has distinct styling
         let styles: Vec<String> = vec![
@@ -884,7 +1206,7 @@ mod tests {
 
     #[test]
     fn test_styling_style_attributes() {
-        let attrs = TermAttributes::with_mock_theme(ColorSupport::Xterm256, TermTheme::Dark);
+        let attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermTheme::Dark);
 
         // Error should be bold
         let error_style = attrs.style_for_level(Level::Error).paint("test");

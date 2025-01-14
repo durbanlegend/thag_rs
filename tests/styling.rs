@@ -32,7 +32,7 @@ mod tests {
     fn test_styling_term_attributes_init_default() {
         // Test default initialization
         let attrs = TermAttributes::initialize(ColorInitStrategy::Default);
-        assert!(matches!(attrs.color_support, ColorSupport::Ansi16));
+        assert!(matches!(attrs.color_support, ColorSupport::Basic));
         assert!(matches!(attrs.theme, TermTheme::Dark));
     }
 
@@ -40,11 +40,11 @@ mod tests {
     fn test_styling_term_attributes_init_config() {
         // Test explicit configuration
         let attrs = TermAttributes::initialize(ColorInitStrategy::Configure(
-            ColorSupport::Xterm256,
+            ColorSupport::Color256,
             TermTheme::Light,
         ));
         eprintln!("attrs.color_support={0:#?}", attrs.color_support);
-        assert!(matches!(attrs.color_support, ColorSupport::Xterm256));
+        assert!(matches!(attrs.color_support, ColorSupport::Color256));
         assert!(matches!(attrs.theme, TermTheme::Light));
     }
 }

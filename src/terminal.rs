@@ -81,7 +81,7 @@ pub fn detect_color_support() -> &'static ColorSupport {
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
         debug_log!("Avoiding supports_color for testing");
-        return &ColorSupport::Ansi16;
+        return &ColorSupport::Basic;
     }
 
     reset_terminal_state();
@@ -116,9 +116,9 @@ pub fn detect_color_support() -> &'static ColorSupport {
 
         supports_color::on(Stream::Stdout).map_or(ColorSupport::None, |color_level| {
             if color_level.has_16m || color_level.has_256 {
-                ColorSupport::Xterm256
+                ColorSupport::Color256
             } else {
-                ColorSupport::Ansi16
+                ColorSupport::Basic
             }
         })
     })

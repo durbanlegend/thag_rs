@@ -8,7 +8,7 @@ use edit::edit_file;
 use mockall::{automock, predicate::str};
 use serde::de;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+// use serde_with::{serde_as, DisplayFromStr};
 #[cfg(target_os = "windows")]
 use std::env;
 use std::{
@@ -39,6 +39,20 @@ pub struct Config {
     pub dependencies: Dependencies, // New section
     /// Miscellaneous settings
     pub misc: Misc,
+}
+
+#[derive(Debug, Deserialize)]
+struct PartialConfig {
+    #[serde(default)]
+    logging: Option<Logging>,
+    #[serde(default)]
+    colors: Option<Colors>,
+    #[serde(default)]
+    proc_macros: Option<ProcMacros>,
+    #[serde(default)]
+    dependencies: Option<Dependencies>,
+    #[serde(default)]
+    misc: Option<Misc>,
 }
 
 impl Config {
@@ -96,8 +110,10 @@ impl Config {
             "4. config_path={config_path:#?}, exists={}",
             config_path.exists()
         );
-        let config_str = fs::read_to_string(&config_path)?;
-        let maybe_config = toml::from_str(&config_str);
+        // let config_str = fs::read_to_string(&config_path)?;
+        // let maybe_config = toml::from_str(&config_str);
+        let maybe_config = Self::load(&config_path);
+
         #[cfg(debug_assertions)]
         debug_log!("5. maybe_config={maybe_config:#?}");
         Ok(maybe_config?)
@@ -111,10 +127,47 @@ impl Config {
     pub fn load(path: &Path) -> Result<Self, ThagError> {
         profile_method!("load");
         let content = std::fs::read_to_string(path)?;
-        let config: Self = toml::from_str(&content)?;
-        config.validate()?;
-        validate_config_format(&content)?;
-        Ok(config)
+
+        match toml::from_str::<Config>(&content) {
+            Ok(config) => {
+                config.validate()?;
+                validate_config_format(&content)?;
+                Ok(config)
+            }
+            Err(e) => {
+                // If parsing failed, try to salvage what we can
+                eprintln!(
+                    "Warning: Config parse error ({e}). Attempting to preserve valid settings."
+                );
+                let mut default_config = Config::default();
+
+                // Try to parse what we can
+                if let Ok(partial_config) = toml::from_str::<PartialConfig>(&content) {
+                    default_config.update_from_partial(partial_config);
+                    eprintln!("Info: Successfully preserved valid config settings.");
+                }
+
+                Ok(default_config)
+            }
+        }
+    }
+
+    fn update_from_partial(&mut self, partial: PartialConfig) {
+        if let Some(logging) = partial.logging {
+            self.logging = logging;
+        }
+        if let Some(colors) = partial.colors {
+            self.colors = colors;
+        }
+        if let Some(proc_macros) = partial.proc_macros {
+            self.proc_macros = proc_macros;
+        }
+        if let Some(dependencies) = partial.dependencies {
+            self.dependencies = dependencies;
+        }
+        if let Some(misc) = partial.misc {
+            self.misc = misc;
+        }
     }
 
     fn validate(&self) -> Result<(), ThagError> {
@@ -424,12 +477,12 @@ pub struct FeatureOverride {
 }
 
 /// Logging settings
-#[serde_as]
+// #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
 #[serde(default)]
 pub struct Logging {
     /// Default verbosity setting
-    #[serde_as(as = "DisplayFromStr")]
+    // #[serde_as(as = "DisplayFromStr")]
     pub default_verbosity: Verbosity,
 }
 
@@ -447,7 +500,7 @@ pub struct Logging {
 )]
 /// Dependency inference level
 #[strum(serialize_all = "snake_case")]
-#[serde(rename_all = "snake_case")] // Add this line
+#[serde(rename_all = "snake_case")]
 pub enum DependencyInference {
     /// Don't infer any dependencies
     None,
@@ -481,22 +534,22 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
 }
 
 /// Terminal color settings
-#[serde_as]
+// #[serde_as]
 #[derive(Clone, Debug, Deserialize, Documented, DocumentedFields, Serialize)]
 pub struct Colors {
     /// Color support override. Sets the terminal's color support level. The alternative is
-    /// to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
+    /// to leave it up to `thag_rs`, which depending on the platform may call 3rd-party crates
     /// to interrogate the terminal, which could cause misbehaviour, or may choose a default,
     /// which might not take advantage of the full capabilities of the terminal.
     /// If the terminal can't handle your chosen level, this may cause unwanted control strings
     /// to be interleaved with the messages.
     /// If your terminal can handle 16m colors, choose xterm256
-    #[serde_as(as = "DisplayFromStr")]
+    // #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
     pub color_support: ColorSupport,
     #[serde(default)]
     /// Light or dark terminal background override
-    #[serde_as(as = "DisplayFromStr")]
+    // #[serde_as(as = "DisplayFromStr")]
     pub term_theme: TermTheme,
 }
 
@@ -510,25 +563,25 @@ impl Default for Colors {
 }
 
 /// Demo proc macro settings
-#[serde_as]
+// #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Documented, DocumentedFields, Serialize)]
 #[serde(default)]
 pub struct ProcMacros {
-    /// Absolute or relative path to bank proc macros crate, e.g. bank/proc_macros.
-    #[serde_as(as = "Option<DisplayFromStr>")]
+    /// Absolute or relative path to bank proc macros crate, e.g. `bank/proc_macros`.
+    // #[serde_as(as = "Option<DisplayFromStr>")]
     pub bank_proc_macro_crate_path: Option<String>,
-    /// Absolute or relative path to demo proc macros crate, e.g. demo/proc_macros.
-    #[serde_as(as = "Option<DisplayFromStr>")]
+    /// Absolute or relative path to demo proc macros crate, e.g. `demo/proc_macros`.
+    // #[serde_as(as = "Option<DisplayFromStr>")]
     pub demo_proc_macro_crate_path: Option<String>,
 }
 
 /// Miscellaneous configuration parameters
-#[serde_as]
+// #[serde_as]
 #[derive(Clone, Debug, Default, Documented, DocumentedFields, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Misc {
     /// Strip double quotes from around string literals returned by snippets
-    #[serde_as(as = "DisplayFromStr")]
+    // #[serde_as(as = "DisplayFromStr")]
     pub unquote: bool,
 }
 

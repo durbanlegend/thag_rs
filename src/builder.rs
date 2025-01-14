@@ -502,6 +502,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     let start = Instant::now();
 
     // Initialize TermAttributes for message styling
+    // `color_detect` feature overrides configured colour support.
     #[cfg(feature = "color_detect")]
     let strategy = if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]

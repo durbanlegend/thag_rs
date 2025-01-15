@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "config", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "config", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "config", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "config", "simplelog"] }
 */
 
 /// Claude-generated demo of `Dracula` theme.

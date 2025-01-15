@@ -35,3 +35,7 @@ thag-profile.folded
 test_output.log
 demo/proc_macros/target/debug
 bank/my_error*.rs
+Terrminal-theme_color_ref_chat_Claude.txt
+src/color256 copy 1.rs
+src/color256 copy.rs
+web_safe_colors.txt

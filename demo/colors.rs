@@ -97,10 +97,10 @@ pub enum Ansi16DarkStyle {
 }
 
 generate_styles!(
-    (Xterm256LightStyle, Light, Xterm256),
-    (Xterm256DarkStyle, Dark, Xterm256),
-    (Ansi16LightStyle, Light, Ansi16),
-    (Ansi16DarkStyle, Dark, Ansi16)
+    (Xterm256LightStyle, Light, Color256),
+    (Xterm256DarkStyle, Dark, Color256),
+    (Ansi16LightStyle, Light, Basic),
+    (Ansi16DarkStyle, Dark, Basic)
 );
 
 // Returns lazy static color values.
@@ -118,9 +118,9 @@ pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
     profile!("coloring");
 
     if std::env::var("TEST_ENV").is_ok() {
-        #[cfg(debug_assertions)]
+        // #[cfg(debug_assertions)]
         debug_log!("Avoiding supports_color for testing");
-        return (Some(&ColorSupport::Ansi16), &TermTheme::Dark);
+        return (Some(&ColorSupport::Basic), &TermTheme::Dark);
     }
 
     (
@@ -879,7 +879,7 @@ pub fn main() {
             vlog!(V::N, "No colour support found for terminal");
         }
         Some(support) => {
-            if matches!(support, ColorSupport::Xterm256) {
+            if matches!(support, ColorSupport::Color256) {
                 println!("ANSI / Xterm 256 color palette:\n");
                 XtermColor::iter().for_each(|variant| {
                     let color = Color::from(&variant);

@@ -55,6 +55,14 @@ impl Style {
         }
     }
 
+    /// Creates a new Style with the specified foreground color
+    pub fn fg(color: u8) -> Self {
+        Self {
+            foreground: Some(ColorInfo::indexed(color)),
+            ..Default::default()
+        }
+    }
+
     #[must_use]
     pub const fn bold(mut self) -> Self {
         self.bold = true;
@@ -900,6 +908,38 @@ impl Theme {
             },
             background: None,
             description: "Full dark theme with 256-color support".into(),
+        })
+    }
+
+    pub fn dracula() -> Theme {
+        Theme::Dracula(ThemeConfig {
+            term_bg_luma: TermBgLuma::Dark,
+            min_color_support: ColorSupport::Color256,
+            palette: Palette {
+                // Headers and Structure
+                heading1: Color::fixed(212).bold(), // Bold Pink
+                heading2: Color::fixed(141).bold(), // Bold Purple
+                heading3: Color::fixed(117).bold(), // Bold Cyan
+
+                // Status/Alerts
+                error: Color::fixed(203),   // Red
+                warning: Color::fixed(228), // Yellow
+                success: Color::fixed(84),  // Green
+                info: Color::fixed(117),    // Cyan
+
+                // Emphasis levels
+                emphasis: Color::fixed(141).bold(), // Bold Purple
+                code: Color::fixed(84),             // Green
+                normal: Color::fixed(253),          // Light Gray
+                subtle: Color::fixed(245),          // Medium Gray
+                hint: Color::fixed(244).italic(),   // Dim Light Gray
+
+                // Development
+                debug: Color::fixed(245).italic(), // Italic Medium Gray
+                trace: Color::fixed(244),          // Dim Light Gray
+            },
+            background: Some("#282a36".into()),
+            description: "Dark theme with vibrant colors".into(),
         })
     }
 

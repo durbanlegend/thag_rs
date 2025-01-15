@@ -25,7 +25,7 @@ pub fn main() {
     let print_header = |arg| println!("{}", header_style.clone().paint(arg));
 
     // Section 1: ANSI / Xterm 256 color palette
-    if matches!(color_support, ColorSupport::Xterm256) {
+    if matches!(color_support, ColorSupport::Color256) {
         let col_width = 25;
         print_header("\nANSI / Xterm 256 color palette:\n");
         let color = Fixed(u8::from(&Level::HEAD));

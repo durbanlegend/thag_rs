@@ -286,11 +286,17 @@ impl BuildState {
             .to_path_buf();
 
         // Cargo home setup
-        let cargo_home_var = env::var("CARGO_HOME")?;
-        let cargo_home = PathBuf::from(if cargo_home_var == String::new() {
-            get_home_dir()?.join(".cargo").display().to_string()
-        } else {
-            cargo_home_var
+        // let cargo_home_var = env::var("CARGO_HOME")?;
+        // let cargo_home = PathBuf::from(if cargo_home_var == String::new() {
+        //     get_home_dir()?.join(".cargo").display().to_string()
+        // } else {
+        //     cargo_home_var
+        let cargo_home = PathBuf::from(match std::env::var("CARGO_HOME") {
+            Ok(string) if string != String::new() => string,
+            _ => {
+                let home_dir = get_home_dir()?;
+                home_dir.join(".cargo").display().to_string()
+            }
         });
 
         // Target directory setup

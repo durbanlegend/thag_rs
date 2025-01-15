@@ -64,6 +64,9 @@
 // Core functionality (core feature):
 // Required for basic script operations
 //-----------------------------------------------------------------------------
+/// Core: Color palette
+// #[cfg(feature = "core")]
+// pub mod color256;
 /// Core: Error handling
 #[cfg(feature = "core")]
 pub mod errors;

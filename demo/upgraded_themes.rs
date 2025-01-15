@@ -5,8 +5,8 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 */
 
 /// Claude-generated demo of styling's legacy themes upgraded to the new structure.
-//# Purpose: Confirm style conversion.
-//# Categories: testing
+//# Purpose: Confirm style conversion and demo the themes.
+//# Categories: basic, educational, testing
 use thag_rs::styling::{Role, Theme};
 
 fn display_theme(theme: &Theme) {

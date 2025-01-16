@@ -3,6 +3,7 @@ use crate::build_utils::validate_theme_file;
 use build_utils::{BuildError, BuildResult};
 use std::env;
 use std::fs;
+use std::io::Write;
 use std::path::Path;
 
 #[allow(clippy::doc_markdown, clippy::too_many_lines)]
@@ -130,7 +131,6 @@ fn main() {
 
             let test_name = source_name.replace('.', "_");
 
-            use std::io::Write;
             writeln!(
                 file,
                 r#"
@@ -243,8 +243,12 @@ fn generate_theme_data() -> BuildResult<()> {
         // Read theme content
         let theme_content = fs::read_to_string(&path)?;
 
-        // Escape the content for inclusion in the source
-        let escaped_content = theme_content.replace('\"', "\\\"").replace('\n', "\\n");
+        // Normalize line endings and escape quotes
+        let escaped_content = theme_content
+            .replace('\\', "\\\\")
+            .replace('\"', "\\\"")
+            .replace("\r\n", "\\n")
+            .replace('\n', "\\n");
 
         // Add to map
         theme_data.push_str(&format!(

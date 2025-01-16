@@ -1,0 +1,28 @@
+name = "Dracula"
+description = "Dark theme with vibrant colors"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+background = "#282a36"
+
+[palette]
+# Headers and Structure
+heading1 = { rgb = [255, 121, 198], style = ["bold"] } # Pink
+heading2 = { rgb = [189, 147, 249], style = ["bold"] } # Purple
+heading3 = { rgb = [139, 233, 253], style = ["bold"] } # Cyan
+
+# Status/Alerts
+error = { rgb = [255, 85, 85] }     # Red
+warning = { rgb = [241, 250, 140] } # Yellow
+success = { rgb = [80, 250, 123] }  # Green
+info = { rgb = [139, 233, 253] }    # Cyan
+
+# Emphasis levels
+emphasis = { rgb = [189, 147, 249], style = ["bold"] } # Purple
+code = { rgb = [80, 250, 123] }                        # Green
+normal = { rgb = [248, 248, 242] }                     # Foreground
+subtle = { rgb = [98, 114, 164] }                      # Comment
+hint = { rgb = [98, 114, 164], style = ["italic"] }    # Comment italic
+
+# Development
+debug = { rgb = [98, 114, 164], style = ["italic"] } # Comment italic
+trace = { rgb = [68, 71, 90] }                       # Selection

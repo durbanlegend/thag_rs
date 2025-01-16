@@ -1,8 +1,10 @@
 #![allow(clippy::missing_panics_doc)]
 mod category_enum;
+mod palette_methods;
 mod repeat_dash;
 
 use crate::category_enum::category_enum_impl;
+use crate::palette_methods::palette_methods_impl;
 use crate::repeat_dash::repeat_dash_impl;
 use proc_macro::TokenStream;
 use quote::quote;
@@ -171,4 +173,15 @@ pub fn profile(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
     .into()
+}
+
+#[proc_macro_derive(PaletteMethods)]
+pub fn palette_methods(input: TokenStream) -> TokenStream {
+    // Parse the input to check for the `expand_macro` attribute
+    let should_expand = input.clone().into_iter().any(|token| {
+        // Very basic check - you might want something more robust
+        token.to_string().contains("expand_macro")
+    });
+
+    intercept_and_debug(should_expand, &input, palette_methods_impl)
 }

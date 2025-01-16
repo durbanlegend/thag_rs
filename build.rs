@@ -1,17 +1,32 @@
+mod build_utils;
+use crate::build_utils::validate_theme_file;
+use build_utils::{BuildError, BuildResult};
 use std::env;
 use std::fs;
-use std::io::Write;
 use std::path::Path;
 
 #[allow(clippy::doc_markdown, clippy::too_many_lines)]
-/// Create a separate test for each individual script in demo/, to ensure that it builds
-/// successfully. We don't try to run them for logistical reasons, but at least we
-/// identify undocumented and abandoned scripts. Given that there are so many of these scripts,
-/// avoid Cargo's default behaviour of running all tests in parallel. --test-threads=3 to 5 seems
-/// to work best on my MacBook Air M1.
-/// Suggested command: `cargo test --features=simplelog -- --nocapture --test-threads=3
-/// You may want to adjust the test-threads value further depending on your hardware.
+/// 1. Compile all built-in themes into the binary.
+/// 2. Create a separate test for each individual script in demo/, to ensure that it builds
+///    successfully. We don't try to run them for logistical reasons, but at least we
+///    identify undocumented and abandoned scripts. Given that there are so many of these scripts,
+///    avoid Cargo's default behaviour of running all tests in parallel. --test-threads=3 to 5 seems
+///    to work best on my MacBook Air M1.
+///    Suggested command: `cargo test --features=simplelog -- --nocapture --test-threads=3
+///    You may want to adjust the test-threads value further depending on your hardware.
 fn main() {
+    // 1. Theme loading
+    // Tell cargo to rerun if any theme file changes
+    println!("cargo:rerun-if-changed=themes/built_in");
+
+    if let Err(e) = generate_theme_data() {
+        // Use cargo:warning to show build script errors
+        println!("cargo:warning=Theme generation failed: {e:?}"); // Fail the build if we can't generate themes
+        std::process::exit(1);
+    }
+    let _ = generate_theme_data();
+
+    // 2. Test generation
     // Check for mutually exclusive features
     let simple = std::env::var("CARGO_FEATURE_SIMPLELOG").is_ok();
     let env = std::env::var("CARGO_FEATURE_ENV_LOGGER").is_ok();
@@ -115,6 +130,7 @@ fn main() {
 
             let test_name = source_name.replace('.', "_");
 
+            use std::io::Write;
             writeln!(
                 file,
                 r#"
@@ -186,4 +202,62 @@ fn check_{test_name}() {{
             .expect("Failed to write test function");
         }
     }
+}
+
+fn generate_theme_data() -> BuildResult<()> {
+    println!("cargo:rerun-if-changed=themes/built_in");
+
+    let out_dir = env::var("OUT_DIR")?;
+    let dest_path = Path::new(&out_dir).join("theme_data.rs");
+    let mut theme_data = String::new();
+
+    // Start the generated file
+    theme_data.push_str(
+        "
+        /// Maps theme names to their TOML definitions
+        pub const BUILT_IN_THEMES: phf::Map<&'static str, &'static str> = phf::phf_map! {
+    ",
+    );
+
+    let theme_dir = Path::new("themes/built_in");
+    let entries = fs::read_dir(theme_dir)?;
+
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+
+        // Check if it's a .toml file
+        if path.extension().and_then(|s| s.to_str()) != Some("toml") {
+            continue;
+        }
+
+        // Validate theme before including it
+        validate_theme_file(&path)?;
+
+        // Get theme name from filename
+        let theme_name = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| BuildError::InvalidFileName { path: path.clone() })?;
+
+        // Read theme content
+        let theme_content = fs::read_to_string(&path)?;
+
+        // Escape the content for inclusion in the source
+        let escaped_content = theme_content.replace('\"', "\\\"").replace('\n', "\\n");
+
+        // Add to map
+        theme_data.push_str(&format!(
+            r#""{theme_name}" => "{escaped_content}",
+"#
+        ));
+    }
+
+    // Close the map
+    theme_data.push_str("};");
+
+    // Write the generated file
+    fs::write(dest_path, theme_data)?;
+
+    Ok(())
 }

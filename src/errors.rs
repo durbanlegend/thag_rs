@@ -1,5 +1,7 @@
 #[cfg(any(feature = "cargo_toml", feature = "toml"))]
 use crate::shared::disentangle;
+use crate::styling::TermBgLuma;
+use crate::ColorSupport;
 #[cfg(feature = "bitflags")]
 use bitflags::parser::ParseError as BitFlagsParseError;
 #[cfg(feature = "cargo_toml")]
@@ -11,6 +13,7 @@ use reedline::ReedlineError;
 #[cfg(feature = "serde_merge")]
 use serde_merge::error::Error as SerdeMergeError;
 use std::borrow::Cow;
+use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 use std::sync::{MutexGuard, PoisonError as LockError};
 use std::{error::Error, io};
@@ -40,6 +43,7 @@ pub enum ThagError {
     Logic(&'static str), // For logic errors
     NoneOption(&'static str), // For unwrapping Options
     OsString(std::ffi::OsString), // For unconvertible OsStrings
+    ParseInt(ParseIntError),
     #[cfg(feature = "reedline")]
     Reedline(ReedlineError), // For reedline errors
     #[cfg(feature = "serde_merge")]
@@ -47,15 +51,15 @@ pub enum ThagError {
     StrumParse(StrumParseError), // For strum parse enum
     #[cfg(feature = "syn")]
     Syn(SynError), // For syn errors
-    Theme(ThemeError), // For thag_rs::styling theme errors
+    Theme(ThemeError),           // For thag_rs::styling theme errors
     #[cfg(feature = "toml")]
     TomlDe(TomlDeError), // For TOML deserialization errors
     #[cfg(feature = "toml")]
     TomlSer(TomlSerError), // For TOML serialization errors
     #[cfg(feature = "cargo_toml")]
     Toml(CargoTomlError), // For cargo_toml errors
-    UnsupportedTerm, // For terminal interrogation
-    Validation(String), // For config.toml and similar validation
+    UnsupportedTerm,             // For terminal interrogation
+    Validation(String),          // For config.toml and similar validation
     VarError(std::env::VarError), // For std::env::var errors
 }
 
@@ -120,6 +124,12 @@ impl From<String> for ThagError {
 impl From<&'static str> for ThagError {
     fn from(s: &'static str) -> Self {
         Self::FromStr(Cow::Borrowed(s))
+    }
+}
+
+impl From<ParseIntError> for ThagError {
+    fn from(err: ParseIntError) -> Self {
+        Self::ParseInt(err)
     }
 }
 
@@ -195,6 +205,7 @@ impl std::fmt::Display for ThagError {
             Self::Io(e) => write!(f, "{e}"),
             Self::LockMutexGuard(e) => write!(f, "{e}"),
             Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
+            Self::ParseInt(e) => write!(f, "{e}"),
             #[cfg(feature = "reedline")]
             Self::Reedline(e) => write!(f, "{e}"),
             #[cfg(feature = "serde_merge")]
@@ -252,6 +263,7 @@ impl Error for ThagError {
             Self::Logic(_e) => Some(self),
             Self::NoneOption(_e) => Some(self),
             Self::OsString(ref _o) => Some(self),
+            Self::ParseInt(ref e) => Some(e),
             #[cfg(feature = "reedline")]
             Self::Reedline(e) => Some(e),
             #[cfg(feature = "serde_merge")]
@@ -278,23 +290,48 @@ pub enum ThemeError {
     DarkThemeLightTerm,
     InsufficientColorSupport,
     LightThemeDarkTerm,
+    // New theme-related variants
+    ColorSupportMismatch {
+        required: ColorSupport,
+        available: ColorSupport,
+    },
+    TermBgLumaMismatch {
+        theme: TermBgLuma,
+        terminal: TermBgLuma,
+    },
+    InvalidColorValue(String),
+    InvalidStyle(String),
+    InvalidTermBgLuma(String),
+    InvalidColorSupport(String),
+    UnknownTheme(String),
 }
 
 impl std::fmt::Display for ThemeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ThemeError::DarkThemeLightTerm => write!(
+            Self::DarkThemeLightTerm => write!(
                 f,
                 "Only light themes may be selected for a light terminal background."
             ),
-            ThemeError::InsufficientColorSupport => write!(
+            Self::InsufficientColorSupport => write!(
                 f,
                 "Configured or detected level of terminal colour support is insufficient for this theme."
             ),
-            ThemeError::LightThemeDarkTerm => write!(
+            Self::LightThemeDarkTerm => write!(
                 f,
                 "Only dark themes may be selected for a dark terminal background."
             ),
+            Self::ColorSupportMismatch { required, available } => {
+                write!(f, "Theme requires {required:?} colors but terminal only supports {available:?}")
+            }
+            Self::TermBgLumaMismatch { theme, terminal } => {
+                write!(f, "Theme requires {theme:?} background but terminal is {terminal:?}")
+            }
+            Self::InvalidColorSupport(msg) => write!(f, "Invalid color support: {msg}"),
+            Self::InvalidColorValue(msg) => write!(f, "Invalid color value: {msg}"),
+            Self::InvalidStyle(style) => write!(f, "Invalid style attribute: {style}"),
+            Self::InvalidTermBgLuma(name) => write!(f, "Unknown value: must be `light` or `dark`: {name}"),
+            Self::UnknownTheme(name) => write!(f, "Unknown theme: {name}"),
         }
     }
 }

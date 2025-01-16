@@ -1,10 +1,14 @@
 use crate::errors::ThemeError;
-use crate::{cvprtln, profile_method, V};
+use crate::{cvprtln, profile_method, ThagResult, V};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::Path;
+use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
+use thag_proc_macros::PaletteMethods;
 
 #[cfg(feature = "color_detect")]
 use crate::terminal;
@@ -12,26 +16,79 @@ use crate::terminal;
 #[cfg(debug_assertions)]
 use crate::debug_log;
 
+// Include the generated theme data
+include!(concat!(env!("OUT_DIR"), "/theme_data.rs"));
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum ColorValue {
+    Basic { basic: [String; 2] }, // [ANSI code, index]
+    Color256 { color_256: u8 },   // 256-color index
+    TrueColor { rgb: [u8; 3] },   // RGB values
+}
+
+#[derive(Debug, Deserialize)]
+struct StyleConfig {
+    #[serde(flatten)]
+    color: ColorValue,
+    #[serde(default)]
+    style: Vec<String>, // ["bold", "italic", etc.]
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ColorInfo {
+    pub value: ColorValue,
     pub ansi: &'static str,
-    pub index: u8, // Store the original color index
+    pub index: u8,
 }
 
 impl ColorInfo {
     #[must_use]
-    pub const fn new(ansi: &'static str, index: u8) -> Self {
-        Self { ansi, index }
+    pub fn new(ansi: &'static str, index: u8) -> Self {
+        Self {
+            value: ColorValue::Basic {
+                basic: [ansi.to_string(), index.to_string()], // This won't work with const fn
+            },
+            ansi,
+            index,
+        }
     }
 
     #[must_use]
     pub fn indexed(index: u8) -> Self {
-        Self::new(
-            Box::leak(format!("\x1b[38;5;{index}m").into_boxed_str()),
+        Self {
+            value: ColorValue::Color256 { color_256: index },
+            ansi: Box::leak(format!("\x1b[38;5;{index}m").into_boxed_str()),
             index,
-        )
+        }
+    }
+
+    #[must_use]
+    pub fn rgb(r: u8, g: u8, b: u8) -> Self {
+        Self {
+            value: ColorValue::TrueColor { rgb: [r, g, b] },
+            ansi: Box::leak(format!("\x1b[38;2;{r};{g};{b}m").into_boxed_str()),
+            index: 0,
+        }
+    }
+
+    // Helper to create appropriate ColorInfo based on terminal support
+    #[must_use]
+    pub fn with_support(rgb: (u8, u8, u8), support: ColorSupport) -> Self {
+        match support {
+            ColorSupport::TrueColor => Self::rgb(rgb.0, rgb.1, rgb.2),
+            ColorSupport::Color256 => Self::indexed(find_closest_color(rgb)),
+            _ => Self::indexed(find_closest_basic_color(rgb)),
+        }
     }
 }
+
+// // Theme background detection
+// pub struct ThemeSignature {
+//     bg_rgb: (u8, u8, u8),
+//     name: &'static str,
+//     description: &'static str,
+// }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(clippy::struct_excessive_bools)]
@@ -55,10 +112,35 @@ impl Style {
         }
     }
 
+    fn from_config(config: &StyleConfig) -> ThagResult<Self> {
+        let mut style = match &config.color {
+            ColorValue::Basic { basic } => {
+                let ansi_str = Box::leak(basic[0].clone().into_boxed_str());
+                Style::fg(ColorInfo::new(ansi_str, basic[1].parse()?))
+            }
+            ColorValue::Color256 { color_256 } => Style::fg(ColorInfo::indexed(*color_256)),
+            ColorValue::TrueColor { rgb } => Style::fg(ColorInfo::rgb(rgb[0], rgb[1], rgb[2])),
+        };
+
+        // Apply additional styles
+        for s in &config.style {
+            match s.as_str() {
+                "bold" => style = style.bold(),
+                "italic" => style = style.italic(),
+                "dim" => style = style.dim(),
+                "underline" => style = style.underline(),
+                _ => return Err(ThemeError::InvalidStyle(s.clone()).into()),
+            }
+        }
+
+        Ok(style)
+    }
+
     /// Creates a new Style with the specified foreground color
-    pub fn fg(color: u8) -> Self {
+    #[must_use]
+    pub fn fg(color_info: ColorInfo) -> Self {
         Self {
-            foreground: Some(ColorInfo::indexed(color)),
+            foreground: Some(color_info),
             ..Default::default()
         }
     }
@@ -132,10 +214,7 @@ impl Style {
     #[must_use]
     pub fn with_color_index(index: u8) -> Self {
         Self {
-            foreground: Some(ColorInfo {
-                ansi: Box::leak(format!("\x1b[38;5;{index}m").into_boxed_str()),
-                index,
-            }),
+            foreground: Some(ColorInfo::indexed(index)),
             ..Default::default()
         }
     }
@@ -302,17 +381,19 @@ impl Color {
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum ColorSupport {
-    /// Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
-    #[serde(alias = "xterm256")] // Accept old "256" value
-    Color256,
+    /// Still to be determined or defaulted
+    Undetermined = 0,
+    /// No color support
+    None = 1,
     /// Basic 16-color support
     #[default]
     #[serde(alias = "ansi16")] // Accept old "ansi16" value
-    Basic,
-    /// No color support
-    None,
-    /// Still to be determined or defaulted
-    Undetermined,
+    Basic = 2,
+    /// Full color support, suitable for color palettes of 256 colours (8 bit) or higher.
+    #[serde(alias = "xterm256")] // Accept old "256" value
+    Color256 = 3,
+    /// Full color support, 24 bits -> 16 million colors.
+    TrueColor = 4,
 }
 
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
@@ -680,7 +761,25 @@ impl From<Level> for Role {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+pub struct PaletteConfig {
+    heading1: StyleConfig,
+    heading2: StyleConfig,
+    heading3: StyleConfig,
+    error: StyleConfig,
+    warning: StyleConfig,
+    success: StyleConfig,
+    info: StyleConfig,
+    emphasis: StyleConfig,
+    code: StyleConfig,
+    normal: StyleConfig,
+    subtle: StyleConfig,
+    hint: StyleConfig,
+    debug: StyleConfig,
+    trace: StyleConfig,
+}
+
+#[derive(Clone, Debug, PaletteMethods)]
 pub struct Palette {
     heading1: Style,
     heading2: Style,
@@ -698,15 +797,38 @@ pub struct Palette {
     trace: Style,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TermBgLuma {
     Light,
     Dark,
 }
 
+impl FromStr for TermBgLuma {
+    type Err = ThemeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "light" => Ok(Self::Light),
+            "dark" => Ok(Self::Dark),
+            _ => Err(ThemeError::InvalidTermBgLuma(s.to_string())),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct ThemeDefinition {
+    name: String,
+    description: String,
+    term_bg_luma: String,
+    min_color_support: String,
+    background: Option<String>,
+    palette: PaletteConfig, // Rename from Palette to make the role clear
+}
+
 #[derive(Debug)]
 #[allow(dead_code)]
-pub struct ThemeConfig {
+pub struct Theme {
     pub term_bg_luma: TermBgLuma,
     pub min_color_support: ColorSupport,
     pub palette: Palette,
@@ -714,262 +836,266 @@ pub struct ThemeConfig {
     pub description: String,
 }
 
-#[non_exhaustive]
-pub enum Theme {
-    BasicLight(ThemeConfig),
-    BasicDark(ThemeConfig),
-    FullLight(ThemeConfig),
-    FullDark(ThemeConfig),
-    Dracula(ThemeConfig),
-    GruvboxLightHard(ThemeConfig),
-}
-
 impl Theme {
-    /// Creates a new theme instance after validating terminal compatibility.
+    /// Loads a theme from a TOML file.
     ///
-    /// This method checks that:
-    /// 1. The theme's required background luminance matches the terminal's
-    /// 2. The terminal's color support meets the theme's minimum requirements
+    /// The TOML file should define a complete theme, including:
+    /// - Color support requirements
+    /// - Background luminance requirements
+    /// - Style definitions for all message types
     ///
     /// # Arguments
-    /// * `theme` - The theme variant to instantiate
-    /// * `color_support` - Terminal's color capability (Basic, Color16, Color256)
-    /// * `term_bg_luma` - Terminal's background luminance (Light or Dark)
+    /// * `path` - Path to the TOML file containing the theme definition
     ///
     /// # Returns
-    /// * `Ok(Theme)` - If the theme is compatible with the terminal
+    /// A new `Theme` instance configured according to the TOML definition
     ///
     /// # Errors
-    /// * `ThemeError::DarkThemeLightTerm` - If trying to use a dark theme with a light background
-    /// * `ThemeError::LightThemeDarkTerm` - If trying to use a light theme with a dark background
-    /// * `ThemeError::InsufficientColorSupport` - If terminal's color support is below theme's minimum requirement
+    /// Returns `ThagError` if:
+    /// - The file cannot be read
+    /// - The file contains invalid TOML syntax
+    /// - The theme definition is incomplete or invalid
+    /// - Color values don't match the declared minimum color support
+    /// - Style attributes are invalid
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::errors::ThemeError;
-    /// use thag_rs::styling::{ColorSupport, Theme, TermBgLuma};
-    /// let theme = Theme::new(
-    ///     Theme::basic_light(),
-    ///     ColorSupport::Basic,
-    ///     TermBgLuma::Light
-    /// )?;
-    /// # Ok::<(), ThemeError>(())
-    pub fn new(
-        theme: Theme,
-        color_support: ColorSupport,
+    /// use std::path::Path;
+    /// let theme = Theme::load_from_file(Path::new("themes/custom.toml"))?;
+    /// ```
+    pub fn load_from_file(path: &Path) -> ThagResult<Self> {
+        let content = fs::read_to_string(path)?;
+        let def: ThemeDefinition = toml::from_str(&content)?;
+        Self::from_definition(def)
+    }
+
+    /// Loads a built-in theme by name.
+    ///
+    /// Built-in themes are compiled into the binary and include:
+    /// - "`dracula`" - Dark theme with vibrant colors
+    /// - "`basic_light`" - Simple light theme for basic terminals
+    /// - "`basic_dark`" - Simple dark theme for basic terminals
+    /// - "`light_256`" - Rich light theme for 256-color terminals
+    /// - "`dark_256`" - Rich dark theme for 256-color terminals
+    ///
+    /// # Arguments
+    /// * `name` - The name of the built-in theme to load
+    ///
+    /// # Returns
+    /// A new `Theme` instance configured according to the named theme
+    ///
+    /// # Errors
+    /// Returns `ThagError` if:
+    /// - The specified theme name is not recognized
+    /// - The theme definition contains invalid color values
+    /// - The theme definition contains invalid style attributes
+    /// - There's a mismatch between color values and minimum color support
+    ///
+    /// # Examples
+    /// ```
+    /// let theme = Theme::load_builtin("dracula")?;
+    /// ```
+    pub fn load_builtin(name: &str) -> ThagResult<Self> {
+        let theme_toml = BUILT_IN_THEMES
+            .get(name)
+            .ok_or_else(|| ThemeError::UnknownTheme(name.to_string()))?;
+
+        let def: ThemeDefinition = toml::from_str(theme_toml)?;
+        Self::from_definition(def)
+    }
+
+    fn from_definition(def: ThemeDefinition) -> ThagResult<Self> {
+        Ok(Theme {
+            term_bg_luma: TermBgLuma::from_str(&def.term_bg_luma)?,
+            min_color_support: ColorSupport::from_str(&def.min_color_support)?,
+            palette: Palette::from_config(&def.palette)?,
+            background: def.background,
+            description: def.description,
+        })
+    }
+
+    /// Validates that the theme is compatible with the terminal capabilities.
+    ///
+    /// Checks both the color support level and background luminance compatibility
+    /// to ensure the theme will display correctly in the current terminal.
+    ///
+    /// # Arguments
+    /// * `available_support` - The terminal's color support level
+    /// * `term_bg_luma` - The terminal's background luminance (light or dark)
+    ///
+    /// # Returns
+    /// `Ok(())` if the theme is compatible with the terminal
+    ///
+    /// # Errors
+    /// Returns `ThagError` if:
+    /// - The terminal's color support is insufficient for the theme
+    ///   (e.g., trying to use a 256-color theme in a basic terminal)
+    /// - The terminal's background luminance doesn't match the theme's requirements
+    ///   (e.g., trying to use a light theme on a dark background)
+    /// - Any style in the theme's palette requires unavailable terminal features
+    ///
+    /// # Examples
+    /// ```
+    /// let theme = Theme::load_builtin("dracula")?;
+    /// theme.validate(ColorSupport::Color256, TermBgLuma::Dark)?;
+    /// ```
+    pub fn validate(
+        &self,
+        available_support: ColorSupport,
         term_bg_luma: TermBgLuma,
-    ) -> Result<Theme, ThemeError> {
-        let config = theme.config();
-
-        if config.term_bg_luma != term_bg_luma {
-            return Err(match term_bg_luma {
-                TermBgLuma::Light => ThemeError::DarkThemeLightTerm,
-                TermBgLuma::Dark => ThemeError::LightThemeDarkTerm,
-            });
+    ) -> ThagResult<()> {
+        // Check color support
+        eprintln!("self.min_color_support={:?}", self.min_color_support);
+        eprintln!("available_support={available_support:?}");
+        if available_support < self.min_color_support {
+            return Err(ThemeError::ColorSupportMismatch {
+                required: self.min_color_support,
+                available: available_support,
+            }
+            .into());
         }
-        if color_support < config.min_color_support {
-            return Err(ThemeError::InsufficientColorSupport);
+
+        // Check background compatibility
+        if self.term_bg_luma != term_bg_luma {
+            return Err(ThemeError::TermBgLumaMismatch {
+                theme: self.term_bg_luma,
+                terminal: term_bg_luma,
+            }
+            .into());
         }
 
+        // Validate each color in the palette matches the declared min_color_support
+        self.validate_palette()?;
+
+        Ok(())
+    }
+
+    fn validate_palette(&self) -> ThagResult<()> {
+        self.palette.validate_styles(self.min_color_support)?;
+        Ok(())
+    }
+
+    /// Validates a theme definition before creating a Theme
+    #[allow(dead_code)]
+    fn validate_definition(def: &ThemeDefinition) -> ThagResult<()> {
+        // Validate term_bg_luma value
+        if !["light", "dark"].contains(&def.term_bg_luma.as_str()) {
+            return Err(ThemeError::InvalidTermBgLuma(def.term_bg_luma.clone()).into());
+        }
+
+        // Validate color_support value
+        if !["basic", "color_256", "true_color"].contains(&def.min_color_support.as_str()) {
+            return Err(ThemeError::InvalidColorSupport(def.min_color_support.clone()).into());
+        }
+
+        // Validate styles
+        for style_name in def
+            .palette
+            .heading1
+            .style
+            .iter()
+            .chain(&def.palette.heading2.style)
+        // ... chain all style arrays
+        {
+            if !["bold", "italic", "dim", "underline"].contains(&style_name.as_str()) {
+                return Err(ThemeError::InvalidStyle(style_name.clone()).into());
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Loads a theme from a file and validates it against terminal capabilities.
+    ///
+    /// This is a convenience method that combines `load_from_file` and `validate`
+    /// to ensure the loaded theme is compatible with the current terminal.
+    ///
+    /// # Arguments
+    /// * `path` - Path to the TOML file containing the theme definition
+    /// * `available_support` - The terminal's color support level
+    /// * `term_bg_luma` - The terminal's background luminance (light or dark)
+    ///
+    /// # Returns
+    /// A new validated `Theme` instance configured according to the TOML definition
+    ///
+    /// # Errors
+    /// Returns `ThagError` if:
+    /// - The file cannot be read or contains invalid TOML syntax
+    /// - The theme definition is incomplete or invalid
+    /// - The terminal's color support is insufficient for the theme
+    /// - The terminal's background luminance doesn't match the theme's requirements
+    /// - Any style in the theme's palette requires unavailable terminal features
+    ///
+    /// # Examples
+    /// ```
+    /// use std::path::Path;
+    /// let theme = Theme::load(
+    ///     Path::new("themes/custom.toml"),
+    ///     ColorSupport::Color256,
+    ///     TermBgLuma::Dark
+    /// )?;
+    /// ```
+    pub fn load(
+        path: &Path,
+        available_support: ColorSupport,
+        term_bg_luma: TermBgLuma,
+    ) -> ThagResult<Self> {
+        let theme = Self::load_from_file(path)?;
+        theme.validate(available_support, term_bg_luma)?;
         Ok(theme)
     }
 
-    pub fn config(&self) -> &ThemeConfig {
-        match self {
-            Theme::BasicLight(config)
-            | Theme::BasicDark(config)
-            | Theme::FullLight(config)
-            | Theme::FullDark(config)
-            | Theme::Dracula(config)
-            | Theme::GruvboxLightHard(config) => config,
+    #[must_use]
+    pub fn style_for(&self, role: Role) -> Style {
+        let palette = &self.palette;
+
+        match role {
+            Role::Error => palette.error.clone(),
+            Role::Warning => palette.warning.clone(),
+            Role::Heading1 => palette.heading1.clone(),
+            Role::Heading2 => palette.heading2.clone(),
+            Role::Heading3 => palette.heading3.clone(),
+            Role::Success => palette.success.clone(),
+            Role::Info => palette.info.clone(),
+            Role::Emphasis => palette.emphasis.clone(),
+            Role::Code => palette.code.clone(),
+            Role::Normal => palette.normal.clone(),
+            Role::Subtle => palette.subtle.clone(),
+            Role::Hint => palette.hint.clone(),
+            Role::Debug => palette.debug.clone(),
+            Role::Trace => palette.trace.clone(),
         }
     }
 }
 
-impl Theme {
-    #[must_use]
-    pub fn basic_light() -> Theme {
-        Theme::BasicLight(ThemeConfig {
-            term_bg_luma: TermBgLuma::Light,
-            min_color_support: ColorSupport::Basic,
-            palette: Palette {
-                // Current behavior mappings
-                error: Color::red().bold(),
-                warning: Color::magenta().bold(),
-                heading1: Color::blue().bold(), // Was Heading
-                heading2: Color::cyan().bold(), // Was Subheading
-                heading3: Color::cyan().bold(), // Match heading2 in basic
-                emphasis: Color::green().bold(),
-                info: Color::green(), // Was Bright
-                normal: Color::dark_gray(),
-
-                // New roles
-                success: Style::new(), // No decoration in basic
-                code: Style::new(),    // No decoration in basic
-                subtle: Style::new(),  // No decoration in basic
-
-                // Current behavior mappings
-                hint: Color::cyan().italic(), // Was Ghost
-                debug: Color::cyan(),
-                trace: Color::cyan(), // Match debug in basic
-            },
-            background: None,
-            description: "Basic light theme with minimal color usage".into(),
-        })
-    }
-
-    #[must_use]
-    pub fn basic_dark() -> Theme {
-        Theme::BasicDark(ThemeConfig {
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::Basic,
-            palette: Palette {
-                // Current behavior mappings
-                error: Color::red().bold(),
-                warning: Color::yellow().bold(),
-                heading1: Color::green().bold(), // Was Heading
-                heading2: Color::blue().bold(),  // Was Subheading
-                heading3: Color::blue().bold(),  // Match heading2 in basic
-                emphasis: Color::cyan().bold(),
-                info: Color::light_yellow(), // Was Bright
-                normal: Color::white(),
-
-                // New roles
-                success: Style::new(), // No decoration in basic
-                code: Style::new(),    // No decoration in basic
-                subtle: Style::new(),  // No decoration in basic
-
-                // Current behavior mappings
-                hint: Color::light_gray().italic(), // Was Ghost
-                debug: Color::light_cyan(),
-                trace: Color::light_cyan(), // Match debug in basic
-            },
-            background: None,
-            description: "Basic dark theme with minimal color usage".into(),
-        })
-    }
-
-    #[must_use]
-    pub fn full_light() -> Theme {
-        Theme::FullLight(ThemeConfig {
-            term_bg_luma: TermBgLuma::Light,
-            min_color_support: ColorSupport::Color256,
-            palette: Palette {
-                // Current behavior mappings
-                error: Color::fixed(160).bold(),    // GuardsmanRed
-                warning: Color::fixed(164).bold(),  // DarkPurplePizzazz
-                heading1: Color::fixed(19).bold(),  // MidnightBlue
-                heading2: Color::fixed(26).bold(),  // ScienceBlue
-                heading3: Color::fixed(26).bold(),  // Match heading2
-                emphasis: Color::fixed(167).bold(), // RomanOrange
-                info: Color::fixed(42).bold(),      // Was Bright: CaribbeanGreen
-                normal: Color::fixed(16),           // Black
-
-                // New roles
-                success: Style::new(), // No decoration initially
-                code: Style::new(),    // No decoration initially
-                subtle: Style::new(),  // No decoration initially
-
-                // Current behavior mappings
-                hint: Color::fixed(232).italic(), // Was Ghost: DarkCodGray
-                debug: Color::fixed(32),          // LochmaraBlue
-                trace: Color::fixed(32),          // Match debug
-            },
-            background: None,
-            description: "Full light theme with 256-color support".into(),
-        })
-    }
-
-    #[must_use]
-    pub fn full_dark() -> Theme {
-        Theme::FullDark(ThemeConfig {
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::Color256,
-            palette: Palette {
-                // Current behavior mappings
-                error: Color::fixed(1).bold(),      // UserRed
-                warning: Color::fixed(171).bold(),  // LighterHeliotrope
-                heading1: Color::fixed(33).bold(),  // AzureRadiance
-                heading2: Color::fixed(44),         // RobinEggBlue
-                heading3: Color::fixed(44),         // Match heading2
-                emphasis: Color::fixed(173).bold(), // Copperfield
-                info: Color::fixed(118).italic(),   // Was Bright: ChartreuseGreen
-                normal: Color::fixed(231),          // White
-
-                // New roles
-                success: Style::new(), // No decoration initially
-                code: Style::new(),    // No decoration initially
-                subtle: Style::new(),  // No decoration initially
-
-                // Current behavior mappings
-                hint: Color::fixed(251).italic(), // Was Ghost: Silver
-                debug: Color::fixed(37),          // BondiBlue
-                trace: Color::fixed(37),          // Match debug
-            },
-            background: None,
-            description: "Full dark theme with 256-color support".into(),
-        })
-    }
-
-    pub fn dracula() -> Theme {
-        Theme::Dracula(ThemeConfig {
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::Color256,
-            palette: Palette {
-                // Headers and Structure
-                heading1: Color::fixed(212).bold(), // Bold Pink
-                heading2: Color::fixed(141).bold(), // Bold Purple
-                heading3: Color::fixed(117).bold(), // Bold Cyan
-
-                // Status/Alerts
-                error: Color::fixed(203),   // Red
-                warning: Color::fixed(228), // Yellow
-                success: Color::fixed(84),  // Green
-                info: Color::fixed(117),    // Cyan
-
-                // Emphasis levels
-                emphasis: Color::fixed(141).bold(), // Bold Purple
-                code: Color::fixed(84),             // Green
-                normal: Color::fixed(253),          // Light Gray
-                subtle: Color::fixed(245),          // Medium Gray
-                hint: Color::fixed(244).italic(),   // Dim Light Gray
-
-                // Development
-                debug: Color::fixed(245).italic(), // Italic Medium Gray
-                trace: Color::fixed(244),          // Dim Light Gray
-            },
-            background: Some("#282a36".into()),
-            description: "Dark theme with vibrant colors".into(),
-        })
-    }
-
-    #[must_use]
-    pub fn style_for(&self, role: Role) -> &Style {
-        let palette = match self {
-            Theme::BasicLight(config)
-            | Theme::BasicDark(config)
-            | Theme::FullLight(config)
-            | Theme::FullDark(config)
-            | Theme::Dracula(config)
-            | Theme::GruvboxLightHard(config) => &config.palette,
-        };
-
-        match role {
-            Role::Error => &palette.error,
-            Role::Warning => &palette.warning,
-            Role::Heading1 => &palette.heading1,
-            Role::Heading2 => &palette.heading2,
-            Role::Heading3 => &palette.heading3,
-            Role::Success => &palette.success,
-            Role::Info => &palette.info,
-            Role::Emphasis => &palette.emphasis,
-            Role::Code => &palette.code,
-            Role::Normal => &palette.normal,
-            Role::Subtle => &palette.subtle,
-            Role::Hint => &palette.hint,
-            Role::Debug => &palette.debug,
-            Role::Trace => &palette.trace,
+// Helper to check a single style
+fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
+    if let Some(color_info) = &style.foreground {
+        match &color_info.value {
+            ColorValue::Basic { basic: _ } => Ok(()), // Basic is always valid
+            ColorValue::Color256 { color_256: _ } => {
+                if min_support < ColorSupport::Color256 {
+                    Err(ThemeError::InvalidColorValue(
+                        "256-color value used in theme requiring only basic colors".into(),
+                    )
+                    .into())
+                } else {
+                    Ok(())
+                }
+            }
+            ColorValue::TrueColor { rgb: _ } => {
+                if min_support < ColorSupport::TrueColor {
+                    Err(ThemeError::InvalidColorValue(
+                        "True color value used in theme requiring only 256 colors".into(),
+                    )
+                    .into())
+                } else {
+                    Ok(())
+                }
+            }
         }
+    } else {
+        Ok(())
     }
 }
 
@@ -992,6 +1118,135 @@ macro_rules! cvprtln {
         }
     }};
 }
+
+#[allow(dead_code)]
+fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8), is_system: bool) -> u32 {
+    let base_distance = base_distance(c1, c2);
+
+    // Give a slight preference to system colors when they're close matches
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    if is_system {
+        (f64::from(base_distance) * 0.9) as u32
+    } else {
+        base_distance
+    }
+}
+
+fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
+    let dr = f64::from(i32::from(c1.0) - i32::from(c2.0)) * 0.3;
+    let dg = f64::from(i32::from(c1.1) - i32::from(c2.1)) * 0.59;
+    let db = f64::from(i32::from(c1.2) - i32::from(c2.2)) * 0.11;
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let base_distance = (dr * dr + dg * dg + db * db) as u32;
+    base_distance
+}
+
+fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
+    const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
+
+    // Handle grays first (232-255)
+    let (r, g, b) = rgb;
+    if r == g && g == b {
+        if r < 4 {
+            return 16; // black
+        }
+        if r > 238 {
+            return 231; // white
+        }
+        // Find closest gray (232-255)
+        let gray_idx = (f32::from(r) - 8.0) / 10.0;
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let gray_idx = gray_idx.round() as u8;
+        if gray_idx < 24 {
+            return 232 + gray_idx;
+        }
+    }
+
+    // Find closest color in the 6x6x6 color cube (16-231)
+    let find_closest = |v: u8| {
+        u8::try_from(
+            STEPS
+                .iter()
+                .enumerate()
+                .min_by_key(|(_i, &s)| (i16::from(s) - i16::from(v)).abs())
+                .map_or(0, |(i, _)| i),
+        )
+        .map_or(0, |v| v)
+    };
+
+    let r_idx = find_closest(r);
+    let g_idx = find_closest(g);
+    let b_idx = find_closest(b);
+
+    16 + (36 * r_idx) + (6 * g_idx) + b_idx
+}
+
+fn find_closest_basic_color(rgb: (u8, u8, u8)) -> u8 {
+    // Use weighted Euclidean distance for better perceptual matching
+
+    #[allow(clippy::cast_possible_truncation)]
+    BASIC_COLORS
+        .iter()
+        .enumerate()
+        .min_by(|&(_, &c1), &(_, &c2)| {
+            base_distance(rgb, c1)
+                .partial_cmp(&base_distance(rgb, c2))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .map_or(0, |(i, _)| i as u8)
+}
+
+// Helper function to get RGB values for a color number (for verification)
+#[must_use]
+pub fn get_rgb(color: u8) -> (u8, u8, u8) {
+    const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
+
+    match color {
+        0..=15 => BASIC_COLORS[color as usize],
+        16..=231 => {
+            let color = color - 16;
+            let r = STEPS[((color / 36) % 6) as usize];
+            let g = STEPS[((color / 6) % 6) as usize];
+            let b = STEPS[(color % 6) as usize];
+            (r, g, b)
+        }
+        232..=255 => {
+            let gray = 8 + (color - 232) * 10;
+            (gray, gray, gray)
+        }
+    }
+}
+
+// Usage:
+#[allow(dead_code)]
+fn main() -> ThagResult<()> {
+    // Load built-in theme
+    let _dracula = Theme::load_builtin("dracula")?;
+
+    // Load custom theme
+    let _custom = Theme::load_from_file(Path::new("custom_theme.toml"))?;
+
+    Ok(())
+}
+
+const BASIC_COLORS: [(u8, u8, u8); 16] = [
+    (0, 0, 0),       // black
+    (128, 0, 0),     // red
+    (0, 128, 0),     // green
+    (128, 128, 0),   // yellow
+    (0, 0, 128),     // blue
+    (128, 0, 128),   // magenta
+    (0, 128, 128),   // cyan
+    (192, 192, 192), // light gray
+    (128, 128, 128), // dark gray
+    (255, 0, 0),     // bright red
+    (0, 255, 0),     // bright green
+    (255, 255, 0),   // bright yellow
+    (0, 0, 255),     // bright blue
+    (255, 0, 255),   // bright magenta
+    (0, 255, 255),   // bright cyan
+    (255, 255, 255), // white
+];
 
 #[macro_export]
 macro_rules! clog {
@@ -1123,6 +1378,7 @@ macro_rules! cvlog_ghost {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
     use std::sync::atomic::{AtomicBool, Ordering};
 
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
@@ -1255,5 +1511,76 @@ mod tests {
         // Ghost should be italic
         let ghost_style = attrs.style_for_level(Level::Ghost).paint("test");
         assert!(ghost_style.contains("\x1b[3m"));
+    }
+
+    #[test]
+    fn test_load_dracula_theme() -> ThagResult<()> {
+        let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
+
+        // Check theme metadata
+        assert_eq!(theme.term_bg_luma, TermBgLuma::Dark);
+        assert_eq!(theme.min_color_support, ColorSupport::TrueColor);
+        assert_eq!(theme.background.as_deref(), Some("#282a36"));
+
+        // Check a few key styles
+        if let ColorValue::TrueColor { rgb } = &theme.palette.heading1.foreground.unwrap().value {
+            assert_eq!(rgb, &[255, 121, 198]);
+        } else {
+            panic!("Expected TrueColor for heading1");
+        }
+
+        // Check style attributes
+        assert!(theme.palette.heading1.bold);
+        assert!(!theme.palette.normal.bold);
+        assert!(theme.palette.hint.italic);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_dracula_validation() -> ThagResult<()> {
+        let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
+
+        // Should succeed with TrueColor support and dark background
+        assert!(theme
+            .validate(ColorSupport::TrueColor, TermBgLuma::Dark)
+            .is_ok());
+
+        // Should fail with insufficient color support
+        assert!(theme
+            .validate(ColorSupport::Color256, TermBgLuma::Dark)
+            .is_err());
+
+        // Should fail with wrong background
+        assert!(theme
+            .validate(ColorSupport::TrueColor, TermBgLuma::Light)
+            .is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_color_support_ordering() {
+        assert!(ColorSupport::None < ColorSupport::Basic);
+        assert!(ColorSupport::Basic < ColorSupport::Color256);
+        assert!(ColorSupport::Color256 < ColorSupport::TrueColor);
+
+        // Or more comprehensively:
+        let supports = [
+            ColorSupport::Undetermined,
+            ColorSupport::None,
+            ColorSupport::Basic,
+            ColorSupport::Color256,
+            ColorSupport::TrueColor,
+        ];
+
+        for i in 0..supports.len() - 1 {
+            assert!(
+                supports[i] < supports[i + 1],
+                "ColorSupport ordering violated between {:?} and {:?}",
+                supports[i],
+                supports[i + 1]
+            );
+        }
     }
 }

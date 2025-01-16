@@ -8,7 +8,7 @@ use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
-use thag_proc_macros::PaletteMethods;
+use thag_proc_macros::{AnsiCodeDerive, PaletteMethods};
 
 #[cfg(feature = "color_detect")]
 use crate::terminal;
@@ -18,6 +18,39 @@ use crate::debug_log;
 
 // Include the generated theme data
 include!(concat!(env!("OUT_DIR"), "/theme_data.rs"));
+
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, AnsiCodeDerive)]
+#[serde(rename_all = "snake_case")]
+pub enum AnsiCode {
+    // Standard colors (30-37)
+    Black = 30,
+    Red = 31,
+    Green = 32,
+    Yellow = 33,
+    Blue = 34,
+    Magenta = 35,
+    Cyan = 36,
+    White = 37,
+
+    // High intensity colors (90-97)
+    #[ansi_name = "Dark Gray"]
+    BrightBlack = 90,
+    BrightRed = 91,
+    BrightGreen = 92,
+    BrightYellow = 93,
+    BrightBlue = 94,
+    BrightMagenta = 95,
+    BrightCyan = 96,
+    BrightWhite = 97,
+}
+
+impl AnsiCode {
+    // Get the numeric code
+    #[must_use]
+    pub fn code(self) -> u8 {
+        self as u8
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(untagged)]
@@ -114,9 +147,12 @@ impl Style {
 
     fn from_config(config: &StyleConfig) -> ThagResult<Self> {
         let mut style = match &config.color {
-            ColorValue::Basic { basic } => {
-                let ansi_str = Box::leak(basic[0].clone().into_boxed_str());
-                Style::fg(ColorInfo::new(ansi_str, basic[1].parse()?))
+            ColorValue::Basic {
+                basic: [code, index],
+            } => {
+                let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
+                let index = index.parse()?;
+                Style::fg(ColorInfo::new(ansi, index))
             }
             ColorValue::Color256 { color_256 } => Style::fg(ColorInfo::indexed(*color_256)),
             ColorValue::TrueColor { rgb } => Style::fg(ColorInfo::rgb(rgb[0], rgb[1], rgb[2])),
@@ -686,18 +722,6 @@ impl TermAttributes {
             Level::Ghost => Color::fixed(251).italic(),  // Silver
         }
     }
-
-    // /// Creates a new TermAttributes instance with specified support and theme for testing
-    // #[cfg(test)]
-    // pub fn with_mock_theme(
-    //     color_support: &'static ColorSupport,
-    //     theme: &'static TermTheme,
-    // ) -> Self {
-    //     Self {
-    //         color_support,
-    //         theme,
-    //     }
-    // }
 }
 
 #[must_use]
@@ -1514,7 +1538,7 @@ mod tests {
     }
 
     #[test]
-    fn test_load_dracula_theme() -> ThagResult<()> {
+    fn test_styling_load_dracula_theme() -> ThagResult<()> {
         let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
 
         // Check theme metadata
@@ -1538,7 +1562,7 @@ mod tests {
     }
 
     #[test]
-    fn test_dracula_validation() -> ThagResult<()> {
+    fn test_styling_dracula_validation() -> ThagResult<()> {
         let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
 
         // Should succeed with TrueColor support and dark background
@@ -1560,7 +1584,7 @@ mod tests {
     }
 
     #[test]
-    fn test_color_support_ordering() {
+    fn test_styling_color_support_ordering() {
         assert!(ColorSupport::None < ColorSupport::Basic);
         assert!(ColorSupport::Basic < ColorSupport::Color256);
         assert!(ColorSupport::Color256 < ColorSupport::TrueColor);

@@ -93,7 +93,7 @@ pub fn validate_theme_file(path: &Path) -> Result<(), BuildError> {
         "min_color_support",
         "palette",
     ] {
-        if !theme.get(field).is_some() {
+        if theme.get(field).is_none() {
             return Err(BuildError::MissingField {
                 field: field.to_string(),
                 path: path.to_owned(),

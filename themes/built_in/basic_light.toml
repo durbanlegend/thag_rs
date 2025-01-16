@@ -5,23 +5,23 @@ min_color_support = "basic"
 
 [palette]
 # Headers and Structure
-heading1 = { basic = ["\\x1b[31m", "1"], style = ["bold"] } # Red
-heading2 = { basic = ["\\x1b[34m", "4"], style = ["bold"] } # Blue
-heading3 = { basic = ["\\x1b[36m", "6"], style = ["bold"] } # Cyan
+heading1 = { basic = ["red", "1"], style = ["bold"] }  # Red
+heading2 = { basic = ["blue", "4"], style = ["bold"] } # Blue
+heading3 = { basic = ["cyan", "6"], style = ["bold"] } # Cyan
 
 # Status/Alerts
-error = { basic = ["\\x1b[31m", "1"] }   # Red
-warning = { basic = ["\\x1b[35m", "5"] } # Magenta
-success = { basic = ["\\x1b[32m", "2"] } # Green
-info = { basic = ["\\x1b[36m", "6"] }    # Cyan
+error = { basic = ["red", "1"] }       # Red
+warning = { basic = ["magenta", "5"] } # Magenta
+success = { basic = ["green", "2"] }   # Green
+info = { basic = ["cyan", "6"] }       # Cyan
 
 # Emphasis levels
-emphasis = { basic = ["\\x1b[32m", "2"], style = ["bold"] } # Green
-code = { basic = ["\\x1b[34m", "4"] }                       # Blue
-normal = { basic = ["\\x1b[30m", "0"] }                     # Black
-subtle = { basic = ["\\x1b[90m", "8"] }                     # Gray
-hint = { basic = ["\\x1b[36m", "6"], style = ["italic"] }   # Cyan
+emphasis = { basic = ["green", "2"], style = ["bold"] } # Green
+code = { basic = ["blue", "4"] }                        # Blue
+normal = { basic = ["black", "0"] }                     # Black
+subtle = { basic = ["gray", "8"] }                      # Gray
+hint = { basic = ["cyan", "6"], style = ["italic"] }    # Cyan
 
 # Development
-debug = { basic = ["\\x1b[36m", "6"] } # Cyan
-trace = { basic = ["\\x1b[90m", "8"] } # Gray
+debug = { basic = ["cyan", "6"] } # Cyan
+trace = { basic = ["gray", "8"] } # Gray

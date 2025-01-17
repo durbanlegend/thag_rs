@@ -95,8 +95,11 @@ impl ErrorVariant {
 
     fn display_summary(&self) -> String {
         match &self.wrapped_type {
-            Some(wrapped) => format!("{} ({}) - \"{}\"", self.name, wrapped, self.display_message),
-            None => format!("{} - \"{}\"", self.name, self.display_message),
+            Some(wrapped) => format!(
+                r#"{} ({}) - "{}""#,
+                self.name, wrapped, self.display_message
+            ),
+            None => format!(r#"{} - "{}""#, self.name, self.display_message),
         }
     }
 }
@@ -233,22 +236,26 @@ fn generate_tests(module: &ErrorModule) -> String {
         if let Some(wrapped) = &variant.wrapped_type {
             if wrapped == "std::io::Error" {
                 output.push_str(&format!(
-                    "            {}::{}(std::io::Error::new(std::io::ErrorKind::Other, \"test error\")).to_string(),\n",
+                    r#"            {}::{}(std::io::Error::new(std::io::ErrorKind::Other, "test error")).to_string(),
+"#,
                     module.name, variant.name
                 ));
                 // Use the actual display message format
                 output.push_str(&format!(
-                    "            \"{}\"\n",
+                    r#"            "{}"
+"#,
                     variant.display_message.replace("{}", "test error")
                 ));
             } else if wrapped == "String" {
                 output.push_str(&format!(
-                    "            {}::{}(\"test error\".to_string()).to_string(),\n",
+                    r#"            {}::{}("test error".to_string()).to_string(),
+"#,
                     module.name, variant.name
                 ));
                 // Use the actual display message format
                 output.push_str(&format!(
-                    "            \"{}\"\n",
+                    r#"            "{}"
+"#,
                     variant.display_message.replace("{}", "test error")
                 ));
             } else {
@@ -261,7 +268,10 @@ fn generate_tests(module: &ErrorModule) -> String {
                     "            // {}::{}(your_test_value).to_string(),\n",
                     module.name, variant.name
                 ));
-                output.push_str("            // \"test error\"  // TODO: Review expected output\n");
+                output.push_str(
+                    r#"            // "test error"  // TODO: Review expected output
+"#,
+                );
                 output.push_str("        );\n");
                 continue;
             }
@@ -271,7 +281,11 @@ fn generate_tests(module: &ErrorModule) -> String {
                 module.name, variant.name
             ));
             // For variants without wrapped types, use the display message directly
-            output.push_str(&format!("            \"{}\"\n", variant.display_message));
+            output.push_str(&format!(
+                r#"            "{}"
+"#,
+                variant.display_message
+            ));
         }
         output.push_str("        );\n");
     }
@@ -284,7 +298,8 @@ fn generate_tests(module: &ErrorModule) -> String {
         if let Some(wrapped) = &variant.wrapped_type {
             match wrapped.as_str() {
                 "std::io::Error" => {
-                    output.push_str("        let io_error = std::io::Error::new(std::io::ErrorKind::Other, \"test error\");\n");
+                    output.push_str(r#"        let io_error = std::io::Error::new(std::io::ErrorKind::Other, "test error");
+"#);
                     output.push_str(&format!(
                         "        let error = {}::{}(io_error);\n",
                         module.name, variant.name
@@ -295,7 +310,10 @@ fn generate_tests(module: &ErrorModule) -> String {
                     ));
                 }
                 "String" => {
-                    output.push_str("        let string_error = \"test error\".to_string();\n");
+                    output.push_str(
+                        r#"        let string_error = "test error".to_string();
+"#,
+                    );
                     output.push_str(&format!(
                         "        let error = {}::{}(string_error);\n",
                         module.name, variant.name
@@ -369,7 +387,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 variants.push(variant);
             }
             Err(e) => {
-                println!("Error creating variant: {}", e);
+                println!("Error creating variant: {e}");
                 continue;
             }
         }
@@ -433,33 +451,6 @@ fn generate_error_module(module: &ErrorModule) -> String {
     }
     output.push_str("}\n\n");
 
-    // Generate Display impl
-    output.push_str(&format!("impl std::fmt::Display for {} {{\n", module.name));
-    output.push_str("    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n");
-    output.push_str("        match self {\n");
-    for variant in &module.variants {
-        if let Some(_wrapped) = &variant.wrapped_type {
-            output.push_str(&format!(
-                "            {}::{}(arg) => write!(f, \"{}\", arg),\n",
-                module.name, variant.name, variant.display_message
-            ));
-        } else {
-            output.push_str(&format!(
-                "            {}::{} => write!(f, \"{}\"),\n",
-                module.name, variant.name, variant.display_message
-            ));
-        }
-    }
-    output.push_str("        }\n");
-    output.push_str("    }\n");
-    output.push_str("}\n\n");
-
-    // Generate Error impl
-    output.push_str(&format!(
-        "impl std::error::Error for {} {{}}\n\n",
-        module.name
-    ));
-
     // Generate From impls for wrapped types
     for variant in &module.variants {
         if let Some(wrapped) = &variant.wrapped_type {
@@ -467,12 +458,62 @@ fn generate_error_module(module: &ErrorModule) -> String {
                 // Skip String as it's handled differently
                 output.push_str(&format!("impl From<{}> for {} {{\n", wrapped, module.name));
                 output.push_str(&format!("    fn from(err: {}) -> Self {{\n", wrapped));
-                output.push_str(&format!("        {}::{}(err)\n", module.name, variant.name));
+                output.push_str(&format!("        Self::{}(err)\n", variant.name));
                 output.push_str("    }\n");
                 output.push_str("}\n\n");
             }
         }
     }
+
+    // Generate Display impl
+    output.push_str(&format!("impl std::fmt::Display for {} {{\n", module.name));
+    output.push_str("    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n");
+    output.push_str("        match self {\n");
+    for variant in &module.variants {
+        if let Some(_wrapped) = &variant.wrapped_type {
+            output.push_str(&format!(
+                r#"            Self::{}(e) => write!(f, "{}", e),
+"#,
+                variant.name, variant.display_message
+            ));
+        } else {
+            output.push_str(&format!(
+                r#"            Self::{} => write!(f, "{}"),
+"#,
+                variant.name, variant.display_message
+            ));
+        }
+    }
+    output.push_str("        }\n");
+    output.push_str("    }\n");
+    output.push_str("}\n\n");
+
+    // // Generate Error impl
+    // output.push_str(&format!(
+    //     "impl std::error::Error for {} {{}}\n\n",
+    //     module.name
+    // ));
+
+    // Generate Error impl
+    output.push_str(&format!("impl std::error::Error for {} {{\n", module.name));
+    output.push_str("    fn source(&self) -> Option<&(dyn Error + 'static)> {\n");
+    output.push_str("        match self {\n");
+    for variant in &module.variants {
+        if let Some(_wrapped) = &variant.wrapped_type {
+            output.push_str(&format!(
+                "            Self::{}(e) => Some(e),\n",
+                variant.name
+            ));
+        } else {
+            output.push_str(&format!(
+                "           Self::{} => Some(self),\n",
+                variant.name
+            ));
+        }
+    }
+    output.push_str("        }\n");
+    output.push_str("    }\n");
+    output.push_str("}\n\n");
 
     output
 }

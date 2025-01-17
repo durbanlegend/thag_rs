@@ -14,30 +14,6 @@ use termbg::Theme as TermbgTheme;
 #[cfg(debug_assertions)]
 use crate::debug_log;
 
-// fn reset_terminal_state() {
-//     // Create a sequence that should work across terminals
-//     let reset_sequence = format!(
-//         "{}{}{}{}{}{}",
-//         "\x1B[s",    // Save cursor position
-//         "\x1B[?25h", // Show cursor
-//         "\x1B[?7h",  // Enable line wrap
-//         "\x1B[0m",   // Reset attributes
-//         "\x1B[r",    // Reset scroll region
-//         "\x1B[u"     // Restore cursor position
-//     );
-
-//     // Apply to main screen
-//     print!("\x1B[?1049l{}", reset_sequence);
-
-//     // Apply to alternate screen
-//     print!("\x1B[?1049h{}", reset_sequence);
-
-//     // Return to main screen
-//     print!("\x1B[?1049l");
-
-//     let _ = stdout().flush();
-// }
-
 fn reset_terminal_state() {
     print!("\r");
     let _ = stdout().flush();
@@ -115,7 +91,9 @@ pub fn detect_color_support() -> &'static ColorSupport {
         }
 
         supports_color::on(Stream::Stdout).map_or(ColorSupport::None, |color_level| {
-            if color_level.has_16m || color_level.has_256 {
+            if color_level.has_16m {
+                ColorSupport::TrueColor
+            } else if color_level.has_256 {
                 ColorSupport::Color256
             } else {
                 ColorSupport::Basic

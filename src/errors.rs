@@ -48,6 +48,7 @@ pub enum ThagError {
     StrumParse(StrumParseError), // For strum parse enum
     #[cfg(feature = "syn")]
     Syn(SynError), // For syn errors
+    Termbg(termbg::Error),       // For termbg errors
     Theme(ThemeError),           // For thag_rs::styling theme errors
 
     TomlDe(TomlDeError), // For TOML deserialization errors
@@ -168,6 +169,12 @@ impl From<Box<dyn Error + Send + Sync + 'static>> for ThagError {
     }
 }
 
+impl From<termbg::Error> for ThagError {
+    fn from(err: termbg::Error) -> Self {
+        Self::Termbg(err)
+    }
+}
+
 impl From<std::env::VarError> for ThagError {
     fn from(err: std::env::VarError) -> Self {
         Self::VarError(err)
@@ -208,6 +215,7 @@ impl std::fmt::Display for ThagError {
             Self::StrumParse(e) => write!(f, "{e}"),
             #[cfg(feature = "syn")]
             Self::Syn(e) => write!(f, "{e}"),
+            Self::Termbg(e) => write!(f, "{e}"),
             Self::Theme(e) => write!(f, "{e}"),
 
             Self::TomlDe(e) => {
@@ -266,6 +274,7 @@ impl Error for ThagError {
             Self::StrumParse(ref e) => Some(e),
             #[cfg(feature = "syn")]
             Self::Syn(e) => Some(e),
+            Self::Termbg(e) => Some(e),
             Self::Theme(ref e) => Some(e),
             Self::TomlDe(ref e) => Some(e),
             Self::TomlSer(ref e) => Some(e),

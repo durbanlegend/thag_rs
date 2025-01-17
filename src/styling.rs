@@ -1,3 +1,4 @@
+#![allow(clippy::cast_lossless)]
 use crate::errors::ThemeError;
 use crate::{cvprtln, profile_method, ThagResult, V};
 use documented::{Documented, DocumentedVariants};
@@ -861,6 +862,53 @@ pub struct Theme {
 }
 
 impl Theme {
+    /// Detects and loads the most appropriate theme for the current terminal
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any `termbg` error encountered.
+    pub fn auto_detect() -> ThagResult<Self> {
+        // Known theme backgrounds
+        const DRACULA_BG: (u8, u8, u8) = (40, 42, 54); // #282a36
+        const THRESHOLD: f32 = 30.0; // Adjust this value as needed
+
+        // Helper to calculate color distance
+        fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> f32 {
+            let dr = (c1.0 as f32 - c2.0 as f32).powi(2);
+            let dg = (c1.1 as f32 - c2.1 as f32).powi(2);
+            let db = (c1.2 as f32 - c2.2 as f32).powi(2);
+            (dr + dg + db).sqrt()
+        }
+
+        // Get terminal background color
+        let timeout = std::time::Duration::from_millis(500);
+        let bg_rgb = termbg::rgb(timeout)?;
+
+        // Convert 16-bit RGB to 8-bit RGB
+        let bg_rgb_8bit = (
+            (bg_rgb.r >> 8) as u8,
+            (bg_rgb.g >> 8) as u8,
+            (bg_rgb.b >> 8) as u8,
+        );
+
+        // Check if background matches Dracula
+        if color_distance(bg_rgb_8bit, DRACULA_BG) < THRESHOLD {
+            Self::load_builtin("dracula")
+        } else {
+            // Fall back to basic theme based on background luminance
+            let luminance = (bg_rgb_8bit.0 as f32 * 0.299
+                + bg_rgb_8bit.1 as f32 * 0.587
+                + bg_rgb_8bit.2 as f32 * 0.114)
+                / 255.0;
+
+            if luminance > 0.5 {
+                Self::load_builtin("basic_light")
+            } else {
+                Self::load_builtin("basic_dark")
+            }
+        }
+    }
+
     /// Loads a theme from a TOML file.
     ///
     /// The TOML file should define a complete theme, including:
@@ -1155,18 +1203,18 @@ macro_rules! cvprtln {
     }};
 }
 
-#[allow(dead_code)]
-fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8), is_system: bool) -> u32 {
-    let base_distance = base_distance(c1, c2);
+// #[allow(dead_code)]
+// fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8), is_system: bool) -> u32 {
+//     let base_distance = base_distance(c1, c2);
 
-    // Give a slight preference to system colors when they're close matches
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    if is_system {
-        (f64::from(base_distance) * 0.9) as u32
-    } else {
-        base_distance
-    }
-}
+//     // Give a slight preference to system colors when they're close matches
+//     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+//     if is_system {
+//         (f64::from(base_distance) * 0.9) as u32
+//     } else {
+//         base_distance
+//     }
+// }
 
 fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
     let dr = f64::from(i32::from(c1.0) - i32::from(c2.0)) * 0.3;

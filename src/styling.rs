@@ -885,7 +885,10 @@ impl Theme {
     /// # Examples
     /// ```
     /// use std::path::Path;
-    /// let theme = Theme::load_from_file(Path::new("themes/custom.toml"))?;
+    /// use thag_rs::ThagError;
+    /// use thag_rs::styling::Theme;
+    /// let theme = Theme::load_from_file(Path::new("themes/built_in/basic_light.toml"))?;
+    /// # Ok::<(), ThagError>(())
     /// ```
     pub fn load_from_file(path: &Path) -> ThagResult<Self> {
         let content = fs::read_to_string(path)?;
@@ -917,7 +920,10 @@ impl Theme {
     ///
     /// # Examples
     /// ```
+    /// use thag_rs::ThagError;
+    /// use thag_rs::styling::Theme;
     /// let theme = Theme::load_builtin("dracula")?;
+    /// # Ok::<(), ThagError>(())
     /// ```
     pub fn load_builtin(name: &str) -> ThagResult<Self> {
         let theme_toml = BUILT_IN_THEMES
@@ -960,8 +966,11 @@ impl Theme {
     ///
     /// # Examples
     /// ```
+    /// use thag_rs::ThagError;
+    /// use thag_rs::styling::{ColorSupport, TermBgLuma, Theme};
     /// let theme = Theme::load_builtin("dracula")?;
-    /// theme.validate(ColorSupport::Color256, TermBgLuma::Dark)?;
+    /// theme.validate(ColorSupport::TrueColor, TermBgLuma::Dark)?;
+    /// # Ok::<(), ThagError>(())
     /// ```
     pub fn validate(
         &self,
@@ -1053,11 +1062,14 @@ impl Theme {
     /// # Examples
     /// ```
     /// use std::path::Path;
+    /// use thag_rs::ThagError;
+    /// use thag_rs::styling::{ColorSupport, TermBgLuma, Theme};
     /// let theme = Theme::load(
-    ///     Path::new("themes/custom.toml"),
-    ///     ColorSupport::Color256,
-    ///     TermBgLuma::Dark
+    ///     Path::new("themes/built_in/basic_light.toml"),
+    ///     ColorSupport::Basic,
+    ///     TermBgLuma::Light
     /// )?;
+    /// # Ok::<(), ThagError>(())
     /// ```
     pub fn load(
         path: &Path,
@@ -1248,7 +1260,7 @@ fn main() -> ThagResult<()> {
     let _dracula = Theme::load_builtin("dracula")?;
 
     // Load custom theme
-    let _custom = Theme::load_from_file(Path::new("custom_theme.toml"))?;
+    let _custom = Theme::load_from_file(Path::new("themes/examples/custom_theme.toml"))?;
 
     Ok(())
 }

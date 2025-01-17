@@ -1,4 +1,3 @@
-#[cfg(any(feature = "cargo_toml", feature = "toml"))]
 use crate::shared::disentangle;
 use crate::styling::TermBgLuma;
 use crate::ColorSupport;
@@ -20,9 +19,7 @@ use std::{error::Error, io};
 use strum::ParseError as StrumParseError;
 #[cfg(feature = "syn")]
 use syn::Error as SynError;
-#[cfg(feature = "toml")]
 use toml::de::Error as TomlDeError;
-#[cfg(feature = "toml")]
 use toml::ser::Error as TomlSerError;
 
 pub type ThagResult<T> = Result<T, ThagError>;
@@ -52,14 +49,14 @@ pub enum ThagError {
     #[cfg(feature = "syn")]
     Syn(SynError), // For syn errors
     Theme(ThemeError),           // For thag_rs::styling theme errors
-    #[cfg(feature = "toml")]
+
     TomlDe(TomlDeError), // For TOML deserialization errors
-    #[cfg(feature = "toml")]
+
     TomlSer(TomlSerError), // For TOML serialization errors
     #[cfg(feature = "cargo_toml")]
     Toml(CargoTomlError), // For cargo_toml errors
-    UnsupportedTerm,             // For terminal interrogation
-    Validation(String),          // For config.toml and similar validation
+    UnsupportedTerm,       // For terminal interrogation
+    Validation(String),    // For config.toml and similar validation
     VarError(std::env::VarError), // For std::env::var errors
 }
 
@@ -94,14 +91,12 @@ impl From<ThemeError> for ThagError {
     }
 }
 
-#[cfg(feature = "toml")]
 impl From<TomlDeError> for ThagError {
     fn from(err: TomlDeError) -> Self {
         Self::TomlDe(err)
     }
 }
 
-#[cfg(feature = "toml")]
 impl From<TomlSerError> for ThagError {
     fn from(err: TomlSerError) -> Self {
         Self::TomlSer(err)
@@ -214,14 +209,14 @@ impl std::fmt::Display for ThagError {
             #[cfg(feature = "syn")]
             Self::Syn(e) => write!(f, "{e}"),
             Self::Theme(e) => write!(f, "{e}"),
-            #[cfg(feature = "toml")]
+
             Self::TomlDe(e) => {
                 // Extract the actual error message without all the nested structure
                 let msg = e.to_string();
                 write!(f, "toml::de::Error: {}", disentangle(msg.as_str()))?;
                 Ok(())
             }
-            #[cfg(feature = "toml")]
+
             Self::TomlSer(e) => {
                 // Extract the actual error message without all the nested structure
                 let msg = e.to_string();
@@ -272,10 +267,7 @@ impl Error for ThagError {
             #[cfg(feature = "syn")]
             Self::Syn(e) => Some(e),
             Self::Theme(ref e) => Some(e),
-            #[cfg(feature = "toml")]
-            #[cfg(feature = "toml")]
             Self::TomlDe(ref e) => Some(e),
-            #[cfg(feature = "toml")]
             Self::TomlSer(ref e) => Some(e),
             #[cfg(feature = "cargo_toml")]
             Self::Toml(ref e) => Some(e),

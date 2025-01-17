@@ -67,7 +67,7 @@ syn = { version = "2.0.96", features = [
 ], optional = true }
 termbg = { version = "0.6.1", optional = true }
 thag_proc_macros = { version = "0.1.1", path = "src/proc_macros" }
-toml = { version = "0.8.19", optional = true }
+toml = { version = "0.8.19" }
 toml_edit = { version = "0.22.22", optional = true }
 # `tui-textarea` is used for the `tui` feature`.
 tui-textarea = { version = "0.7", features = [
@@ -124,7 +124,7 @@ ast = [
 ]
 
 # Configuration and Color Support
-config = ["core", "edit", "mockall", "toml", "toml_edit"]
+config = ["core", "edit", "mockall", "toml_edit"]
 
 color_detect = ["crossterm", "scopeguard", "supports-color", "termbg"]
 
@@ -187,7 +187,7 @@ profiling = []
 #     │       │   │   ├── core  ★ (shared)       # Core features required here too
 #     │       │   │   ├── mockall
 #     │       │   │   ├── serde_with
-#     │       │   │   └── toml/toml_edit
+#     │       │   │   └── toml_edit
 #     │       │   └── crossterm                  # Terminal control
 #     │       │
 #     │       ├── ratatui                        # TUI framework

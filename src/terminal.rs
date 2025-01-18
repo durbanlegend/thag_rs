@@ -3,13 +3,12 @@
 //! This module handles detection of terminal capabilities while preserving terminal state.
 //! In particular, it manages raw mode status which can be affected by some detection operations.
 
-use crate::styling::{ColorSupport, TermTheme};
-use crate::{lazy_static_var, profile, ThagResult};
+use crate::styling::{ColorSupport, TermBgLuma};
+use crate::{lazy_static_var, profile, ThagError, ThagResult};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use scopeguard::defer;
 use std::io::{stdout, Write};
 use supports_color::Stream;
-use termbg::Theme as TermbgTheme;
 
 #[cfg(debug_assertions)]
 use crate::debug_log;
@@ -54,6 +53,7 @@ impl Drop for TerminalStateGuard {
 #[must_use]
 #[allow(unused_variables)]
 pub fn detect_color_support() -> &'static ColorSupport {
+    profile!("detect_color_support");
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
         debug_log!("Avoiding supports_color for testing");
@@ -120,14 +120,54 @@ pub fn detect_color_support() -> &'static ColorSupport {
 /// let theme = detect_theme();
 /// println!("Terminal theme: {:?}", theme);
 /// ```
-pub fn detect_theme() -> &'static TermTheme {
-    lazy_static_var!(TermTheme, {
+pub fn get_term_bg_luma() -> &'static TermBgLuma {
+    profile!("get_term_bg_luma");
+
+    lazy_static_var!(TermBgLuma, {
         let _guard = TerminalStateGuard::new();
-        detect_theme_internal().unwrap_or(TermTheme::Dark)
+
+        let maybe_term_bg = get_term_bg();
+        if let Ok((r, g, b)) = &maybe_term_bg {
+            // Per termbg:
+            // ITU-R BT.601
+            let y =
+                f64::from(*b).mul_add(0.114, f64::from(*r).mul_add(0.299, f64::from(*g) * 0.587));
+
+            if y > 32768.0 {
+                TermBgLuma::Light
+            } else {
+                TermBgLuma::Dark
+            }
+        } else {
+            TermBgLuma::Dark
+        }
     })
 }
 
-fn detect_theme_internal() -> Result<TermTheme, termbg::Error> {
+/// Detects the terminal's background color.
+///
+/// This function attempts to detect the terminal's background color using `termbg`.
+/// If detection fails it defaults to `TermTheme::Dark`.
+///
+/// # Raw Mode Handling
+///
+/// This function preserves the terminal's raw mode status, restoring it if detection
+/// operations modify it.
+///
+/// # Errors
+///
+/// This function will wrap and return any error returned by `termbg::rgb`.
+///
+/// # Examples
+///
+/// ```
+/// use thag_rs::terminal::get_term_bg;
+///
+/// let maybe_term_bg = get_term_bg()?;
+/// println!("Terminal bckground: {maybe_term_bg:?}");
+/// # Ok::<&'static (u8, u8, u8), ThagError>(())
+/// ```
+pub fn get_term_bg() -> ThagResult<&'static (u8, u8, u8)> {
     struct RawModeGuard(bool);
     impl Drop for RawModeGuard {
         fn drop(&mut self) {
@@ -138,25 +178,39 @@ fn detect_theme_internal() -> Result<TermTheme, termbg::Error> {
         }
     }
 
-    // Save initial state
-    let raw_before = is_raw_mode_enabled()?;
+    profile!("get_term_bg");
 
-    // Ensure raw mode for detection
-    if !raw_before {
-        enable_raw_mode()?;
-    }
+    lazy_static_var!(
+        Result < (u8, u8, u8),
+        termbg::Error >, {
+            // Save initial state
+            let raw_before = is_raw_mode_enabled()?;
 
-    let _guard = RawModeGuard(raw_before);
+            // Ensure raw mode for detection
+            if !raw_before {
+                enable_raw_mode()?;
+            }
 
-    // Now do theme detection
-    println!("Checking terminal theme");
-    let timeout = std::time::Duration::from_millis(500);
-    let theme = termbg::theme(timeout)?;
+            let _guard = RawModeGuard(raw_before);
 
-    Ok(match theme {
-        TermbgTheme::Light => TermTheme::Light,
-        TermbgTheme::Dark => TermTheme::Dark,
-    })
+            // Now do theme detection
+            eprintln!("Checking terminal background");
+            let timeout = std::time::Duration::from_millis(500);
+            let bg_rgb = termbg::rgb(timeout)?;
+
+            // Convert 16-bit RGB to 8-bit RGB
+            let (r, g, b): (u8, u8, u8) = (
+                (bg_rgb.r >> 8) as u8,
+                (bg_rgb.g >> 8) as u8,
+                (bg_rgb.b >> 8) as u8,
+            );
+
+            Ok((r, g, b))
+        }
+    )
+    // .map(|x| &x)
+    .as_ref()
+    .map_err(|e| ThagError::from(e.to_string()))
 }
 
 /// Restore the raw or cooked terminal status as saved in the boolean argument.

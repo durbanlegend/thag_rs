@@ -48,16 +48,15 @@ pub enum ThagError {
     StrumParse(StrumParseError), // For strum parse enum
     #[cfg(feature = "syn")]
     Syn(SynError), // For syn errors
-    Termbg(termbg::Error),       // For termbg errors
+    #[cfg(feature = "color_detect")]
+    Termbg(termbg::Error), // For termbg errors
     Theme(ThemeError),           // For thag_rs::styling theme errors
-
-    TomlDe(TomlDeError), // For TOML deserialization errors
-
-    TomlSer(TomlSerError), // For TOML serialization errors
+    TomlDe(TomlDeError),         // For TOML deserialization errors
+    TomlSer(TomlSerError),       // For TOML serialization errors
     #[cfg(feature = "cargo_toml")]
     Toml(CargoTomlError), // For cargo_toml errors
-    UnsupportedTerm,       // For terminal interrogation
-    Validation(String),    // For config.toml and similar validation
+    UnsupportedTerm,             // For terminal interrogation
+    Validation(String),          // For config.toml and similar validation
     VarError(std::env::VarError), // For std::env::var errors
 }
 
@@ -88,7 +87,7 @@ impl From<StrumParseError> for ThagError {
 
 impl From<ThemeError> for ThagError {
     fn from(err: ThemeError) -> Self {
-        ThagError::Theme(err)
+        Self::Theme(err)
     }
 }
 
@@ -169,6 +168,7 @@ impl From<Box<dyn Error + Send + Sync + 'static>> for ThagError {
     }
 }
 
+#[cfg(feature = "color_detect")]
 impl From<termbg::Error> for ThagError {
     fn from(err: termbg::Error) -> Self {
         Self::Termbg(err)
@@ -215,6 +215,7 @@ impl std::fmt::Display for ThagError {
             Self::StrumParse(e) => write!(f, "{e}"),
             #[cfg(feature = "syn")]
             Self::Syn(e) => write!(f, "{e}"),
+            #[cfg(feature = "color_detect")]
             Self::Termbg(e) => write!(f, "{e}"),
             Self::Theme(e) => write!(f, "{e}"),
 
@@ -274,6 +275,7 @@ impl Error for ThagError {
             Self::StrumParse(ref e) => Some(e),
             #[cfg(feature = "syn")]
             Self::Syn(e) => Some(e),
+            #[cfg(feature = "color_detect")]
             Self::Termbg(e) => Some(e),
             Self::Theme(ref e) => Some(e),
             Self::TomlDe(ref e) => Some(e),
@@ -305,6 +307,7 @@ pub enum ThemeError {
     InvalidTermBgLuma(String),
     InvalidColorSupport(String),
     UnknownTheme(String),
+    InvalidAnsiCode(String),
 }
 
 impl std::fmt::Display for ThemeError {
@@ -333,6 +336,7 @@ impl std::fmt::Display for ThemeError {
             Self::InvalidStyle(style) => write!(f, "Invalid style attribute: {style}"),
             Self::InvalidTermBgLuma(name) => write!(f, "Unknown value: must be `light` or `dark`: {name}"),
             Self::UnknownTheme(name) => write!(f, "Unknown theme: {name}"),
+            Self::InvalidAnsiCode(e) => write!(f, "{e}"),
         }
     }
 }

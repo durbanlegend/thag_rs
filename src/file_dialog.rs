@@ -126,7 +126,7 @@ impl FileDialog<'_> {
             input: TextArea::default(),
             title_bottom: "Ctrl+l to show keys",
             buf: String::new(),
-            term_attrs: TermAttributes::get_or_default(),
+            term_attrs: TermAttributes::get(),
         };
         s.update_entries()?;
         Ok(s)

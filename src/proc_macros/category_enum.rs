@@ -1,7 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
 use quote::quote;
-// use std::str::FromStr;
 
 pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
     let expanded = quote! {

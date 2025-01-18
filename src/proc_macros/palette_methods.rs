@@ -1,10 +1,11 @@
+#![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
 
 use quote::quote;
 
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
-pub(crate) fn palette_methods_impl(input: TokenStream) -> TokenStream {
+pub fn palette_methods_impl(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     let fields = match input.data {

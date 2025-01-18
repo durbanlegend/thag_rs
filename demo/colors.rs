@@ -934,7 +934,8 @@ pub fn main() {
                 let content = format!(
                     "{variant_str} message: message_style={variant_str:?}, style={style:?}"
                 );
-                println!("{}", style.paint(content));
+                let painted_content = style.paint(content);
+                println!("{} = {:#?}", painted_content, painted_content);
             }
 
             println!();

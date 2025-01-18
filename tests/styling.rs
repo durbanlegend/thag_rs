@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use thag_rs::styling::{ColorInitStrategy, TermAttributes};
-    use thag_rs::{Color, ColorSupport, Style, TermTheme};
+    use thag_rs::{Color, ColorSupport, Style, TermBgLuma};
 
     // Helper function to make ANSI sequences visible in test output
     fn debug_ansi(s: &str) -> String {
@@ -33,7 +33,7 @@ mod tests {
         // Test default initialization
         let attrs = TermAttributes::initialize(ColorInitStrategy::Default);
         assert!(matches!(attrs.color_support, ColorSupport::Basic));
-        assert!(matches!(attrs.theme, TermTheme::Dark));
+        assert!(matches!(attrs.theme, TermBgLuma::Dark));
     }
 
     #[test]
@@ -41,10 +41,10 @@ mod tests {
         // Test explicit configuration
         let attrs = TermAttributes::initialize(ColorInitStrategy::Configure(
             ColorSupport::Color256,
-            TermTheme::Light,
+            TermBgLuma::Light,
         ));
         eprintln!("attrs.color_support={0:#?}", attrs.color_support);
         assert!(matches!(attrs.color_support, ColorSupport::Color256));
-        assert!(matches!(attrs.theme, TermTheme::Light));
+        assert!(matches!(attrs.theme, TermBgLuma::Light));
     }
 }

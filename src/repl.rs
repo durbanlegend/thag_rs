@@ -5,7 +5,11 @@ use crate::{
     cvprtln, get_verbosity, lazy_static_var,
     manifest::extract,
     profile, profile_method, regex,
-    styling::{ColorInfo, TermAttributes},
+    styling::{
+        style_for_role, ColorInfo, ColorInitStrategy,
+        Role::{Heading3, Success},
+        TermAttributes,
+    },
     tui_editor::{
         script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
         ManagedTerminal, RataStyle,
@@ -227,6 +231,8 @@ pub enum ReplCommand {
     Help,
     /// Show key bindings
     Keys,
+    /// Show theme and terminal attributes (change via `thag -C`)
+    Theme,
     /// Exit the REPL
     Quit,
 }
@@ -283,12 +289,11 @@ impl Prompt for ReplPrompt {
     }
 
     fn get_prompt_color(&self) -> reedline::Color {
-        if let Some(color_info) = TermAttributes::get_or_default()
-            .style_for_level(Lvl::NORM)
-            .foreground
-        {
+        if let Some(color_info) = Style::for_role(Success).foreground {
+            // eprintln!("color_info for Success={color_info:?}");
             Color::Indexed(color_info.index).into()
         } else {
+            // eprintln!("defaulting to Green");
             Color::Green.into()
         }
     }
@@ -296,18 +301,12 @@ impl Prompt for ReplPrompt {
 
 fn get_heading_style() -> &'static Style {
     profile!("get_heading_style");
-    lazy_static_var!(
-        Style,
-        TermAttributes::get_or_default().style_for_level(Lvl::HEAD)
-    )
+    lazy_static_var!(Style, TermAttributes::get().style_for_level(Lvl::HEAD))
 }
 
 fn get_subhead_style() -> &'static Style {
     profile!("get_subhead_style");
-    lazy_static_var!(
-        Style,
-        TermAttributes::get_or_default().style_for_level(Lvl::SUBH)
-    )
+    lazy_static_var!(Style, TermAttributes::get().style_for_level(Lvl::SUBH))
 }
 
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
@@ -385,7 +384,7 @@ pub fn run_repl(
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
 
-    let term_attrs = TermAttributes::get_or_default();
+    let term_attrs = TermAttributes::get();
 
     // Only add highlighting if color support is available
     if matches!(
@@ -554,6 +553,9 @@ pub fn run_repl(
                     ReplCommand::Keys => {
                         show_key_bindings(formatted_bindings, max_key_len);
                     }
+                    ReplCommand::Theme => {
+                        show_theme_details();
+                    }
                 }
                 continue;
             }
@@ -562,6 +564,106 @@ pub fn run_repl(
         process_source(rs_source, build_state, args, proc_flags, start)?;
     }
     Ok(())
+}
+
+fn show_theme_details() {
+    let term_attrs = TermAttributes::get();
+    let theme = &term_attrs.theme;
+    let rgb_disp = term_attrs
+        .theme
+        .background
+        .as_deref()
+        .map_or("None".to_string(), |hex| {
+            // Remove '#' if present and parse hex values
+            let hex = hex.trim_start_matches('#');
+            if hex.len() == 6 {
+                if let (Ok(r), Ok(g), Ok(b)) = (
+                    u8::from_str_radix(&hex[0..2], 16),
+                    u8::from_str_radix(&hex[2..4], 16),
+                    u8::from_str_radix(&hex[4..6], 16),
+                ) {
+                    format!("#{} = rgb({}, {}, {})", hex, r, g, b)
+                } else {
+                    hex.to_string()
+                }
+            } else {
+                hex.to_string()
+            }
+        });
+
+    // Get length of longest string after "painting" (wrapping in xterm styling instruction).
+    let strategy_legend = style_for_role(Heading3, "Attributes determined by: ");
+    let col1_width = strategy_legend.len() + 5;
+    println!(
+        "\n\t{}",
+        Style::new().underline().paint("Theme attributes:")
+    );
+    println!(
+        "\n\t{:.<col1_width$} {}",
+        style_for_role(Heading3, "Theme: "),
+        theme.name
+    );
+    println!(
+        "\t{:.<col1_width$} {}",
+        style_for_role(Heading3, "Type: "),
+        if theme.is_builtin {
+            "Built-in"
+        } else {
+            "Custom"
+        }
+    );
+    println!(
+        "\t{:.<col1_width$} {}",
+        style_for_role(Heading3, "File: "),
+        theme.filename.display()
+    );
+    println!(
+        "\t{:.<col1_width$} {}",
+        style_for_role(Heading3, "Description: "),
+        theme.description
+    );
+    println!(
+        "\t{:.<col1_width$} {}",
+        style_for_role(Heading3, "Background: "),
+        rgb_disp
+    );
+    println!(
+        "\t{:.<col1_width$} {:?}",
+        style_for_role(Heading3, "Palette: "),
+        theme.min_color_support
+    );
+    println!(
+        "\n\t{}",
+        Style::new().underline().paint("Terminal attributes:")
+    );
+    // println!(
+    //     "\n\t{:.<col1_width$}",
+    //     style_for_role(Heading2, "Terminal attributes:")
+    // );
+    println!(
+        "\n\t{:.<col1_width$} {:?}",
+        strategy_legend,
+        ColorInitStrategy::determine()
+    );
+    println!(
+        "\t{:.<col1_width$} {:?}",
+        style_for_role(Heading3, "Color support: "),
+        term_attrs.color_support
+    );
+    println!(
+        "\t{:.<col1_width$} {:?}",
+        style_for_role(Heading3, "Background luminance: "),
+        term_attrs.term_bg_luma
+    );
+    println!(
+        "\t{:.<col1_width$} {}\n",
+        style_for_role(Heading3, "Background color: "),
+        term_attrs.term_bg.map_or("None".to_string(), |rgb| format!(
+            "rgb({}, {}, {})",
+            rgb.0, rgb.1, rgb.2
+        ))
+    );
+    // println!("{}\n", term_attrs.theme.info());
 }
 
 /// Process a source string through to completion according to the arguments passed in.
@@ -625,7 +727,7 @@ fn tui(
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
-    let style = crate::styling::TermAttributes::get_or_default().style_for_level(Lvl::SUBH);
+    let style = crate::styling::TermAttributes::get().style_for_level(Lvl::SUBH);
     let display = KeyDisplay {
         title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: RataStyle::from(&style),
@@ -735,7 +837,7 @@ pub fn edit_history<R: EventReader + Debug>(
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
-    let style = crate::styling::TermAttributes::get_or_default().style_for_level(Lvl::SUBH);
+    let style = crate::styling::TermAttributes::get().style_for_level(Lvl::SUBH);
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: RataStyle::from(&style),

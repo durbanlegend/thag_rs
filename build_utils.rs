@@ -40,24 +40,24 @@ pub enum BuildError {
 impl fmt::Display for BuildError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            BuildError::Io { source } => write!(f, "IO error: {source}"),
-            BuildError::Env { source } => write!(f, "Environment error: {source}"),
-            BuildError::InvalidFileName { path } => {
+            Self::Io { source } => write!(f, "IO error: {source}"),
+            Self::Env { source } => write!(f, "Environment error: {source}"),
+            Self::InvalidFileName { path } => {
                 write!(f, "Invalid filename: {}", path.display())
             }
-            BuildError::MissingField { field, path } => {
+            Self::MissingField { field, path } => {
                 write!(f, "Missing field {field}: {}", path.display())
             }
-            BuildError::MissingStyle { style, path } => {
+            Self::MissingStyle { style, path } => {
                 write!(f, "Missing style {style}: {}", path.display())
             }
-            BuildError::InvalidValue { field, value, path } => {
+            Self::InvalidValue { field, value, path } => {
                 write!(
                     f,
                     "Invalid value {value} for field {field}: {}",
                     path.display()
                 )
-            } // BuildError::InvalidUtf8 { path } => {
+            } // Self::InvalidUtf8 { path } => {
               //     write!(f, "Invalid UTF-8 in filename: {}", path.display())
               // }
         }
@@ -66,13 +66,13 @@ impl fmt::Display for BuildError {
 
 impl From<io::Error> for BuildError {
     fn from(source: io::Error) -> Self {
-        BuildError::Io { source }
+        Self::Io { source }
     }
 }
 
 impl From<env::VarError> for BuildError {
     fn from(source: env::VarError) -> Self {
-        BuildError::Env { source }
+        Self::Env { source }
     }
 }
 

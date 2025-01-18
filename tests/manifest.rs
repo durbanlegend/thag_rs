@@ -21,7 +21,7 @@ mod tests {
         let _ = env_logger::builder().is_test(true).try_init();
 
         if !TermAttributes::is_initialized() {
-            TermAttributes::initialize(ColorInitStrategy::Default);
+            TermAttributes::initialize(&ColorInitStrategy::Default);
         }
     }
 

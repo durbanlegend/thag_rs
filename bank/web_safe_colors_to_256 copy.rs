@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use owo_colors::XtermColors;
 
 pub trait Calcs {
@@ -94,6 +93,13 @@ fn find_closest_color(web_rgb: (u8, u8, u8)) -> u8 {
     closest_index
 }
 
+fn convert_color((r, g, b): (u8, u8, u8)) -> u8 {
+    // ((r as u32 * 216 + g as u32 * 36 + b as u32 * 6) / 256)
+    //     .try_into()
+    //     .unwrap()
+    r & 0b11100000 | g & 0b11100000 >> 3 | b & 0b11000000 >> 6
+}
+
 // fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
 //     // Using weighted Euclidean distance for better perceptual matching
 //     // Weights based on human perception: R: 0.3, G: 0.59, B: 0.11
@@ -125,36 +131,27 @@ fn main() {
         .filter(|line| line.contains('\t'))
         .filter(|line| !line.starts_with("HTML name"))
         .filter_map(WebColor::from_line)
-        .sorted_by(|a, b| {
-            a.rgb
-                .0
-                .cmp(&b.rgb.0) // First sort by R
-                .then_with(|| a.rgb.1.cmp(&b.rgb.1)) // Then by G
-                .then_with(|| a.rgb.2.cmp(&b.rgb.2)) // Then by B
-        })
         .collect();
 
     println!("Web Color Mappings to 256-color Space:");
     println!("======================================");
 
-    println!(
-        "Name:                Web RGB   Formatted  owo RGB   Formatted Closest Web RGB, Xterm RGB"
-    );
     for color in web_colors {
         let closest = find_closest_color(color.rgb);
-        let formatted = format_color_block(closest);
         let xterm_rgb = XtermColors::rgb_95_40(closest);
+        let converted = convert_color(color.rgb);
+        let conv_rgb = XtermColors::rgb_95_40(converted);
         println!(
-             "{:<20} \x1b[48;2;{};{};{}m   \x1b[0m -> {}  \x1b[48;2;{};{};{}m   \x1b[0m  {:?} #{:03} From:({:>3},{:>3},{:>3}) To:({:>3},{:>3},{:>3})",
-             color.name,
-             color.rgb.0, color.rgb.1, color.rgb.2,
-             formatted,
-             xterm_rgb.0, xterm_rgb.1, xterm_rgb.2,
-             formatted,
-             closest,
-             color.rgb.0, color.rgb.1, color.rgb.2,    // From RGB
-             xterm_rgb.0, xterm_rgb.1, xterm_rgb.2     // To RGB
-         );
+            "{:<20} \x1b[48;2;{};{};{}m   \x1b[0m -> {} {} #{:03} From:({:>3},{:>3},{:>3}) To:({:>3},{:>3},{:>3}), Simple:({:>3},{:>3},{:>3})",
+            color.name,
+            color.rgb.0, color.rgb.1, color.rgb.2,
+            format_color_block(closest),
+            format_color_block(converted),
+            closest,
+            color.rgb.0, color.rgb.1, color.rgb.2,    // From RGB
+            xterm_rgb.0, xterm_rgb.1, xterm_rgb.2,    // To RGB
+            conv_rgb.0, conv_rgb.1, conv_rgb.2       // Converted RGB
+        );
         // println!(
         //     "{:<20} \x1b[48;2;{};{};{}m   \x1b[0m -> {} #{:03} RGB({:>3},{:>3},{:>3})",
         //     color.name,
@@ -172,8 +169,8 @@ fn main() {
 
 fn format_color_block(color_num: u8) -> String {
     match color_num {
-        0..=7 => format!("\x1b[3{}m   \x1b[0m", color_num), // Standard colors
-        8..=15 => format!("\x1b[9{}m   \x1b[0m", color_num - 8), // Bright colors
+        0..=7 => format!("\x1b[4{}m   \x1b[0m", color_num), // Standard colors
+        8..=15 => format!("\x1b[10{}m   \x1b[0m", color_num - 8), // Bright colors
         _ => format!("\x1b[48;5;{}m   \x1b[0m", color_num), // 256 colors
     }
     // match color_num {

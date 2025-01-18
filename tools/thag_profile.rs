@@ -89,7 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let processed = process_profile_data(&lines);
 
     let options = vec![
-        "Generate & Show Flamegraph",
+        "Generate & Show Flamechart",
         "Show Statistics",
         "Filter Functions",
         "Show Async Boundaries",
@@ -98,11 +98,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let selection = Select::new("Select action:", options).prompt()?;
 
     match selection {
-        "Generate & Show Flamegraph" => generate_flamegraph(&processed.filtered_stacks)?,
+        "Generate & Show Flamechart" => generate_flamechart(&processed.filtered_stacks)?,
         "Show Statistics" => show_statistics(&processed.stats),
         "Filter Functions" => {
             let filtered = filter_functions(&processed.filtered_stacks)?;
-            generate_flamegraph(&filtered)?;
+            generate_flamechart(&filtered)?;
         }
         "Show Async Boundaries" => show_async_boundaries(&processed.stats),
         _ => println!("Unknown option"),
@@ -111,12 +111,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn generate_flamegraph(stacks: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+fn generate_flamechart(stacks: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     if stacks.is_empty() {
         return Err("No profile data available".into());
     }
 
-    let output = File::create("flamegraph.svg")?;
+    let output = File::create("flamechart.svg")?;
     let mut opts = Options::default();
     opts.title = "Thag Profile".to_string();
     opts.colors = Palette::Basic(BasicPalette::Aqua);
@@ -125,10 +125,10 @@ fn generate_flamegraph(stacks: &[String]) -> Result<(), Box<dyn std::error::Erro
     opts.flame_chart = true; // Enable flame chart mode for temporal ordering
 
     // Just pass the stacks directly, no need for sequence numbers
-    flamegraph::from_lines(&mut opts, stacks.iter().rev().map(String::as_str), output)?;
+    flamechart::from_lines(&mut opts, stacks.iter().rev().map(String::as_str), output)?;
 
-    println!("Flame chart generated: flamegraph.svg");
-    open_in_browser("flamegraph.svg")?;
+    println!("Flame chart generated: flamechart.svg");
+    open_in_browser("flamechart.svg")?;
     Ok(())
 }
 

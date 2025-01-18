@@ -1,6 +1,6 @@
 use crate::{
     clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, Color, ColorSupport, Level, Lvl,
-    TermTheme, ThagError, ThagResult, Verbosity, V,
+    TermBgLuma, ThagError, ThagResult, Verbosity, V,
 };
 use crate::{profile, profile_method};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
@@ -550,14 +550,14 @@ pub struct Colors {
     #[serde(default)]
     /// Light or dark terminal background override
     // #[serde_as(as = "DisplayFromStr")]
-    pub term_theme: TermTheme,
+    pub term_theme: TermBgLuma,
 }
 
 impl Default for Colors {
     fn default() -> Self {
         Self {
             color_support: ColorSupport::Undetermined,
-            term_theme: TermTheme::Undetermined,
+            term_theme: TermBgLuma::Undetermined,
         }
     }
 }

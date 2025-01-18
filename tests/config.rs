@@ -18,7 +18,7 @@ mod tests {
         },
         debug_log, load,
         logging::Verbosity,
-        ColorSupport, Context, TermTheme, ThagResult,
+        ColorSupport, Context, TermBgLuma, ThagResult,
     };
 
     #[cfg(feature = "simplelog")]
@@ -85,7 +85,7 @@ mod tests {
 
         assert_eq!(config.logging.default_verbosity, Verbosity::Normal);
         assert_eq!(config.colors.color_support, ColorSupport::default());
-        assert_eq!(config.colors.term_theme, TermTheme::default());
+        assert_eq!(config.colors.term_theme, TermBgLuma::default());
     }
 
     #[test]

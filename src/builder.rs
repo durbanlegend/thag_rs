@@ -508,28 +508,8 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     let start = Instant::now();
 
     // Initialize TermAttributes for message styling
-    // `color_detect` feature overrides configured colour support.
-    #[cfg(feature = "color_detect")]
-    let strategy = if std::env::var("TEST_ENV").is_ok() {
-        #[cfg(debug_assertions)]
-        debug_log!("Avoiding colour detection for testing");
-        ColorInitStrategy::Default
-    } else {
-        ColorInitStrategy::Detect
-    };
-
-    #[cfg(not(feature = "color_detect"))]
-    let strategy = if std::env::var("TEST_ENV").is_ok() {
-        #[cfg(debug_assertions)]
-        debug_log!("Avoiding colour detection for testing");
-        ColorInitStrategy::Default
-    } else if let Some(config) = maybe_config() {
-        ColorInitStrategy::Configure(config.colors.color_support, config.colors.term_theme)
-    } else {
-        ColorInitStrategy::Default
-    };
-
-    TermAttributes::initialize(strategy);
+    let strategy = ColorInitStrategy::determine();
+    TermAttributes::initialize(&strategy);
 
     let proc_flags = get_proc_flags(args)?;
 

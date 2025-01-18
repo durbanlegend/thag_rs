@@ -142,7 +142,7 @@ pub use {
     logging::{get_verbosity, Verbosity, V},
     profiling::Profile,
     shared::{debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string},
-    styling::{Color, ColorSupport, Level, Lvl, Style, TermTheme},
+    styling::{Color, ColorSupport, Level, Lvl, Style, TermBgLuma},
     thag_proc_macros::repeat_dash,
 };
 

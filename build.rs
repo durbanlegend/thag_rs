@@ -25,7 +25,6 @@ fn main() {
         println!("cargo:warning=Theme generation failed: {e:?}"); // Fail the build if we can't generate themes
         std::process::exit(1);
     }
-    let _ = generate_theme_data();
 
     // 2. Test generation
     // Check for mutually exclusive features

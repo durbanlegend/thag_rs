@@ -75,6 +75,7 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Other front-ends: thag_test: call thag with dethag of bad output - rather fix bad output at source - done?
 - [ ]  Use cargo-dist to build and distribute thag front-end commands.
 - [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
+- [ ]  Add macro name parameter to {src|bank|demo}proc_macros/lib::intercept_and_debug for use in "Expanded macro" title.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
@@ -240,7 +241,3 @@ Key Considerations:
 - Maintaining color support detection
 - Terminal background detection
 - Configuration options
-
-TODO:
-1. Matching against themes.
-2. Calculate closest colour distance from owo colours

@@ -1,27 +1,28 @@
 name = "Gruvbox Light Hard"
 description = "Light theme with high contrast and warm colors"
 term_bg_luma = "light"
-min_color_support = "color_256"
+min_color_support = "color256"
+background = "#fcf3d2"
 
 [palette]
 # Headers and Structure
-heading1 = { color_256 = 124 } # Red
-heading2 = { color_256 = 100 } # Green
-heading3 = { color_256 = 172 } # Orange
+heading1 = { color256 = 124 } # Red
+heading2 = { color256 = 100 } # Green
+heading3 = { color256 = 172 } # Orange
 
 # Status/Alerts
-error = { color_256 = 160 }   # BrightRed
-warning = { color_256 = 214 } # Yellow
-success = { color_256 = 142 } # Green
-info = { color_256 = 109 }    # Blue
+error = { color256 = 160 }   # BrightRed
+warning = { color256 = 214 } # Yellow
+success = { color256 = 142 } # Green
+info = { color256 = 109 }    # Blue
 
 # Emphasis levels
-emphasis = { color_256 = 132 }                 # Purple
-code = { color_256 = 106 }                     # Green
-normal = { color_256 = 239 }                   # Gray
-subtle = { color_256 = 245 }                   # Light Gray
-hint = { color_256 = 244, style = ["italic"] } # Gray
+emphasis = { color256 = 132 }                 # Purple
+code = { color256 = 106 }                     # Green
+normal = { color256 = 239 }                   # Gray
+subtle = { color256 = 245 }                   # Light Gray
+hint = { color256 = 244, style = ["italic"] } # Gray
 
 # Development
-debug = { color_256 = 245 } # Gray
-trace = { color_256 = 246 } # Light Gray
+debug = { color256 = 245 } # Gray
+trace = { color256 = 246 } # Light Gray

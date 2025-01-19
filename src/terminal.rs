@@ -127,14 +127,8 @@ pub fn get_term_bg_luma() -> &'static TermBgLuma {
         let _guard = TerminalStateGuard::new();
 
         let maybe_term_bg = get_term_bg();
-        if let Ok((r, g, b)) = &maybe_term_bg {
-            // Per termbg:
-            // ITU-R BT.601
-            let y = f64::from(*b)
-                .mul_add(0.114, f64::from(*r).mul_add(0.299, f64::from(*g) * 0.587))
-                / 255.0;
-
-            if y > 0.5 {
+        if let Ok(rgb) = maybe_term_bg {
+            if is_light_color(*rgb) {
                 TermBgLuma::Light
             } else {
                 TermBgLuma::Dark
@@ -143,6 +137,12 @@ pub fn get_term_bg_luma() -> &'static TermBgLuma {
             TermBgLuma::Dark
         }
     })
+}
+
+pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
+    // Using perceived brightness formula
+    let brightness = (r as f32 * 0.299 + g as f32 * 0.587 + b as f32 * 0.114) / 255.0;
+    brightness > 0.5
 }
 
 /// Detects the terminal's background color.

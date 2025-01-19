@@ -1,0 +1,34 @@
+# 1. Uses Nord's official color palette
+# 2. Maintains Nord's color groupings (Polar Night, Snow Storm, Frost, Aurora)
+# 3. Uses cooler colors for structural elements
+# 4. Warmer colors for alerts/emphasis
+# 5. Proper contrast against the dark background
+
+name = "Nord 256"
+description = "An arctic, north-bluish color palette (256 colors)"
+term_bg_luma = "dark"
+min_color_support = "color256"
+background = "#2e3440"
+
+[palette]
+# Headers and Structure
+heading1 = { color256 = 110, style = ["bold"] } # Light blue
+heading2 = { color256 = 109, style = ["bold"] } # Blue
+heading3 = { color256 = 67, style = ["bold"] }  # Dark blue
+
+# Status/Alerts
+error = { color256 = 167 }   # Red
+warning = { color256 = 214 } # Yellow
+success = { color256 = 108 } # Green
+info = { color256 = 116 }    # Cyan
+
+# Emphasis levels
+emphasis = { color256 = 139 }                # Purple
+code = { color256 = 109 }                    # Blue
+normal = { color256 = 253 }                  # Light gray
+subtle = { color256 = 248 }                  # Gray
+hint = { color256 = 60, style = ["italic"] } # Dark gray blue
+
+# Development
+debug = { color256 = 59 }  # Dark gray
+trace = { color256 = 236 } # Darker gray

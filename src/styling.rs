@@ -674,7 +674,7 @@ impl TermAttributes {
                     let support = *crate::terminal::detect_color_support();
                     let term_bg_rgb = terminal::get_term_bg().ok();
                     let term_bg_luma = terminal::get_term_bg_luma();
-                    eprintln!("support={support:?}, term_bg={term_bg_rgb:?}");
+                    // eprintln!("support={support:?}, term_bg={term_bg_rgb:?}");
                     // TODO: dethagomize error message
                     let theme = Theme::auto_detect(support, *term_bg_luma, term_bg_rgb)
                         .expect("Failed to auto-detect theme");
@@ -1037,18 +1037,18 @@ impl Theme {
 
         if let Some(term_bg_rgb) = maybe_term_bg {
             let signatures = get_theme_signatures();
-            eprintln!("signatures={signatures:?}");
+            // eprintln!("signatures={signatures:?}");
             // Filter themes by luma first
             let matching_luma_themes: Vec<_> = signatures
                 .iter()
                 .filter(|(_, sig)| sig.term_bg_luma == term_bg_luma)
                 .collect();
-            eprintln!("matching_luma_themes={matching_luma_themes:?}");
+            // eprintln!("matching_luma_themes={matching_luma_themes:?}");
 
             // Try exact RGB match within luma-matching themes
             for (theme_name, sig) in &matching_luma_themes {
                 if *term_bg_rgb == sig.bg_rgb && color_support >= sig.min_color_support {
-                    eprintln!("Found an exact match!");
+                    // eprintln!("Found an exact match!");
                     return Self::load_builtin(theme_name);
                 }
             }
@@ -1171,15 +1171,15 @@ impl Theme {
         let mut def: ThemeDefinition = toml::from_str(theme_toml)?;
         def.filename = PathBuf::from(format!("themes/built_in/{name}.toml"));
         def.is_builtin = true;
-        eprintln!("About to call Theme::from_definition({def:?})");
+        // eprintln!("About to call Theme::from_definition({def:?})");
         Self::from_definition(def)
     }
 
     fn from_definition(def: ThemeDefinition) -> ThagResult<Self> {
         profile_method!("Theme::from_definition");
-        eprintln!("def.min_color_support={:?}", def.min_color_support);
+        // eprintln!("def.min_color_support={:?}", def.min_color_support);
         let color_support = ColorSupport::from_str(&def.min_color_support);
-        eprintln!("color_support={color_support:?})");
+        // eprintln!("color_support={color_support:?})");
         Ok(Self {
             name: def.name,
             filename: def.filename,

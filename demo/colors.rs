@@ -33,7 +33,7 @@ use termbg::{terminal, theme, Theme};
 use thag_rs::styling::{ColorInitStrategy, TermAttributes};
 use thag_rs::{
     config, cvprtln, debug_log, lazy_static_var, maybe_config, profile, profile_method,
-    profile_section, vlog, ColorSupport, Level, Lvl, TermTheme, ThagResult, V,
+    profile_section, vlog, ColorSupport, Level, Lvl, TermBgLuma, ThagResult, V,
 };
 
 use ratatui::style::{Color as RataColor, Style as RataStyle, Stylize};
@@ -114,18 +114,18 @@ generate_styles!(
 //
 // This function will bubble up any i/o errors encountered.
 #[must_use]
-pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
+pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermBgLuma) {
     profile!("coloring");
 
     if std::env::var("TEST_ENV").is_ok() {
         // #[cfg(debug_assertions)]
         debug_log!("Avoiding supports_color for testing");
-        return (Some(&ColorSupport::Basic), &TermTheme::Dark);
+        return (Some(&ColorSupport::Basic), &TermBgLuma::Dark);
     }
 
     (
         Some(thag_rs::terminal::detect_color_support()),
-        thag_rs::terminal::detect_theme(),
+        thag_rs::terminal::get_term_bg_luma(),
     )
 }
 
@@ -186,7 +186,7 @@ macro_rules! generate_styles {
         )*
 
         pub fn init_styles(
-            term_theme: &TermTheme,
+            term_theme: &TermBgLuma,
             color_support: Option<&ColorSupport>,
         ) -> fn(Lvl) -> Style {
             use std::sync::OnceLock;
@@ -195,7 +195,7 @@ macro_rules! generate_styles {
 
             *STYLE_MAPPING.get_or_init(|| match (term_theme, color_support) {
                 $(
-                    (TermTheme::$term_theme, Some(ColorSupport::$color_support)) => {
+                    (TermBgLuma::$term_theme, Some(ColorSupport::$color_support)) => {
                         |message_level| Style::from(&$style_enum::from(&message_level))
                     }
                 ),*
@@ -208,7 +208,7 @@ macro_rules! generate_styles {
 // Retrieve whether the terminal theme is light or dark, to allow an appropriate colour
 // palette to be chosen.
 #[must_use]
-pub fn get_term_theme() -> &'static TermTheme {
+pub fn get_term_theme() -> &'static TermBgLuma {
     profile!("get_term_theme");
     coloring().1
 }
@@ -224,7 +224,7 @@ pub fn get_term_theme() -> &'static TermTheme {
 #[must_use]
 pub fn get_style(
     message_level: &Lvl,
-    term_theme: &TermTheme,
+    term_theme: &TermBgLuma,
     color_support: Option<&ColorSupport>,
 ) -> Style {
     // dbg!();
@@ -867,7 +867,7 @@ impl From<&Level> for MessageLevel {
 // Main function for use by testing or the script runner.
 #[allow(dead_code)]
 pub fn main() {
-    let term_attrs = TermAttributes::initialize(ColorInitStrategy::Detect);
+    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Detect);
 
     #[allow(unused_variables)]
     let term = terminal();
@@ -934,8 +934,7 @@ pub fn main() {
                 let content = format!(
                     "{variant_str} message: message_style={variant_str:?}, style={style:?}"
                 );
-                let painted_content = style.paint(content);
-                println!("{} = {:#?}", painted_content, painted_content);
+                println!("{}", style.paint(content));
             }
 
             println!();

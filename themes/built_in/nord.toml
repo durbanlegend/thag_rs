@@ -1,0 +1,59 @@
+# 1. Uses Nord's official color palette
+# 2. Maintains Nord's color groupings (Polar Night, Snow Storm, Frost, Aurora)
+# 3. Uses cooler colors for structural elements
+# 4. Warmer colors for alerts/emphasis
+# 5. Proper contrast against the dark background
+
+# Nord Color Palette:
+# Polar Night (Dark to light):
+# Nord0: #2e3440 (Dark gray-blue - Background)
+# Nord1: #3b4252 (Lighter gray-blue)
+# Nord2: #434c5e (Even lighter gray-blue)
+# Nord3: #4c566a (Lightest gray-blue)
+#
+# Snow Storm (Light to dark):
+# Nord4: #d8dee9 (Lightest gray - Foreground)
+# Nord5: #e5e9f0 (Lighter gray)
+# Nord6: #eceff4 (Light gray)
+#
+# Frost:
+# Nord7: #8fbcbb (Cyan-blue)
+# Nord8: #88c0d0 (Light blue)
+# Nord9: #81a1c1 (Mid blue)
+# Nord10: #5e81ac (Dark blue)
+#
+# Aurora:
+# Nord11: #bf616a (Red)
+# Nord12: #d08770 (Orange)
+# Nord13: #ebcb8b (Yellow)
+# Nord14: #a3be8c (Green)
+# Nord15: #b48ead (Purple)
+
+name = "Nord"
+description = "An arctic, north-bluish color palette"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+background = "#2e3440"                                # Nord0: Polar Night (darkest)
+
+[palette]
+# Headers and Structure
+heading1 = { rgb = [136, 192, 208], style = ["bold"] } # Nord8: Frost
+heading2 = { rgb = [129, 161, 193], style = ["bold"] } # Nord9: Frost
+heading3 = { rgb = [94, 129, 172], style = ["bold"] }  # Nord10: Frost
+
+# Status/Alerts
+error = { rgb = [191, 97, 106] }    # Nord11: Aurora (red)
+warning = { rgb = [235, 203, 139] } # Nord13: Aurora (yellow)
+success = { rgb = [163, 190, 140] } # Nord14: Aurora (green)
+info = { rgb = [143, 188, 187] }    # Nord7: Frost (cyan)
+
+# Emphasis levels
+emphasis = { rgb = [180, 142, 173] }               # Nord15: Aurora (purple)
+code = { rgb = [129, 161, 193] }                   # Nord9: Frost
+normal = { rgb = [216, 222, 233] }                 # Nord4: Snow Storm
+subtle = { rgb = [179, 183, 188] }                 # Nord3/4 mix
+hint = { rgb = [76, 86, 106], style = ["italic"] } # Nord3: Polar Night
+
+# Development
+debug = { rgb = [67, 76, 94] } # Nord2: Polar Night
+trace = { rgb = [59, 66, 82] } # Nord1: Polar Night

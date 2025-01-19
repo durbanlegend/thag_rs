@@ -76,6 +76,7 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Use cargo-dist to build and distribute thag front-end commands.
 - [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
 - [ ]  Add macro name parameter to {src|bank|demo}proc_macros/lib::intercept_and_debug for use in "Expanded macro" title.
+- [ ]  REP theme display needs theme title in ?Heading1.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?

@@ -1,3 +1,16 @@
+# Dracula Official Color Palette:
+# Background: #282a36 (Dark gray with slight purple tint)
+# Foreground: #f8f8f2 (Off-white)
+# Selection:  #44475a (Light gray with purple tint)
+# Comment:    #6272a4 (Muted blue)
+# Red:        #ff5555 (Bright coral red)
+# Orange:     #ffb86c (Warm orange)
+# Yellow:     #f1fa8c (Soft pastel yellow)
+# Green:      #50fa7b (Bright mint green)
+# Purple:     #bd93f9 (Soft purple)
+# Cyan:       #8be9fd (Bright cyan)
+# Pink:       #ff79c6 (Hot pink)
+
 name = "Dracula"
 description = "Dark theme with vibrant colors"
 term_bg_luma = "dark"

@@ -34,31 +34,31 @@
 # Gray:
 # Gray: #928374
 
-name = "Gruvbox Light Hard 256"
+name = "Gruvbox Light Hard"
 description = "Light theme with high contrast and warm colors"
 term_bg_luma = "light"
-min_color_support = "color256"
-background = "#fcf3d2"
+min_color_support = "true_color"
+background = "#f9f5d7"                                         # Light0_hard
 
 [palette]
 # Headers and Structure
-heading1 = { color256 = 124 } # Red
-heading2 = { color256 = 100 } # Green
-heading3 = { color256 = 172 } # Orange
+heading1 = { rgb = [157, 0, 6], style = ["bold"] }    # Bright Red
+heading2 = { rgb = [121, 116, 14], style = ["bold"] } # Bright Yellow
+heading3 = { rgb = [66, 123, 88], style = ["bold"] }  # Bright Green
 
 # Status/Alerts
-error = { color256 = 160 }   # BrightRed
-warning = { color256 = 214 } # Yellow
-success = { color256 = 142 } # Green
-info = { color256 = 109 }    # Blue
+error = { rgb = [204, 36, 29] }    # Red
+warning = { rgb = [181, 118, 20] } # Yellow
+success = { rgb = [121, 116, 14] } # Bright Yellow
+info = { rgb = [7, 102, 120] }     # Blue
 
 # Emphasis levels
-emphasis = { color256 = 132 }                 # Purple
-code = { color256 = 106 }                     # Green
-normal = { color256 = 239 }                   # Gray
-subtle = { color256 = 245 }                   # Light Gray
-hint = { color256 = 244, style = ["italic"] } # Gray
+emphasis = { rgb = [146, 60, 131] }                  # Purple
+code = { rgb = [66, 123, 88] }                       # Green
+normal = { rgb = [60, 56, 54] }                      # Dark Gray
+subtle = { rgb = [102, 92, 84] }                     # Medium Gray
+hint = { rgb = [146, 131, 116], style = ["italic"] } # Light Gray
 
 # Development
-debug = { color256 = 245 } # Gray
-trace = { color256 = 246 } # Light Gray
+debug = { rgb = [168, 153, 132] } # Gray
+trace = { rgb = [189, 174, 147] } # Light Gray

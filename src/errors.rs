@@ -291,24 +291,23 @@ impl Error for ThagError {
 #[derive(Debug)]
 pub enum ThemeError {
     BackgroundDetectionFailed,
-    DarkThemeLightTerm,
-    InsufficientColorSupport,
-    LightThemeDarkTerm,
-    // New theme-related variants
     ColorSupportMismatch {
         required: ColorSupport,
         available: ColorSupport,
     },
+    DarkThemeLightTerm,
+    InsufficientColorSupport,
+    InvalidAnsiCode(String),
+    InvalidColorSupport(String),
+    InvalidColorValue(String),
+    InvalidStyle(String),
+    InvalidTermBgLuma(String),
+    LightThemeDarkTerm,
     TermBgLumaMismatch {
         theme: TermBgLuma,
         terminal: TermBgLuma,
     },
-    InvalidColorValue(String),
-    InvalidStyle(String),
-    InvalidTermBgLuma(String),
-    InvalidColorSupport(String),
     UnknownTheme(String),
-    InvalidAnsiCode(String),
 }
 
 impl std::fmt::Display for ThemeError {
@@ -316,6 +315,9 @@ impl std::fmt::Display for ThemeError {
         match self {
             Self::BackgroundDetectionFailed => {
                 write!(f, "Background RGB not detected or configured for terminal")
+            }
+            Self::ColorSupportMismatch { required, available } => {
+                write!(f, "Theme requires {required:?} colors but terminal only supports {available:?}")
             }
             Self::DarkThemeLightTerm => write!(
                 f,
@@ -325,22 +327,19 @@ impl std::fmt::Display for ThemeError {
                 f,
                 "Configured or detected level of terminal colour support is insufficient for this theme."
             ),
-            Self::LightThemeDarkTerm => write!(
-                f,
-                "Only dark themes may be selected for a dark terminal background."
-            ),
-            Self::ColorSupportMismatch { required, available } => {
-                write!(f, "Theme requires {required:?} colors but terminal only supports {available:?}")
-            }
-            Self::TermBgLumaMismatch { theme, terminal } => {
-                write!(f, "Theme requires {theme:?} background but terminal is {terminal:?}")
-            }
+            Self::InvalidAnsiCode(e) => write!(f, "{e}"),
             Self::InvalidColorSupport(msg) => write!(f, "Invalid color support: {msg}"),
             Self::InvalidColorValue(msg) => write!(f, "Invalid color value: {msg}"),
             Self::InvalidStyle(style) => write!(f, "Invalid style attribute: {style}"),
             Self::InvalidTermBgLuma(name) => write!(f, "Unknown value: must be `light` or `dark`: {name}"),
+            Self::LightThemeDarkTerm => write!(
+                f,
+                "Only dark themes may be selected for a dark terminal background."
+            ),
+            Self::TermBgLumaMismatch { theme, terminal } => {
+                write!(f, "Theme requires {theme:?} background but terminal is {terminal:?}")
+            }
             Self::UnknownTheme(name) => write!(f, "Unknown theme: {name}"),
-            Self::InvalidAnsiCode(e) => write!(f, "{e}"),
         }
     }
 }

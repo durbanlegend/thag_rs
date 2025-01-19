@@ -130,10 +130,11 @@ pub fn get_term_bg_luma() -> &'static TermBgLuma {
         if let Ok((r, g, b)) = &maybe_term_bg {
             // Per termbg:
             // ITU-R BT.601
-            let y =
-                f64::from(*b).mul_add(0.114, f64::from(*r).mul_add(0.299, f64::from(*g) * 0.587));
+            let y = f64::from(*b)
+                .mul_add(0.114, f64::from(*r).mul_add(0.299, f64::from(*g) * 0.587))
+                / 255.0;
 
-            if y > 32768.0 {
+            if y > 0.5 {
                 TermBgLuma::Light
             } else {
                 TermBgLuma::Dark

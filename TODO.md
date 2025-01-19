@@ -240,3 +240,7 @@ Key Considerations:
 - Maintaining color support detection
 - Terminal background detection
 - Configuration options
+
+TODO:
+1. Matching against themes.
+2. Calculate closest colour distance from owo colours

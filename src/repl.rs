@@ -658,10 +658,12 @@ fn show_theme_details() {
     println!(
         "\t{:.<col1_width$} {}\n",
         style_for_role(Heading3, "Background color: "),
-        term_attrs.term_bg.map_or("None".to_string(), |rgb| format!(
-            "rgb({}, {}, {})",
-            rgb.0, rgb.1, rgb.2
-        ))
+        term_attrs
+            .term_bg_rgb
+            .map_or("None".to_string(), |rgb| format!(
+                "rgb({}, {}, {})",
+                rgb.0, rgb.1, rgb.2
+            ))
     );
     // println!("{}\n", term_attrs.theme.info());
 }

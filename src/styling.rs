@@ -118,12 +118,12 @@ impl ColorInfo {
     }
 }
 
-// // Theme background detection
-// pub struct ThemeSignature {
-//     bg_rgb: (u8, u8, u8),
-//     name: &'static str,
-//     description: &'static str,
-// }
+// Theme background detection
+pub struct ThemeSignature {
+    bg_rgb: (u8, u8, u8),
+    name: &'static str,
+    description: &'static str,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(clippy::struct_excessive_bools)]
@@ -598,7 +598,7 @@ impl ColorInitStrategy {
 #[derive(Debug)]
 pub struct TermAttributes {
     pub color_support: ColorSupport,
-    pub term_bg: Option<&'static (u8, u8, u8)>,
+    pub term_bg_rgb: Option<&'static (u8, u8, u8)>,
     pub term_bg_luma: TermBgLuma,
     pub theme: Theme,
 }
@@ -619,7 +619,7 @@ impl TermAttributes {
     ) -> Self {
         Self {
             color_support,
-            term_bg,
+            term_bg_rgb: term_bg,
             term_bg_luma,
             theme,
         }
@@ -657,7 +657,7 @@ impl TermAttributes {
                     Self {
                         color_support: support,
                         theme,
-                        term_bg: None::<&'static (u8, u8, u8)>,
+                        term_bg_rgb: None::<&'static (u8, u8, u8)>,
                         term_bg_luma: match bg_luma {
                             TermBgLuma::Light => TermBgLuma::Light,
                             TermBgLuma::Dark => TermBgLuma::Dark,
@@ -672,7 +672,7 @@ impl TermAttributes {
                     Self {
                         color_support: ColorSupport::Basic,
                         theme,
-                        term_bg: None::<&'static (u8, u8, u8)>,
+                        term_bg_rgb: None::<&'static (u8, u8, u8)>,
                         term_bg_luma: TermBgLuma::Dark,
                     }
                 }
@@ -686,13 +686,13 @@ impl TermAttributes {
                     Self {
                         color_support: support,
                         theme: theme.clone(),
-                        term_bg,
+                        term_bg_rgb: term_bg,
                         term_bg_luma: theme.term_bg_luma,
                     }
                 }
             }
         });
-        eprintln!("Returning {get_or_init:#?}");
+        // eprintln!("Returning {get_or_init:#?}");
         get_or_init
     }
 
@@ -1052,7 +1052,9 @@ impl Theme {
         if let Some(term_bg) = maybe_term_bg {
             // TODO make generic
             // Check if background matches Dracula
-            if color_distance(*term_bg, DRACULA_BG) < THRESHOLD {
+            let color_distance = color_distance(*term_bg, DRACULA_BG);
+            eprintln!("theme=DRACULA, color_distance={color_distance}, THRESHOLD={}");
+            if color_distance < THRESHOLD {
                 eprintln!("auto-detect loading dracula");
                 Self::load_builtin("dracula")
             } else {

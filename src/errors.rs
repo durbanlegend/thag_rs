@@ -290,6 +290,7 @@ impl Error for ThagError {
 
 #[derive(Debug)]
 pub enum ThemeError {
+    BackgroundDetectionFailed,
     DarkThemeLightTerm,
     InsufficientColorSupport,
     LightThemeDarkTerm,
@@ -313,6 +314,9 @@ pub enum ThemeError {
 impl std::fmt::Display for ThemeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::BackgroundDetectionFailed => {
+                write!(f, "Background RGB not detected or configured for terminal")
+            }
             Self::DarkThemeLightTerm => write!(
                 f,
                 "Only light themes may be selected for a light terminal background."

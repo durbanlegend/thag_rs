@@ -53,7 +53,7 @@ impl AnsiCode {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(untagged)]
 pub enum ColorValue {
     Basic { basic: [String; 2] }, // [ANSI code, index]
@@ -69,7 +69,7 @@ struct StyleConfig {
     style: Vec<String>, // ["bold", "italic", etc.]
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ColorInfo {
     pub value: ColorValue,
     pub ansi: &'static str,
@@ -118,7 +118,7 @@ impl ColorInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Style {
     pub foreground: Option<ColorInfo>,
@@ -126,6 +126,41 @@ pub struct Style {
     pub italic: bool,
     pub dim: bool,
     pub underline: bool,
+}
+
+#[derive(Serialize)]
+pub struct ThemeOutput {
+    name: String,
+    description: String,
+    term_bg_luma: String,
+    min_color_support: String,
+    background: Option<String>,
+    palette: PaletteOutput,
+}
+
+#[derive(Serialize)]
+pub struct PaletteOutput {
+    heading1: StyleOutput,
+    heading2: StyleOutput,
+    heading3: StyleOutput,
+    error: StyleOutput,
+    warning: StyleOutput,
+    success: StyleOutput,
+    info: StyleOutput,
+    emphasis: StyleOutput,
+    code: StyleOutput,
+    normal: StyleOutput,
+    subtle: StyleOutput,
+    hint: StyleOutput,
+    debug: StyleOutput,
+    trace: StyleOutput,
+}
+
+#[derive(Serialize)]
+pub struct StyleOutput {
+    rgb: [u8; 3],
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    style: Vec<String>,
 }
 
 impl Style {
@@ -173,6 +208,26 @@ impl Style {
         }
 
         Ok(style)
+    }
+
+    #[must_use]
+    pub fn from_fg_hex(hex: &str) -> ThagResult<Self> {
+        let hex = hex.trim_start_matches('#');
+        if hex.len() == 6 {
+            if let (Ok(r), Ok(g), Ok(b)) = (
+                u8::from_str_radix(&hex[0..2], 16),
+                u8::from_str_radix(&hex[2..4], 16),
+                u8::from_str_radix(&hex[4..6], 16),
+            ) {
+                let mut color_info = ColorInfo::rgb(r, g, b);
+                color_info.index = find_closest_color((r, g, b));
+                Ok(Self::fg(color_info))
+            } else {
+                Err(ThagError::Parse)
+            }
+        } else {
+            Err(ThagError::Parse)
+        }
     }
 
     /// Creates a new Style with the specified foreground color
@@ -269,6 +324,36 @@ impl Style {
 impl Default for Style {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+pub fn style_to_output(style: &Style) -> StyleOutput {
+    let mut style_attrs = Vec::new();
+    if style.bold {
+        style_attrs.push("bold".to_string());
+    }
+    if style.italic {
+        style_attrs.push("italic".to_string());
+    }
+    if style.dim {
+        style_attrs.push("dim".to_string());
+    }
+    if style.underline {
+        style_attrs.push("underline".to_string());
+    }
+
+    let rgb = if let Some(color_info) = &style.foreground {
+        match &color_info.value {
+            ColorValue::TrueColor { rgb } => *rgb,
+            _ => [0, 0, 0], // shouldn't happen for true color themes
+        }
+    } else {
+        [0, 0, 0]
+    };
+
+    StyleOutput {
+        rgb,
+        style: style_attrs,
     }
 }
 
@@ -968,28 +1053,28 @@ pub struct PaletteConfig {
     trace: StyleConfig,
 }
 
-#[derive(Clone, Debug, PaletteMethods)]
+#[derive(Clone, Debug, PaletteMethods, Serialize)]
 pub struct Palette {
-    heading1: Style,
-    heading2: Style,
-    heading3: Style,
-    error: Style,
-    warning: Style,
-    success: Style,
-    info: Style,
-    emphasis: Style,
-    code: Style,
-    normal: Style,
-    subtle: Style,
-    hint: Style,
-    debug: Style,
-    trace: Style,
+    pub heading1: Style,
+    pub heading2: Style,
+    pub heading3: Style,
+    pub error: Style,
+    pub warning: Style,
+    pub success: Style,
+    pub info: Style,
+    pub emphasis: Style,
+    pub code: Style,
+    pub normal: Style,
+    pub subtle: Style,
+    pub hint: Style,
+    pub debug: Style,
+    pub trace: Style,
 }
 
 // ThemeDefinition & ThemeSignature and their impls
 generate_theme_types! {}
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 #[allow(dead_code)]
 pub struct Theme {
     pub name: String,      // e.g., "Dracula"
@@ -1376,6 +1461,82 @@ impl Theme {
     pub fn list_builtin() -> Vec<String> {
         BUILT_IN_THEMES.keys().map(ToString::to_string).collect()
     }
+
+    pub fn to_256_color(&self) -> Result<Theme, Box<dyn std::error::Error>> {
+        // Helper to convert a Style from true color to 256-color
+        fn convert_style(style: &Style) -> Result<Style, Box<dyn std::error::Error>> {
+            if let Some(color_info) = &style.foreground {
+                match &color_info.value {
+                    ColorValue::TrueColor { rgb } => {
+                        let index = find_closest_color((rgb[0], rgb[1], rgb[2]));
+                        let mut new_style = Style::fg(ColorInfo::indexed(index));
+                        // Preserve other style attributes
+                        new_style.bold = style.bold;
+                        new_style.italic = style.italic;
+                        new_style.dim = style.dim;
+                        new_style.underline = style.underline;
+                        Ok(new_style)
+                    }
+                    _ => Ok(style.clone()), // Already 256 or basic color
+                }
+            } else {
+                Ok(style.clone())
+            }
+        }
+
+        // Create new theme with converted palette
+        Ok(Theme {
+            name: format!("{} 256", self.name),
+            description: format!("{} (256 colors)", self.description),
+            term_bg_luma: self.term_bg_luma,
+            min_color_support: ColorSupport::Color256,
+            palette: Palette {
+                heading1: convert_style(&self.palette.heading1)?,
+                heading2: convert_style(&self.palette.heading2)?,
+                heading3: convert_style(&self.palette.heading3)?,
+                error: convert_style(&self.palette.error)?,
+                warning: convert_style(&self.palette.warning)?,
+                success: convert_style(&self.palette.success)?,
+                info: convert_style(&self.palette.info)?,
+                emphasis: convert_style(&self.palette.emphasis)?,
+                code: convert_style(&self.palette.code)?,
+                normal: convert_style(&self.palette.normal)?,
+                subtle: convert_style(&self.palette.subtle)?,
+                hint: convert_style(&self.palette.hint)?,
+                debug: convert_style(&self.palette.debug)?,
+                trace: convert_style(&self.palette.trace)?,
+            },
+            background: self.background.clone(),
+            is_builtin: self.is_builtin,
+            filename: self.filename.clone(),
+        })
+    }
+
+    pub fn to_output(&self) -> ThemeOutput {
+        ThemeOutput {
+            name: self.name.clone(),
+            description: self.description.clone(),
+            term_bg_luma: self.term_bg_luma.to_string().to_lowercase(),
+            min_color_support: "true_color".to_string(),
+            background: self.background.clone(),
+            palette: PaletteOutput {
+                heading1: style_to_output(&self.palette.heading1),
+                heading2: style_to_output(&self.palette.heading2),
+                heading3: style_to_output(&self.palette.heading3),
+                error: style_to_output(&self.palette.error),
+                warning: style_to_output(&self.palette.warning),
+                success: style_to_output(&self.palette.success),
+                info: style_to_output(&self.palette.info),
+                emphasis: style_to_output(&self.palette.emphasis),
+                code: style_to_output(&self.palette.code),
+                normal: style_to_output(&self.palette.normal),
+                subtle: style_to_output(&self.palette.subtle),
+                hint: style_to_output(&self.palette.hint),
+                debug: style_to_output(&self.palette.debug),
+                trace: style_to_output(&self.palette.trace),
+            },
+        }
+    }
 }
 
 // Helper to check a single style
@@ -1452,7 +1613,7 @@ fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
     base_distance
 }
 
-fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
+pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
 
     profile!("find_closest_color");

@@ -1204,7 +1204,7 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
     profile!("handle_build_or_check");
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    cvprtln!(Lvl::BRI, V::V, "cargo_command={cargo_command:#?}");
+    cvprtln!(Lvl::BRI, V::VV, "cargo_command={cargo_command:#?}");
 
     let status = cargo_command.spawn()?.wait()?;
 

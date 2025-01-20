@@ -40,6 +40,7 @@ pub enum ThagError {
     Logic(&'static str), // For logic errors
     NoneOption(&'static str), // For unwrapping Options
     OsString(std::ffi::OsString), // For unconvertible OsStrings
+    Parse,
     ParseInt(ParseIntError),
     #[cfg(feature = "reedline")]
     Reedline(ReedlineError), // For reedline errors
@@ -207,6 +208,7 @@ impl std::fmt::Display for ThagError {
             Self::Io(e) => write!(f, "{e}"),
             Self::LockMutexGuard(e) => write!(f, "{e}"),
             Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
+            Self::Parse => write!(f, "Error parsing source data"),
             Self::ParseInt(e) => write!(f, "{e}"),
             #[cfg(feature = "reedline")]
             Self::Reedline(e) => write!(f, "{e}"),
@@ -267,6 +269,7 @@ impl Error for ThagError {
             Self::Logic(_e) => Some(self),
             Self::NoneOption(_e) => Some(self),
             Self::OsString(ref _o) => Some(self),
+            Self::Parse => Some(self),
             Self::ParseInt(ref e) => Some(e),
             #[cfg(feature = "reedline")]
             Self::Reedline(e) => Some(e),

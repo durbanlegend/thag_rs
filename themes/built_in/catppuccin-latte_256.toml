@@ -1,0 +1,51 @@
+name = "Catppuccin Latte"
+description = "Converted from Catppuccin Latte theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+background = "#eff1f5"
+
+[palette.heading1]
+color256 = 161
+style = ["bold"]
+
+[palette.heading2]
+color256 = 27
+style = ["bold"]
+
+[palette.heading3]
+color256 = 30
+style = ["bold"]
+
+[palette.error]
+color256 = 161
+
+[palette.warning]
+color256 = 202
+
+[palette.success]
+color256 = 70
+
+[palette.info]
+color256 = 27
+
+[palette.emphasis]
+color256 = 99
+
+[palette.code]
+color256 = 70
+
+[palette.normal]
+color256 = 59
+
+[palette.subtle]
+color256 = 70
+
+[palette.hint]
+color256 = 174
+style = ["italic"]
+
+[palette.debug]
+color256 = 167
+
+[palette.trace]
+color256 = 188

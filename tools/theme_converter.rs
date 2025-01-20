@@ -31,10 +31,10 @@ toml = "0.8.19"
 //# Purpose: Theme generation.
 //# Categories: tools
 use clap::Parser;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use thag_rs::styling::{Palette, Style, Theme};
+use thag_rs::styling::{find_closest_color, ColorValue, Palette, Style, Theme};
 use thag_rs::{ColorSupport, TermBgLuma};
 
 #[derive(Debug, Deserialize)]
@@ -154,6 +154,136 @@ impl BaseTheme {
     }
 }
 
+#[derive(Serialize)]
+struct ThemeOutput {
+    name: String,
+    description: String,
+    term_bg_luma: String,
+    min_color_support: String,
+    background: Option<String>,
+    palette: PaletteOutput,
+}
+
+#[derive(Serialize)]
+struct PaletteOutput {
+    // Headers and Structure
+    heading1: StyleOutput,
+    heading2: StyleOutput,
+    heading3: StyleOutput,
+    // Status/Alerts
+    error: StyleOutput,
+    warning: StyleOutput,
+    success: StyleOutput,
+    info: StyleOutput,
+    // Emphasis levels
+    emphasis: StyleOutput,
+    code: StyleOutput,
+    normal: StyleOutput,
+    subtle: StyleOutput,
+    hint: StyleOutput,
+    // Development
+    debug: StyleOutput,
+    trace: StyleOutput,
+}
+
+#[derive(Serialize)]
+struct StyleOutput {
+    #[serde(flatten)]
+    color: ColorOutput,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    style: Vec<String>,
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+enum ColorOutput {
+    TrueColor { rgb: [u8; 3] },
+    Color256 { color256: u8 },
+}
+
+trait ToThemeOutput {
+    fn to_output(&self, use_256: bool) -> ThemeOutput;
+}
+
+impl ToThemeOutput for Theme {
+    fn to_output(&self, use_256: bool) -> ThemeOutput {
+        ThemeOutput {
+            name: self.name.clone(),
+            description: self.description.clone(),
+            term_bg_luma: self.term_bg_luma.to_string().to_lowercase(),
+            min_color_support: if use_256 { "color256" } else { "true_color" }.to_string(),
+            background: self.background.clone(),
+            palette: PaletteOutput {
+                heading1: style_to_output(&self.palette.heading1, use_256),
+                heading2: style_to_output(&self.palette.heading2, use_256),
+                heading3: style_to_output(&self.palette.heading3, use_256),
+                error: style_to_output(&self.palette.error, use_256),
+                warning: style_to_output(&self.palette.warning, use_256),
+                success: style_to_output(&self.palette.success, use_256),
+                info: style_to_output(&self.palette.info, use_256),
+                emphasis: style_to_output(&self.palette.emphasis, use_256),
+                code: style_to_output(&self.palette.code, use_256),
+                normal: style_to_output(&self.palette.normal, use_256),
+                subtle: style_to_output(&self.palette.subtle, use_256),
+                hint: style_to_output(&self.palette.hint, use_256),
+                debug: style_to_output(&self.palette.debug, use_256),
+                trace: style_to_output(&self.palette.trace, use_256),
+            },
+        }
+    }
+}
+
+fn style_to_output(style: &Style, use_256: bool) -> StyleOutput {
+    let mut style_attrs = Vec::new();
+    if style.bold {
+        style_attrs.push("bold".to_string());
+    }
+    if style.italic {
+        style_attrs.push("italic".to_string());
+    }
+    if style.dim {
+        style_attrs.push("dim".to_string());
+    }
+    if style.underline {
+        style_attrs.push("underline".to_string());
+    }
+
+    let color = if let Some(color_info) = &style.foreground {
+        match &color_info.value {
+            ColorValue::TrueColor { rgb } => {
+                if use_256 {
+                    ColorOutput::Color256 {
+                        color256: find_closest_color((rgb[0], rgb[1], rgb[2])),
+                    }
+                } else {
+                    ColorOutput::TrueColor { rgb: *rgb }
+                }
+            }
+            ColorValue::Color256 { color256 } => ColorOutput::Color256 {
+                color256: *color256,
+            },
+            ColorValue::Basic { .. } => {
+                // Shouldn't happen for these themes, but handle gracefully
+                ColorOutput::Color256 { color256: 7 } // Default to light gray
+            }
+        }
+    } else {
+        // Shouldn't happen, but handle gracefully
+        if use_256 {
+            ColorOutput::Color256 { color256: 7 }
+        } else {
+            ColorOutput::TrueColor {
+                rgb: [192, 192, 192],
+            }
+        }
+    };
+
+    StyleOutput {
+        color,
+        style: style_attrs,
+    }
+}
+
 #[derive(Parser)]
 #[command(author, version, about = "Convert Base16/24 themes to thag format")]
 struct Cli {
@@ -232,7 +362,7 @@ fn convert_directory(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
 fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
     // Read and parse YAML
     let content = fs::read_to_string(input)?;
-    let theme: BaseTheme = serde_yaml_ok::from_str(&content)?;
+    let base_theme: BaseTheme = serde_yaml_ok::from_str(&content)?;
 
     // Create output filename
     let stem = input
@@ -241,15 +371,15 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
         .ok_or("Invalid input filename")?;
 
     // Convert to thag theme
-    let thag_theme = theme.convert_to_thag()?;
+    let thag_theme = base_theme.convert_to_thag()?;
 
     // Generate TOML
     let true_color_path = cli.output.join(format!("{}.toml", stem));
     if !cli.force && true_color_path.exists() {
         eprintln!("Skipping existing file: {:?}", true_color_path);
     } else {
-        let toml = toml::to_string_pretty(&thag_theme.to_output())?;
-        fs::write(&true_color_path, toml)?;
+        let theme_toml = toml::to_string_pretty(&thag_theme.to_output(false))?; // Changed from theme to thag_theme
+        fs::write(&true_color_path, theme_toml)?;
         if cli.verbose {
             println!("Created {:?}", true_color_path);
         }
@@ -261,10 +391,8 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
         if !cli.force && color256_path.exists() {
             eprintln!("Skipping existing file: {:?}", color256_path);
         } else {
-            let theme_256 = thag_theme.to_256_color()?;
-            // let toml = toml::to_string_pretty(&theme_256)?;
-            let toml = toml::to_string_pretty(&theme_256.to_output())?;
-            fs::write(&color256_path, toml)?;
+            let theme_256_toml = toml::to_string_pretty(&thag_theme.to_output(true))?; // Changed from theme to thag_theme
+            fs::write(&color256_path, theme_256_toml)?;
             if cli.verbose {
                 println!("Created {:?}", color256_path);
             }

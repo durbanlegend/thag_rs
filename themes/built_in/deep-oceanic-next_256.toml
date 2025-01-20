@@ -1,0 +1,51 @@
+name = "Deep Oceanic Next"
+description = "Converted from Deep Oceanic Next theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+background = "#001c1f"
+
+[palette.heading1]
+color256 = 167
+style = ["bold"]
+
+[palette.heading2]
+color256 = 68
+style = ["bold"]
+
+[palette.heading3]
+color256 = 73
+style = ["bold"]
+
+[palette.error]
+color256 = 167
+
+[palette.warning]
+color256 = 173
+
+[palette.success]
+color256 = 72
+
+[palette.info]
+color256 = 68
+
+[palette.emphasis]
+color256 = 98
+
+[palette.code]
+color256 = 72
+
+[palette.normal]
+color256 = 188
+
+[palette.subtle]
+color256 = 79
+
+[palette.hint]
+color256 = 222
+style = ["italic"]
+
+[palette.debug]
+color256 = 203
+
+[palette.trace]
+color256 = 17

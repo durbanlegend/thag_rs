@@ -7,7 +7,7 @@ use crate::{
     profile, profile_method, regex,
     styling::{
         style_for_role, ColorInfo, ColorInitStrategy,
-        Role::{self, Heading2, Info, Normal, Success},
+        Role::{self, Heading1, Info, Normal, Success},
         TermAttributes, Theme,
     },
     tui_editor::{
@@ -705,7 +705,7 @@ fn show_theme_details() {
 
         print!("\t{}{}", styled_name, padding);
         let description = if *attr == "Theme" {
-            style_for_role(Heading2, description)
+            style_for_role(Heading1, description)
         } else {
             description.to_string()
         };

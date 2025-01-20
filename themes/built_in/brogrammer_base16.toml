@@ -1,0 +1,107 @@
+name = "Brogrammer Base 16"
+description = "Converted from Brogrammer Base 16 theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+background = "1f1f1f"
+
+[palette.heading1]
+rgb = [
+    214,
+    219,
+    229,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    83,
+    80,
+    185,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    16,
+    129,
+    214,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    214,
+    219,
+    229,
+]
+
+[palette.warning]
+rgb = [
+    29,
+    211,
+    97,
+]
+
+[palette.success]
+rgb = [
+    243,
+    189,
+    9,
+]
+
+[palette.info]
+rgb = [
+    83,
+    80,
+    185,
+]
+
+[palette.emphasis]
+rgb = [
+    15,
+    125,
+    219,
+]
+
+[palette.code]
+rgb = [
+    243,
+    189,
+    9,
+]
+
+[palette.normal]
+rgb = [
+    78,
+    90,
+    183,
+]
+
+[palette.subtle]
+rgb = [
+    236,
+    186,
+    15,
+]
+
+[palette.hint]
+rgb = [
+    236,
+    186,
+    15,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    45,
+    197,
+    94,
+]
+
+[palette.trace]
+rgb = [
+    248,
+    17,
+    24,
+]

@@ -109,7 +109,7 @@ impl BaseTheme {
             term_bg_luma: detect_background_luma(&self.palette.base00)?,
             min_color_support: ColorSupport::TrueColor,
             palette,
-            background: Some(format!("#{}", self.palette.base00)),
+            background: Some(format!("{}", self.palette.base00)),
             is_builtin: false,
             filename: PathBuf::new(), // Will be set by caller
         })

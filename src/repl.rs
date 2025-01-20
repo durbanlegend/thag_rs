@@ -7,7 +7,7 @@ use crate::{
     profile, profile_method, regex,
     styling::{
         style_for_role, ColorInfo, ColorInitStrategy,
-        Role::{self, Heading3, Normal, Success},
+        Role::{self, Heading2, Info, Normal, Success},
         TermAttributes, Theme,
     },
     tui_editor::{
@@ -700,10 +700,15 @@ fn show_theme_details() {
     println!("\t{}", "─".repeat(flower_box_len));
 
     for (attr, description) in theme_docs {
-        let styled_name = style_for_role(Heading3, attr);
+        let styled_name = style_for_role(Info, attr);
         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
 
         print!("\t{}{}", styled_name, padding);
+        let description = if *attr == "Theme" {
+            style_for_role(Heading2, description)
+        } else {
+            description.to_string()
+        };
         println!("│ {}", description);
     }
 
@@ -723,7 +728,10 @@ fn show_theme_details() {
         (
             "Background color",
             &term_attrs.term_bg_rgb.map_or("None".to_string(), |rgb| {
-                format!("rgb({}, {}, {})", rgb.0, rgb.1, rgb.2)
+                format!(
+                    "#{:02x}{:02x}{:02x} = rgb({}, {}, {})",
+                    rgb.0, rgb.1, rgb.2, rgb.0, rgb.1, rgb.2
+                )
             }),
         ),
     ];
@@ -741,7 +749,7 @@ fn show_theme_details() {
     println!("\t{}", "─".repeat(flower_box_len));
 
     for (attr, description) in terminal_docs {
-        let styled_name = style_for_role(Heading3, attr);
+        let styled_name = style_for_role(Info, attr);
         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
 
         print!("\t{}{}", styled_name, padding);

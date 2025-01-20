@@ -1570,6 +1570,10 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
     )
 }
 
+pub fn rgb_to_hex((r, g, b): (u8, u8, u8)) -> String {
+    format!("#{r:02x}{g:02x}{b:02x}")
+}
+
 // Convenience macros
 /// A line print macro that conditionally prints a message using `cprtln` if the current global verbosity
 /// is at least as verbose as the `Verbosity` (alias `V`) level passed in.

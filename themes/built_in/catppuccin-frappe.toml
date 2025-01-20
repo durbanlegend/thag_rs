@@ -2,7 +2,7 @@ name = "Catppuccin Frappe"
 description = "Converted from Catppuccin Frappe theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
-background = "##303446"
+background = "#303446"
 
 [palette.heading1]
 rgb = [

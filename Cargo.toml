@@ -52,7 +52,7 @@ ratatui = "0.29.0"
 reedline = "0.38.0"
 regex = "1.11.1"
 scopeguard = "1.2.0"
-semver = "1.0.23"
+semver = "1.0.25"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"
 serde_merge = "0.1.3"

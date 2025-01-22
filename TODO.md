@@ -65,9 +65,7 @@ validate_state only when feature minimal not engaged - instead switched off debu
        - Document thag_cargo and thag_clippy in the Readme.
 - [ ]  Add profiling to capabilities for scripts.
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
-- [ ]  Consider further refactor of log_color into term_aware vs log_color and eventually term_aware (incl supports_color) vs log_color?
-         And change feature name from color_support to term_aware or themed.
-- [ ]  Fix u8 conversion.
+- [ ]  Migrate Level to Role and decommission.
 - [ ]  Consider script to reverse-engineer xterm OSC sequences.
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
@@ -76,7 +74,6 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Use cargo-dist to build and distribute thag front-end commands.
 - [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
 - [ ]  Add macro name parameter to {src|bank|demo}proc_macros/lib::intercept_and_debug for use in "Expanded macro" title.
-- [ ]  REP theme display needs theme title in ?Heading1.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
@@ -142,7 +139,7 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
     released to crates.io a first time, then release all over again.
 - [ ] Optional: reinstall thag_rs from path. (cargo install --path .)
 - [ ] Make sure Readme images are up to date.
-- [ ] Run clippy::pedantic and clippy::nursery
+- [ ] Run clippy_feature_tests.sh
 - [ ] Run cargo tests
 - [ ] Run `gen_readme`
 - [ ] Run `typos` command.

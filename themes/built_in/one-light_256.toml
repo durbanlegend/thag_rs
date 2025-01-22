@@ -2,7 +2,7 @@ name = "One Light"
 description = "Converted from One Light theme"
 term_bg_luma = "light"
 min_color_support = "color256"
-background = "#e7e7e9"
+backgrounds = ["#e7e7e9"]
 
 [palette.heading1]
 color256 = 161

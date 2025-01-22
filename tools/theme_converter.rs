@@ -109,7 +109,10 @@ impl BaseTheme {
             term_bg_luma: detect_background_luma(&self.palette.base00)?,
             min_color_support: ColorSupport::TrueColor,
             palette,
-            background: Some(format!("{}", self.palette.base00)),
+            backgrounds: Some(format!(
+                "[#{}]",
+                self.palette.base00.trim_start_matches('#').to_lowercase()
+            )),
             is_builtin: false,
             filename: PathBuf::new(), // Will be set by caller
         })
@@ -160,7 +163,7 @@ struct ThemeOutput {
     description: String,
     term_bg_luma: String,
     min_color_support: String,
-    background: Option<String>,
+    backgrounds: Option<String>,
     palette: PaletteOutput,
 }
 
@@ -208,11 +211,11 @@ trait ToThemeOutput {
 impl ToThemeOutput for Theme {
     fn to_output(&self, use_256: bool) -> ThemeOutput {
         ThemeOutput {
-            name: self.name.clone(),
+            name: format!("{}{}", self.name, if use_256 { " 256" } else { "" }),
             description: self.description.clone(),
             term_bg_luma: self.term_bg_luma.to_string().to_lowercase(),
             min_color_support: if use_256 { "color256" } else { "true_color" }.to_string(),
-            background: self.background.clone(),
+            backgrounds: self.backgrounds.clone(),
             palette: PaletteOutput {
                 heading1: style_to_output(&self.palette.heading1, use_256),
                 heading2: style_to_output(&self.palette.heading2, use_256),

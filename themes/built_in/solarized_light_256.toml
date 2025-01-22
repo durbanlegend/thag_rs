@@ -24,7 +24,7 @@ name = "Solarized Light 256"
 description = "Precision colors for machines and people (256 colors)"
 term_bg_luma = "light"
 min_color_support = "color256"
-background = "#fdf6e3"                                                # Base3
+backgrounds = ["#fdf6e3"]                                             # Base3
 
 [palette]
 # Headers and Structure

@@ -5,16 +5,14 @@ use quote::quote;
 use std::fs;
 use syn::Ident;
 
+#[allow(clippy::too_many_lines)]
 pub fn generate_theme_types_impl(_input: TokenStream) -> TokenStream {
-    // First, collect theme signatures from TOML files
     let mut theme_entries = Vec::new();
 
     if let Ok(entries) = fs::read_dir("themes/built_in") {
         for entry in entries.filter_map(Result::ok) {
             if entry.path().extension().and_then(|s| s.to_str()) == Some("toml") {
-                // eprintln!("entry.path()={}", entry.path().display());
                 if let Ok(content) = fs::read_to_string(entry.path()) {
-                    // eprintln!("... content read");
                     if let Ok(theme) = content.parse::<toml::Value>() {
                         let name = entry
                             .path()
@@ -23,11 +21,16 @@ pub fn generate_theme_types_impl(_input: TokenStream) -> TokenStream {
                             .unwrap_or("unknown")
                             .to_string();
 
-                        // eprintln!("name={name}");
-                        if let Some(bg) = theme.get("background").and_then(|v| v.as_str()) {
-                            // eprintln!("bg={bg}");
-                            if let Some((r, g, b)) = hex_to_rgb(bg) {
-                                // eprintln!("rbg={r}, {g}, {b}");
+                        // Only handle backgrounds array
+                        if let Some(bg_array) = theme.get("backgrounds").and_then(|v| v.as_array())
+                        {
+                            let backgrounds: Vec<_> = bg_array
+                                .iter()
+                                .filter_map(|v| v.as_str())
+                                .filter_map(hex_to_rgb)
+                                .collect();
+
+                            if let Some(first_bg) = backgrounds.first() {
                                 let term_bg_luma = to_upper_camel_case(
                                     theme
                                         .get("term_bg_luma")
@@ -46,11 +49,17 @@ pub fn generate_theme_types_impl(_input: TokenStream) -> TokenStream {
                                 let min_color_support =
                                     Ident::new(&min_color_support, Span::call_site());
 
+                                let (r, g, b) = *first_bg;
+                                let bg_entries = backgrounds.iter().map(|(r, g, b)| {
+                                    quote! { (#r, #g, #b) }
+                                });
+
                                 theme_entries.push(quote! {
                                     m.insert(
                                         #name.to_string(),
                                         ThemeSignature {
                                             bg_rgb: (#r, #g, #b),
+                                            bg_rgbs: vec![#(#bg_entries),*],
                                             term_bg_luma: TermBgLuma::#term_bg_luma,
                                             min_color_support: ColorSupport::#min_color_support,
                                         }
@@ -79,8 +88,8 @@ pub fn generate_theme_types_impl(_input: TokenStream) -> TokenStream {
             pub term_bg_luma: String,
             /// Minimum color support required
             pub min_color_support: String,
-            /// Theme background color in hex format
-            pub background: Option<String>,
+            /// All possible Hex RGB values for theme background
+            pub backgrounds: Vec<String>,  // Keep as hex strings in TOML
             /// Theme description
             pub description: String,
             /// Color palette configuration
@@ -99,16 +108,18 @@ pub fn generate_theme_types_impl(_input: TokenStream) -> TokenStream {
             }
 
             /// Get the background color if specified
-            pub fn background(&self) -> Option<&str> {
-                self.background.as_deref()
+            pub fn backgrounds(&self) -> Vec<String> {
+                self.backgrounds.clone()
             }
         }
 
         /// Runtime theme signature for matching
         #[derive(Debug, Clone, PartialEq, Eq)]
         pub struct ThemeSignature {
-            /// RGB values of theme background
+            /// RGB values of primary theme background (first in list)
             pub bg_rgb: (u8, u8, u8),
+            /// All possible RGB values for theme background
+            pub bg_rgbs: Vec<(u8, u8, u8)>,
             /// Light or dark background requirement
             pub term_bg_luma: TermBgLuma,
             /// Minimum color support required
@@ -121,6 +132,13 @@ pub fn generate_theme_types_impl(_input: TokenStream) -> TokenStream {
                 let mut m = ::std::collections::HashMap::new();
                 #(#theme_entries)*
                 m
+            }
+
+            /// Check if a given background color matches any of the theme's backgrounds
+            pub fn matches_background(&self, bg: (u8, u8, u8)) -> bool {
+                self.bg_rgbs.iter().any(|&theme_bg| {
+                    color_distance(bg, theme_bg) < THRESHOLD
+                })
             }
         }
 

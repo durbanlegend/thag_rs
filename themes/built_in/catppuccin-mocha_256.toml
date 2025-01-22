@@ -1,8 +1,8 @@
-name = "Catppuccin Mocha"
+name = "Catppuccin Mocha 256"
 description = "Converted from Catppuccin Mocha theme"
 term_bg_luma = "dark"
 min_color_support = "color256"
-background = "#1e1e2e"
+backgrounds = ["#1e1e2e"]
 
 [palette.heading1]
 color256 = 211

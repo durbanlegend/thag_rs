@@ -18,11 +18,19 @@ fn reset_terminal_state() {
     let _ = stdout().flush();
 }
 
-struct TerminalStateGuard;
+#[allow(clippy::module_name_repetitions)]
+pub struct TerminalStateGuard;
 
 impl TerminalStateGuard {
-    const fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self
+    }
+}
+
+impl Default for TerminalStateGuard {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -115,10 +123,10 @@ pub fn detect_color_support() -> &'static ColorSupport {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::terminal::detect_theme;
+/// use thag_rs::terminal::get_term_bg_luma;
 ///
-/// let theme = detect_theme();
-/// println!("Terminal theme: {:?}", theme);
+/// let luma = get_term_bg_luma();
+/// println!("Terminal background intensity: {:?}", luma);
 /// ```
 pub fn get_term_bg_luma() -> &'static TermBgLuma {
     profile!("get_term_bg_luma");
@@ -127,21 +135,21 @@ pub fn get_term_bg_luma() -> &'static TermBgLuma {
         let _guard = TerminalStateGuard::new();
 
         let maybe_term_bg = get_term_bg();
-        if let Ok(rgb) = maybe_term_bg {
+        maybe_term_bg.map_or(TermBgLuma::Dark, |rgb| {
             if is_light_color(*rgb) {
                 TermBgLuma::Light
             } else {
                 TermBgLuma::Dark
             }
-        } else {
-            TermBgLuma::Dark
-        }
+        })
     })
 }
 
+#[must_use]
 pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
     // Using perceived brightness formula
-    let brightness = (r as f32 * 0.299 + g as f32 * 0.587 + b as f32 * 0.114) / 255.0;
+    let brightness =
+        f32::from(b).mul_add(0.114, f32::from(r).mul_add(0.299, f32::from(g) * 0.587)) / 255.0;
     brightness > 0.5
 }
 
@@ -163,10 +171,10 @@ pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
 ///
 /// ```
 /// use thag_rs::terminal::get_term_bg;
+/// use thag_rs::ThagError;
 ///
-/// let maybe_term_bg = get_term_bg()?;
+/// let maybe_term_bg = get_term_bg();
 /// println!("Terminal bckground: {maybe_term_bg:?}");
-/// # Ok::<&'static (u8, u8, u8), ThagError>(())
 /// ```
 pub fn get_term_bg() -> ThagResult<&'static (u8, u8, u8)> {
     struct RawModeGuard(bool);

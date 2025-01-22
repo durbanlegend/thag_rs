@@ -145,7 +145,7 @@ where
             Err(e) => eprintln!("Failed to parse tokens: {e:?}"),
             Ok(syn_file) => {
                 let pretty_output = prettyplease::unparse(&syn_file);
-                let dash_line = "-".repeat(70);
+                let dash_line = "─".repeat(70);
                 eprintln!("{style_reset}{dash_line}{style_reset}");
                 eprintln!("{style_bold}Expanded macro:{style_reset}");
                 eprint!("{pretty_output}");

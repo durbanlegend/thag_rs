@@ -38,7 +38,7 @@ name = "Gruvbox Light Hard 256"
 description = "Light theme with high contrast and warm colors"
 term_bg_luma = "light"
 min_color_support = "color256"
-background = "#fcf3d2"
+backgrounds = ["#fcf3d2"]
 
 [palette]
 # Headers and Structure

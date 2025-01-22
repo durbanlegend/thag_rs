@@ -2,7 +2,7 @@ name = "Brogrammer Base 16"
 description = "Converted from Brogrammer Base 16 theme"
 term_bg_luma = "dark"
 min_color_support = "color256"
-background = "1f1f1f"
+backgrounds = ["#1f1f1f"]
 
 [palette.heading1]
 color256 = 188

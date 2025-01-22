@@ -1253,7 +1253,7 @@ fn display_build_failure() {
 
     cvprtln!(
         Lvl::EMPH,
-        V::N,
+        V::V,
         r#"Dependency inference_level={inference_level:#?}
 If the problem is a dependency error, consider the following advice:
 {advice}
@@ -1313,7 +1313,7 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     debug_log!("executable_path={executable_path:#?}, output_path={output_path:#?}");
     fs::rename(executable_path, output_path)?;
 
-    // let dash_line = "-".repeat(&FLOWER_BOX_LEN);
+    // let dash_line = "─".repeat(&FLOWER_BOX_LEN);
     repeat_dash!(70);
     cvprtln!(Lvl::EMPH, V::Q, "{DASH_LINE}");
 
@@ -1353,7 +1353,7 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
 
     // Sandwich command between two lines of dashes in the terminal
 
-    let dash_line = "-".repeat(FLOWER_BOX_LEN);
+    let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
 
     let _exit_status = run_command.spawn()?.wait()?;

@@ -28,7 +28,7 @@ name = "Solarized Light"
 description = "Precision colors for machines and people"
 term_bg_luma = "light"
 min_color_support = "true_color"
-background = "#fdf6e3"                                   # Base3: Light background
+backgrounds = ["#fdf6e3"]                                # Base3: Light background
 
 [palette]
 # Headers and Structure

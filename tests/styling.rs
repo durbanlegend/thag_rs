@@ -31,20 +31,20 @@ mod tests {
     #[test]
     fn test_styling_term_attributes_init_default() {
         // Test default initialization
-        let attrs = TermAttributes::initialize(ColorInitStrategy::Default);
+        let attrs = TermAttributes::initialize(&ColorInitStrategy::Default);
         assert!(matches!(attrs.color_support, ColorSupport::Basic));
-        assert!(matches!(attrs.theme, TermBgLuma::Dark));
+        assert!(matches!(attrs.theme.term_bg_luma, TermBgLuma::Dark));
     }
 
     #[test]
     fn test_styling_term_attributes_init_config() {
         // Test explicit configuration
-        let attrs = TermAttributes::initialize(ColorInitStrategy::Configure(
+        let attrs = TermAttributes::initialize(&ColorInitStrategy::Configure(
             ColorSupport::Color256,
             TermBgLuma::Light,
         ));
         eprintln!("attrs.color_support={0:#?}", attrs.color_support);
         assert!(matches!(attrs.color_support, ColorSupport::Color256));
-        assert!(matches!(attrs.theme, TermBgLuma::Light));
+        assert!(matches!(attrs.theme.term_bg_luma, TermBgLuma::Light));
     }
 }

@@ -32,7 +32,7 @@ pub struct Config {
     /// Logging configuration
     pub logging: Logging,
     /// Color settings
-    pub colors: Colors,
+    pub styling: Styling,
     /// Proc macros directory location, e.g. `demo/proc_macros`
     pub proc_macros: ProcMacros,
     /// Dependency handling settings
@@ -46,7 +46,7 @@ struct PartialConfig {
     #[serde(default)]
     logging: Option<Logging>,
     #[serde(default)]
-    colors: Option<Colors>,
+    colors: Option<Styling>,
     #[serde(default)]
     proc_macros: Option<ProcMacros>,
     #[serde(default)]
@@ -128,7 +128,7 @@ impl Config {
         profile_method!("load");
         let content = std::fs::read_to_string(path)?;
 
-        match toml::from_str::<Config>(&content) {
+        match toml::from_str::<Self>(&content) {
             Ok(config) => {
                 config.validate()?;
                 validate_config_format(&content)?;
@@ -139,7 +139,7 @@ impl Config {
                 eprintln!(
                     "Warning: Config parse error ({e}). Attempting to preserve valid settings."
                 );
-                let mut default_config = Config::default();
+                let mut default_config = Self::default();
 
                 // Try to parse what we can
                 if let Ok(partial_config) = toml::from_str::<PartialConfig>(&content) {
@@ -157,7 +157,7 @@ impl Config {
             self.logging = logging;
         }
         if let Some(colors) = partial.colors {
-            self.colors = colors;
+            self.styling = colors;
         }
         if let Some(proc_macros) = partial.proc_macros {
             self.proc_macros = proc_macros;
@@ -536,7 +536,7 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
 /// Terminal color settings
 // #[serde_as]
 #[derive(Clone, Debug, Deserialize, Documented, DocumentedFields, Serialize)]
-pub struct Colors {
+pub struct Styling {
     /// Color support override. Sets the terminal's color support level. The alternative is
     /// to leave it up to `thag_rs`, which depending on the platform may call 3rd-party crates
     /// to interrogate the terminal, which could cause misbehaviour, or may choose a default,
@@ -551,13 +551,32 @@ pub struct Colors {
     /// Light or dark terminal background override
     // #[serde_as(as = "DisplayFromStr")]
     pub term_theme: TermBgLuma,
+    /// First one is primary
+    #[serde(default)]
+    pub backgrounds: Vec<String>,
+    /// For backward compatibility
+    // #[serde(default = "default_background")]
+    pub background: Option<String>,
 }
 
-impl Default for Colors {
+impl Default for Styling {
+    #[cfg(feature = "color_detect")]
     fn default() -> Self {
         Self {
             color_support: ColorSupport::Undetermined,
             term_theme: TermBgLuma::Undetermined,
+            backgrounds: vec![],
+            background: None,
+        }
+    }
+
+    #[cfg(not(feature = "color_detect"))]
+    fn default() -> Self {
+        Self {
+            color_support: ColorSupport::Undetermined,
+            term_theme: TermBgLuma::Dark,
+            backgrounds: vec![],
+            background: None,
         }
     }
 }
@@ -581,7 +600,6 @@ pub struct ProcMacros {
 #[serde(default)]
 pub struct Misc {
     /// Strip double quotes from around string literals returned by snippets
-    // #[serde_as(as = "DisplayFromStr")]
     pub unquote: bool,
 }
 
@@ -812,8 +830,8 @@ fn main() {
         debug_log!(
             "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
             config.logging.default_verbosity,
-            config.colors.color_support,
-            config.colors.term_theme
+            config.styling.color_support,
+            config.styling.term_theme
         );
     } else {
         debug_log!("No configuration file found.");

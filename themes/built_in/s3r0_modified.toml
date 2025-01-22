@@ -14,7 +14,7 @@ name = "S3r0 Modified"
 description = "A modified s3r0 theme with vibrant accents on a dark background"
 term_bg_luma = "dark"
 min_color_support = "true_color"
-background = "#1f1f1f"                                                          # Dark gray background
+backgrounds = ["#1f1f1f"]                                                       # Dark gray background
 
 [palette]
 # Headers and Structure

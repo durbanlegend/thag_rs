@@ -28,7 +28,7 @@ name = "Solarized Dark"
 description = "Precision colors for machines and people"
 term_bg_luma = "dark"
 min_color_support = "true_color"
-background = "#002b36"                                   # Base03: Dark background
+backgrounds = ["#002b36"]                                # Base03: Dark background
 
 [palette]
 # Headers and Structure

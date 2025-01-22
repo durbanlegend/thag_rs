@@ -2,7 +2,7 @@ name = "Chalk"
 description = "Converted from Chalk theme"
 term_bg_luma = "dark"
 min_color_support = "color256"
-background = "#151515"
+backgrounds = ["#151515"]
 
 [palette.heading1]
 color256 = 211

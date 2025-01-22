@@ -35,14 +35,14 @@ lazy_static! {
     };
 
     #[derive(Debug)]
-    pub static ref TERM_THEME: TermTheme = {
+    pub static ref TERM_THEME: TermBgLuma = {
         let timeout = std::time::Duration::from_millis(100);
         debug_log!("Check terminal background color");
         let theme = termbg::theme(timeout);
         // clear_screen();
         match theme {
-            Ok(Theme::Light) => TermTheme::Light,
-            Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+            Ok(Theme::Light) => TermBgLuma::Light,
+            Ok(Theme::Dark) | Err(_) => TermBgLuma::Dark,
         }
     };
 }
@@ -72,7 +72,7 @@ pub enum ColorSupport {
 }
 
 #[derive(EnumString, Display, PartialEq)]
-pub enum TermTheme {
+pub enum TermBgLuma {
     Light,
     Dark,
 }

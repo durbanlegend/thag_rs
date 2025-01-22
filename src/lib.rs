@@ -165,8 +165,8 @@ pub use termbg;
 
 #[cfg(feature = "config")]
 pub use config::{
-    load, maybe_config, Colors, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
-    ProcMacros,
+    load, maybe_config, Config, Context, Dependencies, FeatureOverride, Logging, Misc, ProcMacros,
+    Styling,
 };
 
 #[cfg(feature = "tui")]

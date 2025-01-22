@@ -32,20 +32,20 @@ pub fn clear_screen() {
 }
 
 #[derive(Debug, PartialEq)]
-enum TermTheme {
+enum TermBgLuma {
     Light,
     Dark,
 }
 
 lazy_static! {
-    static ref TERM_THEME: TermTheme = {
+    static ref TERM_THEME: TermBgLuma = {
         let timeout = std::time::Duration::from_millis(100);
         // debug!("Check terminal background color");
         let theme = termbg::theme(timeout);
         clear_screen();
         match theme {
-            Ok(Theme::Light) => TermTheme::Light,
-            Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+            Ok(Theme::Light) => TermBgLuma::Light,
+            Ok(Theme::Dark) | Err(_) => TermBgLuma::Dark,
         }
     };
 }
@@ -53,7 +53,7 @@ lazy_static! {
 fn main() {
     // Directly match the static variable without a mutex
     match *TERM_THEME {
-        TermTheme::Light => println!("The theme is Light"),
-        TermTheme::Dark => println!("The theme is Dark"),
+        TermBgLuma::Light => println!("The theme is Light"),
+        TermBgLuma::Dark => println!("The theme is Dark"),
     }
 }

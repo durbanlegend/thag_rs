@@ -2,7 +2,7 @@ name = "Flat"
 description = "Converted from Flat theme"
 term_bg_luma = "dark"
 min_color_support = "color256"
-background = "#082845"
+backgrounds = ["#082845"]
 
 [palette.heading1]
 color256 = 124

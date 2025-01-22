@@ -6,9 +6,9 @@ use crate::{
     manifest::extract,
     profile, profile_method, regex,
     styling::{
-        display_theme_roles, show_theme_details, ColorInfo,
-        Role::{self, Success},
-        TermAttributes,
+        style_for_role, ColorInfo, ColorInitStrategy,
+        Role::{self, Heading1, Info, Normal, Success},
+        TermAttributes, Theme,
     },
     tui_editor::{
         script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
@@ -301,18 +301,12 @@ impl Prompt for ReplPrompt {
 
 fn get_heading_style() -> &'static Style {
     profile!("get_heading_style");
-    lazy_static_var!(
-        Style,
-        TermAttributes::get_or_init().style_for_level(Lvl::HEAD)
-    )
+    lazy_static_var!(Style, TermAttributes::get().style_for_level(Lvl::HEAD))
 }
 
 fn get_subhead_style() -> &'static Style {
     profile!("get_subhead_style");
-    lazy_static_var!(
-        Style,
-        TermAttributes::get_or_init().style_for_level(Lvl::SUBH)
-    )
+    lazy_static_var!(Style, TermAttributes::get().style_for_level(Lvl::SUBH))
 }
 
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
@@ -390,7 +384,7 @@ pub fn run_repl(
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
 
-    let term_attrs = TermAttributes::get_or_init();
+    let term_attrs = TermAttributes::get();
 
     // Only add highlighting if color support is available
     if matches!(
@@ -557,7 +551,7 @@ pub fn run_repl(
                         show_key_bindings(formatted_bindings, max_key_len);
                     }
                     ReplCommand::Theme => {
-                        let term_attrs = TermAttributes::get_or_init();
+                        let term_attrs = TermAttributes::get();
                         let theme = &term_attrs.theme;
 
                         display_theme_roles(theme);
@@ -573,195 +567,194 @@ pub fn run_repl(
     Ok(())
 }
 
-// pub fn display_theme_roles(theme: &Theme) {
-//     // Role descriptions
-//     const ROLE_DOCS: &[(&str, &str)] = &[
-//         ("Heading1", "Primary heading, highest prominence"),
-//         ("Heading2", "Secondary heading"),
-//         ("Heading3", "Tertiary heading"),
-//         ("Error", "Critical errors requiring immediate attention"),
-//         ("Warning", "Important cautions or potential issues"),
-//         ("Success", "Positive completion or status messages"),
-//         ("Info", "General informational messages"),
-//         ("Emphasis", "Text that needs to stand out"),
-//         ("Code", "Code snippets or commands"),
-//         ("Normal", "Standard text, default prominence"),
-//         ("Subtle", "De-emphasized but clearly visible text"),
-//         ("Hint", "Completion suggestions or placeholder text"),
-//         ("Debug", "Development/diagnostic information"),
-//         ("Trace", "Detailed execution tracking"),
-//     ];
+fn display_theme_roles(theme: &Theme) {
+    // Role descriptions
+    const ROLE_DOCS: &[(&str, &str)] = &[
+        ("Heading1", "Primary heading, highest prominence"),
+        ("Heading2", "Secondary heading"),
+        ("Heading3", "Tertiary heading"),
+        ("Error", "Critical errors requiring immediate attention"),
+        ("Warning", "Important cautions or potential issues"),
+        ("Success", "Positive completion or status messages"),
+        ("Info", "General informational messages"),
+        ("Emphasis", "Text that needs to stand out"),
+        ("Code", "Code snippets or commands"),
+        ("Normal", "Standard text, default prominence"),
+        ("Subtle", "De-emphasized but clearly visible text"),
+        ("Hint", "Completion suggestions or placeholder text"),
+        ("Debug", "Development/diagnostic information"),
+        ("Trace", "Detailed execution tracking"),
+    ];
 
-//     // Calculate maximum role name length for alignment.
-//     // Get length of longest role name after "painting" (wrapping in xterm styling instruction).
-//     // let role_legend = style_for_role(Heading1, ROLE_DOCS[0].0);
-//     // let col1_width = role_legend.len() + 2;
+    // Calculate maximum role name length for alignment.
+    // Get length of longest role name after "painting" (wrapping in xterm styling instruction).
+    // let role_legend = style_for_role(Heading1, ROLE_DOCS[0].0);
+    // let col1_width = role_legend.len() + 2;
 
-//     // // Calculate maximum role name length for alignment
-//     // let max_name_len = ROLE_DOCS
-//     //     .iter()
-//     //     .map(|(name, _)| name.len())
-//     //     .max()
-//     //     .unwrap_or(0);
+    // // Calculate maximum role name length for alignment
+    // let max_name_len = ROLE_DOCS
+    //     .iter()
+    //     .map(|(name, _)| name.len())
+    //     .max()
+    //     .unwrap_or(0);
 
-//     let col1_width = ROLE_DOCS
-//         .iter()
-//         .map(|(name, _)| name.len())
-//         .max()
-//         .unwrap_or(0)
-//         + 2; // Base width on raw text length
+    let col1_width = ROLE_DOCS
+        .iter()
+        .map(|(name, _)| name.len())
+        .max()
+        .unwrap_or(0)
+        + 2; // Base width on raw text length
 
-//     // println!("\n\tRole Styles:");
-//     println!("\n\t{}", style_for_role(Normal, "Role styles:"));
-//     // println!("\t{}", "═".repeat(80));
-//     println!("\t{}", "─".repeat(80));
+    // println!("\n\tRole Styles:");
+    println!("\n\t{}", style_for_role(Normal, "Role styles:"));
+    // println!("\t{}", "═".repeat(80));
+    println!("\t{}", "─".repeat(80));
 
-//     for (role_name, description) in ROLE_DOCS {
-//         // Convert role name to Role enum variant
-//         #[allow(clippy::match_same_arms)]
-//         let role = match *role_name {
-//             "Heading1" => Role::Heading1,
-//             "Heading2" => Role::Heading2,
-//             "Heading3" => Role::Heading3,
-//             "Error" => Role::Error,
-//             "Warning" => Role::Warning,
-//             "Success" => Role::Success,
-//             "Info" => Role::Info,
-//             "Emphasis" => Role::Emphasis,
-//             "Code" => Role::Code,
-//             "Normal" => Role::Normal,
-//             "Subtle" => Role::Subtle,
-//             "Hint" => Role::Hint,
-//             "Debug" => Role::Debug,
-//             "Trace" => Role::Trace,
-//             _ => Role::Normal,
-//         };
+    for (role_name, description) in ROLE_DOCS {
+        // Convert role name to Role enum variant
+        let role = match *role_name {
+            "Heading1" => Role::Heading1,
+            "Heading2" => Role::Heading2,
+            "Heading3" => Role::Heading3,
+            "Error" => Role::Error,
+            "Warning" => Role::Warning,
+            "Success" => Role::Success,
+            "Info" => Role::Info,
+            "Emphasis" => Role::Emphasis,
+            "Code" => Role::Code,
+            "Normal" => Role::Normal,
+            "Subtle" => Role::Subtle,
+            "Hint" => Role::Hint,
+            "Debug" => Role::Debug,
+            "Trace" => Role::Trace,
+            _ => Role::Normal,
+        };
 
-//         // Get style for this role
-//         let style = theme.style_for(role);
+        // Get style for this role
+        let style = theme.style_for(role);
 
-//         // Print role name in its style, followed by description
-//         let styled_name = style.paint(role_name);
-//         let padding = " ".repeat(col1_width.saturating_sub(role_name.len()));
+        // Print role name in its style, followed by description
+        let styled_name = style.paint(role_name);
+        let padding = " ".repeat(col1_width.saturating_sub(role_name.len()));
 
-//         print!("\t{}{}", styled_name, padding);
-//         println!("│ {}", description);
-//     }
-//     println!("\t{}", "─".repeat(80));
-// }
+        print!("\t{}{}", styled_name, padding);
+        println!("│ {}", description);
+    }
+    println!("\t{}", "─".repeat(80));
+}
 
-// fn show_theme_details() {
-//     let term_attrs = TermAttributes::get();
-//     let theme = &term_attrs.theme;
-//     let rgb_disp = term_attrs
-//         .theme
-//         .background
-//         .as_deref()
-//         .map_or("None".to_string(), |hex| {
-//             // Remove '#' if present and parse hex values
-// let hex = hex.trim_start_matches('#');
-// if hex.len() == 6 {
-//     if let (Ok(r), Ok(g), Ok(b)) = (
-//         u8::from_str_radix(&hex[0..2], 16),
-//         u8::from_str_radix(&hex[2..4], 16),
-//         u8::from_str_radix(&hex[4..6], 16),
-//     ) {
-//         format!("#{} = rgb({}, {}, {})", hex, r, g, b)
-//     } else {
-//         hex.to_string()
-//     }
-// } else {
-//     hex.to_string()
-// }
-//         });
+fn show_theme_details() {
+    let term_attrs = TermAttributes::get();
+    let theme = &term_attrs.theme;
+    let rgb_disp = term_attrs
+        .theme
+        .background
+        .as_deref()
+        .map_or("None".to_string(), |hex| {
+            // Remove '#' if present and parse hex values
+            let hex = hex.trim_start_matches('#');
+            if hex.len() == 6 {
+                if let (Ok(r), Ok(g), Ok(b)) = (
+                    u8::from_str_radix(&hex[0..2], 16),
+                    u8::from_str_radix(&hex[2..4], 16),
+                    u8::from_str_radix(&hex[4..6], 16),
+                ) {
+                    format!("#{} = rgb({}, {}, {})", hex, r, g, b)
+                } else {
+                    hex.to_string()
+                }
+            } else {
+                hex.to_string()
+            }
+        });
 
-//     let theme_docs: &[(&str, &str)] = &[
-//         ("Theme", &theme.name),
-//         (
-//             "Type",
-//             if theme.is_builtin {
-//                 "Built-in"
-//             } else {
-//                 "Custom"
-//             },
-//         ),
-//         ("File", &theme.filename.display().to_string()),
-//         ("Description", &theme.description),
-//         ("Background", &rgb_disp),
-//         ("Palette", &theme.min_color_support.to_string()),
-//     ];
+    let theme_docs: &[(&str, &str)] = &[
+        ("Theme", &theme.name),
+        (
+            "Type",
+            if theme.is_builtin {
+                "Built-in"
+            } else {
+                "Custom"
+            },
+        ),
+        ("File", &theme.filename.display().to_string()),
+        ("Description", &theme.description),
+        ("Background", &rgb_disp),
+        ("Palette", &theme.min_color_support.to_string()),
+    ];
 
-//     let col1_width = theme_docs
-//         .iter()
-//         .map(|(name, _)| name.len())
-//         .max()
-//         .unwrap_or(0)
-//         + 2; // Base width on raw text length
+    let col1_width = theme_docs
+        .iter()
+        .map(|(name, _)| name.len())
+        .max()
+        .unwrap_or(0)
+        + 2; // Base width on raw text length
 
-//     let flower_box_len = 80;
+    let flower_box_len = 80;
 
-//     println!("\n\t{}", style_for_role(Normal, "Theme attributes:"));
-//     println!("\t{}", "─".repeat(flower_box_len));
+    println!("\n\t{}", style_for_role(Normal, "Theme attributes:"));
+    println!("\t{}", "─".repeat(flower_box_len));
 
-//     for (attr, description) in theme_docs {
-//         let styled_name = style_for_role(Info, attr);
-//         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
+    for (attr, description) in theme_docs {
+        let styled_name = style_for_role(Info, attr);
+        let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
 
-//         print!("\t{}{}", styled_name, padding);
-//         let description = if *attr == "Theme" {
-//             style_for_role(Heading1, description)
-//         } else {
-//             (*description).to_string()
-//         };
-//         println!("│ {}", description);
-//     }
+        print!("\t{}{}", styled_name, padding);
+        let description = if *attr == "Theme" {
+            style_for_role(Heading1, description)
+        } else {
+            description.to_string()
+        };
+        println!("│ {}", description);
+    }
 
-//     println!("\t{}\n", "─".repeat(flower_box_len));
+    println!("\t{}\n", "─".repeat(flower_box_len));
 
-//     let terminal_docs: &[(&str, &str)] = &[
-//         (
-//             "Attributes determined by",
-//             match ColorInitStrategy::determine() {
-//                 ColorInitStrategy::Configure(_, _) => "Configure",
-//                 ColorInitStrategy::Default => "Default",
-//                 ColorInitStrategy::Detect => "Detect",
-//             },
-//         ),
-//         ("Color support", &term_attrs.color_support.to_string()),
-//         ("Background luminance", &term_attrs.term_bg_luma.to_string()),
-//         (
-//             "Background color",
-//             &term_attrs.term_bg_rgb.map_or("None".to_string(), |rgb| {
-//                 format!(
-//                     "#{:02x}{:02x}{:02x} = rgb({}, {}, {})",
-//                     rgb.0, rgb.1, rgb.2, rgb.0, rgb.1, rgb.2
-//                 )
-//             }),
-//         ),
-//     ];
+    let terminal_docs: &[(&str, &str)] = &[
+        (
+            "Attributes determined by",
+            match ColorInitStrategy::determine() {
+                ColorInitStrategy::Configure(_, _) => "Configure",
+                ColorInitStrategy::Default => "Default",
+                ColorInitStrategy::Detect => "Detect",
+            },
+        ),
+        ("Color support", &term_attrs.color_support.to_string()),
+        ("Background luminance", &term_attrs.term_bg_luma.to_string()),
+        (
+            "Background color",
+            &term_attrs.term_bg_rgb.map_or("None".to_string(), |rgb| {
+                format!(
+                    "#{:02x}{:02x}{:02x} = rgb({}, {}, {})",
+                    rgb.0, rgb.1, rgb.2, rgb.0, rgb.1, rgb.2
+                )
+            }),
+        ),
+    ];
 
-//     let col1_width = terminal_docs
-//         .iter()
-//         .map(|(name, _)| name.len())
-//         .max()
-//         .unwrap_or(0)
-//         + 2; // Base width on raw text length
+    let col1_width = terminal_docs
+        .iter()
+        .map(|(name, _)| name.len())
+        .max()
+        .unwrap_or(0)
+        + 2; // Base width on raw text length
 
-//     let flower_box_len = 80;
+    let flower_box_len = 80;
 
-//     println!("\n\t{}", style_for_role(Normal, "Terminal attributes:"));
-//     println!("\t{}", "─".repeat(flower_box_len));
+    println!("\n\t{}", style_for_role(Normal, "Terminal attributes:"));
+    println!("\t{}", "─".repeat(flower_box_len));
 
-//     for (attr, description) in terminal_docs {
-//         let styled_name = style_for_role(Info, attr);
-//         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
+    for (attr, description) in terminal_docs {
+        let styled_name = style_for_role(Info, attr);
+        let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
 
-//         print!("\t{}{}", styled_name, padding);
-//         println!("│ {}", description);
-//     }
+        print!("\t{}{}", styled_name, padding);
+        println!("│ {}", description);
+    }
 
-//     println!("\t{}\n", "─".repeat(flower_box_len));
-// }
+    println!("\t{}\n", "─".repeat(flower_box_len));
+}
 
 /// Process a source string through to completion according to the arguments passed in.
 ///
@@ -824,7 +817,7 @@ fn tui(
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
-    let style = crate::styling::TermAttributes::get_or_init().style_for_level(Lvl::SUBH);
+    let style = crate::styling::TermAttributes::get().style_for_level(Lvl::SUBH);
     let display = KeyDisplay {
         title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: RataStyle::from(&style),
@@ -934,7 +927,7 @@ pub fn edit_history<R: EventReader + Debug>(
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
-    let style = crate::styling::TermAttributes::get_or_init().style_for_level(Lvl::SUBH);
+    let style = crate::styling::TermAttributes::get().style_for_level(Lvl::SUBH);
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: RataStyle::from(&style),

@@ -1,51 +1,51 @@
-name = "Dracula 256"
-description = "Converted from Dracula theme"
+name = "Breath (Gogh) 256"
+description = "Converted from Breath (Gogh) theme"
 term_bg_luma = "dark"
 min_color_support = "color256"
-backgrounds = ["#282a36"]
+backgrounds = ["#1E2229"]
 
 [palette.heading1]
-color256 = 203
+color256 = 102
 style = ["bold"]
 
 [palette.heading2]
-color256 = 111
+color256 = 97
 style = ["bold"]
 
 [palette.heading3]
-color256 = 117
+color256 = 74
 style = ["bold"]
 
 [palette.error]
-color256 = 203
+color256 = 102
 
 [palette.warning]
-color256 = 215
+color256 = 71
 
 [palette.success]
-color256 = 84
+color256 = 215
 
 [palette.info]
-color256 = 111
+color256 = 97
 
 [palette.emphasis]
-color256 = 212
+color256 = 36
 
 [palette.code]
-color256 = 84
+color256 = 215
 
 [palette.normal]
-color256 = 231
+color256 = 97
 
 [palette.subtle]
-color256 = 157
+color256 = 208
 
 [palette.hint]
-color256 = 229
+color256 = 208
 style = ["italic"]
 
 [palette.debug]
-color256 = 210
+color256 = 65
 
 [palette.trace]
-color256 = 16
+color256 = 196

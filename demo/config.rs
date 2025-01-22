@@ -8,8 +8,8 @@ mockall = "0.13.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "3.11.0"
 toml = "0.8.19"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
 */
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
@@ -30,7 +30,7 @@ use std::{
     path::PathBuf,
 };
 use thag_rs::{
-    cvprtln, debug_log, lazy_static_var, ColorSupport, Lvl, TermTheme, ThagResult, Verbosity, V,
+    cvprtln, debug_log, lazy_static_var, ColorSupport, Lvl, TermBgLuma, ThagResult, Verbosity, V,
 };
 
 /// Initializes and returns the configuration.
@@ -225,7 +225,7 @@ pub struct Colors {
     pub color_support: ColorSupport,
     #[serde(default)]
     #[serde_as(as = "DisplayFromStr")]
-    pub term_theme: TermTheme,
+    pub term_theme: TermBgLuma,
 }
 
 #[serde_as]
@@ -240,7 +240,7 @@ pub struct ProcMacros {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Misc {
-    #[serde_as(as = "DisplayFromStr")]
+    // #[serde_as(as = "DisplayFromStr")]
     pub unquote: bool,
 }
 
@@ -373,7 +373,7 @@ fn main() -> ThagResult<()> {
                 }
                 eprintln!();
                 eprintln!(
-                    "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
+                    "verbosity={:?}, ColorSupport={:?}, TermBgLuma={:?}",
                     config.logging.default_verbosity,
                     config.colors.color_support,
                     config.colors.term_theme

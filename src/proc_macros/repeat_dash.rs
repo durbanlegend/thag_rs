@@ -11,7 +11,7 @@ pub fn repeat_dash_impl(tokens: TokenStream) -> TokenStream {
         .expect("Expected a usize integer");
 
     // Generate the repeated dash string
-    let dash_line = "-".repeat(len);
+    let dash_line = "─".repeat(len);
 
     // expanded a constant string definition
     TokenStream::from(quote! {

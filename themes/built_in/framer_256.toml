@@ -2,7 +2,7 @@ name = "Framer"
 description = "Converted from Framer theme"
 term_bg_luma = "dark"
 min_color_support = "color256"
-background = "#111111"
+backgrounds = ["#111111"]
 
 [palette.heading1]
 color256 = 203

@@ -2,7 +2,7 @@ name = "Github"
 description = "Converted from Github theme"
 term_bg_luma = "light"
 min_color_support = "color256"
-background = "#f4f4f4"
+backgrounds = ["#f4f4f4"]
 
 [palette.heading1]
 color256 = 88

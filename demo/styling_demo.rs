@@ -2,8 +2,8 @@
 [dependencies]
 nu-ansi-term = { version = "0.50.1", features = ["derive_serde_style"] }
 strum = { version = "0.26.3", features = ["derive"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "simplelog"] }
 */
 /// Demonstrates the colour and styling options of `thag_rs`.
 /// Also demos the full 256-colour palette as per `demo/colors*.rs`.
@@ -11,77 +11,92 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 /// E.g. `thag demo/styling_demo.rs`
 //# Purpose: Demonstrate and test the look of available colour palettes and styling settings.
 //# Categories: prototype, reference, testing
-use nu_ansi_term::Color::Fixed;
+// use nu_ansi_term::Color::Fixed;
 use strum::{Display, EnumIter, IntoEnumIterator};
-use thag_rs::styling::{ColorInitStrategy, Level, TermAttributes, TermTheme};
-use thag_rs::{cvprtln, profile_method, vlog, ColorSupport, V};
+use thag_rs::{
+    cvprtln, profile_method,
+    styling::{
+        display_theme_roles, show_theme_details, Color, ColorInitStrategy, Level, Role,
+        TermAttributes, TermBgLuma, Theme,
+    },
+    vlog, ColorSupport, Style, ThagResult, V,
+};
 
-pub fn main() {
-    let term_attrs = TermAttributes::initialize(ColorInitStrategy::Detect);
-    let color_support = &term_attrs.color_support;
-    let theme = term_attrs.get_theme();
-    let theme_str = theme.to_string();
-    let header_style = term_attrs.style_for_level(Level::NORM).underline();
+pub fn main() -> ThagResult<()> {
+    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Detect);
+    let color_support = term_attrs.color_support;
+    let theme = &term_attrs.theme;
+    let header_style = Style::for_role(Role::Normal).underline();
     let print_header = |arg| println!("{}", header_style.clone().paint(arg));
 
     // Section 1: ANSI / Xterm 256 color palette
-    if matches!(color_support, ColorSupport::Color256) {
+    if color_support >= ColorSupport::Color256 {
+        println!();
         let col_width = 25;
-        print_header("\nANSI / Xterm 256 color palette:\n");
-        let color = Fixed(u8::from(&Level::HEAD));
+        print_header("ANSI / Xterm 256 color palette:\n");
+        let color = Color::fixed(u8::from(&Level::HEAD));
         println!(
             "{}{}{}{}",
-            color.paint(format!("{:<col_width$}", "Normal")),
-            color.italic().paint(format!("{:<col_width$}", "Italic")),
-            color.bold().paint(format!("{:<col_width$}", "Bold")),
+            color.clone().paint(format!("{:<col_width$}", "Normal")),
             color
+                .clone()
+                .italic()
+                .paint(format!("{:<col_width$}", "Italic")),
+            color
+                .clone()
+                .bold()
+                .paint(format!("{:<col_width$}", "Bold")),
+            color
+                .clone()
                 .bold()
                 .italic()
-                .paint(format!("{:<col_width$}", "Bold Italic"))
+                .paint(format!("{:<col_width$}", "Bold Italic")),
+            // color.paint(format!("{:<col_width$}", "Normal"))
         );
-        let dash_line = "-".repeat(col_width * 4);
+        let dash_line = "─".repeat(col_width * 4);
         cvprtln!(Level::SUBH, V::Q, "{dash_line}");
         XtermColor::iter().for_each(|variant| {
             let color_string = variant.to_string();
             let pad_color_string = format!("{color_string:<col_width$}");
-            let color = Fixed(u8::from(&variant));
+            let color = Color::fixed(u8::from(&variant));
             println!(
                 "{}{}{}{}",
-                color.paint(pad_color_string.clone()),
-                color.italic().paint(pad_color_string.clone()),
-                color.bold().paint(pad_color_string.clone()),
+                color.clone().paint(pad_color_string.clone()),
+                color.clone().italic().paint(pad_color_string.clone()),
+                color.clone().bold().paint(pad_color_string.clone()),
                 color.bold().italic().paint(pad_color_string)
             );
         });
         println!();
     }
 
+    let theme_name = match theme.term_bg_luma {
+        TermBgLuma::Light => "basic_light",
+        TermBgLuma::Dark | TermBgLuma::Undetermined => "basic_dark",
+    };
+    let theme = Theme::load_builtin(theme_name)?;
+
     // Section 2: ANSI-16 color palette using basic styles
-    let header = format!("ANSI-16 color palette in use for {theme_str} theme:\n");
+    let header = format!("ANSI-16 color palette in use for {theme_name} theme:\n");
     print_header(&header);
-    for level in Level::iter() {
-        let style = match theme {
-            TermTheme::Light => TermAttributes::basic_light_style(level),
-            TermTheme::Dark | TermTheme::Undetermined => TermAttributes::basic_dark_style(level),
-        };
-        let content = format!("{level} message: level={level:?}, style={style:?}");
+    for role in Role::iter() {
+        let style = theme.style_for(role);
+        let content = format!("{role} message: role={role}, style={style:?}");
         println!("{}", style.paint(content));
     }
 
     println!();
 
     // Section 3: ANSI-16 palette using u8 colors
-    let header = format!("ANSI-16 color palette in use for {theme_str} theme (converted via u8 and missing bold/dimmed/italic):\n");
+    let header = format!("ANSI-16 color palette in use for {theme_name} theme (converted via u8 and missing bold/dimmed/italic):\n");
     print_header(&header);
-    for level in Level::iter() {
-        let style = match theme {
-            TermTheme::Light => TermAttributes::basic_light_style(level),
-            TermTheme::Dark | TermTheme::Undetermined => TermAttributes::basic_dark_style(level),
-        };
+    for role in Role::iter() {
+        let style = theme.style_for(role);
+        // eprintln!("style={style:?}");
         if let Some(color_info) = style.foreground {
             let index: u8 = color_info.index;
-            let content = format!("{level} message: level={level:?}, index={index}");
-            let color = Fixed(index);
+            let color = Color::fixed(index);
+            let content = format!("{role} message: role={role:?}, index={index}, color={color:?}");
             println!("{}", color.paint(content));
         }
     }
@@ -89,24 +104,25 @@ pub fn main() {
     println!();
 
     // Section 4: Current terminal color palette
+    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Detect);
+    let theme = &term_attrs.theme;
+    // let user_config = maybe_config();
+    // let current = user_config.clone().unwrap_or_default();
     print_header("Color palette in use on this terminal:\n");
-    for level in Level::iter() {
-        let style = match theme {
-            TermTheme::Light => TermAttributes::full_light_style(level),
-            TermTheme::Dark | TermTheme::Undetermined => TermAttributes::full_dark_style(level),
-        };
-        cvprtln!(
-            level,
-            V::N,
-            "My {level} message: level={level:?}, style={style:?}"
-        );
-    }
-
+    display_theme_roles(theme);
+    show_theme_details();
     println!();
 
     // Section 5: Current terminal attributes
     print_header("This terminal's color attributes:\n");
-    vlog!(V::N, "Color support={color_support:?}, theme={theme:?}\n");
+    vlog!(
+        V::N,
+        "Color support={color_support}, theme={}: {}\n",
+        theme.name,
+        theme.description
+    );
+
+    Ok(())
 }
 
 // An enum of the colours in a 256-colour palette, per the naming in `https://docs.rs/owo-colors/latest/owo_colors/colors/xterm/index.html#`.

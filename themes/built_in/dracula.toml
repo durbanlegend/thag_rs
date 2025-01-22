@@ -15,7 +15,7 @@ name = "Dracula"
 description = "Dark theme with vibrant colors"
 term_bg_luma = "dark"
 min_color_support = "true_color"
-background = "#282a36"
+backgrounds = ["#282a36"]
 
 [palette]
 # Headers and Structure

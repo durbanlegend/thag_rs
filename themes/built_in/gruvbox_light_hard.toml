@@ -38,7 +38,12 @@ name = "Gruvbox Light Hard"
 description = "Light theme with high contrast and warm colors"
 term_bg_luma = "light"
 min_color_support = "true_color"
-background = "#f9f5d7"                                         # Light0_hard
+# List of known backgrounds with optional comments
+backgrounds = [
+    "#f9f5d7",  # Official
+    "#d9c8a4",  # Zed Terminal
+    "#fbf1c7",  # Alternative light
+]
 
 [palette]
 # Headers and Structure

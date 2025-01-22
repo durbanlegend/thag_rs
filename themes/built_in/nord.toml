@@ -33,7 +33,7 @@ name = "Nord"
 description = "An arctic, north-bluish color palette"
 term_bg_luma = "dark"
 min_color_support = "true_color"
-background = "#2e3440"                                # Nord0: Polar Night (darkest)
+backgrounds = ["#2e3440"]                             # Nord0: Polar Night (darkest)
 
 [palette]
 # Headers and Structure

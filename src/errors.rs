@@ -306,6 +306,7 @@ pub enum ThemeError {
     InvalidStyle(String),
     InvalidTermBgLuma(String),
     LightThemeDarkTerm,
+    NoValidBackground(String),
     TermBgLumaMismatch {
         theme: TermBgLuma,
         terminal: TermBgLuma,
@@ -339,6 +340,7 @@ impl std::fmt::Display for ThemeError {
                 f,
                 "Only dark themes may be selected for a dark terminal background."
             ),
+            Self::NoValidBackground(theme) => write!(f, "No valid background found for theme {theme}"),
             Self::TermBgLumaMismatch { theme, terminal } => {
                 write!(f, "Theme requires {theme:?} background but terminal is {terminal:?}")
             }

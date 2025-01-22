@@ -30,7 +30,7 @@ eula = false
 bitflags = { version = "2.8.0", optional = true }
 cargo-lookup = { version = "0.1.0", optional = true }
 cargo_toml = { version = "0.21.0", optional = true }
-clap = { version = "4.5.26", features = ["cargo", "derive"], optional = true }
+clap = { version = "4.5.27", features = ["cargo", "derive"], optional = true }
 crokey = { version = "1.1.0", optional = true }
 crossterm = { version = "0.28.1", features = ["use-dev-tty"], optional = true }
 directories = "5.0.1"
@@ -126,7 +126,7 @@ ast = [
 # Configuration and Color Support
 config = ["core", "edit", "mockall", "toml_edit"]
 
-color_detect = ["crossterm", "scopeguard", "supports-color", "termbg"]
+color_detect = ["config", "crossterm", "scopeguard", "supports-color", "termbg"]
 
 # Build and Analysis
 build = [
@@ -197,6 +197,7 @@ profiling = []
 #     │       └── scopeguard                     # Resource cleanup (shared with color_detect)
 #     │
 #     └── color_detect     # Optional terminal detection, only included in full
+#         ├── config
 #         ├── crossterm    # (shared with build)
 #         ├── scopeguard   # (shared with tui)
 #         ├── supports-color

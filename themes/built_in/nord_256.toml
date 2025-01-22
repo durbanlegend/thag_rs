@@ -8,7 +8,7 @@ name = "Nord 256"
 description = "An arctic, north-bluish color palette (256 colors)"
 term_bg_luma = "dark"
 min_color_support = "color256"
-background = "#2e3440"
+backgrounds = ["#2e3440"]
 
 [palette]
 # Headers and Structure

@@ -55,7 +55,7 @@ enum ColorLevel {
 }
 
 #[derive(EnumString, Display, PartialEq)]
-enum TermTheme {
+enum TermBgLuma {
     Light,
     Dark,
 }
@@ -166,10 +166,10 @@ fn main() {
     let maybe_theme = get_theme();
     let term_theme = match maybe_theme {
         Ok(theme) => match theme {
-            Theme::Light => TermTheme::Light,
-            Theme::Dark => TermTheme::Dark,
+            Theme::Light => TermBgLuma::Light,
+            Theme::Dark => TermBgLuma::Dark,
         },
-        Err(_) => TermTheme::Dark,
+        Err(_) => TermBgLuma::Dark,
     };
 
     let maybe_color_support = supports_color::on(Stream::Stdout);

@@ -25,10 +25,10 @@ pub fn ansi_code_derive_impl(input: TokenStream) -> TokenStream {
         // Use custom name or generate from variant name
         let name_str = custom_name.unwrap_or_else(|| match variant_ident.to_string().as_str() {
             s if s.starts_with("Bright") => {
-                let mut chars = s.chars();
-                let first = chars.next().unwrap();
-                let rest: String = chars.collect();
-                format!("{first} {rest}")
+                let chars = s.chars();
+                let rest: String = chars.skip(6).collect();
+                // let rest: String = chars.collect();
+                format!("Bright {rest}")
             }
             s => s.to_string(),
         });
@@ -66,6 +66,7 @@ pub fn ansi_code_derive_impl(input: TokenStream) -> TokenStream {
          Returns a static string representing the color name.\n\n\
          # Examples\n\
          ```\n\
+         use thag_rs::styling::AnsiCode;
          assert_eq!({name}::Red.name(), \"Red\");\n\
          assert_eq!({name}::BrightBlue.name(), \"Bright Blue\");\n\
          ```\n\

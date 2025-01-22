@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "core", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "core", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
 */
 
 /// Demo of unit testing a non-snippet source file such as a library module using `thag --test-only (-T)`.
@@ -40,7 +40,7 @@ use std::{
 use strum::{Display, EnumString};
 use thag_rs::{
     clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, profile, profile_method, Color,
-    ColorSupport, Level, Lvl, TermTheme, ThagError, ThagResult, Verbosity, V,
+    ColorSupport, Level, Lvl, TermBgLuma, ThagError, ThagResult, Verbosity, V,
 };
 use toml_edit::DocumentMut;
 
@@ -518,14 +518,14 @@ pub struct Colors {
     #[serde(default)]
     /// Light or dark terminal background override
     #[serde_as(as = "DisplayFromStr")]
-    pub term_theme: TermTheme,
+    pub term_theme: TermBgLuma,
 }
 
 impl Default for Colors {
     fn default() -> Self {
         Self {
             color_support: ColorSupport::Undetermined,
-            term_theme: TermTheme::Undetermined,
+            term_theme: TermBgLuma::Dark,
         }
     }
 }
@@ -549,7 +549,7 @@ pub struct ProcMacros {
 #[serde(default)]
 pub struct Misc {
     /// Strip double quotes from around string literals returned by snippets
-    #[serde_as(as = "DisplayFromStr")]
+    // #[serde_as(as = "DisplayFromStr")]
     pub unquote: bool,
 }
 
@@ -778,7 +778,7 @@ fn main() {
         // debug_log!("Loaded config: {config:?}");
         #[cfg(debug_assertions)]
         debug_log!(
-            "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
+            "verbosity={:?}, ColorSupport={:?}, TermBgLuma={:?}",
             config.logging.default_verbosity,
             config.colors.color_support,
             config.colors.term_theme
@@ -804,7 +804,7 @@ mod tests {
     };
     use tempfile::TempDir;
     use thag_rs::{
-        cvprtln, debug_log, logging::Verbosity, ColorSupport, Lvl, TermTheme, ThagResult, V,
+        cvprtln, debug_log, logging::Verbosity, ColorSupport, Lvl, TermBgLuma, ThagResult, V,
     };
 
     static LOGGER: OnceLock<()> = OnceLock::new();
@@ -884,7 +884,7 @@ mod tests {
 
         assert_eq!(config.logging.default_verbosity, Verbosity::Normal);
         assert_eq!(config.colors.color_support, ColorSupport::default());
-        assert_eq!(config.colors.term_theme, TermTheme::default());
+        assert_eq!(config.colors.term_theme, TermBgLuma::default());
         Ok(())
     }
 

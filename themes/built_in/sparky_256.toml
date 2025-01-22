@@ -2,7 +2,7 @@ name = "Sparky"
 description = "Converted from Sparky theme"
 term_bg_luma = "dark"
 min_color_support = "color256"
-background = "#072B31"
+backgrounds = ["#072B31"]
 
 [palette.heading1]
 color256 = 203

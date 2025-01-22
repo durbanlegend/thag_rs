@@ -8,8 +8,8 @@ regex = "1.10.4"
 scopeguard = "1.2.0"
 serde = "1.0.210"
 serde_json = "1.0.132"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["tui", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["tui", "simplelog"] }
 tui-textarea = { version = "0.6", features = ["search"] }
 */
 

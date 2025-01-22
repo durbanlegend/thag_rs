@@ -2,7 +2,7 @@ name = "One Black"
 description = "Converted from One Black theme"
 term_bg_luma = "dark"
 min_color_support = "color256"
-background = "#000000"
+backgrounds = ["#000000"]
 
 [palette.heading1]
 color256 = 167

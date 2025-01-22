@@ -1,8 +1,8 @@
-name = "Atelier Seaside Light"
+name = "Atelier Seaside Light 256"
 description = "Converted from Atelier Seaside Light theme"
 term_bg_luma = "light"
 min_color_support = "color256"
-background = "f4fbf4"
+backgrounds = ["#f4fbf4"]
 
 [palette.heading1]
 color256 = 161

@@ -2,7 +2,7 @@ name = "Catppuccin Latte"
 description = "Converted from Catppuccin Latte theme"
 term_bg_luma = "light"
 min_color_support = "color256"
-background = "#eff1f5"
+backgrounds = ["#eff1f5"]
 
 [palette.heading1]
 color256 = 161

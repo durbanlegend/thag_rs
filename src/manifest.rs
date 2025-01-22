@@ -394,7 +394,7 @@ pub fn lookup_deps(
 
     let existing_toml_block = !&rs_dep_map.is_empty();
     let mut new_inferred_deps: Vec<String> = vec![];
-    let term_attrs = TermAttributes::get();
+    let term_attrs = TermAttributes::get_or_init();
     let recomm_style = &term_attrs.style_for_level(Level::Subheading);
     let recomm_inf_level = &DependencyInference::Config;
     let actual_style = if inference_level == recomm_inf_level {
@@ -546,7 +546,7 @@ fn display_toml_info(
     if !existing_toml_block {
         toml_block.push_str("*/");
     }
-    let term_attrs = TermAttributes::get();
+    let term_attrs = TermAttributes::get_or_init();
     let styled_toml_block = term_attrs.style_for_level(Lvl::SUBH).paint(&toml_block);
     let styled_inference_level = term_attrs
         .style_for_level(Lvl::EMPH)

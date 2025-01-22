@@ -2,6 +2,7 @@ name = "Basic Dark"
 description = "Basic dark theme for simple terminals"
 term_bg_luma = "dark"
 min_color_support = "basic"
+backgrounds = []
 
 [palette]
 # Headers and Structure

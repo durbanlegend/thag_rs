@@ -2,8 +2,8 @@
 [dependencies]
 nu-ansi-term = { version = "0.50.1", features = ["derive_serde_style"] }
 strum = { version = "0.26.3", features = ["derive"] }
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "simplelog"] }
 */
 /// Demonstrates the colour and styling options of `thag_rs`.
 /// Also demos the full 256-colour palette as per `demo/colors*.rs`.
@@ -16,8 +16,8 @@ use strum::{Display, EnumIter, IntoEnumIterator};
 use thag_rs::{
     cvprtln, profile_method,
     styling::{
-        display_theme_roles, show_theme_details, Color, ColorInitStrategy, Level, Role,
-        TermAttributes, TermBgLuma, Theme,
+        display_theme_roles, show_theme_details, Color, ColorInitStrategy, Role, TermAttributes,
+        TermBgLuma, Theme,
     },
     vlog, ColorSupport, Style, ThagResult, V,
 };
@@ -34,7 +34,7 @@ pub fn main() -> ThagResult<()> {
         println!();
         let col_width = 25;
         print_header("ANSI / Xterm 256 color palette:\n");
-        let color = Color::fixed(u8::from(&Level::HEAD));
+        let color = Color::fixed(u8::from(&Role::HD1));
         println!(
             "{}{}{}{}",
             color.clone().paint(format!("{:<col_width$}", "Normal")),
@@ -54,7 +54,7 @@ pub fn main() -> ThagResult<()> {
             // color.paint(format!("{:<col_width$}", "Normal"))
         );
         let dash_line = "─".repeat(col_width * 4);
-        cvprtln!(Level::SUBH, V::Q, "{dash_line}");
+        cvprtln!(Role::HD2, V::Q, "{dash_line}");
         XtermColor::iter().for_each(|variant| {
             let color_string = variant.to_string();
             let pad_color_string = format!("{color_string:<col_width$}");

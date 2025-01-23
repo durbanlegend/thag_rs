@@ -3,8 +3,8 @@
 inferno = "0.12.0"
 inquire = "0.7.5"
 serde = { version = "1.0.216", features = ["derive"] }
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
 */
 
 /// Profile graph/chart generator for the `thag` internal profiler.

@@ -6,7 +6,7 @@ bpaf_derive = "0.5.10"
 
 /// Example from bpaf crate docs2/src/command/derive.rs.
 ///
-/// E.g. `demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6`
+/// E.g. `thag demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6`
 //# Purpose: Demo CLI alternative to clap crate
 //# Categories: CLI, crates, technique
 use bpaf_derive::Bpaf;

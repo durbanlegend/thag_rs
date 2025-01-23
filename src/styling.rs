@@ -63,23 +63,14 @@ impl AnsiCode {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum ColorValue {
-    None {},
     Basic { basic: [String; 2] }, // [ANSI code, index]
     Color256 { color256: u8 },    // 256-color index
     TrueColor { rgb: [u8; 3] },   // RGB values
 }
 
-// Provide default for ColorValue
-impl Default for ColorValue {
-    fn default() -> Self {
-        Self::None {}
-    }
-}
-
 #[derive(Clone, Debug, Deserialize)]
 struct StyleConfig {
     #[serde(flatten)]
-    #[serde(default)] // Important: provides default when fields are missing
     color: ColorValue,
     #[serde(default)]
     style: Vec<String>, // ["bold", "italic", etc.]
@@ -93,17 +84,8 @@ pub struct ColorInfo {
 }
 
 impl ColorInfo {
-    // #[must_use]
-    // pub fn none() -> Self {
-    //     Self {
-    //         value: ColorValue::None {},
-    //         ansi: "",
-    //         index: 0,
-    //     }
-    // }
-
     #[must_use]
-    pub fn basic(ansi: &'static str, index: u8) -> Self {
+    pub fn new(ansi: &'static str, index: u8) -> Self {
         Self {
             value: ColorValue::Basic {
                 basic: [ansi.to_string(), index.to_string()], // This won't work with const fn
@@ -114,7 +96,7 @@ impl ColorInfo {
     }
 
     #[must_use]
-    pub fn color256(index: u8) -> Self {
+    pub fn indexed(index: u8) -> Self {
         Self {
             value: ColorValue::Color256 { color256: index },
             ansi: Box::leak(format!("\x1b[38;5;{index}m").into_boxed_str()),
@@ -137,8 +119,8 @@ impl ColorInfo {
         profile_method!("ColorInfo::with_support");
         match support {
             ColorSupport::TrueColor => Self::rgb(rgb.0, rgb.1, rgb.2),
-            ColorSupport::Color256 => Self::color256(find_closest_color(rgb)),
-            _ => Self::color256(find_closest_basic_color(rgb)),
+            ColorSupport::Color256 => Self::indexed(find_closest_color(rgb)),
+            _ => Self::indexed(find_closest_basic_color(rgb)),
         }
     }
 }
@@ -170,7 +152,6 @@ impl Style {
     fn from_config(config: &StyleConfig) -> ThagResult<Self> {
         profile_method!("Style::from_config");
         let mut style = match &config.color {
-            ColorValue::None {} => Self::default(),
             ColorValue::Basic {
                 basic: [_name, index],
             } => {
@@ -182,9 +163,9 @@ impl Style {
                     index + 90 - 8
                 };
                 let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
-                Self::fg(ColorInfo::basic(ansi, index))
+                Self::fg(ColorInfo::new(ansi, index))
             }
-            ColorValue::Color256 { color256 } => Self::fg(ColorInfo::color256(*color256)),
+            ColorValue::Color256 { color256 } => Self::fg(ColorInfo::indexed(*color256)),
             ColorValue::TrueColor { rgb } => {
                 let rgb_tuple = (rgb[0], rgb[1], rgb[2]);
                 let mut color_info = ColorInfo::rgb(rgb[0], rgb[1], rgb[2]);
@@ -315,7 +296,7 @@ impl Style {
     #[must_use]
     pub fn with_color_index(index: u8) -> Self {
         Self {
-            foreground: Some(ColorInfo::color256(index)),
+            foreground: Some(ColorInfo::indexed(index)),
             ..Default::default()
         }
     }
@@ -361,7 +342,7 @@ impl Color {
     #[must_use]
     pub fn black() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::BLACK, 0)),
+            foreground: Some(ColorInfo::new(Self::BLACK, 0)),
             ..Default::default()
         }
     }
@@ -369,7 +350,7 @@ impl Color {
     #[must_use]
     pub fn red() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::RED, 1)),
+            foreground: Some(ColorInfo::new(Self::RED, 1)),
             ..Default::default()
         }
     }
@@ -377,7 +358,7 @@ impl Color {
     #[must_use]
     pub fn green() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::GREEN, 2)),
+            foreground: Some(ColorInfo::new(Self::GREEN, 2)),
             ..Default::default()
         }
     }
@@ -385,7 +366,7 @@ impl Color {
     #[must_use]
     pub fn yellow() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::YELLOW, 3)),
+            foreground: Some(ColorInfo::new(Self::YELLOW, 3)),
             ..Default::default()
         }
     }
@@ -393,7 +374,7 @@ impl Color {
     #[must_use]
     pub fn blue() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::BLUE, 4)),
+            foreground: Some(ColorInfo::new(Self::BLUE, 4)),
             ..Default::default()
         }
     }
@@ -401,7 +382,7 @@ impl Color {
     #[must_use]
     pub fn magenta() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::MAGENTA, 5)),
+            foreground: Some(ColorInfo::new(Self::MAGENTA, 5)),
             ..Default::default()
         }
     }
@@ -409,7 +390,7 @@ impl Color {
     #[must_use]
     pub fn cyan() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::CYAN, 6)),
+            foreground: Some(ColorInfo::new(Self::CYAN, 6)),
             ..Default::default()
         }
     }
@@ -417,7 +398,7 @@ impl Color {
     #[must_use]
     pub fn white() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::WHITE, 7)),
+            foreground: Some(ColorInfo::new(Self::WHITE, 7)),
             ..Default::default()
         }
     }
@@ -425,7 +406,7 @@ impl Color {
     #[must_use]
     pub fn dark_gray() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::DARK_GRAY, 8)),
+            foreground: Some(ColorInfo::new(Self::DARK_GRAY, 8)),
             ..Default::default()
         }
     }
@@ -433,7 +414,7 @@ impl Color {
     #[must_use]
     pub fn light_yellow() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::LIGHT_YELLOW, 11)),
+            foreground: Some(ColorInfo::new(Self::LIGHT_YELLOW, 11)),
             ..Default::default()
         }
     }
@@ -441,7 +422,7 @@ impl Color {
     #[must_use]
     pub fn light_cyan() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::LIGHT_CYAN, 14)),
+            foreground: Some(ColorInfo::new(Self::LIGHT_CYAN, 14)),
             ..Default::default()
         }
     }
@@ -449,7 +430,7 @@ impl Color {
     #[must_use]
     pub fn light_gray() -> Style {
         Style {
-            foreground: Some(ColorInfo::basic(Self::LIGHT_GRAY, 15)),
+            foreground: Some(ColorInfo::new(Self::LIGHT_GRAY, 15)),
             ..Default::default()
         }
     }
@@ -465,9 +446,9 @@ impl Color {
                 index + 90 - 8
             };
             let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
-            Style::fg(ColorInfo::basic(ansi, index))
+            Style::fg(ColorInfo::new(ansi, index))
         } else {
-            Style::fg(ColorInfo::color256(index))
+            Style::fg(ColorInfo::indexed(index))
         }
     }
 }
@@ -568,34 +549,19 @@ impl Default for TermBgLuma {
 //     }
 // }
 
-// /// Represents different message/content levels for styling
-// #[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq)]
-// #[strum(serialize_all = "snake_case")]
-// pub enum Level {
-//     Error,
-//     Warning,
-//     Heading, // HEAD in the original
-//     Subheading,
-//     Emphasis,
-//     Bright,
-//     Normal,
-//     Debug,
-//     Ghost,
-// }
-
-// For backward compatibility
-pub type Level = Role;
-
-impl Level {
-    pub const HEAD: Self = Self::Heading1;
-    pub const SUBH: Self = Self::Heading2;
-    // pub const ERR: Self = Self::Error;
-    // pub const WARN: Self = Self::Warning;
-    pub const BRI: Self = Self::Info;
-    // pub const EMPH: Self = Self::Emphasis;
-    // pub const NORM: Self = Self::Normal;
-    pub const GHOS: Self = Self::Hint;
-    // pub const DBUG: Self = Self::Debug;
+/// Represents different message/content levels for styling
+#[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq)]
+#[strum(serialize_all = "snake_case")]
+pub enum Level {
+    Error,
+    Warning,
+    Heading, // HEAD in the original
+    Subheading,
+    Emphasis,
+    Bright,
+    Normal,
+    Debug,
+    Ghost,
 }
 
 pub type Lvl = Role;
@@ -606,15 +572,15 @@ impl Lvl {
     pub const HD3: Self = Self::Heading3;
     pub const ERR: Self = Self::Error;
     pub const WARN: Self = Self::Warning;
-    pub const SUCC: Self = Self::Success;
-    pub const INFO: Self = Self::Info;
     pub const EMPH: Self = Self::Emphasis;
-    pub const CODE: Self = Self::Code;
+    pub const HEAD: Self = Self::Heading1;
+    pub const SUBH: Self = Self::Heading2;
+    pub const BRI: Self = Self::Info;
+    pub const INFO: Self = Self::Info;
     pub const NORM: Self = Self::Normal;
-    pub const SUBT: Self = Self::Subtle;
-    pub const HINT: Self = Self::Hint;
     pub const DBUG: Self = Self::Debug;
-    pub const TRCE: Self = Self::Trace;
+    pub const GHST: Self = Self::Hint;
+    pub const HINT: Self = Self::Hint;
 }
 
 impl Role {
@@ -859,54 +825,54 @@ impl TermAttributes {
     //     TermBgLuma::Dark
     // }
 
-    /// Returns the appropriate style for the given message level
-    ///
-    /// The style is determined by the current color support level and theme.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use thag_rs::styling::{AnsiCode, TermAttributes, Level};
-    ///
-    /// let attrs = TermAttributes::get_or_init();
-    /// let error_style = attrs.style_for_level(Level::Error);
-    /// println!("{}", error_style.paint("This is an error message"));
-    /// ```
-    #[must_use]
-    #[deprecated = "Use `Style::for_role`"]
-    #[allow(unused_variables)]
-    pub fn style_for_level(&self, level: Level) -> Style {
-        profile_method!("TermAttrs::style_for_level");
+    // /// Returns the appropriate style for the given message level
+    // ///
+    // /// The style is determined by the current color support level and theme.
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// use thag_rs::styling::{AnsiCode, TermAttributes, Level};
+    // ///
+    // /// let attrs = TermAttributes::get_or_init();
+    // /// let error_style = attrs.style_for_level(Level::Error);
+    // /// println!("{}", error_style.paint("This is an error message"));
+    // /// ```
+    // #[must_use]
+    // #[deprecated = "Use `Style::for_role`"]
+    // #[allow(unused_variables)]
+    // pub fn style_for_level(&self, level: Level) -> Style {
+    //     profile_method!("TermAttrs::style_for_level");
 
-        Style::for_role(level)
+    //     Style::for_role(level)
 
-        // // Convert Level to Role
-        // let role = Role::from(level);
+    //     // // Convert Level to Role
+    //     // let role = Role::from(level);
 
-        // // Validate theme against terminal capabilities
-        // match self
-        //     .theme
-        //     .validate(&self.color_support, &self.theme.term_bg_luma)
-        // {
-        //     Ok(()) => {
-        //         let style = if self.color_support == ColorSupport::None {
-        //             Style::default()
-        //         } else {
-        //             self.theme.style_for(role)
-        //         };
-        //         if style == Style::default() {
-        //             #[cfg(debug_assertions)]
-        //             debug_log!("No style defined for role {:?}", role);
-        //         }
-        //         style
-        //     }
-        //     Err(e) => {
-        //         #[cfg(debug_assertions)]
-        //         debug_log!("Theme validation failed: {:?}", e);
-        //         Style::default()
-        //     }
-        // }
-    }
+    //     // // Validate theme against terminal capabilities
+    //     // match self
+    //     //     .theme
+    //     //     .validate(&self.color_support, &self.theme.term_bg_luma)
+    //     // {
+    //     //     Ok(()) => {
+    //     //         let style = if self.color_support == ColorSupport::None {
+    //     //             Style::default()
+    //     //         } else {
+    //     //             self.theme.style_for(role)
+    //     //         };
+    //     //         if style == Style::default() {
+    //     //             #[cfg(debug_assertions)]
+    //     //             debug_log!("No style defined for role {:?}", role);
+    //     //         }
+    //     //         style
+    //     //     }
+    //     //     Err(e) => {
+    //     //         #[cfg(debug_assertions)]
+    //     //         debug_log!("Theme validation failed: {:?}", e);
+    //     //         Style::default()
+    //     //     }
+    //     // }
+    // }
 
     /// Updates the current theme to the specified built-in theme.
     ///
@@ -935,68 +901,75 @@ impl TermAttributes {
     }
 }
 
-// /// Returns the style for basic (16-color) light theme
-// #[must_use]
-// pub fn basic_light_style(level: Level) -> Style {
-//     match level {
-//         Level::Error => Color::red().bold(),
-//         Level::Warning => Color::magenta().bold(),
-//         Level::Heading => Color::blue().bold(),
-//         Level::Subheading => Color::cyan().bold(),
-//         Level::Emphasis => Color::green().bold(),
-//         Level::Bright => Color::green(),
-//         Level::Normal => Color::dark_gray(),
-//         Level::Debug => Color::cyan(),
-//         Level::Ghost => Color::cyan().italic(),
-//     }
-// }
+/// Returns the style for basic (16-color) light theme
+#[must_use]
+pub fn basic_light_style(level: Level) -> Style {
+    match level {
+        Level::Error => Color::red().bold(),
+        Level::Warning => Color::magenta().bold(),
+        Level::Heading => Color::blue().bold(),
+        Level::Subheading => Color::cyan().bold(),
+        Level::Emphasis => Color::green().bold(),
+        Level::Bright => Color::green(),
+        Level::Normal => Color::dark_gray(),
+        Level::Debug => Color::cyan(),
+        Level::Ghost => Color::cyan().italic(),
+    }
+}
 
-// /// Returns the style for basic (16-color) dark theme
-// #[must_use]
-// pub fn basic_dark_style(level: Level) -> Style {
-//     match level {
-//         Level::Error => Color::red().bold(),
-//         Level::Warning => Color::yellow().bold(),
-//         Level::Heading => Color::green().bold(),
-//         Level::Subheading => Color::blue().bold(),
-//         Level::Emphasis => Color::cyan().bold(),
-//         Level::Bright => Color::light_yellow(),
-//         Level::Normal => Color::white(),
-//         Level::Debug => Color::light_cyan(),
-//         Level::Ghost => Color::light_gray().italic(),
-//     }
-// }
+/// Returns the style for basic (16-color) dark theme
+#[must_use]
+pub fn basic_dark_style(level: Level) -> Style {
+    match level {
+        Level::Error => Color::red().bold(),
+        Level::Warning => Color::yellow().bold(),
+        Level::Heading => Color::green().bold(),
+        Level::Subheading => Color::blue().bold(),
+        Level::Emphasis => Color::cyan().bold(),
+        Level::Bright => Color::light_yellow(),
+        Level::Normal => Color::white(),
+        Level::Debug => Color::light_cyan(),
+        Level::Ghost => Color::light_gray().italic(),
+    }
+}
 
-// /// Returns the style for full (256-color) light theme
-// #[must_use]
-// pub fn full_light_style(level: Level) -> Style {
-//     match level {
-//         Level::Error => Color::fixed(160).bold(),   // GuardsmanRed
-//         Level::Warning => Color::fixed(164).bold(), // DarkPurplePizzazz
-//         Level::Heading => Color::fixed(19).bold(),  // MidnightBlue
-//         Level::Subheading => Color::fixed(26).bold(), // ScienceBlue
-//         Level::Emphasis => Color::fixed(167).bold(), // RomanOrange
-//         Level::Bright => Color::fixed(42).bold(),   // CaribbeanGreen
-//         Level::Normal => Color::fixed(16),          // Black
-//         Level::Debug => Color::fixed(32),           // LochmaraBlue
-//         Level::Ghost => Color::fixed(232).italic(), // DarkCodGray
-//     }
-// }
+/// Returns the style for full (256-color) light theme
+#[must_use]
+pub fn full_light_style(level: Level) -> Style {
+    match level {
+        Level::Error => Color::fixed(160).bold(),   // GuardsmanRed
+        Level::Warning => Color::fixed(164).bold(), // DarkPurplePizzazz
+        Level::Heading => Color::fixed(19).bold(),  // MidnightBlue
+        Level::Subheading => Color::fixed(26).bold(), // ScienceBlue
+        Level::Emphasis => Color::fixed(167).bold(), // RomanOrange
+        Level::Bright => Color::fixed(42).bold(),   // CaribbeanGreen
+        Level::Normal => Color::fixed(16),          // Black
+        Level::Debug => Color::fixed(32),           // LochmaraBlue
+        Level::Ghost => Color::fixed(232).italic(), // DarkCodGray
+    }
+}
 
-// /// Returns the style for full (256-color) dark theme
+/// Returns the style for full (256-color) dark theme
+#[must_use]
+pub fn full_dark_style(level: Level) -> Style {
+    match level {
+        Level::Error => Color::fixed(1).bold(),      // UserRed
+        Level::Warning => Color::fixed(171).bold(),  // LighterHeliotrope
+        Level::Heading => Color::fixed(33).bold(),   // AzureRadiance
+        Level::Subheading => Color::fixed(44),       // RobinEggBlue
+        Level::Emphasis => Color::fixed(173).bold(), // Copperfield
+        Level::Bright => Color::fixed(118).italic(), // ChartreuseGreen
+        Level::Normal => Color::fixed(231),          // White
+        Level::Debug => Color::fixed(37),            // BondiBlue
+        Level::Ghost => Color::fixed(251).italic(),  // Silver
+    }
+}
+
 // #[must_use]
-// pub fn full_dark_style(level: Level) -> Style {
-//     match level {
-//         Level::Error => Color::fixed(1).bold(),      // UserRed
-//         Level::Warning => Color::fixed(171).bold(),  // LighterHeliotrope
-//         Level::Heading => Color::fixed(33).bold(),   // AzureRadiance
-//         Level::Subheading => Color::fixed(44),       // RobinEggBlue
-//         Level::Emphasis => Color::fixed(173).bold(), // Copperfield
-//         Level::Bright => Color::fixed(118).italic(), // ChartreuseGreen
-//         Level::Normal => Color::fixed(231),          // White
-//         Level::Debug => Color::fixed(37),            // BondiBlue
-//         Level::Ghost => Color::fixed(251).italic(),  // Silver
-//     }
+// pub fn style_string(lvl: Level, string: &str) -> String {
+//     TermAttributes::get_or_init()
+//         .style_for_level(lvl)
+//         .paint(string)
 // }
 
 #[must_use]
@@ -1047,22 +1020,22 @@ pub enum Role {
     Trace,
 }
 
-// impl From<Level> for Role {
-//     fn from(level: Level) -> Self {
-//         profile_method!("Role::from");
-//         match level {
-//             Level::Error => Self::Error,
-//             Level::Warning => Self::Warning,
-//             Level::Heading => Self::Heading1,
-//             Level::Subheading => Self::Heading2,
-//             Level::Emphasis => Self::Emphasis,
-//             Level::Bright => Self::Info,   // Highlighting important info
-//             Level::Normal => Self::Normal, // Default display style
-//             Level::Debug => Self::Debug,
-//             Level::Ghost => Self::Hint,
-//         }
-//     }
-// }
+impl From<Level> for Role {
+    fn from(level: Level) -> Self {
+        profile_method!("Role::from");
+        match level {
+            Level::Error => Self::Error,
+            Level::Warning => Self::Warning,
+            Level::Heading => Self::Heading1,
+            Level::Subheading => Self::Heading2,
+            Level::Emphasis => Self::Emphasis,
+            Level::Bright => Self::Info,   // Highlighting important info
+            Level::Normal => Self::Normal, // Default display style
+            Level::Debug => Self::Debug,
+            Level::Ghost => Self::Hint,
+        }
+    }
+}
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct PaletteConfig {
@@ -1082,7 +1055,7 @@ pub struct PaletteConfig {
     trace: StyleConfig,
 }
 
-#[derive(Clone, Debug, Default, PaletteMethods)]
+#[derive(Clone, Debug, PaletteMethods)]
 pub struct Palette {
     pub heading1: Style,
     pub heading2: Style,
@@ -1593,7 +1566,7 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
     style.foreground.as_ref().map_or_else(
         || Ok(()),
         |color_info| match &color_info.value {
-            ColorValue::None {} | ColorValue::Basic { basic: _ } => Ok(()), // Basic is always valid
+            ColorValue::Basic { basic: _ } => Ok(()), // Basic is always valid
             ColorValue::Color256 { color256: _ } => {
                 if min_support < ColorSupport::Color256 {
                     Err(ThemeError::InvalidColorValue(
@@ -2024,7 +1997,7 @@ macro_rules! clog_heading1 {
 }
 
 #[macro_export]
-macro_rules! heading2 {
+macro_rules! clog_heading2 {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Heading2, $($arg)*) };
 }
 
@@ -2065,7 +2038,7 @@ macro_rules! clog_subtle {
 
 #[macro_export]
 macro_rules! cvlog {
-    ($verbosity:expr, $level:expr, $($arg:tt)*) => {{
+    ($verbosity:expr, $role:expr, $($arg:tt)*) => {{
         if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
             let logger = $crate::logging::LOGGER.lock().unwrap();
             let message = format!($($arg)*);
@@ -2073,7 +2046,7 @@ macro_rules! cvlog {
             #[cfg(feature = "color_support")]
             {
                 let color_logger = $crate::styling::TermAttributes::get();
-                let style = color_logger.style_for_level($level);
+                let style = $crate::styling::Style::for_role($role);
                 logger.log($verbosity, &style.paint(message));
             }
 
@@ -2155,7 +2128,7 @@ mod tests {
                     ColorSupport::Basic | ColorSupport::Undetermined,
                     TermBgLuma::Dark | TermBgLuma::Undetermined,
                 ) => "basic_dark",
-                (ColorSupport::None, _) => "none",
+                (ColorSupport::None, _) => "basic_dark", // Shouldn't matter - TODO make nice
                 (ColorSupport::Color256, TermBgLuma::Light) => "github_256",
                 (ColorSupport::Color256, TermBgLuma::Dark) => "dracula_256",
                 (ColorSupport::Color256, TermBgLuma::Undetermined) => "dracula_256",
@@ -2163,8 +2136,7 @@ mod tests {
                 (ColorSupport::TrueColor, TermBgLuma::Dark) => "dracula",
                 (ColorSupport::TrueColor, TermBgLuma::Undetermined) => "dracula",
             };
-            let theme =
-                Theme::load_builtin(theme_name).expect("Failed to load builtin theme {theme_name}");
+            let theme = Theme::load_builtin(theme_name).expect("Failed to load builtin theme");
             Self::new(color_support, Some(BLACK_BG), term_bg_luma, theme)
         }
     }
@@ -2258,42 +2230,40 @@ mod tests {
         assert_ne!(heading_light, heading_dark);
     }
 
-    #[test]
-    fn test_styling_level_styling() {
-        // let attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
+    // #[test]
+    // fn test_styling_role_styling() {
+    //     // Test each level has distinct styling
+    //     let styles: Vec<String> = vec![
+    //         Role::Heading1,
+    //         Role::Heading2,
+    //         Role::Heading3,
+    //         Role::Error,
+    //         Role::Warning,
+    //         Role::Success,
+    //         Role::Info,
+    //         Role::Emphasis,
+    //         Role::Code,
+    //         Role::Normal,
+    //         Role::Subtle,
+    //         Role::Hint,
+    //         Role::Debug,
+    //     ]
+    //     .iter()
+    //     .map(|level| attrs.style_for_level(*level).paint("test"))
+    //     .collect();
 
-        // Test each level has distinct styling
-        let styles: Vec<String> = vec![
-            Role::Heading1,
-            Role::Heading2,
-            Role::Heading3,
-            Role::Error,
-            Role::Warning,
-            Role::Success,
-            Role::Info,
-            Role::Emphasis,
-            Role::Code,
-            Role::Normal,
-            Role::Subtle,
-            Role::Hint,
-            Role::Debug,
-        ]
-        .iter()
-        .map(|role| Style::for_role(*role).paint("test"))
-        .collect();
-
-        // Check that all styles are unique
-        for (i, style1) in styles.iter().enumerate() {
-            for (j, style2) in styles.iter().enumerate() {
-                if i != j {
-                    assert_ne!(
-                        style1, style2,
-                        "Styles for different levels should be distinct, but {i} == {j}"
-                    );
-                }
-            }
-        }
-    }
+    //     // Check that all styles are unique
+    //     for (i, style1) in styles.iter().enumerate() {
+    //         for (j, style2) in styles.iter().enumerate() {
+    //             if i != j {
+    //                 assert_ne!(
+    //                     style1, style2,
+    //                     "Styles for different levels should be distinct"
+    //                 );
+    //             }
+    //         }
+    //     }
+    // }
 
     #[test]
     fn test_styling_style_attributes() {

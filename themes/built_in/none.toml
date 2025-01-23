@@ -1,0 +1,21 @@
+name = "No Theme"
+description = "Theme for terminals that don't support color or don't want to for any reason"
+term_bg_luma = "dark"
+min_color_support = "none"
+backgrounds = [""]
+
+[palette]
+heading1 = {}
+heading2 = {}
+heading3 = {}
+error = {}
+warning = {}
+success = {}
+info = {}
+emphasis = {}
+code = {}
+normal = {}
+subtle = {}
+hint = {}
+debug = {}
+trace = {}

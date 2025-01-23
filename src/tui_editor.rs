@@ -4,8 +4,8 @@ use crate::{
     file_dialog::{DialogMode, FileDialog, Status},
     profile, profile_method, regex,
     stdin::edit_history,
-    styling::Level,
-    KeyCombination, Lvl, ThagError, ThagResult,
+    styling::Role,
+    KeyCombination, ThagError, ThagResult,
 };
 use crokey::key;
 use crossterm::event::{
@@ -506,9 +506,9 @@ impl From<&crate::styling::Style> for RataStyle {
 }
 
 // Implement conversion to ratatui's Color
-impl From<&Level> for Color {
-    fn from(level: &Level) -> Self {
-        Self::Indexed(u8::from(level))
+impl From<&Role> for Color {
+    fn from(role: &Role) -> Self {
+        Self::Indexed(u8::from(role))
     }
 }
 
@@ -566,7 +566,7 @@ where
 {
     // Initialize state variables
     let mut popup = false;
-    let mut tui_highlight_fg: Lvl = Lvl::EMPH;
+    let mut tui_highlight_fg: Role = Role::EMPH;
     let mut saved = false;
     let mut status_message: String = String::default(); // Add status message variable
 
@@ -819,12 +819,12 @@ where
                 key!(ctrl - t) => {
                     // Toggle highlighting colours
                     tui_highlight_fg = match tui_highlight_fg {
-                        Lvl::EMPH => Lvl::BRI,
-                        Lvl::BRI => Lvl::ERR,
-                        Lvl::ERR => Lvl::WARN,
-                        Lvl::WARN => Lvl::HEAD,
-                        Lvl::HEAD => Lvl::SUBH,
-                        _ => Lvl::EMPH,
+                        Role::EMPH => Role::INFO,
+                        Role::INFO => Role::ERR,
+                        Role::ERR => Role::WARN,
+                        Role::WARN => Role::HD1,
+                        Role::HD1 => Role::HD2,
+                        _ => Role::EMPH,
                     };
                     if var("TEST_ENV").is_err() {
                         #[allow(clippy::option_if_let_else)]
@@ -876,7 +876,7 @@ where
     }
 }
 
-pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate::Lvl) {
+pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) {
     profile!("highlight_selection");
     textarea.set_selection_style(
         RataStyle::default()
@@ -1136,7 +1136,7 @@ pub fn display_popup(
         .title_top(Line::from(title_top).centered())
         .title_bottom(Line::from(title_bottom).centered())
         .add_modifier(Modifier::BOLD)
-        .fg(Color::Indexed(u8::from(&Lvl::HEAD)));
+        .fg(Color::Indexed(u8::from(&Role::HD1)));
     #[allow(clippy::cast_possible_truncation)]
     let area = centered_rect(
         max_key_len + max_desc_len + 5,
@@ -1174,9 +1174,9 @@ pub fn display_popup(
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
+                .fg(Color::Indexed(u8::from(&Role::EMPH)));
         } else {
-            widget = widget.fg(Color::Indexed(u8::from(&Lvl::SUBH))).not_bold();
+            widget = widget.fg(Color::Indexed(u8::from(&Role::HD2))).not_bold();
         }
         f.render_widget(widget, cells[0]);
         let mut widget = Paragraph::new(mappings[i].desc);
@@ -1184,11 +1184,11 @@ pub fn display_popup(
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
+                .fg(Color::Indexed(u8::from(&Role::EMPH)));
         } else {
             widget = widget.remove_modifier(Modifier::BOLD).set_style(
                 RataStyle::default()
-                    .fg(Color::Indexed(u8::from(&Lvl::NORM)))
+                    .fg(Color::Indexed(u8::from(&Role::NORM)))
                     .not_bold(),
             );
         }

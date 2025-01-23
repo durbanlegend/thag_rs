@@ -1,8 +1,8 @@
-use crate::styling::TermAttributes;
+use crate::styling::Role;
 use crate::{
     debug_log, key_mappings, lazy_static_var,
     tui_editor::{self, centered_rect, display_popup, KeyDisplayLine},
-    KeyCombination, Level, Lvl,
+    KeyCombination,
 };
 // #[cfg(feature = "profiling")]
 use crate::{profile, profile_method};
@@ -95,7 +95,7 @@ pub struct FileDialog<'a> {
     pub input: TextArea<'a>,
 
     pub buf: String,
-    term_attrs: &'static TermAttributes,
+    // term_attrs: &'static TermAttributes,
 }
 
 // impl<FilePattern> FileDialog<'_, FilePattern> {
@@ -126,7 +126,7 @@ impl FileDialog<'_> {
             input: TextArea::default(),
             title_bottom: "Ctrl+l to show keys",
             buf: String::new(),
-            term_attrs: TermAttributes::get_or_init(),
+            // term_attrs: TermAttributes::get_or_init(),
         };
         s.update_entries()?;
         Ok(s)
@@ -223,7 +223,7 @@ impl FileDialog<'_> {
                 .title(title.clone())
                 .borders(Borders::ALL)
                 .border_style(if file_list_focus {
-                    ratatui::style::Style::from(&self.term_attrs.style_for_level(Level::Heading))
+                    ratatui::style::Style::from(&crate::Style::for_role(Role::Heading1))
                 } else {
                     ratatui::style::Style::default()
                         .fg(ratatui::style::Color::DarkGray)
@@ -239,12 +239,12 @@ impl FileDialog<'_> {
                 .block(block)
                 .highlight_style(
                     Style::default()
-                        .fg(Color::Indexed(u8::from(&Lvl::EMPH)))
+                        .fg(Color::Indexed(u8::from(&Role::EMPH)))
                         .bold(),
                 )
                 .style(if file_list_focus {
                     Style::default()
-                        .fg(Color::Indexed(u8::from(&Lvl::SUBH)))
+                        .fg(Color::Indexed(u8::from(&Role::HD2)))
                         .not_bold()
                 } else {
                     Style::default().fg(Color::DarkGray).dim()
@@ -257,7 +257,7 @@ impl FileDialog<'_> {
                 // Create a Block for the input area with borders and background
                 let input_style = if input_focus {
                     Style::default()
-                        .fg(Color::Indexed(u8::from(&Lvl::HEAD)))
+                        .fg(Color::Indexed(u8::from(&Role::HD1)))
                         .bold()
                 } else {
                     Style::default().fg(Color::DarkGray).dim()
@@ -281,7 +281,7 @@ impl FileDialog<'_> {
                     self.input.set_cursor_style(Style::default()); //.on_magenta());
                     self.input.set_cursor_line_style(
                         Style::default()
-                            .fg(Color::Indexed(u8::from(&Lvl::EMPH)))
+                            .fg(Color::Indexed(u8::from(&Role::EMPH)))
                             .bold(),
                     );
                 } else {

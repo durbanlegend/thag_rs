@@ -8,14 +8,14 @@ use crate::{
     styling::{
         display_theme_roles, show_theme_details, ColorInfo,
         Role::{self, Success},
-        TermAttributes,
+        Style, TermAttributes,
     },
     tui_editor::{
         script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
         ManagedTerminal, RataStyle,
     },
     vlog, BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
-    KeyDisplayLine, Lvl, ProcFlags, Style, ThagError, ThagResult, V,
+    KeyDisplayLine, ProcFlags, ThagError, ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
 use crokey::key;
@@ -301,18 +301,12 @@ impl Prompt for ReplPrompt {
 
 fn get_heading_style() -> &'static Style {
     profile!("get_heading_style");
-    lazy_static_var!(
-        Style,
-        TermAttributes::get_or_init().style_for_level(Lvl::HEAD)
-    )
+    lazy_static_var!(Style, Style::for_role(Role::HD1))
 }
 
 fn get_subhead_style() -> &'static Style {
     profile!("get_subhead_style");
-    lazy_static_var!(
-        Style,
-        TermAttributes::get_or_init().style_for_level(Lvl::SUBH)
-    )
+    lazy_static_var!(Style, Style::for_role(Role::HD2))
 }
 
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
@@ -425,7 +419,7 @@ pub fn run_repl(
         line_editor_builder = line_editor_builder.with_highlighter(highlighter);
 
         // Add styled hinter
-        let our_ghost = term_attrs.style_for_level(Lvl::Ghost);
+        let our_ghost = Style::for_role(Role::Hint);
         let nu_ghost = our_ghost
             .foreground
             .as_ref()
@@ -784,7 +778,7 @@ pub fn process_source(
         process_expr(build_state, rs_source, args, proc_flags, &start)?;
     } else {
         cvprtln!(
-            Lvl::ERR,
+            Role::ERR,
             get_verbosity(),
             "Error parsing code: {maybe_ast:#?}"
         );
@@ -824,7 +818,7 @@ fn tui(
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
-    let style = crate::styling::TermAttributes::get_or_init().style_for_level(Lvl::SUBH);
+    let style = Style::for_role(Role::HD2);
     let display = KeyDisplay {
         title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: RataStyle::from(&style),
@@ -934,7 +928,7 @@ pub fn edit_history<R: EventReader + Debug>(
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
-    let style = crate::styling::TermAttributes::get_or_init().style_for_level(Lvl::SUBH);
+    let style = Style::for_role(Role::HD2);
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
         title_style: RataStyle::from(&style),
@@ -1137,7 +1131,7 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
     profile!("show_key_bindings");
     println!();
     cvprtln!(
-        Lvl::EMPH,
+        Role::EMPH,
         get_verbosity(),
         "Key bindings - subject to your terminal settings"
     );
@@ -1429,7 +1423,7 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
 pub fn disp_repl_banner(cmd_list: &str) {
     profile!("disp_repl_banner");
     cvprtln!(
-        Lvl::HEAD,
+        Role::HD1,
         get_verbosity(),
         r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#
     );
@@ -1437,13 +1431,13 @@ pub fn disp_repl_banner(cmd_list: &str) {
     println!();
 
     cvprtln!(
-        Lvl::SUBH,
+        Role::HD2,
         get_verbosity(),
         r"Expressions in matching braces, brackets or quotes may span multiple lines."
     );
 
     cvprtln!(
-        Lvl::SUBH,
+        Role::HD2,
         get_verbosity(),
         r"Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
     );

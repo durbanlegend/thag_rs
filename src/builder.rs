@@ -47,11 +47,11 @@ use crate::code_utils::{
 };
 use crate::config::{self, DependencyInference, RealContext};
 use crate::manifest::extract;
-use crate::styling::{style_string, ColorInitStrategy, TermAttributes};
+use crate::styling::{paint_for_role, ColorInitStrategy, TermAttributes};
 use crate::{
     ast, cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
     modified_since_compiled, profile, profile_method, profile_section, regex, repeat_dash, shared,
-    validate_args, vlog, Ast, Cli, Dependencies, Lvl, ProcFlags, ThagError, ThagResult,
+    validate_args, vlog, Ast, Cli, Dependencies, ProcFlags, Role, ThagError, ThagResult,
     DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX,
     TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
@@ -951,7 +951,7 @@ pub fn gen_build_run(
         generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
         cvprtln!(
-            Lvl::EMPH,
+            Role::EMPH,
             V::N,
             "Skipping unnecessary generation step.  Use --force (-f) to override."
         );
@@ -967,14 +967,14 @@ pub fn gen_build_run(
             } else {
                 "Skipping unnecessary cargo build step. Use --force (-f) to override."
             };
-        cvprtln!(Lvl::EMPH, V::N, "{build_qualifier}");
+        cvprtln!(Role::EMPH, V::N, "{build_qualifier}");
     }
     if proc_flags.contains(ProcFlags::RUN) {
         run(proc_flags, &args.args, build_state)?;
     }
     let process = &format!(
         "{PACKAGE_NAME} completed processing script {}",
-        style_string(Lvl::EMPH, &build_state.source_name)
+        paint_for_role(Role::EMPH, &build_state.source_name)
     );
     display_timings(start, process, proc_flags);
     Ok(())
@@ -1143,7 +1143,7 @@ fn build_command_args(
     } else if proc_flags.contains(ProcFlags::CARGO) {
         args.extend_from_slice(&build_state.args[1..]);
     } else if proc_flags.contains(ProcFlags::TEST_ONLY) && !build_state.args.is_empty() {
-        cvprtln!(Lvl::BRI, V::V, "build_state.args={:#?}", build_state.args);
+        cvprtln!(Role::INFO, V::V, "build_state.args={:#?}", build_state.args);
         args.push("--".to_string());
         args.extend_from_slice(&build_state.args[..]);
     }
@@ -1184,7 +1184,7 @@ fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult
     profile!("handle_expand");
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    cvprtln!(Lvl::BRI, V::V, "cargo_command={cargo_command:#?}");
+    cvprtln!(Role::INFO, V::V, "cargo_command={cargo_command:#?}");
 
     let output = cargo_command.output()?;
 
@@ -1204,7 +1204,7 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
     profile!("handle_build_or_check");
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    cvprtln!(Lvl::BRI, V::VV, "cargo_command={cargo_command:#?}");
+    cvprtln!(Role::INFO, V::VV, "cargo_command={cargo_command:#?}");
 
     let status = cargo_command.spawn()?.wait()?;
 
@@ -1238,7 +1238,7 @@ fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResu
 
 fn display_build_failure() {
     profile!("display_build_failure");
-    cvprtln!(Lvl::ERR, V::N, "Build failed");
+    cvprtln!(Role::ERR, V::N, "Build failed");
     let config = maybe_config();
     let binding = Dependencies::default();
     let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
@@ -1252,7 +1252,7 @@ fn display_build_failure() {
     };
 
     cvprtln!(
-        Lvl::EMPH,
+        Role::EMPH,
         V::V,
         r#"Dependency inference_level={inference_level:#?}
 If the problem is a dependency error, consider the following advice:
@@ -1315,14 +1315,14 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
 
     // let dash_line = "─".repeat(&FLOWER_BOX_LEN);
     repeat_dash!(70);
-    cvprtln!(Lvl::EMPH, V::Q, "{DASH_LINE}");
+    cvprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
 
     vlog!(
         V::QQ,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
     );
 
-    cvprtln!(Lvl::EMPH, V::Q, "{DASH_LINE}");
+    cvprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
     Ok(())
 }
 
@@ -1354,11 +1354,11 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
-    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
+    cvprtln!(Role::EMPH, V::Q, "{dash_line}");
 
     let _exit_status = run_command.spawn()?.wait()?;
 
-    cvprtln!(Lvl::EMPH, V::Q, "{dash_line}");
+    cvprtln!(Role::EMPH, V::Q, "{dash_line}");
 
     // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");

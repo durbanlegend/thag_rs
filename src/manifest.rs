@@ -6,8 +6,8 @@ use crate::{
     code_utils::get_source_path,
     config::DependencyInference,
     cvprtln, debug_log, get_verbosity, maybe_config, profile, profile_section, regex,
-    styling::TermAttributes,
-    vlog, Ast, BuildState, Dependencies, Level, Lvl, ThagResult, V,
+    styling::Role,
+    vlog, Ast, BuildState, Dependencies, Style, ThagResult, V,
 };
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
@@ -394,19 +394,18 @@ pub fn lookup_deps(
 
     let existing_toml_block = !&rs_dep_map.is_empty();
     let mut new_inferred_deps: Vec<String> = vec![];
-    let term_attrs = TermAttributes::get_or_init();
-    let recomm_style = &term_attrs.style_for_level(Level::Subheading);
+    let recomm_style = &Style::for_role(Role::Heading1);
     let recomm_inf_level = &DependencyInference::Config;
     let actual_style = if inference_level == recomm_inf_level {
         recomm_style
     } else {
-        &term_attrs.style_for_level(Level::Emphasis)
+        &Style::for_role(Role::Emphasis)
     };
     let styled_inference_level = actual_style.paint(inference_level.to_string());
     let styled_recomm_inf_level = recomm_style.paint(recomm_inf_level.to_string());
     // Hack: use reset string \x1b[0m here to avoid mystery white-on-white bug.
     cvprtln!(
-        Lvl::NORM,
+        Role::NORM,
         V::V,
         "\x1b[0mRecommended dependency inference_level={styled_recomm_inf_level}, actual={styled_inference_level}"
     );
@@ -546,11 +545,8 @@ fn display_toml_info(
     if !existing_toml_block {
         toml_block.push_str("*/");
     }
-    let term_attrs = TermAttributes::get_or_init();
-    let styled_toml_block = term_attrs.style_for_level(Lvl::SUBH).paint(&toml_block);
-    let styled_inference_level = term_attrs
-        .style_for_level(Lvl::EMPH)
-        .paint(inference_level.to_string());
+    let styled_toml_block = Style::for_role(Role::Heading2).paint(&toml_block);
+    let styled_inference_level = Style::for_role(Role::EMPH).paint(inference_level.to_string());
     let wording = if existing_toml_block {
         format!("This is the {styled_inference_level} manifest information that was generated for this run. If you want to, you can merge it into the existing toml block at")
     } else {
@@ -569,7 +565,7 @@ fn proc_macros_magic(
 ) {
     profile!("proc_macros_magic");
     cvprtln!(
-        Lvl::BRI,
+        Role::INFO,
         V::V,
         r#"Found magic import `{dep_name}`: attempting to generate path dependency from `proc_macros.(...)proc_macro_crate_path` in config file ".../config.toml"."#
     );
@@ -594,13 +590,13 @@ fn proc_macros_magic(
     );
     let magic_proc_macros_dir = maybe_magic_proc_macros_dir.as_ref().map_or_else(|| {
         cvprtln!(
-            Lvl::BRI,
+            Role::INFO,
             V::V,
             r#"No `config.proc_macros.proc_macro_crate_path` in config file for "use {dep_name};": defaulting to "{default_proc_macros_dir}"."#
         );
         default_proc_macros_dir
     }, |proc_macros_dir| {
-        cvprtln!(Lvl::BRI, V::V, "Found {proc_macros_dir:#?}.");
+        cvprtln!(Role::INFO, V::V, "Found {proc_macros_dir:#?}.");
         proc_macros_dir.to_string()
     });
 

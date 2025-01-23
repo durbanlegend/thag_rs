@@ -63,6 +63,7 @@ mod tests {
         assert!(matches!(*luma, TermBgLuma::Light | TermBgLuma::Dark));
     }
 
+    #[ignore = "Can't be run headless"]
     #[test]
     fn test_restore_raw_status() {
         // Test restoring to non-raw mode

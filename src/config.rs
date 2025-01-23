@@ -1,6 +1,7 @@
+use crate::styling::Role;
 use crate::{
-    clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, Color, ColorSupport, Level, Lvl,
-    TermBgLuma, ThagError, ThagResult, Verbosity, V,
+    clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, Color, ColorSupport, TermBgLuma,
+    ThagError, ThagResult, Verbosity, V,
 };
 use crate::{profile, profile_method};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
@@ -32,6 +33,7 @@ pub struct Config {
     /// Logging configuration
     pub logging: Logging,
     /// Color settings
+    #[serde(alias = "colors")]
     pub styling: Styling,
     /// Proc macros directory location, e.g. `demo/proc_macros`
     pub proc_macros: ProcMacros,
@@ -45,8 +47,8 @@ pub struct Config {
 struct PartialConfig {
     #[serde(default)]
     logging: Option<Logging>,
-    #[serde(default)]
-    colors: Option<Styling>,
+    #[serde(default, alias = "colors")]
+    styling: Option<Styling>,
     #[serde(default)]
     proc_macros: Option<ProcMacros>,
     #[serde(default)]
@@ -156,8 +158,8 @@ impl Config {
         if let Some(logging) = partial.logging {
             self.logging = logging;
         }
-        if let Some(colors) = partial.colors {
-            self.styling = colors;
+        if let Some(styling) = partial.styling {
+            self.styling = styling;
         }
         if let Some(proc_macros) = partial.proc_macros {
             self.proc_macros = proc_macros;
@@ -373,14 +375,14 @@ impl Dependencies {
                         config_features.push(feature.clone());
                     } else {
                         cvprtln!(
-                            Lvl::WARN,
+                            Role::WARN,
                             V::QQ,
                             "Configured feature `{}` does not exist in crate {}. Available features are:",
                             feature,
                             crate_name
                         );
                         for available in all_features {
-                            cvprtln!(Lvl::BRI, V::QQ, "{}", available);
+                            cvprtln!(Role::INFO, V::QQ, "{}", available);
                         }
                     }
                 }
@@ -729,7 +731,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 
     if !config_path.exists() {
         clog!(
-            Level::Warning,
+            Role::Warning,
             "Configuration file path {} not found. No config loaded. System defaults will be used.",
             config_path.display()
         );

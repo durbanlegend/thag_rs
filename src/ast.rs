@@ -27,7 +27,7 @@ use syn::{
     TypePath, UseRename, UseTree,
 };
 
-use crate::{cvprtln, Lvl, V};
+use crate::{cvprtln, Role, V};
 
 #[cfg(debug_assertions)]
 use {crate::debug_timings, std::time::Instant};
@@ -387,7 +387,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     let mut dependencies = maybe_ast.map_or_else(
         |_| {
             cvprtln!(
-                Lvl::ERR,
+                Role::ERR,
                 V::QQ,
                 "Could not parse code into an abstract syntax tree"
             );
@@ -726,7 +726,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
         }
         _ => {
             cvprtln!(
-                Lvl::WARN,
+                Role::WARN,
                 V::Q,
                 "Expression not catered for: {expr:#?}, wrapping expression in println!()"
             );

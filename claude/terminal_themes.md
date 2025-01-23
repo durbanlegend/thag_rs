@@ -419,7 +419,7 @@ pub fn run_repl(
         line_editor_builder = line_editor_builder.with_highlighter(highlighter);
 
         // Add styled hinter
-        let our_ghost = term_attrs.style_for_level(Lvl::Ghost);
+        let our_ghost = Style::for_role(Lvl::Ghost);
         let nu_ghost = our_ghost
             .foreground
             .as_ref()

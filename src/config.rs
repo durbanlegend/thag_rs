@@ -7,10 +7,10 @@ use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use mockall::{automock, predicate::str};
 use nu_ansi_term::Style;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 // use std::collections::HashSet;
-use serde::de;
+use serde::de::{self, Error as DeError};
 #[cfg(target_os = "windows")]
 use std::env;
 use std::path::Path;
@@ -24,6 +24,7 @@ use std::{
     sync::Arc,
 };
 use strum::{Display, EnumString};
+use toml::Value;
 use toml_edit::DocumentMut;
 
 /// Configuration categories
@@ -465,7 +466,7 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
             "minimal" => Ok(Self::Min),
             "config" => Ok(Self::Config),
             "maximal" => Ok(Self::Max),
-            _ => Err(de::Error::custom(format!(
+            _ => Err(DeError::custom(format!(
                 "Invalid dependency inference level '{s}'. Expected one of: none, minimal, config, maximal"
             ))),
         }
@@ -506,13 +507,21 @@ pub struct ProcMacros {
 }
 
 /// Miscellaneous configuration parameters
-#[serde_as]
 #[derive(Clone, Debug, Default, Documented, DocumentedFields, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Misc {
     /// Strip double quotes from around string literals returned by snippets
-    #[serde_as(as = "DisplayFromStr")]
+    #[serde(deserialize_with = "boolean")]
     pub unquote: bool,
+}
+
+fn boolean<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
+    let deserialize = Deserialize::deserialize(deserializer);
+    deserialize.map_or_else(Err, |val| match val {
+        Value::Boolean(b) => Ok(b),
+        Value::String(s) => Ok(&s == "true"),
+        _ => Err(DeError::custom("Wrong type, expected boolean")),
+    })
 }
 
 #[automock]

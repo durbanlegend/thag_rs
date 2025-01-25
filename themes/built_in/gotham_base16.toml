@@ -1,0 +1,112 @@
+name = "Gotham Base16 "
+description = "Converted from Gotham theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0c1014"]
+bg_rgbs = [[
+    12,
+    16,
+    20,
+]]
+
+[palette.heading1]
+rgb = [
+    194,
+    49,
+    39,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    25,
+    84,
+    102,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    42,
+    168,
+    137,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    194,
+    49,
+    39,
+]
+
+[palette.warning]
+rgb = [
+    237,
+    180,
+    67,
+]
+
+[palette.success]
+rgb = [
+    51,
+    133,
+    158,
+]
+
+[palette.info]
+rgb = [
+    25,
+    84,
+    102,
+]
+
+[palette.emphasis]
+rgb = [
+    136,
+    140,
+    166,
+]
+
+[palette.code]
+rgb = [
+    51,
+    133,
+    158,
+]
+
+[palette.normal]
+rgb = [
+    89,
+    156,
+    171,
+]
+
+[palette.subtle]
+rgb = [
+    10,
+    55,
+    73,
+]
+
+[palette.hint]
+rgb = [
+    10,
+    55,
+    73,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    9,
+    31,
+    46,
+]
+
+[palette.trace]
+rgb = [
+    17,
+    21,
+    28,
+]

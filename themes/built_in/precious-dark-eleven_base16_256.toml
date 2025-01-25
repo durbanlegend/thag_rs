@@ -1,0 +1,56 @@
+name = "Precious Dark Eleven Base16 256"
+description = "Converted from Precious Dark Eleven theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#1c1e20"]
+bg_rgbs = [[
+    28,
+    30,
+    32,
+]]
+
+[palette.heading1]
+color256 = 210
+style = ["bold"]
+
+[palette.heading2]
+color256 = 75
+style = ["bold"]
+
+[palette.heading3]
+color256 = 73
+style = ["bold"]
+
+[palette.error]
+color256 = 210
+
+[palette.warning]
+color256 = 179
+
+[palette.success]
+color256 = 107
+
+[palette.info]
+color256 = 75
+
+[palette.emphasis]
+color256 = 141
+
+[palette.code]
+color256 = 107
+
+[palette.normal]
+color256 = 145
+
+[palette.subtle]
+color256 = 245
+
+[palette.hint]
+color256 = 245
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 16

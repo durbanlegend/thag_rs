@@ -1,0 +1,112 @@
+name = "vulcan Base16 "
+description = "Converted from vulcan theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#041523"]
+bg_rgbs = [[
+    4,
+    21,
+    35,
+]]
+
+[palette.heading1]
+rgb = [
+    129,
+    133,
+    145,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    151,
+    125,
+    124,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    151,
+    125,
+    124,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    129,
+    133,
+    145,
+]
+
+[palette.warning]
+rgb = [
+    173,
+    180,
+    185,
+]
+
+[palette.success]
+rgb = [
+    151,
+    125,
+    124,
+]
+
+[palette.info]
+rgb = [
+    151,
+    125,
+    124,
+]
+
+[palette.emphasis]
+rgb = [
+    145,
+    152,
+    163,
+]
+
+[palette.code]
+rgb = [
+    151,
+    125,
+    124,
+]
+
+[palette.normal]
+rgb = [
+    91,
+    119,
+    140,
+]
+
+[palette.subtle]
+rgb = [
+    122,
+    87,
+    89,
+]
+
+[palette.hint]
+rgb = [
+    122,
+    87,
+    89,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    0,
+    53,
+    82,
+]
+
+[palette.trace]
+rgb = [
+    18,
+    35,
+    57,
+]

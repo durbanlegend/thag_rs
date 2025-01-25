@@ -1,0 +1,112 @@
+name = "Brewer Base16 "
+description = "Converted from Brewer theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0c0d0e"]
+bg_rgbs = [[
+    12,
+    13,
+    14,
+]]
+
+[palette.heading1]
+rgb = [
+    227,
+    26,
+    28,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    49,
+    130,
+    189,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    128,
+    177,
+    211,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    227,
+    26,
+    28,
+]
+
+[palette.warning]
+rgb = [
+    220,
+    160,
+    96,
+]
+
+[palette.success]
+rgb = [
+    49,
+    163,
+    84,
+]
+
+[palette.info]
+rgb = [
+    49,
+    130,
+    189,
+]
+
+[palette.emphasis]
+rgb = [
+    117,
+    107,
+    177,
+]
+
+[palette.code]
+rgb = [
+    49,
+    163,
+    84,
+]
+
+[palette.normal]
+rgb = [
+    183,
+    184,
+    185,
+]
+
+[palette.subtle]
+rgb = [
+    115,
+    116,
+    117,
+]
+
+[palette.hint]
+rgb = [
+    115,
+    116,
+    117,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    81,
+    82,
+    83,
+]
+
+[palette.trace]
+rgb = [
+    46,
+    47,
+    48,
+]

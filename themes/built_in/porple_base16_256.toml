@@ -1,0 +1,56 @@
+name = "Porple Base16 256"
+description = "Converted from Porple theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#292c36"]
+bg_rgbs = [[
+    41,
+    44,
+    54,
+]]
+
+[palette.heading1]
+color256 = 203
+style = ["bold"]
+
+[palette.heading2]
+color256 = 104
+style = ["bold"]
+
+[palette.heading3]
+color256 = 66
+style = ["bold"]
+
+[palette.error]
+color256 = 203
+
+[palette.warning]
+color256 = 215
+
+[palette.success]
+color256 = 113
+
+[palette.info]
+color256 = 104
+
+[palette.emphasis]
+color256 = 132
+
+[palette.code]
+color256 = 113
+
+[palette.normal]
+color256 = 253
+
+[palette.subtle]
+color256 = 60
+
+[palette.hint]
+color256 = 60
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

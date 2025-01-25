@@ -1,0 +1,56 @@
+name = "Nebula Base16 256"
+description = "Converted from Nebula theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#22273b"]
+bg_rgbs = [[
+    34,
+    39,
+    59,
+]]
+
+[palette.heading1]
+color256 = 103
+style = ["bold"]
+
+[palette.heading2]
+color256 = 61
+style = ["bold"]
+
+[palette.heading3]
+color256 = 23
+style = ["bold"]
+
+[palette.error]
+color256 = 103
+
+[palette.warning]
+color256 = 65
+
+[palette.success]
+color256 = 61
+
+[palette.info]
+color256 = 61
+
+[palette.emphasis]
+color256 = 61
+
+[palette.code]
+color256 = 61
+
+[palette.normal]
+color256 = 145
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 66
+
+[palette.trace]
+color256 = 59

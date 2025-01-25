@@ -1,0 +1,56 @@
+name = "Ayu Light Base16 256"
+description = "Converted from Ayu Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#fafafa"]
+bg_rgbs = [[
+    250,
+    250,
+    250,
+]]
+
+[palette.heading1]
+color256 = 204
+style = ["bold"]
+
+[palette.heading2]
+color256 = 74
+style = ["bold"]
+
+[palette.heading3]
+color256 = 72
+style = ["bold"]
+
+[palette.error]
+color256 = 204
+
+[palette.warning]
+color256 = 215
+
+[palette.success]
+color256 = 106
+
+[palette.info]
+color256 = 74
+
+[palette.emphasis]
+color256 = 140
+
+[palette.code]
+color256 = 106
+
+[palette.normal]
+color256 = 59
+
+[palette.subtle]
+color256 = 145
+
+[palette.hint]
+color256 = 145
+style = ["italic"]
+
+[palette.debug]
+color256 = 231
+
+[palette.trace]
+color256 = 231

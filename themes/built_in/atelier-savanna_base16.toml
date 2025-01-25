@@ -1,0 +1,112 @@
+name = "Atelier Savanna Base16 "
+description = "Converted from Atelier Savanna theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#171c19"]
+bg_rgbs = [[
+    23,
+    28,
+    25,
+]]
+
+[palette.heading1]
+rgb = [
+    177,
+    97,
+    57,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    71,
+    140,
+    144,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    28,
+    154,
+    160,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    177,
+    97,
+    57,
+]
+
+[palette.warning]
+rgb = [
+    160,
+    126,
+    59,
+]
+
+[palette.success]
+rgb = [
+    72,
+    153,
+    99,
+]
+
+[palette.info]
+rgb = [
+    71,
+    140,
+    144,
+]
+
+[palette.emphasis]
+rgb = [
+    85,
+    133,
+    155,
+]
+
+[palette.code]
+rgb = [
+    72,
+    153,
+    99,
+]
+
+[palette.normal]
+rgb = [
+    135,
+    146,
+    138,
+]
+
+[palette.subtle]
+rgb = [
+    95,
+    109,
+    100,
+]
+
+[palette.hint]
+rgb = [
+    95,
+    109,
+    100,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    82,
+    96,
+    87,
+]
+
+[palette.trace]
+rgb = [
+    35,
+    42,
+    37,
+]

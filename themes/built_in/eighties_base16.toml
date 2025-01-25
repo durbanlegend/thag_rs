@@ -1,0 +1,112 @@
+name = "Eighties Base16 "
+description = "Converted from Eighties theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2d2d2d"]
+bg_rgbs = [[
+    45,
+    45,
+    45,
+]]
+
+[palette.heading1]
+rgb = [
+    242,
+    119,
+    122,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    102,
+    153,
+    204,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    102,
+    204,
+    204,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    242,
+    119,
+    122,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    204,
+    102,
+]
+
+[palette.success]
+rgb = [
+    153,
+    204,
+    153,
+]
+
+[palette.info]
+rgb = [
+    102,
+    153,
+    204,
+]
+
+[palette.emphasis]
+rgb = [
+    204,
+    153,
+    204,
+]
+
+[palette.code]
+rgb = [
+    153,
+    204,
+    153,
+]
+
+[palette.normal]
+rgb = [
+    211,
+    208,
+    200,
+]
+
+[palette.subtle]
+rgb = [
+    116,
+    115,
+    105,
+]
+
+[palette.hint]
+rgb = [
+    116,
+    115,
+    105,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    81,
+    81,
+    81,
+]
+
+[palette.trace]
+rgb = [
+    57,
+    57,
+    57,
+]

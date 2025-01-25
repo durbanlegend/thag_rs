@@ -1,0 +1,112 @@
+name = "Eva Base16 "
+description = "Converted from Eva theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2a3b4d"]
+bg_rgbs = [[
+    42,
+    59,
+    77,
+]]
+
+[palette.heading1]
+rgb = [
+    196,
+    103,
+    108,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    21,
+    244,
+    238,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    75,
+    143,
+    119,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    196,
+    103,
+    108,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    255,
+    102,
+]
+
+[palette.success]
+rgb = [
+    102,
+    255,
+    102,
+]
+
+[palette.info]
+rgb = [
+    21,
+    244,
+    238,
+]
+
+[palette.emphasis]
+rgb = [
+    156,
+    108,
+    211,
+]
+
+[palette.code]
+rgb = [
+    102,
+    255,
+    102,
+]
+
+[palette.normal]
+rgb = [
+    159,
+    162,
+    166,
+]
+
+[palette.subtle]
+rgb = [
+    85,
+    121,
+    156,
+]
+
+[palette.hint]
+rgb = [
+    85,
+    121,
+    156,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    75,
+    105,
+    136,
+]
+
+[palette.trace]
+rgb = [
+    61,
+    86,
+    111,
+]

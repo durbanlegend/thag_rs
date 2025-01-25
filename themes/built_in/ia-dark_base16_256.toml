@@ -1,0 +1,56 @@
+name = "iA Dark Base16 256"
+description = "Converted from iA Dark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#1a1a1a"]
+bg_rgbs = [[
+    26,
+    26,
+    26,
+]]
+
+[palette.heading1]
+color256 = 173
+style = ["bold"]
+
+[palette.heading2]
+color256 = 116
+style = ["bold"]
+
+[palette.heading3]
+color256 = 109
+style = ["bold"]
+
+[palette.error]
+color256 = 173
+
+[palette.warning]
+color256 = 137
+
+[palette.success]
+color256 = 107
+
+[palette.info]
+color256 = 116
+
+[palette.emphasis]
+color256 = 139
+
+[palette.code]
+color256 = 107
+
+[palette.normal]
+color256 = 252
+
+[palette.subtle]
+color256 = 243
+
+[palette.hint]
+color256 = 243
+style = ["italic"]
+
+[palette.debug]
+color256 = 23
+
+[palette.trace]
+color256 = 235

@@ -1,0 +1,56 @@
+name = "Black Metal (Bathory) Base16 256"
+description = "Converted from Black Metal (Bathory) theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#000000"]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
+
+[palette.heading1]
+color256 = 66
+style = ["bold"]
+
+[palette.heading2]
+color256 = 245
+style = ["bold"]
+
+[palette.heading3]
+color256 = 248
+style = ["bold"]
+
+[palette.error]
+color256 = 66
+
+[palette.warning]
+color256 = 173
+
+[palette.success]
+color256 = 222
+
+[palette.info]
+color256 = 245
+
+[palette.emphasis]
+color256 = 247
+
+[palette.code]
+color256 = 222
+
+[palette.normal]
+color256 = 251
+
+[palette.subtle]
+color256 = 236
+
+[palette.hint]
+color256 = 236
+style = ["italic"]
+
+[palette.debug]
+color256 = 235
+
+[palette.trace]
+color256 = 233

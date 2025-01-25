@@ -1,0 +1,56 @@
+name = "dirtysea Base16 256"
+description = "Converted from dirtysea theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#e0e0e0"]
+bg_rgbs = [[
+    224,
+    224,
+    224,
+]]
+
+[palette.heading1]
+color256 = 88
+style = ["bold"]
+
+[palette.heading2]
+color256 = 22
+style = ["bold"]
+
+[palette.heading3]
+color256 = 94
+style = ["bold"]
+
+[palette.error]
+color256 = 88
+
+[palette.warning]
+color256 = 94
+
+[palette.success]
+color256 = 53
+
+[palette.info]
+color256 = 22
+
+[palette.emphasis]
+color256 = 18
+
+[palette.code]
+color256 = 53
+
+[palette.normal]
+color256 = 16
+
+[palette.subtle]
+color256 = 242
+
+[palette.hint]
+color256 = 242
+style = ["italic"]
+
+[palette.debug]
+color256 = 252
+
+[palette.trace]
+color256 = 188

@@ -1,0 +1,56 @@
+name = "Everforest Base16 256"
+description = "Converted from Everforest theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#2d353b"]
+bg_rgbs = [[
+    45,
+    53,
+    59,
+]]
+
+[palette.heading1]
+color256 = 174
+style = ["bold"]
+
+[palette.heading2]
+color256 = 109
+style = ["bold"]
+
+[palette.heading3]
+color256 = 108
+style = ["bold"]
+
+[palette.error]
+color256 = 174
+
+[palette.warning]
+color256 = 180
+
+[palette.success]
+color256 = 144
+
+[palette.info]
+color256 = 109
+
+[palette.emphasis]
+color256 = 175
+
+[palette.code]
+color256 = 144
+
+[palette.normal]
+color256 = 187
+
+[palette.subtle]
+color256 = 102
+
+[palette.hint]
+color256 = 102
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

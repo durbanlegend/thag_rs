@@ -1,0 +1,112 @@
+name = "Solar Flare Base16 "
+description = "Converted from Solar Flare theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#18262f"]
+bg_rgbs = [[
+    24,
+    38,
+    47,
+]]
+
+[palette.heading1]
+rgb = [
+    239,
+    82,
+    83,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    51,
+    181,
+    225,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    82,
+    203,
+    176,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    239,
+    82,
+    83,
+]
+
+[palette.warning]
+rgb = [
+    228,
+    181,
+    28,
+]
+
+[palette.success]
+rgb = [
+    124,
+    200,
+    68,
+]
+
+[palette.info]
+rgb = [
+    51,
+    181,
+    225,
+]
+
+[palette.emphasis]
+rgb = [
+    163,
+    99,
+    213,
+]
+
+[palette.code]
+rgb = [
+    124,
+    200,
+    68,
+]
+
+[palette.normal]
+rgb = [
+    166,
+    175,
+    184,
+]
+
+[palette.subtle]
+rgb = [
+    102,
+    117,
+    129,
+]
+
+[palette.hint]
+rgb = [
+    102,
+    117,
+    129,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    88,
+    104,
+    117,
+]
+
+[palette.trace]
+rgb = [
+    34,
+    46,
+    56,
+]

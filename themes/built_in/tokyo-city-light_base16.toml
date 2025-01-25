@@ -1,0 +1,112 @@
+name = "Tokyo City Light Base16 "
+description = "Converted from Tokyo City Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fbfbfd"]
+bg_rgbs = [[
+    251,
+    251,
+    253,
+]]
+
+[palette.heading1]
+rgb = [
+    140,
+    67,
+    81,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    52,
+    84,
+    138,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    76,
+    80,
+    94,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    140,
+    67,
+    81,
+]
+
+[palette.warning]
+rgb = [
+    76,
+    80,
+    94,
+]
+
+[palette.success]
+rgb = [
+    72,
+    94,
+    48,
+]
+
+[palette.info]
+rgb = [
+    52,
+    84,
+    138,
+]
+
+[palette.emphasis]
+rgb = [
+    90,
+    74,
+    120,
+]
+
+[palette.code]
+rgb = [
+    72,
+    94,
+    48,
+]
+
+[palette.normal]
+rgb = [
+    52,
+    59,
+    89,
+]
+
+[palette.subtle]
+rgb = [
+    150,
+    153,
+    163,
+]
+
+[palette.hint]
+rgb = [
+    150,
+    153,
+    163,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    237,
+    239,
+    246,
+]
+
+[palette.trace]
+rgb = [
+    246,
+    246,
+    248,
+]

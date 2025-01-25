@@ -1,0 +1,56 @@
+name = "Tomorrow Night Eighties Base16 256"
+description = "Converted from Tomorrow Night Eighties theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#2d2d2d"]
+bg_rgbs = [[
+    45,
+    45,
+    45,
+]]
+
+[palette.heading1]
+color256 = 210
+style = ["bold"]
+
+[palette.heading2]
+color256 = 68
+style = ["bold"]
+
+[palette.heading3]
+color256 = 80
+style = ["bold"]
+
+[palette.error]
+color256 = 210
+
+[palette.warning]
+color256 = 221
+
+[palette.success]
+color256 = 114
+
+[palette.info]
+color256 = 68
+
+[palette.emphasis]
+color256 = 176
+
+[palette.code]
+color256 = 114
+
+[palette.normal]
+color256 = 252
+
+[palette.subtle]
+color256 = 247
+
+[palette.hint]
+color256 = 247
+style = ["italic"]
+
+[palette.debug]
+color256 = 239
+
+[palette.trace]
+color256 = 237

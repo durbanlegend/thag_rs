@@ -1,0 +1,56 @@
+name = "ShadeSmear Dark Base16 256"
+description = "Converted from ShadeSmear Dark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#232323"]
+bg_rgbs = [[
+    35,
+    35,
+    35,
+]]
+
+[palette.heading1]
+color256 = 167
+style = ["bold"]
+
+[palette.heading2]
+color256 = 60
+style = ["bold"]
+
+[palette.heading3]
+color256 = 173
+style = ["bold"]
+
+[palette.error]
+color256 = 167
+
+[palette.warning]
+color256 = 66
+
+[palette.success]
+color256 = 65
+
+[palette.info]
+color256 = 60
+
+[palette.emphasis]
+color256 = 179
+
+[palette.code]
+color256 = 65
+
+[palette.normal]
+color256 = 253
+
+[palette.subtle]
+color256 = 250
+
+[palette.hint]
+color256 = 250
+style = ["italic"]
+
+[palette.debug]
+color256 = 239
+
+[palette.trace]
+color256 = 234

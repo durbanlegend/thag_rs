@@ -1,0 +1,56 @@
+name = "Summerfruit Dark Base16 256"
+description = "Converted from Summerfruit Dark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#151515"]
+bg_rgbs = [[
+    21,
+    21,
+    21,
+]]
+
+[palette.heading1]
+color256 = 198
+style = ["bold"]
+
+[palette.heading2]
+color256 = 68
+style = ["bold"]
+
+[palette.heading3]
+color256 = 37
+style = ["bold"]
+
+[palette.error]
+color256 = 198
+
+[palette.warning]
+color256 = 142
+
+[palette.success]
+color256 = 40
+
+[palette.info]
+color256 = 68
+
+[palette.emphasis]
+color256 = 127
+
+[palette.code]
+color256 = 40
+
+[palette.normal]
+color256 = 252
+
+[palette.subtle]
+color256 = 239
+
+[palette.hint]
+color256 = 239
+style = ["italic"]
+
+[palette.debug]
+color256 = 236
+
+[palette.trace]
+color256 = 234

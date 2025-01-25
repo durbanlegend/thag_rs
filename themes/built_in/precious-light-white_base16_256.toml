@@ -1,0 +1,56 @@
+name = "Precious Light White Base16 256"
+description = "Converted from Precious Light White theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#ffffff"]
+bg_rgbs = [[
+    255,
+    255,
+    255,
+]]
+
+[palette.heading1]
+color256 = 131
+style = ["bold"]
+
+[palette.heading2]
+color256 = 25
+style = ["bold"]
+
+[palette.heading3]
+color256 = 29
+style = ["bold"]
+
+[palette.error]
+color256 = 131
+
+[palette.warning]
+color256 = 94
+
+[palette.success]
+color256 = 58
+
+[palette.info]
+color256 = 25
+
+[palette.emphasis]
+color256 = 98
+
+[palette.code]
+color256 = 58
+
+[palette.normal]
+color256 = 240
+
+[palette.subtle]
+color256 = 244
+
+[palette.hint]
+color256 = 244
+style = ["italic"]
+
+[palette.debug]
+color256 = 253
+
+[palette.trace]
+color256 = 255

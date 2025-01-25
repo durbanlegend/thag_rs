@@ -1,0 +1,112 @@
+name = "PaperColor Light Base16 "
+description = "Converted from PaperColor Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#eeeeee"]
+bg_rgbs = [[
+    238,
+    238,
+    238,
+]]
+
+[palette.heading1]
+rgb = [
+    188,
+    188,
+    188,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    215,
+    95,
+    0,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    215,
+    95,
+    0,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    188,
+    188,
+    188,
+]
+
+[palette.warning]
+rgb = [
+    215,
+    0,
+    135,
+]
+
+[palette.success]
+rgb = [
+    135,
+    0,
+    175,
+]
+
+[palette.info]
+rgb = [
+    215,
+    95,
+    0,
+]
+
+[palette.emphasis]
+rgb = [
+    0,
+    95,
+    175,
+]
+
+[palette.code]
+rgb = [
+    135,
+    0,
+    175,
+]
+
+[palette.normal]
+rgb = [
+    68,
+    68,
+    68,
+]
+
+[palette.subtle]
+rgb = [
+    95,
+    135,
+    0,
+]
+
+[palette.hint]
+rgb = [
+    95,
+    135,
+    0,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    0,
+    135,
+    0,
+]
+
+[palette.trace]
+rgb = [
+    175,
+    0,
+    0,
+]

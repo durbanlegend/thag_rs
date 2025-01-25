@@ -1,0 +1,56 @@
+name = "Sandcastle Base16 256"
+description = "Converted from Sandcastle theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#282c34"]
+bg_rgbs = [[
+    40,
+    44,
+    52,
+]]
+
+[palette.heading1]
+color256 = 108
+style = ["bold"]
+
+[palette.heading2]
+color256 = 108
+style = ["bold"]
+
+[palette.heading3]
+color256 = 108
+style = ["bold"]
+
+[palette.error]
+color256 = 108
+
+[palette.warning]
+color256 = 137
+
+[palette.success]
+color256 = 66
+
+[palette.info]
+color256 = 108
+
+[palette.emphasis]
+color256 = 167
+
+[palette.code]
+color256 = 66
+
+[palette.normal]
+color256 = 138
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 23

@@ -1,0 +1,112 @@
+name = "Humanoid light Base16 "
+description = "Converted from Humanoid light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f8f8f2"]
+bg_rgbs = [[
+    248,
+    248,
+    242,
+]]
+
+[palette.heading1]
+rgb = [
+    176,
+    21,
+    26,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    0,
+    130,
+    201,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    0,
+    142,
+    142,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    176,
+    21,
+    26,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    182,
+    39,
+]
+
+[palette.success]
+rgb = [
+    56,
+    142,
+    60,
+]
+
+[palette.info]
+rgb = [
+    0,
+    130,
+    201,
+]
+
+[palette.emphasis]
+rgb = [
+    112,
+    15,
+    152,
+]
+
+[palette.code]
+rgb = [
+    56,
+    142,
+    60,
+]
+
+[palette.normal]
+rgb = [
+    35,
+    38,
+    41,
+]
+
+[palette.subtle]
+rgb = [
+    192,
+    192,
+    189,
+]
+
+[palette.hint]
+rgb = [
+    192,
+    192,
+    189,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    222,
+    222,
+    216,
+]
+
+[palette.trace]
+rgb = [
+    239,
+    239,
+    233,
+]

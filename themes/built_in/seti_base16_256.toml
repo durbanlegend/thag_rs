@@ -1,0 +1,56 @@
+name = "Seti UI Base16 256"
+description = "Converted from Seti UI theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#151718"]
+bg_rgbs = [[
+    21,
+    23,
+    24,
+]]
+
+[palette.heading1]
+color256 = 167
+style = ["bold"]
+
+[palette.heading2]
+color256 = 74
+style = ["bold"]
+
+[palette.heading3]
+color256 = 79
+style = ["bold"]
+
+[palette.error]
+color256 = 167
+
+[palette.warning]
+color256 = 185
+
+[palette.success]
+color256 = 149
+
+[palette.info]
+color256 = 74
+
+[palette.emphasis]
+color256 = 140
+
+[palette.code]
+color256 = 149
+
+[palette.normal]
+color256 = 253
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 66
+
+[palette.trace]
+color256 = 16

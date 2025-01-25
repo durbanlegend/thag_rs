@@ -1,0 +1,56 @@
+name = "Shapeshifter Base16 256"
+description = "Converted from Shapeshifter theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#f9f9f9"]
+bg_rgbs = [[
+    249,
+    249,
+    249,
+]]
+
+[palette.heading1]
+color256 = 160
+style = ["bold"]
+
+[palette.heading2]
+color256 = 62
+style = ["bold"]
+
+[palette.heading3]
+color256 = 50
+style = ["bold"]
+
+[palette.error]
+color256 = 160
+
+[palette.warning]
+color256 = 184
+
+[palette.success]
+color256 = 41
+
+[palette.info]
+color256 = 62
+
+[palette.emphasis]
+color256 = 212
+
+[palette.code]
+color256 = 41
+
+[palette.normal]
+color256 = 16
+
+[palette.subtle]
+color256 = 240
+
+[palette.hint]
+color256 = 240
+style = ["italic"]
+
+[palette.debug]
+color256 = 248
+
+[palette.trace]
+color256 = 254

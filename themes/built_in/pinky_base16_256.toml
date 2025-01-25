@@ -1,0 +1,56 @@
+name = "pinky Base16 256"
+description = "Converted from pinky theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#171517"]
+bg_rgbs = [[
+    23,
+    21,
+    23,
+]]
+
+[palette.heading1]
+color256 = 214
+style = ["bold"]
+
+[palette.heading2]
+color256 = 51
+style = ["bold"]
+
+[palette.heading3]
+color256 = 57
+style = ["bold"]
+
+[palette.error]
+color256 = 214
+
+[palette.warning]
+color256 = 41
+
+[palette.success]
+color256 = 197
+
+[palette.info]
+color256 = 51
+
+[palette.emphasis]
+color256 = 33
+
+[palette.code]
+color256 = 197
+
+[palette.normal]
+color256 = 231
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 16
+
+[palette.trace]
+color256 = 16

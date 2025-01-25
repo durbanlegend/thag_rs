@@ -1,0 +1,112 @@
+name = "Deep Oceanic Next Base16 "
+description = "Converted from Deep Oceanic Next theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#001c1f"]
+bg_rgbs = [[
+    0,
+    28,
+    31,
+]]
+
+[palette.heading1]
+rgb = [
+    211,
+    70,
+    77,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    86,
+    140,
+    207,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    79,
+    183,
+    174,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    211,
+    70,
+    77,
+]
+
+[palette.warning]
+rgb = [
+    243,
+    184,
+    99,
+]
+
+[palette.success]
+rgb = [
+    99,
+    183,
+    132,
+]
+
+[palette.info]
+rgb = [
+    86,
+    140,
+    207,
+]
+
+[palette.emphasis]
+rgb = [
+    139,
+    102,
+    214,
+]
+
+[palette.code]
+rgb = [
+    99,
+    183,
+    132,
+]
+
+[palette.normal]
+rgb = [
+    212,
+    225,
+    232,
+]
+
+[palette.subtle]
+rgb = [
+    0,
+    72,
+    82,
+]
+
+[palette.hint]
+rgb = [
+    0,
+    72,
+    82,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    0,
+    54,
+    64,
+]
+
+[palette.trace]
+rgb = [
+    0,
+    41,
+    49,
+]

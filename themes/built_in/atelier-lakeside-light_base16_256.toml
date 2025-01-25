@@ -1,0 +1,56 @@
+name = "Atelier Lakeside Light Base16 256"
+description = "Converted from Atelier Lakeside Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#ebf8ff"]
+bg_rgbs = [[
+    235,
+    248,
+    255,
+]]
+
+[palette.heading1]
+color256 = 161
+style = ["bold"]
+
+[palette.heading2]
+color256 = 31
+style = ["bold"]
+
+[palette.heading3]
+color256 = 29
+style = ["bold"]
+
+[palette.error]
+color256 = 161
+
+[palette.warning]
+color256 = 100
+
+[palette.success]
+color256 = 65
+
+[palette.info]
+color256 = 31
+
+[palette.emphasis]
+color256 = 61
+
+[palette.code]
+color256 = 65
+
+[palette.normal]
+color256 = 60
+
+[palette.subtle]
+color256 = 67
+
+[palette.hint]
+color256 = 67
+style = ["italic"]
+
+[palette.debug]
+color256 = 109
+
+[palette.trace]
+color256 = 153

@@ -1,0 +1,112 @@
+name = "Kanagawa Base16 "
+description = "Converted from Kanagawa theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1f1f28"]
+bg_rgbs = [[
+    31,
+    31,
+    40,
+]]
+
+[palette.heading1]
+rgb = [
+    195,
+    64,
+    67,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    126,
+    156,
+    216,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    106,
+    149,
+    137,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    195,
+    64,
+    67,
+]
+
+[palette.warning]
+rgb = [
+    192,
+    163,
+    110,
+]
+
+[palette.success]
+rgb = [
+    118,
+    148,
+    106,
+]
+
+[palette.info]
+rgb = [
+    126,
+    156,
+    216,
+]
+
+[palette.emphasis]
+rgb = [
+    149,
+    127,
+    184,
+]
+
+[palette.code]
+rgb = [
+    118,
+    148,
+    106,
+]
+
+[palette.normal]
+rgb = [
+    220,
+    215,
+    186,
+]
+
+[palette.subtle]
+rgb = [
+    84,
+    84,
+    109,
+]
+
+[palette.hint]
+rgb = [
+    84,
+    84,
+    109,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    34,
+    50,
+    73,
+]
+
+[palette.trace]
+rgb = [
+    22,
+    22,
+    29,
+]

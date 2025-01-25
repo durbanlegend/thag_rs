@@ -1,0 +1,56 @@
+name = "DanQing Light Base16 256"
+description = "Converted from DanQing Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#fcfefd"]
+bg_rgbs = [[
+    252,
+    254,
+    253,
+]]
+
+[palette.heading1]
+color256 = 209
+style = ["bold"]
+
+[palette.heading2]
+color256 = 146
+style = ["bold"]
+
+[palette.heading3]
+color256 = 81
+style = ["bold"]
+
+[palette.error]
+color256 = 209
+
+[palette.warning]
+color256 = 215
+
+[palette.success]
+color256 = 107
+
+[palette.info]
+color256 = 146
+
+[palette.emphasis]
+color256 = 182
+
+[palette.code]
+color256 = 107
+
+[palette.normal]
+color256 = 59
+
+[palette.subtle]
+color256 = 188
+
+[palette.hint]
+color256 = 188
+style = ["italic"]
+
+[palette.debug]
+color256 = 195
+
+[palette.trace]
+color256 = 231

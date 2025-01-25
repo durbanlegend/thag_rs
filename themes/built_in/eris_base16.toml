@@ -1,0 +1,112 @@
+name = "eris Base16 "
+description = "Converted from eris theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0a0920"]
+bg_rgbs = [[
+    10,
+    9,
+    32,
+]]
+
+[palette.heading1]
+rgb = [
+    247,
+    104,
+    163,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    37,
+    143,
+    196,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    37,
+    143,
+    196,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    247,
+    104,
+    163,
+]
+
+[palette.warning]
+rgb = [
+    250,
+    174,
+    162,
+]
+
+[palette.success]
+rgb = [
+    250,
+    174,
+    162,
+]
+
+[palette.info]
+rgb = [
+    37,
+    143,
+    196,
+]
+
+[palette.emphasis]
+rgb = [
+    247,
+    104,
+    163,
+]
+
+[palette.code]
+rgb = [
+    250,
+    174,
+    162,
+]
+
+[palette.normal]
+rgb = [
+    96,
+    107,
+    172,
+]
+
+[palette.subtle]
+rgb = [
+    51,
+    55,
+    115,
+]
+
+[palette.hint]
+rgb = [
+    51,
+    55,
+    115,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    35,
+    37,
+    90,
+]
+
+[palette.trace]
+rgb = [
+    19,
+    19,
+    58,
+]

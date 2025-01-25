@@ -1,0 +1,112 @@
+name = "Qualia Base16 "
+description = "Converted from Qualia theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#101010"]
+bg_rgbs = [[
+    16,
+    16,
+    16,
+]]
+
+[palette.heading1]
+rgb = [
+    239,
+    166,
+    162,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    80,
+    202,
+    205,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    200,
+    200,
+    116,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    239,
+    166,
+    162,
+]
+
+[palette.warning]
+rgb = [
+    230,
+    163,
+    220,
+]
+
+[palette.success]
+rgb = [
+    128,
+    201,
+    144,
+]
+
+[palette.info]
+rgb = [
+    80,
+    202,
+    205,
+]
+
+[palette.emphasis]
+rgb = [
+    224,
+    175,
+    133,
+]
+
+[palette.code]
+rgb = [
+    128,
+    201,
+    144,
+]
+
+[palette.normal]
+rgb = [
+    192,
+    192,
+    192,
+]
+
+[palette.subtle]
+rgb = [
+    69,
+    69,
+    69,
+]
+
+[palette.hint]
+rgb = [
+    69,
+    69,
+    69,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    69,
+    69,
+    69,
+]
+
+[palette.trace]
+rgb = [
+    69,
+    69,
+    69,
+]

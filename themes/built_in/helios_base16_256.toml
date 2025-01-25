@@ -1,0 +1,56 @@
+name = "Helios Base16 256"
+description = "Converted from Helios theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#1d2021"]
+bg_rgbs = [[
+    29,
+    32,
+    33,
+]]
+
+[palette.heading1]
+color256 = 161
+style = ["bold"]
+
+[palette.heading2]
+color256 = 31
+style = ["bold"]
+
+[palette.heading3]
+color256 = 36
+style = ["bold"]
+
+[palette.error]
+color256 = 161
+
+[palette.warning]
+color256 = 214
+
+[palette.success]
+color256 = 106
+
+[palette.info]
+color256 = 31
+
+[palette.emphasis]
+color256 = 131
+
+[palette.code]
+color256 = 106
+
+[palette.normal]
+color256 = 253
+
+[palette.subtle]
+color256 = 66
+
+[palette.hint]
+color256 = 66
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

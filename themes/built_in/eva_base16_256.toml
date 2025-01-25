@@ -1,0 +1,56 @@
+name = "Eva Base16 256"
+description = "Converted from Eva theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#2a3b4d"]
+bg_rgbs = [[
+    42,
+    59,
+    77,
+]]
+
+[palette.heading1]
+color256 = 167
+style = ["bold"]
+
+[palette.heading2]
+color256 = 51
+style = ["bold"]
+
+[palette.heading3]
+color256 = 66
+style = ["bold"]
+
+[palette.error]
+color256 = 167
+
+[palette.warning]
+color256 = 227
+
+[palette.success]
+color256 = 83
+
+[palette.info]
+color256 = 51
+
+[palette.emphasis]
+color256 = 134
+
+[palette.code]
+color256 = 83
+
+[palette.normal]
+color256 = 145
+
+[palette.subtle]
+color256 = 67
+
+[palette.hint]
+color256 = 67
+style = ["italic"]
+
+[palette.debug]
+color256 = 60
+
+[palette.trace]
+color256 = 59

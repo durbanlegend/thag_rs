@@ -1,0 +1,112 @@
+name = "Equilibrium Gray Dark Base16 "
+description = "Converted from Equilibrium Gray Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#111111"]
+bg_rgbs = [[
+    17,
+    17,
+    17,
+]]
+
+[palette.heading1]
+rgb = [
+    240,
+    67,
+    57,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    0,
+    141,
+    209,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    0,
+    148,
+    139,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    240,
+    67,
+    57,
+]
+
+[palette.warning]
+rgb = [
+    187,
+    136,
+    1,
+]
+
+[palette.success]
+rgb = [
+    127,
+    139,
+    0,
+]
+
+[palette.info]
+rgb = [
+    0,
+    141,
+    209,
+]
+
+[palette.emphasis]
+rgb = [
+    106,
+    127,
+    210,
+]
+
+[palette.code]
+rgb = [
+    127,
+    139,
+    0,
+]
+
+[palette.normal]
+rgb = [
+    171,
+    171,
+    171,
+]
+
+[palette.subtle]
+rgb = [
+    119,
+    119,
+    119,
+]
+
+[palette.hint]
+rgb = [
+    119,
+    119,
+    119,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    38,
+    38,
+    38,
+]
+
+[palette.trace]
+rgb = [
+    27,
+    27,
+    27,
+]

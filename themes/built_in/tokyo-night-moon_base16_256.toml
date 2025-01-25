@@ -1,0 +1,56 @@
+name = "Tokyo Night Moon Base16 256"
+description = "Converted from Tokyo Night Moon theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#222436"]
+bg_rgbs = [[
+    34,
+    36,
+    54,
+]]
+
+[palette.heading1]
+color256 = 210
+style = ["bold"]
+
+[palette.heading2]
+color256 = 111
+style = ["bold"]
+
+[palette.heading3]
+color256 = 117
+style = ["bold"]
+
+[palette.error]
+color256 = 210
+
+[palette.warning]
+color256 = 222
+
+[palette.success]
+color256 = 150
+
+[palette.info]
+color256 = 111
+
+[palette.emphasis]
+color256 = 218
+
+[palette.code]
+color256 = 150
+
+[palette.normal]
+color256 = 59
+
+[palette.subtle]
+color256 = 61
+
+[palette.hint]
+color256 = 61
+style = ["italic"]
+
+[palette.debug]
+color256 = 24
+
+[palette.trace]
+color256 = 17

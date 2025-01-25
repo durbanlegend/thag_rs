@@ -1,0 +1,112 @@
+name = "dirtysea Base16 "
+description = "Converted from dirtysea theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#e0e0e0"]
+bg_rgbs = [[
+    224,
+    224,
+    224,
+]]
+
+[palette.heading1]
+rgb = [
+    132,
+    0,
+    0,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    0,
+    115,
+    0,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    117,
+    91,
+    0,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    132,
+    0,
+    0,
+]
+
+[palette.warning]
+rgb = [
+    117,
+    91,
+    0,
+]
+
+[palette.success]
+rgb = [
+    115,
+    0,
+    115,
+]
+
+[palette.info]
+rgb = [
+    0,
+    115,
+    0,
+]
+
+[palette.emphasis]
+rgb = [
+    0,
+    0,
+    144,
+]
+
+[palette.code]
+rgb = [
+    115,
+    0,
+    115,
+]
+
+[palette.normal]
+rgb = [
+    0,
+    0,
+    0,
+]
+
+[palette.subtle]
+rgb = [
+    112,
+    112,
+    112,
+]
+
+[palette.hint]
+rgb = [
+    112,
+    112,
+    112,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    208,
+    208,
+    208,
+]
+
+[palette.trace]
+rgb = [
+    208,
+    218,
+    208,
+]

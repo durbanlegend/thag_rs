@@ -1,0 +1,112 @@
+name = "Gruvbox light, medium Base16 "
+description = "Converted from Gruvbox light, medium theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fbf1c7"]
+bg_rgbs = [[
+    251,
+    241,
+    199,
+]]
+
+[palette.heading1]
+rgb = [
+    157,
+    0,
+    6,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    7,
+    102,
+    120,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    66,
+    123,
+    88,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    157,
+    0,
+    6,
+]
+
+[palette.warning]
+rgb = [
+    181,
+    118,
+    20,
+]
+
+[palette.success]
+rgb = [
+    121,
+    116,
+    14,
+]
+
+[palette.info]
+rgb = [
+    7,
+    102,
+    120,
+]
+
+[palette.emphasis]
+rgb = [
+    143,
+    63,
+    113,
+]
+
+[palette.code]
+rgb = [
+    121,
+    116,
+    14,
+]
+
+[palette.normal]
+rgb = [
+    80,
+    73,
+    69,
+]
+
+[palette.subtle]
+rgb = [
+    189,
+    174,
+    147,
+]
+
+[palette.hint]
+rgb = [
+    189,
+    174,
+    147,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    213,
+    196,
+    161,
+]
+
+[palette.trace]
+rgb = [
+    235,
+    219,
+    178,
+]

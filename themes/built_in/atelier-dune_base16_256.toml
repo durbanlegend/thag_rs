@@ -1,0 +1,56 @@
+name = "Atelier Dune Base16 256"
+description = "Converted from Atelier Dune theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#20201d"]
+bg_rgbs = [[
+    32,
+    32,
+    29,
+]]
+
+[palette.heading1]
+color256 = 167
+style = ["bold"]
+
+[palette.heading2]
+color256 = 68
+style = ["bold"]
+
+[palette.heading3]
+color256 = 36
+style = ["bold"]
+
+[palette.error]
+color256 = 167
+
+[palette.warning]
+color256 = 136
+
+[palette.success]
+color256 = 71
+
+[palette.info]
+color256 = 68
+
+[palette.emphasis]
+color256 = 134
+
+[palette.code]
+color256 = 71
+
+[palette.normal]
+color256 = 144
+
+[palette.subtle]
+color256 = 101
+
+[palette.hint]
+color256 = 101
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 16

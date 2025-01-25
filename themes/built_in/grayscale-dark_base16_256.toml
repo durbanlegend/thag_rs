@@ -1,0 +1,56 @@
+name = "Grayscale Dark Base16 256"
+description = "Converted from Grayscale Dark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#101010"]
+bg_rgbs = [[
+    16,
+    16,
+    16,
+]]
+
+[palette.heading1]
+color256 = 244
+style = ["bold"]
+
+[palette.heading2]
+color256 = 242
+style = ["bold"]
+
+[palette.heading3]
+color256 = 245
+style = ["bold"]
+
+[palette.error]
+color256 = 244
+
+[palette.warning]
+color256 = 247
+
+[palette.success]
+color256 = 245
+
+[palette.info]
+color256 = 242
+
+[palette.emphasis]
+color256 = 243
+
+[palette.code]
+color256 = 245
+
+[palette.normal]
+color256 = 250
+
+[palette.subtle]
+color256 = 239
+
+[palette.hint]
+color256 = 239
+style = ["italic"]
+
+[palette.debug]
+color256 = 238
+
+[palette.trace]
+color256 = 235

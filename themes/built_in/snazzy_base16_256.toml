@@ -1,0 +1,56 @@
+name = "Snazzy Base16 256"
+description = "Converted from Snazzy theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#282a36"]
+bg_rgbs = [[
+    40,
+    42,
+    54,
+]]
+
+[palette.heading1]
+color256 = 203
+style = ["bold"]
+
+[palette.heading2]
+color256 = 81
+style = ["bold"]
+
+[palette.heading3]
+color256 = 123
+style = ["bold"]
+
+[palette.error]
+color256 = 203
+
+[palette.warning]
+color256 = 229
+
+[palette.success]
+color256 = 84
+
+[palette.info]
+color256 = 81
+
+[palette.emphasis]
+color256 = 205
+
+[palette.code]
+color256 = 84
+
+[palette.normal]
+color256 = 188
+
+[palette.subtle]
+color256 = 102
+
+[palette.hint]
+color256 = 102
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

@@ -1,0 +1,112 @@
+name = "Stella Base16 "
+description = "Converted from Stella theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2b213c"]
+bg_rgbs = [[
+    43,
+    33,
+    60,
+]]
+
+[palette.heading1]
+rgb = [
+    199,
+    153,
+    135,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    165,
+    170,
+    212,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    155,
+    199,
+    191,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    199,
+    153,
+    135,
+]
+
+[palette.warning]
+rgb = [
+    199,
+    198,
+    145,
+]
+
+[palette.success]
+rgb = [
+    172,
+    199,
+    155,
+]
+
+[palette.info]
+rgb = [
+    165,
+    170,
+    212,
+]
+
+[palette.emphasis]
+rgb = [
+    197,
+    148,
+    255,
+]
+
+[palette.code]
+rgb = [
+    172,
+    199,
+    155,
+]
+
+[palette.normal]
+rgb = [
+    153,
+    139,
+    173,
+]
+
+[palette.subtle]
+rgb = [
+    101,
+    89,
+    120,
+]
+
+[palette.hint]
+rgb = [
+    101,
+    89,
+    120,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    77,
+    65,
+    96,
+]
+
+[palette.trace]
+rgb = [
+    54,
+    43,
+    72,
+]

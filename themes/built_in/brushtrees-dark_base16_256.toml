@@ -1,0 +1,56 @@
+name = "Brush Trees Dark Base16 256"
+description = "Converted from Brush Trees Dark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#485867"]
+bg_rgbs = [[
+    72,
+    88,
+    103,
+]]
+
+[palette.heading1]
+color256 = 138
+style = ["bold"]
+
+[palette.heading2]
+color256 = 103
+style = ["bold"]
+
+[palette.heading3]
+color256 = 109
+style = ["bold"]
+
+[palette.error]
+color256 = 138
+
+[palette.warning]
+color256 = 144
+
+[palette.success]
+color256 = 108
+
+[palette.info]
+color256 = 103
+
+[palette.emphasis]
+color256 = 139
+
+[palette.code]
+color256 = 108
+
+[palette.normal]
+color256 = 152
+
+[palette.subtle]
+color256 = 103
+
+[palette.hint]
+color256 = 103
+style = ["italic"]
+
+[palette.debug]
+color256 = 66
+
+[palette.trace]
+color256 = 60

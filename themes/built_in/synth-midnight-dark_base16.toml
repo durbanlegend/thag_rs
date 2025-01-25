@@ -1,0 +1,112 @@
+name = "Synth Midnight Terminal Dark Base16 "
+description = "Converted from Synth Midnight Terminal Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#050608"]
+bg_rgbs = [[
+    5,
+    6,
+    8,
+]]
+
+[palette.heading1]
+rgb = [
+    181,
+    59,
+    80,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    3,
+    174,
+    255,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    66,
+    255,
+    249,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    181,
+    59,
+    80,
+]
+
+[palette.warning]
+rgb = [
+    201,
+    211,
+    100,
+]
+
+[palette.success]
+rgb = [
+    6,
+    234,
+    97,
+]
+
+[palette.info]
+rgb = [
+    3,
+    174,
+    255,
+]
+
+[palette.emphasis]
+rgb = [
+    234,
+    92,
+    226,
+]
+
+[palette.code]
+rgb = [
+    6,
+    234,
+    97,
+]
+
+[palette.normal]
+rgb = [
+    193,
+    195,
+    196,
+]
+
+[palette.subtle]
+rgb = [
+    71,
+    72,
+    73,
+]
+
+[palette.hint]
+rgb = [
+    71,
+    72,
+    73,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    40,
+    41,
+    42,
+]
+
+[palette.trace]
+rgb = [
+    26,
+    27,
+    28,
+]

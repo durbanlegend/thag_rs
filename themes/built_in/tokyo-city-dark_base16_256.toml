@@ -1,0 +1,56 @@
+name = "Tokyo City Dark Base16 256"
+description = "Converted from Tokyo City Dark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#171d23"]
+bg_rgbs = [[
+    23,
+    29,
+    35,
+]]
+
+[palette.heading1]
+color256 = 210
+style = ["bold"]
+
+[palette.heading2]
+color256 = 111
+style = ["bold"]
+
+[palette.heading3]
+color256 = 117
+style = ["bold"]
+
+[palette.error]
+color256 = 210
+
+[palette.warning]
+color256 = 152
+
+[palette.success]
+color256 = 149
+
+[palette.info]
+color256 = 111
+
+[palette.emphasis]
+color256 = 141
+
+[palette.code]
+color256 = 149
+
+[palette.normal]
+color256 = 189
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 23
+
+[palette.trace]
+color256 = 16

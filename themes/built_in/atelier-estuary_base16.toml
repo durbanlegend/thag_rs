@@ -1,0 +1,112 @@
+name = "Atelier Estuary Base16 "
+description = "Converted from Atelier Estuary theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#22221b"]
+bg_rgbs = [[
+    34,
+    34,
+    27,
+]]
+
+[palette.heading1]
+rgb = [
+    186,
+    98,
+    54,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    54,
+    161,
+    102,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    91,
+    157,
+    72,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    186,
+    98,
+    54,
+]
+
+[palette.warning]
+rgb = [
+    165,
+    152,
+    13,
+]
+
+[palette.success]
+rgb = [
+    125,
+    151,
+    38,
+]
+
+[palette.info]
+rgb = [
+    54,
+    161,
+    102,
+]
+
+[palette.emphasis]
+rgb = [
+    95,
+    145,
+    130,
+]
+
+[palette.code]
+rgb = [
+    125,
+    151,
+    38,
+]
+
+[palette.normal]
+rgb = [
+    146,
+    145,
+    129,
+]
+
+[palette.subtle]
+rgb = [
+    108,
+    107,
+    90,
+]
+
+[palette.hint]
+rgb = [
+    108,
+    107,
+    90,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    95,
+    94,
+    78,
+]
+
+[palette.trace]
+rgb = [
+    48,
+    47,
+    39,
+]

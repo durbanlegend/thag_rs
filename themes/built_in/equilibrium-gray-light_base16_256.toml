@@ -1,0 +1,56 @@
+name = "Equilibrium Gray Light Base16 256"
+description = "Converted from Equilibrium Gray Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#f1f1f1"]
+bg_rgbs = [[
+    241,
+    241,
+    241,
+]]
+
+[palette.heading1]
+color256 = 160
+style = ["bold"]
+
+[palette.heading2]
+color256 = 25
+style = ["bold"]
+
+[palette.heading3]
+color256 = 29
+style = ["bold"]
+
+[palette.error]
+color256 = 160
+
+[palette.warning]
+color256 = 130
+
+[palette.success]
+color256 = 58
+
+[palette.info]
+color256 = 25
+
+[palette.emphasis]
+color256 = 61
+
+[palette.code]
+color256 = 58
+
+[palette.normal]
+color256 = 238
+
+[palette.subtle]
+color256 = 243
+
+[palette.hint]
+color256 = 243
+style = ["italic"]
+
+[palette.debug]
+color256 = 252
+
+[palette.trace]
+color256 = 254

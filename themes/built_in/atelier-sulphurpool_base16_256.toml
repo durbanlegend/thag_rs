@@ -1,0 +1,56 @@
+name = "Atelier Sulphurpool Base16 256"
+description = "Converted from Atelier Sulphurpool theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#202746"]
+bg_rgbs = [[
+    32,
+    39,
+    70,
+]]
+
+[palette.heading1]
+color256 = 166
+style = ["bold"]
+
+[palette.heading2]
+color256 = 68
+style = ["bold"]
+
+[palette.heading3]
+color256 = 38
+style = ["bold"]
+
+[palette.error]
+color256 = 166
+
+[palette.warning]
+color256 = 137
+
+[palette.success]
+color256 = 137
+
+[palette.info]
+color256 = 68
+
+[palette.emphasis]
+color256 = 68
+
+[palette.code]
+color256 = 137
+
+[palette.normal]
+color256 = 109
+
+[palette.subtle]
+color256 = 60
+
+[palette.hint]
+color256 = 60
+style = ["italic"]
+
+[palette.debug]
+color256 = 60
+
+[palette.trace]
+color256 = 23

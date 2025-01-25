@@ -1,0 +1,112 @@
+name = "Oxocarbon Light Base16 "
+description = "Converted from Oxocarbon Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f2f4f8"]
+bg_rgbs = [[
+    242,
+    244,
+    248,
+]]
+
+[palette.heading1]
+rgb = [
+    255,
+    126,
+    182,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    66,
+    190,
+    101,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    103,
+    58,
+    183,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    255,
+    126,
+    182,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    111,
+    0,
+]
+
+[palette.success]
+rgb = [
+    15,
+    98,
+    254,
+]
+
+[palette.info]
+rgb = [
+    66,
+    190,
+    101,
+]
+
+[palette.emphasis]
+rgb = [
+    190,
+    149,
+    255,
+]
+
+[palette.code]
+rgb = [
+    15,
+    98,
+    254,
+]
+
+[palette.normal]
+rgb = [
+    57,
+    57,
+    57,
+]
+
+[palette.subtle]
+rgb = [
+    22,
+    22,
+    22,
+]
+
+[palette.hint]
+rgb = [
+    22,
+    22,
+    22,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    82,
+    82,
+    82,
+]
+
+[palette.trace]
+rgb = [
+    221,
+    225,
+    230,
+]

@@ -1,0 +1,56 @@
+name = "Edge Dark Base16 256"
+description = "Converted from Edge Dark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#262729"]
+bg_rgbs = [[
+    38,
+    39,
+    41,
+]]
+
+[palette.heading1]
+color256 = 167
+style = ["bold"]
+
+[palette.heading2]
+color256 = 74
+style = ["bold"]
+
+[palette.heading3]
+color256 = 73
+style = ["bold"]
+
+[palette.error]
+color256 = 167
+
+[palette.warning]
+color256 = 180
+
+[palette.success]
+color256 = 144
+
+[palette.info]
+color256 = 74
+
+[palette.emphasis]
+color256 = 176
+
+[palette.code]
+color256 = 144
+
+[palette.normal]
+color256 = 146
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 146
+
+[palette.trace]
+color256 = 103

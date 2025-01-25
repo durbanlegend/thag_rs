@@ -1,0 +1,56 @@
+name = "Atelier Forest Light Base16 256"
+description = "Converted from Atelier Forest Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#f1efee"]
+bg_rgbs = [[
+    241,
+    239,
+    238,
+]]
+
+[palette.heading1]
+color256 = 197
+style = ["bold"]
+
+[palette.heading2]
+color256 = 68
+style = ["bold"]
+
+[palette.heading3]
+color256 = 67
+style = ["bold"]
+
+[palette.error]
+color256 = 197
+
+[palette.warning]
+color256 = 136
+
+[palette.success]
+color256 = 100
+
+[palette.info]
+color256 = 68
+
+[palette.emphasis]
+color256 = 62
+
+[palette.code]
+color256 = 100
+
+[palette.normal]
+color256 = 59
+
+[palette.subtle]
+color256 = 138
+
+[palette.hint]
+color256 = 138
+style = ["italic"]
+
+[palette.debug]
+color256 = 145
+
+[palette.trace]
+color256 = 188

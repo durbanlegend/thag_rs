@@ -1,0 +1,56 @@
+name = "Hopscotch Base16 256"
+description = "Converted from Hopscotch theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#322931"]
+bg_rgbs = [[
+    50,
+    41,
+    49,
+]]
+
+[palette.heading1]
+color256 = 167
+style = ["bold"]
+
+[palette.heading2]
+color256 = 31
+style = ["bold"]
+
+[palette.heading3]
+color256 = 30
+style = ["bold"]
+
+[palette.error]
+color256 = 167
+
+[palette.warning]
+color256 = 221
+
+[palette.success]
+color256 = 107
+
+[palette.info]
+color256 = 31
+
+[palette.emphasis]
+color256 = 168
+
+[palette.code]
+color256 = 107
+
+[palette.normal]
+color256 = 145
+
+[palette.subtle]
+color256 = 96
+
+[palette.hint]
+color256 = 96
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

@@ -1,0 +1,56 @@
+name = "UwUnicorn Base16 256"
+description = "Converted from UwUnicorn theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#241b26"]
+bg_rgbs = [[
+    36,
+    27,
+    38,
+]]
+
+[palette.heading1]
+color256 = 103
+style = ["bold"]
+
+[palette.heading2]
+color256 = 73
+style = ["bold"]
+
+[palette.heading3]
+color256 = 134
+style = ["bold"]
+
+[palette.error]
+color256 = 103
+
+[palette.warning]
+color256 = 131
+
+[palette.success]
+color256 = 169
+
+[palette.info]
+color256 = 73
+
+[palette.emphasis]
+color256 = 108
+
+[palette.code]
+color256 = 169
+
+[palette.normal]
+color256 = 224
+
+[palette.subtle]
+color256 = 61
+
+[palette.hint]
+color256 = 61
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 17

@@ -1,0 +1,56 @@
+name = "Marrakesh Base16 256"
+description = "Converted from Marrakesh theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#201602"]
+bg_rgbs = [[
+    32,
+    22,
+    2,
+]]
+
+[palette.heading1]
+color256 = 131
+style = ["bold"]
+
+[palette.heading2]
+color256 = 67
+style = ["bold"]
+
+[palette.heading3]
+color256 = 107
+style = ["bold"]
+
+[palette.error]
+color256 = 131
+
+[palette.warning]
+color256 = 137
+
+[palette.success]
+color256 = 29
+
+[palette.info]
+color256 = 67
+
+[palette.emphasis]
+color256 = 97
+
+[palette.code]
+color256 = 29
+
+[palette.normal]
+color256 = 101
+
+[palette.subtle]
+color256 = 58
+
+[palette.hint]
+color256 = 58
+style = ["italic"]
+
+[palette.debug]
+color256 = 58
+
+[palette.trace]
+color256 = 52

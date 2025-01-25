@@ -1,0 +1,56 @@
+name = "Still Alive Base16 256"
+description = "Converted from Still Alive theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#f0f0f0"]
+bg_rgbs = [[
+    240,
+    240,
+    240,
+]]
+
+[palette.heading1]
+color256 = 65
+style = ["bold"]
+
+[palette.heading2]
+color256 = 18
+style = ["bold"]
+
+[palette.heading3]
+color256 = 23
+style = ["bold"]
+
+[palette.error]
+color256 = 65
+
+[palette.warning]
+color256 = 60
+
+[palette.success]
+color256 = 59
+
+[palette.info]
+color256 = 18
+
+[palette.emphasis]
+color256 = 88
+
+[palette.code]
+color256 = 59
+
+[palette.normal]
+color256 = 160
+
+[palette.subtle]
+color256 = 196
+
+[palette.hint]
+color256 = 196
+style = ["italic"]
+
+[palette.debug]
+color256 = 226
+
+[palette.trace]
+color256 = 221

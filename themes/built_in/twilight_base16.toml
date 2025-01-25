@@ -1,0 +1,112 @@
+name = "Twilight Base16 "
+description = "Converted from Twilight theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1e1e1e"]
+bg_rgbs = [[
+    30,
+    30,
+    30,
+]]
+
+[palette.heading1]
+rgb = [
+    207,
+    106,
+    76,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    117,
+    135,
+    166,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    175,
+    196,
+    219,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    207,
+    106,
+    76,
+]
+
+[palette.warning]
+rgb = [
+    249,
+    238,
+    152,
+]
+
+[palette.success]
+rgb = [
+    143,
+    157,
+    106,
+]
+
+[palette.info]
+rgb = [
+    117,
+    135,
+    166,
+]
+
+[palette.emphasis]
+rgb = [
+    155,
+    133,
+    157,
+]
+
+[palette.code]
+rgb = [
+    143,
+    157,
+    106,
+]
+
+[palette.normal]
+rgb = [
+    167,
+    167,
+    167,
+]
+
+[palette.subtle]
+rgb = [
+    95,
+    90,
+    96,
+]
+
+[palette.hint]
+rgb = [
+    95,
+    90,
+    96,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    70,
+    75,
+    80,
+]
+
+[palette.trace]
+rgb = [
+    50,
+    53,
+    55,
+]

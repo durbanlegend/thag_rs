@@ -1,0 +1,56 @@
+name = "OneDark Base16 256"
+description = "Converted from OneDark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#282c34"]
+bg_rgbs = [[
+    40,
+    44,
+    52,
+]]
+
+[palette.heading1]
+color256 = 168
+style = ["bold"]
+
+[palette.heading2]
+color256 = 75
+style = ["bold"]
+
+[palette.heading3]
+color256 = 73
+style = ["bold"]
+
+[palette.error]
+color256 = 168
+
+[palette.warning]
+color256 = 180
+
+[palette.success]
+color256 = 108
+
+[palette.info]
+color256 = 75
+
+[palette.emphasis]
+color256 = 176
+
+[palette.code]
+color256 = 108
+
+[palette.normal]
+color256 = 145
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

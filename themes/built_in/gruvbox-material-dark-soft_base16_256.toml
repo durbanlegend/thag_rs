@@ -1,0 +1,56 @@
+name = "Gruvbox Material Dark, Soft Base16 256"
+description = "Converted from Gruvbox Material Dark, Soft theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#32302f"]
+bg_rgbs = [[
+    50,
+    48,
+    47,
+]]
+
+[palette.heading1]
+color256 = 167
+style = ["bold"]
+
+[palette.heading2]
+color256 = 109
+style = ["bold"]
+
+[palette.heading3]
+color256 = 108
+style = ["bold"]
+
+[palette.error]
+color256 = 167
+
+[palette.warning]
+color256 = 179
+
+[palette.success]
+color256 = 143
+
+[palette.info]
+color256 = 109
+
+[palette.emphasis]
+color256 = 174
+
+[palette.code]
+color256 = 143
+
+[palette.normal]
+color256 = 187
+
+[palette.subtle]
+color256 = 95
+
+[palette.hint]
+color256 = 95
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

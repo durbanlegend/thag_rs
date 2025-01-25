@@ -1,0 +1,56 @@
+name = "Equilibrium Light Base16 256"
+description = "Converted from Equilibrium Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#f5f0e7"]
+bg_rgbs = [[
+    245,
+    240,
+    231,
+]]
+
+[palette.heading1]
+color256 = 160
+style = ["bold"]
+
+[palette.heading2]
+color256 = 25
+style = ["bold"]
+
+[palette.heading3]
+color256 = 29
+style = ["bold"]
+
+[palette.error]
+color256 = 160
+
+[palette.warning]
+color256 = 130
+
+[palette.success]
+color256 = 58
+
+[palette.info]
+color256 = 25
+
+[palette.emphasis]
+color256 = 61
+
+[palette.code]
+color256 = 58
+
+[palette.normal]
+color256 = 59
+
+[palette.subtle]
+color256 = 66
+
+[palette.hint]
+color256 = 66
+style = ["italic"]
+
+[palette.debug]
+color256 = 188
+
+[palette.trace]
+color256 = 188

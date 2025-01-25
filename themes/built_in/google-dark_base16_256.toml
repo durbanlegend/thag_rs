@@ -1,0 +1,56 @@
+name = "Google Dark Base16 256"
+description = "Converted from Google Dark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#1d1f21"]
+bg_rgbs = [[
+    29,
+    31,
+    33,
+]]
+
+[palette.heading1]
+color256 = 166
+style = ["bold"]
+
+[palette.heading2]
+color256 = 63
+style = ["bold"]
+
+[palette.heading3]
+color256 = 63
+style = ["bold"]
+
+[palette.error]
+color256 = 166
+
+[palette.warning]
+color256 = 214
+
+[palette.success]
+color256 = 29
+
+[palette.info]
+color256 = 63
+
+[palette.emphasis]
+color256 = 134
+
+[palette.code]
+color256 = 29
+
+[palette.normal]
+color256 = 188
+
+[palette.subtle]
+color256 = 102
+
+[palette.hint]
+color256 = 102
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 16

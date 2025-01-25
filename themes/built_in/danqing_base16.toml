@@ -1,0 +1,112 @@
+name = "DanQing Base16 "
+description = "Converted from DanQing theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2d302f"]
+bg_rgbs = [[
+    45,
+    48,
+    47,
+]]
+
+[palette.heading1]
+rgb = [
+    249,
+    144,
+    111,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    176,
+    164,
+    227,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    48,
+    223,
+    243,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    144,
+    111,
+]
+
+[palette.warning]
+rgb = [
+    240,
+    194,
+    57,
+]
+
+[palette.success]
+rgb = [
+    138,
+    179,
+    97,
+]
+
+[palette.info]
+rgb = [
+    176,
+    164,
+    227,
+]
+
+[palette.emphasis]
+rgb = [
+    204,
+    164,
+    227,
+]
+
+[palette.code]
+rgb = [
+    138,
+    179,
+    97,
+]
+
+[palette.normal]
+rgb = [
+    224,
+    240,
+    239,
+]
+
+[palette.subtle]
+rgb = [
+    157,
+    168,
+    163,
+]
+
+[palette.hint]
+rgb = [
+    157,
+    168,
+    163,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    90,
+    96,
+    93,
+]
+
+[palette.trace]
+rgb = [
+    67,
+    72,
+    70,
+]

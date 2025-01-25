@@ -1,0 +1,112 @@
+name = "Horizon Dark Base16 "
+description = "Converted from Horizon Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1c1e26"]
+bg_rgbs = [[
+    28,
+    30,
+    38,
+]]
+
+[palette.heading1]
+rgb = [
+    233,
+    60,
+    88,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    223,
+    82,
+    115,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    36,
+    168,
+    180,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    233,
+    60,
+    88,
+]
+
+[palette.warning]
+rgb = [
+    239,
+    185,
+    147,
+]
+
+[palette.success]
+rgb = [
+    239,
+    175,
+    142,
+]
+
+[palette.info]
+rgb = [
+    223,
+    82,
+    115,
+]
+
+[palette.emphasis]
+rgb = [
+    176,
+    114,
+    209,
+]
+
+[palette.code]
+rgb = [
+    239,
+    175,
+    142,
+]
+
+[palette.normal]
+rgb = [
+    203,
+    206,
+    208,
+]
+
+[palette.subtle]
+rgb = [
+    111,
+    111,
+    112,
+]
+
+[palette.hint]
+rgb = [
+    111,
+    111,
+    112,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    46,
+    48,
+    62,
+]
+
+[palette.trace]
+rgb = [
+    35,
+    37,
+    48,
+]

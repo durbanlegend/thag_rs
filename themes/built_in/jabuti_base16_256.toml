@@ -1,0 +1,56 @@
+name = "Jabuti Base16 256"
+description = "Converted from Jabuti theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#292a37"]
+bg_rgbs = [[
+    41,
+    42,
+    55,
+]]
+
+[palette.heading1]
+color256 = 204
+style = ["bold"]
+
+[palette.heading2]
+color256 = 80
+style = ["bold"]
+
+[palette.heading3]
+color256 = 211
+style = ["bold"]
+
+[palette.error]
+color256 = 204
+
+[palette.warning]
+color256 = 186
+
+[palette.success]
+color256 = 79
+
+[palette.info]
+color256 = 80
+
+[palette.emphasis]
+color256 = 141
+
+[palette.code]
+color256 = 79
+
+[palette.normal]
+color256 = 152
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

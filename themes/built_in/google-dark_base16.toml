@@ -1,0 +1,112 @@
+name = "Google Dark Base16 "
+description = "Converted from Google Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1d1f21"]
+bg_rgbs = [[
+    29,
+    31,
+    33,
+]]
+
+[palette.heading1]
+rgb = [
+    204,
+    52,
+    43,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    57,
+    113,
+    237,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    57,
+    113,
+    237,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    204,
+    52,
+    43,
+]
+
+[palette.warning]
+rgb = [
+    251,
+    169,
+    34,
+]
+
+[palette.success]
+rgb = [
+    25,
+    136,
+    68,
+]
+
+[palette.info]
+rgb = [
+    57,
+    113,
+    237,
+]
+
+[palette.emphasis]
+rgb = [
+    163,
+    106,
+    199,
+]
+
+[palette.code]
+rgb = [
+    25,
+    136,
+    68,
+]
+
+[palette.normal]
+rgb = [
+    197,
+    200,
+    198,
+]
+
+[palette.subtle]
+rgb = [
+    150,
+    152,
+    150,
+]
+
+[palette.hint]
+rgb = [
+    150,
+    152,
+    150,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    55,
+    59,
+    65,
+]
+
+[palette.trace]
+rgb = [
+    40,
+    42,
+    46,
+]

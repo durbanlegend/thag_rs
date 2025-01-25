@@ -1,0 +1,56 @@
+name = "Mocha Base16 256"
+description = "Converted from Mocha theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#3b3228"]
+bg_rgbs = [[
+    59,
+    50,
+    40,
+]]
+
+[palette.heading1]
+color256 = 168
+style = ["bold"]
+
+[palette.heading2]
+color256 = 109
+style = ["bold"]
+
+[palette.heading3]
+color256 = 109
+style = ["bold"]
+
+[palette.error]
+color256 = 168
+
+[palette.warning]
+color256 = 216
+
+[palette.success]
+color256 = 143
+
+[palette.info]
+color256 = 109
+
+[palette.emphasis]
+color256 = 139
+
+[palette.code]
+color256 = 143
+
+[palette.normal]
+color256 = 188
+
+[palette.subtle]
+color256 = 95
+
+[palette.hint]
+color256 = 95
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

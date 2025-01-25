@@ -1,0 +1,112 @@
+name = "UwUnicorn Base16 "
+description = "Converted from UwUnicorn theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#241b26"]
+bg_rgbs = [[
+    36,
+    27,
+    38,
+]]
+
+[palette.heading1]
+rgb = [
+    135,
+    123,
+    182,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    106,
+    158,
+    181,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    156,
+    95,
+    206,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    135,
+    123,
+    182,
+]
+
+[palette.warning]
+rgb = [
+    168,
+    74,
+    115,
+]
+
+[palette.success]
+rgb = [
+    201,
+    101,
+    191,
+]
+
+[palette.info]
+rgb = [
+    106,
+    158,
+    181,
+]
+
+[palette.emphasis]
+rgb = [
+    120,
+    163,
+    143,
+]
+
+[palette.code]
+rgb = [
+    201,
+    101,
+    191,
+]
+
+[palette.normal]
+rgb = [
+    238,
+    213,
+    217,
+]
+
+[palette.subtle]
+rgb = [
+    108,
+    60,
+    178,
+]
+
+[palette.hint]
+rgb = [
+    108,
+    60,
+    178,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    70,
+    53,
+    74,
+]
+
+[palette.trace]
+rgb = [
+    47,
+    42,
+    63,
+]

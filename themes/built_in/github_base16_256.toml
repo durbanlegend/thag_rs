@@ -1,0 +1,56 @@
+name = "Github Base16 256"
+description = "Converted from Github theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#ffffff"]
+bg_rgbs = [[
+    255,
+    255,
+    255,
+]]
+
+[palette.heading1]
+color256 = 203
+style = ["bold"]
+
+[palette.heading2]
+color256 = 97
+style = ["bold"]
+
+[palette.heading3]
+color256 = 24
+style = ["bold"]
+
+[palette.error]
+color256 = 203
+
+[palette.warning]
+color256 = 97
+
+[palette.success]
+color256 = 24
+
+[palette.info]
+color256 = 97
+
+[palette.emphasis]
+color256 = 125
+
+[palette.code]
+color256 = 24
+
+[palette.normal]
+color256 = 236
+
+[palette.subtle]
+color256 = 102
+
+[palette.hint]
+color256 = 102
+style = ["italic"]
+
+[palette.debug]
+color256 = 189
+
+[palette.trace]
+color256 = 231

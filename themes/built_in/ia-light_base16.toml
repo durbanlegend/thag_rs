@@ -1,0 +1,112 @@
+name = "iA Light Base16 "
+description = "Converted from iA Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f6f6f6"]
+bg_rgbs = [[
+    246,
+    246,
+    246,
+]]
+
+[palette.heading1]
+rgb = [
+    156,
+    90,
+    2,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    72,
+    186,
+    194,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    45,
+    107,
+    177,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    156,
+    90,
+    2,
+]
+
+[palette.warning]
+rgb = [
+    196,
+    130,
+    24,
+]
+
+[palette.success]
+rgb = [
+    56,
+    120,
+    28,
+]
+
+[palette.info]
+rgb = [
+    72,
+    186,
+    194,
+]
+
+[palette.emphasis]
+rgb = [
+    169,
+    69,
+    152,
+]
+
+[palette.code]
+rgb = [
+    56,
+    120,
+    28,
+]
+
+[palette.normal]
+rgb = [
+    24,
+    24,
+    24,
+]
+
+[palette.subtle]
+rgb = [
+    137,
+    137,
+    137,
+]
+
+[palette.hint]
+rgb = [
+    137,
+    137,
+    137,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    189,
+    229,
+    242,
+]
+
+[palette.trace]
+rgb = [
+    222,
+    222,
+    222,
+]

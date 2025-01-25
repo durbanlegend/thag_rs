@@ -1,0 +1,112 @@
+name = "Circus Base16 "
+description = "Converted from Circus theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#191919"]
+bg_rgbs = [[
+    25,
+    25,
+    25,
+]]
+
+[palette.heading1]
+rgb = [
+    220,
+    101,
+    125,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    99,
+    158,
+    228,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    75,
+    177,
+    167,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    220,
+    101,
+    125,
+]
+
+[palette.warning]
+rgb = [
+    195,
+    186,
+    99,
+]
+
+[palette.success]
+rgb = [
+    132,
+    185,
+    124,
+]
+
+[palette.info]
+rgb = [
+    99,
+    158,
+    228,
+]
+
+[palette.emphasis]
+rgb = [
+    184,
+    136,
+    226,
+]
+
+[palette.code]
+rgb = [
+    132,
+    185,
+    124,
+]
+
+[palette.normal]
+rgb = [
+    167,
+    167,
+    167,
+]
+
+[palette.subtle]
+rgb = [
+    95,
+    90,
+    96,
+]
+
+[palette.hint]
+rgb = [
+    95,
+    90,
+    96,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    48,
+    48,
+    48,
+]
+
+[palette.trace]
+rgb = [
+    32,
+    32,
+    32,
+]

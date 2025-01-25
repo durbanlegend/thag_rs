@@ -1,0 +1,56 @@
+name = "Flat Base16 256"
+description = "Converted from Flat theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#2c3e50"]
+bg_rgbs = [[
+    44,
+    62,
+    80,
+]]
+
+[palette.heading1]
+color256 = 167
+style = ["bold"]
+
+[palette.heading2]
+color256 = 68
+style = ["bold"]
+
+[palette.heading3]
+color256 = 37
+style = ["bold"]
+
+[palette.error]
+color256 = 167
+
+[palette.warning]
+color256 = 220
+
+[palette.success]
+color256 = 41
+
+[palette.info]
+color256 = 68
+
+[palette.emphasis]
+color256 = 97
+
+[palette.code]
+color256 = 41
+
+[palette.normal]
+color256 = 254
+
+[palette.subtle]
+color256 = 109
+
+[palette.hint]
+color256 = 109
+style = ["italic"]
+
+[palette.debug]
+color256 = 102
+
+[palette.trace]
+color256 = 59

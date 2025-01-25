@@ -1,0 +1,112 @@
+name = "Pop Base16 "
+description = "Converted from Pop theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#000000"]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
+
+[palette.heading1]
+rgb = [
+    235,
+    0,
+    138,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    14,
+    90,
+    148,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    0,
+    170,
+    187,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    235,
+    0,
+    138,
+]
+
+[palette.warning]
+rgb = [
+    248,
+    202,
+    18,
+]
+
+[palette.success]
+rgb = [
+    55,
+    179,
+    73,
+]
+
+[palette.info]
+rgb = [
+    14,
+    90,
+    148,
+]
+
+[palette.emphasis]
+rgb = [
+    179,
+    30,
+    141,
+]
+
+[palette.code]
+rgb = [
+    55,
+    179,
+    73,
+]
+
+[palette.normal]
+rgb = [
+    208,
+    208,
+    208,
+]
+
+[palette.subtle]
+rgb = [
+    80,
+    80,
+    80,
+]
+
+[palette.hint]
+rgb = [
+    80,
+    80,
+    80,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    48,
+    48,
+    48,
+]
+
+[palette.trace]
+rgb = [
+    32,
+    32,
+    32,
+]

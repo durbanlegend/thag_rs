@@ -1,0 +1,112 @@
+name = "Codeschool Base16 "
+description = "Converted from Codeschool theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#232c31"]
+bg_rgbs = [[
+    35,
+    44,
+    49,
+]]
+
+[palette.heading1]
+rgb = [
+    42,
+    84,
+    145,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    72,
+    77,
+    121,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    176,
+    47,
+    48,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    42,
+    84,
+    145,
+]
+
+[palette.warning]
+rgb = [
+    160,
+    59,
+    30,
+]
+
+[palette.success]
+rgb = [
+    35,
+    121,
+    134,
+]
+
+[palette.info]
+rgb = [
+    72,
+    77,
+    121,
+]
+
+[palette.emphasis]
+rgb = [
+    197,
+    152,
+    32,
+]
+
+[palette.code]
+rgb = [
+    35,
+    121,
+    134,
+]
+
+[palette.normal]
+rgb = [
+    158,
+    167,
+    166,
+]
+
+[palette.subtle]
+rgb = [
+    63,
+    73,
+    68,
+]
+
+[palette.hint]
+rgb = [
+    63,
+    73,
+    68,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    42,
+    52,
+    58,
+]
+
+[palette.trace]
+rgb = [
+    28,
+    54,
+    87,
+]

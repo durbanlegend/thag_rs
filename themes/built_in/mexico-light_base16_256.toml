@@ -1,0 +1,56 @@
+name = "Mexico Light Base16 256"
+description = "Converted from Mexico Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#f8f8f8"]
+bg_rgbs = [[
+    248,
+    248,
+    248,
+]]
+
+[palette.heading1]
+color256 = 131
+style = ["bold"]
+
+[palette.heading2]
+color256 = 109
+style = ["bold"]
+
+[palette.heading3]
+color256 = 66
+style = ["bold"]
+
+[palette.error]
+color256 = 131
+
+[palette.warning]
+color256 = 208
+
+[palette.success]
+color256 = 65
+
+[palette.info]
+color256 = 109
+
+[palette.emphasis]
+color256 = 97
+
+[palette.code]
+color256 = 65
+
+[palette.normal]
+color256 = 237
+
+[palette.subtle]
+color256 = 250
+
+[palette.hint]
+color256 = 250
+style = ["italic"]
+
+[palette.debug]
+color256 = 253
+
+[palette.trace]
+color256 = 254

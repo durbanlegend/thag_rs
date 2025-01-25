@@ -1,0 +1,112 @@
+name = "Precious Light White Base16 "
+description = "Converted from Precious Light White theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#ffffff"]
+bg_rgbs = [[
+    255,
+    255,
+    255,
+]]
+
+[palette.heading1]
+rgb = [
+    175,
+    73,
+    71,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    24,
+    109,
+    170,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    8,
+    119,
+    103,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    175,
+    73,
+    71,
+]
+
+[palette.warning]
+rgb = [
+    135,
+    101,
+    0,
+]
+
+[palette.success]
+rgb = [
+    85,
+    115,
+    1,
+]
+
+[palette.info]
+rgb = [
+    24,
+    109,
+    170,
+]
+
+[palette.emphasis]
+rgb = [
+    123,
+    78,
+    203,
+]
+
+[palette.code]
+rgb = [
+    85,
+    115,
+    1,
+]
+
+[palette.normal]
+rgb = [
+    85,
+    85,
+    85,
+]
+
+[palette.subtle]
+rgb = [
+    132,
+    132,
+    132,
+]
+
+[palette.hint]
+rgb = [
+    132,
+    132,
+    132,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    219,
+    219,
+    219,
+]
+
+[palette.trace]
+rgb = [
+    237,
+    237,
+    237,
+]

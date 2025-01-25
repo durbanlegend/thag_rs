@@ -1,0 +1,56 @@
+name = "vice Base16 256"
+description = "Converted from vice theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#17191e"]
+bg_rgbs = [[
+    23,
+    25,
+    30,
+]]
+
+[palette.heading1]
+color256 = 199
+style = ["bold"]
+
+[palette.heading2]
+color256 = 45
+style = ["bold"]
+
+[palette.heading3]
+color256 = 99
+style = ["bold"]
+
+[palette.error]
+color256 = 199
+
+[palette.warning]
+color256 = 229
+
+[palette.success]
+color256 = 39
+
+[palette.info]
+color256 = 45
+
+[palette.emphasis]
+color256 = 50
+
+[palette.code]
+color256 = 39
+
+[palette.normal]
+color256 = 109
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 16

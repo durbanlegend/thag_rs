@@ -1,0 +1,56 @@
+name = "Ashes Base16 256"
+description = "Converted from Ashes theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#1c2023"]
+bg_rgbs = [[
+    28,
+    32,
+    35,
+]]
+
+[palette.heading1]
+color256 = 180
+style = ["bold"]
+
+[palette.heading2]
+color256 = 140
+style = ["bold"]
+
+[palette.heading3]
+color256 = 110
+style = ["bold"]
+
+[palette.error]
+color256 = 180
+
+[palette.warning]
+color256 = 150
+
+[palette.success]
+color256 = 115
+
+[palette.info]
+color256 = 140
+
+[palette.emphasis]
+color256 = 175
+
+[palette.code]
+color256 = 115
+
+[palette.normal]
+color256 = 188
+
+[palette.subtle]
+color256 = 102
+
+[palette.hint]
+color256 = 102
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

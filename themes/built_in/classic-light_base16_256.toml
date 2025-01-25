@@ -1,0 +1,56 @@
+name = "Classic Light Base16 256"
+description = "Converted from Classic Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#f5f5f5"]
+bg_rgbs = [[
+    245,
+    245,
+    245,
+]]
+
+[palette.heading1]
+color256 = 131
+style = ["bold"]
+
+[palette.heading2]
+color256 = 73
+style = ["bold"]
+
+[palette.heading3]
+color256 = 109
+style = ["bold"]
+
+[palette.error]
+color256 = 131
+
+[palette.warning]
+color256 = 216
+
+[palette.success]
+color256 = 107
+
+[palette.info]
+color256 = 73
+
+[palette.emphasis]
+color256 = 139
+
+[palette.code]
+color256 = 107
+
+[palette.normal]
+color256 = 236
+
+[palette.subtle]
+color256 = 249
+
+[palette.hint]
+color256 = 249
+style = ["italic"]
+
+[palette.debug]
+color256 = 252
+
+[palette.trace]
+color256 = 254

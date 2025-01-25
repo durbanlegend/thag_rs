@@ -1176,15 +1176,7 @@ impl Theme {
             let matching_luma_themes: Vec<_> = signatures
                 .iter()
                 .filter(|(_, sig)| sig.term_bg_luma == term_bg_luma)
-                // .filter(|(_, sig)| sig.matches_background(*term_bg_rgb))
                 .collect();
-            // let matching_luma_theme_names = &matching_luma_themes
-            //     .iter()
-            //     .map(|sig| format!("{}: {}", sig.0, sig.1.term_bg_luma))
-            //     .collect::<Vec<String>>()
-            //     .join(",");
-            // eprintln!("matching_luma_themes={matching_luma_theme_names}");
-            // eprintln!("matching_luma_themes={matching_luma_themes:#?}");
 
             let exact_matches = matching_luma_themes
                 .iter()
@@ -1192,14 +1184,12 @@ impl Theme {
                     sig.matches_background(*term_bg_rgb) && sig.min_color_support == color_support
                 })
                 .map(|(name, _)| (*name).to_string())
-                // .cloned()
                 .collect::<Vec<String>>();
             eprintln!("exact_matches={exact_matches:#?}");
 
             // Try exact RGB match within luma-matching themes
             if let Some(config) = maybe_config() {
                 eprintln!("Looking for match on config styling");
-                // let mut found = false;
                 let preferred_styling = match term_bg_luma {
                     TermBgLuma::Light => &config.styling.preferred_light,
                     _ => &config.styling.preferred_dark,

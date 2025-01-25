@@ -1,0 +1,112 @@
+name = "Precious Light Warm Base16 "
+description = "Converted from Precious Light Warm theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fff5e5"]
+bg_rgbs = [[
+    255,
+    245,
+    229,
+]]
+
+[palette.heading1]
+rgb = [
+    177,
+    71,
+    69,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    36,
+    109,
+    165,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    14,
+    119,
+    103,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    177,
+    71,
+    69,
+]
+
+[palette.warning]
+rgb = [
+    135,
+    101,
+    0,
+]
+
+[palette.success]
+rgb = [
+    85,
+    115,
+    0,
+]
+
+[palette.info]
+rgb = [
+    36,
+    109,
+    165,
+]
+
+[palette.emphasis]
+rgb = [
+    122,
+    80,
+    198,
+]
+
+[palette.code]
+rgb = [
+    85,
+    115,
+    0,
+]
+
+[palette.normal]
+rgb = [
+    78,
+    83,
+    89,
+]
+
+[palette.subtle]
+rgb = [
+    127,
+    128,
+    128,
+]
+
+[palette.hint]
+rgb = [
+    127,
+    128,
+    128,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    217,
+    211,
+    200,
+]
+
+[palette.trace]
+rgb = [
+    236,
+    228,
+    214,
+]

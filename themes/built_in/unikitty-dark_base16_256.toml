@@ -1,0 +1,56 @@
+name = "Unikitty Dark Base16 256"
+description = "Converted from Unikitty Dark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#2e2a31"]
+bg_rgbs = [[
+    46,
+    42,
+    49,
+]]
+
+[palette.heading1]
+color256 = 162
+style = ["bold"]
+
+[palette.heading2]
+color256 = 99
+style = ["bold"]
+
+[palette.heading3]
+color256 = 32
+style = ["bold"]
+
+[palette.error]
+color256 = 162
+
+[palette.warning]
+color256 = 172
+
+[palette.success]
+color256 = 36
+
+[palette.info]
+color256 = 99
+
+[palette.emphasis]
+color256 = 134
+
+[palette.code]
+color256 = 36
+
+[palette.normal]
+color256 = 145
+
+[palette.subtle]
+color256 = 102
+
+[palette.hint]
+color256 = 102
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

@@ -1,0 +1,112 @@
+name = "3024 Base16 "
+description = "Converted from 3024 theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#090300"]
+bg_rgbs = [[
+    9,
+    3,
+    0,
+]]
+
+[palette.heading1]
+rgb = [
+    219,
+    45,
+    32,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    1,
+    160,
+    228,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    181,
+    228,
+    244,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    219,
+    45,
+    32,
+]
+
+[palette.warning]
+rgb = [
+    253,
+    237,
+    2,
+]
+
+[palette.success]
+rgb = [
+    1,
+    162,
+    82,
+]
+
+[palette.info]
+rgb = [
+    1,
+    160,
+    228,
+]
+
+[palette.emphasis]
+rgb = [
+    161,
+    106,
+    148,
+]
+
+[palette.code]
+rgb = [
+    1,
+    162,
+    82,
+]
+
+[palette.normal]
+rgb = [
+    165,
+    162,
+    162,
+]
+
+[palette.subtle]
+rgb = [
+    92,
+    88,
+    85,
+]
+
+[palette.hint]
+rgb = [
+    92,
+    88,
+    85,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    74,
+    69,
+    67,
+]
+
+[palette.trace]
+rgb = [
+    58,
+    52,
+    50,
+]

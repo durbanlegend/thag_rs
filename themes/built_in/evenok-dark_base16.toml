@@ -1,0 +1,112 @@
+name = "Evenok Dark Base16 "
+description = "Converted from Evenok Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#000000"]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
+
+[palette.heading1]
+rgb = [
+    245,
+    112,
+    138,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    0,
+    175,
+    242,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    0,
+    186,
+    179,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    245,
+    112,
+    138,
+]
+
+[palette.warning]
+rgb = [
+    184,
+    163,
+    0,
+]
+
+[palette.success]
+rgb = [
+    84,
+    188,
+    92,
+]
+
+[palette.info]
+rgb = [
+    0,
+    175,
+    242,
+]
+
+[palette.emphasis]
+rgb = [
+    144,
+    149,
+    255,
+]
+
+[palette.code]
+rgb = [
+    84,
+    188,
+    92,
+]
+
+[palette.normal]
+rgb = [
+    208,
+    208,
+    208,
+]
+
+[palette.subtle]
+rgb = [
+    80,
+    80,
+    80,
+]
+
+[palette.hint]
+rgb = [
+    80,
+    80,
+    80,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    48,
+    48,
+    48,
+]
+
+[palette.trace]
+rgb = [
+    32,
+    32,
+    32,
+]

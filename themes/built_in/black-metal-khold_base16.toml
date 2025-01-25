@@ -1,0 +1,112 @@
+name = "Black Metal (Khold) Base16 "
+description = "Converted from Black Metal (Khold) theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#000000"]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
+
+[palette.heading1]
+rgb = [
+    95,
+    135,
+    135,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    136,
+    136,
+    136,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    170,
+    170,
+    170,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    95,
+    135,
+    135,
+]
+
+[palette.warning]
+rgb = [
+    151,
+    75,
+    70,
+]
+
+[palette.success]
+rgb = [
+    236,
+    238,
+    227,
+]
+
+[palette.info]
+rgb = [
+    136,
+    136,
+    136,
+]
+
+[palette.emphasis]
+rgb = [
+    153,
+    153,
+    153,
+]
+
+[palette.code]
+rgb = [
+    236,
+    238,
+    227,
+]
+
+[palette.normal]
+rgb = [
+    193,
+    193,
+    193,
+]
+
+[palette.subtle]
+rgb = [
+    51,
+    51,
+    51,
+]
+
+[palette.hint]
+rgb = [
+    51,
+    51,
+    51,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    34,
+    34,
+    34,
+]
+
+[palette.trace]
+rgb = [
+    18,
+    18,
+    18,
+]

@@ -1,0 +1,56 @@
+name = "Windows 95 Light Base16 256"
+description = "Converted from Windows 95 Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#fcfcfc"]
+bg_rgbs = [[
+    252,
+    252,
+    252,
+]]
+
+[palette.heading1]
+color256 = 124
+style = ["bold"]
+
+[palette.heading2]
+color256 = 19
+style = ["bold"]
+
+[palette.heading3]
+color256 = 37
+style = ["bold"]
+
+[palette.error]
+color256 = 124
+
+[palette.warning]
+color256 = 130
+
+[palette.success]
+color256 = 34
+
+[palette.info]
+color256 = 19
+
+[palette.emphasis]
+color256 = 127
+
+[palette.code]
+color256 = 34
+
+[palette.normal]
+color256 = 240
+
+[palette.subtle]
+color256 = 248
+
+[palette.hint]
+color256 = 248
+style = ["italic"]
+
+[palette.debug]
+color256 = 251
+
+[palette.trace]
+color256 = 254

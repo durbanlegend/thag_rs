@@ -1,0 +1,56 @@
+name = "Framer Base16 256"
+description = "Converted from Framer theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#181818"]
+bg_rgbs = [[
+    24,
+    24,
+    24,
+]]
+
+[palette.heading1]
+color256 = 209
+style = ["bold"]
+
+[palette.heading2]
+color256 = 39
+style = ["bold"]
+
+[palette.heading3]
+color256 = 153
+style = ["bold"]
+
+[palette.error]
+color256 = 209
+
+[palette.warning]
+color256 = 221
+
+[palette.success]
+color256 = 80
+
+[palette.info]
+color256 = 39
+
+[palette.emphasis]
+color256 = 141
+
+[palette.code]
+color256 = 80
+
+[palette.normal]
+color256 = 252
+
+[palette.subtle]
+color256 = 243
+
+[palette.hint]
+color256 = 243
+style = ["italic"]
+
+[palette.debug]
+color256 = 238
+
+[palette.trace]
+color256 = 233

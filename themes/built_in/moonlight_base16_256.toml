@@ -1,0 +1,56 @@
+name = "Moonlight Base16 256"
+description = "Converted from Moonlight theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#212337"]
+bg_rgbs = [[
+    33,
+    35,
+    55,
+]]
+
+[palette.heading1]
+color256 = 203
+style = ["bold"]
+
+[palette.heading2]
+color256 = 87
+style = ["bold"]
+
+[palette.heading3]
+color256 = 45
+style = ["bold"]
+
+[palette.error]
+color256 = 203
+
+[palette.warning]
+color256 = 222
+
+[palette.success]
+color256 = 49
+
+[palette.info]
+color256 = 87
+
+[palette.emphasis]
+color256 = 141
+
+[palette.code]
+color256 = 49
+
+[palette.normal]
+color256 = 146
+
+[palette.subtle]
+color256 = 104
+
+[palette.hint]
+color256 = 104
+style = ["italic"]
+
+[palette.debug]
+color256 = 60
+
+[palette.trace]
+color256 = 59

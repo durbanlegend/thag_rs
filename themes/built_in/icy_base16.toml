@@ -1,0 +1,112 @@
+name = "Icy Dark Base16 "
+description = "Converted from Icy Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#021012"]
+bg_rgbs = [[
+    2,
+    16,
+    18,
+]]
+
+[palette.heading1]
+rgb = [
+    22,
+    193,
+    217,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    0,
+    188,
+    212,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    38,
+    198,
+    218,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    22,
+    193,
+    217,
+]
+
+[palette.warning]
+rgb = [
+    128,
+    222,
+    234,
+]
+
+[palette.success]
+rgb = [
+    77,
+    208,
+    225,
+]
+
+[palette.info]
+rgb = [
+    0,
+    188,
+    212,
+]
+
+[palette.emphasis]
+rgb = [
+    0,
+    172,
+    193,
+]
+
+[palette.code]
+rgb = [
+    77,
+    208,
+    225,
+]
+
+[palette.normal]
+rgb = [
+    9,
+    91,
+    103,
+]
+
+[palette.subtle]
+rgb = [
+    5,
+    46,
+    52,
+]
+
+[palette.hint]
+rgb = [
+    5,
+    46,
+    52,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    4,
+    31,
+    35,
+]
+
+[palette.trace]
+rgb = [
+    3,
+    22,
+    25,
+]

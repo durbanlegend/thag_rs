@@ -1,0 +1,112 @@
+name = "Tango Base16 "
+description = "Converted from Tango theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2e3436"]
+bg_rgbs = [[
+    46,
+    52,
+    54,
+]]
+
+[palette.heading1]
+rgb = [
+    204,
+    0,
+    0,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    52,
+    101,
+    164,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    6,
+    152,
+    154,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    204,
+    0,
+    0,
+]
+
+[palette.warning]
+rgb = [
+    196,
+    160,
+    0,
+]
+
+[palette.success]
+rgb = [
+    78,
+    154,
+    6,
+]
+
+[palette.info]
+rgb = [
+    52,
+    101,
+    164,
+]
+
+[palette.emphasis]
+rgb = [
+    117,
+    80,
+    123,
+]
+
+[palette.code]
+rgb = [
+    78,
+    154,
+    6,
+]
+
+[palette.normal]
+rgb = [
+    211,
+    215,
+    207,
+]
+
+[palette.subtle]
+rgb = [
+    85,
+    87,
+    83,
+]
+
+[palette.hint]
+rgb = [
+    85,
+    87,
+    83,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    252,
+    233,
+    79,
+]
+
+[palette.trace]
+rgb = [
+    138,
+    226,
+    52,
+]

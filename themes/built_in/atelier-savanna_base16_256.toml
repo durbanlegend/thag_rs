@@ -1,0 +1,56 @@
+name = "Atelier Savanna Base16 256"
+description = "Converted from Atelier Savanna theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#171c19"]
+bg_rgbs = [[
+    23,
+    28,
+    25,
+]]
+
+[palette.heading1]
+color256 = 131
+style = ["bold"]
+
+[palette.heading2]
+color256 = 66
+style = ["bold"]
+
+[palette.heading3]
+color256 = 31
+style = ["bold"]
+
+[palette.error]
+color256 = 131
+
+[palette.warning]
+color256 = 137
+
+[palette.success]
+color256 = 65
+
+[palette.info]
+color256 = 66
+
+[palette.emphasis]
+color256 = 66
+
+[palette.code]
+color256 = 65
+
+[palette.normal]
+color256 = 102
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 16

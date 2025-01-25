@@ -1,0 +1,112 @@
+name = "Silk Light Base16 "
+description = "Converted from Silk Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#e9f1ef"]
+bg_rgbs = [[
+    233,
+    241,
+    239,
+]]
+
+[palette.heading1]
+rgb = [
+    207,
+    67,
+    46,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    57,
+    170,
+    201,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    50,
+    156,
+    162,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    207,
+    67,
+    46,
+]
+
+[palette.warning]
+rgb = [
+    207,
+    173,
+    37,
+]
+
+[palette.success]
+rgb = [
+    108,
+    163,
+    140,
+]
+
+[palette.info]
+rgb = [
+    57,
+    170,
+    201,
+]
+
+[palette.emphasis]
+rgb = [
+    110,
+    101,
+    130,
+]
+
+[palette.code]
+rgb = [
+    108,
+    163,
+    140,
+]
+
+[palette.normal]
+rgb = [
+    56,
+    81,
+    86,
+]
+
+[palette.subtle]
+rgb = [
+    92,
+    120,
+    123,
+]
+
+[palette.hint]
+rgb = [
+    92,
+    120,
+    123,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    144,
+    183,
+    182,
+]
+
+[palette.trace]
+rgb = [
+    204,
+    212,
+    211,
+]

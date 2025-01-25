@@ -1,0 +1,112 @@
+name = "Atelier Cave Light Base16 "
+description = "Converted from Atelier Cave Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#efecf4"]
+bg_rgbs = [[
+    239,
+    236,
+    244,
+]]
+
+[palette.heading1]
+rgb = [
+    190,
+    70,
+    120,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    87,
+    109,
+    219,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    57,
+    139,
+    198,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    190,
+    70,
+    120,
+]
+
+[palette.warning]
+rgb = [
+    160,
+    110,
+    59,
+]
+
+[palette.success]
+rgb = [
+    42,
+    146,
+    146,
+]
+
+[palette.info]
+rgb = [
+    87,
+    109,
+    219,
+]
+
+[palette.emphasis]
+rgb = [
+    149,
+    90,
+    231,
+]
+
+[palette.code]
+rgb = [
+    42,
+    146,
+    146,
+]
+
+[palette.normal]
+rgb = [
+    88,
+    82,
+    96,
+]
+
+[palette.subtle]
+rgb = [
+    126,
+    120,
+    135,
+]
+
+[palette.hint]
+rgb = [
+    126,
+    120,
+    135,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    139,
+    135,
+    146,
+]
+
+[palette.trace]
+rgb = [
+    226,
+    223,
+    231,
+]

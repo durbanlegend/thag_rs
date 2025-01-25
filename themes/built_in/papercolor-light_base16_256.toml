@@ -1,0 +1,56 @@
+name = "PaperColor Light Base16 256"
+description = "Converted from PaperColor Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#eeeeee"]
+bg_rgbs = [[
+    238,
+    238,
+    238,
+]]
+
+[palette.heading1]
+color256 = 250
+style = ["bold"]
+
+[palette.heading2]
+color256 = 166
+style = ["bold"]
+
+[palette.heading3]
+color256 = 166
+style = ["bold"]
+
+[palette.error]
+color256 = 250
+
+[palette.warning]
+color256 = 162
+
+[palette.success]
+color256 = 91
+
+[palette.info]
+color256 = 166
+
+[palette.emphasis]
+color256 = 25
+
+[palette.code]
+color256 = 91
+
+[palette.normal]
+color256 = 238
+
+[palette.subtle]
+color256 = 64
+
+[palette.hint]
+color256 = 64
+style = ["italic"]
+
+[palette.debug]
+color256 = 28
+
+[palette.trace]
+color256 = 124

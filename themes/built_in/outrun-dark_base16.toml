@@ -1,0 +1,112 @@
+name = "Outrun Dark Base16 "
+description = "Converted from Outrun Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#00002a"]
+bg_rgbs = [[
+    0,
+    0,
+    42,
+]]
+
+[palette.heading1]
+rgb = [
+    255,
+    66,
+    66,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    102,
+    176,
+    255,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    14,
+    240,
+    240,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    255,
+    66,
+    66,
+]
+
+[palette.warning]
+rgb = [
+    243,
+    232,
+    119,
+]
+
+[palette.success]
+rgb = [
+    89,
+    241,
+    118,
+]
+
+[palette.info]
+rgb = [
+    102,
+    176,
+    255,
+]
+
+[palette.emphasis]
+rgb = [
+    241,
+    5,
+    150,
+]
+
+[palette.code]
+rgb = [
+    89,
+    241,
+    118,
+]
+
+[palette.normal]
+rgb = [
+    208,
+    208,
+    250,
+]
+
+[palette.subtle]
+rgb = [
+    80,
+    80,
+    122,
+]
+
+[palette.hint]
+rgb = [
+    80,
+    80,
+    122,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    48,
+    48,
+    90,
+]
+
+[palette.trace]
+rgb = [
+    32,
+    32,
+    74,
+]

@@ -1,0 +1,112 @@
+name = "Mountain Base16 "
+description = "Converted from Mountain theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0f0f0f"]
+bg_rgbs = [[
+    15,
+    15,
+    15,
+]]
+
+[palette.heading1]
+rgb = [
+    172,
+    138,
+    140,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    143,
+    138,
+    172,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    138,
+    171,
+    172,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    172,
+    138,
+    140,
+]
+
+[palette.warning]
+rgb = [
+    172,
+    169,
+    138,
+]
+
+[palette.success]
+rgb = [
+    138,
+    172,
+    139,
+]
+
+[palette.info]
+rgb = [
+    143,
+    138,
+    172,
+]
+
+[palette.emphasis]
+rgb = [
+    172,
+    138,
+    172,
+]
+
+[palette.code]
+rgb = [
+    138,
+    172,
+    139,
+]
+
+[palette.normal]
+rgb = [
+    202,
+    202,
+    202,
+]
+
+[palette.subtle]
+rgb = [
+    76,
+    76,
+    76,
+]
+
+[palette.hint]
+rgb = [
+    76,
+    76,
+    76,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    38,
+    38,
+    38,
+]
+
+[palette.trace]
+rgb = [
+    25,
+    25,
+    25,
+]

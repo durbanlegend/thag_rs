@@ -1,0 +1,56 @@
+name = "Paraiso Base16 256"
+description = "Converted from Paraiso theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#2f1e2e"]
+bg_rgbs = [[
+    47,
+    30,
+    46,
+]]
+
+[palette.heading1]
+color256 = 203
+style = ["bold"]
+
+[palette.heading2]
+color256 = 39
+style = ["bold"]
+
+[palette.heading3]
+color256 = 79
+style = ["bold"]
+
+[palette.error]
+color256 = 203
+
+[palette.warning]
+color256 = 220
+
+[palette.success]
+color256 = 72
+
+[palette.info]
+color256 = 39
+
+[palette.emphasis]
+color256 = 97
+
+[palette.code]
+color256 = 72
+
+[palette.normal]
+color256 = 144
+
+[palette.subtle]
+color256 = 95
+
+[palette.hint]
+color256 = 95
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 59

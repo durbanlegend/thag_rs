@@ -1,0 +1,56 @@
+name = "Tokyodark Base16 256"
+description = "Converted from Tokyodark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#11121d"]
+bg_rgbs = [[
+    17,
+    18,
+    29,
+]]
+
+[palette.heading1]
+color256 = 204
+style = ["bold"]
+
+[palette.heading2]
+color256 = 69
+style = ["bold"]
+
+[palette.heading3]
+color256 = 147
+style = ["bold"]
+
+[palette.error]
+color256 = 204
+
+[palette.warning]
+color256 = 179
+
+[palette.success]
+color256 = 113
+
+[palette.info]
+color256 = 69
+
+[palette.emphasis]
+color256 = 140
+
+[palette.code]
+color256 = 113
+
+[palette.normal]
+color256 = 146
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 17
+
+[palette.trace]
+color256 = 17

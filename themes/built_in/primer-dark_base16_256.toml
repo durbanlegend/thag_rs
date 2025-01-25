@@ -1,0 +1,56 @@
+name = "Primer Dark Base16 256"
+description = "Converted from Primer Dark theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#010409"]
+bg_rgbs = [[
+    1,
+    4,
+    9,
+]]
+
+[palette.heading1]
+color256 = 209
+style = ["bold"]
+
+[palette.heading2]
+color256 = 75
+style = ["bold"]
+
+[palette.heading3]
+color256 = 153
+style = ["bold"]
+
+[palette.error]
+color256 = 209
+
+[palette.warning]
+color256 = 172
+
+[palette.success]
+color256 = 71
+
+[palette.info]
+color256 = 75
+
+[palette.emphasis]
+color256 = 211
+
+[palette.code]
+color256 = 71
+
+[palette.normal]
+color256 = 146
+
+[palette.subtle]
+color256 = 59
+
+[palette.hint]
+color256 = 59
+style = ["italic"]
+
+[palette.debug]
+color256 = 59
+
+[palette.trace]
+color256 = 16

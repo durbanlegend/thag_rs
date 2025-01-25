@@ -1,0 +1,56 @@
+name = "Green Screen Base16 256"
+description = "Converted from Green Screen theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#001100"]
+bg_rgbs = [[
+    0,
+    17,
+    0,
+]]
+
+[palette.heading1]
+color256 = 28
+style = ["bold"]
+
+[palette.heading2]
+color256 = 28
+style = ["bold"]
+
+[palette.heading3]
+color256 = 22
+style = ["bold"]
+
+[palette.error]
+color256 = 28
+
+[palette.warning]
+color256 = 28
+
+[palette.success]
+color256 = 34
+
+[palette.info]
+color256 = 28
+
+[palette.emphasis]
+color256 = 34
+
+[palette.code]
+color256 = 34
+
+[palette.normal]
+color256 = 34
+
+[palette.subtle]
+color256 = 28
+
+[palette.hint]
+color256 = 28
+style = ["italic"]
+
+[palette.debug]
+color256 = 22
+
+[palette.trace]
+color256 = 22

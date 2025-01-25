@@ -1,0 +1,56 @@
+name = "Grayscale Light Base16 256"
+description = "Converted from Grayscale Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#f7f7f7"]
+bg_rgbs = [[
+    247,
+    247,
+    247,
+]]
+
+[palette.heading1]
+color256 = 244
+style = ["bold"]
+
+[palette.heading2]
+color256 = 242
+style = ["bold"]
+
+[palette.heading3]
+color256 = 245
+style = ["bold"]
+
+[palette.error]
+color256 = 244
+
+[palette.warning]
+color256 = 247
+
+[palette.success]
+color256 = 245
+
+[palette.info]
+color256 = 242
+
+[palette.emphasis]
+color256 = 243
+
+[palette.code]
+color256 = 245
+
+[palette.normal]
+color256 = 238
+
+[palette.subtle]
+color256 = 248
+
+[palette.hint]
+color256 = 248
+style = ["italic"]
+
+[palette.debug]
+color256 = 250
+
+[palette.trace]
+color256 = 254

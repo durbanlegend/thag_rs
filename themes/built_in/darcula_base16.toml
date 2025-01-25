@@ -1,0 +1,112 @@
+name = "Darcula Base16 "
+description = "Converted from Darcula theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2b2b2b"]
+bg_rgbs = [[
+    43,
+    43,
+    43,
+]]
+
+[palette.heading1]
+rgb = [
+    78,
+    173,
+    229,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    152,
+    118,
+    170,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    98,
+    151,
+    85,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    78,
+    173,
+    229,
+]
+
+[palette.warning]
+rgb = [
+    187,
+    181,
+    41,
+]
+
+[palette.success]
+rgb = [
+    106,
+    135,
+    89,
+]
+
+[palette.info]
+rgb = [
+    152,
+    118,
+    170,
+]
+
+[palette.emphasis]
+rgb = [
+    204,
+    120,
+    50,
+]
+
+[palette.code]
+rgb = [
+    106,
+    135,
+    89,
+]
+
+[palette.normal]
+rgb = [
+    169,
+    183,
+    198,
+]
+
+[palette.subtle]
+rgb = [
+    96,
+    99,
+    102,
+]
+
+[palette.hint]
+rgb = [
+    96,
+    99,
+    102,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    50,
+    50,
+    50,
+]
+
+[palette.trace]
+rgb = [
+    50,
+    50,
+    50,
+]

@@ -10,7 +10,7 @@ serde = { version = "1.0.215", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
-#thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
 tokio = { version = "1", features = ["full"] }
 toml = "0.8"
 */
@@ -32,8 +32,8 @@ use strum::IntoEnumIterator;
 use syn::{parse_file, Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTree};
 use thag_rs::config::DependencyInference;
 use thag_rs::{
-    maybe_config, ColorSupport, Colors, Config, Dependencies, FeatureOverride, Logging, Misc,
-    ProcMacros, TermTheme, Verbosity,
+    maybe_config, ColorSupport, Config, Dependencies, FeatureOverride, Logging, Misc, ProcMacros,
+    Styling, TermBgLuma, Verbosity,
 };
 type Error = CustomUserError;
 
@@ -101,7 +101,7 @@ trait PromptableEnum:
 
 impl PromptableEnum for Verbosity {}
 impl PromptableEnum for ColorSupport {}
-impl PromptableEnum for TermTheme {}
+impl PromptableEnum for TermBgLuma {}
 
 // Generic prompt function for DisplayFromStr types
 fn prompt_enum<T: PromptableEnum>(
@@ -441,7 +441,7 @@ fn add_doc_comments(toml_str: &str, doc_comments: Vec<(String, String)>) -> Stri
             section = trimmed.trim_matches(|c| c == '[' || c == ']').to_string();
             match section.as_str() {
                 "logging" => result.push_str(&format!("# {}\n", Logging::DOCS)),
-                "colors" => result.push_str(&format!("# {}\n", Colors::DOCS)),
+                "colors" => result.push_str(&format!("# {}\n", Styling::DOCS)),
                 "dependencies" => result.push_str(&format!("# {}\n", Dependencies::DOCS)),
                 "proc_macros" => result.push_str(&format!("# {}\n", ProcMacros::DOCS)),
                 "misc" => result.push_str(&format!("# {}\n", Misc::DOCS)),
@@ -458,7 +458,7 @@ fn add_doc_comments(toml_str: &str, doc_comments: Vec<(String, String)>) -> Stri
                 add_enum_docs::<ColorSupport>(&mut result, "ColorSupport");
             }
             s if s.starts_with("term_theme =") => {
-                add_enum_docs::<TermTheme>(&mut result, "TermTheme");
+                add_enum_docs::<TermBgLuma>(&mut result, "TermBgLuma");
             }
             s => {
                 let maybe_setting = &s.split_once(' ');
@@ -495,7 +495,7 @@ fn prompt_logging_config(current: &Logging) -> Result<Option<Logging>, Box<dyn s
     Ok(Some(Logging { default_verbosity }))
 }
 
-fn prompt_colors_config(current: &Colors) -> Result<Option<Colors>, Box<dyn std::error::Error>> {
+fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn std::error::Error>> {
     let color_support = prompt_enum(
         "Color support:",
         "Configure color output support",
@@ -516,9 +516,29 @@ fn prompt_colors_config(current: &Colors) -> Result<Option<Colors>, Box<dyn std:
         return Ok(None);
     };
 
-    Ok(Some(Colors {
+    let backgrounds =
+        match Text::new("Background/s to match on (comma-separated #ffffff, primary first):")
+            .with_help_message("E.g. `#f9f5d7, #d9c8a4, #fbf1c7`")
+            .prompt_skippable()?
+        {
+            Some(bgs) => bgs
+                .split(',')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(String::from)
+                .collect(),
+            None => vec![],
+        };
+
+    Ok(Some(Styling {
         color_support,
         term_theme,
+        backgrounds,
+        background: None,
+        preferred_light: vec![],
+        preferred_dark: vec![],
+        fallback_light: vec![],
+        fallback_dark: vec![],
     }))
 }
 
@@ -806,7 +826,7 @@ fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
             "Configure:",
             vec![
                 "Logging",
-                "Colors",
+                "Styling",
                 "Dependencies",
                 "Proc Macros",
                 "Misc Settings",
@@ -824,9 +844,9 @@ fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
                     config.logging = new_config;
                 }
             }
-            "Colors" => {
-                if let Some(new_config) = prompt_colors_config(&config.colors)? {
-                    config.colors = new_config;
+            "Styling" => {
+                if let Some(new_config) = prompt_colors_config(&config.styling)? {
+                    config.styling = new_config;
                 }
             }
             "Dependencies" => {

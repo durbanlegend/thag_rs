@@ -2,7 +2,7 @@ name = "S3r0 Modified 256"
 description = "A modified s3r0 theme with vibrant accents on a dark background"
 term_bg_luma = "dark"
 min_color_support = "color256"
-backgrounds = ["#1f1f1f"]
+backgrounds = ["#1f1f1f", "#000000"]                                            # Dark gray background
 
 [palette]
 # Headers and Structure

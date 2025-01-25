@@ -96,19 +96,6 @@ d=...
 f=$d/Cargo.toml
 cargo expand --bin $stem --manifest-path=$f --theme=gruvbox-dark | sdiff $p - | less
 
-stem=proc_macro_host_port_const
-
-These colors should be more vibrant than before, with:
-- Strong reds for errors and headings
-- Bright yellows for warnings
-- Rich greens for success messages
-- Clear blues for info
-- Distinct purples for emphasis
-- Aqua for bright highlights
-- Well-graduated grays for normal/subtle/ghost text
-- Orange for debug to make it stand out more
-
-
 ### Testing without ColorSupport::None
 thag -C -> change
 env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r

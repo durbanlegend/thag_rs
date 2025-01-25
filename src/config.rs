@@ -7,9 +7,10 @@ use crate::{profile, profile_method};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
 use mockall::{automock, predicate::str};
-use serde::de;
-use serde::{Deserialize, Serialize};
-// use serde_with::{serde_as, DisplayFromStr};
+use serde::{
+    de::{self, Error as DeError},
+    Deserialize, Deserializer, Serialize,
+};
 #[cfg(target_os = "windows")]
 use std::env;
 use std::{
@@ -22,6 +23,7 @@ use std::{
     sync::Arc,
 };
 use strum::{Display, EnumString};
+use toml::Value;
 use toml_edit::DocumentMut;
 
 const DEFAULT_CONFIG: &str = include_str!("../assets/default_config.toml");
@@ -559,6 +561,19 @@ pub struct Styling {
     /// For backward compatibility
     // #[serde(default = "default_background")]
     pub background: Option<String>,
+    /// Preferred light themes in descending order
+    #[serde(default)]
+    pub preferred_light: Vec<String>,
+    /// Preferred dark themes in descending order
+    #[serde(default)]
+    pub preferred_dark: Vec<String>,
+    /// For backward compatibility
+    #[serde(default)]
+    /// Preferred fallback light themes in descending order
+    pub fallback_light: Vec<String>,
+    /// Preferred fallback dark themes in descending order
+    #[serde(default)]
+    pub fallback_dark: Vec<String>,
 }
 
 impl Default for Styling {
@@ -569,6 +584,10 @@ impl Default for Styling {
             term_theme: TermBgLuma::Undetermined,
             backgrounds: vec![],
             background: None,
+            preferred_light: vec![],
+            preferred_dark: vec![],
+            fallback_light: vec![],
+            fallback_dark: vec![],
         }
     }
 
@@ -579,6 +598,10 @@ impl Default for Styling {
             term_theme: TermBgLuma::Dark,
             backgrounds: vec![],
             background: None,
+            preferred_light: vec![],
+            preferred_dark: vec![],
+            fallback_light: vec![],
+            fallback_dark: vec![],
         }
     }
 }
@@ -597,12 +620,22 @@ pub struct ProcMacros {
 }
 
 /// Miscellaneous configuration parameters
-// #[serde_as]
 #[derive(Clone, Debug, Default, Documented, DocumentedFields, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Misc {
     /// Strip double quotes from around string literals returned by snippets
+    #[serde(deserialize_with = "boolean")]
     pub unquote: bool,
+}
+
+/// Custom deserialisation method for booleans, to accept current true/false or legacy "true"/"false".
+fn boolean<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
+    let deserialize = Deserialize::deserialize(deserializer);
+    deserialize.map_or_else(Err, |val| match val {
+        Value::Boolean(b) => Ok(b),
+        Value::String(s) => Ok(&s == "true"),
+        _ => Err(DeError::custom("Wrong type, expected boolean")),
+    })
 }
 
 #[automock]

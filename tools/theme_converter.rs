@@ -100,6 +100,10 @@ impl BaseTheme {
             self.create_base16_palette()?
         };
 
+        let bg = self.palette.base00.trim_start_matches('#').to_lowercase();
+        let backgrounds = vec![format!("#{bg}")];
+        let bg_rgbs = vec![hex_to_rgb(&bg)?];
+
         Ok(Theme {
             name: self.scheme.clone(),
             description: self
@@ -109,10 +113,8 @@ impl BaseTheme {
             term_bg_luma: detect_background_luma(&self.palette.base00)?,
             min_color_support: ColorSupport::TrueColor,
             palette,
-            backgrounds: Some(format!(
-                "[#{}]",
-                self.palette.base00.trim_start_matches('#').to_lowercase()
-            )),
+            backgrounds,
+            bg_rgbs,
             is_builtin: false,
             filename: PathBuf::new(), // Will be set by caller
         })
@@ -163,7 +165,8 @@ struct ThemeOutput {
     description: String,
     term_bg_luma: String,
     min_color_support: String,
-    backgrounds: Option<String>,
+    backgrounds: Vec<String>,
+    bg_rgbs: Vec<(u8, u8, u8)>, // Official one first
     palette: PaletteOutput,
 }
 
@@ -205,17 +208,28 @@ enum ColorOutput {
 }
 
 trait ToThemeOutput {
-    fn to_output(&self, use_256: bool) -> ThemeOutput;
+    fn to_output(&self, use_256: bool, is_base24: bool) -> ThemeOutput;
 }
 
 impl ToThemeOutput for Theme {
-    fn to_output(&self, use_256: bool) -> ThemeOutput {
+    fn to_output(&self, use_256: bool, is_base24: bool) -> ThemeOutput {
+        let backgrounds = self.backgrounds.clone();
+        let bg_rgbs = backgrounds
+            .iter()
+            .map(|hex| hex_to_rgb(&hex).unwrap())
+            .collect::<Vec<(u8, u8, u8)>>();
         ThemeOutput {
-            name: format!("{}{}", self.name, if use_256 { " 256" } else { "" }),
+            name: format!(
+                "{} {} {}",
+                self.name,
+                if is_base24 { "" } else { "Base16" },
+                if use_256 { "256" } else { "" }
+            ),
             description: self.description.clone(),
             term_bg_luma: self.term_bg_luma.to_string().to_lowercase(),
             min_color_support: if use_256 { "color256" } else { "true_color" }.to_string(),
-            backgrounds: self.backgrounds.clone(),
+            backgrounds,
+            bg_rgbs,
             palette: PaletteOutput {
                 heading1: style_to_output(&self.palette.heading1, use_256),
                 heading2: style_to_output(&self.palette.heading2, use_256),
@@ -340,8 +354,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     fs::create_dir_all(&cli.output)?;
 
     if cli.input.is_dir() {
+        eprintln!("Converting directory...");
         convert_directory(&cli)?;
     } else {
+        eprintln!("Converting file...");
         convert_file(&cli.input, &cli)?;
     }
 
@@ -376,12 +392,18 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
     // Convert to thag theme
     let thag_theme = base_theme.convert_to_thag()?;
 
+    let is_base24 = base_theme.is_base24();
+
     // Generate TOML
-    let true_color_path = cli.output.join(format!("{}.toml", stem));
+    let true_color_path = cli.output.join(format!(
+        "{}{}.toml",
+        stem,
+        if is_base24 { "" } else { "_base16" }
+    ));
     if !cli.force && true_color_path.exists() {
         eprintln!("Skipping existing file: {:?}", true_color_path);
     } else {
-        let theme_toml = toml::to_string_pretty(&thag_theme.to_output(false))?; // Changed from theme to thag_theme
+        let theme_toml = toml::to_string_pretty(&thag_theme.to_output(false, is_base24))?; // Changed from theme to thag_theme
         fs::write(&true_color_path, theme_toml)?;
         if cli.verbose {
             println!("Created {:?}", true_color_path);
@@ -390,11 +412,19 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
 
     // Optionally generate 256-color version
     if cli.color256 {
-        let color256_path = cli.output.join(format!("{}_256.toml", stem));
+        let color256_path = cli.output.join(format!(
+            "{}{}_256.toml",
+            stem,
+            if base_theme.is_base24() {
+                ""
+            } else {
+                "_base16"
+            }
+        ));
         if !cli.force && color256_path.exists() {
             eprintln!("Skipping existing file: {:?}", color256_path);
         } else {
-            let theme_256_toml = toml::to_string_pretty(&thag_theme.to_output(true))?; // Changed from theme to thag_theme
+            let theme_256_toml = toml::to_string_pretty(&thag_theme.to_output(true, is_base24))?; // Changed from theme to thag_theme
             fs::write(&color256_path, theme_256_toml)?;
             if cli.verbose {
                 println!("Created {:?}", color256_path);

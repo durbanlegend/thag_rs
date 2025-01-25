@@ -134,8 +134,15 @@ pub fn generate_theme_types_impl(_input: TokenStream) -> TokenStream {
                 m
             }
 
-            /// Check if a given background color matches any of the theme's backgrounds
-            pub fn matches_background(&self, bg: (u8, u8, u8)) -> bool {
+            /// Check if a given background color exactly matches any of the theme's backgrounds
+            fn matches_background(&self, bg: (u8, u8, u8)) -> bool {
+                self.bg_rgbs.iter().any(|&theme_bg| {
+                    bg == theme_bg
+                })
+            }
+
+            /// Check if a given background color matches any of the theme's backgrounds within the threshold
+            pub fn bg_within_threshold(&self, bg: (u8, u8, u8)) -> bool {
                 self.bg_rgbs.iter().any(|&theme_bg| {
                     color_distance(bg, theme_bg) < THRESHOLD
                 })

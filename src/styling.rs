@@ -857,6 +857,7 @@ impl TermAttributes {
     /// # Examples
     ///
     /// ```
+    /// #![allow(deprecated)]
     /// use thag_rs::styling::{AnsiCode, TermAttributes, Level};
     ///
     /// let attrs = TermAttributes::get_or_init();
@@ -1147,7 +1148,7 @@ pub struct Theme {
     pub term_bg_luma: TermBgLuma,
     pub min_color_support: ColorSupport,
     pub palette: Palette,
-    // pub bg_rgb: (u8,u8,u8)
+    pub backgrounds: Vec<String>,
     pub bg_rgbs: Vec<(u8, u8, u8)>, // Official first
     pub description: String,
 }
@@ -1165,16 +1166,9 @@ impl Theme {
         maybe_term_bg: Option<&(u8, u8, u8)>,
     ) -> ThagResult<Self> {
         profile_method!("Theme::auto_detect");
-        // Causes a tight loop because we're called from the TermAttributes::initialize
-        // eprintln!("About to call TermAttributes::get_or_init()");
-        // let term_attrs = TermAttributes::get_or_init();
-        // let term_attrs = TermAttributes::get();
-        // let term_bg_rgb = term_attrs
-        //     .term_bg_rgb
-        //     .ok_or(ThemeError::BackgroundDetectionFailed)?;
-        // let color_support = term_attrs.color_support;
-        // let term_bg_luma = term_attrs.term_bg_luma;
-
+        // NB: don't call `TermAttributes::get_or_init()` here because it will cause a tight loop
+        // since we're called from the TermAttributes::initialize.
+        eprintln!("maybe_term_bg={maybe_term_bg:?}");
         if let Some(term_bg_rgb) = maybe_term_bg {
             let signatures = get_theme_signatures();
             // eprintln!("signatures={signatures:?}");
@@ -1182,22 +1176,53 @@ impl Theme {
             let matching_luma_themes: Vec<_> = signatures
                 .iter()
                 .filter(|(_, sig)| sig.term_bg_luma == term_bg_luma)
+                // .filter(|(_, sig)| sig.matches_background(*term_bg_rgb))
                 .collect();
             // let matching_luma_theme_names = &matching_luma_themes
             //     .iter()
             //     .map(|sig| format!("{}: {}", sig.0, sig.1.term_bg_luma))
             //     .collect::<Vec<String>>()
             //     .join(",");
-            // eprintln!("matching_luma_themes={matching_luma_theme_names:?}");
+            // eprintln!("matching_luma_themes={matching_luma_theme_names}");
+            // eprintln!("matching_luma_themes={matching_luma_themes:#?}");
+
+            let exact_matches = matching_luma_themes
+                .iter()
+                .filter(|(_, sig)| {
+                    sig.matches_background(*term_bg_rgb) && sig.min_color_support == color_support
+                })
+                .map(|(name, _)| (*name).to_string())
+                // .cloned()
+                .collect::<Vec<String>>();
+            eprintln!("exact_matches={exact_matches:#?}");
 
             // Try exact RGB match within luma-matching themes
-            for (theme_name, sig) in &matching_luma_themes {
-                // if *term_bg_rgb == sig.bg_rgb && color_support >= sig.min_color_support {
-                if matches_background(*term_bg_rgb)? && color_support >= sig.min_color_support {
-                    eprintln!("Found an exact match!");
-                    return Self::load_builtin(theme_name);
+            if let Some(config) = maybe_config() {
+                eprintln!("Looking for match on config styling");
+                // let mut found = false;
+                let preferred_styling = match term_bg_luma {
+                    TermBgLuma::Light => &config.styling.preferred_light,
+                    _ => &config.styling.preferred_dark,
+                };
+
+                for preferred_name in preferred_styling {
+                    eprintln!("preferred_name={preferred_name}");
+                    if exact_matches.contains(preferred_name) {
+                        eprintln!("Found an exact match in {preferred_name}!");
+                        return Self::load_builtin(preferred_name);
+                    }
+                }
+
+                for (theme_name, sig) in &matching_luma_themes {
+                    // if *term_bg_rgb == sig.bg_rgb && color_support >= sig.min_color_support {
+                    if matches_background(*term_bg_rgb)? && color_support >= sig.min_color_support {
+                        eprintln!("Found a match in {theme_name}!");
+                        return Self::load_builtin(theme_name);
+                    }
                 }
             }
+
+            eprintln!("No exact match found; looking for closest match");
 
             // Try closest match with progressive color support reduction
             for required_support in [
@@ -1350,6 +1375,7 @@ impl Theme {
             min_color_support: color_support?,
             palette: Palette::from_config(&def.palette)?,
             // bg_rgb: *bg_rgb,
+            backgrounds: def.backgrounds.clone(),
             bg_rgbs,
             description: def.description,
         })

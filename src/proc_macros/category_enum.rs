@@ -18,6 +18,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            Basic,
            BigNumbers,
            Crates,
+           Demo,
            Educational,
            ErrorHandling,
            Exploration,

@@ -2015,10 +2015,10 @@ pub fn show_theme_details() {
     } else {
         theme_bgs
     };
-    eprintln!(
-        "theme_bgs={theme_bgs:?}, backgrounds={:?}",
-        term_attrs.theme.backgrounds
-    );
+    // eprintln!(
+    //     "theme_bgs={theme_bgs:?}, backgrounds={:?}",
+    //     term_attrs.theme.backgrounds
+    // );
     let rgb_disp = if theme_bgs.is_empty() {
         "None".to_string()
     } else if let Some(term_bg_rgb) = term_attrs.term_bg_rgb {

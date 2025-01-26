@@ -2,12 +2,63 @@
 mod tests {
     use crossterm::terminal::disable_raw_mode;
     use crossterm::terminal::is_raw_mode_enabled;
+    use log::LevelFilter;
+    use simplelog::{ColorChoice,CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
+    use thag_rs::debug_log;
     use std::env;
+    use std::env::set_var;
+    use std::sync::OnceLock;
     use thag_rs::terminal::TerminalStateGuard;
     use thag_rs::{
         terminal::{detect_color_support, get_term_bg_luma, is_light_color, restore_raw_status},
         ColorSupport, TermBgLuma,
     };
+
+    #[cfg(feature = "simplelog")]
+    static LOGGER: OnceLock<()> = OnceLock::new();
+
+    fn init_logger() {
+        // Choose between simplelog and env_logger based on compile feature
+        #[cfg(feature = "simplelog")]
+        LOGGER.get_or_init(|| {
+            CombinedLogger::init(vec![
+                TermLogger::new(
+                    LevelFilter::Debug,
+                    Config::default(),
+                    TerminalMode::Mixed,
+                    ColorChoice::Auto,
+                ),
+                WriteLogger::new(
+                    LevelFilter::Debug,
+                    Config::default(),
+                    std::fs::File::create("app.log").unwrap(),
+                ),
+            ])
+            .unwrap();
+            debug_log!("Initialized simplelog");
+        });
+
+        #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
+        {
+            let _ = env_logger::builder().is_test(true).try_init();
+        }
+    }
+
+    // Set environment variables before running tests
+    fn set_up() {
+        init_logger();
+        set_var("TEST_ENV", "1");
+        #[cfg(windows)]
+        {
+            set_var("VISUAL", "powershell.exe /C Get-Content");
+            set_var("EDITOR", "powershell.exe /C Get-Content");
+        }
+        #[cfg(not(windows))]
+        {
+            set_var("VISUAL", "cat");
+            set_var("EDITOR", "cat");
+        }
+    }
 
     #[test]
     fn test_is_light_color() {
@@ -93,6 +144,7 @@ mod tests {
 
     #[test]
     fn test_raw_mode_preservation() {
+        set_up();
         let initial_raw_mode = is_raw_mode_enabled().unwrap_or(false);
 
         // Run detection

@@ -67,6 +67,9 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  Migrate Level to Role and decommission.
 - [ ]  Consider script to reverse-engineer xterm OSC sequences.
+- [ ]  Theme config: for Windows:
+        1. Check supports_color detection failing.
+        2. Need to detect term_bg_rgb rather than or in addition to term_bg_luma.
 - [ ]  Demo proc macro to load collection into enum at build time?
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
         pre-processing to toml block with support for variables.

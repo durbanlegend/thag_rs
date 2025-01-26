@@ -554,7 +554,7 @@ pub struct Styling {
     #[serde(default)]
     /// Light or dark terminal background override
     // #[serde_as(as = "DisplayFromStr")]
-    pub term_theme: TermBgLuma,
+    pub term_bg_luma: TermBgLuma,
     /// First one is primary
     #[serde(default)]
     pub backgrounds: Vec<String>,
@@ -581,7 +581,7 @@ impl Default for Styling {
     fn default() -> Self {
         Self {
             color_support: ColorSupport::Undetermined,
-            term_theme: TermBgLuma::Undetermined,
+            term_bg_luma: TermBgLuma::Undetermined,
             backgrounds: vec![],
             background: None,
             preferred_light: vec![],
@@ -866,7 +866,7 @@ fn main() {
             "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
             config.logging.default_verbosity,
             config.styling.color_support,
-            config.styling.term_theme
+            config.styling.term_bg_luma
         );
     } else {
         debug_log!("No configuration file found.");

@@ -644,6 +644,15 @@ impl ColorInitStrategy {
                 #[cfg(debug_assertions)]
                 debug_log!("Avoiding colour detection for testing");
                 Self::Default
+            } else if cfg!(target_os = "windows"){
+                if let Some(config) = maybe_config() {
+                    let term_bg_luma = config.styling.term_bg_luma;
+                    let term_bg_luma = match term_bg_luma {
+                        TermBgLuma::Undetermined => *terminal::get_term_bg_luma(),
+                        _ => term_bg_luma,
+                    };
+                    Self::Configure(config.styling.color_support, term_bg_luma)
+                } else {Self::Default}
             } else {
                 Self::Detect
             };
@@ -654,7 +663,7 @@ impl ColorInitStrategy {
                 debug_log!("Avoiding colour detection for testing");
                 Self::Default
             } else if let Some(config) = maybe_config() {
-                Self::Configure(config.styling.color_support, config.styling.term_theme)
+                Self::Configure(config.styling.color_support, config.styling.term_bg_luma)
             } else {
                 Self::Default
             };

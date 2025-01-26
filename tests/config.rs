@@ -85,7 +85,7 @@ mod tests {
 
         assert_eq!(config.logging.default_verbosity, Verbosity::Normal);
         assert_eq!(config.styling.color_support, ColorSupport::default());
-        assert_eq!(config.styling.term_theme, TermBgLuma::default());
+        assert_eq!(config.styling.term_bg_luma, TermBgLuma::default());
     }
 
     #[test]

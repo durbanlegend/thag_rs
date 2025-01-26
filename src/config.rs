@@ -579,25 +579,13 @@ pub struct Styling {
 }
 
 impl Default for Styling {
-    #[cfg(feature = "color_detect")]
     fn default() -> Self {
         Self {
             color_support: ColorSupport::Undetermined,
             term_bg_rgb: None,
+            #[cfg(feature = "color_detect")]
             term_bg_luma: TermBgLuma::Undetermined,
-            backgrounds: vec![],
-            background: None,
-            preferred_light: vec![],
-            preferred_dark: vec![],
-            fallback_light: vec![],
-            fallback_dark: vec![],
-        }
-    }
-
-    #[cfg(not(feature = "color_detect"))]
-    fn default() -> Self {
-        Self {
-            color_support: ColorSupport::Undetermined,
+            #[cfg(not(feature = "color_detect"))]
             term_bg_luma: TermBgLuma::Dark,
             backgrounds: vec![],
             background: None,

@@ -13,7 +13,7 @@ use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_proc_macros::{generate_theme_types, AnsiCodeDerive, PaletteMethods};
 
 #[cfg(feature = "color_detect")]
-use crate::terminal;
+use crate::terminal::{self, get_term_bg};
 
 #[cfg(feature = "config")]
 use crate::config::maybe_config;
@@ -651,15 +651,11 @@ impl ColorInitStrategy {
                         TermBgLuma::Undetermined => *terminal::get_term_bg_luma(),
                         _ => term_bg_luma,
                     };
-                    let term_bg_rgb = config.styling.term_bg_rgb;
-                    let term_bg_rgb = match term_bg_rgb {
-                        None => {
-                            let result = terminal::get_term_bg();
-                            result.map_or(None, |term_bg_rgb| Some(*term_bg_rgb))
-                        }
-                        _ => term_bg_rgb,
-                    };
-                    Self::Configure(config.styling.color_support, term_bg_luma, term_bg_rgb)
+                    Self::Configure(
+                        config.styling.color_support,
+                        term_bg_luma,
+                        resolve_config_term_bg_rgb(&config),
+                    )
                 } else {
                     Self::Default
                 }
@@ -673,7 +669,11 @@ impl ColorInitStrategy {
                 debug_log!("Avoiding colour detection for testing");
                 Self::Default
             } else if let Some(config) = maybe_config() {
-                Self::Configure(config.styling.color_support, config.styling.term_bg_luma)
+                Self::Configure(
+                    config.styling.color_support,
+                    config.styling.term_bg_luma,
+                    config.styling.term_bg_rgb,
+                )
             } else {
                 Self::Default
             };
@@ -683,6 +683,15 @@ impl ColorInitStrategy {
 
             strategy
         }
+    }
+}
+
+#[cfg(feature = "color_detect")]
+fn resolve_config_term_bg_rgb(config: &crate::Config) -> Option<(u8, u8, u8)> {
+    let term_bg_rgb = config.styling.term_bg_rgb;
+    match term_bg_rgb {
+        None => get_term_bg().map_or(None, |rgb| Some(*rgb)),
+        _ => term_bg_rgb,
     }
 }
 
@@ -1223,12 +1232,15 @@ impl Theme {
                 .collect::<Vec<String>>();
             eprintln!("exact_matches={exact_matches:#?}");
 
+            #[cfg(feature = "config")]
             if let Some(config) = maybe_config() {
                 // Try exact RGB match within luma-matching themes
                 eprintln!("Looking for match on config styling");
                 let preferred_styling = match term_bg_luma {
                     TermBgLuma::Light => &config.styling.preferred_light,
-                    _ => &config.styling.preferred_dark,
+                    TermBgLuma::Dark => &config.styling.preferred_dark,
+                    #[cfg(feature = "color_detect")]
+                    TermBgLuma::Undetermined => &config.styling.preferred_dark,
                 };
 
                 for preferred_name in preferred_styling {
@@ -1988,6 +2000,7 @@ pub fn display_theme_roles(theme: &Theme) {
 //     }
 // }
 
+#[allow(clippy::too_many_lines)]
 pub fn show_theme_details() {
     let term_attrs = TermAttributes::get_or_init();
     let theme = &term_attrs.theme;
@@ -2015,7 +2028,7 @@ pub fn show_theme_details() {
             let color_distance = color_distance(*term_bg_rgb, *rgb);
             if color_distance < min_distance {
                 min_distance = color_distance;
-                closest_rgb = rgb.clone();
+                closest_rgb = *rgb;
             }
         }
         dual_format_rgb(closest_rgb)

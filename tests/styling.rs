@@ -42,6 +42,7 @@ mod tests {
         let attrs = TermAttributes::initialize(&ColorInitStrategy::Configure(
             ColorSupport::Color256,
             TermBgLuma::Light,
+            None,
         ));
         eprintln!("attrs.color_support={0:#?}", attrs.color_support);
         assert!(matches!(attrs.color_support, ColorSupport::Color256));

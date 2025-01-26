@@ -1260,6 +1260,14 @@ impl Theme {
                     }
                 }
 
+                // Look for any theme exactly matching terminal background colour, in hopes of matching existing theme colours.
+                for (theme_name, sig) in &matching_luma_themes {
+                    if sig.matches_background(*term_bg_rgb) {
+                        eprintln!("Choosing theme {theme_name} because it exactly matches terminal bg {term_bg_rgb:?}");
+                        return Self::load_builtin(theme_name);
+                    }
+                }
+
                 // Try closest match to a preferred theme, irrespective of colour support.
                 // for (theme_name, sig) in &matching_luma_themes {
                 let mut best_match = None;
@@ -1291,14 +1299,6 @@ impl Theme {
             //     .map(|(name, _)| (*name).to_string())
             //     .collect::<Vec<String>>();
             // eprintln!("exact_matches={near_enough_matches:#?}");
-
-            // Look for any theme exactly matching terminal background colour.
-            for (theme_name, sig) in &matching_luma_themes {
-                if sig.matches_background(*term_bg_rgb) {
-                    eprintln!("Choosing theme {theme_name} because it exactly matches terminal bg {term_bg_rgb:?}");
-                    return Self::load_builtin(theme_name);
-                }
-            }
 
             // TODO: fallback matching
             eprintln!("No exact match found; looking for closest match");

@@ -111,7 +111,7 @@ struct Colors {
     #[doc = "Color support level (auto, always, never)"]
     color_support: Option<String>,
     #[doc = "Terminal theme (dark, light)"]
-    term_theme: Option<String>,
+    term_bg_luma: Option<String>,
 }
 
 #[derive(Default, Serialize)]
@@ -291,17 +291,17 @@ fn prompt_colors_config_with_escape() -> Result<Option<Colors>, Box<dyn std::err
         return Ok(None);
     };
 
-    let term_theme = Select::new("Terminal theme:", vec!["dark", "light"])
+    let term_bg_luma = Select::new("Terminal theme:", vec!["dark", "light"])
         .with_help_message("Choose theme based on your terminal background")
         .prompt_skippable()?;
 
-    let Some(term_theme) = term_theme else {
+    let Some(term_bg_luma) = term_bg_luma else {
         return Ok(None);
     };
 
     Ok(Some(Colors {
         color_support: Some(color_support.to_string()),
-        term_theme: Some(term_theme.to_string()),
+        term_bg_luma: Some(term_bg_luma.to_string()),
     }))
 }
 

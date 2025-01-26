@@ -70,6 +70,12 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Theme config: for Windows:
         1. Check supports_color detection failing.
         2. Need to detect term_bg_rgb rather than or in addition to term_bg_luma.
+        "Still, the crux of this bug: if COLORTERM is meant to detect color support - though what the value is set to
+         doesn't seem well-defined - perhaps the more oft-supported TERM=xterm-256color is appropriate here for WT
+         while COLORTERM=xterm-truecolor is appropriate in addition. TERM seems to be more general-purpose from various
+         reads, while COLORTERM seems to be more specific to color support, as the name also implies."
+         https://github.com/microsoft/terminal/issues/11057
+
 - [ ]  Demo proc macro to load collection into enum at build time?
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
         pre-processing to toml block with support for variables.

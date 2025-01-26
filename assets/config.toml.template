@@ -14,7 +14,8 @@ default_verbosity = "normal"
 # If your terminal can handle 16m colors, choose color256.
 # The aliases are the legacy names.
 # Available options for ColorSupport:
-#   color256 (alias xterm256) - Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
+#   true_color - Full color support, 24 bits -> 16 million colors.
+#   color256 (alias xterm256) - 256-color support, suitable for color palettes of 256 colours (16 bit).
 #   basic (alias ansi16) - Basic 16-color support
 #   none - No color support
 #   undetermined - Still to be determined or defaulted
@@ -25,7 +26,7 @@ default_verbosity = "normal"
 # legibility of text.
 # Valid values are: "dark" or "light".
 # "dark" is generally a safe choice as the colors should be legible even for a light theme
-# term_theme = "dark"
+# term_bg_luma = "dark"
 
 # Message theme preferences for light backgrounds
 preferred_light = [

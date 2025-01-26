@@ -552,8 +552,10 @@ pub struct Styling {
     #[serde(default)]
     pub color_support: ColorSupport,
     #[serde(default)]
-    /// Light or dark terminal background override
-    // #[serde_as(as = "DisplayFromStr")]
+    /// Terminal background RGB override (user should coordinate this with `term_bg_luma`)
+    pub term_bg_rgb: Option<(u8, u8, u8)>,
+    #[serde(default)]
+    /// Light or dark terminal background override (user should coordinate this with `term_bg_rgb`)
     pub term_bg_luma: TermBgLuma,
     /// First one is primary
     #[serde(default)]
@@ -581,6 +583,7 @@ impl Default for Styling {
     fn default() -> Self {
         Self {
             color_support: ColorSupport::Undetermined,
+            term_bg_rgb: None,
             term_bg_luma: TermBgLuma::Undetermined,
             backgrounds: vec![],
             background: None,
@@ -595,7 +598,7 @@ impl Default for Styling {
     fn default() -> Self {
         Self {
             color_support: ColorSupport::Undetermined,
-            term_theme: TermBgLuma::Dark,
+            term_bg_luma: TermBgLuma::Dark,
             backgrounds: vec![],
             background: None,
             preferred_light: vec![],

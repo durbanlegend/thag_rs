@@ -164,7 +164,7 @@ fn main() {
     debug!("  Term : {:?}", term);
 
     let maybe_theme = get_theme();
-    let term_theme = match maybe_theme {
+    let term_bg_luma = match maybe_theme {
         Ok(theme) => match theme {
             Theme::Light => TermBgLuma::Light,
             Theme::Dark => TermBgLuma::Dark,
@@ -190,7 +190,7 @@ fn main() {
         let msg_level = MessageType::Warning;
 
         let color_qual = color_level.unwrap().to_string().to_lowercase();
-        let theme_qual = term_theme.to_string().to_lowercase();
+        let theme_qual = term_bg_luma.to_string().to_lowercase();
         let msg_level_qual = msg_level.to_string().to_lowercase();
         // debug!("Calling from_str on {}_{}_{}", &color_qual, &theme_qual, &msg_level_qual);
         let style = MessageStyle::from_str(&format!(

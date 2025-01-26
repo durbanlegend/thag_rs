@@ -10,7 +10,7 @@
 macro_rules! generate_styles {
     (
         $(
-            ($style_enum:ident, $term_theme:ident, $color_support:ident)
+            ($style_enum:ident, $term_bg_luma:ident, $color_support:ident)
         ),*
     ) => {
         $(

@@ -518,14 +518,14 @@ pub struct Colors {
     #[serde(default)]
     /// Light or dark terminal background override
     #[serde_as(as = "DisplayFromStr")]
-    pub term_theme: TermBgLuma,
+    pub term_bg_luma: TermBgLuma,
 }
 
 impl Default for Colors {
     fn default() -> Self {
         Self {
             color_support: ColorSupport::Undetermined,
-            term_theme: TermBgLuma::Dark,
+            term_bg_luma: TermBgLuma::Dark,
         }
     }
 }
@@ -781,7 +781,7 @@ fn main() {
             "verbosity={:?}, ColorSupport={:?}, TermBgLuma={:?}",
             config.logging.default_verbosity,
             config.colors.color_support,
-            config.colors.term_theme
+            config.colors.term_bg_luma
         );
     } else {
         debug_log!("No configuration file found.");
@@ -884,7 +884,7 @@ mod tests {
 
         assert_eq!(config.logging.default_verbosity, Verbosity::Normal);
         assert_eq!(config.colors.color_support, ColorSupport::default());
-        assert_eq!(config.colors.term_theme, TermBgLuma::default());
+        assert_eq!(config.colors.term_bg_luma, TermBgLuma::default());
         Ok(())
     }
 

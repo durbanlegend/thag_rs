@@ -225,7 +225,7 @@ pub struct Colors {
     pub color_support: ColorSupport,
     #[serde(default)]
     #[serde_as(as = "DisplayFromStr")]
-    pub term_theme: TermBgLuma,
+    pub term_bg_luma: TermBgLuma,
 }
 
 #[serde_as]
@@ -376,7 +376,7 @@ fn main() -> ThagResult<()> {
                     "verbosity={:?}, ColorSupport={:?}, TermBgLuma={:?}",
                     config.logging.default_verbosity,
                     config.colors.color_support,
-                    config.colors.term_theme
+                    config.colors.term_bg_luma
                 );
             } else {
                 eprintln!("No configuration file found.");

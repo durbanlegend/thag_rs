@@ -458,7 +458,7 @@ fn add_doc_comments(toml_str: &str, doc_comments: Vec<(String, String)>) -> Stri
             s if s.starts_with("color_support =") => {
                 add_enum_docs::<ColorSupport>(&mut result, "ColorSupport");
             }
-            s if s.starts_with("term_theme =") => {
+            s if s.starts_with("term_bg_luma =") => {
                 add_enum_docs::<TermBgLuma>(&mut result, "TermBgLuma");
             }
             s => {
@@ -507,13 +507,13 @@ fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn st
         return Ok(None);
     };
 
-    let term_theme = prompt_enum(
+    let term_bg_luma = prompt_enum(
         "Terminal theme:",
         "Select theme based on your terminal background",
-        &current.term_theme,
+        &current.term_bg_luma,
     )?;
 
-    let Some(term_theme) = term_theme else {
+    let Some(term_bg_luma) = term_bg_luma else {
         return Ok(None);
     };
 
@@ -533,7 +533,7 @@ fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn st
 
     Ok(Some(Styling {
         color_support,
-        term_theme,
+        term_bg_luma,
         backgrounds,
         background: None,
         preferred_light: vec![],

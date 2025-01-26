@@ -33,7 +33,7 @@ use syn::{parse_file, Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTr
 use thag_rs::config::DependencyInference;
 use thag_rs::{
     maybe_config, ColorSupport, Config, Dependencies, FeatureOverride, Logging, Misc, ProcMacros,
-    Styling, TermBgLuma, Verbosity,
+    Styling, TermBgLuma, ThagError, Verbosity,
 };
 type Error = CustomUserError;
 
@@ -507,6 +507,27 @@ fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn st
         return Ok(None);
     };
 
+    let term_bg_rgb = match Text::new("Background RGB (r: u8, g: u8, b: u8):")
+        .with_help_message("E.g. `256, 128, 0`:")
+        .prompt_skippable()?
+    {
+        Some(bg) => {
+            let v: Vec<u8> = bg
+                .split(',')
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(|s| u8::from_str_radix(s, 10).unwrap_or(0_u8))
+                .collect();
+            if v.len() != 3 {
+                return Err(Box::new(ThagError::FromStr(
+                    "Could not parse {bg} into (u8, u8, u8)".into(),
+                )));
+            }
+            Some((v[0], v[1], v[2]))
+        }
+        None => None,
+    };
+
     let term_bg_luma = prompt_enum(
         "Terminal theme:",
         "Select theme based on your terminal background",
@@ -534,6 +555,7 @@ fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn st
     Ok(Some(Styling {
         color_support,
         term_bg_luma,
+        term_bg_rgb,
         backgrounds,
         background: None,
         preferred_light: vec![],

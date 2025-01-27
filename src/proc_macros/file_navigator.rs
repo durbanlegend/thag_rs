@@ -1,6 +1,8 @@
+#![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
 use quote::quote;
 
+#[allow(clippy::too_many_lines)]
 pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
     let output = quote! {
         struct FileNavigator {
@@ -16,7 +18,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 }
             }
 
-            fn list_items(&self, include: &str) -> Vec<String> {
+            fn list_items(&self, include: &str, hidden: bool) -> Vec<String> {
                 let mut items = vec!["*SELECT CURRENT DIRECTORY*".to_string(), "..".to_string()];
 
                 // Add directories
@@ -25,7 +27,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                     .flatten()
                     .flatten()
                     .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
-                    .filter(|entry| !entry.file_name().to_string_lossy().starts_with('.'))
+                    .filter(|entry| if hidden {true} else {!entry.file_name().to_string_lossy().starts_with('.')})
                     .map(|entry| entry.file_name().to_string_lossy().into_owned())
                     .collect();
                 dirs.sort();
@@ -74,14 +76,14 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             }
         }
 
-        fn save_to_file(content: String, default_name: String, ext: &str) -> std::io::Result<std::path::PathBuf> {
+        fn save_to_file(content: String, default_name: String, ext: &str, hidden: bool) -> std::io::Result<std::path::PathBuf> {
             use inquire::{Select, Text};
             let mut navigator = FileNavigator::new();
 
             println!("Select destination directory (use arrow keys and Enter to navigate):");
 
             let selected_dir = loop {
-                let items = navigator.list_items(ext);
+                let items = navigator.list_items(ext, hidden);
                 let selection = Select::new(
                     &format!("Current directory: {}", navigator.current_path().display()),
                     items,

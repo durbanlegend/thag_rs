@@ -472,7 +472,6 @@ impl Color {
     Clone,
     Copy,
     Debug,
-    Default,
     Deserialize,
     Display,
     Documented,
@@ -493,7 +492,6 @@ pub enum ColorSupport {
     /// No color support
     None = 1,
     /// Basic 16-color support
-    #[default]
     #[serde(alias = "ansi16")] // Accept old "ansi16" value
     Basic = 2,
     /// Full color support, suitable for color palettes of 256 colours (8 bit) or higher.
@@ -501,6 +499,20 @@ pub enum ColorSupport {
     Color256 = 3,
     /// Full color support, 24 bits -> 16 million colors.
     TrueColor = 4,
+}
+
+impl Default for ColorSupport {
+    fn default() -> Self {
+        #[cfg(feature = "color_detect")]
+        {
+            Self::Undetermined
+        }
+
+        #[cfg(not(feature = "color_detect"))]
+        {
+            Self::Basic // Safe default when detection isn't available
+        }
+    }
 }
 
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
@@ -528,7 +540,6 @@ pub enum TermBgLuma {
     /// Dark background terminal
     Dark,
     /// Let `thag` autodetect the background luminosity
-    // #[cfg(feature = "color_detect")]
     Undetermined,
 }
 

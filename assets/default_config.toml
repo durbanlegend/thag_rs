@@ -4,6 +4,7 @@
 
 # Logging settings
 [logging]
+
 # Available options for Verbosity:
 #   quieter - Minimal output, suitable for piping to another process
 #   quiet - Less detailed output
@@ -13,22 +14,21 @@
 
 default_verbosity = "normal"
 
-# Terminal color settings
-[colors]
-# If your terminal can handle 16m colors, choose color256.
-# The aliases are the legacy names.
+[styling]
+
 # Available options for ColorSupport:
-#   true_color - Full color support, 24 bits -> 16 million colors.
-#   color256 (alias xterm256) - 256-color support, suitable for color palettes of 256 colours (16 bit).
-#   basic (alias ansi16) - Basic 16-color support
-#   none - No color support
 #   undetermined - Still to be determined or defaulted
+#   none - No color support
+#   basic - Basic 16-color support
+#   color256 - Full color support, suitable for color palettes of 256 colours (8 bit) or higher.
+#   true_color - Full color support, 24 bits -> 16 million colors.
+
 color_support = "color256"
 
-# Available options for TermTheme:
+# Available options for TermBgLuma:
 #   light - Light background terminal
-#   dark - Dark background terminal (default)
-#   auto_detect - Let `thag` autodetect the background luminosity
+#   dark - Dark background terminal
+#   undetermined - Let `thag` autodetect the background luminosity
 
 # Terminal light/dark override. Tells thag_rs whether you are using a light or dark theme,
 # instead of letting thag_rs interrogate the terminal, which could cause misbehaviour
@@ -38,16 +38,19 @@ color_support = "color256"
 # "dark" is generally a safe choice as the colors should be legible even for a light theme
 term_bg_luma = "dark"
 
-# Message theme preferences for light backgrounds
+# First one is primary
+backgrounds = []
+
+# Preferred light themes in descending order
 preferred_light = [
-    "gruvbox_light_hard",
+    "gruvboxs_light_hard",
     "summercamp",
     "catppuccin-latte",
     "atelier-seaside-light_base16",
     "solarized_light",
 ]
 
-# Message theme preferences for dark backgrounds
+# Preferred dark themes in descending order
 preferred_dark = [
     "espresso",
     "catppuccin-mocha",
@@ -59,12 +62,17 @@ preferred_dark = [
     "gruvbox-dark-soft_base16",
 ]
 
-# Message theme fallback preferences for light backgrounds
-fallback_light = ["github_256", "basic_light"]
-# Message theme fallback preferences for dark backgrounds
-fallback_dark = ["catppuccin-mocha_256", "basic_dark"]
-auto_detect = true
-custom_themes_dir = "~/.config/thag/themes"
+# Preferred fallback light themes in descending order
+fallback_light = [
+    "github_256",
+    "basic_light",
+]
+
+# Preferred fallback dark themes in descending order
+fallback_dark = [
+    "catppuccin-mocha_256",
+    "basic_dark",
+]
 
 # Demo proc macro settings
 [proc_macros]

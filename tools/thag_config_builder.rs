@@ -9,9 +9,10 @@ semver = "1.0.23"
 serde = { version = "1.0.215", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
-tokio = { version = "1", features = ["full"] }
+thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "simplelog"] }
+# thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "simplelog"] }
 toml = "0.8"
 */
 
@@ -30,10 +31,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use strum::IntoEnumIterator;
 use syn::{parse_file, Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTree};
-use thag_rs::config::DependencyInference;
+use thag_proc_macros::file_navigator;
+use thag_rs::config::{DependencyInference, RealContext};
 use thag_rs::{
-    maybe_config, ColorSupport, Config, Dependencies, FeatureOverride, Logging, Misc, ProcMacros,
-    Styling, TermBgLuma, ThagError, Verbosity,
+    maybe_config, ColorSupport, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
+    ProcMacros, Styling, TermBgLuma, Verbosity,
 };
 type Error = CustomUserError;
 
@@ -51,6 +53,22 @@ impl StringValidator for PathValidator {
     }
 }
 
+enum ConfigSource {
+    Current(Config),
+    Default(Config),
+    FromFile(Config),
+}
+
+impl ConfigSource {
+    fn get_config(self) -> Config {
+        match self {
+            ConfigSource::Current(c) => c,
+            ConfigSource::Default(c) => c,
+            ConfigSource::FromFile(c) => c,
+        }
+    }
+}
+
 struct ConfigBuilder {
     system_defaults: Config,
     user_config: Option<Config>,
@@ -58,15 +76,14 @@ struct ConfigBuilder {
 }
 
 impl ConfigBuilder {
-    fn new() -> Self {
+    fn new(base_config: Config) -> Self {
         let system_defaults = Config::default();
         let user_config = maybe_config();
-        let current = user_config.clone().unwrap_or_default();
 
         Self {
             system_defaults,
             user_config,
-            current,
+            current: base_config,
         }
     }
 
@@ -77,6 +94,9 @@ impl ConfigBuilder {
         Ok(add_doc_comments(&toml_str, doc_comments))
     }
 }
+
+// Generate the FileNavigator struct, its implementation and the save function.
+file_navigator! {}
 
 // Helper trait for DisplayFromStr types
 trait PromptableEnum:
@@ -120,6 +140,70 @@ fn prompt_enum<T: PromptableEnum>(
 struct ModuleInfo {
     items: Vec<Item>,
     uses: Vec<(String, String)>, // (name, path)
+}
+
+fn select_base_config() -> Result<ConfigSource, Box<dyn std::error::Error>> {
+    use inquire::Select;
+
+    println!("This tool will help you customize an existing configuration.");
+
+    let context = RealContext::new();
+    let binding = context.get_config_path();
+    let current_config_path = binding.display();
+
+    let options = vec![
+        format!("Current configuration ({})", current_config_path),
+        "Default configuration (assets/default_config.toml)".to_string(),
+        "Select configuration from disk...".to_string(),
+    ];
+
+    let selection = Select::new("Select base configuration:", options).prompt()?;
+
+    match selection.as_str() {
+        s if s.starts_with("Current configuration") => {
+            Ok(ConfigSource::Current(maybe_config().unwrap_or_default()))
+        }
+        // s if s.starts_with("Default configuration") => {
+        //     let default_config = Config::default();
+        //     Ok(ConfigSource::Default(default_config))
+        // }
+        s if s.starts_with("Default configuration") => {
+            let default_config_str = include_str!("../assets/default_config.toml");
+            let default_config: Config = toml::from_str(default_config_str)?;
+            Ok(ConfigSource::Default(default_config))
+        }
+        _ => {
+            // Use the file navigator proc macro to select a file
+            let mut navigator = FileNavigator::new();
+            // ... use the navigator to select a .toml file
+            // You might want to create a function like:
+            let config_path = select_config_file(&mut navigator)?;
+            let config = Config::load(&config_path)?;
+            Ok(ConfigSource::FromFile(config))
+        }
+    }
+}
+
+fn select_config_file(
+    navigator: &mut FileNavigator,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    println!("Select a configuration file (use arrow keys and Enter to navigate):");
+
+    loop {
+        let items = navigator.list_items("toml", true);
+        let selection = Select::new(
+            &format!("Current directory: {}", navigator.current_path().display()),
+            items,
+        )
+        .with_help_message("Press Enter to navigate, select a .toml file to load")
+        .prompt()?;
+
+        if let Some(path) = navigator.navigate(&selection) {
+            if path.extension().map_or(false, |ext| ext == "toml") {
+                return Ok(path);
+            }
+        }
+    }
 }
 
 fn collect_modules(project_root: &Path) -> HashMap<String, ModuleInfo> {
@@ -506,30 +590,31 @@ fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn st
         return Ok(None);
     };
 
-    let term_bg_rgb = match Text::new("Background RGB (r: u8, g: u8, b: u8):")
-        .with_help_message("E.g. `256, 128, 0`:")
-        .prompt_skippable()?
-    {
-        Some(bg) => {
-            let v: Vec<u8> = bg
-                .split(',')
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(|s| u8::from_str_radix(s, 10).unwrap_or(0_u8))
-                .collect();
-            if v.len() != 3 {
-                return Err(Box::new(ThagError::FromStr(
-                    "Could not parse {bg} into (u8, u8, u8)".into(),
-                )));
-            }
-            Some((v[0], v[1], v[2]))
-        }
-        None => None,
-    };
+    // Too difficult for user to answer and enter on the fly
+    // let term_bg_rgb = match Text::new("Background RGB (r: u8, g: u8, b: u8):")
+    //     .with_help_message("E.g. `256, 128, 0`:")
+    //     .prompt_skippable()?
+    // {
+    //     Some(bg) => {
+    //         let v: Vec<u8> = bg
+    //             .split(',')
+    //             .map(str::trim)
+    //             .filter(|s| !s.is_empty())
+    //             .map(|s| u8::from_str_radix(s, 10).unwrap_or(0_u8))
+    //             .collect();
+    //         if v.len() != 3 {
+    //             return Err(Box::new(ThagError::FromStr(
+    //                 "Could not parse {bg} into (u8, u8, u8)".into(),
+    //             )));
+    //         }
+    //         Some((v[0], v[1], v[2]))
+    //     }
+    //     None => None,
+    // };
 
     let term_bg_luma = prompt_enum(
-        "Terminal theme:",
-        "Select theme based on your terminal background",
+        "Terminal background:",
+        "Themes will be selected based on your terminal background",
         &current.term_bg_luma,
     )?;
 
@@ -537,25 +622,26 @@ fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn st
         return Ok(None);
     };
 
-    let backgrounds =
-        match Text::new("Background/s to match on (comma-separated #ffffff, primary first):")
-            .with_help_message("E.g. `#f9f5d7, #d9c8a4, #fbf1c7`")
-            .prompt_skippable()?
-        {
-            Some(bgs) => bgs
-                .split(',')
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(String::from)
-                .collect(),
-            None => vec![],
-        };
+    // Too difficult for user to answer and enter on the fly
+    // let backgrounds =
+    //     match Text::new("Background/s to match on (comma-separated #ffffff, primary first):")
+    //         .with_help_message("E.g. `#f9f5d7, #d9c8a4, #fbf1c7`")
+    //         .prompt_skippable()?
+    //     {
+    //         Some(bgs) => bgs
+    //             .split(',')
+    //             .map(str::trim)
+    //             .filter(|s| !s.is_empty())
+    //             .map(String::from)
+    //             .collect(),
+    //         None => vec![],
+    //     };
 
     Ok(Some(Styling {
         color_support,
         term_bg_luma,
-        term_bg_rgb,
-        backgrounds,
+        term_bg_rgb: None,
+        backgrounds: vec![],
         background: None,
         preferred_light: vec![],
         preferred_dark: vec![],
@@ -840,7 +926,8 @@ fn prompt_proc_macros_config(
 use colored::Colorize;
 
 fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
-    let builder = ConfigBuilder::new();
+    let config_source = select_base_config()?;
+    let builder = ConfigBuilder::new(config_source.get_config());
     let mut config = builder.current.clone();
 
     loop {
@@ -848,7 +935,7 @@ fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
             "Configure:",
             vec![
                 "Logging",
-                "Styling",
+                "Styling/Colors",
                 "Dependencies",
                 "Proc Macros",
                 "Misc Settings",
@@ -866,7 +953,7 @@ fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
                     config.logging = new_config;
                 }
             }
-            "Styling" => {
+            "Styling/Colors" => {
                 if let Some(new_config) = prompt_colors_config(&config.styling)? {
                     config.styling = new_config;
                 }

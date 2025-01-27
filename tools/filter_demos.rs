@@ -389,7 +389,7 @@ async fn main() {
                 output_markdown(&categories_desc, &crates_desc, &combination_op, &metadata);
             let default_name =
                 generate_default_filename(&categories, &selected_crates, &filter_prefs);
-            match save_to_file(markdown, default_name, "md") {
+            match save_to_file(markdown, default_name, "md", false) {
                 Ok(path) => println!("Markdown file saved successfully to: {}", path.display()),
                 Err(e) => eprintln!("Error saving file: {}", e),
             }

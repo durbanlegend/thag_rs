@@ -205,7 +205,7 @@ pub fn ansi_code_derive(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn file_navigator(input: TokenStream) -> TokenStream {
-    intercept_and_debug(true, &input, file_navigator_impl)
+    intercept_and_debug(false, &input, file_navigator_impl)
 }
 
 #[proc_macro]

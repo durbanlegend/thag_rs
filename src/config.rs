@@ -569,9 +569,8 @@ pub struct Styling {
     /// Preferred dark themes in descending order
     #[serde(default)]
     pub preferred_dark: Vec<String>,
-    /// For backward compatibility
-    #[serde(default)]
     /// Preferred fallback light themes in descending order
+    #[serde(default)]
     pub fallback_light: Vec<String>,
     /// Preferred fallback dark themes in descending order
     #[serde(default)]

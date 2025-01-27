@@ -6,11 +6,11 @@ inquire = "0.7.5"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive"] }
 syn = "2"
-# thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
-thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+# thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = "0.1.9"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
 # tokio = "1.41.1"
 tokio = { version = "1", features = ["full"] }
 warp = "0.3.7"
@@ -23,20 +23,22 @@ warp = "0.3.7"
 //# Categories: technique, tools
 use edit;
 // use regex::Regex;
-use inquire::{MultiSelect, Select, Text};
+use inquire::{MultiSelect, Select};
 use std::{
     collections::{BTreeSet, HashMap},
-    env::current_dir,
     fs::{self, read_dir},
     path::{Path, PathBuf},
     process::Command,
 };
-use thag_proc_macros::category_enum;
+use thag_proc_macros::{category_enum, file_navigator};
 use thag_rs::{ast, code_utils::to_ast, lazy_static_var, regex};
 use tokio;
 use warp::Filter;
 
 category_enum! {} // This will generate the Category enum
+
+// Generate the FileNavigator struct, its implementation and the save function.
+file_navigator! {}
 
 #[derive(Clone, Debug, Display)]
 enum FilterLogic {
@@ -387,7 +389,7 @@ async fn main() {
                 output_markdown(&categories_desc, &crates_desc, &combination_op, &metadata);
             let default_name =
                 generate_default_filename(&categories, &selected_crates, &filter_prefs);
-            match save_markdown_to_file(markdown, default_name) {
+            match save_to_file(markdown, default_name, "md") {
                 Ok(path) => println!("Markdown file saved successfully to: {}", path.display()),
                 Err(e) => eprintln!("Error saving file: {}", e),
             }
@@ -630,77 +632,6 @@ struct ScriptMetadata {
     categories: Vec<String>, // New field for categories
 }
 
-struct FileNavigator {
-    current_dir: PathBuf,
-    history: Vec<PathBuf>,
-}
-
-impl FileNavigator {
-    fn new() -> Self {
-        Self {
-            current_dir: current_dir().unwrap_or_else(|_| PathBuf::from(".")),
-            history: Vec::new(),
-        }
-    }
-
-    fn list_items(&self) -> Vec<String> {
-        let mut items = vec!["*SELECT CURRENT DIRECTORY*".to_string(), "..".to_string()];
-
-        // Add directories
-        let mut dirs: Vec<_> = std::fs::read_dir(&self.current_dir)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
-            .filter(|entry| !entry.file_name().to_string_lossy().starts_with('.'))
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
-            .collect();
-        dirs.sort();
-        items.extend(dirs.into_iter().map(|d| format!("📁 {d}")));
-
-        // Add .md files
-        let mut files: Vec<_> = std::fs::read_dir(&self.current_dir)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .filter(|entry| {
-                entry.file_type().map(|ft| ft.is_file()).unwrap_or(false)
-                    && entry.path().extension().is_some_and(|ext| ext == "md")
-            })
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
-            .collect();
-        files.sort();
-        items.extend(files.into_iter().map(|f| format!("📄 {f}")));
-
-        items
-    }
-
-    fn navigate(&mut self, selection: &str) -> Option<PathBuf> {
-        if selection == ".." {
-            if let Some(parent) = self.current_dir.parent() {
-                self.history.push(self.current_dir.clone());
-                self.current_dir = parent.to_path_buf();
-            }
-            None
-        } else {
-            let clean_name = selection.trim_start_matches(['📁', '📄', ' ']);
-            let new_path = self.current_dir.join(clean_name);
-
-            if new_path.is_dir() {
-                self.history.push(self.current_dir.clone());
-                self.current_dir = new_path;
-                None
-            } else {
-                Some(new_path)
-            }
-        }
-    }
-
-    fn current_path(&self) -> &PathBuf {
-        &self.current_dir
-    }
-}
-
 fn generate_default_filename(
     categories: &[Category],
     selected_crates: &[String],
@@ -729,67 +660,6 @@ fn generate_default_filename(
     parts.sort();
     let logic_str = filter_prefs.combination_logic.simple_text();
     format!("demo_{}.md", parts.join(&format!("_{}_", logic_str)))
-}
-
-fn save_markdown_to_file(content: String, default_name: String) -> std::io::Result<PathBuf> {
-    let mut navigator = FileNavigator::new();
-    // let mut selected_dir = None;
-
-    println!("Select destination directory (use arrow keys and Enter to navigate):");
-
-    let selected_dir = loop {
-        let items = navigator.list_items();
-        let selection = Select::new(
-            &format!("Current directory: {}", navigator.current_path().display()),
-            items,
-        )
-        .with_help_message("Press Enter to navigate, Space to select current directory")
-        .prompt();
-
-        match selection {
-            Ok(sel) => {
-                if sel == "." || sel == "*SELECT CURRENT DIRECTORY*" {
-                    // User selected current directory
-                    // selected_dir = Some(navigator.current_path().to_path_buf());
-                    break Some(navigator.current_path().to_path_buf());
-                } else if let Some(_path) = navigator.navigate(&sel) {
-                    // If a file is selected, ignore it and continue navigation
-                    continue;
-                }
-            }
-            Err(inquire::error::InquireError::OperationCanceled)
-            | Err(inquire::error::InquireError::OperationInterrupted) => {
-                // User wants to cancel the whole operation
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Selection cancelled",
-                ));
-            }
-            Err(_) => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Unexpected error",
-                ))
-            }
-        }
-    };
-
-    if let Some(dir) = selected_dir {
-        // Get filename
-        let filename = Text::new("Enter filename:")
-            .with_default(&default_name)
-            .prompt()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-
-        let full_path = dir.join(filename);
-        fs::write(&full_path, content)?;
-        Ok(full_path)
-    } else {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "No directory selected",
-        ))
-    }
 }
 
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {

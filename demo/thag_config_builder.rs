@@ -9,9 +9,10 @@ semver = "1.0.23"
 serde = { version = "1.0.215", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
-tokio = { version = "1", features = ["full"] }
+# thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
+thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
 toml = "0.8"
 */
 
@@ -30,10 +31,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use strum::IntoEnumIterator;
 use syn::{parse_file, Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTree};
+use thag_proc_macros::file_navigator;
 use thag_rs::config::DependencyInference;
 use thag_rs::{
     maybe_config, ColorSupport, Config, Dependencies, FeatureOverride, Logging, Misc, ProcMacros,
-    Styling, TermBgLuma, ThagError, Verbosity,
+    Styling, TermBgLuma, Verbosity,
 };
 type Error = CustomUserError;
 
@@ -78,6 +80,9 @@ impl ConfigBuilder {
     }
 }
 
+// Generate the FileNavigator struct, its implementation and the save function.
+file_navigator! {}
+
 // Helper trait for DisplayFromStr types
 trait PromptableEnum:
     Sized + Display + Clone + IntoEnumIterator + DocumentedVariants + Into<&'static str>
@@ -102,7 +107,6 @@ trait PromptableEnum:
 impl PromptableEnum for Verbosity {}
 impl PromptableEnum for ColorSupport {}
 impl PromptableEnum for TermBgLuma {}
-// impl PromptableEnum for Styling {}
 
 // Generic prompt function for DisplayFromStr types
 fn prompt_enum<T: PromptableEnum>(
@@ -507,30 +511,31 @@ fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn st
         return Ok(None);
     };
 
-    let term_bg_rgb = match Text::new("Background RGB (r: u8, g: u8, b: u8):")
-        .with_help_message("E.g. `256, 128, 0`:")
-        .prompt_skippable()?
-    {
-        Some(bg) => {
-            let v: Vec<u8> = bg
-                .split(',')
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(|s| u8::from_str_radix(s, 10).unwrap_or(0_u8))
-                .collect();
-            if v.len() != 3 {
-                return Err(Box::new(ThagError::FromStr(
-                    "Could not parse {bg} into (u8, u8, u8)".into(),
-                )));
-            }
-            Some((v[0], v[1], v[2]))
-        }
-        None => None,
-    };
+    // Too difficult for user to answer and enter on the fly
+    // let term_bg_rgb = match Text::new("Background RGB (r: u8, g: u8, b: u8):")
+    //     .with_help_message("E.g. `256, 128, 0`:")
+    //     .prompt_skippable()?
+    // {
+    //     Some(bg) => {
+    //         let v: Vec<u8> = bg
+    //             .split(',')
+    //             .map(str::trim)
+    //             .filter(|s| !s.is_empty())
+    //             .map(|s| u8::from_str_radix(s, 10).unwrap_or(0_u8))
+    //             .collect();
+    //         if v.len() != 3 {
+    //             return Err(Box::new(ThagError::FromStr(
+    //                 "Could not parse {bg} into (u8, u8, u8)".into(),
+    //             )));
+    //         }
+    //         Some((v[0], v[1], v[2]))
+    //     }
+    //     None => None,
+    // };
 
     let term_bg_luma = prompt_enum(
-        "Terminal theme:",
-        "Select theme based on your terminal background",
+        "Terminal background:",
+        "Themes will be selected based on your terminal background",
         &current.term_bg_luma,
     )?;
 
@@ -538,25 +543,26 @@ fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn st
         return Ok(None);
     };
 
-    let backgrounds =
-        match Text::new("Background/s to match on (comma-separated #ffffff, primary first):")
-            .with_help_message("E.g. `#f9f5d7, #d9c8a4, #fbf1c7`")
-            .prompt_skippable()?
-        {
-            Some(bgs) => bgs
-                .split(',')
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(String::from)
-                .collect(),
-            None => vec![],
-        };
+    // Too difficult for user to answer and enter on the fly
+    // let backgrounds =
+    //     match Text::new("Background/s to match on (comma-separated #ffffff, primary first):")
+    //         .with_help_message("E.g. `#f9f5d7, #d9c8a4, #fbf1c7`")
+    //         .prompt_skippable()?
+    //     {
+    //         Some(bgs) => bgs
+    //             .split(',')
+    //             .map(str::trim)
+    //             .filter(|s| !s.is_empty())
+    //             .map(String::from)
+    //             .collect(),
+    //         None => vec![],
+    //     };
 
     Ok(Some(Styling {
         color_support,
         term_bg_luma,
-        term_bg_rgb,
-        backgrounds,
+        term_bg_rgb: None,
+        backgrounds: vec![],
         background: None,
         preferred_light: vec![],
         preferred_dark: vec![],
@@ -849,7 +855,7 @@ fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
             "Configure:",
             vec![
                 "Logging",
-                "Styling",
+                "Styling/Colors",
                 "Dependencies",
                 "Proc Macros",
                 "Misc Settings",
@@ -867,7 +873,7 @@ fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
                     config.logging = new_config;
                 }
             }
-            "Styling" => {
+            "Styling/Colors" => {
                 if let Some(new_config) = prompt_colors_config(&config.styling)? {
                     config.styling = new_config;
                 }

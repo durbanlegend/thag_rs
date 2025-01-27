@@ -76,9 +76,15 @@ validate_state only when feature minimal not engaged - instead switched off debu
          reads, while COLORTERM seems to be more specific to color support, as the name also implies."
          https://github.com/microsoft/terminal/issues/11057
 
+- [ ]  Update profiling instrumentation and doc comments.
+- [ ]  Extend gen_readme to do other dirs including tools and demo/proc_macros, currently demo/gen_readme_proc_macro.rs
 - [ ]  Demo proc macro to load collection into enum at build time?
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
         pre-processing to toml block with support for variables.
+- [ ]  Claude re what are its ideas for "Time Machine" debugging?
+- [ ]  Profiling for scripts
+- [ ]  Upgrade all cargo.tomls
+
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.
 - [ ]  Update Readme for new features.
 - [ ]  Offer thag updates as a menu option.
@@ -96,7 +102,6 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Check dead code & other #(!)[allow(...)]; look into factoring over-long gen_build_run
 - [ ]  Look for code smells
 - [ ]  Look into fuzzing the tests such as test_merge_manifest.
-- [ ]  Extend gen_readme to do other dirs including tools and demo/proc_macros, currently demo/gen_readme_proc_macro.rs
 - [ ]  Consider dropping our termbg module if termbg 0.6.1 is working fine.
 - [ ]  Testing fib scripts: ls -1 demo/fib_*.rs | grep -v basic | grep -v binet | while read f; do echo $f;  cargo run -- $f -qq -- 100 | grep 354224848179261915075 || echo "...failed"; done
 stem=macro_lazy_static_var_advanced

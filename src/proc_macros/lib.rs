@@ -1,12 +1,14 @@
 #![allow(clippy::missing_panics_doc)]
 mod ansi_code_derive;
 mod category_enum;
+mod file_navigator;
 mod generate_theme_types;
 mod palette_methods;
 mod repeat_dash;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;
+use crate::file_navigator::file_navigator_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
 use crate::palette_methods::palette_methods_impl;
 use crate::repeat_dash::repeat_dash_impl;
@@ -202,7 +204,11 @@ pub fn ansi_code_derive(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
+pub fn file_navigator(input: TokenStream) -> TokenStream {
+    intercept_and_debug(true, &input, file_navigator_impl)
+}
+
+#[proc_macro]
 pub fn generate_theme_types(input: TokenStream) -> TokenStream {
-    // generate_theme_types_impl()
     intercept_and_debug(false, &input, generate_theme_types_impl)
 }

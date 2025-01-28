@@ -27,7 +27,7 @@ use convert_case::{Converter, Pattern};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use inquire::error::CustomUserError;
 use inquire::validator::{StringValidator, Validation};
-use inquire::{Confirm, Select, Text};
+use inquire::Confirm;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs;
@@ -193,7 +193,7 @@ fn select_config_file(
     println!("Select a configuration file (use arrow keys and Enter to navigate):");
 
     loop {
-        let items = navigator.list_items("toml", true);
+        let items = navigator.list_items(Some("toml"), true);
         let selection = Select::new(
             &format!("Current directory: {}", navigator.current_path().display()),
             items,
@@ -201,7 +201,7 @@ fn select_config_file(
         .with_help_message("Press Enter to navigate, select a .toml file to load")
         .prompt()?;
 
-        if let Some(path) = navigator.navigate(&selection) {
+        if let NavigationResult::SelectionComplete(path) = navigator.navigate(&selection, true) {
             if path.extension().map_or(false, |ext| ext == "toml") {
                 return Ok(path);
             }

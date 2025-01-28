@@ -3,8 +3,8 @@
 inferno = "0.12.0"
 inquire = "0.7.5"
 serde = { version = "1.0.216", features = ["derive"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
 */
 
 /// Profile graph/chart generator for the `thag` internal profiler.
@@ -125,7 +125,7 @@ fn generate_flamechart(stacks: &[String]) -> Result<(), Box<dyn std::error::Erro
     opts.flame_chart = true; // Enable flame chart mode for temporal ordering
 
     // Just pass the stacks directly, no need for sequence numbers
-    flamechart::from_lines(&mut opts, stacks.iter().rev().map(String::as_str), output)?;
+    flamegraph::from_lines(&mut opts, stacks.iter().rev().map(String::as_str), output)?;
 
     println!("Flame chart generated: flamechart.svg");
     open_in_browser("flamechart.svg")?;

@@ -13,6 +13,7 @@ include = [
     "README.md",
     "build.rs",
     "demo/**",
+    "tools/**",
     "tests/**",
 ]
 readme = "README.md"
@@ -289,6 +290,10 @@ install-updater = false
 [[workspace.metadata.dist.extra-artifacts]]
 artifacts = ["demo.zip"]
 build = ["sh", "-c", "zip demo.zip demo/*"]
+
+[[workspace.metadata.dist.extra-artifacts]]
+artifacts = ["tools.zip"]
+build = ["sh", "-c", "zip tools.zip tools/*"]
 
 [[workspace.metadata.dist.extra-artifacts]]
 artifacts = ["assets/default_config.toml"]

@@ -5,9 +5,17 @@ use quote::quote;
 #[allow(clippy::too_many_lines)]
 pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
     let output = quote! {
+        use inquire::{Select, Text};
         struct FileNavigator {
             current_dir: std::path::PathBuf,
             history: Vec<std::path::PathBuf>,
+        }
+
+        #[derive(Debug)]
+        pub enum NavigationResult {
+            SelectionComplete(std::path::PathBuf),
+            NavigatedTo(std::path::PathBuf),
+            NoSelection,
         }
 
         impl FileNavigator {
@@ -18,7 +26,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 }
             }
 
-            fn list_items(&self, include: &str, hidden: bool) -> Vec<String> {
+            fn list_items(&self, include_ext: Option<&str>, hidden: bool) -> Vec<String> {
                 let mut items = vec!["*SELECT CURRENT DIRECTORY*".to_string(), "..".to_string()];
 
                 // Add directories
@@ -33,14 +41,14 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 dirs.sort();
                 items.extend(dirs.into_iter().map(|d| format!("📁 {d}")));
 
-                // Add .<include> files
+                // Add .<include_ext> files
                 let mut files: Vec<_> = std::fs::read_dir(&self.current_dir)
                     .into_iter()
                     .flatten()
                     .flatten()
                     .filter(|entry| {
                         entry.file_type().map(|ft| ft.is_file()).unwrap_or(false)
-                            && entry.path().extension().is_some_and(|ext| ext == include)
+                            && entry.path().extension().is_some_and(|ext| include_ext.is_some_and(|incl| incl == ext))
                     })
                     .map(|entry| entry.file_name().to_string_lossy().into_owned())
                     .collect();
@@ -50,23 +58,31 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 items
             }
 
-            fn navigate(&mut self, selection: &str) -> Option<std::path::PathBuf> {
+            fn navigate(&mut self, selection: &str, select_dir: bool) -> NavigationResult {
                 if selection == ".." {
                     if let Some(parent) = self.current_dir.parent() {
                         self.history.push(self.current_dir.clone());
                         self.current_dir = parent.to_path_buf();
                     }
-                    None
+                    NavigationResult::NoSelection
+                } else if selection == "*SELECT CURRENT DIRECTORY*" && select_dir {
+                    NavigationResult::SelectionComplete(self.current_dir.clone())
                 } else {
                     let clean_name = selection.trim_start_matches(['📁', '📄', ' ']);
                     let new_path = self.current_dir.join(clean_name);
 
                     if new_path.is_dir() {
                         self.history.push(self.current_dir.clone());
-                        self.current_dir = new_path;
-                        None
+                        self.current_dir = new_path.clone();
+                        if select_dir {
+                            NavigationResult::NavigatedTo(new_path)
+                        } else {
+                            NavigationResult::NoSelection
+                        }
+                    } else if !select_dir {
+                        NavigationResult::SelectionComplete(new_path)
                     } else {
-                        Some(new_path)
+                        NavigationResult::NoSelection
                     }
                 }
             }
@@ -76,14 +92,51 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             }
         }
 
-        fn save_to_file(content: String, default_name: String, ext: &str, hidden: bool) -> std::io::Result<std::path::PathBuf> {
-            use inquire::{Select, Text};
+        fn select_directory(navigator: &mut FileNavigator, hidden: bool) -> Result<PathBuf, Box<dyn std::error::Error>> {
+            println!("Select a directory (use arrow keys and Enter to navigate):");
+
+            loop {
+                let items = navigator.list_items(None, hidden);
+                let selection = Select::new(
+                    &format!("Current directory: {}", navigator.current_path().display()),
+                    items,
+                )
+                .with_help_message("Press Enter to navigate, select '*SELECT CURRENT DIRECTORY*' to choose current directory")
+                .prompt()?;
+
+                match navigator.navigate(&selection, true) {
+                    NavigationResult::SelectionComplete(path) => return Ok(path),
+                    NavigationResult::NavigatedTo(_) | NavigationResult::NoSelection => continue,
+                }
+            }
+        }
+
+        fn select_file(navigator: &mut FileNavigator, include_ext: Option<&str>, hidden: bool) -> Result<PathBuf, Box<dyn std::error::Error>> {
+            println!("Select a file (use arrow keys and Enter to navigate):");
+
+            loop {
+                let items = navigator.list_items(include_ext, hidden);
+                let selection = Select::new(
+                    &format!("Current directory: {}", navigator.current_path().display()),
+                    items,
+                )
+                .with_help_message("Press Enter to navigate, select a file to load")
+                .prompt()?;
+
+                match navigator.navigate(&selection, false) {
+                    NavigationResult::SelectionComplete(path) => return Ok(path),
+                    NavigationResult::NavigatedTo(_) | NavigationResult::NoSelection => continue,
+                }
+            }
+        }
+
+        fn save_to_file(content: String, default_name: String, include_ext: Option<&str>, hidden: bool) -> std::io::Result<std::path::PathBuf> {
             let mut navigator = FileNavigator::new();
 
             println!("Select destination directory (use arrow keys and Enter to navigate):");
 
             let selected_dir = loop {
-                let items = navigator.list_items(ext, hidden);
+                let items = navigator.list_items(include_ext, hidden);
                 let selection = Select::new(
                     &format!("Current directory: {}", navigator.current_path().display()),
                     items,
@@ -95,7 +148,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                     Ok(sel) => {
                         if sel == "." || sel == "*SELECT CURRENT DIRECTORY*" {
                             break Some(navigator.current_path().to_path_buf());
-                        } else if let Some(_path) = navigator.navigate(&sel) {
+                        } else if let NavigationResult::NavigatedTo(_path) = navigator.navigate(&sel, hidden) {
                             continue;
                         }
                     }

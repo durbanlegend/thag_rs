@@ -2,6 +2,7 @@
 [dependencies]
 convert_case = "0.6.0"
 heck = "0.5.0"
+inquire = "0.7.5"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive"] }
 # thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
@@ -11,13 +12,14 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 # thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
 */
 
-/// This is the actual script used to collect demo script metadata and generate
-/// demo/README.md.
+/// This is the script used to collect script metadata for the `demo` and `tools` directories and generate
+/// local `README.md` files documenting those directories.
 ///
 /// Strategy and grunt work thanks to ChatGPT.
-//# Purpose: Document demo scripts in a demo/README.md as a guide to the user.
+//# Purpose: Document demo scripts in a demo/README.md as a guide for the user, and the same for tools scripts.
 //# Categories: technique, tools
 use heck::ToSnakeCase;
+use inquire;
 use std::{
     collections::HashMap,
     fs::{self, read_dir, File},
@@ -30,7 +32,9 @@ use thag_rs::{
 };
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-use thag_proc_macros::category_enum;
+use thag_proc_macros::{category_enum, file_navigator};
+
+file_navigator! {}
 
 #[derive(Debug)]
 struct ScriptMetadata {
@@ -93,7 +97,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
                             categories.iter().all(|cat| {
                                 let found = valid_categories.contains(&cat.as_str().to_snake_case());
                                 if !found {
-                                    eprintln!("Unknown or invalid category {cat}");
+                                    eprintln!("Unknown or invalid category: `{cat}`");
                                 }
                                 found
                             }),
@@ -313,14 +317,18 @@ fn generate_run_section(metadata: &ScriptMetadata) -> String {
     md
 }
 
-fn main() {
-    let scripts_dir = Path::new("demo");
-    let output_path = Path::new("demo/README.md");
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut navigator = FileNavigator::new();
+    // ... use the navigator to select a directory
+    let scripts_dir = select_directory(&mut navigator, false)?;
+
+    let output_path = scripts_dir.join("README.md");
     let boilerplate_path = Path::new("assets/boilerplate.md");
 
-    // Regular execution when profiling is not enabled
-    let all_metadata = collect_all_metadata(scripts_dir);
-    generate_readme(&all_metadata, output_path, boilerplate_path);
+    let all_metadata = collect_all_metadata(&scripts_dir);
+    generate_readme(&all_metadata, &output_path, boilerplate_path);
 
-    println!("demo/README.md generated successfully.");
+    println!("{} generated successfully.", output_path.display());
+
+    Ok(())
 }

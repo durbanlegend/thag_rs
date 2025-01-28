@@ -3,6 +3,26 @@
 ## High Priority
 - [ ]  Sort and flesh out keywords (u16 etc) in shared::is_valid_crate_name. (make HashSet? phf?)
 
+## On the go
+- [ ]  Theme config: for Windows:
+        1. Check supports_color detection failing.
+        2. Need to detect term_bg_rgb rather than or in addition to term_bg_luma.
+        "Still, the crux of this bug: if COLORTERM is meant to detect color support - though what the value is set to
+         doesn't seem well-defined - perhaps the more oft-supported TERM=xterm-256color is appropriate here for WT
+         while COLORTERM=xterm-truecolor is appropriate in addition. TERM seems to be more general-purpose from various
+         reads, while COLORTERM seems to be more specific to color support, as the name also implies."
+         https://github.com/microsoft/terminal/issues/11057
+- [ ]  Conversion of Gogh themes
+- [ ]  Update profiling instrumentation and doc comments.
+- [ ]  Extend gen_readme to do other dirs including tools and demo/proc_macros, currently demo/gen_readme_proc_macro.rs
+- [ ]  Demo proc macro to load collection into enum at build time?
+- [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
+        pre-processing to toml block with support for variables.
+- [ ]  Claude re what are its ideas for "Time Machine" debugging?
+- [ ]  Profiling for scripts
+- [ ]  Replace build.rs logic for themes by loading themes directly into a HashMap in proc macro generate_theme_types;
+        rename it to load_themes.
+
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.
@@ -67,22 +87,7 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  Migrate Level to Role and decommission.
 - [ ]  Consider script to reverse-engineer xterm OSC sequences.
-- [ ]  Theme config: for Windows:
-        1. Check supports_color detection failing.
-        2. Need to detect term_bg_rgb rather than or in addition to term_bg_luma.
-        "Still, the crux of this bug: if COLORTERM is meant to detect color support - though what the value is set to
-         doesn't seem well-defined - perhaps the more oft-supported TERM=xterm-256color is appropriate here for WT
-         while COLORTERM=xterm-truecolor is appropriate in addition. TERM seems to be more general-purpose from various
-         reads, while COLORTERM seems to be more specific to color support, as the name also implies."
-         https://github.com/microsoft/terminal/issues/11057
 
-- [ ]  Update profiling instrumentation and doc comments.
-- [ ]  Extend gen_readme to do other dirs including tools and demo/proc_macros, currently demo/gen_readme_proc_macro.rs
-- [ ]  Demo proc macro to load collection into enum at build time?
-- [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
-        pre-processing to toml block with support for variables.
-- [ ]  Claude re what are its ideas for "Time Machine" debugging?
-- [ ]  Profiling for scripts
 - [ ]  Upgrade all cargo.tomls
 
 - [ ]  "Thoughts of Thag" command to spew out random stone-age Thaggisms.

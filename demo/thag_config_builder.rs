@@ -95,7 +95,6 @@ impl ConfigBuilder {
     }
 }
 
-// Generate the FileNavigator struct, its implementation and the save function.
 file_navigator! {}
 
 // Helper trait for DisplayFromStr types
@@ -176,32 +175,9 @@ fn select_base_config() -> Result<ConfigSource, Box<dyn std::error::Error>> {
             // Use the file navigator proc macro to select a file
             let mut navigator = FileNavigator::new();
             // ... use the navigator to select a .toml file
-            // You might want to create a function like:
-            let config_path = select_config_file(&mut navigator)?;
+            let config_path = select_file(&mut navigator, "toml", true)?;
             let config = Config::load(&config_path)?;
             Ok(ConfigSource::FromFile(config))
-        }
-    }
-}
-
-fn select_config_file(
-    navigator: &mut FileNavigator,
-) -> Result<PathBuf, Box<dyn std::error::Error>> {
-    println!("Select a configuration file (use arrow keys and Enter to navigate):");
-
-    loop {
-        let items = navigator.list_items("toml", true);
-        let selection = Select::new(
-            &format!("Current directory: {}", navigator.current_path().display()),
-            items,
-        )
-        .with_help_message("Press Enter to navigate, select a .toml file to load")
-        .prompt()?;
-
-        if let Some(path) = navigator.navigate(&selection) {
-            if path.extension().map_or(false, |ext| ext == "toml") {
-                return Ok(path);
-            }
         }
     }
 }

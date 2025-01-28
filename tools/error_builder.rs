@@ -4,6 +4,16 @@ heck = "0.5.0"
 inquire = "0.7.5"
 */
 
+/// Quick and easy prompted generator for new custom error types and new variants required
+/// by existing custom error types. Prompts for the new or existing custom error type, the
+/// new variants, any types wrapped by the new variants, and any special display messages.
+/// The output can be saved to a new error module in the case of a new custom error type,
+/// or simply copied and pasted in sections from the output into an existing error module
+/// in the case of an existing custom error type.
+///
+/// Strategy and grunt work thanks to ChatGPT.
+//# Purpose: Facilitate generation and enhancement of custom error modules.
+//# Categories: technique, tools
 use heck::ToSnakeCase;
 use inquire::{Confirm, MultiSelect, Select, Text};
 use std::{error::Error, fs, path::PathBuf};

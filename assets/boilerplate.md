@@ -1,4 +1,4 @@
-## Running the scripts
+## Running the scripts in `demo` and `tools`
 
 `thag_rs` uses `clap` for a standard command-line interface. Try `thag --help` (or -h) if
 you get stuck.

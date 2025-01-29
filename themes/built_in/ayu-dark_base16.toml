@@ -1,12 +1,16 @@
-name = "Ayu Dark Base16 "
+    name = "Ayu Dark Base16 "
 description = "Converted from Ayu Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
-backgrounds = ["#0f1419"]
+backgrounds = ["#0f1419", "#0a0e14"]
 bg_rgbs = [[
     15,
     20,
     25,
+], [
+    10,
+    14,
+    20,
 ]]
 
 [palette.heading1]

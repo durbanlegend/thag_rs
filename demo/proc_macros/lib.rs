@@ -49,7 +49,12 @@ use syn::{
 
 #[proc_macro_attribute]
 pub fn attribute_basic(_attr: TokenStream, input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), &input, attribute_basic_impl)
+    intercept_and_debug(
+        cfg!(feature = "expand"),
+        "attribute_basic",
+        &input,
+        attribute_basic_impl,
+    )
 }
 
 #[proc_macro_derive(DeriveBasic, attributes(expand_macro))]
@@ -67,26 +72,39 @@ pub fn derive_basic(input: TokenStream) -> TokenStream {
     #[cfg(not(feature = "expand"))]
     let should_expand = false;
 
-    intercept_and_debug(should_expand, &input_clone, |tokens| {
-        derive_basic_impl(tokens)
-    })
-    // intercept_and_debug(cfg!(feature = "expand"), &input, derive_basic_impl)
+    intercept_and_debug(
+        should_expand,
+        "derive_basic",
+        &input_clone,
+        derive_basic_impl,
+    )
+    // intercept_and_debug(cfg!(feature = "expand"), "derive_basic", &input, derive_basic_impl)
 }
 
 #[proc_macro]
 pub fn function_like_basic(input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), &input, |_tokens| {
-        // Original macro logic
-        let expanded = quote! {
-            pub const VALUE: usize = 42;
-        };
-        TokenStream::from(expanded)
-    })
+    intercept_and_debug(
+        cfg!(feature = "expand"),
+        "function_like_basic",
+        &input,
+        |_tokens| {
+            // Original macro logic
+            let expanded = quote! {
+                pub const VALUE: usize = 42;
+            };
+            TokenStream::from(expanded)
+        },
+    )
 }
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
 pub fn derive_custom_model(input: TokenStream) -> TokenStream {
-    intercept_and_debug(true, &input, |tokens| derive_custom_model_impl(tokens))
+    intercept_and_debug(
+        true,
+        "derive_custom_model",
+        &input,
+        derive_custom_model_impl,
+    )
 }
 
 #[proc_macro_derive(IntoStringHashMap)]
@@ -127,7 +145,7 @@ pub fn organizing_code_tokenstream(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DeriveConst, attributes(adjust, use_mappings))]
 pub fn organizing_code_const(input: TokenStream) -> TokenStream {
     // organizing_code_const_impl(input.into()).unwrap().into()
-    intercept_and_debug(true, &input, |tokens| {
+    intercept_and_debug(true, "organizing_code_const", &input, |tokens| {
         organizing_code_const_impl(tokens.into()).unwrap().into()
     })
 }
@@ -148,7 +166,12 @@ pub fn use_mappings(attr: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn repeat_dash(input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), &input, repeat_dash_impl)
+    intercept_and_debug(
+        cfg!(feature = "expand"),
+        "repeat_dash",
+        &input,
+        repeat_dash_impl,
+    )
 }
 
 #[proc_macro]
@@ -219,11 +242,16 @@ pub fn host_port_const(tokens: TokenStream) -> TokenStream {
     host_port_const_impl(tokens.into()).into()
 }
 
-fn intercept_and_debug<F>(expand: bool, input: &TokenStream, proc_macro: F) -> TokenStream
+fn intercept_and_debug<F>(
+    expand: bool,
+    name: &str,
+    input: &TokenStream,
+    proc_macro: F,
+) -> TokenStream
 where
     F: Fn(TokenStream) -> TokenStream,
 {
-    use inline_colorization::{style_bold, style_reset};
+    use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
 
     // Call the provided macro function
     let output = proc_macro(input.clone());
@@ -236,9 +264,11 @@ where
             Err(e) => eprintln!("Failed to parse tokens: {e:?}"),
             Ok(syn_file) => {
                 let pretty_output = prettyplease::unparse(&syn_file);
-                let dash_line = "-".repeat(70);
+                let dash_line = "─".repeat(70);
                 eprintln!("{style_reset}{dash_line}{style_reset}");
-                eprintln!("{style_bold}Expanded macro:{style_reset}");
+                eprintln!(
+                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset}:{style_reset}\n"
+                );
                 eprint!("{pretty_output}");
                 eprintln!("{style_reset}{dash_line}{style_reset}");
             }
@@ -250,5 +280,5 @@ where
 
 #[proc_macro_derive(DocComment)]
 pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
-    intercept_and_debug(true, &input, |tokens| derive_doc_comment_impl(tokens))
+    intercept_and_debug(true, "derive_doc_comment", &input, derive_doc_comment_impl)
 }

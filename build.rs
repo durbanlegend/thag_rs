@@ -1,6 +1,6 @@
 mod build_utils;
-use crate::build_utils::validate_theme_file;
-use build_utils::{BuildError, BuildResult};
+// use crate::build_utils::validate_theme_file;
+// use build_utils::{BuildError, BuildResult};
 use std::env;
 use std::fs;
 use std::io::Write;
@@ -18,13 +18,13 @@ use std::path::Path;
 fn main() {
     // 1. Theme loading
     // Tell cargo to rerun if any theme file changes
-    println!("cargo:rerun-if-changed=themes/built_in");
+    // println!("cargo:rerun-if-changed=themes/built_in");
 
-    if let Err(e) = generate_theme_data() {
-        // Use cargo:warning to show build script errors
-        println!("cargo:warning=Theme generation failed: {e:?}"); // Fail the build if we can't generate themes
-        std::process::exit(1);
-    }
+    // if let Err(e) = generate_theme_data() {
+    //     // Use cargo:warning to show build script errors
+    //     println!("cargo:warning=Theme generation failed: {e:?}"); // Fail the build if we can't generate themes
+    //     std::process::exit(1);
+    // }
 
     // 2. Test generation
     // Check for mutually exclusive features
@@ -76,10 +76,8 @@ fn main() {
         let dest_dir = &out_dir_path.join(subdir_name);
 
         // Create the destination directory if it doesn't exist
-        fs::create_dir_all(dest_dir).expect(&format!(
-            "Failed to create directory {}",
-            dest_dir.display()
-        ));
+        fs::create_dir_all(dest_dir)
+            .unwrap_or_else(|_| panic!("Failed to create directory {}", dest_dir.display()));
 
         let skip_scripts_on_windows = [
             "crossbeam_channel_stopwatch.rs",
@@ -117,10 +115,9 @@ fn main() {
         };
         */
 
-        for entry in fs::read_dir(source_dir).expect(&format!(
-            "Failed to read directory {}",
-            source_dir.display()
-        )) {
+        for entry in fs::read_dir(source_dir)
+            .unwrap_or_else(|_| panic!("Failed to read directory {}", source_dir.display()))
+        {
             let entry = entry.expect("Failed to get directory entry");
             let path = entry.path();
 
@@ -217,64 +214,64 @@ fn check_{subdir_name}_{test_name}() {{
     }
 }
 
-fn generate_theme_data() -> BuildResult<()> {
-    println!("cargo:rerun-if-changed=themes/built_in");
+// fn generate_theme_data() -> BuildResult<()> {
+//     println!("cargo:rerun-if-changed=themes/built_in");
 
-    let out_dir = env::var("OUT_DIR")?;
-    let dest_path = Path::new(&out_dir).join("theme_data.rs");
-    let mut theme_data = String::new();
+//     let out_dir = env::var("OUT_DIR")?;
+//     let dest_path = Path::new(&out_dir).join("theme_data.rs");
+//     let mut theme_data = String::new();
 
-    // Start the generated file
-    theme_data.push_str(
-        "
-        /// Maps theme names to their TOML definitions
-        pub const BUILT_IN_THEMES: phf::Map<&'static str, &'static str> = phf::phf_map! {
-    ",
-    );
+//     // Start the generated file
+//     theme_data.push_str(
+//         "
+//         /// Maps theme names to their TOML definitions
+//         pub const BUILT_IN_THEMES: phf::Map<&'static str, &'static str> = phf::phf_map! {
+//     ",
+//     );
 
-    let theme_dir = Path::new("themes/built_in");
-    let entries = fs::read_dir(theme_dir)?;
+//     let theme_dir = Path::new("themes/built_in");
+//     let entries = fs::read_dir(theme_dir)?;
 
-    for entry in entries {
-        let entry = entry?;
-        let path = entry.path();
+//     for entry in entries {
+//         let entry = entry?;
+//         let path = entry.path();
 
-        // Check if it's a .toml file
-        if path.extension().and_then(|s| s.to_str()) != Some("toml") {
-            continue;
-        }
+//         // Check if it's a .toml file
+//         if path.extension().and_then(|s| s.to_str()) != Some("toml") {
+//             continue;
+//         }
 
-        // Validate theme before including it
-        validate_theme_file(&path)?;
+//         // Validate theme before including it
+//         validate_theme_file(&path)?;
 
-        // Get theme name from filename
-        let theme_name = path
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .ok_or_else(|| BuildError::InvalidFileName { path: path.clone() })?;
+//         // Get theme name from filename
+//         let theme_name = path
+//             .file_stem()
+//             .and_then(|s| s.to_str())
+//             .ok_or_else(|| BuildError::InvalidFileName { path: path.clone() })?;
 
-        // Read theme content
-        let theme_content = fs::read_to_string(&path)?;
+//         // Read theme content
+//         let theme_content = fs::read_to_string(&path)?;
 
-        // Normalize line endings and escape quotes
-        let escaped_content = theme_content
-            .replace('\\', "\\\\")
-            .replace('\"', "\\\"")
-            .replace("\r\n", "\\n")
-            .replace('\n', "\\n");
+//         // Normalize line endings and escape quotes
+//         let escaped_content = theme_content
+//             .replace('\\', "\\\\")
+//             .replace('\"', "\\\"")
+//             .replace("\r\n", "\\n")
+//             .replace('\n', "\\n");
 
-        // Add to map
-        theme_data.push_str(&format!(
-            r#""{theme_name}" => "{escaped_content}",
-"#
-        ));
-    }
+//         // Add to map
+//         theme_data.push_str(&format!(
+//             r#""{theme_name}" => "{escaped_content}",
+// "#
+//         ));
+//     }
 
-    // Close the map
-    theme_data.push_str("};");
+//     // Close the map
+//     theme_data.push_str("};");
 
-    // Write the generated file
-    fs::write(dest_path, theme_data)?;
+//     // Write the generated file
+//     fs::write(dest_path, theme_data)?;
 
-    Ok(())
-}
+//     Ok(())
+// }

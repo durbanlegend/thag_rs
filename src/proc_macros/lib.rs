@@ -4,6 +4,7 @@ mod category_enum;
 mod file_navigator;
 mod generate_theme_types;
 mod palette_methods;
+mod preload_themes;
 mod repeat_dash;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
@@ -11,6 +12,7 @@ use crate::category_enum::category_enum_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
 use crate::palette_methods::palette_methods_impl;
+use crate::preload_themes::preload_themes_impl;
 use crate::repeat_dash::repeat_dash_impl;
 use proc_macro::TokenStream;
 use quote::quote;
@@ -106,7 +108,7 @@ pub fn category_enum(input: TokenStream) -> TokenStream {
         token.to_string().contains("expand_macro")
     });
 
-    intercept_and_debug(should_expand, &input, category_enum_impl)
+    intercept_and_debug(should_expand, "category_enum", &input, category_enum_impl)
 }
 
 /// Generates a constant `DASH_LINE` consisting of a dash (hyphen) repeated the number of times specified by the integer literal argument `n`.
@@ -127,14 +129,19 @@ pub fn category_enum(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn repeat_dash(input: TokenStream) -> TokenStream {
     // repeat_dash_impl(input)
-    intercept_and_debug(false, &input, repeat_dash_impl)
+    intercept_and_debug(false, "repeat_dash", &input, repeat_dash_impl)
 }
 
-fn intercept_and_debug<F>(expand: bool, input: &TokenStream, proc_macro: F) -> TokenStream
+fn intercept_and_debug<F>(
+    expand: bool,
+    name: &str,
+    input: &TokenStream,
+    proc_macro: F,
+) -> TokenStream
 where
     F: Fn(TokenStream) -> TokenStream,
 {
-    use inline_colorization::{style_bold, style_reset};
+    use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
 
     // Call the provided macro function
     let output = proc_macro(input.clone());
@@ -149,7 +156,9 @@ where
                 let pretty_output = prettyplease::unparse(&syn_file);
                 let dash_line = "─".repeat(70);
                 eprintln!("{style_reset}{dash_line}{style_reset}");
-                eprintln!("{style_bold}Expanded macro:{style_reset}");
+                eprintln!(
+                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset}:{style_reset}\n"
+                );
                 eprint!("{pretty_output}");
                 eprintln!("{style_reset}{dash_line}{style_reset}");
             }
@@ -181,34 +190,34 @@ pub fn profile(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Generates repetitive methods for all 14 `Style` fields of the `Palette` struct
+/// instead of hand-coding them.
 #[proc_macro_derive(PaletteMethods)]
 pub fn palette_methods(input: TokenStream) -> TokenStream {
-    // Parse the input to check for the `expand_macro` attribute
-    let should_expand = input.clone().into_iter().any(|token| {
-        // Very basic check - you might want something more robust
-        token.to_string().contains("expand_macro")
-    });
-
-    intercept_and_debug(should_expand, &input, palette_methods_impl)
+    intercept_and_debug(false, "palette_methods", &input, palette_methods_impl)
 }
 
 #[proc_macro_derive(AnsiCodeDerive, attributes(ansi_name))]
 pub fn ansi_code_derive(input: TokenStream) -> TokenStream {
-    // Parse the input to check for the `expand_macro` attribute
-    let should_expand = input.clone().into_iter().any(|token| {
-        // Very basic check - you might want something more robust
-        token.to_string().contains("expand_macro")
-    });
-
-    intercept_and_debug(should_expand, &input, ansi_code_derive_impl)
+    intercept_and_debug(false, "ansi_code_derive", &input, ansi_code_derive_impl)
 }
 
 #[proc_macro]
 pub fn file_navigator(input: TokenStream) -> TokenStream {
-    intercept_and_debug(false, &input, file_navigator_impl)
+    intercept_and_debug(false, "file_navigator", &input, file_navigator_impl)
 }
 
 #[proc_macro]
 pub fn generate_theme_types(input: TokenStream) -> TokenStream {
-    intercept_and_debug(false, &input, generate_theme_types_impl)
+    intercept_and_debug(
+        false,
+        "generate_theme_types",
+        &input,
+        generate_theme_types_impl,
+    )
+}
+
+#[proc_macro]
+pub fn preload_themes(input: TokenStream) -> TokenStream {
+    intercept_and_debug(false, "preload_themes", &input, preload_themes_impl)
 }

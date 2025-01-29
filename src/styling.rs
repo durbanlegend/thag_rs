@@ -10,7 +10,7 @@ use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
-use thag_proc_macros::{generate_theme_types, AnsiCodeDerive, PaletteMethods};
+use thag_proc_macros::{preload_themes, AnsiCodeDerive, PaletteMethods};
 
 #[cfg(feature = "color_detect")]
 use crate::terminal::{self, get_term_bg};
@@ -22,9 +22,10 @@ use crate::config::maybe_config;
 use crate::debug_log;
 
 // Include the generated theme data
-include!(concat!(env!("OUT_DIR"), "/theme_data.rs"));
+// include!(concat!(env!("OUT_DIR"), "/theme_data.rs"));
 
 // #[cfg(feature = "color_detect")]
+#[cfg(feature = "config")]
 const THRESHOLD: f32 = 30.0; // Adjust this value as needed
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, AnsiCodeDerive)]
@@ -195,6 +196,7 @@ impl Style {
     /// This function will return an error if it encounters an invalid hex RGB value.
     #[cfg(feature = "config")]
     pub fn from_fg_hex(hex: &str) -> ThagResult<Self> {
+        profile_method!("Style::from_fg_hex");
         let hex = hex.trim_start_matches('#');
         if hex.len() == 6 {
             if let (Ok(r), Ok(g), Ok(b)) = (
@@ -631,6 +633,7 @@ impl Role {
 // We can implement conversions to u8 directly here
 impl From<&Role> for u8 {
     fn from(role: &Role) -> Self {
+        profile_method!("Style::from(&Role)");
         role.color_index()
     }
 }
@@ -699,6 +702,7 @@ impl ColorInitStrategy {
 
 #[cfg(feature = "color_detect")]
 fn resolve_config_term_bg_rgb(config: &crate::Config) -> Option<(u8, u8, u8)> {
+    profile!("resolve_config_term_bg_rgb");
     let term_bg_rgb = config.styling.term_bg_rgb;
     match term_bg_rgb {
         None => get_term_bg().map_or(None, |rgb| Some(*rgb)),
@@ -758,6 +762,7 @@ impl TermAttributes {
         profile_method!("TermAttributes::initialize");
         let get_or_init = INSTANCE.get_or_init(|| -> Self {
             profile_section!("TermAttributes::get_or_init");
+            #[allow(clippy::match_same_arms)]
             match *strategy {
                 ColorInitStrategy::Configure(support, bg_luma, bg_rgb) => {
                     let theme_name = match (support, bg_luma, bg_rgb) {
@@ -782,7 +787,7 @@ impl TermAttributes {
                         // _ => unreachable!(),
                     };
                     let theme =
-                        Theme::load_builtin(theme_name).expect("Failed to load builtin theme");
+                        Theme::get_builtin(theme_name).expect("Failed to load builtin theme");
                     Self {
                         color_support: support,
                         theme,
@@ -790,7 +795,7 @@ impl TermAttributes {
                         term_bg_rgb: None::<&'static (u8, u8, u8)>,
                         term_bg_luma: match bg_luma {
                             TermBgLuma::Light => TermBgLuma::Light,
-                            TermBgLuma::Dark => TermBgLuma::Dark,
+                            TermBgLuma::Dark |
                             // #[cfg(feature = "color_detect")]
                             TermBgLuma::Undetermined => TermBgLuma::Dark,
                         },
@@ -798,7 +803,7 @@ impl TermAttributes {
                 }
                 ColorInitStrategy::Default => {
                     let theme =
-                        Theme::load_builtin("basic_dark").expect("Failed to load basic dark theme");
+                        Theme::get_builtin("basic_dark").expect("Failed to load basic dark theme");
                     Self {
                         color_support: ColorSupport::Basic,
                         term_bg_hex: None,
@@ -853,6 +858,7 @@ impl TermAttributes {
     /// # Panics
     /// Panics if theme initialization fails
     pub fn get_or_init() -> &'static Self {
+        profile_method!("TermAttrs::resolve_config_term_bg_rgb");
         let strategy = ColorInitStrategy::determine();
         // eprintln!(
         //     "strategy={strategy:?}. initialized={}",
@@ -957,7 +963,8 @@ impl TermAttributes {
     /// * The theme is incompatible with current terminal capabilities
     /// * Theme validation fails
     pub fn with_theme(mut self, theme_name: &str) -> ThagResult<Self> {
-        self.theme = Theme::load_builtin(theme_name)?;
+        profile_method!("TermAttrs::with_theme");
+        self.theme = Theme::get_builtin(theme_name)?;
         Ok(self)
     }
 
@@ -1035,11 +1042,13 @@ impl TermAttributes {
 
 #[must_use]
 pub fn paint_for_role(role: Role, string: &str) -> String {
+    profile!("paint_for_role");
     Style::for_role(role).paint(string)
 }
 
 #[must_use]
 pub fn style_for_theme_and_role(theme: &Theme, role: Role) -> Style {
+    profile!("paint_for_role");
     theme.style_for_role(role)
 }
 
@@ -1137,6 +1146,7 @@ pub struct Palette {
 impl Palette {
     #[must_use]
     pub fn style_for_role(&self, role: Role) -> Style {
+        profile!("paint_for_role");
         match role {
             Heading1 => self.heading1.clone(),
             Role::Heading2 => self.heading2.clone(),
@@ -1179,7 +1189,51 @@ impl Palette {
 // }
 
 // ThemeDefinition & ThemeSignature and their impls
-generate_theme_types! {}
+// generate_theme_types! {}
+
+// ThemeIndex, THEME_INDEX and BG_LOOKUP
+preload_themes! {}
+
+/// Theme definition loaded from TOML files
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ThemeDefinition {
+    name: String,
+    #[serde(skip)]
+    pub filename: PathBuf, // e.g., "themes/built_in/dracula.toml"
+    #[serde(skip)]
+    pub is_builtin: bool, // true for built-in themes, false for custom    pub term_bg_luma: TermBgLuma,
+    /// Light or dark background requirement
+    pub term_bg_luma: String,
+    /// Minimum color support required
+    pub min_color_support: String,
+    /// All possible Hex RGB values for theme background
+    pub backgrounds: Vec<String>, // Keep as hex strings in TOML
+    /// Theme description
+    pub description: String,
+    /// Color palette configuration
+    pub palette: PaletteConfig,
+}
+
+impl ThemeDefinition {
+    /// Get the background luminance requirement
+    #[must_use]
+    pub fn term_bg_luma(&self) -> &str {
+        &self.term_bg_luma
+    }
+
+    /// Get the minimum color support requirement
+    #[must_use]
+    pub fn min_color_support(&self) -> &str {
+        &self.min_color_support
+    }
+
+    /// Get the background color if specified
+    #[must_use]
+    pub fn backgrounds(&self) -> Vec<String> {
+        self.backgrounds.clone()
+    }
+}
 
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
@@ -1196,6 +1250,17 @@ pub struct Theme {
 }
 
 impl Theme {
+    fn from_toml(theme_name: &str, theme_toml: &str) -> Result<Self, ThagError> {
+        profile_method!("Theme::from_toml");
+        // vlog!(V::V, "About to call toml::from_str(theme_toml)");
+        let mut def: ThemeDefinition = toml::from_str(theme_toml)?;
+        // vlog!(V::V, "Done! def={def:?}");
+        def.filename = PathBuf::from(format!("themes/built_in/{theme_name}.toml"));
+        def.is_builtin = true;
+        // vlog!(V::V, "About to call Theme::from_definition({def:?})");
+        Self::from_definition(def)
+    }
+
     /// Detects and loads the most appropriate theme for the current terminal.
     /// This function does not involve interrogating the terminal, and may use
     /// configured or defaulted values.
@@ -1204,7 +1269,7 @@ impl Theme {
     ///
     /// This function will bubble up any `termbg` error encountered.
     // #[cfg(feature = "color_detect")]
-    #[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
+    #[allow(clippy::too_many_lines, clippy::cognitive_complexity, unused_variables)]
     pub fn auto_detect(
         color_support: ColorSupport,
         term_bg_luma: TermBgLuma,
@@ -1214,154 +1279,215 @@ impl Theme {
         // NB: don't call `TermAttributes::get_or_init()` here because it will cause a tight loop
         // since we're called from the TermAttributes::initialize.
         vlog!(V::V, "maybe_term_bg={maybe_term_bg:?}");
-        if let Some(term_bg_rgb) = maybe_term_bg {
-            let signatures = get_theme_signatures();
-            // vlog!(V::V, "signatures={signatures:?}");
-            // First filter themes by luma and compatible colour support
-            let eligible_themes: Vec<_> = signatures
-                .iter()
-                .filter(|(_, sig)| {
-                    let mut min_distance = f32::MAX;
-                    for rgb in &sig.bg_rgbs {
-                        let color_distance = color_distance(*term_bg_rgb, *rgb);
-                        if color_distance < min_distance {
-                            min_distance = color_distance;
-                        }
+        let Some(term_bg_rgb) = maybe_term_bg else {
+            return fallback_theme(term_bg_luma);
+        };
+
+        // let signatures = get_theme_signatures();
+        // vlog!(V::V, "signatures={signatures:?}");
+        let hex = rgb_to_bare_hex(term_bg_rgb);
+        let exact_matches = BG_LOOKUP
+            .get(&hex)
+            .map(|names| Vec::from(*names))
+            .unwrap_or_default();
+        vlog!(
+            V::V,
+            "term_bg_rgb={term_bg_rgb:?}, hex={hex}, exact_matches for hex={exact_matches:?}"
+        );
+
+        // let exact_matches = get_exact_matches(&exact_bg_matches, *term_bg_rgb, color_support);
+        // vlog!(V::V, "exact_matches={exact_matches:#?}");
+
+        // First filter themes by luma and compatible colour support
+        #[cfg(feature = "config")]
+        let eligible_themes: Vec<_> = THEME_INDEX
+            .into_iter()
+            .filter(|(_, idx)| {
+                let mut min_distance = f32::MAX;
+                for rgb in idx.bg_rgbs {
+                    let color_distance = color_distance(*term_bg_rgb, *rgb);
+                    if color_distance < min_distance {
+                        min_distance = color_distance;
                     }
-                    sig.term_bg_luma == term_bg_luma
-                        && sig.min_color_support <= color_support
-                        && min_distance < THRESHOLD
-                })
-                .collect();
+                }
+                idx.term_bg_luma == term_bg_luma
+                    && idx.min_color_support <= color_support
+                    && min_distance < THRESHOLD
+            })
+            .map(|(&name, idx)| (name, idx))
+            .collect();
 
-            let exact_matches = get_exact_matches(&eligible_themes, *term_bg_rgb, color_support);
-            vlog!(V::V, "exact_matches={exact_matches:#?}");
+        #[cfg(feature = "config")]
+        if let Some(config) = maybe_config() {
+            vlog!(
+                V::V,
+                "1. Try exact background RGB match of a preferred theme."
+            );
+            vlog!(V::V, "Looking for match on config styling");
+            let preferred_styling = get_preferred_styling(term_bg_luma, &config);
 
-            #[cfg(feature = "config")]
-            if let Some(config) = maybe_config() {
-                // 1. Try exact background RGB match of a preferred theme
-                vlog!(V::V, "Looking for match on config styling");
-                let preferred_styling = get_preferred_styling(term_bg_luma, &config);
+            for preferred_name in preferred_styling {
+                vlog!(V::V, "preferred_name={preferred_name}");
+                if exact_matches.contains(&preferred_name.as_str()) {
+                    vlog!(V::V, "Found an exact match in {preferred_name}!");
+                    return Self::get_builtin(preferred_name);
+                }
+            }
+
+            vlog!(
+                V::V,
+                "2. If TrueColor, look for exact RGB match of a preferred Color256 theme."
+            );
+            if color_support == ColorSupport::TrueColor {
+                // Look for matching 256-color theme
+                let next_best_matches = eligible_themes
+                    .iter()
+                    .filter(|(_, idx)| {
+                        idx.matches_background(*term_bg_rgb)
+                            && idx.min_color_support == ColorSupport::Color256
+                    })
+                    .map(|(name, _)| (*name).to_string())
+                    .collect::<Vec<String>>();
+                vlog!(V::V, "next_best_matches={next_best_matches:#?}");
 
                 for preferred_name in preferred_styling {
                     vlog!(V::V, "preferred_name={preferred_name}");
-                    if exact_matches.contains(preferred_name) {
-                        vlog!(V::V, "Found an exact match in {preferred_name}!");
-                        return Self::load_builtin(preferred_name);
+                    if next_best_matches.contains(preferred_name) {
+                        vlog!(
+                            V::V,
+                            "Found an exact match at reduced color in {preferred_name}"
+                        );
+                        return Self::get_builtin(preferred_name);
                     }
                 }
+            }
 
-                // 2. If TrueColor, look for exact RGB match of a preferred Color256 theme.
-                if color_support == ColorSupport::TrueColor {
-                    // Look for matching 256-color theme
-                    let next_best_matches = eligible_themes
-                        .iter()
-                        .filter(|(_, sig)| {
-                            sig.matches_background(*term_bg_rgb)
-                                && sig.min_color_support == ColorSupport::Color256
-                        })
-                        .map(|(name, _)| (*name).to_string())
-                        .collect::<Vec<String>>();
-                    vlog!(V::V, "next_best_matches={next_best_matches:#?}");
+            vlog!(V::V, "3. Look for any theme exactly matching colour support and terminal background colour, in hopes of matching existing theme colours.");
+            vlog!(V::V, "a. Try exact match on fallback names");
+            let fallback_styling = get_fallback_styling(term_bg_luma, &config);
+            for fallback_name in fallback_styling {
+                vlog!(V::V, "fallback_name={fallback_name}");
+                if exact_matches.contains(&fallback_name.as_str()) {
+                    vlog!(V::V, "Found an exact match in fallback {fallback_name}!");
+                    return Self::get_builtin(fallback_name);
+                }
+            }
+            vlog!(
+                V::V,
+                "b. Try for any exact match at the original color support."
+            );
+            if let Some(exact_match) = exact_matches.into_iter().next() {
+                vlog!(V::V, "Found an exact match with {exact_match}!");
+                return Self::get_builtin(exact_match);
+            }
+            let reduced_palette_matches =
+                get_reduced_palette_matches(&eligible_themes, *term_bg_rgb, color_support);
+            vlog!(V::V, "exact_matches={reduced_palette_matches:#?}");
 
-                    for preferred_name in preferred_styling {
-                        vlog!(V::V, "preferred_name={preferred_name}");
-                        if next_best_matches.contains(preferred_name) {
-                            vlog!(
-                                V::V,
-                                "Found an exact match at reduced color in {preferred_name}"
-                            );
-                            return Self::load_builtin(preferred_name);
-                        }
-                    }
-                }
-
-                // 3. Look for any theme exactly matching colour support and terminal background colour,
-                //    in hopes of matching existing theme colours.
-                // a. Try exact match on fallback names
-                let fallback_styling = get_fallback_styling(term_bg_luma, &config);
-                for fallback_name in fallback_styling {
-                    vlog!(V::V, "fallback_name={fallback_name}");
-                    if exact_matches.contains(fallback_name) {
-                        vlog!(V::V, "Found an exact match in fallback {fallback_name}!");
-                        return Self::load_builtin(fallback_name);
-                    }
-                }
-                // b. Try for any exact match at the original color support
-                if let Some(exact_match) = exact_matches.into_iter().next() {
-                    vlog!(V::V, "Found an exact match with {exact_match}!");
-                    return Self::load_builtin(&exact_match);
-                }
-                let reduced_palette_matches =
-                    get_reduced_palette_matches(&eligible_themes, *term_bg_rgb, color_support);
-                vlog!(V::V, "exact_matches={reduced_palette_matches:#?}");
-
-                // c. Try colour-reduced exact match on fallback names
-                for fallback_name in fallback_styling {
-                    vlog!(V::V, "fallback_name={fallback_name}");
-                    if reduced_palette_matches.contains(fallback_name) {
-                        vlog!(V::V, "Found a color-reduced exact background match in fallback {fallback_name}!");
-                        return Self::load_builtin(fallback_name);
-                    }
-                }
-                // d. Try for any exact match at the reduced color support
-                if let Some(bg_match) = reduced_palette_matches.into_iter().next() {
+            vlog!(V::V, "c. Try colour-reduced exact match on fallback names.");
+            for fallback_name in fallback_styling {
+                vlog!(V::V, "fallback_name={fallback_name}");
+                if reduced_palette_matches.contains(fallback_name) {
                     vlog!(
                         V::V,
-                        "Found a color-reduced exact background match with {bg_match}!"
+                        "Found a color-reduced exact background match in fallback {fallback_name}!"
                     );
-                    return Self::load_builtin(&bg_match);
+                    return Self::get_builtin(fallback_name);
                 }
+            }
+            vlog!(
+                V::V,
+                "d. Try for any exact match at the reduced color support."
+            );
+            if let Some(bg_match) = reduced_palette_matches.into_iter().next() {
+                vlog!(
+                    V::V,
+                    "Found a color-reduced exact background match with {bg_match}!"
+                );
+                return Self::get_builtin(&bg_match);
+            }
 
-                // No exact matches found.
-                // 4. Try closest match to a preferred theme, irrespective of colour support.
-                let mut best_match = None;
-                let mut min_distance = f32::MAX;
-                for preferred_name in preferred_styling {
-                    let preferred_sig = signatures.get(preferred_name);
-                    // vlog!(V::V, "theme_name={theme_name}");
-                    if let Some(sig) = preferred_sig {
-                        for rgb in &sig.bg_rgbs {
-                            let distance = color_distance(*term_bg_rgb, *rgb);
-                            if distance < min_distance {
-                                min_distance = distance;
-                                best_match = Some(preferred_name);
-                            }
+            vlog!(V::V, "No exact matches found.");
+            vlog!(
+                V::V,
+                "4. Try closest match to a preferred theme, irrespective of colour support."
+            );
+            let mut best_match = None;
+            let mut min_distance = f32::MAX;
+            for preferred_name in preferred_styling {
+                let preferred_idx = THEME_INDEX.get(preferred_name);
+                // vlog!(V::V, "theme_name={theme_name}");
+                if let Some(idx) = preferred_idx {
+                    for rgb in idx.bg_rgbs {
+                        let distance = color_distance(*term_bg_rgb, *rgb);
+                        if distance < min_distance {
+                            min_distance = distance;
+                            best_match = Some(preferred_name);
                         }
                     }
                 }
-                if let Some(theme) = best_match {
-                    vlog!(V::V, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
-                    return Self::load_builtin(theme);
-                }
+            }
+            if let Some(theme) = best_match {
+                vlog!(V::V, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
+                return Self::get_builtin(theme);
+            }
 
-                // 5. Try closest match to a fallback theme, irrespective of colour support.
-                let mut best_match = None;
-                let mut min_distance = f32::MAX;
-                for fallback_name in fallback_styling {
-                    let fallback_sig = signatures.get(fallback_name);
-                    // vlog!(V::V, "theme_name={theme_name}");
-                    if let Some(sig) = fallback_sig {
-                        for rgb in &sig.bg_rgbs {
-                            let distance = color_distance(*term_bg_rgb, *rgb);
-                            if distance < min_distance {
-                                min_distance = distance;
-                                best_match = Some(fallback_name);
-                            }
+            vlog!(
+                V::V,
+                "5. Try closest match to a fallback theme, irrespective of colour support."
+            );
+            let mut best_match = None;
+            let mut min_distance = f32::MAX;
+            for fallback_name in fallback_styling {
+                let fallback_idx = THEME_INDEX.get(fallback_name);
+                // vlog!(V::V, "theme_name={theme_name}");
+                if let Some(idx) = fallback_idx {
+                    for rgb in idx.bg_rgbs {
+                        let distance = color_distance(*term_bg_rgb, *rgb);
+                        if distance < min_distance {
+                            min_distance = distance;
+                            best_match = Some(fallback_name);
                         }
                     }
                 }
-                if let Some(theme) = best_match {
-                    vlog!(V::V, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
-                    return Self::load_builtin(theme);
-                }
+            }
+            if let Some(theme) = best_match {
+                vlog!(V::V, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
+                return Self::get_builtin(theme);
+            }
 
-                // 6. Try closest match at original colour support.
-                let mut min_distance = f32::MAX;
-                let mut best_match = None;
-                for (theme, sig) in &eligible_themes {
-                    if sig.min_color_support == color_support {
-                        for rgb in &sig.bg_rgbs {
+            vlog!(V::V, "6. Try closest match at original colour support.");
+            let mut min_distance = f32::MAX;
+            let mut best_match = None;
+            for (theme, idx) in &eligible_themes {
+                if idx.min_color_support == color_support {
+                    for rgb in idx.bg_rgbs {
+                        let color_distance = color_distance(*term_bg_rgb, *rgb);
+                        if color_distance < min_distance {
+                            min_distance = color_distance;
+                            best_match = Some(theme);
+                        }
+                    }
+                }
+            }
+            if let Some(theme) = best_match {
+                vlog!(
+                    V::V,
+                    "Found the closest match at {color_support:?} with {theme}!"
+                );
+                return Self::get_builtin(theme);
+            }
+
+            vlog!(
+                V::V,
+                "7. Try closest match with progressive color support reduction."
+            );
+            let mut min_distance = f32::MAX;
+            let mut best_match = None;
+            for col_supp in [ColorSupport::Color256, ColorSupport::Basic] {
+                for (theme, idx) in &eligible_themes {
+                    if idx.min_color_support == col_supp {
+                        for rgb in idx.bg_rgbs {
                             let color_distance = color_distance(*term_bg_rgb, *rgb);
                             if color_distance < min_distance {
                                 min_distance = color_distance;
@@ -1375,48 +1501,17 @@ impl Theme {
                         V::V,
                         "Found the closest match at {color_support:?} with {theme}!"
                     );
-                    return Self::load_builtin(theme);
-                }
-
-                // 7. Try closest match with progressive color support reduction.
-                let mut min_distance = f32::MAX;
-                let mut best_match = None;
-                for col_supp in [ColorSupport::Color256, ColorSupport::Basic] {
-                    for (theme, sig) in &eligible_themes {
-                        if sig.min_color_support == col_supp {
-                            for rgb in &sig.bg_rgbs {
-                                let color_distance = color_distance(*term_bg_rgb, *rgb);
-                                if color_distance < min_distance {
-                                    min_distance = color_distance;
-                                    best_match = Some(theme);
-                                }
-                            }
-                        }
-                    }
-                    if let Some(theme) = best_match {
-                        vlog!(
-                            V::V,
-                            "Found the closest match at {color_support:?} with {theme}!"
-                        );
-                        return Self::load_builtin(theme);
-                    }
+                    return Self::get_builtin(theme);
                 }
             }
-
-            // Fall back to basic theme
-            Ok(Self::load_builtin(if term_bg_luma == TermBgLuma::Light {
-                "basic_light"
-            } else {
-                "basic_dark"
-            })?)
-        } else {
-            // Fall back to basic theme
-            Ok(Self::load_builtin(if term_bg_luma == TermBgLuma::Light {
-                "basic_light"
-            } else {
-                "basic_dark"
-            })?)
         }
+
+        vlog!(V::V, "8. Fall back to basic theme.");
+        Self::get_builtin(if term_bg_luma == TermBgLuma::Light {
+            "basic_light"
+        } else {
+            "basic_dark"
+        })
     }
 
     /// Loads a theme from a TOML file.
@@ -1483,22 +1578,16 @@ impl Theme {
     /// ```
     /// use thag_rs::ThagError;
     /// use thag_rs::styling::Theme;
-    /// let theme = Theme::load_builtin("dracula")?;
+    /// let theme = Theme::get_builtin("dracula")?;
     /// # Ok::<(), ThagError>(())
     /// ```
-    pub fn load_builtin(name: &str) -> ThagResult<Self> {
-        profile_method!("Theme::load_builtin");
-        let theme_toml = BUILT_IN_THEMES
-            .get(name)
-            .ok_or_else(|| ThemeError::UnknownTheme(name.to_string()))?;
-
-        // vlog!(V::V, "About to call toml::from_str(theme_toml)");
-        let mut def: ThemeDefinition = toml::from_str(theme_toml)?;
-        // vlog!(V::V, "Done! def={def:?}");
-        def.filename = PathBuf::from(format!("themes/built_in/{name}.toml"));
-        def.is_builtin = true;
-        // vlog!(V::V, "About to call Theme::from_definition({def:?})");
-        Self::from_definition(def)
+    pub fn get_builtin(theme_name: &str) -> ThagResult<Self> {
+        profile_method!("Theme::get_builtin");
+        let maybe_theme_index = THEME_INDEX.get(theme_name);
+        let Some(theme_index) = maybe_theme_index else {
+            return Err(ThagError::FromStr("No theme found for name".into()));
+        };
+        Self::from_toml(theme_name, theme_index.content)
     }
 
     fn from_definition(def: ThemeDefinition) -> ThagResult<Self> {
@@ -1556,7 +1645,7 @@ impl Theme {
     /// ```
     /// use thag_rs::ThagError;
     /// use thag_rs::styling::{ColorSupport, TermBgLuma, Theme};
-    /// let theme = Theme::load_builtin("dracula")?;
+    /// let theme = Theme::get_builtin("dracula")?;
     /// theme.validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)?;
     /// # Ok::<(), ThagError>(())
     /// ```
@@ -1700,6 +1789,7 @@ impl Theme {
     /// Returns information about the theme suitable for display
     #[must_use]
     pub fn info(&self) -> String {
+        profile_method!("Theme::info");
         format!(
             "Theme: {}\nType: {}\nFile: {}\nDescription: {}\nBackground: {} = ({}, {}, {})\nMinimum Color Support: {:?}\nBackground Luminance: {:?}",
             self.name,
@@ -1716,17 +1806,46 @@ impl Theme {
     /// Returns a list of all available built-in themes
     #[must_use]
     pub fn list_builtin() -> Vec<String> {
-        BUILT_IN_THEMES.keys().map(ToString::to_string).collect()
+        profile_method!("Theme::list_builtin");
+        THEME_INDEX.keys().map(ToString::to_string).collect()
     }
 
     #[must_use]
     fn style_for_role(&self, role: Role) -> Style {
+        profile_method!("Theme::style_for_role");
         self.palette.style_for_role(role)
     }
 }
 
+// fn get_theme(theme_name: &str) -> Option<Result<Theme, ThagError>> {
+//     Some(fun_name(theme_name))
+// }
+
+// fn get_theme(theme_name: &str) -> Result<Theme, ThagError> {
+//     let theme_index = THEME_INDEX.get(theme_name).unwrap();
+//     Theme::from_toml(theme_name, theme_index.content)
+// }
+
+fn fallback_theme(term_bg_luma: TermBgLuma) -> ThagResult<Theme> {
+    profile!("fallback_theme");
+    let name = if term_bg_luma == TermBgLuma::Light {
+        "basic_light"
+    } else {
+        "basic_dark"
+    };
+
+    Theme::from_toml(
+        name,
+        THEME_INDEX
+            .get(name)
+            .expect("Basic theme not found")
+            .content,
+    )
+}
+
 #[cfg(feature = "config")]
 fn get_preferred_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Vec<String> {
+    profile!("get_preferred_styling");
     match term_bg_luma {
         TermBgLuma::Light => &config.styling.preferred_light,
         TermBgLuma::Dark => &config.styling.preferred_dark,
@@ -1742,6 +1861,7 @@ fn get_preferred_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &V
 
 #[cfg(feature = "config")]
 fn get_fallback_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Vec<String> {
+    profile!("get_fallback_styling");
     match term_bg_luma {
         TermBgLuma::Light => &config.styling.fallback_light,
         TermBgLuma::Dark => &config.styling.fallback_dark,
@@ -1755,30 +1875,40 @@ fn get_fallback_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Ve
     }
 }
 
-fn get_exact_matches(
-    eligible_themes: &Vec<(&String, &ThemeSignature)>,
-    term_bg_rgb: (u8, u8, u8),
-    color_support: ColorSupport,
-) -> Vec<String> {
-    eligible_themes
-        .iter()
-        .filter(|(_, sig)| {
-            sig.matches_background(term_bg_rgb) && sig.min_color_support == color_support
-        })
-        .map(|(name, _)| (*name).to_string())
-        .collect::<Vec<String>>()
-}
+// fn get_exact_matches(
+//     eligible_themes: &Vec<&str>,
+//     term_bg_rgb: (u8, u8, u8),
+//     color_support: ColorSupport,
+// ) -> Vec<String> {
+//     eligible_themes
+//         .iter()
+//         .map(|theme_name| (theme_name, THEME_INDEX.get(theme_name)))
+//         .filter_map(|(theme_name, maybe_idx)| {
+//             if let Some(idx) = maybe_idx {
+//                 if idx.matches_background(term_bg_rgb) && idx.min_color_support == color_support {
+//                     Some((theme_name, idx))
+//                 } else {
+//                     None
+//                 }
+//             } else {
+//                 None
+//             }
+//         })
+//         .map(|(name, _)| (*name).to_string())
+//         .collect::<Vec<String>>()
+// }
 
 #[cfg(feature = "config")]
 fn get_reduced_palette_matches(
-    eligible_themes: &Vec<(&String, &ThemeSignature)>,
+    eligible_themes: &Vec<(&str, &ThemeIndex)>,
     term_bg_rgb: (u8, u8, u8),
     color_support: ColorSupport,
 ) -> Vec<String> {
+    profile!("get_reduced_palette_matches");
     eligible_themes
         .iter()
-        .filter(|(_, sig)| {
-            sig.matches_background(term_bg_rgb) && sig.min_color_support < color_support
+        .filter(|(_, idx)| {
+            idx.matches_background(term_bg_rgb) && idx.min_color_support < color_support
         })
         .map(|(name, _)| (*name).to_string())
         .collect()
@@ -1798,6 +1928,7 @@ fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> f32 {
 
 // #[cfg(feature = "color_detect")]
 fn hex_to_rgb(hex: &str) -> ThagResult<(u8, u8, u8)> {
+    profile!("hex_to_rgb");
     let hex = hex.trim_start_matches('#');
     if hex.len() == 6 {
         if let (Ok(r), Ok(g), Ok(b)) = (
@@ -1816,7 +1947,7 @@ fn hex_to_rgb(hex: &str) -> ThagResult<(u8, u8, u8)> {
 
 // Helper to check a single style
 fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
-    profile_method!("Theme::style_for");
+    profile!("validate_style");
     style.foreground.as_ref().map_or_else(
         || Ok(()),
         |color_info| match &color_info.value {
@@ -1864,10 +1995,10 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
 //     }
 // }
 
-#[must_use]
-pub fn rgb_to_hex((r, g, b): &(u8, u8, u8)) -> String {
-    format!("#{r:02x}{g:02x}{b:02x}")
-}
+// #[must_use]
+// pub fn rgb_to_hex((r, g, b): &(u8, u8, u8)) -> String {
+//     format!("#{r:02x}{g:02x}{b:02x}")
+// }
 
 // Convenience macros
 /// A line print macro that conditionally prints a message using `cprtln` if the current global verbosity
@@ -1997,7 +2128,7 @@ pub fn get_rgb(color: u8) -> (u8, u8, u8) {
 #[allow(dead_code)]
 fn main() -> ThagResult<()> {
     // Load built-in theme
-    let _dracula = Theme::load_builtin("dracula")?;
+    let _dracula = Theme::get_builtin("dracula")?;
 
     // Load custom theme
     let _custom = Theme::load_from_file(Path::new("themes/examples/custom_theme.toml"))?;
@@ -2042,6 +2173,8 @@ pub fn display_theme_roles(theme: &Theme) {
         ("Debug", "Development/diagnostic information"),
         ("Trace", "Detailed execution tracking"),
     ];
+
+    profile!("display_theme_roles");
 
     // Calculate maximum role name length for alignment.
     // Get length of longest role name after "painting" (wrapping in xterm styling instruction).
@@ -2120,6 +2253,7 @@ pub fn display_theme_roles(theme: &Theme) {
 
 #[allow(clippy::too_many_lines)]
 pub fn show_theme_details() {
+    profile!("show_theme_details");
     let term_attrs = TermAttributes::get_or_init();
     let theme = &term_attrs.theme;
     let theme_bgs = &term_attrs.theme.bg_rgbs;
@@ -2241,6 +2375,7 @@ pub fn show_theme_details() {
 }
 
 fn dual_format_rgb((r, g, b): (u8, u8, u8)) -> String {
+    profile!("dual_format_rgb");
     format!("#{r:02x}{g:02x}{b:02x} = rgb({r}, {g}, {b})")
 }
 
@@ -2410,7 +2545,7 @@ mod tests {
                 (ColorSupport::TrueColor, TermBgLuma::Undetermined) => "dracula",
             };
             let theme =
-                Theme::load_builtin(theme_name).expect("Failed to load builtin theme {theme_name}");
+                Theme::get_builtin(theme_name).expect("Failed to load builtin theme {theme_name}");
             Self::new(color_support, Some(BLACK_BG), term_bg_luma, theme)
         }
     }

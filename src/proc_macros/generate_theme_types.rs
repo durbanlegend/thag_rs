@@ -75,44 +75,6 @@ pub fn generate_theme_types_impl(_input: TokenStream) -> TokenStream {
 
     // Generate both structures and their implementations
     let expanded = quote! {
-        /// Theme definition loaded from TOML files
-        #[derive(Debug, Clone, serde::Deserialize)]
-        #[serde(rename_all = "snake_case")]
-        pub struct ThemeDefinition {
-            name: String,
-            #[serde(skip)]
-            pub filename: PathBuf, // e.g., "themes/built_in/dracula.toml"
-            #[serde(skip)]
-            pub is_builtin: bool, // true for built-in themes, false for custom    pub term_bg_luma: TermBgLuma,
-            /// Light or dark background requirement
-            pub term_bg_luma: String,
-            /// Minimum color support required
-            pub min_color_support: String,
-            /// All possible Hex RGB values for theme background
-            pub backgrounds: Vec<String>,  // Keep as hex strings in TOML
-            /// Theme description
-            pub description: String,
-            /// Color palette configuration
-            pub palette: PaletteConfig,
-        }
-
-        impl ThemeDefinition {
-            /// Get the background luminance requirement
-            pub fn term_bg_luma(&self) -> &str {
-                &self.term_bg_luma
-            }
-
-            /// Get the minimum color support requirement
-            pub fn min_color_support(&self) -> &str {
-                &self.min_color_support
-            }
-
-            /// Get the background color if specified
-            pub fn backgrounds(&self) -> Vec<String> {
-                self.backgrounds.clone()
-            }
-        }
-
         /// Runtime theme signature for matching
         #[derive(Debug, Clone, PartialEq, Eq)]
         pub struct ThemeSignature {

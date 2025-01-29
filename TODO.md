@@ -22,6 +22,7 @@
 - [ ]  Profiling for scripts
 - [ ]  Replace build.rs logic for themes by loading themes directly into a HashMap in proc macro generate_theme_types;
         rename it to load_themes.
+- [ ]  Unit tests for env_logger feature.
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.
@@ -96,7 +97,6 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Other front-ends: thag_test: call thag with dethag of bad output - rather fix bad output at source - done?
 - [ ]  Use cargo-dist to build and distribute thag front-end commands.
 - [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
-- [ ]  Add macro name parameter to {src|bank|demo}proc_macros/lib::intercept_and_debug for use in "Expanded macro" title.
 - [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?

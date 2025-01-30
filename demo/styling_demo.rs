@@ -74,7 +74,7 @@ pub fn main() -> ThagResult<()> {
         TermBgLuma::Light => "basic_light",
         TermBgLuma::Dark | TermBgLuma::Undetermined => "basic_dark",
     };
-    let theme = Theme::load_builtin(theme_name)?;
+    let theme = Theme::get_builtin(theme_name)?;
 
     // Section 2: ANSI-16 color palette using basic styles
     let header = format!("ANSI-16 color palette in use for {theme_name} theme:\n");

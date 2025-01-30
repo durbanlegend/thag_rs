@@ -30,6 +30,14 @@ pub fn palette_methods_impl(input: TokenStream) -> TokenStream {
         }
     });
 
+    // New: Generate style references for iterator
+    let style_refs = fields.iter().map(|f| {
+        let field_name = &f.ident;
+        quote! {
+            &mut self.#field_name
+        }
+    });
+
     let output = quote! {
         impl Palette {
             /// Validates all styles in the palette against the minimum color support level.
@@ -60,6 +68,13 @@ pub fn palette_methods_impl(input: TokenStream) -> TokenStream {
                     #(#conversion_fields,)*
                 })
             }
+
+            // New method to get mutable iterator over all styles
+             pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Style> {
+                 vec![
+                     #(#style_refs,)*
+                 ].into_iter()
+             }
         }
     };
 

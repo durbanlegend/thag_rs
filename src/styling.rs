@@ -724,7 +724,7 @@ fn resolve_config_term_bg_rgb(config: &crate::Config) -> Option<(u8, u8, u8)> {
 pub struct TermAttributes {
     pub color_support: ColorSupport,
     pub term_bg_hex: Option<String>,
-    pub term_bg_rgb: Option<&'static (u8, u8, u8)>,
+    pub term_bg_rgb: Option<(u8, u8, u8)>,
     pub term_bg_luma: TermBgLuma,
     pub theme: Theme,
 }
@@ -739,7 +739,7 @@ impl TermAttributes {
     #[allow(dead_code)]
     const fn new(
         color_support: ColorSupport,
-        term_bg: Option<&'static (u8, u8, u8)>,
+        term_bg: Option<(u8, u8, u8)>,
         term_bg_luma: TermBgLuma,
         theme: Theme,
     ) -> Self {
@@ -767,6 +767,7 @@ impl TermAttributes {
     /// Panics if:
     /// * Built-in theme loading fails (which should never happen with correct installation)
     /// * Theme conversion fails during initialization
+    #[allow(clippy::too_many_lines)]
     pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
         profile_method!("TermAttributes::initialize");
         let get_or_init = INSTANCE.get_or_init(|| -> Self {
@@ -776,27 +777,16 @@ impl TermAttributes {
                 panic!("Error initializing configuration")
             };
 
-            // Remove eprintln! diagnostic message
-            #[allow(clippy::match_same_arms)]
             match *strategy {
                 ColorInitStrategy::Configure(support, bg_luma, bg_rgb) => {
                     let theme_name = match (support, bg_luma, bg_rgb) {
-                        (
-                            ColorSupport::Basic | ColorSupport::Undetermined,
-                            TermBgLuma::Light,
-                            _,
-                        ) => "atelier-heath-light_base16",
+                        (_, TermBgLuma::Light, _) => "github",
                         (
                             ColorSupport::Basic | ColorSupport::Undetermined | ColorSupport::None,
                             _,
                             _,
                         ) => "basic_dark",
-                        (ColorSupport::Color256, TermBgLuma::Light, _) => "github_256",
-                        (ColorSupport::Color256, TermBgLuma::Dark, _) => "espresso_256",
-                        (ColorSupport::TrueColor, TermBgLuma::Light, _) => "one-light",
-                        (ColorSupport::TrueColor, TermBgLuma::Dark, _) => "espresso",
-                        (ColorSupport::Color256, TermBgLuma::Undetermined, _) => "espresso_256",
-                        (ColorSupport::TrueColor, TermBgLuma::Undetermined, _) => "espresso",
+                        (_, TermBgLuma::Dark | TermBgLuma::Undetermined, _) => "espresso",
                     };
                     let theme = Theme::get_theme_with_color_support(theme_name, support)
                         .expect("Failed to load builtin theme");
@@ -804,7 +794,7 @@ impl TermAttributes {
                         color_support: support,
                         theme,
                         term_bg_hex: None,
-                        term_bg_rgb: None::<&'static (u8, u8, u8)>,
+                        term_bg_rgb: None::<(u8, u8, u8)>,
                         term_bg_luma: match bg_luma {
                             TermBgLuma::Light => TermBgLuma::Light,
                             TermBgLuma::Dark | TermBgLuma::Undetermined => TermBgLuma::Dark,
@@ -818,25 +808,76 @@ impl TermAttributes {
                     Self {
                         color_support: ColorSupport::Basic,
                         term_bg_hex: None,
-                        term_bg_rgb: None::<&'static (u8, u8, u8)>,
+                        term_bg_rgb: None::<(u8, u8, u8)>,
                         term_bg_luma: TermBgLuma::Dark,
                         theme,
                     }
                 }
-                #[cfg(feature = "color_detect")]
                 ColorInitStrategy::Match => {
-                    let support = *crate::terminal::detect_color_support();
-                    let term_bg_rgb = terminal::get_term_bg().ok();
-                    let term_bg_hex = term_bg_rgb.map(rgb_to_hex);
-                    let term_bg_luma = terminal::get_term_bg_luma();
-                    let theme = Theme::auto_detect(support, *term_bg_luma, term_bg_rgb)
-                        .expect("Failed to auto-detect theme");
-                    Self {
-                        color_support: support,
-                        term_bg_hex,
-                        term_bg_rgb,
-                        term_bg_luma: *term_bg_luma,
-                        theme,
+                    #[cfg(feature = "color_detect")]
+                    {
+                        let support = *crate::terminal::detect_color_support();
+                        let term_bg_rgb_ref = terminal::get_term_bg().ok();
+                        let term_bg_rgb = term_bg_rgb_ref.copied();
+                        let term_bg_hex = term_bg_rgb_ref.map(rgb_to_hex);
+                        let term_bg_luma = terminal::get_term_bg_luma();
+                        let theme = Theme::auto_detect(support, *term_bg_luma, term_bg_rgb_ref)
+                            .expect("Failed to auto-detect theme");
+                        Self {
+                            color_support: support,
+                            term_bg_hex,
+                            term_bg_rgb,
+                            term_bg_luma: *term_bg_luma,
+                            theme,
+                        }
+                    }
+                    #[cfg(all(not(feature = "color_detect"), feature = "config"))]
+                    {
+                        if let Some(config) = maybe_config() {
+                            let term_bg_rgb = config
+                                .styling
+                                .term_bg_rgb
+                                .unwrap_or_else(|| panic!("Attempted to unwrap term_bg_rgb: None"));
+                            let color_support = config.styling.color_support;
+                            let term_bg_luma = config.styling.term_bg_luma;
+                            // let term_bg_rgb1 = term_bg_rgb.as_ref();
+                            let theme =
+                                Theme::auto_detect(color_support, term_bg_luma, Some(&term_bg_rgb))
+                                    .expect("Failed to auto-detect theme");
+                            Self {
+                                color_support,
+                                term_bg_hex: Some(rgb_to_hex(&term_bg_rgb)), // term_bg_rgb.map(|rgb: (u8, u8, u8)| rgb_to_hex(&rgb)),
+                                term_bg_rgb: Some(term_bg_rgb),
+                                term_bg_luma,
+                                theme,
+                            }
+                        } else {
+                            let theme = Theme::get_theme_with_color_support(
+                                "basic_dark",
+                                ColorSupport::Basic,
+                            )
+                            .expect("Failed to load basic dark theme");
+                            Self {
+                                color_support: ColorSupport::Basic,
+                                term_bg_hex: None,
+                                term_bg_rgb: None::<(u8, u8, u8)>,
+                                term_bg_luma: TermBgLuma::Dark,
+                                theme,
+                            }
+                        }
+                    }
+                    #[cfg(not(feature = "config"))]
+                    {
+                        let theme =
+                            Theme::get_theme_with_color_support("basic_dark", ColorSupport::Basic)
+                                .expect("Failed to load basic dark theme");
+                        Self {
+                            color_support: ColorSupport::Basic,
+                            term_bg_hex: None,
+                            term_bg_rgb: None::<(u8, u8, u8)>,
+                            term_bg_luma: TermBgLuma::Dark,
+                            theme,
+                        }
                     }
                 }
             }
@@ -1056,7 +1097,7 @@ pub fn paint_for_role(role: Role, string: &str) -> String {
 
 #[must_use]
 pub fn style_for_theme_and_role(theme: &Theme, role: Role) -> Style {
-    profile!("paint_for_role");
+    profile!("style_for_theme_and_role");
     theme.style_for_role(role)
 }
 
@@ -1324,7 +1365,8 @@ impl Theme {
             })
             .map(|(&name, idx)| (name, idx))
             .collect();
-        eprintln!("Found {} eligible themes", eligible_themes.len());
+        #[cfg(feature = "config")]
+        vlog!(V::V, "Found {} eligible themes", eligible_themes.len());
         #[cfg(feature = "config")]
         if let Some(config) = maybe_config() {
             vlog!(
@@ -1559,8 +1601,6 @@ impl Theme {
     /// - "`dracula`" - Dark theme with vibrant colors
     /// - "`basic_light`" - Simple light theme for basic terminals
     /// - "`basic_dark`" - Simple dark theme for basic terminals
-    /// - "`light_256`" - Rich light theme for 256-color terminals
-    /// - "`dark_256`" - Rich dark theme for 256-color terminals
     ///
     /// # Arguments
     /// * `name` - The name of the built-in theme to load
@@ -1889,8 +1929,8 @@ impl Theme {
         match target {
             ColorSupport::TrueColor => (), // No conversion needed
             ColorSupport::Color256 => self.convert_to_256(),
-            ColorSupport::Basic => self.convert_to_basic(),
-            ColorSupport::Undetermined | ColorSupport::None => unreachable!(),
+            ColorSupport::Basic | ColorSupport::Undetermined => self.convert_to_basic(),
+            ColorSupport::None => self.convert_to_none(),
         }
     }
 
@@ -1910,7 +1950,6 @@ impl Theme {
         }
         self.min_color_support = ColorSupport::Color256;
     }
-
     fn convert_to_basic(&mut self) {
         profile_method!("Theme::convert_to_basic");
         // Convert each color in the palette
@@ -1919,19 +1958,6 @@ impl Theme {
                 match value {
                     ColorValue::TrueColor { rgb } => {
                         let index = Self::convert_rgb_to_ansi(rgb[0], rgb[1], rgb[2]);
-                        // *value = ColorValue::Basic {
-                        //     basic: [
-                        //         format!(
-                        //             "\x1b[{}m",
-                        //             if index < 8 {
-                        //                 30 + index
-                        //             } else {
-                        //                 90 + (index - 8)
-                        //             }
-                        //         ),
-                        //         index.to_string(),
-                        //     ],
-                        // };
                         // Use the index directly to get the AnsiCode
                         let code = if index <= 7 {
                             index + 30
@@ -1945,19 +1971,6 @@ impl Theme {
                     ColorValue::Color256 { color256 } => {
                         let rgb = index_to_rgb(*color256);
                         let index = Self::convert_rgb_to_ansi(rgb.0, rgb.1, rgb.2);
-                        // *value = ColorValue::Basic {
-                        //     basic: [
-                        //         format!(
-                        //             "\x1b[{}m",
-                        //             if index < 8 {
-                        //                 30 + index
-                        //             } else {
-                        //                 90 + (index - 8)
-                        //             }
-                        //         ),
-                        //         index.to_string(),
-                        //     ],
-                        // };
                         // Use the index directly to get the AnsiCode
                         let code = if index <= 7 {
                             index + 30
@@ -1973,6 +1986,18 @@ impl Theme {
             }
         }
         self.min_color_support = ColorSupport::Basic;
+    }
+
+    fn convert_to_none(&mut self) {
+        profile_method!("Theme::convert_to_basic");
+        // Convert each color in the palette
+        for style in self.palette.iter_mut() {
+            let index = 0;
+            let code = index + 30;
+            let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
+            style.foreground = Some(ColorInfo::basic(ansi, index));
+        }
+        self.min_color_support = ColorSupport::None;
     }
 }
 
@@ -2479,7 +2504,7 @@ pub fn show_theme_details() {
         let mut min_distance = f32::MAX;
         let mut closest_rgb: (u8, u8, u8) = (0, 0, 0);
         for rgb in theme_bgs {
-            let color_distance = color_distance(*term_bg_rgb, *rgb);
+            let color_distance = color_distance(term_bg_rgb, *rgb);
             if color_distance < min_distance {
                 min_distance = color_distance;
                 closest_rgb = *rgb;
@@ -2549,7 +2574,7 @@ pub fn show_theme_details() {
             "Background color",
             &term_attrs
                 .term_bg_rgb
-                .map_or("None".to_string(), |rgb| dual_format_rgb(*rgb)),
+                .map_or("None".to_string(), dual_format_rgb),
         ),
     ];
 
@@ -2739,16 +2764,16 @@ mod tests {
                     TermBgLuma::Dark | TermBgLuma::Undetermined,
                 ) => "basic_dark",
                 (ColorSupport::None, _) => "none",
-                (ColorSupport::Color256, TermBgLuma::Light) => "github_256",
-                (ColorSupport::Color256, TermBgLuma::Dark) => "dracula_256",
-                (ColorSupport::Color256, TermBgLuma::Undetermined) => "dracula_256",
+                (ColorSupport::Color256, TermBgLuma::Light) => "github",
+                (ColorSupport::Color256, TermBgLuma::Dark) => "dracula",
+                (ColorSupport::Color256, TermBgLuma::Undetermined) => "dracula",
                 (ColorSupport::TrueColor, TermBgLuma::Light) => "one-light",
                 (ColorSupport::TrueColor, TermBgLuma::Dark) => "dracula",
                 (ColorSupport::TrueColor, TermBgLuma::Undetermined) => "dracula",
             };
-            let theme =
-                Theme::get_builtin(theme_name).expect("Failed to load builtin theme {theme_name}");
-            Self::new(color_support, Some(BLACK_BG), term_bg_luma, theme)
+            let theme = Theme::get_theme_with_color_support(theme_name, color_support)
+                .expect("Failed to load or resolve builtin theme {theme_name}");
+            Self::new(color_support, Some(BLACK_BG).copied(), term_bg_luma, theme)
         }
     }
 

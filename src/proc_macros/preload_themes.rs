@@ -5,29 +5,40 @@ use quote::quote;
 use std::collections::HashMap;
 use syn::Ident;
 
+#[allow(clippy::too_many_lines)]
 pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
     let themes_dir = "themes/built_in";
     let mut theme_indices = Vec::new();
     let mut bg_to_names = HashMap::new();
 
-    // eprintln!("Caching themes...");
-
     for entry in std::fs::read_dir(themes_dir).unwrap() {
         let path = entry.unwrap().path();
-        // Skip hidden files like .DS_Store
-        if path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .map_or(true, |n| n.starts_with('.'))
-        {
+        // Skip hidden files like .DS_Store and read only .toml files
+        if path.file_name().and_then(|n| n.to_str()).map_or(true, |n| {
+            n.starts_with('.')
+                || !std::path::Path::new(n)
+                    .extension()
+                    .map_or(false, |ext| ext.eq_ignore_ascii_case("toml"))
+        }) {
             continue;
         }
 
-        let content = std::fs::read_to_string(&path).unwrap();
-        let value: toml::Value = toml::from_str(&content).unwrap();
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|_| panic!("Error reading {}", path.display()));
+        let value: toml::Value = toml::from_str(&content)
+            .unwrap_or_else(|_| panic!("Bad toml at path {}", path.display()));
         let name = path.file_stem().unwrap().to_str().unwrap().to_string();
 
-        // println!("All good so far");
+        // // Only process true_color themes
+        // let min_color_support = value
+        //     .get("min_color_support")
+        //     .and_then(|v| v.as_str())
+        //     .unwrap_or("basic");
+
+        // if min_color_support != "true_color" {
+        //     continue; // Skip non-true_color themes
+        // }
+
         if let Some(bg_array) = value.get("backgrounds").and_then(|v| v.as_array()) {
             let backgrounds: Vec<_> = bg_array
                 .iter()
@@ -46,22 +57,22 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
                     .unwrap_or("dark"),
             );
 
-            let min_color_support = to_upper_camel_case(
-                value
-                    .get("min_color_support")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("basic"),
-            );
+            // let min_color_support = to_upper_camel_case(
+            //     value
+            //         .get("min_color_support")
+            //         .and_then(|v| v.as_str())
+            //         .unwrap_or("basic"),
+            // );
 
             let term_bg_luma_ident = Ident::new(&term_bg_luma, Span::call_site());
-            let min_color_support_ident = Ident::new(&min_color_support, Span::call_site());
+            // let min_color_support_ident = Ident::new(&min_color_support, Span::call_site());
 
             let theme_index = quote! {
                 #name => ThemeIndex {
                     name: #name,
                     bg_rgbs: &[#(#bg_rgbs),*],
                     term_bg_luma: TermBgLuma::#term_bg_luma_ident,
-                    min_color_support: ColorSupport::#min_color_support_ident,
+                    min_color_support: ColorSupport::TrueColor,  // Will generate 256 if needed at run time
                     content: #content,
                 }
             };
@@ -104,6 +115,15 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
                 self.bg_rgbs.iter().any(|&theme_bg| {
                     bg == theme_bg
                 })
+            }
+
+            // New method to get theme with specific color support
+            fn get_theme_with_color_support(&self, color_support: ColorSupport) -> Theme {
+                let mut theme = Theme::get_builtin(self.name).expect("Could not get theme");
+                if color_support != ColorSupport::TrueColor {
+                    theme.convert_to_color_support(color_support);
+                }
+                theme
             }
         }
 

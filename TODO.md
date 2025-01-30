@@ -14,15 +14,16 @@
          https://github.com/microsoft/terminal/issues/11057
 - [ ]  Conversion of Gogh themes
 - [ ]  Update profiling instrumentation and doc comments.
-- [ ]  Extend gen_readme to do other dirs including tools and demo/proc_macros, currently demo/gen_readme_proc_macro.rs
 - [ ]  Demo proc macro to load collection into enum at build time?
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
         pre-processing to toml block with support for variables.
 - [ ]  Claude re what are its ideas for "Time Machine" debugging?
-- [ ]  Profiling for scripts
+- [ ]  Profiling for scripts - consider inserting the instrumentation in a proc macro.
 - [ ]  Replace build.rs logic for themes by loading themes directly into a HashMap in proc macro generate_theme_types;
         rename it to load_themes.
 - [ ]  Unit tests for env_logger feature.
+- [ ]  Bullet-proof `unwrap`s in styling.
+- [ ]  Claude re REPL alternative editor to `reedline`
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

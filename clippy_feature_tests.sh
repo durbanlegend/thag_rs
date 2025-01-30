@@ -2,8 +2,8 @@
 
 # Array of checks to run
 CHECKS=(
-    "check-ast"
     "check-build"
+    "check-ast"
     "check-build-alt"
     "check-core"
     "check-core-alt"

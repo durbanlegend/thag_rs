@@ -134,7 +134,7 @@ pub fn get_term_bg_luma() -> &'static TermBgLuma {
     lazy_static_var!(TermBgLuma, {
         let _guard = TerminalStateGuard::new();
 
-        let maybe_term_bg = get_term_bg();
+        let maybe_term_bg = get_term_bg_rgb();
         maybe_term_bg.map_or(TermBgLuma::Dark, |rgb| {
             if is_light_color(*rgb) {
                 TermBgLuma::Light
@@ -176,7 +176,7 @@ pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
 /// let maybe_term_bg = get_term_bg();
 /// println!("Terminal bckground: {maybe_term_bg:?}");
 /// ```
-pub fn get_term_bg() -> ThagResult<&'static (u8, u8, u8)> {
+pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
     struct RawModeGuard(bool);
     impl Drop for RawModeGuard {
         fn drop(&mut self) {

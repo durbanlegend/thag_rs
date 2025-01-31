@@ -20,7 +20,7 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::Write;
+use std::io::{Result, Write};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Instant, SystemTime};
 pub use thag_proc_macros::profile;
@@ -63,6 +63,12 @@ pub fn is_profiling_enabled() -> bool {
     PROFILING_ENABLED.load(Ordering::SeqCst)
 }
 
+// pub struct ProfileContext {
+//     script_name: String,
+//     start_time: SystemTime,
+//     session_id: String, // Could be useful for multiple runs
+// }
+
 pub struct Profile {
     start: Option<Instant>,
     name: &'static str,
@@ -95,42 +101,74 @@ impl Profile {
         })
     }
 
-    fn write_trace_event(&self, duration: std::time::Duration) {
+    fn write_trace_event(&self, duration: std::time::Duration) -> Result<()> {
         if !is_profiling_enabled() {
-            return;
+            return Ok(());
         }
 
         let micros = duration.as_micros();
         if micros == 0 {
-            return;
+            return Ok(());
         }
 
         let first_write = FIRST_WRITE.swap(false, Ordering::SeqCst);
-        if let Ok(mut file) = File::options()
+        let file = File::options()
             .create(true)
             .write(true)
             .truncate(first_write)
             .append(!first_write)
-            .open("thag-profile.folded")
-        {
-            let stack = Self::get_parent_stack();
-            let entry = if stack.is_empty() {
-                self.name.to_string()
-            } else {
-                format!("{stack};{}", self.name)
-            };
+            .open("thag-profile.folded")?;
 
-            // Write just the stack and duration
-            writeln!(file, "{entry} {micros}").ok();
+        let mut writer = std::io::BufWriter::new(file);
+
+        if first_write {
+            // Write metadata as comments
+            writeln!(writer, "# Format: Inferno folded stacks")?;
+            writeln!(
+                writer,
+                "# Script: {}",
+                std::env::current_exe().unwrap_or_default().display()
+            )?;
+            writeln!(writer, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
+            writeln!(writer, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
+            writeln!(writer, "# Platform: {}", std::env::consts::OS)?;
+            // Add blank line after metadata
+            writeln!(writer)?;
         }
+
+        let stack = Self::get_parent_stack();
+        let entry = if stack.is_empty() {
+            self.name.to_string()
+        } else {
+            format!("{stack};{}", self.name)
+        };
+
+        writeln!(writer, "{entry} {micros}")?;
+        writer.flush()?;
+        Ok(())
     }
 }
 
+pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
+    PROFILE_STACK.with(|stack| {
+        let mut stack = stack.borrow_mut();
+        if let Some(pos) = stack.iter().position(|&name| name == section_name) {
+            // Remove this section and all nested sections after it
+            stack.truncate(pos);
+            Some(Profile {
+                start: None, // Profile is already ended
+                name: section_name,
+            })
+        } else {
+            None
+        }
+    })
+}
 impl Drop for Profile {
     fn drop(&mut self) {
         if let Some(start) = self.start {
             let elapsed = start.elapsed();
-            self.write_trace_event(elapsed);
+            let _ = self.write_trace_event(elapsed);
             PROFILE_STACK.with(|stack| {
                 stack.borrow_mut().pop();
             });

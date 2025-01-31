@@ -13,7 +13,7 @@ use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_proc_macros::{preload_themes, AnsiCodeDerive, PaletteMethods};
 
 #[cfg(feature = "color_detect")]
-use crate::terminal::{self, get_term_bg};
+use crate::terminal::{self, get_term_bg_rgb};
 
 #[cfg(feature = "config")]
 use crate::config::maybe_config;
@@ -721,14 +721,22 @@ fn resolve_config_term_bg_rgb(config: &crate::Config) -> Option<(u8, u8, u8)> {
     profile!("resolve_config_term_bg_rgb");
     let term_bg_rgb = config.styling.term_bg_rgb;
     match term_bg_rgb {
-        None => get_term_bg().map_or(None, |rgb| Some(*rgb)),
+        None => get_term_bg_rgb().map_or(None, |rgb| Some(*rgb)),
         _ => term_bg_rgb,
     }
+}
+
+#[derive(Debug, Display)]
+pub enum HowInitialized {
+    Configured,
+    Defaulted,
+    Detected,
 }
 
 /// Manages terminal color attributes and styling based on terminal capabilities and theme
 #[derive(Debug)]
 pub struct TermAttributes {
+    pub how_initialized: HowInitialized,
     pub color_support: ColorSupport,
     pub term_bg_hex: Option<String>,
     pub term_bg_rgb: Option<(u8, u8, u8)>,
@@ -751,6 +759,7 @@ impl TermAttributes {
         theme: Theme,
     ) -> Self {
         Self {
+            how_initialized: HowInitialized::Defaulted,
             color_support,
             term_bg_hex: None,
             term_bg_rgb: term_bg,
@@ -778,7 +787,7 @@ impl TermAttributes {
     pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
         profile_method!("TermAttributes::initialize");
         let get_or_init = INSTANCE.get_or_init(|| -> Self {
-            profile_section!("TermAttributes::get_or_init");
+            profile_section!("INSTANCE::get_or_init");
             #[cfg(feature = "config")]
             let Some(_config) = maybe_config() else {
                 panic!("Error initializing configuration")
@@ -798,6 +807,7 @@ impl TermAttributes {
                     let theme = Theme::get_theme_with_color_support(theme_name, support)
                         .expect("Failed to load builtin theme");
                     Self {
+                        how_initialized: HowInitialized::Configured,
                         color_support: support,
                         theme,
                         term_bg_hex: None,
@@ -813,6 +823,7 @@ impl TermAttributes {
                         Theme::get_theme_with_color_support("basic_dark", ColorSupport::Basic)
                             .expect("Failed to load basic dark theme");
                     Self {
+                        how_initialized: HowInitialized::Configured,
                         color_support: ColorSupport::Basic,
                         term_bg_hex: None,
                         term_bg_rgb: None::<(u8, u8, u8)>,
@@ -823,15 +834,17 @@ impl TermAttributes {
                 ColorInitStrategy::Match => {
                     #[cfg(feature = "color_detect")]
                     {
-                        let support = *crate::terminal::detect_color_support();
-                        let term_bg_rgb_ref = terminal::get_term_bg().ok();
+                        let color_support = *crate::terminal::detect_color_support();
+                        let term_bg_rgb_ref = terminal::get_term_bg_rgb().ok();
                         let term_bg_rgb = term_bg_rgb_ref.copied();
                         let term_bg_hex = term_bg_rgb_ref.map(rgb_to_hex);
                         let term_bg_luma = terminal::get_term_bg_luma();
-                        let theme = Theme::auto_detect(support, *term_bg_luma, term_bg_rgb_ref)
-                            .expect("Failed to auto-detect theme");
+                        let theme =
+                            Theme::auto_detect(color_support, *term_bg_luma, term_bg_rgb_ref)
+                                .expect("Failed to auto-detect theme");
                         Self {
-                            color_support: support,
+                            how_initialized: HowInitialized::Detected,
+                            color_support,
                             term_bg_hex,
                             term_bg_rgb,
                             term_bg_luma: *term_bg_luma,
@@ -854,6 +867,7 @@ impl TermAttributes {
                                     .expect("Failed to auto-detect theme")
                             };
                             Self {
+                                how_initialized: HowInitialized::Configured,
                                 color_support,
                                 term_bg_hex: Some(rgb_to_hex(&term_bg_rgb)), // term_bg_rgb.map(|rgb: (u8, u8, u8)| rgb_to_hex(&rgb)),
                                 term_bg_rgb: Some(term_bg_rgb),
@@ -867,6 +881,7 @@ impl TermAttributes {
                             )
                             .expect("Failed to load basic dark theme");
                             Self {
+                                how_initialized: HowInitialized::Defaulted,
                                 color_support: ColorSupport::Basic,
                                 term_bg_hex: None,
                                 term_bg_rgb: None::<(u8, u8, u8)>,
@@ -881,6 +896,7 @@ impl TermAttributes {
                             Theme::get_theme_with_color_support("basic_dark", ColorSupport::Basic)
                                 .expect("Failed to load basic dark theme");
                         Self {
+                            how_initialized: HowInitialized::Defaulted,
                             color_support: ColorSupport::Basic,
                             term_bg_hex: None,
                             term_bg_rgb: None::<(u8, u8, u8)>,
@@ -2489,8 +2505,8 @@ pub fn display_theme_roles(theme: &Theme) {
 // }
 
 #[allow(clippy::too_many_lines)]
-pub fn show_theme_details() {
-    profile!("show_theme_details");
+pub fn display_theme_details() {
+    profile!("display_theme_details");
     let term_attrs = TermAttributes::get_or_init();
     let theme = &term_attrs.theme;
     let theme_bgs = &term_attrs.theme.bg_rgbs;
@@ -2568,15 +2584,16 @@ pub fn show_theme_details() {
 
     println!("\t{}\n", "─".repeat(flower_box_len));
 
+    let how_initialized = term_attrs.how_initialized.to_string();
     let terminal_docs: &[(&str, &str)] = &[
         (
             "Attributes determined by",
-            match ColorInitStrategy::determine() {
-                ColorInitStrategy::Configure(_, _, _) => "Configure",
-                ColorInitStrategy::Default => "Default",
-                // #[cfg(feature = "color_detect")]
-                ColorInitStrategy::Match => "Match",
-            },
+            // match term_attrs.how_initialized {
+            //     HowInitialized::Configured(_, _, _) => "Configured",
+            //     HowInitialized::Defaulted => "Default",
+            //     HowInitialized::Detected => "Detected",
+            // },
+            how_initialized.as_str(),
         ),
         ("Color support", &term_attrs.color_support.to_string()),
         ("Background luminance", &term_attrs.term_bg_luma.to_string()),

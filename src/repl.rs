@@ -6,7 +6,7 @@ use crate::{
     manifest::extract,
     profile, profile_method, regex,
     styling::{
-        display_theme_roles, show_theme_details, ColorInfo,
+        display_theme_details, display_theme_roles, ColorInfo,
         Role::{self, Success},
         Style, TermAttributes,
     },
@@ -564,7 +564,7 @@ pub fn run_repl(
                         let theme = &term_attrs.theme;
 
                         display_theme_roles(theme);
-                        show_theme_details();
+                        display_theme_details();
                     }
                 }
                 continue;

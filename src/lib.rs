@@ -140,7 +140,7 @@ pub use {
     errors::{ThagError, ThagResult},
     log, // re-export log crate for debug_log
     logging::{get_verbosity, Verbosity, V},
-    profiling::Profile,
+    profiling::{end_profile_section, Profile},
     shared::{debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string},
     styling::{Color, ColorSupport, Level, Lvl, Role, Style, TermBgLuma},
     thag_proc_macros::repeat_dash,

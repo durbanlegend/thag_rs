@@ -5,7 +5,8 @@ use crate::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
     code_utils::get_source_path,
     config::DependencyInference,
-    cvprtln, debug_log, get_verbosity, maybe_config, profile, profile_section, regex,
+    cvprtln, debug_log, end_profile_section, get_verbosity, maybe_config, profile, profile_section,
+    regex,
     styling::Role,
     vlog, Ast, BuildState, Dependencies, Style, ThagResult, V,
 };
@@ -183,7 +184,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     //     .as_ref()
     //     .map_or_else(|| infer_deps_from_source(rs_source), infer_deps_from_ast);
 
-    profile_section!("infer_deps_and_merge");
+    profile_section!("infer_deps");
     let rs_inferred_deps = if let Some(ref use_crates) = build_state.crates_finder {
         build_state.metadata_finder.as_ref().map_or_else(
             || infer_deps_from_source(rs_source),
@@ -193,6 +194,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
         infer_deps_from_source(rs_source)
     };
 
+    end_profile_section("infer_deps");
     // debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
 
     profile_section!("merge_manifest");
@@ -223,6 +225,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
 
     // Reassign the merged manifest back to build_state
     build_state.cargo_manifest = Some(merged_manifest);
+    end_profile_section("merge_manifest");
 
     #[cfg(debug_assertions)]
     debug_timings(&start_merge_manifest, "Processed features");

@@ -51,9 +51,9 @@ use crate::styling::{paint_for_role, ColorInitStrategy, TermAttributes};
 use crate::{
     ast, cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
     modified_since_compiled, profile, profile_method, profile_section, regex, repeat_dash, shared,
-    validate_args, vlog, Ast, Cli, Dependencies, ProcFlags, Role, ThagError, ThagResult,
-    DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX,
-    TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
+    validate_args, vlog, Ast, Cli, ColorSupport, Dependencies, ProcFlags, Role, ThagError,
+    ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR,
+    RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
 use cargo_toml::Manifest;
 use regex::Regex;
@@ -548,6 +548,15 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
+    if is_edit && TermAttributes::get_or_init().color_support == ColorSupport::None {
+        return Err(ThagError::UnsupportedTerm(
+            r#" for `--edit (-d)` option.
+Unfortunately, TUI features require terminal color support.
+As an alternative, consider using the `edit` + `run` functions of `--repl (-r)`."#
+                .into(),
+        ));
+    }
+
     let is_loop = proc_flags.contains(ProcFlags::LOOP);
     let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
     if is_dynamic {

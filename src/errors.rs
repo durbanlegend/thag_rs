@@ -56,7 +56,7 @@ pub enum ThagError {
     TomlSer(TomlSerError),       // For TOML serialization errors
     #[cfg(feature = "cargo_toml")]
     Toml(CargoTomlError), // For cargo_toml errors
-    UnsupportedTerm,             // For terminal interrogation
+    UnsupportedTerm(String),     // For terminal interrogation
     Validation(String),          // For config.toml and similar validation
     VarError(std::env::VarError), // For std::env::var errors
 }
@@ -242,7 +242,7 @@ impl std::fmt::Display for ThagError {
                 write!(f, "cargo_toml error: {}", disentangle(msg.as_str()))?;
                 Ok(())
             }
-            Self::UnsupportedTerm => write!(f, "Unsupported terminal type"),
+            Self::UnsupportedTerm(e) => write!(f, "Unsupported terminal type {e}"),
             Self::Validation(e) => write!(f, "{e}"),
             Self::VarError(e) => write!(f, "{e}"),
         }
@@ -257,7 +257,7 @@ impl Error for ThagError {
             // underlying type already implements the `Error` trait.
             #[cfg(feature = "bitflags")]
             Self::BitFlagsParse(e) => Some(e),
-            Self::Cancelled | Self::UnsupportedTerm => Some(self),
+            Self::Cancelled => Some(self),
             #[cfg(feature = "clap")]
             Self::ClapError(ref e) => Some(e),
             Self::Command(_e) => Some(self),
@@ -285,6 +285,7 @@ impl Error for ThagError {
             Self::TomlSer(ref e) => Some(e),
             #[cfg(feature = "cargo_toml")]
             Self::Toml(ref e) => Some(e),
+            Self::UnsupportedTerm(ref _e) => Some(self),
             Self::Validation(ref _e) => Some(self),
             Self::VarError(ref e) => Some(e),
         }

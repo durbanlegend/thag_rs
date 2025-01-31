@@ -509,6 +509,10 @@ pub fn run_repl(
                         break;
                     }
                     ReplCommand::Tui => {
+                        if TermAttributes::get_or_init().color_support == ColorSupport::None {
+                            println!("Sorry, TUI features require terminal color support");
+                            continue;
+                        }
                         let source_path = &build_state.source_path;
                         let mut save_path: PathBuf =
                             build_state.cargo_home.join("repl_tui_save.rs");
@@ -541,6 +545,10 @@ pub fn run_repl(
                         list(build_state)?;
                     }
                     ReplCommand::History => {
+                        if TermAttributes::get_or_init().color_support == ColorSupport::None {
+                            println!("Sorry, TUI features require terminal color support");
+                            continue;
+                        }
                         review_history(
                             &mut line_editor,
                             &history_path,

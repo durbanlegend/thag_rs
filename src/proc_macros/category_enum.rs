@@ -26,6 +26,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            Macros,
            Math,
            ProcMacros,
+           Profiling,
            Prototype,
            Recreational,
            Reference,
@@ -52,7 +53,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        /// assert_eq!(categories, vec![
        ///     "ast", "cli", "repl", "async", "basic", "big_numbers", "crates", "demo",
        ///     "educational", "error_handling", "exploration", "filesystem", "macros", "math",
-       ///     "proc_macros", "prototype", "recreational", "reference", "technique",
+       ///     "proc_macros", "profiling", "prototype", "recreational", "reference", "technique",
        ///     "testing", "thag_front_ends", "tools", "type_identification"
        /// ]);
        /// ```

@@ -2587,7 +2587,7 @@ pub fn display_theme_details() {
     let how_initialized = term_attrs.how_initialized.to_string();
     let terminal_docs: &[(&str, &str)] = &[
         (
-            "Attributes determined by",
+            "How attributes determined",
             // match term_attrs.how_initialized {
             //     HowInitialized::Configured(_, _, _) => "Configured",
             //     HowInitialized::Defaulted => "Default",

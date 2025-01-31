@@ -3995,6 +3995,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_str
 
 ---
 
+### Script: profile_file.rs
+
+**Description:**  Tries to profile a file via injection into its abstract syntax tree.
+
+**Purpose:** Debugging
+
+**Crates:** `prettyplease`, `quote`, `syn`
+
+**Type:** Program
+
+**Categories:** AST, crates, profiling, technique, tools
+
+**Link:** [profile_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.rs
+```
+
+---
+
 ### Script: profiling_puffin_demo.rs
 
 **Description:**  Published demo from the `profiling` crate using the `puffin` profiler.
@@ -5499,38 +5521,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 ---
 
-### Script: thag_profile.rs
-
-**Description:**  Profile graph/chart generator for the `thag` internal profiler.
-
- E.g.:
-
-```
- thag demo/thag_profile.rs -x    # Compile this script as a command
-
- cargo run --features thag/profile <path>/demo/time_cookbook.rs -f   # Profile a demo script
-
- thag_profile    # Generate a flamechart or show stats for the new profile
-```
-
-**Purpose:** Low-footprint profiling.
-
-**Crates:** `inferno`, `inquire`, `thag_rs`
-
-**Type:** Program
-
-**Categories:** tools
-
-**Link:** [thag_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_profile.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_profile.rs
-```
-
----
-
 ### Script: thag_prompt.rs
 
 **Description:**  Early prototype of prompting front-end for `thag`.
@@ -5802,7 +5792,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Purpose:** Demo featured crates, but `firestorm` profiler in particular.
 
-**Crates:** `firestorm`, `ratatui`, `tui_textarea`
+**Crates:** `ratatui`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 

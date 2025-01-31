@@ -1,0 +1,113 @@
+/*[toml]
+[dependencies]
+prettyplease = "0.2.29"
+quote = "1.0.38"
+syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "visit-mut"] }
+*/
+
+/// Tries to profile a file via injection into its abstract syntax tree.
+//# Purpose: Debugging
+//# Categories: AST, crates, profiling, technique, tools
+use quote::quote;
+use std::io::{self, Read};
+use syn::{self, visit_mut::VisitMut, Block, ImplItemFn, ItemImpl, Stmt, Type};
+
+fn read_stdin() -> Result<String, io::Error> {
+    let mut buffer = String::new();
+    let stdin = io::stdin();
+    let mut handle = stdin.lock();
+    handle.read_to_string(&mut buffer)?;
+    Ok(buffer)
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let content = read_stdin().expect("Problem reading input");
+    eprintln!("[{:#?}]", content);
+    let mut ast: syn::File = syn::parse_str(&content)?;
+    // println!("{:#?}", syntax);
+    inject_profiling(&mut ast);
+    let formatted = prettyplease::unparse(&ast);
+    print!("{}", formatted);
+
+    Ok(())
+}
+
+struct ProfileInjector {
+    current_impl_type: Option<String>,
+}
+
+impl ProfileInjector {
+    fn new() -> Self {
+        Self {
+            current_impl_type: None,
+        }
+    }
+}
+
+impl VisitMut for ProfileInjector {
+    fn visit_item_impl_mut(&mut self, impl_: &mut ItemImpl) {
+        let prev_type = self.current_impl_type.take();
+        self.current_impl_type = Some(get_type_name(&impl_.self_ty));
+
+        // Visit the impl items
+        syn::visit_mut::visit_item_impl_mut(self, impl_);
+
+        self.current_impl_type = prev_type;
+    }
+
+    fn visit_impl_item_fn_mut(&mut self, method: &mut ImplItemFn) {
+        let method_name = if let Some(ref impl_type) = self.current_impl_type {
+            format!("{}::{}", impl_type, method.sig.ident)
+        } else {
+            method.sig.ident.to_string()
+        };
+
+        inject_profile_stmt(&mut method.block, &method_name, true);
+
+        syn::visit_mut::visit_impl_item_fn_mut(self, method);
+    }
+}
+
+pub fn inject_profiling(ast: &mut syn::File) {
+    let mut injector = ProfileInjector::new();
+    injector.visit_file_mut(ast);
+}
+
+fn get_type_name(ty: &Type) -> String {
+    match ty {
+        Type::Path(type_path) if !type_path.path.segments.is_empty() => type_path
+            .path
+            .segments
+            .last()
+            .map(|seg| seg.ident.to_string())
+            .unwrap_or_default(),
+        _ => String::new(),
+    }
+}
+
+fn inject_profile_stmt(block: &mut Block, name: &str, is_method: bool) {
+    let profile_macro = if is_method {
+        quote! { profile_method!(#name); }
+    } else {
+        quote! { profile!(#name); }
+    };
+
+    let profile_stmt: Stmt = syn::parse2(profile_macro).unwrap();
+
+    // Find position after declarations
+    let insert_pos = block
+        .stmts
+        .iter()
+        .position(|stmt| !is_declaration(stmt))
+        .unwrap_or(0);
+
+    block.stmts.insert(insert_pos, profile_stmt);
+}
+
+fn is_declaration(stmt: &Stmt) -> bool {
+    matches!(
+        stmt,
+        Stmt::Local(_) // let statements
+                       // Add other declaration types if needed
+    )
+}

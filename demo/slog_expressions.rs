@@ -24,6 +24,10 @@ struct X {
     foo: Foo,
 }
 
+fn baz() -> bool {
+    true
+}
+
 fn main() {
     let decorator = slog_term::TermDecorator::new().build();
     use slog::Drain;

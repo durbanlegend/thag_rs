@@ -16,7 +16,7 @@ use strum::{Display, EnumIter, IntoEnumIterator};
 use thag_rs::{
     cvprtln, profile_method,
     styling::{
-        display_theme_roles, show_theme_details, Color, ColorInitStrategy, Role, TermAttributes,
+        display_theme_details, display_theme_roles, Color, ColorInitStrategy, Role, TermAttributes,
         TermBgLuma, Theme,
     },
     vlog, ColorSupport, Style, ThagResult, V,
@@ -110,7 +110,7 @@ pub fn main() -> ThagResult<()> {
     // let current = user_config.clone().unwrap_or_default();
     print_header("Color palette in use on this terminal:\n");
     display_theme_roles(theme);
-    show_theme_details();
+    display_theme_details();
     println!();
 
     // Section 5: Current terminal attributes

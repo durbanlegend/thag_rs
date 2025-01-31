@@ -253,6 +253,13 @@ impl Style {
         self
     }
 
+    pub const fn reset(&mut self) {
+        self.bold = false;
+        self.italic = false;
+        self.dim = false;
+        self.underline = false;
+    }
+
     pub fn paint<D>(&self, val: D) -> String
     where
         D: std::fmt::Display,
@@ -840,10 +847,12 @@ impl TermAttributes {
                                 .unwrap_or_else(|| panic!("Attempted to unwrap term_bg_rgb: None"));
                             let color_support = config.styling.color_support;
                             let term_bg_luma = config.styling.term_bg_luma;
-                            // let term_bg_rgb1 = term_bg_rgb.as_ref();
-                            let theme =
+                            let theme = if color_support == ColorSupport::None {
+                                Theme::get_builtin("none").expect("Failed to load `none` theme")
+                            } else {
                                 Theme::auto_detect(color_support, term_bg_luma, Some(&term_bg_rgb))
-                                    .expect("Failed to auto-detect theme");
+                                    .expect("Failed to auto-detect theme")
+                            };
                             Self {
                                 color_support,
                                 term_bg_hex: Some(rgb_to_hex(&term_bg_rgb)), // term_bg_rgb.map(|rgb: (u8, u8, u8)| rgb_to_hex(&rgb)),
@@ -1996,6 +2005,7 @@ impl Theme {
             let code = index + 30;
             let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
             style.foreground = Some(ColorInfo::basic(ansi, index));
+            style.reset();
         }
         self.min_color_support = ColorSupport::None;
     }

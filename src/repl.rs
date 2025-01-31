@@ -290,10 +290,10 @@ impl Prompt for ReplPrompt {
 
     fn get_prompt_color(&self) -> reedline::Color {
         if let Some(color_info) = Style::for_role(Success).foreground {
-            // eprintln!("color_info for Success={color_info:?}");
+            vlog!(V::VV, "color_info for Success={color_info:?}");
             Color::Indexed(color_info.index).into()
         } else {
-            // eprintln!("defaulting to Green");
+            vlog!(V::VV, "defaulting to Green");
             Color::Green.into()
         }
     }
@@ -382,7 +382,8 @@ pub fn run_repl(
         .with_history_exclusion_prefix(Some("q".into()))
         .with_completer(completer)
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
-        .with_edit_mode(edit_mode);
+        .with_edit_mode(edit_mode)
+        .with_ansi_colors(TermAttributes::get_or_init().color_support != ColorSupport::None);
 
     let term_attrs = TermAttributes::get_or_init();
 
@@ -566,196 +567,6 @@ pub fn run_repl(
     }
     Ok(())
 }
-
-// pub fn display_theme_roles(theme: &Theme) {
-//     // Role descriptions
-//     const ROLE_DOCS: &[(&str, &str)] = &[
-//         ("Heading1", "Primary heading, highest prominence"),
-//         ("Heading2", "Secondary heading"),
-//         ("Heading3", "Tertiary heading"),
-//         ("Error", "Critical errors requiring immediate attention"),
-//         ("Warning", "Important cautions or potential issues"),
-//         ("Success", "Positive completion or status messages"),
-//         ("Info", "General informational messages"),
-//         ("Emphasis", "Text that needs to stand out"),
-//         ("Code", "Code snippets or commands"),
-//         ("Normal", "Standard text, default prominence"),
-//         ("Subtle", "De-emphasized but clearly visible text"),
-//         ("Hint", "Completion suggestions or placeholder text"),
-//         ("Debug", "Development/diagnostic information"),
-//         ("Trace", "Detailed execution tracking"),
-//     ];
-
-//     // Calculate maximum role name length for alignment.
-//     // Get length of longest role name after "painting" (wrapping in xterm styling instruction).
-//     // let role_legend = style_for_role(Heading1, ROLE_DOCS[0].0);
-//     // let col1_width = role_legend.len() + 2;
-
-//     // // Calculate maximum role name length for alignment
-//     // let max_name_len = ROLE_DOCS
-//     //     .iter()
-//     //     .map(|(name, _)| name.len())
-//     //     .max()
-//     //     .unwrap_or(0);
-
-//     let col1_width = ROLE_DOCS
-//         .iter()
-//         .map(|(name, _)| name.len())
-//         .max()
-//         .unwrap_or(0)
-//         + 2; // Base width on raw text length
-
-//     // println!("\n\tRole Styles:");
-//     println!("\n\t{}", style_for_role(Normal, "Role styles:"));
-//     // println!("\t{}", "═".repeat(80));
-//     println!("\t{}", "─".repeat(80));
-
-//     for (role_name, description) in ROLE_DOCS {
-//         // Convert role name to Role enum variant
-//         #[allow(clippy::match_same_arms)]
-//         let role = match *role_name {
-//             "Heading1" => Role::Heading1,
-//             "Heading2" => Role::Heading2,
-//             "Heading3" => Role::Heading3,
-//             "Error" => Role::Error,
-//             "Warning" => Role::Warning,
-//             "Success" => Role::Success,
-//             "Info" => Role::Info,
-//             "Emphasis" => Role::Emphasis,
-//             "Code" => Role::Code,
-//             "Normal" => Role::Normal,
-//             "Subtle" => Role::Subtle,
-//             "Hint" => Role::Hint,
-//             "Debug" => Role::Debug,
-//             "Trace" => Role::Trace,
-//             _ => Role::Normal,
-//         };
-
-//         // Get style for this role
-//         let style = theme.style_for(role);
-
-//         // Print role name in its style, followed by description
-//         let styled_name = style.paint(role_name);
-//         let padding = " ".repeat(col1_width.saturating_sub(role_name.len()));
-
-//         print!("\t{}{}", styled_name, padding);
-//         println!("│ {}", description);
-//     }
-//     println!("\t{}", "─".repeat(80));
-// }
-
-// fn show_theme_details() {
-//     let term_attrs = TermAttributes::get();
-//     let theme = &term_attrs.theme;
-//     let rgb_disp = term_attrs
-//         .theme
-//         .background
-//         .as_deref()
-//         .map_or("None".to_string(), |hex| {
-//             // Remove '#' if present and parse hex values
-// let hex = hex.trim_start_matches('#');
-// if hex.len() == 6 {
-//     if let (Ok(r), Ok(g), Ok(b)) = (
-//         u8::from_str_radix(&hex[0..2], 16),
-//         u8::from_str_radix(&hex[2..4], 16),
-//         u8::from_str_radix(&hex[4..6], 16),
-//     ) {
-//         format!("#{} = rgb({}, {}, {})", hex, r, g, b)
-//     } else {
-//         hex.to_string()
-//     }
-// } else {
-//     hex.to_string()
-// }
-//         });
-
-//     let theme_docs: &[(&str, &str)] = &[
-//         ("Theme", &theme.name),
-//         (
-//             "Type",
-//             if theme.is_builtin {
-//                 "Built-in"
-//             } else {
-//                 "Custom"
-//             },
-//         ),
-//         ("File", &theme.filename.display().to_string()),
-//         ("Description", &theme.description),
-//         ("Background", &rgb_disp),
-//         ("Palette", &theme.min_color_support.to_string()),
-//     ];
-
-//     let col1_width = theme_docs
-//         .iter()
-//         .map(|(name, _)| name.len())
-//         .max()
-//         .unwrap_or(0)
-//         + 2; // Base width on raw text length
-
-//     let flower_box_len = 80;
-
-//     println!("\n\t{}", style_for_role(Normal, "Theme attributes:"));
-//     println!("\t{}", "─".repeat(flower_box_len));
-
-//     for (attr, description) in theme_docs {
-//         let styled_name = style_for_role(Info, attr);
-//         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
-
-//         print!("\t{}{}", styled_name, padding);
-//         let description = if *attr == "Theme" {
-//             style_for_role(Heading1, description)
-//         } else {
-//             (*description).to_string()
-//         };
-//         println!("│ {}", description);
-//     }
-
-//     println!("\t{}\n", "─".repeat(flower_box_len));
-
-//     let terminal_docs: &[(&str, &str)] = &[
-//         (
-//             "Attributes determined by",
-//             match ColorInitStrategy::determine() {
-//                 ColorInitStrategy::Configure(_, _) => "Configure",
-//                 ColorInitStrategy::Default => "Default",
-//                 ColorInitStrategy::Detect => "Detect",
-//             },
-//         ),
-//         ("Color support", &term_attrs.color_support.to_string()),
-//         ("Background luminance", &term_attrs.term_bg_luma.to_string()),
-//         (
-//             "Background color",
-//             &term_attrs.term_bg_rgb.map_or("None".to_string(), |rgb| {
-//                 format!(
-//                     "#{:02x}{:02x}{:02x} = rgb({}, {}, {})",
-//                     rgb.0, rgb.1, rgb.2, rgb.0, rgb.1, rgb.2
-//                 )
-//             }),
-//         ),
-//     ];
-
-//     let col1_width = terminal_docs
-//         .iter()
-//         .map(|(name, _)| name.len())
-//         .max()
-//         .unwrap_or(0)
-//         + 2; // Base width on raw text length
-
-//     let flower_box_len = 80;
-
-//     println!("\n\t{}", style_for_role(Normal, "Terminal attributes:"));
-//     println!("\t{}", "─".repeat(flower_box_len));
-
-//     for (attr, description) in terminal_docs {
-//         let styled_name = style_for_role(Info, attr);
-//         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
-
-//         print!("\t{}{}", styled_name, padding);
-//         println!("│ {}", description);
-//     }
-
-//     println!("\t{}\n", "─".repeat(flower_box_len));
-// }
 
 /// Process a source string through to completion according to the arguments passed in.
 ///

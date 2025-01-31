@@ -19,11 +19,10 @@
         pre-processing to toml block with support for variables.
 - [ ]  Claude re what are its ideas for "Time Machine" debugging?
 - [ ]  Profiling for scripts - consider inserting the instrumentation in a proc macro.
-- [ ]  Replace build.rs logic for themes by loading themes directly into a HashMap in proc macro generate_theme_types;
-        rename it to load_themes.
 - [ ]  Unit tests for env_logger feature.
 - [ ]  Bullet-proof `unwrap`s in styling.
 - [ ]  Claude re REPL alternative editor to `reedline`
+- [ ]  Consider adding colour support as a feature required for `tui` feature.
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

@@ -65,9 +65,7 @@ enum ConfigSource {
 impl ConfigSource {
     fn get_config(self) -> Config {
         match self {
-            ConfigSource::Current(c) => c,
-            ConfigSource::Default(c) => c,
-            ConfigSource::FromFile(c) => c,
+            Self::Current(c) | Self::Default(c) | Self::FromFile(c) => c,
         }
     }
 }
@@ -1001,8 +999,6 @@ fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", "Welcome to thag config builder!".bold());
 
-    let config = prompt_config()?;
-
     let config_path = dirs::config_dir()
         .ok_or("Could not determine config directory")?
         .join("thag_rs")
@@ -1012,7 +1008,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let builder = ConfigBuilder {
         system_defaults: Config::default(),
         user_config: maybe_config(),
-        current: config.clone(),
+        current: prompt_config()?,
     };
 
     let preview = builder.preview()?;

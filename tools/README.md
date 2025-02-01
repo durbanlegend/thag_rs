@@ -1,4 +1,4 @@
-## Running the scripts
+## Running the scripts in `demo` and `tools`
 
 `thag_rs` uses `clap` for a standard command-line interface. Try `thag --help` (or -h) if
 you get stuck.
@@ -124,14 +124,22 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_
 
 ### Script: error_builder.rs
 
-**Description:** 
-**Purpose:** 
+**Description:**  Quick and easy prompted generator for new custom error types and new variants required
+ by existing custom error types. Prompts for the new or existing custom error type, the
+ new variants, any types wrapped by the new variants, and any special display messages.
+ The output can be saved to a new error module in the case of a new custom error type,
+ or simply copied and pasted in sections from the output into an existing error module
+ in the case of an existing custom error type.
+
+ Strategy and grunt work thanks to ChatGPT.
+
+**Purpose:** Facilitate generation and enhancement of custom error modules.
 
 **Crates:** `heck`, `inquire`
 
 **Type:** Program
 
-**Categories:** missing
+**Categories:** technique, tools
 
 **Link:** [error_builder.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/error_builder.rs)
 
@@ -309,6 +317,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs
 ### Script: thag_config_builder.rs
 
 **Description:**  Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
+ Makes a modified copy of a user-selected `config.toml` file. Some fields such as
+ RGB values in decimal and hex are not prompted for as they are more easily entered
+ using a text editor.
 
 **Purpose:** Handy configuration file builder.
 
@@ -369,7 +380,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 **Purpose:** Low-footprint profiling.
 
-**Crates:** `flamechart`, `inferno`, `inquire`, `thag_rs`
+**Crates:** `inferno`, `inquire`, `thag_rs`
 
 **Type:** Program
 

@@ -1329,33 +1329,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs
 
 ---
 
-### Script: dethagomizer.rs
-
-**Description:**  Unescape \n and \\" markers in a string to convert the wall of text to readable lines.
- This is trickier than it seems because in a compile-time literal, \n compiles to the
- true line feed character 10 (x0A), whereas a \n generated or captured as a literal
- at run time is encoded as ('\', 'n'() = (92, 110) = 0x5c6e. Not surprisingly, the two
- representations, while they look identical to the programmer, don't always behave
- the same.
-
- See `demo/dethagomizer.rs` for a Regex version.
-
-**Purpose:** Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
-
-**Type:** Program
-
-**Categories:** crates, technique, tools
-
-**Link:** [dethagomizer.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs
-```
-
----
-
 ### Script: documented.rs
 
 **Description:**  Published example from the `documented` crate.
@@ -1398,28 +1371,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dependencies.rs
-```
-
----
-
-### Script: download_demo_dir.rs
-
-**Description:**  Downloader for the `demo` directory. Basics courtesy of GPT.
-
-**Purpose:** Download the demo directory from Github main.
-
-**Crates:** `reqwest`, `rfd`, `serde`
-
-**Type:** Program
-
-**Categories:** crates, technique, tools
-
-**Link:** [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_dir.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_dir.rs
 ```
 
 ---
@@ -2395,30 +2346,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadruplin
 
 ---
 
-### Script: filter_demos.rs
-
-**Description:**  Select demo scripts and generate and serve HTML report.
-
- Strategy and grunt work thanks to ChatGPT.
-
-**Purpose:** Allow user to select scripts by category.
-
-**Crates:** `edit`, `inquire`, `thag_proc_macros`, `thag_rs`, `tokio`, `warp`
-
-**Type:** Program
-
-**Categories:** technique, tools
-
-**Link:** [filter_demos.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/filter_demos.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/filter_demos.rs
-```
-
----
-
 ### Script: fizz_buzz_blandy_orendorff.rs
 
 **Description:**  A fun example from Programming Rust by Jim Blandy and Jason Orendorff (O’Reilly).
@@ -2548,31 +2475,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.r
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs
-```
-
----
-
-### Script: gen_readme.rs
-
-**Description:**  This is the actual script used to collect demo script metadata and generate
- demo/README.md.
-
- Strategy and grunt work thanks to ChatGPT.
-
-**Purpose:** Document demo scripts in a demo/README.md as a guide to the user.
-
-**Crates:** `convert_case`, `thag_proc_macros`, `thag_rs`
-
-**Type:** Program
-
-**Categories:** technique, tools
-
-**Link:** [gen_readme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme.rs
 ```
 
 ---
@@ -2918,50 +2820,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_colorization.rs
-```
-
----
-
-### Script: input_expr_to_ast.rs
-
-**Description:**  Tries to convert input to a `syn` abstract syntax tree (syn::Expr).
-
-**Purpose:** Debugging
-
-**Crates:** `syn`
-
-**Type:** Program
-
-**Categories:** AST, crates, technique, tools
-
-**Link:** [input_expr_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_ast.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_ast.rs
-```
-
----
-
-### Script: input_file_to_ast.rs
-
-**Description:**  Tries to convert input to a `syn` abstract syntax tree (syn::File).
-
-**Purpose:** Debugging
-
-**Crates:** `syn`
-
-**Type:** Program
-
-**Categories:** AST, crates, technique, tools
-
-**Link:** [input_file_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_ast.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_ast.rs
 ```
 
 ---
@@ -4017,6 +3875,47 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.r
 
 ---
 
+### Script: profile_file_ra.rs
+
+**Description:**  Tries to profile a file via injection into its abstract syntax tree.
+
+**Purpose:** Debugging
+
+**Crates:** `ra_ap_syntax`
+
+**Type:** Program
+
+**Categories:** AST, crates, profiling, technique, tools
+
+**Link:** [profile_file_ra.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file_ra.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file_ra.rs
+```
+
+---
+
+### Script: profile_test_case.rs
+
+**Description:** 
+**Purpose:** 
+
+**Type:** Program
+
+**Categories:** missing
+
+**Link:** [profile_test_case.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_test_case.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_test_case.rs
+```
+
+---
+
 ### Script: profiling_puffin_demo.rs
 
 **Description:**  Published demo from the `profiling` crate using the `puffin` profiler.
@@ -4749,7 +4648,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_d
 
 **Purpose:** Demo a popular logging crate.
 
-**Crates:** `slog`, `slog_term`
+**Crates:** `slog`, `slog_term`, `thag_rs`
 
 **Type:** Program
 
@@ -5284,28 +5183,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
 
 ---
 
-### Script: term_detection_pack.rs
-
-**Description:**  A basic tool I cobbled together that uses different crates to a) test terminal
- types on different platforms, b) determine and cross-check if a light or dark
- theme is in use and c) determine the level of colour supported reported by
- the terminal.
-
-**Purpose:** Allow checking of terminals on platforms to be supported, also test reliability of different crates.
-
-**Crates:** `crossterm`, `log`, `simplelog`, `supports_color`, `termbg`, `terminal_light`
-
-**Type:** Snippet
-
-**Categories:** crates, tools
-
-**Link:** [term_detection_pack.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/term_detection_pack.rs)
-
-**Not suitable to be run from a URL.**
-
-
----
-
 ### Script: termbg.rs
 
 **Description:**  Published example from `termbg` readme.
@@ -5426,101 +5303,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707
 
 ---
 
-### Script: thag_cargo.rs
-
-**Description:**  `thag` prompted front-end command to run Cargo commands on scripts. It is recommended to compile this to an executable with -x.
- Prompts the user to select a Rust script and a cargo command to run against the script's generated project, and
- and invokes `thag` with the --cargo option to run it.
-
-**Purpose:** A user-friendly interface to the `thag` `--cargo` option.
-
-**Crates:** `atty`, `inquire`
-
-**Type:** Program
-
-**Categories:** technique, thag_front_ends, tools
-
-**Link:** [thag_cargo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs
-```
-
----
-
-### Script: thag_clippy.rs
-
-**Description:**  `thag` prompted front-end command to run `clippy` on scripts. It is recommended to compile this to an executable with -x.
- Prompts the user to select a Rust script and one or more Clippy lints to run against the script's generated project, and
- and invokes `thag` with the --cargo option to run it.
-
-**Purpose:** A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
-
-**Crates:** `atty`, `colored`, `inquire`
-
-**Type:** Program
-
-**Categories:** technique, thag_front_ends, tools
-
-**Link:** [thag_clippy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs
-```
-
----
-
-### Script: thag_config_builder.rs
-
-**Description:**  Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
-
-**Purpose:** Handy configuration file builder.
-
-**Crates:** `colored`, `convert_case`, `dirs`, `documented`, `inquire`, `strum`, `syn`, `thag_proc_macros`, `thag_rs`, `toml`
-
-**Type:** Program
-
-**Categories:** crates, technique, tools
-
-**Link:** [thag_config_builder.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder.rs
-```
-
----
-
-### Script: thag_from_rust_script.rs
-
-**Description:**  Converts embedded manifest format from `rust-script` to `thag`.
-
- E.g. `cat <path_to_rust_script_file> | thag -qq demo/thag_from_rust_script.rs | thag -s [-- [options] [args] ...]`
-
- Place any command-line options and/or arguments for the script at the end after a -- as shown.
-
-
-**Purpose:** Convenience for any `rust-script` user who wants to try out `thag`.
-
-**Type:** Program
-
-**Categories:** crates, tools
-
-**Link:** [thag_from_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust_script.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust_script.rs
-```
-
----
-
 ### Script: thag_prompt.rs
 
 **Description:**  Early prototype of prompting front-end for `thag`.
@@ -5539,48 +5321,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs
-```
-
----
-
-### Script: thag_to_rust_script.rs
-
-**Description:**  Converts embedded manifest format from `thag` to `rust-script`.
-
-**Purpose:** Convenience for any `thag` user who wants to try out `rust-script`.
-
-**Type:** Program
-
-**Categories:** crates, tools
-
-**Link:** [thag_to_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_script.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_script.rs
-```
-
----
-
-### Script: thag_url.rs
-
-**Description:**  `thag` front-end command to run scripts from URLs. It is recommended to compile this with -x.
-
-**Purpose:** A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
-
-**Crates:** `syn`, `tempfile`, `tinyget`, `url`
-
-**Type:** Program
-
-**Categories:** technique, thag_front_ends, tools
-
-**Link:** [thag_url.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs
 ```
 
 ---

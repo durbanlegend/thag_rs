@@ -22,7 +22,8 @@
 - [ ]  Unit tests for env_logger feature.
 - [ ]  Bullet-proof `unwrap`s in styling.
 - [ ]  Claude re REPL alternative editor to `reedline`
-- [ ]  Consider adding colour support as a feature required for `tui` feature.
+- [ ]  Consider thag option to include expanded macro for debugging.
+
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

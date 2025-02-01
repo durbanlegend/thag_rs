@@ -2,6 +2,7 @@
 [dependencies]
 slog = "2.7.0"
 slog-term = "2.9.1"
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
 */
 
 /// Published example from `slog` crate (misc/examples/expressions.rs).
@@ -9,6 +10,7 @@ slog-term = "2.9.1"
 //# Categories: crates
 use slog::{self, o, slog_warn, warn};
 use slog_term;
+use thag_rs;
 
 use std::sync::Mutex;
 
@@ -16,6 +18,7 @@ struct Foo;
 
 impl Foo {
     fn bar(&self) -> u32 {
+        profile_method!("Foo::bar");
         1
     }
 }

@@ -4,7 +4,7 @@
 //! In particular, it manages raw mode status which can be affected by some detection operations.
 
 use crate::styling::{ColorSupport, TermBgLuma};
-use crate::{lazy_static_var, profile, ThagError, ThagResult};
+use crate::{lazy_static_var, profile, vlog, ThagError, ThagResult, V};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use scopeguard::defer;
 use std::io::{stdout, Write};
@@ -72,7 +72,7 @@ pub fn detect_color_support() -> &'static ColorSupport {
 
     lazy_static_var!(ColorSupport, {
         let _guard = TerminalStateGuard::new();
-        println!("Checking colour support");
+        vlog!(V::V, "Checking colour support");
         let raw_before = is_raw_mode_enabled();
         if let Ok(raw_then) = raw_before {
             defer! {
@@ -203,7 +203,7 @@ pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
             let _guard = RawModeGuard(raw_before);
 
             // Now do theme detection
-            eprintln!("Checking terminal background");
+            vlog!(V::V, "Checking terminal background");
             let timeout = std::time::Duration::from_millis(500);
             let bg_rgb = termbg::rgb(timeout)?;
 

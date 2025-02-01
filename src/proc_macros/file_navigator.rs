@@ -5,7 +5,7 @@ use quote::quote;
 #[allow(clippy::too_many_lines)]
 pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
     let output = quote! {
-        use inquire::{Select, Text};
+        use inquire::{InquireError,Select, Text};
         struct FileNavigator {
             current_dir: std::path::PathBuf,
             history: Vec<std::path::PathBuf>,
@@ -73,21 +73,21 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
 
                     if new_path.is_dir() {
                         self.history.push(self.current_dir.clone());
-                        self.current_dir = new_path.clone();
+                        self.current_dir.clone_from(&new_path);
                         if select_dir {
                             NavigationResult::NavigatedTo(new_path)
                         } else {
                             NavigationResult::NoSelection
                         }
-                    } else if !select_dir {
-                        NavigationResult::SelectionComplete(new_path)
-                    } else {
+                    } else if select_dir {
                         NavigationResult::NoSelection
+                    } else {
+                        NavigationResult::SelectionComplete(new_path)
                     }
                 }
             }
 
-            fn current_path(&self) -> &std::path::PathBuf {
+            const fn current_path(&self) -> &std::path::PathBuf {
                 &self.current_dir
             }
         }
@@ -130,7 +130,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             }
         }
 
-        fn save_to_file(content: String, default_name: String, include_ext: Option<&str>, hidden: bool) -> std::io::Result<std::path::PathBuf> {
+        fn save_to_file(content: String, default_name: &str, include_ext: Option<&str>, hidden: bool) -> std::io::Result<std::path::PathBuf> {
             let mut navigator = FileNavigator::new();
 
             println!("Select destination directory (use arrow keys and Enter to navigate):");
@@ -147,13 +147,12 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 match selection {
                     Ok(sel) => {
                         if sel == "." || sel == "*SELECT CURRENT DIRECTORY*" {
-                            break Some(navigator.current_path().to_path_buf());
+                            break Some(navigator.current_path().clone());
                         } else if let NavigationResult::NavigatedTo(_path) = navigator.navigate(&sel, hidden) {
                             continue;
                         }
                     }
-                    Err(inquire::error::InquireError::OperationCanceled)
-                    | Err(inquire::error::InquireError::OperationInterrupted) => {
+                    Err(inquire::error::InquireError::OperationCanceled | inquire::error::InquireError::OperationInterrupted) => {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::Other,
                             "Selection cancelled",
@@ -170,7 +169,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
 
             if let Some(dir) = selected_dir {
                 let filename = Text::new("Enter filename:")
-                    .with_default(&default_name)
+                    .with_default(default_name)
                     .prompt()
                     .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
 

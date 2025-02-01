@@ -19,7 +19,7 @@ fn read_stdin() -> Result<String, io::Error> {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let content = read_stdin().expect("Problem reading input");
-    println!("[{:#?}]", content);
+    eprintln!("[{:#?}]", content);
     let syntax: syn::Expr = syn::parse_str(&format!("{{ {content} }}"))?;
     println!("{:#?}", syntax);
     Ok(())

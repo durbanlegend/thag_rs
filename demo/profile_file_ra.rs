@@ -4,9 +4,11 @@ ra_ap_syntax = "0.0.261"
 */
 
 use ra_ap_syntax::{
-    ast::{self, HasName},
+    ast::{self, make::tokens::single_newline, HasName},
     ted::{self, Position},
-    AstNode, Edition, Parse, SourceFile, SyntaxKind,
+    AstNode, Edition,
+    NodeOrToken::Token,
+    Parse, SourceFile, SyntaxKind,
 };
 use std::io::Read;
 
@@ -19,21 +21,7 @@ fn parse_stmt(stmt: &str) -> Option<ra_ap_syntax::SyntaxNode> {
         .map(|node| node.clone_for_update())
 }
 
-fn find_first_use_or_item(tree: &ast::SourceFile) -> Option<ra_ap_syntax::SyntaxNode> {
-    tree.syntax().children().find(|node| {
-        matches!(
-            node.kind(),
-            SyntaxKind::USE
-                | SyntaxKind::STRUCT
-                | SyntaxKind::FN
-                | SyntaxKind::IMPL
-                | SyntaxKind::ENUM
-                | SyntaxKind::TRAIT
-        )
-    })
-}
-
-fn find_best_import_position(tree: &ast::SourceFile) -> Position {
+fn find_best_import_position(tree: &ast::SourceFile) -> (Position, bool) {
     // Look for the first USE node
     if let Some(first_use) = tree
         .syntax()
@@ -46,11 +34,22 @@ fn find_best_import_position(tree: &ast::SourceFile) -> Position {
         });
         eprintln!("has_toml={has_toml}");
         if has_toml {
+            let next_token = first_use.next_sibling_or_token();
+            eprintln!("first_use.next_sibling_or_token()={next_token:?}");
+            let insert_nl = if let Some(Token(ref token)) = next_token {
+                if token.kind() == SyntaxKind::WHITESPACE && token.to_string().starts_with("\n\n") {
+                    false
+                } else {
+                    true
+                }
+            } else {
+                true
+            };
             // Insert after the entire USE node and add a blank line
-            Position::after(first_use)
+            (Position::after(first_use), insert_nl)
         } else {
             // No TOML block, can insert before the USE node
-            Position::before(first_use)
+            (Position::before(first_use), false)
         }
     } else {
         // No USE nodes, find first non-attribute, non-comment item
@@ -60,9 +59,9 @@ fn find_best_import_position(tree: &ast::SourceFile) -> Position {
                 SyntaxKind::ATTR | SyntaxKind::COMMENT | SyntaxKind::WHITESPACE
             )
         }) {
-            Position::before(first_item)
+            (Position::before(first_item), true)
         } else {
-            Position::last_child_of(tree.syntax())
+            (Position::last_child_of(tree.syntax()), true)
         }
     }
 }
@@ -98,14 +97,16 @@ fn instrument_code(source: &str) -> String {
 
     // Add imports after attributes but before other items
     let import_text = "use thag_rs::{profile, profile_method};";
-    if !source.contains("use thag_rs::{profile, profile_method}") {
+    if !source.contains(import_text) {
         if let Some(import_node) = parse_stmt(import_text) {
-            let pos = find_best_import_position(&tree);
-            ted::insert(pos, ast::make::tokens::single_newline());
-            let pos = find_best_import_position(&tree);
+            let (pos, insert_nl) = find_best_import_position(&tree);
+            if insert_nl {
+                ted::insert(pos, single_newline())
+            };
+            let (pos, _insert_nl) = find_best_import_position(&tree);
             ted::insert(pos, import_node);
-            let pos = find_best_import_position(&tree);
-            ted::insert(pos, ast::make::tokens::single_newline());
+            let (pos, _insert_nl) = find_best_import_position(&tree);
+            ted::insert(pos, single_newline());
         }
     }
 
@@ -122,51 +123,20 @@ fn instrument_code(source: &str) -> String {
                     // Special handling for main
                     if fn_name == "main" {
                         let enable_prof = "let _ = thag_rs::profiling::enable_profiling(true);";
-                        let profile_stmt = "profile!(\"{fn_name}\");";
-
-                        if let Some(enable_node) = parse_stmt(enable_prof) {
-                            if let Some(profile_node) = parse_stmt(profile_stmt) {
-                                // Insert both statements at the start of main
+                        if !source.contains("enable_profiling(") {
+                            if let Some(enable_node) = parse_stmt(enable_prof) {
                                 if let Some(first_stmt) = body.statements().next() {
-                                    ted::insert(
-                                        Position::before(first_stmt.syntax()),
-                                        profile_node,
-                                    );
-                                    eprintln!("Main: inserting NL before first_stmt");
-                                    ted::insert(
-                                        Position::before(first_stmt.syntax()),
-                                        ast::make::tokens::single_newline(),
-                                    );
-                                    eprintln!("Main: inserting white space before first_stmt");
-                                    ted::insert(
-                                        Position::before(first_stmt.syntax()),
-                                        ast::make::tokens::whitespace("    "),
-                                    );
                                     ted::insert(Position::before(first_stmt.syntax()), enable_node);
-                                    eprintln!("Main: inserting NL before first_stmt");
+                                    eprintln!(r#"Main: inserting "\n    " before first_stmt"#);
                                     ted::insert(
                                         Position::before(first_stmt.syntax()),
-                                        ast::make::tokens::single_newline(),
-                                    );
-                                    eprintln!("Main: inserting white space before first_stmt");
-                                    ted::insert(
-                                        Position::before(first_stmt.syntax()),
-                                        ast::make::tokens::whitespace("    "),
+                                        ast::make::tokens::whitespace("\n    "),
                                     );
                                 } else {
-                                    eprintln!("Main: inserting NL as first child");
+                                    eprintln!("Main: inserting NL before first_stmt");
                                     ted::insert(
                                         Position::first_child_of(body.syntax()),
-                                        ast::make::tokens::single_newline(),
-                                    );
-                                    ted::insert(
-                                        Position::first_child_of(body.syntax()),
-                                        profile_node,
-                                    );
-                                    eprintln!("Main: inserting NL as first child");
-                                    ted::insert(
-                                        Position::first_child_of(body.syntax()),
-                                        ast::make::tokens::single_newline(),
+                                        single_newline(),
                                     );
                                     ted::insert(
                                         Position::first_child_of(body.syntax()),
@@ -176,26 +146,21 @@ fn instrument_code(source: &str) -> String {
                             }
                         }
                     } else {
-                        let profile_stmt = format!("\n    profile!(\"{fn_name}\");\n");
+                        let profile_stmt = format!(r#"profile!("{fn_name}");"#);
                         if let Some(profile_node) = parse_stmt(&profile_stmt) {
                             if let Some(first_stmt) = body.statements().next() {
                                 ted::insert(Position::before(first_stmt.syntax()), profile_node);
-                                eprintln!("Inserting NL before first_stmt");
+                                eprintln!(r#"Main: inserting "\n    " before first_stmt"#);
                                 ted::insert(
                                     Position::before(first_stmt.syntax()),
-                                    ast::make::tokens::single_newline(),
-                                );
-                                eprintln!("Inserting white space before first_stmt");
-                                ted::insert(
-                                    Position::before(first_stmt.syntax()),
-                                    ast::make::tokens::whitespace("    "),
+                                    ast::make::tokens::whitespace("\n    "),
                                 );
                             } else {
                                 ted::insert(Position::first_child_of(body.syntax()), profile_node);
                                 eprintln!("Inserting NL as first child");
                                 ted::insert(
                                     Position::first_child_of(body.syntax()),
-                                    ast::make::tokens::single_newline(),
+                                    single_newline(),
                                 );
                             }
                         }
@@ -222,7 +187,7 @@ fn instrument_code(source: &str) -> String {
                                     .unwrap_or_else(|| "unknown".to_string());
 
                                 let profile_stmt =
-                                    format!("profile_method!(\"{type_name}::{method_name}\");");
+                                    format!(r#"profile_method!("{type_name}::{method_name}");"#);
                                 insert_profile_in_method_body(&body, &profile_stmt);
                             }
                         }

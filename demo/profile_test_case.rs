@@ -12,27 +12,33 @@ impl Foo {
     // Comment
     /// Doc comment
     fn bar(&self) -> u32 {
+        println!("In Foo::bar");
         1
     }
 
     // Already has profiling
     fn baz(&self) -> u32 {
         profile_method!("Foo::baz");
+        println!("In Foo::baz");
         2
     }
 }
 
-fn regular_function() {
+fn regular_function(foo: &Foo) {
     println!("hello");
+    foo.bar();
 }
 
 // Already has profiling
-fn profiled_function() {
+fn profiled_function(foo: &Foo) {
     profile!("profiled_function");
     println!("already profiled");
+    foo.baz();
 }
 
 fn main() {
-    regular_function();
-    profiled_function();
+    let _ = thag_rs::profiling::enable_profiling(false);
+    let foo = Foo;
+    regular_function(foo);
+    profiled_function(foo);
 }

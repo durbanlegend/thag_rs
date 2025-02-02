@@ -174,7 +174,7 @@ pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
 /// use thag_rs::ThagError;
 ///
 /// let maybe_term_bg_rgb = get_term_bg_rgb();
-/// println!("Terminal bckground: {maybe_term_bg_rgb    :?}");
+/// println!("Terminal background: {maybe_term_bg_rgb:?}");
 /// ```
 pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
     struct RawModeGuard(bool);

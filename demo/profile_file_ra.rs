@@ -33,6 +33,40 @@ fn find_first_use_or_item(tree: &ast::SourceFile) -> Option<ra_ap_syntax::Syntax
     })
 }
 
+fn find_best_import_position(tree: &ast::SourceFile) -> Position {
+    // Look for the first USE node
+    if let Some(first_use) = tree
+        .syntax()
+        .children()
+        .find(|node| node.kind() == SyntaxKind::USE)
+    {
+        // Check if it contains a TOML block comment
+        let has_toml = first_use.children_with_tokens().any(|token| {
+            token.kind() == SyntaxKind::COMMENT && token.to_string().starts_with("/*[toml]")
+        });
+        eprintln!("has_toml={has_toml}");
+        if has_toml {
+            // Insert after the entire USE node and add a blank line
+            Position::after(first_use)
+        } else {
+            // No TOML block, can insert before the USE node
+            Position::before(first_use)
+        }
+    } else {
+        // No USE nodes, find first non-attribute, non-comment item
+        if let Some(first_item) = tree.syntax().children().find(|node| {
+            !matches!(
+                node.kind(),
+                SyntaxKind::ATTR | SyntaxKind::COMMENT | SyntaxKind::WHITESPACE
+            )
+        }) {
+            Position::before(first_item)
+        } else {
+            Position::last_child_of(tree.syntax())
+        }
+    }
+}
+
 fn insert_profile_in_method_body(body: &ast::BlockExpr, profile_stmt: &str) {
     if let Some(profile_node) = parse_stmt(profile_stmt) {
         // Find the STMT_LIST and its L_CURLY
@@ -51,10 +85,6 @@ fn insert_profile_in_method_body(body: &ast::BlockExpr, profile_stmt: &str) {
                     Position::after(&l_curly),
                     ast::make::tokens::whitespace("    "),
                 );
-                // ted::insert(
-                //     Position::after(&l_curly),
-                //     ast::make::tokens::single_newline(),
-                // );
             }
         }
     }
@@ -67,16 +97,15 @@ fn instrument_code(source: &str) -> String {
     // eprintln!("tree={tree:#?}");
 
     // Add imports after attributes but before other items
-    let import_text = "\nuse thag_rs::{profile, profile_method};\n";
+    let import_text = "use thag_rs::{profile, profile_method};";
     if !source.contains("use thag_rs::{profile, profile_method}") {
         if let Some(import_node) = parse_stmt(import_text) {
-            if let Some(first_node) = find_first_use_or_item(&tree) {
-                eprintln!("Found first_node={first_node:?}");
-                ted::insert(Position::before(first_node), import_node);
-            } else {
-                eprintln!("Did not find a matching first_nod");
-                ted::insert(Position::last_child_of(tree.syntax()), import_node);
-            }
+            let pos = find_best_import_position(&tree);
+            ted::insert(pos, ast::make::tokens::single_newline());
+            let pos = find_best_import_position(&tree);
+            ted::insert(pos, import_node);
+            let pos = find_best_import_position(&tree);
+            ted::insert(pos, ast::make::tokens::single_newline());
         }
     }
 
@@ -203,7 +232,7 @@ fn instrument_code(source: &str) -> String {
         }
     }
 
-    eprintln!("Updated tree.syntax():\n{:#?}", tree.syntax());
+    // eprintln!("Updated tree.syntax():\n{:#?}", tree.syntax());
     tree.syntax().to_string()
 }
 

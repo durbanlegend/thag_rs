@@ -1,7 +1,8 @@
 #![allow(dead_code, unused_imports)]
 /*[toml]
 [dependencies]
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["core", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
 */
 // Original code
 use std::collections::HashMap;

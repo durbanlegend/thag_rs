@@ -2,7 +2,8 @@
 [dependencies]
 slog = "2.7.0"
 slog-term = "2.9.1"
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["core", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
 */
 
 /// Published example from `slog` crate (misc/examples/expressions.rs).

@@ -1,3 +1,4 @@
+#![allow(dead_code, unused_imports)]
 /*[toml]
 [dependencies]
 thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }

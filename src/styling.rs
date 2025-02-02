@@ -18,6 +18,7 @@ use crate::terminal::{self, get_term_bg_rgb};
 #[cfg(feature = "config")]
 use crate::config::maybe_config;
 
+#[allow(unused_imports)]
 #[cfg(debug_assertions)]
 use crate::debug_log;
 
@@ -1404,7 +1405,7 @@ impl Theme {
             for preferred_name in preferred_styling {
                 vlog!(V::V, "preferred_name={preferred_name}");
                 if exact_matches.contains(&preferred_name.as_str()) {
-                    vlog!(V::V, "Found an exact match in {preferred_name}!");
+                    vlog!(V::V, "Found an exact match in {preferred_name}");
                     return Self::get_theme_with_color_support(preferred_name, color_support);
                 }
             }
@@ -1443,13 +1444,13 @@ impl Theme {
             for fallback_name in fallback_styling {
                 vlog!(V::V, "fallback_name={fallback_name}");
                 if exact_matches.contains(&fallback_name.as_str()) {
-                    vlog!(V::V, "Found an exact match in fallback {fallback_name}!");
+                    vlog!(V::V, "Found an exact match in fallback {fallback_name}");
                     return Self::get_theme_with_color_support(fallback_name, color_support);
                 }
             }
             vlog!(V::V, "b. Try for any exact match.");
             if let Some(exact_match) = exact_matches.into_iter().next() {
-                vlog!(V::V, "Found an exact match with {exact_match}!");
+                vlog!(V::V, "Found an exact match with {exact_match}");
                 return Self::get_theme_with_color_support(exact_match, color_support);
             }
             // let reduced_palette_matches =
@@ -1462,7 +1463,7 @@ impl Theme {
             //     if reduced_palette_matches.contains(fallback_name) {
             //         vlog!(
             //             V::V,
-            //             "Found a color-reduced exact background match in fallback {fallback_name}!"
+            //             "Found a color-reduced exact background match in fallback {fallback_name}"
             //         );
             //         return Self::get_theme_with_color_support(fallback_name, color_support);
             //     }
@@ -1474,7 +1475,7 @@ impl Theme {
             // if let Some(bg_match) = reduced_palette_matches.into_iter().next() {
             //     vlog!(
             //         V::V,
-            //         "Found a color-reduced exact background match with {bg_match}!"
+            //         "Found a color-reduced exact background match with {bg_match}"
             //     );
             //     return Self::get_theme_with_color_support(&bg_match, color_support);
             // }
@@ -1539,7 +1540,7 @@ impl Theme {
                 }
             }
             if let Some(theme) = best_match {
-                vlog!(V::V, "Found the closest match with {theme}!");
+                vlog!(V::V, "Found the closest match with {theme}");
                 return Self::get_theme_with_color_support(theme, color_support);
             }
 
@@ -1564,7 +1565,7 @@ impl Theme {
             //         if let Some(theme) = best_match {
             //             vlog!(
             //                 V::V,
-            //                 "Found the closest match at {color_support:?} with {theme}!"
+            //                 "Found the closest match at {color_support:?} with {theme}"
             //             );
             //             return Self::get_theme_with_color_support(theme, color_support);
             //         }

@@ -4,7 +4,7 @@ ra_ap_syntax = "0.0.261"
 */
 
 use ra_ap_syntax::{
-    ast::{self, HasName, Stmt},
+    ast::{self, HasName},
     ted::{self, Position},
     AstNode, Edition, Parse, SourceFile, SyntaxKind,
 };
@@ -33,25 +33,32 @@ fn find_first_use_or_item(tree: &ast::SourceFile) -> Option<ra_ap_syntax::Syntax
     })
 }
 
-// fn insert_profile_in_method_body(body: &ast::BlockExpr, profile_stmt: &str) {
-//     if let Some(profile_node) = parse_stmt(profile_stmt) {
-//         if let Some(first_stmt) = body.statements().next() {
-//             ted::insert(Position::before(first_stmt.syntax()), profile_node);
-//         } else {
-//             // If no statements, insert after the opening brace
-//             ted::insert(Position::first_child_of(body.syntax()), profile_node);
-//         }
-//     }
-// }
-
-// fn find_first_non_attribute(tree: &ast::SourceFile) -> Option<ra_ap_syntax::SyntaxNode> {
-//     tree.syntax().children().find(|node| {
-//         !matches!(
-//             node.kind(),
-//             SyntaxKind::ATTR | SyntaxKind::COMMENT | SyntaxKind::WHITESPACE
-//         )
-//     })
-// }
+fn insert_profile_in_method_body(body: &ast::BlockExpr, profile_stmt: &str) {
+    if let Some(profile_node) = parse_stmt(profile_stmt) {
+        // Find the STMT_LIST and its L_CURLY
+        if let Some(stmt_list) = body
+            .syntax()
+            .children()
+            .find(|n| n.kind() == SyntaxKind::STMT_LIST)
+        {
+            if let Some(l_curly) = stmt_list
+                .children_with_tokens()
+                .find(|t| t.kind() == SyntaxKind::L_CURLY)
+            {
+                // Insert after the opening brace and its following whitespace
+                ted::insert(Position::after(&l_curly), profile_node);
+                ted::insert(
+                    Position::after(&l_curly),
+                    ast::make::tokens::whitespace("    "),
+                );
+                // ted::insert(
+                //     Position::after(&l_curly),
+                //     ast::make::tokens::single_newline(),
+                // );
+            }
+        }
+    }
+}
 
 fn instrument_code(source: &str) -> String {
     let parse = SourceFile::parse(source, Edition::Edition2021);
@@ -179,37 +186,15 @@ fn instrument_code(source: &str) -> String {
                 for item in items.assoc_items() {
                     if let ast::AssocItem::Fn(method) = item {
                         if let Some(body) = method.body() {
-                            // eprintln!("body={body:?}, body.stmt_list()={:?}", body.stmt_list());
-                            // for stmt in body.stmt_list().expect("No statement list").statements() {
-                            //     eprintln!("stmt={stmt:?}");
-                            // }
                             if !has_profile_macro(&body) {
                                 let method_name = method
                                     .name()
                                     .map(|n| n.text().to_string())
                                     .unwrap_or_else(|| "unknown".to_string());
 
-                                let profile_stmt = format!(
-                                    "\n    profile_method!(\"{type_name}::{method_name}\");\n"
-                                );
-                                if let Some(stmt_list) = body.stmt_list() {
-                                    if let Some(profile_node) = parse_stmt(&profile_stmt) {
-                                        let next_stmt = stmt_list.statements().next();
-                                        eprintln!("next_stmt={next_stmt:?}");
-                                        if let Some(first_stmt) = next_stmt {
-                                            eprintln!("first_stmt={first_stmt:?}",);
-                                            ted::insert(
-                                                Position::before(first_stmt.syntax()),
-                                                profile_node,
-                                            );
-                                        } else {
-                                            ted::insert(
-                                                Position::first_child_of(body.syntax()),
-                                                profile_node,
-                                            );
-                                        }
-                                    }
-                                }
+                                let profile_stmt =
+                                    format!("profile_method!(\"{type_name}::{method_name}\");");
+                                insert_profile_in_method_body(&body, &profile_stmt);
                             }
                         }
                     }
@@ -218,6 +203,7 @@ fn instrument_code(source: &str) -> String {
         }
     }
 
+    eprintln!("Updated tree.syntax():\n{:#?}", tree.syntax());
     tree.syntax().to_string()
 }
 

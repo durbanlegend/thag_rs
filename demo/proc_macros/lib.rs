@@ -282,3 +282,128 @@ where
 pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
     intercept_and_debug(true, "derive_doc_comment", &input, derive_doc_comment_impl)
 }
+
+use std::collections::HashMap;
+use std::path::PathBuf;
+use toml::{self, Value};
+
+#[proc_macro]
+pub fn load_static_map(input: TokenStream) -> TokenStream {
+    intercept_and_debug(true, "load_static_map", &input, load_static_map_impl)
+}
+
+fn load_static_map_impl(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as LitStr);
+
+    let relative_path = input.value();
+
+    // // Construct absolute path from project root
+    // let absolute_path = format!("{}/{}", env!("CARGO_MANIFEST_DIR"), relative_path);
+
+    // // Read and parse the data at compile time
+    // let content = std::fs::read_to_string(&absolute_path)
+    //     .expect(&format!("Failed to read file: {}", absolute_path));
+
+    // Read and parse the data at compile time
+    // let content = std::fs::read_to_string(path).expect("Failed to read file");
+    let content = std::fs::read_to_string(&relative_path)
+        .unwrap_or_else(|e| panic!("Failed to read file '{}': {}", relative_path, e));
+
+    // Example for TOML, but could be made generic
+    let data: HashMap<String, Value> = toml::from_str(&content).expect("Failed to parse TOML");
+
+    // Generate the static map
+    let entries = data.iter().map(|(k, v)| {
+        let key_str = k.as_str();
+        let value = generate_const_value(v);
+        quote! { #key_str => #value } // Changed from tuple syntax to => syntax
+    });
+
+    quote! {
+        static MAP: phf::Map<&'static str, Value> = phf::phf_map! {
+            #(#entries),*
+        };
+    }
+    .into()
+}
+
+fn generate_const_value(value: &toml::Value) -> proc_macro2::TokenStream {
+    match value {
+        toml::Value::String(s) => {
+            quote! { Value::String(#s) } // Note: Using string literal directly
+        }
+        toml::Value::Integer(i) => {
+            quote! { Value::Integer(#i) }
+        }
+        toml::Value::Float(f) => {
+            quote! { Value::Float(#f) }
+        }
+        toml::Value::Boolean(b) => {
+            quote! { Value::Boolean(#b) }
+        }
+        toml::Value::Array(arr) => {
+            let elements = arr.iter().map(|v| generate_const_value(v));
+            quote! { Value::Array(&[#(#elements),*]) } // Note: Using array slice
+        }
+        toml::Value::Table(table) => {
+            let entries = table.iter().map(|(k, v)| {
+                let key = k.as_str();
+                let value = generate_const_value(v);
+                quote! { (#key, #value) }
+            });
+            quote! {
+                Value::Table(&[#(#entries),*])  // Note: Using array slice
+            }
+        }
+        toml::Value::Datetime(dt) => {
+            let dt_str = dt.to_string();
+            quote! { Value::Datetime(#dt_str) }
+        }
+    }
+}
+
+// fn generate_value(value: &toml::Value) -> proc_macro2::TokenStream {
+//     match value {
+//         toml::Value::String(s) => {
+//             quote! { Value::String(#s.to_string()) }
+//         }
+//         toml::Value::Integer(i) => {
+//             quote! { Value::Integer(#i) }
+//         }
+//         toml::Value::Float(f) => {
+//             quote! { Value::Float(#f) }
+//         }
+//         toml::Value::Boolean(b) => {
+//             quote! { Value::Boolean(#b) }
+//         }
+//         toml::Value::Array(arr) => {
+//             let elements = arr.iter().map(|v| generate_value(v));
+//             quote! { Value::Array(vec![#(#elements),*]) }
+//         }
+//         toml::Value::Table(table) => {
+//             let entries = table.iter().map(|(k, v)| {
+//                 let key = k.to_string();
+//                 let value = generate_value(v);
+//                 quote! { (#key.to_string(), #value) }
+//             });
+//             quote! {
+//                 Value::Table(vec![#(#entries),*].into_iter().collect())
+//             }
+//         }
+//         toml::Value::Datetime(dt) => {
+//             let dt_str = dt.to_string();
+//             quote! { Value::Datetime(#dt_str.to_string()) }
+//         }
+//     }
+// }
+
+// #[derive(Debug, Clone)]
+// pub enum Value {
+//     String(String),
+//     Integer(i64),
+//     Float(f64),
+//     Boolean(bool),
+//     Array(Vec<Value>),
+//     Table(HashMap<String, Value>),
+//     Datetime(String),
+// }

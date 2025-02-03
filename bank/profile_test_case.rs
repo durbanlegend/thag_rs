@@ -39,6 +39,6 @@ fn profiled_function(foo: &Foo) {
 fn main() {
     let _ = thag_rs::profiling::enable_profiling(false);
     let foo = Foo;
-    regular_function(foo);
-    profiled_function(foo);
+    regular_function(&foo);
+    profiled_function(&foo);
 }

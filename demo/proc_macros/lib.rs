@@ -297,17 +297,16 @@ fn load_static_map_impl(input: TokenStream) -> TokenStream {
 
     let relative_path = input.value();
 
-    // // Construct absolute path from project root
-    // let absolute_path = format!("{}/{}", env!("CARGO_MANIFEST_DIR"), relative_path);
+    eprintln!("env!(CARGO_MANIFEST_DIR)={}", env!("CARGO_MANIFEST_DIR"));
 
-    // // Read and parse the data at compile time
-    // let content = std::fs::read_to_string(&absolute_path)
-    //     .expect(&format!("Failed to read file: {}", absolute_path));
+    // Construct absolute path from project root. The manifest dir will be that of the proc macros crate.
+    // We assume the project dir is two steps up from the proc macros dir.
+    let absolute_path = format!("{}/../../{}", env!("CARGO_MANIFEST_DIR"), relative_path);
 
     // Read and parse the data at compile time
-    // let content = std::fs::read_to_string(path).expect("Failed to read file");
-    let content = std::fs::read_to_string(&relative_path)
-        .unwrap_or_else(|e| panic!("Failed to read file '{}': {}", relative_path, e));
+    let content = std::fs::read_to_string(absolute_path).expect("Failed to read file");
+    // let content = std::fs::read_to_string(&relative_path)
+    //     .unwrap_or_else(|e| panic!("Failed to read file '{}': {}", relative_path, e));
 
     // Example for TOML, but could be made generic
     let data: HashMap<String, Value> = toml::from_str(&content).expect("Failed to parse TOML");

@@ -52,8 +52,9 @@ impl Value {
 }
 
 fn main() {
-    load_static_map!("/Users/donf/projects/thag_rs/themes/built_in/dracula.toml");
-    // load_static_map!("../themes/built_in/dracula.toml");
+    // This must be a string literal representing a path relative to the project dir,
+    // assumed to be 2 steps obove the demo proc macro dir.
+    load_static_map!("themes/built_in/dracula.toml");
 
     println!("description={:?}", MAP.get("description"));
     println!();

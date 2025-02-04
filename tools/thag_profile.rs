@@ -32,12 +32,10 @@ use inferno::flamegraph::{
     Options, Palette,
 };
 use inquire::{MultiSelect, Select};
-// use inquire::Text;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{BufRead, BufReader};
-// use std::io::Write;
-// use std::borrow::Cow::Borrowed;
 use std::process::Command;
 use std::time::Duration;
 use thag_rs::profiling::ProfileStats;
@@ -272,36 +270,172 @@ fn filter_functions(
 //     }
 // }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct ColorSchemeConfig {
+    last_used: String,
+}
+
+impl Default for ColorSchemeConfig {
+    fn default() -> Self {
+        Self {
+            last_used: "Aqua (Default)".to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ColorSchemeOption {
+    name: &'static str,
+    description: &'static str,
+    palette: Palette,
+}
+
+fn get_color_schemes() -> Vec<ColorSchemeOption> {
+    vec![
+        // Basic Palettes
+        ColorSchemeOption {
+            name: "Aqua (Default)",
+            description: "Cool blue-green gradient, easy on the eyes",
+            palette: Palette::Basic(BasicPalette::Aqua),
+        },
+        ColorSchemeOption {
+            name: "Blue",
+            description: "Calming blue tones, good for general use",
+            palette: Palette::Basic(BasicPalette::Blue),
+        },
+        ColorSchemeOption {
+            name: "Green",
+            description: "Forest-like green palette, natural feel",
+            palette: Palette::Basic(BasicPalette::Green),
+        },
+        ColorSchemeOption {
+            name: "Hot",
+            description: "Heat map style, red-yellow gradient",
+            palette: Palette::Basic(BasicPalette::Hot),
+        },
+        ColorSchemeOption {
+            name: "Mem",
+            description: "Memory profiling focused, purple tones",
+            palette: Palette::Basic(BasicPalette::Mem),
+        },
+        ColorSchemeOption {
+            name: "Orange",
+            description: "Warm orange tones, high visibility",
+            palette: Palette::Basic(BasicPalette::Orange),
+        },
+        ColorSchemeOption {
+            name: "Purple",
+            description: "Rich purple gradient, distinctive look",
+            palette: Palette::Basic(BasicPalette::Purple),
+        },
+        ColorSchemeOption {
+            name: "Red",
+            description: "Bold red tones, high contrast",
+            palette: Palette::Basic(BasicPalette::Red),
+        },
+        ColorSchemeOption {
+            name: "Yellow",
+            description: "Bright yellow scheme, high visibility",
+            palette: Palette::Basic(BasicPalette::Yellow),
+        },
+        // Special Palettes
+        ColorSchemeOption {
+            name: "Rust",
+            description: "Official Rust-themed palette, orange and grey tones",
+            palette: Palette::Multi(MultiPalette::Rust),
+        },
+    ]
+}
+
+fn load_last_used_scheme() -> ThagResult<String> {
+    let config_path = dirs::config_dir()
+        .ok_or_else(|| {
+            <String as Into<ThagError>>::into("Could not find config directory".to_string())
+        })?
+        .join("thag")
+        .join("flamechart_colors.json");
+
+    if config_path.exists() {
+        let content = fs::read_to_string(config_path)?;
+        let config: ColorSchemeConfig = serde_json::from_str(&content)
+            .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
+        Ok(config.last_used)
+    } else {
+        Ok(ColorSchemeConfig::default().last_used)
+    }
+}
+
+fn save_color_scheme(name: &str) -> ThagResult<()> {
+    let config_dir = dirs::config_dir()
+        .ok_or_else(|| {
+            <String as Into<ThagError>>::into("Could not find config directory".to_string())
+        })?
+        .join("thag");
+
+    fs::create_dir_all(&config_dir)?;
+
+    let config = ColorSchemeConfig {
+        last_used: name.to_string(),
+    };
+
+    let config_path = config_dir.join("flamechart_colors.json");
+    fs::write(
+        config_path,
+        serde_json::to_string_pretty(&config)
+            .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?,
+    )?;
+
+    Ok(())
+}
+
 fn select_color_scheme() -> ThagResult<Palette> {
-    let options = vec![
-        "Aqua (Default)",
-        "Blue",
-        "Green",
-        "Hot",
-        "Mem",
-        "Orange",
-        "Purple",
-        "Red",
-        "Yellow",
-        "Rust", // Special case - this is a MultiPalette
-    ];
+    let schemes = get_color_schemes();
+    let last_used = load_last_used_scheme()?;
 
-    let selection = Select::new("Select color scheme:", options)
-        // .with_default(0)
-        .prompt()
-        .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
+    // First ask if user wants to use the last scheme or select a new one
+    let use_last = inquire::Confirm::new(&format!(
+        "Use last color scheme ({last_used})? (Press 'n' to select a different scheme)"
+    ))
+    .with_default(true)
+    .prompt()
+    .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
 
-    Ok(match selection {
-        "Aqua (Default)" => Palette::Basic(BasicPalette::Aqua),
-        "Blue" => Palette::Basic(BasicPalette::Blue),
-        "Green" => Palette::Basic(BasicPalette::Green),
-        "Hot" => Palette::Basic(BasicPalette::Hot),
-        "Mem" => Palette::Basic(BasicPalette::Mem),
-        "Orange" => Palette::Basic(BasicPalette::Orange),
-        "Purple" => Palette::Basic(BasicPalette::Purple),
-        "Red" => Palette::Basic(BasicPalette::Red),
-        "Yellow" => Palette::Basic(BasicPalette::Yellow),
-        "Rust" => Palette::Multi(MultiPalette::Rust),
-        _ => unreachable!(),
-    })
+    if use_last {
+        return Ok(schemes
+            .iter()
+            .find(|s| s.name == last_used)
+            .unwrap_or(&schemes[0])
+            .palette);
+    }
+
+    // Group schemes for display
+    println!("\nBasic Color Schemes:");
+    println!("-------------------");
+    schemes.iter().take(9).for_each(|s| {
+        println!("{}: {}", s.name, s.description);
+    });
+
+    println!("\nSpecial Color Schemes:");
+    println!("--------------------");
+    schemes.iter().skip(9).for_each(|s| {
+        println!("{}: {}", s.name, s.description);
+    });
+
+    println!(); // Add space before selection prompt
+
+    let selection = Select::new(
+        "Select color scheme:",
+        schemes.iter().map(|s| s.name).collect::<Vec<_>>(),
+    )
+    .prompt()
+    .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
+
+    // Save the selection
+    save_color_scheme(selection)?;
+
+    Ok(schemes
+        .iter()
+        .find(|s| s.name == selection)
+        .unwrap()
+        .palette)
 }

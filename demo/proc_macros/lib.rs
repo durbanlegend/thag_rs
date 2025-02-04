@@ -46,7 +46,7 @@ use std::fs;
 use std::path::Path;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_file, parse_macro_input, DeriveInput, ExprArray, Ident, LitInt, LitStr, Token,
+    parse_file, parse_macro_input, DeriveInput, ExprArray, Ident, LitInt, Token,
 };
 
 #[proc_macro_attribute]

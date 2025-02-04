@@ -23,16 +23,21 @@ thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, fea
 //# Categories: tools
 use chrono::{
     DateTime, Local,
-    LocalResult::{Ambiguous, Single},
+    LocalResult::{Ambiguous, None as Nada, Single},
     TimeZone,
 };
-use inferno::flamegraph::{self, color::BasicPalette, Options, Palette};
+use inferno::flamegraph::{
+    self,
+    color::{BasicPalette, MultiPalette},
+    Options, Palette,
+};
 use inquire::{MultiSelect, Select};
 // use inquire::Text;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 // use std::io::Write;
+// use std::borrow::Cow::Borrowed;
 use std::process::Command;
 use std::time::Duration;
 use thag_rs::profiling::ProfileStats;
@@ -44,17 +49,26 @@ pub struct ProcessedProfile {
     pub title: String,
     pub subtitle: String,
     pub timestamp: DateTime<Local>, // From chrono crate
+                                    // pub notes: String,
 }
 
-fn process_profile_data(lines: &[String]) -> ThagResult<ProcessedProfile> {
+fn process_profile_data(lines: &[String]) -> ProcessedProfile {
     let mut processed = ProcessedProfile::default();
     let mut stacks = Vec::new();
 
     for line in lines {
         if line.starts_with('#') {
             match line.split_once(": ") {
-                Some(("# Script", script)) => {
-                    processed.title = format!("Profile: {}", script.trim());
+                Some(("# Script", script_path)) => {
+                    // Get just the file name for the title
+                    let script_name = std::path::Path::new(script_path.trim())
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or_else(|| script_path.trim());
+
+                    processed.title = format!("Flamechart for profile: {script_name}");
+                    // Store full path for subtitle
+                    processed.subtitle = format!("Path: {}\n\nStarted: ", script_path.trim());
                 }
                 Some(("# Started", timestamp)) => {
                     // Convert microseconds since epoch to DateTime
@@ -62,10 +76,8 @@ fn process_profile_data(lines: &[String]) -> ThagResult<ProcessedProfile> {
                         match Local.timestamp_micros(ts) {
                             Single(dt) | Ambiguous(dt, _) => {
                                 processed.timestamp = dt;
-                                processed.subtitle =
-                                    format!("Started: {}", dt.format("%Y-%m-%d %H:%M:%S%.3f"));
                             }
-                            _ => (),
+                            Nada => (),
                         }
                     }
                 }
@@ -77,7 +89,7 @@ fn process_profile_data(lines: &[String]) -> ThagResult<ProcessedProfile> {
     }
 
     processed.stacks = stacks;
-    Ok(processed)
+    processed
 }
 
 // fn is_async_boundary(func_name: &str) -> bool {
@@ -99,14 +111,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reader = BufReader::new(input);
     let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
 
-    let processed = process_profile_data(&lines)?;
+    let processed = process_profile_data(&lines);
 
     // Build stats if needed
     let mut stats = ProfileStats::default();
     for line in &processed.stacks {
         if let Some((stack, time)) = line.rsplit_once(' ') {
             if let Ok(duration) = time.parse::<u128>() {
-                stats.record(stack, Duration::from_micros(duration as u64));
+                stats.record(stack, Duration::from_micros(u64::try_from(duration)?));
             }
         }
     }
@@ -115,7 +127,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "Generate & Show Flamechart",
         "Show Statistics",
         "Filter Functions",
-        "Show Async Boundaries",
+        // "Show Async Boundaries",
     ];
 
     let selection = Select::new("Select action:", options).prompt()?;
@@ -127,100 +139,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let filtered = filter_functions(&processed)?;
             generate_flamechart(&filtered)?;
         }
-        "Show Async Boundaries" => show_async_boundaries(&stats),
+        // "Show Async Boundaries" => show_async_boundaries(&stats),
         _ => println!("Unknown option"),
     }
 
     Ok(())
 }
 
-// fn main() -> Result<(), Box<dyn std::error::Error>> {
-//     let args = parse_args()?;
-
-//     // Read the profile data
-//     let content = std::fs::read_to_string("thag-profile.folded")?;
-//     let processed = process_profile_data(&content)?;
-
-//     // Build stats if needed
-//     let mut stats = ProfileStats::default();
-//     for line in &processed.stacks {
-//         if let Some((stack, time)) = line.rsplit_once(' ') {
-//             if let Ok(duration) = time.parse::<u128>() {
-//                 stats.record(stack, Duration::from_micros(duration as u64));
-//             }
-//         }
-//     }
-
-//     match args.command {
-//         Command::ShowStats => {
-//             show_statistics(&stats, &processed);
-//         }
-//         Command::ShowFlameChart { filter } => {
-//             let filtered_profile = if let Some(filter) = filter {
-//                 ProcessedProfile {
-//                     stacks: processed
-//                         .stacks
-//                         .into_iter()
-//                         .filter(|line| line.contains(&filter))
-//                         .collect(),
-//                     ..processed // Keep the metadata
-//                 }
-//             } else {
-//                 processed
-//             };
-//             generate_flamechart(&filtered_profile)?;
-//         }
-//         Command::ShowAsync => {
-//             // Similar adaptation for async view if needed
-//         }
-//     }
-
-//     Ok(())
-// }
-
-// fn extract_metadata(stacks: &[String]) -> (String, String) {
-//     let mut title = String::from("Thag Profile");
-//     let mut subtitle = String::new();
-
-//     for line in stacks.into_iter().take(10) {
-//         eprintln!("line={line}");
-//         if line.starts_with("# ") {
-//             let split_once = line.split_once(": ");
-//             eprintln!("split_once={split_once:?}");
-//             match split_once {
-//                 Some(("# Script", script)) => {
-//                     eprintln!("Found {script}");
-//                     title = format!("Profile: {}", script.trim());
-//                 }
-//                 Some(("# Started", timestamp)) => {
-//                     eprintln!("Found {timestamp}");
-//                     subtitle = format!("Started: {}", timestamp.trim());
-//                 }
-//                 Some(other) => {
-//                     eprintln!("Found {other:?}");
-//                 }
-//                 _ => {}
-//             }
-//         } else {
-//             eprintln!("Does not start with '# '={line}");
-//         }
-//     }
-
-//     (title, subtitle)
-// }
-
 fn generate_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     if profile.stacks.is_empty() {
         return Err(ThagError::Profiling("No profile data available"));
     }
 
+    let color_scheme = select_color_scheme()?;
+
     let output = File::create("flamechart.svg")?;
     let mut opts = Options::default();
-    opts.title = profile.title.clone();
-    opts.subtitle = Some(profile.subtitle.clone());
-    opts.colors = Palette::Basic(BasicPalette::Aqua);
-    opts.count_name = "μs".to_owned();
-    opts.min_width = 0.1;
+    // opts.title = profile.title.clone();
+    opts.subtitle = Some(format!(
+        "Started: {}",
+        profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")
+    ));
+    // opts.notes = profile.subtitle.clone();
+    opts.colors = color_scheme;
+    "μs".clone_into(&mut opts.count_name);
+    opts.min_width = 0.01;
+    // opts.color_diffusion = true;
     opts.flame_chart = true;
 
     flamegraph::from_lines(
@@ -228,11 +172,10 @@ fn generate_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
         profile.stacks.iter().rev().map(String::as_str),
         output,
     )?;
-    // .map_err(|e| ThagError::FromStr(&e.to_string()))?;
 
     println!("Flame chart generated: flamechart.svg");
     if let Err(e) = open_in_browser("flamechart.svg") {
-        eprintln!("Failed to open browser: {}", e);
+        eprintln!("Failed to open browser: {e}");
     }
     Ok(())
 }
@@ -256,6 +199,10 @@ fn open_in_browser(path: &str) -> Result<(), Box<dyn std::error::Error>> {
 fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile) {
     println!("\n{}", profile.title);
     println!("{}", profile.subtitle);
+    println!(
+        "Started: {}",
+        profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")
+    );
     println!("\nFunction Statistics:");
     println!("===================");
 
@@ -269,10 +216,7 @@ fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile) {
         } else {
             0
         };
-        println!(
-            "{}: {} calls, {} μs total, {} μs avg",
-            func, calls, total_time, avg_time
-        );
+        println!("{func}: {calls} calls, {total_time} μs total, {avg_time} μs avg");
     }
 }
 
@@ -291,7 +235,7 @@ fn filter_functions(
         .collect();
 
     let mut function_list: Vec<_> = functions.into_iter().collect();
-    function_list.sort();
+    function_list.sort_unstable();
 
     let to_filter = MultiSelect::new("Select functions to filter out:", function_list).prompt()?;
 
@@ -313,17 +257,51 @@ fn filter_functions(
     })
 }
 
-fn show_async_boundaries(stats: &ProfileStats) {
-    println!("\nAsync Boundaries:");
-    println!("================");
+// fn show_async_boundaries(stats: &ProfileStats) {
+//     println!("\nAsync Boundaries:");
+//     println!("================");
 
-    for func_name in stats.async_boundaries.iter() {
-        if let Some(&calls) = stats.calls.get(func_name) {
-            let total_time = stats.total_time.get(func_name).unwrap_or(&0);
-            println!(
-                "{}: {} calls, {} μs total (includes subprocess time)",
-                func_name, calls, total_time
-            );
-        }
-    }
+//     for func_name in stats.async_boundaries.iter() {
+//         if let Some(&calls) = stats.calls.get(func_name) {
+//             let total_time = stats.total_time.get(func_name).unwrap_or(&0);
+//             println!(
+//                 "{}: {} calls, {} μs total (includes subprocess time)",
+//                 func_name, calls, total_time
+//             );
+//         }
+//     }
+// }
+
+fn select_color_scheme() -> ThagResult<Palette> {
+    let options = vec![
+        "Aqua (Default)",
+        "Blue",
+        "Green",
+        "Hot",
+        "Mem",
+        "Orange",
+        "Purple",
+        "Red",
+        "Yellow",
+        "Rust", // Special case - this is a MultiPalette
+    ];
+
+    let selection = Select::new("Select color scheme:", options)
+        // .with_default(0)
+        .prompt()
+        .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
+
+    Ok(match selection {
+        "Aqua (Default)" => Palette::Basic(BasicPalette::Aqua),
+        "Blue" => Palette::Basic(BasicPalette::Blue),
+        "Green" => Palette::Basic(BasicPalette::Green),
+        "Hot" => Palette::Basic(BasicPalette::Hot),
+        "Mem" => Palette::Basic(BasicPalette::Mem),
+        "Orange" => Palette::Basic(BasicPalette::Orange),
+        "Purple" => Palette::Basic(BasicPalette::Purple),
+        "Red" => Palette::Basic(BasicPalette::Red),
+        "Yellow" => Palette::Basic(BasicPalette::Yellow),
+        "Rust" => Palette::Multi(MultiPalette::Rust),
+        _ => unreachable!(),
+    })
 }

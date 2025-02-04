@@ -9,7 +9,6 @@ slog-term = "2.9.1"
 //# Categories: crates
 use slog::{self, o, slog_warn, warn};
 use slog_term;
-
 use std::sync::Mutex;
 
 struct Foo;

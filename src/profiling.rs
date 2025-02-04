@@ -20,13 +20,16 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{Result, Write};
+use std::io::{BufWriter, Write};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Mutex, OnceLock};
 use std::time::{Instant, SystemTime};
 pub use thag_proc_macros::profile;
 
-use crate::{ThagError, ThagResult};
+use crate::{lazy_static_var, ThagError, ThagResult, Verbosity};
 
+static FILE_PATH: OnceLock<String> = OnceLock::new();
+static FILE: OnceLock<Mutex<Option<BufWriter<File>>>> = OnceLock::new();
 static FIRST_WRITE: AtomicBool = AtomicBool::new(true);
 
 thread_local! {
@@ -42,10 +45,19 @@ static START_TIME: AtomicU64 = AtomicU64::new(0);
 ///
 /// This function will return an error if there's an overflow due to the time elapsed being too large for the field.
 pub fn enable_profiling(enabled: bool) -> ThagResult<()> {
+    if enabled {
+        // Reset file if it exists
+        if let Some(file) = FILE.get() {
+            let mut guard = file
+                .lock()
+                .map_err(|_| ThagError::Profiling("Failed to lock file".into()))?;
+            *guard = None;
+        }
+    }
+
     PROFILING_ENABLED.store(enabled, Ordering::SeqCst);
     if enabled {
         FIRST_WRITE.store(true, Ordering::SeqCst);
-        // Store start time when profiling is enabled
         let Ok(now) = u64::try_from(
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -55,6 +67,16 @@ pub fn enable_profiling(enabled: bool) -> ThagResult<()> {
             return Err(ThagError::FromStr("Time value too large".into()));
         };
         START_TIME.store(now, Ordering::SeqCst);
+
+        // Initialize FILE_PATH with timestamp
+        FILE_PATH.get_or_init(|| {
+            "thag-profile.folded".to_string()
+            // let timestamp = now;
+            // format!("thag-profile-{}.folded", timestamp)
+        });
+
+        // Initialize FILE
+        FILE.get_or_init(|| Mutex::new(None));
     }
     Ok(())
 }
@@ -79,14 +101,27 @@ impl Profile {
     pub fn new(name: &'static str) -> Self {
         let start = if is_profiling_enabled() {
             PROFILE_STACK.with(|stack| {
-                stack.borrow_mut().push(name);
+                let mut stack = stack.borrow_mut();
+                let _current_depth = stack.len();
+                stack.push(name);
+                // eprintln!(
+                //     ">>> Pushed {} (depth was {}, now {})",
+                //     name,
+                //     current_depth,
+                //     stack.len()
+                // );
+                // Verify the stack contents
+                // eprintln!("Current stack: {:?}", stack.clone());
             });
             Some(Instant::now())
         } else {
+            // verbose_println(format!("Note: Profiling not enabled when creating {name}"));
             None
         };
 
-        Self { start, name }
+        let profile = Self { start, name };
+        // eprintln!("Created Profile for {} at {:p}", name, &profile);
+        profile
     }
 
     fn get_parent_stack() -> String {
@@ -101,7 +136,7 @@ impl Profile {
         })
     }
 
-    fn write_trace_event(&self, duration: std::time::Duration) -> Result<()> {
+    fn write_trace_event(&self, duration: std::time::Duration) -> ThagResult<()> {
         if !is_profiling_enabled() {
             return Ok(());
         }
@@ -111,41 +146,98 @@ impl Profile {
             return Ok(());
         }
 
-        let first_write = FIRST_WRITE.swap(false, Ordering::SeqCst);
-        let file = File::options()
-            .create(true)
-            .write(true)
-            .truncate(first_write)
-            .append(!first_write)
-            .open("thag-profile.folded")?;
+        PROFILE_STACK.with(|stack| {
+            let _stack = stack.borrow();
+            // eprintln!("Writing trace for {} at depth {}", self.name, stack.len());
+        });
 
-        let mut writer = std::io::BufWriter::new(file);
+        let file = FILE.get().expect("FILE not initialized");
+        let mut file_guard = file
+            .lock()
+            .map_err(|_| ThagError::Profiling("Failed to lock file".into()))?;
 
-        if first_write {
-            // Write metadata as comments
-            writeln!(writer, "# Format: Inferno folded stacks")?;
-            writeln!(
-                writer,
-                "# Script: {}",
-                std::env::current_exe().unwrap_or_default().display()
-            )?;
-            writeln!(writer, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
-            writeln!(writer, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
-            writeln!(writer, "# Platform: {}", std::env::consts::OS)?;
-            // Add blank line after metadata
-            writeln!(writer)?;
+        if file_guard.is_none() {
+            let file_path = FILE_PATH.get().expect("FILE_PATH not initialized");
+            let file = File::options()
+                .create(true)
+                .write(true)
+                .truncate(true) // Always truncate on first open
+                .open(file_path)?;
+            *file_guard = Some(BufWriter::new(file));
+
+            // Write header information
+            if let Some(writer) = file_guard.as_mut() {
+                writeln!(
+                    writer,
+                    "# Script: {}",
+                    std::env::current_exe().unwrap_or_default().display()
+                )?;
+                writeln!(writer, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
+                writeln!(writer, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
+                writeln!(writer)?;
+            }
         }
 
-        let stack = Self::get_parent_stack();
-        let entry = if stack.is_empty() {
-            self.name.to_string()
-        } else {
-            format!("{stack};{}", self.name)
-        };
+        if let Some(writer) = file_guard.as_mut() {
+            let stack = Self::get_parent_stack();
+            let entry = if stack.is_empty() {
+                self.name.to_string()
+            } else {
+                format!("{stack};{}", self.name)
+            };
 
-        writeln!(writer, "{entry} {micros}")?;
-        writer.flush()?;
+            writeln!(writer, "{entry} {micros}")?;
+            writer.flush()?; // Make sure we flush after each write
+        }
+
         Ok(())
+    }
+}
+
+impl Drop for Profile {
+    fn drop(&mut self) {
+        if let Some(start) = self.start {
+            let elapsed = start.elapsed();
+
+            // First write the trace event while the stack is still intact
+            let _ = self.write_trace_event(elapsed);
+
+            // Then pop from the stack
+            PROFILE_STACK.with(|stack| {
+                let mut stack = stack.borrow_mut();
+                if let Some(popped) = stack.pop() {
+                    // eprintln!("<<< Popping {} (depth now {})", popped, stack.len());
+                    if popped != self.name {
+                        {
+                            verbose_only(|| {
+                                eprintln!(
+                                    "!!! STACK MISMATCH: Expected {}, got {}",
+                                    self.name, popped
+                                )
+                            });
+                        };
+                    }
+                } else {
+                    verbose_only(|| {
+                        eprintln!("!!! ERROR: Stack empty when trying to pop {}", self.name)
+                    });
+                }
+            });
+        }
+    }
+}
+
+/// Run a function or closure only if the global verbosity is Verbose or higher.
+/// Intended to run an eprintln! of a message. This is meant as an equivalent to `vlog!`
+/// but without risking an infinite recursion with profiling trying to log and logging
+/// trying to profile.
+///
+/// Uses a function or closure as its argument rather than accept a pre-formatted message
+/// argument, so that we only do the formatting if we need to.
+fn verbose_only(fun: impl Fn()) {
+    let verbosity = lazy_static_var!(Verbosity, crate::get_verbosity());
+    if *verbosity as u8 >= Verbosity::Verbose as u8 {
+        fun();
     }
 }
 
@@ -163,17 +255,6 @@ pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
             None
         }
     })
-}
-impl Drop for Profile {
-    fn drop(&mut self) {
-        if let Some(start) = self.start {
-            let elapsed = start.elapsed();
-            let _ = self.write_trace_event(elapsed);
-            PROFILE_STACK.with(|stack| {
-                stack.borrow_mut().pop();
-            });
-        }
-    }
 }
 
 /// Profile the enclosing function if profiling is enabled.

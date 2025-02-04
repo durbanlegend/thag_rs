@@ -3743,6 +3743,29 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_hos
 
 ---
 
+### Script: proc_macro_load_static_map.rs
+
+**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
+ `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
+
+**Purpose:** Sample model of a basic function-like proc macro.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_load_static_map.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_load_static_map.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_load_static_map.rs
+```
+
+---
+
 ### Script: proc_macro_organizing_code.rs
 
 **Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
@@ -3877,15 +3900,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.r
 
 ### Script: profile_file_ra.rs
 
-**Description:**  Tries to profile a file via injection into its abstract syntax tree.
-
-**Purpose:** Debugging
+**Description:** 
+**Purpose:** 
 
 **Crates:** `ra_ap_syntax`
 
 **Type:** Program
 
-**Categories:** AST, crates, profiling, technique, tools
+**Categories:** missing
 
 **Link:** [profile_file_ra.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file_ra.rs)
 
@@ -3893,25 +3915,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.r
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file_ra.rs
-```
-
----
-
-### Script: profile_test_case.rs
-
-**Description:** 
-**Purpose:** 
-
-**Type:** Program
-
-**Categories:** missing
-
-**Link:** [profile_test_case.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_test_case.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_test_case.rs
 ```
 
 ---
@@ -4648,7 +4651,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_d
 
 **Purpose:** Demo a popular logging crate.
 
-**Crates:** `slog`, `slog_term`, `thag_rs`
+**Crates:** `slog`, `slog_term`
 
 **Type:** Program
 

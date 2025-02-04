@@ -29,7 +29,8 @@ static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 /// Will panic if it can't unwrap the lock on the mutex protecting the `LOGGER` static variable.
 #[must_use]
 pub fn get_verbosity() -> Verbosity {
-    profile!("get_verbosity");
+    // NB: Do not profile this function, because module `profiling` may need to
+    // call it to determine whether to print debugging output.
     LOGGER.lock().unwrap().verbosity
 }
 

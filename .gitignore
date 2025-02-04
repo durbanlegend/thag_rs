@@ -42,3 +42,4 @@ web_safe_colors.txt
 themes/built_in/none copy.toml
 themes/built_in/none_bad.toml
 themes/built_in/none_basic.toml
+*.folded

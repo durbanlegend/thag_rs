@@ -33,9 +33,12 @@ use inferno::flamegraph::{
 };
 use inquire::{MultiSelect, Select};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+// use std::borrow::Cow::Borrowed;
+use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
+// use std::path::Path;
 use std::process::Command;
 use std::time::Duration;
 use thag_rs::profiling::ProfileStats;
@@ -122,7 +125,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let options = vec![
-        "Generate & Show Flamechart",
+        "Show Flamechart",
+        "Show Differential",
         "Show Statistics",
         "Filter Functions",
         // "Show Async Boundaries",
@@ -131,7 +135,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let selection = Select::new("Select action:", options).prompt()?;
 
     match selection {
-        "Generate & Show Flamechart" => generate_flamechart(&processed)?,
+        "Show Flamechart" => generate_flamechart(&processed)?,
+        "Show Differential" => match select_profile_files() {
+            Ok((before, after)) => {
+                if let Err(e) = generate_differential_flamegraph(before, after) {
+                    eprintln!("Error generating differential flamegraph: {}", e);
+                }
+            }
+            Err(e) => eprintln!("Error selecting files: {}", e),
+        },
         "Show Statistics" => show_statistics(&stats, &processed),
         "Filter Functions" => {
             let filtered = filter_functions(&processed)?;
@@ -175,6 +187,53 @@ fn generate_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     if let Err(e) = open_in_browser("flamechart.svg") {
         eprintln!("Failed to open browser: {e}");
     }
+    Ok(())
+}
+
+fn generate_differential_flamegraph(before: PathBuf, after: PathBuf) -> ThagResult<()> {
+    // First, generate the differential data
+    let mut diff_data = Vec::new();
+    inferno::differential::from_files(
+        inferno::differential::Options::default(), // Options for differential processing
+        &before,
+        &after,
+        &mut diff_data,
+    )
+    .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
+
+    // Extract timestamps from filenames for the subtitle
+    let before_name = before.file_name().unwrap_or_default().to_string_lossy();
+    let after_name = after.file_name().unwrap_or_default().to_string_lossy();
+
+    // Get script name from the first file
+    let script_name = before
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .and_then(|s| s.split('-').next())
+        .unwrap_or("unknown");
+
+    // Now generate the flamegraph from the differential data
+    let output = File::create("flamegraph-diff.svg")?;
+    let mut opts = Options::default();
+    opts.title = format!("Differential Profile: {}", script_name);
+    opts.subtitle = format!("Comparing {} → {}", before_name, after_name).into();
+    opts.colors = select_color_scheme()?;
+    opts.count_name = "μs".to_owned();
+
+    // Convert diff_data to lines
+    let diff_lines = String::from_utf8(diff_data)
+        .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
+    let lines: Vec<&str> = diff_lines.lines().collect();
+
+    flamegraph::from_lines(&mut opts, lines.iter().map(|s| *s), output)
+        .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
+
+    println!("\nDifferential flame graph generated: flamegraph-diff.svg");
+    println!("Red indicates increased time, blue indicates decreased time");
+    println!("The width of the boxes represents the absolute time difference");
+
+    open_in_browser("flamegraph-diff.svg")
+        .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
     Ok(())
 }
 
@@ -438,4 +497,108 @@ fn select_color_scheme() -> ThagResult<Palette> {
         .find(|s| s.name == selection)
         .unwrap()
         .palette)
+}
+
+fn group_profile_files() -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
+    let mut groups: HashMap<String, Vec<PathBuf>> = HashMap::new();
+
+    // Use file_navigator to get the directory and list .folded files
+    let dir = std::env::current_dir()?;
+    for entry in dir.read_dir()? {
+        if let Ok(entry) = entry {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("folded") {
+                if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                    // Extract script_stem from filename (everything before the first hyphen)
+                    if let Some(script_stem) = filename.split('-').next() {
+                        groups
+                            .entry(script_stem.to_string())
+                            .or_default()
+                            .push(path);
+                    }
+                }
+            }
+        }
+    }
+
+    // Sort files within each group by timestamp (they'll sort naturally due to the filename format)
+    for files in groups.values_mut() {
+        files.sort();
+    }
+
+    // Convert to sorted vec for display
+    let mut result: Vec<_> = groups.into_iter().collect();
+    result.sort_by(|(a, _), (b, _)| a.cmp(b));
+
+    Ok(result)
+}
+
+fn select_profile_files() -> ThagResult<(PathBuf, PathBuf)> {
+    let groups = group_profile_files()?;
+
+    if groups.is_empty() {
+        return Err(<String as Into<ThagError>>::into(
+            "No profile files found".to_string(),
+        ));
+    }
+
+    // First select the script group
+    let script_options: Vec<_> = groups
+        .iter()
+        .map(|(name, files)| format!("{} ({} profiles)", name, files.len()))
+        .collect();
+
+    let script_selection = Select::new("Select script to compare:", script_options.clone())
+        .prompt()
+        .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
+
+    let script_idx = script_options
+        .iter()
+        .position(|s| s == &script_selection)
+        .ok_or_else(|| <String as Into<ThagError>>::into("Invalid selection".to_string()))?;
+
+    let files = &groups[script_idx].1;
+    if files.len() < 2 {
+        return Err(<String as Into<ThagError>>::into(
+            "Need at least 2 profiles to compare".to_string(),
+        ));
+    }
+
+    // Select 'before' profile
+    let file_options: Vec<_> = files
+        .iter()
+        .map(|p| {
+            p.file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string()
+        })
+        .collect();
+
+    let before = Select::new("Select 'before' profile:", file_options.clone())
+        .prompt()
+        .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
+
+    // Create new options list excluding the 'before' selection
+    let after_options: Vec<_> = file_options
+        .into_iter()
+        .filter(|name| name != &before)
+        .collect();
+
+    let after = Select::new("Select 'after' profile:", after_options)
+        .prompt()
+        .map_err(|e| <String as Into<ThagError>>::into(e.to_string()))?;
+
+    Ok((
+        files
+            .iter()
+            .find(|p| p.file_name().unwrap_or_default().to_string_lossy() == before)
+            .cloned()
+            .unwrap(),
+        files
+            .iter()
+            .find(|p| p.file_name().unwrap_or_default().to_string_lossy() == after)
+            .cloned()
+            .unwrap(),
+    ))
 }

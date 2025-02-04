@@ -17,16 +17,17 @@
 //!
 //! `demo/thag_profile.rs` also allows you to filter out unwanted events, e.g. to make it easier to drill down into the flamechart.
 //!
+use crate::{lazy_static_var, ThagError, ThagResult, Verbosity};
+use chrono::Local;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::time::{Instant, SystemTime};
 pub use thag_proc_macros::profile;
-
-use crate::{lazy_static_var, ThagError, ThagResult, Verbosity};
 
 static FILE_PATH: OnceLock<String> = OnceLock::new();
 static FILE: OnceLock<Mutex<Option<BufWriter<File>>>> = OnceLock::new();
@@ -70,9 +71,9 @@ pub fn enable_profiling(enabled: bool) -> ThagResult<()> {
 
         // Initialize FILE_PATH with timestamp
         FILE_PATH.get_or_init(|| {
-            "thag-profile.folded".to_string()
-            // let timestamp = now;
-            // format!("thag-profile-{}.folded", timestamp)
+            // "thag-profile.folded".to_string()
+            let script_path = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("unknown"));
+            generate_profile_filename(&script_path)
         });
 
         // Initialize FILE
@@ -409,4 +410,15 @@ impl ProfileStats {
     pub const fn max_time(&self) -> Option<std::time::Duration> {
         self.max_time
     }
+}
+
+fn generate_profile_filename(script_path: &Path) -> String {
+    let script_stem = script_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
+
+    let timestamp = Local::now().format("%Y%m%d-%H%M%S");
+
+    format!("{}-{}.folded", script_stem, timestamp)
 }

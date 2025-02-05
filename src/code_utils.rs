@@ -288,7 +288,7 @@ pub fn wrap_snippet(inner_attribs: &str, body: &str) -> String {
 
     debug_log!("In wrap_snippet: inner_attribs={inner_attribs:#?}");
     let wrapped_snippet = format!(
-        r##"#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
+        r#"#![allow(unused_imports,unused_macros,unused_variables,dead_code)]
 {inner_attribs}
 use std::error::Error;
 use std::io;
@@ -300,7 +300,7 @@ fn main() -> Result<(), Box<dyn Error>> {{
 {body}
 Ok(())
 }}
-"##
+"#
     );
 
     debug_log!("wrapped_snippet={wrapped_snippet}");
@@ -380,7 +380,7 @@ pub fn build_loop(args: &Cli, filter: String) -> String {
     // dbg!(&filter);
 
     format!(
-        r#"{}
+        r"{}
 use std::io::{{self, BufRead}};
 fn main() -> Result<(), Box<dyn std::error::Error>> {{
     {}
@@ -396,13 +396,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
     {}
     Ok(())
 }}
-"#,
+",
         loop_toml.as_ref().map_or_else(String::new, |toml| {
             vlog!(V::V, "toml={toml}");
             format!(
-                r#"/*[toml]
+                r"/*[toml]
 {toml}
-*/"#
+*/"
             )
         }),
         loop_begin.as_ref().map_or("", |prelude| {

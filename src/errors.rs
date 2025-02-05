@@ -42,7 +42,7 @@ pub enum ThagError {
     OsString(std::ffi::OsString), // For unconvertible OsStrings
     Parse,
     ParseInt(ParseIntError),
-    Profiling(&'static str),
+    Profiling(String),
     #[cfg(feature = "reedline")]
     Reedline(ReedlineError), // For reedline errors
     #[cfg(feature = "serde_merge")]
@@ -211,7 +211,7 @@ impl std::fmt::Display for ThagError {
             Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
             Self::Parse => write!(f, "Error parsing source data"),
             Self::ParseInt(e) => write!(f, "{e}"),
-            Self::Profiling(e) => write!(f, "{}", e),
+            Self::Profiling(e) => write!(f, "{e}"),
             #[cfg(feature = "reedline")]
             Self::Reedline(e) => write!(f, "{e}"),
             #[cfg(feature = "serde_merge")]

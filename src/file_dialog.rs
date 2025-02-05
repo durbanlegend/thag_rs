@@ -423,7 +423,7 @@ impl FileDialog<'_> {
                     .filter(|e| -> bool {
                         let e = e.path();
                         if e.file_name()
-                            .map_or(false, |n| n.to_string_lossy().starts_with('.'))
+                            .is_some_and(|n| n.to_string_lossy().starts_with('.'))
                         {
                             return self.show_hidden;
                         }
@@ -433,12 +433,12 @@ impl FileDialog<'_> {
                             return true;
                         }
                         match self.filter.as_ref().unwrap() {
-                            FilePattern::Extension(ext) => e.extension().map_or(false, |e| {
+                            FilePattern::Extension(ext) => e.extension().is_some_and(|e| {
                                 e.to_ascii_lowercase() == OsString::from(ext.to_ascii_lowercase())
                             }),
                             FilePattern::Substring(substr) => e
                                 .file_name()
-                                .map_or(false, |n| n.to_string_lossy().contains(substr)),
+                                .is_some_and(|n| n.to_string_lossy().contains(substr)),
                         }
                     })
                     .map(|file| {

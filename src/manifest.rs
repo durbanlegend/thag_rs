@@ -138,7 +138,7 @@ gen_src_path={gen_src_path}",
 pub fn default(source_stem: &str, gen_src_path: &str) -> ThagResult<Manifest> {
     profile!("default");
     let cargo_manifest = format!(
-        r##"[package]
+        r#"[package]
 name = "{}"
 version = "0.0.1"
 edition = "2021"
@@ -155,7 +155,7 @@ edition = "2021"
 name = "{}"
 path = "{}"
 edition = "2021"
-"##,
+"#,
         source_stem, source_stem, gen_src_path
     );
 
@@ -194,7 +194,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
         infer_deps_from_source(rs_source)
     };
 
-    end_profile_section("infer_deps");
+    let _ = end_profile_section("infer_deps");
     // debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
 
     profile_section!("merge_manifest");
@@ -225,7 +225,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
 
     // Reassign the merged manifest back to build_state
     build_state.cargo_manifest = Some(merged_manifest);
-    end_profile_section("merge_manifest");
+    let _ = end_profile_section("infer_deps");
 
     #[cfg(debug_assertions)]
     debug_timings(&start_merge_manifest, "Processed features");

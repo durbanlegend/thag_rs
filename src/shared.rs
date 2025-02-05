@@ -113,6 +113,24 @@ macro_rules! regex {
     }};
 }
 
+#[macro_export]
+macro_rules! static_lazy {
+    ($name:ident: $type:ty = $init:expr) => {
+        struct $name;
+
+        impl $name {
+            pub fn get() -> &'static $type {
+                static INSTANCE: std::sync::OnceLock<$type> = std::sync::OnceLock::new();
+                INSTANCE.get_or_init(|| $init)
+            }
+
+            pub fn init() {
+                let _ = Self::get();
+            }
+        }
+    };
+}
+
 /// Get the user's home directory as a `String`.
 ///
 /// # Errors

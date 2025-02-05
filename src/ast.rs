@@ -456,7 +456,7 @@ pub fn find_metadata(syntax_tree: &Ast) -> MetadataFinder {
 #[must_use]
 pub fn should_filter_dependency(name: &str) -> bool {
     // Filter out capitalized names
-    if name.chars().next().map_or(false, char::is_uppercase) {
+    if name.chars().next().is_some_and(char::is_uppercase) {
         return true;
     }
 
@@ -582,9 +582,11 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
     match expr {
         Expr::ForLoop(for_loop) => {
             // debug_log!("%%%%%%%% Expr::ForLoop(for_loop))");
-            for_loop.body.stmts.last().map_or(false, |last_stmt| {
-                is_stmt_unit_type(last_stmt, function_map)
-            })
+            for_loop
+                .body
+                .stmts
+                .last()
+                .is_some_and(|last_stmt| is_stmt_unit_type(last_stmt, function_map))
         }
         Expr::If(expr_if) => {
             // Cycle through if-else statements and return false if any one is found returning
@@ -603,7 +605,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
                         // decide according to the return type of the last statement in the block.
                         Expr::Block(expr_block) => {
                             let else_is_unit_type =
-                                expr_block.block.stmts.last().map_or(false, |last_stmt_in_block| is_stmt_unit_type(last_stmt_in_block, function_map));
+                                expr_block.block.stmts.last().is_some_and(|last_stmt_in_block| is_stmt_unit_type(last_stmt_in_block, function_map));
                             else_is_unit_type
                         }
                         // If it's another if-statement, simply recurse through this method.
@@ -625,9 +627,11 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             if expr_block.block.stmts.is_empty() {
                 return true;
             }
-            expr_block.block.stmts.last().map_or(false, |last_stmt| {
-                is_stmt_unit_type(last_stmt, function_map)
-            })
+            expr_block
+                .block
+                .stmts
+                .last()
+                .is_some_and(|last_stmt| is_stmt_unit_type(last_stmt, function_map))
         }
         Expr::Match(expr_match) => {
             for arm in &expr_match.arms {

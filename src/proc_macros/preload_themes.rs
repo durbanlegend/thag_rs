@@ -18,7 +18,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
             n.starts_with('.')
                 || !std::path::Path::new(n)
                     .extension()
-                    .map_or(false, |ext| ext.eq_ignore_ascii_case("toml"))
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("toml"))
         }) {
             continue;
         }

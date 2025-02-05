@@ -550,9 +550,9 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
     if is_edit && TermAttributes::get_or_init().color_support == ColorSupport::None {
         return Err(ThagError::UnsupportedTerm(
-            r#" for `--edit (-d)` option.
+            r" for `--edit (-d)` option.
 Unfortunately, TUI features require terminal color support.
-As an alternative, consider using the `edit` + `run` functions of `--repl (-r)`."#
+As an alternative, consider using the `edit` + `run` functions of `--repl (-r)`."
                 .into(),
         ));
     }
@@ -862,7 +862,7 @@ pub fn gen_build_run(
         // NB build scripts that are well-formed programs from the original source.
         // Fun fact: Rust compiler will ignore shebangs:
         // https://neosmart.net/blog/self-compiling-rust-code/
-        let is_file = build_state.ast.as_ref().map_or(false, Ast::is_file);
+        let is_file = build_state.ast.as_ref().is_some_and(Ast::is_file);
         build_state.build_from_orig_source =
             (test_only || has_main == Some(true)) && args.script.is_some() && is_file;
 
@@ -1263,14 +1263,18 @@ fn display_build_failure() {
     cvprtln!(
         Role::EMPH,
         V::V,
-        r#"Dependency inference_level={inference_level:#?}
-If the problem is a dependency error, consider the following advice:
-{advice}
-{}"#,
+        r"Dependency inference_level={inference_level:#?}
+If the problem is a dependency error, consider the following advice:"
+    );
+    cvprtln!(
+        Role::Info,
+        V::V,
+        r"{advice}
+{}",
         if matches!(inference_level, config::DependencyInference::Config) {
             ""
         } else {
-            "Consider running with dependency inference_level configured as `config` or an embedded `toml` block."
+            "Consider running with dependency inference_level configured as `config` or else an embedded `toml` block."
         }
     );
 }

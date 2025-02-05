@@ -25,13 +25,15 @@ use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use std::sync::{Mutex, OnceLock};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, AtomicUsize, Ordering};
+use std::sync::Mutex;
+// use std::sync::OnceLock;
 use std::time::{Instant, SystemTime};
 // use std::time::SystemTime;
 pub use thag_proc_macros::profile;
 
-static TIME_PROFILE_: OnceLock<String> = OnceLock::new();
+static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
+static IS_RECORDING: AtomicBool = AtomicBool::new(false);
 
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
@@ -79,7 +81,7 @@ enum MemoryOperation {
 }
 
 #[global_allocator]
-static ALLOCATOR: MemoryProfiler = MemoryProfiler::new();
+static ALLOCATOR: AllocationProfiler = AllocationProfiler::new();
 
 #[derive(Clone)]
 struct ProfileFilePaths {
@@ -87,14 +89,14 @@ struct ProfileFilePaths {
     memory: String,
     alloc: String,
 }
-struct MemoryProfiler {
+struct AllocationProfiler {
     inner: System, // Use system allocator as backend
     total_allocated: AtomicUsize,
     active_allocations: AtomicUsize,
     allocation_count: AtomicUsize,
 }
 
-impl MemoryProfiler {
+impl AllocationProfiler {
     const fn new() -> Self {
         Self {
             inner: System,
@@ -116,34 +118,54 @@ impl MemoryProfiler {
     /// # Errors
     /// Returns a `ThagError` if writing to the allocation log fails
     fn record_allocation(op: &MemoryOperation, size: usize) -> ThagResult<()> {
-        if !is_profiling_enabled() {
+        if !is_profiling_enabled()
+            || !is_memory_profiling_enabled()
+            || IS_RECORDING.load(Ordering::SeqCst)
+        {
             return Ok(());
         }
 
-        let stack = crate::profiling::PROFILE_STACK.with(|stack| {
-            let stack = stack.borrow();
-            if stack.is_empty() {
-                String::new()
-            } else {
-                stack.join(";")
-            }
-        });
+        // Set recording flag
+        IS_RECORDING.store(true, Ordering::SeqCst);
 
-        let entry = match op {
-            MemoryOperation::Allocate => format!("{stack} +{size}"),
-            MemoryOperation::Deallocate => format!("{stack} -{size}"),
-            MemoryOperation::Reallocate => format!("{stack} ={size}"),
-        };
+        // Use a closure to ensure we reset the flag
+        let result = (|| {
+            let stack = PROFILE_STACK
+                .try_with(|stack| {
+                    stack
+                        .try_borrow()
+                        .map(|stack| {
+                            if stack.is_empty() {
+                                String::new()
+                            } else {
+                                stack.join(";")
+                            }
+                        })
+                        .unwrap_or_default()
+                })
+                .unwrap_or_default();
 
-        let paths = ProfilePaths::get();
-        Profile::write_profile_event(&paths.alloc, AllocationLogFile::get(), &entry)
+            let entry = match op {
+                MemoryOperation::Allocate => format!("{stack} +{size}"),
+                MemoryOperation::Deallocate => format!("{stack} -{size}"),
+                MemoryOperation::Reallocate => format!("{stack} ={size}"),
+            };
+
+            let paths = ProfilePaths::get();
+            Profile::write_profile_event(&paths.alloc, AllocationLogFile::get(), &entry)
+        })();
+
+        // Reset recording flag
+        IS_RECORDING.store(false, Ordering::SeqCst);
+
+        result
     }
 }
 
-unsafe impl GlobalAlloc for MemoryProfiler {
+unsafe impl GlobalAlloc for AllocationProfiler {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ptr = self.inner.alloc(layout);
-        if !ptr.is_null() {
+        if !ptr.is_null() && !IS_RECORDING.load(Ordering::SeqCst) {
             self.total_allocated
                 .fetch_add(layout.size(), Ordering::SeqCst);
             self.active_allocations.fetch_add(1, Ordering::SeqCst);
@@ -156,14 +178,16 @@ unsafe impl GlobalAlloc for MemoryProfiler {
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         self.inner.dealloc(ptr, layout);
-        self.active_allocations.fetch_sub(1, Ordering::SeqCst);
-        // Record the deallocation
-        let _ = Self::record_allocation(&MemoryOperation::Deallocate, layout.size());
+        if !IS_RECORDING.load(Ordering::SeqCst) {
+            self.active_allocations.fetch_sub(1, Ordering::SeqCst);
+            // Record the deallocation
+            let _ = Self::record_allocation(&MemoryOperation::Deallocate, layout.size());
+        }
     }
 
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         let new_ptr = self.inner.realloc(ptr, layout, new_size);
-        if !new_ptr.is_null() {
+        if !new_ptr.is_null() && !IS_RECORDING.load(Ordering::SeqCst) {
             // Record the reallocation
             let _ = Self::record_allocation(&MemoryOperation::Reallocate, new_size);
         }
@@ -236,6 +260,28 @@ fn initialize_profile_files(profile_type: &ProfileType) -> ThagResult<()> {
     Ok(())
 }
 
+fn get_global_profile_type() -> ProfileType {
+    match PROFILE_TYPE.load(Ordering::SeqCst) {
+        1 => ProfileType::Time,
+        2 => ProfileType::Memory,
+        3 => ProfileType::Both,
+        _ => ProfileType::Time,
+    }
+}
+fn set_profile_type(profile_type: &ProfileType) {
+    let value = match profile_type {
+        ProfileType::Time => 1,
+        ProfileType::Memory => 2,
+        ProfileType::Both => 3,
+    };
+    PROFILE_TYPE.store(value, Ordering::SeqCst);
+}
+
+fn is_memory_profiling_enabled() -> bool {
+    let profile_type = PROFILE_TYPE.load(Ordering::SeqCst);
+    profile_type == 2 || profile_type == 3
+}
+
 /// Enables or disables profiling with the specified profile type.
 ///
 /// When enabling profiling, this function:
@@ -256,7 +302,11 @@ fn initialize_profile_files(profile_type: &ProfileType) -> ThagResult<()> {
 /// - Mutex operations fail
 pub fn enable_profiling(enabled: bool, profile_type: &ProfileType) -> ThagResult<()> {
     if enabled {
-        // Initialize paths first
+        // Set profile type first
+        set_profile_type(profile_type);
+        println!("Set profile type to {:?}", get_global_profile_type()); // Debug
+
+        // Initialize paths
         ProfilePaths::init();
 
         // Store start time
@@ -269,8 +319,10 @@ pub fn enable_profiling(enabled: bool, profile_type: &ProfileType) -> ThagResult
             return Err(ThagError::Profiling("Time value too large".into()));
         };
         START_TIME.store(now, Ordering::SeqCst);
+        println!("Stored start time"); // Debug
 
         // Initialize and reset appropriate files
+        println!("initialize_profile_files"); // Debug
         initialize_profile_files(profile_type)?;
     }
 
@@ -325,6 +377,7 @@ pub fn is_profiling_enabled() -> bool {
     PROFILING_ENABLED.load(Ordering::SeqCst)
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum ProfileType {
     Time, // Wall clock/elapsed time
     Memory,
@@ -350,10 +403,26 @@ impl Profile {
     }
 
     #[must_use]
-    pub fn new(name: &'static str, profile_type: ProfileType) -> Self {
+    pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
+        let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
+            1 => ProfileType::Time,
+            2 => ProfileType::Memory,
+            3 => ProfileType::Both,
+            _ => ProfileType::Time, // default
+        };
+
+        // Use the more comprehensive of the two types
+        let profile_type = match (requested_type, global_type) {
+            (ProfileType::Both, _) | (_, ProfileType::Both) => ProfileType::Both,
+            (ProfileType::Memory, _) | (_, ProfileType::Memory) => ProfileType::Memory,
+            _ => ProfileType::Time,
+        };
+
         let start = if is_profiling_enabled() {
             PROFILE_STACK.with(|stack| {
-                stack.borrow_mut().push(name);
+                if let Ok(mut guard) = stack.try_borrow_mut() {
+                    guard.push(name);
+                }
             });
             Some(Instant::now())
         } else {
@@ -460,51 +529,19 @@ impl Profile {
             return Ok(());
         }
 
-        PROFILE_STACK.with(|stack| {
-            let _stack = stack.borrow();
-            // eprintln!("Writing trace for {} at depth {}", self.name, stack.len());
-        });
+        let stack = Self::get_parent_stack();
+        let entry = if stack.is_empty() {
+            self.name.to_string()
+        } else {
+            format!("{stack};{}", self.name)
+        };
 
-        let file = TimeProfileFile::get();
-        let mut file_guard = file
-            .lock()
-            .map_err(|_| ThagError::Profiling("Failed to lock file".into()))?;
-
-        if file_guard.is_none() {
-            let file_path = TIME_PROFILE_.get().expect("FILE_PATH not initialized");
-            let file = File::options()
-                .create(true)
-                .write(true)
-                .truncate(true) // Always truncate on first open
-                .open(file_path)?;
-            *file_guard = Some(BufWriter::new(file));
-
-            // Write header information
-            if let Some(writer) = file_guard.as_mut() {
-                writeln!(
-                    writer,
-                    "# Script: {}",
-                    std::env::current_exe().unwrap_or_default().display()
-                )?;
-                writeln!(writer, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
-                writeln!(writer, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
-                writeln!(writer)?;
-            }
-        }
-
-        if let Some(writer) = file_guard.as_mut() {
-            let stack = Self::get_parent_stack();
-            let entry = if stack.is_empty() {
-                self.name.to_string()
-            } else {
-                format!("{stack};{}", self.name)
-            };
-
-            writeln!(writer, "{entry} {micros}")?;
-            writer.flush()?; // Make sure we flush after each write
-        }
-        drop(file_guard);
-        Ok(())
+        let paths = ProfilePaths::get();
+        Self::write_profile_event(
+            &paths.time,
+            TimeProfileFile::get(),
+            &format!("{entry} {micros}"),
+        )
     }
 
     /// Records a memory profiling event.
@@ -518,87 +555,67 @@ impl Profile {
     /// # Errors
     /// Returns a `ThagError` if writing to the profile file fails
     fn write_memory_event(&self, delta: usize) -> ThagResult<()> {
-        if !is_profiling_enabled() {
+        if !is_profiling_enabled() || delta == 0 {
             return Ok(());
         }
 
         let stack = Self::get_parent_stack();
         let entry = if stack.is_empty() {
-            self.name.to_string()
+            format!("{} {delta}", self.name)
         } else {
-            format!("{stack};{}", self.name)
+            format!("{stack};{} {delta}", self.name)
         };
 
         let paths = ProfilePaths::get();
-        Self::write_profile_event(
-            &paths.memory,
-            MemoryProfileFile::get(),
-            &format!("{entry} {delta}"),
-        )
+        Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
     }
 }
 
 impl Drop for Profile {
     fn drop(&mut self) {
-        if let Some(start) = self.start {
+        // dbg!(&self.profile_type);
+        if let Some(start) = self.start.take() {
             match self.profile_type {
                 ProfileType::Time => {
                     let elapsed = start.elapsed();
-
-                    // Handle stack operations in a single borrow
-                    PROFILE_STACK.with(|stack| {
-                        let mut stack = stack.borrow_mut();
-                        if let Some(popped) = stack.pop() {
-                            if popped != self.name {
-                                verbose_only(|| {
-                                    eprintln!(
-                                        "!!! STACK MISMATCH: Expected {}, got {}",
-                                        self.name, popped
-                                    );
-                                });
-                            }
-                        }
-                    });
-
-                    // Write the trace event after stack operations
                     let _ = self.write_time_event(elapsed);
                 }
                 ProfileType::Memory => {
+                    // Make sure we capture the memory delta before popping the stack
                     if let Some(initial) = self.initial_memory {
                         let final_memory = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
                         let delta = final_memory.saturating_sub(initial);
-                        let _ = self.write_memory_event(delta);
+                        dbg!(delta);
+                        if delta > 0 {
+                            let _ = self.write_memory_event(delta);
+                        }
                     }
-
-                    PROFILE_STACK.with(|stack| {
-                        stack.borrow_mut().pop();
-                    });
                 }
                 ProfileType::Both => {
                     let elapsed = start.elapsed();
+                    // eprintln!(
+                    //     "elapsed={elapsed:?}, self.initial_memory={:?}",
+                    //     self.initial_memory
+                    // );
                     if let Some(initial) = self.initial_memory {
                         let final_memory = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
+                        // eprintln!("final_memory={final_memory:?}");
                         let delta = final_memory.saturating_sub(initial);
-                        let _ = self.write_memory_event(delta);
-                    }
-
-                    PROFILE_STACK.with(|stack| {
-                        let mut stack = stack.borrow_mut();
-                        if let Some(popped) = stack.pop() {
-                            if popped != self.name {
-                                verbose_only(|| {
-                                    eprintln!(
-                                        "!!! STACK MISMATCH: Expected {}, got {}",
-                                        self.name, popped
-                                    );
-                                });
-                            }
+                        dbg!(delta);
+                        if delta > 0 {
+                            let _ = self.write_memory_event(delta);
                         }
-                    });
-
+                    }
                     let _ = self.write_time_event(elapsed);
                 }
             }
+
+            // Clean up the stack after writing events
+            let _ = PROFILE_STACK.try_with(|stack| {
+                if let Ok(mut guard) = stack.try_borrow_mut() {
+                    guard.pop();
+                }
+            });
         }
     }
 }
@@ -610,6 +627,7 @@ impl Drop for Profile {
 ///
 /// Uses a function or closure as its argument rather than accept a pre-formatted message
 /// argument, so that we only do the formatting if we need to.
+#[allow(dead_code)]
 fn verbose_only(fun: impl Fn()) {
     let verbosity = lazy_static_var!(Verbosity, crate::get_verbosity());
     if *verbosity as u8 >= Verbosity::Verbose as u8 {

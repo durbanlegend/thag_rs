@@ -44,3 +44,4 @@ themes/built_in/none_bad.toml
 themes/built_in/none_basic.toml
 *.folded
 *.log
+tools/thag_profile_bad.rs

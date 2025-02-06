@@ -72,6 +72,23 @@ pub struct MemoryData {
     pub allocation_sizes: HashMap<usize, u64>, // Size -> Count
 }
 
+#[derive(Debug, Clone, Copy)]
+enum ChartType {
+    TimeSequence, // flame_chart = true
+    Aggregated,   // flame_chart = false
+}
+
+impl ChartType {
+    fn configure_options(&self, opts: &mut Options) {
+        opts.flame_chart = matches!(self, ChartType::TimeSequence);
+        opts.title = match self {
+            ChartType::TimeSequence => "Execution Timeline",
+            ChartType::Aggregated => "Aggregated Profile",
+        }
+        .to_string();
+    }
+}
+
 fn process_profile_data(lines: &[String]) -> ProcessedProfile {
     let mut processed = ProcessedProfile::default();
     let mut stacks = Vec::new();
@@ -142,6 +159,30 @@ fn process_profile_data(lines: &[String]) -> ProcessedProfile {
         }
     }
 
+    let mut current_memory = 0u64;
+    let mut peak_memory = 0u64;
+
+    for line in lines {
+        if !line.starts_with('#') {
+            if let Some((_stack, size)) = line.rsplit_once(' ') {
+                if let Ok(bytes) = size.parse::<u64>() {
+                    memory_data.total_allocations += 1;
+                    current_memory += bytes;
+                    peak_memory = peak_memory.max(current_memory);
+
+                    // Update allocation sizes histogram
+                    *memory_data
+                        .allocation_sizes
+                        .entry(bytes as usize)
+                        .or_default() += 1;
+                }
+            }
+        }
+    }
+
+    memory_data.peak_memory = peak_memory;
+    memory_data.current_memory = current_memory;
+
     processed.stacks = stacks;
     processed.memory_data = Some(memory_data);
     processed
@@ -173,19 +214,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .prompt()
         .map_err(|e| ThagError::Profiling(e.to_string()))?;
 
+    let filter = |filename: &str| !filename.contains("-memory");
     match analysis_type {
-        "Time Profile - Single" => analyze_single_time_profile()?,
-        "Time Profile - Differential" => analyze_differential_time_profiles()?,
-        "Memory Profile" => analyze_memory_profiles()?,
+        "Time Profile - Single" => analyze_single_time_profile(filter)?,
+        "Time Profile - Differential" => analyze_differential_time_profiles(filter)?,
+        "Memory Profile" => analyze_memory_profiles(|filename: &str| filename.contains("-memory"))?,
         _ => return Err("Invalid selection".into()),
     }
 
     Ok(())
 }
 
-fn analyze_single_time_profile() -> ThagResult<()> {
+// fn analyze_single_time_profile(filter: Fn(&str)) -> ThagResult<()> {
+fn analyze_single_time_profile<T: Fn(&str) -> bool>(filter: T) -> ThagResult<()> {
     // Filter to show only time profile files
-    let profile_groups = group_profile_files()?
+    let profile_groups = group_profile_files(&filter)?
         .into_iter()
         .filter(|(_, files)| {
             files
@@ -207,7 +250,7 @@ fn analyze_single_time_profile() -> ThagResult<()> {
 
     match selection {
         "Show Flamechart" => generate_flamechart(&processed)?,
-        "Show Differential" => match select_profile_files() {
+        "Show Differential" => match select_profile_files(filter) {
             Ok((before, after)) => {
                 if let Err(e) = generate_differential_flamegraph(before, after) {
                     eprintln!("Error generating differential flamegraph: {}", e);
@@ -227,8 +270,9 @@ fn analyze_single_time_profile() -> ThagResult<()> {
     Ok(())
 }
 
-fn analyze_differential_time_profiles() -> ThagResult<()> {
-    // let profile_groups = group_profile_files()?
+// fn analyze_differential_time_profiles(filter: dyn Fn(&str)) -> ThagResult<()> {
+fn analyze_differential_time_profiles<T: Fn(&str) -> bool>(filter: T) -> ThagResult<()> {
+    // let profile_groups = group_profile_files(filter)?
     //     .into_iter()
     //     .filter(|(_, files)| {
     //         files
@@ -237,12 +281,14 @@ fn analyze_differential_time_profiles() -> ThagResult<()> {
     //     })
     //     .collect::<Vec<_>>();
 
-    let (before, after) = select_profile_files()?;
+    let (before, after) = select_profile_files(filter)?;
     generate_differential_flamegraph(before, after)
 }
 
-fn analyze_memory_profiles() -> ThagResult<()> {
-    let profile_groups = group_profile_files()?
+// fn analyze_memory_profiles() -> ThagResult<()> {
+fn analyze_memory_profiles<T: Fn(&str) -> bool>(filter: T) -> ThagResult<()> {
+    // let filter = |filename: &str| filename.contains("-memory");
+    let profile_groups = group_profile_files(filter)?
         .into_iter()
         .filter(|(_, files)| {
             files
@@ -293,9 +339,15 @@ fn generate_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
 
     let color_scheme = select_color_scheme()?;
 
-    let output = File::create("flamechart.svg")?;
+    let chart_type = ChartType::TimeSequence;
+    let svg = "flamechart.svg";
+    let output = File::create(svg)?;
     let mut opts = Options::default();
-    // opts.title = profile.title.clone();
+    chart_type.configure_options(&mut opts);
+    opts.title = match opts.flame_chart {
+        true => "Execution Timeline Chart".to_string(), // for time profiles
+        false => "Flame Graph".to_string(),
+    };
     opts.subtitle = Some(format!(
         "Started: {}",
         profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")
@@ -312,6 +364,8 @@ fn generate_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
         profile.stacks.iter().rev().map(String::as_str),
         output,
     )?;
+
+    enhance_svg_accessibility(svg)?;
 
     println!("Flame chart generated: flamechart.svg");
     open_in_browser("flamechart.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
@@ -341,7 +395,8 @@ fn generate_differential_flamegraph(before: PathBuf, after: PathBuf) -> ThagResu
         .unwrap_or("unknown");
 
     // Now generate the flamegraph from the differential data
-    let output = File::create("flamegraph-diff.svg")?;
+    let svg = "flamegraph-diff.svg";
+    let output = File::create(svg)?;
     let mut opts = Options::default();
     opts.title = format!("Differential Profile: {}", script_name);
     opts.subtitle = format!("Comparing {} → {}", before_name, after_name).into();
@@ -357,6 +412,8 @@ fn generate_differential_flamegraph(before: PathBuf, after: PathBuf) -> ThagResu
 
     flamegraph::from_lines(&mut opts, lines.iter().map(|s| *s), output)
         .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+    enhance_svg_accessibility(svg)?;
 
     println!("\nDifferential flame graph generated: flamegraph-diff.svg");
     println!("Red indicates increased time, blue indicates decreased time");
@@ -623,7 +680,8 @@ fn select_color_scheme() -> ThagResult<Palette> {
         .palette)
 }
 
-fn group_profile_files() -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
+// fn group_profile_files(filter: F) -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
+fn group_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
     let mut groups: HashMap<String, Vec<PathBuf>> = HashMap::new();
 
     // Use file_navigator to get the directory and list .folded files
@@ -632,7 +690,11 @@ fn group_profile_files() -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
         if let Ok(entry) = entry {
             let path = entry.path();
             if path.extension().and_then(|e| e.to_str()) == Some("folded") {
-                if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                if let Some(filename) = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .filter(|n| filter(n))
+                {
                     // eprintln!("path={}, filename={filename}", path.display());
                     // Extract script_stem from filename (everything before the first hyphen)
                     if let Some(script_stem) = filename.split('-').next() {
@@ -659,8 +721,8 @@ fn group_profile_files() -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
     Ok(result)
 }
 
-fn select_profile_files() -> ThagResult<(PathBuf, PathBuf)> {
-    let groups = group_profile_files()?;
+fn select_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<(PathBuf, PathBuf)> {
+    let groups = group_profile_files(filter)?;
 
     if groups.is_empty() {
         return Err(ThagError::Profiling("No profile files found".to_string()));
@@ -784,9 +846,15 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
         ));
     }
 
-    let output = File::create("memory-flamechart.svg")?;
+    let svg = "memory-flamechart.svg";
+    let output = File::create(svg)?;
+    let chart_type = ChartType::TimeSequence;
     let mut opts = Options::default();
-    opts.title = "Memory Allocation Flamechart".to_string();
+    chart_type.configure_options(&mut opts);
+    opts.title = match opts.flame_chart {
+        true => "Memory Allocation Timeline".to_string(),
+        false => "Memory Allocation Graph".to_string(),
+    };
     opts.subtitle = Some(format!(
         "Peak Memory: {} bytes\nTotal Allocations: {}",
         profile
@@ -809,6 +877,8 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
         profile.stacks.iter().rev().map(String::as_str),
         output,
     )?;
+
+    enhance_svg_accessibility(svg)?;
 
     println!("Memory flame chart generated: memory-flamechart.svg");
     open_in_browser("memory-flamechart.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
@@ -900,19 +970,57 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
     Ok(())
 }
 
-fn generate_memory_timeline(_profile: &ProcessedProfile) -> ThagResult<()> {
-    // Create a timeline visualization showing memory usage over time
-    let _output = File::create("memory-timeline.svg")?;
+// fn generate_memory_timeline(_profile: &ProcessedProfile) -> ThagResult<()> {
+//     // Create a timeline visualization showing memory usage over time
+//     let svg = "memory-timeline.svg";
+//     let _output = File::create(svg)?;
 
-    // TODO: Implement SVG generation for memory timeline
-    // This would show:
-    // - X axis: Time
-    // - Y axis: Memory usage
-    // - Color-coded regions for different allocation patterns
-    // - Markers for peak memory events
+//     // TODO: Implement SVG generation for memory timeline
+//     // This would show:
+//     // - X axis: Time
+//     // - Y axis: Memory usage
+//     // - Color-coded regions for different allocation patterns
+//     // - Markers for peak memory events
 
-    println!("Memory timeline generated: memory-timeline.svg");
-    open_in_browser("memory-timeline.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
+//     println!("Memory timeline generated: memory-timeline.svg");
+//     enhance_svg_accessibility(svg)?;
+
+//     open_in_browser(svg).map_err(|e| ThagError::Profiling(e.to_string()))?;
+//     Ok(())
+// }
+
+fn generate_memory_timeline(profile: &ProcessedProfile) -> ThagResult<()> {
+    if let Some(memory_data) = &profile.memory_data {
+        let mut timeline_data: Vec<(usize, u64)> = profile
+            .stacks
+            .iter()
+            .filter_map(|line| {
+                line.split_whitespace()
+                    .last()
+                    .and_then(|s| s.parse::<usize>().ok())
+                    .map(|size| (size, 1))
+            })
+            .collect();
+
+        // Sort by size for visualization
+        timeline_data.sort_by_key(|(size, _)| *size);
+
+        // Generate SVG (basic implementation)
+        let svg = format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        .label {{ font-family: Arial; font-size: 12px; }}
+        .title {{ font-family: Arial; font-size: 16px; font-weight: bold; }}
+    </style>
+    <text x="600" y="30" class="title" text-anchor="middle">Memory Timeline</text>
+    <!-- Add timeline visualization here -->
+</svg>"#
+        );
+
+        fs::write("memory-timeline.svg", svg)?;
+        open_in_browser("memory-timeline.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
+    }
     Ok(())
 }
 
@@ -962,4 +1070,17 @@ fn matches_memory_pattern(stack: &str, pattern: &str) -> bool {
         "Frequent allocations" => stack.contains("loop") || stack.contains("iter"),
         _ => false,
     }
+}
+
+fn enhance_svg_accessibility(svg_path: &str) -> ThagResult<()> {
+    let content = fs::read_to_string(svg_path)?;
+
+    // Make the inactive search link more visible
+    let enhanced = content.replace(
+        "opacity:0.1",
+        "opacity:0.5", // Darker grey for better visibility
+    );
+
+    fs::write(svg_path, enhanced)?;
+    Ok(())
 }

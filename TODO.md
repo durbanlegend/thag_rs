@@ -24,6 +24,14 @@
 - [ ]  Claude re REPL alternative editor to `reedline`
 - [ ]  Consider thag option to include expanded macro for debugging.
 
+Thag Memory Profiling Visualization Implementation
+Also, regarding the memory timeline visualization, seeing the allocation log format helps. We could show:
+- Cumulative memory usage over time
+- Allocation/deallocation patterns
+- Peak memory points
+- Memory churn (high allocation/deallocation activity)
+
+Would you like me to implement a specific visualization approach?
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

@@ -92,25 +92,32 @@ impl ChartType {
 
 fn process_profile_data(lines: &[String]) -> ProcessedProfile {
     let mut processed = ProcessedProfile::default();
-    let stacks = Vec::new();
-    // let memory_data = MemoryData::default();
+    let mut stacks = Vec::new();
+
+    // Determine profile type from first non-empty line
+    for line in lines {
+        if line.starts_with("# Time Profile") {
+            processed.profile_type = ProfileType::Time;
+            break;
+        } else if line.starts_with("# Memory Profile") {
+            processed.profile_type = ProfileType::Memory;
+            break;
+        }
+    }
 
     for line in lines {
         if line.starts_with('#') {
             match line.split_once(": ") {
                 Some(("# Script", script_path)) => {
-                    // Get just the file name for the title
                     let script_name = std::path::Path::new(script_path.trim())
                         .file_name()
                         .and_then(|n| n.to_str())
                         .unwrap_or_else(|| script_path.trim());
 
-                    processed.title = format!("Flamechart for profile: {script_name}");
-                    // Store full path for subtitle
-                    processed.subtitle = format!("Path: {}\n\nStarted: ", script_path.trim());
+                    processed.title = format!("Profile for: {script_name}");
+                    processed.subtitle = format!("Path: {}", script_path.trim());
                 }
                 Some(("# Started", timestamp)) => {
-                    // Convert microseconds since epoch to DateTime
                     if let Ok(ts) = timestamp.trim().parse::<i64>() {
                         match Local.timestamp_micros(ts) {
                             Single(dt) | Ambiguous(dt, _) => {
@@ -120,76 +127,20 @@ fn process_profile_data(lines: &[String]) -> ProcessedProfile {
                         }
                     }
                 }
-                // Some(("# Profile-Type", profile_type)) => {
-                //     processed.profile_type = match profile_type.trim() {
-                //         "memory" => ProfileType::Memory,
-                //         _ => ProfileType::Time,
-                //     };
-                // }
-                // Some(("# Memory-Stats", stats)) => {
-                //     // Parse memory statistics
-                //     for stat in stats.split(',') {
-                //         let (key, value) = stat.trim().split_once('=').unwrap_or(("", "0"));
-                //         match key {
-                //             "total_alloc" => {
-                //                 memory_data.total_allocations = value.parse().unwrap_or(0);
-                //             }
-                //             "total_dealloc" => {
-                //                 memory_data.total_deallocations = value.parse().unwrap_or(0);
-                //             }
-                //             "peak" => memory_data.peak_memory = value.parse().unwrap_or(0),
-                //             "current" => memory_data.current_memory = value.parse().unwrap_or(0),
-                //             _ => {}
-                //         }
-                //     }
-                // }
                 _ => {}
             }
-            // } else if !line.is_empty() {
-            //     // For memory profiles, parse allocation size from the stack
-            //     if matches!(processed.profile_type, ProfileType::Memory) {
-            //         if let Some((stack, size)) = line.rsplit_once(' ') {
-            //             if let Ok(size) = size.parse::<usize>() {
-            //                 *memory_data.allocation_sizes.entry(size).or_default() += 1;
-            //             }
-            //             stacks.push(stack.to_string());
-            //         }
-            //     } else {
-            //         stacks.push(line.to_string());
-            //     }
+        } else if !line.is_empty() {
+            stacks.push(line.to_string());
         }
     }
 
-    // let current_memory = 0u64;
-    // let peak_memory = 0u64;
-
-    // for line in lines {
-    //     if !line.starts_with('#') {
-    //         if let Some((_stack, size)) = line.rsplit_once(' ') {
-    //             if let Ok(bytes) = size.parse::<u64>() {
-    //                 memory_data.total_allocations += 1;
-    //                 current_memory += bytes;
-    //                 peak_memory = peak_memory.max(current_memory);
-
-    //                 // Update allocation sizes histogram
-    //                 *memory_data
-    //                     .allocation_sizes
-    //                     .entry(
-    //                         usize::try_from(bytes)
-    //                             .map_err(|e| ThagError::FromStr(e.to_string().into()))?,
-    //                     )
-    //                     .or_default() += 1;
-    //             }
-    //         }
-    //     }
-    // }
-
-    // memory_data.peak_memory = peak_memory;
-    // memory_data.current_memory = current_memory;
-
     processed.stacks = stacks;
-    processed.memory_data = Some(calculate_memory_stats(&processed));
-    // Ok(processed)
+
+    // Calculate memory stats if it's a memory profile
+    if matches!(processed.profile_type, ProfileType::Memory) {
+        processed.memory_data = Some(calculate_memory_stats(&processed.stacks));
+    }
+
     processed
 }
 
@@ -388,7 +339,6 @@ fn analyze_differential_time_profiles() -> ThagResult<()> {
     generate_differential_flamegraph(&before, &after)
 }
 
-// fn analyze_memory_profiles<T: Fn(&str) -> bool>(filter: T) -> ThagResult<()> {
 fn analyze_memory_profiles() -> ThagResult<()> {
     let profile_groups = group_profile_files(|f| f.contains("-memory"))?;
 
@@ -951,28 +901,25 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
         ));
     }
 
-    let svg = "memory-flamechart.svg";
-    let output = File::create(svg)?;
-    let chart_type = ChartType::TimeSequence;
+    let memory_data = profile
+        .memory_data
+        .as_ref()
+        .ok_or_else(|| ThagError::Profiling("No memory statistics available".to_string()))?;
+
+    let output = File::create("memory-flamechart.svg")?;
     let mut opts = Options::default();
-    chart_type.configure_options(&mut opts);
-    opts.title = if opts.flame_chart {
-        "Memory Allocation Timeline"
-    } else {
-        "Memory Allocation Graph"
-    }
-    .to_string();
+    opts.title = format!("{} (Memory Profile)", profile.title);
     opts.subtitle = Some(format!(
-        "Peak Memory: {} bytes\nTotal Allocations: {}",
-        profile.memory_data.as_ref().map_or(0, |d| d.peak_memory),
-        profile
-            .memory_data
-            .as_ref()
-            .map_or(0, |d| d.total_allocations)
+        "{}\nStarted: {}\nTotal Allocations: {}, Peak Memory: {} bytes",
+        profile.subtitle,
+        profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
+        memory_data.total_allocations,
+        memory_data.peak_memory
     ));
-    opts.colors = Palette::Basic(BasicPalette::Mem); // Use memory-focused color scheme
+    opts.colors = Palette::Basic(BasicPalette::Mem);
     "bytes".clone_into(&mut opts.count_name);
     opts.min_width = 0.1;
+    opts.flame_chart = true;
 
     flamegraph::from_lines(
         &mut opts,
@@ -980,8 +927,7 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
         output,
     )?;
 
-    enhance_svg_accessibility(svg)?;
-
+    enhance_svg_accessibility("memory-flamechart.svg")?;
     println!("Memory flame chart generated: memory-flamechart.svg");
     open_in_browser("memory-flamechart.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
     Ok(())
@@ -1023,57 +969,61 @@ fn show_memory_statistics(profile: &ProcessedProfile) {
     }
 }
 
-fn show_allocation_distribution(profile: &ProcessedProfile) {
-    if let Some(memory_data) = &profile.memory_data {
-        println!("\nAllocation Size Distribution");
-        println!("===========================");
+fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
+    let memory_data = profile
+        .memory_data
+        .as_ref()
+        .ok_or_else(|| ThagError::Profiling("No memory statistics available".to_string()))?;
 
-        let mut sizes: Vec<_> = memory_data.allocation_sizes.iter().collect();
-        sizes.sort_by_key(|(size, _)| *size);
+    if memory_data.allocation_sizes.is_empty() {
+        println!("No allocation data available.");
+        return Ok(());
+    }
 
-        // Create size buckets for better visualization
-        let buckets = vec![
-            (0, 64),
-            (65, 256),
-            (257, 1024),
-            (1025, 4096),
-            (4097, 16384),
-            (16385, 65536),
-            (65537, usize::MAX),
-        ];
+    println!("\nAllocation Size Distribution");
+    println!("===========================");
 
-        let mut bucket_counts = HashMap::new();
-        for (size, count) in sizes {
-            for (min, max) in &buckets {
-                if size >= min && size <= max {
-                    *bucket_counts.entry(format!("{min}-{max}")).or_insert(0) += count;
-                    break;
-                }
+    // Define size buckets (in bytes)
+    let buckets = vec![
+        (0, 64, "0-64"),
+        (65, 256, "65-256"),
+        (257, 1024, "257-1K"),
+        (1025, 4096, "1K-4K"),
+        (4097, 16384, "4K-16K"),
+        (16385, 65536, "16K-64K"),
+        (65537, usize::MAX, ">64K"),
+    ];
+
+    let mut bucket_counts: HashMap<&str, u64> = HashMap::new();
+    let mut total_bytes = 0u64;
+
+    for (&size, &count) in &memory_data.allocation_sizes {
+        total_bytes += size as u64 * count;
+        for &(min, max, label) in &buckets {
+            if size >= min && size <= max {
+                *bucket_counts.entry(label).or_default() += count;
+                break;
             }
         }
-
-        // Early return if no data
-        if bucket_counts.is_empty() {
-            println!("No allocation data available.");
-            return;
-        }
-
-        // Find max count before iterating
-        let max_count = bucket_counts.values().max().copied().unwrap_or(1); // Use 1 as fallback to avoid division by zero
-
-        // Display distribution
-        for (range, count) in bucket_counts {
-            #[allow(
-                clippy::cast_precision_loss,
-                clippy::cast_sign_loss,
-                clippy::cast_possible_truncation
-            )]
-            let bar_length = ((count as f64 / max_count as f64) * 50.0) as usize;
-            println!("{range:>15}: {count:>6} |{}", "=".repeat(bar_length));
-        }
-    } else {
-        println!("No memory profile data available.");
     }
+
+    // Calculate max count for bar scaling
+    let max_count = bucket_counts.values().max().copied().unwrap_or(1);
+
+    // Display distribution with bars
+    for &(_, _, label) in &buckets {
+        let count = bucket_counts.get(label).copied().unwrap_or(0);
+        let bar_length = ((count as f64 / max_count as f64) * 50.0) as usize;
+        println!("{:>8}: {:>6} |{}", label, count, "█".repeat(bar_length));
+    }
+
+    println!("\nTotal memory allocated: {} bytes", total_bytes);
+    println!(
+        "Average allocation size: {} bytes",
+        total_bytes / memory_data.total_allocations
+    );
+
+    Ok(())
 }
 
 // fn generate_memory_timeline(_profile: &ProcessedProfile) -> ThagResult<()> {
@@ -1189,31 +1139,29 @@ fn enhance_svg_accessibility(svg_path: &str) -> ThagResult<()> {
     Ok(())
 }
 
-#[allow(clippy::cast_possible_truncation)]
-fn calculate_memory_stats(profile: &ProcessedProfile) -> MemoryData {
+fn calculate_memory_stats(stacks: &[String]) -> MemoryData {
     let mut memory_data = MemoryData::default();
     let mut current_memory = 0u64;
     let mut peak_memory = 0u64;
 
-    for line in &profile.stacks {
+    for line in stacks {
         if let Some((stack, size_str)) = line.rsplit_once(' ') {
             if let Ok(size) = size_str.parse::<u64>() {
                 memory_data.total_allocations += 1;
-                current_memory += size;
-                peak_memory = peak_memory.max(current_memory);
-
-                // Track deallocation by looking for free/drop/deallocate in the stack
-                if stack.contains("free") || stack.contains("drop") || stack.contains("deallocate")
-                {
-                    memory_data.total_deallocations += 1;
-                    current_memory = current_memory.saturating_sub(size);
-                }
-
-                // Update allocation sizes map
                 *memory_data
                     .allocation_sizes
                     .entry(size as usize)
                     .or_default() += 1;
+
+                // Assume deallocations if the stack contains certain keywords
+                if stack.contains("free") || stack.contains("drop") || stack.contains("deallocate")
+                {
+                    memory_data.total_deallocations += 1;
+                    current_memory = current_memory.saturating_sub(size);
+                } else {
+                    current_memory += size;
+                    peak_memory = peak_memory.max(current_memory);
+                }
             }
         }
     }
@@ -1279,3 +1227,39 @@ fn calculate_memory_stats(profile: &ProcessedProfile) -> MemoryData {
 //     }
 //     Ok(())
 // }
+
+fn parse_allocation_log(lines: &[String]) -> MemoryData {
+    let mut memory_data = MemoryData::default();
+    let mut current_memory = 0u64;
+
+    for line in lines {
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() >= 2 {
+            let (stack, op) = if parts.len() > 2 {
+                (parts[0..parts.len() - 1].join(" "), *parts.last().unwrap())
+            } else {
+                (parts[0].to_string(), parts[1])
+            };
+
+            if let Some(size_str) = op.strip_prefix('+') {
+                if let Ok(size) = size_str.parse::<u64>() {
+                    memory_data.total_allocations += 1;
+                    current_memory += size;
+                    memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
+                }
+            } else if let Some(size_str) = op.strip_prefix('-') {
+                if let Ok(size) = size_str.parse::<u64>() {
+                    memory_data.total_deallocations += 1;
+                    current_memory = current_memory.saturating_sub(size);
+                }
+            }
+        }
+    }
+
+    memory_data.current_memory = current_memory;
+    memory_data
+}

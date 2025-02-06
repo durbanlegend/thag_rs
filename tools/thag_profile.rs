@@ -90,10 +90,10 @@ impl ChartType {
     }
 }
 
-fn process_profile_data(lines: &[String]) -> ThagResult<ProcessedProfile> {
+fn process_profile_data(lines: &[String]) -> ProcessedProfile {
     let mut processed = ProcessedProfile::default();
-    let mut stacks = Vec::new();
-    let mut memory_data = MemoryData::default();
+    let stacks = Vec::new();
+    // let memory_data = MemoryData::default();
 
     for line in lines {
         if line.starts_with('#') {
@@ -120,76 +120,77 @@ fn process_profile_data(lines: &[String]) -> ThagResult<ProcessedProfile> {
                         }
                     }
                 }
-                Some(("# Profile-Type", profile_type)) => {
-                    processed.profile_type = match profile_type.trim() {
-                        "memory" => ProfileType::Memory,
-                        _ => ProfileType::Time,
-                    };
-                }
-                Some(("# Memory-Stats", stats)) => {
-                    // Parse memory statistics
-                    for stat in stats.split(',') {
-                        let (key, value) = stat.trim().split_once('=').unwrap_or(("", "0"));
-                        match key {
-                            "total_alloc" => {
-                                memory_data.total_allocations = value.parse().unwrap_or(0);
-                            }
-                            "total_dealloc" => {
-                                memory_data.total_deallocations = value.parse().unwrap_or(0);
-                            }
-                            "peak" => memory_data.peak_memory = value.parse().unwrap_or(0),
-                            "current" => memory_data.current_memory = value.parse().unwrap_or(0),
-                            _ => {}
-                        }
-                    }
-                }
+                // Some(("# Profile-Type", profile_type)) => {
+                //     processed.profile_type = match profile_type.trim() {
+                //         "memory" => ProfileType::Memory,
+                //         _ => ProfileType::Time,
+                //     };
+                // }
+                // Some(("# Memory-Stats", stats)) => {
+                //     // Parse memory statistics
+                //     for stat in stats.split(',') {
+                //         let (key, value) = stat.trim().split_once('=').unwrap_or(("", "0"));
+                //         match key {
+                //             "total_alloc" => {
+                //                 memory_data.total_allocations = value.parse().unwrap_or(0);
+                //             }
+                //             "total_dealloc" => {
+                //                 memory_data.total_deallocations = value.parse().unwrap_or(0);
+                //             }
+                //             "peak" => memory_data.peak_memory = value.parse().unwrap_or(0),
+                //             "current" => memory_data.current_memory = value.parse().unwrap_or(0),
+                //             _ => {}
+                //         }
+                //     }
+                // }
                 _ => {}
             }
-        } else if !line.is_empty() {
-            // For memory profiles, parse allocation size from the stack
-            if matches!(processed.profile_type, ProfileType::Memory) {
-                if let Some((stack, size)) = line.rsplit_once(' ') {
-                    if let Ok(size) = size.parse::<usize>() {
-                        *memory_data.allocation_sizes.entry(size).or_default() += 1;
-                    }
-                    stacks.push(stack.to_string());
-                }
-            } else {
-                stacks.push(line.to_string());
-            }
+            // } else if !line.is_empty() {
+            //     // For memory profiles, parse allocation size from the stack
+            //     if matches!(processed.profile_type, ProfileType::Memory) {
+            //         if let Some((stack, size)) = line.rsplit_once(' ') {
+            //             if let Ok(size) = size.parse::<usize>() {
+            //                 *memory_data.allocation_sizes.entry(size).or_default() += 1;
+            //             }
+            //             stacks.push(stack.to_string());
+            //         }
+            //     } else {
+            //         stacks.push(line.to_string());
+            //     }
         }
     }
 
-    let mut current_memory = 0u64;
-    let mut peak_memory = 0u64;
+    // let current_memory = 0u64;
+    // let peak_memory = 0u64;
 
-    for line in lines {
-        if !line.starts_with('#') {
-            if let Some((_stack, size)) = line.rsplit_once(' ') {
-                if let Ok(bytes) = size.parse::<u64>() {
-                    memory_data.total_allocations += 1;
-                    current_memory += bytes;
-                    peak_memory = peak_memory.max(current_memory);
+    // for line in lines {
+    //     if !line.starts_with('#') {
+    //         if let Some((_stack, size)) = line.rsplit_once(' ') {
+    //             if let Ok(bytes) = size.parse::<u64>() {
+    //                 memory_data.total_allocations += 1;
+    //                 current_memory += bytes;
+    //                 peak_memory = peak_memory.max(current_memory);
 
-                    // Update allocation sizes histogram
-                    *memory_data
-                        .allocation_sizes
-                        .entry(
-                            usize::try_from(bytes)
-                                .map_err(|e| ThagError::FromStr(e.to_string().into()))?,
-                        )
-                        .or_default() += 1;
-                }
-            }
-        }
-    }
+    //                 // Update allocation sizes histogram
+    //                 *memory_data
+    //                     .allocation_sizes
+    //                     .entry(
+    //                         usize::try_from(bytes)
+    //                             .map_err(|e| ThagError::FromStr(e.to_string().into()))?,
+    //                     )
+    //                     .or_default() += 1;
+    //             }
+    //         }
+    //     }
+    // }
 
-    memory_data.peak_memory = peak_memory;
-    memory_data.current_memory = current_memory;
+    // memory_data.peak_memory = peak_memory;
+    // memory_data.current_memory = current_memory;
 
     processed.stacks = stacks;
-    processed.memory_data = Some(memory_data);
-    Ok(processed)
+    processed.memory_data = Some(calculate_memory_stats(&processed));
+    // Ok(processed)
+    processed
 }
 
 // fn is_async_boundary(func_name: &str) -> bool {
@@ -207,131 +208,234 @@ fn process_profile_data(lines: &[String]) -> ThagResult<ProcessedProfile> {
 // }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // First choose analysis type
-    let analysis_types = vec![
-        "Time Profile - Single",
-        "Time Profile - Differential",
-        "Memory Profile",
-    ];
+    loop {
+        let analysis_types = vec![
+            "Time Profile - Single",
+            "Time Profile - Differential",
+            "Memory Profile",
+            "Exit",
+        ];
 
-    let analysis_type = Select::new("Select analysis type:", analysis_types)
-        .prompt()
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+        let analysis_type = Select::new("Select analysis type:", analysis_types).prompt()?;
 
-    let filter = |filename: &str| !filename.contains("-memory");
-    match analysis_type {
-        "Time Profile - Single" => analyze_single_time_profile(filter)?,
-        "Time Profile - Differential" => analyze_differential_time_profiles(filter)?,
-        "Memory Profile" => analyze_memory_profiles(|filename: &str| filename.contains("-memory"))?,
-        _ => return Err("Invalid selection".into()),
-    }
-
-    Ok(())
-}
-
-// fn analyze_single_time_profile(filter: Fn(&str)) -> ThagResult<()> {
-fn analyze_single_time_profile<T: Fn(&str) -> bool>(filter: T) -> ThagResult<()> {
-    // Filter to show only time profile files
-    let profile_groups = group_profile_files(&filter)?
-        .into_iter()
-        .filter(|(_, files)| {
-            files
-                .iter()
-                .any(|f| !f.to_string_lossy().contains("-memory"))
-        })
-        .collect::<Vec<_>>();
-
-    let selected_file = select_profile_file(&profile_groups)?;
-    let processed = read_and_process_profile(&selected_file)?;
-    let stats = build_time_stats(&processed)?;
-
-    let options = vec!["Show Flamechart", "Show Statistics", "Filter Functions"];
-
-    // Show time-specific menu and handle selection...
-    let selection = Select::new("Select action:", options)
-        .prompt()
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
-
-    match selection {
-        "Show Flamechart" => generate_flamechart(&processed)?,
-        "Show Differential" => match select_profile_files(filter) {
-            Ok((before, after)) => {
-                if let Err(e) = generate_differential_flamegraph(&before, &after) {
-                    eprintln!("Error generating differential flamegraph: {e}");
-                }
-            }
-            Err(e) => eprintln!("Error selecting files: {e}"),
-        },
-        "Show Statistics" => show_statistics(&stats, &processed),
-        "Filter Functions" => {
-            let filtered =
-                filter_functions(&processed).map_err(|e| ThagError::Profiling(e.to_string()))?;
-            generate_flamechart(&filtered)?;
+        match analysis_type {
+            "Exit" => break,
+            "Time Profile - Single" => analyze_single_time_profile()?,
+            "Time Profile - Differential" => analyze_differential_time_profiles()?,
+            "Memory Profile" => analyze_memory_profiles()?,
+            _ => println!("Invalid selection"),
         }
-        // "Show Async Boundaries" => show_async_boundaries(&stats),
-        _ => println!("Unknown option"),
+
+        println!("\nPress Enter to continue...");
+        let _ = std::io::stdin().read_line(&mut String::new());
     }
+
     Ok(())
 }
 
-// fn analyze_differential_time_profiles(filter: dyn Fn(&str)) -> ThagResult<()> {
-fn analyze_differential_time_profiles<T: Fn(&str) -> bool>(filter: T) -> ThagResult<()> {
-    // let profile_groups = group_profile_files(filter)?
-    //     .into_iter()
-    //     .filter(|(_, files)| {
-    //         files
-    //             .iter()
-    //             .any(|f| !f.to_string_lossy().contains("-memory"))
-    //     })
-    //     .collect::<Vec<_>>();
+// fn handle_time_profiles() -> ThagResult<()> {
+//     loop {
+//         // Get time profile files (exclude memory profiles)
+//         let profile_groups = group_profile_files(|f| !f.contains("-memory"))?;
 
+//         if profile_groups.is_empty() {
+//             println!("No time profile files found.");
+//             break;
+//         }
+
+//         // First ask if user wants single or differential analysis
+//         let options = vec![
+//             "Single Profile",
+//             "Differential Analysis",
+//             "Back to Main Menu",
+//         ];
+//         let choice = Select::new("Select analysis type:", options)
+//             .prompt()
+//             .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+//         match choice {
+//             "Back to Main Menu" => break,
+//             "Differential Analysis" => {
+//                 if let Err(e) = analyze_differential_time_profiles() {
+//                     eprintln!("Error in differential analysis: {}", e);
+//                 }
+//                 println!("\nPress Enter to continue...");
+//                 let _ = std::io::stdin().read_line(&mut String::new());
+//             }
+//             "Single Profile" => {
+//                 match select_profile_file(&profile_groups)? {
+//                     None => continue, // Return to time profile type selection
+//                     Some(file_path) => {
+//                         let processed = read_and_process_profile(&file_path)?;
+//                         let stats = build_time_stats(&processed)?;
+
+//                         loop {
+//                             let options = vec![
+//                                 "Show Flamechart",
+//                                 "Show Statistics",
+//                                 "Filter Functions",
+//                                 "Back to Profile Selection",
+//                             ];
+
+//                             let action = Select::new("Select action:", options)
+//                                 .prompt()
+//                                 .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+//                             match action {
+//                                 "Back to Profile Selection" => break,
+//                                 "Show Flamechart" => {
+//                                     generate_flamechart(&processed)?;
+//                                 }
+//                                 "Show Statistics" => {
+//                                     show_statistics(&stats, &processed);
+//                                 }
+//                                 "Filter Functions" => {
+//                                     let filtered = filter_functions(&processed)?;
+//                                     generate_flamechart(&filtered)?;
+//                                 }
+//                                 _ => println!("Unknown option"),
+//                             }
+
+//                             println!("\nPress Enter to continue...");
+//                             let _ = std::io::stdin().read_line(&mut String::new());
+//                         }
+//                     }
+//                 }
+//             }
+//             _ => println!("Unknown option"),
+//         }
+//     }
+//     Ok(())
+// }
+
+// fn handle_memory_profiles() -> ThagResult<()> {
+//     loop {
+//         let profile_groups = group_profile_files(|f| f.contains("-memory"))?;
+
+//         match select_profile_file(&profile_groups)? {
+//             None => break, // Return to main menu
+//             Some(file_path) => {
+//                 let processed = read_and_process_profile(&file_path)?;
+
+//                 loop {
+//                     match show_memory_analysis_menu()? {
+//                         None => break, // Return to file selection
+//                         Some(action) => {
+//                             process_memory_action(&action, &processed)?;
+//                             println!("\nPress Enter to continue...");
+//                             let _ = std::io::stdin().read_line(&mut String::new());
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     Ok(())
+// }
+
+fn analyze_single_time_profile() -> ThagResult<()> {
+    // Get time profile files (exclude memory profiles)
+    let profile_groups = group_profile_files(|f| !f.contains("-memory"))?;
+
+    if profile_groups.is_empty() {
+        println!("No time profile files found.");
+        return Ok(());
+    }
+
+    match select_profile_file(&profile_groups)? {
+        None => Ok(()), // User selected "Back"
+        Some(file_path) => {
+            let processed = read_and_process_profile(&file_path)?;
+            let stats = build_time_stats(&processed)?;
+
+            loop {
+                let options = vec![
+                    "Show Flamechart",
+                    "Show Statistics",
+                    "Filter Functions",
+                    "Back to Profile Selection",
+                ];
+
+                let action = Select::new("Select action:", options)
+                    .prompt()
+                    .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+                match action {
+                    "Back to Profile Selection" => break,
+                    "Show Flamechart" => generate_flamechart(&processed)?,
+                    "Show Statistics" => {
+                        show_statistics(&stats, &processed);
+                    }
+                    "Filter Functions" => {
+                        let filtered = filter_functions(&processed)?;
+                        generate_flamechart(&filtered)?;
+                    }
+                    _ => println!("Unknown option"),
+                }
+
+                println!("\nPress Enter to continue...");
+                let _ = std::io::stdin().read_line(&mut String::new());
+            }
+            Ok(())
+        }
+    }
+}
+
+fn analyze_differential_time_profiles() -> ThagResult<()> {
+    let filter = |filename: &str| !filename.contains("-memory");
+    // let profile_groups = group_profile_files(filter)?;
     let (before, after) = select_profile_files(filter)?;
     generate_differential_flamegraph(&before, &after)
 }
 
-// fn analyze_memory_profiles() -> ThagResult<()> {
-fn analyze_memory_profiles<T: Fn(&str) -> bool>(filter: T) -> ThagResult<()> {
-    // let filter = |filename: &str| filename.contains("-memory");
-    let profile_groups = group_profile_files(filter)?
-        .into_iter()
-        .filter(|(_, files)| {
-            files
-                .iter()
-                .any(|f| f.to_string_lossy().contains("-memory"))
-        })
-        .collect::<Vec<_>>();
+// fn analyze_memory_profiles<T: Fn(&str) -> bool>(filter: T) -> ThagResult<()> {
+fn analyze_memory_profiles() -> ThagResult<()> {
+    let profile_groups = group_profile_files(|f| f.contains("-memory"))?;
 
-    // eprintln!("profile_groups={profile_groups:#?}");
-    let selected_file = select_profile_file(&profile_groups)?;
-    let processed = read_and_process_profile(&selected_file)?;
-
-    let options = vec![
-        "Show Memory Flamechart",
-        "Show Memory Statistics",
-        "Show Allocation Size Distribution",
-        "Show Memory Timeline",
-        "Filter Memory Patterns",
-    ];
-
-    // Show memory-specific menu and handle selection...
-
-    let selection = Select::new("Select action:", options)
-        .prompt()
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
-
-    match selection {
-        "Show Memory Flamechart" => generate_memory_flamechart(&processed)?,
-        "Show Memory Statistics" => show_memory_statistics(&processed),
-        "Show Allocation Size Distribution" => show_allocation_distribution(&processed),
-        "Show Memory Timeline" => generate_memory_timeline(&processed)?,
-        "Filter Memory Patterns" => {
-            let filtered = filter_memory_patterns(&processed)?;
-            generate_memory_flamechart(&filtered)?;
-        }
-        _ => println!("Unknown option"),
+    if profile_groups.is_empty() {
+        println!("No memory profile files found.");
+        return Ok(());
     }
 
-    Ok(())
+    match select_profile_file(&profile_groups)? {
+        None => Ok(()), // User selected "Back"
+        Some(selected_file) => {
+            let processed = read_and_process_profile(&selected_file)?;
+
+            let options = vec![
+                "Show Memory Flamechart",
+                "Show Memory Statistics",
+                "Show Allocation Size Distribution",
+                "Show Memory Timeline",
+                "Filter Memory Patterns",
+                "Back",
+            ];
+
+            // Show memory-specific menu and handle selection...
+            let selection = Select::new("Select action:", options)
+                .prompt()
+                .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+            match selection {
+                // "Back" => Ok(()),
+                "Show Memory Flamechart" => generate_memory_flamechart(&processed),
+                "Show Memory Statistics" => {
+                    show_memory_statistics(&processed);
+                    Ok(())
+                }
+                "Show Allocation Size Distribution" => {
+                    show_allocation_distribution(&processed);
+                    Ok(())
+                }
+                "Show Memory Timeline" => generate_memory_timeline(&processed),
+                "Filter Memory Patterns" => {
+                    let filtered = filter_memory_patterns(&processed)?;
+                    generate_memory_flamechart(&filtered)
+                }
+                _ => Ok(()),
+            }
+        }
+    }
 }
 
 fn generate_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
@@ -692,14 +796,8 @@ fn group_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<Vec<(String
     let dir = std::env::current_dir()?;
     for entry in (dir.read_dir()?).flatten() {
         let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("folded") {
-            if let Some(filename) = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .filter(|n| filter(n))
-            {
-                // eprintln!("path={}, filename={filename}", path.display());
-                // Extract script_stem from filename (everything before the first hyphen)
+        if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+            if path.extension().and_then(|e| e.to_str()) == Some("folded") && filter(filename) {
                 if let Some(script_stem) = filename.split('-').next() {
                     groups
                         .entry(script_stem.to_string())
@@ -791,29 +889,34 @@ fn select_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<(PathBuf, 
     ))
 }
 
-fn select_profile_file(profile_groups: &[(String, Vec<PathBuf>)]) -> ThagResult<PathBuf> {
+fn select_profile_file(profile_groups: &[(String, Vec<PathBuf>)]) -> ThagResult<Option<PathBuf>> {
     if profile_groups.is_empty() {
-        return Err(ThagError::Profiling("No profile files found".to_string()));
+        return Ok(None);
     }
 
-    let file_options: Vec<_> = profile_groups
+    let mut file_options: Vec<_> = profile_groups
         .iter()
         .flat_map(|(_, files)| files)
         .map(|p| p.to_string_lossy().to_string())
         .collect();
+    file_options.push("Back".to_string());
 
     let selected = Select::new("Select profile to analyze:", file_options)
         .prompt()
         .map_err(|e| ThagError::Profiling(e.to_string()))?;
 
+    if selected == "Back" {
+        return Ok(None);
+    }
+
     // Find the actual PathBuf for the selected file
     for (_, files) in profile_groups {
         if let Some(file) = files.iter().find(|f| f.to_string_lossy() == selected) {
-            return Ok(file.clone());
+            return Ok(Some(file.clone()));
         }
     }
 
-    Err(ThagError::Profiling("Selected file not found".to_string()))
+    Ok(None)
 }
 
 fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
@@ -821,7 +924,7 @@ fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
     let reader = BufReader::new(input);
     let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
 
-    process_profile_data(&lines)
+    Ok(process_profile_data(&lines))
 }
 
 fn build_time_stats(processed: &ProcessedProfile) -> ThagResult<ProfileStats> {
@@ -1085,3 +1188,94 @@ fn enhance_svg_accessibility(svg_path: &str) -> ThagResult<()> {
     fs::write(svg_path, enhanced)?;
     Ok(())
 }
+
+#[allow(clippy::cast_possible_truncation)]
+fn calculate_memory_stats(profile: &ProcessedProfile) -> MemoryData {
+    let mut memory_data = MemoryData::default();
+    let mut current_memory = 0u64;
+    let mut peak_memory = 0u64;
+
+    for line in &profile.stacks {
+        if let Some((stack, size_str)) = line.rsplit_once(' ') {
+            if let Ok(size) = size_str.parse::<u64>() {
+                memory_data.total_allocations += 1;
+                current_memory += size;
+                peak_memory = peak_memory.max(current_memory);
+
+                // Track deallocation by looking for free/drop/deallocate in the stack
+                if stack.contains("free") || stack.contains("drop") || stack.contains("deallocate")
+                {
+                    memory_data.total_deallocations += 1;
+                    current_memory = current_memory.saturating_sub(size);
+                }
+
+                // Update allocation sizes map
+                *memory_data
+                    .allocation_sizes
+                    .entry(size as usize)
+                    .or_default() += 1;
+            }
+        }
+    }
+
+    memory_data.peak_memory = peak_memory;
+    memory_data.current_memory = current_memory;
+    memory_data
+}
+
+// #[derive(Debug)]
+// enum MainMenuChoice {
+//     TimeProfile,
+//     MemoryProfile,
+//     Exit,
+// }
+
+// fn show_main_menu() -> ThagResult<MainMenuChoice> {
+//     let options = vec!["Time Profile Analysis", "Memory Profile Analysis", "Exit"];
+
+//     let selection = Select::new("Select profile type:", options)
+//         .prompt()
+//         .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+//     Ok(match selection {
+//         "Time Profile Analysis" => MainMenuChoice::TimeProfile,
+//         "Memory Profile Analysis" => MainMenuChoice::MemoryProfile,
+//         "Exit" => MainMenuChoice::Exit,
+//         _ => MainMenuChoice::Exit,
+//     })
+// }
+
+// fn show_memory_analysis_menu() -> ThagResult<Option<&'static str>> {
+//     let options = vec![
+//         "Show Memory Flamechart",
+//         "Show Memory Statistics",
+//         "Show Allocation Size Distribution",
+//         "Show Memory Timeline",
+//         "Filter Memory Patterns",
+//         "Back to File Selection",
+//     ];
+
+//     let selection = Select::new("Select action:", options)
+//         .prompt()
+//         .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+//     Ok(match selection {
+//         "Back to File Selection" => None,
+//         action => Some(action),
+//     })
+// }
+
+// fn process_memory_action(action: &str, profile: &ProcessedProfile) -> ThagResult<()> {
+//     match action {
+//         "Show Memory Flamechart" => generate_memory_flamechart(profile)?,
+//         "Show Memory Statistics" => show_memory_statistics(profile),
+//         "Show Allocation Size Distribution" => show_allocation_distribution(profile),
+//         "Show Memory Timeline" => generate_memory_timeline(profile)?,
+//         "Filter Memory Patterns" => {
+//             let filtered = filter_memory_patterns(profile)?;
+//             generate_memory_flamechart(&filtered)?;
+//         }
+//         _ => println!("Unknown action"),
+//     }
+//     Ok(())
+// }

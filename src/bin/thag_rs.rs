@@ -24,7 +24,7 @@ pub fn main() -> ThagResult<()> {
 
     if cfg!(feature = "profiling") {
         println!("Enabling profiling..."); // Debug output
-        profiling::enable_profiling(true, &profiling::ProfileType::Both)?;
+        profiling::enable_profiling(true, profiling::ProfileType::Both)?;
     }
     handle(&cli);
     Ok(())

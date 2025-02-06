@@ -162,63 +162,52 @@ fn process_profile_data(lines: &[String]) -> ProcessedProfile {
 // }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Get available profile files
-    let profile_groups = group_profile_files()?;
+    // First choose analysis type
+    let analysis_types = vec![
+        "Time Profile - Single",
+        "Time Profile - Differential",
+        "Memory Profile",
+    ];
 
-    if profile_groups.is_empty() {
-        return Err("No profile files found in current directory".into());
+    let analysis_type = Select::new("Select analysis type:", analysis_types)
+        .prompt()
+        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+    match analysis_type {
+        "Time Profile - Single" => analyze_single_time_profile()?,
+        "Time Profile - Differential" => analyze_differential_time_profiles()?,
+        "Memory Profile" => analyze_memory_profiles()?,
+        _ => return Err("Invalid selection".into()),
     }
 
-    // Select single profile file
-    let file_options: Vec<_> = profile_groups
-        .iter()
-        .flat_map(|(_, files)| files)
-        .map(|p| p.to_string_lossy().to_string())
-        .collect();
+    Ok(())
+}
 
-    let selected_file = Select::new("Select profile to analyze:", file_options).prompt()?;
+fn analyze_single_time_profile() -> ThagResult<()> {
+    // Filter to show only time profile files
+    let profile_groups = group_profile_files()?
+        .into_iter()
+        .filter(|(_, files)| {
+            files
+                .iter()
+                .any(|f| !f.to_string_lossy().contains("-memory"))
+        })
+        .collect::<Vec<_>>();
 
-    // Read selected profile
-    let input = File::open(selected_file)?;
-    let reader = BufReader::new(input);
-    let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
+    let selected_file = select_profile_file(&profile_groups)?;
+    let processed = read_and_process_profile(&selected_file)?;
+    let stats = build_time_stats(&processed)?;
 
-    let processed = process_profile_data(&lines);
+    let options = vec!["Show Flamechart", "Show Statistics", "Filter Functions"];
 
-    // Build time stats if needed
-    let mut stats = ProfileStats::default();
-    if matches!(processed.profile_type, ProfileType::Time) {
-        for line in &processed.stacks {
-            if let Some((stack, time)) = line.rsplit_once(' ') {
-                if let Ok(duration) = time.parse::<u128>() {
-                    stats.record(stack, Duration::from_micros(u64::try_from(duration)?));
-                }
-            }
-        }
-    }
+    // Show time-specific menu and handle selection...
+    let selection = Select::new("Select action:", options)
+        .prompt()
+        .map_err(|e| ThagError::Profiling(e.to_string()))?;
 
-    // Show appropriate options based on profile type
-    let options = match processed.profile_type {
-        ProfileType::Time => vec![
-            "Show Flamechart",
-            "Show Differential",
-            "Show Statistics",
-            "Filter Functions",
-        ],
-        ProfileType::Memory => vec![
-            "Show Memory Flamechart",
-            "Show Memory Statistics",
-            "Show Allocation Size Distribution",
-            "Show Memory Timeline",
-            "Filter Memory Patterns",
-        ],
-    };
-
-    let selection = Select::new("Select action:", options).prompt()?;
-
-    match (selection, &processed.profile_type) {
-        ("Show Flamechart", ProfileType::Time) => generate_flamechart(&processed)?,
-        ("Show Differential", ProfileType::Time) => match select_profile_files() {
+    match selection {
+        "Show Flamechart" => generate_flamechart(&processed)?,
+        "Show Differential" => match select_profile_files() {
             Ok((before, after)) => {
                 if let Err(e) = generate_differential_flamegraph(before, after) {
                     eprintln!("Error generating differential flamegraph: {}", e);
@@ -226,19 +215,66 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Err(e) => eprintln!("Error selecting files: {}", e),
         },
-        ("Show Statistics", ProfileType::Time) => show_statistics(&stats, &processed),
-        ("Filter Functions", ProfileType::Time) => {
-            let filtered = filter_functions(&processed)?;
+        "Show Statistics" => show_statistics(&stats, &processed),
+        "Filter Functions" => {
+            let filtered =
+                filter_functions(&processed).map_err(|e| ThagError::Profiling(e.to_string()))?;
             generate_flamechart(&filtered)?;
         }
-        // ("Show Async Boundaries", ProfileType::Time) => show_async_boundaries(&stats),
-        ("Show Memory Flamechart", ProfileType::Memory) => generate_memory_flamechart(&processed)?,
-        ("Show Memory Statistics", ProfileType::Memory) => show_memory_statistics(&processed),
-        ("Show Allocation Size Distribution", ProfileType::Memory) => {
-            show_allocation_distribution(&processed)?
-        }
-        ("Show Memory Timeline", ProfileType::Memory) => generate_memory_timeline(&processed)?,
-        ("Filter Memory Patterns", ProfileType::Memory) => {
+        // "Show Async Boundaries" => show_async_boundaries(&stats),
+        _ => println!("Unknown option"),
+    }
+    Ok(())
+}
+
+fn analyze_differential_time_profiles() -> ThagResult<()> {
+    // let profile_groups = group_profile_files()?
+    //     .into_iter()
+    //     .filter(|(_, files)| {
+    //         files
+    //             .iter()
+    //             .any(|f| !f.to_string_lossy().contains("-memory"))
+    //     })
+    //     .collect::<Vec<_>>();
+
+    let (before, after) = select_profile_files()?;
+    generate_differential_flamegraph(before, after)
+}
+
+fn analyze_memory_profiles() -> ThagResult<()> {
+    let profile_groups = group_profile_files()?
+        .into_iter()
+        .filter(|(_, files)| {
+            files
+                .iter()
+                .any(|f| f.to_string_lossy().contains("-memory"))
+        })
+        .collect::<Vec<_>>();
+
+    // eprintln!("profile_groups={profile_groups:#?}");
+    let selected_file = select_profile_file(&profile_groups)?;
+    let processed = read_and_process_profile(&selected_file)?;
+
+    let options = vec![
+        "Show Memory Flamechart",
+        "Show Memory Statistics",
+        "Show Allocation Size Distribution",
+        "Show Memory Timeline",
+        "Filter Memory Patterns",
+    ];
+
+    // Show memory-specific menu and handle selection...
+
+    let selection = Select::new("Select action:", options)
+        .prompt()
+        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+    match selection {
+        "Show Memory Flamechart" => generate_memory_flamechart(&processed)?,
+        "Show Memory Statistics" => show_memory_statistics(&processed),
+        "Show Allocation Size Distribution" => show_allocation_distribution(&processed)?,
+        "Show Memory Timeline" => generate_memory_timeline(&processed)?,
+        "Filter Memory Patterns" => {
             let filtered = filter_memory_patterns(&processed)?;
             generate_memory_flamechart(&filtered)?;
         }
@@ -370,9 +406,7 @@ fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile) {
     }
 }
 
-fn filter_functions(
-    processed: &ProcessedProfile,
-) -> Result<ProcessedProfile, inquire::InquireError> {
+fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile> {
     let functions: HashSet<_> = processed
         .stacks
         .iter()
@@ -387,7 +421,9 @@ fn filter_functions(
     let mut function_list: Vec<_> = functions.into_iter().collect();
     function_list.sort_unstable();
 
-    let to_filter = MultiSelect::new("Select functions to filter out:", function_list).prompt()?;
+    let to_filter = MultiSelect::new("Select functions to filter out:", function_list)
+        .prompt()
+        .map_err(|e| ThagError::Profiling(e.to_string()))?;
 
     Ok(ProcessedProfile {
         stacks: processed
@@ -597,6 +633,7 @@ fn group_profile_files() -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
             let path = entry.path();
             if path.extension().and_then(|e| e.to_str()) == Some("folded") {
                 if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                    // eprintln!("path={}, filename={filename}", path.display());
                     // Extract script_stem from filename (everything before the first hyphen)
                     if let Some(script_stem) = filename.split('-').next() {
                         groups
@@ -688,6 +725,56 @@ fn select_profile_files() -> ThagResult<(PathBuf, PathBuf)> {
             .cloned()
             .unwrap(),
     ))
+}
+
+fn select_profile_file(profile_groups: &[(String, Vec<PathBuf>)]) -> ThagResult<PathBuf> {
+    if profile_groups.is_empty() {
+        return Err(ThagError::Profiling("No profile files found".to_string()));
+    }
+
+    let file_options: Vec<_> = profile_groups
+        .iter()
+        .flat_map(|(_, files)| files)
+        .map(|p| p.to_string_lossy().to_string())
+        .collect();
+
+    let selected = Select::new("Select profile to analyze:", file_options)
+        .prompt()
+        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+    // Find the actual PathBuf for the selected file
+    for (_, files) in profile_groups {
+        if let Some(file) = files.iter().find(|f| f.to_string_lossy() == selected) {
+            return Ok(file.clone());
+        }
+    }
+
+    Err(ThagError::Profiling("Selected file not found".to_string()))
+}
+
+fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
+    let input = File::open(path)?;
+    let reader = BufReader::new(input);
+    let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
+
+    Ok(process_profile_data(&lines))
+}
+
+fn build_time_stats(processed: &ProcessedProfile) -> ThagResult<ProfileStats> {
+    let mut stats = ProfileStats::default();
+    for line in &processed.stacks {
+        if let Some((stack, time)) = line.rsplit_once(' ') {
+            if let Ok(duration) = time.parse::<u128>() {
+                stats.record(
+                    stack,
+                    Duration::from_micros(
+                        u64::try_from(duration).map_err(|e| ThagError::Profiling(e.to_string()))?,
+                    ),
+                );
+            }
+        }
+    }
+    Ok(stats)
 }
 
 fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
@@ -829,9 +916,7 @@ fn generate_memory_timeline(_profile: &ProcessedProfile) -> ThagResult<()> {
     Ok(())
 }
 
-fn filter_memory_patterns(
-    profile: &ProcessedProfile,
-) -> Result<ProcessedProfile, inquire::InquireError> {
+fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedProfile> {
     let patterns = vec![
         "Large allocations (>1MB)",
         "Temporary allocations",
@@ -840,7 +925,9 @@ fn filter_memory_patterns(
         "Custom pattern...",
     ];
 
-    let selected = MultiSelect::new("Select memory patterns to highlight:", patterns).prompt()?;
+    let selected = MultiSelect::new("Select memory patterns to highlight:", patterns)
+        .prompt()
+        .map_err(|e| ThagError::Profiling(e.to_string()))?;
 
     // Create a new filtered profile based on selected patterns
     let mut filtered = profile.clone();

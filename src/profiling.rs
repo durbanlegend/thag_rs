@@ -5,10 +5,7 @@
 //! Placing the following instruction at the start of your code will allow profiling to be enabled by running with `--features=profiling`.
 //!
 //! ```ignore
-//!     if cfg!(feature = "profiling") {
-//!         println!("Enabling profiling..."); // Debug output
-//!         profiling::enable_profiling(true)?;
-//!     }
+//! profiling::enable_profiling(true, ProfileType::Both)?; // Could feature-gate this
 //! ```
 //!
 //! Output will be in the form of a file called `thag-profile.folded` in the current working directory, and may be
@@ -80,6 +77,14 @@ enum MemoryOperation {
     Reallocate,
 }
 
+struct RecordingGuard;
+
+impl Drop for RecordingGuard {
+    fn drop(&mut self) {
+        IS_RECORDING.store(false, Ordering::SeqCst);
+    }
+}
+
 #[global_allocator]
 static ALLOCATOR: AllocationProfiler = AllocationProfiler::new();
 
@@ -125,40 +130,32 @@ impl AllocationProfiler {
             return Ok(());
         }
 
-        // Set recording flag
         IS_RECORDING.store(true, Ordering::SeqCst);
+        let _guard = RecordingGuard; // Will reset flag when dropped
 
-        // Use a closure to ensure we reset the flag
-        let result = (|| {
-            let stack = PROFILE_STACK
-                .try_with(|stack| {
-                    stack
-                        .try_borrow()
-                        .map(|stack| {
-                            if stack.is_empty() {
-                                String::new()
-                            } else {
-                                stack.join(";")
-                            }
-                        })
-                        .unwrap_or_default()
-                })
-                .unwrap_or_default();
+        let stack = PROFILE_STACK
+            .try_with(|stack| {
+                stack
+                    .try_borrow()
+                    .map(|stack| {
+                        if stack.is_empty() {
+                            String::new()
+                        } else {
+                            stack.join(";")
+                        }
+                    })
+                    .unwrap_or_default()
+            })
+            .unwrap_or_default();
 
-            let entry = match op {
-                MemoryOperation::Allocate => format!("{stack} +{size}"),
-                MemoryOperation::Deallocate => format!("{stack} -{size}"),
-                MemoryOperation::Reallocate => format!("{stack} ={size}"),
-            };
+        let entry = match op {
+            MemoryOperation::Allocate => format!("{stack} +{size}"),
+            MemoryOperation::Deallocate => format!("{stack} -{size}"),
+            MemoryOperation::Reallocate => format!("{stack} ={size}"),
+        };
 
-            let paths = ProfilePaths::get();
-            Profile::write_profile_event(&paths.alloc, AllocationLogFile::get(), &entry)
-        })();
-
-        // Reset recording flag
-        IS_RECORDING.store(false, Ordering::SeqCst);
-
-        result
+        let paths = ProfilePaths::get();
+        Profile::write_profile_event(&paths.alloc, AllocationLogFile::get(), &entry)
     }
 }
 
@@ -223,7 +220,7 @@ fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) ->
 ///
 /// # Errors
 /// Returns a `ThagError` if any file operations fail
-fn initialize_profile_files(profile_type: &ProfileType) -> ThagResult<()> {
+fn initialize_profile_files(profile_type: ProfileType) -> ThagResult<()> {
     let paths = ProfilePaths::get();
 
     match profile_type {
@@ -262,13 +259,12 @@ fn initialize_profile_files(profile_type: &ProfileType) -> ThagResult<()> {
 
 fn get_global_profile_type() -> ProfileType {
     match PROFILE_TYPE.load(Ordering::SeqCst) {
-        1 => ProfileType::Time,
         2 => ProfileType::Memory,
         3 => ProfileType::Both,
         _ => ProfileType::Time,
     }
 }
-fn set_profile_type(profile_type: &ProfileType) {
+fn set_profile_type(profile_type: ProfileType) {
     let value = match profile_type {
         ProfileType::Time => 1,
         ProfileType::Memory => 2,
@@ -300,7 +296,7 @@ fn is_memory_profiling_enabled() -> bool {
 /// - Time value conversion fails
 /// - File operations fail
 /// - Mutex operations fail
-pub fn enable_profiling(enabled: bool, profile_type: &ProfileType) -> ThagResult<()> {
+pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<()> {
     if enabled {
         // Set profile type first
         set_profile_type(profile_type);
@@ -405,7 +401,6 @@ impl Profile {
     #[must_use]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
         let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
-            1 => ProfileType::Time,
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
             _ => ProfileType::Time, // default
@@ -453,21 +448,21 @@ impl Profile {
     /// A string representing the current profiling stack, excluding the
     /// most recent addition (which will be added separately in the event logging)
     fn get_parent_stack() -> String {
-        match PROFILE_STACK.try_with(|stack| {
-            if let Ok(stack_ref) = stack.try_borrow() {
-                stack_ref
-                    .iter()
-                    .take(stack_ref.len().saturating_sub(1))
-                    .copied()
-                    .collect::<Vec<_>>()
-                    .join(";")
-            } else {
-                String::new()
-            }
-        }) {
-            Ok(result) => result,
-            Err(_) => String::new(),
-        }
+        PROFILE_STACK
+            .try_with(|stack| {
+                stack.try_borrow().map_or_else(
+                    |_| String::new(),
+                    |stack_ref| {
+                        stack_ref
+                            .iter()
+                            .take(stack_ref.len().saturating_sub(1))
+                            .copied()
+                            .collect::<Vec<_>>()
+                            .join(";")
+                    },
+                )
+            })
+            .unwrap_or_default()
     }
 
     /// Writes a profiling event to the specified profile file.
@@ -755,6 +750,7 @@ macro_rules! profile_method {
 ///
 /// # Example
 /// ```
+/// use thag_rs::profile_memory;
 /// fn allocate_buffer() {
 ///     profile_memory!("allocate_buffer");
 ///     let buffer = vec![0; 1024];
@@ -777,6 +773,7 @@ macro_rules! profile_memory {
 ///
 /// # Example
 /// ```
+/// use thag_rs::profile_both;
 /// fn process_data() {
 ///     profile_both!("process_data");
 ///     // Both time and memory usage will be tracked

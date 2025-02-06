@@ -352,38 +352,46 @@ fn analyze_memory_profiles() -> ThagResult<()> {
         Some(selected_file) => {
             let processed = read_and_process_profile(&selected_file)?;
 
-            let options = vec![
-                "Show Memory Flamechart",
-                "Show Memory Statistics",
-                "Show Allocation Size Distribution",
-                "Show Memory Timeline",
-                "Filter Memory Patterns",
-                "Back",
-            ];
+            loop {
+                let options = vec![
+                    "Show Memory Flamechart",
+                    "Show Memory Statistics",
+                    "Show Allocation Size Distribution",
+                    "Show Memory Timeline",
+                    "Filter Memory Patterns",
+                    "Back to Profile Selection",
+                ];
 
-            // Show memory-specific menu and handle selection...
-            let selection = Select::new("Select action:", options)
-                .prompt()
-                .map_err(|e| ThagError::Profiling(e.to_string()))?;
+                // Show memory-specific menu and handle selection...
+                let selection = Select::new("Select action:", options)
+                    .prompt()
+                    .map_err(|e| ThagError::Profiling(e.to_string()))?;
 
-            match selection {
-                // "Back" => Ok(()),
-                "Show Memory Flamechart" => generate_memory_flamechart(&processed),
-                "Show Memory Statistics" => {
-                    show_memory_statistics(&processed);
-                    Ok(())
+                match selection {
+                    "Back to Profile Selection" => break,
+                    "Show Memory Flamechart" => generate_memory_flamechart(&processed)
+                        .map_or_else(|e| println!("{e}"), |()| {}),
+                    "Show Memory Statistics" => show_memory_statistics(&processed),
+                    "Show Allocation Size Distribution" => show_allocation_distribution(&processed)
+                        .map_or_else(|e| println!("{e}"), |()| {}),
+                    "Show Memory Timeline" => generate_memory_timeline(&processed)
+                        .map_or_else(|e| println!("{e}"), |()| {}),
+                    "Filter Memory Patterns" => {
+                        filter_memory_patterns(&processed).map_or_else(
+                            |e| println!("{e}"),
+                            |filtered| {
+                                generate_memory_flamechart(&filtered)
+                                    .map_or_else(|e| println!("{e}"), |()| {});
+                            },
+                        );
+                    }
+                    _ => {}
                 }
-                "Show Allocation Size Distribution" => {
-                    show_allocation_distribution(&processed);
-                    Ok(())
-                }
-                "Show Memory Timeline" => generate_memory_timeline(&processed),
-                "Filter Memory Patterns" => {
-                    let filtered = filter_memory_patterns(&processed)?;
-                    generate_memory_flamechart(&filtered)
-                }
-                _ => Ok(()),
+
+                println!("\nPress Enter to continue...");
+                let _ = std::io::stdin().read_line(&mut String::new());
             }
+            Ok(())
         }
     }
 }
@@ -942,12 +950,13 @@ fn show_memory_statistics(profile: &ProcessedProfile) {
         println!("Peak Memory Usage:    {} bytes", memory_data.peak_memory);
         println!("Current Memory Usage: {} bytes", memory_data.current_memory);
 
-        if memory_data.total_deallocations < memory_data.total_allocations {
-            println!(
-                "\nWarning: Possible memory leak - {} allocations weren't freed",
-                memory_data.total_allocations - memory_data.total_deallocations
-            );
-        }
+        // Remove the misleading deallocation warning
+        // if memory_data.total_deallocations < memory_data.total_allocations {
+        //     println!(
+        //         "\nWarning: Possible memory leak - {} allocations weren't freed",
+        //         memory_data.total_allocations - memory_data.total_deallocations
+        //     );
+        // }
 
         // Show top allocation sites
         println!("\nTop Allocation Sites:");
@@ -969,6 +978,11 @@ fn show_memory_statistics(profile: &ProcessedProfile) {
     }
 }
 
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
     let memory_data = profile
         .memory_data
@@ -1014,10 +1028,10 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
     for &(_, _, label) in &buckets {
         let count = bucket_counts.get(label).copied().unwrap_or(0);
         let bar_length = ((count as f64 / max_count as f64) * 50.0) as usize;
-        println!("{:>8}: {:>6} |{}", label, count, "█".repeat(bar_length));
+        println!("{label:>8}: {count:>6} |{}", "█".repeat(bar_length));
     }
 
-    println!("\nTotal memory allocated: {} bytes", total_bytes);
+    println!("\nTotal memory allocated: {total_bytes} bytes",);
     println!(
         "Average allocation size: {} bytes",
         total_bytes / memory_data.total_allocations
@@ -1139,6 +1153,7 @@ fn enhance_svg_accessibility(svg_path: &str) -> ThagResult<()> {
     Ok(())
 }
 
+#[allow(clippy::cast_possible_truncation)]
 fn calculate_memory_stats(stacks: &[String]) -> MemoryData {
     let mut memory_data = MemoryData::default();
     let mut current_memory = 0u64;
@@ -1228,6 +1243,7 @@ fn calculate_memory_stats(stacks: &[String]) -> MemoryData {
 //     Ok(())
 // }
 
+#[allow(dead_code)]
 fn parse_allocation_log(lines: &[String]) -> MemoryData {
     let mut memory_data = MemoryData::default();
     let mut current_memory = 0u64;
@@ -1239,7 +1255,7 @@ fn parse_allocation_log(lines: &[String]) -> MemoryData {
 
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() >= 2 {
-            let (stack, op) = if parts.len() > 2 {
+            let (_stack, op) = if parts.len() > 2 {
                 (parts[0..parts.len() - 1].join(" "), *parts.last().unwrap())
             } else {
                 (parts[0].to_string(), parts[1])

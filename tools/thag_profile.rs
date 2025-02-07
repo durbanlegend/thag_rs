@@ -1053,7 +1053,6 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
         .stacks
         .iter()
         .filter(|stack| {
-            // For each entry, check which patterns it matches
             let matching_patterns: Vec<_> = selected
                 .iter()
                 .filter(|&&pattern| {
@@ -1071,7 +1070,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
                 })
                 .collect();
 
-            matching_patterns.is_empty() // Keep if it matches no patterns
+            matching_patterns.is_empty()
         })
         .cloned()
         .collect();
@@ -1085,22 +1084,39 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
     for pattern in &selected {
         let count = filter_stats.get(pattern).copied().unwrap_or(0);
         total_filtered = total_filtered.max(count); // Use max to avoid double-counting
+        let percentage = (count as f64 / total_entries as f64 * 100.0).round();
         if pattern == &"Custom pattern..." {
-            println!("Pattern '{}': {} entries", custom_pattern, count);
+            println!(
+                "Pattern '{}': {} entries ({:.1}%)",
+                custom_pattern, count, percentage
+            );
         } else {
-            println!("Pattern '{}': {} entries", pattern, count);
+            println!(
+                "Pattern '{}': {} entries ({:.1}%)",
+                pattern, count, percentage
+            );
         }
     }
 
-    println!("Entries remaining: {}", filtered.stacks.len());
-    println!("Entries filtered: {}", total_filtered);
+    let remaining = filtered.stacks.len();
+    let remaining_percentage = (remaining as f64 / total_entries as f64 * 100.0).round();
+    let filtered_percentage = (total_filtered as f64 / total_entries as f64 * 100.0).round();
+
+    println!("\nSummary:");
+    println!(
+        "Entries remaining: {} ({:.1}%)",
+        remaining, remaining_percentage
+    );
+    println!(
+        "Entries filtered:  {} ({:.1}%)",
+        total_filtered, filtered_percentage
+    );
 
     if filtered.stacks.is_empty() {
         println!(
             "\nWarning: All entries were filtered out. Displaying unfiltered profile instead."
         );
         println!("Consider adjusting your filter criteria.");
-        // Pause to let user read the warning
         println!("\nPress Enter to continue with unfiltered display...");
         let _ = std::io::stdin().read_line(&mut String::new());
         Ok(profile.clone())

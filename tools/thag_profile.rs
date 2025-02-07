@@ -39,8 +39,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader};
+use std::path::Path;
 use std::path::PathBuf;
-// use std::path::Path;
 use std::process::Command;
 use std::time::Duration;
 use thag_rs::profiling::ProfileStats;
@@ -144,20 +144,6 @@ fn process_profile_data(lines: &[String]) -> ProcessedProfile {
     processed
 }
 
-// fn is_async_boundary(func_name: &str) -> bool {
-//     // Expanded list of async indicators
-//     matches!(func_name.trim(),
-//         "handle_build_or_check" |
-//         "build" |
-//         _ if func_name.contains("spawn") ||
-//             func_name.contains("wait") ||
-//             func_name.contains("async") ||
-//             func_name.contains("process") ||
-//             func_name.contains("command") ||
-//             func_name.contains("exec")
-//     )
-// }
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         let analysis_types = vec![
@@ -183,106 +169,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
-// fn handle_time_profiles() -> ThagResult<()> {
-//     loop {
-//         // Get time profile files (exclude memory profiles)
-//         let profile_groups = group_profile_files(|f| !f.contains("-memory"))?;
-
-//         if profile_groups.is_empty() {
-//             println!("No time profile files found.");
-//             break;
-//         }
-
-//         // First ask if user wants single or differential analysis
-//         let options = vec![
-//             "Single Profile",
-//             "Differential Analysis",
-//             "Back to Main Menu",
-//         ];
-//         let choice = Select::new("Select analysis type:", options)
-//             .prompt()
-//             .map_err(|e| ThagError::Profiling(e.to_string()))?;
-
-//         match choice {
-//             "Back to Main Menu" => break,
-//             "Differential Analysis" => {
-//                 if let Err(e) = analyze_differential_time_profiles() {
-//                     eprintln!("Error in differential analysis: {}", e);
-//                 }
-//                 println!("\nPress Enter to continue...");
-//                 let _ = std::io::stdin().read_line(&mut String::new());
-//             }
-//             "Single Profile" => {
-//                 match select_profile_file(&profile_groups)? {
-//                     None => continue, // Return to time profile type selection
-//                     Some(file_path) => {
-//                         let processed = read_and_process_profile(&file_path)?;
-//                         let stats = build_time_stats(&processed)?;
-
-//                         loop {
-//                             let options = vec![
-//                                 "Show Flamechart",
-//                                 "Show Statistics",
-//                                 "Filter Functions",
-//                                 "Back to Profile Selection",
-//                             ];
-
-//                             let action = Select::new("Select action:", options)
-//                                 .prompt()
-//                                 .map_err(|e| ThagError::Profiling(e.to_string()))?;
-
-//                             match action {
-//                                 "Back to Profile Selection" => break,
-//                                 "Show Flamechart" => {
-//                                     generate_flamechart(&processed)?;
-//                                 }
-//                                 "Show Statistics" => {
-//                                     show_statistics(&stats, &processed);
-//                                 }
-//                                 "Filter Functions" => {
-//                                     let filtered = filter_functions(&processed)?;
-//                                     generate_flamechart(&filtered)?;
-//                                 }
-//                                 _ => println!("Unknown option"),
-//                             }
-
-//                             println!("\nPress Enter to continue...");
-//                             let _ = std::io::stdin().read_line(&mut String::new());
-//                         }
-//                     }
-//                 }
-//             }
-//             _ => println!("Unknown option"),
-//         }
-//     }
-//     Ok(())
-// }
-
-// fn handle_memory_profiles() -> ThagResult<()> {
-//     loop {
-//         let profile_groups = group_profile_files(|f| f.contains("-memory"))?;
-
-//         match select_profile_file(&profile_groups)? {
-//             None => break, // Return to main menu
-//             Some(file_path) => {
-//                 let processed = read_and_process_profile(&file_path)?;
-
-//                 loop {
-//                     match show_memory_analysis_menu()? {
-//                         None => break, // Return to file selection
-//                         Some(action) => {
-//                             process_memory_action(&action, &processed)?;
-//                             println!("\nPress Enter to continue...");
-//                             let _ = std::io::stdin().read_line(&mut String::new());
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     Ok(())
-// }
 
 fn analyze_single_time_profile() -> ThagResult<()> {
     // Get time profile files (exclude memory profiles)
@@ -371,7 +257,7 @@ fn analyze_memory_profiles() -> ThagResult<()> {
                     "Back to Profile Selection" => break,
                     "Show Memory Flamechart" => generate_memory_flamechart(&processed)
                         .map_or_else(|e| println!("{e}"), |()| {}),
-                    "Show Memory Statistics" => show_memory_statistics(&processed),
+                    "Show Memory Statistics" => show_memory_statistics(&processed, &selected_file),
                     "Show Allocation Size Distribution" => show_allocation_distribution(&processed)
                         .map_or_else(|e| println!("{e}"), |()| {}),
                     "Show Memory Timeline" => generate_memory_timeline(&processed)
@@ -565,21 +451,6 @@ fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile
         ..processed.clone() // Keep the metadata
     })
 }
-
-// fn show_async_boundaries(stats: &ProfileStats) {
-//     println!("\nAsync Boundaries:");
-//     println!("================");
-
-//     for func_name in stats.async_boundaries.iter() {
-//         if let Some(&calls) = stats.calls.get(func_name) {
-//             let total_time = stats.total_time.get(func_name).unwrap_or(&0);
-//             println!(
-//                 "{}: {} calls, {} μs total (includes subprocess time)",
-//                 func_name, calls, total_time
-//             );
-//         }
-//     }
-// }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ColorSchemeConfig {
@@ -941,24 +812,95 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     Ok(())
 }
 
-fn show_memory_statistics(profile: &ProcessedProfile) {
+// Add pattern analysis to memory statistics display
+fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
     if let Some(memory_data) = &profile.memory_data {
-        println!("\nMemory Profile Statistics");
+        let mut memory_data = memory_data.clone();
+
+        // Try to find and parse allocation log
+        if let Some(log_path) = find_allocation_log(file_path) {
+            match parse_allocation_log(&log_path) {
+                Ok(alloc_entries) => {
+                    // Add allocation size analysis before enhancing stats
+                    println!("\nAllocation Analysis:");
+                    println!("===================");
+                    let mut total_allocated = 0u64;
+                    let mut total_deallocated = 0u64;
+
+                    for entry in &alloc_entries {
+                        if entry.size > 0 {
+                            total_allocated += entry.size as u64;
+                        } else {
+                            total_deallocated += (-entry.size) as u64;
+                        }
+                    }
+
+                    println!("Total Bytes Allocated:   {}", total_allocated);
+                    println!("Total Bytes Deallocated: {}", total_deallocated);
+                    println!(
+                        "Average Allocation Size: {} bytes",
+                        if memory_data.total_allocations > 0 {
+                            total_allocated / memory_data.total_allocations
+                        } else {
+                            0
+                        }
+                    );
+
+                    // Now enhance the stats
+                    enhance_memory_stats(&mut memory_data, &alloc_entries);
+                    println!("\nMemory Profile Statistics (including allocation log)");
+
+                    // Show allocation patterns
+                    let patterns = analyze_allocation_patterns(&alloc_entries);
+                    if !patterns.is_empty() {
+                        println!("\nAllocation Patterns:");
+                        println!("===================");
+                        let mut pattern_vec: Vec<_> = patterns.iter().collect();
+                        pattern_vec.sort_by_key(|(_, p)| std::cmp::Reverse(p.total_allocated));
+
+                        for (stack, pattern) in pattern_vec.iter().take(5) {
+                            if !stack.is_empty() {
+                                // Skip empty stack frames
+                                println!("\nStack: {}", stack);
+                                println!("  Allocations:   {}", pattern.allocation_count);
+                                println!("  Deallocations: {}", pattern.deallocation_count);
+                                println!("  Total Bytes:   {}", pattern.total_allocated);
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    println!(
+                        "\nMemory Profile Statistics (allocation log parsing failed: {})",
+                        e
+                    );
+                }
+            }
+        } else {
+            println!("\nMemory Profile Statistics (no allocation log found)");
+        }
+
         println!("========================");
         println!("Total Allocations:    {}", memory_data.total_allocations);
-        println!("Total Deallocations:  {}", memory_data.total_deallocations);
+        if memory_data.total_deallocations > 0 {
+            println!("Total Deallocations:  {}", memory_data.total_deallocations);
+            if memory_data.total_deallocations > memory_data.total_allocations {
+                println!("Note: Deallocation count exceeds allocation count.");
+                println!("      This may indicate:");
+                println!("      - Deallocations of memory allocated before profiling started");
+                println!("      - Multiple deallocation events for complex data structures");
+                println!("      - Partial deallocations of larger allocations");
+            } else {
+                println!(
+                    "Net Allocations:      {}",
+                    memory_data.total_allocations - memory_data.total_deallocations
+                );
+            }
+        }
         println!("Peak Memory Usage:    {} bytes", memory_data.peak_memory);
         println!("Current Memory Usage: {} bytes", memory_data.current_memory);
 
-        // Remove the misleading deallocation warning
-        // if memory_data.total_deallocations < memory_data.total_allocations {
-        //     println!(
-        //         "\nWarning: Possible memory leak - {} allocations weren't freed",
-        //         memory_data.total_allocations - memory_data.total_deallocations
-        //     );
-        // }
-
-        // Show top allocation sites
+        // Show top allocation sites from profile data
         println!("\nTop Allocation Sites:");
         let mut allocation_sites: Vec<_> = profile
             .stacks
@@ -973,7 +915,7 @@ fn show_memory_statistics(profile: &ProcessedProfile) {
         allocation_sites.sort_by_key(|(_site, size)| std::cmp::Reverse(*size));
 
         for (site, size) in allocation_sites.iter().take(10) {
-            println!("{size:>10} bytes: {site}");
+            println!("{:>10} bytes: {}", size, site);
         }
     }
 }
@@ -1040,25 +982,6 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
     Ok(())
 }
 
-// fn generate_memory_timeline(_profile: &ProcessedProfile) -> ThagResult<()> {
-//     // Create a timeline visualization showing memory usage over time
-//     let svg = "memory-timeline.svg";
-//     let _output = File::create(svg)?;
-
-//     // TODO: Implement SVG generation for memory timeline
-//     // This would show:
-//     // - X axis: Time
-//     // - Y axis: Memory usage
-//     // - Color-coded regions for different allocation patterns
-//     // - Markers for peak memory events
-
-//     println!("Memory timeline generated: memory-timeline.svg");
-//     enhance_svg_accessibility(svg)?;
-
-//     open_in_browser(svg).map_err(|e| ThagError::Profiling(e.to_string()))?;
-//     Ok(())
-// }
-
 fn generate_memory_timeline(profile: &ProcessedProfile) -> ThagResult<()> {
     if let Some(_memory_data) = &profile.memory_data {
         let mut timeline_data: Vec<(usize, u64)> = profile
@@ -1107,6 +1030,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
 
     // Create a new filtered profile based on selected patterns
     let mut filtered = profile.clone();
+    eprintln!("profile.stacks.len()={}", profile.stacks.len());
     filtered.stacks = profile
         .stacks
         .iter()
@@ -1114,16 +1038,17 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
             // Apply selected filters
             selected
                 .iter()
-                .any(|pattern| matches_memory_pattern(stack, pattern))
+                .any(|pattern| !matches_memory_pattern(stack, pattern))
         })
         .cloned()
         .collect();
+    eprintln!("filtered.stacks.len()={}", filtered.stacks.len());
 
     Ok(filtered)
 }
 
 fn matches_memory_pattern(stack: &str, pattern: &str) -> bool {
-    match pattern {
+    let matches = match pattern {
         "Large allocations (>1MB)" => {
             if let Some((_stack, size)) = stack.rsplit_once(' ') {
                 size.parse::<usize>()
@@ -1137,7 +1062,9 @@ fn matches_memory_pattern(stack: &str, pattern: &str) -> bool {
         "Leaked memory" => stack.contains("leak") || !stack.contains("free"),
         "Frequent allocations" => stack.contains("loop") || stack.contains("iter"),
         _ => false,
-    }
+    };
+    eprintln!("stack={stack}, pattern={pattern}, matches={matches}");
+    matches
 }
 
 fn enhance_svg_accessibility(svg_path: &str) -> ThagResult<()> {
@@ -1186,96 +1113,130 @@ fn calculate_memory_stats(stacks: &[String]) -> MemoryData {
     memory_data
 }
 
-// #[derive(Debug)]
-// enum MainMenuChoice {
-//     TimeProfile,
-//     MemoryProfile,
-//     Exit,
-// }
+#[derive(Debug)]
+struct AllocationLogEntry {
+    stack: String,
+    size: i64, // Positive for allocations, negative for deallocations
+}
 
-// fn show_main_menu() -> ThagResult<MainMenuChoice> {
-//     let options = vec!["Time Profile Analysis", "Memory Profile Analysis", "Exit"];
+#[derive(Debug, Default)]
+struct AllocationPattern {
+    allocation_count: u64,
+    deallocation_count: u64,
+    total_allocated: u64,
+    total_deallocated: u64,
+}
 
-//     let selection = Select::new("Select profile type:", options)
-//         .prompt()
-//         .map_err(|e| ThagError::Profiling(e.to_string()))?;
+fn analyze_allocation_patterns(
+    entries: &[AllocationLogEntry],
+) -> HashMap<String, AllocationPattern> {
+    let mut patterns: HashMap<String, AllocationPattern> = HashMap::new();
 
-//     Ok(match selection {
-//         "Time Profile Analysis" => MainMenuChoice::TimeProfile,
-//         "Memory Profile Analysis" => MainMenuChoice::MemoryProfile,
-//         "Exit" => MainMenuChoice::Exit,
-//         _ => MainMenuChoice::Exit,
-//     })
-// }
+    for entry in entries {
+        let pattern = patterns
+            .entry(entry.stack.clone())
+            .or_insert_with(AllocationPattern::default);
+        if entry.size > 0 {
+            pattern.allocation_count += 1;
+            pattern.total_allocated += entry.size as u64;
+        } else {
+            pattern.deallocation_count += 1;
+            pattern.total_deallocated += (-entry.size) as u64;
+        }
+    }
 
-// fn show_memory_analysis_menu() -> ThagResult<Option<&'static str>> {
-//     let options = vec![
-//         "Show Memory Flamechart",
-//         "Show Memory Statistics",
-//         "Show Allocation Size Distribution",
-//         "Show Memory Timeline",
-//         "Filter Memory Patterns",
-//         "Back to File Selection",
-//     ];
+    patterns
+}
 
-//     let selection = Select::new("Select action:", options)
-//         .prompt()
-//         .map_err(|e| ThagError::Profiling(e.to_string()))?;
+fn find_allocation_log(memory_profile_path: &Path) -> Option<PathBuf> {
+    let file_stem = memory_profile_path.file_stem()?.to_str()?;
+    // Remove "-memory" suffix and add "-alloc.log"
+    let log_name = file_stem.replace("-memory", "-alloc.log");
+    let log_path = memory_profile_path.with_file_name(log_name);
+    if log_path.exists() {
+        Some(log_path)
+    } else {
+        None
+    }
+}
 
-//     Ok(match selection {
-//         "Back to File Selection" => None,
-//         action => Some(action),
-//     })
-// }
+fn parse_allocation_log(path: &Path) -> ThagResult<Vec<AllocationLogEntry>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let mut entries = Vec::new();
 
-// fn process_memory_action(action: &str, profile: &ProcessedProfile) -> ThagResult<()> {
-//     match action {
-//         "Show Memory Flamechart" => generate_memory_flamechart(profile)?,
-//         "Show Memory Statistics" => show_memory_statistics(profile),
-//         "Show Allocation Size Distribution" => show_allocation_distribution(profile),
-//         "Show Memory Timeline" => generate_memory_timeline(profile)?,
-//         "Filter Memory Patterns" => {
-//             let filtered = filter_memory_patterns(profile)?;
-//             generate_memory_flamechart(&filtered)?;
-//         }
-//         _ => println!("Unknown action"),
-//     }
-//     Ok(())
-// }
-
-#[allow(dead_code)]
-fn parse_allocation_log(lines: &[String]) -> MemoryData {
-    let mut memory_data = MemoryData::default();
-    let mut current_memory = 0u64;
-
-    for line in lines {
+    for line in reader.lines() {
+        let line = line?;
         if line.starts_with('#') || line.is_empty() {
             continue;
         }
 
+        // Split into stack and operation
         let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() >= 2 {
-            let (_stack, op) = if parts.len() > 2 {
+        if !parts.is_empty() {
+            let (stack, op) = if parts.len() > 1 {
                 (parts[0..parts.len() - 1].join(" "), *parts.last().unwrap())
             } else {
-                (parts[0].to_string(), parts[1])
+                (String::new(), parts[0])
             };
 
-            if let Some(size_str) = op.strip_prefix('+') {
-                if let Ok(size) = size_str.parse::<u64>() {
-                    memory_data.total_allocations += 1;
-                    current_memory += size;
-                    memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
-                }
+            // Parse operation (+size, -size, or =size)
+            let size = if let Some(size_str) = op.strip_prefix('+') {
+                size_str.parse::<i64>().unwrap_or(0)
             } else if let Some(size_str) = op.strip_prefix('-') {
-                if let Ok(size) = size_str.parse::<u64>() {
-                    memory_data.total_deallocations += 1;
-                    current_memory = current_memory.saturating_sub(size);
-                }
-            }
+                -size_str.parse::<i64>().unwrap_or(0)
+            } else if let Some(_size_str) = op.strip_prefix('=') {
+                0 // Current size, not a change
+            } else {
+                continue;
+            };
+
+            entries.push(AllocationLogEntry { stack, size });
         }
     }
 
-    memory_data.current_memory = current_memory;
-    memory_data
+    Ok(entries)
+}
+
+#[allow(clippy::cast_sign_loss)]
+fn enhance_memory_stats(memory_data: &mut MemoryData, alloc_entries: &[AllocationLogEntry]) {
+    let mut current_memory = 0i64;
+    let mut peak_memory = 0i64;
+    let mut log_allocations = 0u64;
+    let mut deallocations = 0u64;
+    let mut total_allocated = 0u64;
+    let mut total_deallocated = 0u64;
+
+    for entry in alloc_entries {
+        if entry.size > 0 {
+            log_allocations += 1;
+            current_memory += entry.size;
+            total_allocated += entry.size as u64;
+        } else if entry.size < 0 {
+            deallocations += 1;
+            current_memory += entry.size; // Adding negative number
+            total_deallocated += (-entry.size) as u64;
+        }
+        peak_memory = peak_memory.max(current_memory);
+    }
+
+    memory_data.total_deallocations = deallocations;
+    memory_data.peak_memory = peak_memory.max(0) as u64;
+    memory_data.current_memory = current_memory.max(0) as u64;
+
+    if log_allocations != memory_data.total_allocations || deallocations > log_allocations {
+        println!("\nAllocation Tracking Analysis:");
+        println!(
+            "  Profile shows: {} allocations",
+            memory_data.total_allocations
+        );
+        println!(
+            "  Log shows:     {} allocations, {} deallocations",
+            log_allocations, deallocations
+        );
+        println!(
+            "  Total bytes:   {} allocated, {} deallocated",
+            total_allocated, total_deallocated
+        );
+    }
 }

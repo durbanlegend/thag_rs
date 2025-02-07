@@ -1024,31 +1024,93 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
         "Custom pattern...",
     ];
 
-    let selected = MultiSelect::new("Select memory patterns to highlight:", patterns)
+    let selected = MultiSelect::new("Select memory patterns to filter out:", patterns)
         .prompt()
         .map_err(|e| ThagError::Profiling(e.to_string()))?;
 
-    // Create a new filtered profile based on selected patterns
+    // If nothing selected, return unfiltered profile
+    if selected.is_empty() {
+        println!("No patterns selected - showing all entries");
+        return Ok(profile.clone());
+    }
+
+    // Handle custom pattern if selected
+    let mut custom_pattern = String::new();
+    if selected.contains(&"Custom pattern...") {
+        custom_pattern =
+            inquire::Text::new("Enter custom pattern to filter (e.g., 'vec' or 'string'):")
+                .prompt()
+                .map_err(|e| ThagError::Profiling(e.to_string()))?;
+    }
+
+    // Track filtering statistics
+    let mut filter_stats: HashMap<&str, usize> = HashMap::new();
+    let total_entries = profile.stacks.len();
+
+    // Create a new filtered profile
     let mut filtered = profile.clone();
-    eprintln!("profile.stacks.len()={}", profile.stacks.len());
     filtered.stacks = profile
         .stacks
         .iter()
         .filter(|stack| {
-            // Apply selected filters
-            selected
+            // For each entry, check which patterns it matches
+            let matching_patterns: Vec<_> = selected
                 .iter()
-                .any(|pattern| !matches_memory_pattern(stack, pattern))
+                .filter(|&&pattern| {
+                    let matches = if pattern == "Custom pattern..." {
+                        stack
+                            .to_lowercase()
+                            .contains(&custom_pattern.to_lowercase())
+                    } else {
+                        matches_memory_pattern(stack, pattern)
+                    };
+                    if matches {
+                        *filter_stats.entry(pattern).or_insert(0) += 1;
+                    }
+                    matches
+                })
+                .collect();
+
+            matching_patterns.is_empty() // Keep if it matches no patterns
         })
         .cloned()
         .collect();
-    eprintln!("filtered.stacks.len()={}", filtered.stacks.len());
 
-    Ok(filtered)
+    // Display filtering statistics
+    println!("\nFiltering Statistics:");
+    println!("====================");
+    println!("Total entries: {}", total_entries);
+
+    let mut total_filtered = 0;
+    for pattern in &selected {
+        let count = filter_stats.get(pattern).copied().unwrap_or(0);
+        total_filtered = total_filtered.max(count); // Use max to avoid double-counting
+        if pattern == &"Custom pattern..." {
+            println!("Pattern '{}': {} entries", custom_pattern, count);
+        } else {
+            println!("Pattern '{}': {} entries", pattern, count);
+        }
+    }
+
+    println!("Entries remaining: {}", filtered.stacks.len());
+    println!("Entries filtered: {}", total_filtered);
+
+    if filtered.stacks.is_empty() {
+        println!(
+            "\nWarning: All entries were filtered out. Displaying unfiltered profile instead."
+        );
+        println!("Consider adjusting your filter criteria.");
+        // Pause to let user read the warning
+        println!("\nPress Enter to continue with unfiltered display...");
+        let _ = std::io::stdin().read_line(&mut String::new());
+        Ok(profile.clone())
+    } else {
+        Ok(filtered)
+    }
 }
 
 fn matches_memory_pattern(stack: &str, pattern: &str) -> bool {
-    let matches = match pattern {
+    match pattern {
         "Large allocations (>1MB)" => {
             if let Some((_stack, size)) = stack.rsplit_once(' ') {
                 size.parse::<usize>()
@@ -1058,13 +1120,30 @@ fn matches_memory_pattern(stack: &str, pattern: &str) -> bool {
                 false
             }
         }
-        "Temporary allocations" => stack.contains("temp") || stack.contains("temporary"),
-        "Leaked memory" => stack.contains("leak") || !stack.contains("free"),
-        "Frequent allocations" => stack.contains("loop") || stack.contains("iter"),
+        "Temporary allocations" => {
+            let stack_lower = stack.to_lowercase();
+            stack_lower.contains("temp")
+                || stack_lower.contains("tmp")
+                || stack_lower.contains("temporary")
+                || stack_lower.contains("buffer")
+        }
+        "Leaked memory" => {
+            // Only consider it leaked if it's an allocation that doesn't have associated deallocation terms
+            let stack_lower = stack.to_lowercase();
+            stack_lower.contains("alloc")
+                && !stack_lower.contains("free")
+                && !stack_lower.contains("drop")
+                && !stack_lower.contains("deallocate")
+        }
+        "Frequent allocations" => {
+            let stack_lower = stack.to_lowercase();
+            stack_lower.contains("loop")
+                || stack_lower.contains("iter")
+                || stack_lower.contains("each")
+                || stack_lower.contains("map")
+        }
         _ => false,
-    };
-    eprintln!("stack={stack}, pattern={pattern}, matches={matches}");
-    matches
+    }
 }
 
 fn enhance_svg_accessibility(svg_path: &str) -> ThagResult<()> {

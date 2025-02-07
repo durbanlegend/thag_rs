@@ -35,6 +35,7 @@ use inferno::flamegraph::{
 };
 use inquire::{MultiSelect, Select};
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 // use std::borrow::Cow::Borrowed;
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
@@ -813,6 +814,7 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
 }
 
 // Add pattern analysis to memory statistics display
+#[allow(clippy::cast_sign_loss)]
 fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
     if let Some(memory_data) = &profile.memory_data {
         let mut memory_data = memory_data.clone();
@@ -835,8 +837,8 @@ fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
                         }
                     }
 
-                    println!("Total Bytes Allocated:   {}", total_allocated);
-                    println!("Total Bytes Deallocated: {}", total_deallocated);
+                    println!("Total Bytes Allocated:   {total_allocated}");
+                    println!("Total Bytes Deallocated: {total_deallocated}");
                     println!(
                         "Average Allocation Size: {} bytes",
                         if memory_data.total_allocations > 0 {
@@ -861,7 +863,7 @@ fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
                         for (stack, pattern) in pattern_vec.iter().take(5) {
                             if !stack.is_empty() {
                                 // Skip empty stack frames
-                                println!("\nStack: {}", stack);
+                                println!("\nStack: {stack}");
                                 println!("  Allocations:   {}", pattern.allocation_count);
                                 println!("  Deallocations: {}", pattern.deallocation_count);
                                 println!("  Total Bytes:   {}", pattern.total_allocated);
@@ -870,10 +872,7 @@ fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
                     }
                 }
                 Err(e) => {
-                    println!(
-                        "\nMemory Profile Statistics (allocation log parsing failed: {})",
-                        e
-                    );
+                    println!("\nMemory Profile Statistics (allocation log parsing failed: {e})");
                 }
             }
         } else {
@@ -915,7 +914,7 @@ fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
         allocation_sites.sort_by_key(|(_site, size)| std::cmp::Reverse(*size));
 
         for (site, size) in allocation_sites.iter().take(10) {
-            println!("{:>10} bytes: {}", size, site);
+            println!("{size:>10} bytes: {site}");
         }
     }
 }
@@ -1015,6 +1014,7 @@ fn generate_memory_timeline(profile: &ProcessedProfile) -> ThagResult<()> {
     Ok(())
 }
 
+#[allow(clippy::cast_precision_loss)]
 fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedProfile> {
     let patterns = vec![
         "Large allocations (>1MB)",
@@ -1035,13 +1035,14 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
     }
 
     // Handle custom pattern if selected
-    let mut custom_pattern = String::new();
-    if selected.contains(&"Custom pattern...") {
-        custom_pattern =
-            inquire::Text::new("Enter custom pattern to filter (e.g., 'vec' or 'string'):")
-                .prompt()
-                .map_err(|e| ThagError::Profiling(e.to_string()))?;
-    }
+    #[allow(clippy::cast_precision_loss)]
+    let custom_pattern = if selected.contains(&"Custom pattern...") {
+        inquire::Text::new("Enter custom pattern to filter (e.g., 'vec' or 'string'):")
+            .prompt()
+            .map_err(|e| ThagError::Profiling(e.to_string()))?
+    } else {
+        String::new()
+    };
 
     // Track filtering statistics
     let mut filter_stats: HashMap<&str, usize> = HashMap::new();
@@ -1053,24 +1054,19 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
         .stacks
         .iter()
         .filter(|stack| {
-            let matching_patterns: Vec<_> = selected
-                .iter()
-                .filter(|&&pattern| {
-                    let matches = if pattern == "Custom pattern..." {
-                        stack
-                            .to_lowercase()
-                            .contains(&custom_pattern.to_lowercase())
-                    } else {
-                        matches_memory_pattern(stack, pattern)
-                    };
-                    if matches {
-                        *filter_stats.entry(pattern).or_insert(0) += 1;
-                    }
-                    matches
-                })
-                .collect();
-
-            matching_patterns.is_empty()
+            selected.iter().any(|&pattern| {
+                let matches = if pattern == "Custom pattern..." {
+                    stack
+                        .to_lowercase()
+                        .contains(&custom_pattern.to_lowercase())
+                } else {
+                    matches_memory_pattern(stack, pattern)
+                };
+                if matches {
+                    *filter_stats.entry(pattern).or_insert(0) += 1;
+                }
+                matches
+            })
         })
         .cloned()
         .collect();
@@ -1078,7 +1074,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
     // Display filtering statistics
     println!("\nFiltering Statistics:");
     println!("====================");
-    println!("Total entries: {}", total_entries);
+    println!("Total entries: {total_entries}");
 
     let mut total_filtered = 0;
     for pattern in &selected {
@@ -1086,15 +1082,9 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
         total_filtered = total_filtered.max(count); // Use max to avoid double-counting
         let percentage = (count as f64 / total_entries as f64 * 100.0).round();
         if pattern == &"Custom pattern..." {
-            println!(
-                "Pattern '{}': {} entries ({:.1}%)",
-                custom_pattern, count, percentage
-            );
+            println!("Pattern '{custom_pattern}': {count} entries ({percentage:.1}%)");
         } else {
-            println!(
-                "Pattern '{}': {} entries ({:.1}%)",
-                pattern, count, percentage
-            );
+            println!("Pattern '{pattern}': {count} entries ({percentage:.1}%)");
         }
     }
 
@@ -1103,14 +1093,8 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
     let filtered_percentage = (total_filtered as f64 / total_entries as f64 * 100.0).round();
 
     println!("\nSummary:");
-    println!(
-        "Entries remaining: {} ({:.1}%)",
-        remaining, remaining_percentage
-    );
-    println!(
-        "Entries filtered:  {} ({:.1}%)",
-        total_filtered, filtered_percentage
-    );
+    println!("Entries remaining: {remaining} ({remaining_percentage:.1}%)");
+    println!("Entries filtered:  {total_filtered} ({filtered_percentage:.1}%)");
 
     if filtered.stacks.is_empty() {
         println!(
@@ -1222,15 +1206,14 @@ struct AllocationPattern {
     total_deallocated: u64,
 }
 
+#[allow(clippy::cast_sign_loss)]
 fn analyze_allocation_patterns(
     entries: &[AllocationLogEntry],
 ) -> HashMap<String, AllocationPattern> {
     let mut patterns: HashMap<String, AllocationPattern> = HashMap::new();
 
     for entry in entries {
-        let pattern = patterns
-            .entry(entry.stack.clone())
-            .or_insert_with(AllocationPattern::default);
+        let pattern = patterns.entry(entry.stack.clone()).or_default();
         if entry.size > 0 {
             pattern.allocation_count += 1;
             pattern.total_allocated += entry.size as u64;
@@ -1303,14 +1286,18 @@ fn enhance_memory_stats(memory_data: &mut MemoryData, alloc_entries: &[Allocatio
     let mut total_deallocated = 0u64;
 
     for entry in alloc_entries {
-        if entry.size > 0 {
-            log_allocations += 1;
-            current_memory += entry.size;
-            total_allocated += entry.size as u64;
-        } else if entry.size < 0 {
-            deallocations += 1;
-            current_memory += entry.size; // Adding negative number
-            total_deallocated += (-entry.size) as u64;
+        match entry.size.cmp(&0) {
+            Ordering::Greater => {
+                log_allocations += 1;
+                current_memory += entry.size;
+                total_allocated += entry.size as u64;
+            }
+            Ordering::Less => {
+                deallocations += 1;
+                current_memory += entry.size; // Adding negative number
+                total_deallocated += (-entry.size) as u64;
+            }
+            Ordering::Equal => (),
         }
         peak_memory = peak_memory.max(current_memory);
     }
@@ -1325,13 +1312,7 @@ fn enhance_memory_stats(memory_data: &mut MemoryData, alloc_entries: &[Allocatio
             "  Profile shows: {} allocations",
             memory_data.total_allocations
         );
-        println!(
-            "  Log shows:     {} allocations, {} deallocations",
-            log_allocations, deallocations
-        );
-        println!(
-            "  Total bytes:   {} allocated, {} deallocated",
-            total_allocated, total_deallocated
-        );
+        println!("  Log shows:     {log_allocations} allocations, {deallocations} deallocations");
+        println!("  Total bytes:   {total_allocated} allocated, {total_deallocated} deallocated");
     }
 }

@@ -1304,10 +1304,10 @@ fn generate_memory_timeline(profile: &ProcessedProfile, file_path: &Path) -> Tha
             min_memory = min_memory.min(cumulative_memory);
             timeline_points.push((index as i32, cumulative_memory));
 
-            // Debug first few points and any negative values
-            if index < 5 || cumulative_memory < 0 {
-                println!("Point {}: {} bytes", index, cumulative_memory);
-            }
+            // // Debug first few points and any negative values
+            // if index < 5 || cumulative_memory < 0 {
+            //     println!("Point {}: {} bytes", index, cumulative_memory);
+            // }
         }
 
         // Adjust all points to be non-negative
@@ -1349,7 +1349,7 @@ fn generate_memory_timeline(profile: &ProcessedProfile, file_path: &Path) -> Tha
             .map(|(x, y)| {
                 // Fix x-coordinate scaling
                 let x_pos = padding + ((x * plot_width) / timeline_points.len().max(1) as i32);
-                println!("Point {}: x={}, x_pos={}", x, x, x_pos); // Debug x scaling
+                // println!("Point {}: x={}, x_pos={}", x, x, x_pos); // Debug x scaling
                 let y_pos =
                     height - padding - ((y * plot_height as i64) / peak_memory.max(1)) as i32;
                 if *x == 0 {
@@ -1357,38 +1357,6 @@ fn generate_memory_timeline(profile: &ProcessedProfile, file_path: &Path) -> Tha
                 } else {
                     format!("L {x_pos},{y_pos}")
                 }
-            })
-            .collect::<String>();
-
-        println!(
-            "First 100 chars of path data: {}",
-            &path_data[..path_data.len().min(100)]
-        );
-
-        println!(
-            "Last 100 chars of path data: {}",
-            &path_data[path_data.len() - 100..path_data.len()]
-        );
-
-        // Add debug visualization for first few points
-        let debug_points = timeline_points
-            .iter()
-            .take(5)
-            .enumerate()
-            .map(|(i, (x, y))| {
-                let x_pos = padding + (x * plot_width / timeline_points.len() as i32);
-                let y_pos =
-                    height - padding - ((y * plot_height as i64) / peak_memory.max(1)) as i32;
-                format!(
-                    r#"<circle cx="{}" cy="{}" r="4" fill="{}"/>
-                           <text x="{}" y="{}" class="label">{} bytes</text>"#,
-                    x_pos,
-                    y_pos,
-                    if i == 0 { "red" } else { "blue" },
-                    x_pos + 5,
-                    y_pos,
-                    y
-                )
             })
             .collect::<String>();
 
@@ -1413,9 +1381,6 @@ fn generate_memory_timeline(profile: &ProcessedProfile, file_path: &Path) -> Tha
 
             <!-- Memory usage line -->
             <path class="line" d="{}"/>
-
-            <!-- Debug visualization -->
-            {}
 
             <!-- Peak memory line -->
             <line class="peak"
@@ -1457,25 +1422,25 @@ fn generate_memory_timeline(profile: &ProcessedProfile, file_path: &Path) -> Tha
                 })
                 .collect::<String>(),
             // Debug points
-            timeline_points
-                .iter()
-                .take(5)
-                .enumerate()
-                .map(|(i, (x, y))| {
-                    let x_pos = padding + ((x * plot_width) / timeline_points.len().max(1) as i32);
-                    let y_pos = calculate_y_position(*y, peak_memory, height, padding, plot_height);
-                    format!(
-                        r#"<circle cx="{}" cy="{}" r="4" fill="{}"/>
-                               <text x="{}" y="{}" class="label">{} bytes</text>"#,
-                        x_pos,
-                        y_pos,
-                        if i == 0 { "red" } else { "blue" },
-                        x_pos + 5,
-                        y_pos,
-                        y
-                    )
-                })
-                .collect::<String>(),
+            // timeline_points
+            //     .iter()
+            //     .take(5)
+            //     .enumerate()
+            //     .map(|(i, (x, y))| {
+            //         let x_pos = padding + ((x * plot_width) / timeline_points.len().max(1) as i32);
+            //         let y_pos = calculate_y_position(*y, peak_memory, height, padding, plot_height);
+            //         format!(
+            //             r#"<circle cx="{}" cy="{}" r="4" fill="{}"/>
+            //                    <text x="{}" y="{}" class="label">{} bytes</text>"#,
+            //             x_pos,
+            //             y_pos,
+            //             if i == 0 { "red" } else { "blue" },
+            //             x_pos + 5,
+            //             y_pos,
+            //             y
+            //         )
+            //     })
+            //     .collect::<String>(),
             // Peak line y-coordinate
             calculate_y_position(peak_memory, peak_memory, height, padding, plot_height),
             width - padding,

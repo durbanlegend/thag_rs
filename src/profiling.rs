@@ -17,14 +17,15 @@
 use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
 use chrono::Local;
 use std::alloc::{GlobalAlloc, Layout, System};
+use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::fs::{File, OpenOptions};
-use std::io::{BufWriter, Write};
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, AtomicUsize, Ordering};
+use std::fs::{self, File, OpenOptions};
+use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, AtomicPtr, AtomicU64, AtomicU8, AtomicUsize, Ordering};
 use std::sync::Mutex;
-// use std::sync::OnceLock;
+use std::sync::OnceLock;
 use std::time::{Instant, SystemTime};
 // use std::time::SystemTime;
 pub use thag_proc_macros::profile;
@@ -71,10 +72,11 @@ thread_local! {
 static PROFILING_ENABLED: AtomicBool = AtomicBool::new(false);
 static START_TIME: AtomicU64 = AtomicU64::new(0);
 
+#[derive(Clone, Debug)]
 enum MemoryOperation {
-    Allocate,
-    Deallocate,
-    Reallocate,
+    Allocate(usize),
+    Deallocate(usize),
+    Reallocate { old_size: usize, new_size: usize },
 }
 
 struct RecordingGuard;
@@ -85,111 +87,276 @@ impl Drop for RecordingGuard {
     }
 }
 
+// Keep the OnceLock for the allocator instance
+static ALLOCATOR_INSTANCE: OnceLock<AllocationProfiler> = OnceLock::new();
+
+// Add back the global allocator, but have it delegate to the OnceLock instance
+// #[g÷lobal_allocator]
+// static ALLOCATOR: AllocatorWrapper = AllocatorWrapper;
 #[global_allocator]
 static ALLOCATOR: AllocationProfiler = AllocationProfiler::new();
 
-#[derive(Clone)]
-struct ProfileFilePaths {
-    time: String,
-    memory: String,
-    alloc: String,
+thread_local! {
+    static CURRENT_STACK: AtomicPtr<&'static str> = AtomicPtr::new(std::ptr::null_mut());
+    static IN_ALLOC: AtomicBool = AtomicBool::new(false);
 }
+
 struct AllocationProfiler {
-    inner: System, // Use system allocator as backend
+    inner: System,
+    allocation_buffer: AtomicUsize,
     total_allocated: AtomicUsize,
     active_allocations: AtomicUsize,
-    allocation_count: AtomicUsize,
+    is_recording: AtomicBool,
 }
 
 impl AllocationProfiler {
     const fn new() -> Self {
         Self {
             inner: System,
+            allocation_buffer: AtomicUsize::new(0),
             total_allocated: AtomicUsize::new(0),
             active_allocations: AtomicUsize::new(0),
-            allocation_count: AtomicUsize::new(0),
+            is_recording: AtomicBool::new(false),
         }
     }
 
-    /// Records a memory allocation event with the current profiling stack.
-    ///
-    /// This function captures memory operations (allocate, deallocate, reallocate)
-    /// and writes them to the allocation log with the current stack trace.
-    ///
-    /// # Arguments
-    /// * `op` - The type of memory operation being performed
-    /// * `size` - The size in bytes of the memory being operated on
-    ///
-    /// # Errors
-    /// Returns a `ThagError` if writing to the allocation log fails
-    fn record_allocation(op: &MemoryOperation, size: usize) -> ThagResult<()> {
-        if !is_profiling_enabled()
-            || !is_memory_profiling_enabled()
-            || IS_RECORDING.load(Ordering::SeqCst)
-        {
-            return Ok(());
+    fn get() -> &'static AllocationProfiler {
+        &ALLOCATOR
+    }
+
+    fn set_current_stack(stack: Option<&'static str>) {
+        if !IN_ALLOC.with(|in_alloc| in_alloc.load(Ordering::SeqCst)) {
+            CURRENT_STACK.with(|s| {
+                let ptr = match stack {
+                    Some(s) => {
+                        let boxed: Box<&'static str> = Box::new(s);
+                        Box::into_raw(boxed)
+                    }
+                    None => std::ptr::null_mut(),
+                };
+                s.store(ptr, Ordering::SeqCst);
+            });
+        }
+    }
+
+    fn get_current_stack() -> &'static str {
+        if IN_ALLOC.with(|in_alloc| in_alloc.load(Ordering::SeqCst)) {
+            return "(recording)";
+        }
+        CURRENT_STACK.with(|s| {
+            let ptr = s.load(Ordering::SeqCst);
+            if ptr.is_null() {
+                "(unknown)"
+            } else {
+                unsafe { *ptr }
+            }
+        })
+    }
+
+    fn generate_report(&self) -> ThagResult<String> {
+        let mut report = String::new();
+        report.push_str("Memory Profile Report\n");
+        report.push_str("====================\n\n");
+
+        report.push_str(&format!(
+            "Total Allocated: {} bytes\n",
+            self.total_allocated.load(Ordering::SeqCst)
+        ));
+        report.push_str(&format!(
+            "Active Allocations: {}\n",
+            self.active_allocations.load(Ordering::SeqCst)
+        ));
+        report.push_str(&format!(
+            "Current Buffer: {} bytes\n",
+            self.allocation_buffer.load(Ordering::SeqCst)
+        ));
+
+        Ok(report)
+    }
+
+    // Simplified leak detection
+    fn detect_leaks(&self) -> ThagResult<LeakReport> {
+        let mut report = LeakReport::default();
+        let current_allocated = self.allocation_buffer.load(Ordering::SeqCst);
+
+        if current_allocated > 0 {
+            report.add_leak(
+                "(unknown)",
+                LeakInfo {
+                    bytes: current_allocated,
+                    alloc_count: self.active_allocations.load(Ordering::SeqCst),
+                    dealloc_count: 0,
+                    last_operation: None,
+                },
+            );
         }
 
-        IS_RECORDING.store(true, Ordering::SeqCst);
-        let _guard = RecordingGuard; // Will reset flag when dropped
+        Ok(report)
+    }
 
-        let stack = PROFILE_STACK
-            .try_with(|stack| {
-                stack
-                    .try_borrow()
-                    .map(|stack| {
-                        if stack.is_empty() {
-                            String::new()
-                        } else {
-                            stack.join(";")
-                        }
-                    })
-                    .unwrap_or_default()
-            })
-            .unwrap_or_default();
-
-        let entry = match op {
-            MemoryOperation::Allocate => format!("{stack} +{size}"),
-            MemoryOperation::Deallocate => format!("{stack} -{size}"),
-            MemoryOperation::Reallocate => format!("{stack} ={size}"),
-        };
-
+    fn get_log_path() -> PathBuf {
+        // Get thread id to separate test outputs
+        let thread_id = std::thread::current().id();
         let paths = ProfilePaths::get();
-        Profile::write_profile_event(&paths.alloc, AllocationLogFile::get(), &entry)
+        let file_stem = paths.alloc.strip_suffix(".log").unwrap_or(&paths.alloc);
+        PathBuf::from(format!("{}-{:?}.log", file_stem, thread_id))
+    }
+
+    fn log_allocation(&self, size: usize, is_alloc: bool) {
+        if self.is_recording.load(Ordering::SeqCst) {
+            return;
+        }
+
+        let stack = CURRENT_STACK.with(|s| {
+            let ptr = s.load(Ordering::SeqCst);
+            if ptr.is_null() {
+                "(unknown)"
+            } else {
+                unsafe { *ptr }
+            }
+        });
+
+        let total = self.allocation_buffer.load(Ordering::SeqCst);
+        let op = if is_alloc { "+" } else { "-" };
+
+        let msg = format!(
+            "{}|{}|{}|{}|{}\n",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_micros(),
+            stack,
+            op,
+            size,
+            total
+        );
+
+        // Use thread-specific log file
+        if let Ok(mut file) = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(Self::get_log_path())
+        {
+            let _ = file.write_all(msg.as_bytes());
+        }
     }
 }
 
 unsafe impl GlobalAlloc for AllocationProfiler {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ptr = self.inner.alloc(layout);
-        if !ptr.is_null() && !IS_RECORDING.load(Ordering::SeqCst) {
-            self.total_allocated
-                .fetch_add(layout.size(), Ordering::SeqCst);
-            self.active_allocations.fetch_add(1, Ordering::SeqCst);
-            self.allocation_count.fetch_add(1, Ordering::SeqCst);
-            // Record the allocation
-            let _ = Self::record_allocation(&MemoryOperation::Allocate, layout.size());
+        if !ptr.is_null() && !self.is_recording.load(Ordering::SeqCst) {
+            if !IN_ALLOC.with(|in_alloc| in_alloc.load(Ordering::SeqCst)) {
+                IN_ALLOC.with(|in_alloc| in_alloc.store(true, Ordering::SeqCst));
+                self.is_recording.store(true, Ordering::SeqCst);
+
+                self.allocation_buffer
+                    .fetch_add(layout.size(), Ordering::SeqCst);
+                self.total_allocated
+                    .fetch_add(layout.size(), Ordering::SeqCst);
+                self.active_allocations.fetch_add(1, Ordering::SeqCst);
+
+                // Log after updating counters
+                self.log_allocation(layout.size(), true);
+
+                self.is_recording.store(false, Ordering::SeqCst);
+                IN_ALLOC.with(|in_alloc| in_alloc.store(false, Ordering::SeqCst));
+            }
         }
         ptr
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         self.inner.dealloc(ptr, layout);
-        if !IS_RECORDING.load(Ordering::SeqCst) {
-            self.active_allocations.fetch_sub(1, Ordering::SeqCst);
-            // Record the deallocation
-            let _ = Self::record_allocation(&MemoryOperation::Deallocate, layout.size());
+        if !self.is_recording.load(Ordering::SeqCst) {
+            if !IN_ALLOC.with(|in_alloc| in_alloc.load(Ordering::SeqCst)) {
+                IN_ALLOC.with(|in_alloc| in_alloc.store(true, Ordering::SeqCst));
+                self.is_recording.store(true, Ordering::SeqCst);
+
+                // Log before updating counters
+                self.log_allocation(layout.size(), false);
+
+                self.allocation_buffer
+                    .fetch_sub(layout.size(), Ordering::SeqCst);
+                self.active_allocations.fetch_sub(1, Ordering::SeqCst);
+
+                self.is_recording.store(false, Ordering::SeqCst);
+                IN_ALLOC.with(|in_alloc| in_alloc.store(false, Ordering::SeqCst));
+            }
         }
+    }
+}
+
+// Update write_memory_reports to use the simplified structure
+pub fn write_memory_reports() -> ThagResult<()> {
+    if !is_profiling_enabled() || !is_memory_profiling_enabled() {
+        return Ok(());
     }
 
-    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
-        let new_ptr = self.inner.realloc(ptr, layout, new_size);
-        if !new_ptr.is_null() && !IS_RECORDING.load(Ordering::SeqCst) {
-            // Record the reallocation
-            let _ = Self::record_allocation(&MemoryOperation::Reallocate, new_size);
+    let paths = ProfilePaths::get();
+
+    // Generate and write leak report
+    let leak_report = AllocationProfiler::get().detect_leaks()?;
+    let report_path = PathBuf::from(&paths.memory).with_extension("leak-report");
+    fs::write(&report_path, leak_report.generate_report())?;
+
+    // Generate basic memory report
+    let tracking_report = AllocationProfiler::get().generate_report()?;
+    let tracking_path = PathBuf::from(&paths.memory).with_extension("tracking-report");
+    fs::write(&tracking_path, tracking_report)?;
+
+    Ok(())
+}
+
+// Wrapper struct to implement GlobalAlloc
+struct AllocatorWrapper;
+
+static IS_ALLOCATING: AtomicBool = AtomicBool::new(false);
+
+unsafe impl GlobalAlloc for AllocatorWrapper {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        // Prevent recursive allocation
+        if IS_ALLOCATING.load(Ordering::SeqCst) {
+            println!("Recursive allocation detected!");
+            return System.alloc(layout);
         }
-        new_ptr
+
+        IS_ALLOCATING.store(true, Ordering::SeqCst);
+        println!("Allocating {} bytes", layout.size());
+
+        let ptr = ALLOCATOR_INSTANCE
+            .get_or_init(AllocationProfiler::new)
+            .alloc(layout);
+
+        IS_ALLOCATING.store(false, Ordering::SeqCst);
+        ptr
     }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        if IS_ALLOCATING.load(Ordering::SeqCst) {
+            println!("Recursive deallocation detected!");
+            System.dealloc(ptr, layout);
+            return;
+        }
+
+        IS_ALLOCATING.store(true, Ordering::SeqCst);
+        println!("Deallocating {} bytes", layout.size());
+
+        ALLOCATOR_INSTANCE
+            .get_or_init(AllocationProfiler::new)
+            .dealloc(ptr, layout);
+
+        IS_ALLOCATING.store(false, Ordering::SeqCst);
+    }
+
+    // Similar for realloc...
+}
+
+#[derive(Clone)]
+struct ProfileFilePaths {
+    time: String,
+    memory: String,
+    alloc: String,
 }
 
 /// Resets a profile file by clearing its buffer writer.
@@ -297,6 +464,11 @@ fn is_memory_profiling_enabled() -> bool {
 /// - File operations fail
 /// - Mutex operations fail
 pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<()> {
+    if !enabled && is_profiling_enabled() {
+        // Generate reports before disabling profiling
+        write_memory_reports()?;
+    }
+
     if enabled {
         // Set profile type first
         set_profile_type(profile_type);
@@ -346,8 +518,7 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ThagResult<()> {
         .create(true)
         .write(true)
         .truncate(true)
-        .open(path)
-        .map_err(|e| ThagError::Profiling(format!("Failed to create {profile_type} file: {e}")))?;
+        .open(path)?;
 
     writeln!(file, "# {profile_type}")?;
     writeln!(
@@ -357,6 +528,9 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ThagResult<()> {
     )?;
     writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
     writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
+    if path.ends_with("alloc.log") {
+        writeln!(file, "# Format: timestamp|stack|operation|size|total")?;
+    }
     writeln!(file)?;
 
     Ok(())
@@ -400,41 +574,31 @@ impl Profile {
 
     #[must_use]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
+        println!(
+            "Profile::new called with name: {} and type: {:?}",
+            name, requested_type
+        );
+
         let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
-            _ => ProfileType::Time, // default
-        };
-
-        // Use the more comprehensive of the two types
-        let profile_type = match (requested_type, global_type) {
-            (ProfileType::Both, _) | (_, ProfileType::Both) => ProfileType::Both,
-            (ProfileType::Memory, _) | (_, ProfileType::Memory) => ProfileType::Memory,
             _ => ProfileType::Time,
         };
+        println!("Global profile type: {:?}", global_type);
 
-        let start = if is_profiling_enabled() {
-            PROFILE_STACK.with(|stack| {
-                if let Ok(mut guard) = stack.try_borrow_mut() {
-                    guard.push(name);
-                }
-            });
-            Some(Instant::now())
-        } else {
-            None
-        };
-
-        let initial_memory = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-            Some(ALLOCATOR.total_allocated.load(Ordering::SeqCst))
-        } else {
-            None
-        };
+        if is_profiling_enabled() {
+            AllocationProfiler::set_current_stack(Some(name));
+        }
 
         Self {
-            start,
+            start: Some(Instant::now()),
             name,
-            profile_type,
-            initial_memory,
+            profile_type: requested_type,
+            initial_memory: Some(
+                AllocationProfiler::get()
+                    .allocation_buffer
+                    .load(Ordering::SeqCst),
+            ),
         }
     }
 
@@ -568,6 +732,7 @@ impl Profile {
 
 impl Drop for Profile {
     fn drop(&mut self) {
+        AllocationProfiler::set_current_stack(None);
         // dbg!(&self.profile_type);
         if let Some(start) = self.start.take() {
             match self.profile_type {
@@ -578,9 +743,11 @@ impl Drop for Profile {
                 ProfileType::Memory => {
                     // Make sure we capture the memory delta before popping the stack
                     if let Some(initial) = self.initial_memory {
-                        let final_memory = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
+                        let final_memory = AllocationProfiler::get()
+                            .total_allocated
+                            .load(Ordering::SeqCst);
                         let delta = final_memory.saturating_sub(initial);
-                        dbg!(delta);
+                        // dbg!(delta);
                         if delta > 0 {
                             let _ = self.write_memory_event(delta);
                         }
@@ -593,10 +760,12 @@ impl Drop for Profile {
                     //     self.initial_memory
                     // );
                     if let Some(initial) = self.initial_memory {
-                        let final_memory = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
+                        let final_memory = AllocationProfiler::get()
+                            .total_allocated
+                            .load(Ordering::SeqCst);
                         // eprintln!("final_memory={final_memory:?}");
                         let delta = final_memory.saturating_sub(initial);
-                        dbg!(delta);
+                        // dbg!(delta);
                         if delta > 0 {
                             let _ = self.write_memory_event(delta);
                         }
@@ -613,6 +782,39 @@ impl Drop for Profile {
             });
         }
     }
+}
+
+fn write_unified_log_entry(
+    stack: &str,
+    op: &MemoryOperation,
+    current_total: usize,
+) -> ThagResult<()> {
+    if !is_profiling_enabled() || IS_RECORDING.load(Ordering::SeqCst) {
+        return Ok(());
+    }
+
+    IS_RECORDING.store(true, Ordering::SeqCst);
+    let _guard = RecordingGuard;
+
+    let timestamp = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_micros();
+
+    let entry = match op {
+        MemoryOperation::Allocate(size) => {
+            format!("{timestamp}|{stack}|+|{size}|{current_total}")
+        }
+        MemoryOperation::Deallocate(size) => {
+            format!("{timestamp}|{stack}|-|{size}|{current_total}")
+        }
+        MemoryOperation::Reallocate { old_size, new_size } => {
+            format!("{timestamp}|{stack}|=|{old_size}->{new_size}|{current_total}")
+        }
+    };
+
+    let paths = ProfilePaths::get();
+    Profile::write_profile_event(&paths.alloc, AllocationLogFile::get(), &entry)
 }
 
 /// Run a function or closure only if the global verbosity is Verbose or higher.
@@ -874,5 +1076,585 @@ impl ProfileStats {
     #[must_use]
     pub const fn max_time(&self) -> Option<std::time::Duration> {
         self.max_time
+    }
+}
+
+/// Enhanced memory tracking structure
+#[derive(Default)]
+struct MemoryTracker {
+    total_allocated: AtomicUsize,
+    active_allocations: AtomicUsize,
+    peak_memory: AtomicUsize,
+    allocation_count: AtomicUsize,
+    deallocation_count: AtomicUsize,
+    reallocation_count: AtomicUsize,
+    allocation_sites: OnceLock<Mutex<HashMap<String, AllocationSiteInfo>>>,
+}
+
+#[derive(Default)]
+struct AllocationSiteInfo {
+    alloc_count: usize,
+    dealloc_count: usize,
+    realloc_count: usize,
+    current_bytes: isize,
+    peak_bytes: usize,
+    last_operation: Option<(SystemTime, MemoryOperation)>,
+}
+
+impl MemoryTracker {
+    fn new() -> Self {
+        Self {
+            total_allocated: AtomicUsize::new(0),
+            active_allocations: AtomicUsize::new(0),
+            peak_memory: AtomicUsize::new(0),
+            allocation_count: AtomicUsize::new(0),
+            deallocation_count: AtomicUsize::new(0),
+            reallocation_count: AtomicUsize::new(0),
+            allocation_sites: OnceLock::new(),
+        }
+    }
+
+    fn get_sites_mutex(&self) -> &Mutex<HashMap<String, AllocationSiteInfo>> {
+        self.allocation_sites
+            .get_or_init(|| Mutex::new(HashMap::new()))
+    }
+
+    fn record_operation(&self, stack: &str, op: &MemoryOperation) -> ThagResult<()> {
+        println!("Recording operation");
+        let mut sites = self
+            .get_sites_mutex()
+            .lock()
+            .map_err(|_| ThagError::Profiling("Failed to lock allocation sites".into()))?;
+
+        let site = sites.entry(stack.to_string()).or_default();
+
+        match op {
+            MemoryOperation::Allocate(size) => {
+                site.alloc_count += 1;
+                site.current_bytes += *size as isize;
+            }
+            MemoryOperation::Deallocate(size) => {
+                site.dealloc_count += 1;
+                site.current_bytes -= *size as isize;
+            }
+            MemoryOperation::Reallocate { old_size, new_size } => {
+                site.realloc_count += 1;
+                site.current_bytes = site.current_bytes - *old_size as isize + *new_size as isize;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn generate_report(&self) -> ThagResult<String> {
+        let sites = self
+            .get_sites_mutex()
+            .lock()
+            .map_err(|_| ThagError::Profiling("Failed to lock allocation sites".into()))?;
+
+        let mut report = String::new();
+        report.push_str("Memory Tracking Report\n");
+        report.push_str("====================\n\n");
+
+        report.push_str(&format!(
+            "Total Allocations: {}\n",
+            self.allocation_count.load(Ordering::SeqCst)
+        ));
+        report.push_str(&format!(
+            "Total Deallocations: {}\n",
+            self.deallocation_count.load(Ordering::SeqCst)
+        ));
+        report.push_str(&format!(
+            "Total Reallocations: {}\n",
+            self.reallocation_count.load(Ordering::SeqCst)
+        ));
+        report.push_str(&format!(
+            "Peak Memory Usage: {} bytes\n\n",
+            self.peak_memory.load(Ordering::SeqCst)
+        ));
+
+        report.push_str("Allocation Sites:\n");
+        for (stack, info) in sites.iter() {
+            report.push_str(&format!("\nStack: {}\n", stack));
+            report.push_str(&format!("  Allocations: {}\n", info.alloc_count));
+            report.push_str(&format!("  Deallocations: {}\n", info.dealloc_count));
+            report.push_str(&format!("  Reallocations: {}\n", info.realloc_count));
+            report.push_str(&format!("  Current Memory: {} bytes\n", info.current_bytes));
+            report.push_str(&format!("  Peak Memory: {} bytes\n", info.peak_bytes));
+        }
+
+        Ok(report)
+    }
+}
+
+/// Validates memory operation logs for consistency
+#[derive(Default)]
+struct MemoryLogValidator {
+    valid_entries: usize,
+    invalid_entries: Vec<(usize, String, String)>, // (line number, content, error)
+    allocation_balance: HashMap<String, isize>,    // stack -> balance
+    total_allocated: usize,
+    total_freed: usize,
+}
+
+impl MemoryLogValidator {
+    fn validate_log(path: &Path) -> ThagResult<Self> {
+        let file = File::open(path)?;
+        let reader = BufReader::new(file);
+        let mut validator = Self::default();
+
+        for (line_num, line) in reader.lines().enumerate() {
+            let line = line?;
+            if line.starts_with('#') || line.trim().is_empty() {
+                continue;
+            }
+
+            match validator.validate_entry(line_num + 1, &line) {
+                Ok(()) => validator.valid_entries += 1,
+                Err(e) => validator
+                    .invalid_entries
+                    .push((line_num + 1, line, e.to_string())),
+            }
+        }
+
+        Ok(validator)
+    }
+
+    #[allow(clippy::many_single_char_names)]
+    fn validate_entry(&mut self, line_num: usize, entry: &str) -> ThagResult<()> {
+        let parts: Vec<&str> = entry.split('|').collect();
+        if parts.len() != 5 {
+            return Err(ThagError::Profiling(format!(
+                "Invalid entry format at line {}",
+                line_num
+            )));
+        }
+
+        let [timestamp, stack, op, size, total] = match parts.as_slice() {
+            [a, b, c, d, e] => [a, b, c, d, e],
+            _ => return Err(ThagError::Profiling("Invalid entry format".into())),
+        };
+
+        // Validate timestamp
+        timestamp
+            .parse::<u64>()
+            .map_err(|_| ThagError::Profiling(format!("Invalid timestamp at line {}", line_num)))?;
+
+        // Validate operation and size
+        let (size_delta, operation) = match *op {
+            "+" => {
+                let size = size.parse::<isize>().map_err(|_| {
+                    ThagError::Profiling(format!("Invalid allocation size at line {}", line_num))
+                })?;
+                (size, "allocation")
+            }
+            "-" => {
+                let size = -size.parse::<isize>().map_err(|_| {
+                    ThagError::Profiling(format!("Invalid deallocation size at line {}", line_num))
+                })?;
+                (size, "deallocation")
+            }
+            "=" => {
+                if let Some((old_str, new_str)) = size.split_once("->") {
+                    let old_size = old_str.parse::<isize>().map_err(|_| {
+                        ThagError::Profiling(format!(
+                            "Invalid old size in reallocation at line {}",
+                            line_num
+                        ))
+                    })?;
+                    let new_size = new_str.parse::<isize>().map_err(|_| {
+                        ThagError::Profiling(format!(
+                            "Invalid new size in reallocation at line {}",
+                            line_num
+                        ))
+                    })?;
+                    (new_size - old_size, "reallocation")
+                } else {
+                    return Err(ThagError::Profiling(format!(
+                        "Invalid reallocation format at line {}",
+                        line_num
+                    )));
+                }
+            }
+            _ => {
+                return Err(ThagError::Profiling(format!(
+                    "Invalid operation '{}' at line {}",
+                    op, line_num
+                )))
+            }
+        };
+
+        // Update allocation balance
+        *self
+            .allocation_balance
+            .entry(stack.to_string())
+            .or_default() += size_delta;
+
+        // Validate running total
+        let expected_total = total
+            .parse::<isize>()
+            .map_err(|_| ThagError::Profiling(format!("Invalid total at line {line_num}")))?;
+
+        let actual_total: isize = self.allocation_balance.values().sum();
+        if actual_total != expected_total {
+            return Err(ThagError::Profiling(format!(
+                "Total mismatch at line {line_num}: expected {expected_total}, calculated {actual_total}"
+            )));
+        }
+
+        Ok(())
+    }
+
+    fn generate_validation_report(&self) -> String {
+        let mut report = String::new();
+        report.push_str("Memory Log Validation Report\n");
+        report.push_str("==========================\n\n");
+
+        report.push_str(&format!("Valid Entries: {}\n", self.valid_entries));
+        report.push_str(&format!(
+            "Invalid Entries: {}\n\n",
+            self.invalid_entries.len()
+        ));
+
+        if !self.invalid_entries.is_empty() {
+            report.push_str("Invalid Entry Details:\n");
+            for (line_num, content, error) in &self.invalid_entries {
+                report.push_str(&format!("Line {line_num}: {content}\n  Error: {error}\n"));
+            }
+            report.push_str("\n");
+        }
+
+        report.push_str("Stack Balance:\n");
+        for (stack, balance) in &self.allocation_balance {
+            if *balance != 0 {
+                report.push_str(&format!("  {stack}: {balance} bytes\n"));
+            }
+        }
+
+        report
+    }
+}
+
+#[derive(Default)]
+pub struct LeakReport {
+    leaks: HashMap<String, LeakInfo>,
+    total_leaked_bytes: usize,
+    leak_count: usize,
+}
+
+#[derive(Clone)]
+pub struct LeakInfo {
+    bytes: usize,
+    alloc_count: usize,
+    dealloc_count: usize,
+    last_operation: Option<(SystemTime, MemoryOperation)>,
+}
+
+impl LeakReport {
+    fn add_leak(&mut self, stack: &str, info: LeakInfo) {
+        self.total_leaked_bytes += info.bytes;
+        self.leak_count += 1;
+        self.leaks.insert(stack.to_string(), info);
+    }
+
+    pub fn generate_report(&self) -> String {
+        let mut report = String::new();
+        report.push_str("Memory Leak Report\n");
+        report.push_str("=================\n\n");
+
+        if self.leak_count == 0 {
+            report.push_str("No memory leaks detected.\n");
+            return report;
+        }
+
+        report.push_str(&format!("Total Leaks: {}\n", self.leak_count));
+        report.push_str(&format!(
+            "Total Leaked Memory: {} bytes\n\n",
+            self.total_leaked_bytes
+        ));
+
+        // Sort leaks by size
+        let mut leaks: Vec<_> = self.leaks.iter().collect();
+        leaks.sort_by_key(|(_, info)| std::cmp::Reverse(info.bytes));
+
+        report.push_str("Detailed Leak Information:\n");
+        for (stack, info) in leaks {
+            report.push_str(&format!("\nStack: {stack}\n"));
+            report.push_str(&format!("  Leaked Bytes: {}\n", info.bytes));
+            report.push_str(&format!("  Allocations: {}\n", info.alloc_count));
+            report.push_str(&format!("  Deallocations: {}\n", info.dealloc_count));
+            if let Some((time, op)) = &info.last_operation {
+                report.push_str(&format!("  Last Operation: {op:?} at {time:?}\n"));
+            }
+        }
+
+        report
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn setup_profiling() -> ThagResult<()> {
+        enable_profiling(true, ProfileType::Memory)?;
+        Ok(())
+    }
+
+    fn cleanup_profiling() -> ThagResult<()> {
+        enable_profiling(false, ProfileType::Memory)?;
+        Ok(())
+    }
+
+    fn setup_test_profile() -> ThagResult<PathBuf> {
+        enable_profiling(true, ProfileType::Memory)?;
+        let log_path = AllocationProfiler::get_log_path();
+
+        // Initialize log file with headers
+        let mut file = OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(&log_path)?;
+
+        writeln!(file, "# Allocation Log")?;
+        writeln!(file, "# Test: {:?}", std::thread::current().id())?;
+        writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
+        writeln!(file, "# Format: timestamp|stack|operation|size|total")?;
+        writeln!(file)?;
+
+        Ok(log_path)
+    }
+
+    fn cleanup_test_profile(log_path: &Path) -> ThagResult<()> {
+        enable_profiling(false, ProfileType::Memory)?;
+        let _ = fs::remove_file(log_path); // Clean up test file
+        Ok(())
+    }
+
+    #[test]
+    fn test_memory_leak_detection() -> ThagResult<()> {
+        // setup_profiling()?;
+        let log_path = setup_test_profile()?;
+
+        // Print profile paths
+        let paths = ProfilePaths::get();
+        println!("Memory profile path: {}", paths.memory);
+        println!("Allocation log path: {}", paths.alloc);
+
+        // Create some deliberate memory leaks
+        {
+            println!("Starting leak test");
+            profile_memory!("test_leak_vec");
+            let _leaked_vec = Vec::from_iter(0..1000);
+            std::mem::forget(_leaked_vec); // Deliberately leak memory
+            println!("Created and leaked vector");
+        }
+
+        // Generate reports
+        write_memory_reports()?;
+
+        // Verify report file exists and print content
+        let report_path = PathBuf::from(&paths.memory).with_extension("leak-report");
+        println!("Looking for report at: {}", report_path.display());
+        if report_path.exists() {
+            let report_content = fs::read_to_string(&report_path)?;
+            println!("Report content:\n{}", report_content);
+        } else {
+            println!("Report file not found!");
+        }
+
+        // Create some deliberate memory leaks
+        {
+            profile_memory!("test_leak_vec");
+            let _leaked_vec = Vec::from_iter(0..1000);
+            std::mem::forget(_leaked_vec); // Deliberately leak memory
+        }
+
+        {
+            profile_memory!("test_leak_string");
+            let _leaked_string = String::with_capacity(1000);
+            std::mem::forget(_leaked_string);
+        }
+
+        {
+            profile_memory!("test_no_leak");
+            let _normal_vec = Vec::from_iter(0..1000);
+            // This vector should be properly deallocated
+        }
+
+        // Generate reports
+        write_memory_reports()?;
+
+        // Read and verify the leak report
+        let paths = ProfilePaths::get();
+        let report_path = PathBuf::from(&paths.memory).with_extension("leak-report");
+        let report_content = fs::read_to_string(report_path)?;
+
+        // Basic verification
+        assert!(report_content.contains("Memory Leak Report"));
+        assert!(report_content.contains("test_leak_vec"));
+        assert!(report_content.contains("test_leak_string"));
+        assert!(!report_content.contains("test_no_leak"));
+
+        // Verify specific leak sizes (adjust these based on your platform's size_of::<T>)
+        assert!(report_content.contains("Leaked Bytes: 4000")); // Vec<i32> = 1000 * 4 bytes
+        assert!(report_content.contains("Leaked Bytes: 1000")); // String with capacity 1000
+
+        cleanup_profiling()?;
+        Ok(())
+    }
+
+    // #[test]
+    // fn test_allocation_tracking() -> ThagResult<()> {
+    //     setup_profiling()?;
+
+    //     {
+    //         profile_memory!("test_allocation_pattern");
+    //         // Create and modify a vector to generate various allocation patterns
+    //         let mut vec = Vec::with_capacity(100);
+    //         for i in 0..150 {
+    //             // This should cause at least one reallocation
+    //             vec.push(i);
+    //         }
+    //         vec.clear(); // This shouldn't deallocate the memory
+    //         vec.shrink_to_fit(); // This should trigger deallocation
+    //     }
+
+    //     write_memory_reports()?;
+
+    //     // Read and verify the tracking report
+    //     let paths = ProfilePaths::get();
+    //     let report_path = PathBuf::from(&paths.memory).with_extension("tracking-report");
+    //     let report_content = fs::read_to_string(report_path)?;
+
+    //     // Verify tracking information
+    //     assert!(report_content.contains("test_allocation_pattern"));
+    //     assert!(report_content.contains("Allocations:"));
+    //     assert!(report_content.contains("Reallocations:"));
+    //     assert!(report_content.contains("Deallocations:"));
+
+    //     cleanup_profiling()?;
+    //     Ok(())
+    // }
+
+    #[test]
+    fn test_allocation_tracking() -> ThagResult<()> {
+        let log_path = setup_test_profile()?;
+
+        AllocationProfiler::set_current_stack(Some("test_allocation"));
+        let _vec = vec![1, 2, 3, 4, 5];
+        drop(_vec); // Explicit deallocation
+
+        // Verify log contents
+        let log_content = fs::read_to_string(&log_path)?;
+        assert!(log_content.contains("test_allocation"));
+        assert!(log_content.contains("|+|")); // Allocation
+        assert!(log_content.contains("|-|")); // Deallocation
+
+        cleanup_test_profile(&log_path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_memory_validation() -> ThagResult<()> {
+        // setup_profiling()?;
+        let log_path = setup_test_profile()?;
+
+        {
+            profile_memory!("test_validation");
+            // Create some allocations and deallocations
+            let mut data = Vec::new();
+            for _ in 0..10 {
+                data.push(Vec::from_iter(0..100));
+            }
+            data.clear();
+        }
+
+        write_memory_reports()?;
+
+        // Read and verify the validation report
+        let paths = ProfilePaths::get();
+        let validation_path = PathBuf::from(&paths.alloc).with_extension("validation");
+        let validation_content = fs::read_to_string(validation_path)?;
+
+        // Basic validation checks
+        assert!(validation_content.contains("Memory Log Validation Report"));
+        assert!(validation_content.contains("Valid Entries:"));
+        assert!(!validation_content.contains("Invalid Entry Details:"));
+
+        cleanup_profiling()?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_simple_allocation() -> ThagResult<()> {
+        println!("Starting test");
+        // setup_profiling()?;
+        println!("Profiling enabled");
+
+        {
+            println!("Creating test vector");
+            let _test_vec = Vec::from_iter(0..10);
+            println!("Vector created");
+        }
+
+        println!("Test complete");
+        cleanup_profiling()?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_minimal() {
+        println!("Test starting");
+        let x = String::from("test");
+        println!("String created: {}", x);
+    }
+
+    #[test]
+    fn test_basic_allocation() {
+        println!("Test starting");
+        let _x = vec![1, 2, 3, 4, 5];
+        println!("Vector allocated");
+    }
+
+    #[test]
+    fn test_minimal_allocation() {
+        static TEST_STARTED: AtomicBool = AtomicBool::new(false);
+
+        if !TEST_STARTED.load(Ordering::SeqCst) {
+            TEST_STARTED.store(true, Ordering::SeqCst);
+
+            let before_alloc = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
+            let _vec = vec![1, 2, 3, 4, 5];
+            let after_alloc = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
+
+            assert!(
+                after_alloc > before_alloc,
+                "Allocation not tracked: before={}, after={}",
+                before_alloc,
+                after_alloc
+            );
+        }
+    }
+
+    #[test]
+    fn test_stack_tracking() {
+        static TEST_STARTED: AtomicBool = AtomicBool::new(false);
+
+        if !TEST_STARTED.load(Ordering::SeqCst) {
+            TEST_STARTED.store(true, Ordering::SeqCst);
+
+            let before_alloc = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
+            let _vec = vec![1, 2, 3, 4, 5];
+            let after_alloc = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
+
+            assert!(
+                after_alloc > before_alloc,
+                "Allocation not tracked: before={}, after={}",
+                before_alloc,
+                after_alloc
+            );
+        }
     }
 }

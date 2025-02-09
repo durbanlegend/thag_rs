@@ -90,9 +90,6 @@ impl Drop for RecordingGuard {
 // Keep the OnceLock for the allocator instance
 static ALLOCATOR_INSTANCE: OnceLock<AllocationProfiler> = OnceLock::new();
 
-// Add back the global allocator, but have it delegate to the OnceLock instance
-// #[g÷lobal_allocator]
-// static ALLOCATOR: AllocatorWrapper = AllocatorWrapper;
 #[global_allocator]
 static ALLOCATOR: AllocationProfiler = AllocationProfiler::new();
 
@@ -747,7 +744,6 @@ impl Drop for Profile {
                             .total_allocated
                             .load(Ordering::SeqCst);
                         let delta = final_memory.saturating_sub(initial);
-                        // dbg!(delta);
                         if delta > 0 {
                             let _ = self.write_memory_event(delta);
                         }
@@ -765,7 +761,6 @@ impl Drop for Profile {
                             .load(Ordering::SeqCst);
                         // eprintln!("final_memory={final_memory:?}");
                         let delta = final_memory.saturating_sub(initial);
-                        // dbg!(delta);
                         if delta > 0 {
                             let _ = self.write_memory_event(delta);
                         }
@@ -1187,154 +1182,6 @@ impl MemoryTracker {
     }
 }
 
-/// Validates memory operation logs for consistency
-#[derive(Default)]
-struct MemoryLogValidator {
-    valid_entries: usize,
-    invalid_entries: Vec<(usize, String, String)>, // (line number, content, error)
-    allocation_balance: HashMap<String, isize>,    // stack -> balance
-    total_allocated: usize,
-    total_freed: usize,
-}
-
-impl MemoryLogValidator {
-    fn validate_log(path: &Path) -> ThagResult<Self> {
-        let file = File::open(path)?;
-        let reader = BufReader::new(file);
-        let mut validator = Self::default();
-
-        for (line_num, line) in reader.lines().enumerate() {
-            let line = line?;
-            if line.starts_with('#') || line.trim().is_empty() {
-                continue;
-            }
-
-            match validator.validate_entry(line_num + 1, &line) {
-                Ok(()) => validator.valid_entries += 1,
-                Err(e) => validator
-                    .invalid_entries
-                    .push((line_num + 1, line, e.to_string())),
-            }
-        }
-
-        Ok(validator)
-    }
-
-    #[allow(clippy::many_single_char_names)]
-    fn validate_entry(&mut self, line_num: usize, entry: &str) -> ThagResult<()> {
-        let parts: Vec<&str> = entry.split('|').collect();
-        if parts.len() != 5 {
-            return Err(ThagError::Profiling(format!(
-                "Invalid entry format at line {}",
-                line_num
-            )));
-        }
-
-        let [timestamp, stack, op, size, total] = match parts.as_slice() {
-            [a, b, c, d, e] => [a, b, c, d, e],
-            _ => return Err(ThagError::Profiling("Invalid entry format".into())),
-        };
-
-        // Validate timestamp
-        timestamp
-            .parse::<u64>()
-            .map_err(|_| ThagError::Profiling(format!("Invalid timestamp at line {}", line_num)))?;
-
-        // Validate operation and size
-        let (size_delta, operation) = match *op {
-            "+" => {
-                let size = size.parse::<isize>().map_err(|_| {
-                    ThagError::Profiling(format!("Invalid allocation size at line {}", line_num))
-                })?;
-                (size, "allocation")
-            }
-            "-" => {
-                let size = -size.parse::<isize>().map_err(|_| {
-                    ThagError::Profiling(format!("Invalid deallocation size at line {}", line_num))
-                })?;
-                (size, "deallocation")
-            }
-            "=" => {
-                if let Some((old_str, new_str)) = size.split_once("->") {
-                    let old_size = old_str.parse::<isize>().map_err(|_| {
-                        ThagError::Profiling(format!(
-                            "Invalid old size in reallocation at line {}",
-                            line_num
-                        ))
-                    })?;
-                    let new_size = new_str.parse::<isize>().map_err(|_| {
-                        ThagError::Profiling(format!(
-                            "Invalid new size in reallocation at line {}",
-                            line_num
-                        ))
-                    })?;
-                    (new_size - old_size, "reallocation")
-                } else {
-                    return Err(ThagError::Profiling(format!(
-                        "Invalid reallocation format at line {}",
-                        line_num
-                    )));
-                }
-            }
-            _ => {
-                return Err(ThagError::Profiling(format!(
-                    "Invalid operation '{}' at line {}",
-                    op, line_num
-                )))
-            }
-        };
-
-        // Update allocation balance
-        *self
-            .allocation_balance
-            .entry(stack.to_string())
-            .or_default() += size_delta;
-
-        // Validate running total
-        let expected_total = total
-            .parse::<isize>()
-            .map_err(|_| ThagError::Profiling(format!("Invalid total at line {line_num}")))?;
-
-        let actual_total: isize = self.allocation_balance.values().sum();
-        if actual_total != expected_total {
-            return Err(ThagError::Profiling(format!(
-                "Total mismatch at line {line_num}: expected {expected_total}, calculated {actual_total}"
-            )));
-        }
-
-        Ok(())
-    }
-
-    fn generate_validation_report(&self) -> String {
-        let mut report = String::new();
-        report.push_str("Memory Log Validation Report\n");
-        report.push_str("==========================\n\n");
-
-        report.push_str(&format!("Valid Entries: {}\n", self.valid_entries));
-        report.push_str(&format!(
-            "Invalid Entries: {}\n\n",
-            self.invalid_entries.len()
-        ));
-
-        if !self.invalid_entries.is_empty() {
-            report.push_str("Invalid Entry Details:\n");
-            for (line_num, content, error) in &self.invalid_entries {
-                report.push_str(&format!("Line {line_num}: {content}\n  Error: {error}\n"));
-            }
-            report.push_str("\n");
-        }
-
-        report.push_str("Stack Balance:\n");
-        for (stack, balance) in &self.allocation_balance {
-            if *balance != 0 {
-                report.push_str(&format!("  {stack}: {balance} bytes\n"));
-            }
-        }
-
-        report
-    }
-}
-
 #[derive(Default)]
 pub struct LeakReport {
     leaks: HashMap<String, LeakInfo>,
@@ -1434,8 +1281,8 @@ mod tests {
 
     #[test]
     fn test_memory_leak_detection() -> ThagResult<()> {
-        // setup_profiling()?;
-        let log_path = setup_test_profile()?;
+        setup_profiling()?;
+        // let log_path = setup_test_profile()?;
 
         // Print profile paths
         let paths = ProfilePaths::get();
@@ -1505,61 +1352,61 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_allocation_tracking() -> ThagResult<()> {
+        setup_profiling()?;
+
+        {
+            profile_memory!("test_allocation_pattern");
+            // Create and modify a vector to generate various allocation patterns
+            let mut vec = Vec::with_capacity(100);
+            for i in 0..150 {
+                // This should cause at least one reallocation
+                vec.push(i);
+            }
+            vec.clear(); // This shouldn't deallocate the memory
+            vec.shrink_to_fit(); // This should trigger deallocation
+        }
+
+        write_memory_reports()?;
+
+        // Read and verify the tracking report
+        let paths = ProfilePaths::get();
+        let report_path = PathBuf::from(&paths.memory).with_extension("tracking-report");
+        let report_content = fs::read_to_string(report_path)?;
+
+        // Verify tracking information
+        assert!(report_content.contains("test_allocation_pattern"));
+        assert!(report_content.contains("Allocations:"));
+        assert!(report_content.contains("Reallocations:"));
+        assert!(report_content.contains("Deallocations:"));
+
+        cleanup_profiling()?;
+        Ok(())
+    }
+
     // #[test]
     // fn test_allocation_tracking() -> ThagResult<()> {
-    //     setup_profiling()?;
+    //     let log_path = setup_test_profile()?;
 
-    //     {
-    //         profile_memory!("test_allocation_pattern");
-    //         // Create and modify a vector to generate various allocation patterns
-    //         let mut vec = Vec::with_capacity(100);
-    //         for i in 0..150 {
-    //             // This should cause at least one reallocation
-    //             vec.push(i);
-    //         }
-    //         vec.clear(); // This shouldn't deallocate the memory
-    //         vec.shrink_to_fit(); // This should trigger deallocation
-    //     }
+    //     AllocationProfiler::set_current_stack(Some("test_allocation"));
+    //     let _vec = vec![1, 2, 3, 4, 5];
+    //     drop(_vec); // Explicit deallocation
 
-    //     write_memory_reports()?;
+    //     // Verify log contents
+    //     let log_content = fs::read_to_string(&log_path)?;
+    //     assert!(log_content.contains("test_allocation"));
+    //     assert!(log_content.contains("|+|")); // Allocation
+    //     assert!(log_content.contains("|-|")); // Deallocation
 
-    //     // Read and verify the tracking report
-    //     let paths = ProfilePaths::get();
-    //     let report_path = PathBuf::from(&paths.memory).with_extension("tracking-report");
-    //     let report_content = fs::read_to_string(report_path)?;
-
-    //     // Verify tracking information
-    //     assert!(report_content.contains("test_allocation_pattern"));
-    //     assert!(report_content.contains("Allocations:"));
-    //     assert!(report_content.contains("Reallocations:"));
-    //     assert!(report_content.contains("Deallocations:"));
-
-    //     cleanup_profiling()?;
+    //     cleanup_test_profile(&log_path)?;
     //     Ok(())
     // }
 
     #[test]
-    fn test_allocation_tracking() -> ThagResult<()> {
-        let log_path = setup_test_profile()?;
-
-        AllocationProfiler::set_current_stack(Some("test_allocation"));
-        let _vec = vec![1, 2, 3, 4, 5];
-        drop(_vec); // Explicit deallocation
-
-        // Verify log contents
-        let log_content = fs::read_to_string(&log_path)?;
-        assert!(log_content.contains("test_allocation"));
-        assert!(log_content.contains("|+|")); // Allocation
-        assert!(log_content.contains("|-|")); // Deallocation
-
-        cleanup_test_profile(&log_path)?;
-        Ok(())
-    }
-
-    #[test]
     fn test_memory_validation() -> ThagResult<()> {
-        // setup_profiling()?;
-        let log_path = setup_test_profile()?;
+        setup_profiling()?;
+        // let log_path = setup_test_profile()?;
 
         {
             profile_memory!("test_validation");
@@ -1590,7 +1437,7 @@ mod tests {
     #[test]
     fn test_simple_allocation() -> ThagResult<()> {
         println!("Starting test");
-        // setup_profiling()?;
+        setup_profiling()?;
         println!("Profiling enabled");
 
         {

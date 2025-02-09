@@ -22,8 +22,9 @@ use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicPtr, AtomicU64, AtomicU8, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, AtomicUsize, Ordering};
 use std::sync::Mutex;
+use std::sync::OnceLock;
 use std::time::{Instant, SystemTime};
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
@@ -67,36 +68,19 @@ thread_local! {
 static PROFILING_ENABLED: AtomicBool = AtomicBool::new(false);
 static START_TIME: AtomicU64 = AtomicU64::new(0);
 
-#[derive(Clone, Debug)]
-enum MemoryOperation {
-    Allocate(usize),
-    Deallocate(usize),
-}
-
 #[global_allocator]
 static ALLOCATOR: AllocationProfiler = AllocationProfiler::new();
 
-thread_local! {
-    static CURRENT_STACK: AtomicPtr<&'static str> = const { AtomicPtr::new(std::ptr::null_mut()) };
-    static IN_ALLOC: AtomicBool = const { AtomicBool::new(false) };
-}
-
 struct AllocationProfiler {
     inner: System,
-    allocation_buffer: AtomicUsize,
     total_allocated: AtomicUsize,
-    active_allocations: AtomicUsize,
-    is_recording: AtomicBool,
 }
 
 impl AllocationProfiler {
     const fn new() -> Self {
         Self {
             inner: System,
-            allocation_buffer: AtomicUsize::new(0),
             total_allocated: AtomicUsize::new(0),
-            active_allocations: AtomicUsize::new(0),
-            is_recording: AtomicBool::new(false),
         }
     }
 
@@ -104,91 +88,35 @@ impl AllocationProfiler {
         &ALLOCATOR
     }
 
-    fn set_current_stack(stack: Option<&'static str>) {
-        CURRENT_STACK.with(|s| {
-            let ptr: *mut &str = stack.map_or_else(std::ptr::null_mut, |s| {
-                let boxed: Box<&'static str> = Box::new(s);
-                Box::into_raw(boxed)
-            });
-            s.store(ptr, Ordering::SeqCst);
-        });
-    }
-
-    fn get_current_stack() -> &'static str {
-        CURRENT_STACK.with(|s| {
-            let ptr = s.load(Ordering::SeqCst);
-            if ptr.is_null() {
-                "(unknown)"
-            } else {
-                unsafe { *ptr }
-            }
-        })
-    }
-
-    #[allow(clippy::unnecessary_wraps, clippy::needless_lifetimes)]
-    fn log_allocation(&self, op: &MemoryOperation) -> ThagResult<()> {
-        // Ensure we always reset the flag
-        struct Guard<'a>(&'a AtomicBool);
-        impl<'a> Drop for Guard<'a> {
-            fn drop(&mut self) {
-                self.0.store(false, Ordering::SeqCst);
-            }
-        }
-
-        if self.is_recording.load(Ordering::SeqCst) {
-            return Ok(());
-        }
-
-        // Set recording flag before any potential allocations
-        self.is_recording.store(true, Ordering::SeqCst);
-
-        let _guard = Guard(&self.is_recording);
-
-        // Pre-format components to minimize allocations
-        let stack = Self::get_current_stack();
-        let total = self.allocation_buffer.load(Ordering::SeqCst);
-
-        // Use a fixed buffer for the message
-        let msg = match op {
-            MemoryOperation::Allocate(size) => format!("{stack}|+|{size}|{total}\n"),
-            MemoryOperation::Deallocate(size) => format!("{stack}|-|{size}|{total}\n"),
-        };
-
+    fn write_log(&self, size: usize, is_alloc: bool) {
         if let Ok(mut file) = OpenOptions::new()
             .create(true)
             .append(true)
             .open(&ProfilePaths::get().alloc)
         {
-            let _ = file.write_all(msg.as_bytes());
+            // Just write the operation and raw bytes
+            let _ = file.write(&[if is_alloc { b'+' } else { b'-' }]);
+            let _ = file.write(&size.to_ne_bytes());
+            let _ = file.write(&[b'\n']);
         }
-
-        Ok(())
     }
 }
 
 unsafe impl GlobalAlloc for AllocationProfiler {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ptr = self.inner.alloc(layout);
-        if !ptr.is_null() && !self.is_recording.load(Ordering::SeqCst) {
-            self.allocation_buffer
-                .fetch_add(layout.size(), Ordering::SeqCst);
+        if !ptr.is_null() && is_profiling_enabled() {
             self.total_allocated
                 .fetch_add(layout.size(), Ordering::SeqCst);
-            self.active_allocations.fetch_add(1, Ordering::SeqCst);
-
-            let _ = self.log_allocation(&MemoryOperation::Allocate(layout.size()));
+            self.write_log(layout.size(), true);
         }
         ptr
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         self.inner.dealloc(ptr, layout);
-        if !self.is_recording.load(Ordering::SeqCst) {
-            self.allocation_buffer
-                .fetch_sub(layout.size(), Ordering::SeqCst);
-            self.active_allocations.fetch_sub(1, Ordering::SeqCst);
-
-            let _ = self.log_allocation(&MemoryOperation::Deallocate(layout.size()));
+        if is_profiling_enabled() {
+            self.write_log(layout.size(), false);
         }
     }
 }
@@ -301,14 +229,8 @@ fn set_profile_type(profile_type: ProfileType) {
 /// - Mutex operations fail
 pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<()> {
     if enabled {
-        // Set profile type first
         set_profile_type(profile_type);
-        println!("Set profile type to {:?}", get_global_profile_type()); // Debug
 
-        // Initialize paths
-        ProfilePaths::init();
-
-        // Store start time
         let Ok(now) = u64::try_from(
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -318,11 +240,28 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
             return Err(ThagError::Profiling("Time value too large".into()));
         };
         START_TIME.store(now, Ordering::SeqCst);
-        println!("Stored start time"); // Debug
 
-        // Initialize and reset appropriate files
-        println!("initialize_profile_files"); // Debug
-        initialize_profile_files(profile_type)?;
+        // Initialize log file if doing memory profiling
+        if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+            // Create new file and write headers
+            if let Ok(mut file) = OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(&ProfilePaths::get().alloc)
+            {
+                writeln!(file, "# Allocation Log")?;
+                writeln!(
+                    file,
+                    "# Script: {}",
+                    std::env::current_exe().unwrap_or_default().display()
+                )?;
+                writeln!(file, "# Started: {}", now)?;
+                writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
+                writeln!(file, "# Format: operation|size")?;
+                writeln!(file)?;
+            }
+        }
     }
 
     PROFILING_ENABLED.store(enabled, Ordering::SeqCst);
@@ -405,17 +344,18 @@ impl Profile {
 
     #[must_use]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
-        println!("Profile::new called with name: {name} and type: {requested_type:?}");
-
-        let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
+        let _global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
             _ => ProfileType::Time,
         };
-        println!("Global profile type: {global_type:?}");
 
         if is_profiling_enabled() {
-            AllocationProfiler::set_current_stack(Some(name));
+            PROFILE_STACK.with(|stack| {
+                if let Ok(mut guard) = stack.try_borrow_mut() {
+                    guard.push(name);
+                }
+            });
         }
 
         Self {
@@ -424,7 +364,7 @@ impl Profile {
             profile_type: requested_type,
             initial_memory: Some(
                 AllocationProfiler::get()
-                    .allocation_buffer
+                    .total_allocated // Changed from current_allocated
                     .load(Ordering::SeqCst),
             ),
         }
@@ -560,48 +500,47 @@ impl Profile {
 
 impl Drop for Profile {
     fn drop(&mut self) {
-        AllocationProfiler::set_current_stack(None);
-        // dbg!(&self.profile_type);
         if let Some(start) = self.start.take() {
             match self.profile_type {
                 ProfileType::Time => {
                     let elapsed = start.elapsed();
                     let _ = self.write_time_event(elapsed);
                 }
-                ProfileType::Memory => {
-                    // Make sure we capture the memory delta before popping the stack
+                ProfileType::Memory | ProfileType::Both => {
                     if let Some(initial) = self.initial_memory {
                         let final_memory = AllocationProfiler::get()
-                            .total_allocated
+                            .total_allocated // Changed from current_allocated
                             .load(Ordering::SeqCst);
                         let delta = final_memory.saturating_sub(initial);
-                        if delta > 0 {
-                            let _ = self.write_memory_event(delta);
+
+                        // Get the stack and format the entry
+                        let stack = PROFILE_STACK.with(|s| {
+                            if let Ok(stack) = s.try_borrow() {
+                                stack.join(";")
+                            } else {
+                                String::new()
+                            }
+                        });
+
+                        if !stack.is_empty() && delta > 0 {
+                            let entry = format!("{} {}", stack, delta);
+                            let _ = Profile::write_profile_event(
+                                &ProfilePaths::get().memory,
+                                MemoryProfileFile::get(),
+                                &entry,
+                            );
                         }
                     }
-                }
-                ProfileType::Both => {
-                    let elapsed = start.elapsed();
-                    // eprintln!(
-                    //     "elapsed={elapsed:?}, self.initial_memory={:?}",
-                    //     self.initial_memory
-                    // );
-                    if let Some(initial) = self.initial_memory {
-                        let final_memory = AllocationProfiler::get()
-                            .total_allocated
-                            .load(Ordering::SeqCst);
-                        // eprintln!("final_memory={final_memory:?}");
-                        let delta = final_memory.saturating_sub(initial);
-                        if delta > 0 {
-                            let _ = self.write_memory_event(delta);
-                        }
+
+                    if matches!(self.profile_type, ProfileType::Both) {
+                        let elapsed = start.elapsed();
+                        let _ = self.write_time_event(elapsed);
                     }
-                    let _ = self.write_time_event(elapsed);
                 }
             }
 
-            // Clean up the stack after writing events
-            let _ = PROFILE_STACK.try_with(|stack| {
+            // Pop this profile from the stack
+            PROFILE_STACK.with(|stack| {
                 if let Ok(mut guard) = stack.try_borrow_mut() {
                     guard.pop();
                 }
@@ -875,50 +814,115 @@ impl ProfileStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::AtomicBool;
+    use std::fs;
 
-    #[test]
-    fn test_basic_allocation() {
-        static TEST_STARTED: AtomicBool = AtomicBool::new(false);
+    fn setup_test() -> Result<(), Box<dyn std::error::Error>> {
+        enable_profiling(true, ProfileType::Memory)?;
+        Ok(())
+    }
 
-        if !TEST_STARTED.load(Ordering::SeqCst) {
-            TEST_STARTED.store(true, Ordering::SeqCst);
-
-            // Test allocation tracking
-            let before_alloc = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
-            let _vec = vec![1, 2, 3, 4, 5];
-            let after_alloc = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
-
-            assert!(
-                after_alloc > before_alloc,
-                "Allocation not tracked: before={}, after={}",
-                before_alloc,
-                after_alloc
-            );
-        }
+    fn cleanup_test() -> Result<(), Box<dyn std::error::Error>> {
+        enable_profiling(false, ProfileType::Memory)?;
+        Ok(())
     }
 
     #[test]
-    fn test_stack_tracking() {
-        static TEST_STARTED: AtomicBool = AtomicBool::new(false);
+    fn test_basic_allocation() -> Result<(), Box<dyn std::error::Error>> {
+        enable_profiling(true, ProfileType::Memory)?;
 
-        if !TEST_STARTED.load(Ordering::SeqCst) {
-            TEST_STARTED.store(true, Ordering::SeqCst);
+        let before = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
+        let x = Box::new(42i32);
+        let after = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
 
-            AllocationProfiler::set_current_stack(Some("test_allocation"));
-            let stack = AllocationProfiler::get_current_stack();
-            assert_eq!(stack, "test_allocation", "Stack tracking failed");
+        assert!(after > before, "Allocation not tracked");
+        drop(x);
 
-            // Verify it shows up in allocation log
-            let _vec = vec![1, 2, 3, 4, 5];
-
-            // Basic log verification (we can enhance this later)
-            if let Ok(content) = std::fs::read_to_string(&ProfilePaths::get().alloc) {
-                assert!(
-                    content.contains("test_allocation"),
-                    "Stack not found in allocation log"
-                );
-            }
-        }
+        enable_profiling(false, ProfileType::Memory)?;
+        Ok(())
     }
+
+    // fn test_peak_tracking() -> Result<(), Box<dyn std::error::Error>> {
+    //     setup_test()?;
+
+    //     let initial_peak = ALLOCATOR.peak_allocated.load(Ordering::SeqCst);
+
+    //     // Create allocations sequentially to ensure predictable behavior
+    //     let vec1 = vec![1; 1000];
+    //     let peak1 = ALLOCATOR.peak_allocated.load(Ordering::SeqCst);
+
+    //     let vec2 = vec![2; 2000];
+    //     let peak_with_both = ALLOCATOR.peak_allocated.load(Ordering::SeqCst);
+
+    //     assert!(
+    //         peak_with_both > peak1,
+    //         "Peak didn't increase with second allocation"
+    //     );
+    //     assert!(
+    //         peak1 > initial_peak,
+    //         "Peak didn't increase with first allocation"
+    //     );
+
+    //     // Drop first allocation and verify peak remains
+    //     drop(vec1);
+    //     let peak_after_first_drop = ALLOCATOR.peak_allocated.load(Ordering::SeqCst);
+    //     assert_eq!(
+    //         peak_with_both, peak_after_first_drop,
+    //         "Peak decreased after partial deallocation: {} vs {}",
+    //         peak_with_both, peak_after_first_drop
+    //     );
+
+    //     // Drop second allocation
+    //     drop(vec2);
+    //     let final_peak = ALLOCATOR.peak_allocated.load(Ordering::SeqCst);
+    //     assert_eq!(
+    //         peak_with_both, final_peak,
+    //         "Peak changed after all deallocations"
+    //     );
+
+    //     cleanup_test()?;
+    //     Ok(())
+    // }
+
+    // #[test]
+    // fn test_allocation_log_format() -> Result<(), Box<dyn std::error::Error>> {
+    //     setup_test()?;
+
+    //     // Create and drop an allocation to generate log entries
+    //     {
+    //         let _vec = vec![1, 2, 3, 4, 5];
+    //     }
+
+    //     let log_content = fs::read_to_string(&ProfilePaths::get().alloc)?;
+
+    //     // Check log format
+    //     assert!(
+    //         log_content.contains("# Format: timestamp|operation|size|current|peak"),
+    //         "Log header missing or incorrect"
+    //     );
+
+    //     // Verify log entries contain all fields
+    //     let entries: Vec<&str> = log_content
+    //         .lines()
+    //         .filter(|line| !line.starts_with('#'))
+    //         .collect();
+
+    //     for entry in entries {
+    //         let fields: Vec<&str> = entry.split('|').collect();
+    //         assert_eq!(fields.len(), 5, "Log entry has incorrect number of fields");
+
+    //         // Verify timestamp is numeric
+    //         assert!(fields[0].parse::<u128>().is_ok(), "Invalid timestamp");
+
+    //         // Verify operation is + or -
+    //         assert!(matches!(fields[1], "+" | "-"), "Invalid operation");
+
+    //         // Verify size, current, and peak are numeric
+    //         assert!(fields[2].parse::<usize>().is_ok(), "Invalid size");
+    //         assert!(fields[3].parse::<usize>().is_ok(), "Invalid current value");
+    //         assert!(fields[4].parse::<usize>().is_ok(), "Invalid peak value");
+    //     }
+
+    //     cleanup_test()?;
+    //     Ok(())
+    // }
 }

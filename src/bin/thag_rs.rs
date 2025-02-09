@@ -12,6 +12,11 @@ use std::time::Instant;
 use thag_rs::profiling;
 
 pub fn main() -> ThagResult<()> {
+    if cfg!(feature = "profiling") {
+        println!("Enabling profiling..."); // Debug output
+        profiling::enable_profiling(true, profiling::ProfileType::Both)?;
+    }
+
     #[cfg(debug_assertions)]
     let start = Instant::now();
     let cli = RefCell::new(get_args()); // Wrap args in a RefCell
@@ -22,10 +27,6 @@ pub fn main() -> ThagResult<()> {
     #[cfg(debug_assertions)]
     debug_timings(&start, "Configured logging");
 
-    if cfg!(feature = "profiling") {
-        println!("Enabling profiling..."); // Debug output
-        profiling::enable_profiling(true, profiling::ProfileType::Both)?;
-    }
     handle(&cli);
     Ok(())
 }

@@ -17,21 +17,17 @@
 use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
 use chrono::Local;
 use std::alloc::{GlobalAlloc, Layout, System};
-use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::fs::{self, File, OpenOptions};
-use std::io::{BufRead, BufReader, BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::fs::{File, OpenOptions};
+use std::io::{BufWriter, Write};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicPtr, AtomicU64, AtomicU8, AtomicUsize, Ordering};
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use std::time::{Instant, SystemTime};
-// use std::time::SystemTime;
-pub use thag_proc_macros::profile;
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
-static IS_RECORDING: AtomicBool = AtomicBool::new(false);
 
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
@@ -76,19 +72,7 @@ static START_TIME: AtomicU64 = AtomicU64::new(0);
 enum MemoryOperation {
     Allocate(usize),
     Deallocate(usize),
-    Reallocate { old_size: usize, new_size: usize },
 }
-
-struct RecordingGuard;
-
-impl Drop for RecordingGuard {
-    fn drop(&mut self) {
-        IS_RECORDING.store(false, Ordering::SeqCst);
-    }
-}
-
-// Keep the OnceLock for the allocator instance
-static ALLOCATOR_INSTANCE: OnceLock<AllocationProfiler> = OnceLock::new();
 
 #[global_allocator]
 static ALLOCATOR: AllocationProfiler = AllocationProfiler::new();
@@ -158,9 +142,6 @@ impl AllocationProfiler {
         let msg = match op {
             MemoryOperation::Allocate(size) => format!("{}|+|{}|{}\n", stack, size, total),
             MemoryOperation::Deallocate(size) => format!("{}|-|{}|{}\n", stack, size, total),
-            MemoryOperation::Reallocate { old_size, new_size } => {
-                format!("{}|=|{}->{}|{}\n", stack, old_size, new_size, total)
-            }
         };
 
         if let Ok(mut file) = OpenOptions::new()
@@ -192,26 +173,6 @@ impl AllocationProfiler {
             "Current Buffer: {} bytes\n",
             self.allocation_buffer.load(Ordering::SeqCst)
         ));
-
-        Ok(report)
-    }
-
-    // Simplified leak detection
-    fn detect_leaks(&self) -> ThagResult<LeakReport> {
-        let mut report = LeakReport::default();
-        let current_allocated = self.allocation_buffer.load(Ordering::SeqCst);
-
-        if current_allocated > 0 {
-            report.add_leak(
-                "(unknown)",
-                LeakInfo {
-                    bytes: current_allocated,
-                    alloc_count: self.active_allocations.load(Ordering::SeqCst),
-                    dealloc_count: 0,
-                    last_operation: None,
-                },
-            );
-        }
 
         Ok(report)
     }
@@ -250,71 +211,6 @@ unsafe impl GlobalAlloc for AllocationProfiler {
             let _ = self.log_allocation(&MemoryOperation::Deallocate(layout.size()));
         }
     }
-}
-
-// Update write_memory_reports to use the simplified structure
-pub fn write_memory_reports() -> ThagResult<()> {
-    if !is_profiling_enabled() || !is_memory_profiling_enabled() {
-        return Ok(());
-    }
-
-    let paths = ProfilePaths::get();
-
-    // Generate and write leak report
-    let leak_report = AllocationProfiler::get().detect_leaks()?;
-    let report_path = PathBuf::from(&paths.memory).with_extension("leak-report");
-    fs::write(&report_path, leak_report.generate_report())?;
-
-    // Generate basic memory report
-    let tracking_report = AllocationProfiler::get().generate_report()?;
-    let tracking_path = PathBuf::from(&paths.memory).with_extension("tracking-report");
-    fs::write(&tracking_path, tracking_report)?;
-
-    Ok(())
-}
-
-// Wrapper struct to implement GlobalAlloc
-struct AllocatorWrapper;
-
-static IS_ALLOCATING: AtomicBool = AtomicBool::new(false);
-
-unsafe impl GlobalAlloc for AllocatorWrapper {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // Prevent recursive allocation
-        if IS_ALLOCATING.load(Ordering::SeqCst) {
-            println!("Recursive allocation detected!");
-            return System.alloc(layout);
-        }
-
-        IS_ALLOCATING.store(true, Ordering::SeqCst);
-        println!("Allocating {} bytes", layout.size());
-
-        let ptr = ALLOCATOR_INSTANCE
-            .get_or_init(AllocationProfiler::new)
-            .alloc(layout);
-
-        IS_ALLOCATING.store(false, Ordering::SeqCst);
-        ptr
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        if IS_ALLOCATING.load(Ordering::SeqCst) {
-            println!("Recursive deallocation detected!");
-            System.dealloc(ptr, layout);
-            return;
-        }
-
-        IS_ALLOCATING.store(true, Ordering::SeqCst);
-        println!("Deallocating {} bytes", layout.size());
-
-        ALLOCATOR_INSTANCE
-            .get_or_init(AllocationProfiler::new)
-            .dealloc(ptr, layout);
-
-        IS_ALLOCATING.store(false, Ordering::SeqCst);
-    }
-
-    // Similar for realloc...
 }
 
 #[derive(Clone)]
@@ -429,11 +325,6 @@ fn is_memory_profiling_enabled() -> bool {
 /// - File operations fail
 /// - Mutex operations fail
 pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<()> {
-    if !enabled && is_profiling_enabled() {
-        // Generate reports before disabling profiling
-        write_memory_reports()?;
-    }
-
     if enabled {
         // Set profile type first
         set_profile_type(profile_type);
@@ -747,39 +638,6 @@ impl Drop for Profile {
     }
 }
 
-fn write_unified_log_entry(
-    stack: &str,
-    op: &MemoryOperation,
-    current_total: usize,
-) -> ThagResult<()> {
-    if !is_profiling_enabled() || IS_RECORDING.load(Ordering::SeqCst) {
-        return Ok(());
-    }
-
-    IS_RECORDING.store(true, Ordering::SeqCst);
-    let _guard = RecordingGuard;
-
-    let timestamp = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_micros();
-
-    let entry = match op {
-        MemoryOperation::Allocate(size) => {
-            format!("{timestamp}|{stack}|+|{size}|{current_total}")
-        }
-        MemoryOperation::Deallocate(size) => {
-            format!("{timestamp}|{stack}|-|{size}|{current_total}")
-        }
-        MemoryOperation::Reallocate { old_size, new_size } => {
-            format!("{timestamp}|{stack}|=|{old_size}->{new_size}|{current_total}")
-        }
-    };
-
-    let paths = ProfilePaths::get();
-    Profile::write_profile_event(&paths.alloc, AllocationLogFile::get(), &entry)
-}
-
 /// Run a function or closure only if the global verbosity is Verbose or higher.
 /// Intended to run an eprintln! of a message. This is meant as an equivalent to `vlog!`
 /// but without risking an infinite recursion with profiling trying to log and logging
@@ -1039,171 +897,6 @@ impl ProfileStats {
     #[must_use]
     pub const fn max_time(&self) -> Option<std::time::Duration> {
         self.max_time
-    }
-}
-
-/// Enhanced memory tracking structure
-#[derive(Default)]
-struct MemoryTracker {
-    total_allocated: AtomicUsize,
-    active_allocations: AtomicUsize,
-    peak_memory: AtomicUsize,
-    allocation_count: AtomicUsize,
-    deallocation_count: AtomicUsize,
-    reallocation_count: AtomicUsize,
-    allocation_sites: OnceLock<Mutex<HashMap<String, AllocationSiteInfo>>>,
-}
-
-#[derive(Default)]
-struct AllocationSiteInfo {
-    alloc_count: usize,
-    dealloc_count: usize,
-    realloc_count: usize,
-    current_bytes: isize,
-    peak_bytes: usize,
-    last_operation: Option<(SystemTime, MemoryOperation)>,
-}
-
-impl MemoryTracker {
-    fn new() -> Self {
-        Self {
-            total_allocated: AtomicUsize::new(0),
-            active_allocations: AtomicUsize::new(0),
-            peak_memory: AtomicUsize::new(0),
-            allocation_count: AtomicUsize::new(0),
-            deallocation_count: AtomicUsize::new(0),
-            reallocation_count: AtomicUsize::new(0),
-            allocation_sites: OnceLock::new(),
-        }
-    }
-
-    fn get_sites_mutex(&self) -> &Mutex<HashMap<String, AllocationSiteInfo>> {
-        self.allocation_sites
-            .get_or_init(|| Mutex::new(HashMap::new()))
-    }
-
-    fn record_operation(&self, stack: &str, op: &MemoryOperation) -> ThagResult<()> {
-        println!("Recording operation");
-        let mut sites = self
-            .get_sites_mutex()
-            .lock()
-            .map_err(|_| ThagError::Profiling("Failed to lock allocation sites".into()))?;
-
-        let site = sites.entry(stack.to_string()).or_default();
-
-        match op {
-            MemoryOperation::Allocate(size) => {
-                site.alloc_count += 1;
-                site.current_bytes += *size as isize;
-            }
-            MemoryOperation::Deallocate(size) => {
-                site.dealloc_count += 1;
-                site.current_bytes -= *size as isize;
-            }
-            MemoryOperation::Reallocate { old_size, new_size } => {
-                site.realloc_count += 1;
-                site.current_bytes = site.current_bytes - *old_size as isize + *new_size as isize;
-            }
-        }
-
-        Ok(())
-    }
-
-    fn generate_report(&self) -> ThagResult<String> {
-        let sites = self
-            .get_sites_mutex()
-            .lock()
-            .map_err(|_| ThagError::Profiling("Failed to lock allocation sites".into()))?;
-
-        let mut report = String::new();
-        report.push_str("Memory Tracking Report\n");
-        report.push_str("====================\n\n");
-
-        report.push_str(&format!(
-            "Total Allocations: {}\n",
-            self.allocation_count.load(Ordering::SeqCst)
-        ));
-        report.push_str(&format!(
-            "Total Deallocations: {}\n",
-            self.deallocation_count.load(Ordering::SeqCst)
-        ));
-        report.push_str(&format!(
-            "Total Reallocations: {}\n",
-            self.reallocation_count.load(Ordering::SeqCst)
-        ));
-        report.push_str(&format!(
-            "Peak Memory Usage: {} bytes\n\n",
-            self.peak_memory.load(Ordering::SeqCst)
-        ));
-
-        report.push_str("Allocation Sites:\n");
-        for (stack, info) in sites.iter() {
-            report.push_str(&format!("\nStack: {}\n", stack));
-            report.push_str(&format!("  Allocations: {}\n", info.alloc_count));
-            report.push_str(&format!("  Deallocations: {}\n", info.dealloc_count));
-            report.push_str(&format!("  Reallocations: {}\n", info.realloc_count));
-            report.push_str(&format!("  Current Memory: {} bytes\n", info.current_bytes));
-            report.push_str(&format!("  Peak Memory: {} bytes\n", info.peak_bytes));
-        }
-
-        Ok(report)
-    }
-}
-
-#[derive(Default)]
-pub struct LeakReport {
-    leaks: HashMap<String, LeakInfo>,
-    total_leaked_bytes: usize,
-    leak_count: usize,
-}
-
-#[derive(Clone)]
-pub struct LeakInfo {
-    bytes: usize,
-    alloc_count: usize,
-    dealloc_count: usize,
-    last_operation: Option<(SystemTime, MemoryOperation)>,
-}
-
-impl LeakReport {
-    fn add_leak(&mut self, stack: &str, info: LeakInfo) {
-        self.total_leaked_bytes += info.bytes;
-        self.leak_count += 1;
-        self.leaks.insert(stack.to_string(), info);
-    }
-
-    pub fn generate_report(&self) -> String {
-        let mut report = String::new();
-        report.push_str("Memory Leak Report\n");
-        report.push_str("=================\n\n");
-
-        if self.leak_count == 0 {
-            report.push_str("No memory leaks detected.\n");
-            return report;
-        }
-
-        report.push_str(&format!("Total Leaks: {}\n", self.leak_count));
-        report.push_str(&format!(
-            "Total Leaked Memory: {} bytes\n\n",
-            self.total_leaked_bytes
-        ));
-
-        // Sort leaks by size
-        let mut leaks: Vec<_> = self.leaks.iter().collect();
-        leaks.sort_by_key(|(_, info)| std::cmp::Reverse(info.bytes));
-
-        report.push_str("Detailed Leak Information:\n");
-        for (stack, info) in leaks {
-            report.push_str(&format!("\nStack: {stack}\n"));
-            report.push_str(&format!("  Leaked Bytes: {}\n", info.bytes));
-            report.push_str(&format!("  Allocations: {}\n", info.alloc_count));
-            report.push_str(&format!("  Deallocations: {}\n", info.dealloc_count));
-            if let Some((time, op)) = &info.last_operation {
-                report.push_str(&format!("  Last Operation: {op:?} at {time:?}\n"));
-            }
-        }
-
-        report
     }
 }
 

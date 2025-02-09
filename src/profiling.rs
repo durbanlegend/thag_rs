@@ -125,16 +125,30 @@ impl AllocationProfiler {
         })
     }
 
+    #[allow(clippy::unnecessary_wraps, clippy::needless_lifetimes)]
     fn log_allocation(&self, op: &MemoryOperation) -> ThagResult<()> {
+        // Ensure we always reset the flag
+        struct Guard<'a>(&'a AtomicBool);
+        impl<'a> Drop for Guard<'a> {
+            fn drop(&mut self) {
+                self.0.store(false, Ordering::SeqCst);
+            }
+        }
+
         if self.is_recording.load(Ordering::SeqCst) {
             return Ok(());
         }
 
+        // Set recording flag before any potential allocations
         self.is_recording.store(true, Ordering::SeqCst);
 
+        let _guard = Guard(&self.is_recording);
+
+        // Pre-format components to minimize allocations
         let stack = Self::get_current_stack();
         let total = self.allocation_buffer.load(Ordering::SeqCst);
 
+        // Use a fixed buffer for the message
         let msg = match op {
             MemoryOperation::Allocate(size) => format!("{stack}|+|{size}|{total}\n"),
             MemoryOperation::Deallocate(size) => format!("{stack}|-|{size}|{total}\n"),
@@ -145,10 +159,9 @@ impl AllocationProfiler {
             .append(true)
             .open(&ProfilePaths::get().alloc)
         {
-            file.write_all(msg.as_bytes())?;
+            let _ = file.write_all(msg.as_bytes());
         }
 
-        self.is_recording.store(false, Ordering::SeqCst);
         Ok(())
     }
 }

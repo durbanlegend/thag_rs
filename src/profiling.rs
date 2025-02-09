@@ -24,7 +24,6 @@ use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicPtr, AtomicU64, AtomicU8, AtomicUsize, Ordering};
 use std::sync::Mutex;
-use std::sync::OnceLock;
 use std::time::{Instant, SystemTime};
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
@@ -78,8 +77,8 @@ enum MemoryOperation {
 static ALLOCATOR: AllocationProfiler = AllocationProfiler::new();
 
 thread_local! {
-    static CURRENT_STACK: AtomicPtr<&'static str> = AtomicPtr::new(std::ptr::null_mut());
-    static IN_ALLOC: AtomicBool = AtomicBool::new(false);
+    static CURRENT_STACK: AtomicPtr<&'static str> = const { AtomicPtr::new(std::ptr::null_mut()) };
+    static IN_ALLOC: AtomicBool = const { AtomicBool::new(false) };
 }
 
 struct AllocationProfiler {
@@ -101,19 +100,16 @@ impl AllocationProfiler {
         }
     }
 
-    fn get() -> &'static AllocationProfiler {
+    fn get() -> &'static Self {
         &ALLOCATOR
     }
 
     fn set_current_stack(stack: Option<&'static str>) {
         CURRENT_STACK.with(|s| {
-            let ptr = match stack {
-                Some(s) => {
-                    let boxed: Box<&'static str> = Box::new(s);
-                    Box::into_raw(boxed)
-                }
-                None => std::ptr::null_mut(),
-            };
+            let ptr: *mut &str = stack.map_or_else(std::ptr::null_mut, |s| {
+                let boxed: Box<&'static str> = Box::new(s);
+                Box::into_raw(boxed)
+            });
             s.store(ptr, Ordering::SeqCst);
         });
     }
@@ -140,8 +136,8 @@ impl AllocationProfiler {
         let total = self.allocation_buffer.load(Ordering::SeqCst);
 
         let msg = match op {
-            MemoryOperation::Allocate(size) => format!("{}|+|{}|{}\n", stack, size, total),
-            MemoryOperation::Deallocate(size) => format!("{}|-|{}|{}\n", stack, size, total),
+            MemoryOperation::Allocate(size) => format!("{stack}|+|{size}|{total}\n"),
+            MemoryOperation::Deallocate(size) => format!("{stack}|-|{size}|{total}\n"),
         };
 
         if let Ok(mut file) = OpenOptions::new()
@@ -155,35 +151,6 @@ impl AllocationProfiler {
         self.is_recording.store(false, Ordering::SeqCst);
         Ok(())
     }
-
-    fn generate_report(&self) -> ThagResult<String> {
-        let mut report = String::new();
-        report.push_str("Memory Profile Report\n");
-        report.push_str("====================\n\n");
-
-        report.push_str(&format!(
-            "Total Allocated: {} bytes\n",
-            self.total_allocated.load(Ordering::SeqCst)
-        ));
-        report.push_str(&format!(
-            "Active Allocations: {}\n",
-            self.active_allocations.load(Ordering::SeqCst)
-        ));
-        report.push_str(&format!(
-            "Current Buffer: {} bytes\n",
-            self.allocation_buffer.load(Ordering::SeqCst)
-        ));
-
-        Ok(report)
-    }
-}
-
-fn get_log_path() -> PathBuf {
-    // Get thread id to separate test outputs
-    let thread_id = std::thread::current().id();
-    let paths = ProfilePaths::get();
-    let file_stem = paths.alloc.strip_suffix(".log").unwrap_or(&paths.alloc);
-    PathBuf::from(format!("{}-{:?}.log", file_stem, thread_id))
 }
 
 unsafe impl GlobalAlloc for AllocationProfiler {
@@ -299,11 +266,6 @@ fn set_profile_type(profile_type: ProfileType) {
         ProfileType::Both => 3,
     };
     PROFILE_TYPE.store(value, Ordering::SeqCst);
-}
-
-fn is_memory_profiling_enabled() -> bool {
-    let profile_type = PROFILE_TYPE.load(Ordering::SeqCst);
-    profile_type == 2 || profile_type == 3
 }
 
 /// Enables or disables profiling with the specified profile type.
@@ -430,17 +392,14 @@ impl Profile {
 
     #[must_use]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
-        println!(
-            "Profile::new called with name: {} and type: {:?}",
-            name, requested_type
-        );
+        println!("Profile::new called with name: {name} and type: {requested_type:?}");
 
         let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
             _ => ProfileType::Time,
         };
-        println!("Global profile type: {:?}", global_type);
+        println!("Global profile type: {global_type:?}");
 
         if is_profiling_enabled() {
             AllocationProfiler::set_current_stack(Some(name));

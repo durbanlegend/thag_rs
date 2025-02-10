@@ -22,9 +22,10 @@ use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, AtomicUsize, Ordering};
-use std::sync::Mutex;
-use std::sync::OnceLock;
+use std::sync::{
+    atomic::{AtomicBool, AtomicU64, AtomicU8, AtomicUsize, Ordering},
+    Mutex,
+};
 use std::time::{Instant, SystemTime};
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
@@ -88,107 +89,76 @@ impl AllocationProfiler {
         &ALLOCATOR
     }
 
-    fn write_log(&self, size: usize, is_alloc: bool) {
-        // Check if we can access thread locals safely
-        if PROFILE_STACK.try_with(|_| true).unwrap_or(false) == false {
-            return;
+    fn write_log(&self, size: usize, is_alloc: bool) -> Result<(), Box<dyn std::error::Error>> {
+        static IS_LOGGING: AtomicBool = AtomicBool::new(false);
+
+        if IS_LOGGING.load(Ordering::SeqCst) {
+            return Ok(());
         }
 
-        if let Ok(mut file) = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&ProfilePaths::get().alloc)
-        {
+        IS_LOGGING.store(true, Ordering::SeqCst);
+
+        let result = (|| {
             let mut buffer = [0u8; 1024];
             let mut pos = 0;
 
-            // Write timestamp
-            if let Ok(duration) = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-                let timestamp_bytes = duration.as_micros().to_ne_bytes();
-                buffer[pos..pos + 16].copy_from_slice(&timestamp_bytes);
-                pos += 16;
-            }
+            // Write fixed-length header first
+            let duration = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
+            let timestamp_bytes = duration.as_micros().to_ne_bytes();
+            buffer[pos..pos + 16].copy_from_slice(&timestamp_bytes);
+            pos += 16;
 
-            // Write operation
             buffer[pos] = if is_alloc { b'+' } else { b'-' };
             pos += 1;
 
-            // Write size
-            let size_bytes = size.to_ne_bytes();
-            buffer[pos..pos + 8].copy_from_slice(&size_bytes);
+            buffer[pos..pos + 8].copy_from_slice(&size.to_ne_bytes());
             pos += 8;
 
-            // Debug output
-            println!("Writing log entry:");
-            println!("First 25 bytes: {:?}", &buffer[..25]);
-            println!("Operation at pos {}: {}", 16, buffer[16] as char);
-            println!("Size bytes at pos {}: {:?}", 17, &buffer[17..25]);
+            // Reserve space for stack length - we'll write it later
+            let stack_len_pos = pos;
+            pos += 4;
 
-            // Write timestamp
-            if let Ok(duration) = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-                let timestamp_bytes = duration.as_micros().to_ne_bytes();
-                buffer[pos..pos + 16].copy_from_slice(&timestamp_bytes);
-                pos += 16;
-            }
-
-            // Write operation
-            buffer[pos] = if is_alloc { b'+' } else { b'-' };
-            pos += 1;
-
-            // Write size
-            let size_bytes = size.to_ne_bytes();
-            buffer[pos..pos + 8].copy_from_slice(&size_bytes);
-            pos += 8;
-
-            // Try to get stack, but handle failure gracefully
-            let stack_result = PROFILE_STACK.try_with(|s| {
-                if let Ok(stack) = s.try_borrow() {
-                    // Write stack length
-                    let stack_len = stack.len();
-                    let len_bytes = (stack_len as u32).to_ne_bytes();
-                    buffer[pos..pos + 4].copy_from_slice(&len_bytes);
-                    pos += 4;
-
-                    // Write each frame directly
-                    for frame in stack.iter() {
-                        let frame_bytes = frame.as_bytes();
-                        if pos + frame_bytes.len() + 1 < buffer.len() {
-                            buffer[pos..pos + frame_bytes.len()].copy_from_slice(frame_bytes);
-                            pos += frame_bytes.len();
-                            buffer[pos] = b';'; // Frame separator
-                            pos += 1;
+            // Write stack frames and count them
+            let stack_len = PROFILE_STACK
+                .try_with(|s| {
+                    if let Ok(stack) = s.try_borrow() {
+                        let mut len = 0u32;
+                        for frame in stack.iter() {
+                            let frame_bytes = frame.as_bytes();
+                            if frame_bytes.len() <= 256
+                                && (pos + frame_bytes.len() + 1) < buffer.len()
+                            {
+                                buffer[pos..pos + frame_bytes.len()].copy_from_slice(frame_bytes);
+                                pos += frame_bytes.len();
+                                buffer[pos] = b';';
+                                pos += 1;
+                                len += 1;
+                            }
                         }
+                        len
+                    } else {
+                        0
                     }
-                }
-            });
+                })
+                .unwrap_or(0);
 
-            // If we couldn't access the stack, write 0 length
-            if stack_result.is_err() {
-                let len_bytes = 0u32.to_ne_bytes();
-                buffer[pos..pos + 4].copy_from_slice(&len_bytes);
-                pos += 4;
-            }
+            // Now write the stack length
+            buffer[stack_len_pos..stack_len_pos + 4].copy_from_slice(&stack_len.to_ne_bytes());
 
-            // Write newline
             buffer[pos] = b'\n';
             pos += 1;
 
-            // Single write operation
-            let _ = file.write_all(&buffer[..pos]);
+            let mut file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&ProfilePaths::get().alloc)?;
 
-            // Debug first write
-            static FIRST_WRITE: AtomicBool = AtomicBool::new(true);
-            if FIRST_WRITE
-                .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
-                .is_ok()
-            {
-                println!("First log write:");
-                println!("timestamp: {:?}", &buffer[0..16]);
-                println!("operation: {}", buffer[16] as char);
-                println!("size bytes: {:?}", &buffer[17..25]);
-                println!("stack length bytes: {:?}", &buffer[25..29]);
-            }
-        }
+            file.write_all(&buffer[..pos])?;
+            Ok(())
+        })();
+
+        IS_LOGGING.store(false, Ordering::SeqCst);
+        result
     }
 }
 
@@ -198,7 +168,9 @@ unsafe impl GlobalAlloc for AllocationProfiler {
         if !ptr.is_null() && is_profiling_enabled() {
             self.total_allocated
                 .fetch_add(layout.size(), Ordering::SeqCst);
-            self.write_log(layout.size(), true);
+            if let Err(e) = self.write_log(layout.size(), true) {
+                eprintln!("Error writing allocation log: {}", e);
+            }
         }
         ptr
     }
@@ -206,7 +178,9 @@ unsafe impl GlobalAlloc for AllocationProfiler {
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         self.inner.dealloc(ptr, layout);
         if is_profiling_enabled() {
-            self.write_log(layout.size(), false);
+            if let Err(e) = self.write_log(layout.size(), false) {
+                eprintln!("Error writing allocation log: {}", e);
+            }
         }
     }
 }

@@ -89,15 +89,105 @@ impl AllocationProfiler {
     }
 
     fn write_log(&self, size: usize, is_alloc: bool) {
+        // Check if we can access thread locals safely
+        if PROFILE_STACK.try_with(|_| true).unwrap_or(false) == false {
+            return;
+        }
+
         if let Ok(mut file) = OpenOptions::new()
             .create(true)
             .append(true)
             .open(&ProfilePaths::get().alloc)
         {
-            // Just write the operation and raw bytes
-            let _ = file.write(&[if is_alloc { b'+' } else { b'-' }]);
-            let _ = file.write(&size.to_ne_bytes());
-            let _ = file.write(&[b'\n']);
+            let mut buffer = [0u8; 1024];
+            let mut pos = 0;
+
+            // Write timestamp
+            if let Ok(duration) = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+                let timestamp_bytes = duration.as_micros().to_ne_bytes();
+                buffer[pos..pos + 16].copy_from_slice(&timestamp_bytes);
+                pos += 16;
+            }
+
+            // Write operation
+            buffer[pos] = if is_alloc { b'+' } else { b'-' };
+            pos += 1;
+
+            // Write size
+            let size_bytes = size.to_ne_bytes();
+            buffer[pos..pos + 8].copy_from_slice(&size_bytes);
+            pos += 8;
+
+            // Debug output
+            println!("Writing log entry:");
+            println!("First 25 bytes: {:?}", &buffer[..25]);
+            println!("Operation at pos {}: {}", 16, buffer[16] as char);
+            println!("Size bytes at pos {}: {:?}", 17, &buffer[17..25]);
+
+            // Write timestamp
+            if let Ok(duration) = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+                let timestamp_bytes = duration.as_micros().to_ne_bytes();
+                buffer[pos..pos + 16].copy_from_slice(&timestamp_bytes);
+                pos += 16;
+            }
+
+            // Write operation
+            buffer[pos] = if is_alloc { b'+' } else { b'-' };
+            pos += 1;
+
+            // Write size
+            let size_bytes = size.to_ne_bytes();
+            buffer[pos..pos + 8].copy_from_slice(&size_bytes);
+            pos += 8;
+
+            // Try to get stack, but handle failure gracefully
+            let stack_result = PROFILE_STACK.try_with(|s| {
+                if let Ok(stack) = s.try_borrow() {
+                    // Write stack length
+                    let stack_len = stack.len();
+                    let len_bytes = (stack_len as u32).to_ne_bytes();
+                    buffer[pos..pos + 4].copy_from_slice(&len_bytes);
+                    pos += 4;
+
+                    // Write each frame directly
+                    for frame in stack.iter() {
+                        let frame_bytes = frame.as_bytes();
+                        if pos + frame_bytes.len() + 1 < buffer.len() {
+                            buffer[pos..pos + frame_bytes.len()].copy_from_slice(frame_bytes);
+                            pos += frame_bytes.len();
+                            buffer[pos] = b';'; // Frame separator
+                            pos += 1;
+                        }
+                    }
+                }
+            });
+
+            // If we couldn't access the stack, write 0 length
+            if stack_result.is_err() {
+                let len_bytes = 0u32.to_ne_bytes();
+                buffer[pos..pos + 4].copy_from_slice(&len_bytes);
+                pos += 4;
+            }
+
+            // Write newline
+            buffer[pos] = b'\n';
+            pos += 1;
+
+            // Single write operation
+            let _ = file.write_all(&buffer[..pos]);
+
+            // Debug first write
+            static FIRST_WRITE: AtomicBool = AtomicBool::new(true);
+            if FIRST_WRITE
+                .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+                .is_ok()
+            {
+                println!("First log write:");
+                println!("timestamp: {:?}", &buffer[0..16]);
+                println!("operation: {}", buffer[16] as char);
+                println!("size bytes: {:?}", &buffer[17..25]);
+                println!("stack length bytes: {:?}", &buffer[25..29]);
+            }
         }
     }
 }

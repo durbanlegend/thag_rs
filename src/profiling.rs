@@ -169,7 +169,7 @@ unsafe impl GlobalAlloc for AllocationProfiler {
             self.total_allocated
                 .fetch_add(layout.size(), Ordering::SeqCst);
             if let Err(e) = self.write_log(layout.size(), true) {
-                eprintln!("Error writing allocation log: {}", e);
+                eprintln!("Error writing allocation log: {e}");
             }
         }
         ptr
@@ -179,7 +179,7 @@ unsafe impl GlobalAlloc for AllocationProfiler {
         self.inner.dealloc(ptr, layout);
         if is_profiling_enabled() {
             if let Err(e) = self.write_log(layout.size(), false) {
-                eprintln!("Error writing allocation log: {}", e);
+                eprintln!("Error writing allocation log: {e}");
             }
         }
     }
@@ -320,7 +320,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
                     "# Script: {}",
                     std::env::current_exe().unwrap_or_default().display()
                 )?;
-                writeln!(file, "# Started: {}", now)?;
+                writeln!(file, "# Started: {now}")?;
                 writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
                 writeln!(file, "# Format: operation|size")?;
                 writeln!(file)?;
@@ -587,7 +587,7 @@ impl Drop for Profile {
                         });
 
                         if !stack.is_empty() && delta > 0 {
-                            let entry = format!("{} {}", stack, delta);
+                            let entry = format!("{stack} {delta}");
                             let _ = Profile::write_profile_event(
                                 &ProfilePaths::get().memory,
                                 MemoryProfileFile::get(),

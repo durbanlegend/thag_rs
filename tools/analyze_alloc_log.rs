@@ -15,6 +15,7 @@ struct Args {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct LogEntry {
     timestamp: u128,
     operation: char,
@@ -44,10 +45,7 @@ fn read_entry(reader: &mut BufReader<File>) -> io::Result<LogEntry> {
     if operation != '+' && operation != '-' {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            format!(
-                "Invalid operation '{}' at position {}",
-                operation, start_pos
-            ),
+            format!("Invalid operation '{operation}' at position {start_pos}"),
         ));
     }
 
@@ -61,7 +59,7 @@ fn read_entry(reader: &mut BufReader<File>) -> io::Result<LogEntry> {
         // 1GB max allocation
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            format!("Invalid size {} at position {}", size, start_pos),
+            format!("Invalid size {size} at position {start_pos}"),
         ));
     }
 
@@ -75,10 +73,7 @@ fn read_entry(reader: &mut BufReader<File>) -> io::Result<LogEntry> {
         // reasonable max stack depth
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            format!(
-                "Invalid stack length {} at position {}",
-                stack_len, start_pos
-            ),
+            format!("Invalid stack length {stack_len} at position {start_pos}"),
         ));
     }
 
@@ -152,7 +147,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Debug file size
     let file_size = reader.seek(SeekFrom::End(0))?;
-    println!("File size: {} bytes", file_size);
+    println!("File size: {file_size} bytes");
     reader.rewind()?;
 
     // Skip header (read until double newline)
@@ -167,7 +162,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Debug position after header
     let start_pos = reader.stream_position()?;
-    println!("\nStarting to read entries at position: {}", start_pos);
+    println!("\nStarting to read entries at position: {start_pos}");
 
     // Try to read first few bytes to verify format
     let mut peek_buf = [0u8; 32];
@@ -216,6 +211,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[allow(clippy::cast_precision_loss)]
 fn analyze_stack_traces(entries: &[LogEntry]) {
     println!("\nStack Trace Analysis:");
     println!("-------------------");
@@ -240,21 +236,22 @@ fn analyze_stack_traces(entries: &[LogEntry]) {
 
     for (stack, (count, bytes)) in sorted_allocs.iter().take(10) {
         if stack.is_empty() {
-            println!("{:8}  {:5}  (no stack trace)", bytes, count);
+            println!("{bytes:8}  {count:5}  (no stack trace)");
         } else {
-            println!("{:8}  {:5}  {}", bytes, count, stack);
+            println!("{bytes:8}  {count:5}  {stack}");
         }
     }
 
     // Add summary
-    println!("\nStack Trace Summary:");
-    println!("------------------");
-    let total_entries = entries.len();
-    let entries_with_stack = entries.iter().filter(|e| !e.stack.is_empty()).count();
-    println!("Total entries: {}", total_entries);
-    println!(
-        "Entries with stack trace: {} ({:.1}%)",
-        entries_with_stack,
-        (entries_with_stack as f64 / total_entries as f64) * 100.0
-    );
+    if !entries.is_empty() {
+        println!("\nStack Trace Summary:");
+        println!("------------------");
+        let total_entries = entries.len();
+        let entries_with_stack = entries.iter().filter(|e| !e.stack.is_empty()).count();
+        println!("Total entries: {total_entries}");
+        println!(
+            "Entries with stack trace: {entries_with_stack} ({:.1}%)",
+            (entries_with_stack as f64 / total_entries as f64) * 100.0
+        );
+    }
 }

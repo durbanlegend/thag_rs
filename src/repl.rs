@@ -349,6 +349,7 @@ pub fn run_repl(
     build_state: &mut BuildState,
     start: Instant,
 ) -> ThagResult<()> {
+    profile!("run_repl");
     #[allow(unused_variables)]
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
     let hist_staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");

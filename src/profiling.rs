@@ -305,27 +305,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
         };
         START_TIME.store(now, Ordering::SeqCst);
 
-        // Initialize log file if doing memory profiling
-        if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-            // Create new file and write headers
-            if let Ok(mut file) = OpenOptions::new()
-                .create(true)
-                .write(true)
-                .truncate(true)
-                .open(&ProfilePaths::get().alloc)
-            {
-                writeln!(file, "# Allocation Log")?;
-                writeln!(
-                    file,
-                    "# Script: {}",
-                    std::env::current_exe().unwrap_or_default().display()
-                )?;
-                writeln!(file, "# Started: {now}")?;
-                writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
-                writeln!(file, "# Format: operation|size")?;
-                writeln!(file)?;
-            }
-        }
+        initialize_profile_files(profile_type)?;
     }
 
     PROFILING_ENABLED.store(enabled, Ordering::SeqCst);
@@ -363,7 +343,7 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ThagResult<()> {
     writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
     writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
     if path.ends_with("alloc.log") {
-        writeln!(file, "# Format: timestamp|stack|operation|size|total")?;
+        writeln!(file, "# Format: operation|size")?;
     }
     writeln!(file)?;
 
@@ -408,6 +388,7 @@ impl Profile {
 
     #[must_use]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
+        println!("Profile::new called with name: {name} and type: {requested_type:?}");
         let _global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
@@ -550,13 +531,22 @@ impl Profile {
             return Ok(());
         }
 
-        let stack = Self::get_parent_stack();
-        let entry = if stack.is_empty() {
-            format!("{} {delta}", self.name)
-        } else {
-            format!("{stack};{} {delta}", self.name)
-        };
+        // Get stack trace in same format as allocation log
+        let stack_data = PROFILE_STACK
+            .try_with(|s| {
+                s.try_borrow().ok().map(|stack| {
+                    if stack.is_empty() {
+                        self.name.to_string()
+                    } else {
+                        format!("{};{}", stack.join(";"), self.name)
+                    }
+                })
+            })
+            .unwrap_or(None) // Handle the Result
+            .unwrap_or_else(|| self.name.to_string()); // Handle the Option
 
+        // Write to .folded file
+        let entry = format!("{stack_data} {delta}");
         let paths = ProfilePaths::get();
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
     }
@@ -573,40 +563,24 @@ impl Drop for Profile {
                 ProfileType::Memory | ProfileType::Both => {
                     if let Some(initial) = self.initial_memory {
                         let final_memory = AllocationProfiler::get()
-                            .total_allocated // Changed from current_allocated
+                            .total_allocated
                             .load(Ordering::SeqCst);
                         let delta = final_memory.saturating_sub(initial);
 
-                        // Get the stack and format the entry
-                        let stack = PROFILE_STACK.with(|s| {
-                            if let Ok(stack) = s.try_borrow() {
-                                stack.join(";")
-                            } else {
-                                String::new()
-                            }
-                        });
-
-                        if !stack.is_empty() && delta > 0 {
-                            let entry = format!("{stack} {delta}");
-                            let _ = Profile::write_profile_event(
-                                &ProfilePaths::get().memory,
-                                MemoryProfileFile::get(),
-                                &entry,
-                            );
+                        if delta > 0 {
+                            // Write to both allocation log and folded file
+                            let _ = self.write_memory_event(delta);
                         }
-                    }
-
-                    if matches!(self.profile_type, ProfileType::Both) {
-                        let elapsed = start.elapsed();
-                        let _ = self.write_time_event(elapsed);
                     }
                 }
             }
+        }
 
-            // Pop this profile from the stack
-            PROFILE_STACK.with(|stack| {
-                if let Ok(mut guard) = stack.try_borrow_mut() {
-                    guard.pop();
+        // Pop from profile stack
+        if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
+            let _ = PROFILE_STACK.try_with(|s| {
+                if let Ok(mut stack) = s.try_borrow_mut() {
+                    stack.pop();
                 }
             });
         }
@@ -904,89 +878,4 @@ mod tests {
         enable_profiling(false, ProfileType::Memory)?;
         Ok(())
     }
-
-    // fn test_peak_tracking() -> Result<(), Box<dyn std::error::Error>> {
-    //     setup_test()?;
-
-    //     let initial_peak = ALLOCATOR.peak_allocated.load(Ordering::SeqCst);
-
-    //     // Create allocations sequentially to ensure predictable behavior
-    //     let vec1 = vec![1; 1000];
-    //     let peak1 = ALLOCATOR.peak_allocated.load(Ordering::SeqCst);
-
-    //     let vec2 = vec![2; 2000];
-    //     let peak_with_both = ALLOCATOR.peak_allocated.load(Ordering::SeqCst);
-
-    //     assert!(
-    //         peak_with_both > peak1,
-    //         "Peak didn't increase with second allocation"
-    //     );
-    //     assert!(
-    //         peak1 > initial_peak,
-    //         "Peak didn't increase with first allocation"
-    //     );
-
-    //     // Drop first allocation and verify peak remains
-    //     drop(vec1);
-    //     let peak_after_first_drop = ALLOCATOR.peak_allocated.load(Ordering::SeqCst);
-    //     assert_eq!(
-    //         peak_with_both, peak_after_first_drop,
-    //         "Peak decreased after partial deallocation: {} vs {}",
-    //         peak_with_both, peak_after_first_drop
-    //     );
-
-    //     // Drop second allocation
-    //     drop(vec2);
-    //     let final_peak = ALLOCATOR.peak_allocated.load(Ordering::SeqCst);
-    //     assert_eq!(
-    //         peak_with_both, final_peak,
-    //         "Peak changed after all deallocations"
-    //     );
-
-    //     cleanup_test()?;
-    //     Ok(())
-    // }
-
-    // #[test]
-    // fn test_allocation_log_format() -> Result<(), Box<dyn std::error::Error>> {
-    //     setup_test()?;
-
-    //     // Create and drop an allocation to generate log entries
-    //     {
-    //         let _vec = vec![1, 2, 3, 4, 5];
-    //     }
-
-    //     let log_content = fs::read_to_string(&ProfilePaths::get().alloc)?;
-
-    //     // Check log format
-    //     assert!(
-    //         log_content.contains("# Format: timestamp|operation|size|current|peak"),
-    //         "Log header missing or incorrect"
-    //     );
-
-    //     // Verify log entries contain all fields
-    //     let entries: Vec<&str> = log_content
-    //         .lines()
-    //         .filter(|line| !line.starts_with('#'))
-    //         .collect();
-
-    //     for entry in entries {
-    //         let fields: Vec<&str> = entry.split('|').collect();
-    //         assert_eq!(fields.len(), 5, "Log entry has incorrect number of fields");
-
-    //         // Verify timestamp is numeric
-    //         assert!(fields[0].parse::<u128>().is_ok(), "Invalid timestamp");
-
-    //         // Verify operation is + or -
-    //         assert!(matches!(fields[1], "+" | "-"), "Invalid operation");
-
-    //         // Verify size, current, and peak are numeric
-    //         assert!(fields[2].parse::<usize>().is_ok(), "Invalid size");
-    //         assert!(fields[3].parse::<usize>().is_ok(), "Invalid current value");
-    //         assert!(fields[4].parse::<usize>().is_ok(), "Invalid peak value");
-    //     }
-
-    //     cleanup_test()?;
-    //     Ok(())
-    // }
 }

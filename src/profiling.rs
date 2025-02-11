@@ -21,6 +21,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
+use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicBool, AtomicU64, AtomicU8, AtomicUsize, Ordering},
@@ -372,7 +373,8 @@ pub struct Profile {
     start: Option<Instant>,
     name: &'static str,
     profile_type: ProfileType,
-    initial_memory: Option<usize>, // For memory delta
+    initial_memory: Option<usize>,     // For memory delta
+    _not_send: PhantomData<*const ()>, // Makes Profile !Send
 }
 
 impl Profile {
@@ -383,6 +385,7 @@ impl Profile {
             name,
             profile_type: ProfileType::Time, // Default to time profiling
             initial_memory: None,
+            _not_send: PhantomData,
         }
     }
 
@@ -562,29 +565,31 @@ impl Profile {
 impl Drop for Profile {
     fn drop(&mut self) {
         if let Some(start) = self.start.take() {
+            // Handle time profiling first
             match self.profile_type {
-                ProfileType::Time => {
+                ProfileType::Time | ProfileType::Both => {
                     let elapsed = start.elapsed();
                     let _ = self.write_time_event(elapsed);
                 }
-                ProfileType::Memory | ProfileType::Both => {
-                    if let Some(initial) = self.initial_memory {
-                        let final_memory = AllocationProfiler::get()
-                            .total_allocated
-                            .load(Ordering::SeqCst);
-                        let delta = final_memory.saturating_sub(initial);
-
-                        if delta > 0 {
-                            // Write to both allocation log and folded file
-                            let _ = self.write_memory_event(delta);
-                        }
-                    }
-                }
+                ProfileType::Memory => (),
             }
         }
 
-        // Pop from profile stack
+        // Handle memory profiling and stack maintenance together
         if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
+            // Write memory event if we have initial memory
+            if let Some(initial) = self.initial_memory {
+                let final_memory = AllocationProfiler::get()
+                    .total_allocated
+                    .load(Ordering::SeqCst);
+                let delta = final_memory.saturating_sub(initial);
+
+                if delta > 0 {
+                    let _ = self.write_memory_event(delta);
+                }
+            }
+
+            // Pop from profile stack
             let _ = PROFILE_STACK.try_with(|s| {
                 if let Ok(mut stack) = s.try_borrow_mut() {
                     stack.pop();

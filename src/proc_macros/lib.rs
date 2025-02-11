@@ -5,6 +5,7 @@ mod file_navigator;
 mod generate_theme_types;
 mod palette_methods;
 mod preload_themes;
+mod profile;
 mod repeat_dash;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
@@ -13,10 +14,10 @@ use crate::file_navigator::file_navigator_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
 use crate::palette_methods::palette_methods_impl;
 use crate::preload_themes::preload_themes_impl;
+use crate::profile::{profile_async_impl, profile_impl};
 use crate::repeat_dash::repeat_dash_impl;
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{parse_file, parse_macro_input, ItemFn};
+use syn::parse_file;
 
 /// Generates a `Category` enum with predefined variants and utility implementations.
 ///
@@ -108,7 +109,7 @@ pub fn category_enum(input: TokenStream) -> TokenStream {
         token.to_string().contains("expand_macro")
     });
 
-    intercept_and_debug(should_expand, "category_enum", &input, category_enum_impl)
+    maybe_expand_proc_macro(should_expand, "category_enum", &input, category_enum_impl)
 }
 
 /// Generates a constant `DASH_LINE` consisting of a dash (hyphen) repeated the number of times specified by the integer literal argument `n`.
@@ -129,10 +130,10 @@ pub fn category_enum(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn repeat_dash(input: TokenStream) -> TokenStream {
     // repeat_dash_impl(input)
-    intercept_and_debug(false, "repeat_dash", &input, repeat_dash_impl)
+    maybe_expand_proc_macro(false, "repeat_dash", &input, repeat_dash_impl)
 }
 
-fn intercept_and_debug<F>(
+fn maybe_expand_proc_macro<F>(
     expand: bool,
     name: &str,
     input: &TokenStream,
@@ -141,75 +142,86 @@ fn intercept_and_debug<F>(
 where
     F: Fn(TokenStream) -> TokenStream,
 {
-    use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
-
     // Call the provided macro function
     let output = proc_macro(input.clone());
 
     if expand {
-        // Pretty-print the expanded tokens
-        let output: proc_macro2::TokenStream = output.clone().into();
-        let token_str = output.to_string();
-        match parse_file(&token_str) {
-            Err(e) => eprintln!("Failed to parse tokens: {e:?}"),
-            Ok(syn_file) => {
-                let pretty_output = prettyplease::unparse(&syn_file);
-                let dash_line = "─".repeat(70);
-                eprintln!("{style_reset}{dash_line}{style_reset}");
-                eprintln!(
-                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset}:{style_reset}\n"
-                );
-                eprint!("{pretty_output}");
-                eprintln!("{style_reset}{dash_line}{style_reset}");
-            }
-        }
+        expand_output(&output);
     }
 
     output
 }
 
-#[proc_macro_attribute]
-pub fn profile(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(item as ItemFn);
-    let fn_name = &input.sig.ident;
-    let attrs = &input.attrs;
-    let vis = &input.vis;
-    let sig = &input.sig;
-    let body = &input.block;
+fn maybe_expand_attr_macro<F>(
+    expand: bool,
+    name: &str,
+    attr: &TokenStream,
+    item: &TokenStream,
+    attr_macro: F,
+) -> TokenStream
+where
+    F: Fn(TokenStream, TokenStream) -> TokenStream,
+{
+    // Call the provided macro function
+    let output = attr_macro(attr.clone(), item.clone());
 
-    quote! {
-        #(#attrs)*
-        #vis #sig {
-            let _profile = ::thag_rs::Profile::new(concat!(
-                module_path!(), "::",
-                stringify!(#fn_name)
-            ));
-            #body
+    if expand {
+        expand_output(&output);
+    }
+
+    output
+}
+
+fn expand_output(output: &_) {
+    // Pretty-print the expanded tokens
+    use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
+    let output: proc_macro2::TokenStream = output.clone().into();
+    let token_str = output.to_string();
+    match parse_file(&token_str) {
+        Err(e) => eprintln!("Failed to parse tokens: {e:?}"),
+        Ok(syn_file) => {
+            let pretty_output = prettyplease::unparse(&syn_file);
+            let dash_line = "─".repeat(70);
+            eprintln!("{style_reset}{dash_line}{style_reset}");
+            eprintln!(
+                "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset}:{style_reset}\n"
+            );
+            eprint!("{pretty_output}");
+            eprintln!("{style_reset}{dash_line}{style_reset}");
         }
     }
-    .into()
+}
+
+#[proc_macro_attribute]
+pub fn profile(attr: TokenStream, item: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(true, "profile", &attr, &item, profile_impl)
+}
+
+#[proc_macro_attribute]
+pub fn profile_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(true, "profile", &attr, &item, profile_async_impl)
 }
 
 /// Generates repetitive methods for all 14 `Style` fields of the `Palette` struct
 /// instead of hand-coding them.
 #[proc_macro_derive(PaletteMethods)]
 pub fn palette_methods(input: TokenStream) -> TokenStream {
-    intercept_and_debug(false, "palette_methods", &input, palette_methods_impl)
+    maybe_expand_proc_macro(false, "palette_methods", &input, palette_methods_impl)
 }
 
 #[proc_macro_derive(AnsiCodeDerive, attributes(ansi_name))]
 pub fn ansi_code_derive(input: TokenStream) -> TokenStream {
-    intercept_and_debug(false, "ansi_code_derive", &input, ansi_code_derive_impl)
+    maybe_expand_proc_macro(false, "ansi_code_derive", &input, ansi_code_derive_impl)
 }
 
 #[proc_macro]
 pub fn file_navigator(input: TokenStream) -> TokenStream {
-    intercept_and_debug(false, "file_navigator", &input, file_navigator_impl)
+    maybe_expand_proc_macro(false, "file_navigator", &input, file_navigator_impl)
 }
 
 #[proc_macro]
 pub fn generate_theme_types(input: TokenStream) -> TokenStream {
-    intercept_and_debug(
+    maybe_expand_proc_macro(
         false,
         "generate_theme_types",
         &input,
@@ -219,5 +231,5 @@ pub fn generate_theme_types(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn preload_themes(input: TokenStream) -> TokenStream {
-    intercept_and_debug(false, "preload_themes", &input, preload_themes_impl)
+    maybe_expand_proc_macro(false, "preload_themes", &input, preload_themes_impl)
 }

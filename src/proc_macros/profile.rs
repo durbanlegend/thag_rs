@@ -6,11 +6,12 @@ use syn::{parse_macro_input, FnArg, ItemFn, Receiver};
 pub fn profile_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
 
-    // Extract function name and visibility
     let fn_name = &input.sig.ident;
     let vis = &input.vis;
     let inputs = &input.sig.inputs;
     let output = &input.sig.output;
+    let generics = &input.sig.generics;
+    let where_clause = &generics.where_clause;
     let body = &input.block;
 
     // Determine if this is a method by checking for self parameter
@@ -25,18 +26,49 @@ pub fn profile_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     });
 
-    // Generate the profile name
-    let profile_name = if is_method {
-        // For methods, include the struct/trait name if we can get it
-        // This is a simplified version - might want to add more context
-        format!("method::{}", fn_name)
-    } else {
-        format!("fn::{}", fn_name)
+    // Include generic parameters in profile name
+    let type_params: Vec<_> = generics
+        .params
+        .iter()
+        .map(|param| match param {
+            syn::GenericParam::Type(t) => t.ident.to_string(),
+            syn::GenericParam::Lifetime(l) => l.lifetime.to_string(),
+            syn::GenericParam::Const(c) => c.ident.to_string(),
+        })
+        .collect();
+
+    // let type_str =  if let Some(impl_block) = get_impl_block(&input) {
+    //         format!("{}::{}", impl_block.self_ty, fn_name)
+    //     } else {
+    //         format!("method::{}", fn_name)
+    //     }
+    // }
+    let profile_name = match (is_method, type_params.is_empty()) {
+        (true, true) => format!("method::{}", fn_name),
+        (true, false) => format!(
+            "{}::{fn_name}<{}>",
+            impl_block.self_ty,
+            type_params.join(",")
+        ),
+        (false, true) => todo!(),
+        (false, false) => format!("fn::{}", fn_name),
+        //     if let Some(impl_block) = get_impl_block(&input) {
+        //         format!("{}::{}", impl_block.self_ty, fn_name)
+        //     } else {
+        //         format!("method::{}", fn_name)
+        //     }
+        // }) else {
+        //     format!("fn::{}", fn_name)
     };
 
-    // Generate the wrapped function
+    let profile_name = if type_params.is_empty() {
+        format!("fn::{}", fn_name)
+    } else {
+        format!("fn::{}<{}>", fn_name, type_params.join(","))
+    };
+
     let wrapped = quote! {
-        #vis fn #fn_name(#inputs) #output {
+        #vis fn #fn_name #generics (#inputs) #output #where_clause {
             let _profile = ::thag::Profile::new(#profile_name, ::thag::ProfileType::Time);
             #body
         }

@@ -388,10 +388,17 @@ impl Profile {
 
     #[must_use]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
-        println!("Profile::new called with name: {name} and type: {requested_type:?}");
-        let _global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
+        // println!("Profile::new called with name: {name} and type: {requested_type:?}");
+        let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
+            _ => ProfileType::Time, // default
+        };
+
+        // Use the more comprehensive of the two types
+        let profile_type = match (requested_type, global_type) {
+            (ProfileType::Both, _) | (_, ProfileType::Both) => ProfileType::Both,
+            (ProfileType::Memory, _) | (_, ProfileType::Memory) => ProfileType::Memory,
             _ => ProfileType::Time,
         };
 
@@ -406,7 +413,7 @@ impl Profile {
         Self {
             start: Some(Instant::now()),
             name,
-            profile_type: requested_type,
+            profile_type,
             initial_memory: Some(
                 AllocationProfiler::get()
                     .total_allocated // Changed from current_allocated

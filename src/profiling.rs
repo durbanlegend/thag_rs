@@ -27,7 +27,7 @@ use std::sync::Mutex;
 // use std::sync::OnceLock;
 use std::time::{Instant, SystemTime};
 // use std::time::SystemTime;
-pub use thag_proc_macros::profile;
+// pub use thag_proc_macros::profile;
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
 static IS_RECORDING: AtomicBool = AtomicBool::new(false);
@@ -580,7 +580,7 @@ impl Drop for Profile {
                     if let Some(initial) = self.initial_memory {
                         let final_memory = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
                         let delta = final_memory.saturating_sub(initial);
-                        dbg!(delta);
+                        // dbg!(delta);
                         if delta > 0 {
                             let _ = self.write_memory_event(delta);
                         }
@@ -596,7 +596,7 @@ impl Drop for Profile {
                         let final_memory = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
                         // eprintln!("final_memory={final_memory:?}");
                         let delta = final_memory.saturating_sub(initial);
-                        dbg!(delta);
+                        // dbg!(delta);
                         if delta > 0 {
                             let _ = self.write_memory_event(delta);
                         }
@@ -736,7 +736,8 @@ macro_rules! profile_section {
 macro_rules! profile_method {
     () => {
         const NAME: &'static str = concat!(module_path!(), "::", stringify!(profile_method));
-        let _profile = $crate::profiling::Profile::new(NAME);
+        println!("profile_method NAME={NAME}");
+        let _profile = $crate::profiling::Profile::new(NAME, $crate::profiling::ProfileType::Time);
     };
     ($name:expr) => {
         let _profile = $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Time);

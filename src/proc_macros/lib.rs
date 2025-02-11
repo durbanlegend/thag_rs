@@ -14,7 +14,7 @@ use crate::file_navigator::file_navigator_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
 use crate::palette_methods::palette_methods_impl;
 use crate::preload_themes::preload_themes_impl;
-use crate::profile::{profile_async_impl, profile_impl};
+use crate::profile::profile_impl;
 use crate::repeat_dash::repeat_dash_impl;
 use proc_macro::TokenStream;
 use syn::parse_file;
@@ -146,7 +146,7 @@ where
     let output = proc_macro(input.clone());
 
     if expand {
-        expand_output(&output);
+        expand_output(name, &output);
     }
 
     output
@@ -166,13 +166,13 @@ where
     let output = attr_macro(attr.clone(), item.clone());
 
     if expand {
-        expand_output(&output);
+        expand_output(name, &output);
     }
 
     output
 }
 
-fn expand_output(output: &_) {
+fn expand_output(name: &str, output: &TokenStream) {
     // Pretty-print the expanded tokens
     use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
     let output: proc_macro2::TokenStream = output.clone().into();
@@ -194,12 +194,7 @@ fn expand_output(output: &_) {
 
 #[proc_macro_attribute]
 pub fn profile(attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(true, "profile", &attr, &item, profile_impl)
-}
-
-#[proc_macro_attribute]
-pub fn profile_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(true, "profile", &attr, &item, profile_async_impl)
+    maybe_expand_attr_macro(false, "profile", &attr, &item, profile_impl)
 }
 
 /// Generates repetitive methods for all 14 `Style` fields of the `Palette` struct

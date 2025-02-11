@@ -1,32 +1,149 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, FnArg, ItemFn, Receiver};
+use syn::{
+    parse::{Parse, ParseStream},
+    parse_macro_input, FnArg, Generics, ItemFn, LitStr, ReturnType, Type, Visibility, WhereClause,
+};
 
-pub fn profile_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
+/// Configuration for profile attribute macro
+#[derive(Default)]
+struct ProfileArgs {
+    /// The implementing type (e.g., "`MyStruct`")
+    imp: Option<String>,
+    /// The trait being implemented (e.g., "`Display`")
+    trait_: Option<String>,
+    /// Explicit profile type override
+    profile_type: Option<ProfileTypeOverride>,
+}
+
+/// Explicit profile type configuration
+#[derive(Debug, Clone)]
+enum ProfileTypeOverride {
+    /// Use the global profile type set in `enable_profiling`
+    Global,
+    /// Override with specific type
+    Time,
+    Memory,
+    Both,
+}
+
+/// Context for generating profiled function wrappers
+///
+/// This struct contains all the necessary components to generate either a synchronous
+/// or asynchronous function wrapper with profiling capabilities.
+#[derive(Debug)]
+struct FunctionContext<'a> {
+    /// Function visibility (pub, pub(crate), etc.)
+    vis: &'a Visibility,
+    /// Function name identifier
+    fn_name: &'a syn::Ident,
+    /// Generic parameters including lifetimes and type parameters
+    generics: &'a Generics,
+    /// Function parameters
+    inputs: &'a syn::punctuated::Punctuated<FnArg, syn::Token![,]>,
+    /// Function return type
+    output: &'a ReturnType,
+    /// Optional where clause for generic constraints
+    where_clause: Option<&'a WhereClause>,
+    /// Function body
+    body: &'a syn::Block,
+    /// Generated profile name incorporating context (impl/trait/async/etc.)
+    profile_name: String,
+}
+
+impl Parse for ProfileArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut args = Self::default();
+
+        while !input.is_empty() {
+            let ident: syn::Ident = input.parse()?;
+            let _: syn::Token![=] = input.parse()?;
+
+            match ident.to_string().as_str() {
+                "imp" => {
+                    let lit: LitStr = input.parse()?;
+                    args.imp = Some(lit.value());
+                }
+                "trait_" => {
+                    let lit: LitStr = input.parse()?;
+                    args.trait_ = Some(lit.value());
+                }
+                "profile_type" => {
+                    let lit: LitStr = input.parse()?;
+                    args.profile_type = Some(match lit.value().as_str() {
+                        "global" => ProfileTypeOverride::Global,
+                        "time" => ProfileTypeOverride::Time,
+                        "memory" => ProfileTypeOverride::Memory,
+                        "both" => ProfileTypeOverride::Both,
+                        _ => return Err(syn::Error::new(lit.span(), "invalid profile type")),
+                    });
+                }
+                _ => return Err(syn::Error::new(ident.span(), "unknown attribute")),
+            }
+
+            if !input.is_empty() {
+                let _: syn::Token![,] = input.parse()?;
+            }
+        }
+
+        Ok(args)
+    }
+}
+
+/// Determines if a function is a method by checking for:
+/// 1. Explicit self parameter
+/// 2. Return type of Self (including references to Self)
+/// 3. Location within an impl block (when available)
+fn is_method(inputs: &[FnArg], output: &ReturnType) -> bool {
+    // Check for self parameter
+    let has_self_param = inputs.iter().any(|arg| matches!(arg, FnArg::Receiver(_)));
+    if has_self_param {
+        return true;
+    }
+
+    // Check for Self return type (including references to Self)
+    match output {
+        ReturnType::Type(_, ty) => contains_self_type(ty),
+        ReturnType::Default => false,
+    }
+}
+
+/// Recursively checks if a type contains Self
+fn contains_self_type(ty: &Type) -> bool {
+    match ty {
+        // Handle reference types (&Self, &'static Self, etc.)
+        Type::Reference(type_reference) => contains_self_type(&type_reference.elem),
+
+        // Handle plain Self
+        Type::Path(type_path) => type_path
+            .path
+            .segments
+            .iter()
+            .any(|segment| segment.ident == "Self"),
+
+        // Handle other type variants if needed
+        _ => false,
+    }
+}
+
+pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(attr as ProfileArgs);
     let input = parse_macro_input!(item as ItemFn);
 
     let fn_name = &input.sig.ident;
-    let vis = &input.vis;
     let inputs = &input.sig.inputs;
     let output = &input.sig.output;
     let generics = &input.sig.generics;
-    let where_clause = &generics.where_clause;
-    let body = &input.block;
+    let is_async = input.sig.asyncness.is_some();
 
-    // Determine if this is a method by checking for self parameter
-    let is_method = inputs.iter().any(|arg| {
-        if let FnArg::Receiver(Receiver {
-            reference: Some(_), ..
-        }) = arg
-        {
-            true
-        } else {
-            false
-        }
-    });
+    // Convert Punctuated to slice for is_method
+    let input_args: Vec<_> = inputs.iter().cloned().collect();
+    // Determine if this is a method
+    eprintln!("fn_name={fn_name}");
+    let is_method = is_method(&input_args, output);
 
-    // Include generic parameters in profile name
+    // Get generic parameters
     let type_params: Vec<_> = generics
         .params
         .iter()
@@ -37,84 +154,140 @@ pub fn profile_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         })
         .collect();
 
-    // let type_str =  if let Some(impl_block) = get_impl_block(&input) {
-    //         format!("{}::{}", impl_block.self_ty, fn_name)
-    //     } else {
-    //         format!("method::{}", fn_name)
-    //     }
-    // }
-    let profile_name = match (is_method, type_params.is_empty()) {
-        (true, true) => format!("method::{}", fn_name),
-        (true, false) => format!(
-            "{}::{fn_name}<{}>",
-            impl_block.self_ty,
-            type_params.join(",")
-        ),
-        (false, true) => todo!(),
-        (false, false) => format!("fn::{}", fn_name),
-        //     if let Some(impl_block) = get_impl_block(&input) {
-        //         format!("{}::{}", impl_block.self_ty, fn_name)
-        //     } else {
-        //         format!("method::{}", fn_name)
-        //     }
-        // }) else {
-        //     format!("fn::{}", fn_name)
+    // Generate profile name
+    let profile_name = generate_profile_name(fn_name, is_method, &args, &type_params, is_async);
+
+    let ctx = FunctionContext {
+        vis: &input.vis,
+        fn_name,
+        generics: &input.sig.generics,
+        inputs: &input.sig.inputs,
+        output: &input.sig.output,
+        where_clause: input.sig.generics.where_clause.as_ref(),
+        body: &input.block,
+        profile_name,
     };
 
-    let profile_name = if type_params.is_empty() {
-        format!("fn::{}", fn_name)
+    if is_async {
+        generate_async_wrapper(&ctx, args.profile_type.as_ref())
     } else {
-        format!("fn::{}<{}>", fn_name, type_params.join(","))
-    };
-
-    let wrapped = quote! {
-        #vis fn #fn_name #generics (#inputs) #output #where_clause {
-            let _profile = ::thag::Profile::new(#profile_name, ::thag::ProfileType::Time);
-            #body
-        }
-    };
-
-    wrapped.into()
+        generate_sync_wrapper(&ctx, args.profile_type.as_ref())
+    }
+    .into()
 }
 
-pub fn profile_async_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(item as ItemFn);
+fn generate_profile_name(
+    fn_name: &syn::Ident,
+    is_method: bool,
+    args: &ProfileArgs,
+    type_params: &[String],
+    is_async: bool,
+) -> String {
+    let mut parts = Vec::new();
 
-    if !input.sig.asyncness.is_some() {
-        return TokenStream::from(quote! {
-            compile_error!("profile_async can only be used with async functions");
-        });
+    // Add async prefix if applicable
+    if is_async {
+        parts.push("async".to_string());
     }
 
-    let fn_name = &input.sig.ident;
-    let vis = &input.vis;
-    let inputs = &input.sig.inputs;
-    let output = &input.sig.output;
-    let body = &input.block;
+    // Add context (impl/trait/fn)
+    if is_method {
+        if let Some(trait_name) = &args.trait_ {
+            parts.push(format!("trait::{trait_name}"));
+            if let Some(impl_type) = &args.imp {
+                parts.push(format!("impl::{impl_type}"));
+            }
+        } else if let Some(impl_type) = &args.imp {
+            parts.push(format!("impl::{impl_type}"));
+        } else {
+            parts.push("method".to_string());
+        }
+    } else {
+        parts.push("fn".to_string());
+    }
 
-    let profile_name = format!("async::{}", fn_name);
+    // Add function name
+    parts.push(fn_name.to_string());
 
-    // Create a future that's bound to the thread where it starts
-    let wrapped = quote! {
-        #vis async fn #fn_name(#inputs) #output {
+    // Add generic parameters if any
+    if !type_params.is_empty() {
+        parts.push(format!("<{}>", type_params.join(",")));
+    }
+
+    parts.join("::")
+}
+
+fn generate_sync_wrapper(
+    ctx: &FunctionContext,
+    profile_type: Option<&ProfileTypeOverride>,
+) -> proc_macro2::TokenStream {
+    let FunctionContext {
+        vis,
+        fn_name,
+        generics,
+        inputs,
+        output,
+        where_clause,
+        body,
+        profile_name,
+    } = ctx;
+
+    let profile_type = resolve_profile_type(profile_type);
+
+    quote! {
+        #vis fn #fn_name #generics (#inputs) #output #where_clause {
+            let _profile = crate::Profile::new(#profile_name, #profile_type);
+            #body
+        }
+    }
+}
+
+fn resolve_profile_type(profile_type: Option<&ProfileTypeOverride>) -> proc_macro2::TokenStream {
+    match profile_type {
+        Some(ProfileTypeOverride::Global) | None => {
+            quote!(crate::profiling::get_global_profile_type())
+        }
+        Some(ProfileTypeOverride::Time) => quote!(crate::ProfileType::Time),
+        Some(ProfileTypeOverride::Memory) => quote!(crate::ProfileType::Memory),
+        Some(ProfileTypeOverride::Both) => quote!(crate::ProfileType::Both),
+    }
+}
+
+fn generate_async_wrapper(
+    ctx: &FunctionContext,
+    profile_type: Option<&ProfileTypeOverride>,
+) -> proc_macro2::TokenStream {
+    let FunctionContext {
+        vis,
+        fn_name,
+        generics,
+        inputs,
+        output,
+        where_clause,
+        body,
+        profile_name,
+    } = ctx;
+
+    let profile_type = resolve_profile_type(profile_type);
+
+    quote! {
+        #vis async fn #fn_name #generics (#inputs) #output #where_clause {
             use std::future::Future;
             use std::pin::Pin;
             use std::task::{Context, Poll};
 
             struct ProfiledFuture<F> {
                 inner: F,
-                _profile: Option<::thag::Profile>,
+                _profile: Option<crate::Profile>,
             }
 
             impl<F: Future> Future for ProfiledFuture<F> {
                 type Output = F::Output;
 
                 fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-                    // Safety: we're not moving any pinned data
                     let this = unsafe { self.as_mut().get_unchecked_mut() };
                     let result = unsafe { Pin::new_unchecked(&mut this.inner) }.poll(cx);
                     if result.is_ready() {
-                        // Drop the profile when the future completes
                         this._profile.take();
                     }
                     result
@@ -124,10 +297,8 @@ pub fn profile_async_impl(_attr: TokenStream, item: TokenStream) -> TokenStream 
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: Some(::thag::Profile::new(#profile_name, ::thag::ProfileType::Time)),
+                _profile: Some(crate::Profile::new(#profile_name, #profile_type)),
             }.await
         }
-    };
-
-    wrapped.into()
+    }
 }

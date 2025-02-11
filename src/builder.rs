@@ -50,7 +50,7 @@ use crate::manifest::extract;
 use crate::styling::{paint_for_role, ColorInitStrategy, TermAttributes};
 use crate::{
     ast, cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
-    modified_since_compiled, profile, profile_method, profile_section, regex, repeat_dash, shared,
+    modified_since_compiled, profile_fn, profile_method, profile_section, regex, repeat_dash, shared,
     validate_args, vlog, Ast, Cli, ColorSupport, Dependencies, ProcFlags, Role, ThagError,
     ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR,
     RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
@@ -189,7 +189,7 @@ impl BuildState {
         cli: &Cli,
         script_state: &ScriptState,
     ) -> ThagResult<Self> {
-        profile!("pre_configure");
+        profile_fn!("pre_configure");
 
         // 1. Validate and extract basic script info
         let (source_name, source_stem) = Self::extract_script_info(script_state)?;
@@ -214,7 +214,7 @@ impl BuildState {
     }
 
     fn extract_script_info(script_state: &ScriptState) -> ThagResult<(String, String)> {
-        profile!("extract_script_info");
+        profile_fn!("extract_script_info");
         let script = script_state
             .get_script()
             .ok_or(ThagError::NoneOption("No script specified"))?;
@@ -247,7 +247,7 @@ impl BuildState {
         source_name: &str,
         source_stem: &str,
     ) -> ThagResult<BuildPaths> {
-        profile!("set_up_paths");
+        profile_fn!("set_up_paths");
         // Working directory setup
         let working_dir_path = if flags.is_repl {
             TMPDIR.join(REPL_SUBDIR)
@@ -341,7 +341,7 @@ impl BuildState {
         source_stem: String,
         cli: &Cli,
     ) -> Self {
-        profile!("create_initial_state");
+        profile_fn!("create_initial_state");
 
         Self {
             working_dir_path: paths.working_dir_path,
@@ -585,7 +585,7 @@ fn resolve_script_dir_path(
     repl_source_path: Option<&PathBuf>,
     is_dynamic: bool,
 ) -> ThagResult<PathBuf> {
-    profile!("resolve_script_dir_path");
+    profile_fn!("resolve_script_dir_path");
     let script_dir_path = if is_repl {
         if let Some(ref script) = args.script {
             // REPL with repeat of named script
@@ -628,7 +628,7 @@ fn set_script_state(
     repl_source_path: Option<PathBuf>,
     is_dynamic: bool,
 ) -> ThagResult<ScriptState> {
-    profile!("set_script_state");
+    profile_fn!("set_script_state");
     let script_state: ScriptState = if let Some(ref script) = args.script {
         let script = script.to_owned();
         ScriptState::Named {
@@ -745,7 +745,7 @@ pub fn process_expr(
     proc_flags: &ProcFlags,
     start: &Instant,
 ) -> ThagResult<()> {
-    profile!("process_expr");
+    profile_fn!("process_expr");
     // let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(args, proc_flags, build_state, start);
@@ -755,7 +755,7 @@ pub fn process_expr(
 
 #[cfg(debug_assertions)]
 fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
-    profile!("log_init_setup");
+    profile_fn!("log_init_setup");
     debug_log_config();
     debug_timings(&start, "Set up processing flags");
     debug_log!("proc_flags={proc_flags:#?}");
@@ -770,7 +770,7 @@ fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
 
 #[cfg(debug_assertions)]
 fn debug_log_config() {
-    profile!("debug_log_config");
+    profile_fn!("debug_log_config");
     debug_log!("PACKAGE_NAME={PACKAGE_NAME}");
     debug_log!("VERSION={VERSION}");
     debug_log!("REPL_SUBDIR={REPL_SUBDIR}");
@@ -1003,7 +1003,7 @@ pub fn generate(
     rs_source: Option<&str>,
     proc_flags: &ProcFlags,
 ) -> ThagResult<()> {
-    profile!("generate");
+    profile_fn!("generate");
     let start_gen = Instant::now();
 
     #[cfg(debug_assertions)]
@@ -1082,14 +1082,14 @@ pub fn generate(
 
 #[inline]
 fn syn_parse_file(rs_source: Option<&str>) -> ThagResult<syn::File> {
-    profile!("syn_parse_file");
+    profile_fn!("syn_parse_file");
     let syntax_tree = syn::parse_file(rs_source.ok_or("Logic error retrieving rs_source")?)?;
     Ok(syntax_tree)
 }
 
 #[inline]
 fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
-    profile!("prettyplease_unparse");
+    profile_fn!("prettyplease_unparse");
     prettyplease::unparse(syntax_tree)
 }
 
@@ -1100,7 +1100,7 @@ fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
 /// This function will bubble up any errors encountered.
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     let start_build = Instant::now();
-    profile!("build");
+    profile_fn!("build");
     vlog!(V::V, "BBBBBBBB In build");
 
     if proc_flags.contains(ProcFlags::EXPAND) {
@@ -1114,7 +1114,7 @@ pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()>
 }
 
 fn create_cargo_command(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<Command> {
-    profile!("create_cargo_command");
+    profile_fn!("create_cargo_command");
     let cargo_toml_path_str = code_utils::path_to_str(&build_state.cargo_toml_path)?;
     let mut cargo_command = Command::new("cargo");
 
@@ -1130,7 +1130,7 @@ fn build_command_args(
     build_state: &BuildState,
     cargo_toml_path: &str,
 ) -> Vec<String> {
-    profile!("build_command_args");
+    profile_fn!("build_command_args");
     let mut args = vec![
         get_cargo_subcommand(proc_flags, build_state).to_string(),
         "--manifest-path".to_string(),
@@ -1161,7 +1161,7 @@ fn build_command_args(
 }
 
 fn get_cargo_subcommand(proc_flags: &ProcFlags, build_state: &BuildState) -> &'static str {
-    profile!("get_cargo_subcommand");
+    profile_fn!("get_cargo_subcommand");
     if proc_flags.contains(ProcFlags::CHECK) {
         "check"
     } else if proc_flags.contains(ProcFlags::EXPAND) {
@@ -1177,7 +1177,7 @@ fn get_cargo_subcommand(proc_flags: &ProcFlags, build_state: &BuildState) -> &'s
 }
 
 fn configure_command_output(command: &mut Command, proc_flags: &ProcFlags) {
-    profile!("configure_command_output");
+    profile_fn!("configure_command_output");
     if proc_flags.contains(ProcFlags::QUIETER) || proc_flags.contains(ProcFlags::EXPAND) {
         command
             .stdout(std::process::Stdio::piped())
@@ -1190,7 +1190,7 @@ fn configure_command_output(command: &mut Command, proc_flags: &ProcFlags) {
 }
 
 fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
-    profile!("handle_expand");
+    profile_fn!("handle_expand");
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
     cvprtln!(Role::INFO, V::V, "cargo_command={cargo_command:#?}");
@@ -1210,7 +1210,7 @@ fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult
 }
 
 fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
-    profile!("handle_build_or_check");
+    profile_fn!("handle_build_or_check");
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
     cvprtln!(Role::INFO, V::VV, "cargo_command={cargo_command:#?}");
@@ -1229,7 +1229,7 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
 }
 
 fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResult<()> {
-    profile!("display_expansion_diff");
+    profile_fn!("display_expansion_diff");
     let expanded_source = String::from_utf8(stdout)?;
     let unexpanded_path = get_source_path(build_state);
     let unexpanded_source = std::fs::read_to_string(unexpanded_path)?;
@@ -1246,7 +1246,7 @@ fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResu
 }
 
 fn display_build_failure() {
-    profile!("display_build_failure");
+    profile_fn!("display_build_failure");
     cvprtln!(Role::ERR, V::N, "Build failed");
     let config = maybe_config();
     let binding = Dependencies::default();
@@ -1280,7 +1280,7 @@ If the problem is a dependency error, consider the following advice:"
 }
 
 fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
-    profile!("deploy_executable");
+    profile_fn!("deploy_executable");
     // Determine the output directory
     let mut cargo_bin_path = PathBuf::from(crate::get_home_dir_string()?);
     let cargo_bin_subdir = ".cargo/bin";
@@ -1384,7 +1384,7 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
 /// Display method timings when either the --verbose or --timings option is chosen.
 #[inline]
 pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
-    profile!("display_timings");
+    profile_fn!("display_timings");
     #[cfg(not(debug_assertions))]
     if !proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
         return;

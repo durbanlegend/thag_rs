@@ -2,7 +2,7 @@ use crate::{
     code_utils::write_source,
     debug_log,
     file_dialog::{DialogMode, FileDialog, Status},
-    profile, profile_method, regex,
+    profile_fn, profile_method, regex,
     stdin::edit_history,
     styling::Role,
     KeyCombination, ThagError, ThagResult,
@@ -111,7 +111,7 @@ impl ManagedTerminal<'_> {
 /// # Errors
 ///
 pub fn resolve_term<'a>() -> ThagResult<Option<ManagedTerminal<'a>>> {
-    profile!("resolve_term");
+    profile_fn!("resolve_term");
     if var("TEST_ENV").is_ok() {
         return Ok(None);
     }
@@ -877,7 +877,7 @@ where
 }
 
 pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) {
-    profile!("highlight_selection");
+    profile_fn!("highlight_selection");
     textarea.set_selection_style(
         RataStyle::default()
             .fg(Color::Indexed(u8::from(&tui_highlight_fg)))
@@ -900,7 +900,7 @@ pub fn script_key_handler(
     saved: &mut bool, // TODO decide if we need this
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
-    profile!("script_key_handler");
+    profile_fn!("script_key_handler");
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
@@ -1111,7 +1111,7 @@ fn save_and_submit(
 ///
 /// This function will bubble up any i/o errors encountered by `crossterm::enable_raw_mode`.
 pub fn maybe_enable_raw_mode() -> ThagResult<()> {
-    profile!("maybe_enable_raw_mode");
+    profile_fn!("maybe_enable_raw_mode");
     let test_env = &var("TEST_ENV");
     debug_log!("test_env={test_env:?}");
     if !test_env.is_ok() && !is_raw_mode_enabled()? {
@@ -1129,7 +1129,7 @@ pub fn display_popup(
     max_desc_len: u16,
     f: &mut ratatui::prelude::Frame<'_>,
 ) {
-    profile!("display_popup");
+    profile_fn!("display_popup");
     let num_filtered_rows = mappings.len();
     let block = Block::default()
         .borders(Borders::ALL)
@@ -1198,7 +1198,7 @@ pub fn display_popup(
 
 #[must_use]
 pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
-    profile!("centered_rect");
+    profile_fn!("centered_rect");
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Max(max_height),
@@ -1219,7 +1219,7 @@ pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 /// it stands).
 #[must_use]
 pub fn normalize_newlines(input: &str) -> String {
-    profile!("normalize_newlines");
+    profile_fn!("normalize_newlines");
     let re: &Regex = regex!(r"\r\n?");
 
     re.replace_all(input, "\n").to_string()
@@ -1232,7 +1232,7 @@ pub fn normalize_newlines(input: &str) -> String {
 /// This function will bubble up any `ratatui` or `crossterm` errors encountered.
 // TODO: move to shared or tui_editor?
 pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>) -> ThagResult<()> {
-    profile!("reset_term");
+    profile_fn!("reset_term");
     disable_raw_mode()?;
     crossterm::execute!(
         term.backend_mut(),
@@ -1253,7 +1253,7 @@ pub fn save_if_changed(
     textarea: &mut TextArea<'_>,
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
-    profile!("save_if_changed");
+    profile_fn!("save_if_changed");
     debug_log!("save_if_changed...");
     if textarea.is_empty() {
         debug_log!("nothing to save(1)...");
@@ -1312,7 +1312,7 @@ pub fn save_if_changed(
 // }
 
 pub fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &Entry) {
-    profile!("paste_to_textarea");
+    profile_fn!("paste_to_textarea");
     textarea.select_all();
     textarea.cut();
     // 6
@@ -1329,7 +1329,7 @@ pub fn preserve(
     hist: &mut History,
     history_path: &PathBuf,
 ) -> ThagResult<()> {
-    profile!("preserve");
+    profile_fn!("preserve");
     debug_log!("preserve...");
     save_if_not_empty(textarea, hist);
     save_history(Some(&mut hist.clone()), Some(history_path))?;
@@ -1337,7 +1337,7 @@ pub fn preserve(
 }
 
 pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
-    profile!("save_if_not_empty");
+    profile_fn!("save_if_not_empty");
     debug_log!("save_if_not_empty...");
 
     let text = copy_text(textarea);
@@ -1348,7 +1348,7 @@ pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
 }
 
 pub fn copy_text(textarea: &mut TextArea<'_>) -> String {
-    profile!("copy_text");
+    profile_fn!("copy_text");
     textarea.select_all();
     textarea.copy();
     let text = textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
@@ -1364,7 +1364,7 @@ pub fn save_history(
     history: Option<&mut History>,
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
-    profile!("save_history");
+    profile_fn!("save_history");
     debug_log!("save_history...{history:?}");
     if let Some(hist) = history {
         if let Some(hist_path) = history_path {
@@ -1385,7 +1385,7 @@ pub fn save_source_file(
     textarea: &mut TextArea<'_>,
     saved: &mut bool,
 ) -> ThagResult<()> {
-    profile!("save_source_file");
+    profile_fn!("save_source_file");
     // Ensure newline at end
     textarea.move_cursor(CursorMove::Bottom);
     textarea.move_cursor(CursorMove::End);

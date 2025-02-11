@@ -5,7 +5,7 @@ use crate::{
     KeyCombination,
 };
 // #[cfg(feature = "profiling")]
-use crate::{profile, profile_method};
+use crate::{profile_fn, profile_method};
 use crokey::key;
 /// Original is `https://github.com/flip1995/tui-rs-file-dialog/blob/master/src/lib.rs`
 /// Copyright (c) 2023 Philipp Krones
@@ -549,7 +549,7 @@ impl FileDialog<'_> {
 }
 
 fn get_max_lengths(mappings: &[KeyDisplayLine]) -> (u16, u16) {
-    profile!("get_max_lengths");
+    profile_fn!("get_max_lengths");
     lazy_static_var!(
         (u16, u16),
         mappings
@@ -565,7 +565,7 @@ fn get_max_lengths(mappings: &[KeyDisplayLine]) -> (u16, u16) {
 
 /// Handle input in Save mode (for typing file name).
 fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
-    profile!("handle_save_input");
+    profile_fn!("handle_save_input");
     // Convert the KeyEvent into an Input that TextArea can handle
     let input = Input::from(key);
     text_area.input(input);

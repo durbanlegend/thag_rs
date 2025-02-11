@@ -17,7 +17,7 @@ use {
 use crate::escape_path_for_windows;
 
 use crate::{
-    cvlog_warning, debug_log, profile, profile_method, profile_section, regex, vlog, Ast,
+    cvlog_warning, debug_log, profile_fn, profile_method, profile_section, regex, vlog, Ast,
     ThagError, ThagResult, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use regex::Regex;
@@ -67,7 +67,7 @@ impl VisitMut for RemoveInnerAttributes {
 /// Remove inner attributes (`#![...]`) from the part of the AST that will be wrapped in
 /// `fn main`, as they need to be promoted to the crate level.
 pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
-    profile!("remove_inner_attributes");
+    profile_fn!("remove_inner_attributes");
     let remove_inner_attributes = &mut RemoveInnerAttributes { found: false };
     remove_inner_attributes.visit_expr_block_mut(expr);
     remove_inner_attributes.found
@@ -77,7 +77,7 @@ pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
 /// # Errors
 /// Will return `Err` if there is any file system error reading from the file path.
 pub fn read_file_contents(path: &Path) -> ThagResult<String> {
-    profile!("read_file_contents");
+    profile_fn!("read_file_contents");
 
     debug_log!("Reading from {path:?}");
     Ok(fs::read_to_string(path)?)
@@ -91,7 +91,7 @@ pub fn read_file_contents(path: &Path) -> ThagResult<String> {
 /// # Errors
 /// Will return `Err` if there is any error encountered by the `syn` crate trying to parse the source string into an AST.
 pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
-    profile!("extract_ast_expr");
+    profile_fn!("extract_ast_expr");
     let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
     if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
         // Try putting the expression in braces.
@@ -108,7 +108,7 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
 /// # Errors
 /// Will return `Err` if there is any error caused by invalid characters in the path name.
 pub fn path_to_str(path: &Path) -> ThagResult<String> {
-    profile!("path_to_str");
+    profile_fn!("path_to_str");
     let string = path
         .to_path_buf()
         .into_os_string()
@@ -124,7 +124,7 @@ pub fn path_to_str(path: &Path) -> ThagResult<String> {
 /// # Errors
 /// Will return `Err` if the stdout or stderr is not found captured as expected.
 pub fn display_output(output: &Output) -> ThagResult<()> {
-    profile!("display_output");
+    profile_fn!("display_output");
     // Read the captured output from the pipe
     // let stdout = output.stdout;
 
@@ -151,7 +151,7 @@ pub fn display_output(output: &Output) -> ThagResult<()> {
 pub fn modified_since_compiled(
     build_state: &BuildState,
 ) -> ThagResult<Option<(&PathBuf, SystemTime)>> {
-    profile!("modified_since_compiled");
+    profile_fn!("modified_since_compiled");
 
     let executable = &build_state.target_path;
     executable.try_exists()?;
@@ -202,7 +202,7 @@ pub fn modified_since_compiled(
 /// if possible (should work if the code will compile)
 #[must_use]
 pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
-    profile!("to_ast");
+    profile_fn!("to_ast");
 
     #[cfg(debug_assertions)]
     let start_ast = Instant::now();
@@ -248,7 +248,7 @@ pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
     let inner_attrib_regex: &Regex = regex!(r"(?m)^[\s]*#!\[.+\]");
 
-    profile!("extract_inner_attribs");
+    profile_fn!("extract_inner_attribs");
 
     debug_log!("rs_source={rs_source}");
 
@@ -282,7 +282,7 @@ pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
 /// Convert a Rust code snippet into a program by wrapping it in a main method and other scaffolding.
 #[must_use]
 pub fn wrap_snippet(inner_attribs: &str, body: &str) -> String {
-    profile!("wrap_snippet");
+    profile_fn!("wrap_snippet");
 
     debug_log!("In wrap_snippet");
 
@@ -311,7 +311,7 @@ Ok(())
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
 pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> ThagResult<fs::File> {
-    profile!("write_source");
+    profile_fn!("write_source");
     let mut to_rs_file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -334,7 +334,7 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> ThagResult<fs::Fil
 /// # Errors
 /// Will return Err if it can't create the `rs_dyn` directory.
 pub fn create_temp_source_file() -> ThagResult<PathBuf> {
-    profile!("create_temp_source_file");
+    profile_fn!("create_temp_source_file");
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
@@ -359,7 +359,7 @@ pub fn create_temp_source_file() -> ThagResult<PathBuf> {
 pub fn build_loop(args: &Cli, filter: String) -> String {
     use crate::ast::is_unit_return_type;
 
-    profile!("build_loop");
+    profile_fn!("build_loop");
     let maybe_ast = extract_ast_expr(&filter);
     let returns_unit = maybe_ast.map_or_else(
         |_| {
@@ -420,7 +420,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 /// # Errors
 /// Will return `Err` if there is any error deleting the file.
 pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<()> {
-    profile!("clean_up");
+    profile_fn!("clean_up");
     // Delete the file
     remove_file(source_path)?;
 
@@ -432,7 +432,7 @@ pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<
 /// # Errors
 /// Will return `Err` if there is any error reading the directory.
 pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
-    profile!("display_dir_contents");
+    profile_fn!("display_dir_contents");
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
@@ -460,7 +460,7 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 /// an abstract syntax tree.
 #[must_use]
 pub fn strip_curly_braces(haystack: &str) -> Option<String> {
-    profile!("strip_curly_braces");
+    profile_fn!("strip_curly_braces");
     // Define the regex pattern
     let re: &Regex = regex!(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$");
 
@@ -472,7 +472,7 @@ pub fn strip_curly_braces(haystack: &str) -> Option<String> {
 #[must_use]
 #[cfg(feature = "build")]
 pub fn get_source_path(build_state: &BuildState) -> String {
-    profile!("get_source_path");
+    profile_fn!("get_source_path");
     let binding: &PathBuf = if build_state.build_from_orig_source {
         &build_state.source_path
     } else {
@@ -491,7 +491,7 @@ pub fn get_source_path(build_state: &BuildState) -> String {
 /// # Panics
 /// Will panic if the `rustfmt` failed.
 fn rustfmt(source_path_str: &str) {
-    profile!("rustfmt");
+    profile_fn!("rustfmt");
     if Command::new("rustfmt").arg("--version").output().is_ok() {
         // Run rustfmt on the source file
         let mut command = Command::new("rustfmt");

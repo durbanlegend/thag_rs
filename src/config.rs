@@ -3,7 +3,7 @@ use crate::{
     clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, Color, ColorSupport, TermBgLuma,
     ThagError, ThagResult, Verbosity, V,
 };
-use crate::{profile, profile_method};
+use crate::{profile_fn, profile_method};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
 use mockall::{automock, predicate::str};
@@ -686,7 +686,7 @@ impl Context for RealContext {
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
 pub fn maybe_config() -> Option<Config> {
-    profile!("maybe_config");
+    profile_fn!("maybe_config");
     lazy_static_var!(Option<Config>, {
         let context = RealContext::new();
         let load_or_default = Config::load_or_create_default(&context);
@@ -696,7 +696,7 @@ pub fn maybe_config() -> Option<Config> {
 }
 
 fn maybe_load_config() -> Option<Config> {
-    profile!("maybe_load_config");
+    profile_fn!("maybe_load_config");
     // eprintln!("In maybe_load_config, should not see this message more than once");
 
     let context = get_context();
@@ -723,7 +723,7 @@ fn maybe_load_config() -> Option<Config> {
 /// Panics if there is any issue accessing the current directory, e.g. if it doesn't exist or we don't have sufficient permissions to access it.
 #[must_use]
 pub fn get_context() -> Arc<dyn Context> {
-    profile!("get_context");
+    profile_fn!("get_context");
     let context: Arc<dyn Context> = if var("TEST_ENV").is_ok() {
         let current_dir = current_dir().expect("Could not get current dir");
         let config_path = current_dir.join("tests/assets").join("config.toml");
@@ -747,7 +747,7 @@ pub fn get_context() -> Arc<dyn Context> {
 /// This function will return an error if it either finds a file and fails to read it,
 /// or reads the file and fails to parse it.
 pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
-    profile!("load");
+    profile_fn!("load");
     let config_path = context.get_config_path();
 
     debug_log!("config_path={config_path:?}");
@@ -775,7 +775,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 /// Will panic if it can't create the parent directory for the configuration.
 #[allow(clippy::unnecessary_wraps)]
 pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
-    profile!("open");
+    profile_fn!("open");
     let config_path = context.get_config_path();
     debug_log!("config_path={config_path:?}");
 
@@ -806,7 +806,7 @@ pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
 ///
 /// This function will bubble up any Toml parsing errors encountered.
 pub fn validate_config_format(content: &str) -> Result<(), ThagError> {
-    profile!("validate_config_format");
+    profile_fn!("validate_config_format");
     // Try to parse as generic TOML first
     let doc = content
         .parse::<DocumentMut>()

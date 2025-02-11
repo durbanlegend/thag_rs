@@ -90,6 +90,7 @@ impl AllocationProfiler {
         &ALLOCATOR
     }
 
+    #[allow(clippy::unused_self)]
     fn write_log(&self, size: usize, is_alloc: bool) -> Result<(), Box<dyn std::error::Error>> {
         static IS_LOGGING: AtomicBool = AtomicBool::new(false);
 
@@ -122,7 +123,7 @@ impl AllocationProfiler {
             // Write stack frames and count them
             let stack_len = PROFILE_STACK
                 .try_with(|s| {
-                    if let Ok(stack) = s.try_borrow() {
+                    s.try_borrow().map_or(0, |stack| {
                         let mut len = 0u32;
                         for frame in stack.iter() {
                             let frame_bytes = frame.as_bytes();
@@ -137,9 +138,7 @@ impl AllocationProfiler {
                             }
                         }
                         len
-                    } else {
-                        0
-                    }
+                    })
                 })
                 .unwrap_or(0);
 
@@ -258,7 +257,7 @@ fn initialize_profile_files(profile_type: ProfileType) -> ThagResult<()> {
     Ok(())
 }
 
-fn get_global_profile_type() -> ProfileType {
+pub fn get_global_profile_type() -> ProfileType {
     match PROFILE_TYPE.load(Ordering::SeqCst) {
         2 => ProfileType::Memory,
         3 => ProfileType::Both,
@@ -392,6 +391,7 @@ impl Profile {
     #[must_use]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
         // println!("Profile::new called with name: {name} and type: {requested_type:?}");
+        // TODO: make the requested type a true override once the proc macro is implemented
         let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
@@ -422,6 +422,7 @@ impl Profile {
                     .total_allocated // Changed from current_allocated
                     .load(Ordering::SeqCst),
             ),
+            _not_send: PhantomData,
         }
     }
 
@@ -643,6 +644,7 @@ pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
                         name: section_name,
                         profile_type: ProfileType::Time,
                         initial_memory: None,
+                        _not_send: PhantomData,
                     })
                 },
             )
@@ -659,13 +661,13 @@ pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
 ///
 /// ```Rust
 /// fn foo(bar) {
-///     profile!("foo");
+///     profile_fn!("foo");
 ///     ...
 /// }
 ///
 /// ```
 #[macro_export]
-macro_rules! profile {
+macro_rules! profile_fn {
     ($name:expr) => {
         let _profile = $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Time);
     };

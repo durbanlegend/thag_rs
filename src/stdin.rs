@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{
-    debug_log, profile,
+    debug_log, profile_fn,
     tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay},
     vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError, ThagResult, V,
 };
@@ -196,7 +196,7 @@ pub fn read() -> Result<String, std::io::Error> {
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
-    profile!("read_to_string");
+    profile_fn!("read_to_string");
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)

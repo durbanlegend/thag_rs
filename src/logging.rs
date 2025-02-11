@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::{debug_log, profile, profile_method, ThagResult};
+use crate::{debug_log, profile_fn, profile_method, ThagResult};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use std::sync::{
@@ -36,12 +36,12 @@ pub fn get_verbosity() -> Verbosity {
 
 #[allow(clippy::module_name_repetitions)]
 pub fn enable_debug_logging() {
-    profile!("enable_debug_logging");
+    profile_fn!("enable_debug_logging");
     DEBUG_LOG_ENABLED.store(true, Ordering::SeqCst);
 }
 
 pub fn is_debug_logging_enabled() -> bool {
-    profile!("is_debug_logging_enabled");
+    profile_fn!("is_debug_logging_enabled");
     DEBUG_LOG_ENABLED.load(Ordering::SeqCst)
 }
 
@@ -134,7 +134,7 @@ pub static LOGGER: LazyLock<Mutex<Logger>> = LazyLock::new(|| Mutex::new(Logger:
 /// # Panics
 /// Will panic in debug mode if the global verbosity value is not the value we just set.
 pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
-    profile!("set_global_verbosity");
+    profile_fn!("set_global_verbosity");
     LOGGER.lock()?.set_verbosity(verbosity);
     #[cfg(debug_assertions)]
     assert_eq!(get_verbosity(), verbosity);
@@ -150,7 +150,7 @@ pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
 #[cfg(feature = "env_logger")]
 pub fn configure_log() {
     use log::info;
-    profile!("configure_log");
+    profile_fn!("configure_log");
 
     let env = Env::new().filter("RUST_LOG");
     Builder::new().parse_env(env).init();
@@ -164,7 +164,7 @@ pub fn configure_log() {
 /// Panics if it can't create the log file app.log in the current working directory.
 #[cfg(feature = "simplelog")]
 pub fn configure_log() {
-    profile!("configure_log");
+    profile_fn!("configure_log");
 
     configure_simplelog();
     // info!("Initialized simplelog");  // interferes with testing
@@ -178,7 +178,7 @@ pub fn configure_log() {
 /// Panics if it can't create the log file app.log in the current working directory.
 #[cfg(feature = "simplelog")]
 fn configure_simplelog() {
-    profile!("configure_simplelog");
+    profile_fn!("configure_simplelog");
     CombinedLogger::init(vec![
         TermLogger::new(
             LevelFilter::Info,

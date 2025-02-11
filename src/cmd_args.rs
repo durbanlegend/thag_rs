@@ -1,7 +1,7 @@
 use crate::{
     config::{maybe_config, DependencyInference},
     logging::{set_global_verbosity, Verbosity, V},
-    profile, profile_method, profile_section, ThagError, ThagResult, RS_SUFFIX,
+    profile_fn, profile_method, profile_section, ThagError, ThagResult, RS_SUFFIX,
 };
 use bitflags::bitflags;
 use clap::{ArgGroup /*, ColorChoice */, Parser};
@@ -143,7 +143,7 @@ pub struct Cli {
 /// Getter for clap command-line arguments
 #[must_use]
 pub fn get_args() -> Cli {
-    profile!("get_args");
+    profile_fn!("get_args");
     Cli::parse()
 }
 
@@ -151,7 +151,7 @@ pub fn get_args() -> Cli {
 /// # Errors
 /// Will return `Err` if there is a missing script name or missing .rs suffix.
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
-    profile!("validate_args");
+    profile_fn!("validate_args");
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) {
             return Err(format!("Script name {script} must end in {RS_SUFFIX}").into());
@@ -173,7 +173,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
 /// # Errors
 /// Will return `Err` if the logger mutex cannot be locked.
 pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
-    profile!("set_verbosity");
+    profile_fn!("set_verbosity");
 
     let verbosity = if args.verbose >= 2 {
         Verbosity::Debug
@@ -260,7 +260,7 @@ impl str::FromStr for ProcFlags {
 ///
 /// Will panic if the internal correctness check fails.
 pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
-    profile!("get_proc_flags");
+    profile_fn!("get_proc_flags");
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();

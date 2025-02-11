@@ -1,12 +1,12 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::{debug_log, profile, ThagResult};
+use crate::{debug_log, profile_fn, ThagResult};
 use std::{path::PathBuf, time::Instant};
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.
 #[inline]
 pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
-    profile!("reassemble");
+    profile_fn!("reassemble");
     map.fold(String::new(), |mut output, b| {
         let _ = writeln!(output, "{b}");
         output
@@ -17,7 +17,7 @@ pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
 #[inline]
 #[must_use]
 pub fn disentangle(text_wall: &str) -> String {
-    profile!("disentangle");
+    profile_fn!("disentangle");
     reassemble(text_wall.lines())
 }
 
@@ -27,21 +27,21 @@ pub fn disentangle(text_wall: &str) -> String {
 #[inline]
 #[cfg(target_os = "windows")]
 pub fn escape_path_for_windows(path_str: &str) -> String {
-    profile!("escape_path_for_windows");
+    profile_fn!("escape_path_for_windows");
     path_str.replace('\\', "/")
 }
 
 #[must_use]
 #[cfg(not(target_os = "windows"))]
 pub fn escape_path_for_windows(path_str: &str) -> String {
-    profile!("escape_path_for_windows");
+    profile_fn!("escape_path_for_windows");
     path_str.to_string()
 }
 
 /// Developer method to log method timings.
 #[inline]
 pub fn debug_timings(start: &Instant, process: &str) {
-    profile!("debug_timings");
+    profile_fn!("debug_timings");
     let dur = start.elapsed();
     debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
 }
@@ -124,6 +124,7 @@ macro_rules! static_lazy {
                 INSTANCE.get_or_init(|| $init)
             }
 
+            #[allow(dead_code)]
             pub fn init() {
                 let _ = Self::get();
             }

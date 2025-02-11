@@ -1,7 +1,7 @@
 #![allow(clippy::cast_lossless)]
 use crate::errors::ThemeError;
 use crate::styling::Role::{Heading1, Info, Normal};
-use crate::{profile, profile_method, profile_section, vlog, ThagError, ThagResult, V};
+use crate::{profile, profile_fn, profile_method, profile_section, vlog, ThagError, ThagResult, V};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -261,12 +261,11 @@ impl Style {
         self.underline = false;
     }
 
+    #[profile(imp = "Style")]
     pub fn paint<D>(&self, val: D) -> String
     where
         D: std::fmt::Display,
     {
-        profile_method!("Style::paint");
-
         // vlog!(V::V, "self.foreground={:#?}", self.foreground);
         if self.foreground.is_none() {
             return val.to_string();
@@ -719,7 +718,7 @@ impl ColorInitStrategy {
 
 #[cfg(feature = "color_detect")]
 fn resolve_config_term_bg_rgb(config: &crate::Config) -> Option<(u8, u8, u8)> {
-    profile!("resolve_config_term_bg_rgb");
+    profile_fn!("resolve_config_term_bg_rgb");
     let term_bg_rgb = config.styling.term_bg_rgb;
     match term_bg_rgb {
         None => get_term_bg_rgb().map_or(None, |rgb| Some(*rgb)),
@@ -785,8 +784,8 @@ impl TermAttributes {
     /// * Built-in theme loading fails (which should never happen with correct installation)
     /// * Theme conversion fails during initialization
     #[allow(clippy::too_many_lines)]
+    #[profile(imp = "TermAttributes")]
     pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
-        profile_method!("TermAttributes::initialize");
         let get_or_init = INSTANCE.get_or_init(|| -> Self {
             profile_section!("INSTANCE::get_or_init");
             #[cfg(feature = "config")]
@@ -1117,13 +1116,13 @@ impl TermAttributes {
 
 #[must_use]
 pub fn paint_for_role(role: Role, string: &str) -> String {
-    profile!("paint_for_role");
+    profile_fn!("paint_for_role");
     Style::for_role(role).paint(string)
 }
 
 #[must_use]
 pub fn style_for_theme_and_role(theme: &Theme, role: Role) -> Style {
-    profile!("style_for_theme_and_role");
+    profile_fn!("style_for_theme_and_role");
     theme.style_for_role(role)
 }
 
@@ -1221,7 +1220,7 @@ pub struct Palette {
 impl Palette {
     #[must_use]
     pub fn style_for_role(&self, role: Role) -> Style {
-        profile!("paint_for_role");
+        profile_fn!("paint_for_role");
         match role {
             Heading1 => self.heading1.clone(),
             Role::Heading2 => self.heading2.clone(),
@@ -2029,7 +2028,7 @@ impl Theme {
 }
 
 fn index_to_rgb(index: u8) -> (u8, u8, u8) {
-    profile!("index_to_rgb");
+    profile_fn!("index_to_rgb");
     if index < 16 {
         // Standard ANSI colors
         return match index {
@@ -2077,7 +2076,7 @@ fn index_to_rgb(index: u8) -> (u8, u8, u8) {
 // }
 
 fn fallback_theme(term_bg_luma: TermBgLuma) -> ThagResult<Theme> {
-    profile!("fallback_theme");
+    profile_fn!("fallback_theme");
     let name = if term_bg_luma == TermBgLuma::Light {
         "basic_light"
     } else {
@@ -2095,7 +2094,7 @@ fn fallback_theme(term_bg_luma: TermBgLuma) -> ThagResult<Theme> {
 
 #[cfg(feature = "config")]
 fn get_preferred_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Vec<String> {
-    profile!("get_preferred_styling");
+    profile_fn!("get_preferred_styling");
     match term_bg_luma {
         TermBgLuma::Light => &config.styling.preferred_light,
         TermBgLuma::Dark => &config.styling.preferred_dark,
@@ -2111,7 +2110,7 @@ fn get_preferred_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &V
 
 #[cfg(feature = "config")]
 fn get_fallback_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Vec<String> {
-    profile!("get_fallback_styling");
+    profile_fn!("get_fallback_styling");
     match term_bg_luma {
         TermBgLuma::Light => &config.styling.fallback_light,
         TermBgLuma::Dark => &config.styling.fallback_dark,
@@ -2166,7 +2165,7 @@ fn get_fallback_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Ve
 // #[cfg(feature = "color_detect")]
 #[must_use]
 fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> f32 {
-    profile!("color_distance");
+    profile_fn!("color_distance");
     let dr = (c1.0 as f32 - c2.0 as f32).powi(2);
     let dg = (c1.1 as f32 - c2.1 as f32).powi(2);
     let db = (c1.2 as f32 - c2.2 as f32).powi(2);
@@ -2175,7 +2174,7 @@ fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> f32 {
 
 // #[cfg(feature = "color_detect")]
 fn hex_to_rgb(hex: &str) -> ThagResult<(u8, u8, u8)> {
-    profile!("hex_to_rgb");
+    profile_fn!("hex_to_rgb");
     let hex = hex.trim_start_matches('#');
     if hex.len() == 6 {
         if let (Ok(r), Ok(g), Ok(b)) = (
@@ -2194,7 +2193,7 @@ fn hex_to_rgb(hex: &str) -> ThagResult<(u8, u8, u8)> {
 
 // Helper to check a single style
 fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
-    profile!("validate_style");
+    profile_fn!("validate_style");
     style.foreground.as_ref().map_or_else(
         || Ok(()),
         |color_info| match &color_info.value {
@@ -2280,7 +2279,7 @@ macro_rules! cvprtln {
 // }
 
 fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
-    profile!("base_distance");
+    profile_fn!("base_distance");
     let dr = f64::from(i32::from(c1.0) - i32::from(c2.0)) * 0.3;
     let dg = f64::from(i32::from(c1.1) - i32::from(c2.1)) * 0.59;
     let db = f64::from(i32::from(c1.2) - i32::from(c2.2)) * 0.11;
@@ -2293,7 +2292,7 @@ fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
 pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
 
-    profile!("find_closest_color");
+    profile_fn!("find_closest_color");
 
     // Handle grays first (232-255)
     let (r, g, b) = rgb;
@@ -2315,7 +2314,7 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
 
     // Find closest color in the 6x6x6 color cube (16-231)
     let find_closest = |v: u8| {
-        profile!("find_closest");
+        profile_fn!("find_closest");
         u8::try_from(
             STEPS
                 .iter()
@@ -2341,7 +2340,7 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
 }
 
 fn find_closest_basic_color(rgb: (u8, u8, u8)) -> u8 {
-    profile!("find_closest_basic_color");
+    profile_fn!("find_closest_basic_color");
     // Use weighted Euclidean distance for better perceptual matching
 
     #[allow(clippy::cast_possible_truncation)]
@@ -2361,7 +2360,7 @@ fn find_closest_basic_color(rgb: (u8, u8, u8)) -> u8 {
 pub fn get_rgb(color: u8) -> (u8, u8, u8) {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
 
-    profile!("get_rgb");
+    profile_fn!("get_rgb");
     match color {
         0..=15 => BASIC_COLORS[color as usize],
         16..=231 => {
@@ -2428,7 +2427,7 @@ pub fn display_theme_roles(theme: &Theme) {
         ("Trace", "Detailed execution tracking"),
     ];
 
-    profile!("display_theme_roles");
+    profile_fn!("display_theme_roles");
 
     // Calculate maximum role name length for alignment.
     // Get length of longest role name after "painting" (wrapping in xterm styling instruction).
@@ -2507,7 +2506,7 @@ pub fn display_theme_roles(theme: &Theme) {
 
 #[allow(clippy::too_many_lines)]
 pub fn display_theme_details() {
-    profile!("display_theme_details");
+    profile_fn!("display_theme_details");
     let term_attrs = TermAttributes::get_or_init();
     let theme = &term_attrs.theme;
     let theme_bgs = &term_attrs.theme.bg_rgbs;
@@ -2630,7 +2629,7 @@ pub fn display_theme_details() {
 }
 
 fn dual_format_rgb((r, g, b): (u8, u8, u8)) -> String {
-    profile!("dual_format_rgb");
+    profile_fn!("dual_format_rgb");
     format!("#{r:02x}{g:02x}{b:02x} = rgb({r}, {g}, {b})")
 }
 

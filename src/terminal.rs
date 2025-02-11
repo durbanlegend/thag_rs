@@ -4,7 +4,7 @@
 //! In particular, it manages raw mode status which can be affected by some detection operations.
 
 use crate::styling::{ColorSupport, TermBgLuma};
-use crate::{lazy_static_var, profile, vlog, ThagError, ThagResult, V};
+use crate::{lazy_static_var, profile_fn, vlog, ThagError, ThagResult, V};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use scopeguard::defer;
 use std::io::{stdout, Write};
@@ -61,7 +61,7 @@ impl Drop for TerminalStateGuard {
 #[must_use]
 #[allow(unused_variables)]
 pub fn detect_color_support() -> &'static ColorSupport {
-    profile!("detect_color_support");
+    profile_fn!("detect_color_support");
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
         debug_log!("Avoiding supports_color for testing");
@@ -129,7 +129,7 @@ pub fn detect_color_support() -> &'static ColorSupport {
 /// println!("Terminal background intensity: {:?}", luma);
 /// ```
 pub fn get_term_bg_luma() -> &'static TermBgLuma {
-    profile!("get_term_bg_luma");
+    profile_fn!("get_term_bg_luma");
 
     lazy_static_var!(TermBgLuma, {
         let _guard = TerminalStateGuard::new();
@@ -187,7 +187,7 @@ pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
         }
     }
 
-    profile!("get_term_bg");
+    profile_fn!("get_term_bg");
 
     lazy_static_var!(
         Result < (u8, u8, u8),
@@ -228,7 +228,7 @@ pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
 ///
 /// This function will bubble up any errors returned by `crossterm`.
 pub fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
-    profile!("restore_raw_status");
+    profile_fn!("restore_raw_status");
     if raw_before {
         enable_raw_mode()?;
     } else {

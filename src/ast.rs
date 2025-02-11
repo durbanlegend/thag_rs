@@ -1,7 +1,7 @@
 //!
 //! AST analysis and dependency inference capability for `thag_rs`.
 //!
-use crate::{debug_log, profile, profile_method, regex, ThagResult, BUILT_IN_CRATES};
+use crate::{debug_log, profile_fn, profile_method, regex, ThagResult, BUILT_IN_CRATES};
 use phf::phf_set;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
@@ -342,7 +342,7 @@ pub fn infer_deps_from_ast(
     crates_finder: &CratesFinder,
     metadata_finder: &MetadataFinder,
 ) -> Vec<String> {
-    profile!("infer_deps_from_ast");
+    profile_fn!("infer_deps_from_ast");
     let mut dependencies = vec![];
     dependencies.extend_from_slice(&crates_finder.crates);
 
@@ -377,7 +377,7 @@ pub fn infer_deps_from_ast(
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn infer_deps_from_source(code: &str) -> Vec<String> {
-    profile!("infer_deps_from_source");
+    profile_fn!("infer_deps_from_source");
 
     if code.trim().is_empty() {
         return vec![];
@@ -429,7 +429,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 
 #[must_use]
 pub fn find_crates(syntax_tree: &Ast) -> CratesFinder {
-    profile!("find_crates");
+    profile_fn!("find_crates");
     let mut crates_finder = CratesFinder::default();
 
     match syntax_tree {
@@ -442,7 +442,7 @@ pub fn find_crates(syntax_tree: &Ast) -> CratesFinder {
 
 #[must_use]
 pub fn find_metadata(syntax_tree: &Ast) -> MetadataFinder {
-    profile!("find_metadata");
+    profile_fn!("find_metadata");
     let mut metadata_finder = MetadataFinder::default();
 
     match syntax_tree {
@@ -467,7 +467,7 @@ pub fn should_filter_dependency(name: &str) -> bool {
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
 pub fn find_modules_source(code: &str) -> Vec<String> {
-    profile!("find_modules_source");
+    profile_fn!("find_modules_source");
     let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
     debug_log!("In ast::find_use_renames_source");
     let mut modules: Vec<String> = vec![];
@@ -487,7 +487,7 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
 ///
 /// This function will return an error if `syn` fails to parse the `use` statements as a `syn::File`.
 pub fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
-    profile!("extract_and_wrap_uses");
+    profile_fn!("extract_and_wrap_uses");
     // Step 1: Capture `use` statements
     let use_simple_regex: &Regex = regex!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
     let use_nested_regex: &Regex = regex!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
@@ -532,7 +532,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
                 .insert(i.sig.ident.to_string(), i.sig.output.clone());
         }
     }
-    profile!("extract_functions");
+    profile_fn!("extract_functions");
 
     let mut finder = FindFns::default();
     finder.visit_expr(expr);
@@ -545,7 +545,7 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 #[must_use]
 #[inline]
 pub fn is_unit_return_type(expr: &Expr) -> bool {
-    profile!("is_unit_return_type");
+    profile_fn!("is_unit_return_type");
 
     #[cfg(debug_assertions)]
     let start = Instant::now();
@@ -576,7 +576,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
     expr: &Expr,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> bool {
-    profile!("is_last_stmt_unit_type");
+    profile_fn!("is_last_stmt_unit_type");
 
     // debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
@@ -747,7 +747,7 @@ pub fn is_path_unit_type<S: BuildHasher>(
     path: &syn::PatPath,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> Option<bool> {
-    profile!("is_path_unit_type");
+    profile_fn!("is_path_unit_type");
     if let Some(ident) = path.path.get_ident() {
         if let Some(return_type) = function_map.get(&ident.to_string()) {
             return Some(match return_type {
@@ -779,7 +779,7 @@ pub fn is_stmt_unit_type<S: BuildHasher>(
     stmt: &Stmt,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> bool {
-    profile!("is_stmt_unit_type");
+    profile_fn!("is_stmt_unit_type");
 
     debug_log!("%%%%%%%% stmt={stmt:#?}");
     match stmt {
@@ -833,7 +833,7 @@ pub fn is_stmt_unit_type<S: BuildHasher>(
 /// # Errors
 /// Will return `Err` if there is any error parsing expressions
 pub fn is_main_fn_returning_unit(file: &File) -> ThagResult<bool> {
-    profile!("is_main_fn_returning_unit");
+    profile_fn!("is_main_fn_returning_unit");
 
     // Traverse the file to find the main function
     for item in &file.items {

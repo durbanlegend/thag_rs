@@ -1457,129 +1457,71 @@ fn generate_memory_timeline(processed: &ProcessedProfile, log_path: &Path) -> Th
     eprintln!("alloc_log_path={}", alloc_log_path.display());
     let alloc_entries = parse_allocation_log(&alloc_log_path)?;
 
-    // Process entries chronologically and track significant events
-    let mut events = Vec::new();
-    let mut current_memory = 0i64;
-    let mut peak_memory = 0i64;
-    let mut last_peak = 0i64;
-
-    for entry in &alloc_entries {
-        let prev_memory = current_memory;
-        current_memory += entry.size; // size is already negative for deallocations
-        peak_memory = peak_memory.max(current_memory);
-
-        // Track significant events (new peaks or large changes)
-        let is_significant =
-            current_memory > last_peak || (entry.size.abs() as f64 / peak_memory as f64) > 0.05; // 5% threshold
-
-        if is_significant {
-            events.push(MemoryEvent {
-                timestamp: entry.timestamp,
-                operation: entry.operation,
-                size: entry.size,
-                stack: entry.stack.clone(),
-                cumulative_memory: current_memory,
-                is_peak: current_memory > last_peak,
-            });
-
-            if current_memory > last_peak {
-                last_peak = current_memory;
-            }
-        }
+    if alloc_entries.is_empty() {
+        println!("No memory allocations to display");
+        return Ok(());
     }
 
-    // Print comprehensive analysis
-    println!("\nMemory Usage Timeline Analysis:");
-    println!("==============================");
-    println!("Peak memory: {} bytes", peak_memory);
-    println!("Final memory: {} bytes", current_memory);
-    println!("\nSignificant Memory Events:");
-    println!("------------------------");
+    // Generate SVG timeline
+    let output = File::create("memory-timeline.svg")?;
+    let mut opts = Options::default();
+    opts.title = "Memory Usage Timeline".to_string();
+    opts.subtitle = Some(format!(
+        "Peak: {} bytes, Final: {} bytes, Allocs: {}, Deallocs: {}",
+        memory_data.peak_memory,
+        memory_data.current_memory,
+        memory_data.allocation_count,
+        memory_data.deallocation_count
+    ));
+    opts.colors = Palette::Basic(BasicPalette::Mem);
+    "bytes".clone_into(&mut opts.count_name);
+    opts.min_width = 0.1;
+    opts.flame_chart = true;
 
-    let format_time = |time: u128| {
-        let secs = time / 1_000_000;
-        let millis = (time % 1_000_000) / 1000;
-        format!("{}.{:03}s", secs, millis)
-    };
+    // Format timeline data for flamegraph
+    let timeline_data: Vec<String> = alloc_entries
+        .iter()
+        .map(|entry| {
+            format!(
+                "{} {}",
+                entry.stack,
+                entry.size.abs() // Use absolute size for visualization
+            )
+        })
+        .collect();
 
-    for event in &events {
-        let marker = if event.is_peak { "⚑" } else { "│" };
-        println!(
-            "{} {} {:>10} bytes ({:>+8}) - {}",
-            marker,
-            format_time(event.timestamp),
-            event.cumulative_memory,
-            event.size,
-            event.stack
-        );
+    flamegraph::from_lines(&mut opts, timeline_data.iter().map(String::as_str), output)?;
+
+    println!("\nMemory Timeline Analysis:");
+    println!("=========================");
+    println!("Peak memory usage:    {} bytes", memory_data.peak_memory);
+    println!("Final memory usage:   {} bytes", memory_data.current_memory);
+    println!(
+        "Total allocations:    {} ({} bytes)",
+        memory_data.allocation_count, memory_data.total_allocated
+    );
+    println!(
+        "Total deallocations: {} ({} bytes)",
+        memory_data.deallocation_count, memory_data.total_deallocated
+    );
+
+    // List top memory events
+    println!("\nTop Memory Events:");
+    let mut significant_events: Vec<_> = alloc_entries
+        .iter()
+        .filter(|e| e.size.abs() as f64 / memory_data.peak_memory as f64 > 0.05) // 5% of peak
+        .collect();
+    significant_events.sort_by_key(|e| -(e.size.abs()));
+
+    for event in significant_events.iter().take(10) {
+        let time = Duration::from_micros((event.timestamp / 1000) as u64);
+        println!("{:>8} bytes at {:?}: {}", event.size, time, event.stack);
     }
 
-    // Generate enhanced visual timeline
-    println!("\nMemory Timeline:");
-    const WIDTH: usize = 100;
-    const HEIGHT: usize = 25;
-    let mut timeline = vec![vec![' '; WIDTH]; HEIGHT];
-    let mut labels = Vec::new();
-
-    if !events.is_empty() {
-        let start_time = events.first().unwrap().timestamp;
-        let end_time = events.last().unwrap().timestamp;
-        let time_range = end_time.saturating_sub(start_time);
-
-        // Plot memory usage
-        for event in &events {
-            let x = ((event.timestamp - start_time) as f64 / time_range as f64 * (WIDTH - 1) as f64)
-                as usize;
-            let y = ((event.cumulative_memory as f64 / peak_memory as f64) * (HEIGHT - 2) as f64)
-                as usize;
-            let y = HEIGHT - 2 - y;
-
-            if x < WIDTH && y < HEIGHT {
-                timeline[y][x] = if event.is_peak { '▲' } else { '█' };
-
-                // Add label for significant events
-                if event.is_peak || event.size.abs() > peak_memory / 10 {
-                    let short_stack = event.stack.split(';').last().unwrap_or("unknown");
-                    labels.push((x, y, short_stack.to_string()));
-                }
-            }
-        }
-
-        // Draw timeline with labels
-        println!("{}", "─".repeat(WIDTH + 2));
-        for (y, row) in timeline.iter().enumerate() {
-            print!("│");
-            for (x, &cell) in row.iter().enumerate() {
-                // Check if we have a label for this position
-                if let Some((label_x, label_y, ref label)) =
-                    labels.iter().find(|(lx, ly, _)| *lx == x && *ly == y)
-                {
-                    print!("{}", label.chars().next().unwrap_or('?'));
-                } else {
-                    print!("{}", cell);
-                }
-            }
-            println!("│");
-        }
-        println!("{}", "─".repeat(WIDTH + 2));
-
-        // Print time scale
-        println!(
-            "{}{}{}",
-            format_time(0),
-            " ".repeat(WIDTH - 20),
-            format_time(time_range)
-        );
-
-        // Print legend for significant functions
-        println!("\nSignificant Functions:");
-        let mut seen_labels = HashSet::new();
-        for (_, _, label) in &labels {
-            if seen_labels.insert(label) {
-                println!("  {} {}", "•", label);
-            }
-        }
-    }
+    enhance_svg_accessibility("memory-timeline.svg")
+        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+    println!("\nMemory timeline generated: memory-timeline.svg");
+    open_in_browser("memory-timeline.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
 
     Ok(())
 }

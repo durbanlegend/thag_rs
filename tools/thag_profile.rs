@@ -88,6 +88,25 @@ impl MemoryData {
                 .unwrap_or(0) as u64;
         }
     }
+
+    fn update_stats(&mut self, entries: &[AllocationLogEntry]) {
+        let mut current_memory = 0i64;
+
+        for entry in entries {
+            if entry.size > 0 {
+                self.allocation_count += 1;
+                self.total_allocated += entry.size as u64;
+                current_memory += entry.size;
+            } else {
+                self.deallocation_count += 1;
+                self.total_deallocated += entry.size.abs() as u64;
+                current_memory -= entry.size.abs();
+            }
+            self.peak_memory = self.peak_memory.max(current_memory as u64);
+        }
+
+        self.current_memory = current_memory.max(0) as u64;
+    }
 }
 
 #[derive(Debug)]
@@ -178,9 +197,14 @@ fn process_profile_data(lines: &[String]) -> ProcessedProfile {
     // Process headers first
     for line in lines {
         if line.starts_with("# Started: ") {
-            if let Ok(ts) = line[10..].trim().parse::<u128>() {
+            if let Ok(ts) = line[10..].trim().parse::<i64>() {
                 // eprintln!("Start time ts={ts}");
-                start_time = Some(ts);
+                match Local.timestamp_micros(ts) {
+                    Single(dt) | Ambiguous(dt, _) => {
+                        processed.timestamp = dt;
+                    }
+                    Nada => (),
+                }
                 break;
             }
         }
@@ -1446,83 +1470,264 @@ fn enhance_memory_stats(memory_data: &mut MemoryData, alloc_entries: &[Allocatio
     }
 }
 
-fn generate_memory_timeline(processed: &ProcessedProfile, log_path: &Path) -> ThagResult<()> {
-    let memory_data = processed
-        .memory_data
-        .as_ref()
-        .ok_or_else(|| ThagError::Profiling("No memory data available".to_string()))?;
+fn process_memory_data(
+    alloc_entries: &[AllocationLogEntry],
+) -> (Vec<(i32, i64)>, HashMap<String, i64>) {
+    let mut cumulative_memory = 0i64;
+    let mut timeline_points = Vec::new();
+    let mut function_peaks = HashMap::new();
+    let mut current_function_totals = HashMap::new();
+    let start_time = alloc_entries[0].timestamp;
 
-    // Get both data sources
-    let alloc_log_path = find_allocation_log(log_path).expect("Could not find allocation log path");
-    eprintln!("alloc_log_path={}", alloc_log_path.display());
-    let alloc_entries = parse_allocation_log(&alloc_log_path)?;
+    for entry in alloc_entries {
+        let relative_time = ((entry.timestamp - start_time) / 1000) as i32;
+        cumulative_memory += entry.size;
 
-    if alloc_entries.is_empty() {
-        println!("No memory allocations to display");
-        return Ok(());
+        // Track per-function memory
+        let function_name = entry
+            .stack
+            .split(';')
+            .last()
+            .unwrap_or("unknown")
+            .to_string();
+        let current = current_function_totals
+            .entry(function_name.clone())
+            .or_insert(0);
+        *current += entry.size;
+
+        // Update peak for this function
+        let peak = function_peaks.entry(function_name).or_insert(0);
+        *peak = (*peak).max(*current);
+
+        timeline_points.push((relative_time, cumulative_memory));
     }
 
-    // Generate SVG timeline
-    let output = File::create("memory-timeline.svg")?;
-    let mut opts = Options::default();
-    opts.title = "Memory Usage Timeline".to_string();
-    opts.subtitle = Some(format!(
-        "Peak: {} bytes, Final: {} bytes, Allocs: {}, Deallocs: {}",
-        memory_data.peak_memory,
-        memory_data.current_memory,
-        memory_data.allocation_count,
-        memory_data.deallocation_count
-    ));
-    opts.colors = Palette::Basic(BasicPalette::Mem);
-    "bytes".clone_into(&mut opts.count_name);
-    opts.min_width = 0.1;
-    opts.flame_chart = true;
+    (timeline_points, function_peaks)
+}
 
-    // Format timeline data for flamegraph
-    let timeline_data: Vec<String> = alloc_entries
-        .iter()
-        .map(|entry| {
-            format!(
-                "{} {}",
-                entry.stack,
-                entry.size.abs() // Use absolute size for visualization
+fn generate_memory_timeline(profile: &ProcessedProfile, file_path: &Path) -> ThagResult<()> {
+    // Find and parse allocation log
+    if let Some(log_path) = find_allocation_log(file_path) {
+        let alloc_entries = parse_allocation_log(&log_path)?;
+        println!("Found {} allocation entries", alloc_entries.len());
+
+        if alloc_entries.is_empty() {
+            return Err(ThagError::Profiling(
+                "No memory allocation data available".to_string(),
+            ));
+        }
+
+        let (timeline_points, function_peaks) = process_memory_data(&alloc_entries);
+
+        // Print function peak memory usage
+        println!("\nPeak Memory Usage by Function:");
+        let mut peaks: Vec<_> = function_peaks.iter().collect();
+        peaks.sort_by_key(|(_, &peak)| std::cmp::Reverse(peak));
+        for (func, peak) in peaks.iter().take(10) {
+            println!("{}: {} bytes", func, peak);
+        }
+
+        // Use the actual peak memory for scaling
+        let peak_memory = peaks.first().map(|(_, &peak)| peak).unwrap_or(0);
+
+        // Calculate timeline data using timestamps
+        let mut cumulative_memory = 0i64;
+        let mut timeline_points = Vec::new();
+        let mut peak_memory = 0i64;
+
+        // Get start time from first entry
+        let start_time = alloc_entries[0].timestamp;
+
+        for entry in &alloc_entries {
+            cumulative_memory += entry.size; // size is already negative for deallocations
+            peak_memory = peak_memory.max(cumulative_memory);
+
+            // Calculate relative time in milliseconds
+            let relative_time = ((entry.timestamp - start_time) / 1000) as i32;
+            timeline_points.push((relative_time, cumulative_memory));
+        }
+
+        // SVG dimensions and layout
+        let width = 1200i32;
+        let height = 600i32;
+        let padding = 60i32;
+        let plot_width = width - 2 * padding;
+        let plot_height = height - 2 * padding;
+
+        // Find time range for x-axis scaling
+        let max_time = timeline_points.last().map(|(t, _)| *t).unwrap_or(0);
+
+        // Generate y-axis labels (memory scale)
+        let memory_labels = generate_memory_scale_labels(peak_memory);
+        let memory_points = generate_scale_points(plot_height, memory_labels.len());
+
+        // Generate x-axis labels (time points)
+        let time_labels = generate_time_scale_labels((max_time / 1000) as usize); // Convert to seconds
+        let time_points = generate_scale_points(plot_width, time_labels.len());
+
+        let start_time = alloc_entries[0].timestamp;
+        let end_time = alloc_entries.last().unwrap().timestamp;
+        let total_duration_ms = ((end_time - start_time) / 1000) as i32;
+
+        let path_data = timeline_points
+            .iter()
+            .map(|(t, y)| {
+                let x_pos = padding + ((t * plot_width) / total_duration_ms.max(1));
+                let y_pos = calculate_y_position(*y, peak_memory, height, padding, plot_height);
+                if *t == 0 {
+                    format!("M {x_pos},{y_pos}")
+                } else {
+                    format!("L {x_pos},{y_pos}")
+                }
+            })
+            .collect::<String>();
+
+        println!(
+            "First 100 chars of path data: {}",
+            &path_data[..path_data.len().min(100)]
+        );
+
+        println!(
+            "Last 100 chars of path data: {}",
+            &path_data[path_data.len() - 100..path_data.len()]
+        );
+
+        // // Add debug visualization for first few points
+        // let debug_points = timeline_points
+        //     .iter()
+        //     .take(5)
+        //     .enumerate()
+        //     .map(|(i, (x, y))| {
+        //         let x_pos = padding + (x * plot_width / timeline_points.len() as i32);
+        //         let y_pos =
+        //             height - padding - ((y * plot_height as i64) / peak_memory.max(1)) as i32;
+        //         format!(
+        //             r#"<circle cx="{}" cy="{}" r="4" fill="{}"/>
+        //                    <text x="{}" y="{}" class="label">{} bytes</text>"#,
+        //             x_pos,
+        //             y_pos,
+        //             if i == 0 { "red" } else { "blue" },
+        //             x_pos + 5,
+        //             y_pos,
+        //             y
+        //         )
+        //     })
+        //     .collect::<String>();
+
+        // Create SVG content
+        let svg = format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+            <style>
+                .axis {{ stroke: #333; stroke-width: 1 }}
+                .grid {{ stroke: #ccc; stroke-width: 0.5; opacity: 0.5 }}
+                .line {{ stroke: #2196F3; stroke-width: 2; fill: none }}
+                .peak {{ stroke: #F44336; stroke-width: 1; stroke-dasharray: 5,5 }}
+                .label {{ font-family: Arial; font-size: 12px; }}
+                .title {{ font-family: Arial; font-size: 16px; font-weight: bold; }}
+            </style>
+
+            <!-- Title -->
+            <text x="{}" y="30" class="title" text-anchor="middle">Memory Usage Timeline</text>
+
+            <!-- Grid lines -->
+            {}
+
+            <!-- Memory usage line -->
+            <path class="line" d="{}"/>
+
+            <!-- Debug visualization -->
+
+            <!-- Peak memory line -->
+            <line class="peak"
+                      x1="{padding}"
+                      y1="{}"
+                      x2="{}"
+                      y2="{}" />
+
+            <!-- Axes -->
+            <g class="axis">
+                <line x1="{padding}" y1="{}" x2="{}" y2="{}" />
+                <line x1="{padding}" y1="{}" x2="{padding}" y2="{padding}" />
+            </g>
+
+            <!-- Axis labels -->
+            {}
+        </svg>"#,
+            // Format arguments in order:
+            width / 2, // Title x position
+            generate_grid_lines(
+                padding,
+                plot_width,
+                plot_height,
+                &memory_points,
+                &time_points
+            ), // Grid lines
+            // Memory usage line path data
+            // Generate path data
+            timeline_points
+                .iter()
+                .map(|(x, y)| {
+                    // let x_pos = padding + ((x * plot_width) / timeline_points.len().max(1) as i32);
+                    let x_pos = padding + ((x * plot_width) / total_duration_ms.max(1));
+                    let y_pos = calculate_y_position(*y, peak_memory, height, padding, plot_height);
+                    if *x == 0 {
+                        format!("M {x_pos},{y_pos}")
+                    } else {
+                        format!("L {x_pos},{y_pos}")
+                    }
+                })
+                .collect::<String>(),
+            // Debug points
+            // timeline_points
+            //     .iter()
+            //     .take(5)
+            //     .enumerate()
+            //     .map(|(i, (x, y))| {
+            //         // let x_pos = padding + ((x * plot_width) / timeline_points.len().max(1) as i32);
+            //         let x_pos = padding + ((x * plot_width) / total_duration_ms.max(1));
+            //         let y_pos = calculate_y_position(*y, peak_memory, height, padding, plot_height);
+            //         format!(
+            //             r#"<circle cx="{}" cy="{}" r="4" fill="{}"/>
+            //                    <text x="{}" y="{}" class="label">{} bytes</text>"#,
+            //             x_pos,
+            //             y_pos,
+            //             if i == 0 { "red" } else { "blue" },
+            //             x_pos + 5,
+            //             y_pos,
+            //             y
+            //         )
+            //     })
+            //     .collect::<String>(),
+            // Peak line y-coordinate
+            calculate_y_position(peak_memory, peak_memory, height, padding, plot_height),
+            width - padding,
+            calculate_y_position(peak_memory, peak_memory, height, padding, plot_height),
+            // Axis coordinates
+            height - padding, // x-axis y1
+            width - padding,  // x-axis x2
+            height - padding, // x-axis y2
+            height - padding, // y-axis y1
+            // Axis labels
+            generate_axis_labels(
+                padding,
+                height,
+                plot_width,
+                &memory_labels,
+                &memory_points,
+                &time_labels,
+                &time_points
             )
-        })
-        .collect();
+        );
 
-    flamegraph::from_lines(&mut opts, timeline_data.iter().map(String::as_str), output)?;
+        fs::write("memory-timeline.svg", svg)?;
+        println!("Memory timeline generated: memory-timeline.svg");
 
-    println!("\nMemory Timeline Analysis:");
-    println!("=========================");
-    println!("Peak memory usage:    {} bytes", memory_data.peak_memory);
-    println!("Final memory usage:   {} bytes", memory_data.current_memory);
-    println!(
-        "Total allocations:    {} ({} bytes)",
-        memory_data.allocation_count, memory_data.total_allocated
-    );
-    println!(
-        "Total deallocations: {} ({} bytes)",
-        memory_data.deallocation_count, memory_data.total_deallocated
-    );
-
-    // List top memory events
-    println!("\nTop Memory Events:");
-    let mut significant_events: Vec<_> = alloc_entries
-        .iter()
-        .filter(|e| e.size.abs() as f64 / memory_data.peak_memory as f64 > 0.05) // 5% of peak
-        .collect();
-    significant_events.sort_by_key(|e| -(e.size.abs()));
-
-    for event in significant_events.iter().take(10) {
-        let time = Duration::from_micros((event.timestamp / 1000) as u64);
-        println!("{:>8} bytes at {:?}: {}", event.size, time, event.stack);
+        // Fix the error handling for open_in_browser
+        open_in_browser("memory-timeline.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
+    } else {
+        return Err(ThagError::Profiling("No allocation log found".to_string()));
     }
-
-    enhance_svg_accessibility("memory-timeline.svg")
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
-    println!("\nMemory timeline generated: memory-timeline.svg");
-    open_in_browser("memory-timeline.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
-
     Ok(())
 }
 
@@ -1632,7 +1837,14 @@ fn generate_time_scale_labels(total_points: usize) -> Vec<String> {
 
 fn generate_scale_points(length: i32, num_divisions: usize) -> Vec<i32> {
     (0..num_divisions)
-        .map(|i| (i * length as usize) / (num_divisions - 1))
+        .map(|i| {
+            (i * length as usize)
+                / (if num_divisions == 1 {
+                    1
+                } else {
+                    num_divisions - 1
+                })
+        })
         .map(|p| p as i32)
         .collect()
 }

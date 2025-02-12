@@ -46,3 +46,4 @@ themes/built_in/none_basic.toml
 *.log
 tools/thag_profile_bad.rs
 tools/thag_profile_bad2.rs
+tools/thag_profile_line.rs

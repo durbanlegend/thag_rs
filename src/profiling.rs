@@ -669,7 +669,7 @@ pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
 #[macro_export]
 macro_rules! profile_fn {
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Time);
+        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 
@@ -700,7 +700,7 @@ macro_rules! profile_fn {
 #[macro_export]
 macro_rules! profile_section {
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Time);
+        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 
@@ -725,7 +725,7 @@ macro_rules! profile_method {
         let _profile = $crate::profiling::Profile::new(NAME);
     };
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Time);
+        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 

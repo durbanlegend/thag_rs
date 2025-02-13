@@ -1,6 +1,7 @@
 #![allow(clippy::missing_panics_doc)]
 mod ansi_code_derive;
 mod category_enum;
+mod enable_profiling;
 mod file_navigator;
 mod generate_theme_types;
 mod palette_methods;
@@ -10,6 +11,7 @@ mod repeat_dash;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;
+use crate::enable_profiling::enable_profiling_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
 use crate::palette_methods::palette_methods_impl;
@@ -190,6 +192,17 @@ fn expand_output(name: &str, output: &TokenStream) {
             eprintln!("{style_reset}{dash_line}{style_reset}");
         }
     }
+}
+
+#[proc_macro_attribute]
+pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(
+        true,
+        "enable_profiling",
+        &attr,
+        &item,
+        enable_profiling_impl,
+    )
 }
 
 #[proc_macro_attribute]

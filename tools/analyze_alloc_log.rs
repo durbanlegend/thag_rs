@@ -123,14 +123,14 @@ fn read_entry(reader: &mut BufReader<File>) -> io::Result<LogEntry> {
     // Try to read newline
     let _ = reader.read_exact(&mut op_byte);
 
-    println!(
-        "Read entry at {}: op={}, size={}, stack_len={}, actual_frames={}",
-        start_pos,
-        operation,
-        size,
-        stack_len,
-        stack.len()
-    );
+    // println!(
+    //     "Read entry at {}: op={}, size={}, stack_len={}, actual_frames={}",
+    //     start_pos,
+    //     operation,
+    //     size,
+    //     stack_len,
+    //     stack.len()
+    // );
 
     Ok(LogEntry {
         timestamp,
@@ -178,7 +178,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(entry) => {
                 static COUNT: AtomicUsize = AtomicUsize::new(0);
                 let count = COUNT.fetch_add(1, Ordering::SeqCst);
-                if true {
+                if false {
                     // count < 5 || count % 100 == 0 {
                     println!(
                         "\nEntry {}: op={}, size={}, stack_len={}, stack={:?}",
@@ -205,6 +205,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nRead {} entries", entries.len());
 
     if !entries.is_empty() {
+        let mut accum_bytes: usize = 0;
+        for entry in &entries {
+            match entry.operation {
+                '+' => accum_bytes += entry.size,
+                '-' => accum_bytes -= entry.size,
+                _ => panic!("Invalid operator {}", entry.operation),
+            }
+        }
+
+        println!("accum_bytes={accum_bytes}");
         analyze_stack_traces(&entries);
     }
 

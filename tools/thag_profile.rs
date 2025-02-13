@@ -66,14 +66,21 @@ pub enum ProfileType {
 
 // Keep existing MemoryData struct
 #[derive(Debug, Default, Clone)]
-struct MemoryData {
-    total_allocated: u64,
-    total_deallocated: u64,
-    peak_memory: u64,
-    current_memory: u64,
-    allocation_count: usize,
-    deallocation_count: usize,
-    allocation_sizes: HashMap<usize, usize>,
+pub struct MemoryData {
+    // Allocation counts
+    pub allocation_count: usize,   // Number of allocation operations
+    pub deallocation_count: usize, // Number of deallocation operations
+
+    // Bytes tracked
+    pub bytes_allocated: u64,   // Total bytes from allocations
+    pub bytes_deallocated: u64, // Total bytes from deallocations
+
+    // Memory state
+    pub peak_memory: u64,    // Maximum memory in use at any point
+    pub current_memory: u64, // Current memory in use
+
+    // Size distribution
+    pub allocation_sizes: HashMap<usize, usize>, // Size -> Count of allocations
 }
 
 // Add timeline support to MemoryData
@@ -95,11 +102,11 @@ impl MemoryData {
         for entry in entries {
             if entry.size > 0 {
                 self.allocation_count += 1;
-                self.total_allocated += entry.size as u64;
+                self.bytes_allocated += entry.size as u64;
                 current_memory += entry.size;
             } else {
                 self.deallocation_count += 1;
-                self.total_deallocated += entry.size.abs() as u64;
+                self.bytes_deallocated += entry.size.abs() as u64;
                 current_memory -= entry.size.abs();
             }
             self.peak_memory = self.peak_memory.max(current_memory as u64);
@@ -197,7 +204,9 @@ fn process_profile_data(lines: &[String]) -> ProcessedProfile {
     // Process headers first
     for line in lines {
         if line.starts_with("# Started: ") {
-            if let Ok(ts) = line[10..].trim().parse::<i64>() {
+            let parse = line[10..].trim().parse::<i64>();
+            if let Ok(ts) = parse {
+                start_time = Some(ts);
                 // eprintln!("Start time ts={ts}");
                 match Local.timestamp_micros(ts) {
                     Single(dt) | Ambiguous(dt, _) => {
@@ -222,7 +231,7 @@ fn process_profile_data(lines: &[String]) -> ProcessedProfile {
                     // Parse size directly - it's always a positive delta
                     if let Ok(size) = size_str.parse::<i64>() {
                         return Some(AllocationLogEntry {
-                            timestamp: start_time.unwrap_or(0),
+                            timestamp: start_time.unwrap_or(0) as u128,
                             operation: '+', // Always an allocation in the .folded file
                             size,
                             stack,
@@ -242,10 +251,14 @@ fn process_profile_data(lines: &[String]) -> ProcessedProfile {
 
         for entry in &entries {
             memory_data.allocation_count += 1;
-            memory_data.total_allocated += entry.size as u64;
+            memory_data.bytes_allocated += entry.size as u64;
             current_memory += entry.size as u64;
             memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
         }
+        eprintln!(
+            "process_profile_data set memory_data.peak_memory to {}",
+            memory_data.peak_memory
+        );
 
         memory_data.current_memory = current_memory;
         processed.memory_data = Some(memory_data);
@@ -899,7 +912,89 @@ fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
     let reader = BufReader::new(input);
     let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
 
-    Ok(process_profile_data(&lines))
+    let mut processed = ProcessedProfile::default();
+    let mut start_time: std::option::Option<DateTime<Local>> = None;
+
+    // Determine profile type from first non-empty line
+    for line in &lines {
+        if line.starts_with("# Time Profile") {
+            processed.profile_type = ProfileType::Time;
+            break;
+        } else if line.starts_with("# Memory Profile") {
+            processed.profile_type = ProfileType::Memory;
+            break;
+        }
+    }
+
+    // Process headers first
+    for line in &lines {
+        if line.starts_with("# Started: ") {
+            if let Ok(ts) = line[10..].trim().parse::<i64>() {
+                match Local.timestamp_micros(ts) {
+                    Single(dt) | Ambiguous(dt, _) => {
+                        processed.timestamp = dt;
+                    }
+                    Nada => (),
+                }
+                break;
+            }
+        }
+    }
+
+    if matches!(processed.profile_type, ProfileType::Time) {
+        processed.stacks = lines
+            .iter()
+            .filter(|line| !line.starts_with('#') && !line.is_empty())
+            .cloned()
+            .collect();
+    }
+
+    // Process memory entries from folded file
+    if matches!(processed.profile_type, ProfileType::Memory) {
+        let entries: Vec<(String, i64)> = lines
+            .iter()
+            .filter(|line| !line.starts_with('#') && !line.is_empty())
+            .filter_map(|line| {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    let stack = parts[..parts.len() - 1].join(" ");
+                    if let Some(size_str) = parts.last() {
+                        if let Ok(size) = size_str.parse::<i64>() {
+                            return Some((stack, size));
+                        }
+                    }
+                }
+                None
+            })
+            .collect();
+
+        if !entries.is_empty() {
+            let mut memory_data = MemoryData::default();
+            let mut current_memory = 0u64;
+
+            for (stack, size) in &entries {
+                memory_data.allocation_count += 1;
+                memory_data.bytes_allocated += *size as u64;
+                current_memory += *size as u64;
+                memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
+
+                // Track allocation size distribution
+                let size_abs = size.unsigned_abs() as usize;
+                *memory_data.allocation_sizes.entry(size_abs).or_default() += 1;
+            }
+
+            memory_data.current_memory = current_memory;
+            processed.memory_data = Some(memory_data);
+        }
+
+        // Store original entries for later comparison
+        processed.stacks = entries
+            .into_iter()
+            .map(|(stack, size)| format!("{} {}", stack, size))
+            .collect();
+    }
+
+    Ok(processed)
 }
 
 fn build_time_stats(processed: &ProcessedProfile) -> ThagResult<ProfileStats> {
@@ -934,11 +1029,19 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     let output = File::create("memory-flamechart.svg")?;
     let mut opts = Options::default();
     opts.title = format!("{} (Memory Profile)", profile.title);
+    // opts.subtitle = Some(format!(
+    //     "{}\nStarted: {}\nTotal Allocations: {}, Peak Memory: {} bytes",
+    //     profile.subtitle,
+    //     profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
+    //     memory_data.bytes_allocated,
+    //     memory_data.peak_memory
+    // ));
     opts.subtitle = Some(format!(
-        "{}\nStarted: {}\nTotal Allocations: {}, Peak Memory: {} bytes",
+        "{}\nStarted: {}\nTotal Bytes Alloc: {}, Dealloc: {}, Peak: {}",
         profile.subtitle,
         profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
-        memory_data.total_allocated,
+        memory_data.bytes_allocated,
+        memory_data.bytes_deallocated,
         memory_data.peak_memory
     ));
     opts.colors = Palette::Basic(BasicPalette::Mem);
@@ -971,23 +1074,23 @@ fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
                     // Add allocation size analysis before enhancing stats
                     println!("\nAllocation Analysis:");
                     println!("===================");
-                    let mut total_allocated = 0u64;
-                    let mut total_deallocated = 0u64;
+                    let mut bytes_allocated = 0u64;
+                    let mut bytes_deallocated = 0u64;
 
                     for entry in &alloc_entries {
                         if entry.size > 0 {
-                            total_allocated += entry.size as u64;
+                            bytes_allocated += entry.size as u64;
                         } else {
-                            total_deallocated += (-entry.size) as u64;
+                            bytes_deallocated += (-entry.size) as u64;
                         }
                     }
 
-                    println!("Total Bytes Allocated:   {total_allocated}");
-                    println!("Total Bytes Deallocated: {total_deallocated}");
+                    println!("Total Bytes Allocated:   {bytes_allocated}");
+                    println!("Total Bytes Deallocated: {bytes_deallocated}");
                     println!(
                         "Average Allocation Size: {} bytes",
-                        if memory_data.total_allocated > 0 {
-                            total_allocated / memory_data.total_allocated
+                        if memory_data.bytes_allocated > 0 {
+                            bytes_allocated / memory_data.bytes_allocated
                         } else {
                             0
                         }
@@ -1003,7 +1106,7 @@ fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
                         println!("\nAllocation Patterns:");
                         println!("===================");
                         let mut pattern_vec: Vec<_> = patterns.iter().collect();
-                        pattern_vec.sort_by_key(|(_, p)| std::cmp::Reverse(p.total_allocated));
+                        pattern_vec.sort_by_key(|(_, p)| std::cmp::Reverse(p.bytes_allocated));
 
                         for (stack, pattern) in pattern_vec.iter().take(5) {
                             if !stack.is_empty() {
@@ -1011,7 +1114,7 @@ fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
                                 println!("\nStack: {stack}");
                                 println!("  Allocations:   {}", pattern.allocation_count);
                                 println!("  Deallocations: {}", pattern.deallocation_count);
-                                println!("  Total Bytes:   {}", pattern.total_allocated);
+                                println!("  Total Bytes:   {}", pattern.bytes_allocated);
                             }
                         }
                     }
@@ -1025,10 +1128,14 @@ fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
         }
 
         println!("========================");
-        println!("Total Allocations:    {}", memory_data.total_allocated);
-        if memory_data.total_deallocated > 0 {
-            println!("Total Deallocations:  {}", memory_data.total_deallocated);
-            if memory_data.total_deallocated > memory_data.total_allocated {
+        // println!("Total Allocations:    {}", memory_data.bytes_allocated);
+        println!("Total Bytes Allocated:    {}", memory_data.bytes_allocated);
+        if memory_data.bytes_deallocated > 0 {
+            println!(
+                "Total Bytes Deallocated:  {}",
+                memory_data.bytes_deallocated
+            );
+            if memory_data.bytes_deallocated > memory_data.bytes_allocated {
                 println!("Note: Deallocation count exceeds allocation count.");
                 println!("      This may indicate:");
                 println!("      - Deallocations of memory allocated before profiling started");
@@ -1037,7 +1144,7 @@ fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
             } else {
                 println!(
                     "Net Allocations:      {}",
-                    memory_data.total_allocated - memory_data.total_deallocated
+                    memory_data.bytes_allocated - memory_data.bytes_deallocated
                 );
             }
         }
@@ -1121,7 +1228,7 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
     println!("\nTotal memory allocated: {total_bytes} bytes",);
     println!(
         "Average allocation size: {} bytes",
-        total_bytes / memory_data.total_allocated
+        total_bytes / memory_data.bytes_allocated
     );
 
     Ok(())
@@ -1272,41 +1379,41 @@ fn enhance_svg_accessibility(svg_path: &str) -> ThagResult<()> {
     Ok(())
 }
 
-#[derive(Debug, Default)]
-struct AllocationStats {
-    total_allocated: u64,
-    total_deallocated: u64,
-    peak_memory: i64,
-    current_memory: i64,
-    allocation_count: usize,
-    deallocation_count: usize,
-}
+// #[derive(Debug, Default)]
+// struct AllocationStats {
+//     bytes_allocated: u64,
+//     bytes_deallocated: u64,
+//     peak_memory: i64,
+//     current_memory: i64,
+//     allocation_count: usize,
+//     deallocation_count: usize,
+// }
 
-#[allow(clippy::cast_possible_truncation)]
-fn calculate_memory_stats(entries: &[AllocationLogEntry]) -> AllocationStats {
-    let mut stats = AllocationStats::default();
-    let mut current_memory = 0i64;
+// #[allow(clippy::cast_possible_truncation)]
+// fn calculate_memory_stats(entries: &[AllocationLogEntry]) -> AllocationStats {
+//     let mut stats = AllocationStats::default();
+//     let mut current_memory = 0i64;
 
-    for entry in entries {
-        match entry.operation {
-            '+' => {
-                stats.allocation_count += 1;
-                stats.total_allocated += entry.size.unsigned_abs() as u64;
-                current_memory += entry.size;
-                stats.peak_memory = stats.peak_memory.max(current_memory);
-            }
-            '-' => {
-                stats.deallocation_count += 1;
-                stats.total_deallocated += entry.size.unsigned_abs() as u64;
-                current_memory -= entry.size.abs();
-            }
-            _ => continue,
-        }
-    }
+//     for entry in entries {
+//         match entry.operation {
+//             '+' => {
+//                 stats.allocation_count += 1;
+//                 stats.bytes_allocated += entry.size.unsigned_abs() as u64;
+//                 current_memory += entry.size;
+//                 stats.peak_memory = stats.peak_memory.max(current_memory);
+//             }
+//             '-' => {
+//                 stats.deallocation_count += 1;
+//                 stats.bytes_deallocated += entry.size.unsigned_abs() as u64;
+//                 current_memory -= entry.size.abs();
+//             }
+//             _ => continue,
+//         }
+//     }
 
-    stats.current_memory = current_memory;
-    stats
-}
+//     stats.current_memory = current_memory;
+//     stats
+// }
 
 #[derive(Clone, Debug)]
 struct AllocationLogEntry {
@@ -1320,8 +1427,8 @@ struct AllocationLogEntry {
 struct AllocationPattern {
     allocation_count: u64,
     deallocation_count: u64,
-    total_allocated: u64,
-    total_deallocated: u64,
+    bytes_allocated: u64,
+    bytes_deallocated: u64,
 }
 
 #[allow(clippy::cast_sign_loss)]
@@ -1334,10 +1441,10 @@ fn analyze_allocation_patterns(
         let pattern = patterns.entry(entry.stack.clone()).or_default();
         if entry.size > 0 {
             pattern.allocation_count += 1;
-            pattern.total_allocated += entry.size as u64;
+            pattern.bytes_allocated += entry.size as u64;
         } else {
             pattern.deallocation_count += 1;
-            pattern.total_deallocated += (-entry.size) as u64;
+            pattern.bytes_deallocated += (-entry.size) as u64;
         }
     }
 
@@ -1431,42 +1538,68 @@ fn parse_allocation_log(path: &Path) -> ThagResult<Vec<AllocationLogEntry>> {
 
 #[allow(clippy::cast_sign_loss)]
 fn enhance_memory_stats(memory_data: &mut MemoryData, alloc_entries: &[AllocationLogEntry]) {
+    let original_allocation_count = memory_data.allocation_count;
+    let original_bytes_allocated = memory_data.bytes_allocated;
+
     let mut current_memory = 0i64;
     let mut peak_memory = 0i64;
-    let mut log_allocations = 0u64;
-    let mut deallocations = 0u64;
-    let mut total_allocated = 0u64;
-    let mut total_deallocated = 0u64;
+    let mut log_allocation_count = 0usize;
+    let mut log_deallocation_count = 0usize;
+    let mut log_bytes_allocated = 0u64;
+    let mut log_bytes_deallocated = 0u64;
 
+    // Process allocation log entries
     for entry in alloc_entries {
         match entry.size.cmp(&0) {
             Ordering::Greater => {
-                log_allocations += 1;
+                log_allocation_count += 1;
+                log_bytes_allocated += entry.size as u64;
                 current_memory += entry.size;
-                total_allocated += entry.size as u64;
             }
             Ordering::Less => {
-                deallocations += 1;
+                log_deallocation_count += 1;
+                log_bytes_deallocated += (-entry.size) as u64;
                 current_memory += entry.size; // Adding negative number
-                total_deallocated += (-entry.size) as u64;
             }
             Ordering::Equal => (),
         }
         peak_memory = peak_memory.max(current_memory);
     }
 
-    memory_data.total_deallocated = deallocations;
+    // Update memory_data with allocation log information
+    memory_data.deallocation_count = log_deallocation_count;
+    memory_data.bytes_deallocated = log_bytes_deallocated;
     memory_data.peak_memory = peak_memory.max(0) as u64;
     memory_data.current_memory = current_memory.max(0) as u64;
 
-    if log_allocations != memory_data.total_allocated || deallocations > log_allocations {
-        println!("\nAllocation Tracking Analysis:");
+    // Compare folded file data with allocation log data
+    println!("\nAllocation Tracking Analysis:");
+    println!(
+        "  Profile shows: {} aggregate allocations",
+        original_allocation_count
+    );
+    println!("  Total bytes:   {} allocated", original_bytes_allocated);
+    println!(
+        "  Log shows:     {} individual allocations, {} deallocations",
+        log_allocation_count, log_deallocation_count
+    );
+    println!(
+        "  Total bytes:   {} allocated, {} deallocated",
+        log_bytes_allocated, log_bytes_deallocated
+    );
+
+    // Report discrepancies
+    // Only warn if folded file shows more "allocations" than log file
+    if original_allocation_count > log_allocation_count {
         println!(
-            "  Profile shows: {} allocations",
-            memory_data.total_allocated
+            "\nWarning: Folded file shows more entries ({}) than total allocations in log ({})",
+            original_allocation_count, log_allocation_count
         );
-        println!("  Log shows:     {log_allocations} allocations, {deallocations} deallocations");
-        println!("  Total bytes:   {total_allocated} allocated, {total_deallocated} deallocated");
+    }
+    if original_bytes_allocated != log_bytes_allocated {
+        println!("\nWarning: Allocated bytes mismatch!");
+        println!("  Folded file shows {} bytes", original_bytes_allocated);
+        println!("  Log file shows {} bytes", log_bytes_allocated);
     }
 }
 
@@ -1518,6 +1651,7 @@ fn generate_memory_timeline(profile: &ProcessedProfile, file_path: &Path) -> Tha
         }
 
         let (timeline_points, function_peaks) = process_memory_data(&alloc_entries);
+        eprintln!("function_peaks={function_peaks:?}");
 
         // Print function peak memory usage
         println!("\nPeak Memory Usage by Function:");

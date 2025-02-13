@@ -11,11 +11,12 @@ use std::cell::RefCell;
 use std::time::Instant;
 use thag_rs::profiling;
 
+#[enable_profiling] // default Both
 pub fn main() -> ThagResult<()> {
-    if cfg!(feature = "profiling") {
-        println!("Enabling profiling..."); // Debug output
-        profiling::enable_profiling(true, profiling::ProfileType::Both)?;
-    }
+    // if cfg!(feature = "profiling") {
+    //     println!("Enabling profiling..."); // Debug output
+    //     profiling::enable_profiling(true, profiling::ProfileType::Both)?;
+    // }
 
     #[cfg(debug_assertions)]
     let start = Instant::now();

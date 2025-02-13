@@ -29,6 +29,13 @@ use std::sync::{
 };
 use std::time::{Instant, SystemTime};
 
+// Can be set either by feature or attribute macro
+#[cfg(any(feature = "profiling", enable_profiling))]
+pub const PROFILING_ENABLED: bool = true;
+
+#[cfg(not(any(feature = "profiling", enable_profiling)))]
+pub const PROFILING_ENABLED: bool = false;
+
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
 
 static_lazy! {
@@ -368,6 +375,17 @@ pub enum ProfileType {
     Both,
 }
 
+impl ProfileType {
+    pub const fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "time" => Some(Self::Time),
+            "memory" => Some(Self::Memory),
+            "both" => Some(Self::Both),
+            _ => None,
+        }
+    }
+}
+
 pub struct Profile {
     start: Option<Instant>,
     name: &'static str,
@@ -389,7 +407,15 @@ impl Profile {
     }
 
     #[must_use]
+    #[inline(always)]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
+        if !PROFILING_ENABLED {
+            panic!(
+                r#"Attempted to profile without profiling enabled. Either enable the 'profiling' feature or use #[enable_profiling]"#
+            );
+        }
+        static INITIALIZING: AtomicBool = AtomicBool::new(false);
+
         // println!("Profile::new called with name: {name} and type: {requested_type:?}");
         // TODO: make the requested type a true override once the proc macro is implemented
         let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
@@ -527,37 +553,19 @@ impl Profile {
         )
     }
 
-    /// Records a memory profiling event.
-    ///
-    /// Writes the memory usage delta for a profiled section along with its
-    /// stack trace to the memory profile file.
-    ///
-    /// # Arguments
-    /// * `delta` - The change in memory usage for the profiled section
-    ///
-    /// # Errors
-    /// Returns a `ThagError` if writing to the profile file fails
-    fn write_memory_event(&self, delta: usize) -> ThagResult<()> {
+    fn write_memory_event_with_op(&self, delta: usize, op: char) -> ThagResult<()> {
         if !is_profiling_enabled() || delta == 0 {
             return Ok(());
         }
 
-        // Get stack trace in same format as allocation log
-        let stack_data = PROFILE_STACK
-            .try_with(|s| {
-                s.try_borrow().ok().map(|stack| {
-                    if stack.is_empty() {
-                        self.name.to_string()
-                    } else {
-                        format!("{};{}", stack.join(";"), self.name)
-                    }
-                })
-            })
-            .unwrap_or(None) // Handle the Result
-            .unwrap_or_else(|| self.name.to_string()); // Handle the Option
+        // Get parent stack without duplicating current function name
+        let stack_data = Self::get_parent_stack();
+        let entry = if stack_data.is_empty() {
+            format!("{} {}{}", self.name, op, delta)
+        } else {
+            format!("{};{} {}{}", stack_data, self.name, op, delta)
+        };
 
-        // Write to .folded file
-        let entry = format!("{stack_data} {delta}");
         let paths = ProfilePaths::get();
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
     }
@@ -586,7 +594,14 @@ impl Drop for Profile {
                 let delta = final_memory.saturating_sub(initial);
 
                 if delta > 0 {
-                    let _ = self.write_memory_event(delta);
+                    // Record the allocation
+                    let _ = {
+                        let this = &self;
+                        this.write_memory_event_with_op(delta, '+')
+                    };
+
+                    // Record the impending deallocation by drop glue
+                    let _ = self.write_memory_event_with_op(delta, '-');
                 }
             }
 
@@ -669,7 +684,8 @@ pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
 #[macro_export]
 macro_rules! profile_fn {
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
+        let _profile =
+            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 
@@ -700,7 +716,8 @@ macro_rules! profile_fn {
 #[macro_export]
 macro_rules! profile_section {
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
+        let _profile =
+            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 
@@ -725,7 +742,8 @@ macro_rules! profile_method {
         let _profile = $crate::profiling::Profile::new(NAME);
     };
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
+        let _profile =
+            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 

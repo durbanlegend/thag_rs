@@ -254,7 +254,7 @@ impl Style {
         self
     }
 
-    pub const fn reset(&mut self) {
+    pub fn reset(&mut self) {
         self.bold = false;
         self.italic = false;
         self.dim = false;

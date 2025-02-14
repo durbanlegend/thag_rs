@@ -77,7 +77,6 @@ thread_local! {
     static PROFILE_STACK: RefCell<Vec<&'static str>> = const { RefCell::new(Vec::new()) };
 }
 
-static PROFILING_ENABLED: AtomicBool = AtomicBool::new(false);
 static START_TIME: AtomicU64 = AtomicU64::new(0);
 
 #[global_allocator]

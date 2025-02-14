@@ -51,23 +51,24 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let mut input = parse_macro_input!(item as ItemFn);
 
     let profile_type = match args.profile_type {
-        Some(ProfileTypeOverride::Time) => quote! { crate::profiling::ProfileType::Time },
-        Some(ProfileTypeOverride::Memory) => quote! { crate::profiling::ProfileType::Memory },
-        Some(ProfileTypeOverride::Both) | None => quote! { crate::profiling::ProfileType::Both },
+        Some(ProfileTypeOverride::Time) => quote! { ProfileType::Time },
+        Some(ProfileTypeOverride::Memory) => quote! { ProfileType::Memory },
+        Some(ProfileTypeOverride::Both) | None => quote! { ProfileType::Both },
     };
 
     // Create the new function body
     let original_body = input.block;
     input.block = parse_quote! {{
-            crate::profiling::enable_profiling(true, #profile_type)
-                .expect("Failed to enable profiling");
+        use crate::profiling::{enable_profiling, ProfileType};
+        enable_profiling(true, #profile_type)
+            .expect("Failed to enable profiling");
 
-            let result = (|| #original_body)();
+        let result = (|| #original_body)();
 
-            crate::profiling::enable_profiling(false, #profile_type)
-                .expect("Failed to disable profiling");
+        enable_profiling(false, #profile_type)
+            .expect("Failed to disable profiling");
 
-            result
+        result
     }};
 
     quote! {

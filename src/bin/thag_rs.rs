@@ -1,23 +1,18 @@
 #![allow(clippy::uninlined_format_args)]
 
+use std::cell::RefCell;
+#[cfg(debug_assertions)]
+use std::time::Instant;
+use thag_proc_macros::enable_profiling;
 use thag_rs::cmd_args::set_verbosity;
 #[cfg(debug_assertions)]
 use thag_rs::debug_timings;
 use thag_rs::logging::configure_log;
-use thag_rs::{execute, get_args, ThagResult};
-
-use std::cell::RefCell;
-#[cfg(debug_assertions)]
-use std::time::Instant;
 use thag_rs::profiling;
+use thag_rs::{execute, get_args, ThagResult};
 
 #[enable_profiling] // default Both
 pub fn main() -> ThagResult<()> {
-    // if cfg!(feature = "profiling") {
-    //     println!("Enabling profiling..."); // Debug output
-    //     profiling::enable_profiling(true, profiling::ProfileType::Both)?;
-    // }
-
     #[cfg(debug_assertions)]
     let start = Instant::now();
     let cli = RefCell::new(get_args()); // Wrap args in a RefCell

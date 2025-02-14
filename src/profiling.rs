@@ -322,6 +322,11 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
     Ok(())
 }
 
+// Function to set runtime profiling state
+pub fn set_profiling_enabled(enabled: bool) {
+    PROFILING_STATE.store(enabled, Ordering::SeqCst);
+}
+
 /// Creates and initializes a single profile file with header information.
 ///
 /// Creates the file if it doesn't exist, truncates it if it does, and writes
@@ -368,13 +373,9 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ThagResult<()> {
 /// # Returns
 /// `true` if profiling is enabled, `false` otherwise
 #[inline(always)]
+#[allow(clippy::inline_always)]
 pub fn is_profiling_enabled() -> bool {
     PROFILING_FEATURE || PROFILING_STATE.load(Ordering::SeqCst)
-}
-
-// Function to set runtime profiling state
-pub fn set_profiling_enabled(enabled: bool) {
-    PROFILING_STATE.store(enabled, Ordering::SeqCst);
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -385,6 +386,8 @@ pub enum ProfileType {
 }
 
 impl ProfileType {
+    #[must_use]
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "time" => Some(Self::Time),
@@ -415,17 +418,19 @@ impl Profile {
         }
     }
 
+    /// Creates a new `Profile` to profile a section of code.
+    ///
+    /// # Panics
+    ///
+    /// Panics if invoked inapropriately, namely when profiling is not enabled.
     #[must_use]
     #[inline(always)]
+    #[allow(clippy::inline_always)]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
-        if !is_profiling_enabled() {
-            panic!(
-                "Attempted to profile without profiling enabled. \
-                       Enable either the 'profiling' feature or use #[enable_profiling]"
-            );
-        }
-
-        static INITIALIZING: AtomicBool = AtomicBool::new(false);
+        assert!(
+            is_profiling_enabled(),
+            r"Attempted to profile without profiling enabled. Either enable the 'profiling' feature or use #[enable_profiling]"
+        );
 
         // println!("Profile::new called with name: {name} and type: {requested_type:?}");
         // TODO: make the requested type a true override once the proc macro is implemented

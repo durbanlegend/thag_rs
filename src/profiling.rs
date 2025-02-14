@@ -318,7 +318,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
         initialize_profile_files(profile_type)?;
     }
 
-    PROFILING_ENABLED.store(enabled, Ordering::SeqCst);
+    set_profiling_enabled(enabled); // Using the new function instead of direct atomic access
     Ok(())
 }
 

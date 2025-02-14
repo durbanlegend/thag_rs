@@ -59,8 +59,6 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     // Create the new function body
     let original_body = input.block;
     input.block = parse_quote! {{
-            crate::profiling::set_profiling_enabled(true);
-
             crate::profiling::enable_profiling(true, #profile_type)
                 .expect("Failed to enable profiling");
 
@@ -68,8 +66,6 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
             crate::profiling::enable_profiling(false, #profile_type)
                 .expect("Failed to disable profiling");
-
-            crate::profiling::set_profiling_enabled(false);
 
             result
     }};

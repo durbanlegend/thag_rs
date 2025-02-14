@@ -29,12 +29,15 @@ use std::sync::{
 };
 use std::time::{Instant, SystemTime};
 
-// Can be set either by feature or attribute macro
-#[cfg(any(feature = "profiling", enable_profiling))]
-pub const PROFILING_ENABLED: bool = true;
+// Single atomic for runtime profiling state
+static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
-#[cfg(not(any(feature = "profiling", enable_profiling)))]
-pub const PROFILING_ENABLED: bool = false;
+// Compile-time feature check
+#[cfg(feature = "profiling")]
+const PROFILING_FEATURE: bool = true;
+
+#[cfg(not(feature = "profiling"))]
+const PROFILING_FEATURE: bool = false;
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
 
@@ -364,8 +367,14 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ThagResult<()> {
 ///
 /// # Returns
 /// `true` if profiling is enabled, `false` otherwise
+#[inline(always)]
 pub fn is_profiling_enabled() -> bool {
-    PROFILING_ENABLED.load(Ordering::SeqCst)
+    PROFILING_FEATURE || PROFILING_STATE.load(Ordering::SeqCst)
+}
+
+// Function to set runtime profiling state
+pub fn set_profiling_enabled(enabled: bool) {
+    PROFILING_STATE.store(enabled, Ordering::SeqCst);
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -376,7 +385,7 @@ pub enum ProfileType {
 }
 
 impl ProfileType {
-    pub const fn from_str(s: &str) -> Option<Self> {
+    pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "time" => Some(Self::Time),
             "memory" => Some(Self::Memory),
@@ -409,11 +418,13 @@ impl Profile {
     #[must_use]
     #[inline(always)]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
-        if !PROFILING_ENABLED {
+        if !is_profiling_enabled() {
             panic!(
-                r#"Attempted to profile without profiling enabled. Either enable the 'profiling' feature or use #[enable_profiling]"#
+                "Attempted to profile without profiling enabled. \
+                       Enable either the 'profiling' feature or use #[enable_profiling]"
             );
         }
+
         static INITIALIZING: AtomicBool = AtomicBool::new(false);
 
         // println!("Profile::new called with name: {name} and type: {requested_type:?}");

@@ -61,7 +61,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     quote! {
         #[allow(unused_mut)]
         #input {
-            crate::PROFILING_ATTRIBUTE_ENABLED.store(true, std::sync::atomic::Ordering::SeqCst);
+            crate::profiling::set_profiling_enabled(true);
 
             crate::profiling::enable_profiling(true, #profile_type)
                 .expect("Failed to enable profiling");
@@ -73,7 +73,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             crate::profiling::enable_profiling(false, #profile_type)
                 .expect("Failed to disable profiling");
 
-            crate::PROFILING_ATTRIBUTE_ENABLED.store(false, std::sync::atomic::Ordering::SeqCst);
+            crate::profiling::set_profiling_enabled(false);
 
             result
         }

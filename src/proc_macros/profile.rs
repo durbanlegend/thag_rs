@@ -1,6 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
-use quote::quote;
+use proc_macro_crate::{crate_name, FoundCrate};
+use quote::{format_ident, quote};
 use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input, FnArg, Generics, ItemFn, LitStr, ReturnType, Type, Visibility, WhereClause,
@@ -50,6 +51,8 @@ struct FunctionContext<'a> {
     body: &'a syn::Block,
     /// Generated profile name incorporating context (impl/trait/async/etc.)
     profile_name: String,
+    /// Crate path depends on internal vs external caller.
+    crate_path: proc_macro2::TokenStream, // Add this field
 }
 
 impl Parse for ProfileArgs {
@@ -166,6 +169,7 @@ pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         where_clause: input.sig.generics.where_clause.as_ref(),
         body: &input.block,
         profile_name,
+        crate_path: get_crate_path(),
     };
 
     if is_async {
@@ -230,26 +234,31 @@ fn generate_sync_wrapper(
         where_clause,
         body,
         profile_name,
+        crate_path,
     } = ctx;
 
-    let profile_type = resolve_profile_type(profile_type);
+    let profile_type = resolve_profile_type(profile_type, &ctx.crate_path);
 
     quote! {
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
-            let _profile = crate::Profile::new(#profile_name, #profile_type);
+            let _profile = #crate_path::Profile::new(#profile_name, #profile_type);
             #body
         }
     }
 }
 
-fn resolve_profile_type(profile_type: Option<&ProfileTypeOverride>) -> proc_macro2::TokenStream {
-    match profile_type {
-        Some(ProfileTypeOverride::Global) | None => {
-            quote!(crate::profiling::get_global_profile_type())
+fn resolve_profile_type(
+    override_type: Option<&ProfileTypeOverride>,
+    crate_path: &proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    match override_type {
+        Some(ProfileTypeOverride::Global) => {
+            quote! { #crate_path::profiling::get_global_profile_type() }
         }
-        Some(ProfileTypeOverride::Time) => quote!(crate::ProfileType::Time),
-        Some(ProfileTypeOverride::Memory) => quote!(crate::ProfileType::Memory),
-        Some(ProfileTypeOverride::Both) => quote!(crate::ProfileType::Both),
+        Some(ProfileTypeOverride::Time) => quote! { #crate_path::ProfileType::Time },
+        Some(ProfileTypeOverride::Memory) => quote! { #crate_path::ProfileType::Memory },
+        Some(ProfileTypeOverride::Both) => quote! { #crate_path::ProfileType::Both },
+        None => quote! { #crate_path::profiling::get_global_profile_type() },
     }
 }
 
@@ -266,9 +275,10 @@ fn generate_async_wrapper(
         where_clause,
         body,
         profile_name,
+        crate_path,
     } = ctx;
 
-    let profile_type = resolve_profile_type(profile_type);
+    let profile_type = resolve_profile_type(profile_type, &ctx.crate_path);
 
     quote! {
         #vis async fn #fn_name #generics (#inputs) #output #where_clause {
@@ -278,7 +288,7 @@ fn generate_async_wrapper(
 
             struct ProfiledFuture<F> {
                 inner: F,
-                _profile: Option<crate::Profile>,
+                _profile: Option<#crate_path::Profile>,
             }
 
             impl<F: Future> Future for ProfiledFuture<F> {
@@ -297,8 +307,19 @@ fn generate_async_wrapper(
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: Some(crate::Profile::new(#profile_name, #profile_type)),
+                _profile: Some(#crate_path::Profile::new(#profile_name, #profile_type)),
             }.await
         }
+    }
+}
+
+fn get_crate_path() -> proc_macro2::TokenStream {
+    match crate_name("thag_rs") {
+        Ok(FoundCrate::Itself) => quote! { crate },
+        Ok(FoundCrate::Name(name)) => {
+            let ident = format_ident!("{}", name);
+            quote! { #ident }
+        }
+        Err(_) => quote! { thag_rs },
     }
 }

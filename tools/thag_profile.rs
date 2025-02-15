@@ -958,10 +958,30 @@ fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
                 let parts: Vec<&str> = line.split_whitespace().collect();
                 if parts.len() >= 2 {
                     let stack = parts[..parts.len() - 1].join(" ");
-                    if let Some(size_str) = parts.last() {
-                        if let Ok(size) = size_str.parse::<i64>() {
-                            return Some((stack, size));
-                        }
+                    if let Some(op_size_str) = parts.last() {
+                        // Parse operation and size
+                        let (size, _op) = if let Some(size_str) = op_size_str.strip_prefix('+') {
+                            if let Ok(size) = size_str.parse::<i64>() {
+                                (size, '+')
+                            } else {
+                                return None;
+                            }
+                        } else if let Some(size_str) = op_size_str.strip_prefix('-') {
+                            if let Ok(size) = size_str.parse::<i64>() {
+                                (-size, '-') // Note the negation for deallocation
+                            } else {
+                                return None;
+                            }
+                        } else {
+                            // For backward compatibility, try parsing without prefix
+                            if let Ok(size) = op_size_str.parse::<i64>() {
+                                (size, '+')
+                            } else {
+                                return None;
+                            }
+                        };
+
+                        return Some((stack, size));
                     }
                 }
                 None

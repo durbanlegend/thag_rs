@@ -1,6 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
-use quote::quote;
+use proc_macro_crate::{crate_name, FoundCrate};
+use quote::{format_ident, quote};
 use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input, parse_quote, Ident, ItemFn, LitStr, Token,
@@ -24,7 +25,7 @@ impl Parse for ProfileArgs {
             None
         } else {
             let ident: Ident = input.parse()?;
-            if ident != "type" {
+            if ident != "profile_type" {
                 return Err(syn::Error::new(ident.span(), "Expected 'type'"));
             }
             let _: Token![=] = input.parse()?;
@@ -50,6 +51,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let args = parse_macro_input!(attr as ProfileArgs);
     let mut input = parse_macro_input!(item as ItemFn);
 
+    let crate_path = get_crate_path();
     let profile_type = match args.profile_type {
         Some(ProfileTypeOverride::Time) => quote! { ProfileType::Time },
         Some(ProfileTypeOverride::Memory) => quote! { ProfileType::Memory },
@@ -59,7 +61,8 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     // Create the new function body
     let original_body = input.block;
     input.block = parse_quote! {{
-        use crate::profiling::{enable_profiling, ProfileType};
+        use #crate_path::profiling::{enable_profiling, ProfileType};
+
         enable_profiling(true, #profile_type)
             .expect("Failed to enable profiling");
 
@@ -75,4 +78,19 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         #input
     }
     .into()
+}
+
+fn get_crate_path() -> proc_macro2::TokenStream {
+    if std::env::var("CARGO_BIN_NAME").is_ok() {
+        quote! { thag_rs }
+    } else {
+        match crate_name("thag_rs") {
+            Ok(FoundCrate::Itself) => quote! { crate },
+            Ok(FoundCrate::Name(name)) => {
+                let ident = format_ident!("{}", name);
+                quote! { #ident }
+            }
+            Err(_) => quote! { thag_rs },
+        }
+    }
 }

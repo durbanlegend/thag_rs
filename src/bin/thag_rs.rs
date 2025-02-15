@@ -8,10 +8,9 @@ use thag_rs::cmd_args::set_verbosity;
 #[cfg(debug_assertions)]
 use thag_rs::debug_timings;
 use thag_rs::logging::configure_log;
-use thag_rs::profiling;
 use thag_rs::{execute, get_args, ThagResult};
 
-#[enable_profiling] // default Both
+#[enable_profiling(profile_type = "time")]
 pub fn main() -> ThagResult<()> {
     #[cfg(debug_assertions)]
     let start = Instant::now();

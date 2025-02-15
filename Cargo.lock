@@ -1418,6 +1418,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "proc-macro-crate"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ecf48c7ca261d60b74ab1a7b20da18bede46776b2e55535cb958eb595c5fa7b"
+dependencies = [
+ "toml_edit",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "0.4.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2021,6 +2030,7 @@ version = "0.1.1"
 dependencies = [
  "inline_colorization",
  "prettyplease",
+ "proc-macro-crate",
  "proc-macro2 1.0.93",
  "quote 1.0.37",
  "syn 2.0.98",

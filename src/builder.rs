@@ -50,8 +50,8 @@ use crate::manifest::extract;
 use crate::styling::{paint_for_role, ColorInitStrategy, TermAttributes};
 use crate::{
     ast, cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
-    modified_since_compiled, profile_fn, profile_method, profile_section, regex, repeat_dash, shared,
-    validate_args, vlog, Ast, Cli, ColorSupport, Dependencies, ProcFlags, Role, ThagError,
+    modified_since_compiled, profile_fn, profile_method, profile_section, regex, repeat_dash,
+    shared, validate_args, vlog, Ast, Cli, ColorSupport, Dependencies, ProcFlags, Role, ThagError,
     ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR,
     RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
@@ -509,7 +509,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
 
     // Initialize TermAttributes for message styling
     let strategy = ColorInitStrategy::determine();
-    TermAttributes::initialize(&strategy);
+    TermAttributes::initialize(strategy);
 
     let proc_flags = get_proc_flags(args)?;
 

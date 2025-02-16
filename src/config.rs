@@ -175,7 +175,7 @@ impl Config {
     }
 
     fn validate(&self) -> Result<(), ThagError> {
-        profile_method!("validate");
+        profile_method!("Config::validate");
         // Validate Dependencies section
         self.dependencies
             .validate()
@@ -424,7 +424,7 @@ impl Dependencies {
     }
 
     fn validate(&self) -> Result<(), String> {
-        profile_method!("validate");
+        profile_method!("Dependencies::validate");
         // Validate feature overrides
         for (crate_name, override_config) in &self.feature_overrides {
             // Check for conflicts between required and excluded features

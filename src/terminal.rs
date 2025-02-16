@@ -187,7 +187,7 @@ pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
         }
     }
 
-    profile_fn!("get_term_bg");
+    profile_fn!("get_term_bg_rgb");
 
     lazy_static_var!(
         Result < (u8, u8, u8),

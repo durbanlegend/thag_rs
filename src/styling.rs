@@ -1,7 +1,10 @@
 #![allow(clippy::cast_lossless)]
 use crate::errors::ThemeError;
 use crate::styling::Role::{Heading1, Info, Normal};
-use crate::{profile, profile_fn, profile_method, profile_section, vlog, ThagError, ThagResult, V};
+use crate::{
+    lazy_static_var, profile, profile_fn, profile_method, profile_section, vlog, ThagError,
+    ThagResult, V,
+};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -656,9 +659,10 @@ pub enum ColorInitStrategy {
 
 impl ColorInitStrategy {
     #[must_use]
-    pub fn determine() -> Self {
+    pub fn determine() -> &'static Self {
         profile_method!("ColorInitStrategy::determine");
-        {
+
+        lazy_static_var!(ColorInitStrategy, {
             // `color_detect` feature overrides configured colour support.
             #[cfg(feature = "color_detect")]
             let strategy = if std::env::var("TEST_ENV").is_ok() {
@@ -712,7 +716,7 @@ impl ColorInitStrategy {
             let strategy = Self::Default;
 
             strategy
-        }
+        })
     }
 }
 
@@ -933,13 +937,12 @@ impl TermAttributes {
     /// Panics if theme initialization fails
     pub fn get_or_init() -> &'static Self {
         profile_method!("TermAttrs::get_or_init");
-        let strategy = ColorInitStrategy::determine();
         // eprintln!(
         //     "strategy={strategy:?}. initialized={}",
         //     Self::is_initialized()
         // );
         if !Self::is_initialized() {
-            Self::initialize(&strategy);
+            Self::initialize(ColorInitStrategy::determine());
         }
         // Safe to unwrap as we just checked/initialized it
         // vlog!(V::V, "INSTANCE.get()={:?}", INSTANCE.get());

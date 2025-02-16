@@ -994,8 +994,15 @@ fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
 
             for (stack, size) in &entries {
                 memory_data.allocation_count += 1;
-                memory_data.bytes_allocated += *size as u64;
-                current_memory += *size as u64;
+                eprintln!(
+                    "memory_data.bytes_allocated = {}; size = {size}",
+                    memory_data.bytes_allocated
+                );
+
+                // Convert to signed arithmetic to handle both allocations and deallocations
+                memory_data.bytes_allocated = (memory_data.bytes_allocated as i64 + size) as u64;
+                current_memory = (current_memory as i64 + *size as i64) as u64;
+
                 memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
 
                 // Track allocation size distribution
@@ -1723,6 +1730,13 @@ fn generate_memory_timeline(profile: &ProcessedProfile, file_path: &Path) -> Tha
         let end_time = alloc_entries.last().unwrap().timestamp;
         let total_duration_ms = ((end_time - start_time) / 1000) as i32;
 
+        let title = format!(
+            "Memory Timeline for {}\nStarted: {}\nDuration: {:?}",
+            source_path.display(),
+            start_time.format("%Y-%m-%d %H:%M:%S"),
+            duration
+        );
+
         let path_data = timeline_points
             .iter()
             .map(|(t, y)| {
@@ -1782,7 +1796,7 @@ fn generate_memory_timeline(profile: &ProcessedProfile, file_path: &Path) -> Tha
             </style>
 
             <!-- Title -->
-            <text x="{}" y="30" class="title" text-anchor="middle">Memory Usage Timeline</text>
+            <text x="{}" y="30" class="title" text-anchor="middle">{title}</text>
 
             <!-- Grid lines -->
             {}

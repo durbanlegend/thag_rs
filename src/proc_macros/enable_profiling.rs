@@ -66,7 +66,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         enable_profiling(true, #profile_type)
             .expect("Failed to enable profiling");
 
-        let result = (|| #original_body)();
+        let result = #original_body;  // Just use the body directly
 
         enable_profiling(false, #profile_type)
             .expect("Failed to disable profiling");

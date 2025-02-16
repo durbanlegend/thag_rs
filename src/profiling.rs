@@ -446,6 +446,17 @@ impl Profile {
             _ => ProfileType::Time,
         };
 
+        #[cfg(debug_assertions)]
+        if let Some(err) = Self::validate_stack(name) {
+            panic!("Stack validation failed: {err}");
+        }
+
+        #[cfg(debug_assertions)]
+        // No need to check is_profiling_enabled() again here
+        if let Some(err) = Self::validate_stack(name) {
+            panic!("Stack validation failed: {err}");
+        }
+
         if is_profiling_enabled() {
             PROFILE_STACK.with(|stack| {
                 if let Ok(mut guard) = stack.try_borrow_mut() {
@@ -544,10 +555,8 @@ impl Profile {
     /// # Errors
     /// Returns a `ThagError` if writing to the profile file fails
     fn write_time_event(&self, duration: std::time::Duration) -> ThagResult<()> {
-        if !is_profiling_enabled() {
-            return Ok(());
-        }
-
+        // Profile must exist and profiling must be enabled if we got here
+        // Only keep the business logic checks
         let micros = duration.as_micros();
         if micros == 0 {
             return Ok(());
@@ -569,7 +578,8 @@ impl Profile {
     }
 
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ThagResult<()> {
-        if !is_profiling_enabled() || delta == 0 {
+        if delta == 0 {
+            // Keep this as it's a business logic check
             return Ok(());
         }
 
@@ -583,6 +593,28 @@ impl Profile {
 
         let paths = ProfilePaths::get();
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
+    }
+
+    #[cfg(debug_assertions)]
+    #[cfg(debug_assertions)]
+    fn validate_stack(name: &'static str) -> Option<String> {
+        PROFILE_STACK.with(|s| {
+            let stack = s.borrow();
+            // Check for duplicate consecutive entries
+            if let Some(top) = stack.last() {
+                if *top == name {
+                    return Some(format!("Duplicate stack entry: {name}"));
+                }
+            }
+            // Check for reasonable stack depth
+            if stack.len() > 100 {
+                return Some(format!(
+                    "Stack depth {} exceeds reasonable limit",
+                    stack.len()
+                ));
+            }
+            None
+        })
     }
 }
 
@@ -619,14 +651,17 @@ impl Drop for Profile {
                     let _ = self.write_memory_event_with_op(delta, '-');
                 }
             }
-
-            // Pop from profile stack
-            let _ = PROFILE_STACK.try_with(|s| {
-                if let Ok(mut stack) = s.try_borrow_mut() {
-                    stack.pop();
-                }
-            });
         }
+
+        // Pop from profile stack for all profile types
+        // We know profiling must have been enabled when this Profile was created,
+        // so we can just pop the stack without checking is_profiling_enabled() again
+        // Pop from profile stack
+        let _ = PROFILE_STACK.try_with(|s| {
+            if let Ok(mut stack) = s.try_borrow_mut() {
+                stack.pop();
+            }
+        });
     }
 }
 
@@ -924,5 +959,76 @@ mod tests {
 
         enable_profiling(false, ProfileType::Memory)?;
         Ok(())
+    }
+
+    #[test]
+    fn test_profile_stack_management() {
+        set_profiling_enabled(true);
+
+        // Test basic push/pop
+        {
+            let _p1 = Profile::new("outer", ProfileType::Time);
+            PROFILE_STACK.with(|s| {
+                let stack = s.borrow();
+                assert_eq!(stack.len(), 1);
+                assert_eq!(stack[0], "outer");
+            });
+
+            {
+                let _p2 = Profile::new("inner", ProfileType::Time);
+                PROFILE_STACK.with(|s| {
+                    let stack = s.borrow();
+                    assert_eq!(stack.len(), 2);
+                    assert_eq!(stack[1], "inner");
+                });
+            } // inner dropped here
+
+            PROFILE_STACK.with(|s| {
+                let stack = s.borrow();
+                assert_eq!(stack.len(), 1);
+                assert_eq!(stack[0], "outer");
+            });
+        } // outer dropped here
+
+        // Verify empty stack after all profiles dropped
+        PROFILE_STACK.with(|s| {
+            let stack = s.borrow();
+            assert_eq!(stack.len(), 0, "Stack not empty after all profiles dropped");
+        });
+    }
+
+    #[test]
+    fn test_profile_types_stack_management() {
+        set_profiling_enabled(true);
+
+        // Test different profile types
+        {
+            let _p1 = Profile::new("time_prof", ProfileType::Time);
+            let _p2 = Profile::new("mem_prof", ProfileType::Memory);
+            let _p3 = Profile::new("both_prof", ProfileType::Both);
+
+            PROFILE_STACK.with(|s| {
+                let stack = s.borrow();
+                assert_eq!(stack.len(), 3);
+                assert_eq!(&stack[..], &["time_prof", "mem_prof", "both_prof"]);
+            });
+        }
+
+        // Verify clean stack
+        PROFILE_STACK.with(|s| {
+            let stack = s.borrow();
+            assert_eq!(stack.len(), 0);
+        });
+    }
+
+    // Force debug_assertions for tests
+    #[cfg_attr(test, debug_assertions)]
+    #[test]
+    #[should_panic(expected = "Stack validation failed: Duplicate stack entry")]
+    fn test_duplicate_stack_entries() {
+        set_profiling_enabled(true);
+
+        let _p1 = Profile::new("same", ProfileType::Time);
+        let _p2 = Profile::new("same", ProfileType::Time); // Should panic
     }
 }

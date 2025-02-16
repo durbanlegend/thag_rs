@@ -19,7 +19,7 @@ use std::{fmt, str};
 #[command(group(
             ArgGroup::new("verbosity")
                 .required(false)
-                .args(&["quiet", "normal", "verbose"]),
+                .args(&["quiet", "normal_verbosity", "verbose"]),
         ))]
 #[command(group(
             ArgGroup::new("norun_options")

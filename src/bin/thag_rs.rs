@@ -8,10 +8,14 @@ use thag_rs::cmd_args::set_verbosity;
 #[cfg(debug_assertions)]
 use thag_rs::debug_timings;
 use thag_rs::logging::configure_log;
-use thag_rs::{execute, get_args, ThagResult};
+use thag_rs::{execute, get_args, profiling, ProfileType, ThagResult};
 
-#[enable_profiling(profile_type = "time")]
+// #[enable_profiling(profile_type = "time")]
 pub fn main() -> ThagResult<()> {
+    // if cfg!(feature = "profiling") {
+    //     println!("Enabling profiling..."); // Debug output
+    //     profiling::enable_profiling(true, ProfileType::Time)?;
+    // }
     #[cfg(debug_assertions)]
     let start = Instant::now();
     let cli = RefCell::new(get_args()); // Wrap args in a RefCell

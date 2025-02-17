@@ -6,6 +6,7 @@ inferno = "0.12.0"
 inquire = "0.7.5"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.138"
+strum = { version = "0.27.1", features = ["derive"] }
 # thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
 thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
 */
@@ -46,6 +47,7 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
+use strum::Display;
 use thag_rs::profiling::ProfileStats;
 use thag_rs::{ThagError, ThagResult};
 
@@ -60,7 +62,7 @@ pub struct ProcessedProfile {
     pub memory_events: Vec<MemoryEvent>,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Display)]
 pub enum ProfileType {
     #[default]
     Time,
@@ -160,7 +162,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let analysis_types = vec![
             "Time Profile - Single",
             "Time Profile - Differential",
-            "Memory Profile",
+            "Memory Profile - Single",
+            "Memory Profile - Differential",
             "Exit",
         ];
 
@@ -169,8 +172,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         match analysis_type {
             "Exit" => break,
             "Time Profile - Single" => analyze_single_time_profile()?,
-            "Time Profile - Differential" => analyze_differential_time_profiles()?,
-            "Memory Profile" => analyze_memory_profiles()?,
+            "Time Profile - Differential" => analyze_differential_profiles(ProfileType::Time)?,
+            "Memory Profile - Single" => analyze_memory_profiles()?,
+            "Memory Profile - Differential" => analyze_differential_profiles(ProfileType::Memory)?,
             _ => println!("Invalid selection"),
         }
 
@@ -210,10 +214,10 @@ fn analyze_single_time_profile() -> ThagResult<()> {
 
                 match action {
                     "Back to Profile Selection" => break,
-                    "Show Flamechart" => generate_flamechart(&processed)?,
+                    "Show Flamechart" => generate_time_flamechart(&processed)?,
                     "Filter Functions" => {
                         let filtered = filter_functions(&processed)?;
-                        generate_flamechart(&filtered)?;
+                        generate_time_flamechart(&filtered)?;
                     }
                     "Show Statistics" => {
                         show_statistics(&stats, &processed);
@@ -229,11 +233,14 @@ fn analyze_single_time_profile() -> ThagResult<()> {
     }
 }
 
-fn analyze_differential_time_profiles() -> ThagResult<()> {
-    let filter = |filename: &str| !filename.contains("-memory");
+fn analyze_differential_profiles(profile_type: ProfileType) -> ThagResult<()> {
+    let filter = |filename: &str| match profile_type {
+        ProfileType::Time => !filename.contains("-memory"),
+        ProfileType::Memory => filename.contains("-memory"),
+    };
     // let profile_groups = group_profile_files(filter)?;
     let (before, after) = select_profile_files(filter)?;
-    generate_differential_flamegraph(&before, &after)
+    generate_differential_flamegraph(profile_type, &before, &after)
 }
 
 fn analyze_memory_profiles() -> ThagResult<()> {
@@ -290,7 +297,7 @@ fn analyze_memory_profiles() -> ThagResult<()> {
     }
 }
 
-fn generate_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
+fn generate_time_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     if profile.stacks.is_empty() {
         return Err(ThagError::Profiling(
             "No profile data available".to_string(),
@@ -333,7 +340,11 @@ fn generate_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     Ok(())
 }
 
-fn generate_differential_flamegraph(before: &PathBuf, after: &PathBuf) -> ThagResult<()> {
+fn generate_differential_flamegraph(
+    profile_type: ProfileType,
+    before: &PathBuf,
+    after: &PathBuf,
+) -> ThagResult<()> {
     // First, generate the differential data
     let mut diff_data = Vec::new();
     inferno::differential::from_files(
@@ -359,10 +370,17 @@ fn generate_differential_flamegraph(before: &PathBuf, after: &PathBuf) -> ThagRe
     let svg = "flamegraph-diff.svg";
     let output = File::create(svg)?;
     let mut opts = Options::default();
-    opts.title = format!("Differential Profile: {script_name}");
+    opts.title = format!("Differential {profile_type} Profile: {script_name}");
     opts.subtitle = format!("Comparing {before_name} → {after_name}").into();
-    opts.colors = select_color_scheme()?;
-    "μs".clone_into(&mut opts.count_name);
+    opts.colors = match profile_type {
+        ProfileType::Time => select_color_scheme()?,
+        ProfileType::Memory => Palette::Basic(BasicPalette::Mem),
+    };
+    match profile_type {
+        ProfileType::Time => "μs",
+        ProfileType::Memory => "bytes",
+    }
+    .clone_into(&mut opts.count_name);
     opts.flame_chart = false;
 
     // Convert diff_data to lines

@@ -16,6 +16,7 @@
 //!
 use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
 use chrono::Local;
+use memory_stats::memory_stats;
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
@@ -86,14 +87,13 @@ pub(crate) fn push_profile(name: &'static str) -> bool {
         return false;
     }
 
-    // Convert &'static str to *mut &'static str
-    let name_ptr = Box::into_raw(Box::new(name)) as *mut &'static str;
+    let name_ptr = Box::into_raw(Box::new(name));
     PROFILE_STACK[idx].store(name_ptr, Ordering::SeqCst);
     STACK_DEPTH.store(idx + 1, Ordering::SeqCst);
     true
 }
 
-pub(crate) fn pop_profile() {
+pub fn pop_profile() {
     let idx = STACK_DEPTH.load(Ordering::SeqCst);
     if idx > 0 {
         let old_ptr = PROFILE_STACK[idx - 1].swap(ptr::null_mut(), Ordering::SeqCst);
@@ -109,16 +109,20 @@ pub(crate) fn pop_profile() {
 
 pub(crate) fn get_profile_stack() -> Vec<&'static str> {
     let depth = STACK_DEPTH.load(Ordering::SeqCst);
+    // println!("get_profile_stack: depth = {depth}"); // Debug
     let mut result = Vec::with_capacity(depth);
 
     for i in 0..depth {
         let ptr = PROFILE_STACK[i].load(Ordering::SeqCst);
         if !ptr.is_null() {
             unsafe {
-                result.push(*ptr);
+                let name = *ptr;
+                // println!("  stack[{i}] = {name}"); // Debug
+                result.push(name);
             }
         }
     }
+    // println!("get_profile_stack returning: {result:?}"); // Debug
     result
 }
 
@@ -128,7 +132,7 @@ pub(crate) fn get_profile_stack() -> Vec<&'static str> {
 fn validate_profile_stack(name: &'static str) -> Option<String> {
     let depth = STACK_DEPTH.load(Ordering::SeqCst);
     if depth >= MAX_PROFILE_DEPTH {
-        return Some(format!("Stack depth {} exceeds limit", depth));
+        return Some(format!("Stack depth {depth} exceeds limit"));
     }
     if depth > 0 {
         let ptr = PROFILE_STACK[depth - 1].load(Ordering::SeqCst);
@@ -136,7 +140,7 @@ fn validate_profile_stack(name: &'static str) -> Option<String> {
             unsafe {
                 let top = *ptr;
                 if top == name {
-                    return Some(format!("Duplicate stack entry: {}", name));
+                    return Some(format!("Duplicate stack entry: {name}"));
                 }
             }
         }
@@ -200,8 +204,8 @@ impl AllocationProfiler {
             let stack_len = {
                 let mut len = 0u32;
                 let depth = STACK_DEPTH.load(Ordering::SeqCst);
-                for i in 0..depth {
-                    let ptr = PROFILE_STACK[i].load(Ordering::SeqCst);
+                for element in PROFILE_STACK.iter().take(depth) {
+                    let ptr = element.load(Ordering::SeqCst);
                     if !ptr.is_null() {
                         unsafe {
                             let frame = *ptr;
@@ -491,16 +495,14 @@ impl Profile {
     ///
     /// # Panics
     ///
-    /// Panics if invoked inapropriately, namely when profiling is not enabled.
+    /// Panics if stack validation fails.
     #[must_use]
     #[inline(always)]
     #[allow(clippy::inline_always)]
-    pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
-        assert!(
-            is_profiling_enabled(),
-            r"Attempted to profile without profiling enabled. Either enable the 'profiling' feature or use #[enable_profiling]"
-        );
-
+    pub fn new(name: &'static str, requested_type: ProfileType) -> Option<Self> {
+        if !is_profiling_enabled() {
+            return None;
+        }
         // println!("Profile::new called with name: {name} and type: {requested_type:?}");
         // TODO: make the requested type a true override once the proc macro is implemented
         let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
@@ -529,7 +531,7 @@ impl Profile {
 
         assert!(push_profile(name), "Profile stack overflow");
 
-        Self {
+        Some(Self {
             start: Some(Instant::now()),
             name,
             profile_type,
@@ -539,7 +541,7 @@ impl Profile {
                     .load(Ordering::SeqCst),
             ),
             _not_send: PhantomData,
-        }
+        })
     }
 
     /// Writes a profiling event to the specified profile file.
@@ -635,8 +637,8 @@ impl Profile {
 
 impl Drop for Profile {
     fn drop(&mut self) {
+        // Handle time/memory profiling first
         if let Some(start) = self.start.take() {
-            // Handle time profiling first
             match self.profile_type {
                 ProfileType::Time | ProfileType::Both => {
                     let elapsed = start.elapsed();
@@ -646,31 +648,27 @@ impl Drop for Profile {
             }
         }
 
-        // Handle memory profiling and stack maintenance together
-        if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
-            // Write memory event if we have initial memory
-            if let Some(initial) = self.initial_memory {
-                let final_memory = AllocationProfiler::get()
-                    .total_allocated
-                    .load(Ordering::SeqCst);
-                let delta = final_memory.saturating_sub(initial);
+        // Get current depth before we modify it
+        if let Some(idx) = STACK_DEPTH.load(Ordering::SeqCst).checked_sub(1) {
+            // First store new depth
+            STACK_DEPTH.store(idx, Ordering::SeqCst);
 
-                if delta > 0 {
-                    // Record the allocation
-                    let _ = {
-                        let this = &self;
-                        this.write_memory_event_with_op(delta, '+')
-                    };
-
-                    // Record the impending deallocation by drop glue
-                    let _ = self.write_memory_event_with_op(delta, '-');
+            // Then clean up the entry
+            let ptr = PROFILE_STACK[idx].swap(ptr::null_mut(), Ordering::SeqCst);
+            if !ptr.is_null() {
+                unsafe {
+                    drop(Box::from_raw(ptr));
                 }
             }
+        }
 
-            // Pop from profile stack for all profile types
-            // We know profiling must have been enabled when this Profile was created,
-            // so we can just pop the stack without checking is_profiling_enabled() again
-            pop_profile();
+        // Debug verification
+        #[cfg(debug_assertions)]
+        {
+            let depth = STACK_DEPTH.load(Ordering::SeqCst);
+            if depth >= MAX_PROFILE_DEPTH {
+                println!("Warning: Stack depth {} after drop", depth);
+            }
         }
     }
 }
@@ -690,18 +688,18 @@ fn verbose_only(fun: impl Fn()) {
     }
 }
 
-#[must_use]
-/// Validates that the stack truncation will be valid
-#[cfg(debug_assertions)]
-fn validate_stack_truncation(pos: usize) -> Option<String> {
-    let depth = STACK_DEPTH.load(Ordering::SeqCst);
-    if pos >= depth {
-        return Some(format!(
-            "Truncation position {pos} exceeds stack depth {depth}"
-        ));
-    }
-    None
-}
+// #[must_use]
+// /// Validates that the stack truncation will be valid
+// #[cfg(debug_assertions)]
+// fn validate_stack_truncation(pos: usize) -> Option<String> {
+//     let depth = STACK_DEPTH.load(Ordering::SeqCst);
+//     if pos >= depth {
+//         return Some(format!(
+//             "Truncation position {pos} exceeds stack depth {depth}"
+//         ));
+//     }
+//     None
+// }
 
 /// Ends profiling for a named section early by removing it and all nested
 /// sections after it from the profiling stack.
@@ -736,12 +734,17 @@ pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
     }
 
     pos.map(|p| {
-        #[cfg(debug_assertions)]
-        if let Some(err) = validate_stack_truncation(p) {
-            panic!("Stack truncation validation failed: {err}");
+        // Clean up everything after position p
+        for i in p..depth {
+            let ptr = PROFILE_STACK[i].swap(ptr::null_mut(), Ordering::SeqCst);
+            if !ptr.is_null() {
+                unsafe {
+                    drop(Box::from_raw(ptr));
+                }
+            }
         }
 
-        // Truncate stack to this position
+        // Update depth
         STACK_DEPTH.store(p, Ordering::SeqCst);
 
         Profile {
@@ -827,7 +830,8 @@ macro_rules! profile_section {
 macro_rules! profile_method {
     () => {
         const NAME: &'static str = concat!(module_path!(), "::", stringify!(profile_method));
-        let _profile = $crate::profiling::Profile::new(NAME);
+        let _profile =
+            $crate::profiling::Profile::new(NAME, $crate::profiling::get_global_profile_type());
     };
     ($name:expr) => {
         let _profile =
@@ -972,10 +976,44 @@ impl ProfileStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
+    use std::panic;
+
+    struct TestGuard;
+
+    impl Drop for TestGuard {
+        fn drop(&mut self) {
+            reset_stack();
+            set_profiling_enabled(false);
+        }
+    }
+
+    fn run_test<T>(test: T) -> ()
+    where
+        T: FnOnce() + panic::UnwindSafe,
+    {
+        // Setup
+        reset_stack();
+        set_profiling_enabled(true);
+
+        // Create guard that will clean up even if test panics
+        let _guard = TestGuard;
+
+        // Run the test, catching any panics to ensure our guard runs
+        let result = panic::catch_unwind(test);
+
+        // Re-throw any panic after our guard has cleaned up
+        if let Err(e) = result {
+            panic::resume_unwind(e);
+        }
+    }
 
     fn reset_stack() {
-        let depth = STACK_DEPTH.swap(0, Ordering::SeqCst);
-        for i in 0..depth {
+        // First get and clear the depth
+        let old_depth = STACK_DEPTH.swap(0, Ordering::SeqCst);
+
+        // Then clean up all entries up to the old depth
+        for i in 0..old_depth {
             let ptr = PROFILE_STACK[i].swap(ptr::null_mut(), Ordering::SeqCst);
             if !ptr.is_null() {
                 unsafe {
@@ -983,119 +1021,136 @@ mod tests {
                 }
             }
         }
-    }
 
-    #[test]
-    fn test_profile_stack_basic() {
-        reset_stack();
-
-        assert!(push_profile("first"));
-        assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), 1);
-
-        let stack = get_profile_stack();
-        assert_eq!(stack.len(), 1);
-        assert_eq!(stack[0], "first");
-
-        pop_profile();
-        assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), 0);
-        assert!(get_profile_stack().is_empty());
-    }
-
-    #[test]
-    fn test_profile_stack_nesting() {
-        reset_stack();
-
-        assert!(push_profile("outer"));
-        assert!(push_profile("inner"));
-
-        let stack = get_profile_stack();
-        assert_eq!(stack.len(), 2);
-        assert_eq!(stack[0], "outer");
-        assert_eq!(stack[1], "inner");
-
-        pop_profile();
-        let stack = get_profile_stack();
-        assert_eq!(stack.len(), 1);
-        assert_eq!(stack[0], "outer");
-
-        pop_profile();
-        assert!(get_profile_stack().is_empty());
-    }
-
-    #[test]
-    fn test_profile_stack_capacity() {
-        reset_stack();
-
-        // Fill stack to capacity
-        for _ in 0..MAX_PROFILE_DEPTH {
-            assert!(push_profile("test"));
+        // Extra safety: clear any remaining entries
+        for i in old_depth..MAX_PROFILE_DEPTH {
+            PROFILE_STACK[i].store(ptr::null_mut(), Ordering::SeqCst);
         }
-
-        // Try to push one more
-        assert!(!push_profile("overflow"));
-
-        // Verify stack depth didn't change
-        assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), MAX_PROFILE_DEPTH);
-
-        reset_stack();
     }
 
     #[test]
-    fn test_profile_stack_empty_pop() {
-        reset_stack();
+    #[serial]
+    fn test_profile_stack_basic() {
+        println!("\n--- test_profile_stack_basic starting ---"); // Debug
 
-        // Try to pop empty stack
-        pop_profile();
-        assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), 0);
-    }
-
-    #[test]
-    #[should_panic(expected = "Stack validation failed: Duplicate stack entry")]
-    fn test_profile_duplicate_stack_entries() {
-        set_profiling_enabled(true);
-        reset_stack();
-
-        let _p1 = Profile::new("same", ProfileType::Time);
-        let _p2 = Profile::new("same", ProfileType::Time); // Should panic
-    }
-
-    #[test]
-    fn test_profile_type_stack_management() {
-        set_profiling_enabled(true);
-        reset_stack();
-
-        {
-            let _p1 = Profile::new("time_prof", ProfileType::Time);
-            let _p2 = Profile::new("mem_prof", ProfileType::Memory);
-            let _p3 = Profile::new("both_prof", ProfileType::Both);
+        run_test(|| {
+            assert!(push_profile("first"));
+            println!("After push:"); // Debug
+            let depth = STACK_DEPTH.load(Ordering::SeqCst);
+            println!("STACK_DEPTH = {}", depth);
 
             let stack = get_profile_stack();
-            assert_eq!(stack.len(), 3);
-            assert_eq!(&stack[..], &["time_prof", "mem_prof", "both_prof"]);
-        }
+            println!("Stack = {:?}", stack);
+            assert_eq!(stack.len(), 1);
+            assert_eq!(stack[0], "first");
 
-        // Verify clean stack after drops
-        assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), 0);
-        set_profiling_enabled(false);
+            pop_profile();
+            assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), 0);
+            assert!(get_profile_stack().is_empty());
+        });
     }
 
     #[test]
-    fn test_end_profile_section() {
-        reset_stack();
+    #[serial]
+    fn test_profile_stack_nesting() {
+        run_test(|| {
+            assert!(push_profile("outer"));
+            assert!(push_profile("inner"));
 
-        assert!(push_profile("outer"));
-        assert!(push_profile("middle"));
-        assert!(push_profile("inner"));
+            let stack = get_profile_stack();
+            assert_eq!(stack.len(), 2);
+            assert_eq!(stack[0], "outer");
+            assert_eq!(stack[1], "inner");
 
-        let stack = get_profile_stack();
-        assert_eq!(&stack[..], &["outer", "middle", "inner"]);
+            pop_profile();
+            let stack = get_profile_stack();
+            assert_eq!(stack.len(), 1);
+            assert_eq!(stack[0], "outer");
 
-        let profile = end_profile_section("middle");
-        assert!(profile.is_some());
-        assert_eq!(profile.unwrap().name, "middle");
+            pop_profile();
+            assert!(get_profile_stack().is_empty());
+        });
+    }
 
-        let stack = get_profile_stack();
-        assert_eq!(stack.len(), 1);
-        assert_eq!(stack[0], "outer");
+    #[test]
+    #[serial]
+    fn test_profile_stack_capacity() {
+        run_test(|| {
+            // Fill stack to capacity
+            for _ in 0..MAX_PROFILE_DEPTH {
+                assert!(push_profile("test"));
+            }
+
+            // Try to push one more
+            assert!(!push_profile("overflow"));
+
+            // Verify stack depth didn't change
+            assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), MAX_PROFILE_DEPTH);
+        });
+    }
+
+    #[test]
+    #[serial]
+    fn test_profile_stack_empty_pop() {
+        run_test(|| {
+            // Try to pop empty stack
+            pop_profile();
+            assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), 0);
+        });
+    }
+
+    #[test]
+    #[serial]
+    #[should_panic(expected = "Stack validation failed: Duplicate stack entry")]
+    fn test_profile_duplicate_stack_entries() {
+        run_test(|| {
+            let _p1 = Profile::new("same", ProfileType::Time);
+            let _p2 = Profile::new("same", ProfileType::Time); // Should panic
+        });
+    }
+
+    #[test]
+    #[serial]
+    fn test_profile_type_stack_management() {
+        run_test(|| {
+            {
+                let _p1 = Profile::new("time_prof", ProfileType::Time);
+                let _p2 = Profile::new("mem_prof", ProfileType::Memory);
+                let _p3 = Profile::new("both_prof", ProfileType::Both);
+
+                let stack = get_profile_stack();
+                assert_eq!(stack.len(), 3);
+                assert_eq!(&stack[..], &["time_prof", "mem_prof", "both_prof"]);
+            } // All profiles should be dropped here
+
+            // Verify clean stack after drops
+            let final_depth = STACK_DEPTH.load(Ordering::SeqCst);
+            println!("Final stack:"); // Debug
+            let final_stack = get_profile_stack();
+            println!("Depth: {}, Stack: {:?}", final_depth, final_stack);
+            assert_eq!(final_depth, 0, "Stack not empty after drops");
+            assert!(get_profile_stack().is_empty(), "Stack should be empty");
+        });
+    }
+
+    #[test]
+    #[serial]
+    fn test_profile_end_profile_section() {
+        run_test(|| {
+            assert!(push_profile("outer"));
+            assert!(push_profile("middle"));
+            assert!(push_profile("inner"));
+
+            let stack = get_profile_stack();
+            assert_eq!(&stack[..], &["outer", "middle", "inner"]);
+
+            let profile = end_profile_section("middle");
+            assert!(profile.is_some());
+            assert_eq!(profile.unwrap().name, "middle");
+
+            let stack = get_profile_stack();
+            assert_eq!(stack.len(), 1);
+            assert_eq!(stack[0], "outer");
+        });
     }
 }

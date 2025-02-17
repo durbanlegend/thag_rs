@@ -24,7 +24,7 @@ impl Parse for ProfileArgs {
             None
         } else {
             let ident: Ident = input.parse()?;
-            if ident != "type" {
+            if ident != "profile_type" {
                 return Err(syn::Error::new(ident.span(), "Expected 'type'"));
             }
             let _: Token![=] = input.parse()?;

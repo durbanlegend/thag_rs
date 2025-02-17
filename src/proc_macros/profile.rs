@@ -297,7 +297,7 @@ fn generate_async_wrapper(
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: Some(crate::Profile::new(#profile_name, #profile_type)),
+                _profile: crate::Profile::new(#profile_name, #profile_type),
             }.await
         }
     }

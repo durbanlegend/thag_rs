@@ -2777,6 +2777,7 @@ mod tests {
     use std::io::Write;
     use std::path::Path;
     use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Mutex;
 
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
     static BLACK_BG: &'static (u8, u8, u8) = &(0, 0, 0);
@@ -2808,41 +2809,49 @@ mod tests {
 
     // use std::io::Write;
 
-    thread_local! {
-        static TEST_OUTPUT: std::cell::RefCell<Vec<String>> = std::cell::RefCell::new(Vec::new());
+    // Use a static Mutex for test output collection
+    static TEST_OUTPUT: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+    fn init_test_output() {
+        if let Ok(mut guard) = TEST_OUTPUT.lock() {
+            guard.clear();
+            guard.push(String::new());
+        }
     }
 
-    fn init_test() {
-        TEST_OUTPUT.with(|output| {
-            output.borrow_mut().push(String::new());
-        });
+    fn get_test_output() -> Vec<String> {
+        match TEST_OUTPUT.lock() {
+            Ok(guard) => guard.clone(),
+            Err(_) => Vec::new(),
+        }
     }
 
-    // At end of each test or in test teardown
     fn flush_test_output() {
-        TEST_OUTPUT.with(|output| {
+        if let Ok(guard) = TEST_OUTPUT.lock() {
             let mut stdout = std::io::stdout();
-            for line in output.borrow().iter() {
+            for line in guard.iter() {
                 writeln!(stdout, "{}", line).unwrap();
             }
-            output.borrow_mut().clear();
-        });
+        }
     }
 
     // Tests that need access to internal implementation
     #[test]
     fn test_styling_default_theme_with_mock() {
-        init_test();
+        init_test_output();
         let term_attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
         let defaulted = term_attrs.term_bg_luma;
         // assert!(matches!(defaulted, TermBgLuma::Dark)); // TODO alt: out?
         assert_eq!(defaulted, TermBgLuma::Dark);
         println!();
-        flush_test_output();
+        let output = get_test_output();
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
     }
 
     #[test]
     fn test_styling_color_support_levels() {
+        init_test_output();
         let none = TermAttributes::with_mock_theme(ColorSupport::None, TermBgLuma::Dark);
         let basic = TermAttributes::with_mock_theme(ColorSupport::Basic, TermBgLuma::Dark);
         let color256 = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
@@ -2875,10 +2884,14 @@ mod tests {
         vlog!(V::V, "painted={painted:?}");
         assert!(painted.contains("\x1b[38;2;"));
         assert!(painted.ends_with("\u{1b}[0m"));
+        let output = get_test_output();
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
     }
 
     #[test]
     fn test_styling_theme_variations() {
+        init_test_output();
         let attrs_light =
             TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Light);
         let attrs_dark = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
@@ -2893,47 +2906,15 @@ mod tests {
 
         // Light and dark themes should produce different colors
         assert_ne!(heading_light, heading_dark);
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
     }
-
-    // #[test]
-    // fn test_styling_role_styling() {
-    //     // let attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
-
-    //     // Test each role has distinct styling
-    //     let styles: Vec<String> = vec![
-    //         Role::Heading1,
-    //         Role::Heading2,
-    //         Role::Heading3,
-    //         Role::Error,
-    //         Role::Warning,
-    //         Role::Success,
-    //         Role::Info,
-    //         Role::Emphasis,
-    //         Role::Code,
-    //         Role::Normal,
-    //         Role::Subtle,
-    //         Role::Hint,
-    //         Role::Debug,
-    //     ]
-    //     .iter()
-    //     .map(|role| Style::for_role(*role).paint("test"))
-    //     .collect();
-
-    //     // Check that all styles are unique
-    //     for (i, style1) in styles.iter().enumerate() {
-    //         for (j, style2) in styles.iter().enumerate() {
-    //             if i != j {
-    //                 assert_ne!(
-    //                     style1, style2,
-    //                     "Styles for different levels should be distinct, but {i} == {j}"
-    //                 );
-    //             }
-    //         }
-    //     }
-    // }
 
     #[test]
     fn test_styling_style_attributes() {
+        init_test_output();
         let attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
 
         // Heading1 should be bold
@@ -2952,11 +2933,16 @@ mod tests {
             "theme={}, hint_style={hint_style:?}, painted={painted:?}",
             attrs.theme.name
         );
+        let output = get_test_output();
         assert!(painted.contains("\x1b[3m"));
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
     }
 
     #[test]
     fn test_styling_load_dracula_theme() -> ThagResult<()> {
+        init_test_output();
         let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
 
         // Check theme metadata
@@ -2976,11 +2962,16 @@ mod tests {
         assert!(!theme.palette.normal.bold);
         assert!(theme.palette.hint.italic);
 
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
         Ok(())
     }
 
     #[test]
     fn test_styling_dracula_validation() -> ThagResult<()> {
+        init_test_output();
         let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
 
         // Should succeed with TrueColor support and dark background
@@ -2998,11 +2989,17 @@ mod tests {
             .validate(&ColorSupport::TrueColor, &TermBgLuma::Light)
             .is_err());
 
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+
         Ok(())
     }
 
     #[test]
     fn test_styling_color_support_ordering() {
+        init_test_output();
         assert!(ColorSupport::None < ColorSupport::Basic);
         assert!(ColorSupport::Basic < ColorSupport::Color256);
         assert!(ColorSupport::Color256 < ColorSupport::TrueColor);
@@ -3024,5 +3021,10 @@ mod tests {
                 supports[i + 1]
             );
         }
+
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
     }
 }

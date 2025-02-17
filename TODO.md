@@ -33,6 +33,46 @@ Also, regarding the memory timeline visualization, seeing the allocation log for
 
 Would you like me to implement a specific visualization approach?
 
+1. Add clear documentation about this limitation:
+```rust
+/// # Memory Profiling Limitations
+///
+/// WARNING: Due to limitations in Rust's global allocator implementation,
+/// thag's memory profiling cannot be used in crates that use thread_local
+/// storage with destructors. This includes common patterns like:
+///
+/// ```rust
+/// thread_local! {
+///     static MY_STORAGE: RefCell<Vec<String>> = RefCell::new(Vec::new());
+/// }
+/// ```
+///
+/// If you need both thread-local storage and memory profiling, consider:
+/// - Using static Mutex instead of thread_local
+/// - Using raw pointers with careful synchronization
+/// - Profiling only sections of code that don't use thread_local storage
+/// ```
+pub mod profiling { ... }
+```
+
+2. Consider providing alternative profiling strategies that don't use the global allocator
+
+3. Add runtime checks that could detect this situation early:
+```rust
+pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<()> {
+    if enabled && matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+        // Check for known problematic patterns
+        // (Note: this is just an example - actually detecting TLS usage
+        // at runtime might not be feasible)
+        if has_tls_with_destructors() {
+            return Err(ThagError::Profiling(
+                "Memory profiling cannot be used with thread_local storage that has destructors".into()
+            ));
+        }
+    }
+    // ...
+}
+
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.

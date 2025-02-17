@@ -41,6 +41,7 @@ documented = "0.9.1"
 edit = { version = "0.1.5", optional = true }
 env_logger = { version = "0.11.5", optional = true }
 log = "0.4.25"
+memory-stats = "1.2.0"
 mockall = { version = "0.13.1", optional = true }
 nu-ansi-term = { version = "0.50.1", optional = true }
 phf = { version = "0.11", features = ["macros"] }
@@ -254,6 +255,7 @@ env_logger = "0.11.5"
 lazy_static = "1.5.0"
 predicates = "3.1.2"
 sequential-test = "0.2.4"
+serial_test = "3.2.0"
 tempfile = "3.14.0"
 test-generator = "0.3.1"
 

@@ -60,7 +60,7 @@ serde_with = "3.12.0"
 side-by-side-diff = "0.1.2"
 simplelog = { version = "0.12.2", optional = true }
 strict = "0.2.0"
-strum = { version = "0.27.0", features = ["derive", "phf"] }
+strum = { version = "0.27.1", features = ["derive", "phf"] }
 supports-color = "3.0.2"
 syn = { version = "2.0.98", features = [
     "extra-traits",

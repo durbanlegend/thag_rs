@@ -73,6 +73,60 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
     // ...
 }
 
+an cause:
+/// - Recursive profiling (analyzer profiling itself)
+/// - Stack corruption (mixing analyzer and target stacks)
+/// - Confusing profile output (merged analyzer and target data)
+/// - Performance impact (unnecessary double profiling)
+///
+/// ## Best Practices
+///
+/// 1. Use separate binaries for profiling and analysis:
+/// ```rust
+/// // In your analysis tool
+/// #[derive(Default)]
+/// struct MyAnalyzer {
+///     // Analysis state
+/// }
+///
+/// fn main() {
+///     // Ensure profiling is disabled for the analyzer
+///     thag::profiling::set_profiling_enabled(false);
+///
+///     let analyzer = MyAnalyzer::default();
+///     analyzer.process_profile_data("profile.folded");
+/// }
+/// ```
+///
+/// 2. Compile analysis tools without profiling:
+/// ```toml
+/// # In Cargo.toml for analysis tools
+/// [dependencies]
+/// thag = { version = "0.1", default-features = false }
+/// ```
+///
+/// 3. Use the ProfileAnalyzer struct for safe analysis:
+/// ```rust
+/// use thag::ProfileAnalyzer;
+///
+/// fn analyze_profile(path: &Path) -> ThagResult<()> {
+///     let analyzer = ProfileAnalyzer::new();  // Automatically disables profiling
+///     analyzer.analyze_profile(path)?;
+///     Ok(())
+/// }
+/// ```
+///
+/// ## Debugging Profile Issues
+///
+/// If you see unusual patterns in profile output, such as:
+/// - Repeated stack entries
+/// - Unexpected nesting levels
+/// - Mixed contexts
+///
+/// Check whether the analysis tool might have profiling enabled.
+/// These issues often occur when profile analysis is itself being profiled.
+```
+
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.

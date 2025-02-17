@@ -35,12 +35,14 @@ use inferno::flamegraph::{
 };
 use inquire::{MultiSelect, Select};
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
+// use std::cmp::Ordering;
 // use std::borrow::Cow::Borrowed;
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
-use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
-use std::path::Path;
+use std::io::{BufRead, BufReader};
+// use std::io::Read;
+// use std::io::{Seek, SeekFrom};
+// use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
@@ -83,87 +85,54 @@ pub struct MemoryData {
     pub allocation_sizes: HashMap<usize, usize>, // Size -> Count of allocations
 }
 
-// Add timeline support to MemoryData
-impl MemoryData {
-    fn update_from_timeline(&mut self, timeline: &[MemoryState]) {
-        if let Some(last) = timeline.last() {
-            self.current_memory = last.current_memory.max(0) as u64;
-            self.peak_memory = timeline
-                .iter()
-                .map(|state| state.peak_memory)
-                .max()
-                .unwrap_or(0) as u64;
-        }
-    }
+// #[derive(Debug)]
+// struct MemoryState {
+//     timestamp: u128,
+//     current_memory: i64,
+//     peak_memory: i64,
+// }
 
-    fn update_stats(&mut self, entries: &[AllocationLogEntry]) {
-        let mut current_memory = 0i64;
+// #[derive(Debug)]
+// struct MemoryEvent {
+//     timestamp: u128,
+//     operation: char,
+//     size: i64,
+//     stack: String,
+//     cumulative_memory: i64,
+//     is_peak: bool,
+// }
 
-        for entry in entries {
-            if entry.size > 0 {
-                self.allocation_count += 1;
-                self.bytes_allocated += entry.size as u64;
-                current_memory += entry.size;
-            } else {
-                self.deallocation_count += 1;
-                self.bytes_deallocated += entry.size.abs() as u64;
-                current_memory -= entry.size.abs();
-            }
-            self.peak_memory = self.peak_memory.max(current_memory as u64);
-        }
+// fn analyze_memory_timeline(entries: &[AllocationLogEntry]) -> Vec<MemoryState> {
+//     let mut timeline = Vec::new();
+//     let mut current_memory = 0i64;
+//     let mut peak_memory = 0i64;
 
-        self.current_memory = current_memory.max(0) as u64;
-    }
-}
+//     // Sort entries by timestamp if they aren't already
+//     let mut sorted_entries = entries.to_vec();
+//     sorted_entries.sort_by_key(|e| e.timestamp);
 
-#[derive(Debug)]
-struct MemoryState {
-    timestamp: u128,
-    current_memory: i64,
-    peak_memory: i64,
-}
+//     for entry in sorted_entries {
+//         // Update current memory based on operation
+//         match entry.operation {
+//             '+' => {
+//                 current_memory += entry.size;
+//                 peak_memory = peak_memory.max(current_memory);
+//             }
+//             '-' => {
+//                 current_memory -= entry.size.abs(); // Use abs() since size might already be negative
+//             }
+//             _ => continue,
+//         }
 
-#[derive(Debug)]
-struct MemoryEvent {
-    timestamp: u128,
-    operation: char,
-    size: i64,
-    stack: String,
-    cumulative_memory: i64,
-    is_peak: bool,
-}
+//         timeline.push(MemoryState {
+//             timestamp: entry.timestamp,
+//             current_memory,
+//             peak_memory,
+//         });
+//     }
 
-fn analyze_memory_timeline(entries: &[AllocationLogEntry]) -> Vec<MemoryState> {
-    let mut timeline = Vec::new();
-    let mut current_memory = 0i64;
-    let mut peak_memory = 0i64;
-
-    // Sort entries by timestamp if they aren't already
-    let mut sorted_entries = entries.to_vec();
-    sorted_entries.sort_by_key(|e| e.timestamp);
-
-    for entry in sorted_entries {
-        // Update current memory based on operation
-        match entry.operation {
-            '+' => {
-                current_memory += entry.size;
-                peak_memory = peak_memory.max(current_memory);
-            }
-            '-' => {
-                current_memory -= entry.size.abs(); // Use abs() since size might already be negative
-            }
-            _ => continue,
-        }
-
-        timeline.push(MemoryState {
-            timestamp: entry.timestamp,
-            current_memory,
-            peak_memory,
-        });
-    }
-
-    timeline
-}
+//     timeline
+// }
 
 #[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
@@ -183,127 +152,130 @@ impl ChartType {
     }
 }
 
-fn process_profile_data(lines: &[String]) -> ProcessedProfile {
-    let mut processed = ProcessedProfile::default();
-    let mut start_time = None;
-    let _stacks: Vec<String> = Vec::new();
+// fn process_profile_data(lines: &[String]) -> ProcessedProfile {
+//     let mut processed = ProcessedProfile::default();
+//     let mut start_time = None;
+//     let _stacks: Vec<String> = Vec::new();
 
-    // Determine profile type from first non-empty line
-    for line in lines {
-        if line.starts_with("# Time Profile") {
-            processed.profile_type = ProfileType::Time;
-            // eprintln!("Is time profile");
-            break;
-        } else if line.starts_with("# Memory Profile") {
-            processed.profile_type = ProfileType::Memory;
-            // eprintln!("Is memory profile");
-            break;
-        }
-    }
+//     // Determine profile type from first non-empty line
+//     for line in lines {
+//         if line.starts_with("# Time Profile") {
+//             processed.profile_type = ProfileType::Time;
+//             // eprintln!("Is time profile");
+//             break;
+//         } else if line.starts_with("# Memory Profile") {
+//             processed.profile_type = ProfileType::Memory;
+//             // eprintln!("Is memory profile");
+//             break;
+//         }
+//     }
 
-    // Process headers first
-    for line in lines {
-        if line.starts_with("# Started: ") {
-            let parse = line[10..].trim().parse::<i64>();
-            if let Ok(ts) = parse {
-                start_time = Some(ts);
-                // eprintln!("Start time ts={ts}");
-                match Local.timestamp_micros(ts) {
-                    Single(dt) | Ambiguous(dt, _) => {
-                        processed.timestamp = dt;
-                    }
-                    Nada => (),
-                }
-                break;
-            }
-        }
-    }
+//     // Process headers first
+//     for line in lines {
+//         if line.starts_with("# Started: ") {
+//             let parse = line[10..].trim().parse::<i64>();
+//             if let Ok(ts) = parse {
+//                 start_time = Some(ts);
+//                 // eprintln!("Start time ts={ts}");
+//                 match Local.timestamp_micros(ts) {
+//                     Single(dt) | Ambiguous(dt, _) => {
+//                         processed.timestamp = dt;
+//                     }
+//                     Nada => (),
+//                 }
+//                 break;
+//             }
+//         }
+//     }
 
-    // Process memory entries
-    let entries: Vec<AllocationLogEntry> = lines
-        .iter()
-        .filter(|line| !line.starts_with('#') && !line.is_empty())
-        .filter_map(|line| {
-            let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() >= 2 {
-                let stack = parts[..parts.len() - 1].join(" ");
-                if let Some(size_str) = parts.last() {
-                    // Parse size directly - it's always a positive delta
-                    if let Ok(size) = size_str.parse::<i64>() {
-                        return Some(AllocationLogEntry {
-                            timestamp: start_time.unwrap_or(0) as u128,
-                            operation: '+', // Always an allocation in the .folded file
-                            size,
-                            stack,
-                        });
-                    }
-                }
-            }
-            None
-        })
-        .collect();
+//     // Process memory entries
+//     let entries: Vec<AllocationLogEntry> = lines
+//         .iter()
+//         .filter(|line| !line.starts_with('#') && !line.is_empty())
+//         .filter_map(|line| {
+//             let parts: Vec<&str> = line.split_whitespace().collect();
+//             if parts.len() >= 2 {
+//                 let stack = parts[..parts.len() - 1].join(" ");
+//                 if let Some(size_str) = parts.last() {
+//                     // Parse size directly - it's always a positive delta
+//                     if let Ok(size) = size_str.parse::<i64>() {
+//                         return Some(AllocationLogEntry {
+//                             timestamp: start_time.unwrap_or(0) as u128,
+//                             operation: '+', // Always an allocation in the .folded file
+//                             size,
+//                             stack,
+//                         });
+//                     }
+//                 }
+//             }
+//             None
+//         })
+//         .collect();
 
-    // eprintln!("entries.len()={}", entries.len());
-    // Calculate memory stats
-    if matches!(processed.profile_type, ProfileType::Memory) && !entries.is_empty() {
-        let mut memory_data = MemoryData::default();
-        let mut current_memory = 0u64;
+//     // eprintln!("entries.len()={}", entries.len());
+//     // Calculate memory stats
+//     if matches!(processed.profile_type, ProfileType::Memory) && !entries.is_empty() {
+//         let mut memory_data = MemoryData::default();
+//         let mut current_memory = 0u64;
 
-        for entry in &entries {
-            memory_data.allocation_count += 1;
-            memory_data.bytes_allocated += entry.size as u64;
-            current_memory += entry.size as u64;
-            memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
-        }
-        eprintln!(
-            "process_profile_data set memory_data.peak_memory to {}",
-            memory_data.peak_memory
-        );
+//         for entry in &entries {
+//             memory_data.allocation_count += 1;
+//             memory_data.bytes_allocated += entry.size as u64;
+//             current_memory += entry.size as u64;
+//             memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
+//         }
+//         eprintln!(
+//             "process_profile_data set memory_data.peak_memory to {}",
+//             memory_data.peak_memory
+//         );
 
-        memory_data.current_memory = current_memory;
-        processed.memory_data = Some(memory_data);
-    }
+//         memory_data.current_memory = current_memory;
+//         processed.memory_data = Some(memory_data);
+//     }
 
-    processed.stacks = entries
-        .iter()
-        .map(|entry| format!("{} {}", entry.stack, entry.size))
-        .collect();
+//     processed.stacks = entries
+//         .iter()
+//         .map(|entry| format!("{} {}", entry.stack, entry.size))
+//         .collect();
 
-    // eprintln!("processed={processed:#?}");
-    processed
-}
+//     // eprintln!("processed={processed:#?}");
+//     processed
+// }
 
-fn parse_allocation_entries(stacks: &[String]) -> Vec<AllocationLogEntry> {
-    stacks
-        .iter()
-        .filter_map(|line| {
-            let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() >= 2 {
-                let stack = parts[..parts.len() - 1].join(" ");
-                let op_size = parts.last()?;
+// fn parse_allocation_entries(stacks: &[String]) -> Vec<AllocationLogEntry> {
+//     stacks
+//         .iter()
+//         .filter_map(|line| {
+//             let parts: Vec<&str> = line.split_whitespace().collect();
+//             if parts.len() >= 2 {
+//                 let stack = parts[..parts.len() - 1].join(" ");
+//                 let op_size = parts.last()?;
 
-                let (operation, size) = if let Some(size_str) = op_size.strip_prefix('+') {
-                    ('+', size_str.parse::<i64>().ok()?)
-                } else if let Some(size_str) = op_size.strip_prefix('-') {
-                    ('-', -size_str.parse::<i64>().ok()?)
-                } else {
-                    return None;
-                };
+//                 let (operation, size) = if let Some(size_str) = op_size.strip_prefix('+') {
+//                     ('+', size_str.parse::<i64>().ok()?)
+//                 } else if let Some(size_str) = op_size.strip_prefix('-') {
+//                     ('-', -size_str.parse::<i64>().ok()?)
+//                 } else {
+//                     return None;
+//                 };
 
-                Some(AllocationLogEntry {
-                    timestamp: 0, // We'll need to add timestamp support
-                    operation,
-                    size,
-                    stack,
-                })
-            } else {
-                None
-            }
-        })
-        .collect()
-}
+//                 Some(AllocationLogEntry {
+//                     timestamp: 0, // We'll need to add timestamp support
+//                     operation,
+//                     size,
+//                     stack,
+//                 })
+//             } else {
+//                 None
+//             }
+//         })
+//         .collect()
+// }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Ensure profiling is disabled for the analyzer
+    // Only takes effect if this tool is compiled (`thag tools/thag_profile.rs -x`).
+    thag_rs::profiling::set_profiling_enabled(false);
     loop {
         let analysis_types = vec![
             "Time Profile - Single",
@@ -402,7 +374,6 @@ fn analyze_memory_profiles() -> ThagResult<()> {
                     "Show Memory Flamechart",
                     "Show Memory Statistics",
                     "Show Allocation Size Distribution",
-                    "Show Memory Timeline",
                     "Filter Memory Patterns",
                     "Back to Profile Selection",
                 ];
@@ -416,10 +387,8 @@ fn analyze_memory_profiles() -> ThagResult<()> {
                     "Back to Profile Selection" => break,
                     "Show Memory Flamechart" => generate_memory_flamechart(&processed)
                         .map_or_else(|e| println!("{e}"), |()| {}),
-                    "Show Memory Statistics" => show_memory_statistics(&processed, &selected_file),
+                    "Show Memory Statistics" => show_memory_statistics(&processed),
                     "Show Allocation Size Distribution" => show_allocation_distribution(&processed)
-                        .map_or_else(|e| println!("{e}"), |()| {}),
-                    "Show Memory Timeline" => generate_memory_timeline(&processed, &selected_file)
                         .map_or_else(|e| println!("{e}"), |()| {}),
                     "Filter Memory Patterns" => {
                         filter_memory_patterns(&processed).map_or_else(
@@ -907,13 +876,18 @@ fn select_profile_file(profile_groups: &[(String, Vec<PathBuf>)]) -> ThagResult<
     Ok(None)
 }
 
+#[allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss
+)]
 fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
     let input = File::open(path)?;
     let reader = BufReader::new(input);
     let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
 
     let mut processed = ProcessedProfile::default();
-    let mut start_time: std::option::Option<DateTime<Local>> = None;
+    // let start_time: std::option::Option<DateTime<Local>> = None;
 
     // Determine profile type from first non-empty line
     for line in &lines {
@@ -972,7 +946,7 @@ fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
             let mut memory_data = MemoryData::default();
             let mut current_memory = 0u64;
 
-            for (stack, size) in &entries {
+            for (_stack, size) in &entries {
                 eprintln!(
                     "memory_data.bytes_allocated = {}; size = {size}",
                     memory_data.bytes_allocated
@@ -980,8 +954,7 @@ fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
 
                 // Convert to signed arithmetic to handle both allocations and deallocations
                 memory_data.bytes_allocated = (memory_data.bytes_allocated as i64 + size) as u64;
-                current_memory = (current_memory as i64 + *size as i64) as u64;
-                current_memory += *size as u64;
+                current_memory = (current_memory as i64 + { *size }) as u64;
                 memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
 
                 // Track allocation size distribution
@@ -996,7 +969,7 @@ fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
         // Store original entries for later comparison
         processed.stacks = entries
             .into_iter()
-            .map(|(stack, size)| format!("{} {}", stack, size))
+            .map(|(stack, size)| format!("{stack} {size}"))
             .collect();
     }
 
@@ -1069,91 +1042,10 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
 
 // Add pattern analysis to memory statistics display
 #[allow(clippy::cast_sign_loss)]
-fn show_memory_statistics(profile: &ProcessedProfile, file_path: &Path) {
+fn show_memory_statistics(profile: &ProcessedProfile) {
     if let Some(memory_data) = &profile.memory_data {
-        let mut memory_data = memory_data.clone();
+        let memory_data = memory_data.clone();
 
-        // Try to find and parse allocation log
-        if let Some(log_path) = find_allocation_log(file_path) {
-            match parse_allocation_log(&log_path) {
-                Ok(alloc_entries) => {
-                    // Add allocation size analysis before enhancing stats
-                    println!("\nAllocation Analysis:");
-                    println!("===================");
-                    let mut bytes_allocated = 0u64;
-                    let mut bytes_deallocated = 0u64;
-
-                    for entry in &alloc_entries {
-                        if entry.size > 0 {
-                            bytes_allocated += entry.size as u64;
-                        } else {
-                            bytes_deallocated += (-entry.size) as u64;
-                        }
-                    }
-
-                    println!("Total Bytes Allocated:   {bytes_allocated}");
-                    println!("Total Bytes Deallocated: {bytes_deallocated}");
-                    println!(
-                        "Average Allocation Size: {} bytes",
-                        if memory_data.bytes_allocated > 0 {
-                            bytes_allocated / memory_data.bytes_allocated
-                        } else {
-                            0
-                        }
-                    );
-
-                    // Now enhance the stats
-                    enhance_memory_stats(&mut memory_data, &alloc_entries);
-                    println!("\nMemory Profile Statistics (including allocation log)");
-
-                    // Show allocation patterns
-                    let patterns = analyze_allocation_patterns(&alloc_entries);
-                    if !patterns.is_empty() {
-                        println!("\nAllocation Patterns:");
-                        println!("===================");
-                        let mut pattern_vec: Vec<_> = patterns.iter().collect();
-                        pattern_vec.sort_by_key(|(_, p)| std::cmp::Reverse(p.bytes_allocated));
-
-                        for (stack, pattern) in pattern_vec.iter().take(5) {
-                            if !stack.is_empty() {
-                                // Skip empty stack frames
-                                println!("\nStack: {stack}");
-                                println!("  Allocations:   {}", pattern.allocation_count);
-                                println!("  Deallocations: {}", pattern.deallocation_count);
-                                println!("  Total Bytes:   {}", pattern.bytes_allocated);
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    println!("\nMemory Profile Statistics (allocation log parsing failed: {e})");
-                }
-            }
-        } else {
-            println!("\nMemory Profile Statistics (no allocation log found)");
-        }
-
-        println!("========================");
-        // println!("Total Allocations:    {}", memory_data.bytes_allocated);
-        println!("Total Bytes Allocated:    {}", memory_data.bytes_allocated);
-        if memory_data.bytes_deallocated > 0 {
-            println!(
-                "Total Bytes Deallocated:  {}",
-                memory_data.bytes_deallocated
-            );
-            if memory_data.bytes_deallocated > memory_data.bytes_allocated {
-                println!("Note: Deallocation count exceeds allocation count.");
-                println!("      This may indicate:");
-                println!("      - Deallocations of memory allocated before profiling started");
-                println!("      - Multiple deallocation events for complex data structures");
-                println!("      - Partial deallocations of larger allocations");
-            } else {
-                println!(
-                    "Net Allocations:      {}",
-                    memory_data.bytes_allocated - memory_data.bytes_deallocated
-                );
-            }
-        }
         println!("Peak Memory Usage:    {} bytes", memory_data.peak_memory);
         println!("Current Memory Usage: {} bytes", memory_data.current_memory);
 
@@ -1383,703 +1275,4 @@ fn enhance_svg_accessibility(svg_path: &str) -> ThagResult<()> {
 
     fs::write(svg_path, enhanced)?;
     Ok(())
-}
-
-// #[derive(Debug, Default)]
-// struct AllocationStats {
-//     bytes_allocated: u64,
-//     bytes_deallocated: u64,
-//     peak_memory: i64,
-//     current_memory: i64,
-//     allocation_count: usize,
-//     deallocation_count: usize,
-// }
-
-// #[allow(clippy::cast_possible_truncation)]
-// fn calculate_memory_stats(entries: &[AllocationLogEntry]) -> AllocationStats {
-//     let mut stats = AllocationStats::default();
-//     let mut current_memory = 0i64;
-
-//     for entry in entries {
-//         match entry.operation {
-//             '+' => {
-//                 stats.allocation_count += 1;
-//                 stats.bytes_allocated += entry.size.unsigned_abs() as u64;
-//                 current_memory += entry.size;
-//                 stats.peak_memory = stats.peak_memory.max(current_memory);
-//             }
-//             '-' => {
-//                 stats.deallocation_count += 1;
-//                 stats.bytes_deallocated += entry.size.unsigned_abs() as u64;
-//                 current_memory -= entry.size.abs();
-//             }
-//             _ => continue,
-//         }
-//     }
-
-//     stats.current_memory = current_memory;
-//     stats
-// }
-
-#[derive(Clone, Debug)]
-struct AllocationLogEntry {
-    timestamp: u128,
-    operation: char, // '+' or '-'
-    size: i64,       // Changed from usize to i64
-    stack: String,   // Changed from Vec<String> to String to match existing code
-}
-
-#[derive(Debug, Default)]
-struct AllocationPattern {
-    allocation_count: u64,
-    deallocation_count: u64,
-    bytes_allocated: u64,
-    bytes_deallocated: u64,
-}
-
-#[allow(clippy::cast_sign_loss)]
-fn analyze_allocation_patterns(
-    entries: &[AllocationLogEntry],
-) -> HashMap<String, AllocationPattern> {
-    let mut patterns: HashMap<String, AllocationPattern> = HashMap::new();
-
-    for entry in entries {
-        let pattern = patterns.entry(entry.stack.clone()).or_default();
-        if entry.size > 0 {
-            pattern.allocation_count += 1;
-            pattern.bytes_allocated += entry.size as u64;
-        } else {
-            pattern.deallocation_count += 1;
-            pattern.bytes_deallocated += (-entry.size) as u64;
-        }
-    }
-
-    patterns
-}
-
-fn find_allocation_log(memory_profile_path: &Path) -> Option<PathBuf> {
-    let file_stem = memory_profile_path.file_stem()?.to_str()?;
-    // Remove "-memory" suffix and add "-alloc.log"
-    let log_name = file_stem.replace("-memory", "-alloc.log");
-    let log_path = memory_profile_path.with_file_name(log_name);
-    if log_path.exists() {
-        Some(log_path)
-    } else {
-        None
-    }
-}
-
-fn parse_allocation_log(path: &Path) -> ThagResult<Vec<AllocationLogEntry>> {
-    let file = File::open(path)?;
-    let mut reader = BufReader::new(file);
-    let mut entries = Vec::new();
-
-    // Skip header lines
-    let mut line = String::new();
-    while reader.read_line(&mut line)? > 0 {
-        if !line.starts_with('#') && !line.is_empty() {
-            break;
-        }
-        line.clear();
-    }
-
-    // Read binary entries
-    let file_size = reader.seek(SeekFrom::End(0))?;
-    reader.seek(SeekFrom::Start(145))?; // Skip header
-
-    while reader.stream_position()? < file_size {
-        // Read fixed-length header (29 bytes)
-        let mut timestamp_buf = [0u8; 16];
-        reader.read_exact(&mut timestamp_buf)?;
-        let timestamp = u128::from_ne_bytes(timestamp_buf);
-
-        let mut op_buf = [0u8; 1];
-        reader.read_exact(&mut op_buf)?;
-        let operation = op_buf[0] as char;
-
-        let mut size_buf = [0u8; 8];
-        reader.read_exact(&mut size_buf)?;
-        let size = usize::from_ne_bytes(size_buf) as i64; // Convert to i64
-        let size = if operation == '-' { -size } else { size };
-
-        let mut stack_len_buf = [0u8; 4];
-        reader.read_exact(&mut stack_len_buf)?;
-        let stack_len = u32::from_ne_bytes(stack_len_buf);
-
-        // Read stack frames into a single string
-        let mut stack = String::new();
-        if stack_len > 0 {
-            let mut frame_data = Vec::new();
-            let mut frames_read = 0;
-
-            while frames_read < stack_len {
-                let mut byte = [0u8; 1];
-                reader.read_exact(&mut byte)?;
-                frame_data.push(byte[0]);
-
-                if byte[0] == b';' {
-                    frames_read += 1;
-                }
-            }
-
-            if let Ok(frames) = String::from_utf8(frame_data) {
-                stack = frames;
-            }
-        }
-
-        // Read newline
-        let mut nl_buf = [0u8; 1];
-        reader.read_exact(&mut nl_buf)?;
-
-        entries.push(AllocationLogEntry {
-            timestamp,
-            operation,
-            size,
-            stack,
-        });
-    }
-
-    Ok(entries)
-}
-
-#[allow(clippy::cast_sign_loss)]
-fn enhance_memory_stats(memory_data: &mut MemoryData, alloc_entries: &[AllocationLogEntry]) {
-    let original_allocation_count = memory_data.allocation_count;
-    let original_bytes_allocated = memory_data.bytes_allocated;
-
-    let mut current_memory = 0i64;
-    let mut peak_memory = 0i64;
-    let mut log_allocation_count = 0usize;
-    let mut log_deallocation_count = 0usize;
-    let mut log_bytes_allocated = 0u64;
-    let mut log_bytes_deallocated = 0u64;
-
-    // Process allocation log entries
-    for entry in alloc_entries {
-        match entry.size.cmp(&0) {
-            Ordering::Greater => {
-                log_allocation_count += 1;
-                log_bytes_allocated += entry.size as u64;
-                current_memory += entry.size;
-            }
-            Ordering::Less => {
-                log_deallocation_count += 1;
-                log_bytes_deallocated += (-entry.size) as u64;
-                current_memory += entry.size; // Adding negative number
-            }
-            Ordering::Equal => (),
-        }
-        peak_memory = peak_memory.max(current_memory);
-    }
-
-    // Update memory_data with allocation log information
-    memory_data.deallocation_count = log_deallocation_count;
-    memory_data.bytes_deallocated = log_bytes_deallocated;
-    memory_data.peak_memory = peak_memory.max(0) as u64;
-    memory_data.current_memory = current_memory.max(0) as u64;
-
-    // Compare folded file data with allocation log data
-    println!("\nAllocation Tracking Analysis:");
-    println!(
-        "  Profile shows: {} aggregate allocations",
-        original_allocation_count
-    );
-    println!("  Total bytes:   {} allocated", original_bytes_allocated);
-    println!(
-        "  Log shows:     {} individual allocations, {} deallocations",
-        log_allocation_count, log_deallocation_count
-    );
-    println!(
-        "  Total bytes:   {} allocated, {} deallocated",
-        log_bytes_allocated, log_bytes_deallocated
-    );
-
-    // Report discrepancies
-    // Only warn if folded file shows more "allocations" than log file
-    if original_allocation_count > log_allocation_count {
-        println!(
-            "\nWarning: Folded file shows more entries ({}) than total allocations in log ({})",
-            original_allocation_count, log_allocation_count
-        );
-    }
-    if original_bytes_allocated != log_bytes_allocated {
-        println!("\nWarning: Allocated bytes mismatch!");
-        println!("  Folded file shows {} bytes", original_bytes_allocated);
-        println!("  Log file shows {} bytes", log_bytes_allocated);
-    }
-}
-
-fn process_memory_data(
-    alloc_entries: &[AllocationLogEntry],
-) -> (Vec<(i32, i64)>, HashMap<String, i64>) {
-    let mut cumulative_memory = 0i64;
-    let mut timeline_points = Vec::new();
-    let mut function_peaks = HashMap::new();
-    let mut current_function_totals = HashMap::new();
-    let start_time = alloc_entries[0].timestamp;
-
-    for entry in alloc_entries {
-        let relative_time = ((entry.timestamp - start_time) / 1000) as i32;
-        cumulative_memory += entry.size;
-
-        // Track per-function memory
-        let function_name = entry
-            .stack
-            .split(';')
-            .last()
-            .unwrap_or("unknown")
-            .to_string();
-        let current = current_function_totals
-            .entry(function_name.clone())
-            .or_insert(0);
-        *current += entry.size;
-
-        // Update peak for this function
-        let peak = function_peaks.entry(function_name).or_insert(0);
-        *peak = (*peak).max(*current);
-
-        timeline_points.push((relative_time, cumulative_memory));
-    }
-
-    (timeline_points, function_peaks)
-}
-
-fn generate_memory_timeline(profile: &ProcessedProfile, file_path: &Path) -> ThagResult<()> {
-    // Find and parse allocation log
-    if let Some(log_path) = find_allocation_log(file_path) {
-        let alloc_entries = parse_allocation_log(&log_path)?;
-        println!("Found {} allocation entries", alloc_entries.len());
-
-        if alloc_entries.is_empty() {
-            return Err(ThagError::Profiling(
-                "No memory allocation data available".to_string(),
-            ));
-        }
-
-        let (timeline_points, function_peaks) = process_memory_data(&alloc_entries);
-        eprintln!("function_peaks={function_peaks:?}");
-
-        // Print function peak memory usage
-        println!("\nPeak Memory Usage by Function:");
-        let mut peaks: Vec<_> = function_peaks.iter().collect();
-        peaks.sort_by_key(|(_, &peak)| std::cmp::Reverse(peak));
-        for (func, peak) in peaks.iter().take(10) {
-            println!("{}: {} bytes", func, peak);
-        }
-
-        // Use the actual peak memory for scaling
-        let peak_memory = peaks.first().map(|(_, &peak)| peak).unwrap_or(0);
-
-        // Calculate timeline data using timestamps
-        let mut cumulative_memory = 0i64;
-        let mut timeline_points = Vec::new();
-        let mut peak_memory = 0i64;
-
-        // Get start time from first entry
-        let start_time = alloc_entries[0].timestamp;
-
-        for entry in &alloc_entries {
-            cumulative_memory += entry.size; // size is already negative for deallocations
-            peak_memory = peak_memory.max(cumulative_memory);
-
-            // Calculate relative time in milliseconds
-            let relative_time = ((entry.timestamp - start_time) / 1000) as i32;
-            timeline_points.push((relative_time, cumulative_memory));
-        }
-
-        // SVG dimensions and layout
-        let width = 1200i32;
-        let height = 600i32;
-        let padding = 60i32;
-        let plot_width = width - 2 * padding;
-        let plot_height = height - 2 * padding;
-
-        // Find time range for x-axis scaling
-        let max_time = timeline_points.last().map(|(t, _)| *t).unwrap_or(0);
-
-        // Generate y-axis labels (memory scale)
-        let memory_labels = generate_memory_scale_labels(peak_memory);
-        let memory_points = generate_scale_points(plot_height, memory_labels.len());
-
-        // Generate x-axis labels (time points)
-        let time_labels = generate_time_scale_labels((max_time / 1000) as usize); // Convert to seconds
-        let time_points = generate_scale_points(plot_width, time_labels.len());
-
-        let start_time = alloc_entries[0].timestamp;
-        let end_time = alloc_entries.last().unwrap().timestamp;
-        let total_duration_ms = ((end_time - start_time) / 1000) as i32;
-
-        let title = format!(
-            "Memory Timeline for {}\nStarted: {}\nDuration: {:?}",
-            source_path.display(),
-            start_time.format("%Y-%m-%d %H:%M:%S"),
-            duration
-        );
-
-        let path_data = timeline_points
-            .iter()
-            .map(|(t, y)| {
-                let x_pos = padding + ((t * plot_width) / total_duration_ms.max(1));
-                let y_pos = calculate_y_position(*y, peak_memory, height, padding, plot_height);
-                if *t == 0 {
-                    format!("M {x_pos},{y_pos}")
-                } else {
-                    format!("L {x_pos},{y_pos}")
-                }
-            })
-            .collect::<String>();
-
-        println!(
-            "First 100 chars of path data: {}",
-            &path_data[..path_data.len().min(100)]
-        );
-
-        println!(
-            "Last 100 chars of path data: {}",
-            &path_data[path_data.len() - 100..path_data.len()]
-        );
-
-        // // Add debug visualization for first few points
-        // let debug_points = timeline_points
-        //     .iter()
-        //     .take(5)
-        //     .enumerate()
-        //     .map(|(i, (x, y))| {
-        //         let x_pos = padding + (x * plot_width / timeline_points.len() as i32);
-        //         let y_pos =
-        //             height - padding - ((y * plot_height as i64) / peak_memory.max(1)) as i32;
-        //         format!(
-        //             r#"<circle cx="{}" cy="{}" r="4" fill="{}"/>
-        //                    <text x="{}" y="{}" class="label">{} bytes</text>"#,
-        //             x_pos,
-        //             y_pos,
-        //             if i == 0 { "red" } else { "blue" },
-        //             x_pos + 5,
-        //             y_pos,
-        //             y
-        //         )
-        //     })
-        //     .collect::<String>();
-
-        // Create SVG content
-        let svg = format!(
-            r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-        <svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
-            <style>
-                .axis {{ stroke: #333; stroke-width: 1 }}
-                .grid {{ stroke: #ccc; stroke-width: 0.5; opacity: 0.5 }}
-                .line {{ stroke: #2196F3; stroke-width: 2; fill: none }}
-                .peak {{ stroke: #F44336; stroke-width: 1; stroke-dasharray: 5,5 }}
-                .label {{ font-family: Arial; font-size: 12px; }}
-                .title {{ font-family: Arial; font-size: 16px; font-weight: bold; }}
-            </style>
-
-            <!-- Title -->
-            <text x="{}" y="30" class="title" text-anchor="middle">{title}</text>
-            <!-- Grid lines -->
-            {}
-
-            <!-- Memory usage line -->
-            <path class="line" d="{}"/>
-
-            <!-- Debug visualization -->
-
-            <!-- Peak memory line -->
-            <line class="peak"
-                      x1="{padding}"
-                      y1="{}"
-                      x2="{}"
-                      y2="{}" />
-
-            <!-- Axes -->
-            <g class="axis">
-                <line x1="{padding}" y1="{}" x2="{}" y2="{}" />
-                <line x1="{padding}" y1="{}" x2="{padding}" y2="{padding}" />
-            </g>
-
-            <!-- Axis labels -->
-            {}
-        </svg>"#,
-            // Format arguments in order:
-            width / 2, // Title x position
-            generate_grid_lines(
-                padding,
-                plot_width,
-                plot_height,
-                &memory_points,
-                &time_points
-            ), // Grid lines
-            // Memory usage line path data
-            // Generate path data
-            timeline_points
-                .iter()
-                .map(|(x, y)| {
-                    // let x_pos = padding + ((x * plot_width) / timeline_points.len().max(1) as i32);
-                    let x_pos = padding + ((x * plot_width) / total_duration_ms.max(1));
-                    let y_pos = calculate_y_position(*y, peak_memory, height, padding, plot_height);
-                    if *x == 0 {
-                        format!("M {x_pos},{y_pos}")
-                    } else {
-                        format!("L {x_pos},{y_pos}")
-                    }
-                })
-                .collect::<String>(),
-            // Debug points
-            // timeline_points
-            //     .iter()
-            //     .take(5)
-            //     .enumerate()
-            //     .map(|(i, (x, y))| {
-            //         // let x_pos = padding + ((x * plot_width) / timeline_points.len().max(1) as i32);
-            //         let x_pos = padding + ((x * plot_width) / total_duration_ms.max(1));
-            //         let y_pos = calculate_y_position(*y, peak_memory, height, padding, plot_height);
-            //         format!(
-            //             r#"<circle cx="{}" cy="{}" r="4" fill="{}"/>
-            //                    <text x="{}" y="{}" class="label">{} bytes</text>"#,
-            //             x_pos,
-            //             y_pos,
-            //             if i == 0 { "red" } else { "blue" },
-            //             x_pos + 5,
-            //             y_pos,
-            //             y
-            //         )
-            //     })
-            //     .collect::<String>(),
-            // Peak line y-coordinate
-            calculate_y_position(peak_memory, peak_memory, height, padding, plot_height),
-            width - padding,
-            calculate_y_position(peak_memory, peak_memory, height, padding, plot_height),
-            // Axis coordinates
-            height - padding, // x-axis y1
-            width - padding,  // x-axis x2
-            height - padding, // x-axis y2
-            height - padding, // y-axis y1
-            // Axis labels
-            generate_axis_labels(
-                padding,
-                height,
-                plot_width,
-                &memory_labels,
-                &memory_points,
-                &time_labels,
-                &time_points
-            )
-        );
-
-        fs::write("memory-timeline.svg", svg)?;
-        println!("Memory timeline generated: memory-timeline.svg");
-
-        // Fix the error handling for open_in_browser
-        open_in_browser("memory-timeline.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
-    } else {
-        return Err(ThagError::Profiling("No allocation log found".to_string()));
-    }
-    Ok(())
-}
-
-fn parse_stack_line(line: &str) -> Option<AllocationLogEntry> {
-    let parts: Vec<&str> = line.split_whitespace().collect();
-    if parts.len() >= 2 {
-        let stack = parts[..parts.len() - 1].join(" ");
-        if let Some(size_str) = parts.last() {
-            // Parse size directly - it's a positive delta
-            if let Ok(size) = size_str.parse::<i64>() {
-                return Some(AllocationLogEntry {
-                    timestamp: 0,   // We'll get this from the log file
-                    operation: '+', // Always an allocation in the .folded file
-                    size,
-                    stack,
-                });
-            }
-        }
-    }
-    None
-}
-
-fn parse_allocation_entries_with_time(stacks: &[String]) -> ThagResult<Vec<AllocationLogEntry>> {
-    let mut entries = Vec::new();
-    let mut base_time = None;
-
-    for line in stacks {
-        if line.starts_with('#') {
-            if line.starts_with("# Started: ") {
-                if let Ok(time) = line[10..].trim().parse::<u128>() {
-                    base_time = Some(time);
-                }
-            }
-            continue;
-        }
-
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() >= 2 {
-            let stack = parts[..parts.len() - 1].join(" ");
-            if let Some(op_size) = parts.last() {
-                let (operation, size) = if let Some(size_str) = op_size.strip_prefix('+') {
-                    ('+', size_str.parse::<i64>().unwrap_or(0))
-                } else if let Some(size_str) = op_size.strip_prefix('-') {
-                    ('-', -size_str.parse::<i64>().unwrap_or(0))
-                } else {
-                    continue;
-                };
-
-                entries.push(AllocationLogEntry {
-                    timestamp: base_time.unwrap_or(0),
-                    operation,
-                    size,
-                    stack,
-                });
-            }
-        }
-    }
-
-    entries.sort_by_key(|e| e.timestamp);
-    Ok(entries)
-}
-
-fn generate_memory_scale_labels(peak_memory: i64) -> Vec<String> {
-    let step = match peak_memory {
-        0..=1_000 => 100,
-        1_001..=10_000 => 1_000,
-        10_001..=100_000 => 10_000,
-        100_001..=1_000_000 => 100_000,
-        _ => 1_000_000,
-    };
-
-    let mut labels = Vec::new();
-    let mut current = 0;
-    while current <= peak_memory {
-        labels.push(format_memory_size(current));
-        current += step;
-    }
-    labels
-}
-
-fn format_memory_size(size: i64) -> String {
-    if size >= 1_000_000 {
-        format!("{}MB", size / 1_000_000)
-    } else if size >= 1_000 {
-        format!("{}KB", size / 1_000)
-    } else {
-        format!("{}B", size)
-    }
-}
-
-fn generate_time_scale_labels(total_points: usize) -> Vec<String> {
-    let step = match total_points {
-        0..=10 => 1,
-        11..=100 => 10,
-        101..=1000 => 100,
-        _ => 1000,
-    };
-
-    let mut labels = Vec::new();
-    let mut current = 0;
-    while current < total_points {
-        labels.push(current.to_string());
-        current += step;
-    }
-    labels
-}
-
-fn generate_scale_points(length: i32, num_divisions: usize) -> Vec<i32> {
-    (0..num_divisions)
-        .map(|i| {
-            (i * length as usize)
-                / (if num_divisions == 1 {
-                    1
-                } else {
-                    num_divisions - 1
-                })
-        })
-        .map(|p| p as i32)
-        .collect()
-}
-
-fn generate_grid_lines(
-    padding: i32,
-    plot_width: i32,
-    plot_height: i32,
-    memory_points: &[i32],
-    time_points: &[i32],
-) -> String {
-    let mut grid = String::new();
-
-    // Horizontal grid lines
-    for &y in memory_points {
-        grid.push_str(&format!(
-            r#"<line class="grid" x1="{}" y1="{}" x2="{}" y2="{}" />"#,
-            padding,
-            y + padding,
-            padding + plot_width,
-            y + padding
-        ));
-    }
-
-    // Vertical grid lines
-    for &x in time_points {
-        grid.push_str(&format!(
-            r#"<line class="grid" x1="{}" y1="{}" x2="{}" y2="{}" />"#,
-            x + padding,
-            padding,
-            x + padding,
-            padding + plot_height
-        ));
-    }
-
-    grid
-}
-
-fn generate_axis_labels(
-    padding: i32,
-    height: i32,
-    plot_width: i32,
-    memory_labels: &[String],
-    memory_points: &[i32],
-    time_labels: &[String],
-    time_points: &[i32],
-) -> String {
-    let mut labels = String::new();
-
-    // Y-axis (memory) labels - reverse the order to have 0 at bottom
-    for (_, (label, &y)) in memory_labels.iter().zip(memory_points).enumerate() {
-        let y_pos = height - padding - y; // Flip the y-coordinate
-        labels.push_str(&format!(
-                r#"<text x="{}" y="{}" class="label" text-anchor="end" alignment-baseline="middle">{}</text>"#,
-                padding - 5,
-                y_pos,
-                label
-            ));
-    }
-
-    // X-axis (time) labels
-    for (label, &x) in time_labels.iter().zip(time_points) {
-        labels.push_str(&format!(
-            r#"<text x="{}" y="{}" class="label" text-anchor="middle">{}</text>"#,
-            x + padding,
-            height - padding + 20,
-            label
-        ));
-    }
-
-    // Axis titles
-    labels.push_str(&format!(
-        r#"<text x="{}" y="{}" class="label" text-anchor="middle">Time (events)</text>"#,
-        padding + plot_width / 2,
-        height - 10
-    ));
-    labels.push_str(&format!(
-        r#"<text x="{}" y="{}" class="label" text-anchor="middle" transform="rotate(-90,{},{})">{}</text>"#,
-        15,
-        height / 2,
-        15,
-        height / 2,
-        "Memory Usage"
-    ));
-
-    labels
-}
-
-fn calculate_y_position(value: i64, peak: i64, height: i32, padding: i32, plot_height: i32) -> i32 {
-    // Convert value to y-coordinate (0 at bottom)
-    height - padding - ((value * plot_height as i64) / peak.max(1)) as i32
 }

@@ -17,7 +17,6 @@
 use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
 use chrono::Local;
 use memory_stats::memory_stats;
-use std::alloc::{GlobalAlloc, Layout, System};
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
@@ -56,7 +55,6 @@ static_lazy! {
         ProfileFilePaths {
             time: format!("{base}.folded"),
             memory: format!("{base}-memory.folded"),
-            alloc: format!("{base}-alloc.log")
         }
     }
 }
@@ -68,10 +66,6 @@ static_lazy! {
 
 static_lazy! {
     MemoryProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
-}
-
-static_lazy! {
-    AllocationLogFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
 const MAX_PROFILE_DEPTH: usize = 100;
@@ -112,8 +106,8 @@ pub(crate) fn get_profile_stack() -> Vec<&'static str> {
     // println!("get_profile_stack: depth = {depth}"); // Debug
     let mut result = Vec::with_capacity(depth);
 
-    for i in 0..depth {
-        let ptr = PROFILE_STACK[i].load(Ordering::SeqCst);
+    for frame in PROFILE_STACK.iter().take(depth) {
+        let ptr = frame.load(Ordering::SeqCst);
         if !ptr.is_null() {
             unsafe {
                 let name = *ptr;
@@ -127,152 +121,23 @@ pub(crate) fn get_profile_stack() -> Vec<&'static str> {
 }
 
 // For validation in debug builds
-#[cfg(debug_assertions)]
+// #[cfg(debug_assertions)]
 #[allow(dead_code)]
 fn validate_profile_stack(name: &'static str) -> Option<String> {
     let depth = STACK_DEPTH.load(Ordering::SeqCst);
     if depth >= MAX_PROFILE_DEPTH {
         return Some(format!("Stack depth {depth} exceeds limit"));
     }
-    if depth > 0 {
-        let ptr = PROFILE_STACK[depth - 1].load(Ordering::SeqCst);
-        if !ptr.is_null() {
-            unsafe {
-                let top = *ptr;
-                if top == name {
-                    return Some(format!("Duplicate stack entry: {name}"));
-                }
-            }
-        }
-    }
+    // Removed duplicate entry check - recursive calls are valid
     None
 }
 
 static START_TIME: AtomicU64 = AtomicU64::new(0);
 
-#[global_allocator]
-static ALLOCATOR: AllocationProfiler = AllocationProfiler::new();
-
-struct AllocationProfiler {
-    inner: System,
-    total_allocated: AtomicUsize,
-}
-
-impl AllocationProfiler {
-    const fn new() -> Self {
-        Self {
-            inner: System,
-            total_allocated: AtomicUsize::new(0),
-        }
-    }
-
-    fn get() -> &'static Self {
-        &ALLOCATOR
-    }
-
-    #[allow(clippy::unused_self)]
-    fn write_log(&self, size: usize, is_alloc: bool) -> Result<(), Box<dyn std::error::Error>> {
-        static IS_LOGGING: AtomicBool = AtomicBool::new(false);
-
-        if IS_LOGGING.load(Ordering::SeqCst) {
-            return Ok(());
-        }
-
-        IS_LOGGING.store(true, Ordering::SeqCst);
-
-        let result = (|| {
-            let mut buffer = [0u8; 1024];
-            let mut pos = 0;
-
-            // Write fixed-length header first
-            let duration = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-            let timestamp_bytes = duration.as_micros().to_ne_bytes();
-            buffer[pos..pos + 16].copy_from_slice(&timestamp_bytes);
-            pos += 16;
-
-            buffer[pos] = if is_alloc { b'+' } else { b'-' };
-            pos += 1;
-
-            buffer[pos..pos + 8].copy_from_slice(&size.to_ne_bytes());
-            pos += 8;
-
-            // Reserve space for stack length - we'll write it later
-            let stack_len_pos = pos;
-            pos += 4;
-
-            // Write stack frames and count them
-            let stack_len = {
-                let mut len = 0u32;
-                let depth = STACK_DEPTH.load(Ordering::SeqCst);
-                for element in PROFILE_STACK.iter().take(depth) {
-                    let ptr = element.load(Ordering::SeqCst);
-                    if !ptr.is_null() {
-                        unsafe {
-                            let frame = *ptr;
-                            let frame_bytes = frame.as_bytes();
-                            if frame_bytes.len() <= 256
-                                && (pos + frame_bytes.len() + 1) < buffer.len()
-                            {
-                                buffer[pos..pos + frame_bytes.len()].copy_from_slice(frame_bytes);
-                                pos += frame_bytes.len();
-                                buffer[pos] = b';';
-                                pos += 1;
-                                len += 1;
-                            }
-                        }
-                    }
-                }
-                len
-            };
-
-            // Now write the stack length
-            buffer[stack_len_pos..stack_len_pos + 4].copy_from_slice(&stack_len.to_ne_bytes());
-
-            buffer[pos] = b'\n';
-            pos += 1;
-
-            let mut file = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&ProfilePaths::get().alloc)?;
-
-            file.write_all(&buffer[..pos])?;
-            Ok(())
-        })();
-
-        IS_LOGGING.store(false, Ordering::SeqCst);
-        result
-    }
-}
-
-unsafe impl GlobalAlloc for AllocationProfiler {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let ptr = self.inner.alloc(layout);
-        if !ptr.is_null() && is_profiling_enabled() {
-            self.total_allocated
-                .fetch_add(layout.size(), Ordering::SeqCst);
-            if let Err(e) = self.write_log(layout.size(), true) {
-                eprintln!("Error writing allocation log: {e}");
-            }
-        }
-        ptr
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        self.inner.dealloc(ptr, layout);
-        if is_profiling_enabled() {
-            if let Err(e) = self.write_log(layout.size(), false) {
-                eprintln!("Error writing allocation log: {e}");
-            }
-        }
-    }
-}
-
 #[derive(Clone)]
 struct ProfileFilePaths {
     time: String,
     memory: String,
-    alloc: String,
 }
 
 /// Resets a profile file by clearing its buffer writer.
@@ -293,10 +158,10 @@ fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) ->
 
 /// Initializes profile files based on the specified profile type.
 ///
-/// This function handles the initialization sequence for all profiling files:
+/// This function handles the initialization sequence for both profiling files:
 /// - For Time profiling: creates and initializes the time profile file
-/// - For Memory profiling: creates and initializes both memory and allocation log files
-/// - For Both: initializes all three files
+/// - For Memory profiling: creates and initializes memory profile file
+/// - For Both: initializes both files
 ///
 /// # Arguments
 /// * `profile_type` - The type of profiling to initialize files for
@@ -314,27 +179,21 @@ fn initialize_profile_files(profile_type: ProfileType) -> ThagResult<()> {
         }
         ProfileType::Memory => {
             MemoryProfileFile::init();
-            AllocationLogFile::init();
             reset_profile_file(MemoryProfileFile::get(), "memory")?;
-            reset_profile_file(AllocationLogFile::get(), "allocation")?;
             initialize_profile_file(&paths.memory, "Memory Profile")?;
-            initialize_profile_file(&paths.alloc, "Allocation Log")?;
         }
         ProfileType::Both => {
             // Initialize all files
             TimeProfileFile::init();
             MemoryProfileFile::init();
-            AllocationLogFile::init();
 
             // Reset all files
             reset_profile_file(TimeProfileFile::get(), "time")?;
             reset_profile_file(MemoryProfileFile::get(), "memory")?;
-            reset_profile_file(AllocationLogFile::get(), "allocation")?;
 
             // Initialize all files with headers
             initialize_profile_file(&paths.time, "Time Profile")?;
             initialize_profile_file(&paths.memory, "Memory Profile")?;
-            initialize_profile_file(&paths.alloc, "Allocation Log")?;
         }
     }
     Ok(())
@@ -518,28 +377,26 @@ impl Profile {
             _ => ProfileType::Time,
         };
 
-        #[cfg(debug_assertions)]
+        let initial_memory = if matches!(requested_type, ProfileType::Memory | ProfileType::Both) {
+            // Get initial memory snapshot
+            memory_stats().map(|stats| stats.physical_mem)
+        } else {
+            None
+        };
+
+        // #[cfg(debug_assertions)]
         if let Some(err) = validate_profile_stack(name) {
             panic!("Stack validation failed: {err}");
         }
 
-        #[cfg(debug_assertions)]
-        // No need to check is_profiling_enabled() again here
-        if let Some(err) = validate_profile_stack(name) {
-            panic!("Stack validation failed: {err}");
-        }
-
-        assert!(push_profile(name), "Profile stack overflow");
+        // Push to stack as before
+        push_profile(name);
 
         Some(Self {
-            start: Some(Instant::now()),
             name,
             profile_type,
-            initial_memory: Some(
-                AllocationProfiler::get()
-                    .total_allocated // Changed from current_allocated
-                    .load(Ordering::SeqCst),
-            ),
+            start: Some(Instant::now()),
+            initial_memory,
             _not_send: PhantomData,
         })
     }
@@ -604,9 +461,9 @@ impl Profile {
 
         let stack = get_profile_stack();
         let entry = if stack.is_empty() {
-            format!("{} {}", self.name, duration.as_nanos())
+            format!("{} {}", self.name, micros)
         } else {
-            format!("{};{} {}", stack.join(";"), self.name, duration.as_nanos())
+            format!("{};{} {}", stack.join(";"), self.name, micros)
         };
 
         let paths = ProfilePaths::get();
@@ -633,12 +490,33 @@ impl Profile {
         let paths = ProfilePaths::get();
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
     }
+
+    // fn write_memory_event(&self, delta: usize) -> ThagResult<()> {
+    //     if delta == 0 {
+    //         // Keep this as it's a business logic check
+    //         return Ok(());
+    //     }
+
+    //     // Get current stack as string
+    //     let stack_data = {
+    //         let stack = get_profile_stack();
+    //         if stack.is_empty() {
+    //             self.name.to_string()
+    //         } else {
+    //             format!("{};{}", stack.join(";"), self.name)
+    //         }
+    //     };
+    //     let entry = format!("{stack_data} {delta}");
+
+    //     let paths = ProfilePaths::get();
+    //     Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
+    // }
 }
 
 impl Drop for Profile {
     fn drop(&mut self) {
-        // Handle time/memory profiling first
         if let Some(start) = self.start.take() {
+            // Handle time profiling as before
             match self.profile_type {
                 ProfileType::Time | ProfileType::Both => {
                     let elapsed = start.elapsed();
@@ -648,29 +526,46 @@ impl Drop for Profile {
             }
         }
 
-        // Get current depth before we modify it
-        if let Some(idx) = STACK_DEPTH.load(Ordering::SeqCst).checked_sub(1) {
-            // First store new depth
-            STACK_DEPTH.store(idx, Ordering::SeqCst);
+        // Handle memory profiling
+        if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
+            if let Some(initial) = self.initial_memory {
+                if let Some(stats) = memory_stats() {
+                    let final_memory = stats.physical_mem;
+                    let delta = final_memory.saturating_sub(initial);
 
-            // Then clean up the entry
-            let ptr = PROFILE_STACK[idx].swap(ptr::null_mut(), Ordering::SeqCst);
-            if !ptr.is_null() {
-                unsafe {
-                    drop(Box::from_raw(ptr));
+                    if delta > 0 {
+                        // Record both the allocation and its impending deallocation
+                        let _ = self.write_memory_event_with_op(delta, '+');
+                        let _ = self.write_memory_event_with_op(delta, '-');
+                    }
                 }
             }
         }
 
-        // Debug verification
-        #[cfg(debug_assertions)]
-        {
-            let depth = STACK_DEPTH.load(Ordering::SeqCst);
-            if depth >= MAX_PROFILE_DEPTH {
-                println!("Warning: Stack depth {} after drop", depth);
-            }
-        }
+        // Pop from stack as before
+        pop_profile();
     }
+}
+
+// Optional: add memory info to error handling
+#[derive(Debug)]
+pub enum MemoryError {
+    StatsUnavailable,
+    DeltaCalculationFailed,
+}
+
+#[allow(dead_code)]
+fn get_memory_delta(initial: usize) -> Result<usize, MemoryError> {
+    memory_stats()
+        .ok_or(MemoryError::StatsUnavailable)
+        .and_then(|stats| {
+            let final_memory = stats.physical_mem;
+            if final_memory >= initial {
+                Ok(final_memory - initial)
+            } else {
+                Err(MemoryError::DeltaCalculationFailed)
+            }
+        })
 }
 
 /// Run a function or closure only if the global verbosity is Verbose or higher.
@@ -721,8 +616,8 @@ pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
     let mut pos = None;
 
     // Find position of section
-    for i in 0..depth {
-        let ptr = PROFILE_STACK[i].load(Ordering::SeqCst);
+    for (i, frame) in PROFILE_STACK.iter().enumerate().take(depth) {
+        let ptr = frame.load(Ordering::SeqCst);
         if !ptr.is_null() {
             unsafe {
                 if *ptr == section_name {
@@ -735,8 +630,8 @@ pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
 
     pos.map(|p| {
         // Clean up everything after position p
-        for i in p..depth {
-            let ptr = PROFILE_STACK[i].swap(ptr::null_mut(), Ordering::SeqCst);
+        for frame in PROFILE_STACK.iter().take(depth).skip(p) {
+            let ptr = frame.swap(ptr::null_mut(), Ordering::SeqCst);
             if !ptr.is_null() {
                 unsafe {
                     drop(Box::from_raw(ptr));
@@ -1152,5 +1047,16 @@ mod tests {
             assert_eq!(stack.len(), 1);
             assert_eq!(stack[0], "outer");
         });
+    }
+
+    // Optional: debug helper
+    #[cfg(test)]
+    fn print_memory_info(context: &str) {
+        if let Some(stats) = memory_stats() {
+            println!(
+                "{}: Physical: {} bytes, Virtual: {} bytes",
+                context, stats.physical_mem, stats.virtual_mem
+            );
+        }
     }
 }

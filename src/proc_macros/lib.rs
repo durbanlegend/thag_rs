@@ -197,7 +197,7 @@ fn expand_output(name: &str, output: &TokenStream) {
 #[proc_macro_attribute]
 pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
     maybe_expand_attr_macro(
-        true,
+        false,
         "enable_profiling",
         &attr,
         &item,

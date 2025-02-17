@@ -123,7 +123,7 @@ pub(crate) fn get_profile_stack() -> Vec<&'static str> {
 // For validation in debug builds
 // #[cfg(debug_assertions)]
 #[allow(dead_code)]
-fn validate_profile_stack(name: &'static str) -> Option<String> {
+fn validate_profile_stack() -> Option<String> {
     let depth = STACK_DEPTH.load(Ordering::SeqCst);
     if depth >= MAX_PROFILE_DEPTH {
         return Some(format!("Stack depth {depth} exceeds limit"));
@@ -385,7 +385,7 @@ impl Profile {
         };
 
         // #[cfg(debug_assertions)]
-        if let Some(err) = validate_profile_stack(name) {
+        if let Some(err) = validate_profile_stack() {
             panic!("Stack validation failed: {err}");
         }
 
@@ -461,9 +461,9 @@ impl Profile {
 
         let stack = get_profile_stack();
         let entry = if stack.is_empty() {
-            format!("{} {}", self.name, micros)
+            format!("{} {micros}", self.name)
         } else {
-            format!("{};{} {}", stack.join(";"), self.name, micros)
+            format!("{} {micros}", stack.join(";"))
         };
 
         let paths = ProfilePaths::get();
@@ -482,7 +482,7 @@ impl Profile {
             if stack.is_empty() {
                 self.name.to_string()
             } else {
-                format!("{};{}", stack.join(";"), self.name)
+                stack.join(";")
             }
         };
         let entry = format!("{stack_data} {op}{delta}");
@@ -511,6 +511,21 @@ impl Profile {
     //     let paths = ProfilePaths::get();
     //     Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
     // }
+
+    fn record_memory_change(&self, delta: usize) -> ThagResult<()> {
+        if delta == 0 {
+            return Ok(());
+        }
+
+        // Record allocation
+        self.write_memory_event_with_op(delta, '+')?;
+
+        // Record corresponding deallocation
+        // Store both events atomically to maintain pairing
+        self.write_memory_event_with_op(delta, '-')?;
+
+        Ok(())
+    }
 }
 
 impl Drop for Profile {
@@ -534,9 +549,7 @@ impl Drop for Profile {
                     let delta = final_memory.saturating_sub(initial);
 
                     if delta > 0 {
-                        // Record both the allocation and its impending deallocation
-                        let _ = self.write_memory_event_with_op(delta, '+');
-                        let _ = self.write_memory_event_with_op(delta, '-');
+                        let _ = self.record_memory_change(delta);
                     }
                 }
             }

@@ -1,9 +1,13 @@
 use ra_ap_syntax::{
-    ast::{self, HasName},
+    ast::{self, HasModuleItem, HasName, Item},
     ted::{self, Position},
-    AstNode, Edition,
-    NodeOrToken::Token,
-    Parse, SourceFile, SyntaxKind,
+    AstNode,
+    Edition,
+    // NodeOrToken::Token,
+    Parse,
+    SourceFile,
+    SyntaxKind,
+    SyntaxNode,
 };
 use std::io::Read;
 
@@ -17,53 +21,26 @@ fn parse_attr(attr: &str) -> Option<ra_ap_syntax::SyntaxNode> {
 }
 
 fn find_best_import_position(tree: &ast::SourceFile) -> (Position, bool) {
-    // Look for the first USE node
-    if let Some(first_use) = tree
-        .syntax()
-        .children()
-        .find(|node| node.kind() == SyntaxKind::USE)
-    {
-        // Check if it contains a TOML block comment
-        let has_toml = first_use.children_with_tokens().any(|token| {
-            token.kind() == SyntaxKind::COMMENT && token.to_string().starts_with("/*[toml]")
-        });
-        // eprintln!("has_toml={has_toml}");
-        if has_toml {
-            let next_token = first_use.next_sibling_or_token();
-            // eprintln!("first_use.next_sibling_or_token()={next_token:?}");
-            let insert_nl = if let Some(Token(ref token)) = next_token {
-                if token.kind() == SyntaxKind::WHITESPACE && token.to_string().starts_with("\n\n") {
-                    false
-                } else {
-                    true
-                }
-            } else {
-                true
-            };
-            // Insert after the entire USE node and add a blank line
-            (Position::after(first_use), insert_nl)
-        } else {
-            // No TOML block, can insert before the USE node
-            (Position::before(first_use), false)
-        }
-    } else {
-        // No USE nodes, find first non-attribute, non-comment item
-        if let Some(first_item) = tree.syntax().children().find(|node| {
-            !matches!(
-                node.kind(),
-                SyntaxKind::ATTR | SyntaxKind::COMMENT | SyntaxKind::WHITESPACE
-            )
-        }) {
-            // eprintln!("Returning `(Position::before({first_item:?}), true)`");
-            (Position::before(first_item), true)
-        } else {
-            // eprintln!(
-            //     "Returning `(Position::last_child_of({:?}), true)`",
-            //     tree.syntax()
-            // );
-            (Position::last_child_of(tree.syntax()), true)
-        }
-    }
+    // Look for the first non-USE node
+    let item = tree
+        .items()
+        .filter(|item| !matches!(item, Item::Use(_)))
+        .filter(|item| {
+            !item
+                // .expect("REASON")
+                .syntax()
+                .children_with_tokens()
+                .any(|token| {
+                    token.kind() == SyntaxKind::COMMENT && token.to_string().starts_with("/*[toml]")
+                })
+        })
+        .take(1)
+        .next();
+    eprintln!("item={item:#?}");
+    (
+        Position::before(item.expect("Could not unwrap item").syntax()),
+        true,
+    )
 }
 
 fn instrument_code(source: &str) -> String {
@@ -74,14 +51,27 @@ fn instrument_code(source: &str) -> String {
         "use thag_rs::profiling;",
         "use thag_proc_macros::enable_profiling;",
     ];
+
     for import_text in imports.iter() {
         if !source.contains(import_text) {
             if let Some(import_node) = parse_attr(import_text) {
-                let (pos, _) = find_best_import_position(&tree);
+                let (pos, insert_nl) = find_best_import_position(&tree);
+                eprintln!(
+                    "insert_nl={}, pos={pos:?}, import_text={import_text}",
+                    insert_nl
+                );
                 ted::insert(pos, &import_node);
+                if insert_nl {
+                    let newline = ast::make::tokens::single_newline();
+                    let (pos, _) = find_best_import_position(&tree);
+                    ted::insert(pos, newline);
+                }
             }
         }
     }
+    let newline = ast::make::tokens::single_newline();
+    let (pos, _) = find_best_import_position(&tree);
+    ted::insert(pos, newline);
 
     for node in tree.syntax().descendants() {
         if let Some(function) = ast::Fn::cast(node.clone()) {
@@ -92,11 +82,16 @@ fn instrument_code(source: &str) -> String {
                 "#[profile]"
             };
 
-            if !function
-                .syntax()
-                .prev_sibling_or_token()
-                .map_or(false, |t| t.to_string().starts_with("#["))
-            {
+            let function_syntax: &SyntaxNode = function.syntax();
+            let fn_token = function.fn_token().expect("Function token is None");
+            eprintln!("fn_token: {fn_token:?}");
+            if !function_syntax.descendants_with_tokens().any(|it| {
+                let text = it.to_string();
+                text.starts_with("#[profile")
+                    || text.starts_with("#[enable_profiling")
+                    || text.starts_with("profile")
+                    || text.starts_with("enable_profiling")
+            }) {
                 // Get original indentation.
                 // Previous whitespace will include all prior newlines.
                 // If there are any, we only want the last one, otherwise we will get
@@ -123,12 +118,12 @@ fn instrument_code(source: &str) -> String {
                 // Parse and insert attribute with proper indentation
                 let attr_node = parse_attr(&format!("{}{}", indent, attr_text))
                     .expect("Failed to parse attribute");
-                ted::insert(Position::before(function.syntax()), &attr_node);
+                ted::insert(Position::before(&fn_token), &attr_node);
 
                 // Add single newline with same indentation
                 let ws_token = ast::make::tokens::whitespace(&indent);
                 // ted::insert(Position::after(&attr_node), ws_token);
-                ted::insert(Position::before(function.syntax()), ws_token);
+                ted::insert(Position::before(fn_token), ws_token);
             }
         }
     }
@@ -149,4 +144,136 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let instrumented = instrument_code(&content);
     print!("{}", instrumented);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_no_duplicate_imports() {
+        let input = r#"
+use some_crate::something;
+use thag_proc_macros::enable_profiling;
+
+fn foo() {}"#;
+        let output = instrument_code(input);
+        assert_eq!(
+            output
+                .matches("use thag_proc_macros::enable_profiling")
+                .count(),
+            1,
+            "should not duplicate existing import"
+        );
+    }
+
+    #[test]
+    fn test_basic_function_instrumentation() {
+        let input = "\n\nfn foo() {}";
+        let output = instrument_code(input);
+        eprintln!("output=[{output}]");
+        assert!(output.contains("#[profile]\nfn foo()"));
+    }
+
+    #[test]
+    fn test_main_function_special_handling() {
+        let input = "fn main() {}";
+        let output = instrument_code(input);
+        assert!(output.contains("#[enable_profiling]\nfn main()"));
+    }
+
+    #[test]
+    fn test_preserves_indentation() {
+        let input = r#"
+impl Foo {
+    fn bar() {}
+}"#;
+        let output = instrument_code(input);
+        assert!(output.contains("    #[profile]\n    fn bar()"));
+    }
+
+    #[test]
+    fn test_multiple_attributes() {
+        let input = r#"#[allow(dead_code)]
+fn main() {}"#;
+        let output = instrument_code(input);
+        assert!(output.contains("#[enable_profiling]\n#[allow(dead_code)]\nfn main()"));
+    }
+
+    #[test]
+    fn test_nested_functions() {
+        let input = r#"
+fn outer() {
+    fn inner() {}
+}"#;
+        let output = instrument_code(input);
+        assert!(output.contains("#[profile]\nfn outer()"));
+        assert!(output.contains("    #[profile]\n    fn inner()"));
+    }
+
+    #[test]
+    fn test_impl_block_functions() {
+        let input = r#"
+impl Foo {
+    fn method1(&self) {}
+    fn method2(&self) {}
+}"#;
+        let output = instrument_code(input);
+        assert!(output.contains("    #[profile]\n    fn method1"));
+        assert!(output.contains("    #[profile]\n    fn method2"));
+    }
+
+    #[test]
+    fn test_preserves_file_start() {
+        let input = "// Copyright notice\n\nfn foo() {}";
+        let output = instrument_code(input);
+        assert!(output.starts_with("// Copyright notice\n"));
+    }
+
+    #[test]
+    fn test_trait_impl_functions() {
+        let input = r#"
+impl SomeTrait for Foo {
+    fn required_method(&self) {}
+}"#;
+        let output = instrument_code(input);
+        assert!(output.contains("    #[profile]\n    fn required_method"));
+    }
+
+    #[test]
+    fn test_async_functions() {
+        let input = "async fn async_foo() {}";
+        let output = instrument_code(input);
+        assert!(output.contains("#[profile]\nasync fn async_foo()"));
+    }
+
+    #[test]
+    fn test_generic_functions() {
+        let input = "fn generic<T: Display>(value: T) {}";
+        let output = instrument_code(input);
+        assert!(output.contains("#[profile]\nfn generic<T: Display>"));
+    }
+
+    #[test]
+    fn test_doc_comments_preserved() {
+        let input = r#"
+/// Doc comment
+fn documented() {}"#;
+        let output = instrument_code(input);
+        assert!(output.contains("/// Doc comment\n#[profile]\nfn documented()"));
+    }
+
+    #[test]
+    fn test_complex_spacing() {
+        let input = r#"
+use std::fmt;
+
+// Some comment
+fn foo() {}
+
+fn bar() {}"#;
+        let output = instrument_code(input);
+        // Check that blank lines between functions are preserved
+        assert!(output.contains("}\n\n#[profile]\nfn bar()"));
+    }
 }

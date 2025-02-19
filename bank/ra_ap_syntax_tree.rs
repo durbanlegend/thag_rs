@@ -3,6 +3,7 @@
 ra_ap_syntax = "0.0.261"
 */
 
+use ra_ap_syntax::ast::{HasModuleItem, Item};
 use ra_ap_syntax::{AstNode, Edition, SourceFile};
 use std::io::Read;
 
@@ -15,8 +16,16 @@ fn read_stdin() -> std::io::Result<String> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let content = read_stdin()?;
     let parse = SourceFile::parse(&content, Edition::Edition2021);
-    let tree = parse.tree().clone_for_update();
+    let file = parse.tree();
 
-    eprintln!("tree={tree:#?}");
+    eprintln!("file={file:#?}");
+
+    let item = file
+        .items()
+        .filter(|item| !matches!(item, Item::Use(_)))
+        .take(1)
+        .next();
+    eprintln!("item={item:#?}");
+
     Ok(())
 }

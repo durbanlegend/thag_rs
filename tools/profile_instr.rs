@@ -41,6 +41,7 @@ fn instrument_code(source: &str) -> String {
             if let Some(import_node) = parse_attr(import_text) {
                 let pos = find_best_import_position(&tree);
                 ted::insert(pos, &import_node);
+                // Single newline after each import
                 let newline = ast::make::tokens::single_newline();
                 ted::insert(Position::after(&import_node), newline);
             }
@@ -61,6 +62,7 @@ fn instrument_code(source: &str) -> String {
                 .prev_sibling_or_token()
                 .map_or(false, |t| t.to_string().starts_with("#["))
             {
+                // Get original indentation
                 let indent = function
                     .syntax()
                     .prev_sibling_or_token()
@@ -72,26 +74,21 @@ fn instrument_code(source: &str) -> String {
                         }
                     })
                     .unwrap_or_default();
-
+                eprintln!("Indentation: {}, value: [{}]", indent.len(), indent);
+                // Parse and insert attribute with proper indentation
                 let attr_node = parse_attr(&format!("{}{}", indent, attr_text))
                     .expect("Failed to parse attribute");
                 ted::insert(Position::before(function.syntax()), &attr_node);
 
-                let ws_token = ast::make::tokens::whitespace(&format!("\n{}", indent));
+                // Add single newline with same indentation
+                let ws_token = ast::make::tokens::whitespace(&indent);
                 ted::insert(Position::after(&attr_node), ws_token);
             }
         }
     }
 
-    // Remove extra blank lines and normalize spacing
-    let result = tree.syntax().to_string();
-    result
-        .trim_start()
-        .lines()
-        .map(|line| line.trim_end())
-        .collect::<Vec<_>>()
-        .join("\n")
-        + "\n"
+    // Return the result without trimming, to preserve original file start
+    tree.syntax().to_string()
 }
 
 fn read_stdin() -> std::io::Result<String> {

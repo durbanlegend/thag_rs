@@ -3,14 +3,16 @@ mod tests {
     use crossterm::terminal::disable_raw_mode;
     use crossterm::terminal::is_raw_mode_enabled;
     use log::LevelFilter;
-    use simplelog::{ColorChoice,CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
-    use thag_rs::debug_log;
+    use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
     use std::env;
     use std::env::set_var;
     use std::sync::OnceLock;
+    use thag_rs::debug_log;
     use thag_rs::terminal::TerminalStateGuard;
     use thag_rs::{
-        terminal::{detect_color_support, get_term_bg_luma, is_light_color, restore_raw_status},
+        terminal::{
+            detect_term_capabilities, get_term_bg_luma, is_light_color, restore_raw_status,
+        },
         ColorSupport, TermBgLuma,
     };
 
@@ -76,7 +78,7 @@ mod tests {
     #[test]
     fn test_detect_color_support_in_test_env() {
         env::set_var("TEST_ENV", "1");
-        let support = detect_color_support();
+        let (support, _) = detect_term_capabilities();
         assert_eq!(*support, ColorSupport::Basic);
         env::remove_var("TEST_ENV");
     }
@@ -132,7 +134,7 @@ mod tests {
     // Mock tests for terminal-dependent functions
     #[test]
     fn test_color_support_detection() {
-        let support = detect_color_support();
+        let (support, _) = detect_term_capabilities();
         assert!(matches!(
             *support,
             ColorSupport::None
@@ -148,7 +150,7 @@ mod tests {
         let initial_raw_mode = is_raw_mode_enabled().unwrap_or(false);
 
         // Run detection
-        let _support = detect_color_support();
+        let _support = detect_term_capabilities();
 
         // Verify raw mode status is preserved
         let final_raw_mode = is_raw_mode_enabled().unwrap_or(false);

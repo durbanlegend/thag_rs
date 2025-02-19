@@ -1,6 +1,7 @@
 #![allow(clippy::cast_lossless)]
 use crate::errors::ThemeError;
 use crate::styling::Role::{Heading1, Info, Normal};
+use crate::terminal::is_light_color;
 use crate::{
     lazy_static_var, profile, profile_fn, profile_method, profile_section, vlog, ThagError,
     ThagResult, V,
@@ -837,20 +838,25 @@ impl TermAttributes {
                 ColorInitStrategy::Match => {
                     #[cfg(feature = "color_detect")]
                     {
-                        let color_support = *crate::terminal::detect_color_support();
-                        let term_bg_rgb_ref = terminal::get_term_bg_rgb().ok();
-                        let term_bg_rgb = term_bg_rgb_ref.copied();
-                        let term_bg_hex = term_bg_rgb_ref.map(rgb_to_hex);
-                        let term_bg_luma = terminal::get_term_bg_luma();
+                        let (color_support, term_bg_rgb_ref) =
+                            crate::terminal::detect_term_capabilities();
+                        // let term_bg_rgb_ref = terminal::get_term_bg_rgb().ok();
+                        let term_bg_rgb = Some(*term_bg_rgb_ref);
+                        let term_bg_hex = Some(rgb_to_hex(term_bg_rgb_ref));
+                        let term_bg_luma = if is_light_color(*term_bg_rgb_ref) {
+                            TermBgLuma::Light
+                        } else {
+                            TermBgLuma::Dark
+                        };
                         let theme =
-                            Theme::auto_detect(color_support, *term_bg_luma, term_bg_rgb_ref)
+                            Theme::auto_detect(*color_support, term_bg_luma, Some(term_bg_rgb_ref))
                                 .expect("Failed to auto-detect theme");
                         Self {
                             how_initialized: HowInitialized::Detected,
-                            color_support,
+                            color_support: *color_support,
                             term_bg_hex,
                             term_bg_rgb,
-                            term_bg_luma: *term_bg_luma,
+                            term_bg_luma,
                             theme,
                         }
                     }

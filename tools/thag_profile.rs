@@ -304,7 +304,7 @@ fn generate_time_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
         ));
     }
 
-    let color_scheme = select_color_scheme()?;
+    let color_scheme = select_time_color_scheme()?;
 
     let chart_type = ChartType::TimeSequence;
     let svg = "flamechart.svg";
@@ -373,7 +373,7 @@ fn generate_differential_flamegraph(
     opts.title = format!("Differential {profile_type} Profile: {script_name}");
     opts.subtitle = format!("Comparing {before_name} → {after_name}").into();
     opts.colors = match profile_type {
-        ProfileType::Time => select_color_scheme()?,
+        ProfileType::Time => select_time_color_scheme()?,
         ProfileType::Memory => Palette::Basic(BasicPalette::Mem),
     };
     match profile_type {
@@ -555,7 +555,7 @@ fn get_color_schemes() -> Vec<ColorSchemeOption> {
     ]
 }
 
-fn load_last_used_scheme() -> ThagResult<String> {
+fn load_last_used_time_scheme() -> ThagResult<String> {
     let config_path = dirs::config_dir()
         .ok_or_else(|| ThagError::Profiling("Could not find config directory".to_string()))?
         .join("thag")
@@ -571,7 +571,7 @@ fn load_last_used_scheme() -> ThagResult<String> {
     }
 }
 
-fn save_color_scheme(name: &str) -> ThagResult<()> {
+fn save_time_color_scheme(name: &str) -> ThagResult<()> {
     let config_dir = dirs::config_dir()
         .ok_or_else(|| ThagError::Profiling("Could not find config directory".to_string()))?
         .join("thag");
@@ -591,9 +591,9 @@ fn save_color_scheme(name: &str) -> ThagResult<()> {
     Ok(())
 }
 
-fn select_color_scheme() -> ThagResult<Palette> {
+fn select_time_color_scheme() -> ThagResult<Palette> {
     let schemes = get_color_schemes();
-    let last_used = load_last_used_scheme()?;
+    let last_used = load_last_used_time_scheme()?;
 
     // First ask if user wants to use the last scheme or select a new one
     let use_last = inquire::Confirm::new(&format!(
@@ -634,7 +634,7 @@ fn select_color_scheme() -> ThagResult<Palette> {
     .map_err(|e| ThagError::Profiling(e.to_string()))?;
 
     // Save the selection
-    save_color_scheme(selection)?;
+    save_time_color_scheme(selection)?;
 
     Ok(schemes
         .iter()

@@ -39,11 +39,13 @@ fn instrument_code(source: &str) -> String {
     for import_text in imports.iter() {
         if !source.contains(import_text) {
             if let Some(import_node) = parse_attr(import_text) {
+                let newline = ast::make::tokens::single_newline();
+                let pos = find_best_import_position(&tree);
+                ted::insert(pos, newline);
                 let pos = find_best_import_position(&tree);
                 ted::insert(pos, &import_node);
                 // Single newline after each import
-                let newline = ast::make::tokens::single_newline();
-                ted::insert(Position::after(&import_node), newline);
+                // ted::insert(Position::after(&import_node), newline);
             }
         }
     }
@@ -62,13 +64,23 @@ fn instrument_code(source: &str) -> String {
                 .prev_sibling_or_token()
                 .map_or(false, |t| t.to_string().starts_with("#["))
             {
-                // Get original indentation
+                // Get original indentation.
+                // Previous whitespace will include all prior newlines.
+                // If there are any, we only want the last one, otherwise we will get
+                // as many newlines as there are prior newlines.
                 let indent = function
                     .syntax()
                     .prev_sibling_or_token()
                     .and_then(|t| {
+                        eprintln!("t: {t:?}");
                         if t.kind() == SyntaxKind::WHITESPACE {
-                            Some(t.to_string())
+                            let s = t.to_string();
+                            let new_indent = s
+                                .rmatch_indices('\n')
+                                .next()
+                                .map_or(s.clone(), |(i, _)| (&s[i..]).to_string());
+                            eprintln!("new_indent: [{new_indent}]");
+                            Some(new_indent)
                         } else {
                             None
                         }
@@ -82,7 +94,8 @@ fn instrument_code(source: &str) -> String {
 
                 // Add single newline with same indentation
                 let ws_token = ast::make::tokens::whitespace(&indent);
-                ted::insert(Position::after(&attr_node), ws_token);
+                // ted::insert(Position::after(&attr_node), ws_token);
+                ted::insert(Position::before(function.syntax()), ws_token);
             }
         }
     }

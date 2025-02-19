@@ -47,3 +47,8 @@ themes/built_in/none_basic.toml
 tools/thag_profile_bad.rs
 tools/thag_profile_bad2.rs
 tools/thag_profile_line.rs
+bank/instr_after.rs
+bank/instr_after.txt
+bank/instr_before.txt
+tui_ta_editor_profile.rs.txt
+tui_ta_editor_profile.txt

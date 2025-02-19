@@ -1,7 +1,9 @@
 use ra_ap_syntax::{
     ast::{self, HasName},
     ted::{self, Position},
-    AstNode, Edition, Parse, SourceFile, SyntaxKind,
+    AstNode, Edition,
+    NodeOrToken::Token,
+    Parse, SourceFile, SyntaxKind,
 };
 use std::io::Read;
 
@@ -14,17 +16,53 @@ fn parse_attr(attr: &str) -> Option<ra_ap_syntax::SyntaxNode> {
         .map(|node| node.clone_for_update())
 }
 
-fn find_best_import_position(tree: &ast::SourceFile) -> Position {
-    let mut last_use = None;
-    for node in tree.syntax().children() {
-        if node.kind() == SyntaxKind::USE {
-            last_use = Some(node.clone());
+fn find_best_import_position(tree: &ast::SourceFile) -> (Position, bool) {
+    // Look for the first USE node
+    if let Some(first_use) = tree
+        .syntax()
+        .children()
+        .find(|node| node.kind() == SyntaxKind::USE)
+    {
+        // Check if it contains a TOML block comment
+        let has_toml = first_use.children_with_tokens().any(|token| {
+            token.kind() == SyntaxKind::COMMENT && token.to_string().starts_with("/*[toml]")
+        });
+        // eprintln!("has_toml={has_toml}");
+        if has_toml {
+            let next_token = first_use.next_sibling_or_token();
+            // eprintln!("first_use.next_sibling_or_token()={next_token:?}");
+            let insert_nl = if let Some(Token(ref token)) = next_token {
+                if token.kind() == SyntaxKind::WHITESPACE && token.to_string().starts_with("\n\n") {
+                    false
+                } else {
+                    true
+                }
+            } else {
+                true
+            };
+            // Insert after the entire USE node and add a blank line
+            (Position::after(first_use), insert_nl)
+        } else {
+            // No TOML block, can insert before the USE node
+            (Position::before(first_use), false)
         }
-    }
-    if let Some(last) = last_use {
-        Position::after(last)
     } else {
-        Position::first_child_of(tree.syntax())
+        // No USE nodes, find first non-attribute, non-comment item
+        if let Some(first_item) = tree.syntax().children().find(|node| {
+            !matches!(
+                node.kind(),
+                SyntaxKind::ATTR | SyntaxKind::COMMENT | SyntaxKind::WHITESPACE
+            )
+        }) {
+            // eprintln!("Returning `(Position::before({first_item:?}), true)`");
+            (Position::before(first_item), true)
+        } else {
+            // eprintln!(
+            //     "Returning `(Position::last_child_of({:?}), true)`",
+            //     tree.syntax()
+            // );
+            (Position::last_child_of(tree.syntax()), true)
+        }
     }
 }
 
@@ -33,19 +71,14 @@ fn instrument_code(source: &str) -> String {
     let tree = parse.tree().clone_for_update();
 
     let imports = [
-        "use thag_proc_macros::enable_profiling;",
         "use thag_rs::profiling;",
+        "use thag_proc_macros::enable_profiling;",
     ];
     for import_text in imports.iter() {
         if !source.contains(import_text) {
             if let Some(import_node) = parse_attr(import_text) {
-                let newline = ast::make::tokens::single_newline();
-                let pos = find_best_import_position(&tree);
-                ted::insert(pos, newline);
-                let pos = find_best_import_position(&tree);
+                let (pos, _) = find_best_import_position(&tree);
                 ted::insert(pos, &import_node);
-                // Single newline after each import
-                // ted::insert(Position::after(&import_node), newline);
             }
         }
     }
@@ -72,21 +105,21 @@ fn instrument_code(source: &str) -> String {
                     .syntax()
                     .prev_sibling_or_token()
                     .and_then(|t| {
-                        eprintln!("t: {t:?}");
+                        // eprintln!("t: {t:?}");
                         if t.kind() == SyntaxKind::WHITESPACE {
                             let s = t.to_string();
                             let new_indent = s
                                 .rmatch_indices('\n')
                                 .next()
                                 .map_or(s.clone(), |(i, _)| (&s[i..]).to_string());
-                            eprintln!("new_indent: [{new_indent}]");
+                            // eprintln!("new_indent: [{new_indent}]");
                             Some(new_indent)
                         } else {
                             None
                         }
                     })
                     .unwrap_or_default();
-                eprintln!("Indentation: {}, value: [{}]", indent.len(), indent);
+                // eprintln!("Indentation: {}, value: [{}]", indent.len(), indent);
                 // Parse and insert attribute with proper indentation
                 let attr_node = parse_attr(&format!("{}{}", indent, attr_text))
                     .expect("Failed to parse attribute");
@@ -100,6 +133,7 @@ fn instrument_code(source: &str) -> String {
         }
     }
 
+    // eprintln!("tree={tree:#?}");
     // Return the result without trimming, to preserve original file start
     tree.syntax().to_string()
 }

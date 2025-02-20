@@ -1,4 +1,4 @@
-#![allow(clippy::uninlined_format_args)]
+#![allow(clippy::uninlined_format_args, unused_imports)]
 
 use std::cell::RefCell;
 #[cfg(debug_assertions)]

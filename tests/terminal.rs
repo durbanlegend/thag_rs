@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn test_terminal_state_guard() {
-        let _guard = TerminalStateGuard::new();
+        let _guard = TerminalStateGuard::new(false);
         // The guard should reset terminal state when dropped
         // We can't easily test the actual terminal state,
         // but we can verify the guard can be created and dropped

@@ -1062,14 +1062,14 @@ mod tests {
         });
     }
 
-    // Optional: debug helper
-    #[cfg(test)]
-    fn print_memory_info(context: &str) {
-        if let Some(stats) = memory_stats() {
-            println!(
-                "{}: Physical: {} bytes, Virtual: {} bytes",
-                context, stats.physical_mem, stats.virtual_mem
-            );
-        }
-    }
+    // // Optional: debug helper
+    // #[cfg(test)]
+    // fn print_memory_info(context: &str) {
+    //     if let Some(stats) = memory_stats() {
+    //         println!(
+    //             "{}: Physical: {} bytes, Virtual: {} bytes",
+    //             context, stats.physical_mem, stats.virtual_mem
+    //         );
+    //     }
+    // }
 }

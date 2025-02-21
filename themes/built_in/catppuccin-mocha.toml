@@ -48,4 +48,6 @@ style = ["italic"]
 rgb = [235, 160, 172]
 
 [palette.trace]
-rgb = [17, 17, 27]
+#rgb = [17, 17, 27]
+rgb = [235, 160, 172]
+style = ["dim", "italic"]

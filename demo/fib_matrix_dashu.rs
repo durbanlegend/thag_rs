@@ -21,7 +21,7 @@ dashu = "0.4.2"
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo a very fast precise computation for large individual Fibonacci numbers.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use dashu::ubig;
 use dashu::integer::UBig;

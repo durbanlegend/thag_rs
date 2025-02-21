@@ -1,6 +1,6 @@
 /// Demo of a generic macro to generate lazy static variables without the `lazy_static` crate.
 //# Purpose: Demonstrate a technique
-//# Categories: educational, technique
+//# Categories: learning, technique
 #[macro_export]
 macro_rules! lazy_static_fn {
     ($type:ty, $init_fn:expr, deref) => {{

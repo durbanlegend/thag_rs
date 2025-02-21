@@ -38,6 +38,7 @@ impl Default for TerminalStateGuard {
     }
 }
 
+#[allow(unused_variables)]
 impl Drop for TerminalStateGuard {
     fn drop(&mut self) {
         let raw_now = match is_raw_mode_enabled() {

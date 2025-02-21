@@ -13,7 +13,7 @@ rug = { version = "1.24.0", features = ["integer"] }
 /// E.g.: `thag demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 ///
 //# Purpose: Demo 3 very fast Fibonacci algorithms (F(4784969) in 0.33 to 0.58 sec for me).
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 50`
 use rug::{Complete, Integer};
 use std::collections::HashMap;

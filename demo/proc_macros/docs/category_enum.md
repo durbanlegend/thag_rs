@@ -74,9 +74,9 @@ Async
 Basic
 BigNumbers
 Crates
-Educational
 ErrorHandling
 Exploration
+Learning
 Macros
 Math
 ProcMacros

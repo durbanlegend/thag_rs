@@ -2,20 +2,20 @@
 
 [![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://crates.io/crates/thag_rs)
 [![Crates.io size](https://img.shields.io/crates/size/thag_rs)](https://img.shields.io/crates/size/thag_rs)
-[![Build Status](https://github.com/durbanlegend/thag_rs/workflows/CI/badge.svg)](https://github.com/durbanlegend/thag_rs/actions)
+[![Build Status](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)
 <img src="https://img.shields.io/badge/rustc-stable+-green.svg" alt="supported rustc stable" />
 <a href="https://deps.rs/repo/github/durbanlegend/thag_rs"><img src="https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg" alt="dependency status"/></a>
 
 
 ## Intro
 
-Introducing `thag_rs` (command `thag`) - a Swiss Army knife of productivity tools for Rust development. `thag` combines a script runner, expression evaluator, and REPL into one tool,
-then adds an array of smart features.
+Introducing `thag_rs` (command `thag`) - a set of creative solutions to ease your Rust development experience. `thag` combines a script runner, expression evaluator, and REPL into one tool,
+with an array of smart features.
 
 `thag`'s mission is to remove obstacles to productivity by giving you a selection of tools
 and examples to make it as quick and easy as possible to figure stuff out without tedious setup.
 
-🚀 **Core Powers:**
+🚀 **The basics:**
 
 - Run Rust code straight from the command line
 
@@ -50,19 +50,38 @@ and examples to make it as quick and easy as possible to figure stuff out withou
 - Integrate your favourite editor (VS Code, Helix, Zed, vim, nano etc.)
 
 - Run any Cargo command (clippy, tree, test) against your scripts.
-(Yes, you can even include unit tests in your scripts)
+(Yes, you can include unit tests in your scripts)
 
-- View macro expansions side-by-side with your base script
+- View macro expansions side-by-side with your base script.
 
-- Proc macro development support, including proc macro starter kit and an "intercept-and-debug" option to show an expanded view of your proc macro
+- Proc macro development support, including proc macro starter kit and an "intercept-and-debug" option to show an expanded view of your proc macro at compile time.
 
 - Automated inclusion of `derive` or other dependency features
 
+- **New in 0.2.0:** `thag` cross-platform profiling library for execution timeline and/or memory usage.
+Enable profiling either via `features=profiling` or the `enable_profiling` attribute.
+Profiling produces named and timestamped output files.
+
+    One handy tool will instrument functions and methods in a source file with `thag` profiling attributes (`#[profile]` and (for `fn main`: `#[enable_profiling]`).
+
+    Another will analyse the profiling output and display statistics and regular or differential before/after flamecharts for chosen profiling output files.
+
+    Yet another will remove the instrumentation from a source file. (TODO)
+
+- **New in 0.2.0:** Support for popular terminal themes. `thag` will attempt to choose a theme based on your terminal's background colour.
+
+    Modify the default configuration to specify your preferred themes.
+
+    A new `theme` REPL command displays the current theme:
+
+![Catppuccin Mocha](assets/theme_catp_mocha.png)
+![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)
+
 💡 **Getting Started:**
 
-Jump into `thag`'s collection of 230+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible. Got a cool script to share? We'd love to see it (under MIT/Apache 2 license)!
+Jump into `thag`'s collection of 230+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
 
-Whether you're prototyping, learning, or building tools, `thag_rs` adapts to your style - from quick one-liners to full-featured programs.
+Be it prototyping, learning, or building tools, `thag_rs` is there to help - from quick one-liners to full-featured programs.
 
 ## Quick start: ways to run the `thag` command
 
@@ -271,18 +290,18 @@ _— The Rust Reference_
     If REPL mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the REPL editor.
     * **Stdin mode** accepts larger scripts and programs on the fly, as typed, pasted or piped input or as URLs (via `thag_url`).
     * **Edit mode** via a basic TUI (terminal user interface) editor, with optional `thag_url` or other piped input.
-    * the classic **script mode** runs an .rs file consisting of a valid Rust snippet or program.
+    * The classic **script mode** runs an .rs file consisting of a valid Rust snippet or program.
 
 
 * **Dependency inference** from code, with generation of minimal and maximal toml blocks for pasting into your Rust source script.
-* **Any valid Cargo.toml **input may be specified in the toml block, e.g.:
+* **Any valid Cargo.toml** input may be specified in the toml block, e.g.:
   - Specific features of dependencies for advanced functionality
   - Local path and git dependencies
   - A [profile.dev] with a non-default optimisation level
   - A [[bin]] to rename the executable output.
 * You can use a **shebang** to write scripts in Rust, or better yet...
 * For **more speed** and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This will compile a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
-* `thag_rs` supports a personal library of code samples for reuse. The downloadable **starter set** in the demo subdirectory contains over 200 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and colour handling, and CLI and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
+* `thag_rs` supports a personal library of code samples for reuse. The downloadable **starter set** in the demo subdirectory contains some 230 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and colour handling, and CLI and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
 * Automatic support for **light or dark backgrounds** and a **16- or 256- colour palette** for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows prior to the Windows Terminal 1.22 Preview of August 2024, interrogating the terminal is not supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` currently defaults to basic Ansi-16 colours and dark mode support. However, the dark mode colours it uses have been chosen to work well with most light modes.
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from `thag_rs`. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
 

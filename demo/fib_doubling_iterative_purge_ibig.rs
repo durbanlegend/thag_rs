@@ -11,7 +11,7 @@ ibig = "0.3.6"
 /// change: that we reduce bloat as best we can by purging redundant entries from the memo
 /// cache as soon as it's safe to do so.
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use ibig::ubig;
 use std::collections::{HashMap, HashSet};

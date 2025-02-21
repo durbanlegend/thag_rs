@@ -28,7 +28,7 @@ fn main() {
         #[expand_macro]
     };
 
-    let variant = Category::from_str("educational");
+    let variant = Category::from_str("learning");
     println!("variant={variant:#?}");
 
     let all_cats = all_categories();

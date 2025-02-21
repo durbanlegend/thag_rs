@@ -1460,33 +1460,6 @@ impl Theme {
                 vlog!(V::V, "Found an exact match with {exact_match}");
                 return Self::get_theme_with_color_support(exact_match, color_support);
             }
-            // let reduced_palette_matches =
-            //     get_reduced_palette_matches(&eligible_themes, *term_bg_rgb);
-            // vlog!(V::V, "exact_matches={reduced_palette_matches:#?}");
-
-            // vlog!(V::V, "c. Try colour-reduced exact match on fallback names.");
-            // for fallback_name in fallback_styling {
-            //     vlog!(V::V, "fallback_name={fallback_name}");
-            //     if reduced_palette_matches.contains(fallback_name) {
-            //         vlog!(
-            //             V::V,
-            //             "Found a color-reduced exact background match in fallback {fallback_name}"
-            //         );
-            //         return Self::get_theme_with_color_support(fallback_name, color_support);
-            //     }
-            // }
-            // vlog!(
-            //     V::V,
-            //     "d. Try for any exact match at the reduced color support."
-            // );
-            // if let Some(bg_match) = reduced_palette_matches.into_iter().next() {
-            //     vlog!(
-            //         V::V,
-            //         "Found a color-reduced exact background match with {bg_match}"
-            //     );
-            //     return Self::get_theme_with_color_support(&bg_match, color_support);
-            // }
-
             vlog!(V::V, "No exact matches found.");
 
             vlog!(V::V, "3. Try closest match to a preferred theme.");
@@ -1550,33 +1523,6 @@ impl Theme {
                 vlog!(V::V, "Found the closest match with {theme}");
                 return Self::get_theme_with_color_support(theme, color_support);
             }
-
-            //     vlog!(
-            //         V::V,
-            //         "6. Try closest match with progressive color support reduction."
-            //     );
-            //     let mut min_distance = f32::MAX;
-            //     let mut best_match = None;
-            //     for col_supp in [ColorSupport::Color256, ColorSupport::Basic] {
-            //         for (theme, idx) in &eligible_themes {
-            //             if idx.min_color_support == col_supp {
-            //                 for rgb in idx.bg_rgbs {
-            //                     let color_distance = color_distance(*term_bg_rgb, *rgb);
-            //                     if color_distance < min_distance {
-            //                         min_distance = color_distance;
-            //                         best_match = Some(theme);
-            //                     }
-            //                 }
-            //             }
-            //         }
-            //         if let Some(theme) = best_match {
-            //             vlog!(
-            //                 V::V,
-            //                 "Found the closest match at {color_support:?} with {theme}"
-            //             );
-            //             return Self::get_theme_with_color_support(theme, color_support);
-            //         }
-            //     }
         }
 
         vlog!(V::V, "6. Fall back to basic theme.");
@@ -2180,6 +2126,11 @@ fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> f32 {
     (dr + dg + db).sqrt()
 }
 
+/// Convert a hex color string to RGB.
+///
+/// # Errors
+///
+/// This function will return an error if the input string is not a valid hex color.
 // #[cfg(feature = "color_detect")]
 fn hex_to_rgb(hex: &str) -> ThagResult<(u8, u8, u8)> {
     profile_fn!("hex_to_rgb");

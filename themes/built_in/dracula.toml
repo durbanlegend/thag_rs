@@ -37,5 +37,5 @@ subtle = { rgb = [98, 114, 164] }                      # Comment
 hint = { rgb = [98, 114, 164], style = ["italic"] }    # Comment italic
 
 # Development
-debug = { rgb = [98, 114, 164], style = ["italic"] } # Comment italic
-trace = { rgb = [68, 71, 90] }                       # Selection
+debug = { rgb = [98, 114, 164], style = ["italic"] }         # Comment italic
+trace = { rgb = [139, 233, 253], style = ["italic", "dim"] } # Cyan

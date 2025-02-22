@@ -34,7 +34,7 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use thag_rs::styling::{self, find_closest_color, ColorInfo, ColorValue, Palette, Style, Theme};
+use thag_rs::styling::{find_closest_color, ColorValue, Palette, Style, Theme};
 use thag_rs::{ColorSupport, TermBgLuma};
 
 #[derive(Debug, Deserialize)]
@@ -134,11 +134,8 @@ impl BaseTheme {
             normal: Style::from_fg_hex(&self.palette.base05)?,          // Default foreground
             subtle: Style::from_fg_hex(self.palette.base14.as_ref().unwrap())?, // Light grey
             hint: Style::from_fg_hex(self.palette.base13.as_ref().unwrap())?.italic(),
-            debug: Style::from_fg_hex(self.palette.base12.as_ref().unwrap())?,
-            trace: create_contrasting_style(
-                &self.palette.base11.as_ref().unwrap(),
-                &self.palette.base00,
-            )?,
+            debug: Style::from_fg_hex(&self.palette.base0_b)?.dim(),
+            trace: Style::from_fg_hex(&self.palette.base0_d)?.italic().dim(),
         })
     }
 
@@ -156,8 +153,8 @@ impl BaseTheme {
             normal: Style::from_fg_hex(&self.palette.base05)?,          // Default foreground
             subtle: Style::from_fg_hex(&self.palette.base03)?,          // Comments color
             hint: Style::from_fg_hex(&self.palette.base03)?.italic(),
-            debug: Style::from_fg_hex(&self.palette.base02)?,
-            trace: create_contrasting_style(&self.palette.base01, &self.palette.base00)?,
+            debug: Style::from_fg_hex(&self.palette.base0_b)?.dim(),
+            trace: Style::from_fg_hex(&self.palette.base0_d)?.italic().dim(),
         })
     }
 }
@@ -436,105 +433,4 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
     }
 
     Ok(())
-}
-
-// fn hex_to_rgb(hex: &str) -> (u8, u8, u8) {
-//     let hex = hex.trim_start_matches('#');
-//     if hex.len() == 6 {
-//         if let (Ok(r), Ok(g), Ok(b)) = (
-//             u8::from_str_radix(&hex[0..2], 16),
-//             u8::from_str_radix(&hex[2..4], 16),
-//             u8::from_str_radix(&hex[4..6], 16),
-//         ) {
-//             (r, g, b)
-//         } else {
-//             panic!("Invalid hex color");
-//         }
-//     } else {
-//         panic!("Invalid hex color");
-//     }
-// }
-
-fn create_contrasting_style(
-    fg_hex: &str,
-    bg_hex: &str,
-) -> Result<Style, Box<dyn std::error::Error>> {
-    let fg = hex_to_rgb(fg_hex)?;
-    let bg = hex_to_rgb(bg_hex)?;
-
-    // If contrast is too low, adjust the foreground color
-    let fg = if calculate_contrast(fg, bg) < 4.5 {
-        // WCAG AA standard
-        adjust_for_contrast(fg, bg)
-    } else {
-        fg
-    };
-    let mut color_info = ColorInfo::rgb(fg.0, fg.1, fg.2);
-    color_info.index = styling::find_closest_color(fg);
-    Ok(Style::fg(color_info))
-}
-
-fn adjust_for_contrast(fg: (u8, u8, u8), bg: (u8, u8, u8)) -> (u8, u8, u8) {
-    let target_contrast = 4.5; // WCAG AA standard for normal text
-    let mut adjusted = fg;
-    let bg_luminance = calculate_relative_luminance(bg);
-    let fg_luminance = calculate_relative_luminance(fg);
-
-    // Determine if we need to lighten or darken the foreground
-    let needs_lightening = fg_luminance < bg_luminance;
-
-    // Try up to 20 adjustments to find sufficient contrast
-    for step in 1..=20 {
-        let current_contrast = calculate_contrast(adjusted, bg);
-
-        if current_contrast >= target_contrast {
-            break;
-        }
-
-        // Adjust by an increasing amount each step
-        let adjustment_factor = (step as f32) * 0.05;
-
-        if needs_lightening {
-            adjusted = lighten_color(adjusted, adjustment_factor);
-        } else {
-            adjusted = darken_color(adjusted, adjustment_factor);
-        }
-    }
-
-    adjusted
-}
-
-fn lighten_color(color: (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
-    (
-        ((color.0 as f32 + (255.0 - color.0 as f32) * factor) as u8).min(255),
-        ((color.1 as f32 + (255.0 - color.1 as f32) * factor) as u8).min(255),
-        ((color.2 as f32 + (255.0 - color.2 as f32) * factor) as u8).min(255),
-    )
-}
-
-fn darken_color(color: (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
-    (
-        (color.0 as f32 * (1.0 - factor)) as u8,
-        (color.1 as f32 * (1.0 - factor)) as u8,
-        (color.2 as f32 * (1.0 - factor)) as u8,
-    )
-}
-
-fn calculate_relative_luminance((r, g, b): (u8, u8, u8)) -> f32 {
-    // Convert RGB to relative luminance
-    let r = r as f32 / 255.0;
-    let g = g as f32 / 255.0;
-    let b = b as f32 / 255.0;
-
-    0.2126 * r + 0.7152 * g + 0.0722 * b
-}
-
-fn calculate_contrast(color1: (u8, u8, u8), color2: (u8, u8, u8)) -> f32 {
-    let l1 = calculate_relative_luminance(color1);
-    let l2 = calculate_relative_luminance(color2);
-
-    let lighter = l1.max(l2);
-    let darker = l1.min(l2);
-
-    (lighter + 0.05) / (darker + 0.05)
 }

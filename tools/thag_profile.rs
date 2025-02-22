@@ -7,8 +7,8 @@ inquire = "0.7.5"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.138"
 strum = { version = "0.27.1", features = ["derive"] }
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "simplelog"] }
 */
 
 /// Profile graph/chart generator for the `thag` internal profiler.
@@ -49,7 +49,7 @@ use std::process::Command;
 use std::time::Duration;
 use strum::Display;
 use thag_rs::profiling::ProfileStats;
-use thag_rs::{ThagError, ThagResult};
+use thag_rs::{thousands, ThagError, ThagResult};
 
 #[derive(Debug, Default, Clone)]
 pub struct ProcessedProfile {
@@ -323,7 +323,7 @@ fn generate_time_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     // opts.notes = profile.subtitle.clone();
     opts.colors = color_scheme;
     "μs".clone_into(&mut opts.count_name);
-    opts.min_width = 0.01;
+    opts.min_width = 0.0;
     // opts.color_diffusion = true;
     opts.flame_chart = true;
 
@@ -670,8 +670,8 @@ fn group_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<Vec<(String
 
     // Convert to sorted vec for display
     let mut result: Vec<_> = groups.into_iter().collect();
-    // Sort groups alphabetically but keep files within groups in reverse chronological order
-    result.sort_by(|(a, _), (b, _)| a.cmp(b));
+    // Show in reverse chronological order
+    result.sort_by(|(_a, ta), (_b, tb)| tb.cmp(ta));
 
     Ok(result)
 }
@@ -864,10 +864,10 @@ fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
             let mut current_memory = 0u64;
 
             for memory_event in &processed.memory_events {
-                eprintln!(
-                    "memory_data.bytes_allocated = {}; size = {}",
-                    memory_data.bytes_allocated, memory_event.delta
-                );
+                // eprintln!(
+                //     "memory_data.bytes_allocated = {}; size = {}",
+                //     memory_data.bytes_allocated, memory_event.delta
+                // );
 
                 // Convert to signed arithmetic to handle both allocations and deallocations
                 // memory_data.bytes_allocated =
@@ -942,24 +942,17 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     let output = File::create("memory-flamechart.svg")?;
     let mut opts = Options::default();
     opts.title = format!("{} (Memory Profile)", profile.title);
-    // opts.subtitle = Some(format!(
-    //     "{}\nStarted: {}\nTotal Allocations: {}, Peak Memory: {} bytes",
-    //     profile.subtitle,
-    //     profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
-    //     memory_data.bytes_allocated,
-    //     memory_data.peak_memory
-    // ));
     opts.subtitle = Some(format!(
-        "{}\nStarted: {}\nTotal Bytes Alloc: {}, Dealloc: {}, Peak: {}",
+        "{}\nStarted: {}\nTotal Bytes Alloc: {} Dealloc: {} Peak: {}",
         profile.subtitle,
         profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
-        memory_data.bytes_allocated,
-        memory_data.bytes_deallocated,
-        memory_data.peak_memory
+        thousands(memory_data.bytes_allocated),
+        thousands(memory_data.bytes_deallocated),
+        thousands(memory_data.peak_memory),
     ));
     opts.colors = Palette::Basic(BasicPalette::Mem);
     "bytes".clone_into(&mut opts.count_name);
-    opts.min_width = 0.1;
+    opts.min_width = 0.001;
     opts.flame_chart = true;
 
     flamegraph::from_lines(

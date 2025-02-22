@@ -150,6 +150,10 @@ required_features = [
 ]
 default_features = false
 
+[dependencies.feature_overrides.thag_rs]
+required_features = ["core", "simplelog"]
+default_features = false
+
 [dependencies.feature_overrides.tokio]
 excluded_features = ["unstable-async-driver"]
 required_features = ["full"]

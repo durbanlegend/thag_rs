@@ -1,5 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{debug_log, profile_fn, ThagResult};
+use std::fmt::Display;
 use std::{path::PathBuf, time::Instant};
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.
@@ -151,4 +152,42 @@ pub fn get_home_dir() -> ThagResult<PathBuf> {
     let user_dirs = directories::UserDirs::new().ok_or("Can't resolve user directories")?;
     let home_dir = user_dirs.home_dir();
     Ok(home_dir.to_owned())
+}
+
+/// Formats a given positive integer with thousands separators (commas).
+///
+/// This function takes any unsigned integer type (`u8`, `u16`, `u32`, `u64`, `u128`, `usize`)
+/// and returns a `String` representation where groups of three digits are separated by commas.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(thousands(1234567u32), "1,234,567");
+/// assert_eq!(thousands(98765u16), "98,765");
+/// assert_eq!(thousands(42u8), "42");
+/// assert_eq!(thousands(12345678901234567890u128), "12,345,678,901,234,567,890");
+/// ```
+///
+/// # Panics
+///
+/// This function panics if `std::str::from_utf8()` fails,
+/// which is highly unlikely since the input is always a valid ASCII digit string.
+///
+/// # Complexity
+///
+/// Runs in **O(d)** time complexity, where `d` is the number of digits in the input number.
+///
+/// # Note
+///
+/// If you need to format signed integers, you'll need a modified version
+/// that correctly handles negative numbers.
+pub fn thousands<T: Display>(n: T) -> String {
+    n.to_string()
+        .as_bytes()
+        .rchunks(3)
+        .rev()
+        .map(std::str::from_utf8)
+        .collect::<Result<Vec<&str>, _>>()
+        .unwrap()
+        .join(",")
 }

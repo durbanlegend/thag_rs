@@ -63,16 +63,10 @@ preferred_dark = [
 ]
 
 # Preferred fallback light themes in descending order
-fallback_light = [
-    "github_256",
-    "basic_light",
-]
+fallback_light = ["github_256", "basic_light"]
 
 # Preferred fallback dark themes in descending order
-fallback_dark = [
-    "catppuccin-mocha_256",
-    "basic_dark",
-]
+fallback_dark = ["catppuccin-mocha_256", "basic_dark"]
 
 # Demo proc macro settings
 [proc_macros]
@@ -171,6 +165,10 @@ required_features = [
     "visit",
     "visit-mut",
 ]
+default_features = false
+
+[dependencies.feature_overrides.thag_rs]
+required_features = ["core", "simplelog"]
 default_features = false
 
 [dependencies.feature_overrides.tokio]

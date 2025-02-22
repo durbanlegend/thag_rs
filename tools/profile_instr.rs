@@ -1,5 +1,5 @@
 use ra_ap_syntax::{
-    ast::{self, HasModuleItem, HasName, Item},
+    ast::{self, HasModuleItem, HasName, HasVisibility, Item},
     ted::{self, Position},
     AstNode, Edition, Parse, SourceFile, SyntaxKind, SyntaxNode,
 };
@@ -82,10 +82,10 @@ fn instrument_code(source: &str) -> String {
     let parse = SourceFile::parse(source, Edition::Edition2021);
     let tree = parse.tree().clone_for_update();
 
-    let imports = [
-        "use thag_rs::profiling;",
-        "use thag_proc_macros::enable_profiling;",
-    ];
+    //     let manifest = [r#"thag_rs = { version = "0.2", default-features = false, features = ["core", "simplelog"] }*
+    // "];
+
+    let imports = ["use thag_rs::{enable_profiling, profile, profiling, Profile};"];
 
     for import_text in imports.iter() {
         if !source.contains(import_text) {
@@ -118,21 +118,32 @@ fn instrument_code(source: &str) -> String {
             };
 
             let fn_token = function.fn_token().expect("Function token is None");
+            let maybe_visibility = function.visibility();
             let maybe_async_token = function.async_token();
-            let target_token = if let Some(async_token) = maybe_async_token {
+            let target_token = if let Some(visibility) = maybe_visibility {
+                if let Some(pub_token) = visibility.pub_token() {
+                    pub_token
+                } else if let Some(async_token) = maybe_async_token {
+                    async_token
+                } else {
+                    fn_token
+                }
+            } else if let Some(async_token) = maybe_async_token {
                 async_token
             } else {
                 fn_token
             };
             // eprintln!("target_token: {target_token:?}");
             let function_syntax: &SyntaxNode = function.syntax();
-            if !function_syntax.descendants_with_tokens().any(|it| {
-                let text = it.to_string();
-                text.starts_with("#[profile")
-                    || text.starts_with("#[enable_profiling")
-                    || text.starts_with("profile")
-                    || text.starts_with("enable_profiling")
-            }) {
+            if function.body().is_some()
+                && !function_syntax.descendants_with_tokens().any(|it| {
+                    let text = it.to_string();
+                    text.starts_with("#[profile")
+                        || text.starts_with("#[enable_profiling")
+                        || text.starts_with("profile")
+                        || text.starts_with("enable_profiling")
+                })
+            {
                 // Get original indentation.
                 // Previous whitespace will include all prior newlines.
                 // If there are any, we only want the last one, otherwise we will get

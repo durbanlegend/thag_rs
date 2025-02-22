@@ -1,7 +1,6 @@
 #![allow(clippy::cast_lossless)]
 use crate::errors::ThemeError;
 use crate::styling::Role::{Heading1, Info, Normal};
-use crate::terminal::is_light_color;
 use crate::{
     lazy_static_var, profile, profile_fn, profile_method, profile_section, vlog, ThagError,
     ThagResult, V,
@@ -17,7 +16,7 @@ use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_proc_macros::{preload_themes, AnsiCodeDerive, PaletteMethods};
 
 #[cfg(feature = "color_detect")]
-use crate::terminal::{self, get_term_bg_rgb};
+use crate::terminal::{self, get_term_bg_rgb, is_light_color};
 
 #[cfg(feature = "config")]
 use crate::config::maybe_config;
@@ -569,34 +568,6 @@ impl Default for TermBgLuma {
         }
     }
 }
-
-// impl FromStr for TermBgLuma {
-//     type Err = ThemeError;
-
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         match s.to_lowercase().as_str() {
-//             "light" => Ok(Self::Light),
-//             "dark" => Ok(Self::Dark),
-//             "undetermined" => Ok(Self::Undetermined),
-//             _ => Err(ThemeError::InvalidTermBgLuma(s.to_string())),
-//         }
-//     }
-// }
-
-// /// Represents different message/content levels for styling
-// #[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq)]
-// #[strum(serialize_all = "snake_case")]
-// pub enum Level {
-//     Error,
-//     Warning,
-//     Heading, // HEAD in the original
-//     Subheading,
-//     Emphasis,
-//     Bright,
-//     Normal,
-//     Debug,
-//     Ghost,
-// }
 
 // For backward compatibility
 pub type Level = Role;
@@ -1745,7 +1716,18 @@ impl Theme {
             .style
             .iter()
             .chain(&def.palette.heading2.style)
-        // ... chain all style arrays
+            .chain(&def.palette.heading3.style)
+            .chain(&def.palette.error.style)
+            .chain(&def.palette.warning.style)
+            .chain(&def.palette.success.style)
+            .chain(&def.palette.info.style)
+            .chain(&def.palette.emphasis.style)
+            .chain(&def.palette.code.style)
+            .chain(&def.palette.normal.style)
+            .chain(&def.palette.subtle.style)
+            .chain(&def.palette.hint.style)
+            .chain(&def.palette.debug.style)
+            .chain(&def.palette.trace.style)
         {
             if !["bold", "italic", "dim", "underline"].contains(&style_name.as_str()) {
                 return Err(ThemeError::InvalidStyle(style_name.clone()).into());
@@ -2388,18 +2370,6 @@ pub fn display_theme_roles(theme: &Theme) {
 
     profile_fn!("display_theme_roles");
 
-    // Calculate maximum role name length for alignment.
-    // Get length of longest role name after "painting" (wrapping in xterm styling instruction).
-    // let role_legend = style_for_role(Heading1, ROLE_DOCS[0].0);
-    // let col1_width = role_legend.len() + 2;
-
-    // // Calculate maximum role name length for alignment
-    // let max_name_len = ROLE_DOCS
-    //     .iter()
-    //     .map(|(name, _)| name.len())
-    //     .max()
-    //     .unwrap_or(0);
-
     let col1_width = ROLE_DOCS
         .iter()
         .map(|(name, _)| name.len())
@@ -2445,23 +2415,6 @@ pub fn display_theme_roles(theme: &Theme) {
     }
     println!("\t{}", "─".repeat(80));
 }
-
-// fn format_bg_str(hex_str: &str) -> String {
-//     let hex = hex_str.trim_start_matches('#');
-//     if hex.len() == 6 {
-//         if let (Ok(r), Ok(g), Ok(b)) = (
-//             u8::from_str_radix(&hex[0..2], 16),
-//             u8::from_str_radix(&hex[2..4], 16),
-//             u8::from_str_radix(&hex[4..6], 16),
-//         ) {
-//             format!("#{hex} = rgb({r}, {g}, {b})")
-//         } else {
-//             hex.to_string()
-//         }
-//     } else {
-//         hex.to_string()
-//     }
-// }
 
 #[allow(clippy::too_many_lines)]
 pub fn display_theme_details() {
@@ -2545,15 +2498,7 @@ pub fn display_theme_details() {
 
     let how_initialized = term_attrs.how_initialized.to_string();
     let terminal_docs: &[(&str, &str)] = &[
-        (
-            "How attributes determined",
-            // match term_attrs.how_initialized {
-            //     HowInitialized::Configured(_, _, _) => "Configured",
-            //     HowInitialized::Defaulted => "Default",
-            //     HowInitialized::Detected => "Detected",
-            // },
-            how_initialized.as_str(),
-        ),
+        ("How attributes determined", how_initialized.as_str()),
         ("Color support", &term_attrs.color_support.to_string()),
         ("Background luminance", &term_attrs.term_bg_luma.to_string()),
         (

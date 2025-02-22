@@ -23,6 +23,8 @@
 - [ ]  Bullet-proof `unwrap`s in styling.
 - [ ]  Claude re REPL alternative editor to `reedline`
 - [ ]  Consider thag option to include expanded macro for debugging.
+- [ ]  Control logging level of -x compiled code?
+- [ ]  Profiling instrumentation to add toml block for thag profiling?
 
 Thag Memory Profiling Visualization Implementation
 Also, regarding the memory timeline visualization, seeing the allocation log format helps. We could show:
@@ -73,7 +75,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
     // ...
 }
 
-an cause:
+Can cause:
 /// - Recursive profiling (analyzer profiling itself)
 /// - Stack corruption (mixing analyzer and target stacks)
 /// - Confusing profile output (merged analyzer and target data)

@@ -1,51 +1,117 @@
-name = "Catppuccin Frappe"
+name = "Catppuccin Frappe  "
 description = "Converted from Catppuccin Frappe theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
 backgrounds = ["#303446"]
+bg_rgbs = [[
+    48,
+    52,
+    70,
+]]
 
 [palette.heading1]
-rgb = [231, 130, 132]
+rgb = [
+    231,
+    130,
+    132,
+]
 style = ["bold"]
 
 [palette.heading2]
-rgb = [140, 170, 238]
+rgb = [
+    140,
+    170,
+    238,
+]
 style = ["bold"]
 
 [palette.heading3]
-rgb = [129, 200, 190]
+rgb = [
+    129,
+    200,
+    190,
+]
 style = ["bold"]
 
 [palette.error]
-rgb = [231, 130, 132]
+rgb = [
+    231,
+    130,
+    132,
+]
 
 [palette.warning]
-rgb = [239, 159, 118]
+rgb = [
+    239,
+    159,
+    118,
+]
 
 [palette.success]
-rgb = [166, 209, 137]
+rgb = [
+    166,
+    209,
+    137,
+]
 
 [palette.info]
-rgb = [140, 170, 238]
+rgb = [
+    140,
+    170,
+    238,
+]
 
 [palette.emphasis]
-rgb = [202, 158, 230]
+rgb = [
+    202,
+    158,
+    230,
+]
 
 [palette.code]
-rgb = [166, 209, 137]
+rgb = [
+    166,
+    209,
+    137,
+]
 
 [palette.normal]
-rgb = [198, 208, 245]
+rgb = [
+    198,
+    208,
+    245,
+]
 
 [palette.subtle]
-rgb = [166, 209, 137]
+rgb = [
+    166,
+    209,
+    137,
+]
 
 [palette.hint]
-rgb = [242, 213, 207]
+rgb = [
+    242,
+    213,
+    207,
+]
 style = ["italic"]
 
 [palette.debug]
-rgb = [234, 153, 156]
+rgb = [
+    166,
+    209,
+    137,
+]
+style = ["dim"]
 
 [palette.trace]
-rgb = [35, 38, 52]
+rgb = [
+    140,
+    170,
+    238,
+]
+style = [
+    "italic",
+    "dim",
+]

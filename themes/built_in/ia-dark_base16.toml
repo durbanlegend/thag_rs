@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    29,
-    65,
-    77,
+    131,
+    164,
+    113,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    34,
-    34,
-    34,
+    142,
+    204,
+    221,
+]
+style = [
+    "italic",
+    "dim",
 ]

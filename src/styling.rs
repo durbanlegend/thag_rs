@@ -2002,15 +2002,6 @@ fn index_to_rgb(index: u8) -> (u8, u8, u8) {
     (r, g, b)
 }
 
-// fn get_theme(theme_name: &str) -> Option<Result<Theme, ThagError>> {
-//     Some(fun_name(theme_name))
-// }
-
-// fn get_theme(theme_name: &str) -> Result<Theme, ThagError> {
-//     let theme_index = THEME_INDEX.get(theme_name).unwrap();
-//     Theme::from_toml(theme_name, theme_index.content)
-// }
-
 fn fallback_theme(term_bg_luma: TermBgLuma) -> ThagResult<Theme> {
     profile_fn!("fallback_theme");
     let name = if term_bg_luma == TermBgLuma::Light {
@@ -2606,7 +2597,7 @@ macro_rules! clog_subtle {
 macro_rules! cvlog {
     ($verbosity:expr, $level:expr, $($arg:tt)*) => {{
         if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
-            let logger = $crate::logging::LOGGER.lock().unwrap();
+            let logger = $crate::logging::LOGGER.lock().expect("Failed to lock logger");
             let message = format!($($arg)*);
 
             #[cfg(feature = "color_support")]
@@ -2732,7 +2723,7 @@ mod tests {
         if let Ok(guard) = TEST_OUTPUT.lock() {
             let mut stdout = std::io::stdout();
             for line in guard.iter() {
-                writeln!(stdout, "{}", line).unwrap();
+                writeln!(stdout, "{}", line).expect("Failed to write to stdout");
             }
         }
     }
@@ -2853,7 +2844,13 @@ mod tests {
         assert_eq!(theme.bg_rgbs, vec![(40, 42, 54)]);
 
         // Check a few key styles
-        if let ColorValue::TrueColor { rgb } = &theme.palette.heading1.foreground.unwrap().value {
+        if let ColorValue::TrueColor { rgb } = &theme
+            .palette
+            .heading1
+            .foreground
+            .expect("Failed to load heading1 foreground color")
+            .value
+        {
             assert_eq!(rgb, &[255, 121, 198]);
         } else {
             panic!("Expected TrueColor for heading1");

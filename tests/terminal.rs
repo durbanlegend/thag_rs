@@ -2,12 +2,8 @@
 mod tests {
     use crossterm::terminal::disable_raw_mode;
     use crossterm::terminal::is_raw_mode_enabled;
-    use log::LevelFilter;
-    use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
     use std::env;
     use std::env::set_var;
-    use std::sync::OnceLock;
-    use thag_rs::debug_log;
     use thag_rs::terminal::TerminalStateGuard;
     use thag_rs::{
         terminal::{
@@ -15,6 +11,18 @@ mod tests {
         },
         ColorSupport, TermBgLuma,
     };
+
+    #[cfg(feature = "simplelog")]
+    use log::LevelFilter;
+
+    #[cfg(feature = "simplelog")]
+    use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
+
+    #[cfg(feature = "simplelog")]
+    use std::sync::OnceLock;
+
+    #[cfg(feature = "simplelog")]
+    use thag_rs::debug_log;
 
     #[cfg(feature = "simplelog")]
     static LOGGER: OnceLock<()> = OnceLock::new();

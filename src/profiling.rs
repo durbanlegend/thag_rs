@@ -938,8 +938,8 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_profile_stack_basic() {
-        println!("\n--- test_profile_stack_basic starting ---"); // Debug
+    fn test_profiling_stack_basic() {
+        println!("\n--- test_profiling_stack_basic starting ---"); // Debug
 
         run_test(|| {
             assert!(push_profile("first"));
@@ -960,7 +960,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_profile_stack_nesting() {
+    fn test_profiling_stack_nesting() {
         run_test(|| {
             assert!(push_profile("outer"));
             assert!(push_profile("inner"));
@@ -982,7 +982,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_profile_stack_capacity() {
+    fn test_profiling_stack_capacity() {
         run_test(|| {
             // Fill stack to capacity
             for _ in 0..MAX_PROFILE_DEPTH {
@@ -999,7 +999,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_profile_stack_empty_pop() {
+    fn test_profiling_stack_empty_pop() {
         run_test(|| {
             // Try to pop empty stack
             pop_profile();
@@ -1010,7 +1010,7 @@ mod tests {
     #[test]
     #[serial]
     #[should_panic(expected = "Stack validation failed: Duplicate stack entry")]
-    fn test_profile_duplicate_stack_entries() {
+    fn test_profiling_duplicate_stack_entries() {
         run_test(|| {
             let _p1 = Profile::new("same", ProfileType::Time);
             let _p2 = Profile::new("same", ProfileType::Time); // Should panic
@@ -1019,7 +1019,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_profile_type_stack_management() {
+    fn test_profiling_type_stack_management() {
         run_test(|| {
             {
                 let _p1 = Profile::new("time_prof", ProfileType::Time);
@@ -1043,7 +1043,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_profile_end_profile_section() {
+    fn test_profiling_end_profile_section() {
         run_test(|| {
             assert!(push_profile("outer"));
             assert!(push_profile("middle"));

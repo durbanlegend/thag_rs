@@ -1,12 +1,14 @@
+use std::{env::set_var, fs};
+use thag_rs::tui_editor::{normalize_newlines, History};
+use thag_rs::{ThagResult, TMPDIR};
+
 #[cfg(feature = "simplelog")]
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
-use std::{env::set_var, fs};
+
 #[cfg(feature = "simplelog")]
-use std::{fs::File, sync::OnceLock};
-use thag_rs::tui_editor::{normalize_newlines, History};
-use thag_rs::{debug_log, ThagResult, TMPDIR};
+use thag_rs::debug_log;
 
 // Set environment variables before running tests
 fn set_up() {
@@ -23,6 +25,9 @@ fn set_up() {
         set_var("EDITOR", "cat");
     }
 }
+
+#[cfg(feature = "simplelog")]
+use std::{fs::File, sync::OnceLock};
 
 #[cfg(feature = "simplelog")]
 static LOGGER: OnceLock<()> = OnceLock::new();

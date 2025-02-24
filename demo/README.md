@@ -1588,6 +1588,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 ---
 
+### Script: factorial_ibig_product_instr.rs
+
+**Description:**  A version of `demo/factorial_ibig_product.rs` converted to a program and instrumented for profiling using
+ `tools/profile_instr.rs`.
+
+ Run this version in the normal way, then run `tools/thag_profile.rs` to analyse the profiling data.
+
+**Purpose:** Demo `thag_rs` execution timeline and memory profiling.
+
+**Crates:** `ibig`, `thag_rs`
+
+**Type:** Program
+
+**Categories:** profiling
+
+**Link:** [factorial_ibig_product_instr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_instr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_instr.rs -- 50
+```
+
+---
+
 ### Script: factorial_main_u128_product.rs
 
 **Description:**  Fast factorial algorithm avoiding recursion, but limited to a maximum of `34!` by using only
@@ -3898,27 +3923,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.r
 
 ---
 
-### Script: profile_file_ra.rs
-
-**Description:**
-**Purpose:**
-
-**Crates:** `ra_ap_syntax`
-
-**Type:** Program
-
-**Categories:** missing
-
-**Link:** [profile_file_ra.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file_ra.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file_ra.rs
-```
-
----
-
 ### Script: profiling_puffin_demo.rs
 
 **Description:**  Published demo from the `profiling` crate using the `puffin` profiler.
@@ -4805,6 +4809,33 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
 
 ---
 
+### Script: stdin_main_instr.rs
+
+**Description:**  A version of `thag_rs`'s `stdin` module from the `main` `git` branch for the purpose of comparison
+ with the `develop` branch version being debugged.
+
+ E.g. `thag demo/stdin_main.rs`
+ Apply highlights to the text depending on the light or dark theme as detected, configured
+ or defaulted, or as toggled by the user with Ctrl-t.
+
+**Purpose:** Debugging.
+
+**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
+
+**Type:** Program
+
+**Categories:** testing
+
+**Link:** [stdin_main_instr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main_instr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main_instr.rs
+```
+
+---
+
 ### Script: structopt_cli_gpt.rs
 
 **Description:**  Basic demo of GPT-generated CLI using the `structopt` crate. This
@@ -5526,16 +5557,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 ### Script: tui_ta_editor_profile.rs
 
-**Description:**  The same script as `demo/tui_ta_editor.rs`, but with `firestorm` profiling.
+**Description:**  Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
+ down to two files at a time, because it was developed to allow editing of generated code and
+ cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
+ or default to a standard editor. A more minimalist version is used to edit stdin input in
+ the `--edit (-d)` option of `thag_rs`.
 
  Not suitable for running from a URL.
- To see the profiling flamegraph after exiting the program, look in dir `flames` under the `env::temp_dir()`
- for your operating system. Note that due to an apparent bug in `firestorm`, the `Editor::run` method currently
- executes twice, so it will need to be closed a second time.
 
-**Purpose:** Demo featured crates, but `firestorm` profiler in particular.
+**Purpose:** Demo and explore TUI editor and featured crates, including `crossterm`.
 
-**Crates:** `ratatui`, `thag_rs`, `tui_textarea`
+**Crates:** `ratatui`, `thag_proc_macros`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 
@@ -5735,6 +5767,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs
 
 ---
 
+### Script: web_safe_colors_to_256.rs
+
+**Description:**  Map and visually test conversion of web safe colours to 256 colours, //: using the `owo-colors` crate colour names and mappings.
+
+**Purpose:** Work out and test colour conversion.
+
+**Crates:** `itertools`, `owo_colors`
+
+**Type:** Program
+
+**Categories:** demo, reference, testing
+
+**Link:** [web_safe_colors_to_256.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/web_safe_colors_to_256.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/web_safe_colors_to_256.rs
+```
+
+---
+
 ### Script: win_test_control.rs
 
 **Description:**  This is the "control" test for the `demo/win_test_*.rs` scripts. It seems to reliably NOT swallow the first character.
@@ -5856,3 +5910,4 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs
 ```
 
 ---
+

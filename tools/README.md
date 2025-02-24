@@ -244,6 +244,117 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_
 
 ---
 
+### Script: profile_instr.rs
+
+**Description:**  A stand-alone convenience tool to instrument a Rust source program for `thag_rs` profiling.
+ It accepts the source code on stdin and outputs instrumented code to stdout.
+ The instrumentation consists of adding the #[enable_profiling] attribute to `fn main` if
+ present, and the #[profile] attribute to all other functions and methods, as well as import
+ statements for the `thag_rs` profiling.
+ module and proc macro library. It is intended to be lossless, using the `rust-analyzer` crate
+ to preserve the original source code intact with its comments and formatting. However, by using
+ it you accept responsibility for all consequences of instrumentation and profiling.
+ It's recommended to use profiling only in development environments and thoroughly test the
+ instrumented code before deploying it.
+ It's also recommended to do a side-by-side comparison of the original and instrumented code
+ to ensure that the instrumentation did not introduce any unintended changes.
+ Free tools for this purpose include `diff`, `sdiff` git diff, GitHub desktop and BBEdit.
+ This tool attempts to position the injected code sensibly and to avoid duplication of existing
+ `thag_rs` profiling code. It implements default profiling which currently includes both execution
+ time and memory usage, but this is easily tweaked manually by modifying the instrumented code by
+ adding the keyword `profile_type = ["time" | "memory"])` to the `#[enable_profiling]` attribute,
+ e.g.: `#[enable_profiling(profile_type = "time")]`.
+
+ This tool is intended for use with the `thag_rs` command-line tool or compiled into a binary.
+ Run it with the `-qq` flag to suppress unwanted output. It requires a positive integer argument
+ being a Rust edition number (2015, 2018, 2021). 2024 can't yet be supported.
+
+ E.g.
+
+ 1. As a script:
+
+ ```
+ thag tools/profile_instr.rs -qq -- 2021 < demo/colors.rs > demo/colors_instrumented.rs
+ ```
+
+ 2. As a command (compiled with `thag tools/profile_instr.rs -x`)
+
+ ```
+ profile_instr < demo/colors.rs -- 2018 > demo/colors_instrumented.rs
+ ```
+
+ Doc comment
+
+**Purpose:** Stand-alone tool to instrument any Rust source code for `thag` profiling.
+
+**Crates:** `env`, `ra_ap_syntax`
+
+**Type:** Program
+
+**Categories:** profiling, tools
+
+**Link:** [profile_instr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_instr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_instr.rs
+```
+
+---
+
+### Script: profile_remove.rs
+
+**Description:**  A stand-alone convenience tool to remove `thag_rs` profiling instrumentation from a Rust source
+ program.
+ It accepts the instrumented source code on stdin and outputs uninstrumented code to stdout.
+ The process consists of removing any and all attribute macro and other ("legacy" / prototype)
+ macro invocations of `thag_rs` profiling. It is intended to be lossless, using the `rust-analyzer`
+ crate to preserve the original source code intact with its comments and formatting. However, by
+ using it you accept responsibility for all consequences.
+ It's recommended to use profiling only in development environments and thoroughly test or
+ remove the instrumented code before deploying it.
+ It's also recommended to do a side-by-side comparison of the original and de-instrumented code
+ to ensure that the removal of instrumentation did not introduce any unintended changes.
+ Free tools for this purpose include `diff`, `sdiff` git diff, GitHub desktop and BBEdit.
+
+ This tool is intended for use with the `thag_rs` command-line tool or compiled into a binary.
+ Run it with the `-qq` flag to suppress unwanted output. It requires a positive integer argument
+ being a Rust edition number (2015, 2018, 2021). 2024 can't yet be supported.
+
+ E.g.
+
+ 1. As a script:
+
+ ```
+ thag tools/profile_uninstr.rs -qq -- 2021 < demo/colors_instrumented.rs > demo/colors.rs
+ ```
+
+ 2. As a command (compiled with `thag tools/profile_uninstr.rs -x`)
+
+ ```
+ profile_uninstr < demo/colors_instrumented.rs -- 2018 > demo/colors.rs
+ ```
+
+
+**Purpose:** Stand-alone tool to remove any and all `thag_rs` profiling instrumentation from any Rust source code.
+
+**Crates:** `env`, `ra_ap_syntax`
+
+**Type:** Program
+
+**Categories:** profiling, tools
+
+**Link:** [profile_remove.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_remove.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_remove.rs
+```
+
+---
+
 ### Script: term_detection_pack.rs
 
 **Description:**  A basic tool I cobbled together that uses different crates to a) test terminal
@@ -380,7 +491,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust
 
 **Purpose:** Low-footprint profiling.
 
-**Crates:** `inferno`, `inquire`, `thag_rs`
+**Crates:** `chrono`, `dirs`, `inferno`, `inquire`, `serde`, `serde_json`, `strum`, `thag_rs`
 
 **Type:** Program
 

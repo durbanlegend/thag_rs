@@ -106,12 +106,12 @@ use syn::parse_file;
 #[proc_macro]
 pub fn category_enum(input: TokenStream) -> TokenStream {
     // Parse the input to check for the `expand_macro` attribute
-    let should_expand = input.clone().into_iter().any(|token| {
-        // Very basic check - you might want something more robust
-        token.to_string().contains("expand_macro")
-    });
+    // let should_expand = input.clone().into_iter().any(|token| {
+    //     // Very basic check - you might want something more robust
+    //     token.to_string().contains("expand_macro")
+    // });
 
-    maybe_expand_proc_macro(should_expand, "category_enum", &input, category_enum_impl)
+    maybe_expand_proc_macro(false, "category_enum", &input, category_enum_impl)
 }
 
 /// Generates a constant `DASH_LINE` consisting of a dash (hyphen) repeated the number of times specified by the integer literal argument `n`.

@@ -4,12 +4,12 @@ convert_case = "0.6.0"
 heck = "0.5.0"
 inquire = "0.7.5"
 regex = "1.10.5"
-strum = { version = "0.26.3", features = ["derive"] }
-# thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
-thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+strum = { version = "0.26.3", features = ["derive", "phf"] }
+thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+# thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = "0.1.9"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
 */
 
 /// This is the script used to collect script metadata for the `demo` and `tools` directories and generate
@@ -26,13 +26,11 @@ use std::{
     io::Write as OtherWrite,
     path::{Path, PathBuf},
 };
+use thag_proc_macros::{category_enum, file_navigator};
 use thag_rs::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
-    code_utils, find_crates, find_metadata, lazy_static_var, regex,
+    code_utils, cvprtln, find_crates, find_metadata, lazy_static_var, regex, Role, V,
 };
-// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
-// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-use thag_proc_macros::{category_enum, file_navigator};
 
 file_navigator! {}
 
@@ -97,7 +95,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
                             categories.iter().all(|cat| {
                                 let found = valid_categories.contains(&cat.as_str().to_snake_case());
                                 if !found {
-                                    eprintln!("Unknown or invalid category: `{cat}`");
+                                    cvprtln!(Role::ERR, V::N, "Unknown or invalid category: `{cat}`");
                                 }
                                 found
                             }),

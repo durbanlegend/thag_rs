@@ -2184,7 +2184,7 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
 ///
 /// The message will be styled and coloured according to the `MessageLevel` (alias `Lvl`) passed in.
 ///
-/// Format: `cvprtln!(&Level: Lvl, verbosity: V, "Lorem ipsum dolor {} amet", content: &str);`
+/// Format: `cvprtln!(role: &Role, verbosity: Verbosity, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
 macro_rules! cvprtln {
     ($role:expr, $verbosity:expr, $($arg:tt)*) => {{

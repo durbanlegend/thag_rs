@@ -62,11 +62,11 @@ and examples to make it as quick and easy as possible to figure stuff out withou
 Enable profiling either via `features=profiling` or the `enable_profiling` attribute.
 Profiling produces named and timestamped output files.
 
-    One handy tool will instrument functions and methods in a source file with `thag` profiling attributes (`#[profile]` and (for `fn main`: `#[enable_profiling]`).
+    There's a tool to instrument functions and methods in a source file with `thag` profiling attributes (`#[profile]` or (for `fn main`: `#[enable_profiling]`)).
 
-    Another will analyse the profiling output and display statistics and regular or differential before/after flamecharts for chosen profiling output files.
+    There's another to select andanalyse the desired profiling output and display statistics and regular or differential before/after flamecharts for chosen profiling output files.
 
-    Yet another will remove the instrumentation from a source file. (TODO)
+    Yet another removes the instrumentation from a source file.
 
 - **New in 0.2.0:** Support for popular terminal themes. `thag` will attempt to choose a theme based on your terminal's background colour.
 

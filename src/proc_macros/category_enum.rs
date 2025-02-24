@@ -23,6 +23,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            ErrorHandling,
            Exploration,
            Filesystem,
+           Learning,
            Macros,
            Math,
            ProcMacros,

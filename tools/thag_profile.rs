@@ -36,14 +36,9 @@ use inferno::flamegraph::{
 };
 use inquire::{MultiSelect, Select};
 use serde::{Deserialize, Serialize};
-// use std::cmp::Ordering;
-// use std::borrow::Cow::Borrowed;
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader};
-// use std::io::Read;
-// use std::io::{Seek, SeekFrom};
-// use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;

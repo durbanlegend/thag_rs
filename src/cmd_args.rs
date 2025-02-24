@@ -153,7 +153,7 @@ pub fn get_args() -> Cli {
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
     profile_fn!("validate_args");
     if let Some(ref script) = args.script {
-        if !script.ends_with(RS_SUFFIX) {
+        if !script.ends_with(RS_SUFFIX) && script != "t" && script != "tools" {
             return Err(format!("Script name {script} must end in {RS_SUFFIX}").into());
         }
     } else if !proc_flags.contains(ProcFlags::EXPR)

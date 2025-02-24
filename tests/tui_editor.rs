@@ -16,13 +16,17 @@ fn set_up() {
     set_var("TEST_ENV", "1");
     #[cfg(windows)]
     {
-        set_var("VISUAL", "powershell.exe /C Get-Content");
-        set_var("EDITOR", "powershell.exe /C Get-Content");
+        unsafe {
+            set_var("VISUAL", "powershell.exe /C Get-Content");
+            set_var("EDITOR", "powershell.exe /C Get-Content");
+        }
     }
     #[cfg(not(windows))]
     {
-        set_var("VISUAL", "cat");
-        set_var("EDITOR", "cat");
+        unsafe {
+            set_var("VISUAL", "cat");
+            set_var("EDITOR", "cat");
+        }
     }
 }
 

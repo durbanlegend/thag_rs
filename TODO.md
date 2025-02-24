@@ -20,6 +20,7 @@
 - [ ]  Claude re REPL alternative editor to `reedline`
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
+- [ ]  Instrumenting and removing instrumentation: edition parameter.
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

@@ -60,7 +60,6 @@ use regex::Regex;
 use side_by_side_diff::create_side_by_side_diff;
 use std::env;
 use std::{
-    env::current_dir,
     fs::{self, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
@@ -524,14 +523,8 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     }
 
     let is_repl = args.repl;
-    let working_dir_path = if is_repl {
-        TMPDIR.join(REPL_SUBDIR)
-    } else {
-        current_dir()?.canonicalize()?
-    };
     validate_args(args, &proc_flags)?;
-    let repl_source_path = if is_repl && args.script.is_none() {
-        // Some(create_next_repl_file()?)
+    let repl_source_path = if is_repl {
         let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
         debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
 
@@ -563,13 +556,8 @@ As an alternative, consider using the `edit` + `run` functions of `--repl (-r)`.
         let _ = create_temp_source_file()?;
     }
 
-    let script_dir_path = resolve_script_dir_path(
-        is_repl,
-        args,
-        &working_dir_path,
-        repl_source_path.as_ref(),
-        is_dynamic,
-    )?;
+    let script_dir_path =
+        resolve_script_dir_path(is_repl, args, repl_source_path.as_ref(), is_dynamic)?;
 
     let script_state =
         set_script_state(args, script_dir_path, is_repl, repl_source_path, is_dynamic)?;
@@ -581,27 +569,17 @@ As an alternative, consider using the `edit` + `run` functions of `--repl (-r)`.
 fn resolve_script_dir_path(
     is_repl: bool,
     args: &Cli,
-    working_dir_path: &Path,
     repl_source_path: Option<&PathBuf>,
     is_dynamic: bool,
 ) -> ThagResult<PathBuf> {
     profile_fn!("resolve_script_dir_path");
     let script_dir_path = if is_repl {
-        if let Some(ref script) = args.script {
-            // REPL with repeat of named script
-            let source_stem = script
-                .strip_suffix(RS_SUFFIX)
-                .ok_or("Failed to strip extension off the script name")?;
-            working_dir_path.join(source_stem)
-        } else {
-            // Normal REPL with no script name
-            repl_source_path
-                .as_ref()
-                .ok_or("Missing path of newly created REPL source file")?
-                .parent()
-                .ok_or("Could not find parent directory of repl source file")?
-                .to_path_buf()
-        }
+        repl_source_path
+            .as_ref()
+            .ok_or("Missing path of newly created REPL source file")?
+            .parent()
+            .ok_or("Could not find parent directory of repl source file")?
+            .to_path_buf()
     } else if is_dynamic {
         debug_log!("is_dynamic={is_dynamic}");
         TMPDIR.join(DYNAMIC_SUBDIR)

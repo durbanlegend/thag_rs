@@ -24,9 +24,11 @@ mod tests {
     fn set_up() {
         static INIT: Once = Once::new();
         INIT.call_once(|| {
-            env::set_var("TEST_ENV", "1");
-            env::set_var("VISUAL", "cat");
-            env::set_var("EDITOR", "cat");
+            unsafe {
+                std::env::set_var("TEST_ENV", "1");
+                std::env::set_var("VISUAL", "cat");
+                std::env::set_var("EDITOR", "cat");
+            }
             init_logger();
         });
     }

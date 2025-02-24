@@ -47,9 +47,12 @@ mod tests {
 
     // Set environment variables before running tests
     fn set_up() {
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        static INIT: Once = Once::new();
+        INIT.call_once(|| unsafe {
+            std::env::set_var("TEST_ENV", "1");
+            std::env::set_var("VISUAL", "cat");
+            std::env::set_var("EDITOR", "cat");
+        });
     }
 
     #[test]

@@ -884,7 +884,7 @@ impl ProfileStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
+    use sequential_test::sequential;
     use std::panic;
 
     struct TestGuard;
@@ -937,7 +937,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[sequential]
     fn test_profiling_stack_basic() {
         println!("\n--- test_profiling_stack_basic starting ---"); // Debug
 
@@ -959,7 +959,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[sequential]
     fn test_profiling_stack_nesting() {
         run_test(|| {
             assert!(push_profile("outer"));
@@ -981,7 +981,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[sequential]
     fn test_profiling_stack_capacity() {
         run_test(|| {
             // Fill stack to capacity
@@ -998,7 +998,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[sequential]
     fn test_profiling_stack_empty_pop() {
         run_test(|| {
             // Try to pop empty stack
@@ -1008,7 +1008,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[sequential]
     #[should_panic(expected = "Stack validation failed: Duplicate stack entry")]
     fn test_profiling_duplicate_stack_entries() {
         run_test(|| {
@@ -1018,7 +1018,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[sequential]
     fn test_profiling_type_stack_management() {
         run_test(|| {
             {
@@ -1042,7 +1042,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[sequential]
     fn test_profiling_end_profile_section() {
         run_test(|| {
             assert!(push_profile("outer"));

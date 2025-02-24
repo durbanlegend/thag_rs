@@ -85,7 +85,9 @@ mod tests {
 
     #[test]
     fn test_detect_color_support_in_test_env() {
-        env::set_var("TEST_ENV", "1");
+        unsafe {
+            env::set_var("TEST_ENV", "1");
+        }
         let (support, _) = detect_term_capabilities();
         assert_eq!(*support, ColorSupport::Basic);
         env::remove_var("TEST_ENV");

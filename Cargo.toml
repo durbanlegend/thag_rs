@@ -255,7 +255,6 @@ env_logger = "0.11.5"
 lazy_static = "1.5.0"
 predicates = "3.1.2"
 sequential-test = "0.2.4"
-serial_test = "3.2.0"
 tempfile = "3.17.1"
 test-generator = "0.3.1"
 

@@ -1,4 +1,5 @@
 use clap::Parser;
+use std::sync::Once;
 use thag_rs::{get_proc_flags, Cli, ProcFlags};
 
 // Set environment variables before running tests

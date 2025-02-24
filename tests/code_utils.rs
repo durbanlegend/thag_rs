@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::{io::Write, path::Path};
+    use std::{io::Write, sync::Once, path::Path};
     use tempfile::NamedTempFile;
     use thag_rs::ast::{is_last_stmt_unit_type, is_path_unit_type, is_stmt_unit_type};
     use thag_rs::code_utils::{

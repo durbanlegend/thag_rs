@@ -1,6 +1,7 @@
 #[cfg(test)]
 use cargo_toml::Manifest;
 use quote::ToTokens;
+use std::sync::Once;
 use std::{
     env::current_dir,
     fs::{self, OpenOptions},

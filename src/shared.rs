@@ -162,8 +162,9 @@ pub fn get_home_dir() -> ThagResult<PathBuf> {
 /// # Examples
 ///
 /// ```
+/// use thag_rs::thousands;
 /// assert_eq!(thousands(1234567u32), "1,234,567");
-/// assert_eq!(thousands(98765u16), "98,765");
+/// assert_eq!(thousands(9876u16), "9,876");
 /// assert_eq!(thousands(42u8), "42");
 /// assert_eq!(thousands(12345678901234567890u128), "12,345,678,901,234,567,890");
 /// ```

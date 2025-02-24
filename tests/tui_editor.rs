@@ -1,32 +1,34 @@
-use std::{env::set_var, fs};
-use thag_rs::tui_editor::{normalize_newlines, History};
-use thag_rs::{ThagResult, TMPDIR};
-
 #[cfg(feature = "simplelog")]
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
+use std::{env::set_var, fs, sync::Once};
+use thag_rs::tui_editor::{normalize_newlines, History};
+use thag_rs::{ThagResult, TMPDIR};
 
 #[cfg(feature = "simplelog")]
 use thag_rs::debug_log;
 
 // Set environment variables before running tests
 fn set_up() {
-    init_logger();
-    set_var("TEST_ENV", "1");
+    static INIT: Once = Once::new();
     #[cfg(windows)]
     {
-        unsafe {
+        INIT.call_once(|| unsafe {
+            set_var("TEST_ENV", "1");
             set_var("VISUAL", "powershell.exe /C Get-Content");
             set_var("EDITOR", "powershell.exe /C Get-Content");
-        }
+            init_logger();
+        });
     }
     #[cfg(not(windows))]
     {
-        unsafe {
+        INIT.call_once(|| unsafe {
+            set_var("TEST_ENV", "1");
             set_var("VISUAL", "cat");
             set_var("EDITOR", "cat");
-        }
+            init_logger();
+        });
     }
 }
 

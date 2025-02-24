@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use std::sync::Once;
     use thag_rs::ast::{
         find_crates, find_metadata, infer_deps_from_ast, infer_deps_from_source,
         should_filter_dependency,

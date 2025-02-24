@@ -250,7 +250,7 @@ requires-any = [["simplelog", "env_logger"]]
 [dev-dependencies]
 assert_cmd = "2.0.16"
 criterion = "0.5.1"
-either = "1.13.0"
+either = "1.14.0"
 env_logger = "0.11.5"
 lazy_static = "1.5.0"
 predicates = "3.1.2"

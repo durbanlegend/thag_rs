@@ -1,8 +1,11 @@
 use clap::Parser;
-use std::env;
-use std::fs::{self, File};
-use std::io::Write;
 use std::path::PathBuf;
+use std::{
+    env,
+    fs::{self, File},
+    io::Write,
+    sync::Once,
+};
 use thag_rs::{execute, Cli, DYNAMIC_SUBDIR, TMPDIR};
 
 // Set environment variables before running tests

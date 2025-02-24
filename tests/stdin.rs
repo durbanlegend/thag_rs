@@ -7,37 +7,41 @@ use ratatui::crossterm::{
     tty::IsTty,
 };
 use sequential_test::sequential;
-#[cfg(feature = "simplelog")]
-use simplelog::{
-    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
-};
 use std::{
     env::set_var,
     io::{stdout, Write},
     process::{Command, Stdio},
+    sync::Once,
 };
-#[cfg(feature = "simplelog")]
-use std::{fs::File, sync::OnceLock};
 use thag_rs::stdin::{edit, read_to_string};
 use thag_rs::{vlog, MockEventReader, V};
 
+#[cfg(feature = "simplelog")]
+use simplelog::{
+    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+};
+#[cfg(feature = "simplelog")]
+use std::{fs::File, sync::OnceLock};
+
 // Set environment variables before running tests
 fn set_up() {
+    static INIT: Once = Once::new();
     init_logger();
-    set_var("TEST_ENV", "1");
     #[cfg(windows)]
     {
-        unsafe {
+        INIT.call_once(|| unsafe {
+            set_var("TEST_ENV", "1");
             set_var("VISUAL", "powershell.exe /C Get-Content");
             set_var("EDITOR", "powershell.exe /C Get-Content");
-        }
+        });
     }
     #[cfg(not(windows))]
     {
-        unsafe {
+        INIT.call_once(|| unsafe {
+            set_var("TEST_ENV", "1");
             set_var("VISUAL", "cat");
             set_var("EDITOR", "cat");
-        }
+        });
     }
 }
 

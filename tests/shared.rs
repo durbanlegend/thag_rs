@@ -1,3 +1,4 @@
+use std::sync::Once;
 use thag_rs::shared::escape_path_for_windows;
 
 // Set environment variables before running tests

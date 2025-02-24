@@ -21,27 +21,46 @@ use std::io::Read;
 /// Free tools for this purpose include `diff`, `sdiff` git diff, GitHub desktop and BBEdit.
 ///
 /// This tool is intended for use with the `thag_rs` command-line tool or compiled into a binary.
-/// Run it with the `-qq` flag to suppress unwanted output.
+/// Run it with the `-qq` flag to suppress unwanted output. It requires a positive integer argument
+/// being a Rust edition number (2015, 2018, 2021). 2024 can't yet be supported.
 ///
 /// E.g.
 ///
 /// 1. As a script:
 ///
 /// ```
-/// thag tools/profile_uninstr.rs -qq < demo/colors_instrumented.rs > demo/colors.rs
+/// thag tools/profile_uninstr.rs -qq -- 2021 < demo/colors_instrumented.rs > demo/colors.rs
 /// ```
 ///
 /// 2. As a command (compiled with `thag tools/profile_uninstr.rs -x`)
 ///
 /// ```
-/// profile_uninstr < demo/colors_instrumented.rs > demo/colors.rs
+/// profile_uninstr < demo/colors_instrumented.rs -- 2018 > demo/colors.rs
 /// ```
 ///
 //# Purpose: Stand-alone tool to remove any and all `thag_rs` profiling instrumentation from any Rust source code.
 //# Categories: profiling, tools
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        eprintln!("Usage: {} <n>", args[0]);
+        std::process::exit(1);
+    }
+
+    let n: usize = args[1]
+        .parse()
+        .expect("Please provide a valid number in the set (2015, 2018, 2021). 2024 is not currently supported.");
+
+    let edition = match n {
+        2015 => Edition::Edition2015,
+        2018 => Edition::Edition2018,
+        2021 => Edition::Edition2021,
+        // 2024 => Edition::Edition2024,
+        _ => panic!("nsupported or invalid Rust edition {n}"),
+    };
+
     let content = read_stdin()?;
-    let stripped = deinstrument_code(&content);
+    let stripped = deinstrument_code(edition, &content);
     print!("{}", stripped);
     Ok(())
 }
@@ -55,8 +74,8 @@ fn parse_attr(attr: &str) -> Option<ra_ap_syntax::SyntaxNode> {
         .map(|node| node.clone_for_update())
 }
 
-fn deinstrument_code(source: &str) -> String {
-    let parse = SourceFile::parse(source, Edition::Edition2021);
+fn deinstrument_code(edition: Edition, source: &str) -> String {
+    let parse = SourceFile::parse(source, edition);
     let tree = parse.tree().clone_for_update();
 
     let import = "{enable_profiling, profile, profiling, Profile}";

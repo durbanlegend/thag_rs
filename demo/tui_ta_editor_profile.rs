@@ -1,7 +1,9 @@
-/*[toml]
+/*[toml]
 [dependencies]
 #crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 ratatui = "0.27.0"
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["tui", "simplelog"] }
 tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 #tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
 */
@@ -38,11 +40,9 @@ use std::fmt::Display;
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
-use tui_textarea::{CursorMove, Input, Key, TextArea};
 use thag_proc_macros::enable_profiling;
 use thag_rs::profiling;
-
-
+use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 macro_rules! error {
     ($fmt: expr $(, $args:tt)*) => {{
@@ -100,7 +100,7 @@ struct SearchBox<'a> {
 
 impl<'a> Default for SearchBox<'a> {
     #[profile]
-     fn default() -> Self {
+    fn default() -> Self {
         let mut textarea = TextArea::default();
         textarea.set_block(Block::default().borders(Borders::ALL).title("Search"));
         Self {
@@ -113,13 +113,13 @@ impl<'a> Default for SearchBox<'a> {
 #[allow(dead_code)]
 impl<'a> SearchBox<'a> {
     #[profile]
-     fn open(&mut self) {
+    fn open(&mut self) {
         self.open = true;
     }
 
     #[profile]
 
-     fn close(&mut self) {
+    fn close(&mut self) {
         self.open = false;
         // Remove input for next search. Do not recreate `self.textarea` instance to keep undo history so that users can
         // restore previous input easily.
@@ -129,7 +129,7 @@ impl<'a> SearchBox<'a> {
 
     #[profile]
 
-     fn height(&self) -> u16 {
+    fn height(&self) -> u16 {
         if self.open {
             3
         } else {
@@ -139,7 +139,7 @@ impl<'a> SearchBox<'a> {
 
     #[profile]
 
-     fn input(&mut self, input: Input) -> Option<&'_ str> {
+    fn input(&mut self, input: Input) -> Option<&'_ str> {
         match input {
             Input {
                 key: Key::Enter, ..
@@ -158,7 +158,7 @@ impl<'a> SearchBox<'a> {
 
     #[profile]
 
-     fn set_error(&mut self, err: Option<impl Display>) {
+    fn set_error(&mut self, err: Option<impl Display>) {
         let b = if let Some(err) = err {
             Block::default()
                 .borders(Borders::ALL)
@@ -181,7 +181,7 @@ struct Buffer<'a> {
 #[allow(dead_code)]
 impl<'a> Buffer<'a> {
     #[profile]
-     fn new(path: PathBuf) -> io::Result<Self> {
+    fn new(path: PathBuf) -> io::Result<Self> {
         let mut textarea = if let Ok(md) = path.metadata() {
             if md.is_file() {
                 let mut textarea: TextArea = io::BufReader::new(fs::File::open(&path)?)
@@ -215,7 +215,7 @@ impl<'a> Buffer<'a> {
 
     #[profile]
 
-     fn save(&mut self) -> io::Result<()> {
+    fn save(&mut self) -> io::Result<()> {
         let mut f = io::BufWriter::new(fs::File::create(&self.path)?);
         for line in self.textarea.lines() {
             f.write_all(line.as_bytes())?;
@@ -235,7 +235,7 @@ struct Output<'a> {
 
 impl<'a> Output<'a> {
     #[profile]
-     fn new() -> Self {
+    fn new() -> Self {
         let mut textarea = TextArea::default();
         textarea.set_style(Style::default().fg(Color::DarkGray));
         textarea.set_cursor_style(Style::default().add_modifier(Modifier::HIDDEN));
@@ -266,7 +266,7 @@ pub(crate) struct Editor<'a> {
 #[allow(dead_code)]
 impl<'a> Editor<'a> {
     #[profile]
-     pub(crate) fn new<I>(paths: I) -> io::Result<Self>
+    pub(crate) fn new<I>(paths: I) -> io::Result<Self>
     where
         I: Iterator,
         I::Item: Into<PathBuf>,
@@ -300,8 +300,7 @@ impl<'a> Editor<'a> {
     }
 
     #[profile]
-
-     #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
+    #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
     pub(crate) fn run(&mut self) -> io::Result<()> {
         loop {
             let search_height = self.search.height();
@@ -547,7 +546,7 @@ impl<'a> Editor<'a> {
 
     #[profile]
 
-     fn write_output(&mut self, msg: &str) {
+    fn write_output(&mut self, msg: &str) {
         self.output.textarea.insert_str(msg);
         self.output.textarea.insert_newline();
         self.output.modified = true;
@@ -556,7 +555,7 @@ impl<'a> Editor<'a> {
 
 #[profile]
 
- fn show_popup(f: &mut ratatui::prelude::Frame) {
+fn show_popup(f: &mut ratatui::prelude::Frame) {
     let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
     let inner = area.inner(Margin {
         vertical: 2,
@@ -601,7 +600,7 @@ impl<'a> Editor<'a> {
 
 impl<'a> Drop for Editor<'a> {
     #[profile]
-     fn drop(&mut self) {
+    fn drop(&mut self) {
         self.term.show_cursor().unwrap();
         disable_raw_mode().unwrap();
         ratatui::crossterm::execute!(
@@ -616,7 +615,7 @@ impl<'a> Drop for Editor<'a> {
 
 #[profile]
 
- fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
+fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Max(max_height),
@@ -633,8 +632,7 @@ impl<'a> Drop for Editor<'a> {
 }
 
 #[enable_profiling]
-
- #[allow(dead_code)]
+#[allow(dead_code)]
 fn main() -> io::Result<()> {
     Editor::new(env::args_os().skip(1))?.run()
 }

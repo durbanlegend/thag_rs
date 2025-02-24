@@ -4,6 +4,7 @@ mod tests {
     use crossterm::terminal::is_raw_mode_enabled;
     use std::env;
     use std::env::set_var;
+    use std::sync::Once;
     use thag_rs::terminal::TerminalStateGuard;
     use thag_rs::{
         terminal::{
@@ -56,17 +57,24 @@ mod tests {
 
     // Set environment variables before running tests
     fn set_up() {
-        init_logger();
-        set_var("TEST_ENV", "1");
+        static INIT: Once = Once::new();
         #[cfg(windows)]
         {
-            set_var("VISUAL", "powershell.exe /C Get-Content");
-            set_var("EDITOR", "powershell.exe /C Get-Content");
+            INIT.call_once(|| unsafe {
+                set_var("TEST_ENV", "1");
+                set_var("VISUAL", "powershell.exe /C Get-Content");
+                set_var("EDITOR", "powershell.exe /C Get-Content");
+                init_logger();
+            });
         }
         #[cfg(not(windows))]
         {
-            set_var("VISUAL", "cat");
-            set_var("EDITOR", "cat");
+            INIT.call_once(|| unsafe {
+                set_var("TEST_ENV", "1");
+                set_var("VISUAL", "cat");
+                set_var("EDITOR", "cat");
+                init_logger();
+            });
         }
     }
 

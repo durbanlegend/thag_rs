@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::{env::current_dir, path::PathBuf, sync::Arc};
+    use std::{env::current_dir, sync::Once, path::PathBuf, sync::Arc};
     use tempfile::TempDir;
     use thag_rs::{
         config::{

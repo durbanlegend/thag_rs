@@ -1,4 +1,4 @@
-name = "Zenbones Base16 "
+name = "Zenbones Base16"
 description = "Converted from Zenbones theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

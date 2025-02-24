@@ -1,4 +1,4 @@
-name = "Horizon Light Base16 "
+name = "Horizon Light Base16"
 description = "Converted from Horizon Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"

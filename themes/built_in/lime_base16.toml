@@ -1,4 +1,4 @@
-name = "lime Base16 "
+name = "lime Base16"
 description = "Converted from lime theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

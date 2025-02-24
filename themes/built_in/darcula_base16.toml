@@ -1,4 +1,4 @@
-name = "Darcula Base16 "
+name = "Darcula Base16"
 description = "Converted from Darcula theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

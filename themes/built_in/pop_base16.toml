@@ -1,4 +1,4 @@
-name = "Pop Base16 "
+name = "Pop Base16"
 description = "Converted from Pop theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

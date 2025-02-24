@@ -1,4 +1,4 @@
-name = "emil Base16 "
+name = "emil Base16"
 description = "Converted from emil theme"
 term_bg_luma = "light"
 min_color_support = "true_color"

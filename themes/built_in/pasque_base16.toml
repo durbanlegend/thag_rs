@@ -1,4 +1,4 @@
-name = "Pasque Base16 "
+name = "Pasque Base16"
 description = "Converted from Pasque theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

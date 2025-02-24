@@ -1,4 +1,4 @@
-name = "Windows 10 Light Base16 "
+name = "Windows 10 Light Base16"
 description = "Converted from Windows 10 Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"

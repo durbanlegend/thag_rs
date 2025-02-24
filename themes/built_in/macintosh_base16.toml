@@ -1,4 +1,4 @@
-name = "Macintosh Base16 "
+name = "Macintosh Base16"
 description = "Converted from Macintosh theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

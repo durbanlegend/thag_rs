@@ -1,4 +1,4 @@
-name = "Solarized Light Base16 "
+name = "Solarized Light Base16"
 description = "Converted from Solarized Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"

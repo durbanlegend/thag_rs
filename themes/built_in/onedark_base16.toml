@@ -1,4 +1,4 @@
-name = "OneDark Base16 "
+name = "OneDark Base16"
 description = "Converted from OneDark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

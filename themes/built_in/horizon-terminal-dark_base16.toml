@@ -1,4 +1,4 @@
-name = "Horizon Terminal Dark Base16 "
+name = "Horizon Terminal Dark Base16"
 description = "Converted from Horizon Terminal Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

@@ -1,4 +1,4 @@
-name = "Gruvbox light, hard Base16 "
+name = "Gruvbox light, hard Base16"
 description = "Converted from Gruvbox light, hard theme"
 term_bg_luma = "light"
 min_color_support = "true_color"

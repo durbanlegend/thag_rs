@@ -1,4 +1,4 @@
-name = "Blue Forest Base16 "
+name = "Blue Forest Base16"
 description = "Converted from Blue Forest theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

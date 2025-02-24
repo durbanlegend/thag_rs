@@ -1,4 +1,4 @@
-name = "Atlas Base16 "
+name = "Atlas Base16"
 description = "Converted from Atlas theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

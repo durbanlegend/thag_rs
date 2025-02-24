@@ -1,4 +1,4 @@
-name = "PaperColor Dark Base16 "
+name = "PaperColor Dark Base16"
 description = "Converted from PaperColor Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

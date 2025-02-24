@@ -1,4 +1,4 @@
-name = "Railscasts Base16 "
+name = "Railscasts Base16"
 description = "Converted from Railscasts theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

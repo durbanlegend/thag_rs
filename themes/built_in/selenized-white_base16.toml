@@ -1,4 +1,4 @@
-name = "selenized-white Base16 "
+name = "selenized-white Base16"
 description = "Converted from selenized-white theme"
 term_bg_luma = "light"
 min_color_support = "true_color"

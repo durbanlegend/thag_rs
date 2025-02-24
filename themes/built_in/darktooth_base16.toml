@@ -1,4 +1,4 @@
-name = "Darktooth Base16 "
+name = "Darktooth Base16"
 description = "Converted from Darktooth theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

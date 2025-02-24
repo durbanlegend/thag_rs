@@ -1,4 +1,4 @@
-name = "London Tube Base16 "
+name = "London Tube Base16"
 description = "Converted from London Tube theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

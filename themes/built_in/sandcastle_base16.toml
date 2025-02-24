@@ -1,4 +1,4 @@
-name = "Sandcastle Base16 "
+name = "Sandcastle Base16"
 description = "Converted from Sandcastle theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

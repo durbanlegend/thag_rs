@@ -1,4 +1,4 @@
-name = "Tomorrow Base16 "
+name = "Tomorrow Base16"
 description = "Converted from Tomorrow theme"
 term_bg_luma = "light"
 min_color_support = "true_color"

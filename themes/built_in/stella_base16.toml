@@ -1,4 +1,4 @@
-name = "Stella Base16 "
+name = "Stella Base16"
 description = "Converted from Stella theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

@@ -1,4 +1,4 @@
-name = "Nova Base16 "
+name = "Nova Base16"
 description = "Converted from Nova theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

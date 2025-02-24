@@ -1,4 +1,4 @@
-name = "Github Base16 "
+name = "Github Base16"
 description = "Converted from Github theme"
 term_bg_luma = "light"
 min_color_support = "true_color"

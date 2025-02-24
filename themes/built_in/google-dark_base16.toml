@@ -1,4 +1,4 @@
-name = "Google Dark Base16 "
+name = "Google Dark Base16"
 description = "Converted from Google Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

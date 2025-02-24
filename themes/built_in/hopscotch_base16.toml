@@ -1,4 +1,4 @@
-name = "Hopscotch Base16 "
+name = "Hopscotch Base16"
 description = "Converted from Hopscotch theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

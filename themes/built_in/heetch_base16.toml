@@ -1,4 +1,4 @@
-name = "Heetch Dark Base16 "
+name = "Heetch Dark Base16"
 description = "Converted from Heetch Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

@@ -1,4 +1,4 @@
-name = "Nord Light Base16 "
+name = "Nord Light Base16"
 description = "Converted from Nord Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"

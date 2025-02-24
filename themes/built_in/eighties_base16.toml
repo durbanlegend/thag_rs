@@ -1,4 +1,4 @@
-name = "Eighties Base16 "
+name = "Eighties Base16"
 description = "Converted from Eighties theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

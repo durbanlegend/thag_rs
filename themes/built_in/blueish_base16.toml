@@ -1,4 +1,4 @@
-name = "Blueish Base16 "
+name = "Blueish Base16"
 description = "Converted from Blueish theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

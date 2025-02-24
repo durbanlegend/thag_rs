@@ -1,4 +1,4 @@
-name = "Harmonic16 Dark Base16 "
+name = "Harmonic16 Dark Base16"
 description = "Converted from Harmonic16 Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

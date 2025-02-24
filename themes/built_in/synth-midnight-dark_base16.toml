@@ -1,4 +1,4 @@
-name = "Synth Midnight Terminal Dark Base16 "
+name = "Synth Midnight Terminal Dark Base16"
 description = "Converted from Synth Midnight Terminal Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

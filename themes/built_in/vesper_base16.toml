@@ -1,4 +1,4 @@
-name = "Vesper Base16 "
+name = "Vesper Base16"
 description = "Converted from Vesper theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"

@@ -6,20 +6,43 @@
 <img src="https://img.shields.io/badge/rustc-stable+-green.svg" alt="supported rustc stable" />
 <a href="https://deps.rs/repo/github/durbanlegend/thag_rs"><img src="https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg" alt="dependency status"/></a>
 
+## Intro
 
-`thag_rs` is a toolkit designed to make your Rust development experience smoother. With the simple `thag` command, you get a script runner, expression evaluator, and REPL all in one place — along with several thoughtful features that address common development pain points.
+`thag_rs` is a toolkit designed to make your Rust development experience smoother and more rewarding. With the simple `thag` command, you get a script runner, expression evaluator, and REPL all in one place—along with several thoughtful features that address common development pain points.
 
 The core purpose of `thag` is straightforward: eliminate the setup barriers that slow you down when you're trying to test ideas, explore functionality, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
 
-Whether you're:
-- Prototyping a concept
-- Learning how a crate works
-- Debugging proc macros
-- Running quick calculations
-- Profiling code performance
-- Building custom development tools
+One standout feature is dependency inference, which automatically detects and configures the crates your code needs. This means you can often start writing actual code immediately, without manually specifying dependencies. When needed, verbose mode shows you exactly which dependencies were inferred, ready to copy into your scripts for future use.
 
-`thag_rs` helps you get answers faster — from simple one-liners to complex multi-file programs.
+Since version 0.2, `thag` offers cross-platform profiling capabilities that work consistently across different operating systems—no more platform-specific setup headaches. You can easily:
+
+- Instrument and de-instrument Rust source files automatically with simple #[profile] function attributes
+
+- Generate execution time and memory usage reports
+
+- Create plain or comparative interactive flamecharts with `inferno`
+
+- Filter profiling output to focus on relevant functions
+
+- Target specific sections of code
+
+Whether you're:
+
+- Prototyping a concept
+
+- Learning how a crate works
+
+- Debugging proc macros
+
+- Running quick calculations
+
+- Profiling code performance
+
+- Converting your scripts into lightning-fast commands
+
+`thag_rs` helps you get answers faster—from simple one-liners to complex multi-file programs.
+
+___
 
 🚀 **The basics:**
 

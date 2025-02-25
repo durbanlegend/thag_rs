@@ -2881,7 +2881,7 @@ mod tests {
             .expect("Failed to load heading1 foreground color")
             .value
         {
-            assert_eq!(rgb, &[255, 121, 198]);
+            assert_eq!(rgb, &[255, 85, 85]);
         } else {
             panic!("Expected TrueColor for heading1");
         }

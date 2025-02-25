@@ -21,6 +21,8 @@
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
 - [ ]  Thag profiling guide.
+- [ ]  Profiling filtering: option to remove functions but not their children.
+- []  Debug profiling end section test.
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

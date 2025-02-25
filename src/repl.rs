@@ -4,7 +4,7 @@ use crate::{
     code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
     cvprtln, get_verbosity, lazy_static_var,
     manifest::extract,
-    profile_fn, profile_method, regex,
+    profile, regex,
     styling::{
         display_theme_details, display_theme_roles, ColorInfo,
         Role::{self, Success},
@@ -39,10 +39,10 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Instant;
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
-use thag_proc_macros::profile;
 use tui_textarea::{Input, TextArea};
 
 impl From<&ColorInfo> for NuColor {
+    #[profile]
     fn from(color_info: &ColorInfo) -> Self {
         Self::Fixed(color_info.index)
     }
@@ -239,8 +239,8 @@ pub enum ReplCommand {
 }
 
 impl ReplCommand {
+    #[profile]
     fn print_help() {
-        profile_method!("print_help");
         let mut command = Self::command();
         // let mut buf = Vec::new();
         // command.write_help(&mut buf).unwrap();
@@ -253,31 +253,31 @@ impl ReplCommand {
 #[allow(clippy::module_name_repetitions)]
 pub struct ReplPrompt(pub &'static str);
 impl Prompt for ReplPrompt {
+    #[profile]
     fn render_prompt_left(&self) -> Cow<str> {
-        profile_method!("render_prompt_left");
         Cow::Owned(self.0.to_string())
     }
 
+    #[profile]
     fn render_prompt_right(&self) -> Cow<str> {
-        profile_method!("render_prompt_right");
         Cow::Owned(String::new())
     }
 
+    #[profile]
     fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<str> {
-        profile_method!("render_prompt_indicator");
         Cow::Owned("> ".to_string())
     }
 
+    #[profile]
     fn render_prompt_multiline_indicator(&self) -> Cow<str> {
-        profile_method!("render_prompt_multiline_indicator");
         Cow::Borrowed(DEFAULT_MULTILINE_INDICATOR)
     }
 
+    #[profile]
     fn render_prompt_history_search_indicator(
         &self,
         history_search: PromptHistorySearch,
     ) -> Cow<str> {
-        profile_method!("render_prompt_history_search_indicator");
         let prefix = match history_search.status {
             PromptHistorySearchStatus::Passing => "",
             PromptHistorySearchStatus::Failing => "failing ",
@@ -289,6 +289,7 @@ impl Prompt for ReplPrompt {
         ))
     }
 
+    #[profile]
     fn get_prompt_color(&self) -> reedline::Color {
         if let Some(color_info) = Style::for_role(Success).foreground {
             vlog!(V::VV, "color_info for Success={color_info:?}");
@@ -347,6 +348,7 @@ pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
 /// Will panic if there is a problem configuring the `reedline` history file.
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::too_many_lines)]
+#[profile]
 pub fn run_repl(
     args: &Cli,
     proc_flags: &ProcFlags,
@@ -611,6 +613,7 @@ pub fn process_source(
     Ok(())
 }
 
+#[profile]
 fn tui(
     initial_content: &str,
     save_path: &mut PathBuf,
@@ -694,6 +697,7 @@ fn tui(
     Ok(())
 }
 
+#[profile]
 fn review_history(
     line_editor: &mut Reedline,
     history_path: &PathBuf,
@@ -724,8 +728,8 @@ fn review_history(
 /// Convert the `reedline` file-backed history newline sequence <\n> into the '\n' (0xa) character for which it stands.
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
+#[profile]
 pub fn decode(input: &str) -> String {
-    profile_fn!("decode");
     let re = regex!(r"(<\\n>)");
     let lf = std::str::from_utf8(&[10_u8]).unwrap();
     re.replace_all(input, lf).to_string()
@@ -736,6 +740,7 @@ pub fn decode(input: &str) -> String {
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+#[profile]
 pub fn edit_history<R: EventReader + Debug>(
     initial_content: &str,
     staging_path: &Path,
@@ -798,6 +803,7 @@ pub fn edit_history<R: EventReader + Debug>(
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+#[profile]
 pub fn history_key_handler(
     key_event: KeyEvent,
     _maybe_term: Option<&mut ManagedTerminal>,
@@ -808,7 +814,6 @@ pub fn history_key_handler(
     saved: &mut bool,
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
-    profile_fn!("history_key_handler");
     // Make sure for Windows
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
@@ -851,11 +856,11 @@ pub fn history_key_handler(
     }
 }
 
+#[profile]
 fn save_file(
     maybe_save_path: &Option<&mut PathBuf>,
     textarea: &TextArea<'_>,
 ) -> ThagResult<String> {
-    profile_fn!("save_file");
     let staging_path = maybe_save_path.as_ref().ok_or("Missing save_path")?;
     let staging_file = OpenOptions::new()
         .read(true)
@@ -873,8 +878,8 @@ fn save_file(
 
 /// Return the maximum length of the key descriptor for a set of styled and
 /// formatted key / description bindings to be displayed on screen.
+#[profile]
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
-    profile_fn!("get_max_key_len");
     let style = get_heading_style();
     formatted_bindings
         .iter()
@@ -886,11 +891,11 @@ fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
         .unwrap_or(0)
 }
 
+#[profile]
 fn format_bindings(
     named_reedline_events: &[(String, &ReedlineEvent)],
     max_cmd_len: usize,
 ) -> &'static Vec<(String, String)> {
-    profile_fn!("format_bindings");
     lazy_static_var!(Vec<(String, String)>, {
         let mut formatted_bindings = named_reedline_events
             .iter()
@@ -915,8 +920,8 @@ fn format_bindings(
     })
 }
 
+#[profile]
 fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
-    profile_fn!("get_max_cmd_len");
     // Calculate max command len for padding
     lazy_static_var!(
         usize,
@@ -952,8 +957,8 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     )
 }
 
+#[profile]
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
-    profile_fn!("show_key_bindings");
     println!();
     cvprtln!(
         Role::EMPH,
@@ -972,8 +977,8 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
 
 // Helper function to convert KeyModifiers to string
 #[must_use]
+#[profile]
 pub fn format_key_modifier(modifier: KeyModifiers) -> String {
-    profile_fn!("format_key_modifier");
     let mut modifiers = Vec::new();
     if modifier.contains(KeyModifiers::CONTROL) {
         modifiers.push("CONTROL");
@@ -994,8 +999,8 @@ pub fn format_key_modifier(modifier: KeyModifiers) -> String {
 
 // Helper function to convert KeyCode to string
 #[must_use]
+#[profile]
 pub fn format_key_code(key_code: KeyCode) -> String {
-    profile_fn!("format_key_code");
     match key_code {
         KeyCode::Backspace => "Backspace".to_string(),
         KeyCode::Enter => "Enter".to_string(),
@@ -1032,8 +1037,8 @@ pub fn format_key_code(key_code: KeyCode) -> String {
 /// Will panic if it fails to split a `EVENT_DESC_MAP` entry, indicating a problem with the `EVENT_DESC_MAP`.
 #[allow(clippy::too_many_lines)]
 #[must_use]
+#[profile]
 pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
-    profile_fn!("format_non_edit_events");
     let event_desc_map = lazy_static_var!(HashMap<&'static str, &'static str>, {
         EVENT_DESCS
             .iter()
@@ -1054,8 +1059,8 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 /// # Panics
 /// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
 #[must_use]
+#[profile]
 pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> String {
-    profile_fn!("format_edit_commands");
     let cmd_desc_map: &HashMap<&str, &str> =
         lazy_static_var!(HashMap<&'static str, &'static str>, {
             CMD_DESCS
@@ -1072,12 +1077,12 @@ pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> St
 }
 
 #[allow(clippy::too_many_lines)]
+#[profile]
 fn format_cmd_desc(
     cmd: &EditCommand,
     cmd_desc_map: &HashMap<&str, &str>,
     max_cmd_len: usize,
 ) -> String {
-    profile_fn!("format_cmd_desc");
     let style = get_subhead_style();
 
     let cmd_highlight = style.paint(format!("{cmd:?}"));
@@ -1189,8 +1194,8 @@ fn format_cmd_desc(
 /// # Errors
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
+#[profile]
 pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
-    profile_fn!("delete");
     // let build_state = &context.build_state;
     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
     if clean_up.is_ok()
@@ -1210,6 +1215,7 @@ pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
+#[profile]
 pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
     edit_file(source_path)?;
 
@@ -1220,6 +1226,7 @@ pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
+#[profile]
 pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
     let cargo_toml_file = &build_state.cargo_toml_path;
     if cargo_toml_file.exists() {
@@ -1232,8 +1239,8 @@ pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
 
 /// Parse the current line. Borrowed from clap-repl crate.
 #[must_use]
+#[profile]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
-    profile_fn!("parse_line");
     let re: &Regex = regex!(r#"("[^"\n]+"|[\S]+)"#);
 
     let mut args = re
@@ -1245,8 +1252,8 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
 }
 
 /// Display the REPL banner.
+#[profile]
 pub fn disp_repl_banner(cmd_list: &str) {
-    profile_fn!("disp_repl_banner");
     cvprtln!(
         Role::HD1,
         get_verbosity(),
@@ -1275,8 +1282,8 @@ pub fn disp_repl_banner(cmd_list: &str) {
 /// The process lacks permissions to view the contents.
 /// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
+#[profile]
 pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
-    profile_fn!("list");
     let source_path = &build_state.source_path;
     if source_path.exists() {
         vlog!(V::QQ, "File: {source_path:?}");

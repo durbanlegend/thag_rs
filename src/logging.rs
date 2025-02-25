@@ -1,5 +1,5 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::{debug_log, profile_fn, profile_method, ThagResult};
+use crate::{debug_log, profile, ThagResult};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use std::sync::{
@@ -28,6 +28,7 @@ static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 ///
 /// Will panic if it can't unwrap the lock on the mutex protecting the `LOGGER` static variable.
 #[must_use]
+#[profile]
 pub fn get_verbosity() -> Verbosity {
     // NB: Do not profile this function, because module `profiling` may need to
     // call it to determine whether to print debugging output.
@@ -35,13 +36,13 @@ pub fn get_verbosity() -> Verbosity {
 }
 
 #[allow(clippy::module_name_repetitions)]
+#[profile]
 pub fn enable_debug_logging() {
-    profile_fn!("enable_debug_logging");
     DEBUG_LOG_ENABLED.store(true, Ordering::SeqCst);
 }
 
+#[profile]
 pub fn is_debug_logging_enabled() -> bool {
-    profile_fn!("is_debug_logging_enabled");
     DEBUG_LOG_ENABLED.load(Ordering::SeqCst)
 }
 
@@ -104,24 +105,24 @@ impl Logger {
     }
 
     /// Log a message if it passes the verbosity filter.
+    #[profile]
     pub fn log(&self, verbosity: Verbosity, message: &str) {
-        profile_method!("log");
         if verbosity as u8 <= self.verbosity as u8 {
             println!("{}", message);
         }
     }
 
     /// Set the verbosity level.
+    #[profile]
     pub fn set_verbosity(&mut self, verbosity: Verbosity) {
-        profile_method!("set_verbosity");
         self.verbosity = verbosity;
 
         debug_log!("Verbosity set to {verbosity:?}");
     }
 
     /// Return the verbosity level
+    #[profile]
     pub fn verbosity(&mut self) -> Verbosity {
-        profile_method!("verbosity");
         self.verbosity
     }
 }
@@ -133,8 +134,8 @@ pub static LOGGER: LazyLock<Mutex<Logger>> = LazyLock::new(|| Mutex::new(Logger:
 /// Will return `Err` if the logger mutex cannot be locked.
 /// # Panics
 /// Will panic in debug mode if the global verbosity value is not the value we just set.
+#[profile]
 pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
-    profile_fn!("set_global_verbosity");
     LOGGER.lock()?.set_verbosity(verbosity);
     #[cfg(debug_assertions)]
     assert_eq!(get_verbosity(), verbosity);
@@ -148,9 +149,9 @@ pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
 
 /// Configure log level
 #[cfg(feature = "env_logger")]
+#[profile]
 pub fn configure_log() {
     use log::info;
-    profile_fn!("configure_log");
 
     let env = Env::new().filter("RUST_LOG");
     Builder::new().parse_env(env).init();
@@ -163,9 +164,8 @@ pub fn configure_log() {
 ///
 /// Panics if it can't create the log file app.log in the current working directory.
 #[cfg(feature = "simplelog")]
+#[profile]
 pub fn configure_log() {
-    profile_fn!("configure_log");
-
     configure_simplelog();
     // info!("Initialized simplelog");  // interferes with testing
     vlog!(V::V, "Initialized simplelog");
@@ -177,8 +177,8 @@ pub fn configure_log() {
 ///
 /// Panics if it can't create the log file app.log in the current working directory.
 #[cfg(feature = "simplelog")]
+#[profile]
 fn configure_simplelog() {
-    profile_fn!("configure_simplelog");
     CombinedLogger::init(vec![
         TermLogger::new(
             LevelFilter::Info,

@@ -17,7 +17,7 @@ use std::path::Path;
 ///    You may want to adjust the test-threads value further depending on your hardware.
 fn main() {
     // 1. Theme loading
-    // NB: tell cargo to rerun if any theme file changes
+    // NB: Tell cargo to rerun if any theme file changes
     println!("cargo:rerun-if-changed=themes/built_in");
 
     // if let Err(e) = generate_theme_data() {
@@ -140,7 +140,7 @@ fn main() {
 
                 let test_name = source_name.replace('.', "_");
 
-                writeln!(
+                #[allow(clippy::literal_string_with_formatting_args)]                writeln!(
                 file,
                 r#"
 #[test]

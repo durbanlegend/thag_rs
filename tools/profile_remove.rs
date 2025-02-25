@@ -1,9 +1,13 @@
+/*[toml]
+[dependencies]
+ra_ap_syntax = "=0.0.264"
+ra-ap-rustc_lexer = "=0.96.0"
+*/
+
 use ra_ap_syntax::{
-    ast::{
-        self, edit_in_place::Removable, HasModuleItem, HasName, Item, Use, UseTree, UseTreeList,
-    },
-    ted::{self, Element, Position},
-    AstNode, Direction, Edition, Parse, SourceFile, SyntaxKind, SyntaxNode, SyntaxToken,
+    ast::{self, HasName, Use, UseTree},
+    ted::{self, Element},
+    AstNode, Edition, SourceFile, SyntaxKind, SyntaxNode,
 };
 use std::io::Read;
 
@@ -22,7 +26,7 @@ use std::io::Read;
 ///
 /// This tool is intended for use with the `thag_rs` command-line tool or compiled into a binary.
 /// Run it with the `-qq` flag to suppress unwanted output. It requires a positive integer argument
-/// being a Rust edition number (2015, 2018, 2021). 2024 can't yet be supported.
+/// being a Rust edition number (2015, 2018, 2021, 2024).
 ///
 /// E.g.
 ///
@@ -41,7 +45,7 @@ use std::io::Read;
 //# Purpose: Stand-alone tool to remove any and all `thag_rs` profiling instrumentation from any Rust source code.
 //# Categories: profiling, tools
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
         eprintln!("Usage: {} <n>", args[0]);
         std::process::exit(1);
@@ -49,13 +53,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let n: usize = args[1]
         .parse()
-        .expect("Please provide a valid number in the set (2015, 2018, 2021). 2024 is not currently supported.");
+        .expect("Please provide a valid number in the set (2015, 2018, 2021, 2024).");
 
     let edition = match n {
         2015 => Edition::Edition2015,
         2018 => Edition::Edition2018,
         2021 => Edition::Edition2021,
-        // 2024 => Edition::Edition2024,
+        2024 => Edition::Edition2024,
         _ => panic!("nsupported or invalid Rust edition {n}"),
     };
 
@@ -63,15 +67,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stripped = deinstrument_code(edition, &content);
     print!("{}", stripped);
     Ok(())
-}
-
-fn parse_attr(attr: &str) -> Option<ra_ap_syntax::SyntaxNode> {
-    let parse: Parse<ast::SourceFile> = SourceFile::parse(attr, Edition::Edition2021);
-    parse
-        .tree()
-        .syntax()
-        .first_child()
-        .map(|node| node.clone_for_update())
 }
 
 fn deinstrument_code(edition: Edition, source: &str) -> String {
@@ -188,11 +183,7 @@ fn deinstrument_code(edition: Edition, source: &str) -> String {
                             descendant.kind() == SyntaxKind::MACRO_CALL
                                 && (descendant.text().to_string().starts_with("profile!")
                                     | descendant.text().to_string().starts_with("profile_fn!")
-                                    || descendant.text().to_string().starts_with("profile_method!")
-                                    || descendant
-                                        .text()
-                                        .to_string()
-                                        .starts_with("profile_section!"))
+                                    || descendant.text().to_string().starts_with("profile_method!"))
                         })
                         .is_some()
                 })

@@ -1,6 +1,5 @@
-//! Introducing `thag_rs` (command `thag`) - a Swiss Army knife of productivity tools for Rust development.
-//! //! `thag` combines a script runner, expression evaluator, and REPL into one tool,
-//! then adds an array of smart features.
+//! Introducing `thag_rs` (command `thag`) - a set of creative solutions to ease your Rust development experience. `thag` combines a script runner, expression evaluator, and REPL into one tool,
+//! with an array of smart features.
 //!
 //! `thag`'s mission is to remove obstacles to productivity by giving you a selection of tools
 //! and examples to make it as quick and easy as possible to figure stuff out without tedious setup.

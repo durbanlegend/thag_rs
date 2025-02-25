@@ -1,3 +1,9 @@
+/*[toml]
+[dependencies]
+ra_ap_syntax = "=0.0.264"
+ra-ap-rustc_lexer = "=0.96.0"
+*/
+
 use ra_ap_syntax::{
     ast::{self, HasModuleItem, HasName, HasVisibility, Item},
     ted::{self, Position},
@@ -27,7 +33,7 @@ use std::io::Read;
 ///
 /// This tool is intended for use with the `thag_rs` command-line tool or compiled into a binary.
 /// Run it with the `-qq` flag to suppress unwanted output. It requires a positive integer argument
-/// being a Rust edition number (2015, 2018, 2021). 2024 can't yet be supported.
+/// being a Rust edition number (2015, 2018, 2021, 2024).
 ///
 /// E.g.
 ///
@@ -54,13 +60,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let n: usize = args[1]
         .parse()
-        .expect("Please provide a valid number in the set (2015, 2018, 2021). 2024 is not currently supported.");
+        .expect("Please provide a valid number in the set (2015, 2018, 2021, 2024).");
 
     let edition = match n {
         2015 => Edition::Edition2015,
         2018 => Edition::Edition2018,
         2021 => Edition::Edition2021,
-        // 2024 => Edition::Edition2024,
+        2024 => Edition::Edition2024,
         _ => panic!("nsupported or invalid Rust edition {n}"),
     };
 
@@ -127,6 +133,11 @@ fn instrument_code(edition: Edition, source: &str) -> String {
 
     for node in tree.syntax().descendants() {
         if let Some(function) = ast::Fn::cast(node.clone()) {
+            // Don't profile a constant function
+            if function.const_token().is_some() {
+                continue;
+            }
+
             let fn_name = function.name().map(|n| n.text().to_string());
             let attr_text = if fn_name.as_deref() == Some("main") {
                 "#[enable_profiling]"
@@ -157,7 +168,9 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                     let text = it.to_string();
                     text.starts_with("#[profile")
                         || text.starts_with("#[enable_profiling")
-                        || text.starts_with("profile")
+                        || text.starts_with("profile!")
+                        || text.starts_with("profile_fn!")
+                        || text.starts_with("profile_method!")
                         || text.starts_with("enable_profiling")
                 })
             {

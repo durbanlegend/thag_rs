@@ -14,7 +14,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
     for entry in std::fs::read_dir(themes_dir).unwrap() {
         let path = entry.unwrap().path();
         // Skip hidden files like .DS_Store and read only .toml files
-        if path.file_name().and_then(|n| n.to_str()).map_or(true, |n| {
+        if path.file_name().and_then(|n| n.to_str()).is_none_or(|n| {
             n.starts_with('.')
                 || !std::path::Path::new(n)
                     .extension()

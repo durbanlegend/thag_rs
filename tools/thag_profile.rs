@@ -1081,11 +1081,11 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
     ];
 
     let mut bucket_counts: HashMap<&str, u64> = HashMap::new();
-    let mut total_bytes = 0u64;
+    // let mut total_bytes = 0u64;
 
     for (&size, &count) in &memory_data.allocation_sizes {
         let count = count as u64;
-        total_bytes += size as u64 * count;
+        // total_bytes += size as u64 * count;
         for &(min, max, label) in &buckets {
             if size >= min && size <= max {
                 *bucket_counts.entry(label).or_default() += count;

@@ -1,12 +1,10 @@
 #![allow(clippy::uninlined_format_args)]
-#[cfg(debug_assertions)]
-use crate::debug_timings;
 use crate::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
     code_utils::get_source_path,
     config::DependencyInference,
-    cvprtln, debug_log, end_profile_section, get_verbosity, maybe_config, profile_fn,
-    profile_section, regex,
+    cvprtln, debug_log, end_profile_section, get_verbosity, maybe_config, profile, profile_section,
+    regex,
     styling::Role,
     vlog, Ast, BuildState, Dependencies, Style, ThagResult, V,
 };
@@ -18,11 +16,13 @@ use serde_merge::omerge;
 use std::{collections::BTreeMap, path::PathBuf, str::FromStr, time::Instant};
 use syn::{parse_file, File};
 
+#[cfg(debug_assertions)]
+use crate::debug_timings;
+
 #[allow(clippy::missing_panics_doc)]
 #[must_use]
+#[profile]
 pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
-    profile_fn!("cargo_lookup");
-
     // Try both original and hyphenated versions
     let crate_variants = vec![dep_crate.to_string(), dep_crate.replace('_', "-")];
 
@@ -94,9 +94,8 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
 /// # Panics
 /// Will panic if the regular expression is malformed.
+#[profile]
 pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
-    profile_fn!("capture_dep");
-
     debug_log!("first_line={first_line}");
     let re: &Regex = regex!(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#);
 
@@ -117,8 +116,8 @@ pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
 /// Configure the default manifest from the `BuildState` instance.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
+#[profile]
 pub fn configure_default(build_state: &BuildState) -> ThagResult<Manifest> {
-    profile_fn!("configure_default");
     let source_stem = &build_state.source_stem;
 
     let gen_src_path = get_source_path(build_state);
@@ -135,8 +134,8 @@ gen_src_path={gen_src_path}",
 /// Parse the default manifest from a string template.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
+#[profile]
 pub fn default(source_stem: &str, gen_src_path: &str) -> ThagResult<Manifest> {
-    profile_fn!("default");
     let cargo_manifest = format!(
         r#"[package]
 name = "{}"
@@ -168,8 +167,8 @@ edition = "2021"
 /// into the default manifest.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
+#[profile]
 pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
-    profile_fn!("merge");
     #[cfg(debug_assertions)]
     let start_merge_manifest = Instant::now();
 
@@ -232,8 +231,8 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     Ok(())
 }
 
+#[profile]
 fn call_omerge(cargo_manifest: &Manifest, rs_manifest: &mut Manifest) -> ThagResult<Manifest> {
-    profile_fn!("call_omerge");
     // eprintln!("cargo_manifest={cargo_manifest:#?}, rs_manifest={rs_manifest:#?}");
     Ok(omerge(cargo_manifest, rs_manifest)?)
 }
@@ -243,9 +242,8 @@ fn call_omerge(cargo_manifest: &Manifest, rs_manifest: &mut Manifest) -> ThagRes
 /// Include the "from" name and exclude the "to" name.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
+#[profile]
 pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {
-    profile_fn!("find_use_renames_source");
-
     debug_log!("In code_utils::find_use_renames_source");
     let use_as_regex: &Regex = regex!(r"(?m)^\s*use\s+(\w+).*? as\s+(\w+)");
 
@@ -271,11 +269,11 @@ pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {
 /// Extract embedded Cargo.toml metadata from a Rust source string.
 /// # Errors
 /// Will return `Err` if there is any error in parsing the toml data into a manifest.
+#[profile]
 pub fn extract(
     rs_full_source: &str,
     #[allow(unused_variables)] start_parsing_rs: Instant,
 ) -> ThagResult<Manifest> {
-    profile_fn!("extract");
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
     profile_section!("parse_and_set_edition");
@@ -300,8 +298,8 @@ pub fn extract(
     Ok(rs_manifest)
 }
 
+#[profile]
 fn extract_toml_block(input: &str) -> Option<String> {
-    profile_fn!("extract_toml_block");
     let re: &Regex = regex!(r"(?s)/\*\[toml\](.*?)\*/");
     re.captures(input)
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
@@ -313,8 +311,8 @@ fn extract_toml_block(input: &str) -> Option<String> {
 /// # Errors
 ///
 /// This function will return an error if `syn` fails to parse the `use` statements as a `syn::File`.
+#[profile]
 pub fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
-    profile_fn!("extract_and_wrap_uses");
     // Step 1: Capture `use` statements
     let use_simple_regex: &Regex = regex!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
     let use_nested_regex: &Regex = regex!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
@@ -338,8 +336,8 @@ pub fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
     Ok(Ast::File(ast))
 }
 
+#[profile]
 fn clean_features(features: Vec<String>) -> Vec<String> {
-    profile_fn!("clean_features");
     let mut features: Vec<String> = features
         .into_iter()
         .filter(|f| !f.contains('/')) // Filter out features with slashes
@@ -348,8 +346,8 @@ fn clean_features(features: Vec<String>) -> Vec<String> {
     features
 }
 
+#[profile]
 fn get_crate_features(name: &str) -> Option<Vec<String>> {
-    profile_fn!("get_crate_features");
     let query: Query = match name.parse() {
         Ok(q) => q,
         Err(e) => {
@@ -384,13 +382,12 @@ fn get_crate_features(name: &str) -> Option<Vec<String>> {
 }
 
 #[allow(clippy::missing_panics_doc)]
+#[profile]
 pub fn lookup_deps(
     inference_level: &DependencyInference,
     rs_inferred_deps: &[String],
     rs_dep_map: &mut BTreeMap<String, Dependency>,
 ) {
-    profile_fn!("lookup_deps");
-
     if rs_inferred_deps.is_empty() {
         return;
     }
@@ -487,12 +484,14 @@ pub fn lookup_deps(
     );
 }
 
+#[profile]
 fn insert_simple(rs_dep_map: &mut BTreeMap<String, Dependency>, name: String, version: String) {
     rs_dep_map
         .entry(name)
         .or_insert_with(|| Dependency::Simple(version));
 }
 
+#[profile]
 fn display_toml_info(
     existing_toml_block: bool,
     new_inferred_deps: &[String],
@@ -517,7 +516,7 @@ fn display_toml_info(
                         "{dep_name} = \"{}\"\n",
                         dep.version
                             .as_ref()
-                            .expect("Error unwrapping version for {dep_name}"),
+                            .unwrap_or_else(|| panic!("Error unwrapping version for {dep_name}")),
                     );
                     toml_block.push_str(&dep_line);
                 } else {
@@ -531,7 +530,7 @@ fn display_toml_info(
                         dep_name,
                         dep.version
                             .as_ref()
-                            .expect("Error unwrapping version for {dep_name}"),
+                            .unwrap_or_else(|| panic!("Error unwrapping version for {dep_name}")),
                         dep.features
                             .iter()
                             .map(|f| format!("\"{}\"", f))
@@ -561,12 +560,12 @@ fn display_toml_info(
     );
 }
 
+#[profile]
 fn proc_macros_magic(
     rs_dep_map: &mut BTreeMap<String, Dependency>,
     dep_name: &str,
     dir_name: &str,
 ) {
-    profile_fn!("proc_macros_magic");
     cvprtln!(
         Role::INFO,
         V::V,
@@ -620,8 +619,8 @@ fn proc_macros_magic(
 /// Identify mod statements for exclusion from Cargo.toml metadata.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
+#[profile]
 pub fn find_modules_source(code: &str) -> Vec<String> {
-    profile_fn!("find_modules_source");
     let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
     debug_log!("In code_utils::find_use_renames_source");
     let mut modules: Vec<String> = vec![];

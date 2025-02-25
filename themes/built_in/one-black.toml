@@ -1,8 +1,13 @@
-name = "One Black"
+name = "One Black "
 description = "Converted from One Black theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
 backgrounds = ["#000000"]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
 
 [palette.heading1]
 rgb = [
@@ -94,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    255,
-    97,
-    110,
+    140,
+    194,
+    101,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    0,
-    0,
-    0,
+    74,
+    165,
+    240,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -1,4 +1,4 @@
-name = "Atlas Base16 "
+name = "Atlas Base16"
 description = "Converted from Atlas theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    81,
     127,
-    141,
+    192,
+    110,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    0,
-    56,
-    77,
+    20,
+    116,
+    126,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -1,4 +1,4 @@
-name = "tarot Base16 "
+name = "tarot Base16"
 description = "Converted from tarot theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    75,
-    32,
-    84,
+    166,
+    142,
+    90,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    42,
-    21,
-    60,
+    110,
+    96,
+    128,
+]
+style = [
+    "italic",
+    "dim",
 ]

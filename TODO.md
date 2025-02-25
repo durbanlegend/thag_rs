@@ -17,21 +17,10 @@
 - [ ]  Demo proc macro to load collection into enum at build time?
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
         pre-processing to toml block with support for variables.
-- [ ]  Claude re what are its ideas for "Time Machine" debugging?
-- [ ]  Profiling for scripts - consider inserting the instrumentation in a proc macro.
-- [ ]  Unit tests for env_logger feature.
-- [ ]  Bullet-proof `unwrap`s in styling.
 - [ ]  Claude re REPL alternative editor to `reedline`
-- [ ]  Consider thag option to include expanded macro for debugging.
-
-Thag Memory Profiling Visualization Implementation
-Also, regarding the memory timeline visualization, seeing the allocation log format helps. We could show:
-- Cumulative memory usage over time
-- Allocation/deallocation patterns
-- Peak memory points
-- Memory churn (high allocation/deallocation activity)
-
-Would you like me to implement a specific visualization approach?
+- [ ]  Control logging level of -x compiled code?
+- [ ]  Profiling instrumentation to add toml block for thag profiling?
+- [ ]  Thag profiling guide.
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

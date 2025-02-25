@@ -1,4 +1,4 @@
-name = "OneDark Dark Base16 "
+name = "OneDark Dark Base16"
 description = "Converted from OneDark Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    44,
-    49,
-    58,
+    137,
+    202,
+    120,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    28,
-    31,
-    36,
+    97,
+    175,
+    239,
+]
+style = [
+    "italic",
+    "dim",
 ]

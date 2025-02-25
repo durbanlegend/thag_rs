@@ -1,4 +1,4 @@
-name = "Heetch Light Base16 "
+name = "Heetch Light Base16"
 description = "Converted from Heetch Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    123,
-    109,
-    139,
+    248,
+    0,
+    89,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    57,
-    37,
-    81,
+    71,
+    249,
+    245,
+]
+style = [
+    "italic",
+    "dim",
 ]

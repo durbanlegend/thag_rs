@@ -1,25 +1,30 @@
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "simplelog")]
-    use simplelog::{
-        ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger,
-    };
-    use std::{
-        env::current_dir,
-        fs::File,
-        path::PathBuf,
-        sync::{Arc, OnceLock},
-    };
+    use std::{env::current_dir, sync::Once, path::PathBuf, sync::Arc};
     use tempfile::TempDir;
     use thag_rs::{
         config::{
             self, validate_config_format, Config, Dependencies, FeatureOverride, MockContext,
             RealContext,
         },
-        debug_log, load,
+        load,
         logging::Verbosity,
         ColorSupport, Context, TermBgLuma, ThagResult,
     };
+
+    #[cfg(feature = "simplelog")]
+    use simplelog::{
+        ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+    };
+
+    #[cfg(feature = "simplelog")]
+    use std::fs::File;
+
+    #[cfg(feature = "simplelog")]
+    use std::sync::OnceLock;
+
+    #[cfg(feature = "simplelog")]
+    use thag_rs::debug_log;
 
     #[cfg(feature = "simplelog")]
     static LOGGER: OnceLock<()> = OnceLock::new();
@@ -53,9 +58,12 @@ mod tests {
 
     // Set environment variables before running tests
     fn set_up() {
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        static INIT: Once = Once::new();
+        INIT.call_once(|| unsafe {
+            std::env::set_var("TEST_ENV", "1");
+            std::env::set_var("VISUAL", "cat");
+            std::env::set_var("EDITOR", "cat");
+        });
     }
 
     #[test]

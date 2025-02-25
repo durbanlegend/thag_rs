@@ -1,15 +1,21 @@
 use clap::Parser;
-use std::env;
-use std::fs::{self, File};
-use std::io::Write;
 use std::path::PathBuf;
+use std::{
+    env,
+    fs::{self, File},
+    io::Write,
+    sync::Once,
+};
 use thag_rs::{execute, Cli, DYNAMIC_SUBDIR, TMPDIR};
 
 // Set environment variables before running tests
 fn set_up() {
-    std::env::set_var("TEST_ENV", "1");
-    std::env::set_var("VISUAL", "cat");
-    std::env::set_var("EDITOR", "cat");
+    static INIT: Once = Once::new();
+    INIT.call_once(|| unsafe {
+        std::env::set_var("TEST_ENV", "1");
+        std::env::set_var("VISUAL", "cat");
+        std::env::set_var("EDITOR", "cat");
+    });
 }
 
 #[test]
@@ -45,7 +51,10 @@ fn main() {{
 
     // Save the real command-line arguments and replace them with the test ones
     let real_args: Vec<String> = env::args().collect();
-    env::set_var("RUST_TEST_ARGS", real_args.join(" "));
+
+    unsafe {
+        env::set_var("RUST_TEST_ARGS", real_args.join(" "));
+    }
 
     // Set up clap to use the test arguments
     let mut cli = Cli::parse_from(&args);
@@ -57,7 +66,9 @@ fn main() {{
     execute(&mut cli)?;
 
     // Restore the real command-line arguments
-    env::set_var("RUST_TEST_ARGS", real_args.join(" "));
+    unsafe {
+        env::set_var("RUST_TEST_ARGS", real_args.join(" "));
+    }
 
     Ok(())
 }

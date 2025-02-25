@@ -44,7 +44,7 @@ preferred_dark = [
     "catppuccin-frappe",
     "s3r0_modified",
     "monokai_base16",
-    "dracula",
+    "dracula_official",
     "gruvbox-dark-hard_base16",
     "gruvbox-dark-soft_base16",
 ]
@@ -148,6 +148,10 @@ required_features = [
     "visit",
     "visit-mut",
 ]
+default_features = false
+
+[dependencies.feature_overrides.thag_rs]
+required_features = ["core", "simplelog"]
 default_features = false
 
 [dependencies.feature_overrides.tokio]

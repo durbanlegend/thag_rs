@@ -1,4 +1,4 @@
-name = "Twilight Base16 "
+name = "Twilight Base16"
 description = "Converted from Twilight theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    70,
-    75,
-    80,
+    143,
+    157,
+    106,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    50,
-    53,
-    55,
+    117,
+    135,
+    166,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -32,10 +32,10 @@
 //!     Basic,
 //!     BigNumbers,
 //!     Crates,
-//!     Educational,
 //!     ErrorHandling,
 //!     Exploration,
 //!     Filesystem,
+//!     Learning,
 //!     Macros,
 //!     Math,
 //!     ProcMacros,
@@ -67,7 +67,7 @@
 //!     pub fn all_categories() -> Vec<&'static str> {
 //!         vec![
 //!             "AST", "CLI", "REPL", "Async", "Basic", "BigNumbers", "Crates",
-//!             "Educational", "ErrorHandling", "Exploration", "Filesystem", "Macros", "Math",
+//!             "ErrorHandling", "Exploration", "Filesystem", "Learning", "Macros", "Math",
 //!             "ProcMacros", "Prototype", "Recreational", "Reference", "Technique",
 //!             "Testing", "Tools", "TypeIdentification",
 //!         ]

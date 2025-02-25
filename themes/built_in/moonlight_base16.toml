@@ -1,4 +1,4 @@
-name = "Moonlight Base16 "
+name = "Moonlight Base16"
 description = "Converted from Moonlight theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    89,
-    99,
-    153,
+    45,
+    244,
+    192,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
     64,
-    60,
-    100,
+    255,
+    255,
+]
+style = [
+    "italic",
+    "dim",
 ]

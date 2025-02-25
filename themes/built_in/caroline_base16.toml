@@ -1,4 +1,4 @@
-name = "caroline Base16 "
+name = "caroline Base16"
 description = "Converted from caroline theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    86,
-    56,
-    55,
+    128,
+    108,
+    97,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    58,
-    36,
-    37,
+    104,
+    76,
+    89,
+]
+style = [
+    "italic",
+    "dim",
 ]

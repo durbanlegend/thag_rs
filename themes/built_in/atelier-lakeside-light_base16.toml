@@ -1,4 +1,4 @@
-name = "Atelier Lakeside Light Base16 "
+name = "Atelier Lakeside Light Base16"
 description = "Converted from Atelier Lakeside Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    126,
-    162,
-    180,
+    86,
+    140,
+    59,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    193,
-    228,
-    246,
+    37,
+    127,
+    173,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -16,21 +16,29 @@
 //!
 use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
 use chrono::Local;
-use std::alloc::{GlobalAlloc, Layout, System};
-use std::cell::RefCell;
+use memory_stats::memory_stats;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
+use std::marker::PhantomData;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, AtomicUsize, Ordering};
-use std::sync::Mutex;
-// use std::sync::OnceLock;
+use std::ptr;
+use std::sync::{
+    atomic::{AtomicBool, AtomicPtr, AtomicU64, AtomicU8, AtomicUsize, Ordering},
+    Mutex,
+};
 use std::time::{Instant, SystemTime};
-// use std::time::SystemTime;
-// pub use thag_proc_macros::profile;
+// Single atomic for runtime profiling state
+static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
+
+// Compile-time feature check
+#[cfg(feature = "profiling")]
+const PROFILING_FEATURE: bool = true;
+
+#[cfg(not(feature = "profiling"))]
+const PROFILING_FEATURE: bool = false;
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
-static IS_RECORDING: AtomicBool = AtomicBool::new(false);
 
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
@@ -46,7 +54,6 @@ static_lazy! {
         ProfileFilePaths {
             time: format!("{base}.folded"),
             memory: format!("{base}-memory.folded"),
-            alloc: format!("{base}-alloc.log")
         }
     }
 }
@@ -60,136 +67,76 @@ static_lazy! {
     MemoryProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
-static_lazy! {
-    AllocationLogFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
+const MAX_PROFILE_DEPTH: usize = 100;
+
+static PROFILE_STACK: [AtomicPtr<&'static str>; MAX_PROFILE_DEPTH] =
+    [const { AtomicPtr::new(ptr::null_mut()) }; MAX_PROFILE_DEPTH];
+static STACK_DEPTH: AtomicUsize = AtomicUsize::new(0);
+
+// Safe interface for stack operations
+pub(crate) fn push_profile(name: &'static str) -> bool {
+    let idx = STACK_DEPTH.load(Ordering::SeqCst);
+    if idx >= MAX_PROFILE_DEPTH {
+        return false;
+    }
+
+    let name_ptr = Box::into_raw(Box::new(name));
+    PROFILE_STACK[idx].store(name_ptr, Ordering::SeqCst);
+    STACK_DEPTH.store(idx + 1, Ordering::SeqCst);
+    true
 }
 
-thread_local! {
-    static PROFILE_STACK: RefCell<Vec<&'static str>> = const { RefCell::new(Vec::new()) };
-}
-
-static PROFILING_ENABLED: AtomicBool = AtomicBool::new(false);
-static START_TIME: AtomicU64 = AtomicU64::new(0);
-
-enum MemoryOperation {
-    Allocate,
-    Deallocate,
-    Reallocate,
-}
-
-struct RecordingGuard;
-
-impl Drop for RecordingGuard {
-    fn drop(&mut self) {
-        IS_RECORDING.store(false, Ordering::SeqCst);
+pub fn pop_profile() {
+    let idx = STACK_DEPTH.load(Ordering::SeqCst);
+    if idx > 0 {
+        let old_ptr = PROFILE_STACK[idx - 1].swap(ptr::null_mut(), Ordering::SeqCst);
+        if !old_ptr.is_null() {
+            // Clean up the Box we created
+            unsafe {
+                drop(Box::from_raw(old_ptr));
+            }
+        }
+        STACK_DEPTH.store(idx - 1, Ordering::SeqCst);
     }
 }
 
-#[global_allocator]
-static ALLOCATOR: AllocationProfiler = AllocationProfiler::new();
+pub(crate) fn get_profile_stack() -> Vec<&'static str> {
+    let depth = STACK_DEPTH.load(Ordering::SeqCst);
+    // println!("get_profile_stack: depth = {depth}"); // Debug
+    let mut result = Vec::with_capacity(depth);
+
+    for frame in PROFILE_STACK.iter().take(depth) {
+        let ptr = frame.load(Ordering::SeqCst);
+        if !ptr.is_null() {
+            unsafe {
+                let name = *ptr;
+                // println!("  stack[{i}] = {name}"); // Debug
+                result.push(name);
+            }
+        }
+    }
+    // println!("get_profile_stack returning: {result:?}"); // Debug
+    result
+}
+
+// For validation in debug builds
+// #[cfg(debug_assertions)]
+#[allow(dead_code)]
+fn validate_profile_stack() -> Option<String> {
+    let depth = STACK_DEPTH.load(Ordering::SeqCst);
+    if depth >= MAX_PROFILE_DEPTH {
+        return Some(format!("Stack depth {depth} exceeds limit"));
+    }
+    // Removed duplicate entry check - recursive calls are valid
+    None
+}
+
+static START_TIME: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
 struct ProfileFilePaths {
     time: String,
     memory: String,
-    alloc: String,
-}
-struct AllocationProfiler {
-    inner: System, // Use system allocator as backend
-    total_allocated: AtomicUsize,
-    active_allocations: AtomicUsize,
-    allocation_count: AtomicUsize,
-}
-
-impl AllocationProfiler {
-    const fn new() -> Self {
-        Self {
-            inner: System,
-            total_allocated: AtomicUsize::new(0),
-            active_allocations: AtomicUsize::new(0),
-            allocation_count: AtomicUsize::new(0),
-        }
-    }
-
-    /// Records a memory allocation event with the current profiling stack.
-    ///
-    /// This function captures memory operations (allocate, deallocate, reallocate)
-    /// and writes them to the allocation log with the current stack trace.
-    ///
-    /// # Arguments
-    /// * `op` - The type of memory operation being performed
-    /// * `size` - The size in bytes of the memory being operated on
-    ///
-    /// # Errors
-    /// Returns a `ThagError` if writing to the allocation log fails
-    fn record_allocation(op: &MemoryOperation, size: usize) -> ThagResult<()> {
-        if !is_profiling_enabled()
-            || !is_memory_profiling_enabled()
-            || IS_RECORDING.load(Ordering::SeqCst)
-        {
-            return Ok(());
-        }
-
-        IS_RECORDING.store(true, Ordering::SeqCst);
-        let _guard = RecordingGuard; // Will reset flag when dropped
-
-        let stack = PROFILE_STACK
-            .try_with(|stack| {
-                stack
-                    .try_borrow()
-                    .map(|stack| {
-                        if stack.is_empty() {
-                            String::new()
-                        } else {
-                            stack.join(";")
-                        }
-                    })
-                    .unwrap_or_default()
-            })
-            .unwrap_or_default();
-
-        let entry = match op {
-            MemoryOperation::Allocate => format!("{stack} +{size}"),
-            MemoryOperation::Deallocate => format!("{stack} -{size}"),
-            MemoryOperation::Reallocate => format!("{stack} ={size}"),
-        };
-
-        let paths = ProfilePaths::get();
-        Profile::write_profile_event(&paths.alloc, AllocationLogFile::get(), &entry)
-    }
-}
-
-unsafe impl GlobalAlloc for AllocationProfiler {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let ptr = self.inner.alloc(layout);
-        if !ptr.is_null() && !IS_RECORDING.load(Ordering::SeqCst) {
-            self.total_allocated
-                .fetch_add(layout.size(), Ordering::SeqCst);
-            self.active_allocations.fetch_add(1, Ordering::SeqCst);
-            self.allocation_count.fetch_add(1, Ordering::SeqCst);
-            // Record the allocation
-            let _ = Self::record_allocation(&MemoryOperation::Allocate, layout.size());
-        }
-        ptr
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        self.inner.dealloc(ptr, layout);
-        if !IS_RECORDING.load(Ordering::SeqCst) {
-            self.active_allocations.fetch_sub(1, Ordering::SeqCst);
-            // Record the deallocation
-            let _ = Self::record_allocation(&MemoryOperation::Deallocate, layout.size());
-        }
-    }
-
-    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
-        let new_ptr = self.inner.realloc(ptr, layout, new_size);
-        if !new_ptr.is_null() && !IS_RECORDING.load(Ordering::SeqCst) {
-            // Record the reallocation
-            let _ = Self::record_allocation(&MemoryOperation::Reallocate, new_size);
-        }
-        new_ptr
-    }
 }
 
 /// Resets a profile file by clearing its buffer writer.
@@ -210,10 +157,10 @@ fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) ->
 
 /// Initializes profile files based on the specified profile type.
 ///
-/// This function handles the initialization sequence for all profiling files:
+/// This function handles the initialization sequence for both profiling files:
 /// - For Time profiling: creates and initializes the time profile file
-/// - For Memory profiling: creates and initializes both memory and allocation log files
-/// - For Both: initializes all three files
+/// - For Memory profiling: creates and initializes memory profile file
+/// - For Both: initializes both files
 ///
 /// # Arguments
 /// * `profile_type` - The type of profiling to initialize files for
@@ -231,33 +178,27 @@ fn initialize_profile_files(profile_type: ProfileType) -> ThagResult<()> {
         }
         ProfileType::Memory => {
             MemoryProfileFile::init();
-            AllocationLogFile::init();
             reset_profile_file(MemoryProfileFile::get(), "memory")?;
-            reset_profile_file(AllocationLogFile::get(), "allocation")?;
             initialize_profile_file(&paths.memory, "Memory Profile")?;
-            initialize_profile_file(&paths.alloc, "Allocation Log")?;
         }
         ProfileType::Both => {
             // Initialize all files
             TimeProfileFile::init();
             MemoryProfileFile::init();
-            AllocationLogFile::init();
 
             // Reset all files
             reset_profile_file(TimeProfileFile::get(), "time")?;
             reset_profile_file(MemoryProfileFile::get(), "memory")?;
-            reset_profile_file(AllocationLogFile::get(), "allocation")?;
 
             // Initialize all files with headers
             initialize_profile_file(&paths.time, "Time Profile")?;
             initialize_profile_file(&paths.memory, "Memory Profile")?;
-            initialize_profile_file(&paths.alloc, "Allocation Log")?;
         }
     }
     Ok(())
 }
 
-fn get_global_profile_type() -> ProfileType {
+pub fn get_global_profile_type() -> ProfileType {
     match PROFILE_TYPE.load(Ordering::SeqCst) {
         2 => ProfileType::Memory,
         3 => ProfileType::Both,
@@ -271,11 +212,6 @@ fn set_profile_type(profile_type: ProfileType) {
         ProfileType::Both => 3,
     };
     PROFILE_TYPE.store(value, Ordering::SeqCst);
-}
-
-fn is_memory_profiling_enabled() -> bool {
-    let profile_type = PROFILE_TYPE.load(Ordering::SeqCst);
-    profile_type == 2 || profile_type == 3
 }
 
 /// Enables or disables profiling with the specified profile type.
@@ -298,14 +234,8 @@ fn is_memory_profiling_enabled() -> bool {
 /// - Mutex operations fail
 pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<()> {
     if enabled {
-        // Set profile type first
         set_profile_type(profile_type);
-        println!("Set profile type to {:?}", get_global_profile_type()); // Debug
 
-        // Initialize paths
-        ProfilePaths::init();
-
-        // Store start time
         let Ok(now) = u64::try_from(
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -315,15 +245,17 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
             return Err(ThagError::Profiling("Time value too large".into()));
         };
         START_TIME.store(now, Ordering::SeqCst);
-        println!("Stored start time"); // Debug
 
-        // Initialize and reset appropriate files
-        println!("initialize_profile_files"); // Debug
         initialize_profile_files(profile_type)?;
     }
 
-    PROFILING_ENABLED.store(enabled, Ordering::SeqCst);
+    set_profiling_enabled(enabled); // Using the new function instead of direct atomic access
     Ok(())
+}
+
+// Function to set runtime profiling state
+pub fn set_profiling_enabled(enabled: bool) {
+    PROFILING_STATE.store(enabled, Ordering::SeqCst);
 }
 
 /// Creates and initializes a single profile file with header information.
@@ -346,8 +278,7 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ThagResult<()> {
         .create(true)
         .write(true)
         .truncate(true)
-        .open(path)
-        .map_err(|e| ThagError::Profiling(format!("Failed to create {profile_type} file: {e}")))?;
+        .open(path)?;
 
     writeln!(file, "# {profile_type}")?;
     writeln!(
@@ -357,6 +288,9 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ThagResult<()> {
     )?;
     writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
     writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
+    if path.ends_with("alloc.log") {
+        writeln!(file, "# Format: operation|size")?;
+    }
     writeln!(file)?;
 
     Ok(())
@@ -369,8 +303,10 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ThagResult<()> {
 ///
 /// # Returns
 /// `true` if profiling is enabled, `false` otherwise
+#[inline(always)]
+#[allow(clippy::inline_always)]
 pub fn is_profiling_enabled() -> bool {
-    PROFILING_ENABLED.load(Ordering::SeqCst)
+    PROFILING_FEATURE || PROFILING_STATE.load(Ordering::SeqCst)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -380,11 +316,25 @@ pub enum ProfileType {
     Both,
 }
 
+impl ProfileType {
+    #[must_use]
+    #[allow(clippy::should_implement_trait)]
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "time" => Some(Self::Time),
+            "memory" => Some(Self::Memory),
+            "both" => Some(Self::Both),
+            _ => None,
+        }
+    }
+}
+
 pub struct Profile {
     start: Option<Instant>,
     name: &'static str,
     profile_type: ProfileType,
-    initial_memory: Option<usize>, // For memory delta
+    initial_memory: Option<usize>,     // For memory delta
+    _not_send: PhantomData<*const ()>, // Makes Profile !Send
 }
 
 impl Profile {
@@ -395,11 +345,24 @@ impl Profile {
             name,
             profile_type: ProfileType::Time, // Default to time profiling
             initial_memory: None,
+            _not_send: PhantomData,
         }
     }
 
+    /// Creates a new `Profile` to profile a section of code.
+    ///
+    /// # Panics
+    ///
+    /// Panics if stack validation fails.
     #[must_use]
-    pub fn new(name: &'static str, requested_type: ProfileType) -> Self {
+    #[inline(always)]
+    #[allow(clippy::inline_always)]
+    pub fn new(name: &'static str, requested_type: ProfileType) -> Option<Self> {
+        if !is_profiling_enabled() {
+            return None;
+        }
+        // println!("Profile::new called with name: {name} and type: {requested_type:?}");
+        // TODO: make the requested type a true override once the proc macro is implemented
         let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
@@ -413,56 +376,28 @@ impl Profile {
             _ => ProfileType::Time,
         };
 
-        let start = if is_profiling_enabled() {
-            PROFILE_STACK.with(|stack| {
-                if let Ok(mut guard) = stack.try_borrow_mut() {
-                    guard.push(name);
-                }
-            });
-            Some(Instant::now())
+        let initial_memory = if matches!(requested_type, ProfileType::Memory | ProfileType::Both) {
+            // Get initial memory snapshot
+            memory_stats().map(|stats| stats.physical_mem)
         } else {
             None
         };
 
-        let initial_memory = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-            Some(ALLOCATOR.total_allocated.load(Ordering::SeqCst))
-        } else {
-            None
-        };
+        // #[cfg(debug_assertions)]
+        if let Some(err) = validate_profile_stack() {
+            panic!("Stack validation failed: {err}");
+        }
 
-        Self {
-            start,
+        // Push to stack as before
+        push_profile(name);
+
+        Some(Self {
             name,
             profile_type,
+            start: Some(Instant::now()),
             initial_memory,
-        }
-    }
-
-    /// Returns the current profiling stack as a semicolon-separated string.
-    ///
-    /// The stack represents the current call hierarchy, with each level
-    /// separated by semicolons, matching the format expected by flamegraph
-    /// generation tools.
-    ///
-    /// # Returns
-    /// A string representing the current profiling stack, excluding the
-    /// most recent addition (which will be added separately in the event logging)
-    fn get_parent_stack() -> String {
-        PROFILE_STACK
-            .try_with(|stack| {
-                stack.try_borrow().map_or_else(
-                    |_| String::new(),
-                    |stack_ref| {
-                        stack_ref
-                            .iter()
-                            .take(stack_ref.len().saturating_sub(1))
-                            .copied()
-                            .collect::<Vec<_>>()
-                            .join(";")
-                    },
-                )
-            })
-            .unwrap_or_default()
+            _not_send: PhantomData,
+        })
     }
 
     /// Writes a profiling event to the specified profile file.
@@ -515,104 +450,134 @@ impl Profile {
     /// # Errors
     /// Returns a `ThagError` if writing to the profile file fails
     fn write_time_event(&self, duration: std::time::Duration) -> ThagResult<()> {
-        if !is_profiling_enabled() {
-            return Ok(());
-        }
+        // Profile must exist and profiling must be enabled if we got here
+        // Only keep the business logic checks
 
         let micros = duration.as_micros();
         if micros == 0 {
             return Ok(());
         }
 
-        let stack = Self::get_parent_stack();
+        let stack = get_profile_stack();
         let entry = if stack.is_empty() {
-            self.name.to_string()
+            format!("{} {micros}", self.name)
         } else {
-            format!("{stack};{}", self.name)
+            format!("{} {micros}", stack.join(";"))
         };
 
         let paths = ProfilePaths::get();
-        Self::write_profile_event(
-            &paths.time,
-            TimeProfileFile::get(),
-            &format!("{entry} {micros}"),
-        )
+        Self::write_profile_event(&paths.time, TimeProfileFile::get(), &entry)
     }
 
-    /// Records a memory profiling event.
-    ///
-    /// Writes the memory usage delta for a profiled section along with its
-    /// stack trace to the memory profile file.
-    ///
-    /// # Arguments
-    /// * `delta` - The change in memory usage for the profiled section
-    ///
-    /// # Errors
-    /// Returns a `ThagError` if writing to the profile file fails
-    fn write_memory_event(&self, delta: usize) -> ThagResult<()> {
-        if !is_profiling_enabled() || delta == 0 {
+    fn write_memory_event_with_op(&self, delta: usize, op: char) -> ThagResult<()> {
+        if delta == 0 {
+            // Keep this as it's a business logic check
             return Ok(());
         }
 
-        let stack = Self::get_parent_stack();
-        let entry = if stack.is_empty() {
-            format!("{} {delta}", self.name)
-        } else {
-            format!("{stack};{} {delta}", self.name)
+        // Get current stack as string
+        let stack_data = {
+            let stack = get_profile_stack();
+            if stack.is_empty() {
+                self.name.to_string()
+            } else {
+                stack.join(";")
+            }
         };
+        let entry = format!("{stack_data} {op}{delta}");
 
         let paths = ProfilePaths::get();
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
+    }
+
+    // fn write_memory_event(&self, delta: usize) -> ThagResult<()> {
+    //     if delta == 0 {
+    //         // Keep this as it's a business logic check
+    //         return Ok(());
+    //     }
+
+    //     // Get current stack as string
+    //     let stack_data = {
+    //         let stack = get_profile_stack();
+    //         if stack.is_empty() {
+    //             self.name.to_string()
+    //         } else {
+    //             format!("{};{}", stack.join(";"), self.name)
+    //         }
+    //     };
+    //     let entry = format!("{stack_data} {delta}");
+
+    //     let paths = ProfilePaths::get();
+    //     Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
+    // }
+
+    fn record_memory_change(&self, delta: usize) -> ThagResult<()> {
+        if delta == 0 {
+            return Ok(());
+        }
+
+        // Record allocation
+        self.write_memory_event_with_op(delta, '+')?;
+
+        // Record corresponding deallocation
+        // Store both events atomically to maintain pairing
+        self.write_memory_event_with_op(delta, '-')?;
+
+        Ok(())
     }
 }
 
 impl Drop for Profile {
     fn drop(&mut self) {
-        // dbg!(&self.profile_type);
         if let Some(start) = self.start.take() {
+            // Handle time profiling as before
             match self.profile_type {
-                ProfileType::Time => {
+                ProfileType::Time | ProfileType::Both => {
                     let elapsed = start.elapsed();
                     let _ = self.write_time_event(elapsed);
                 }
-                ProfileType::Memory => {
-                    // Make sure we capture the memory delta before popping the stack
-                    if let Some(initial) = self.initial_memory {
-                        let final_memory = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
-                        let delta = final_memory.saturating_sub(initial);
-                        // dbg!(delta);
-                        if delta > 0 {
-                            let _ = self.write_memory_event(delta);
-                        }
+                ProfileType::Memory => (),
+            }
+        }
+
+        // Handle memory profiling
+        if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
+            if let Some(initial) = self.initial_memory {
+                if let Some(stats) = memory_stats() {
+                    let final_memory = stats.physical_mem;
+                    let delta = final_memory.saturating_sub(initial);
+
+                    if delta > 0 {
+                        let _ = self.record_memory_change(delta);
                     }
-                }
-                ProfileType::Both => {
-                    let elapsed = start.elapsed();
-                    // eprintln!(
-                    //     "elapsed={elapsed:?}, self.initial_memory={:?}",
-                    //     self.initial_memory
-                    // );
-                    if let Some(initial) = self.initial_memory {
-                        let final_memory = ALLOCATOR.total_allocated.load(Ordering::SeqCst);
-                        // eprintln!("final_memory={final_memory:?}");
-                        let delta = final_memory.saturating_sub(initial);
-                        // dbg!(delta);
-                        if delta > 0 {
-                            let _ = self.write_memory_event(delta);
-                        }
-                    }
-                    let _ = self.write_time_event(elapsed);
                 }
             }
-
-            // Clean up the stack after writing events
-            let _ = PROFILE_STACK.try_with(|stack| {
-                if let Ok(mut guard) = stack.try_borrow_mut() {
-                    guard.pop();
-                }
-            });
         }
+
+        // Pop from stack as before
+        pop_profile();
     }
+}
+
+// Optional: add memory info to error handling
+#[derive(Debug)]
+pub enum MemoryError {
+    StatsUnavailable,
+    DeltaCalculationFailed,
+}
+
+#[allow(dead_code)]
+fn get_memory_delta(initial: usize) -> Result<usize, MemoryError> {
+    memory_stats()
+        .ok_or(MemoryError::StatsUnavailable)
+        .and_then(|stats| {
+            let final_memory = stats.physical_mem;
+            if final_memory >= initial {
+                Ok(final_memory - initial)
+            } else {
+                Err(MemoryError::DeltaCalculationFailed)
+            }
+        })
 }
 
 /// Run a function or closure only if the global verbosity is Verbose or higher.
@@ -630,6 +595,19 @@ fn verbose_only(fun: impl Fn()) {
     }
 }
 
+// #[must_use]
+// /// Validates that the stack truncation will be valid
+// #[cfg(debug_assertions)]
+// fn validate_stack_truncation(pos: usize) -> Option<String> {
+//     let depth = STACK_DEPTH.load(Ordering::SeqCst);
+//     if pos >= depth {
+//         return Some(format!(
+//             "Truncation position {pos} exceeds stack depth {depth}"
+//         ));
+//     }
+//     None
+// }
+
 /// Ends profiling for a named section early by removing it and all nested
 /// sections after it from the profiling stack.
 ///
@@ -642,26 +620,47 @@ fn verbose_only(fun: impl Fn()) {
 /// # Returns
 /// Some(Profile) if the section was found and ended, None if the section
 /// wasn't found in the current stack
+/// # Panics
+/// If the stack truncation position exceeds the current stack depth
 #[must_use]
 pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
-    PROFILE_STACK.with(|stack| {
-        let mut stack = stack.borrow_mut();
-        stack
-            .iter()
-            .position(|&name| name == section_name)
-            .map_or_else(
-                || None,
-                |pos| {
-                    // Remove this section and all nested sections after it
-                    stack.truncate(pos);
-                    Some(Profile {
-                        start: Some(Instant::now()),
-                        name: section_name,
-                        profile_type: ProfileType::Time,
-                        initial_memory: None,
-                    })
-                },
-            )
+    let depth = STACK_DEPTH.load(Ordering::SeqCst);
+    let mut pos = None;
+
+    // Find position of section
+    for (i, frame) in PROFILE_STACK.iter().enumerate().take(depth) {
+        let ptr = frame.load(Ordering::SeqCst);
+        if !ptr.is_null() {
+            unsafe {
+                if *ptr == section_name {
+                    pos = Some(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    pos.map(|p| {
+        // Clean up everything after position p
+        for frame in PROFILE_STACK.iter().take(depth).skip(p) {
+            let ptr = frame.swap(ptr::null_mut(), Ordering::SeqCst);
+            if !ptr.is_null() {
+                unsafe {
+                    drop(Box::from_raw(ptr));
+                }
+            }
+        }
+
+        // Update depth
+        STACK_DEPTH.store(p, Ordering::SeqCst);
+
+        Profile {
+            start: Some(Instant::now()),
+            name: section_name,
+            profile_type: ProfileType::Time,
+            initial_memory: None,
+            _not_send: PhantomData,
+        }
     })
 }
 
@@ -675,15 +674,16 @@ pub fn end_profile_section(section_name: &'static str) -> Option<Profile> {
 ///
 /// ```Rust
 /// fn foo(bar) {
-///     profile!("foo");
+///     profile_fn!("foo");
 ///     ...
 /// }
 ///
 /// ```
 #[macro_export]
-macro_rules! profile {
+macro_rules! profile_fn {
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Time);
+        let _profile =
+            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 
@@ -714,7 +714,8 @@ macro_rules! profile {
 #[macro_export]
 macro_rules! profile_section {
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Time);
+        let _profile =
+            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 
@@ -736,11 +737,12 @@ macro_rules! profile_section {
 macro_rules! profile_method {
     () => {
         const NAME: &'static str = concat!(module_path!(), "::", stringify!(profile_method));
-        println!("profile_method NAME={NAME}");
-        let _profile = $crate::profiling::Profile::new(NAME, $crate::profiling::ProfileType::Time);
+        let _profile =
+            $crate::profiling::Profile::new(NAME, $crate::profiling::get_global_profile_type());
     };
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Time);
+        let _profile =
+            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 
@@ -876,4 +878,197 @@ impl ProfileStats {
     pub const fn max_time(&self) -> Option<std::time::Duration> {
         self.max_time
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sequential_test::sequential;
+    use std::panic;
+
+    struct TestGuard;
+
+    impl Drop for TestGuard {
+        fn drop(&mut self) {
+            reset_stack();
+            set_profiling_enabled(false);
+        }
+    }
+
+    fn run_test<T>(test: T) -> ()
+    where
+        T: FnOnce() + panic::UnwindSafe,
+    {
+        // Setup
+        reset_stack();
+        set_profiling_enabled(true);
+
+        // Create guard that will clean up even if test panics
+        let _guard = TestGuard;
+
+        // Run the test, catching any panics to ensure our guard runs
+        let result = panic::catch_unwind(test);
+
+        // Re-throw any panic after our guard has cleaned up
+        if let Err(e) = result {
+            panic::resume_unwind(e);
+        }
+    }
+
+    fn reset_stack() {
+        // First get and clear the depth
+        let old_depth = STACK_DEPTH.swap(0, Ordering::SeqCst);
+
+        // Then clean up all entries up to the old depth
+        for i in 0..old_depth {
+            let ptr = PROFILE_STACK[i].swap(ptr::null_mut(), Ordering::SeqCst);
+            if !ptr.is_null() {
+                unsafe {
+                    drop(Box::from_raw(ptr));
+                }
+            }
+        }
+
+        // Extra safety: clear any remaining entries
+        for i in old_depth..MAX_PROFILE_DEPTH {
+            PROFILE_STACK[i].store(ptr::null_mut(), Ordering::SeqCst);
+        }
+    }
+
+    #[test]
+    #[sequential]
+    fn test_profiling_stack_basic() {
+        println!("\n--- test_profiling_stack_basic starting ---"); // Debug
+
+        run_test(|| {
+            assert!(push_profile("first"));
+            println!("After push:"); // Debug
+            let depth = STACK_DEPTH.load(Ordering::SeqCst);
+            println!("STACK_DEPTH = {}", depth);
+
+            let stack = get_profile_stack();
+            println!("Stack = {:?}", stack);
+            assert_eq!(stack.len(), 1);
+            assert_eq!(stack[0], "first");
+
+            pop_profile();
+            assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), 0);
+            assert!(get_profile_stack().is_empty());
+        });
+    }
+
+    #[test]
+    #[sequential]
+    fn test_profiling_stack_nesting() {
+        run_test(|| {
+            assert!(push_profile("outer"));
+            assert!(push_profile("inner"));
+
+            let stack = get_profile_stack();
+            assert_eq!(stack.len(), 2);
+            assert_eq!(stack[0], "outer");
+            assert_eq!(stack[1], "inner");
+
+            pop_profile();
+            let stack = get_profile_stack();
+            assert_eq!(stack.len(), 1);
+            assert_eq!(stack[0], "outer");
+
+            pop_profile();
+            assert!(get_profile_stack().is_empty());
+        });
+    }
+
+    #[test]
+    #[sequential]
+    fn test_profiling_stack_capacity() {
+        run_test(|| {
+            // Fill stack to capacity
+            for _ in 0..MAX_PROFILE_DEPTH {
+                assert!(push_profile("test"));
+            }
+
+            // Try to push one more
+            assert!(!push_profile("overflow"));
+
+            // Verify stack depth didn't change
+            assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), MAX_PROFILE_DEPTH);
+        });
+    }
+
+    #[test]
+    #[sequential]
+    fn test_profiling_stack_empty_pop() {
+        run_test(|| {
+            // Try to pop empty stack
+            pop_profile();
+            assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), 0);
+        });
+    }
+
+    #[test]
+    #[sequential]
+    #[should_panic(expected = "Stack validation failed: Duplicate stack entry")]
+    fn test_profiling_duplicate_stack_entries() {
+        run_test(|| {
+            let _p1 = Profile::new("same", ProfileType::Time);
+            let _p2 = Profile::new("same", ProfileType::Time); // Should panic
+        });
+    }
+
+    #[test]
+    #[sequential]
+    fn test_profiling_type_stack_management() {
+        run_test(|| {
+            {
+                let _p1 = Profile::new("time_prof", ProfileType::Time);
+                let _p2 = Profile::new("mem_prof", ProfileType::Memory);
+                let _p3 = Profile::new("both_prof", ProfileType::Both);
+
+                let stack = get_profile_stack();
+                assert_eq!(stack.len(), 3);
+                assert_eq!(&stack[..], &["time_prof", "mem_prof", "both_prof"]);
+            } // All profiles should be dropped here
+
+            // Verify clean stack after drops
+            let final_depth = STACK_DEPTH.load(Ordering::SeqCst);
+            println!("Final stack:"); // Debug
+            let final_stack = get_profile_stack();
+            println!("Depth: {}, Stack: {:?}", final_depth, final_stack);
+            assert_eq!(final_depth, 0, "Stack not empty after drops");
+            assert!(get_profile_stack().is_empty(), "Stack should be empty");
+        });
+    }
+
+    #[test]
+    #[sequential]
+    fn test_profiling_end_profile_section() {
+        run_test(|| {
+            assert!(push_profile("outer"));
+            assert!(push_profile("middle"));
+            assert!(push_profile("inner"));
+
+            let stack = get_profile_stack();
+            assert_eq!(&stack[..], &["outer", "middle", "inner"]);
+
+            let profile = end_profile_section("middle");
+            assert!(profile.is_some());
+            assert_eq!(profile.unwrap().name, "middle");
+
+            let stack = get_profile_stack();
+            assert_eq!(stack.len(), 1);
+            assert_eq!(stack[0], "outer");
+        });
+    }
+
+    // // Optional: debug helper
+    // #[cfg(test)]
+    // fn print_memory_info(context: &str) {
+    //     if let Some(stats) = memory_stats() {
+    //         println!(
+    //             "{}: Physical: {} bytes, Virtual: {} bytes",
+    //             context, stats.physical_mem, stats.virtual_mem
+    //         );
+    //     }
+    // }
 }

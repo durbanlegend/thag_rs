@@ -1,4 +1,4 @@
-name = "Pop Base16 "
+name = "Pop Base16"
 description = "Converted from Pop theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    48,
-    48,
-    48,
+    55,
+    179,
+    73,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    32,
-    32,
-    32,
+    14,
+    90,
+    148,
+]
+style = [
+    "italic",
+    "dim",
 ]

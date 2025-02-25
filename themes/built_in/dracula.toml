@@ -1,41 +1,117 @@
-# Dracula Official Color Palette:
-# Background: #282a36 (Dark gray with slight purple tint)
-# Foreground: #f8f8f2 (Off-white)
-# Selection:  #44475a (Light gray with purple tint)
-# Comment:    #6272a4 (Muted blue)
-# Red:        #ff5555 (Bright coral red)
-# Orange:     #ffb86c (Warm orange)
-# Yellow:     #f1fa8c (Soft pastel yellow)
-# Green:      #50fa7b (Bright mint green)
-# Purple:     #bd93f9 (Soft purple)
-# Cyan:       #8be9fd (Bright cyan)
-# Pink:       #ff79c6 (Hot pink)
-
-name = "Dracula"
-description = "Dark theme with vibrant colors"
+name = "Dracula "
+description = "Converted from Dracula theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
 backgrounds = ["#282a36"]
+bg_rgbs = [[
+    40,
+    42,
+    54,
+]]
 
-[palette]
-# Headers and Structure
-heading1 = { rgb = [255, 121, 198], style = ["bold"] } # Pink
-heading2 = { rgb = [189, 147, 249], style = ["bold"] } # Purple
-heading3 = { rgb = [139, 233, 253], style = ["bold"] } # Cyan
+[palette.heading1]
+rgb = [
+    255,
+    85,
+    85,
+]
+style = ["bold"]
 
-# Status/Alerts
-error = { rgb = [255, 85, 85] }     # Red
-warning = { rgb = [241, 250, 140] } # Yellow
-success = { rgb = [80, 250, 123] }  # Green
-info = { rgb = [139, 233, 253] }    # Cyan
+[palette.heading2]
+rgb = [
+    128,
+    191,
+    255,
+]
+style = ["bold"]
 
-# Emphasis levels
-emphasis = { rgb = [189, 147, 249], style = ["bold"] } # Purple
-code = { rgb = [80, 250, 123] }                        # Green
-normal = { rgb = [248, 248, 242] }                     # Foreground
-subtle = { rgb = [98, 114, 164] }                      # Comment
-hint = { rgb = [98, 114, 164], style = ["italic"] }    # Comment italic
+[palette.heading3]
+rgb = [
+    139,
+    233,
+    253,
+]
+style = ["bold"]
 
-# Development
-debug = { rgb = [98, 114, 164], style = ["italic"] } # Comment italic
-trace = { rgb = [68, 71, 90] }                       # Selection
+[palette.error]
+rgb = [
+    255,
+    85,
+    85,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    184,
+    108,
+]
+
+[palette.success]
+rgb = [
+    80,
+    250,
+    123,
+]
+
+[palette.info]
+rgb = [
+    128,
+    191,
+    255,
+]
+
+[palette.emphasis]
+rgb = [
+    255,
+    121,
+    198,
+]
+
+[palette.code]
+rgb = [
+    80,
+    250,
+    123,
+]
+
+[palette.normal]
+rgb = [
+    248,
+    248,
+    242,
+]
+
+[palette.subtle]
+rgb = [
+    163,
+    245,
+    184,
+]
+
+[palette.hint]
+rgb = [
+    238,
+    245,
+    163,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    80,
+    250,
+    123,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    128,
+    191,
+    255,
+]
+style = [
+    "italic",
+    "dim",
+]

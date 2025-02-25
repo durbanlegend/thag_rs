@@ -1,4 +1,4 @@
-name = "Embers Light Base16 "
+name = "Embers Light Base16"
 description = "Converted from Embers Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    144,
-    154,
-    163,
+    109,
+    130,
+    87,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    174,
-    182,
-    190,
+    130,
+    87,
+    109,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -1,4 +1,4 @@
-name = "Rosé Pine Dawn Base16 "
+name = "Rosé Pine Dawn Base16"
 description = "Converted from Rosé Pine Dawn theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    242,
-    233,
-    222,
+    40,
+    105,
+    131,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    255,
-    250,
-    243,
+    144,
+    122,
+    169,
+]
+style = [
+    "italic",
+    "dim",
 ]

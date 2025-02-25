@@ -1,4 +1,4 @@
-name = "Precious Light Warm Base16 "
+name = "Precious Light Warm Base16"
 description = "Converted from Precious Light Warm theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    217,
-    211,
-    200,
+    85,
+    115,
+    0,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    236,
-    228,
-    214,
+    36,
+    109,
+    165,
+]
+style = [
+    "italic",
+    "dim",
 ]

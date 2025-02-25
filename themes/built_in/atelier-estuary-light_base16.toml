@@ -1,4 +1,4 @@
-name = "Atelier Estuary Light Base16 "
+name = "Atelier Estuary Light Base16"
 description = "Converted from Atelier Estuary Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    146,
-    145,
-    129,
+    125,
+    151,
+    38,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    231,
-    230,
-    223,
+    54,
+    161,
+    102,
+]
+style = [
+    "italic",
+    "dim",
 ]

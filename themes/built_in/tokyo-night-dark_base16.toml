@@ -1,4 +1,4 @@
-name = "Tokyo Night Dark Base16 "
+name = "Tokyo Night Dark Base16"
 description = "Converted from Tokyo Night Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    47,
-    53,
-    73,
+    158,
+    206,
+    106,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    22,
-    22,
-    30,
+    42,
+    195,
+    222,
+]
+style = [
+    "italic",
+    "dim",
 ]

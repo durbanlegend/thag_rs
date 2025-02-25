@@ -1,7 +1,7 @@
 //!
 //! AST analysis and dependency inference capability for `thag_rs`.
 //!
-use crate::{debug_log, profile, profile_method, regex, ThagResult, BUILT_IN_CRATES};
+use crate::{cvprtln, debug_log, profile, regex, Role, ThagResult, BUILT_IN_CRATES, V};
 use phf::phf_set;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
@@ -26,8 +26,6 @@ use syn::{
     Type::Tuple,
     TypePath, UseRename, UseTree,
 };
-
-use crate::{cvprtln, Role, V};
 
 #[cfg(debug_assertions)]
 use {crate::debug_timings, std::time::Instant};
@@ -60,6 +58,7 @@ pub enum Ast {
 // #[cfg(any(feature = "ast", feature = "build"))]
 impl Ast {
     #[must_use]
+    #[profile]
     pub const fn is_file(&self) -> bool {
         match self {
             Self::File(_) => true,
@@ -71,8 +70,8 @@ impl Ast {
 /// Required to use quote! macro to generate code to resolve expression.
 // #[cfg(any(feature = "ast", feature = "build"))]
 impl ToTokens for Ast {
+    #[profile]
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        profile_method!("to_tokens");
         match self {
             Self::File(file) => file.to_tokens(tokens),
             Self::Expr(expr) => expr.to_tokens(tokens),
@@ -87,8 +86,8 @@ pub struct CratesFinder {
 }
 
 impl<'a> Visit<'a> for CratesFinder {
+    #[profile]
     fn visit_item_use(&mut self, node: &'a ItemUse) {
-        profile_method!("visit_item_use");
         // Handle simple case `use a as b;`
         if let UseTree::Rename(use_rename) = &node.tree {
             let node_name = use_rename.ident.to_string();
@@ -99,8 +98,8 @@ impl<'a> Visit<'a> for CratesFinder {
         }
     }
 
+    #[profile]
     fn visit_use_tree(&mut self, node: &'a UseTree) {
-        profile_method!("visit_use_tree");
         match node {
             UseTree::Group(_) => {
                 syn::visit::visit_use_tree(self, node);
@@ -186,8 +185,8 @@ impl<'a> Visit<'a> for CratesFinder {
         }
     }
 
+    #[profile]
     fn visit_expr_path(&mut self, expr_path: &'a syn::ExprPath) {
-        profile_method!("visit_expr_path");
         if expr_path.path.segments.len() > 1 {
             // must have the form a::b so not a variable
             if let Some(first_seg) = expr_path.path.segments.first() {
@@ -203,8 +202,8 @@ impl<'a> Visit<'a> for CratesFinder {
         syn::visit::visit_expr_path(self, expr_path);
     }
 
+    #[profile]
     fn visit_type_path(&mut self, type_path: &'a TypePath) {
-        profile_method!("visit_type_path");
         if type_path.path.segments.len() > 1 {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
@@ -221,8 +220,8 @@ impl<'a> Visit<'a> for CratesFinder {
     }
 
     // Handle macro invocations
+    #[profile]
     fn visit_macro(&mut self, mac: &'a syn::Macro) {
-        profile_method!("visit_macro");
         // Get the macro path (e.g., "serde_json::json" from "serde_json::json!()")
         if mac.path.segments.len() > 1 {
             if let Some(first_seg) = mac.path.segments.first() {
@@ -237,8 +236,8 @@ impl<'a> Visit<'a> for CratesFinder {
     }
 
     // Handle trait implementations
+    #[profile]
     fn visit_item_impl(&mut self, item: &'a syn::ItemImpl) {
-        profile_method!("visit_item_impl");
         // Check the trait being implemented (if any)
         if let Some((_, path, _)) = &item.trait_ {
             if let Some(first_seg) = path.segments.first() {
@@ -264,8 +263,8 @@ impl<'a> Visit<'a> for CratesFinder {
     }
 
     // Handle associated types
+    #[profile]
     fn visit_item_type(&mut self, item: &'a syn::ItemType) {
-        profile_method!("visit_item_type");
         if let syn::Type::Path(type_path) = &*item.ty {
             if let Some(first_seg) = type_path.path.segments.first() {
                 let name = first_seg.ident.to_string();
@@ -279,8 +278,8 @@ impl<'a> Visit<'a> for CratesFinder {
     }
 
     // Handle generic bounds
+    #[profile]
     fn visit_type_param_bound(&mut self, bound: &'a syn::TypeParamBound) {
-        profile_method!("visit_type_param_bound");
         if let syn::TypeParamBound::Trait(trait_bound) = bound {
             if let Some(first_seg) = trait_bound.path.segments.first() {
                 let name = first_seg.ident.to_string();
@@ -303,8 +302,8 @@ pub struct MetadataFinder {
 }
 
 impl<'a> Visit<'a> for MetadataFinder {
+    #[profile]
     fn visit_use_rename(&mut self, node: &'a UseRename) {
-        profile_method!("visit_use_rename");
         // eprintln!(
         //     "visit_use_rename pushing {} to names_to_exclude",
         //     node.rename
@@ -313,21 +312,21 @@ impl<'a> Visit<'a> for MetadataFinder {
         syn::visit::visit_use_rename(self, node);
     }
 
+    #[profile]
     fn visit_item_extern_crate(&mut self, node: &'a syn::ItemExternCrate) {
-        profile_method!("visit_item_extern_crate");
         let crate_name = node.ident.to_string();
         self.extern_crates.push(crate_name);
         syn::visit::visit_item_extern_crate(self, node);
     }
 
+    #[profile]
     fn visit_item_mod(&mut self, node: &'a ItemMod) {
-        profile_method!("visit_item_mod");
         self.mods_to_exclude.push(node.ident.to_string());
         syn::visit::visit_item_mod(self, node);
     }
 
+    #[profile]
     fn visit_item_fn(&mut self, node: &'a syn::ItemFn) {
-        profile_method!("visit_item_fn");
         if node.sig.ident == "main" {
             self.main_count += 1; // Increment counter instead of setting bool
         }
@@ -338,11 +337,11 @@ impl<'a> Visit<'a> for MetadataFinder {
 /// Infer dependencies from AST-derived metadata to put in a Cargo.toml.
 #[must_use]
 #[allow(clippy::module_name_repetitions)]
+#[profile]
 pub fn infer_deps_from_ast(
     crates_finder: &CratesFinder,
     metadata_finder: &MetadataFinder,
 ) -> Vec<String> {
-    profile!("infer_deps_from_ast");
     let mut dependencies = vec![];
     dependencies.extend_from_slice(&crates_finder.crates);
 
@@ -376,9 +375,8 @@ pub fn infer_deps_from_ast(
 /// Infer dependencies from source code to put in a Cargo.toml.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
+#[profile]
 pub fn infer_deps_from_source(code: &str) -> Vec<String> {
-    profile!("infer_deps_from_source");
-
     if code.trim().is_empty() {
         return vec![];
     }
@@ -428,8 +426,8 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 }
 
 #[must_use]
+#[profile]
 pub fn find_crates(syntax_tree: &Ast) -> CratesFinder {
-    profile!("find_crates");
     let mut crates_finder = CratesFinder::default();
 
     match syntax_tree {
@@ -441,8 +439,8 @@ pub fn find_crates(syntax_tree: &Ast) -> CratesFinder {
 }
 
 #[must_use]
+#[profile]
 pub fn find_metadata(syntax_tree: &Ast) -> MetadataFinder {
-    profile!("find_metadata");
     let mut metadata_finder = MetadataFinder::default();
 
     match syntax_tree {
@@ -454,6 +452,7 @@ pub fn find_metadata(syntax_tree: &Ast) -> MetadataFinder {
 }
 
 #[must_use]
+#[profile]
 pub fn should_filter_dependency(name: &str) -> bool {
     // Filter out capitalized names
     if name.chars().next().is_some_and(char::is_uppercase) {
@@ -466,8 +465,8 @@ pub fn should_filter_dependency(name: &str) -> bool {
 /// Identify mod statements for exclusion from Cargo.toml metadata.
 /// Fallback version for when an abstract syntax tree cannot be parsed.
 #[must_use]
+#[profile]
 pub fn find_modules_source(code: &str) -> Vec<String> {
-    profile!("find_modules_source");
     let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
     debug_log!("In ast::find_use_renames_source");
     let mut modules: Vec<String> = vec![];
@@ -486,8 +485,8 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
 /// # Errors
 ///
 /// This function will return an error if `syn` fails to parse the `use` statements as a `syn::File`.
+#[profile]
 pub fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
-    profile!("extract_and_wrap_uses");
     // Step 1: Capture `use` statements
     let use_simple_regex: &Regex = regex!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
     let use_nested_regex: &Regex = regex!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
@@ -514,6 +513,7 @@ pub fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
 /// Cache any functions that we may find in a snippet expression in a Hashmap, so
 /// that if the last statement in the expression is a function call, we can look
 /// up its return type and determine whether to wrap it in a println! statement.
+#[profile]
 fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
     #[derive(Default)]
     struct FindFns {
@@ -521,8 +521,8 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
     }
 
     impl<'ast> Visit<'ast> for FindFns {
+        #[profile]
         fn visit_item_fn(&mut self, i: &'ast syn::ItemFn) {
-            profile_method!("extract_functions_visit_item_fn");
             // if is_debug_logging_enabled() {
             //     debug_log!("Node={:#?}", node);
             //     debug_log!("Ident={}", node.sig.ident);
@@ -532,7 +532,6 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
                 .insert(i.sig.ident.to_string(), i.sig.output.clone());
         }
     }
-    profile!("extract_functions");
 
     let mut finder = FindFns::default();
     finder.visit_expr(expr);
@@ -544,9 +543,8 @@ fn extract_functions(expr: &syn::Expr) -> HashMap<String, ReturnType> {
 /// otherwise we wrap it in a println! statement.
 #[must_use]
 #[inline]
+#[profile]
 pub fn is_unit_return_type(expr: &Expr) -> bool {
-    profile!("is_unit_return_type");
-
     #[cfg(debug_assertions)]
     let start = Instant::now();
 
@@ -572,12 +570,11 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
 #[allow(clippy::too_many_lines)]
 #[must_use]
 #[inline]
+#[profile]
 pub fn is_last_stmt_unit_type<S: BuildHasher>(
     expr: &Expr,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> bool {
-    profile!("is_last_stmt_unit_type");
-
     // debug_log!("%%%%%%%% expr={expr:#?}");
     match expr {
         Expr::ForLoop(for_loop) => {
@@ -596,7 +593,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
                 if !is_stmt_unit_type(last_stmt_in_then_branch, function_map) {
                     return false;
                 };
-                expr_if.else_branch.as_ref().map_or(true, |stmt| {
+                expr_if.else_branch.as_ref().is_none_or(|stmt| {
                     let expr_else = &*stmt.1;
                     // The else branch expression may only be an If or Block expression,
                     // not any of the other types of expression.
@@ -743,11 +740,11 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
 /// return type.
 #[must_use]
 #[inline]
+#[profile]
 pub fn is_path_unit_type<S: BuildHasher>(
     path: &syn::PatPath,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> Option<bool> {
-    profile!("is_path_unit_type");
     if let Some(ident) = path.path.get_ident() {
         if let Some(return_type) = function_map.get(&ident.to_string()) {
             return Some(match return_type {
@@ -775,12 +772,11 @@ pub fn is_path_unit_type<S: BuildHasher>(
 /// Recursively alternates with function `is_last_stmt_unit` to drill down through all
 /// the blocks, loops and if-conditions to identify the last executable statement so as to
 /// determine if it returns a unit type or a value worth printing.
+#[profile]
 pub fn is_stmt_unit_type<S: BuildHasher>(
     stmt: &Stmt,
     function_map: &HashMap<String, ReturnType, S>,
 ) -> bool {
-    profile!("is_stmt_unit_type");
-
     debug_log!("%%%%%%%% stmt={stmt:#?}");
     match stmt {
         Stmt::Expr(expr, None) => {
@@ -832,9 +828,8 @@ pub fn is_stmt_unit_type<S: BuildHasher>(
 
 /// # Errors
 /// Will return `Err` if there is any error parsing expressions
+#[profile]
 pub fn is_main_fn_returning_unit(file: &File) -> ThagResult<bool> {
-    profile!("is_main_fn_returning_unit");
-
     // Traverse the file to find the main function
     for item in &file.items {
         if let Item::Fn(func) = item {

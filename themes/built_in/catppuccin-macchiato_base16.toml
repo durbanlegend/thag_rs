@@ -1,4 +1,4 @@
-name = "Catppuccin Macchiato Base16 "
+name = "Catppuccin Macchiato Base16"
 description = "Converted from Catppuccin Macchiato theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    54,
-    58,
-    79,
+    166,
+    218,
+    149,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    30,
-    32,
-    48,
+    138,
+    173,
+    244,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -1,4 +1,4 @@
-name = "Sagelight Base16 "
+name = "Sagelight Base16"
 description = "Converted from Sagelight theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    216,
-    216,
-    216,
+    160,
+    210,
+    200,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    232,
-    232,
-    232,
+    160,
+    167,
+    210,
+]
+style = [
+    "italic",
+    "dim",
 ]

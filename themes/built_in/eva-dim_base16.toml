@@ -1,4 +1,4 @@
-name = "Eva Dim Base16 "
+name = "Eva Dim Base16"
 description = "Converted from Eva Dim theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    75,
-    105,
-    136,
+    93,
+    229,
+    97,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    61,
-    86,
-    111,
+    26,
+    225,
+    220,
+]
+style = [
+    "italic",
+    "dim",
 ]

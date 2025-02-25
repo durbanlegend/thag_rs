@@ -1,4 +1,4 @@
-name = "Shapeshifter Base16 "
+name = "Shapeshifter Base16"
 description = "Converted from Shapeshifter theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    171,
-    171,
-    171,
+    14,
+    216,
+    57,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    224,
-    224,
-    224,
+    59,
+    72,
+    227,
+]
+style = [
+    "italic",
+    "dim",
 ]

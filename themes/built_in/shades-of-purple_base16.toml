@@ -1,4 +1,4 @@
-name = "Shades of Purple Base16 "
+name = "Shades of Purple Base16"
 description = "Converted from Shades of Purple theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    241,
-    208,
+    58,
+    217,
     0,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
+    105,
     67,
-    212,
-    38,
+    255,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -2,17 +2,28 @@
 mod tests {
     use crossterm::terminal::disable_raw_mode;
     use crossterm::terminal::is_raw_mode_enabled;
-    use log::LevelFilter;
-    use simplelog::{ColorChoice,CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
-    use thag_rs::debug_log;
     use std::env;
     use std::env::set_var;
-    use std::sync::OnceLock;
+    use std::sync::Once;
     use thag_rs::terminal::TerminalStateGuard;
     use thag_rs::{
-        terminal::{detect_color_support, get_term_bg_luma, is_light_color, restore_raw_status},
+        terminal::{
+            detect_term_capabilities, get_term_bg_luma, is_light_color, restore_raw_status,
+        },
         ColorSupport, TermBgLuma,
     };
+
+    #[cfg(feature = "simplelog")]
+    use log::LevelFilter;
+
+    #[cfg(feature = "simplelog")]
+    use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
+
+    #[cfg(feature = "simplelog")]
+    use std::sync::OnceLock;
+
+    #[cfg(feature = "simplelog")]
+    use thag_rs::debug_log;
 
     #[cfg(feature = "simplelog")]
     static LOGGER: OnceLock<()> = OnceLock::new();
@@ -46,17 +57,24 @@ mod tests {
 
     // Set environment variables before running tests
     fn set_up() {
-        init_logger();
-        set_var("TEST_ENV", "1");
+        static INIT: Once = Once::new();
         #[cfg(windows)]
         {
-            set_var("VISUAL", "powershell.exe /C Get-Content");
-            set_var("EDITOR", "powershell.exe /C Get-Content");
+            INIT.call_once(|| unsafe {
+                set_var("TEST_ENV", "1");
+                set_var("VISUAL", "powershell.exe /C Get-Content");
+                set_var("EDITOR", "powershell.exe /C Get-Content");
+                init_logger();
+            });
         }
         #[cfg(not(windows))]
         {
-            set_var("VISUAL", "cat");
-            set_var("EDITOR", "cat");
+            INIT.call_once(|| unsafe {
+                set_var("TEST_ENV", "1");
+                set_var("VISUAL", "cat");
+                set_var("EDITOR", "cat");
+                init_logger();
+            });
         }
     }
 
@@ -75,15 +93,17 @@ mod tests {
 
     #[test]
     fn test_detect_color_support_in_test_env() {
-        env::set_var("TEST_ENV", "1");
-        let support = detect_color_support();
+        unsafe {
+            env::set_var("TEST_ENV", "1");
+        }
+        let (support, _) = detect_term_capabilities();
         assert_eq!(*support, ColorSupport::Basic);
         env::remove_var("TEST_ENV");
     }
 
     #[test]
     fn test_terminal_state_guard() {
-        let _guard = TerminalStateGuard::new();
+        let _guard = TerminalStateGuard::new(false);
         // The guard should reset terminal state when dropped
         // We can't easily test the actual terminal state,
         // but we can verify the guard can be created and dropped
@@ -132,7 +152,7 @@ mod tests {
     // Mock tests for terminal-dependent functions
     #[test]
     fn test_color_support_detection() {
-        let support = detect_color_support();
+        let (support, _) = detect_term_capabilities();
         assert!(matches!(
             *support,
             ColorSupport::None
@@ -148,7 +168,7 @@ mod tests {
         let initial_raw_mode = is_raw_mode_enabled().unwrap_or(false);
 
         // Run detection
-        let _support = detect_color_support();
+        let _support = detect_term_capabilities();
 
         // Verify raw mode status is preserved
         let final_raw_mode = is_raw_mode_enabled().unwrap_or(false);

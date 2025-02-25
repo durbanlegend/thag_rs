@@ -2,7 +2,7 @@
 /// Copyright 2018 Jim Blandy and Jason Orendorff, 978-1-491-92728-1.
 /// Described by the authors as "a really gratuitous use of iterators".
 //# Purpose: Demo using `thag_rs` to try out random code snippets ... also iterators.
-//# Categories: educational, technique
+//# Categories: learning, technique
 use std::iter::{once, repeat};
 
 let fizzes = repeat("").take(2).chain(once("fizz")).cycle();

@@ -1,4 +1,4 @@
-name = "Ocean Base16 "
+name = "Ocean Base16"
 description = "Converted from Ocean theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    79,
-    91,
-    102,
+    163,
+    190,
+    140,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    52,
-    61,
-    70,
+    143,
+    161,
+    179,
+]
+style = [
+    "italic",
+    "dim",
 ]

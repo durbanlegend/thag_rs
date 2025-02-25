@@ -1,4 +1,4 @@
-name = "Tango Base16 "
+name = "Tango Base16"
 description = "Converted from Tango theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    252,
-    233,
-    79,
+    78,
+    154,
+    6,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    138,
-    226,
     52,
+    101,
+    164,
+]
+style = [
+    "italic",
+    "dim",
 ]

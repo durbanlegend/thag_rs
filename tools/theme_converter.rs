@@ -134,8 +134,8 @@ impl BaseTheme {
             normal: Style::from_fg_hex(&self.palette.base05)?,          // Default foreground
             subtle: Style::from_fg_hex(self.palette.base14.as_ref().unwrap())?, // Light grey
             hint: Style::from_fg_hex(self.palette.base13.as_ref().unwrap())?.italic(),
-            debug: Style::from_fg_hex(self.palette.base12.as_ref().unwrap())?,
-            trace: Style::from_fg_hex(self.palette.base11.as_ref().unwrap())?,
+            debug: Style::from_fg_hex(&self.palette.base0_b)?.dim(),
+            trace: Style::from_fg_hex(&self.palette.base0_d)?.italic().dim(),
         })
     }
 
@@ -153,8 +153,8 @@ impl BaseTheme {
             normal: Style::from_fg_hex(&self.palette.base05)?,          // Default foreground
             subtle: Style::from_fg_hex(&self.palette.base03)?,          // Comments color
             hint: Style::from_fg_hex(&self.palette.base03)?.italic(),
-            debug: Style::from_fg_hex(&self.palette.base02)?,
-            trace: Style::from_fg_hex(&self.palette.base01)?,
+            debug: Style::from_fg_hex(&self.palette.base0_b)?.dim(),
+            trace: Style::from_fg_hex(&self.palette.base0_d)?.italic().dim(),
         })
     }
 }
@@ -220,10 +220,10 @@ impl ToThemeOutput for Theme {
             .collect::<Vec<(u8, u8, u8)>>();
         ThemeOutput {
             name: format!(
-                "{} {} {}",
+                "{}{}{}",
                 self.name,
-                if is_base24 { "" } else { "Base16" },
-                if use_256 { "256" } else { "" }
+                if is_base24 { "" } else { " Base16" },
+                if use_256 { " 256" } else { "" }
             ),
             description: self.description.clone(),
             term_bg_luma: self.term_bg_luma.to_string().to_lowercase(),

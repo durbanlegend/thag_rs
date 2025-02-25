@@ -1,4 +1,4 @@
-name = "Everforest Base16 "
+name = "Everforest Base16"
 description = "Converted from Everforest theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    71,
-    82,
-    88,
+    167,
+    192,
+    128,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    52,
-    63,
-    68,
+    127,
+    187,
+    179,
+]
+style = [
+    "italic",
+    "dim",
 ]

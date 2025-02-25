@@ -1,4 +1,4 @@
-name = "Solarized Dark Base16 "
+name = "Solarized Dark Base16"
 description = "Converted from Solarized Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    88,
-    110,
-    117,
+    133,
+    153,
+    0,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    7,
-    54,
-    66,
+    38,
+    139,
+    210,
+]
+style = [
+    "italic",
+    "dim",
 ]

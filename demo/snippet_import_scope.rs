@@ -5,7 +5,7 @@ ibig = "0.3.6"
 
 //: Demo scope of import statements.
 //# Purpose: Prototype to confirm leaving imports in situ when wrapping snippets.
-//# Categories: crates, educational
+//# Categories: crates, learning
 println!("ibi::Ubig with value 123={}", {
     use ibig::ubig; // This guarantees that this println will work without the other import.
     ubig!(123)

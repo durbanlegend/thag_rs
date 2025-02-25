@@ -1,4 +1,4 @@
-name = "Tomorrow Night Base16 "
+name = "Tomorrow Night Base16"
 description = "Converted from Tomorrow Night theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    55,
-    59,
-    65,
+    181,
+    189,
+    104,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    40,
-    42,
-    46,
+    129,
+    162,
+    190,
+]
+style = [
+    "italic",
+    "dim",
 ]

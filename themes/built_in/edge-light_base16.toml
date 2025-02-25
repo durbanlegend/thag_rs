@@ -1,4 +1,4 @@
-name = "Edge Light Base16 "
+name = "Edge Light Base16"
 description = "Converted from Edge Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    214,
-    152,
-    34,
-]
-
-[palette.trace]
-rgb = [
     124,
     159,
     75,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    101,
+    135,
+    191,
+]
+style = [
+    "italic",
+    "dim",
 ]

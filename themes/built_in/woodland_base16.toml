@@ -1,4 +1,4 @@
-name = "Woodland Base16 "
+name = "Woodland Base16"
 description = "Converted from Woodland theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    72,
-    65,
-    58,
+    183,
+    186,
+    83,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    48,
-    43,
-    37,
+    136,
+    164,
+    211,
+]
+style = [
+    "italic",
+    "dim",
 ]

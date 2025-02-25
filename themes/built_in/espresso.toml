@@ -2,7 +2,8 @@ name = "Espresso"
 description = "Converted from Espresso theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
-backgrounds = ["#262626", "#2d2d2d", "#323232"]
+backgrounds = ["#262626", "#323232"]
+bg_rgbs = [[38, 38, 38], [32, 32, 32]]
 
 [palette.heading1]
 rgb = [210, 81, 81]
@@ -45,7 +46,9 @@ rgb = [225, 227, 139]
 style = ["italic"]
 
 [palette.debug]
-rgb = [240, 12, 12]
+rgb = [165, 194, 97]
+style = ["dim"]
 
 [palette.trace]
-rgb = [27, 27, 27]
+rgb = [108, 153, 187]
+style = ["italic", "dim"]

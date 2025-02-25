@@ -1,4 +1,4 @@
-name = "Equilibrium Gray Dark Base16 "
+name = "Equilibrium Gray Dark Base16"
 description = "Converted from Equilibrium Gray Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    38,
-    38,
-    38,
+    127,
+    139,
+    0,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    27,
-    27,
-    27,
+    0,
+    141,
+    209,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -1,4 +1,4 @@
-name = "Humanoid light Base16 "
+name = "Humanoid light Base16"
 description = "Converted from Humanoid light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    222,
-    222,
-    216,
+    56,
+    142,
+    60,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    239,
-    239,
-    233,
+    0,
+    130,
+    201,
+]
+style = [
+    "italic",
+    "dim",
 ]

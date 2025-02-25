@@ -1,4 +1,4 @@
-name = "Material Palenight Base16 "
+name = "Material Palenight Base16"
 description = "Converted from Material Palenight theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    50,
-    55,
-    77,
+    195,
+    232,
+    141,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    68,
-    66,
-    103,
+    130,
+    170,
+    255,
+]
+style = [
+    "italic",
+    "dim",
 ]

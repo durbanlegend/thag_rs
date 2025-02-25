@@ -1,4 +1,4 @@
-name = "Hopscotch Base16 "
+name = "Hopscotch Base16"
 description = "Converted from Hopscotch theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    92,
-    84,
-    91,
+    143,
+    193,
+    62,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    67,
-    59,
-    66,
+    18,
+    144,
+    191,
+]
+style = [
+    "italic",
+    "dim",
 ]

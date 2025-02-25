@@ -1,4 +1,4 @@
-name = "Atelier Dune Base16 "
+name = "Atelier Dune Base16"
 description = "Converted from Atelier Dune theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    110,
-    107,
-    94,
+    96,
+    172,
+    57,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    41,
-    40,
-    36,
+    102,
+    132,
+    225,
+]
+style = [
+    "italic",
+    "dim",
 ]

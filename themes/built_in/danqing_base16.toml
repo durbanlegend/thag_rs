@@ -1,4 +1,4 @@
-name = "DanQing Base16 "
+name = "DanQing Base16"
 description = "Converted from DanQing theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    90,
-    96,
-    93,
+    138,
+    179,
+    97,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    67,
-    72,
-    70,
+    176,
+    164,
+    227,
+]
+style = [
+    "italic",
+    "dim",
 ]

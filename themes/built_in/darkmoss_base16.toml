@@ -1,4 +1,4 @@
-name = "darkmoss Base16 "
+name = "darkmoss Base16"
 description = "Converted from darkmoss theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    55,
-    60,
-    61,
+    73,
+    145,
+    128,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    37,
-    44,
-    45,
+    73,
+    128,
+    145,
+]
+style = [
+    "italic",
+    "dim",
 ]

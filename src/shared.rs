@@ -1,12 +1,13 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{debug_log, profile, ThagResult};
+use std::fmt::Display;
 use std::{path::PathBuf, time::Instant};
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.
 #[inline]
+#[profile]
 pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
-    profile!("reassemble");
     map.fold(String::new(), |mut output, b| {
         let _ = writeln!(output, "{b}");
         output
@@ -16,8 +17,8 @@ pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
 /// Unescape \n markers to convert a string of raw text to readable lines.
 #[inline]
 #[must_use]
+#[profile]
 pub fn disentangle(text_wall: &str) -> String {
-    profile!("disentangle");
     reassemble(text_wall.lines())
 }
 
@@ -26,22 +27,22 @@ pub fn disentangle(text_wall: &str) -> String {
 #[must_use]
 #[inline]
 #[cfg(target_os = "windows")]
+#[profile]
 pub fn escape_path_for_windows(path_str: &str) -> String {
-    profile!("escape_path_for_windows");
     path_str.replace('\\', "/")
 }
 
 #[must_use]
 #[cfg(not(target_os = "windows"))]
+#[profile]
 pub fn escape_path_for_windows(path_str: &str) -> String {
-    profile!("escape_path_for_windows");
     path_str.to_string()
 }
 
 /// Developer method to log method timings.
 #[inline]
+#[profile]
 pub fn debug_timings(start: &Instant, process: &str) {
-    profile!("debug_timings");
     let dur = start.elapsed();
     debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
 }
@@ -124,6 +125,7 @@ macro_rules! static_lazy {
                 INSTANCE.get_or_init(|| $init)
             }
 
+            #[allow(dead_code)]
             pub fn init() {
                 let _ = Self::get();
             }
@@ -136,6 +138,7 @@ macro_rules! static_lazy {
 /// # Errors
 ///
 /// This function will return an error if it can't resolve the user directories.
+#[profile]
 pub fn get_home_dir_string() -> ThagResult<String> {
     let home_dir = &get_home_dir()?;
     Ok(home_dir.display().to_string())
@@ -146,8 +149,49 @@ pub fn get_home_dir_string() -> ThagResult<String> {
 /// # Errors
 ///
 /// This function will return an error if it can't resolve the user directories.
+#[profile]
 pub fn get_home_dir() -> ThagResult<PathBuf> {
     let user_dirs = directories::UserDirs::new().ok_or("Can't resolve user directories")?;
     let home_dir = user_dirs.home_dir();
     Ok(home_dir.to_owned())
+}
+
+/// Formats a given positive integer with thousands separators (commas).
+///
+/// This function takes any unsigned integer type (`u8`, `u16`, `u32`, `u64`, `u128`, `usize`)
+/// and returns a `String` representation where groups of three digits are separated by commas.
+///
+/// # Examples
+///
+/// ```
+/// use thag_rs::thousands;
+/// assert_eq!(thousands(1234567u32), "1,234,567");
+/// assert_eq!(thousands(9876u16), "9,876");
+/// assert_eq!(thousands(42u8), "42");
+/// assert_eq!(thousands(12345678901234567890u128), "12,345,678,901,234,567,890");
+/// ```
+///
+/// # Panics
+///
+/// This function panics if `std::str::from_utf8()` fails,
+/// which is highly unlikely since the input is always a valid ASCII digit string.
+///
+/// # Complexity
+///
+/// Runs in **O(d)** time complexity, where `d` is the number of digits in the input number.
+///
+/// # Note
+///
+/// If you need to format signed integers, you'll need a modified version
+/// that correctly handles negative numbers.
+#[profile]
+pub fn thousands<T: Display>(n: T) -> String {
+    n.to_string()
+        .as_bytes()
+        .rchunks(3)
+        .rev()
+        .map(std::str::from_utf8)
+        .collect::<Result<Vec<&str>, _>>()
+        .unwrap()
+        .join(",")
 }

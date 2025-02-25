@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::{io::Write, path::Path};
+    use std::{io::Write, sync::Once, path::Path};
     use tempfile::NamedTempFile;
     use thag_rs::ast::{is_last_stmt_unit_type, is_path_unit_type, is_stmt_unit_type};
     use thag_rs::code_utils::{
@@ -9,9 +9,12 @@ mod tests {
 
     // Set environment variables before running tests
     fn set_up() {
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        static INIT: Once = Once::new();
+        INIT.call_once(|| unsafe {
+            std::env::set_var("TEST_ENV", "1");
+            std::env::set_var("VISUAL", "cat");
+            std::env::set_var("EDITOR", "cat");
+        });
     }
 
     // Helper function to create a temporary file with given content

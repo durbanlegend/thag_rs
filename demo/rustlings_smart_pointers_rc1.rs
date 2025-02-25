@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 /// Published exercise solution from the `rustlings` crate.
 //# Purpose: Demo one way to preserve your `rustlings` solutions, for reference or as katas.
-//# Categories: educational
+//# Categories: learning
 
 // In this exercise, we want to express the concept of multiple owners via the
 // `Rc<T>` type. This is a model of our solar system - there is a `Sun` type and

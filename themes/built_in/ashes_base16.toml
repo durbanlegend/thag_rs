@@ -1,4 +1,4 @@
-name = "Ashes Base16 "
+name = "Ashes Base16"
 description = "Converted from Ashes theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    86,
-    94,
-    101,
+    149,
+    199,
+    174,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    57,
-    63,
-    69,
+    174,
+    149,
+    199,
+]
+style = [
+    "italic",
+    "dim",
 ]

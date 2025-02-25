@@ -1,4 +1,4 @@
-name = "Mountain Base16 "
+name = "Mountain Base16"
 description = "Converted from Mountain theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    38,
-    38,
-    38,
+    138,
+    172,
+    139,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    25,
-    25,
-    25,
+    143,
+    138,
+    172,
+]
+style = [
+    "italic",
+    "dim",
 ]

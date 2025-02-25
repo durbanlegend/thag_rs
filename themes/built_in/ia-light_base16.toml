@@ -1,4 +1,4 @@
-name = "iA Light Base16 "
+name = "iA Light Base16"
 description = "Converted from iA Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    189,
-    229,
-    242,
+    56,
+    120,
+    28,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    222,
-    222,
-    222,
+    72,
+    186,
+    194,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -1508,7 +1508,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [factorial_dashu_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dashu_product.rs)
 
@@ -1547,7 +1547,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dash
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [factorial_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig.rs)
 
@@ -1576,7 +1576,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [factorial_ibig_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs)
 
@@ -1584,6 +1584,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs -- 50
+```
+
+---
+
+### Script: factorial_ibig_product_instr.rs
+
+**Description:**  A version of `demo/factorial_ibig_product.rs` converted to a program and instrumented for profiling using
+ `tools/profile_instr.rs`.
+
+ Run this version in the normal way, then run `tools/thag_profile.rs` to analyse the profiling data.
+
+**Purpose:** Demo `thag_rs` execution timeline and memory profiling.
+
+**Crates:** `ibig`, `thag_rs`
+
+**Type:** Program
+
+**Categories:** profiling
+
+**Link:** [factorial_ibig_product_instr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_instr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_instr.rs -- 50
 ```
 
 ---
@@ -1597,7 +1622,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 **Type:** Program
 
-**Categories:** educational, math, recreational, technique
+**Categories:** learning, math, recreational, technique
 
 **Link:** [factorial_main_u128_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main_u128_product.rs)
 
@@ -1625,7 +1650,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_4784969_cpp_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_ibig.rs)
 
@@ -1655,7 +1680,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cp
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_4784969_cpp_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_rug.rs)
 
@@ -1686,7 +1711,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cp
 
 **Type:** Snippet
 
-**Categories:** educational, math, recreational, technique
+**Categories:** learning, math, recreational, technique
 
 **Link:** [fib_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs)
 
@@ -1709,7 +1734,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs -
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_basic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig.rs)
 
@@ -1742,7 +1767,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_big_clap_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_rug.rs)
 
@@ -1776,7 +1801,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_r
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_binet_astro_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astro_snippet.rs)
 
@@ -1804,7 +1829,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astr
 
 **Type:** Snippet
 
-**Categories:** educational, math, recreational, technique
+**Categories:** learning, math, recreational, technique
 
 **Link:** [fib_binet_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snippet.rs)
 
@@ -1830,7 +1855,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snip
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_classic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig.rs)
 
@@ -1862,7 +1887,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ib
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_classic_ibig_instrumented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig_instrumented.rs)
 
@@ -1891,7 +1916,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ib
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_dashu_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snippet.rs)
 
@@ -1928,7 +1953,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snip
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_doubling_iterative_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_ibig.rs)
 
@@ -1956,7 +1981,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_i
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_doubling_iterative_purge_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_ibig.rs)
 
@@ -1986,7 +2011,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_i
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_doubling_iterative_purge_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_rug.rs)
 
@@ -2011,7 +2036,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_i
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_doubling_no_memo_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig.rs)
 
@@ -2070,7 +2095,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_n
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_doubling_no_memo_ibig_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_1.rs)
 
@@ -2130,7 +2155,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_n
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_doubling_no_memo_ibig_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_2.rs)
 
@@ -2175,7 +2200,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_n
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_doubling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_recursive_ibig.rs)
 
@@ -2202,7 +2227,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_r
 
 **Type:** Snippet
 
-**Categories:** educational, math, recreational, technique
+**Categories:** learning, math, recreational, technique
 
 **Link:** [fib_matrix.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs)
 
@@ -2240,7 +2265,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs 
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_matrix_dashu.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_dashu.rs)
 
@@ -2278,7 +2303,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_das
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_matrix_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibig.rs)
 
@@ -2308,7 +2333,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibi
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_matrix_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug.rs)
 
@@ -2334,7 +2359,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
 **Link:** [fib_quadrupling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadrupling_recursive_ibig.rs)
 
@@ -2356,7 +2381,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadruplin
 
 **Type:** Snippet
 
-**Categories:** educational, technique
+**Categories:** learning, technique
 
 **Link:** [fizz_buzz_blandy_orendorff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs)
 
@@ -2376,7 +2401,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blan
 
 **Type:** Snippet
 
-**Categories:** educational, technique
+**Categories:** learning, technique
 
 **Link:** [fizz_buzz_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.rs)
 
@@ -2768,7 +2793,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs
 
 **Type:** Program
 
-**Categories:** basic, educational, technique
+**Categories:** basic, learning, technique
 
 **Link:** [include_str.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/include_str.rs)
 
@@ -3053,7 +3078,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.
 
 **Type:** Program
 
-**Categories:** educational, technique
+**Categories:** learning, technique
 
 **Link:** [macro_fn_lazy_static.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_static.rs)
 
@@ -3898,27 +3923,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.r
 
 ---
 
-### Script: profile_file_ra.rs
-
-**Description:** 
-**Purpose:** 
-
-**Crates:** `ra_ap_syntax`
-
-**Type:** Program
-
-**Categories:** missing
-
-**Link:** [profile_file_ra.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file_ra.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file_ra.rs
-```
-
----
-
 ### Script: profiling_puffin_demo.rs
 
 **Description:**  Published demo from the `profiling` crate using the `puffin` profiler.
@@ -3989,13 +3993,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profile
 
  So let's work out the 3 child triples of (3, 4, 5).
 
-**Purpose:** Recreational, educational.
+**Purpose:** Recreational, learning.
 
 **Crates:** `io`
 
 **Type:** Snippet
 
-**Categories:** educational, math, recreational
+**Categories:** learning, math, recreational
 
 **Link:** [py_thag.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs)
 
@@ -4543,7 +4547,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.
 
 **Type:** Program
 
-**Categories:** educational
+**Categories:** learning
 
 **Link:** [rustlings_smart_pointers_rc1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smart_pointers_rc1.rs)
 
@@ -4677,7 +4681,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressio
 
 **Type:** Snippet
 
-**Categories:** crates, educational
+**Categories:** crates, learning
 
 **Link:** [snippet_import_scope.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import_scope.rs)
 
@@ -4699,7 +4703,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import
 
 **Type:** Snippet
 
-**Categories:** crates, educational
+**Categories:** crates, learning
 
 **Link:** [snippet_name_clash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs)
 
@@ -4721,7 +4725,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_c
 
 **Type:** Program
 
-**Categories:** crates, educational, technique
+**Categories:** crates, learning, technique
 
 **Link:** [sort_itertools.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/sort_itertools.rs)
 
@@ -4741,7 +4745,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/sort_itertools
 
 **Type:** Program
 
-**Categories:** crates, educational, technique
+**Categories:** crates, learning, technique
 
 **Link:** [sort_std.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/sort_std.rs)
 
@@ -4801,6 +4805,33 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
+```
+
+---
+
+### Script: stdin_main_instr.rs
+
+**Description:**  A version of `thag_rs`'s `stdin` module from the `main` `git` branch for the purpose of comparison
+ with the `develop` branch version being debugged.
+
+ E.g. `thag demo/stdin_main.rs`
+ Apply highlights to the text depending on the light or dark theme as detected, configured
+ or defaulted, or as toggled by the user with Ctrl-t.
+
+**Purpose:** Debugging.
+
+**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
+
+**Type:** Program
+
+**Categories:** testing
+
+**Link:** [stdin_main_instr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main_instr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main_instr.rs
 ```
 
 ---
@@ -5420,7 +5451,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.
 
 **Type:** Program
 
-**Categories:** educational, technique
+**Categories:** learning, technique
 
 **Link:** [tlborm_callbacks.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs)
 
@@ -5443,7 +5474,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbac
 
 **Type:** Program
 
-**Categories:** async, educational, technique
+**Categories:** async, learning, technique
 
 **Link:** [tokio_hello_short.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_short.rs)
 
@@ -5466,7 +5497,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_sh
 
 **Type:** Program
 
-**Categories:** async, educational, technique
+**Categories:** async, learning, technique
 
 **Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs)
 
@@ -5526,16 +5557,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 ### Script: tui_ta_editor_profile.rs
 
-**Description:**  The same script as `demo/tui_ta_editor.rs`, but with `firestorm` profiling.
+**Description:**  Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
+ down to two files at a time, because it was developed to allow editing of generated code and
+ cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
+ or default to a standard editor. A more minimalist version is used to edit stdin input in
+ the `--edit (-d)` option of `thag_rs`.
 
  Not suitable for running from a URL.
- To see the profiling flamegraph after exiting the program, look in dir `flames` under the `env::temp_dir()`
- for your operating system. Note that due to an apparent bug in `firestorm`, the `Editor::run` method currently
- executes twice, so it will need to be closed a second time.
 
-**Purpose:** Demo featured crates, but `firestorm` profiler in particular.
+**Purpose:** Demo and explore TUI editor and featured crates, including `crossterm`.
 
-**Crates:** `ratatui`, `thag_rs`, `tui_textarea`
+**Crates:** `ratatui`, `thag_proc_macros`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 
@@ -5606,7 +5638,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Type:** Program
 
-**Categories:** async, crates, educational, exploration, technique
+**Categories:** async, crates, learning, exploration, technique
 
 **Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_tokio_editor_gpt.rs)
 
@@ -5697,13 +5729,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run
 
 **Description:**  Implement trait std::iter::Product for `ibig::UBig`. Example provided by GPT.
 
-**Purpose:** Educational / reference.
+**Purpose:** Learning / reference.
 
 **Crates:** `ibig`
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, reference, technique
+**Categories:** big_numbers, learning, reference, technique
 
 **Link:** [ubig_product_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_gpt.rs)
 
@@ -5731,6 +5763,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_g
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs
+```
+
+---
+
+### Script: web_safe_colors_to_256.rs
+
+**Description:**  Map and visually test conversion of web safe colours to 256 colours, //: using the `owo-colors` crate colour names and mappings.
+
+**Purpose:** Work out and test colour conversion.
+
+**Crates:** `itertools`, `owo_colors`
+
+**Type:** Program
+
+**Categories:** demo, reference, testing
+
+**Link:** [web_safe_colors_to_256.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/web_safe_colors_to_256.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/web_safe_colors_to_256.rs
 ```
 
 ---

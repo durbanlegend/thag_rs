@@ -1,4 +1,4 @@
-name = "Jabuti Base16 "
+name = "Jabuti Base16"
 description = "Converted from Jabuti theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    60,
-    62,
-    81,
+    63,
+    218,
+    164,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    52,
-    53,
-    69,
+    63,
+    198,
+    222,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -1,4 +1,4 @@
-name = "Paraiso Base16 "
+name = "Paraiso Base16"
 description = "Converted from Paraiso theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    79,
-    66,
-    76,
+    72,
+    182,
+    133,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    65,
-    50,
-    63,
+    6,
+    182,
+    239,
+]
+style = [
+    "italic",
+    "dim",
 ]

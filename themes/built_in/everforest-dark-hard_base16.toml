@@ -1,4 +1,4 @@
-name = "Everforest Dark Hard Base16 "
+name = "Everforest Dark Hard Base16"
 description = "Converted from Everforest Dark Hard theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    65,
-    75,
-    80,
+    167,
+    192,
+    128,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    46,
-    56,
-    60,
+    127,
+    187,
+    179,
+]
+style = [
+    "italic",
+    "dim",
 ]

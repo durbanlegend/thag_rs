@@ -1,4 +1,4 @@
-name = "Google Light Base16 "
+name = "Google Light Base16"
 description = "Converted from Google Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    197,
-    200,
-    198,
+    25,
+    136,
+    68,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    224,
-    224,
-    224,
+    57,
+    113,
+    237,
+]
+style = [
+    "italic",
+    "dim",
 ]

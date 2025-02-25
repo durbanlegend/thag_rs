@@ -1,4 +1,4 @@
-name = "Atelier Forest Light Base16 "
+name = "Atelier Forest Light Base16"
 description = "Converted from Atelier Forest Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    168,
-    161,
-    159,
+    123,
+    151,
+    38,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    230,
-    226,
-    224,
+    64,
+    126,
+    231,
+]
+style = [
+    "italic",
+    "dim",
 ]

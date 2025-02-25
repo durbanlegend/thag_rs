@@ -1,4 +1,4 @@
-name = "Apathy Base16 "
+name = "Apathy Base16"
 description = "Converted from Apathy theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    24,
-    78,
-    69,
+    136,
+    62,
+    150,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    11,
-    52,
-    45,
+    150,
+    136,
+    62,
+]
+style = [
+    "italic",
+    "dim",
 ]

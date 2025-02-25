@@ -1,4 +1,4 @@
-name = "Bespin Base16 "
+name = "Bespin Base16"
 description = "Converted from Bespin theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    94,
-    93,
-    92,
+    84,
+    190,
+    13,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    54,
-    49,
-    46,
+    94,
+    166,
+    234,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -1,4 +1,4 @@
-name = "Mexico Light Base16 "
+name = "Mexico Light Base16"
 description = "Converted from Mexico Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    216,
-    216,
-    216,
+    83,
+    137,
+    71,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    232,
-    232,
-    232,
+    124,
+    175,
+    194,
+]
+style = [
+    "italic",
+    "dim",
 ]

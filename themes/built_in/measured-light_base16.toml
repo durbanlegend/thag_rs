@@ -1,4 +1,4 @@
-name = "Measured Light Base16 "
+name = "Measured Light Base16"
 description = "Converted from Measured Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    255,
-    234,
-    218,
+    12,
+    104,
+    12,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    249,
-    245,
-    241,
+    1,
+    88,
+    173,
+]
+style = [
+    "italic",
+    "dim",
 ]

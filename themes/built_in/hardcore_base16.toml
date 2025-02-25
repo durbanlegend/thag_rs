@@ -1,4 +1,4 @@
-name = "Hardcore Base16 "
+name = "Hardcore Base16"
 description = "Converted from Hardcore theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    53,
-    53,
-    53,
+    166,
+    226,
+    46,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    48,
-    48,
-    48,
+    102,
+    217,
+    239,
+]
+style = [
+    "italic",
+    "dim",
 ]

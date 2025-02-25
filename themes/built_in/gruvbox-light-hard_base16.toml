@@ -1,4 +1,4 @@
-name = "Gruvbox light, hard Base16 "
+name = "Gruvbox light, hard Base16"
 description = "Converted from Gruvbox light, hard theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    213,
-    196,
-    161,
+    121,
+    116,
+    14,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    235,
-    219,
-    178,
+    7,
+    102,
+    120,
+]
+style = [
+    "italic",
+    "dim",
 ]

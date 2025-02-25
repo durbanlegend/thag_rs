@@ -1,4 +1,4 @@
-name = "Windows 95 Base16 "
+name = "Windows 95 Base16"
 description = "Converted from Windows 95 theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    56,
-    56,
-    56,
+    84,
+    252,
+    84,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    28,
-    28,
-    28,
+    84,
+    84,
+    252,
+]
+style = [
+    "italic",
+    "dim",
 ]

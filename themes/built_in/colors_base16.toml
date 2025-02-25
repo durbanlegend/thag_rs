@@ -1,4 +1,4 @@
-name = "Colors Base16 "
+name = "Colors Base16"
 description = "Converted from Colors theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    85,
-    85,
-    85,
+    46,
+    204,
+    64,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    51,
-    51,
-    51,
+    0,
+    116,
+    217,
+]
+style = [
+    "italic",
+    "dim",
 ]

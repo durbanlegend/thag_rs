@@ -1,4 +1,4 @@
-name = "Stella Base16 "
+name = "Stella Base16"
 description = "Converted from Stella theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    77,
-    65,
-    96,
+    172,
+    199,
+    155,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    54,
-    43,
-    72,
+    165,
+    170,
+    212,
+]
+style = [
+    "italic",
+    "dim",
 ]

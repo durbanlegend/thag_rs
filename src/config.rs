@@ -3,7 +3,7 @@ use crate::{
     clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, Color, ColorSupport, TermBgLuma,
     ThagError, ThagResult, Verbosity, V,
 };
-use crate::{profile, profile_method};
+use crate::{enable_profiling, profile};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
 use mockall::{automock, predicate::str};
@@ -65,9 +65,8 @@ impl Config {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered.
+    #[profile]
     pub fn load_or_create_default(ctx: &impl Context) -> Result<Self, Box<dyn Error>> {
-        profile_method!("load_or_create_default");
-
         let config_path = ctx.get_config_path();
 
         #[cfg(debug_assertions)]
@@ -77,9 +76,9 @@ impl Config {
         );
 
         if !config_path.exists() {
-            let path = config_path
-                .parent()
-                .ok_or(ThagError::NoneOption("No parent for {config_path:#?}"))?;
+            let path = config_path.parent().ok_or(ThagError::NoneOption(format!(
+                "No parent for {config_path:#?}"
+            )))?;
             fs::create_dir_all(path)?;
 
             // Try to find default config in different locations
@@ -128,8 +127,8 @@ impl Config {
     /// # Errors
     ///
     /// This function will bubble up any errors encountered.
+    #[profile]
     pub fn load(path: &Path) -> Result<Self, ThagError> {
-        profile_method!("load");
         let content = std::fs::read_to_string(path)?;
 
         match toml::from_str::<Self>(&content) {
@@ -156,6 +155,7 @@ impl Config {
         }
     }
 
+    #[profile]
     fn update_from_partial(&mut self, partial: PartialConfig) {
         if let Some(logging) = partial.logging {
             self.logging = logging;
@@ -174,8 +174,8 @@ impl Config {
         }
     }
 
+    #[profile]
     fn validate(&self) -> Result<(), ThagError> {
-        profile_method!("validate");
         // Validate Dependencies section
         self.dependencies
             .validate()
@@ -210,8 +210,8 @@ pub struct Dependencies {
 }
 
 impl Default for Dependencies {
+    #[profile]
     fn default() -> Self {
-        profile_method!("default");
         Self {
             exclude_unstable_features: true,
             exclude_std_feature: true,
@@ -226,12 +226,12 @@ impl Default for Dependencies {
 
 impl Dependencies {
     #[must_use]
+    #[profile]
     pub fn filter_maximal_features(
         &self,
         crate_name: &str,
         features: &[String],
     ) -> (Vec<String>, bool) {
-        profile_method!("filter_maximal_features");
         let mut filtered = features.to_owned();
 
         #[cfg(debug_assertions)]
@@ -278,7 +278,7 @@ impl Dependencies {
                     override_config
                         .excluded_features
                         .as_ref()
-                        .map_or(true, |excluded_features| !excluded_features.contains(f))
+                        .is_none_or(|excluded_features| !excluded_features.contains(f))
                 };
                 if !keep {
                     debug_log!("Excluding feature '{}' due to crate-specific override", f);
@@ -335,8 +335,8 @@ impl Dependencies {
 
     // Make should_include_feature use filter_features
     #[must_use]
+    #[profile]
     pub fn should_include_feature(&self, feature: &str, crate_name: &str) -> bool {
-        profile_method!("should_include_feature");
         self.filter_maximal_features(crate_name, &[feature.to_string()])
             .0
             .contains(&feature.to_string())
@@ -344,13 +344,12 @@ impl Dependencies {
 
     // New method for config features based on overrides
     #[must_use]
+    #[profile]
     pub fn apply_config_features(
         &self,
         crate_name: &str,
         all_features: &[String],
     ) -> (Vec<String>, bool) {
-        profile_method!("apply_config_features");
-
         let (mut config_features, default_features) = self.feature_overrides.get(crate_name).map_or_else(|| {
             // Only include features from always_include_features that exist in all_features
             let intersection: Vec<String> = self.always_include_features
@@ -401,13 +400,13 @@ impl Dependencies {
 
     // Method to get features based on inference level
     #[must_use]
+    #[profile]
     pub fn get_features_for_inference_level(
         &self,
         crate_name: &str,
         all_features: &[String],
         level: &DependencyInference,
     ) -> (Option<Vec<String>>, bool) {
-        profile_method!("get_features_for_inference_level");
         match level {
             DependencyInference::None | DependencyInference::Min => (None, true),
             DependencyInference::Config => {
@@ -423,8 +422,8 @@ impl Dependencies {
         }
     }
 
+    #[profile]
     fn validate(&self) -> Result<(), String> {
-        profile_method!("validate");
         // Validate feature overrides
         for (crate_name, override_config) in &self.feature_overrides {
             // Check for conflicts between required and excluded features
@@ -519,11 +518,11 @@ pub enum DependencyInference {
 
 // Custom deserializer to provide better error messages
 impl<'de> de::Deserialize<'de> for DependencyInference {
+    #[profile]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: de::Deserializer<'de>,
     {
-        profile_method!("deserialize");
         let s = String::deserialize(deserializer)?;
         match s.to_lowercase().as_str() {
             "none" => Ok(Self::None),
@@ -578,6 +577,7 @@ pub struct Styling {
 }
 
 impl Default for Styling {
+    #[profile]
     fn default() -> Self {
         Self {
             color_support: ColorSupport::Undetermined,
@@ -619,6 +619,7 @@ pub struct Misc {
 }
 
 /// Custom deserialisation method for booleans, to accept current true/false or legacy "true"/"false".
+#[profile]
 fn boolean<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
     let deserialize = Deserialize::deserialize(deserializer);
     deserialize.map_or_else(Err, |val| match val {
@@ -648,8 +649,8 @@ impl RealContext {
     /// Panics if it fails to resolve the $APPDATA path.
     #[cfg(target_os = "windows")]
     #[must_use]
+    #[profile]
     pub fn new() -> Self {
-        profile_method!("new_real_contexr");
         let base_dir =
             PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"));
         Self { base_dir }
@@ -662,8 +663,8 @@ impl RealContext {
     /// Panics if it fails to resolve the home directory.
     #[cfg(not(target_os = "windows"))]
     #[must_use]
+    #[profile]
     pub fn new() -> Self {
-        profile_method!("new_real_context");
         let base_dir =
             PathBuf::from(crate::get_home_dir_string().expect("Could not find home directory"))
                 .join(".config");
@@ -672,12 +673,12 @@ impl RealContext {
 }
 
 impl Context for RealContext {
+    #[profile]
     fn get_config_path(&self) -> PathBuf {
-        profile_method!("get_config_path");
-
         self.base_dir.join("thag_rs").join("config.toml")
     }
 
+    #[profile]
     fn is_real(&self) -> bool {
         true
     }
@@ -685,8 +686,8 @@ impl Context for RealContext {
 
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
+#[profile]
 pub fn maybe_config() -> Option<Config> {
-    profile!("maybe_config");
     lazy_static_var!(Option<Config>, {
         let context = RealContext::new();
         let load_or_default = Config::load_or_create_default(&context);
@@ -695,8 +696,8 @@ pub fn maybe_config() -> Option<Config> {
     .clone()
 }
 
+#[profile]
 fn maybe_load_config() -> Option<Config> {
-    profile!("maybe_load_config");
     // eprintln!("In maybe_load_config, should not see this message more than once");
 
     let context = get_context();
@@ -722,8 +723,8 @@ fn maybe_load_config() -> Option<Config> {
 ///
 /// Panics if there is any issue accessing the current directory, e.g. if it doesn't exist or we don't have sufficient permissions to access it.
 #[must_use]
+#[profile]
 pub fn get_context() -> Arc<dyn Context> {
-    profile!("get_context");
     let context: Arc<dyn Context> = if var("TEST_ENV").is_ok() {
         let current_dir = current_dir().expect("Could not get current dir");
         let config_path = current_dir.join("tests/assets").join("config.toml");
@@ -746,8 +747,8 @@ pub fn get_context() -> Arc<dyn Context> {
 ///
 /// This function will return an error if it either finds a file and fails to read it,
 /// or reads the file and fails to parse it.
+#[profile]
 pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
-    profile!("load");
     let config_path = context.get_config_path();
 
     debug_log!("config_path={config_path:?}");
@@ -774,8 +775,8 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 /// # Panics
 /// Will panic if it can't create the parent directory for the configuration.
 #[allow(clippy::unnecessary_wraps)]
+#[profile]
 pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
-    profile!("open");
     let config_path = context.get_config_path();
     debug_log!("config_path={config_path:?}");
 
@@ -805,8 +806,8 @@ pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
 /// # Errors
 ///
 /// This function will bubble up any Toml parsing errors encountered.
+#[profile]
 pub fn validate_config_format(content: &str) -> Result<(), ThagError> {
-    profile!("validate_config_format");
     // Try to parse as generic TOML first
     let doc = content
         .parse::<DocumentMut>()
@@ -845,6 +846,7 @@ pub fn validate_config_format(content: &str) -> Result<(), ThagError> {
 
 /// Main function for use by testing or the script runner.
 #[allow(dead_code, unused_variables)]
+#[enable_profiling]
 fn main() {
     let maybe_config = load(&get_context());
 

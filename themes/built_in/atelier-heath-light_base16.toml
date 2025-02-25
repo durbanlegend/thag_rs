@@ -1,4 +1,4 @@
-name = "Atelier Heath Light Base16 "
+name = "Atelier Heath Light Base16"
 description = "Converted from Atelier Heath Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    171,
-    155,
-    171,
+    145,
+    139,
+    59,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    216,
-    202,
-    216,
+    81,
+    106,
+    236,
+]
+style = [
+    "italic",
+    "dim",
 ]

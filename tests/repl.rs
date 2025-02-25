@@ -3,6 +3,7 @@ mod tests {
     use clap::CommandFactory;
     use clap::Parser;
     use std::path::PathBuf;
+    use std::sync::Once;
     use std::time::Instant;
     use thag_rs::cmd_args::{Cli, ProcFlags};
     use thag_rs::code_utils::read_file_contents;
@@ -11,21 +12,21 @@ mod tests {
     use thag_rs::repl::{edit, edit_history, toml, HISTORY_FILE};
     use thag_rs::BuildState;
 
-    use std::sync::Once;
-    static INIT: Once = Once::new();
-
     fn init_logger() {
-        INIT.call_once(|| {
-            env_logger::init();
-        });
+        env_logger::init();
     }
 
     // Set environment variables before running tests
     fn set_up() {
-        init_logger();
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        static INIT: Once = Once::new();
+        INIT.call_once(|| {
+            unsafe {
+                std::env::set_var("TEST_ENV", "1");
+                std::env::set_var("VISUAL", "cat");
+                std::env::set_var("EDITOR", "cat");
+            }
+            init_logger();
+        });
     }
 
     #[test]

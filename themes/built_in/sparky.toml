@@ -1,8 +1,13 @@
-name = "Sparky"
+name = "Sparky "
 description = "Converted from Sparky theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
-backgrounds = ["#072B31"]
+backgrounds = ["#072b31"]
+bg_rgbs = [[
+    7,
+    43,
+    49,
+]]
 
 [palette.heading1]
 rgb = [
@@ -94,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    255,
-    114,
-    118,
+    120,
+    214,
+    75,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    33,
-    35,
-    34,
+    70,
+    152,
+    203,
+]
+style = [
+    "italic",
+    "dim",
 ]

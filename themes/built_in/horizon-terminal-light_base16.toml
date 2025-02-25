@@ -1,4 +1,4 @@
-name = "Horizon Terminal Light Base16 "
+name = "Horizon Terminal Light Base16"
 description = "Converted from Horizon Terminal Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    249,
-    203,
-    190,
+    41,
+    211,
+    152,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    250,
-    218,
-    209,
+    38,
+    187,
+    217,
+]
+style = [
+    "italic",
+    "dim",
 ]

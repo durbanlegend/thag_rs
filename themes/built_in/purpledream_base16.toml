@@ -1,4 +1,4 @@
-name = "Purpledream Base16 "
+name = "Purpledream Base16"
 description = "Converted from Purpledream theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    64,
-    48,
-    64,
+    20,
+    204,
+    100,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    48,
-    32,
-    48,
+    0,
+    160,
+    240,
+]
+style = [
+    "italic",
+    "dim",
 ]

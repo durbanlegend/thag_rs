@@ -1,4 +1,4 @@
-name = "Atelier Cave Light Base16 "
+name = "Atelier Cave Light Base16"
 description = "Converted from Atelier Cave Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    139,
-    135,
+    42,
+    146,
     146,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    226,
-    223,
-    231,
+    87,
+    109,
+    219,
+]
+style = [
+    "italic",
+    "dim",
 ]

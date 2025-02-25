@@ -1,4 +1,4 @@
-name = "selenized-dark Base16 "
+name = "selenized-dark Base16"
 description = "Converted from selenized-dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    45,
-    91,
-    105,
+    117,
+    185,
+    56,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    24,
-    73,
-    86,
+    70,
+    149,
+    247,
+]
+style = [
+    "italic",
+    "dim",
 ]

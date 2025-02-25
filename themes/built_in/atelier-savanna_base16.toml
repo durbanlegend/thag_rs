@@ -1,4 +1,4 @@
-name = "Atelier Savanna Base16 "
+name = "Atelier Savanna Base16"
 description = "Converted from Atelier Savanna theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    82,
-    96,
-    87,
+    72,
+    153,
+    99,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    35,
-    42,
-    37,
+    71,
+    140,
+    144,
+]
+style = [
+    "italic",
+    "dim",
 ]

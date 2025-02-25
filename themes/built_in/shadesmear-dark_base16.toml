@@ -1,4 +1,4 @@
-name = "ShadeSmear Dark Base16 "
+name = "ShadeSmear Dark Base16"
 description = "Converted from ShadeSmear Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    78,
-    78,
-    78,
+    113,
+    152,
+    59,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    28,
-    28,
-    28,
+    55,
+    99,
+    136,
+]
+style = [
+    "italic",
+    "dim",
 ]

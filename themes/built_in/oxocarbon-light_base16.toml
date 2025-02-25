@@ -1,4 +1,4 @@
-name = "Oxocarbon Light Base16 "
+name = "Oxocarbon Light Base16"
 description = "Converted from Oxocarbon Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    82,
-    82,
-    82,
+    15,
+    98,
+    254,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    221,
-    225,
-    230,
+    66,
+    190,
+    101,
+]
+style = [
+    "italic",
+    "dim",
 ]

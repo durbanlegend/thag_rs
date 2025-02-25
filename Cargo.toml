@@ -32,7 +32,7 @@ bitflags = { version = "2.8.0", optional = true }
 cargo-lookup = { version = "0.1.0", optional = true }
 cargo_toml = { version = "0.21.0", optional = true }
 chrono = "0.4.39"
-clap = { version = "4.5.28", features = ["cargo", "derive"], optional = true }
+clap = { version = "4.5.31", features = ["cargo", "derive"], optional = true }
 crokey = { version = "1.1.0", optional = true }
 crossterm = { version = "0.28.1", features = ["use-dev-tty"], optional = true }
 directories = "5.0.1"
@@ -41,6 +41,7 @@ documented = "0.9.1"
 edit = { version = "0.1.5", optional = true }
 env_logger = { version = "0.11.5", optional = true }
 log = "0.4.25"
+memory-stats = "1.2.0"
 mockall = { version = "0.13.1", optional = true }
 nu-ansi-term = { version = "0.50.1", optional = true }
 phf = { version = "0.11", features = ["macros"] }
@@ -52,14 +53,14 @@ reedline = { version = "0.37.0", optional = true }
 regex = "1.11.1"
 scopeguard = { version = "1.2.0", optional = true }
 semver = "1.0.25"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = { version = "1.0.138", optional = true }
+serde = { version = "1.0.218", features = ["derive"] }
+serde_json = { version = "1.0.139", optional = true }
 serde_merge = { version = "0.1.3", optional = true }
 # serde_with = { version = "3.11.0", optional = true }
 side-by-side-diff = { version = "0.1.2", optional = true }
 simplelog = { version = "0.12.2", optional = true }
 # strict = "0.2.0"
-strum = { version = "0.26.3", features = ["derive", "phf"] }
+strum = { version = "0.27.1", features = ["derive", "phf"] }
 supports-color = { version = "3.0.2", optional = true }
 syn = { version = "2.0.98", features = [
     "extra-traits",
@@ -70,7 +71,7 @@ syn = { version = "2.0.98", features = [
 termbg = { version = "0.6.1", optional = true }
 thag_proc_macros = { version = "0.1.1", path = "src/proc_macros" }
 toml = { version = "0.8.20" }
-toml_edit = { version = "0.22.23", optional = true }
+toml_edit = { version = "0.22.24", optional = true }
 # `tui-textarea` is used for the `tui` feature`.
 tui-textarea = { version = "0.7", features = [
     "crossterm",
@@ -79,7 +80,7 @@ tui-textarea = { version = "0.7", features = [
 
 [build-dependencies]
 phf = { version = "0.11", features = ["macros"] }
-tempfile = "3.16"
+tempfile = "3.17"
 toml = "0.8.19"
 
 [target.'cfg(windows)'.dependencies]
@@ -88,8 +89,8 @@ winapi = "0.3.9"
 
 [profile.dev]
 # opt-level = 1            # Use slightly better optimizations.
-debug = false
-debug-assertions = false
+debug = true
+debug-assertions = true
 incremental = true
 
 [profile.release]
@@ -249,12 +250,12 @@ requires-any = [["simplelog", "env_logger"]]
 [dev-dependencies]
 assert_cmd = "2.0.16"
 criterion = "0.5.1"
-either = "1.13.0"
+either = "1.14.0"
 env_logger = "0.11.5"
 lazy_static = "1.5.0"
 predicates = "3.1.2"
 sequential-test = "0.2.4"
-tempfile = "3.14.0"
+tempfile = "3.17.1"
 test-generator = "0.3.1"
 
 [[bench]]

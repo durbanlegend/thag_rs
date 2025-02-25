@@ -1,4 +1,4 @@
-name = "PaperColor Light Base16 "
+name = "PaperColor Light Base16"
 description = "Converted from PaperColor Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    0,
     135,
     0,
+    175,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    175,
+    215,
+    95,
     0,
-    0,
+]
+style = [
+    "italic",
+    "dim",
 ]

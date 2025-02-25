@@ -22,7 +22,7 @@ ibig = "0.3.6"
 /// only run one algorithm while others are slowed down by running and comparing two different
 /// algorithms.
 //# Purpose: Demo snippets with functions and closures, `ibig` cross-platform big-number crate.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 50`
 use ibig::{ubig, UBig};
 use std::env;

@@ -1,4 +1,4 @@
-name = "tender Base16 "
+name = "tender Base16"
 description = "Converted from tender theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    72,
-    72,
-    72,
+    201,
+    208,
+    92,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    56,
-    56,
-    56,
+    179,
+    222,
+    239,
+]
+style = [
+    "italic",
+    "dim",
 ]

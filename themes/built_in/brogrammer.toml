@@ -1,51 +1,117 @@
-name = "Brogrammer"
+name = "Brogrammer "
 description = "Converted from Brogrammer theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
 backgrounds = ["#131313"]
+bg_rgbs = [[
+    19,
+    19,
+    19,
+]]
 
 [palette.heading1]
-rgb = [247, 17, 24]
+rgb = [
+    247,
+    17,
+    24,
+]
 style = ["bold"]
 
 [palette.heading2]
-rgb = [42, 132, 210]
+rgb = [
+    42,
+    132,
+    210,
+]
 style = ["bold"]
 
 [palette.heading3]
-rgb = [15, 128, 213]
+rgb = [
+    15,
+    128,
+    213,
+]
 style = ["bold"]
 
 [palette.error]
-rgb = [247, 17, 24]
+rgb = [
+    247,
+    17,
+    24,
+]
 
 [palette.warning]
-rgb = [236, 185, 15]
+rgb = [
+    236,
+    185,
+    15,
+]
 
 [palette.success]
-rgb = [44, 197, 93]
+rgb = [
+    44,
+    197,
+    93,
+]
 
 [palette.info]
-rgb = [42, 132, 210]
+rgb = [
+    42,
+    132,
+    210,
+]
 
 [palette.emphasis]
-rgb = [78, 89, 183]
+rgb = [
+    78,
+    89,
+    183,
+]
 
 [palette.code]
-rgb = [44, 197, 93]
+rgb = [
+    44,
+    197,
+    93,
+]
 
 [palette.normal]
-rgb = [193, 200, 215]
+rgb = [
+    193,
+    200,
+    215,
+]
 
 [palette.subtle]
-rgb = [29, 210, 96]
+rgb = [
+    29,
+    210,
+    96,
+]
 
 [palette.hint]
-rgb = [242, 189, 9]
+rgb = [
+    242,
+    189,
+    9,
+]
 style = ["italic"]
 
 [palette.debug]
-rgb = [222, 52, 46]
+rgb = [
+    44,
+    197,
+    93,
+]
+style = ["dim"]
 
 [palette.trace]
-rgb = [2, 2, 2]
+rgb = [
+    42,
+    132,
+    210,
+]
+style = [
+    "italic",
+    "dim",
+]

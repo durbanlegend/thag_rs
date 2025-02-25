@@ -1,4 +1,4 @@
-name = "Dark Violet Base16 "
+name = "Dark Violet Base16"
 description = "Converted from Dark Violet theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    67,
-    45,
-    89,
+    69,
+    149,
+    230,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    35,
-    26,
-    64,
+    65,
+    54,
+    217,
+]
+style = [
+    "italic",
+    "dim",
 ]

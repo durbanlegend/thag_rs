@@ -1,4 +1,4 @@
-name = "Terracotta Dark Base16 "
+name = "Terracotta Dark Base16"
 description = "Converted from Terracotta Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    71,
-    57,
-    51,
+    182,
+    198,
+    138,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    54,
-    43,
-    39,
+    176,
+    164,
+    195,
+]
+style = [
+    "italic",
+    "dim",
 ]

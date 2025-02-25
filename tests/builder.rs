@@ -1,6 +1,7 @@
 #[cfg(test)]
 use cargo_toml::Manifest;
 use quote::ToTokens;
+use std::sync::Once;
 use std::{
     env::current_dir,
     fs::{self, OpenOptions},
@@ -19,9 +20,12 @@ use thag_rs::{escape_path_for_windows, execute, ProcFlags, TMPDIR};
 
 // Set environment variables before running tests
 fn set_up() {
-    std::env::set_var("TEST_ENV", "1");
-    std::env::set_var("VISUAL", "cat");
-    std::env::set_var("EDITOR", "cat");
+    static INIT: Once = Once::new();
+    INIT.call_once(|| unsafe {
+        std::env::set_var("TEST_ENV", "1");
+        std::env::set_var("VISUAL", "cat");
+        std::env::set_var("EDITOR", "cat");
+    });
 }
 
 // Helper function to create a sample Cli structure
@@ -78,7 +82,6 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
 }
 
 #[test]
-// #[sequential]
 fn test_builder_execute_dynamic_script() {
     set_up();
     let mut cli = create_sample_cli(Some(
@@ -141,7 +144,6 @@ fn test_builder_generate_source_file() {
 }
 
 #[test]
-// #[sequential]
 fn test_builder_build_cargo_project() {
     set_up();
     let source_name = "bitflags_t.rs";
@@ -235,7 +237,6 @@ name = "bitflags_t"
 }
 
 #[test]
-// #[sequential]
 fn test_builder_run_script() {
     set_up();
     let source_name = "fib_fac_dashu_t.rs";

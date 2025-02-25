@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{
-    debug_log, profile,
+    debug_log, enable_profiling, profile,
     tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay},
     vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError, ThagResult, V,
 };
@@ -59,6 +59,7 @@ enum ReplCommand {
 }
 
 #[allow(dead_code)]
+#[enable_profiling]
 fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
@@ -95,6 +96,7 @@ fn main() -> ThagResult<()> {
 /// # Panics
 ///
 /// If the terminal cannot be reset.
+#[profile]
 pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
@@ -171,6 +173,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 /// # Errors
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+#[profile]
 pub fn read() -> Result<String, std::io::Error> {
     if std::io::stdin().is_terminal() {
         vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
@@ -195,8 +198,8 @@ pub fn read() -> Result<String, std::io::Error> {
 /// # Errors
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+#[profile]
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
-    profile!("read_to_string");
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)
@@ -206,6 +209,7 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
+#[profile]
 pub fn edit_history() -> ThagResult<Option<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");

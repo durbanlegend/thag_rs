@@ -1,4 +1,4 @@
-name = "Sparky Base16 "
+name = "Sparky Base16"
 description = "Converted from Sparky theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    0,
-    60,
-    70,
+    120,
+    214,
+    75,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    0,
-    49,
-    60,
+    70,
+    152,
+    203,
+]
+style = [
+    "italic",
+    "dim",
 ]

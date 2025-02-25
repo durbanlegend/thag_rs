@@ -1,4 +1,4 @@
-name = "UwUnicorn Base16 "
+name = "UwUnicorn Base16"
 description = "Converted from UwUnicorn theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    70,
-    53,
-    74,
+    201,
+    101,
+    191,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    47,
-    42,
-    63,
+    106,
+    158,
+    181,
+]
+style = [
+    "italic",
+    "dim",
 ]

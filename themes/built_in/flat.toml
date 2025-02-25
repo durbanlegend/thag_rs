@@ -1,51 +1,117 @@
-name = "Flat"
+name = "Flat "
 description = "Converted from Flat theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
 backgrounds = ["#082845"]
+bg_rgbs = [[
+    8,
+    40,
+    69,
+]]
 
 [palette.heading1]
-rgb = [168, 35, 32]
+rgb = [
+    168,
+    35,
+    32,
+]
 style = ["bold"]
 
 [palette.heading2]
-rgb = [49, 103, 172]
+rgb = [
+    49,
+    103,
+    172,
+]
 style = ["bold"]
 
 [palette.heading3]
-rgb = [44, 147, 112]
+rgb = [
+    44,
+    147,
+    112,
+]
 style = ["bold"]
 
 [palette.error]
-rgb = [168, 35, 32]
+rgb = [
+    168,
+    35,
+    32,
+]
 
 [palette.warning]
-rgb = [229, 141, 17]
+rgb = [
+    229,
+    141,
+    17,
+]
 
 [palette.success]
-rgb = [45, 148, 64]
+rgb = [
+    45,
+    148,
+    64,
+]
 
 [palette.info]
-rgb = [49, 103, 172]
+rgb = [
+    49,
+    103,
+    172,
+]
 
 [palette.emphasis]
-rgb = [120, 26, 160]
+rgb = [
+    120,
+    26,
+    160,
+]
 
 [palette.code]
-rgb = [45, 148, 64]
+rgb = [
+    45,
+    148,
+    64,
+]
 
 [palette.normal]
-rgb = [140, 147, 154]
+rgb = [
+    140,
+    147,
+    154,
+]
 
 [palette.subtle]
-rgb = [50, 165, 72]
+rgb = [
+    50,
+    165,
+    72,
+]
 
 [palette.hint]
-rgb = [229, 190, 12]
+rgb = [
+    229,
+    190,
+    12,
+]
 style = ["italic"]
 
 [palette.debug]
-rgb = [212, 49, 46]
+rgb = [
+    45,
+    148,
+    64,
+]
+style = ["dim"]
 
 [palette.trace]
-rgb = [0, 22, 41]
+rgb = [
+    49,
+    103,
+    172,
+]
+style = [
+    "italic",
+    "dim",
+]

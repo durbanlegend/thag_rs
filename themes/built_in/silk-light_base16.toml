@@ -1,4 +1,4 @@
-name = "Silk Light Base16 "
+name = "Silk Light Base16"
 description = "Converted from Silk Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    144,
-    183,
-    182,
+    108,
+    163,
+    140,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    204,
-    212,
-    211,
+    57,
+    170,
+    201,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -1,4 +1,4 @@
-name = "Ayu Mirage Base16 "
+name = "Ayu Mirage Base16"
 description = "Converted from Ayu Mirage theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    36,
-    41,
-    54,
+    213,
+    255,
+    128,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    31,
-    36,
-    48,
+    92,
+    207,
+    230,
+]
+style = [
+    "italic",
+    "dim",
 ]

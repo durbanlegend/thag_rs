@@ -6,36 +6,61 @@
 use crate::styling::{ColorSupport, TermBgLuma};
 use crate::{lazy_static_var, profile, vlog, ThagError, ThagResult, V};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
-use scopeguard::defer;
 use std::io::{stdout, Write};
 use supports_color::Stream;
 
 #[cfg(debug_assertions)]
 use crate::debug_log;
 
+#[profile]
 fn reset_terminal_state() {
-    print!("\r");
+    // eprintln!("Resetting terminal state...");
+    print!("\r\n");
     let _ = stdout().flush();
 }
 
 #[allow(clippy::module_name_repetitions)]
-pub struct TerminalStateGuard;
+pub struct TerminalStateGuard {
+    pub raw_mode: bool,
+}
 
 impl TerminalStateGuard {
     #[must_use]
-    pub const fn new() -> Self {
-        Self
+    pub const fn new(raw_mode: bool) -> Self {
+        Self { raw_mode }
     }
 }
 
 impl Default for TerminalStateGuard {
+    #[profile]
     fn default() -> Self {
-        Self::new()
+        Self::new(false)
     }
 }
 
+#[allow(unused_variables)]
 impl Drop for TerminalStateGuard {
+    #[profile]
     fn drop(&mut self) {
+        let raw_now = match is_raw_mode_enabled() {
+            Ok(val) => val,
+            Err(e) => {
+                #[cfg(debug_assertions)]
+                debug_log!("Failed to check raw mode status: {:?}", e);
+                return;
+            }
+        };
+
+        if raw_now == self.raw_mode {
+            #[cfg(debug_assertions)]
+            debug_log!("Raw mode status unchanged.");
+        } else if let Err(e) = restore_raw_status(self.raw_mode) {
+            #[cfg(debug_assertions)]
+            debug_log!("Failed to restore raw mode: {:?}", e);
+        } else {
+            #[cfg(debug_assertions)]
+            debug_log!("Raw mode restored to previous state.");
+        }
         reset_terminal_state();
     }
 }
@@ -59,44 +84,29 @@ impl Drop for TerminalStateGuard {
 /// println!("Terminal color support: {:?}", support);
 /// ```
 #[must_use]
-#[allow(unused_variables)]
-pub fn detect_color_support() -> &'static ColorSupport {
-    profile!("detect_color_support");
+#[profile]
+pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u8)) {
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
         debug_log!("Avoiding supports_color for testing");
-        return &ColorSupport::Basic;
+        return (&ColorSupport::Basic, &(0, 0, 0));
     }
 
-    reset_terminal_state();
-
-    lazy_static_var!(ColorSupport, {
-        let _guard = TerminalStateGuard::new();
-        vlog!(V::V, "Checking colour support");
-        let raw_before = is_raw_mode_enabled();
-        if let Ok(raw_then) = raw_before {
-            defer! {
-                let raw_now = match is_raw_mode_enabled() {
-                    Ok(val) => val,
-                    Err(e) => {
-                        #[cfg(debug_assertions)]
-                        debug_log!("Failed to check raw mode status: {:?}", e);
-                        return;
-                    }
-                };
-
-                if raw_now == raw_then {
-                    #[cfg(debug_assertions)]
-                    debug_log!("Raw mode status unchanged.");
-                } else if let Err(e) = restore_raw_status(raw_then) {
-                    #[cfg(debug_assertions)]
-                    debug_log!("Failed to restore raw mode: {:?}", e);
-                } else {
-                    #[cfg(debug_assertions)]
-                    debug_log!("Raw mode restored to previous state.");
-                }
-            }
+    let maybe_raw_mode = is_raw_mode_enabled();
+    let raw_now = match maybe_raw_mode {
+        Ok(val) => val,
+        #[allow(unused_variables)]
+        Err(e) => {
+            #[cfg(debug_assertions)]
+            debug_log!("Failed to check raw mode status: {:?}", e);
+            return (&ColorSupport::Basic, &(0, 0, 0));
         }
+    };
+
+    let _guard = TerminalStateGuard::new(raw_now);
+
+    let color_support = lazy_static_var!(ColorSupport, {
+        vlog!(V::V, "Checking colour support");
 
         supports_color::on(Stream::Stdout).map_or(ColorSupport::None, |color_level| {
             if color_level.has_16m {
@@ -107,7 +117,14 @@ pub fn detect_color_support() -> &'static ColorSupport {
                 ColorSupport::Basic
             }
         })
-    })
+    });
+
+    let term_bg_rgb = lazy_static_var!((u8, u8, u8), {
+        let maybe_term_bg = get_term_bg_rgb_unguarded();
+        *maybe_term_bg.unwrap_or(&(0, 0, 0))
+    });
+
+    (color_support, term_bg_rgb)
 }
 
 /// Detects the terminal's theme (light or dark)
@@ -128,11 +145,10 @@ pub fn detect_color_support() -> &'static ColorSupport {
 /// let luma = get_term_bg_luma();
 /// println!("Terminal background intensity: {:?}", luma);
 /// ```
+#[profile]
 pub fn get_term_bg_luma() -> &'static TermBgLuma {
-    profile!("get_term_bg_luma");
-
     lazy_static_var!(TermBgLuma, {
-        let _guard = TerminalStateGuard::new();
+        let _guard = TerminalStateGuard::new(false);
 
         let maybe_term_bg = get_term_bg_rgb();
         maybe_term_bg.map_or(TermBgLuma::Dark, |rgb| {
@@ -146,6 +162,7 @@ pub fn get_term_bg_luma() -> &'static TermBgLuma {
 }
 
 #[must_use]
+#[profile]
 pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
     // Using perceived brightness formula
     let brightness =
@@ -176,9 +193,11 @@ pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
 /// let maybe_term_bg_rgb = get_term_bg_rgb();
 /// println!("Terminal background: {maybe_term_bg_rgb:?}");
 /// ```
+#[profile]
 pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
     struct RawModeGuard(bool);
     impl Drop for RawModeGuard {
+        #[profile]
         fn drop(&mut self) {
             if !self.0 {
                 let _ = disable_raw_mode();
@@ -186,8 +205,6 @@ pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
             }
         }
     }
-
-    profile!("get_term_bg");
 
     lazy_static_var!(
         Result < (u8, u8, u8),
@@ -217,7 +234,56 @@ pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
             Ok((r, g, b))
         }
     )
-    // .map(|x| &x)
+    .as_ref()
+    .map_err(|e| ThagError::from(e.to_string()))
+}
+
+/// Detects the terminal's background color.
+///
+/// This version is meant to be called from
+/// a guarded function that handles raw mode and does a single terminal reset for all
+/// terminal interrogations, to avoid multiple newlines generated by multiple resets.
+///
+/// This function attempts to detect the terminal's background color using `termbg`.
+/// If detection fails it defaults to `TermTheme::Dark`.
+///
+/// # Raw Mode Handling
+///
+/// This function has no raw mode handling and shouldbe called from one that does.
+/// Alternatively, use `get_term_bg_rgb` to implement raw mode handling.
+///
+/// # Errors
+///
+/// This function will wrap and return any error returned by `termbg::rgb`.
+///
+/// # Examples
+///
+/// ```
+/// use thag_rs::terminal::get_term_bg_rgb;
+/// use thag_rs::ThagError;
+///
+/// let maybe_term_bg_rgb = get_term_bg_rgb();
+/// println!("Terminal background: {maybe_term_bg_rgb:?}");
+/// ```
+#[profile]
+pub fn get_term_bg_rgb_unguarded() -> ThagResult<&'static (u8, u8, u8)> {
+    // Now do theme detection
+    lazy_static_var!(
+    Result < (u8, u8, u8),
+    termbg::Error >, {
+        vlog!(V::V, "Checking terminal background");
+        let timeout = std::time::Duration::from_millis(500);
+        let bg_rgb = termbg::rgb(timeout)?;
+
+        // Convert 16-bit RGB to 8-bit RGB
+        let (r, g, b): (u8, u8, u8) = (
+            (bg_rgb.r >> 8) as u8,
+            (bg_rgb.g >> 8) as u8,
+            (bg_rgb.b >> 8) as u8,
+        );
+
+        Ok((r, g, b))
+    })
     .as_ref()
     .map_err(|e| ThagError::from(e.to_string()))
 }
@@ -227,8 +293,8 @@ pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
 /// # Errors
 ///
 /// This function will bubble up any errors returned by `crossterm`.
+#[profile]
 pub fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
-    profile!("restore_raw_status");
     if raw_before {
         enable_raw_mode()?;
     } else {

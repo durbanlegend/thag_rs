@@ -1,4 +1,4 @@
-name = "Green Screen Base16 "
+name = "Green Screen Base16"
 description = "Converted from Green Screen theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -100,13 +100,18 @@ style = ["italic"]
 [palette.debug]
 rgb = [
     0,
-    85,
+    187,
     0,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
     0,
-    51,
+    153,
     0,
+]
+style = [
+    "italic",
+    "dim",
 ]

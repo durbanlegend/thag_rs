@@ -1,4 +1,4 @@
-name = "Rosé Pine Moon Base16 "
+name = "Rosé Pine Moon Base16"
 description = "Converted from Rosé Pine Moon theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    57,
-    53,
-    82,
+    62,
+    143,
+    176,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    42,
-    39,
-    63,
+    196,
+    167,
+    231,
+]
+style = [
+    "italic",
+    "dim",
 ]

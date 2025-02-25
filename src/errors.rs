@@ -1,26 +1,33 @@
+use crate::profile;
 use crate::shared::disentangle;
 use crate::styling::TermBgLuma;
 use crate::ColorSupport;
-#[cfg(feature = "bitflags")]
-use bitflags::parser::ParseError as BitFlagsParseError;
-#[cfg(feature = "cargo_toml")]
-use cargo_toml::Error as CargoTomlError;
-#[cfg(feature = "clap")]
-use clap::error::Error as ClapError;
-#[cfg(feature = "reedline")]
-use reedline::ReedlineError;
-#[cfg(feature = "serde_merge")]
-use serde_merge::error::Error as SerdeMergeError;
 use std::borrow::Cow;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 use std::sync::{MutexGuard, PoisonError as LockError};
 use std::{error::Error, io};
 use strum::ParseError as StrumParseError;
-#[cfg(feature = "syn")]
-use syn::Error as SynError;
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
+
+#[cfg(feature = "bitflags")]
+use bitflags::parser::ParseError as BitFlagsParseError;
+
+#[cfg(feature = "cargo_toml")]
+use cargo_toml::Error as CargoTomlError;
+
+#[cfg(feature = "clap")]
+use clap::error::Error as ClapError;
+
+#[cfg(feature = "reedline")]
+use reedline::ReedlineError;
+
+#[cfg(feature = "serde_merge")]
+use serde_merge::error::Error as SerdeMergeError;
+
+#[cfg(feature = "syn")]
+use syn::Error as SynError;
 
 pub type ThagResult<T> = Result<T, ThagError>;
 
@@ -38,7 +45,7 @@ pub enum ThagError {
     Io(std::io::Error), // For I/O errors
     LockMutexGuard(&'static str), // For lock errors with MutexGuard
     Logic(&'static str), // For logic errors
-    NoneOption(&'static str), // For unwrapping Options
+    NoneOption(String), // For unwrapping Options
     OsString(std::ffi::OsString), // For unconvertible OsStrings
     Parse,
     ParseInt(ParseIntError),
@@ -63,12 +70,14 @@ pub enum ThagError {
 }
 
 impl From<FromUtf8Error> for ThagError {
+    #[profile]
     fn from(err: FromUtf8Error) -> Self {
         Self::FromUtf8(err)
     }
 }
 
 impl From<io::Error> for ThagError {
+    #[profile]
     fn from(err: io::Error) -> Self {
         Self::Io(err)
     }
@@ -76,30 +85,35 @@ impl From<io::Error> for ThagError {
 
 #[cfg(feature = "clap")]
 impl From<ClapError> for ThagError {
+    #[profile]
     fn from(err: ClapError) -> Self {
         Self::ClapError(err)
     }
 }
 
 impl From<StrumParseError> for ThagError {
+    #[profile]
     fn from(err: StrumParseError) -> Self {
         Self::StrumParse(err)
     }
 }
 
 impl From<ThemeError> for ThagError {
+    #[profile]
     fn from(err: ThemeError) -> Self {
         Self::Theme(err)
     }
 }
 
 impl From<TomlDeError> for ThagError {
+    #[profile]
     fn from(err: TomlDeError) -> Self {
         Self::TomlDe(err)
     }
 }
 
 impl From<TomlSerError> for ThagError {
+    #[profile]
     fn from(err: TomlSerError) -> Self {
         Self::TomlSer(err)
     }
@@ -107,24 +121,28 @@ impl From<TomlSerError> for ThagError {
 
 #[cfg(feature = "cargo_toml")]
 impl From<CargoTomlError> for ThagError {
+    #[profile]
     fn from(err: CargoTomlError) -> Self {
         Self::Toml(err)
     }
 }
 
 impl From<String> for ThagError {
+    #[profile]
     fn from(s: String) -> Self {
         Self::FromStr(Cow::Owned(s))
     }
 }
 
 impl From<&'static str> for ThagError {
+    #[profile]
     fn from(s: &'static str) -> Self {
         Self::FromStr(Cow::Borrowed(s))
     }
 }
 
 impl From<ParseIntError> for ThagError {
+    #[profile]
     fn from(err: ParseIntError) -> Self {
         Self::ParseInt(err)
     }
@@ -132,6 +150,7 @@ impl From<ParseIntError> for ThagError {
 
 #[cfg(feature = "reedline")]
 impl From<ReedlineError> for ThagError {
+    #[profile]
     fn from(err: ReedlineError) -> Self {
         Self::Reedline(err)
     }
@@ -139,6 +158,7 @@ impl From<ReedlineError> for ThagError {
 
 #[cfg(feature = "serde_merge")]
 impl From<SerdeMergeError> for ThagError {
+    #[profile]
     fn from(err: SerdeMergeError) -> Self {
         Self::SerdeMerge(err)
     }
@@ -146,12 +166,14 @@ impl From<SerdeMergeError> for ThagError {
 
 #[cfg(feature = "syn")]
 impl From<SynError> for ThagError {
+    #[profile]
     fn from(err: SynError) -> Self {
         Self::Syn(err)
     }
 }
 
 impl<'a, T> From<LockError<MutexGuard<'a, T>>> for ThagError {
+    #[profile]
     fn from(_err: LockError<MutexGuard<'a, T>>) -> Self {
         Self::LockMutexGuard("Lock poisoned")
     }
@@ -159,12 +181,14 @@ impl<'a, T> From<LockError<MutexGuard<'a, T>>> for ThagError {
 
 #[cfg(feature = "bitflags")]
 impl From<BitFlagsParseError> for ThagError {
+    #[profile]
     fn from(err: BitFlagsParseError) -> Self {
         Self::BitFlagsParse(err)
     }
 }
 
 impl From<Box<dyn Error + Send + Sync + 'static>> for ThagError {
+    #[profile]
     fn from(err: Box<dyn Error + Send + Sync + 'static>) -> Self {
         Self::Dyn(err)
     }
@@ -172,18 +196,21 @@ impl From<Box<dyn Error + Send + Sync + 'static>> for ThagError {
 
 #[cfg(feature = "color_detect")]
 impl From<termbg::Error> for ThagError {
+    #[profile]
     fn from(err: termbg::Error) -> Self {
         Self::Termbg(err)
     }
 }
 
 impl From<std::env::VarError> for ThagError {
+    #[profile]
     fn from(err: std::env::VarError) -> Self {
         Self::VarError(err)
     }
 }
 
 impl std::fmt::Display for ThagError {
+    #[profile]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             // Use display formatting instead of debug formatting where possible
@@ -192,7 +219,13 @@ impl std::fmt::Display for ThagError {
             Self::Cancelled => write!(f, "Cancelled"),
             #[cfg(feature = "clap")]
             Self::ClapError(e) => write!(f, "{e}"),
-            Self::Command(s) | Self::Logic(s) | Self::NoneOption(s) => {
+            Self::Command(s) | Self::Logic(s) => {
+                for line in s.lines() {
+                    writeln!(f, "{line}")?;
+                }
+                Ok(())
+            }
+            Self::NoneOption(s) => {
                 for line in s.lines() {
                     writeln!(f, "{line}")?;
                 }
@@ -252,6 +285,7 @@ impl std::fmt::Display for ThagError {
 }
 
 impl Error for ThagError {
+    #[profile]
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             // The cause is the underlying implementation error type. Is implicitly
@@ -319,6 +353,7 @@ pub enum ThemeError {
 }
 
 impl std::fmt::Display for ThemeError {
+    #[profile]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BackgroundDetectionFailed => {

@@ -1,4 +1,4 @@
-name = "Qualia Base16 "
+name = "Qualia Base16"
 description = "Converted from Qualia theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    69,
-    69,
-    69,
+    128,
+    201,
+    144,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    69,
-    69,
-    69,
+    80,
+    202,
+    205,
+]
+style = [
+    "italic",
+    "dim",
 ]

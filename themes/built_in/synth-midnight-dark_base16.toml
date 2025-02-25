@@ -1,4 +1,4 @@
-name = "Synth Midnight Terminal Dark Base16 "
+name = "Synth Midnight Terminal Dark Base16"
 description = "Converted from Synth Midnight Terminal Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    40,
-    41,
-    42,
+    6,
+    234,
+    97,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    26,
-    27,
-    28,
+    3,
+    174,
+    255,
+]
+style = [
+    "italic",
+    "dim",
 ]

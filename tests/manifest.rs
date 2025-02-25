@@ -2,9 +2,7 @@
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest, Product};
     use semver::Version;
-    use std::collections::BTreeMap;
-    use std::path::PathBuf;
-    use std::time::Instant;
+    use std::{collections::BTreeMap, sync::Once, path::PathBuf, time::Instant};
     use thag_rs::code_utils::to_ast;
     use thag_rs::manifest::{self, capture_dep, cargo_lookup, configure_default, extract, merge};
     use thag_rs::styling::{ColorInitStrategy, TermAttributes};
@@ -12,9 +10,12 @@ mod tests {
 
     // Set environment variables before running tests
     fn set_up() {
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        static INIT: Once = Once::new();
+        INIT.call_once(|| unsafe {
+            std::env::set_var("TEST_ENV", "1");
+            std::env::set_var("VISUAL", "cat");
+            std::env::set_var("EDITOR", "cat");
+        });
     }
 
     fn init_logger() {

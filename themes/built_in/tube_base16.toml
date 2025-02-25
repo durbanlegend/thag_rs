@@ -1,4 +1,4 @@
-name = "London Tube Base16 "
+name = "London Tube Base16"
 description = "Converted from London Tube theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    90,
-    87,
-    88,
+    0,
+    133,
+    62,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    28,
-    63,
-    149,
+    0,
+    157,
+    220,
+]
+style = [
+    "italic",
+    "dim",
 ]

@@ -1,4 +1,4 @@
-name = "lime Base16 "
+name = "lime Base16"
 description = "Converted from lime theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    42,
-    42,
-    63,
+    140,
+    217,
+    124,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    32,
-    32,
-    48,
+    43,
+    146,
+    111,
+]
+style = [
+    "italic",
+    "dim",
 ]

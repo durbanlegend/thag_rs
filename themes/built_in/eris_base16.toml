@@ -1,4 +1,4 @@
-name = "eris Base16 "
+name = "eris Base16"
 description = "Converted from eris theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    35,
-    37,
-    90,
+    250,
+    174,
+    162,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    19,
-    19,
-    58,
+    37,
+    143,
+    196,
+]
+style = [
+    "italic",
+    "dim",
 ]

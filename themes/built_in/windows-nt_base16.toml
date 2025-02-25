@@ -1,4 +1,4 @@
-name = "Windows NT Base16 "
+name = "Windows NT Base16"
 description = "Converted from Windows NT theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -99,14 +99,19 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
-    85,
-    85,
-    85,
+    0,
+    255,
+    0,
 ]
+style = ["dim"]
 
 [palette.trace]
 rgb = [
-    42,
-    42,
-    42,
+    0,
+    0,
+    255,
+]
+style = [
+    "italic",
+    "dim",
 ]

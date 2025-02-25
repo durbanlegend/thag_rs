@@ -6,7 +6,7 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 
 /// Claude-generated demo of `Dracula` theme.
 //# Purpose: Confirm style implementation and demo the theme.
-//# Categories: basic, educational, testing
+//# Categories: basic, learning, testing
 use thag_rs::styling::{Role, Theme};
 
 fn main() {

@@ -596,7 +596,6 @@ pub fn process_source(
     proc_flags: &ProcFlags,
     start: Instant,
 ) -> ThagResult<()> {
-    // profile!("process_source");
     let rs_manifest = extract(rs_source, Instant::now())?;
     build_state.rs_manifest = Some(rs_manifest);
     let maybe_ast = extract_ast_expr(rs_source);

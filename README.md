@@ -7,13 +7,19 @@
 <a href="https://deps.rs/repo/github/durbanlegend/thag_rs"><img src="https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg" alt="dependency status"/></a>
 
 
-## Intro
+`thag_rs` is a toolkit designed to make your Rust development experience smoother. With the simple `thag` command, you get a script runner, expression evaluator, and REPL all in one place — along with several thoughtful features that address common development pain points.
 
-Introducing `thag_rs` (command `thag`) - a set of creative solutions to ease your Rust development experience. `thag` combines a script runner, expression evaluator, and REPL into one tool,
-with an array of smart features.
+The core purpose of `thag` is straightforward: eliminate the setup barriers that slow you down when you're trying to test ideas, explore functionality, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
 
-`thag`'s mission is to remove obstacles to productivity by giving you a selection of tools
-and examples to make it as quick and easy as possible to figure stuff out without tedious setup.
+Whether you're:
+- Prototyping a concept
+- Learning how a crate works
+- Debugging proc macros
+- Running quick calculations
+- Profiling code performance
+- Building custom development tools
+
+`thag_rs` helps you get answers faster — from simple one-liners to complex multi-file programs.
 
 🚀 **The basics:**
 
@@ -64,7 +70,7 @@ Profiling produces named and timestamped output files.
 
     There's a tool to instrument functions and methods in a source file with `thag` profiling attributes (`#[profile]` or (for `fn main`: `#[enable_profiling]`)).
 
-    There's another to select andanalyse the desired profiling output and display statistics and regular or differential before/after flamecharts for chosen profiling output files.
+    There's another to select and analyse the desired profiling output and display statistics and regular or differential before/after flamecharts for chosen profiling output files.
 
     Yet another removes the instrumentation from a source file.
 
@@ -80,8 +86,6 @@ Profiling produces named and timestamped output files.
 💡 **Getting Started:**
 
 Jump into `thag`'s collection of 230+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
-
-Be it prototyping, learning, or building tools, `thag_rs` is there to help - from quick one-liners to full-featured programs.
 
 ## Quick start: ways to run the `thag` command
 

@@ -4,7 +4,7 @@ edit = "0.1.5"
 inquire = "0.7.5"
 #log = "0.4.22"
 regex = "1.10.5"
-strum = { version = "0.26.3", features = ["derive"] }
+strum = { version = "0.26.3", features = ["derive", "phf"] }
 syn = "2"
 # thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
 thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }

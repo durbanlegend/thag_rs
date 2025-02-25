@@ -1,5 +1,6 @@
 use crate::{
     config::{maybe_config, DependencyInference},
+    end_profile_section,
     logging::{set_global_verbosity, Verbosity, V},
     profile, profile_section, ThagError, ThagResult, RS_SUFFIX,
 };
@@ -224,6 +225,7 @@ bitflags! {
         const CARGO         = 4_194_304;
         const INFER         = 8_388_608;
         const TEST_ONLY     = 16_777_216;
+        const TOOLS         = 33_554_432;
     }
 }
 
@@ -300,6 +302,11 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::CARGO, args.cargo);
         proc_flags.set(ProcFlags::INFER, is_infer);
         proc_flags.set(ProcFlags::TEST_ONLY, args.test_only);
+        proc_flags.set(
+            ProcFlags::TOOLS,
+            args.script.as_ref().is_some_and(|script| script == "tools"),
+        );
+        let _ = end_profile_section("init_config_loop_assert");
 
         profile_section!("config_loop_assert");
         let unquote = args.unquote.map_or_else(
@@ -311,6 +318,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         );
         proc_flags.set(ProcFlags::UNQUOTE, unquote);
         proc_flags.set(ProcFlags::CONFIG, args.config);
+        let _ = end_profile_section("config_loop_assert");
 
         profile_section!("loop_assert");
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
@@ -325,6 +333,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
             }
             return Err("Missing --loop option".into());
         }
+        let _ = end_profile_section("loop_assert");
 
         #[cfg(debug_assertions)]
         {

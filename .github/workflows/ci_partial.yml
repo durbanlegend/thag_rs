@@ -7,7 +7,7 @@ on:
       - develop
     # Exclude tag pushes
     tags-ignore:
-      - '*'
+      - "*"
   pull_request:
     branches:
       - main
@@ -16,7 +16,6 @@ on:
 
 jobs:
   build:
-
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
@@ -24,59 +23,57 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install wayland-client dependencies (Ubuntu only)
-      if: runner.os == 'Linux'
-      run: sudo apt-get install -y libwayland-dev
+      - name: Install wayland-client dependencies (Ubuntu only)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y libwayland-dev
 
-    - name: Set up Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
 
-    - name: Cache Cargo registry
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-registry-
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
 
-    - name: Cache Cargo index
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-index-
+      - name: Cache Cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-index-
 
-    - name: Update crates.io index
-      run: cargo update
+      - name: Update crates.io index
+        run: cargo update
 
-    - name: Build
-      run: cargo build
+      - name: Build
+        run: cargo build
 
-    - name: Show Rust version and active toolchain
-      run: |
-        rustc --version
-        rustup show
+      - name: Show Rust version and active toolchain
+        run: |
+          rustc --version
+          rustup show
 
-    - name: Show cargo tree with features
-      run: cargo tree -f "{p} {f}"
+      - name: Show cargo tree with features
+        run: cargo tree -f "{p} {f}"
 
-    - name: Show mockall dependencies specifically
-      run: cargo tree -p mockall
+      - name: Show mockall dependencies specifically
+        run: cargo tree -p mockall
 
-    - name: Run tests
-      run: cargo test --no-fail-fast --features=simplelog -p thag_rs -- --nocapture --show-output --test-threads=3 check_demo_proc_macro_load_static_map_rs \
-          check_demo_slog_expressions_rs \
-          check_tools_filter_demos_rs
+      - name: Run tests
+        run: cargo test --no-fail-fast --features=simplelog -p thag_rs -- --nocapture --show-output --test-threads=1check_tools_filter_demos_rs
 
-    - name: Upload test output log
-      if: failure()  # Only upload if the test run fails
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-output-log
-        path: test_output.log
+      - name: Upload test output log
+        if: failure() # Only upload if the test run fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output-log
+          path: test_output.log

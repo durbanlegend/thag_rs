@@ -50,10 +50,10 @@ use crate::manifest::extract;
 use crate::styling::{paint_for_role, ColorInitStrategy, TermAttributes};
 use crate::{
     cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
-    modified_since_compiled, profile, regex, repeat_dash, shared, validate_args, vlog, Ast, Cli,
-    ColorSupport, Dependencies, ProcFlags, Role, ThagError, ThagResult, DYNAMIC_SUBDIR,
-    FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME,
-    TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
+    modified_since_compiled, profile, profile_section, regex, repeat_dash, shared, validate_args,
+    vlog, Ast, Cli, ColorSupport, Dependencies, ProcFlags, Role, ThagError, ThagResult,
+    DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX,
+    TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
 use cargo_toml::Manifest;
 use regex::Regex;
@@ -770,9 +770,6 @@ pub fn gen_build_run(
     build_state: &mut BuildState,
     start: &Instant,
 ) -> ThagResult<()> {
-    // Instrument the entire function
-    // profile!("gen_build_run");
-
     if build_state.must_gen {
         let source_path: &Path = &build_state.source_path;
         let start_parsing_rs = Instant::now();
@@ -936,6 +933,7 @@ pub fn gen_build_run(
             } else {
                 Some(rs_source.as_str())
             };
+
         generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
         cvprtln!(
@@ -980,7 +978,7 @@ pub fn gen_build_run(
 #[profile]
 pub fn generate(
     build_state: &BuildState,
-    _rs_source: Option<&str>,
+    rs_source: Option<&str>,
     proc_flags: &ProcFlags,
 ) -> ThagResult<()> {
     let start_gen = Instant::now();
@@ -1001,6 +999,32 @@ pub fn generate(
     let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
     // let is_repl = proc_flags.contains(ProcFlags::REPL);
     vlog!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
+
+    if !build_state.build_from_orig_source {
+        profile_section!("transform_snippet");
+        // TODO make this configurable
+        let rs_source: &str = {
+            #[cfg(feature = "format_snippet")]
+            {
+                let syntax_tree = syn_parse_file(rs_source)?;
+                &prettyplease_unparse(&syntax_tree)
+            }
+            #[cfg(not(feature = "format_snippet"))]
+            {
+                // Code needs to be human readable for clippy, test etc.
+                if proc_flags.contains(ProcFlags::CARGO)
+                    || proc_flags.contains(ProcFlags::TEST_ONLY)
+                {
+                    let syntax_tree = syn_parse_file(rs_source)?;
+                    &prettyplease_unparse(&syntax_tree)
+                } else {
+                    rs_source.expect("Logic error retrieving rs_source")
+                }
+            }
+        };
+
+        write_source(&target_rs_path, rs_source)?;
+    }
 
     // Remove any existing Cargo.lock as this may raise spurious compatibility issues with new dependency versions.
     let lock_path = &build_state.target_dir_path.join("Cargo.lock");

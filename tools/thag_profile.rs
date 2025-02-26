@@ -198,7 +198,7 @@ fn analyze_single_time_profile() -> ThagResult<()> {
             loop {
                 let options = vec![
                     "Show Flamechart",
-                    "Filter Functions",
+                    "Filter Functions (Recursive or Exact Match)",
                     "Show Statistics",
                     "Back to Profile Selection",
                 ];
@@ -210,7 +210,7 @@ fn analyze_single_time_profile() -> ThagResult<()> {
                 match action {
                     "Back to Profile Selection" => break,
                     "Show Flamechart" => generate_time_flamechart(&processed)?,
-                    "Filter Functions" => {
+                    "Filter Functions (Recursive or Exact Match)" => {
                         let filtered = filter_functions(&processed)?;
                         generate_time_flamechart(&filtered)?;
                     }
@@ -437,6 +437,7 @@ fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile) {
 }
 
 fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile> {
+    // Get unique top-level functions from the stacks
     let functions: HashSet<_> = processed
         .stacks
         .iter()
@@ -451,24 +452,81 @@ fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile
     let mut function_list: Vec<_> = functions.into_iter().collect();
     function_list.sort_unstable();
 
+    // Display information about filtering modes
+    println!("\nThere are two filtering modes available:");
+    println!("  1. Recursive: Removes functions and all their child calls (original behavior)");
+    println!("     For example, filtering out 'main' will remove main and everything called by main");
+    println!("  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children");
+    println!("     For example, filtering out 'process_data' will remove standalone 'process_data' entries");
+    println!("     but will keep 'process_data;parse_json' and 'process_data;validate' entries\n");
+
+    // Ask user to select filtering mode
+    let filter_mode = inquire::Select::new(
+        "Select filtering mode:",
+        vec![
+            "Recursive (filter out function and ALL its children)",
+            "Exact Match (filter out function only when it has NO children)",
+        ],
+    )
+    .prompt()
+    .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+    let exact_match = filter_mode.starts_with("Exact Match");
+
+    // Select functions to filter
+    // Show which mode is selected
+    println!("\nUsing {} filtering mode", if exact_match { "Exact Match" } else { "Recursive" });
+
     let to_filter = MultiSelect::new("Select functions to filter out:", function_list)
         .prompt()
         .map_err(|e| ThagError::Profiling(e.to_string()))?;
 
-    Ok(ProcessedProfile {
-        stacks: processed
-            .stacks
+    // Apply appropriate filtering based on the chosen mode
+    let filtered_stacks = if exact_match {
+        // In exact match mode, we need to keep any stack where the filtered function
+        // has children (i.e., is part of a call chain)
+        processed.stacks
             .iter()
             .filter(|line| {
+                // First, extract the root function name
+                let root_func = line
+                    .split(';')
+                    .next()
+                    .and_then(|s| s.split_whitespace().next())
+                    .unwrap_or("");
+
+                // If the root function is in our filter list
+                if to_filter.contains(&root_func) {
+                    // Check if this is a multi-function stack (has children)
+                    let stack_parts = line.split(';').collect::<Vec<_>>();
+                    return stack_parts.len() > 1;
+                }
+
+                // If the function is not in our filter list, keep it
+                true
+            })
+            .cloned()
+            .collect()
+    } else {
+        // Recursive mode (original behavior): filter out function and all its children
+        processed.stacks
+            .iter()
+            .filter(|line| {
+                // Get the root function name
                 let func = line
                     .split(';')
                     .next()
                     .and_then(|s| s.split_whitespace().next())
                     .unwrap_or("");
+                // If it's in the filter list, filter it out
                 !to_filter.contains(&func)
             })
             .cloned()
-            .collect(),
+            .collect()
+    };
+
+    Ok(ProcessedProfile {
+        stacks: filtered_stacks,
         ..processed.clone() // Keep the metadata
     })
 }
@@ -976,13 +1034,6 @@ fn analyze_allocation_sites(
 
     // Process lines directly without creating intermediate MemoryEvents
     for event in &profile.memory_events {
-        // eprintln!("event={event:?}");
-        // eprintln!(
-        //     "stack: {}, op: {}, size: {}",
-        //     event.stack.join(";"),
-        //     event.operation,
-        //     event.delta
-        // );
         // Explicitly specify Result type
         let parse_result: Option<(char, i64)> = match (event.operation, event.delta as i64) {
             ('+', s) => Some(('+', s)),
@@ -1081,11 +1132,14 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
     ];
 
     let mut bucket_counts: HashMap<&str, u64> = HashMap::new();
-    // let mut total_bytes = 0u64;
+
+    let mut total_bytes = 0u64;
 
     for (&size, &count) in &memory_data.allocation_sizes {
         let count = count as u64;
-        // total_bytes += size as u64 * count;
+
+        total_bytes += size as u64 * count;
+
         for &(min, max, label) in &buckets {
             if size >= min && size <= max {
                 *bucket_counts.entry(label).or_default() += count;
@@ -1104,7 +1158,6 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
         println!("{label:>8}: {count:>6} |{}", "█".repeat(bar_length));
     }
 
-    #[cfg(debug_assertions)]
     assert_eq!(total_bytes, memory_data.bytes_allocated);
 
     println!(

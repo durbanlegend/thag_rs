@@ -5,7 +5,7 @@ use inquire::{Select, Text};
 use side_by_side_diff::create_side_by_side_diff;
 use std::{
     fs,
-    io::{self, Write},
+    io::{self, Error, ErrorKind, Write},
     path::Path,
     process::{Command, Output, Stdio},
 };
@@ -66,13 +66,6 @@ fn main() -> Result<()> {
         return Err(anyhow!("File not found: {}", args.input_file));
     }
 
-    // Read the original source
-    let unexpanded_source = fs::read_to_string(input_path)?;
-
-    // Get expanded source using cargo-expand
-    let expanded_source = run_cargo_expand(input_path, &args.theme)
-        .context("Failed to run cargo-expand. Is it installed? (cargo install cargo-expand)")?;
-
     let viewer = if let Some(viewer_name) = args.viewer {
         match viewer_name.as_str() {
             "side-by-side" => ViewerOption::SideBySide,
@@ -102,16 +95,34 @@ fn main() -> Result<()> {
         selection
     };
 
+    let unexpanded_source = match viewer {
+        ViewerOption::ExpandedOnly => None,
+        _ => Some(fs::read_to_string(input_path).or_else(|err| {
+            Err(Error::new(
+                ErrorKind::Other,
+                format!("Failed to read file: {}", err),
+            ))
+        })?),
+    };
+    let expanded_source = match viewer {
+        ViewerOption::ExternalViewer => None,
+        _ => Some(run_cargo_expand(input_path, &args.theme).context(
+            "Failed to run cargo-expand. Is it installed? (cargo install cargo-expand)",
+        )?),
+    };
+
     // Display the expanded code according to the chosen view option
     match viewer {
         ViewerOption::SideBySide => {
             let width = args.width.unwrap_or_else(|| detect_terminal_width());
             let unexpanded_source = &unexpanded_source
+                .unwrap()
                 .lines()
                 .map(|line| line.get(..width as usize).unwrap_or(line))
                 .collect::<Vec<_>>()
                 .join("\n");
             let expanded_source = expanded_source
+                .unwrap()
                 .lines()
                 .map(|line| line.get(..width as usize).unwrap_or(line))
                 .collect::<Vec<_>>()
@@ -125,11 +136,13 @@ fn main() -> Result<()> {
 
             let width: u16 = width_input.parse().context("Invalid width")?;
             let unexpanded_source = &unexpanded_source
+                .unwrap()
                 .lines()
                 .map(|line| line.get(..width as usize).unwrap_or(line))
                 .collect::<Vec<_>>()
                 .join("\n");
             let expanded_source = expanded_source
+                .unwrap()
                 .lines()
                 .map(|line| line.get(..width as usize).unwrap_or(line))
                 .collect::<Vec<_>>()
@@ -137,15 +150,15 @@ fn main() -> Result<()> {
             display_side_by_side(&unexpanded_source, &expanded_source, width)?;
         }
         ViewerOption::ExpandedOnly => {
-            println!("{}", expanded_source);
+            println!("{}", expanded_source.unwrap());
         }
         ViewerOption::UnifiedDiff => {
             let temp_dir = tempdir()?;
             let orig_path = temp_dir.path().join("original.rs");
             let expanded_path = temp_dir.path().join("expanded.rs");
 
-            fs::write(&orig_path, &unexpanded_source)?;
-            fs::write(&expanded_path, &expanded_source)?;
+            fs::write(&orig_path, &unexpanded_source.unwrap())?;
+            fs::write(&expanded_path, &expanded_source.unwrap())?;
 
             let output = Command::new("diff")
                 .arg("-u")
@@ -162,16 +175,27 @@ fn main() -> Result<()> {
             )
             .prompt()?;
 
+            // Get expanded source using cargo-expand
+            let expanded_source = run_cargo_expand(input_path, &args.theme).context(
+                "Failed to run cargo-expand. Is it installed? (cargo install cargo-expand)",
+            )?;
+
             let temp_dir = tempdir()?;
             let orig_path = temp_dir.path().join("original.rs");
             let expanded_path = temp_dir.path().join("expanded.rs");
 
-            fs::write(&orig_path, &unexpanded_source)?;
+            fs::write(&orig_path, &unexpanded_source.unwrap())?;
             fs::write(&expanded_path, &expanded_source)?;
 
             let command = if tool == "custom" {
                 Text::new("Enter custom diff command (use $ORIG and $EXPANDED for file paths):")
                     .prompt()?
+            } else if tool == "sdiff" {
+                let width = args.width.unwrap_or_else(|| match terminal::size() {
+                    Ok((width, _)) => width as u16,
+                    Err(_) => 160, // Default if we can't detect
+                });
+                format!("sdiff -w {width}")
             } else {
                 tool.to_string()
             };
@@ -233,37 +257,17 @@ fn main() -> Result<()> {
 }
 
 /// Run cargo-expand on the input file and return the expanded output
-fn run_cargo_expand(input_path: &Path, theme: &str) -> Result<String> {
-    // Create a temporary directory for the cargo project
-    let temp_dir = tempdir()?;
-    let project_dir = temp_dir.path();
-
-    // Create minimal project structure
-    fs::create_dir(project_dir.join("src"))?;
-
-    // Copy input file to src/main.rs
-    let target_path = project_dir.join("src/main.rs");
-    fs::copy(input_path, &target_path)?;
-
-    // Create minimal Cargo.toml
-    let cargo_toml = format!(
-        r#"[package]
-name = "expand-temp"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-"#
-    );
-    fs::write(project_dir.join("Cargo.toml"), cargo_toml)?;
-
+fn run_cargo_expand(input_path: &Path, _theme: &str) -> Result<String> {
+    let input_path_str = input_path.to_str().ok_or_else(|| anyhow!("Invalid path"))?;
     // Run cargo-expand
-    let output = Command::new("cargo")
-        .current_dir(project_dir)
-        .args(["expand", "--theme", theme])
+    let mut binding = Command::new("thag");
+    let cmd = binding
+        .args(["--cargo", input_path_str, "--", "expand"])
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()?;
+        .stderr(Stdio::piped());
+
+    eprintln!("Running command {cmd:?}");
+    let output = cmd.output()?;
 
     if !output.status.success() {
         return Err(anyhow!(

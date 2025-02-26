@@ -47,7 +47,9 @@ pub fn debug_timings(start: &Instant, process: &str) {
     debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
 }
 
-/// Debugging logger. Logs if the `debug-logs` feature is enabled or if runtime debug logging is enabled (e.g., via `-vv`)
+/// Debugging logger. Logs if the `debug-logs` feature is enabled or if runtime debug logging is enabled (e.g., via `-vv`).
+/// Should not be used outside the `thag_rs` crat due to the feature dependencies. Note that per Rust, messages,
+/// "using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate".
 ///
 #[macro_export]
 macro_rules! debug_log {

@@ -269,7 +269,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     "{}",
                     "\nNo lint groups selected. Using default Clippy checks.".yellow()
                 );
-                println!("\n{}", "Command to run:".bold());
+                println!("\n{}", "Running command:".bold());
                 println!(
                     "thag --cargo {} -- clippy",
                     script_path.display().to_string().bright_cyan()

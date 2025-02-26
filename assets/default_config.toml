@@ -154,7 +154,7 @@ required_features = ["fs"]
 required_features = ["mutex"]
 
 [dependencies.feature_overrides.strum]
-required_features = ["derive", "phf"]
+required_features = ["derive"]
 
 [dependencies.feature_overrides.syn]
 required_features = [

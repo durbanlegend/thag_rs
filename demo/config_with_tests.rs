@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "core", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "core", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
 */
 
 /// Demo of unit testing a non-snippet source file such as a library module using `thag --test-only (-T)`.
@@ -22,12 +22,13 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 //# Categories: technique, testing
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
+use log::debug;
 use mockall::{automock, predicate::str};
 use serde::de;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
-#[cfg(target_os = "windows")]
-use std::env;
+use std::any::type_name_of_val;
+use std::str::FromStr;
 use std::{
     collections::HashMap,
     env::{current_dir, var},
@@ -39,10 +40,13 @@ use std::{
 };
 use strum::{Display, EnumString};
 use thag_rs::{
-    clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, profile, profile_method, Color,
-    ColorSupport, Level, Lvl, TermBgLuma, ThagError, ThagResult, Verbosity, V,
+    clog, clog_error, cprtln, cvprtln, lazy_static_var, Color, ColorSupport, Level, Lvl,
+    TermBgLuma, ThagError, ThagResult, Verbosity, V,
 };
 use toml_edit::DocumentMut;
+
+#[cfg(target_os = "windows")]
+use std::env;
 
 const DEFAULT_CONFIG: &str = include_str!("../assets/default_config.toml");
 
@@ -69,20 +73,18 @@ impl Config {
     ///
     /// This function will bubble up any i/o errors encountered.
     pub fn load_or_create_default(ctx: &impl Context) -> Result<Self, Box<dyn Error>> {
-        profile_method!("load_or_create_default");
-
         let config_path = ctx.get_config_path();
 
         #[cfg(debug_assertions)]
-        debug_log!(
+        debug!(
             "1. config_path={config_path:#?}, exists={}",
             config_path.exists()
         );
 
         if !config_path.exists() {
-            let path = config_path
-                .parent()
-                .ok_or(ThagError::NoneOption("No parent for {config_path:#?}"))?;
+            let path = config_path.parent().ok_or(ThagError::NoneOption(format!(
+                "No parent for {config_path:#?}"
+            )))?;
             fs::create_dir_all(path)?;
 
             // Try to find default config in different locations
@@ -93,7 +95,7 @@ impl Config {
                     .join("default_config.toml");
 
                 #[cfg(debug_assertions)]
-                debug_log!(
+                debug!(
                     "2. dist_config={user_config:#?}, exists={}",
                     user_config.exists()
                 );
@@ -108,19 +110,19 @@ impl Config {
             };
 
             #[cfg(debug_assertions)]
-            debug_log!("3. default_config={default_config}");
+            debug!("3. default_config={default_config}");
             fs::write(&config_path, default_config)?;
         }
 
         #[cfg(debug_assertions)]
-        debug_log!(
+        debug!(
             "4. config_path={config_path:#?}, exists={}",
             config_path.exists()
         );
         let config_str = fs::read_to_string(&config_path)?;
         let maybe_config = toml::from_str(&config_str);
         #[cfg(debug_assertions)]
-        debug_log!("5. maybe_config={maybe_config:#?}");
+        debug!("5. maybe_config={maybe_config:#?}");
         Ok(maybe_config?)
     }
 
@@ -130,7 +132,6 @@ impl Config {
     ///
     /// This function will bubble up any errors encountered.
     pub fn load(path: &Path) -> Result<Self, ThagError> {
-        profile_method!("load");
         let content = std::fs::read_to_string(path)?;
         let config: Self = toml::from_str(&content)?;
         config.validate()?;
@@ -139,7 +140,6 @@ impl Config {
     }
 
     fn validate(&self) -> Result<(), ThagError> {
-        profile_method!("validate");
         // Validate Dependencies section
         self.dependencies
             .validate()
@@ -175,7 +175,6 @@ pub struct Dependencies {
 
 impl Default for Dependencies {
     fn default() -> Self {
-        profile_method!("default");
         Self {
             exclude_unstable_features: true,
             exclude_std_feature: true,
@@ -195,14 +194,12 @@ impl Dependencies {
         crate_name: &str,
         features: &[String],
     ) -> (Vec<String>, bool) {
-        profile_method!("filter_maximal_features");
         let mut filtered = features.to_owned();
 
         #[cfg(debug_assertions)]
-        debug_log!(
+        debug!(
             "Filtering features for crate {}: {:?}",
-            crate_name,
-            filtered
+            crate_name, filtered
         );
 
         // Apply global exclusions
@@ -215,13 +212,13 @@ impl Dependencies {
                     .iter()
                     .any(|ex| f.contains(ex));
                 if !keep {
-                    debug_log!("Excluding feature '{}' due to global exclusion", f);
+                    debug!("Excluding feature '{}' due to global exclusion", f);
                 }
                 keep
             });
             #[cfg(debug_assertions)]
             if filtered.len() < before_len {
-                debug_log!(
+                debug!(
                     "Removed {} features due to global exclusions",
                     before_len - filtered.len()
                 );
@@ -233,7 +230,7 @@ impl Dependencies {
         // Apply crate-specific overrides
         if let Some(override_config) = self.feature_overrides.get(crate_name) {
             #[cfg(debug_assertions)]
-            debug_log!("Applying overrides for crate {}", crate_name);
+            debug!("Applying overrides for crate {}", crate_name);
 
             // Remove excluded features
             // let before_len = filtered.len();
@@ -245,7 +242,7 @@ impl Dependencies {
                         .map_or(true, |excluded_features| !excluded_features.contains(f))
                 };
                 if !keep {
-                    debug_log!("Excluding feature '{}' due to crate-specific override", f);
+                    debug!("Excluding feature '{}' due to crate-specific override", f);
                 }
                 keep
             });
@@ -257,7 +254,7 @@ impl Dependencies {
                         continue;
                     }
                     if !filtered.contains(f) {
-                        debug_log!("Adding required feature '{}'", f);
+                        debug!("Adding required feature '{}'", f);
                         filtered.push(f.clone());
                     }
                 }
@@ -271,7 +268,7 @@ impl Dependencies {
             filtered.retain(|f| {
                 let keep = !f.contains("unstable") || self.always_include_features.contains(f);
                 if !keep {
-                    debug_log!("Excluding unstable feature '{}'", f);
+                    debug!("Excluding unstable feature '{}'", f);
                 }
                 keep
             });
@@ -281,7 +278,7 @@ impl Dependencies {
             filtered.retain(|f| {
                 let keep = f != "std" || self.always_include_features.contains(f);
                 if !keep {
-                    debug_log!("Excluding std feature");
+                    debug!("Excluding std feature");
                 }
                 keep
             });
@@ -292,7 +289,7 @@ impl Dependencies {
         filtered.dedup();
 
         #[cfg(debug_assertions)]
-        debug_log!("Final features for {}: {:?}", crate_name, filtered);
+        debug!("Final features for {}: {:?}", crate_name, filtered);
 
         (filtered.clone(), default_features)
     }
@@ -300,7 +297,6 @@ impl Dependencies {
     // Make should_include_feature use filter_features
     #[must_use]
     pub fn should_include_feature(&self, feature: &str, crate_name: &str) -> bool {
-        profile_method!("should_include_feature");
         self.filter_maximal_features(crate_name, &[feature.to_string()])
             .0
             .contains(&feature.to_string())
@@ -313,8 +309,6 @@ impl Dependencies {
         crate_name: &str,
         all_features: &[String],
     ) -> (Vec<String>, bool) {
-        profile_method!("apply_config_features");
-
         let (mut config_features, default_features) = self.feature_overrides.get(crate_name).map_or_else(|| {
             // Only include features from always_include_features that exist in all_features
             let intersection: Vec<String> = self.always_include_features
@@ -371,7 +365,6 @@ impl Dependencies {
         all_features: &[String],
         level: &DependencyInference,
     ) -> (Option<Vec<String>>, bool) {
-        profile_method!("get_features_for_inference_level");
         match level {
             DependencyInference::None | DependencyInference::Min => (None, true),
             DependencyInference::Config => {
@@ -388,7 +381,6 @@ impl Dependencies {
     }
 
     fn validate(&self) -> Result<(), String> {
-        profile_method!("validate");
         // Validate feature overrides
         for (crate_name, override_config) in &self.feature_overrides {
             // Check for conflicts between required and excluded features
@@ -467,7 +459,7 @@ pub struct Logging {
     DocumentedVariants,
 )]
 /// Dependency inference level
-#[strum(serialize_all = "snake_case")]
+#[strum(use_phf, serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")] // Add this line
 pub enum DependencyInference {
     /// Don't infer any dependencies
@@ -487,7 +479,6 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
     where
         D: de::Deserializer<'de>,
     {
-        profile_method!("deserialize");
         let s = String::deserialize(deserializer)?;
         match s.to_lowercase().as_str() {
             "none" => Ok(Self::None),
@@ -574,7 +565,6 @@ impl RealContext {
     #[cfg(target_os = "windows")]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!("new_real_contexr");
         let base_dir =
             PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"));
         Self { base_dir }
@@ -588,7 +578,6 @@ impl RealContext {
     #[cfg(not(target_os = "windows"))]
     #[must_use]
     pub fn new() -> Self {
-        profile_method!("new_real_context");
         let base_dir =
             PathBuf::from(thag_rs::get_home_dir_string().expect("Could not find home directory"))
                 .join(".config");
@@ -598,8 +587,6 @@ impl RealContext {
 
 impl Context for RealContext {
     fn get_config_path(&self) -> PathBuf {
-        profile_method!("get_config_path");
-
         self.base_dir.join("thag_rs").join("config.toml")
     }
 
@@ -611,7 +598,6 @@ impl Context for RealContext {
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
 pub fn maybe_config() -> Option<Config> {
-    profile!("maybe_config");
     lazy_static_var!(Option<Config>, {
         let context = RealContext::new();
         let load_or_default = Config::load_or_create_default(&context);
@@ -621,7 +607,6 @@ pub fn maybe_config() -> Option<Config> {
 }
 
 fn maybe_load_config() -> Option<Config> {
-    profile!("maybe_load_config");
     // eprintln!("In maybe_load_config, should not see this message more than once");
 
     let context = get_context();
@@ -648,7 +633,6 @@ fn maybe_load_config() -> Option<Config> {
 /// Panics if there is any issue accessing the current directory, e.g. if it doesn't exist or we don't have sufficient permissions to access it.
 #[must_use]
 pub fn get_context() -> Arc<dyn Context> {
-    profile!("get_context");
     let context: Arc<dyn Context> = if var("TEST_ENV").is_ok() {
         let current_dir = current_dir().expect("Could not get current dir");
         let config_path = current_dir.join("tests/assets").join("config.toml");
@@ -672,10 +656,9 @@ pub fn get_context() -> Arc<dyn Context> {
 /// This function will return an error if it either finds a file and fails to read it,
 /// or reads the file and fails to parse it.
 pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
-    profile!("load");
     let config_path = context.get_config_path();
 
-    debug_log!("config_path={config_path:?}");
+    debug!("config_path={config_path:?}");
 
     if !config_path.exists() {
         clog!(
@@ -689,7 +672,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     let config = Config::load(&config_path)?;
 
     // Log validation success
-    debug_log!("Config validation successful");
+    debug!("Config validation successful");
     Ok(Some(config))
 }
 
@@ -700,9 +683,8 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 /// Will panic if it can't create the parent directory for the configuration.
 #[allow(clippy::unnecessary_wraps)]
 pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
-    profile!("open");
     let config_path = context.get_config_path();
-    debug_log!("config_path={config_path:?}");
+    debug!("config_path={config_path:?}");
 
     let exists = config_path.exists();
     if !exists {
@@ -731,7 +713,6 @@ pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
 ///
 /// This function will bubble up any Toml parsing errors encountered.
 pub fn validate_config_format(content: &str) -> Result<(), ThagError> {
-    profile!("validate_config_format");
     // Try to parse as generic TOML first
     let doc = content
         .parse::<DocumentMut>()
@@ -771,21 +752,49 @@ pub fn validate_config_format(content: &str) -> Result<(), ThagError> {
 /// Main function for use by testing or the script runner.
 #[allow(dead_code, unused_variables)]
 fn main() {
+    // Add this temporary code to see what's generated
+    println!(
+        "Generated code for DependencyInference::from_str: {:?}",
+        type_name_of_val(&DependencyInference::from_str)
+    );
+
     let maybe_config = load(&get_context());
 
     if let Ok(Some(config)) = maybe_config {
         // #[cfg(debug_assertions)]
-        // debug_log!("Loaded config: {config:?}");
+        // debug!("Loaded config: {config:?}");
         #[cfg(debug_assertions)]
-        debug_log!(
+        debug!(
             "verbosity={:?}, ColorSupport={:?}, TermBgLuma={:?}",
             config.logging.default_verbosity,
             config.colors.color_support,
             config.colors.term_bg_luma
         );
     } else {
-        debug_log!("No configuration file found.");
+        debug!("No configuration file found.");
     }
+}
+
+#[macro_export]
+macro_rules! debug_log {
+    ($($arg:tt)*) => {
+        // If the `debug-logs` feature is enabled, always log
+        #[cfg(any(feature = "debug-logs", feature = "simplelog"))]
+        {
+            $crate::log::debug!($($arg)*);
+        }
+
+        // In all builds, log if runtime debug logging is enabled (e.g., via `-vv`)
+        #[cfg(not(any(feature = "debug-logs", feature = "simplelog")))]
+        {
+            if $crate::logging::is_debug_logging_enabled() {
+                $crate::log::debug!($($arg)*);
+            } else {
+                // Avoid unused variable warnings in release mode if logging isn't enabled
+                let _ = format_args!($($arg)*);
+            }
+        }
+    };
 }
 
 #[cfg(test)]
@@ -826,7 +835,7 @@ mod tests {
                 ),
             ])
             .unwrap();
-            debug_log!("Initialized simplelog");
+            debug!("Initialized simplelog");
         });
 
         // #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active

@@ -7,7 +7,6 @@ documented = "0.9.1"
 inquire = "0.7.5"
 semver = "1.0.23"
 serde = { version = "1.0.215", features = ["derive"] }
-strum = { version = "0.26.3", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
 thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "simplelog"] }

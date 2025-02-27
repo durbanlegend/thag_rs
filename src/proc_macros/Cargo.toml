@@ -2,7 +2,7 @@
 name = "thag_proc_macros"
 version = "0.1.1"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
-description = "proc macros for the thag_rs crate. Copied from crokey crate under MIT licence"
+description = "proc macros for the thag_rs crate"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 

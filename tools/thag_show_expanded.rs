@@ -18,7 +18,7 @@ use std::{
     fs,
     io::{self, Error, ErrorKind, Write},
     path::{Path, PathBuf},
-    process::{Command, Output, Stdio},
+    process::{Command, Stdio},
 };
 use tempfile::tempdir;
 use thag_proc_macros::file_navigator;
@@ -59,6 +59,7 @@ enum ViewerOption {
     ExpandedOnly,
     UnifiedDiff,
     ExternalViewer,
+    Exit,
 }
 
 impl std::fmt::Display for ViewerOption {
@@ -69,6 +70,7 @@ impl std::fmt::Display for ViewerOption {
             ViewerOption::ExpandedOnly => write!(f, "Expanded code only"),
             ViewerOption::UnifiedDiff => write!(f, "Unified diff"),
             ViewerOption::ExternalViewer => write!(f, "External diff tool"),
+            ViewerOption::Exit => write!(f, "Exit"),
         }
     }
 }
@@ -93,6 +95,11 @@ fn get_script_mode() -> ScriptMode {
 }
 
 fn main() -> Result<()> {
+    // Directly call expand_script
+    expand_script()
+}
+
+fn expand_script() -> Result<()> {
     let input_path = match get_script_mode() {
         ScriptMode::Stdin => {
             eprintln!("This tool cannot be run with stdin input. Please provide a file path or run interactively.");
@@ -114,182 +121,226 @@ fn main() -> Result<()> {
         return Err(anyhow!("File not found: {}", input_path.display()));
     }
 
-    let viewer = {
-        // Interactive mode - ask user for preferred viewing option
+    // Load source files - do this once
+    let unexpanded_source = fs::read_to_string(&input_path).or_else(|err| {
+        Err(Error::new(
+            ErrorKind::Other,
+            format!("Failed to read file: {}", err),
+        ))
+    })?;
+
+    // Get expanded source using cargo-expand - this can be slow, so only do it once
+    let start = std::time::Instant::now();
+    let expanded_source = run_cargo_expand(&input_path)
+        .context("Failed to run cargo-expand. Is it installed? (cargo install cargo-expand)")?;
+    let expand_duration = start.elapsed();
+
+    println!("Macro expansion completed in {:.2?}", expand_duration);
+
+    // Create temporary directory and files once
+    let temp_dir = tempdir()?;
+    let orig_path = temp_dir.path().join("original.rs");
+    let expanded_path = temp_dir.path().join("expanded.rs");
+
+    fs::write(&orig_path, &unexpanded_source)?;
+    fs::write(&expanded_path, &expanded_source)?;
+
+    // Loop for viewing options
+    loop {
+        // Let user choose viewing option
         let options = vec![
             ViewerOption::SideBySide,
             ViewerOption::SideBySideCustomWidth,
             ViewerOption::ExpandedOnly,
             ViewerOption::UnifiedDiff,
             ViewerOption::ExternalViewer,
+            ViewerOption::Exit,
         ];
 
         let selection = Select::new("How would you like to view the expanded code?", options)
-            .with_help_message("Choose a viewing option for the expanded macros")
-            .prompt()?;
-
-        selection
-    };
-
-    let unexpanded_source = match viewer {
-        ViewerOption::ExpandedOnly => None,
-        _ => Some(fs::read_to_string(&input_path).or_else(|err| {
-            Err(Error::new(
-                ErrorKind::Other,
-                format!("Failed to read file: {}", err),
-            ))
-        })?),
-    };
-    let expanded_source = match viewer {
-        ViewerOption::ExternalViewer => None,
-        _ => Some(run_cargo_expand(&input_path).context(
-            "Failed to run cargo-expand. Is it installed? (cargo install cargo-expand)",
-        )?),
-    };
-
-    // Display the expanded code according to the chosen view option
-    match viewer {
-        ViewerOption::SideBySide => {
-            let width = detect_terminal_width();
-            let unexpanded_source = &unexpanded_source
-                .unwrap()
-                .lines()
-                .map(|line| line.get(..width as usize).unwrap_or(line))
-                .collect::<Vec<_>>()
-                .join("\n");
-            let expanded_source = expanded_source
-                .unwrap()
-                .lines()
-                .map(|line| line.get(..width as usize).unwrap_or(line))
-                .collect::<Vec<_>>()
-                .join("\n");
-            display_side_by_side(&unexpanded_source, &expanded_source, width)?;
-        }
-        ViewerOption::SideBySideCustomWidth => {
-            let width_input = Text::new("Enter width for each column:")
-                .with_default(&detect_terminal_width().to_string())
-                .prompt()?;
-
-            let width: u16 = width_input.parse().context("Invalid width")?;
-            let unexpanded_source = &unexpanded_source
-                .unwrap()
-                .lines()
-                .map(|line| line.get(..width as usize).unwrap_or(line))
-                .collect::<Vec<_>>()
-                .join("\n");
-            let expanded_source = expanded_source
-                .unwrap()
-                .lines()
-                .map(|line| line.get(..width as usize).unwrap_or(line))
-                .collect::<Vec<_>>()
-                .join("\n");
-            display_side_by_side(&unexpanded_source, &expanded_source, width)?;
-        }
-        ViewerOption::ExpandedOnly => {
-            println!("{}", expanded_source.unwrap());
-        }
-        ViewerOption::UnifiedDiff => {
-            let temp_dir = tempdir()?;
-            let orig_path = temp_dir.path().join("original.rs");
-            let expanded_path = temp_dir.path().join("expanded.rs");
-
-            fs::write(&orig_path, &unexpanded_source.unwrap())?;
-            fs::write(&expanded_path, &expanded_source.unwrap())?;
-
-            let output = Command::new("diff")
-                .arg("-u")
-                .arg(orig_path)
-                .arg(expanded_path)
-                .output()?;
-
-            io::stdout().write_all(&output.stdout)?;
-        }
-        ViewerOption::ExternalViewer => {
-            let tool = Select::new(
-                "Select external diff tool:",
-                vec!["diff", "sdiff", "git diff", "vimdiff", "code -d", "custom"],
+            .with_help_message(
+                "Choose a viewing option for the expanded macros (press Esc to exit)",
             )
-            .prompt()?;
+            .prompt_skippable()?;
 
-            // Get expanded source using cargo-expand
-            let expanded_source = run_cargo_expand(&input_path).context(
-                "Failed to run cargo-expand. Is it installed? (cargo install cargo-expand)",
-            )?;
+        // If user pressed Esc, exit
+        let Some(viewer) = selection else {
+            println!("Exiting...");
+            return Ok(());
+        };
 
-            let temp_dir = tempdir()?;
-            let orig_path = temp_dir.path().join("original.rs");
-            let expanded_path = temp_dir.path().join("expanded.rs");
+        // Display the expanded code according to the chosen view option
+        match viewer {
+            ViewerOption::SideBySide => {
+                let width = detect_terminal_width();
+                let unexpanded_truncated = unexpanded_source
+                    .lines()
+                    .map(|line| line.get(..width as usize).unwrap_or(line))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                let expanded_truncated = expanded_source
+                    .lines()
+                    .map(|line| line.get(..width as usize).unwrap_or(line))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                display_side_by_side(&unexpanded_truncated, &expanded_truncated, width)?;
 
-            fs::write(&orig_path, &unexpanded_source.unwrap())?;
-            fs::write(&expanded_path, &expanded_source)?;
+                // After viewing, wait for user input
+                println!("\nPress Enter to continue...");
+                let mut buffer = String::new();
+                io::stdin().read_line(&mut buffer)?;
+            }
+            ViewerOption::SideBySideCustomWidth => {
+                let width_input = Text::new("Enter width for each column:")
+                    .with_default(&detect_terminal_width().to_string())
+                    .prompt_skippable()?;
 
-            let command = if tool == "custom" {
-                Text::new("Enter custom diff command (use $ORIG and $EXPANDED for file paths):")
-                    .prompt()?
-            } else if tool == "sdiff" {
-                let width = match terminal::size() {
-                    Ok((width, _)) => width as u16,
-                    Err(_) => 160, // Default if we can't detect
+                // If user pressed Esc, go back to viewer selection
+                let Some(width_input) = width_input else {
+                    continue;
                 };
-                format!("sdiff -w {width}")
-            } else {
-                tool.to_string()
-            };
 
-            let orig = "$ORIG";
-            let expanded = "$EXPANDED";
-            let orig_path = orig_path.to_str().unwrap();
-            let expanded_path = expanded_path.to_str().unwrap();
-            let contains_orig = command.contains(orig);
-            let contains_expanded = command.contains(expanded);
+                let width: u16 = width_input.parse().context("Invalid width")?;
+                let unexpanded_truncated = unexpanded_source
+                    .lines()
+                    .map(|line| line.get(..width as usize).unwrap_or(line))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                let expanded_truncated = expanded_source
+                    .lines()
+                    .map(|line| line.get(..width as usize).unwrap_or(line))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                display_side_by_side(&unexpanded_truncated, &expanded_truncated, width)?;
 
-            if contains_orig != contains_expanded {
-                return Err(anyhow!(
-                    "Command must contain both $ORIG and $EXPANDED or neither"
-                ));
+                // After viewing, wait for user input
+                println!("\nPress Enter to continue...");
+                let mut buffer = String::new();
+                io::stdin().read_line(&mut buffer)?;
             }
-            let args_present = contains_orig && contains_expanded;
+            ViewerOption::ExpandedOnly => {
+                println!("{}", expanded_source);
 
-            let parts: Vec<&str> = command.split_whitespace().collect();
-            // eprintln!("Parts: {:?}", parts);
-
-            if parts.is_empty() {
-                return Err(anyhow!("Empty command"));
+                // After viewing, wait for user input
+                println!("\nPress Enter to continue...");
+                let mut buffer = String::new();
+                io::stdin().read_line(&mut buffer)?;
             }
+            ViewerOption::UnifiedDiff => {
+                let output = Command::new("diff")
+                    .arg("-u")
+                    .arg(&orig_path)
+                    .arg(&expanded_path)
+                    .output()?;
 
-            let mut cmd = Command::new(parts[0]);
-            if parts.len() > 1 {
-                for arg in &parts[1..] {
-                    cmd.arg(arg);
+                io::stdout().write_all(&output.stdout)?;
+
+                // After viewing, wait for user input
+                println!("\nPress Enter to continue...");
+                let mut buffer = String::new();
+                io::stdin().read_line(&mut buffer)?;
+            }
+            ViewerOption::ExternalViewer => {
+                let tools = vec!["diff", "sdiff", "git diff", "vimdiff", "code -d", "custom"];
+
+                let tool_selection = Select::new("Select external diff tool:", tools)
+                    .with_help_message(
+                        "Choose a diff tool to view the files (press Esc to go back)",
+                    )
+                    .prompt_skippable()?;
+
+                // If user pressed Esc, go back to viewer selection
+                let Some(tool) = tool_selection else {
+                    continue;
+                };
+
+                let command = if tool == "custom" {
+                    let input = Text::new(
+                        "Enter custom diff command (use $ORIG and $EXPANDED for file paths):",
+                    )
+                    .prompt_skippable()?;
+
+                    // If user pressed Esc, go back to tool selection
+                    match input {
+                        Some(cmd) => cmd,
+                        None => continue,
+                    }
+                } else if tool == "sdiff" {
+                    let width = match terminal::size() {
+                        Ok((width, _)) => width as u16,
+                        Err(_) => 160, // Default if we can't detect
+                    };
+                    format!("sdiff -w {width}")
+                } else {
+                    tool.to_string()
+                };
+
+                let orig = "$ORIG";
+                let expanded = "$EXPANDED";
+                let orig_path_str = orig_path.to_str().unwrap();
+                let expanded_path_str = expanded_path.to_str().unwrap();
+                let contains_orig = command.contains(orig);
+                let contains_expanded = command.contains(expanded);
+
+                if contains_orig != contains_expanded {
+                    eprintln!("Error: Command must contain both $ORIG and $EXPANDED or neither");
+                    continue;
                 }
+                let args_present = contains_orig && contains_expanded;
+
+                let parts: Vec<&str> = command.split_whitespace().collect();
+
+                if parts.is_empty() {
+                    eprintln!("Error: Empty command");
+                    continue;
+                }
+
+                let mut cmd = Command::new(parts[0]);
+                if parts.len() > 1 {
+                    for arg in &parts[1..] {
+                        let arg_replaced = if args_present {
+                            arg.replace(orig, orig_path_str)
+                                .replace(expanded, expanded_path_str)
+                        } else {
+                            arg.to_string()
+                        };
+                        cmd.arg(arg_replaced);
+                    }
+                }
+                if !args_present {
+                    cmd.arg(orig_path_str).arg(expanded_path_str);
+                }
+
+                eprintln!("Executing command: {cmd:#?}");
+
+                let status = cmd.status()?;
+
+                // For diff tools, exit code 1 means differences found (which is expected)
+                // Only report failure for other exit codes, or for tools that aren't diff-related
+                if !status.success()
+                    && (status.code() != Some(1)
+                        || !(tool == "diff" || tool == "sdiff" || tool == "git diff"))
+                {
+                    eprintln!("External viewer exited with non-zero status: {}", status);
+                }
+
+                // Show file paths for user reference
+                println!(
+                    "Original file: {}\nExpanded file: {}",
+                    orig_path_str, expanded_path_str
+                );
+
+                // After viewing, wait for user input
+                println!("\nPress Enter to continue...");
+                let mut buffer = String::new();
+                io::stdin().read_line(&mut buffer)?;
             }
-            if !args_present {
-                cmd.arg(&orig_path).arg(&expanded_path);
+            ViewerOption::Exit => {
+                println!("Exiting...");
+                return Ok(());
             }
-
-            eprintln!("Executing command: {cmd:#?}");
-
-            let status = cmd.status()?;
-
-            if !status.success() {
-                eprintln!("External viewer exited with non-zero status: {}", status);
-            }
-
-            // Keep files temporarily for the user
-            println!(
-                "Original file: {}\nExpanded file: {}",
-                orig_path, expanded_path
-            );
-            println!("These temporary files will be removed when you exit this program.");
-
-            // Wait for user acknowledgment
-            println!("Press Enter to continue...");
-            let mut buffer = String::new();
-            io::stdin().read_line(&mut buffer)?;
         }
     }
-
-    Ok(())
 }
 
 /// Run cargo-expand on the input file and return the expanded output
@@ -302,7 +353,14 @@ fn run_cargo_expand(input_path: &Path) -> Result<String> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    eprintln!("Running command {cmd:?}");
+    eprintln!(
+        "Running command {} {}",
+        cmd.get_program().to_string_lossy(),
+        cmd.get_args()
+            .map(|arg| arg.to_string_lossy())
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
     let output = cmd.output()?;
 
     if !output.status.success() {
@@ -327,27 +385,8 @@ fn detect_terminal_width() -> u16 {
     match terminal::size() {
         Ok((width, _)) => {
             // Use a bit less than half the terminal width to account for borders and spacing
-            // (width as f32 * 0.45) as u16
             ((width - 26) / 2) as u16
         }
         Err(_) => 80, // Default if we can't detect
     }
-}
-
-/// Alternate implementation that runs cargo-expand on an existing Cargo project
-fn run_cargo_expand_on_project(project_path: &Path) -> Result<Output> {
-    // Run cargo-expand in the project directory
-    let output = Command::new("cargo")
-        .current_dir(project_path)
-        .args(["expand"])
-        .output()?;
-
-    if !output.status.success() {
-        return Err(anyhow!(
-            "cargo-expand failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-
-    Ok(output)
 }

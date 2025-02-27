@@ -21,7 +21,6 @@ toml = "0.8"
 /// using a text editor.
 //# Purpose: Handy configuration file builder.
 //# Categories: crates, technique, tools
-// use convert_case::{Case, Casing};
 use convert_case::{Converter, Pattern};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use inquire::error::CustomUserError;

@@ -2,107 +2,19 @@
 [dependencies]
 atty = "0.2.14"
 inquire = "0.7.5"
+thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
 */
 /// `thag` prompted front-end command to run Cargo commands on scripts. It is recommended to compile this to an executable with -x.
 /// Prompts the user to select a Rust script and a cargo command to run against the script's generated project, and
 /// and invokes `thag` with the --cargo option to run it.
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option.
 //# Categories: technique, thag_front_ends, tools
-use inquire::{Confirm, Select, Text};
-use std::{env, error::Error, path::PathBuf, process::Command};
+// use inquire::Confirm;
+use std::{error::Error, path::PathBuf, process::Command};
+use thag_proc_macros::{file_navigator, tool_errors};
 
-struct FileNavigator {
-    current_dir: PathBuf,
-    history: Vec<PathBuf>,
-}
-
-impl FileNavigator {
-    fn new() -> Self {
-        Self {
-            current_dir: env::current_dir().unwrap_or_else(|_| PathBuf::from(".")),
-            history: Vec::new(),
-        }
-    }
-
-    fn list_items(&self) -> Vec<String> {
-        let mut items = vec!["..".to_string()]; // Parent directory
-
-        // Add directories
-        let mut dirs: Vec<_> = std::fs::read_dir(&self.current_dir)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
-            .filter(|entry| !entry.file_name().to_string_lossy().starts_with('.')) // Optional: hide hidden dirs
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
-            .collect();
-        dirs.sort();
-        items.extend(dirs.into_iter().map(|d| format!("📁 {d}")));
-
-        // Add .rs files
-        let mut files: Vec<_> = std::fs::read_dir(&self.current_dir)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .filter(|entry| {
-                entry.file_type().map(|ft| ft.is_file()).unwrap_or(false)
-                    && entry.path().extension().is_some_and(|ext| ext == "rs")
-            })
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
-            .collect();
-        files.sort();
-        items.extend(files.into_iter().map(|f| format!("📄 {f}")));
-
-        items
-    }
-
-    fn navigate(&mut self, selection: &str) -> Option<PathBuf> {
-        if selection == ".." {
-            if let Some(parent) = self.current_dir.parent() {
-                self.history.push(self.current_dir.clone());
-                self.current_dir = parent.to_path_buf();
-            }
-            None
-        } else {
-            let clean_name = selection.trim_start_matches(['📁', '📄', ' ']);
-            let new_path = self.current_dir.join(clean_name);
-
-            if new_path.is_dir() {
-                self.history.push(self.current_dir.clone());
-                self.current_dir = new_path;
-                None
-            } else {
-                Some(new_path)
-            }
-        }
-    }
-}
-
-fn select_script() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let mut navigator = FileNavigator::new();
-    println!("Select a Rust script to analyze:");
-
-    loop {
-        let items = navigator.list_items();
-
-        let selection = Select::new(
-            &format!("Current dir: {}", navigator.current_dir.display()),
-            items,
-        )
-        .with_help_message("↑↓ navigate, Enter select")
-        .with_page_size(20)
-        .prompt()?;
-
-        if let Some(script_path) = navigator.navigate(&selection) {
-            if Confirm::new(&format!("Use {}?", script_path.display()))
-                .with_default(true)
-                .prompt()?
-            {
-                return Ok(script_path);
-            }
-        }
-    }
-}
+tool_errors! {}
+file_navigator! {}
 
 #[derive(Clone, Debug)]
 struct CargoCommand {
@@ -260,7 +172,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         ScriptMode::Interactive => {
             // Use the file selector
-            select_script()?
+            let mut navigator = FileNavigator::new();
+            select_file(&mut navigator, Some("rs"), false)
+                .map_err(|e| ToolError::ThreadSafe(format!("Failed to select file: {e}",).into()))?
         }
     };
 

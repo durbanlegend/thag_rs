@@ -1,8 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
-
 use quote::quote;
-
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 pub fn palette_methods_impl(input: TokenStream) -> TokenStream {

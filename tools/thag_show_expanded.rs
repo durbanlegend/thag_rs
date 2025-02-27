@@ -10,6 +10,15 @@ tempfile = "3.17.1"
 thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
 */
 
+/// Useful front-end for `thag --cargo <script> --expand`, which in turn uses `cargo-expand` to show the macro expansion
+/// of a user script. This tool provides a user-friendly interface to select the script to analyse and to view the expanded code,
+/// either on its own or side-by-side with the original script using a choice of diff tools.
+///
+/// # Purpose
+/// Display the expanded code of a user script on its own or side-by-side with the original script using a choice of diff tools.
+///
+/// # Categories
+/// diagnosis, technique, thag_front_ends, tools
 use anyhow::{anyhow, Context, Result};
 use crossterm::terminal;
 use side_by_side_diff::create_side_by_side_diff;
@@ -21,36 +30,10 @@ use std::{
     process::{Command, Stdio},
 };
 use tempfile::tempdir;
-use thag_proc_macros::file_navigator;
+use thag_proc_macros::{file_navigator, tool_errors};
 
+tool_errors! {}
 file_navigator! {}
-
-#[derive(Debug)]
-pub enum CustomError {
-    Dyn(Box<dyn std::error::Error + Send + Sync + 'static>),
-}
-
-impl From<Box<dyn std::error::Error + Send + Sync + 'static>> for CustomError {
-    fn from(err: Box<dyn std::error::Error + Send + Sync + 'static>) -> Self {
-        Self::Dyn(err)
-    }
-}
-
-impl std::fmt::Display for CustomError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Dyn(e) => write!(f, "{e}"),
-        }
-    }
-}
-
-impl std::error::Error for CustomError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Dyn(e) => Some(&**e),
-        }
-    }
-}
 
 /// Available viewing options for expanded code
 enum ViewerOption {
@@ -115,7 +98,7 @@ fn expand_script() -> Result<()> {
             // Use the file selector
             let mut navigator = FileNavigator::new();
             select_file(&mut navigator, Some("rs"), false)
-                .map_err(|e| CustomError::Dyn(format!("Failed to select file: {e}",).into()))?
+                .map_err(|e| ToolError::ThreadSafe(format!("Failed to select file: {e}",).into()))?
         }
     };
     if !input_path.exists() {

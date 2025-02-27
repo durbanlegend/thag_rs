@@ -8,6 +8,7 @@ mod palette_methods;
 mod preload_themes;
 mod profile;
 mod repeat_dash;
+mod tool_errors;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;
@@ -18,6 +19,7 @@ use crate::palette_methods::palette_methods_impl;
 use crate::preload_themes::preload_themes_impl;
 use crate::profile::profile_impl;
 use crate::repeat_dash::repeat_dash_impl;
+use crate::tool_errors::tool_errors_impl;
 use proc_macro::TokenStream;
 use syn::parse_file;
 
@@ -240,4 +242,9 @@ pub fn generate_theme_types(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn preload_themes(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "preload_themes", &input, preload_themes_impl)
+}
+
+#[proc_macro]
+pub fn tool_errors(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(false, "tool_errors", &input, tool_errors_impl)
 }

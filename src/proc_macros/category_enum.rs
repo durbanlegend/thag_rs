@@ -19,6 +19,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            BigNumbers,
            Crates,
            Demo,
+           Diagnosis
            ErrorHandling,
            Exploration,
            Filesystem,
@@ -51,7 +52,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        ///
        /// let categories = Category::all_categories();
        /// assert_eq!(categories, vec![
-       ///     "ast", "cli", "repl", "async", "basic", "big_numbers", "crates", "demo",
+       ///     "ast", "cli", "repl", "async", "basic", "big_numbers", "crates", "demo", "diagnosis",
        ///     "error_handling", "exploration", "filesystem", "learning", "macros", "math",
        ///     "proc_macros", "profiling", "prototype", "recreational", "reference", "technique",
        ///     "testing", "thag_front_ends", "tools", "type_identification"

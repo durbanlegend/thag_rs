@@ -39,7 +39,7 @@ impl From<Box<dyn std::error::Error + Send + Sync + 'static>> for CustomError {
 impl std::fmt::Display for CustomError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Dyn(e) => write!(f, "{}", e),
+            Self::Dyn(e) => write!(f, "{e}"),
         }
     }
 }
@@ -65,12 +65,12 @@ enum ViewerOption {
 impl std::fmt::Display for ViewerOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ViewerOption::SideBySide => write!(f, "Side-by-side view (auto width)"),
-            ViewerOption::SideBySideCustomWidth => write!(f, "Side-by-side view (custom width)"),
-            ViewerOption::ExpandedOnly => write!(f, "Expanded code only"),
-            ViewerOption::UnifiedDiff => write!(f, "Unified diff"),
-            ViewerOption::ExternalViewer => write!(f, "External diff tool"),
-            ViewerOption::Exit => write!(f, "Exit"),
+            Self::SideBySide => write!(f, "Side-by-side view (auto width)"),
+            Self::SideBySideCustomWidth => write!(f, "Side-by-side view (custom width)"),
+            Self::ExpandedOnly => write!(f, "Expanded code only"),
+            Self::UnifiedDiff => write!(f, "Unified diff"),
+            Self::ExternalViewer => write!(f, "External diff tool"),
+            Self::Exit => write!(f, "Exit"),
         }
     }
 }
@@ -99,6 +99,7 @@ fn main() -> Result<()> {
     expand_script()
 }
 
+#[allow(clippy::too_many_lines)]
 fn expand_script() -> Result<()> {
     let input_path = match get_script_mode() {
         ScriptMode::Stdin => {
@@ -122,12 +123,8 @@ fn expand_script() -> Result<()> {
     }
 
     // Load source files - do this once
-    let unexpanded_source = fs::read_to_string(&input_path).or_else(|err| {
-        Err(Error::new(
-            ErrorKind::Other,
-            format!("Failed to read file: {}", err),
-        ))
-    })?;
+    let unexpanded_source = fs::read_to_string(&input_path)
+        .map_err(|err| Error::new(ErrorKind::Other, format!("Failed to read file: {err}")))?;
 
     // Get expanded source using cargo-expand - this can be slow, so only do it once
     let start = std::time::Instant::now();
@@ -135,7 +132,7 @@ fn expand_script() -> Result<()> {
         .context("Failed to run cargo-expand. Is it installed? (cargo install cargo-expand)")?;
     let expand_duration = start.elapsed();
 
-    println!("Macro expansion completed in {:.2?}", expand_duration);
+    println!("Macro expansion completed in {expand_duration:.2?}");
 
     // Create temporary directory and files once
     let temp_dir = tempdir()?;
@@ -172,7 +169,7 @@ fn expand_script() -> Result<()> {
         // Display the expanded code according to the chosen view option
         match viewer {
             ViewerOption::SideBySide => {
-                let width = detect_terminal_width();
+                let width = detect_terminal_width_split();
                 let unexpanded_truncated = unexpanded_source
                     .lines()
                     .map(|line| line.get(..width as usize).unwrap_or(line))
@@ -183,7 +180,7 @@ fn expand_script() -> Result<()> {
                     .map(|line| line.get(..width as usize).unwrap_or(line))
                     .collect::<Vec<_>>()
                     .join("\n");
-                display_side_by_side(&unexpanded_truncated, &expanded_truncated, width)?;
+                display_side_by_side(&unexpanded_truncated, &expanded_truncated, width);
 
                 // After viewing, wait for user input
                 println!("\nPress Enter to continue...");
@@ -192,7 +189,7 @@ fn expand_script() -> Result<()> {
             }
             ViewerOption::SideBySideCustomWidth => {
                 let width_input = Text::new("Enter width for each column:")
-                    .with_default(&detect_terminal_width().to_string())
+                    .with_default(&detect_terminal_width_split().to_string())
                     .prompt_skippable()?;
 
                 // If user pressed Esc, go back to viewer selection
@@ -211,7 +208,7 @@ fn expand_script() -> Result<()> {
                     .map(|line| line.get(..width as usize).unwrap_or(line))
                     .collect::<Vec<_>>()
                     .join("\n");
-                display_side_by_side(&unexpanded_truncated, &expanded_truncated, width)?;
+                display_side_by_side(&unexpanded_truncated, &expanded_truncated, width);
 
                 // After viewing, wait for user input
                 println!("\nPress Enter to continue...");
@@ -219,7 +216,7 @@ fn expand_script() -> Result<()> {
                 io::stdin().read_line(&mut buffer)?;
             }
             ViewerOption::ExpandedOnly => {
-                println!("{}", expanded_source);
+                println!("{expanded_source}");
 
                 // After viewing, wait for user input
                 println!("\nPress Enter to continue...");
@@ -266,10 +263,7 @@ fn expand_script() -> Result<()> {
                         None => continue,
                     }
                 } else if tool == "sdiff" {
-                    let width = match terminal::size() {
-                        Ok((width, _)) => width as u16,
-                        Err(_) => 160, // Default if we can't detect
-                    };
+                    let width = detect_terminal_width_full();
                     format!("sdiff -w {width}")
                 } else {
                     tool.to_string()
@@ -302,7 +296,7 @@ fn expand_script() -> Result<()> {
                             arg.replace(orig, orig_path_str)
                                 .replace(expanded, expanded_path_str)
                         } else {
-                            arg.to_string()
+                            (*arg).to_string()
                         };
                         cmd.arg(arg_replaced);
                     }
@@ -321,14 +315,11 @@ fn expand_script() -> Result<()> {
                     && (status.code() != Some(1)
                         || !(tool == "diff" || tool == "sdiff" || tool == "git diff"))
                 {
-                    eprintln!("External viewer exited with non-zero status: {}", status);
+                    eprintln!("External viewer exited with non-zero status: {status}");
                 }
 
                 // Show file paths for user reference
-                println!(
-                    "Original file: {}\nExpanded file: {}",
-                    orig_path_str, expanded_path_str
-                );
+                println!("Original file: {orig_path_str}\nExpanded file: {expanded_path_str}");
 
                 // After viewing, wait for user input
                 println!("\nPress Enter to continue...");
@@ -374,18 +365,24 @@ fn run_cargo_expand(input_path: &Path) -> Result<String> {
 }
 
 /// Display original and expanded code side by side
-fn display_side_by_side(original: &str, expanded: &str, max_width: u16) -> Result<()> {
+fn display_side_by_side(original: &str, expanded: &str, max_width: u16) {
     let diff = create_side_by_side_diff(original, expanded, max_width.into());
-    println!("{}", diff);
-    Ok(())
+    println!("{diff}");
+}
+
+fn detect_terminal_width_full() -> u16 {
+    match terminal::size() {
+        Ok((width, _)) => width,
+        Err(_) => 160, // Default if we can't detect
+    }
 }
 
 /// Detect terminal width to optimize side-by-side display
-fn detect_terminal_width() -> u16 {
+fn detect_terminal_width_split() -> u16 {
     match terminal::size() {
         Ok((width, _)) => {
             // Use a bit less than half the terminal width to account for borders and spacing
-            ((width - 26) / 2) as u16
+            (width - 26) / 2
         }
         Err(_) => 80, // Default if we can't detect
     }

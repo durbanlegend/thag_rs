@@ -22,7 +22,6 @@ warp = "0.3.7"
 //# Purpose: Allow user to select scripts by category.
 //# Categories: technique, tools
 use edit;
-// use regex::Regex;
 use inquire::MultiSelect;
 use std::{
     collections::{BTreeSet, HashMap},

@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
 anyhow = "1.0.96"
-clap = { version = "4.5.31", features = ["cargo", "derive"] }
 crossterm = "0.28.1"
 inquire = "0.7.5"
 side-by-side-diff = "0.1.2"
@@ -14,42 +13,20 @@ thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, fea
 */
 
 use anyhow::{anyhow, Context, Result};
-use clap::Parser;
 use crossterm::terminal;
-use inquire::{Select, Text};
 use side_by_side_diff::create_side_by_side_diff;
 use std::{
+    env::args,
     fs,
     io::{self, Error, ErrorKind, Write},
-    path::Path,
+    path::{Path, PathBuf},
     process::{Command, Output, Stdio},
 };
 use tempfile::tempdir;
+use thag_proc_macros::file_navigator;
+use thag_rs::ThagError;
 
-/// Command-line arguments for the expanded code viewer
-#[derive(Parser, Debug)]
-#[clap(
-    author,
-    version,
-    about = "Show expanded macros with various viewing options"
-)]
-struct Args {
-    /// The input Rust file to expand
-    #[clap(name = "FILE")]
-    input_file: String,
-
-    /// Skip interactive mode and use the specified viewer
-    #[clap(short, long)]
-    viewer: Option<String>,
-
-    /// Theme for cargo-expand (when applicable)
-    #[clap(short, long, default_value = "gruvbox-dark")]
-    theme: String,
-
-    /// Width to use for side-by-side view (auto-detect if not specified)
-    #[clap(short, long)]
-    width: Option<u16>,
-}
+file_navigator! {}
 
 /// Available viewing options for expanded code
 enum ViewerOption {
@@ -72,28 +49,48 @@ impl std::fmt::Display for ViewerOption {
     }
 }
 
-fn main() -> Result<()> {
-    let args = Args::parse();
+fn get_script_mode() -> ScriptMode {
+    if atty::isnt(atty::Stream::Stdin) {
+        // We're receiving input via pipe
+        ScriptMode::Stdin
+    } else if args().len() > 1 {
+        // We have command line arguments (likely a file path)
+        ScriptMode::File
+    } else {
+        // Interactive mode
+        ScriptMode::Interactive
+    }
+}
 
-    // Check if file exists
-    let input_path = Path::new(&args.input_file);
+enum ScriptMode {
+    Stdin,
+    File,
+    Interactive,
+}
+
+fn main() -> Result<()> {
+    let input_path = match get_script_mode() {
+        ScriptMode::Stdin => {
+            eprintln!("This tool cannot be run with stdin input. Please provide a file path or run interactively.");
+            std::process::exit(1);
+        }
+        ScriptMode::File => {
+            // Get the file path from args
+            let args: Vec<String> = args().collect();
+            PathBuf::from(args[1].clone())
+        }
+        ScriptMode::Interactive => {
+            // Use the file selector
+            let mut navigator = FileNavigator::new();
+            select_file(&mut navigator, Some("rs"), false)
+                .map_err(|e| ThagError::Dyn(format!("Failed to select file: {e}",).into()))?
+        }
+    };
     if !input_path.exists() {
-        return Err(anyhow!("File not found: {}", args.input_file));
+        return Err(anyhow!("File not found: {}", input_path.display()));
     }
 
-    let viewer = if let Some(viewer_name) = args.viewer {
-        match viewer_name.as_str() {
-            "side-by-side" => ViewerOption::SideBySide,
-            "custom-width" => ViewerOption::SideBySideCustomWidth,
-            "expanded-only" => ViewerOption::ExpandedOnly,
-            "unified-diff" => ViewerOption::UnifiedDiff,
-            "external" => ViewerOption::ExternalViewer,
-            _ => {
-                eprintln!("Unknown viewer: {}. Using side-by-side view.", viewer_name);
-                ViewerOption::SideBySide
-            }
-        }
-    } else {
+    let viewer = {
         // Interactive mode - ask user for preferred viewing option
         let options = vec![
             ViewerOption::SideBySide,
@@ -112,7 +109,7 @@ fn main() -> Result<()> {
 
     let unexpanded_source = match viewer {
         ViewerOption::ExpandedOnly => None,
-        _ => Some(fs::read_to_string(input_path).or_else(|err| {
+        _ => Some(fs::read_to_string(&input_path).or_else(|err| {
             Err(Error::new(
                 ErrorKind::Other,
                 format!("Failed to read file: {}", err),
@@ -121,7 +118,7 @@ fn main() -> Result<()> {
     };
     let expanded_source = match viewer {
         ViewerOption::ExternalViewer => None,
-        _ => Some(run_cargo_expand(input_path, &args.theme).context(
+        _ => Some(run_cargo_expand(&input_path).context(
             "Failed to run cargo-expand. Is it installed? (cargo install cargo-expand)",
         )?),
     };
@@ -129,7 +126,7 @@ fn main() -> Result<()> {
     // Display the expanded code according to the chosen view option
     match viewer {
         ViewerOption::SideBySide => {
-            let width = args.width.unwrap_or_else(|| detect_terminal_width());
+            let width = detect_terminal_width();
             let unexpanded_source = &unexpanded_source
                 .unwrap()
                 .lines()
@@ -191,7 +188,7 @@ fn main() -> Result<()> {
             .prompt()?;
 
             // Get expanded source using cargo-expand
-            let expanded_source = run_cargo_expand(input_path, &args.theme).context(
+            let expanded_source = run_cargo_expand(&input_path).context(
                 "Failed to run cargo-expand. Is it installed? (cargo install cargo-expand)",
             )?;
 
@@ -206,10 +203,10 @@ fn main() -> Result<()> {
                 Text::new("Enter custom diff command (use $ORIG and $EXPANDED for file paths):")
                     .prompt()?
             } else if tool == "sdiff" {
-                let width = args.width.unwrap_or_else(|| match terminal::size() {
+                let width = match terminal::size() {
                     Ok((width, _)) => width as u16,
                     Err(_) => 160, // Default if we can't detect
-                });
+                };
                 format!("sdiff -w {width}")
             } else {
                 tool.to_string()
@@ -272,7 +269,7 @@ fn main() -> Result<()> {
 }
 
 /// Run cargo-expand on the input file and return the expanded output
-fn run_cargo_expand(input_path: &Path, _theme: &str) -> Result<String> {
+fn run_cargo_expand(input_path: &Path) -> Result<String> {
     let input_path_str = input_path.to_str().ok_or_else(|| anyhow!("Invalid path"))?;
     // Run cargo-expand
     let mut binding = Command::new("thag");
@@ -314,11 +311,11 @@ fn detect_terminal_width() -> u16 {
 }
 
 /// Alternate implementation that runs cargo-expand on an existing Cargo project
-fn run_cargo_expand_on_project(project_path: &Path, theme: &str) -> Result<Output> {
+fn run_cargo_expand_on_project(project_path: &Path) -> Result<Output> {
     // Run cargo-expand in the project directory
     let output = Command::new("cargo")
         .current_dir(project_path)
-        .args(["expand", "--theme", theme])
+        .args(["expand"])
         .output()?;
 
     if !output.status.success() {

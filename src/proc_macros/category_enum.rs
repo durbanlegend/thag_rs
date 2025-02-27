@@ -19,7 +19,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            BigNumbers,
            Crates,
            Demo,
-           Diagnosis
+           Diagnosis,
            ErrorHandling,
            Exploration,
            Filesystem,

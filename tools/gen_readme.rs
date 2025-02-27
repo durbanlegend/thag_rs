@@ -73,8 +73,8 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     let mut sample_args: Option<String> = None;
 
     for line in content.lines() {
-        if line.starts_with("//#") {
-            let parts: Vec<&str> = line[3..].splitn(2, ':').collect();
+        if let Some(stripped) = line.strip_prefix("//#") {
+            let parts: Vec<&str> = stripped.splitn(2, ':').collect();
             if parts.len() == 2 {
                 let keyword = parts[0].trim();
                 let value = parts[1].trim().to_string();
@@ -102,15 +102,15 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
                     "sample arguments" => {
                         // Extract content between backticks, if present
                         let value = value.trim();
-                        sample_args = if let Some(quoted) = value.strip_prefix('`') {
-                            if let Some(args) = quoted.strip_suffix('`') {
-                                Some(args.to_string())
-                            } else {
-                                Some(quoted.to_string())
-                            }
-                        } else {
-                            Some(value.to_string())
-                        };
+                        sample_args = value.strip_prefix('`').map_or_else(
+                            || Some(value.to_string()),
+                            |quoted| {
+                                quoted.strip_suffix('`').map_or_else(
+                                    || Some(quoted.to_string()),
+                                    |args| Some(args.to_string()),
+                                )
+                            },
+                        );
                     }
                     _ => {}
                 }
@@ -139,23 +139,23 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     }
 
     let maybe_syntax_tree = code_utils::to_ast(file_path_str, &content);
-    let (crates, main_methods) = match maybe_syntax_tree {
-        Some(ref ast) => {
-            let crates_finder = find_crates(&ast);
-            let metadata_finder = find_metadata(&ast);
-            (
-                infer_deps_from_ast(&crates_finder, &metadata_finder),
-                metadata_finder.main_count,
-            )
-        }
-        None => {
+    let (crates, main_methods) = maybe_syntax_tree.as_ref().map_or_else(
+        || {
             let re = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
             (
                 infer_deps_from_source(&content),
                 re.find_iter(&content).count(),
             )
-        }
-    };
+        },
+        |ast| {
+            let crates_finder = find_crates(ast);
+            let metadata_finder = find_metadata(ast);
+            (
+                infer_deps_from_ast(&crates_finder, &metadata_finder),
+                metadata_finder.main_count,
+            )
+        },
+    );
 
     let script_type = if main_methods >= 1 {
         "Program"
@@ -201,12 +201,12 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
 
     scripts.sort();
 
-    for entry in scripts.iter() {
+    for entry in &scripts {
         let path = entry.as_path();
         // println!("Parsing {:#?}", path.display());
 
         if path.extension().and_then(|s| s.to_str()) == Some("rs") {
-            if let Some(metadata) = parse_metadata(&path) {
+            if let Some(metadata) = parse_metadata(path) {
                 all_metadata.push(metadata);
             }
         }
@@ -225,14 +225,14 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path, boilerp
         .unwrap_or_else(|_| "## Running the scripts\n\n...".to_string()); // Fallback content if the file is missing
 
     // Write boilerplate to README
-    writeln!(file, "{}", boilerplate).unwrap();
+    writeln!(file, "{boilerplate}").unwrap();
     writeln!(file, "***\n## Detailed script listing\n").unwrap();
 
     for metadata in metadata_list {
         writeln!(file, "### Script: {}\n", metadata.script).unwrap();
-        write!(
+        writeln!(
             file,
-            "**Description:** {}\n",
+            "**Description:** {}",
             metadata.description.as_ref().unwrap_or(&String::new())
         )
         .unwrap();
@@ -285,11 +285,10 @@ fn generate_run_section(metadata: &ScriptMetadata) -> String {
     let mut md = String::new();
     if metadata.crates.contains(&"termbg".to_string())
         || metadata.crates.contains(&"tui_scrollview".to_string())
-        || if let Some(docs) = &metadata.description {
-            docs.contains(&"Not suitable for running from a URL.".to_string())
-        } else {
-            false
-        }
+        || metadata
+            .description
+            .as_ref()
+            .is_some_and(|docs| docs.contains(&"Not suitable for running from a URL.".to_string()))
     {
         md.push_str("\n**Not suitable to be run from a URL.**\n\n");
         return md;
@@ -299,11 +298,10 @@ fn generate_run_section(metadata: &ScriptMetadata) -> String {
     md.push_str("```bash\n");
 
     let base_url = "https://github.com/durbanlegend/thag_rs/blob/master/demo";
-    let command = if let Some(args) = &metadata.sample_args {
-        format!("thag_url {}/{} {}", base_url, metadata.script, args)
-    } else {
-        format!("thag_url {}/{}", base_url, metadata.script)
-    };
+    let command = metadata.sample_args.as_ref().map_or_else(
+        || format!("thag_url {}/{}", base_url, metadata.script),
+        |args| format!("thag_url {}/{} {}", base_url, metadata.script, args),
+    );
 
     md.push_str(&command);
     md.push_str("\n```\n");

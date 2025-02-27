@@ -1,3 +1,18 @@
+/*[toml]
+[dependencies]
+anyhow = "1.0.96"
+clap = { version = "4.5.31", features = ["cargo", "derive"] }
+crossterm = "0.28.1"
+inquire = "0.7.5"
+side-by-side-diff = "0.1.2"
+tempfile = "3.17.1"
+thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+# thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+# thag_rs = "0.2"
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
+*/
+
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use crossterm::terminal;

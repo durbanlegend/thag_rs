@@ -15,11 +15,10 @@ thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, fea
 /// This is the script used to collect script metadata for the `demo` and `tools` directories and generate
 /// local `README.md` files documenting those directories.
 ///
-/// Strategy and grunt work thanks to ChatGPT.
+/// Strategy and grunt work thanks to `ChatGPT`.
 //# Purpose: Document demo scripts in a demo/README.md as a guide for the user, and the same for tools scripts.
 //# Categories: technique, tools
 use heck::ToSnakeCase;
-use inquire;
 use std::{
     collections::HashMap,
     fs::{self, read_dir, File},
@@ -48,13 +47,10 @@ struct ScriptMetadata {
 // Generates all_categories()
 category_enum! {}
 
+#[allow(clippy::too_many_lines)]
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     // Lazy static variable from the categories defined in macro category_enum!.
-    let valid_categories = lazy_static_var!(Vec<String>, {
-        let valid_categories = all_categories();
-        // eprintln!("valid_categories={valid_categories:?}");
-        valid_categories
-    });
+    let valid_categories = lazy_static_var!(Vec<String>, { all_categories() });
     let mut content = fs::read_to_string(file_path).ok()?;
 
     content = if content.starts_with("#!") && !(content.starts_with("#![")) {
@@ -76,7 +72,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     let mut categories = vec!["missing".to_string()]; // Default to "general"
     let mut sample_args: Option<String> = None;
 
-    for line in content.clone().lines() {
+    for line in content.lines() {
         if line.starts_with("//#") {
             let parts: Vec<&str> = line[3..].splitn(2, ':').collect();
             if parts.len() == 2 {

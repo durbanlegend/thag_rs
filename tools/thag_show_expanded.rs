@@ -1,15 +1,13 @@
 /*[toml]
 [dependencies]
 anyhow = "1.0.96"
+atty = "0.2.14"
 crossterm = "0.28.1"
 inquire = "0.7.5"
+# quote = "1.0.38"
 side-by-side-diff = "0.1.2"
 tempfile = "3.17.1"
 thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
-# thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
-# thag_rs = "0.2"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
 */
 
 use anyhow::{anyhow, Context, Result};
@@ -24,9 +22,35 @@ use std::{
 };
 use tempfile::tempdir;
 use thag_proc_macros::file_navigator;
-use thag_rs::ThagError;
 
 file_navigator! {}
+
+#[derive(Debug)]
+pub enum CustomError {
+    Dyn(Box<dyn std::error::Error + Send + Sync + 'static>),
+}
+
+impl From<Box<dyn std::error::Error + Send + Sync + 'static>> for CustomError {
+    fn from(err: Box<dyn std::error::Error + Send + Sync + 'static>) -> Self {
+        Self::Dyn(err)
+    }
+}
+
+impl std::fmt::Display for CustomError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Dyn(e) => write!(f, "{}", e),
+        }
+    }
+}
+
+impl std::error::Error for CustomError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Dyn(e) => Some(&**e),
+        }
+    }
+}
 
 /// Available viewing options for expanded code
 enum ViewerOption {
@@ -49,6 +73,12 @@ impl std::fmt::Display for ViewerOption {
     }
 }
 
+enum ScriptMode {
+    Stdin,
+    File,
+    Interactive,
+}
+
 fn get_script_mode() -> ScriptMode {
     if atty::isnt(atty::Stream::Stdin) {
         // We're receiving input via pipe
@@ -60,12 +90,6 @@ fn get_script_mode() -> ScriptMode {
         // Interactive mode
         ScriptMode::Interactive
     }
-}
-
-enum ScriptMode {
-    Stdin,
-    File,
-    Interactive,
 }
 
 fn main() -> Result<()> {
@@ -83,7 +107,7 @@ fn main() -> Result<()> {
             // Use the file selector
             let mut navigator = FileNavigator::new();
             select_file(&mut navigator, Some("rs"), false)
-                .map_err(|e| ThagError::Dyn(format!("Failed to select file: {e}",).into()))?
+                .map_err(|e| CustomError::Dyn(format!("Failed to select file: {e}",).into()))?
         }
     };
     if !input_path.exists() {

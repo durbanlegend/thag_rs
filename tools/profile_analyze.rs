@@ -1,4 +1,9 @@
 /*[toml]
+[workspace]
+
+[[bin]]
+name = "thag_profile_analyze"
+
 [dependencies]
 chrono = "0.4.39"
 dirs = "6.0.0"
@@ -455,7 +460,9 @@ fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile
     // Display information about filtering modes
     println!("\nThere are two filtering modes available:");
     println!("  1. Recursive: Removes functions and all their child calls (original behavior)");
-    println!("     For example, filtering out 'main' will remove main and everything called by main");
+    println!(
+        "     For example, filtering out 'main' will remove main and everything called by main"
+    );
     println!("  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children");
     println!("     For example, filtering out 'process_data' will remove standalone 'process_data' entries");
     println!("     but will keep 'process_data;parse_json' and 'process_data;validate' entries\n");
@@ -475,7 +482,14 @@ fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile
 
     // Select functions to filter
     // Show which mode is selected
-    println!("\nUsing {} filtering mode", if exact_match { "Exact Match" } else { "Recursive" });
+    println!(
+        "\nUsing {} filtering mode",
+        if exact_match {
+            "Exact Match"
+        } else {
+            "Recursive"
+        }
+    );
 
     let to_filter = MultiSelect::new("Select functions to filter out:", function_list)
         .prompt()
@@ -485,7 +499,8 @@ fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile
     let filtered_stacks = if exact_match {
         // In exact match mode, we need to keep any stack where the filtered function
         // has children (i.e., is part of a call chain)
-        processed.stacks
+        processed
+            .stacks
             .iter()
             .filter(|line| {
                 // First, extract the root function name
@@ -509,7 +524,8 @@ fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile
             .collect()
     } else {
         // Recursive mode (original behavior): filter out function and all its children
-        processed.stacks
+        processed
+            .stacks
             .iter()
             .filter(|line| {
                 // Get the root function name

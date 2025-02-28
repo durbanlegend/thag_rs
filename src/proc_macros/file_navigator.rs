@@ -5,7 +5,7 @@ use quote::quote;
 #[allow(clippy::too_many_lines)]
 pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
     let output = quote! {
-        use inquire::{InquireError,Select, Text};
+        use inquire::{InquireError, Select, Text};
         struct FileNavigator {
             current_dir: std::path::PathBuf,
             history: Vec<std::path::PathBuf>,
@@ -105,7 +105,14 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 .prompt()?;
 
                 match navigator.navigate(&selection, true) {
-                    NavigationResult::SelectionComplete(path) => return Ok(path),
+                    NavigationResult::SelectionComplete(path) => if inquire::Confirm::new(&format!("Use {}?", path.display()))
+                                    .with_default(true)
+                                    .prompt()?
+                                {
+                                    return Ok(path);
+                                } else {
+                                    continue;
+                                }
                     NavigationResult::NavigatedTo(_) | NavigationResult::NoSelection => continue,
                 }
             }
@@ -124,7 +131,14 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 .prompt()?;
 
                 match navigator.navigate(&selection, false) {
-                    NavigationResult::SelectionComplete(path) => return Ok(path),
+                    NavigationResult::SelectionComplete(path) => if inquire::Confirm::new(&format!("Use {}?", path.display()))
+                                    .with_default(true)
+                                    .prompt()?
+                                {
+                                    return Ok(path);
+                                } else {
+                                    continue;
+                                },
                     NavigationResult::NavigatedTo(_) | NavigationResult::NoSelection => continue,
                 }
             }

@@ -1,9 +1,9 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing"] }
+syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
 */
 
-/// Tries to convert input to a `syn` abstract syntax tree (syn::Expr).
+/// Tries to convert input to a `syn` abstract syntax tree (`syn::File` or `syn::Expr`).
 //# Purpose: Debugging
 //# Categories: AST, crates, technique, tools
 use std::io::{self, Read};
@@ -20,7 +20,12 @@ fn read_stdin() -> Result<String, io::Error> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let content = read_stdin().expect("Problem reading input");
     eprintln!("[{:#?}]", content);
-    let syntax: syn::Expr = syn::parse_str(&format!("{{ {content} }}"))?;
-    println!("{:#?}", syntax);
+    match syn::parse_str::<syn::File>(&content) {
+        Ok(file) => println!("{file:#?}"),
+        Err(_) => match syn::parse_str::<syn::Expr>(&format!("{{ {content} }}")) {
+            Ok(expr) => println!("{expr:#?}"),
+            Err(err) => return Err(err.into()),
+        },
+    };
     Ok(())
 }

@@ -2,10 +2,10 @@
 [dependencies]
 #crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 ratatui = "0.27.0"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["tui", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["tui", "simplelog"] }
 tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
-#tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
+# tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
 */
 
 /// Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
@@ -40,8 +40,7 @@ use std::fmt::Display;
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
-use thag_proc_macros::enable_profiling;
-use thag_rs::profiling;
+use thag_rs::{enable_profiling, profile, profiling, Profile};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 macro_rules! error {
@@ -118,7 +117,6 @@ impl<'a> SearchBox<'a> {
     }
 
     #[profile]
-
     fn close(&mut self) {
         self.open = false;
         // Remove input for next search. Do not recreate `self.textarea` instance to keep undo history so that users can
@@ -128,7 +126,6 @@ impl<'a> SearchBox<'a> {
     }
 
     #[profile]
-
     fn height(&self) -> u16 {
         if self.open {
             3
@@ -138,7 +135,6 @@ impl<'a> SearchBox<'a> {
     }
 
     #[profile]
-
     fn input(&mut self, input: Input) -> Option<&'_ str> {
         match input {
             Input {
@@ -157,7 +153,6 @@ impl<'a> SearchBox<'a> {
     }
 
     #[profile]
-
     fn set_error(&mut self, err: Option<impl Display>) {
         let b = if let Some(err) = err {
             Block::default()
@@ -214,7 +209,6 @@ impl<'a> Buffer<'a> {
     }
 
     #[profile]
-
     fn save(&mut self) -> io::Result<()> {
         let mut f = io::BufWriter::new(fs::File::create(&self.path)?);
         for line in self.textarea.lines() {
@@ -299,8 +293,8 @@ impl<'a> Editor<'a> {
         })
     }
 
-    #[profile]
     #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
+    #[profile]
     pub(crate) fn run(&mut self) -> io::Result<()> {
         loop {
             let search_height = self.search.height();
@@ -545,7 +539,6 @@ impl<'a> Editor<'a> {
     }
 
     #[profile]
-
     fn write_output(&mut self, msg: &str) {
         self.output.textarea.insert_str(msg);
         self.output.textarea.insert_newline();
@@ -554,7 +547,6 @@ impl<'a> Editor<'a> {
 }
 
 #[profile]
-
 fn show_popup(f: &mut ratatui::prelude::Frame) {
     let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
     let inner = area.inner(Margin {
@@ -614,7 +606,6 @@ impl<'a> Drop for Editor<'a> {
 }
 
 #[profile]
-
 fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),
@@ -631,8 +622,8 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     .split(popup_layout[1])[1]
 }
 
-#[enable_profiling]
 #[allow(dead_code)]
+#[enable_profiling]
 fn main() -> io::Result<()> {
     Editor::new(env::args_os().skip(1))?.run()
 }

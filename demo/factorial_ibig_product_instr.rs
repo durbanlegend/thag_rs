@@ -1,7 +1,8 @@
 /*[toml]
 [dependencies]
 ibig = "0.3.6"
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "core", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
 */
 
 /// A version of `demo/factorial_ibig_product.rs` converted to a program and instrumented for profiling using

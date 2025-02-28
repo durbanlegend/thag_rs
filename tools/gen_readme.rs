@@ -8,8 +8,8 @@ strum = { version = "0.26.3", features = ["derive", "phf"] }
 thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
 # thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = "0.1.9"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
 */
 
 /// This is the script used to collect script metadata for the `demo` and `tools` directories and generate

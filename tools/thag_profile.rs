@@ -7,8 +7,8 @@ inquire = "0.7.5"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.138"
 strum = { version = "0.27.1", features = ["derive"] }
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "simplelog"] }
 */
 
 /// Profile graph/chart generator for the `thag` internal profiler.

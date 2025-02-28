@@ -20,7 +20,7 @@
 - [ ]  Claude re REPL alternative editor to `reedline`
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
-- [ ]  Thag profiling guide.
+- [ ]  Thag profiling guide. Mention not thread_safe and test functions should not be profiled.
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

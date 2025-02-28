@@ -280,22 +280,22 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
 /// This is useful when tests need to ensure a clean state or when
 /// profiling needs to be reset without relying on scope-based cleanup.
 ///
-/// Before resetting, this function will print all entries in the stack
+/// Before resetting, this function may print all entries in the stack
 /// to help diagnose issues with nested profiling calls.
 pub fn reset_profiling_stack() {
     // Get current depth
     let old_depth = STACK_DEPTH.load(Ordering::SeqCst);
 
     // Print the stack contents before resetting
-    if old_depth > 0 {
-        // eprintln!(
-        //     "WARNING: Profiling stack not empty on reset. Current stack ({old_depth} entries):"
-        // );
-        let stack = get_profile_stack();
-        for (i, name) in stack.iter().enumerate() {
-            eprintln!("  [{i}]: {name}");
-        }
-    }
+    // if old_depth > 0 {
+    //     eprintln!(
+    //         "WARNING: Profiling stack not empty on reset. Current stack ({old_depth} entries):"
+    //     );
+    //     let stack = get_profile_stack();
+    //     for (i, name) in stack.iter().enumerate() {
+    //         eprintln!("  [{i}]: {name}");
+    //     }
+    // }
 
     // Reset depth to 0
     STACK_DEPTH.store(0, Ordering::SeqCst);
@@ -455,9 +455,10 @@ impl Profile {
 
         // Check if this name is already in the stack (validates our test's assumption)
         let current_stack = get_profile_stack();
-        if current_stack.contains(&name) {
-            panic!("Stack validation failed: Duplicate stack entry");
-        }
+        assert!(
+            !current_stack.contains(&name),
+            "Stack validation failed: Duplicate stack entry"
+        );
 
         // Push to stack
         push_profile(name);
@@ -1015,7 +1016,6 @@ mod tests {
         // This allows Profile::new to create profiles directly
         TEST_MODE_ACTIVE.store(false, Ordering::SeqCst);
 
-
         // Create guard that will clean up even if test panics
         let _guard = TestGuard;
 
@@ -1135,7 +1135,10 @@ mod tests {
                 // Just check that the ones present are in the correct order
                 let expected_items = &["time_prof", "mem_prof", "both_prof"];
                 for item in stack.iter() {
-                    assert!(expected_items.contains(item), "Unexpected item in stack: {item}");
+                    assert!(
+                        expected_items.contains(item),
+                        "Unexpected item in stack: {item}"
+                    );
                 }
             } // All profiles should be dropped here
 

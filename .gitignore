@@ -47,3 +47,6 @@ themes/built_in/none_basic.toml
 tools/thag_profile_bad.rs
 tools/thag_profile_bad2.rs
 src/temp.txt
+src/profiling_mutex.rs
+src/styling_mutex.rs
+src/temp.txt

@@ -166,8 +166,13 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             if function.body().is_some()
                 && !function_syntax.descendants_with_tokens().any(|it| {
                     let text = it.to_string();
+                    // eprintln!(
+                    //     "fn_name={}; text: {text}",
+                    //     fn_name.clone().expect("fn_name should be Some")
+                    // );
                     text.starts_with("#[profile")
                         || text.starts_with("#[enable_profiling")
+                        || text.starts_with("#[test")
                         || text.starts_with("profile!")
                         || text.starts_with("profile_fn!")
                         || text.starts_with("profile_method!")

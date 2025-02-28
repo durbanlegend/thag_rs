@@ -1,6 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
 
+#[allow(clippy::too_many_lines)]
 pub fn tool_errors_impl(_tokens: TokenStream) -> TokenStream {
     quote::quote! {
     pub enum ToolError {

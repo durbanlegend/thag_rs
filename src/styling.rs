@@ -2688,10 +2688,32 @@ macro_rules! cvlog_ghost {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::profiling::{safely_cleanup_profiling_after_test, safely_setup_profiling_for_test};
     use std::io::Write;
     use std::path::Path;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Mutex;
+    
+    // Helper function to safely set up and tear down profiling for each test
+    fn with_safe_profiling<F, R>(test_fn: F) -> R
+    where
+        F: FnOnce() -> R,
+    {
+        // Make sure any previous profiling session is cleaned up
+        let _ = safely_cleanup_profiling_after_test();
+        
+        // Set up profiling safely
+        let _ = safely_setup_profiling_for_test();
+        
+        // Run the test
+        let result = test_fn();
+        
+        // Clean up profiling
+        let _ = safely_cleanup_profiling_after_test();
+        
+        // Return the test result
+        result
+    }
 
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
     static BLACK_BG: &'static (u8, u8, u8) = &(0, 0, 0);
@@ -2757,205 +2779,219 @@ mod tests {
     #[test]
     #[profile]
     fn test_styling_default_theme_with_mock() {
-        init_test_output();
-        let term_attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
-        let defaulted = term_attrs.term_bg_luma;
-        // assert!(matches!(defaulted, TermBgLuma::Dark)); // TODO alt: out?
-        assert_eq!(defaulted, TermBgLuma::Dark);
-        println!();
-        let output = get_test_output();
-        assert!(!output.is_empty());
-        flush_test_output(); // Write captured output to stdout
+        with_safe_profiling(|| {
+            init_test_output();
+            let term_attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
+            let defaulted = term_attrs.term_bg_luma;
+            // assert!(matches!(defaulted, TermBgLuma::Dark)); // TODO alt: out?
+            assert_eq!(defaulted, TermBgLuma::Dark);
+            println!();
+            let output = get_test_output();
+            assert!(!output.is_empty());
+            flush_test_output(); // Write captured output to stdout
+        });
     }
 
     #[test]
     #[profile]
     fn test_styling_color_support_levels() {
-        init_test_output();
-        let none = TermAttributes::with_mock_theme(ColorSupport::None, TermBgLuma::Dark);
-        let basic = TermAttributes::with_mock_theme(ColorSupport::Basic, TermBgLuma::Dark);
-        let color256 = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
-        let true_color = TermAttributes::with_mock_theme(ColorSupport::TrueColor, TermBgLuma::Dark);
+        with_safe_profiling(|| {
+            init_test_output();
+            let none = TermAttributes::with_mock_theme(ColorSupport::None, TermBgLuma::Dark);
+            let basic = TermAttributes::with_mock_theme(ColorSupport::Basic, TermBgLuma::Dark);
+            let color256 = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
+            let true_color = TermAttributes::with_mock_theme(ColorSupport::TrueColor, TermBgLuma::Dark);
 
-        let test_role = Role::Error;
+            let test_role = Role::Error;
 
-        let none_style = style_for_theme_and_role(&none.theme, test_role);
-        // No color support should return plain text
-        assert_eq!(none_style.paint("test"), "test");
+            let none_style = style_for_theme_and_role(&none.theme, test_role);
+            // No color support should return plain text
+            assert_eq!(none_style.paint("test"), "test");
 
-        // Basic support should use ANSI 16 colors
-        vlog!(V::V, "basic={basic:#?}");
-        let basic_style = style_for_theme_and_role(&basic.theme, test_role);
-        let painted = basic_style.paint("test");
-        vlog!(V::V, "painted={painted:?}, style={basic_style:?}");
-        assert!(painted.contains("\x1b[31m"));
-        assert!(painted.ends_with("\u{1b}[0m"));
+            // Basic support should use ANSI 16 colors
+            vlog!(V::V, "basic={basic:#?}");
+            let basic_style = style_for_theme_and_role(&basic.theme, test_role);
+            let painted = basic_style.paint("test");
+            vlog!(V::V, "painted={painted:?}, style={basic_style:?}");
+            assert!(painted.contains("\x1b[31m"));
+            assert!(painted.ends_with("\u{1b}[0m"));
 
-        // Color_256 support should use a different ANSI string from basic
-        let color256_style = style_for_theme_and_role(&color256.theme, test_role);
-        let painted = color256_style.paint("test");
-        vlog!(V::V, "painted={painted:?}");
-        assert!(painted.contains("\x1b[38;5;"));
-        assert!(painted.ends_with("\u{1b}[0m"));
+            // Color_256 support should use a different ANSI string from basic
+            let color256_style = style_for_theme_and_role(&color256.theme, test_role);
+            let painted = color256_style.paint("test");
+            vlog!(V::V, "painted={painted:?}");
+            assert!(painted.contains("\x1b[38;5;"));
+            assert!(painted.ends_with("\u{1b}[0m"));
 
-        // TrueColor support should use RGB formatting
-        let true_color_style = style_for_theme_and_role(&true_color.theme, test_role);
-        let painted = true_color_style.paint("test");
-        vlog!(V::V, "painted={painted:?}");
-        assert!(painted.contains("\x1b[38;2;"));
-        assert!(painted.ends_with("\u{1b}[0m"));
-        let output = get_test_output();
-        assert!(!output.is_empty());
-        flush_test_output(); // Write captured output to stdout
+            // TrueColor support should use RGB formatting
+            let true_color_style = style_for_theme_and_role(&true_color.theme, test_role);
+            let painted = true_color_style.paint("test");
+            vlog!(V::V, "painted={painted:?}");
+            assert!(painted.contains("\x1b[38;2;"));
+            assert!(painted.ends_with("\u{1b}[0m"));
+            let output = get_test_output();
+            assert!(!output.is_empty());
+            flush_test_output(); // Write captured output to stdout
+        });
     }
 
     #[test]
     #[profile]
     fn test_styling_theme_variations() {
-        init_test_output();
-        let attrs_light =
-            TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Light);
-        let attrs_dark = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
+        with_safe_profiling(|| {
+            init_test_output();
+            let attrs_light =
+                TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Light);
+            let attrs_dark = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
 
-        let test_role = Role::Heading1;
+            let test_role = Role::Heading1;
 
-        let light_style = style_for_theme_and_role(&attrs_light.theme, test_role);
-        let heading_light = light_style.paint("test");
+            let light_style = style_for_theme_and_role(&attrs_light.theme, test_role);
+            let heading_light = light_style.paint("test");
 
-        let dark_style = style_for_theme_and_role(&attrs_dark.theme, test_role);
-        let heading_dark = dark_style.paint("test");
+            let dark_style = style_for_theme_and_role(&attrs_dark.theme, test_role);
+            let heading_dark = dark_style.paint("test");
 
-        // Light and dark themes should produce different colors
-        assert_ne!(heading_light, heading_dark);
-        let output = get_test_output();
-        flush_test_output(); // Write captured output to stdout
-        assert!(!output.is_empty());
-        flush_test_output(); // Write captured output to stdout
+            // Light and dark themes should produce different colors
+            assert_ne!(heading_light, heading_dark);
+            let output = get_test_output();
+            flush_test_output(); // Write captured output to stdout
+            assert!(!output.is_empty());
+            flush_test_output(); // Write captured output to stdout
+        });
     }
 
     #[test]
     #[profile]
     fn test_styling_style_attributes() {
-        init_test_output();
-        let attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
+        with_safe_profiling(|| {
+            init_test_output();
+            let attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
 
-        // Heading1 should be bold
-        let error_style = style_for_theme_and_role(&attrs.theme, Heading1);
-        let painted = error_style.paint("test");
-        eprintln!(
-            "theme={}, error_style={error_style:?}, painted={painted:?}",
-            attrs.theme.name
-        );
-        assert!(painted.contains("\x1b[1m"));
+            // Heading1 should be bold
+            let error_style = style_for_theme_and_role(&attrs.theme, Heading1);
+            let painted = error_style.paint("test");
+            eprintln!(
+                "theme={}, error_style={error_style:?}, painted={painted:?}",
+                attrs.theme.name
+            );
+            assert!(painted.contains("\x1b[1m"));
 
-        // Hint should be italic
-        let hint_style = style_for_theme_and_role(&attrs.theme, Role::Hint);
-        let painted = hint_style.paint("test");
-        eprintln!(
-            "theme={}, hint_style={hint_style:?}, painted={painted:?}",
-            attrs.theme.name
-        );
-        let output = get_test_output();
-        assert!(painted.contains("\x1b[3m"));
-        flush_test_output(); // Write captured output to stdout
-        assert!(!output.is_empty());
-        flush_test_output(); // Write captured output to stdout
+            // Hint should be italic
+            let hint_style = style_for_theme_and_role(&attrs.theme, Role::Hint);
+            let painted = hint_style.paint("test");
+            eprintln!(
+                "theme={}, hint_style={hint_style:?}, painted={painted:?}",
+                attrs.theme.name
+            );
+            let output = get_test_output();
+            assert!(painted.contains("\x1b[3m"));
+            flush_test_output(); // Write captured output to stdout
+            assert!(!output.is_empty());
+            flush_test_output(); // Write captured output to stdout
+        });
     }
 
     #[test]
     #[profile]
     fn test_styling_load_dracula_theme() -> ThagResult<()> {
-        init_test_output();
-        let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
+        with_safe_profiling(|| {
+            init_test_output();
+            let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
 
-        // Check theme metadata
-        assert_eq!(theme.term_bg_luma, TermBgLuma::Dark);
-        assert_eq!(theme.min_color_support, ColorSupport::TrueColor);
-        assert_eq!(theme.bg_rgbs, vec![(40, 42, 54)]);
+            // Check theme metadata
+            assert_eq!(theme.term_bg_luma, TermBgLuma::Dark);
+            assert_eq!(theme.min_color_support, ColorSupport::TrueColor);
+            assert_eq!(theme.bg_rgbs, vec![(40, 42, 54)]);
 
-        // Check a few key styles
-        if let ColorValue::TrueColor { rgb } = &theme
-            .palette
-            .heading1
-            .foreground
-            .expect("Failed to load heading1 foreground color")
-            .value
-        {
-            assert_eq!(rgb, &[255, 85, 85]);
-        } else {
-            panic!("Expected TrueColor for heading1");
-        }
+            // Check a few key styles
+            if let ColorValue::TrueColor { rgb } = &theme
+                .palette
+                .heading1
+                .foreground
+                .expect("Failed to load heading1 foreground color")
+                .value
+            {
+                assert_eq!(rgb, &[255, 85, 85]);
+            } else {
+                panic!("Expected TrueColor for heading1");
+            }
 
-        // Check style attributes
-        assert!(theme.palette.heading1.bold);
-        assert!(!theme.palette.normal.bold);
-        assert!(theme.palette.hint.italic);
+            // Check style attributes
+            assert!(theme.palette.heading1.bold);
+            assert!(!theme.palette.normal.bold);
+            assert!(theme.palette.hint.italic);
 
-        let output = get_test_output();
-        flush_test_output(); // Write captured output to stdout
-        assert!(!output.is_empty());
-        flush_test_output(); // Write captured output to stdout
-        Ok(())
+            let output = get_test_output();
+            flush_test_output(); // Write captured output to stdout
+            assert!(!output.is_empty());
+            flush_test_output(); // Write captured output to stdout
+            Ok(())
+        })
     }
 
     #[test]
     #[profile]
     fn test_styling_dracula_validation() -> ThagResult<()> {
-        init_test_output();
-        let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
+        with_safe_profiling(|| {
+            init_test_output();
+            let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
 
-        // Should succeed with TrueColor support and dark background
-        assert!(theme
-            .validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)
-            .is_ok());
+            // Should succeed with TrueColor support and dark background
+            assert!(theme
+                .validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)
+                .is_ok());
 
-        // Should fail with insufficient color support
-        assert!(theme
-            .validate(&ColorSupport::Color256, &TermBgLuma::Dark)
-            .is_err());
+            // Should fail with insufficient color support
+            assert!(theme
+                .validate(&ColorSupport::Color256, &TermBgLuma::Dark)
+                .is_err());
 
-        // Should fail with wrong background
-        assert!(theme
-            .validate(&ColorSupport::TrueColor, &TermBgLuma::Light)
-            .is_err());
+            // Should fail with wrong background
+            assert!(theme
+                .validate(&ColorSupport::TrueColor, &TermBgLuma::Light)
+                .is_err());
 
-        let output = get_test_output();
-        flush_test_output(); // Write captured output to stdout
-        assert!(!output.is_empty());
-        flush_test_output(); // Write captured output to stdout
+            let output = get_test_output();
+            flush_test_output(); // Write captured output to stdout
+            assert!(!output.is_empty());
+            flush_test_output(); // Write captured output to stdout
 
-        Ok(())
+            Ok(())
+        })
     }
 
     #[test]
     #[profile]
     fn test_styling_color_support_ordering() {
-        init_test_output();
-        assert!(ColorSupport::None < ColorSupport::Basic);
-        assert!(ColorSupport::Basic < ColorSupport::Color256);
-        assert!(ColorSupport::Color256 < ColorSupport::TrueColor);
+        with_safe_profiling(|| {
+            init_test_output();
+            assert!(ColorSupport::None < ColorSupport::Basic);
+            assert!(ColorSupport::Basic < ColorSupport::Color256);
+            assert!(ColorSupport::Color256 < ColorSupport::TrueColor);
 
-        // Or more comprehensively:
-        let supports = [
-            ColorSupport::Undetermined,
-            ColorSupport::None,
-            ColorSupport::Basic,
-            ColorSupport::Color256,
-            ColorSupport::TrueColor,
-        ];
+            // Or more comprehensively:
+            let supports = [
+                ColorSupport::Undetermined,
+                ColorSupport::None,
+                ColorSupport::Basic,
+                ColorSupport::Color256,
+                ColorSupport::TrueColor,
+            ];
 
-        for i in 0..supports.len() - 1 {
-            assert!(
-                supports[i] < supports[i + 1],
-                "ColorSupport ordering violated between {:?} and {:?}",
-                supports[i],
-                supports[i + 1]
-            );
-        }
+            for i in 0..supports.len() - 1 {
+                assert!(
+                    supports[i] < supports[i + 1],
+                    "ColorSupport ordering violated between {:?} and {:?}",
+                    supports[i],
+                    supports[i + 1]
+                );
+            }
 
-        let output = get_test_output();
-        flush_test_output(); // Write captured output to stdout
-        assert!(!output.is_empty());
-        flush_test_output(); // Write captured output to stdout
+            let output = get_test_output();
+            flush_test_output(); // Write captured output to stdout
+            assert!(!output.is_empty());
+            flush_test_output(); // Write captured output to stdout
+        });
     }
 }

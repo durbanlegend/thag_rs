@@ -6,7 +6,7 @@ use ratatui::crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyModifiers},
     tty::IsTty,
 };
-use sequential_test::sequential;
+use serial_test::serial;
 use std::{
     env::set_var,
     io::{stdout, Write},
@@ -158,7 +158,7 @@ fn test_stdin_read_to_string() {
 }
 
 #[test]
-#[sequential]
+#[serial]
 fn test_stdin_read_from_stdin() {
     set_up();
     // Trying an alternative to process::Command.
@@ -177,7 +177,7 @@ fn test_stdin_read_from_stdin() {
 }
 
 #[test]
-#[sequential]
+#[serial]
 fn test_stdin_read_stdin() {
     set_up();
     init_logger();

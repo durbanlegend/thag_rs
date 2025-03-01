@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use sequential_test::{parallel, sequential};
+    use serial_test::{parallel, serial};
     use std::{
         env,
         io::Write,
@@ -90,7 +90,7 @@ mod tests {
     // }
 
     #[test]
-    #[sequential]
+    #[serial]
     fn test_logging_logger_log() {
         set_up();
         // init_logger();
@@ -142,7 +142,7 @@ fn main() {{
     }
 
     #[test]
-    #[sequential]
+    #[serial]
     fn test_logging_macro_log() {
         set_up();
         // init_logger();
@@ -177,7 +177,7 @@ fn main() {{
 
     #[test]
     #[cfg(feature = "env_logger")]
-    #[sequential]
+    #[serial]
     fn test_logging_env_logger() {
         set_up();
         // init_logger();

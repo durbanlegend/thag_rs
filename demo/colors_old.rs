@@ -16,11 +16,12 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
 //# Categories: prototype, reference, testing
 use lazy_static::lazy_static;
+use log::debug;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
-use thag_rs::{debug_log, logging::Verbosity, vlog};
+use thag_rs::{logging::Verbosity, vlog};
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
@@ -37,7 +38,7 @@ lazy_static! {
     #[derive(Debug)]
     pub static ref TERM_THEME: TermBgLuma = {
         let timeout = std::time::Duration::from_millis(100);
-        debug_log!("Check terminal background color");
+        debug!("Check terminal background color");
         let theme = termbg::theme(timeout);
         // clear_screen();
         match theme {
@@ -191,11 +192,9 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
             "{}_{}_{}",
             &color_qual, &theme_qual, &msg_level_qual
         ));
-        debug_log!(
+        debug!(
             "Called from_str on {}_{}_{}, found {message_style:#?}",
-            &color_qual,
-            &theme_qual,
-            &msg_level_qual,
+            &color_qual, &theme_qual, &msg_level_qual,
         );
         match message_style {
             Ok(message_style) => NuThemeStyle::get_style(&message_style),
@@ -210,7 +209,7 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
 fn main() {
     let term = termbg::terminal();
     // clear_screen();
-    debug_log!("  Term : {:?}", term);
+    debug!("  Term : {:?}", term);
 
     let color_support = match supports_color::on(Stream::Stdout) {
         Some(color_support) => {

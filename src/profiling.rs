@@ -461,10 +461,17 @@ impl Profile {
 
         // Check if this name is already in the stack (validates our test's assumption)
         let current_stack = get_profile_stack();
-        assert!(
-            !current_stack.contains(&name),
-            "Stack validation failed: Duplicate stack entry"
-        );
+        if current_stack.contains(&name) {
+            for (i, name) in current_stack.iter().enumerate() {
+                eprintln!("  [{i}]: {name}");
+            }
+            panic!("Stack validation failed: Duplicate stack entry");
+        }
+
+        // assert!(
+        //     !current_stack.contains(&name),
+        //     "Stack validation failed: Duplicate stack entry"
+        // );
 
         // Push to stack
         push_profile(name);
@@ -996,8 +1003,10 @@ pub fn safely_cleanup_profiling_after_test() -> ThagResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sequential_test::sequential;
+    use serial_test::serial;
     use std::panic;
+    use std::time::Duration;
+    use thag_proc_macros::profile;
 
     struct TestGuard;
 
@@ -1035,7 +1044,7 @@ mod tests {
     }
 
     #[test]
-    #[sequential]
+    #[serial]
     fn test_profiling_stack_basic() {
         println!("\n--- test_profiling_stack_basic starting ---"); // Debug
 
@@ -1057,7 +1066,7 @@ mod tests {
     }
 
     #[test]
-    #[sequential]
+    #[serial]
     fn test_profiling_stack_nesting() {
         run_test(|| {
             assert!(push_profile("outer"));
@@ -1079,7 +1088,7 @@ mod tests {
     }
 
     #[test]
-    #[sequential]
+    #[serial]
     fn test_profiling_stack_capacity() {
         run_test(|| {
             // Make sure the stack is empty
@@ -1099,7 +1108,7 @@ mod tests {
     }
 
     #[test]
-    #[sequential]
+    #[serial]
     fn test_profiling_stack_empty_pop() {
         run_test(|| {
             // Make sure the stack is empty
@@ -1112,7 +1121,7 @@ mod tests {
     }
 
     #[test]
-    #[sequential]
+    #[serial]
     #[should_panic(expected = "Stack validation failed: Duplicate stack entry")]
     fn test_profiling_duplicate_stack_entries() {
         run_test(|| {
@@ -1125,7 +1134,7 @@ mod tests {
     }
 
     #[test]
-    #[sequential]
+    #[serial]
     fn test_profiling_type_stack_management() {
         run_test(|| {
             // Make sure the stack is empty
@@ -1157,7 +1166,7 @@ mod tests {
     }
 
     #[test]
-    #[sequential]
+    #[serial]
     fn test_profiling_end_profile_section() {
         run_test(|| {
             // Make sure the stack is empty
@@ -1178,6 +1187,54 @@ mod tests {
             assert_eq!(stack.len(), 1);
             assert_eq!(stack[0], "outer");
         });
+    }
+
+    // Test async profiling using #[profile] attribute
+    // This will exercise the generate_async_wrapper function in src/proc_macros/profile.rs
+    #[tokio::test]
+    #[serial]
+    async fn test_profiling_async() {
+        // Make sure the stack is empty
+        reset_profiling_stack();
+
+        // Enable profiling
+        let _ = enable_profiling(true, ProfileType::Time);
+
+        // This function uses the actual #[profile] attribute which will invoke generate_async_wrapper
+        #[allow(dead_code)]
+        async fn run_async_task() -> u32 {
+            // Just simulate some async work
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            42
+        }
+
+        // Wrap with our own profile to verify the async function gets profiled
+        let _profile = Profile::new("test_async_profiling_wrapper", ProfileType::Time);
+        assert_eq!(get_profile_stack().len(), 1);
+
+        // Call the async function with #[profile] attribute
+        let result = run_async_profiled().await;
+
+        // Verify the result
+        assert_eq!(result, 42);
+
+        // Verify the profile stack contains our wrapper
+        // The async function's profile would have been dropped when it completed
+        let stack = get_profile_stack();
+        assert_eq!(stack.len(), 1);
+        assert_eq!(stack[0], "test_async_profiling_wrapper");
+
+        // Clean up
+        reset_profiling_stack();
+        let _ = enable_profiling(false, ProfileType::Time);
+    }
+
+    // This function uses the #[profile] attribute which will invoke generate_async_wrapper
+    #[profile]
+    async fn run_async_profiled() -> u32 {
+        // Simulate some async work
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        42
     }
 
     // // Optional: debug helper

@@ -6,9 +6,8 @@ Profiling is an essential part of optimizing your Rust applications. With thag_r
 
 This guide explains how to use thag_rs's built-in profiling capabilities to identify performance bottlenecks, analyze memory usage, and optimize your code.
 
-## Getting Started
 
-### Enabling Profiling
+## Enabling Profiling
 
 There are two ways to enable profiling in thag_rs:
 
@@ -34,7 +33,7 @@ You can specify the profiling type when enabling profiling:
 
 Enables profiling globally for the entire application. Valid values for `<type>` are "time", "memory", or "both". The default is "both".
 
-### Profiling Types
+## Profiling Types
 
 thag_rs supports two types of profiling, separately or combined:
 
@@ -49,13 +48,13 @@ You can also specify the profiling type programmatically:
 profiling::enable_profiling(true, ProfileType::Both)?;
 ```
 
-### Instrumenting Your Code
+## Instrumenting Your Code
 
-#### Automatic Instrumentation
+### Automatic Instrumentation
 
 For easier profiling, thag_rs provides tools to automatically instrument your code:
 
-##### Using the profile_instrument tool
+#### Using the profile_instrument tool
 
 For existing source files, you can use the profile_instrument tool to automatically add profiling attributes:
 
@@ -69,7 +68,7 @@ thag_profile_instrument <edition_yyyy> < path/to/your/source.rs > path/to/destin
 
 This will add #[profile] attributes to functions and methods (excluding tests, because these need extra thread safety measures), and #[enable_profiling] to main() if present.
 
-##### Removing Instrumentation
+#### Removing Instrumentation
 
 When you're done profiling, you can remove the instrumentation:
 
@@ -82,9 +81,9 @@ thag_profile_remove <edition_yyyy> < path/to/your/source.rs > path/to/destinatio
 ```
 
 
-#### Manual Instrumentation
+### Manual Instrumentation
 
-##### Using the #[profile] attribute
+#### Using the #[profile] attribute
 
 You can add the #[profile] attribute to any function to profile it with a meaningful function or method name:
 For regular functions this will profile the function as `fn::<function_name>`.
@@ -169,9 +168,9 @@ fn my_function() {
 }
 ```
 
-### Conditional Profiling with cfg attributes
+## Conditional Profiling with cfg attributes
 
-#### Using a Custom Feature Flag
+### Using a Custom Feature Flag
 
 You can make profiling conditional on a custom feature flag:
 
@@ -183,7 +182,7 @@ fn expensive_calculation() -> u64 {
 }
 ```
 
-#### Using debug_assertions
+### Using debug_assertions
 
 To profile only in debug builds (not release):
 
@@ -195,7 +194,7 @@ fn expensive_calculation() -> u64 {
 }
 ```
 
-#### Combining with Profile Options
+### Combining with Profile Options
 
 You can still use profiling options with conditional compilation:
 
@@ -207,7 +206,7 @@ fn my_method(&self) {
 }
 ```
 
-#### Multi-condition Example
+### Multi-condition Example
 
 You can combine multiple conditions:
 
@@ -219,7 +218,7 @@ fn complex_operation() {
 }
 ```
 
-#### Applying to Trait Implementations
+### Applying to Trait Implementations
 
 Conditional profiling works well with trait implementations too:
 
@@ -230,6 +229,7 @@ impl SomeTrait for MyStruct {
         // Method implementation
     }
 }
+```
 
 ## Analyzing Profile Results
 
@@ -312,14 +312,14 @@ Compares memory usage between two profile runs:
 - **Show Memory Statistics Comparison**: Compare allocation statistics
 - **Back to Profile Selection**: Return to the file selection menu
 
-#### Interpreting Results
+### Interpreting Results
 
 The analyzer produces:
 
 1. Statistical Summary: Shows function calls, total time, average time
 2. Interactive Flamechart: Visual representation of performance data
 
-##### Flamecharts
+#### Flamecharts
 
 Flamecharts provide an intuitive visualization of your profiling data.
 The wider a function appears, the more time it takes relative to the total execution.
@@ -345,7 +345,7 @@ As the above link demonstrates, interactive features of the SVG flamecharts incl
 - **Search**: Search for specific functions
 - **Differential view**: Compare before/after optimizations
 
-##### Profiling Best Practices
+## Profiling Best Practices
 
 1. **Profile representative workloads**: Make sure your test cases represent real-world usage.
 2. **Focus on hot paths**: Look for the widest blocks in your flamechart - these are your performance bottlenecks.
@@ -366,9 +366,9 @@ fn test_profiled_function() {
 
 This is important because thag_rs profiling maintains global state that isn't thread-safe.
 
-### Advanced Features
+## Advanced Features
 
-#### Profiling Async Code
+### Profiling Async Code
 
 The #[profile] attribute works seamlessly with async functions:
 
@@ -381,7 +381,7 @@ async fn process_data() -> Result<Data, Error> {
 
 The profiler will correctly track time spent in the future, including time between .await points.
 
-#### Ending Profile Sections Early
+### Ending Profile Sections Early
 
 Sometimes you may want to end profiling before a section's scope ends:
 
@@ -398,7 +398,7 @@ fn complex_operation() {
 }
 ```
 
-#### Custom Profile Names
+### Custom Profile Names
 
 You can provide custom names for profiled methods:
 
@@ -417,9 +417,9 @@ impl MyStruct {
 }
 ```
 
-### Troubleshooting
+## Troubleshooting
 
-#### Common Issues
+### Common Issues
 
 1. **Missing profile output**: Ensure profiling is enabled and you have write permissions in the current directory.
 2. **Test failures**: Profiled tests, as well as tests that call profiled functions, must use the #[serial] attribute from the serial_test crate to prevent concurrent access to profiling data.
@@ -429,7 +429,7 @@ is effective for this.
 4. **Inappropriate redirection**: Do not redirect the output of either the `thag_profile_instrument` tool or the `thag_profile_remove` tool back to the input file. Redirect it to a different file and compare the two before
 overwriting the original file with the modified version.
 
-#### Inspecting Profile Files
+### Inspecting Profile Files
 
 The folded stack files are human-readable. You can inspect them directly:
 

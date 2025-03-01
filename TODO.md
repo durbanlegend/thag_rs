@@ -20,7 +20,7 @@
 - [ ]  Claude re REPL alternative editor to `reedline`
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
-- [ ]  Profiling guide: document attribute parameters like imp, fix trait_ naming.
+- [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

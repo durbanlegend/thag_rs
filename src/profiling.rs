@@ -275,7 +275,13 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
     Ok(())
 }
 
-/// Resets the profiling stack, safely cleaning up any leftover entries
+/// Disable profiling and reset the profiling stack.
+pub fn disable_profiling() {
+    PROFILING_STATE.store(false, Ordering::SeqCst);
+    reset_profiling_stack();
+}
+
+// Resets the profiling stack, safely cleaning up any leftover entries
 ///
 /// This is useful when tests need to ensure a clean state or when
 /// profiling needs to be reset without relying on scope-based cleanup.

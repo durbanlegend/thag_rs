@@ -1,9 +1,4 @@
 /*[toml]
-[workspace]
-
-[[bin]]
-name = "thag_profile_analyze"
-
 [dependencies]
 chrono = "0.4.39"
 dirs = "6.0.0"
@@ -157,7 +152,7 @@ fn validate_memory_events(events: &[MemoryEvent]) -> Result<(), String> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Ensure profiling is disabled for the analyzer
     // Only takes effect if this tool is compiled (`thag tools/thag_profile.rs -x`).
-    thag_rs::profiling::set_profiling_enabled(false);
+    thag_rs::profiling::disable_profiling();
     loop {
         let analysis_types = vec![
             "Time Profile - Single",

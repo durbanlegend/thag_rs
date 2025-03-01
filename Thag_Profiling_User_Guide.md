@@ -61,7 +61,7 @@ fn main() {
 
 #### Manual Instrumentation
 
-##### Using the #[profile] Attribute
+##### Using the #[profile] attribute
 
   You can add the #[profile] attribute to any function to profile it with a meaningful function or method name:
 
@@ -118,11 +118,7 @@ fn main() {
 
   cargo run --bin profile_analyze -- [options]
 
-  Options include:
-  - --file <path> - Specify the profile file to analyze
-  - --filter <pattern> - Filter functions by pattern
-  - --compare <path> - Compare with another profile file
-  - --output <path> - Specify output path for flamechart
+![Main menu](assets/profile_analyze_main.png)
 
 ##### Interpreting Results
 
@@ -146,9 +142,9 @@ fn main() {
 `thag` uses the `inferno` crate to generate flamecharts. For the execution timeline, the analysis tool allows you to choose the `inferno` color scheme to use. For the memory flamechart,
 it uses `inferno`'s memory-optimized color scheme.
 
- [Image: assets/timeline_flamechart.png](assets/timeline_flamechart.png)
+![Image: assets/timeline_flamechart.png](assets/timeline_flamechart.png)
 
-  [Link: assets/flamechart.svg](assets/flamegraph.svg)
+[Try it!](assets/flamegraph.svg)
 
 ###### Interactive features of the SVG flamecharts include:
 
@@ -234,8 +230,12 @@ it uses `inferno`'s memory-optimized color scheme.
 #### Common Issues
 
   1. Missing Profile Output: Ensure profiling is enabled and you have write permissions in the current directory.
-  2. Test Failures: Profiled tests must use the #[serial] attribute from the serial_test crate to prevent concurrent access to profiling data.
-  3. Overhead: Profiling adds some overhead. For extremely performance-sensitive code, be aware that the measurements include this overhead.
+  2. Test Failures: Profiled tests, as well as tests that call profiled functions, must use the #[serial] attribute from the serial_test crate to prevent concurrent access to profiling data.
+  3. Overhead: Profiling, and in particular memory profiling, adds some overhead. For extremely performance-sensitive code, be aware that the measurements include this overhead.
+  Instrumented code should not add a great deal of overhead when profiling is not enabled, but for time_sensitive code you may wish to remove instrumentation. The `thag_profile_remove` tool
+  is effective for this.
+  4. Do not redirect the output of either the `thag_profile_instrument` tool or the `thag_profile_remove` tool back to the input file. Redirect it to a different file and compare the two before
+  overwriting the original file with the modified version.
 
 #### Inspecting Profile Files
 

@@ -233,7 +233,6 @@ fn analyze_differential_profiles(profile_type: ProfileType) -> ThagResult<()> {
         ProfileType::Time => !filename.contains("-memory"),
         ProfileType::Memory => filename.contains("-memory"),
     };
-    // let profile_groups = group_profile_files(filter)?;
     let (before, after) = select_profile_files(filter)?;
     generate_differential_flamegraph(profile_type, &before, &after)
 }
@@ -707,8 +706,112 @@ fn select_time_color_scheme() -> ThagResult<Palette> {
         .palette)
 }
 
-// fn group_profile_files(filter: F) -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
 fn group_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
+    let all_groups = collect_profile_files(&filter)?;
+    let mut current_filter = String::new();
+
+    loop {
+        // Apply current filter
+        let filtered_groups = if current_filter.is_empty() {
+            all_groups.clone()
+        } else {
+            all_groups
+                .clone()
+                .into_iter()
+                .filter_map(|(group_name, paths)| {
+                    let filtered_paths: Vec<PathBuf> = paths
+                        .into_iter()
+                        .filter(|p| {
+                            p.file_name()
+                                .and_then(|n| n.to_str())
+                                .map_or(false, |name| name.contains(&current_filter))
+                        })
+                        .collect();
+
+                    if filtered_paths.is_empty() {
+                        None
+                    } else {
+                        Some((group_name, filtered_paths))
+                    }
+                })
+                .collect()
+        };
+
+        // Display filter info if active
+        if !current_filter.is_empty() {
+            println!(
+                "Current filter: '{}' (showing {} of {} groups)",
+                current_filter,
+                filtered_groups.len(),
+                all_groups.len()
+            );
+        }
+
+        // Display the current list of files
+        println!("\nAvailable profile files:");
+        for (i, (group_name, paths)) in filtered_groups.iter().enumerate() {
+            println!("{}. {} ({} files)", i + 1, group_name, paths.len());
+            // Optionally show the first few files in each group
+            for (j, path) in paths.iter().take(3).enumerate() {
+                if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                    println!("   {}.{}: {}", i + 1, j + 1, filename);
+                }
+            }
+            if paths.len() > 3 {
+                println!("   ... and {} more", paths.len() - 3);
+            }
+        }
+        println!("");
+
+        // Create selection options with Filter as the first option
+        let mut options = vec!["Filter/modify selection".to_string()];
+
+        // Add numbered options for each group
+        for (i, (group_name, paths)) in filtered_groups.iter().enumerate() {
+            options.push(format!("{}. {} ({} files)", i + 1, group_name, paths.len()));
+        }
+
+        let selection = inquire::Select::new("Select an option:", options)
+            .prompt()
+            .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+        if selection == "Filter/modify selection" {
+            // Show filter options
+            let filter_action = inquire::Select::new(
+                "Filter options:",
+                vec!["Apply/modify filter", "Clear filter", "Back to selection"],
+            )
+            .prompt()
+            .map_err(|e| ThagError::Profiling(e.to_string()))?;
+
+            match filter_action {
+                "Apply/modify filter" => {
+                    current_filter = inquire::Text::new("Enter filter string:")
+                        .with_initial_value(&current_filter)
+                        .prompt()
+                        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+                }
+                "Clear filter" => current_filter.clear(),
+                _ => {} // Back to selection
+            }
+        } else {
+            // Extract the index from the selection string
+            if let Some(index_str) = selection.split('.').next() {
+                if let Ok(index) = index_str.trim().parse::<usize>() {
+                    if index > 0 && index <= filtered_groups.len() {
+                        // Return the selected group
+                        return Ok(vec![filtered_groups[index - 1].clone()]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Helper function to collect all profile files matching the initial filter
+fn collect_profile_files<T: Fn(&str) -> bool>(
+    filter: &T,
+) -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
     let mut groups: HashMap<String, Vec<PathBuf>> = HashMap::new();
 
     // Use file_navigator to get the directory and list .folded files

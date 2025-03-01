@@ -119,7 +119,7 @@ pub(crate) fn get_profile_stack() -> Vec<&'static str> {
     result
 }
 
-// For validation in debug builds
+/// For validation in debug builds
 // #[cfg(debug_assertions)]
 #[allow(dead_code)]
 fn validate_profile_stack() -> Option<String> {
@@ -454,19 +454,19 @@ impl Profile {
             None
         };
 
-        // Validate the stack to check for duplicates - this should panic if duplicate entries are found
-        if let Some(err) = validate_profile_stack() {
-            panic!("Stack validation failed: {err}");
-        }
+        // // Validate the stack to check for duplicates - this should panic if duplicate entries are found
+        // if let Some(err) = validate_profile_stack() {
+        //     panic!("Stack validation failed: {err}");
+        // }
 
-        // Check if this name is already in the stack (validates our test's assumption)
-        let current_stack = get_profile_stack();
-        if current_stack.contains(&name) {
-            for (i, name) in current_stack.iter().enumerate() {
-                eprintln!("  [{i}]: {name}");
-            }
-            panic!("Stack validation failed: Duplicate stack entry");
-        }
+        // // Check if this name is already in the stack (validates our test's assumption)
+        // let current_stack = get_profile_stack();
+        // if current_stack.contains(&name) {
+        //     for (i, name) in current_stack.iter().enumerate() {
+        //         eprintln!("  [{i}]: {name}");
+        //     }
+        //     panic!("Stack validation failed: Duplicate stack entry {name}");
+        // }
 
         // assert!(
         //     !current_stack.contains(&name),

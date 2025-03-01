@@ -348,7 +348,6 @@ pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
 /// Will panic if there is a problem configuring the `reedline` history file.
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::too_many_lines)]
-#[profile]
 pub fn run_repl(
     args: &Cli,
     proc_flags: &ProcFlags,

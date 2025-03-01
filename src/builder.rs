@@ -498,7 +498,7 @@ impl ScriptState {
 /// Will return `Err` if there is an error returned by any of the subordinate functions.
 /// # Panics
 /// Will panic if it fails to strip a .rs extension off the script name,
-#[profile]
+// #[profile]
 pub fn execute(args: &mut Cli) -> ThagResult<()> {
     // Instrument the entire function
     // profile!("execute");
@@ -632,7 +632,6 @@ fn set_script_state(
 }
 
 #[inline]
-#[profile]
 fn process(
     proc_flags: &ProcFlags,
     args: &mut Cli,

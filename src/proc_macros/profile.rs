@@ -12,7 +12,7 @@ struct ProfileArgs {
     /// The implementing type (e.g., "`MyStruct`")
     imp: Option<String>,
     /// The trait being implemented (e.g., "`Display`")
-    trait_: Option<String>,
+    trait_name: Option<String>,
     /// Explicit profile type override
     profile_type: Option<ProfileTypeOverride>,
 }
@@ -65,9 +65,9 @@ impl Parse for ProfileArgs {
                     let lit: LitStr = input.parse()?;
                     args.imp = Some(lit.value());
                 }
-                "trait_" => {
+                "trait_name" => {
                     let lit: LitStr = input.parse()?;
-                    args.trait_ = Some(lit.value());
+                    args.trait_name = Some(lit.value());
                 }
                 "profile_type" => {
                     let lit: LitStr = input.parse()?;
@@ -192,7 +192,7 @@ fn generate_profile_name(
 
     // Add context (impl/trait/fn)
     if is_method {
-        if let Some(trait_name) = &args.trait_ {
+        if let Some(trait_name) = &args.trait_name {
             parts.push(format!("trait::{trait_name}"));
             if let Some(impl_type) = &args.imp {
                 parts.push(format!("impl::{impl_type}"));

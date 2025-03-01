@@ -2729,7 +2729,7 @@ mod tests {
     // Use a static Mutex for test output collection
     static TEST_OUTPUT: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
-    #[profile]
+    // #[profile]
     fn init_test_output() {
         if let Ok(mut guard) = TEST_OUTPUT.lock() {
             guard.clear();
@@ -2737,7 +2737,7 @@ mod tests {
         }
     }
 
-    #[profile]
+    // #[profile]
     fn get_test_output() -> Vec<String> {
         match TEST_OUTPUT.lock() {
             Ok(guard) => guard.clone(),
@@ -2745,7 +2745,7 @@ mod tests {
         }
     }
 
-    #[profile]
+    // #[profile]
     fn flush_test_output() {
         if let Ok(guard) = TEST_OUTPUT.lock() {
             let mut stdout = std::io::stdout();
@@ -2865,6 +2865,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_styling_load_dracula_theme() -> ThagResult<()> {
         init_test_output();
         let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
@@ -2900,6 +2901,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_styling_dracula_validation() -> ThagResult<()> {
         init_test_output();
         let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
@@ -2928,6 +2930,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_styling_color_support_ordering() {
         init_test_output();
         assert!(ColorSupport::None < ColorSupport::Basic);

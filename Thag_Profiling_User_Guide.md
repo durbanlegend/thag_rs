@@ -2,36 +2,91 @@
 
 ## Introduction
 
-Profiling is an essential part of optimizing your Rust applications. With thag_rs, profiling becomes straightforward and consistent across all platforms. No more wrestling with platform-specific profiling tools or complex setup procedures.
+Profiling is key to optimizing your Rust applications, but it tends to be time-consuming (no pun intended).
+`thag_rs` (informally known as `thag`), aims to provide quick, straightforward and consistent basic profiling for your Rust project or script across all platforms.
 
-This guide explains how to use thag_rs's built-in profiling capabilities to identify performance bottlenecks, analyze memory usage, and optimize your code.
+`thag` profiling is intrusive, meaning that you need to instrument your code at least temporarily for profiling.
+`thag` provides an automated instrumentation tool to do the instrumentation. This is designed to be "lossless", preserving the original code intact with its comments
+and formatting, and only adding minimal instrumentation using the `rust-analyzer` syntax tree library `ra_ap_syntax`.
+A second tool is provided to remove the instrumentation.
 
+You can instrument and profile any module or modules of a project, or a user script provided that the script has a `main` function (i.e. not a snippet).
+
+This guide explains how to use `thag_rs`'s built-in profiling capabilities to identify performance bottlenecks, analyze memory usage, and optimize your code.
+
+## Quick-start guide
+
+In the following example, if you've compiled `tools/profile_instrument.rs` to `thag_profile_instrument`, you can use
+`thag_profile_instrument <yyyy>` in place of `thag tools/profile_instrument.rs -qq -- <yyyy>`
+
+1. Instrumenting your script or module:
+
+    ```bash
+    thag tools/profile_instrument.rs -qq -- 2021 < demo/factorial_ibig_product.rs > demo/factorial_ibig_product_profile.rs
+    ```
+
+    Note that `tools/profile_instrument.rs` requires the Rust edition of your project or script for the benefit of the `ra_ap_syntax` crate.
+
+    Comparing before and after with `vimdiff`:
+
+    ```
+    vimdiff demo/factorial_ibig_product.rs demo/factorial_ibig_product_profile.rs
+    ```
+
+    ![vimdiff](assets/vimdiff_profile_instrument.png)
+
+    If you're profiling a project source file, at this point you'd want to replace the uninstrumented code with the instrumented version.
+
+2. Profiling your code:
+
+      ```bash
+      thag demo/factorial_ibig_product_profile.rs
+      ```
+
+    Comparing before and after with `vimdiff`:
+
+    ```
+    vimdiff demo/factorial_ibig_product_profile.rs demo/factorial_ibig_product_profile_profile.rs
+    ```
+
+    ![vimdiff](assets/vimdiff_profile_profile.png)
 
 ## Enabling Profiling
 
-There are two ways to enable profiling in thag_rs:
+There are two ways to enable profiling in `thag_rs`:
 
-1. Via Cargo feature flag - Use this for occasional profiling during development:
-```bash
-cargo run --features profiling -- your_script.rs
-```
+1. Via an `#[enable_profiling]` attribute on the main function.
 
-2. Via #[enable_profiling] attribute - Use this to include profiling in release builds or for permanent instrumentation:
+    ```rust
+    #[enable_profiling]
+    fn main() {
+        // Your code here
+    }
+    ```
 
-```rust
-#[enable_profiling]
-fn main() {
-    // Your code here
-}
-```
 
-You can specify the profiling type when enabling profiling:
+    You can specify the profiling type when enabling profiling:
 
-```rust
-#[enable_profiling(profile_type = "<type>")]
-```
+    ```rust
+    #[enable_profiling(profile_type = "<type>")]
+    ```
 
-Enables profiling globally for the entire application. Valid values for `<type>` are "time", "memory", or "both". The default is "both".
+    Enables profiling globally for the entire application. Valid values for `<type>` are "time", "memory", or "both". The default is "both".
+
+2. Via a `profiling` Cargo feature flag in your project's `Cargo.toml` file or your script's toml block- Use this for occasional profiling during development:
+
+  ```rust
+  /*[toml]
+  ...
+  [features]
+  profiling = []
+  ...
+  */
+  ```
+
+  ```bash
+  cargo run --features profiling -- your_script.rs
+  ```
 
 ## Profiling Types
 
@@ -52,7 +107,7 @@ profiling::enable_profiling(true, ProfileType::Both)?;
 
 ### Automatic Instrumentation
 
-For easier profiling, thag_rs provides tools to automatically instrument your code:
+For easier profiling, `thag_rs` provides tools to automatically instrument your code:
 
 #### Using the profile_instrument tool
 
@@ -66,7 +121,7 @@ or
 thag_profile_instrument <edition_yyyy> < path/to/your/source.rs > path/to/destination.rs
 ```
 
-This will add #[profile] attributes to functions and methods (excluding tests, because these need extra thread safety measures), and #[enable_profiling] to main() if present.
+This will add `#[profile]` attributes to functions and methods (excluding tests, because these need extra thread safety measures), and #`[enable_profiling]`enable_profilingto main() if present.
 
 #### Removing Instrumentation
 
@@ -83,9 +138,9 @@ thag_profile_remove <edition_yyyy> < path/to/your/source.rs > path/to/destinatio
 
 ### Manual Instrumentation
 
-#### Using the #[profile] attribute
+#### Using the `#[profile]` attribute
 
-You can add the #[profile] attribute to any function to profile it with a meaningful function or method name:
+You can add the `#[profile]` attribute to any function to profile it with a meaningful function or method name:
 For regular functions this will profile the function as `fn::<function_name>`.
 For methods, this will profile the method as `method::<method_name>`. See below for how to add the name of the
 implementation type or trait.
@@ -105,7 +160,7 @@ async fn fetch_data() -> Result<String, Error> {
 }
 ```
 
-The #[profile] attribute supports several options:
+The `#[profile]` attribute supports several options:
 
 1. `imp` option (because "impl" is a reserved keyword):
 
@@ -271,7 +326,7 @@ Available profile files:
 1. tui_ta_editor_profile (2 files)
    1.1: tui_ta_editor_profile-20250228-090304.folded
    1.2: tui_ta_editor_profile-20250228-090125.folded
-2. thag (4 files)
+2. `thag` (4 files)
    ...
 ```
 
@@ -325,11 +380,11 @@ Flamecharts provide an intuitive visualization of your profiling data.
 The wider a function appears, the more time it takes relative to the total execution.
 Flamecharts are interactive SVGs that allow you to zoom in on specific functions,
 hover over functions to see detailed information, search for specific functions,
-and compare before/after optimizations.
+and compare before/after optimizations. See the sample image below or click [here](assets/flamechart_time_20250302-080709.svg) to interact with it.
 
 You may be more familiar with flamegraphs than flamecharts. Flamecharts are distinguished by laying out data on the horizontal axis chronologically instead of alphabetically.
 Thag profiling uses flamecharts to reflect the sequence of events, in particular for the execution timeline. For memory profiling the sequence will be the sequence of `drop` events,
-since this is the point at which thag profiling records the allocation and deallocation.
+since this is the point at which `thag` profiling records the allocation and deallocation.
 
 `thag` uses the `inferno` crate to generate flamecharts. For the execution timeline, the analysis tool allows you to choose the `inferno` color scheme to use. For the memory flamechart,
 it uses `inferno`'s memory-optimized color scheme.
@@ -364,13 +419,13 @@ fn test_profiled_function() {
 }
 ```
 
-This is important because thag_rs profiling maintains global state that isn't thread-safe.
+This is important because `thag_rs` profiling maintains global state that isn't thread-safe.
 
 ## Advanced Features
 
 ### Profiling Async Code
 
-The #[profile] attribute works seamlessly with async functions:
+The `#[profile]` attribute works seamlessly with async functions:
 
 ```rust
 #[profile]
@@ -443,5 +498,5 @@ head your-executable-timestamp.folded
 by combining easy instrumentation, detailed analysis, and interactive visualizations to help make your code faster and more efficient.
 
 You can get started quickly by running `thag`'s `profile_instrument` tool to auto-instrument one or more source files of interest with #[profile]
-attributes, and (in the case of `fn main`), #[enable_profiling] attributes. Then run your code as normal with the #[enable_profiling] attribute,
+attributes, and (in the case of `fn main`), `#[enable_profiling]` attributes. Then run your code as normal with the `#[enable_profiling]` attribute,
 or if running a script from `thag` you can use `features=profiling`, and on termination run the `profile_analyze` tool to select and analyze the profile data in the current directory.

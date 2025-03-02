@@ -21,6 +21,7 @@
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
+- [ ]  Profiling: split out to separate crate?
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

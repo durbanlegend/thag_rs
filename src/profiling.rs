@@ -1120,6 +1120,7 @@ mod tests {
         });
     }
 
+    #[ignore = "because validation disabled due to legitimate dups from `syn` visits"]
     #[test]
     #[serial]
     #[should_panic(expected = "Stack validation failed: Duplicate stack entry")]

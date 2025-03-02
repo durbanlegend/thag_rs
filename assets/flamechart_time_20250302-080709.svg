@@ -1,0 +1,491 @@
+<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg version="1.1" width="1200" height="254" onload="init(evt)" viewBox="0 0 1200 254" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:fg="http://github.com/jonhoo/inferno"><!--Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples.--><!--NOTES: --><defs><linearGradient id="background" y1="0" y2="1" x1="0" x2="0"><stop stop-color="#f8f8f8" offset="5%"/><stop stop-color="#e8e8e8" offset="95%"/></linearGradient></defs><style type="text/css">
+text { font-family:monospace; font-size:12px }
+#title { text-anchor:middle; font-size:17px; }
+#matched { text-anchor:end; }
+#search { text-anchor:end; opacity:0.5; cursor:pointer; }
+#search:hover, #search.show { opacity:1; }
+#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+#unzoom { cursor:pointer; }
+#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+.hide { display:none; }
+.parent { opacity:0.5; }
+</style><script type="text/ecmascript"><![CDATA[
+        var nametype = 'Function:';
+        var fontsize = 12;
+        var fontwidth = 0.59;
+        var xpad = 10;
+        var inverted = false;
+        var searchcolor = 'rgb(230,0,230)';
+        var fluiddrawing = true;
+        var truncate_text_right = false;
+    ]]><![CDATA["use strict";
+var details, searchbtn, unzoombtn, matchedtxt, svg, searching, frames, known_font_width;
+function init(evt) {
+    details = document.getElementById("details").firstChild;
+    searchbtn = document.getElementById("search");
+    unzoombtn = document.getElementById("unzoom");
+    matchedtxt = document.getElementById("matched");
+    svg = document.getElementsByTagName("svg")[0];
+    frames = document.getElementById("frames");
+    known_font_width = get_monospace_width(frames);
+    total_samples = parseInt(frames.attributes.total_samples.value);
+    searching = 0;
+
+    // Use GET parameters to restore a flamegraph's state.
+    var restore_state = function() {
+        var params = get_params();
+        if (params.x && params.y)
+            zoom(find_group(document.querySelector('[*|x="' + params.x + '"][y="' + params.y + '"]')));
+        if (params.s)
+            search(params.s);
+    };
+
+    if (fluiddrawing) {
+        // Make width dynamic so the SVG fits its parent's width.
+        svg.removeAttribute("width");
+        // Edge requires us to have a viewBox that gets updated with size changes.
+        var isEdge = /Edge\/\d./i.test(navigator.userAgent);
+        if (!isEdge) {
+            svg.removeAttribute("viewBox");
+        }
+        var update_for_width_change = function() {
+            if (isEdge) {
+                svg.attributes.viewBox.value = "0 0 " + svg.width.baseVal.value + " " + svg.height.baseVal.value;
+            }
+
+            // Keep consistent padding on left and right of frames container.
+            frames.attributes.width.value = svg.width.baseVal.value - xpad * 2;
+
+            // Text truncation needs to be adjusted for the current width.
+            update_text_for_elements(frames.children);
+
+            // Keep search elements at a fixed distance from right edge.
+            var svgWidth = svg.width.baseVal.value;
+            searchbtn.attributes.x.value = svgWidth - xpad;
+            matchedtxt.attributes.x.value = svgWidth - xpad;
+        };
+        window.addEventListener('resize', function() {
+            update_for_width_change();
+        });
+        // This needs to be done asynchronously for Safari to work.
+        setTimeout(function() {
+            unzoom();
+            update_for_width_change();
+            restore_state();
+        }, 0);
+    } else {
+        restore_state();
+    }
+}
+// event listeners
+window.addEventListener("click", function(e) {
+    var target = find_group(e.target);
+    if (target) {
+        if (target.nodeName == "a") {
+            if (e.ctrlKey === false) return;
+            e.preventDefault();
+        }
+        if (target.classList.contains("parent")) unzoom();
+        zoom(target);
+
+        // set parameters for zoom state
+        var el = target.querySelector("rect");
+        if (el && el.attributes && el.attributes.y && el.attributes["fg:x"]) {
+            var params = get_params()
+            params.x = el.attributes["fg:x"].value;
+            params.y = el.attributes.y.value;
+            history.replaceState(null, null, parse_params(params));
+        }
+    }
+    else if (e.target.id == "unzoom") {
+        unzoom();
+
+        // remove zoom state
+        var params = get_params();
+        if (params.x) delete params.x;
+        if (params.y) delete params.y;
+        history.replaceState(null, null, parse_params(params));
+    }
+    else if (e.target.id == "search") search_prompt();
+}, false)
+// mouse-over for info
+// show
+window.addEventListener("mouseover", function(e) {
+    var target = find_group(e.target);
+    if (target) details.nodeValue = nametype + " " + g_to_text(target);
+}, false)
+// clear
+window.addEventListener("mouseout", function(e) {
+    var target = find_group(e.target);
+    if (target) details.nodeValue = ' ';
+}, false)
+// ctrl-F for search
+window.addEventListener("keydown",function (e) {
+    if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+        e.preventDefault();
+        search_prompt();
+    }
+}, false)
+// functions
+function get_params() {
+    var params = {};
+    var paramsarr = window.location.search.substr(1).split('&');
+    for (var i = 0; i < paramsarr.length; ++i) {
+        var tmp = paramsarr[i].split("=");
+        if (!tmp[0] || !tmp[1]) continue;
+        params[tmp[0]]  = decodeURIComponent(tmp[1]);
+    }
+    return params;
+}
+function parse_params(params) {
+    var uri = "?";
+    for (var key in params) {
+        uri += key + '=' + encodeURIComponent(params[key]) + '&';
+    }
+    if (uri.slice(-1) == "&")
+        uri = uri.substring(0, uri.length - 1);
+    if (uri == '?')
+        uri = window.location.href.split('?')[0];
+    return uri;
+}
+function find_child(node, selector) {
+    var children = node.querySelectorAll(selector);
+    if (children.length) return children[0];
+    return;
+}
+function find_group(node) {
+    var parent = node.parentElement;
+    if (!parent) return;
+    if (parent.id == "frames") return node;
+    return find_group(parent);
+}
+function orig_save(e, attr, val) {
+    if (e.attributes["fg:orig_" + attr] != undefined) return;
+    if (e.attributes[attr] == undefined) return;
+    if (val == undefined) val = e.attributes[attr].value;
+    e.setAttribute("fg:orig_" + attr, val);
+}
+function orig_load(e, attr) {
+    if (e.attributes["fg:orig_"+attr] == undefined) return;
+    e.attributes[attr].value = e.attributes["fg:orig_" + attr].value;
+    e.removeAttribute("fg:orig_" + attr);
+}
+function g_to_text(e) {
+    var text = find_child(e, "title").firstChild.nodeValue;
+    return (text)
+}
+function g_to_func(e) {
+    var func = g_to_text(e);
+    // if there's any manipulation we want to do to the function
+    // name before it's searched, do it here before returning.
+    return (func);
+}
+function get_monospace_width(frames) {
+    // Given the id="frames" element, return the width of text characters if
+    // this is a monospace font, otherwise return 0.
+    text = find_child(frames.children[0], "text");
+    originalContent = text.textContent;
+    text.textContent = "!";
+    bangWidth = text.getComputedTextLength();
+    text.textContent = "W";
+    wWidth = text.getComputedTextLength();
+    text.textContent = originalContent;
+    if (bangWidth === wWidth) {
+        return bangWidth;
+    } else {
+        return 0;
+    }
+}
+function update_text_for_elements(elements) {
+    // In order to render quickly in the browser, you want to do one pass of
+    // reading attributes, and one pass of mutating attributes. See
+    // https://web.dev/avoid-large-complex-layouts-and-layout-thrashing/ for details.
+
+    // Fall back to inefficient calculation, if we're variable-width font.
+    // TODO This should be optimized somehow too.
+    if (known_font_width === 0) {
+        for (var i = 0; i < elements.length; i++) {
+            update_text(elements[i]);
+        }
+        return;
+    }
+
+    var textElemNewAttributes = [];
+    for (var i = 0; i < elements.length; i++) {
+        var e = elements[i];
+        var r = find_child(e, "rect");
+        var t = find_child(e, "text");
+        var w = parseFloat(r.attributes.width.value) * frames.attributes.width.value / 100 - 3;
+        var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+        var newX = format_percent((parseFloat(r.attributes.x.value) + (100 * 3 / frames.attributes.width.value)));
+
+        // Smaller than this size won't fit anything
+        if (w < 2 * known_font_width) {
+            textElemNewAttributes.push([newX, ""]);
+            continue;
+        }
+
+        // Fit in full text width
+        if (txt.length * known_font_width < w) {
+            textElemNewAttributes.push([newX, txt]);
+            continue;
+        }
+
+        var substringLength = Math.floor(w / known_font_width) - 2;
+        if (truncate_text_right) {
+            // Truncate the right side of the text.
+            textElemNewAttributes.push([newX, txt.substring(0, substringLength) + ".."]);
+            continue;
+        } else {
+            // Truncate the left side of the text.
+            textElemNewAttributes.push([newX, ".." + txt.substring(txt.length - substringLength, txt.length)]);
+            continue;
+        }
+    }
+
+    console.assert(textElemNewAttributes.length === elements.length, "Resize failed, please file a bug at https://github.com/jonhoo/inferno/");
+
+    // Now that we know new textContent, set it all in one go so we don't refresh a bazillion times.
+    for (var i = 0; i < elements.length; i++) {
+        var e = elements[i];
+        var values = textElemNewAttributes[i];
+        var t = find_child(e, "text");
+        t.attributes.x.value = values[0];
+        t.textContent = values[1];
+    }
+}
+
+function update_text(e) {
+    var r = find_child(e, "rect");
+    var t = find_child(e, "text");
+    var w = parseFloat(r.attributes.width.value) * frames.attributes.width.value / 100 - 3;
+    var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+    t.attributes.x.value = format_percent((parseFloat(r.attributes.x.value) + (100 * 3 / frames.attributes.width.value)));
+
+    // Smaller than this size won't fit anything
+    if (w < 2 * fontsize * fontwidth) {
+        t.textContent = "";
+        return;
+    }
+    t.textContent = txt;
+    // Fit in full text width
+    if (t.getComputedTextLength() < w)
+        return;
+    if (truncate_text_right) {
+        // Truncate the right side of the text.
+        for (var x = txt.length - 2; x > 0; x--) {
+            if (t.getSubStringLength(0, x + 2) <= w) {
+                t.textContent = txt.substring(0, x) + "..";
+                return;
+            }
+        }
+    } else {
+        // Truncate the left side of the text.
+        for (var x = 2; x < txt.length; x++) {
+            if (t.getSubStringLength(x - 2, txt.length) <= w) {
+                t.textContent = ".." + txt.substring(x, txt.length);
+                return;
+            }
+        }
+    }
+    t.textContent = "";
+}
+// zoom
+function zoom_reset(e) {
+    if (e.tagName == "rect") {
+        e.attributes.x.value = format_percent(100 * parseInt(e.attributes["fg:x"].value) / total_samples);
+        e.attributes.width.value = format_percent(100 * parseInt(e.attributes["fg:w"].value) / total_samples);
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_reset(c[i]);
+    }
+}
+function zoom_child(e, x, zoomed_width_samples) {
+    if (e.tagName == "text") {
+        var parent_x = parseFloat(find_child(e.parentNode, "rect[x]").attributes.x.value);
+        e.attributes.x.value = format_percent(parent_x + (100 * 3 / frames.attributes.width.value));
+    } else if (e.tagName == "rect") {
+        e.attributes.x.value = format_percent(100 * (parseInt(e.attributes["fg:x"].value) - x) / zoomed_width_samples);
+        e.attributes.width.value = format_percent(100 * parseInt(e.attributes["fg:w"].value) / zoomed_width_samples);
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_child(c[i], x, zoomed_width_samples);
+    }
+}
+function zoom_parent(e) {
+    if (e.attributes) {
+        if (e.attributes.x != undefined) {
+            e.attributes.x.value = "0.0%";
+        }
+        if (e.attributes.width != undefined) {
+            e.attributes.width.value = "100.0%";
+        }
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_parent(c[i]);
+    }
+}
+function zoom(node) {
+    var attr = find_child(node, "rect").attributes;
+    var width = parseInt(attr["fg:w"].value);
+    var xmin = parseInt(attr["fg:x"].value);
+    var xmax = xmin + width;
+    var ymin = parseFloat(attr.y.value);
+    unzoombtn.classList.remove("hide");
+    var el = frames.children;
+    var to_update_text = [];
+    for (var i = 0; i < el.length; i++) {
+        var e = el[i];
+        var a = find_child(e, "rect").attributes;
+        var ex = parseInt(a["fg:x"].value);
+        var ew = parseInt(a["fg:w"].value);
+        // Is it an ancestor
+        if (!inverted) {
+            var upstack = parseFloat(a.y.value) > ymin;
+        } else {
+            var upstack = parseFloat(a.y.value) < ymin;
+        }
+        if (upstack) {
+            // Direct ancestor
+            if (ex <= xmin && (ex+ew) >= xmax) {
+                e.classList.add("parent");
+                zoom_parent(e);
+                to_update_text.push(e);
+            }
+            // not in current path
+            else
+                e.classList.add("hide");
+        }
+        // Children maybe
+        else {
+            // no common path
+            if (ex < xmin || ex >= xmax) {
+                e.classList.add("hide");
+            }
+            else {
+                zoom_child(e, xmin, width);
+                to_update_text.push(e);
+            }
+        }
+    }
+    update_text_for_elements(to_update_text);
+}
+function unzoom() {
+    unzoombtn.classList.add("hide");
+    var el = frames.children;
+    for(var i = 0; i < el.length; i++) {
+        el[i].classList.remove("parent");
+        el[i].classList.remove("hide");
+        zoom_reset(el[i]);
+    }
+    update_text_for_elements(el);
+}
+// search
+function reset_search() {
+    var el = document.querySelectorAll("#frames rect");
+    for (var i = 0; i < el.length; i++) {
+        orig_load(el[i], "fill")
+    }
+    var params = get_params();
+    delete params.s;
+    history.replaceState(null, null, parse_params(params));
+}
+function search_prompt() {
+    if (!searching) {
+        var term = prompt("Enter a search term (regexp " +
+            "allowed, eg: ^ext4_)", "");
+        if (term != null) {
+            search(term)
+        }
+    } else {
+        reset_search();
+        searching = 0;
+        searchbtn.classList.remove("show");
+        searchbtn.firstChild.nodeValue = "Search"
+        matchedtxt.classList.add("hide");
+        matchedtxt.firstChild.nodeValue = ""
+    }
+}
+function search(term) {
+    var re = new RegExp(term);
+    var el = frames.children;
+    var matches = new Object();
+    var maxwidth = 0;
+    for (var i = 0; i < el.length; i++) {
+        var e = el[i];
+        // Skip over frames which are either not visible, or below the zoomed-to frame
+        if (e.classList.contains("hide") || e.classList.contains("parent")) {
+            continue;
+        }
+        var func = g_to_func(e);
+        var rect = find_child(e, "rect");
+        if (func == null || rect == null)
+            continue;
+        // Save max width. Only works as we have a root frame
+        var w = parseInt(rect.attributes["fg:w"].value);
+        if (w > maxwidth)
+            maxwidth = w;
+        if (func.match(re)) {
+            // highlight
+            var x = parseInt(rect.attributes["fg:x"].value);
+            orig_save(rect, "fill");
+            rect.attributes.fill.value = searchcolor;
+            // remember matches
+            if (matches[x] == undefined) {
+                matches[x] = w;
+            } else {
+                if (w > matches[x]) {
+                    // overwrite with parent
+                    matches[x] = w;
+                }
+            }
+            searching = 1;
+        }
+    }
+    if (!searching)
+        return;
+    var params = get_params();
+    params.s = term;
+    history.replaceState(null, null, parse_params(params));
+
+    searchbtn.classList.add("show");
+    searchbtn.firstChild.nodeValue = "Reset Search";
+    // calculate percent matched, excluding vertical overlap
+    var count = 0;
+    var lastx = -1;
+    var lastw = 0;
+    var keys = Array();
+    for (k in matches) {
+        if (matches.hasOwnProperty(k))
+            keys.push(k);
+    }
+    // sort the matched frames by their x location
+    // ascending, then width descending
+    keys.sort(function(a, b){
+        return a - b;
+    });
+    // Step through frames saving only the biggest bottom-up frames
+    // thanks to the sort order. This relies on the tree property
+    // where children are always smaller than their parents.
+    for (var k in keys) {
+        var x = parseInt(keys[k]);
+        var w = matches[keys[k]];
+        if (x >= lastx + lastw) {
+            count += w;
+            lastx = x;
+            lastw = w;
+        }
+    }
+    // display matched percent
+    matchedtxt.classList.remove("hide");
+    var pct = 100 * count / maxwidth;
+    if (pct != 100) pct = pct.toFixed(1);
+    matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+}
+function format_percent(n) {
+    return n.toFixed(4) + "%";
+}
+]]></script><rect x="0" y="0" width="100%" height="254" fill="url(#background)"/><text id="title" fill="rgb(0,0,0)" x="50.0000%" y="24.00">Execution Timeline Chart</text><text id="subtitle" x="50.0000%" y="48.00">Started: 2025-03-02 08:07:09.983</text><text id="details" fill="rgb(0,0,0)" x="10" y="237.00"> </text><text id="unzoom" class="hide" fill="rgb(0,0,0)" x="10" y="24.00">Reset Zoom</text><text id="search" fill="rgb(0,0,0)" x="1190" y="24.00">Search</text><text id="matched" fill="rgb(0,0,0)" x="1190" y="237.00"> </text><svg id="frames" x="10" width="1180" total_samples="180923"><g><title>fn::get_args (2,240 μs, 1.24%)</title><rect x="0.0000%" y="189" width="1.2381%" height="15" fill="rgb(50,165,165)" fg:x="0" fg:w="2240"/><text x="0.2500%" y="199.50"></text></g><g><title>fn::get_home_dir (16 μs, 0.01%)</title><rect x="1.2381%" y="125" width="0.0088%" height="15" fill="rgb(50,165,165)" fg:x="2240" fg:w="16"/><text x="1.4881%" y="135.50"></text></g><g><title>fn::get_home_dir_string (87 μs, 0.05%)</title><rect x="1.2381%" y="141" width="0.0481%" height="15" fill="rgb(100,211,211)" fg:x="2240" fg:w="87"/><text x="1.4881%" y="151.50"></text></g><g><title>method::new (193 μs, 0.11%)</title><rect x="1.2381%" y="157" width="0.1067%" height="15" fill="rgb(105,215,215)" fg:x="2240" fg:w="193"/><text x="1.4881%" y="167.50"></text></g><g><title>method::get_config_path (1 μs, 0.00%)</title><rect x="1.3448%" y="141" width="0.0006%" height="15" fill="rgb(67,181,181)" fg:x="2433" fg:w="1"/><text x="1.5948%" y="151.50"></text></g><g><title>fn::deserialize::&lt;D&gt; (2 μs, 0.00%)</title><rect x="1.3453%" y="125" width="0.0011%" height="15" fill="rgb(83,195,195)" fg:x="2434" fg:w="2"/><text x="1.5953%" y="135.50"></text></g><g><title>method::default (2 μs, 0.00%)</title><rect x="1.3464%" y="125" width="0.0011%" height="15" fill="rgb(91,203,203)" fg:x="2436" fg:w="2"/><text x="1.5964%" y="135.50"></text></g><g><title>fn::boolean::&lt;&apos;de,D&gt; (55 μs, 0.03%)</title><rect x="1.3475%" y="125" width="0.0304%" height="15" fill="rgb(56,170,170)" fg:x="2438" fg:w="55"/><text x="1.5975%" y="135.50"></text></g><g><title>impl::Dependencies::validate (38 μs, 0.02%)</title><rect x="1.3779%" y="109" width="0.0210%" height="15" fill="rgb(58,172,172)" fg:x="2493" fg:w="38"/><text x="1.6279%" y="119.50"></text></g><g><title>impl::Config::validate (115 μs, 0.06%)</title><rect x="1.3779%" y="125" width="0.0636%" height="15" fill="rgb(81,194,194)" fg:x="2493" fg:w="115"/><text x="1.6279%" y="135.50"></text></g><g><title>fn::validate_config_format (2,096 μs, 1.16%)</title><rect x="1.4415%" y="125" width="1.1585%" height="15" fill="rgb(109,219,219)" fg:x="2608" fg:w="2096"/><text x="1.6915%" y="135.50"></text></g><g><title>fn::load (10,463 μs, 5.78%)</title><rect x="1.3453%" y="141" width="5.7831%" height="15" fill="rgb(100,211,211)" fg:x="2434" fg:w="10463"/><text x="1.5953%" y="151.50">fn::load</text></g><g><title>fn::load_or_create_default (18,769 μs, 10.37%)</title><rect x="1.3448%" y="157" width="10.3740%" height="15" fill="rgb(55,169,169)" fg:x="2433" fg:w="18769"/><text x="1.5948%" y="167.50">fn::load_or_cre..</text></g><g><title>fn::maybe_config (27,509 μs, 15.20%)</title><rect x="1.2381%" y="173" width="15.2048%" height="15" fill="rgb(99,209,209)" fg:x="2240" fg:w="27509"/><text x="1.4881%" y="183.50">fn::maybe_config</text></g><g><title>fn::set_global_verbosity (50 μs, 0.03%)</title><rect x="16.4429%" y="173" width="0.0276%" height="15" fill="rgb(104,214,214)" fg:x="29749" fg:w="50"/><text x="16.6929%" y="183.50"></text></g><g><title>fn::set_verbosity (36,297 μs, 20.06%)</title><rect x="1.2381%" y="189" width="20.0621%" height="15" fill="rgb(69,182,182)" fg:x="2240" fg:w="36297"/><text x="1.4881%" y="199.50">fn::set_verbosity</text></g><g><title>fn::configure_simplelog (232 μs, 0.13%)</title><rect x="21.3002%" y="173" width="0.1282%" height="15" fill="rgb(55,169,169)" fg:x="38537" fg:w="232"/><text x="21.5502%" y="183.50"></text></g><g><title>fn::configure_log (525 μs, 0.29%)</title><rect x="21.3002%" y="189" width="0.2902%" height="15" fill="rgb(58,172,172)" fg:x="38537" fg:w="525"/><text x="21.5502%" y="199.50"></text></g><g><title>fn::debug_timings (383 μs, 0.21%)</title><rect x="21.5904%" y="189" width="0.2117%" height="15" fill="rgb(102,212,212)" fg:x="39062" fg:w="383"/><text x="21.8404%" y="199.50"></text></g><g><title>method::determine (7 μs, 0.00%)</title><rect x="21.8021%" y="189" width="0.0039%" height="15" fill="rgb(56,171,171)" fg:x="39445" fg:w="7"/><text x="22.0521%" y="199.50"></text></g><g><title>fn::maybe_config (13 μs, 0.01%)</title><rect x="21.8060%" y="157" width="0.0072%" height="15" fill="rgb(58,172,172)" fg:x="39452" fg:w="13"/><text x="22.0560%" y="167.50"></text></g><g><title>fn::get_term_bg_rgb_unguarded (16,006 μs, 8.85%)</title><rect x="21.8131%" y="141" width="8.8469%" height="15" fill="rgb(97,208,208)" fg:x="39465" fg:w="16006"/><text x="22.0631%" y="151.50">fn::get_term..</text></g><g><title>fn::reset_terminal_state (7 μs, 0.00%)</title><rect x="30.6600%" y="125" width="0.0039%" height="15" fill="rgb(51,166,166)" fg:x="55471" fg:w="7"/><text x="30.9100%" y="135.50"></text></g><g><title>method::drop (145 μs, 0.08%)</title><rect x="30.6600%" y="141" width="0.0801%" height="15" fill="rgb(54,169,169)" fg:x="55471" fg:w="145"/><text x="30.9100%" y="151.50"></text></g><g><title>fn::detect_term_capabilities (32,568 μs, 18.00%)</title><rect x="21.8131%" y="157" width="18.0010%" height="15" fill="rgb(84,196,196)" fg:x="39465" fg:w="32568"/><text x="22.0631%" y="167.50">fn::detect_term_capabilities</text></g><g><title>fn::is_light_color (42 μs, 0.02%)</title><rect x="39.8142%" y="157" width="0.0232%" height="15" fill="rgb(58,172,172)" fg:x="72033" fg:w="42"/><text x="40.0642%" y="167.50"></text></g><g><title>fn::color_distance (4 μs, 0.00%)</title><rect x="39.8374%" y="141" width="0.0022%" height="15" fill="rgb(79,191,191)" fg:x="72075" fg:w="4"/><text x="40.0874%" y="151.50"></text></g><g><title>fn::maybe_config (27 μs, 0.01%)</title><rect x="39.8396%" y="141" width="0.0149%" height="15" fill="rgb(91,203,203)" fg:x="72079" fg:w="27"/><text x="40.0896%" y="151.50"></text></g><g><title>fn::hex_to_rgb (24 μs, 0.01%)</title><rect x="39.8545%" y="77" width="0.0133%" height="15" fill="rgb(88,200,200)" fg:x="72106" fg:w="24"/><text x="40.1045%" y="87.50"></text></g><g><title>method::rgb (4 μs, 0.00%)</title><rect x="39.8678%" y="61" width="0.0022%" height="15" fill="rgb(59,173,173)" fg:x="72130" fg:w="4"/><text x="40.1178%" y="71.50"></text></g><g><title>find_closest (17 μs, 0.01%)</title><rect x="39.8700%" y="61" width="0.0094%" height="15" fill="rgb(76,189,189)" fg:x="72134" fg:w="17"/><text x="40.1200%" y="71.50"></text></g><g><title>method::fg (4 μs, 0.00%)</title><rect x="39.8794%" y="61" width="0.0022%" height="15" fill="rgb(73,186,186)" fg:x="72151" fg:w="4"/><text x="40.1294%" y="71.50"></text></g><g><title>method::rgb (1 μs, 0.00%)</title><rect x="39.9479%" y="61" width="0.0006%" height="15" fill="rgb(97,208,208)" fg:x="72275" fg:w="1"/><text x="40.1979%" y="71.50"></text></g><g><title>find_closest (1 μs, 0.00%)</title><rect x="39.9485%" y="61" width="0.0006%" height="15" fill="rgb(100,210,210)" fg:x="72276" fg:w="1"/><text x="40.1985%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="39.9490%" y="61" width="0.0017%" height="15" fill="rgb(71,185,185)" fg:x="72277" fg:w="3"/><text x="40.1990%" y="71.50"></text></g><g><title>method::rgb (1 μs, 0.00%)</title><rect x="39.9833%" y="61" width="0.0006%" height="15" fill="rgb(59,173,173)" fg:x="72339" fg:w="1"/><text x="40.2333%" y="71.50"></text></g><g><title>find_closest (1 μs, 0.00%)</title><rect x="39.9839%" y="61" width="0.0006%" height="15" fill="rgb(50,165,165)" fg:x="72340" fg:w="1"/><text x="40.2339%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="39.9844%" y="61" width="0.0017%" height="15" fill="rgb(100,211,211)" fg:x="72341" fg:w="3"/><text x="40.2344%" y="71.50"></text></g><g><title>method::rgb (1 μs, 0.00%)</title><rect x="40.0214%" y="61" width="0.0006%" height="15" fill="rgb(93,205,205)" fg:x="72408" fg:w="1"/><text x="40.2714%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.0220%" y="61" width="0.0017%" height="15" fill="rgb(97,208,208)" fg:x="72409" fg:w="3"/><text x="40.2720%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.0480%" y="61" width="0.0017%" height="15" fill="rgb(65,179,179)" fg:x="72456" fg:w="3"/><text x="40.2980%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.0679%" y="61" width="0.0017%" height="15" fill="rgb(68,181,181)" fg:x="72492" fg:w="3"/><text x="40.3179%" y="71.50"></text></g><g><title>method::rgb (1 μs, 0.00%)</title><rect x="40.0878%" y="61" width="0.0006%" height="15" fill="rgb(74,187,187)" fg:x="72528" fg:w="1"/><text x="40.3378%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.0883%" y="61" width="0.0017%" height="15" fill="rgb(80,192,192)" fg:x="72529" fg:w="3"/><text x="40.3383%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.1138%" y="61" width="0.0017%" height="15" fill="rgb(104,214,214)" fg:x="72575" fg:w="3"/><text x="40.3638%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.1331%" y="61" width="0.0017%" height="15" fill="rgb(75,188,188)" fg:x="72610" fg:w="3"/><text x="40.3831%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.1524%" y="61" width="0.0017%" height="15" fill="rgb(86,198,198)" fg:x="72645" fg:w="3"/><text x="40.4024%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.1723%" y="61" width="0.0017%" height="15" fill="rgb(99,210,210)" fg:x="72681" fg:w="3"/><text x="40.4223%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.1922%" y="61" width="0.0017%" height="15" fill="rgb(65,179,179)" fg:x="72717" fg:w="3"/><text x="40.4422%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.2121%" y="61" width="0.0017%" height="15" fill="rgb(57,171,171)" fg:x="72753" fg:w="3"/><text x="40.4621%" y="71.50"></text></g><g><title>method::fg (3 μs, 0.00%)</title><rect x="40.2320%" y="61" width="0.0017%" height="15" fill="rgb(59,173,173)" fg:x="72789" fg:w="3"/><text x="40.4820%" y="71.50"></text></g><g><title>fn::from_config (695 μs, 0.38%)</title><rect x="39.8678%" y="77" width="0.3841%" height="15" fill="rgb(105,216,216)" fg:x="72130" fg:w="695"/><text x="40.1178%" y="87.50"></text></g><g><title>fn::from_definition (1,670 μs, 0.92%)</title><rect x="39.8545%" y="93" width="0.9230%" height="15" fill="rgb(82,194,194)" fg:x="72106" fg:w="1670"/><text x="40.1045%" y="103.50"></text></g><g><title>fn::from_toml (6,558 μs, 3.62%)</title><rect x="39.8545%" y="109" width="3.6247%" height="15" fill="rgb(86,198,198)" fg:x="72106" fg:w="6558"/><text x="40.1045%" y="119.50">fn::..</text></g><g><title>fn::get_builtin (11,477 μs, 6.34%)</title><rect x="39.8545%" y="125" width="6.3436%" height="15" fill="rgb(88,199,199)" fg:x="72106" fg:w="11477"/><text x="40.1045%" y="135.50">fn::get_..</text></g><g><title>fn::get_theme_with_color_support (16,427 μs, 9.08%)</title><rect x="39.8545%" y="141" width="9.0796%" height="15" fill="rgb(80,193,193)" fg:x="72106" fg:w="16427"/><text x="40.1045%" y="151.50">fn::get_theme..</text></g><g><title>fn::auto_detect (22,880 μs, 12.65%)</title><rect x="39.8374%" y="157" width="12.6463%" height="15" fill="rgb(88,200,200)" fg:x="72075" fg:w="22880"/><text x="40.0874%" y="167.50">fn::auto_detect</text></g><g><title>INSTANCE::get_or_init (78,572 μs, 43.43%)</title><rect x="21.8060%" y="173" width="43.4284%" height="15" fill="rgb(71,184,184)" fg:x="39452" fg:w="78572"/><text x="22.0560%" y="183.50">INSTANCE::get_or_init</text></g><g><title>impl::TermAttributes::initialize (101,673 μs, 56.20%)</title><rect x="21.8060%" y="189" width="56.1968%" height="15" fill="rgb(53,167,167)" fg:x="39452" fg:w="101673"/><text x="22.0560%" y="199.50">impl::TermAttributes::initialize</text></g><g><title>config_loop_assert (14 μs, 0.01%)</title><rect x="78.0028%" y="173" width="0.0077%" height="15" fill="rgb(50,165,165)" fg:x="141125" fg:w="14"/><text x="78.2528%" y="183.50"></text></g><g><title>fn::maybe_config (14 μs, 0.01%)</title><rect x="78.0028%" y="157" width="0.0077%" height="15" fill="rgb(62,176,176)" fg:x="141125" fg:w="14"/><text x="78.2528%" y="167.50"></text></g><g><title>method::fmt (8 μs, 0.00%)</title><rect x="78.0105%" y="157" width="0.0044%" height="15" fill="rgb(52,167,167)" fg:x="141139" fg:w="8"/><text x="78.2605%" y="167.50"></text></g><g><title>fn::from_str (17 μs, 0.01%)</title><rect x="78.0150%" y="157" width="0.0094%" height="15" fill="rgb(109,219,219)" fg:x="141147" fg:w="17"/><text x="78.2650%" y="167.50"></text></g><g><title>assert (132 μs, 0.07%)</title><rect x="78.0105%" y="173" width="0.0730%" height="15" fill="rgb(88,200,200)" fg:x="141139" fg:w="132"/><text x="78.2605%" y="183.50"></text></g><g><title>fn::get_proc_flags (280 μs, 0.15%)</title><rect x="78.0028%" y="189" width="0.1548%" height="15" fill="rgb(67,181,181)" fg:x="141125" fg:w="280"/><text x="78.2528%" y="199.50"></text></g><g><title>config_loop_assert (198 μs, 0.11%)</title><rect x="78.1576%" y="189" width="0.1094%" height="15" fill="rgb(75,188,188)" fg:x="141405" fg:w="198"/><text x="78.4076%" y="199.50"></text></g><g><title>init_config_loop_assert (234 μs, 0.13%)</title><rect x="78.2670%" y="189" width="0.1293%" height="15" fill="rgb(86,198,198)" fg:x="141603" fg:w="234"/><text x="78.5170%" y="199.50"></text></g><g><title>fn::get_proc_flags (256 μs, 0.14%)</title><rect x="78.3963%" y="189" width="0.1415%" height="15" fill="rgb(70,183,183)" fg:x="141837" fg:w="256"/><text x="78.6463%" y="199.50"></text></g><g><title>fn::debug_log_config (265 μs, 0.15%)</title><rect x="78.5378%" y="173" width="0.1465%" height="15" fill="rgb(96,207,207)" fg:x="142093" fg:w="265"/><text x="78.7878%" y="183.50"></text></g><g><title>fn::debug_timings (101 μs, 0.06%)</title><rect x="78.6843%" y="173" width="0.0558%" height="15" fill="rgb(66,180,180)" fg:x="142358" fg:w="101"/><text x="78.9343%" y="183.50"></text></g><g><title>method::fmt (23 μs, 0.01%)</title><rect x="78.7401%" y="173" width="0.0127%" height="15" fill="rgb(90,201,201)" fg:x="142459" fg:w="23"/><text x="78.9901%" y="183.50"></text></g><g><title>fn::log_init_setup (914 μs, 0.51%)</title><rect x="78.5378%" y="189" width="0.5052%" height="15" fill="rgb(59,173,173)" fg:x="142093" fg:w="914"/><text x="78.7878%" y="199.50"></text></g><g><title>fn::resolve_script_dir_path (102 μs, 0.06%)</title><rect x="79.0430%" y="189" width="0.0564%" height="15" fill="rgb(80,192,192)" fg:x="143007" fg:w="102"/><text x="79.2930%" y="199.50"></text></g><g><title>fn::set_script_state (4 μs, 0.00%)</title><rect x="79.0994%" y="189" width="0.0022%" height="15" fill="rgb(64,177,177)" fg:x="143109" fg:w="4"/><text x="79.3494%" y="199.50"></text></g><g><title>fn::extract_script_info (43 μs, 0.02%)</title><rect x="79.1016%" y="173" width="0.0238%" height="15" fill="rgb(71,185,185)" fg:x="143113" fg:w="43"/><text x="79.3516%" y="183.50"></text></g><g><title>method::get_script_dir_path (4 μs, 0.00%)</title><rect x="79.1254%" y="157" width="0.0022%" height="15" fill="rgb(80,193,193)" fg:x="143156" fg:w="4"/><text x="79.3754%" y="167.50"></text></g><g><title>fn::set_up_paths (119 μs, 0.07%)</title><rect x="79.1254%" y="173" width="0.0658%" height="15" fill="rgb(61,175,175)" fg:x="143156" fg:w="119"/><text x="79.3754%" y="183.50"></text></g><g><title>fn::maybe_config (21 μs, 0.01%)</title><rect x="79.1911%" y="157" width="0.0116%" height="15" fill="rgb(59,174,174)" fg:x="143275" fg:w="21"/><text x="79.4411%" y="167.50"></text></g><g><title>method::default (2 μs, 0.00%)</title><rect x="79.2028%" y="157" width="0.0011%" height="15" fill="rgb(105,215,215)" fg:x="143296" fg:w="2"/><text x="79.4528%" y="167.50"></text></g><g><title>method::create_initial_state (106 μs, 0.06%)</title><rect x="79.1911%" y="173" width="0.0586%" height="15" fill="rgb(70,184,184)" fg:x="143275" fg:w="106"/><text x="79.4411%" y="183.50"></text></g><g><title>method::validate_state (608 μs, 0.34%)</title><rect x="79.2497%" y="173" width="0.3361%" height="15" fill="rgb(75,188,188)" fg:x="143381" fg:w="608"/><text x="79.4997%" y="183.50"></text></g><g><title>fn::pre_configure (1,852 μs, 1.02%)</title><rect x="79.1016%" y="189" width="1.0236%" height="15" fill="rgb(106,216,216)" fg:x="143113" fg:w="1852"/><text x="79.3516%" y="199.50"></text></g><g><title>fn::add_menu_keybindings (55 μs, 0.03%)</title><rect x="80.1252%" y="189" width="0.0304%" height="15" fill="rgb(71,184,184)" fg:x="144965" fg:w="55"/><text x="80.3752%" y="199.50"></text></g><g><title>fn::is_initialized (1 μs, 0.00%)</title><rect x="80.1556%" y="173" width="0.0006%" height="15" fill="rgb(99,210,210)" fg:x="145020" fg:w="1"/><text x="80.4056%" y="183.50"></text></g><g><title>method::get_or_init (21 μs, 0.01%)</title><rect x="80.1556%" y="189" width="0.0116%" height="15" fill="rgb(105,215,215)" fg:x="145020" fg:w="21"/><text x="80.4056%" y="199.50"></text></g><g><title>method::get_or_init (3 μs, 0.00%)</title><rect x="80.1673%" y="173" width="0.0017%" height="15" fill="rgb(81,194,194)" fg:x="145041" fg:w="3"/><text x="80.4173%" y="183.50"></text></g><g><title>method::style_for (25 μs, 0.01%)</title><rect x="80.1689%" y="173" width="0.0138%" height="15" fill="rgb(107,217,217)" fg:x="145044" fg:w="25"/><text x="80.4189%" y="183.50"></text></g><g><title>method::get_or_init (3 μs, 0.00%)</title><rect x="80.2214%" y="173" width="0.0017%" height="15" fill="rgb(67,181,181)" fg:x="145139" fg:w="3"/><text x="80.4714%" y="183.50"></text></g><g><title>method::style_for (13 μs, 0.01%)</title><rect x="80.2231%" y="173" width="0.0072%" height="15" fill="rgb(54,169,169)" fg:x="145142" fg:w="13"/><text x="80.4731%" y="183.50"></text></g><g><title>method::get_or_init (3 μs, 0.00%)</title><rect x="80.2529%" y="173" width="0.0017%" height="15" fill="rgb(82,194,194)" fg:x="145196" fg:w="3"/><text x="80.5029%" y="183.50"></text></g><g><title>method::style_for (12 μs, 0.01%)</title><rect x="80.2546%" y="173" width="0.0066%" height="15" fill="rgb(94,205,205)" fg:x="145199" fg:w="12"/><text x="80.5046%" y="183.50"></text></g><g><title>method::get_or_init (3 μs, 0.00%)</title><rect x="80.2828%" y="173" width="0.0017%" height="15" fill="rgb(93,204,204)" fg:x="145250" fg:w="3"/><text x="80.5328%" y="183.50"></text></g><g><title>method::style_for (12 μs, 0.01%)</title><rect x="80.2844%" y="173" width="0.0066%" height="15" fill="rgb(106,216,216)" fg:x="145253" fg:w="12"/><text x="80.5344%" y="183.50"></text></g><g><title>method::for_role (263 μs, 0.15%)</title><rect x="80.1673%" y="189" width="0.1454%" height="15" fill="rgb(80,192,192)" fg:x="145041" fg:w="263"/><text x="80.4173%" y="199.50"></text></g><g><title>method::get_or_init (3 μs, 0.00%)</title><rect x="80.3126%" y="141" width="0.0017%" height="15" fill="rgb(76,188,188)" fg:x="145304" fg:w="3"/><text x="80.5626%" y="151.50"></text></g><g><title>method::style_for (13 μs, 0.01%)</title><rect x="80.3143%" y="141" width="0.0072%" height="15" fill="rgb(52,167,167)" fg:x="145307" fg:w="13"/><text x="80.5643%" y="151.50"></text></g><g><title>method::for_role (59 μs, 0.03%)</title><rect x="80.3126%" y="157" width="0.0326%" height="15" fill="rgb(87,199,199)" fg:x="145304" fg:w="59"/><text x="80.5626%" y="167.50"></text></g><g><title>fn::get_subhead_style (116 μs, 0.06%)</title><rect x="80.3126%" y="173" width="0.0641%" height="15" fill="rgb(75,188,188)" fg:x="145304" fg:w="116"/><text x="80.5626%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (46 μs, 0.03%)</title><rect x="80.3767%" y="173" width="0.0254%" height="15" fill="rgb(104,214,214)" fg:x="145420" fg:w="46"/><text x="80.6267%" y="183.50"></text></g><g><title>fn::get_max_cmd_len (1,594 μs, 0.88%)</title><rect x="80.3126%" y="189" width="0.8810%" height="15" fill="rgb(93,204,204)" fg:x="145304" fg:w="1594"/><text x="80.5626%" y="199.50"></text></g><g><title>method::get_or_init (3 μs, 0.00%)</title><rect x="81.1937%" y="157" width="0.0017%" height="15" fill="rgb(83,195,195)" fg:x="146898" fg:w="3"/><text x="81.4437%" y="167.50"></text></g><g><title>method::style_for (13 μs, 0.01%)</title><rect x="81.1953%" y="157" width="0.0072%" height="15" fill="rgb(54,169,169)" fg:x="146901" fg:w="13"/><text x="81.4453%" y="167.50"></text></g><g><title>method::for_role (63 μs, 0.03%)</title><rect x="81.1937%" y="173" width="0.0348%" height="15" fill="rgb(77,190,190)" fg:x="146898" fg:w="63"/><text x="81.4437%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="81.2285%" y="173" width="0.0006%" height="15" fill="rgb(57,171,171)" fg:x="146961" fg:w="1"/><text x="81.4785%" y="183.50"></text></g><g><title>method::log (7 μs, 0.00%)</title><rect x="81.2290%" y="173" width="0.0039%" height="15" fill="rgb(108,218,218)" fg:x="146962" fg:w="7"/><text x="81.4790%" y="183.50"></text></g><g><title>method::get_or_init (3 μs, 0.00%)</title><rect x="81.2329%" y="157" width="0.0017%" height="15" fill="rgb(55,170,170)" fg:x="146969" fg:w="3"/><text x="81.4829%" y="167.50"></text></g><g><title>method::for_role (21 μs, 0.01%)</title><rect x="81.2329%" y="173" width="0.0116%" height="15" fill="rgb(56,170,170)" fg:x="146969" fg:w="21"/><text x="81.4829%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="81.2445%" y="173" width="0.0006%" height="15" fill="rgb(51,166,166)" fg:x="146990" fg:w="1"/><text x="81.4945%" y="183.50"></text></g><g><title>method::log (3 μs, 0.00%)</title><rect x="81.2451%" y="173" width="0.0017%" height="15" fill="rgb(71,184,184)" fg:x="146991" fg:w="3"/><text x="81.4951%" y="183.50"></text></g><g><title>method::get_or_init (3 μs, 0.00%)</title><rect x="81.2467%" y="157" width="0.0017%" height="15" fill="rgb(68,181,181)" fg:x="146994" fg:w="3"/><text x="81.4967%" y="167.50"></text></g><g><title>method::for_role (21 μs, 0.01%)</title><rect x="81.2467%" y="173" width="0.0116%" height="15" fill="rgb(67,181,181)" fg:x="146994" fg:w="21"/><text x="81.4967%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="81.2583%" y="173" width="0.0006%" height="15" fill="rgb(98,209,209)" fg:x="147015" fg:w="1"/><text x="81.5083%" y="183.50"></text></g><g><title>method::log (3 μs, 0.00%)</title><rect x="81.2589%" y="173" width="0.0017%" height="15" fill="rgb(79,192,192)" fg:x="147016" fg:w="3"/><text x="81.5089%" y="183.50"></text></g><g><title>fn::disp_repl_banner (371 μs, 0.21%)</title><rect x="81.1937%" y="189" width="0.2051%" height="15" fill="rgb(100,211,211)" fg:x="146898" fg:w="371"/><text x="81.4437%" y="199.50"></text></g><g><title>fn::format_key_modifier (2 μs, 0.00%)</title><rect x="81.3987%" y="189" width="0.0011%" height="15" fill="rgb(78,190,190)" fg:x="147269" fg:w="2"/><text x="81.6487%" y="199.50"></text></g><g><title>fn::format_key_code (58 μs, 0.03%)</title><rect x="81.3998%" y="189" width="0.0321%" height="15" fill="rgb(95,206,206)" fg:x="147271" fg:w="58"/><text x="81.6498%" y="199.50"></text></g><g><title>fn::format_key_modifier (2 μs, 0.00%)</title><rect x="81.4319%" y="189" width="0.0011%" height="15" fill="rgb(79,192,192)" fg:x="147329" fg:w="2"/><text x="81.6819%" y="199.50"></text></g><g><title>fn::format_key_code (15 μs, 0.01%)</title><rect x="81.4330%" y="189" width="0.0083%" height="15" fill="rgb(91,203,203)" fg:x="147331" fg:w="15"/><text x="81.6830%" y="199.50"></text></g><g><title>fn::format_key_modifier (2 μs, 0.00%)</title><rect x="81.4413%" y="189" width="0.0011%" height="15" fill="rgb(95,206,206)" fg:x="147346" fg:w="2"/><text x="81.6913%" y="199.50"></text></g><g><title>fn::format_key_code (15 μs, 0.01%)</title><rect x="81.4424%" y="189" width="0.0083%" height="15" fill="rgb(56,170,170)" fg:x="147348" fg:w="15"/><text x="81.6924%" y="199.50"></text></g><g><title>fn::format_key_modifier (1 μs, 0.00%)</title><rect x="81.4507%" y="189" width="0.0006%" height="15" fill="rgb(80,193,193)" fg:x="147363" fg:w="1"/><text x="81.7007%" y="199.50"></text></g><g><title>fn::format_key_code (16 μs, 0.01%)</title><rect x="81.4512%" y="189" width="0.0088%" height="15" fill="rgb(69,182,182)" fg:x="147364" fg:w="16"/><text x="81.7012%" y="199.50"></text></g><g><title>fn::format_key_modifier (1 μs, 0.00%)</title><rect x="81.4601%" y="189" width="0.0006%" height="15" fill="rgb(68,181,181)" fg:x="147380" fg:w="1"/><text x="81.7101%" y="199.50"></text></g><g><title>fn::format_key_code (13 μs, 0.01%)</title><rect x="81.4606%" y="189" width="0.0072%" height="15" fill="rgb(82,195,195)" fg:x="147381" fg:w="13"/><text x="81.7106%" y="199.50"></text></g><g><title>fn::format_key_modifier (1 μs, 0.00%)</title><rect x="81.4678%" y="189" width="0.0006%" height="15" fill="rgb(59,173,173)" fg:x="147394" fg:w="1"/><text x="81.7178%" y="199.50"></text></g><g><title>fn::format_key_code (41 μs, 0.02%)</title><rect x="81.4684%" y="189" width="0.0227%" height="15" fill="rgb(82,194,194)" fg:x="147395" fg:w="41"/><text x="81.7184%" y="199.50"></text></g><g><title>fn::format_key_modifier (2 μs, 0.00%)</title><rect x="81.4910%" y="189" width="0.0011%" height="15" fill="rgb(53,168,168)" fg:x="147436" fg:w="2"/><text x="81.7410%" y="199.50"></text></g><g><title>fn::format_key_code (14 μs, 0.01%)</title><rect x="81.4921%" y="189" width="0.0077%" height="15" fill="rgb(84,196,196)" fg:x="147438" fg:w="14"/><text x="81.7421%" y="199.50"></text></g><g><title>fn::format_key_modifier (2 μs, 0.00%)</title><rect x="81.4999%" y="189" width="0.0011%" height="15" fill="rgb(63,176,176)" fg:x="147452" fg:w="2"/><text x="81.7499%" y="199.50"></text></g><g><title>fn::format_key_code (24 μs, 0.01%)</title><rect x="81.5010%" y="189" width="0.0133%" height="15" fill="rgb(97,208,208)" fg:x="147454" fg:w="24"/><text x="81.7510%" y="199.50"></text></g><g><title>fn::format_key_modifier (1 μs, 0.00%)</title><rect x="81.5142%" y="189" width="0.0006%" height="15" fill="rgb(53,168,168)" fg:x="147478" fg:w="1"/><text x="81.7642%" y="199.50"></text></g><g><title>fn::format_key_code (13 μs, 0.01%)</title><rect x="81.5148%" y="189" width="0.0072%" height="15" fill="rgb(109,219,219)" fg:x="147479" fg:w="13"/><text x="81.7648%" y="199.50"></text></g><g><title>fn::format_key_modifier (6 μs, 0.00%)</title><rect x="81.5220%" y="189" width="0.0033%" height="15" fill="rgb(64,178,178)" fg:x="147492" fg:w="6"/><text x="81.7720%" y="199.50"></text></g><g><title>fn::format_key_code (13 μs, 0.01%)</title><rect x="81.5253%" y="189" width="0.0072%" height="15" fill="rgb(52,167,167)" fg:x="147498" fg:w="13"/><text x="81.7753%" y="199.50"></text></g><g><title>fn::format_key_modifier (23 μs, 0.01%)</title><rect x="81.5325%" y="189" width="0.0127%" height="15" fill="rgb(65,179,179)" fg:x="147511" fg:w="23"/><text x="81.7825%" y="199.50"></text></g><g><title>fn::format_key_code (20 μs, 0.01%)</title><rect x="81.5452%" y="189" width="0.0111%" height="15" fill="rgb(81,194,194)" fg:x="147534" fg:w="20"/><text x="81.7952%" y="199.50"></text></g><g><title>fn::format_key_modifier (4 μs, 0.00%)</title><rect x="81.5562%" y="189" width="0.0022%" height="15" fill="rgb(78,191,191)" fg:x="147554" fg:w="4"/><text x="81.8062%" y="199.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="81.5585%" y="141" width="0.0006%" height="15" fill="rgb(54,169,169)" fg:x="147558" fg:w="1"/><text x="81.8085%" y="151.50"></text></g><g><title>fn::format_cmd_desc (163 μs, 0.09%)</title><rect x="81.5585%" y="157" width="0.0901%" height="15" fill="rgb(60,174,174)" fg:x="147558" fg:w="163"/><text x="81.8085%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="81.7945%" y="141" width="0.0006%" height="15" fill="rgb(82,194,194)" fg:x="147985" fg:w="1"/><text x="82.0445%" y="151.50"></text></g><g><title>fn::format_cmd_desc (129 μs, 0.07%)</title><rect x="81.7945%" y="157" width="0.0713%" height="15" fill="rgb(82,194,194)" fg:x="147985" fg:w="129"/><text x="82.0445%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="81.9531%" y="141" width="0.0006%" height="15" fill="rgb(75,188,188)" fg:x="148272" fg:w="1"/><text x="82.2031%" y="151.50"></text></g><g><title>fn::format_cmd_desc (21 μs, 0.01%)</title><rect x="81.9531%" y="157" width="0.0116%" height="15" fill="rgb(98,209,209)" fg:x="148272" fg:w="21"/><text x="82.2031%" y="167.50"></text></g><g><title>fn::format_edit_commands (769 μs, 0.43%)</title><rect x="81.5585%" y="173" width="0.4250%" height="15" fill="rgb(104,214,214)" fg:x="147558" fg:w="769"/><text x="81.8085%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (4 μs, 0.00%)</title><rect x="81.9835%" y="157" width="0.0022%" height="15" fill="rgb(102,212,212)" fg:x="148327" fg:w="4"/><text x="82.2335%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.0205%" y="157" width="0.0006%" height="15" fill="rgb(102,213,213)" fg:x="148394" fg:w="1"/><text x="82.2705%" y="167.50"></text></g><g><title>fn::format_non_edit_events (86 μs, 0.05%)</title><rect x="81.9835%" y="173" width="0.0475%" height="15" fill="rgb(62,176,176)" fg:x="148327" fg:w="86"/><text x="82.2335%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.0310%" y="141" width="0.0006%" height="15" fill="rgb(59,173,173)" fg:x="148413" fg:w="1"/><text x="82.2810%" y="151.50"></text></g><g><title>fn::format_cmd_desc (119 μs, 0.07%)</title><rect x="82.0310%" y="157" width="0.0658%" height="15" fill="rgb(58,172,172)" fg:x="148413" fg:w="119"/><text x="82.2810%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.1786%" y="141" width="0.0006%" height="15" fill="rgb(102,213,213)" fg:x="148680" fg:w="1"/><text x="82.4286%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="82.1786%" y="157" width="0.0111%" height="15" fill="rgb(76,189,189)" fg:x="148680" fg:w="20"/><text x="82.4286%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.2079%" y="141" width="0.0006%" height="15" fill="rgb(78,191,191)" fg:x="148733" fg:w="1"/><text x="82.4579%" y="151.50"></text></g><g><title>fn::format_cmd_desc (114 μs, 0.06%)</title><rect x="82.2079%" y="157" width="0.0630%" height="15" fill="rgb(69,182,182)" fg:x="148733" fg:w="114"/><text x="82.4579%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.3499%" y="141" width="0.0006%" height="15" fill="rgb(76,188,188)" fg:x="148990" fg:w="1"/><text x="82.5999%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="82.3499%" y="157" width="0.0111%" height="15" fill="rgb(55,170,170)" fg:x="148990" fg:w="20"/><text x="82.5999%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.3787%" y="141" width="0.0006%" height="15" fill="rgb(92,204,204)" fg:x="149042" fg:w="1"/><text x="82.6287%" y="151.50"></text></g><g><title>fn::format_cmd_desc (116 μs, 0.06%)</title><rect x="82.3787%" y="157" width="0.0641%" height="15" fill="rgb(56,171,171)" fg:x="149042" fg:w="116"/><text x="82.6287%" y="167.50"></text></g><g><title>fn::format_edit_commands (890 μs, 0.49%)</title><rect x="82.0310%" y="173" width="0.4919%" height="15" fill="rgb(77,190,190)" fg:x="148413" fg:w="890"/><text x="82.2810%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.5230%" y="157" width="0.0006%" height="15" fill="rgb(60,174,174)" fg:x="149303" fg:w="1"/><text x="82.7730%" y="167.50"></text></g><g><title>fn::format_non_edit_events (20 μs, 0.01%)</title><rect x="82.5230%" y="173" width="0.0111%" height="15" fill="rgb(67,181,181)" fg:x="149303" fg:w="20"/><text x="82.7730%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.5340%" y="141" width="0.0006%" height="15" fill="rgb(52,166,166)" fg:x="149323" fg:w="1"/><text x="82.7840%" y="151.50"></text></g><g><title>fn::format_cmd_desc (21 μs, 0.01%)</title><rect x="82.5340%" y="157" width="0.0116%" height="15" fill="rgb(55,169,169)" fg:x="149323" fg:w="21"/><text x="82.7840%" y="167.50"></text></g><g><title>fn::format_edit_commands (54 μs, 0.03%)</title><rect x="82.5340%" y="173" width="0.0298%" height="15" fill="rgb(71,184,184)" fg:x="149323" fg:w="54"/><text x="82.7840%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.5639%" y="157" width="0.0006%" height="15" fill="rgb(57,171,171)" fg:x="149377" fg:w="1"/><text x="82.8139%" y="167.50"></text></g><g><title>fn::format_non_edit_events (19 μs, 0.01%)</title><rect x="82.5639%" y="173" width="0.0105%" height="15" fill="rgb(98,209,209)" fg:x="149377" fg:w="19"/><text x="82.8139%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.5744%" y="141" width="0.0006%" height="15" fill="rgb(95,206,206)" fg:x="149396" fg:w="1"/><text x="82.8244%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="82.5744%" y="157" width="0.0111%" height="15" fill="rgb(102,213,213)" fg:x="149396" fg:w="20"/><text x="82.8244%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.6031%" y="141" width="0.0006%" height="15" fill="rgb(70,183,183)" fg:x="149448" fg:w="1"/><text x="82.8531%" y="151.50"></text></g><g><title>fn::format_cmd_desc (22 μs, 0.01%)</title><rect x="82.6031%" y="157" width="0.0122%" height="15" fill="rgb(83,195,195)" fg:x="149448" fg:w="22"/><text x="82.8531%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.6340%" y="141" width="0.0006%" height="15" fill="rgb(62,176,176)" fg:x="149504" fg:w="1"/><text x="82.8840%" y="151.50"></text></g><g><title>fn::format_cmd_desc (21 μs, 0.01%)</title><rect x="82.6340%" y="157" width="0.0116%" height="15" fill="rgb(67,181,181)" fg:x="149504" fg:w="21"/><text x="82.8840%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.6639%" y="141" width="0.0006%" height="15" fill="rgb(71,185,185)" fg:x="149558" fg:w="1"/><text x="82.9139%" y="151.50"></text></g><g><title>fn::format_cmd_desc (21 μs, 0.01%)</title><rect x="82.6639%" y="157" width="0.0116%" height="15" fill="rgb(61,175,175)" fg:x="149558" fg:w="21"/><text x="82.9139%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.6937%" y="141" width="0.0006%" height="15" fill="rgb(90,202,202)" fg:x="149612" fg:w="1"/><text x="82.9437%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="82.6937%" y="157" width="0.0111%" height="15" fill="rgb(64,178,178)" fg:x="149612" fg:w="20"/><text x="82.9437%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.7225%" y="141" width="0.0006%" height="15" fill="rgb(50,165,165)" fg:x="149664" fg:w="1"/><text x="82.9725%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="82.7225%" y="157" width="0.0111%" height="15" fill="rgb(57,172,172)" fg:x="149664" fg:w="20"/><text x="82.9725%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.7507%" y="141" width="0.0006%" height="15" fill="rgb(70,183,183)" fg:x="149715" fg:w="1"/><text x="83.0007%" y="151.50"></text></g><g><title>fn::format_cmd_desc (19 μs, 0.01%)</title><rect x="82.7507%" y="157" width="0.0105%" height="15" fill="rgb(88,199,199)" fg:x="149715" fg:w="19"/><text x="83.0007%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.7783%" y="141" width="0.0006%" height="15" fill="rgb(55,170,170)" fg:x="149765" fg:w="1"/><text x="83.0283%" y="151.50"></text></g><g><title>fn::format_cmd_desc (112 μs, 0.06%)</title><rect x="82.7783%" y="157" width="0.0619%" height="15" fill="rgb(93,205,205)" fg:x="149765" fg:w="112"/><text x="83.0283%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.9093%" y="141" width="0.0006%" height="15" fill="rgb(90,202,202)" fg:x="150002" fg:w="1"/><text x="83.1593%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="82.9093%" y="157" width="0.0111%" height="15" fill="rgb(106,216,216)" fg:x="150002" fg:w="20"/><text x="83.1593%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="82.9380%" y="141" width="0.0006%" height="15" fill="rgb(51,166,166)" fg:x="150054" fg:w="1"/><text x="83.1880%" y="151.50"></text></g><g><title>fn::format_cmd_desc (116 μs, 0.06%)</title><rect x="82.9380%" y="157" width="0.0641%" height="15" fill="rgb(76,189,189)" fg:x="150054" fg:w="116"/><text x="83.1880%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.0818%" y="141" width="0.0006%" height="15" fill="rgb(75,188,188)" fg:x="150314" fg:w="1"/><text x="83.3318%" y="151.50"></text></g><g><title>fn::format_cmd_desc (22 μs, 0.01%)</title><rect x="83.0818%" y="157" width="0.0122%" height="15" fill="rgb(89,201,201)" fg:x="150314" fg:w="22"/><text x="83.3318%" y="167.50"></text></g><g><title>fn::format_edit_commands (974 μs, 0.54%)</title><rect x="82.5744%" y="173" width="0.5384%" height="15" fill="rgb(102,213,213)" fg:x="149396" fg:w="974"/><text x="82.8244%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.1127%" y="157" width="0.0006%" height="15" fill="rgb(55,170,170)" fg:x="150370" fg:w="1"/><text x="83.3627%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.1232%" y="157" width="0.0006%" height="15" fill="rgb(63,177,177)" fg:x="150389" fg:w="1"/><text x="83.3732%" y="167.50"></text></g><g><title>fn::format_non_edit_events (39 μs, 0.02%)</title><rect x="83.1127%" y="173" width="0.0216%" height="15" fill="rgb(56,171,171)" fg:x="150370" fg:w="39"/><text x="83.3627%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.1343%" y="141" width="0.0006%" height="15" fill="rgb(60,174,174)" fg:x="150409" fg:w="1"/><text x="83.3843%" y="151.50"></text></g><g><title>fn::format_cmd_desc (27 μs, 0.01%)</title><rect x="83.1343%" y="157" width="0.0149%" height="15" fill="rgb(107,217,217)" fg:x="150409" fg:w="27"/><text x="83.3843%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.1707%" y="141" width="0.0006%" height="15" fill="rgb(57,171,171)" fg:x="150475" fg:w="1"/><text x="83.4207%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="83.1707%" y="157" width="0.0111%" height="15" fill="rgb(64,178,178)" fg:x="150475" fg:w="20"/><text x="83.4207%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.1995%" y="141" width="0.0006%" height="15" fill="rgb(84,196,196)" fg:x="150527" fg:w="1"/><text x="83.4495%" y="151.50"></text></g><g><title>fn::format_cmd_desc (22 μs, 0.01%)</title><rect x="83.1995%" y="157" width="0.0122%" height="15" fill="rgb(105,215,215)" fg:x="150527" fg:w="22"/><text x="83.4495%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.2304%" y="141" width="0.0006%" height="15" fill="rgb(58,172,172)" fg:x="150583" fg:w="1"/><text x="83.4804%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="83.2304%" y="157" width="0.0111%" height="15" fill="rgb(89,200,200)" fg:x="150583" fg:w="20"/><text x="83.4804%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.2592%" y="141" width="0.0006%" height="15" fill="rgb(90,202,202)" fg:x="150635" fg:w="1"/><text x="83.5092%" y="151.50"></text></g><g><title>fn::format_cmd_desc (19 μs, 0.01%)</title><rect x="83.2592%" y="157" width="0.0105%" height="15" fill="rgb(100,211,211)" fg:x="150635" fg:w="19"/><text x="83.5092%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.2868%" y="141" width="0.0006%" height="15" fill="rgb(85,197,197)" fg:x="150685" fg:w="1"/><text x="83.5368%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="83.2868%" y="157" width="0.0111%" height="15" fill="rgb(62,176,176)" fg:x="150685" fg:w="20"/><text x="83.5368%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.3150%" y="141" width="0.0006%" height="15" fill="rgb(61,175,175)" fg:x="150736" fg:w="1"/><text x="83.5650%" y="151.50"></text></g><g><title>fn::format_cmd_desc (19 μs, 0.01%)</title><rect x="83.3150%" y="157" width="0.0105%" height="15" fill="rgb(53,168,168)" fg:x="150736" fg:w="19"/><text x="83.5650%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.3426%" y="141" width="0.0006%" height="15" fill="rgb(97,208,208)" fg:x="150786" fg:w="1"/><text x="83.5926%" y="151.50"></text></g><g><title>fn::format_cmd_desc (112 μs, 0.06%)</title><rect x="83.3426%" y="157" width="0.0619%" height="15" fill="rgb(95,206,206)" fg:x="150786" fg:w="112"/><text x="83.5926%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.4819%" y="141" width="0.0006%" height="15" fill="rgb(50,165,165)" fg:x="151038" fg:w="1"/><text x="83.7319%" y="151.50"></text></g><g><title>fn::format_cmd_desc (21 μs, 0.01%)</title><rect x="83.4819%" y="157" width="0.0116%" height="15" fill="rgb(82,194,194)" fg:x="151038" fg:w="21"/><text x="83.7319%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.5123%" y="141" width="0.0006%" height="15" fill="rgb(55,170,170)" fg:x="151093" fg:w="1"/><text x="83.7623%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="83.5123%" y="157" width="0.0111%" height="15" fill="rgb(102,213,213)" fg:x="151093" fg:w="20"/><text x="83.7623%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.5405%" y="141" width="0.0006%" height="15" fill="rgb(66,179,179)" fg:x="151144" fg:w="1"/><text x="83.7905%" y="151.50"></text></g><g><title>fn::format_cmd_desc (19 μs, 0.01%)</title><rect x="83.5405%" y="157" width="0.0105%" height="15" fill="rgb(104,214,214)" fg:x="151144" fg:w="19"/><text x="83.7905%" y="167.50"></text></g><g><title>fn::format_edit_commands (785 μs, 0.43%)</title><rect x="83.1343%" y="173" width="0.4339%" height="15" fill="rgb(64,178,178)" fg:x="150409" fg:w="785"/><text x="83.3843%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.5681%" y="157" width="0.0006%" height="15" fill="rgb(69,183,183)" fg:x="151194" fg:w="1"/><text x="83.8181%" y="167.50"></text></g><g><title>fn::format_non_edit_events (19 μs, 0.01%)</title><rect x="83.5681%" y="173" width="0.0105%" height="15" fill="rgb(82,194,194)" fg:x="151194" fg:w="19"/><text x="83.8181%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.5786%" y="141" width="0.0006%" height="15" fill="rgb(100,211,211)" fg:x="151213" fg:w="1"/><text x="83.8286%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="83.5786%" y="157" width="0.0111%" height="15" fill="rgb(95,206,206)" fg:x="151213" fg:w="20"/><text x="83.8286%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.6068%" y="141" width="0.0006%" height="15" fill="rgb(102,213,213)" fg:x="151264" fg:w="1"/><text x="83.8568%" y="151.50"></text></g><g><title>fn::format_cmd_desc (110 μs, 0.06%)</title><rect x="83.6068%" y="157" width="0.0608%" height="15" fill="rgb(65,178,178)" fg:x="151264" fg:w="110"/><text x="83.8568%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.7439%" y="141" width="0.0006%" height="15" fill="rgb(96,207,207)" fg:x="151512" fg:w="1"/><text x="83.9939%" y="151.50"></text></g><g><title>fn::format_cmd_desc (20 μs, 0.01%)</title><rect x="83.7439%" y="157" width="0.0111%" height="15" fill="rgb(105,215,215)" fg:x="151512" fg:w="20"/><text x="83.9939%" y="167.50"></text></g><g><title>fn::format_edit_commands (351 μs, 0.19%)</title><rect x="83.5786%" y="173" width="0.1940%" height="15" fill="rgb(83,195,195)" fg:x="151213" fg:w="351"/><text x="83.8286%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.7727%" y="157" width="0.0006%" height="15" fill="rgb(93,204,204)" fg:x="151564" fg:w="1"/><text x="84.0227%" y="167.50"></text></g><g><title>fn::format_non_edit_events (19 μs, 0.01%)</title><rect x="83.7727%" y="173" width="0.0105%" height="15" fill="rgb(93,205,205)" fg:x="151564" fg:w="19"/><text x="84.0227%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.7832%" y="141" width="0.0006%" height="15" fill="rgb(87,199,199)" fg:x="151583" fg:w="1"/><text x="84.0332%" y="151.50"></text></g><g><title>fn::format_cmd_desc (22 μs, 0.01%)</title><rect x="83.7832%" y="157" width="0.0122%" height="15" fill="rgb(89,200,200)" fg:x="151583" fg:w="22"/><text x="84.0332%" y="167.50"></text></g><g><title>fn::format_edit_commands (56 μs, 0.03%)</title><rect x="83.7832%" y="173" width="0.0310%" height="15" fill="rgb(59,173,173)" fg:x="151583" fg:w="56"/><text x="84.0332%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.8141%" y="157" width="0.0006%" height="15" fill="rgb(73,186,186)" fg:x="151639" fg:w="1"/><text x="84.0641%" y="167.50"></text></g><g><title>fn::format_non_edit_events (19 μs, 0.01%)</title><rect x="83.8141%" y="173" width="0.0105%" height="15" fill="rgb(105,216,216)" fg:x="151639" fg:w="19"/><text x="84.0641%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="83.8246%" y="141" width="0.0006%" height="15" fill="rgb(86,198,198)" fg:x="151658" fg:w="1"/><text x="84.0746%" y="151.50"></text></g><g><title>fn::format_cmd_desc (21 μs, 0.01%)</title><rect x="83.8246%" y="157" width="0.0116%" height="15" fill="rgb(93,205,205)" fg:x="151658" fg:w="21"/><text x="84.0746%" y="167.50"></text></g><g><title>fn::format_edit_commands (54 μs, 0.03%)</title><rect x="83.8246%" y="173" width="0.0298%" height="15" fill="rgb(106,216,216)" fg:x="151658" fg:w="54"/><text x="84.0746%" y="183.50"></text></g><g><title>fn::format_bindings (7,691 μs, 4.25%)</title><rect x="81.5585%" y="189" width="4.2510%" height="15" fill="rgb(73,186,186)" fg:x="147558" fg:w="7691"/><text x="81.8085%" y="199.50">fn::f..</text></g><g><title>method::get_or_init (3 μs, 0.00%)</title><rect x="85.8094%" y="141" width="0.0017%" height="15" fill="rgb(100,211,211)" fg:x="155249" fg:w="3"/><text x="86.0594%" y="151.50"></text></g><g><title>method::for_role (22 μs, 0.01%)</title><rect x="85.8094%" y="157" width="0.0122%" height="15" fill="rgb(73,186,186)" fg:x="155249" fg:w="22"/><text x="86.0594%" y="167.50"></text></g><g><title>fn::get_heading_style (54 μs, 0.03%)</title><rect x="85.8094%" y="173" width="0.0298%" height="15" fill="rgb(77,190,190)" fg:x="155249" fg:w="54"/><text x="86.0594%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (46 μs, 0.03%)</title><rect x="85.8393%" y="173" width="0.0254%" height="15" fill="rgb(69,182,182)" fg:x="155303" fg:w="46"/><text x="86.0893%" y="183.50"></text></g><g><title>fn::get_max_key_len (706 μs, 0.39%)</title><rect x="85.8094%" y="189" width="0.3902%" height="15" fill="rgb(86,198,198)" fg:x="155249" fg:w="706"/><text x="86.0594%" y="199.50"></text></g><g><title>method::render_prompt_left (1 μs, 0.00%)</title><rect x="86.1997%" y="189" width="0.0006%" height="15" fill="rgb(97,208,208)" fg:x="155955" fg:w="1"/><text x="86.4497%" y="199.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="86.2002%" y="157" width="0.0028%" height="15" fill="rgb(54,168,168)" fg:x="155956" fg:w="5"/><text x="86.4502%" y="167.50"></text></g><g><title>method::style_for (24 μs, 0.01%)</title><rect x="86.2030%" y="157" width="0.0133%" height="15" fill="rgb(52,167,167)" fg:x="155961" fg:w="24"/><text x="86.4530%" y="167.50"></text></g><g><title>method::for_role (107 μs, 0.06%)</title><rect x="86.2002%" y="173" width="0.0591%" height="15" fill="rgb(58,172,172)" fg:x="155956" fg:w="107"/><text x="86.4502%" y="183.50"></text></g><g><title>method::get_prompt_color (343 μs, 0.19%)</title><rect x="86.2002%" y="189" width="0.1896%" height="15" fill="rgb(64,178,178)" fg:x="155956" fg:w="343"/><text x="86.4502%" y="199.50"></text></g><g><title>method::render_prompt_multiline_indicator (1 μs, 0.00%)</title><rect x="86.3898%" y="189" width="0.0006%" height="15" fill="rgb(76,188,188)" fg:x="156299" fg:w="1"/><text x="86.6398%" y="199.50"></text></g><g><title>method::render_prompt_left (2 μs, 0.00%)</title><rect x="86.3903%" y="189" width="0.0011%" height="15" fill="rgb(77,190,190)" fg:x="156300" fg:w="2"/><text x="86.6403%" y="199.50"></text></g><g><title>fn::is_initialized (1 μs, 0.00%)</title><rect x="86.3914%" y="141" width="0.0006%" height="15" fill="rgb(62,176,176)" fg:x="156302" fg:w="1"/><text x="86.6414%" y="151.50"></text></g><g><title>method::get_or_init (53 μs, 0.03%)</title><rect x="86.3914%" y="157" width="0.0293%" height="15" fill="rgb(84,196,196)" fg:x="156302" fg:w="53"/><text x="86.6414%" y="167.50"></text></g><g><title>method::style_for (1 μs, 0.00%)</title><rect x="86.4207%" y="157" width="0.0006%" height="15" fill="rgb(57,171,171)" fg:x="156355" fg:w="1"/><text x="86.6707%" y="167.50"></text></g><g><title>method::for_role (161 μs, 0.09%)</title><rect x="86.3914%" y="173" width="0.0890%" height="15" fill="rgb(70,183,183)" fg:x="156302" fg:w="161"/><text x="86.6414%" y="183.50"></text></g><g><title>method::get_prompt_color (326 μs, 0.18%)</title><rect x="86.3914%" y="189" width="0.1802%" height="15" fill="rgb(76,188,188)" fg:x="156302" fg:w="326"/><text x="86.6414%" y="199.50"></text></g><g><title>method::render_prompt_multiline_indicator (1 μs, 0.00%)</title><rect x="86.5716%" y="189" width="0.0006%" height="15" fill="rgb(67,181,181)" fg:x="156628" fg:w="1"/><text x="86.8216%" y="199.50"></text></g><g><title>method::render_prompt_left (4 μs, 0.00%)</title><rect x="86.5722%" y="189" width="0.0022%" height="15" fill="rgb(84,196,196)" fg:x="156629" fg:w="4"/><text x="86.8222%" y="199.50"></text></g><g><title>fn::is_initialized (2 μs, 0.00%)</title><rect x="86.5744%" y="141" width="0.0011%" height="15" fill="rgb(62,176,176)" fg:x="156633" fg:w="2"/><text x="86.8244%" y="151.50"></text></g><g><title>method::get_or_init (125 μs, 0.07%)</title><rect x="86.5744%" y="157" width="0.0691%" height="15" fill="rgb(98,209,209)" fg:x="156633" fg:w="125"/><text x="86.8244%" y="167.50"></text></g><g><title>method::style_for (7 μs, 0.00%)</title><rect x="86.6435%" y="157" width="0.0039%" height="15" fill="rgb(85,197,197)" fg:x="156758" fg:w="7"/><text x="86.8935%" y="167.50"></text></g><g><title>method::for_role (369 μs, 0.20%)</title><rect x="86.5744%" y="173" width="0.2040%" height="15" fill="rgb(86,198,198)" fg:x="156633" fg:w="369"/><text x="86.8244%" y="183.50"></text></g><g><title>method::get_prompt_color (730 μs, 0.40%)</title><rect x="86.5744%" y="189" width="0.4035%" height="15" fill="rgb(63,177,177)" fg:x="156633" fg:w="730"/><text x="86.8244%" y="199.50"></text></g><g><title>method::render_prompt_multiline_indicator (1 μs, 0.00%)</title><rect x="86.9779%" y="189" width="0.0006%" height="15" fill="rgb(107,218,218)" fg:x="157363" fg:w="1"/><text x="87.2279%" y="199.50"></text></g><g><title>method::render_prompt_left (5 μs, 0.00%)</title><rect x="86.9784%" y="189" width="0.0028%" height="15" fill="rgb(107,218,218)" fg:x="157364" fg:w="5"/><text x="87.2284%" y="199.50"></text></g><g><title>method::render_prompt_indicator (1 μs, 0.00%)</title><rect x="86.9812%" y="189" width="0.0006%" height="15" fill="rgb(92,203,203)" fg:x="157369" fg:w="1"/><text x="87.2312%" y="199.50"></text></g><g><title>fn::is_initialized (8 μs, 0.00%)</title><rect x="86.9818%" y="141" width="0.0044%" height="15" fill="rgb(74,187,187)" fg:x="157370" fg:w="8"/><text x="87.2318%" y="151.50"></text></g><g><title>method::get_or_init (248 μs, 0.14%)</title><rect x="86.9818%" y="157" width="0.1371%" height="15" fill="rgb(67,181,181)" fg:x="157370" fg:w="248"/><text x="87.2318%" y="167.50"></text></g><g><title>method::style_for (3 μs, 0.00%)</title><rect x="87.1188%" y="157" width="0.0017%" height="15" fill="rgb(72,185,185)" fg:x="157618" fg:w="3"/><text x="87.3688%" y="167.50"></text></g><g><title>method::for_role (633 μs, 0.35%)</title><rect x="86.9818%" y="173" width="0.3499%" height="15" fill="rgb(89,201,201)" fg:x="157370" fg:w="633"/><text x="87.2318%" y="183.50"></text></g><g><title>method::get_prompt_color (1,148 μs, 0.63%)</title><rect x="86.9818%" y="189" width="0.6345%" height="15" fill="rgb(106,216,216)" fg:x="157370" fg:w="1148"/><text x="87.2318%" y="199.50"></text></g><g><title>method::render_prompt_multiline_indicator (1 μs, 0.00%)</title><rect x="87.6163%" y="189" width="0.0006%" height="15" fill="rgb(107,217,217)" fg:x="158518" fg:w="1"/><text x="87.8663%" y="199.50"></text></g><g><title>method::render_prompt_left (4 μs, 0.00%)</title><rect x="87.6168%" y="189" width="0.0022%" height="15" fill="rgb(84,196,196)" fg:x="158519" fg:w="4"/><text x="87.8668%" y="199.50"></text></g><g><title>method::render_prompt_right (1 μs, 0.00%)</title><rect x="87.6190%" y="189" width="0.0006%" height="15" fill="rgb(100,211,211)" fg:x="158523" fg:w="1"/><text x="87.8690%" y="199.50"></text></g><g><title>method::render_prompt_indicator (1 μs, 0.00%)</title><rect x="87.6196%" y="189" width="0.0006%" height="15" fill="rgb(83,195,195)" fg:x="158524" fg:w="1"/><text x="87.8696%" y="199.50"></text></g><g><title>fn::is_initialized (1 μs, 0.00%)</title><rect x="87.6201%" y="141" width="0.0006%" height="15" fill="rgb(79,192,192)" fg:x="158525" fg:w="1"/><text x="87.8701%" y="151.50"></text></g><g><title>method::get_or_init (93 μs, 0.05%)</title><rect x="87.6201%" y="157" width="0.0514%" height="15" fill="rgb(108,218,218)" fg:x="158525" fg:w="93"/><text x="87.8701%" y="167.50"></text></g><g><title>method::style_for (3 μs, 0.00%)</title><rect x="87.6716%" y="157" width="0.0017%" height="15" fill="rgb(108,218,218)" fg:x="158618" fg:w="3"/><text x="87.9216%" y="167.50"></text></g><g><title>method::for_role (324 μs, 0.18%)</title><rect x="87.6201%" y="173" width="0.1791%" height="15" fill="rgb(78,191,191)" fg:x="158525" fg:w="324"/><text x="87.8701%" y="183.50"></text></g><g><title>method::get_prompt_color (657 μs, 0.36%)</title><rect x="87.6201%" y="189" width="0.3631%" height="15" fill="rgb(104,214,214)" fg:x="158525" fg:w="657"/><text x="87.8701%" y="199.50"></text></g><g><title>fn::parse_line (16,302 μs, 9.01%)</title><rect x="87.9833%" y="189" width="9.0105%" height="15" fill="rgb(61,175,175)" fg:x="159182" fg:w="16302"/><text x="88.2333%" y="199.50">fn::parse_line</text></g><g><title>method::get_or_init (6 μs, 0.00%)</title><rect x="96.9937%" y="189" width="0.0033%" height="15" fill="rgb(82,194,194)" fg:x="175484" fg:w="6"/><text x="97.2437%" y="199.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="96.9971%" y="141" width="0.0028%" height="15" fill="rgb(100,211,211)" fg:x="175490" fg:w="5"/><text x="97.2471%" y="151.50"></text></g><g><title>method::style_for (31 μs, 0.02%)</title><rect x="96.9998%" y="141" width="0.0171%" height="15" fill="rgb(71,184,184)" fg:x="175495" fg:w="31"/><text x="97.2498%" y="151.50"></text></g><g><title>method::for_role (124 μs, 0.07%)</title><rect x="96.9971%" y="157" width="0.0685%" height="15" fill="rgb(67,180,180)" fg:x="175490" fg:w="124"/><text x="97.2471%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (7 μs, 0.00%)</title><rect x="97.0656%" y="157" width="0.0039%" height="15" fill="rgb(63,176,176)" fg:x="175614" fg:w="7"/><text x="97.3156%" y="167.50"></text></g><g><title>fn::paint_for_role (269 μs, 0.15%)</title><rect x="96.9971%" y="173" width="0.1487%" height="15" fill="rgb(58,172,172)" fg:x="175490" fg:w="269"/><text x="97.2471%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (7 μs, 0.00%)</title><rect x="97.1457%" y="173" width="0.0039%" height="15" fill="rgb(86,198,198)" fg:x="175759" fg:w="7"/><text x="97.3957%" y="183.50"></text></g><g><title>method::style_for (23 μs, 0.01%)</title><rect x="97.1496%" y="173" width="0.0127%" height="15" fill="rgb(91,203,203)" fg:x="175766" fg:w="23"/><text x="97.3996%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="97.1623%" y="173" width="0.0011%" height="15" fill="rgb(108,218,218)" fg:x="175789" fg:w="2"/><text x="97.4123%" y="183.50"></text></g><g><title>method::style_for (21 μs, 0.01%)</title><rect x="97.1634%" y="173" width="0.0116%" height="15" fill="rgb(106,217,217)" fg:x="175791" fg:w="21"/><text x="97.4134%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (3 μs, 0.00%)</title><rect x="97.1750%" y="173" width="0.0017%" height="15" fill="rgb(96,207,207)" fg:x="175812" fg:w="3"/><text x="97.4250%" y="183.50"></text></g><g><title>method::style_for (36 μs, 0.02%)</title><rect x="97.1767%" y="173" width="0.0199%" height="15" fill="rgb(85,197,197)" fg:x="175815" fg:w="36"/><text x="97.4267%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (7 μs, 0.00%)</title><rect x="97.1966%" y="173" width="0.0039%" height="15" fill="rgb(101,212,212)" fg:x="175851" fg:w="7"/><text x="97.4466%" y="183.50"></text></g><g><title>method::style_for (25 μs, 0.01%)</title><rect x="97.2005%" y="173" width="0.0138%" height="15" fill="rgb(107,218,218)" fg:x="175858" fg:w="25"/><text x="97.4505%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="97.2143%" y="173" width="0.0011%" height="15" fill="rgb(98,209,209)" fg:x="175883" fg:w="2"/><text x="97.4643%" y="183.50"></text></g><g><title>method::style_for (22 μs, 0.01%)</title><rect x="97.2154%" y="173" width="0.0122%" height="15" fill="rgb(102,213,213)" fg:x="175885" fg:w="22"/><text x="97.4654%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="97.2275%" y="173" width="0.0011%" height="15" fill="rgb(109,219,219)" fg:x="175907" fg:w="2"/><text x="97.4775%" y="183.50"></text></g><g><title>method::style_for (21 μs, 0.01%)</title><rect x="97.2287%" y="173" width="0.0116%" height="15" fill="rgb(95,206,206)" fg:x="175909" fg:w="21"/><text x="97.4787%" y="183.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="97.2403%" y="173" width="0.0011%" height="15" fill="rgb(58,173,173)" fg:x="175930" fg:w="2"/><text x="97.4903%" y="183.50"></text></g><g><title>fn::display_theme_roles (1,428 μs, 0.79%)</title><rect x="96.9971%" y="189" width="0.7893%" height="15" fill="rgb(65,178,178)" fg:x="175490" fg:w="1428"/><text x="97.2471%" y="199.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="97.7864%" y="173" width="0.0028%" height="15" fill="rgb(67,181,181)" fg:x="176918" fg:w="5"/><text x="98.0364%" y="183.50"></text></g><g><title>fn::color_distance (1 μs, 0.00%)</title><rect x="97.7891%" y="173" width="0.0006%" height="15" fill="rgb(109,219,219)" fg:x="176923" fg:w="1"/><text x="98.0391%" y="183.50"></text></g><g><title>fn::dual_format_rgb (3 μs, 0.00%)</title><rect x="97.7897%" y="173" width="0.0017%" height="15" fill="rgb(57,172,172)" fg:x="176924" fg:w="3"/><text x="98.0397%" y="183.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="97.7913%" y="141" width="0.0028%" height="15" fill="rgb(91,203,203)" fg:x="176927" fg:w="5"/><text x="98.0413%" y="151.50"></text></g><g><title>method::for_role (38 μs, 0.02%)</title><rect x="97.7913%" y="157" width="0.0210%" height="15" fill="rgb(90,202,202)" fg:x="176927" fg:w="38"/><text x="98.0413%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="97.8123%" y="157" width="0.0011%" height="15" fill="rgb(50,165,165)" fg:x="176965" fg:w="2"/><text x="98.0623%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="97.8615%" y="141" width="0.0028%" height="15" fill="rgb(96,207,207)" fg:x="177054" fg:w="5"/><text x="98.1115%" y="151.50"></text></g><g><title>method::for_role (35 μs, 0.02%)</title><rect x="97.8615%" y="157" width="0.0193%" height="15" fill="rgb(56,170,170)" fg:x="177054" fg:w="35"/><text x="98.1115%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="97.8809%" y="157" width="0.0011%" height="15" fill="rgb(53,168,168)" fg:x="177089" fg:w="2"/><text x="98.1309%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="97.9196%" y="141" width="0.0028%" height="15" fill="rgb(107,217,217)" fg:x="177159" fg:w="5"/><text x="98.1696%" y="151.50"></text></g><g><title>method::for_role (34 μs, 0.02%)</title><rect x="97.9196%" y="157" width="0.0188%" height="15" fill="rgb(101,212,212)" fg:x="177159" fg:w="34"/><text x="98.1696%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="97.9383%" y="157" width="0.0011%" height="15" fill="rgb(75,188,188)" fg:x="177193" fg:w="2"/><text x="98.1883%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="97.9765%" y="141" width="0.0028%" height="15" fill="rgb(79,191,191)" fg:x="177262" fg:w="5"/><text x="98.2265%" y="151.50"></text></g><g><title>method::for_role (34 μs, 0.02%)</title><rect x="97.9765%" y="157" width="0.0188%" height="15" fill="rgb(71,184,184)" fg:x="177262" fg:w="34"/><text x="98.2265%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="97.9953%" y="157" width="0.0006%" height="15" fill="rgb(89,200,200)" fg:x="177296" fg:w="1"/><text x="98.2453%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="98.0323%" y="141" width="0.0028%" height="15" fill="rgb(59,173,173)" fg:x="177363" fg:w="5"/><text x="98.2823%" y="151.50"></text></g><g><title>method::for_role (35 μs, 0.02%)</title><rect x="98.0323%" y="157" width="0.0193%" height="15" fill="rgb(70,184,184)" fg:x="177363" fg:w="35"/><text x="98.2823%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="98.0517%" y="157" width="0.0011%" height="15" fill="rgb(108,218,218)" fg:x="177398" fg:w="2"/><text x="98.3017%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="98.0898%" y="141" width="0.0028%" height="15" fill="rgb(85,197,197)" fg:x="177467" fg:w="5"/><text x="98.3398%" y="151.50"></text></g><g><title>method::for_role (35 μs, 0.02%)</title><rect x="98.0898%" y="157" width="0.0193%" height="15" fill="rgb(58,172,172)" fg:x="177467" fg:w="35"/><text x="98.3398%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="98.1091%" y="157" width="0.0006%" height="15" fill="rgb(85,197,197)" fg:x="177502" fg:w="1"/><text x="98.3591%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="98.1467%" y="141" width="0.0028%" height="15" fill="rgb(72,185,185)" fg:x="177570" fg:w="5"/><text x="98.3967%" y="151.50"></text></g><g><title>method::for_role (34 μs, 0.02%)</title><rect x="98.1467%" y="157" width="0.0188%" height="15" fill="rgb(96,207,207)" fg:x="177570" fg:w="34"/><text x="98.3967%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="98.1655%" y="157" width="0.0006%" height="15" fill="rgb(66,180,180)" fg:x="177604" fg:w="1"/><text x="98.4155%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="98.2031%" y="141" width="0.0028%" height="15" fill="rgb(59,173,173)" fg:x="177672" fg:w="5"/><text x="98.4531%" y="151.50"></text></g><g><title>method::for_role (34 μs, 0.02%)</title><rect x="98.2031%" y="157" width="0.0188%" height="15" fill="rgb(66,180,180)" fg:x="177672" fg:w="34"/><text x="98.4531%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="98.2219%" y="157" width="0.0006%" height="15" fill="rgb(69,182,182)" fg:x="177706" fg:w="1"/><text x="98.4719%" y="167.50"></text></g><g><title>fn::paint_for_role (847 μs, 0.47%)</title><rect x="97.7913%" y="173" width="0.4682%" height="15" fill="rgb(73,186,186)" fg:x="176927" fg:w="847"/><text x="98.0413%" y="183.50"></text></g><g><title>fn::dual_format_rgb (1 μs, 0.00%)</title><rect x="98.2595%" y="173" width="0.0006%" height="15" fill="rgb(103,213,213)" fg:x="177774" fg:w="1"/><text x="98.5095%" y="183.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="98.2600%" y="141" width="0.0028%" height="15" fill="rgb(70,183,183)" fg:x="177775" fg:w="5"/><text x="98.5100%" y="151.50"></text></g><g><title>method::for_role (34 μs, 0.02%)</title><rect x="98.2600%" y="157" width="0.0188%" height="15" fill="rgb(70,183,183)" fg:x="177775" fg:w="34"/><text x="98.5100%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="98.2788%" y="157" width="0.0011%" height="15" fill="rgb(86,198,198)" fg:x="177809" fg:w="2"/><text x="98.5288%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="98.3170%" y="141" width="0.0028%" height="15" fill="rgb(85,197,197)" fg:x="177878" fg:w="5"/><text x="98.5670%" y="151.50"></text></g><g><title>method::for_role (34 μs, 0.02%)</title><rect x="98.3170%" y="157" width="0.0188%" height="15" fill="rgb(57,171,171)" fg:x="177878" fg:w="34"/><text x="98.5670%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="98.3358%" y="157" width="0.0011%" height="15" fill="rgb(92,204,204)" fg:x="177912" fg:w="2"/><text x="98.5858%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="98.3739%" y="141" width="0.0028%" height="15" fill="rgb(94,205,205)" fg:x="177981" fg:w="5"/><text x="98.6239%" y="151.50"></text></g><g><title>method::for_role (34 μs, 0.02%)</title><rect x="98.3739%" y="157" width="0.0188%" height="15" fill="rgb(72,185,185)" fg:x="177981" fg:w="34"/><text x="98.6239%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (1 μs, 0.00%)</title><rect x="98.3927%" y="157" width="0.0006%" height="15" fill="rgb(62,176,176)" fg:x="178015" fg:w="1"/><text x="98.6427%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="98.4297%" y="141" width="0.0028%" height="15" fill="rgb(54,169,169)" fg:x="178082" fg:w="5"/><text x="98.6797%" y="151.50"></text></g><g><title>method::for_role (49 μs, 0.03%)</title><rect x="98.4297%" y="157" width="0.0271%" height="15" fill="rgb(71,184,184)" fg:x="178082" fg:w="49"/><text x="98.6797%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="98.4568%" y="157" width="0.0011%" height="15" fill="rgb(102,212,212)" fg:x="178131" fg:w="2"/><text x="98.7068%" y="167.50"></text></g><g><title>method::get_or_init (5 μs, 0.00%)</title><rect x="98.5032%" y="141" width="0.0028%" height="15" fill="rgb(100,210,210)" fg:x="178215" fg:w="5"/><text x="98.7532%" y="151.50"></text></g><g><title>method::for_role (34 μs, 0.02%)</title><rect x="98.5032%" y="157" width="0.0188%" height="15" fill="rgb(105,215,215)" fg:x="178215" fg:w="34"/><text x="98.7532%" y="167.50"></text></g><g><title>impl::Style::paint::&lt;D&gt; (2 μs, 0.00%)</title><rect x="98.5220%" y="157" width="0.0011%" height="15" fill="rgb(92,203,203)" fg:x="178249" fg:w="2"/><text x="98.7720%" y="167.50"></text></g><g><title>fn::paint_for_role (542 μs, 0.30%)</title><rect x="98.2600%" y="173" width="0.2996%" height="15" fill="rgb(109,219,219)" fg:x="177775" fg:w="542"/><text x="98.5100%" y="183.50"></text></g><g><title>fn::display_theme_details (2,778 μs, 1.54%)</title><rect x="97.7864%" y="189" width="1.5355%" height="15" fill="rgb(72,185,185)" fg:x="176918" fg:w="2778"/><text x="98.0364%" y="199.50"></text></g><g><title>method::render_prompt_multiline_indicator (1 μs, 0.00%)</title><rect x="99.3218%" y="189" width="0.0006%" height="15" fill="rgb(61,175,175)" fg:x="179696" fg:w="1"/><text x="99.5718%" y="199.50"></text></g><g><title>method::render_prompt_left (3 μs, 0.00%)</title><rect x="99.3224%" y="189" width="0.0017%" height="15" fill="rgb(96,207,207)" fg:x="179697" fg:w="3"/><text x="99.5724%" y="199.50"></text></g><g><title>method::render_prompt_indicator (1 μs, 0.00%)</title><rect x="99.3240%" y="189" width="0.0006%" height="15" fill="rgb(96,207,207)" fg:x="179700" fg:w="1"/><text x="99.5740%" y="199.50"></text></g><g><title>fn::is_initialized (2 μs, 0.00%)</title><rect x="99.3246%" y="141" width="0.0011%" height="15" fill="rgb(107,217,217)" fg:x="179701" fg:w="2"/><text x="99.5746%" y="151.50"></text></g><g><title>method::get_or_init (65 μs, 0.04%)</title><rect x="99.3246%" y="157" width="0.0359%" height="15" fill="rgb(93,205,205)" fg:x="179701" fg:w="65"/><text x="99.5746%" y="167.50"></text></g><g><title>method::style_for (2 μs, 0.00%)</title><rect x="99.3605%" y="157" width="0.0011%" height="15" fill="rgb(55,169,169)" fg:x="179766" fg:w="2"/><text x="99.6105%" y="167.50"></text></g><g><title>method::for_role (170 μs, 0.09%)</title><rect x="99.3246%" y="173" width="0.0940%" height="15" fill="rgb(51,166,166)" fg:x="179701" fg:w="170"/><text x="99.5746%" y="183.50"></text></g><g><title>method::get_prompt_color (313 μs, 0.17%)</title><rect x="99.3246%" y="189" width="0.1730%" height="15" fill="rgb(88,199,199)" fg:x="179701" fg:w="313"/><text x="99.5746%" y="199.50"></text></g><g><title>method::render_prompt_multiline_indicator (1 μs, 0.00%)</title><rect x="99.4976%" y="189" width="0.0006%" height="15" fill="rgb(84,196,196)" fg:x="180014" fg:w="1"/><text x="99.7476%" y="199.50"></text></g><g><title>method::render_prompt_left (5 μs, 0.00%)</title><rect x="99.4981%" y="189" width="0.0028%" height="15" fill="rgb(51,166,166)" fg:x="180015" fg:w="5"/><text x="99.7481%" y="199.50"></text></g><g><title>method::render_prompt_indicator (1 μs, 0.00%)</title><rect x="99.5009%" y="189" width="0.0006%" height="15" fill="rgb(75,188,188)" fg:x="180020" fg:w="1"/><text x="99.7509%" y="199.50"></text></g><g><title>fn::is_initialized (1 μs, 0.00%)</title><rect x="99.5014%" y="141" width="0.0006%" height="15" fill="rgb(50,165,165)" fg:x="180021" fg:w="1"/><text x="99.7514%" y="151.50"></text></g><g><title>method::get_or_init (54 μs, 0.03%)</title><rect x="99.5014%" y="157" width="0.0298%" height="15" fill="rgb(104,215,215)" fg:x="180021" fg:w="54"/><text x="99.7514%" y="167.50"></text></g><g><title>method::style_for (2 μs, 0.00%)</title><rect x="99.5313%" y="157" width="0.0011%" height="15" fill="rgb(85,197,197)" fg:x="180075" fg:w="2"/><text x="99.7813%" y="167.50"></text></g><g><title>method::for_role (189 μs, 0.10%)</title><rect x="99.5014%" y="173" width="0.1045%" height="15" fill="rgb(85,197,197)" fg:x="180021" fg:w="189"/><text x="99.7514%" y="183.50"></text></g><g><title>method::get_prompt_color (388 μs, 0.21%)</title><rect x="99.5014%" y="189" width="0.2145%" height="15" fill="rgb(54,169,169)" fg:x="180021" fg:w="388"/><text x="99.7514%" y="199.50"></text></g><g><title>method::render_prompt_multiline_indicator (1 μs, 0.00%)</title><rect x="99.7159%" y="189" width="0.0006%" height="15" fill="rgb(98,209,209)" fg:x="180409" fg:w="1"/><text x="99.9659%" y="199.50"></text></g><g><title>method::render_prompt_left (2 μs, 0.00%)</title><rect x="99.7165%" y="189" width="0.0011%" height="15" fill="rgb(107,217,217)" fg:x="180410" fg:w="2"/><text x="99.9665%" y="199.50"></text></g><g><title>fn::is_initialized (1 μs, 0.00%)</title><rect x="99.7176%" y="141" width="0.0006%" height="15" fill="rgb(97,208,208)" fg:x="180412" fg:w="1"/><text x="99.9676%" y="151.50"></text></g><g><title>method::get_or_init (61 μs, 0.03%)</title><rect x="99.7176%" y="157" width="0.0337%" height="15" fill="rgb(64,178,178)" fg:x="180412" fg:w="61"/><text x="99.9676%" y="167.50"></text></g><g><title>method::style_for (2 μs, 0.00%)</title><rect x="99.7513%" y="157" width="0.0011%" height="15" fill="rgb(75,188,188)" fg:x="180473" fg:w="2"/><text x="100.0013%" y="167.50"></text></g><g><title>method::for_role (185 μs, 0.10%)</title><rect x="99.7176%" y="173" width="0.1023%" height="15" fill="rgb(104,215,215)" fg:x="180412" fg:w="185"/><text x="99.9676%" y="183.50"></text></g><g><title>method::get_prompt_color (356 μs, 0.20%)</title><rect x="99.7176%" y="189" width="0.1968%" height="15" fill="rgb(51,166,166)" fg:x="180412" fg:w="356"/><text x="99.9676%" y="199.50"></text></g><g><title>all (180,923 μs, 100%)</title><rect x="0.0000%" y="205" width="100.0000%" height="15" fill="rgb(103,213,213)" fg:x="0" fg:w="180923"/><text x="0.2500%" y="215.50"></text></g><g><title>fn::parse_line (155 μs, 0.09%)</title><rect x="99.9143%" y="189" width="0.0857%" height="15" fill="rgb(103,214,214)" fg:x="180768" fg:w="155"/><text x="100.1643%" y="199.50"></text></g></svg></svg>

@@ -1,5 +1,4 @@
 *.profraw
-*.svg
 .DS_Store
 .cargo/
 .repl.history
@@ -50,3 +49,10 @@ src/temp.txt
 src/profiling_mutex.rs
 src/styling_mutex.rs
 bank/temp.txt
+flamechart.svg
+flamegraph-diff.svg
+flamegraph.svg
+memory-flamechart.svg
+memory-timeline.svg
+mods.svg
+demo/proc_macros/target/doc/static.files/favicon-2c020d218678b618.svg

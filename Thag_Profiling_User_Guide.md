@@ -334,9 +334,9 @@ since this is the point at which thag profiling records the allocation and deall
 `thag` uses the `inferno` crate to generate flamecharts. For the execution timeline, the analysis tool allows you to choose the `inferno` color scheme to use. For the memory flamechart,
 it uses `inferno`'s memory-optimized color scheme.
 
-![Image: assets/timeline_flamechart.png](assets/timeline_flamechart.png)
+![Image: assets/flamechart_time_20250302-080709.png](assets/flamechart_time_20250302-080709.png)
 
-[Try it!](assets/flamegraph.svg)
+[Try it!](assets/flamechart_time_20250302-080709.svg)
 
 As the above link demonstrates, interactive features of the SVG flamecharts include:
 

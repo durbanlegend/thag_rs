@@ -12,7 +12,8 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_rs::{enable_profiling, profile, profile_section, profiling, Profile};
+use thag_rs::{enable_profiling, profile, profiling, Profile};
+// use thag_rs::profile_section;
 
 struct Document {
     id: usize,
@@ -230,7 +231,6 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
 
     for id in 0..count {
         tasks.push(async move {
-            profile_section!("fetch_and_process_document");
             let doc = fetch_document(id).await;
             process_document(doc).await
         });
@@ -241,7 +241,6 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
 
 #[tokio::main]
 #[enable_profiling]
-#[profile]
 async fn main() -> io::Result<()> {
     // Process a batch of documents asynchronously
     let docs = generate_and_process_documents(50).await;

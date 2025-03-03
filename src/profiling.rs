@@ -503,7 +503,6 @@ impl Profile {
             (*paths_mut).clone_from(&path);
         });
 
-        eprintln!("Name={name}, path={path:?}");
         Some(Self {
             name,
             path,
@@ -575,16 +574,13 @@ impl Profile {
         // Get the current async context to identify this task
         let _ctx_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
 
-        // Use task name directly without nesting to make the flamegraph show parallel tasks
-        // instead of nesting them all under the generator function
+        // Format entry with full path to preserve parent-child relationships
         let entry = if self.path.is_empty() {
             format!("{} {micros}", self.name)
         } else {
-            // Extract just the function name without the full path
-            // This is a major change - instead of showing the full call stack for each task,
-            // we show parallel entries for async calls
-            let fn_name = self.path.last().unwrap_or(&self.name);
-            format!("{fn_name} {micros}")
+            // Use the full path with semicolons to show proper nesting in flamegraphs
+            let path_str = self.path.join(";");
+            format!("{path_str} {micros}")
         };
 
         let paths = ProfilePaths::get();
@@ -600,15 +596,12 @@ impl Profile {
         // Get the current async context to identify this task
         let _ctx_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
 
-        // Use task name directly without nesting to make the flamegraph show parallel tasks
-        // instead of nesting them all under the generator function
+        // Format entry with full path to preserve parent-child relationships
         let path_str = if self.path.is_empty() {
             self.name.to_string()
         } else {
-            // Extract just the function name without the full path
-            // This is a major change - instead of showing the full call stack for each task,
-            // we show parallel entries for async calls
-            (*self.path.last().unwrap_or(&self.name)).to_string()
+            // Use the full path with semicolons to show proper nesting in flamegraphs
+            self.path.join(";")
         };
 
         let entry = format!("{path_str} {op}{delta}");
@@ -685,9 +678,6 @@ impl Drop for Profile {
         // Now update the thread-local path to restore the parent context
         // This is critical for maintaining proper nesting in async contexts
         if !self.path.is_empty() {
-            // Get the current async context ID
-            let _context_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
-
             THREAD_PROFILE_PATH.with(|paths| {
                 let mut paths_mut = paths.borrow_mut();
                 // Remove the current profile (last element) from the path

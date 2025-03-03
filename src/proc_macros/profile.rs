@@ -310,34 +310,42 @@ fn generate_async_wrapper(
             }
 
             // Use the current thread's async context ID assigned by async fn wrapper
-                let parent_task_id = crate::profiling::ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
+            let parent_task_id = crate::profiling::ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
 
-            // Retrieve the current path for the parent task (if any)
-            let mut path = crate::profiling::THREAD_PROFILE_PATHS.with(|paths| {
-                let paths_ref = paths.borrow();
-                paths_ref.get(&parent_task_id).cloned().unwrap_or_default()
-            });
-
-            eprintln!("Parent path={path:?}, parent_task_id={parent_task_id}");
+            // Retrieve the current path for the parent task from global storage
+            let mut path = if let Some(paths_mutex) = crate::profiling::PROFILE_PATHS.get() {
+                if let Ok(paths) = paths_mutex.lock() {
+                    paths.get(&parent_task_id).cloned().unwrap_or_default()
+                } else {
+                    Vec::new() // Fallback if lock fails
+                }
+            } else {
+                Vec::new() // Empty path if not initialized yet
+            };
 
             // For each async function, create a predictable task ID
             // This replaces the randomly generated ID with a sequential one
             let task_id = crate::profiling::NEXT_TASK_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
-            // // Store the task ID in thread local storage before creating the profile
-            // crate::profiling::ASYNC_CONTEXT.with(|ctx| {
-            //     *ctx.borrow_mut() = task_id;
-            // });
-
-            // Set the parent path for the new task (if any)
-            let mut path = crate::profiling::THREAD_PROFILE_PATHS.with(|paths| {
-                // let paths_ref = paths.borrow();
-                // paths_ref.get(&task_id).cloned().unwrap_or_default()
-                let mut paths_mut = paths.borrow_mut();
-                paths_mut.insert(task_id, path.clone());
+            // Store the task ID in thread local storage before creating the profile
+            crate::profiling::ASYNC_CONTEXT.with(|ctx| {
+                *ctx.borrow_mut() = task_id;
             });
 
-            eprintln!("profile_name={}, task_id={task_id}, path={path:?}", #profile_name);
+            // Store parent's path under child's task_id in the global map
+            // This preserves lineage of the task
+            if let Some(paths_mutex) = crate::profiling::PROFILE_PATHS.get() {
+                if let Ok(mut paths) = paths_mutex.lock() {
+                    paths.insert(task_id, path.clone());
+                }
+            } else {
+                // Initialize if needed
+                let _ = crate::profiling::PROFILE_PATHS.get_or_init(|| {
+                    let mut map = std::collections::HashMap::new();
+                    map.insert(task_id, path.clone());
+                    std::sync::Mutex::new(map)
+                });
+            }
 
             let future = async #body;
             ProfiledFuture {

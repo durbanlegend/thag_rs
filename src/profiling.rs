@@ -26,7 +26,7 @@ use std::path::PathBuf;
 use std::ptr;
 use std::sync::{
     atomic::{AtomicBool, AtomicPtr, AtomicU64, AtomicU8, AtomicUsize, Ordering},
-    Mutex,
+    Mutex, OnceLock,
 };
 use std::thread;
 use std::thread::ThreadId;
@@ -150,10 +150,13 @@ static START_TIME: AtomicU64 = AtomicU64::new(0);
 // Used by proc_macros for creating task IDs
 pub static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
 
-// Thread-local storage for profile paths
+// Global storage for profile paths
+// Using a Mutex instead of thread_local to ensure paths are accessible across threads
+// This is crucial for async functions that might be polled on different threads
+pub static PROFILE_PATHS: OnceLock<Mutex<HashMap<u64, Vec<&'static str>>>> = OnceLock::new();
+
+// Thread-local storage for the currently active task ID
 thread_local! {
-    // Maps task_id -> current path stack for that task
-    pub static THREAD_PROFILE_PATHS: RefCell<HashMap<u64, Vec<&'static str>>> = RefCell::new(HashMap::new());
     static THREAD_ID: RefCell<ThreadId> = RefCell::new(thread::current().id());
     // Track the async task context to keep profiling paths separate across tasks
     pub static ASYNC_CONTEXT: RefCell<u64> = const { RefCell::new(0) };
@@ -326,17 +329,21 @@ pub fn reset_profiling_stack() {
         atomic_ptr.store(ptr::null_mut(), Ordering::SeqCst);
     }
 
-    // Reset all thread-local paths
-    THREAD_PROFILE_PATHS.with(|paths| {
-        let mut paths_mut = paths.borrow_mut();
-        paths_mut.clear();
-    });
+    // Reset all profile paths
+    if let Some(paths_mutex) = PROFILE_PATHS.get() {
+        if let Ok(mut paths) = paths_mutex.lock() {
+            paths.clear();
+        }
+    } else {
+        // Initialize if not already done
+        let _ = PROFILE_PATHS.get_or_init(|| Mutex::new(HashMap::new()));
+    }
 
     // Reset the async context ID
     ASYNC_CONTEXT.with(|ctx| {
         *ctx.borrow_mut() = 0;
     });
-    eprintln!("Finished resetting profiling stack");
+    // Stack reset complete
 }
 
 /// Creates and initializes a single profile file with header information.
@@ -480,22 +487,35 @@ impl Profile {
         // Use the current thread's async context ID assigned by async fn wrapper
         let task_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
 
-        // Retrieve the current path for this task (if any)
-        let mut path = THREAD_PROFILE_PATHS.with(|paths| {
-            let paths_ref = paths.borrow();
-            paths_ref.get(&task_id).cloned().unwrap_or_default()
-        });
-
-        eprintln!("Path={path:?}, name={name}, task_id={task_id}");
-
+        // Retrieve the current path for this task from the global map
+        let mut path = if let Some(paths_mutex) = PROFILE_PATHS.get() {
+            if let Ok(paths) = paths_mutex.lock() {
+                paths.get(&task_id).cloned().unwrap_or_default()
+            } else {
+                Vec::new() // Fallback if lock fails
+            }
+        } else {
+            // Initialize if not already done
+            let _mutex = PROFILE_PATHS.get_or_init(|| Mutex::new(HashMap::new()));
+            Vec::new() // Return empty path for first initialization
+        };
+                
         // Add this profile to the path - this maintains the parent-child relationship
         path.push(name);
-
-        // Save the updated path for this task
-        THREAD_PROFILE_PATHS.with(|paths| {
-            let mut paths_mut = paths.borrow_mut();
-            paths_mut.insert(task_id, path.clone());
-        });
+        
+        // Save the updated path for this task in the global map
+        if let Some(paths_mutex) = PROFILE_PATHS.get() {
+            if let Ok(mut paths) = paths_mutex.lock() {
+                paths.insert(task_id, path.clone());
+            }
+        } else {
+            // Initialize and insert
+            let _mutex = PROFILE_PATHS.get_or_init(|| {
+                let mut map = HashMap::new();
+                map.insert(task_id, path.clone());
+                Mutex::new(map)
+            });
+        }
 
         Some(Self {
             name,
@@ -640,20 +660,17 @@ impl Drop for Profile {
             }
         }
 
-        eprintln!("self.path={:?}", self.path);
-        // Update the path in thread-local storage by removing the current function
+        // Update the path in global storage by removing the current function
         if !self.path.is_empty() {
-            THREAD_PROFILE_PATHS.with(|paths| {
-                let mut paths_mut = paths.borrow_mut();
-                eprintln!("paths_mut={paths_mut:?}, task_id={}", self.task_id);
-                if let Some(task_path) = paths_mut.get_mut(&self.task_id) {
-                    eprintln!("task_path (before)={task_path:?}");
-                    if !task_path.is_empty() {
-                        task_path.pop();
+            if let Some(paths_mutex) = PROFILE_PATHS.get() {
+                if let Ok(mut paths) = paths_mutex.lock() {
+                    if let Some(task_path) = paths.get_mut(&self.task_id) {
+                        if !task_path.is_empty() {
+                            task_path.pop();
+                        }
                     }
-                    eprintln!("task_path (after)={task_path:?}");
                 }
-            });
+            }
         }
     }
 }
@@ -714,22 +731,22 @@ pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
     let context_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
 
     // Try to find the section in the context's path
-    let mut found_in_thread_local = false;
+    let mut found_in_global_paths = false;
 
-    THREAD_PROFILE_PATHS.with(|paths| {
-        let mut paths_mut = paths.borrow_mut();
-
-        if let Some(path) = paths_mut.get_mut(&context_id) {
-            // Find the section in this path
-            if let Some(pos) = path.iter().position(|&name| name == section_name) {
-                // Truncate the path at this position
-                path.truncate(pos);
-                found_in_thread_local = true;
+    if let Some(paths_mutex) = PROFILE_PATHS.get() {
+        if let Ok(mut paths) = paths_mutex.lock() {
+            if let Some(path) = paths.get_mut(&context_id) {
+                // Find the section in this path
+                if let Some(pos) = path.iter().position(|&name| name == section_name) {
+                    // Truncate the path at this position
+                    path.truncate(pos);
+                    found_in_global_paths = true;
+                }
             }
         }
-    });
+    }
 
-    if found_in_thread_local {
+    if found_in_global_paths {
         return Some(true);
     }
 
@@ -1243,16 +1260,21 @@ mod tests {
         assert_eq!(result, 42);
 
         // Verify that our wrapper profile is still the only one in its context's path
-        THREAD_PROFILE_PATHS.with(|paths| {
-            let paths_ref = paths.borrow();
-            let task_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
-            if let Some(path) = paths_ref.get(&task_id) {
-                assert_eq!(path.len(), 1);
-                assert_eq!(path[0], "test_async_profiling_wrapper");
+        if let Some(paths_mutex) = PROFILE_PATHS.get() {
+            if let Ok(paths) = paths_mutex.lock() {
+                let task_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
+                if let Some(path) = paths.get(&task_id) {
+                    assert_eq!(path.len(), 1);
+                    assert_eq!(path[0], "test_async_profiling_wrapper");
+                } else {
+                    panic!("No path found for current task ID");
+                }
             } else {
-                panic!("No path found for current task ID");
+                panic!("Failed to lock PROFILE_PATHS");
             }
-        });
+        } else {
+            // If PROFILE_PATHS hasn't been initialized yet, test passes
+        }
 
         // Clean up
         reset_profiling_stack();

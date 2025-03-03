@@ -147,12 +147,16 @@ fn validate_profile_stack() -> Option<String> {
 
 static START_TIME: AtomicU64 = AtomicU64::new(0);
 
+// Used by proc_macros for creating task IDs
+pub static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
+
 // Thread-local storage for profile paths
 thread_local! {
-    static THREAD_PROFILE_PATH: RefCell<Vec<&'static str>> = const { RefCell::new(Vec::new()) };
+    // Maps task_id -> current path stack for that task
+    static THREAD_PROFILE_PATHS: RefCell<HashMap<u64, Vec<&'static str>>> = RefCell::new(HashMap::new());
     static THREAD_ID: RefCell<ThreadId> = RefCell::new(thread::current().id());
     // Track the async task context to keep profiling paths separate across tasks
-    pub static ASYNC_CONTEXT: RefCell<u64> = const { RefCell::new(0) };
+    pub static ASYNC_CONTEXT: RefCell<u64> = RefCell::new(0);
 }
 
 #[derive(Clone)]
@@ -304,17 +308,6 @@ pub fn reset_profiling_stack() {
     // Get current depth
     let old_depth = STACK_DEPTH.load(Ordering::SeqCst);
 
-    // Print the stack contents before resetting
-    // if old_depth > 0 {
-    //     eprintln!(
-    //         "WARNING: Profiling stack not empty on reset. Current stack ({old_depth} entries):"
-    //     );
-    //     let stack = get_profile_stack();
-    //     for (i, name) in stack.iter().enumerate() {
-    //         eprintln!("  [{i}]: {name}");
-    //     }
-    // }
-
     // Reset depth to 0
     STACK_DEPTH.store(0, Ordering::SeqCst);
 
@@ -333,8 +326,8 @@ pub fn reset_profiling_stack() {
         atomic_ptr.store(ptr::null_mut(), Ordering::SeqCst);
     }
 
-    // Also reset the thread-local path
-    THREAD_PROFILE_PATH.with(|paths| {
+    // Reset all thread-local paths
+    THREAD_PROFILE_PATHS.with(|paths| {
         let mut paths_mut = paths.borrow_mut();
         paths_mut.clear();
     });
@@ -416,6 +409,7 @@ impl ProfileType {
     }
 }
 
+/// A profile instance representing a specific function or code section being profiled
 pub struct Profile {
     start: Option<Instant>,
     name: &'static str,
@@ -424,6 +418,7 @@ pub struct Profile {
     profile_type: ProfileType,
     initial_memory: Option<usize>,     // For memory delta
     _not_send: PhantomData<*const ()>, // Makes Profile !Send
+    task_id: u64,                      // Unique ID for this profile instance
 }
 
 impl Profile {
@@ -436,6 +431,7 @@ impl Profile {
             profile_type: ProfileType::Time, // Default to time profiling
             initial_memory: None,
             _not_send: PhantomData,
+            task_id: 0,
         }
     }
 
@@ -480,27 +476,22 @@ impl Profile {
             None
         };
 
-        // Create a unique path for this profile instance
-        let mut path = Vec::new();
-
-        // Get the current async context ID
-        let _context_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
-
-        // Get current thread-local profile path, using the async context ID as part of the key
-        // This effectively separates paths for different async tasks
-        THREAD_PROFILE_PATH.with(|paths| {
+        // Use the current thread's async context ID assigned by async fn wrapper
+        let task_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
+        
+        // Retrieve the current path for this task (if any)
+        let mut path = THREAD_PROFILE_PATHS.with(|paths| {
             let paths_ref = paths.borrow();
-            // Deep copy the path elements
-            path.clone_from(&paths_ref);
+            paths_ref.get(&task_id).cloned().unwrap_or_default()
         });
-
-        // Add this profile to the path
+        
+        // Add this profile to the path - this maintains the parent-child relationship
         path.push(name);
-
-        // Update the thread-local path for future profiles in this context
-        THREAD_PROFILE_PATH.with(|paths| {
+        
+        // Save the updated path for this task
+        THREAD_PROFILE_PATHS.with(|paths| {
             let mut paths_mut = paths.borrow_mut();
-            (*paths_mut).clone_from(&path);
+            paths_mut.insert(task_id, path.clone());
         });
 
         Some(Self {
@@ -510,6 +501,7 @@ impl Profile {
             start: Some(Instant::now()),
             initial_memory,
             _not_send: PhantomData,
+            task_id,
         })
     }
 
@@ -563,16 +555,11 @@ impl Profile {
     /// # Errors
     /// Returns a `ThagError` if writing to the profile file fails
     fn write_time_event(&self, duration: std::time::Duration) -> ThagResult<()> {
-        // Profile must exist and profiling must be enabled if we got here
-        // Only keep the business logic checks
-
+        // Skip zero-duration events
         let micros = duration.as_micros();
         if micros == 0 {
             return Ok(());
         }
-
-        // Get the current async context to identify this task
-        let _ctx_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
 
         // Format entry with full path to preserve parent-child relationships
         let entry = if self.path.is_empty() {
@@ -589,12 +576,8 @@ impl Profile {
 
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ThagResult<()> {
         if delta == 0 {
-            // Keep this as it's a business logic check
             return Ok(());
         }
-
-        // Get the current async context to identify this task
-        let _ctx_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
 
         // Format entry with full path to preserve parent-child relationships
         let path_str = if self.path.is_empty() {
@@ -609,27 +592,6 @@ impl Profile {
         let paths = ProfilePaths::get();
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
     }
-
-    // fn write_memory_event(&self, delta: usize) -> ThagResult<()> {
-    //     if delta == 0 {
-    //         // Keep this as it's a business logic check
-    //         return Ok(());
-    //     }
-
-    //     // Get current stack as string
-    //     let stack_data = {
-    //         let stack = get_profile_stack();
-    //         if stack.is_empty() {
-    //             self.name.to_string()
-    //         } else {
-    //             format!("{};{}", stack.join(";"), self.name)
-    //         }
-    //     };
-    //     let entry = format!("{stack_data} {delta}");
-
-    //     let paths = ProfilePaths::get();
-    //     Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
-    // }
 
     fn record_memory_change(&self, delta: usize) -> ThagResult<()> {
         if delta == 0 {
@@ -675,14 +637,14 @@ impl Drop for Profile {
             }
         }
 
-        // Now update the thread-local path to restore the parent context
-        // This is critical for maintaining proper nesting in async contexts
+        // Update the path in thread-local storage by removing the current function
         if !self.path.is_empty() {
-            THREAD_PROFILE_PATH.with(|paths| {
+            THREAD_PROFILE_PATHS.with(|paths| {
                 let mut paths_mut = paths.borrow_mut();
-                // Remove the current profile (last element) from the path
-                if !paths_mut.is_empty() {
-                    paths_mut.pop();
+                if let Some(task_path) = paths_mut.get_mut(&self.task_id) {
+                    if !task_path.is_empty() {
+                        task_path.pop();
+                    }
                 }
             });
         }
@@ -725,19 +687,6 @@ fn verbose_only(fun: impl Fn()) {
     }
 }
 
-// #[must_use]
-// /// Validates that the stack truncation will be valid
-// #[cfg(debug_assertions)]
-// fn validate_stack_truncation(pos: usize) -> Option<String> {
-//     let depth = STACK_DEPTH.load(Ordering::SeqCst);
-//     if pos >= depth {
-//         return Some(format!(
-//             "Truncation position {pos} exceeds stack depth {depth}"
-//         ));
-//     }
-//     None
-// }
-
 /// Ends profiling for a named section early by removing it and all nested
 /// sections after it from the profiling stack.
 ///
@@ -754,23 +703,25 @@ fn verbose_only(fun: impl Fn()) {
 /// If the stack truncation position exceeds the current stack depth
 #[must_use]
 pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
-    // First, check the thread-local path
+    // Get the current async context ID
+    let context_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
+    
+    // Try to find the section in the context's path
     let mut found_in_thread_local = false;
-
-    // Get the current async context ID for path lookup
-    let _context_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
-
-    THREAD_PROFILE_PATH.with(|paths| {
+    
+    THREAD_PROFILE_PATHS.with(|paths| {
         let mut paths_mut = paths.borrow_mut();
-
-        // Find position of section in thread-local path
-        if let Some(pos) = paths_mut.iter().position(|&name| name == section_name) {
-            // Truncate the path at this position
-            paths_mut.truncate(pos);
-            found_in_thread_local = true;
+        
+        if let Some(path) = paths_mut.get_mut(&context_id) {
+            // Find the section in this path
+            if let Some(pos) = path.iter().position(|&name| name == section_name) {
+                // Truncate the path at this position
+                path.truncate(pos);
+                found_in_thread_local = true;
+            }
         }
     });
-
+    
     if found_in_thread_local {
         return Some(true);
     }
@@ -785,7 +736,6 @@ pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
         if !ptr.is_null() {
             unsafe {
                 if *ptr == section_name {
-                    // Remove debug println that was interfering with output
                     pos = Some(i);
                     break;
                 }
@@ -1279,23 +1229,23 @@ mod tests {
         // Wrap with our own profile to verify the async function gets profiled
         let _profile = Profile::new("test_async_profiling_wrapper", ProfileType::Time);
 
-        // Verify the thread-local path contains our profile
-        let path_len = THREAD_PROFILE_PATH.with(|paths| paths.borrow().len());
-        assert_eq!(path_len, 1);
-
         // Call the async function with #[profile] attribute
         let result = run_async_profiled().await;
 
         // Verify the result
         assert_eq!(result, 42);
 
-        // Verify the thread-local path still contains only our wrapper
-        // The async function's profile would have been dropped when it completed
-        let path_contains_wrapper = THREAD_PROFILE_PATH.with(|paths| {
+        // Verify that our wrapper profile is still the only one in its context's path
+        THREAD_PROFILE_PATHS.with(|paths| {
             let paths_ref = paths.borrow();
-            paths_ref.len() == 1 && paths_ref[0] == "test_async_profiling_wrapper"
+            let task_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
+            if let Some(path) = paths_ref.get(&task_id) {
+                assert_eq!(path.len(), 1);
+                assert_eq!(path[0], "test_async_profiling_wrapper");
+            } else {
+                panic!("No path found for current task ID");
+            }
         });
-        assert!(path_contains_wrapper);
 
         // Clean up
         reset_profiling_stack();
@@ -1309,15 +1259,4 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(50)).await;
         42
     }
-
-    // // Optional: debug helper
-    // #[cfg(test)]
-    // fn print_memory_info(context: &str) {
-    //     if let Some(stats) = memory_stats() {
-    //         println!(
-    //             "{}: Physical: {} bytes, Virtual: {} bytes",
-    //             context, stats.physical_mem, stats.virtual_mem
-    //         );
-    //     }
-    // }
 }

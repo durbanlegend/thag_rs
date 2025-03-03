@@ -309,18 +309,9 @@ fn generate_async_wrapper(
                 }
             }
 
-            // Generate a random ID for this specific async task instance
-            let task_id = {
-                use std::hash::{Hash, Hasher};
-                use std::collections::hash_map::DefaultHasher;
-                
-                let mut hasher = DefaultHasher::new();
-                let fn_name_str = stringify!(#fn_name);
-                fn_name_str.hash(&mut hasher);
-                std::thread::current().id().hash(&mut hasher);
-                std::time::Instant::now().elapsed().as_nanos().hash(&mut hasher);
-                hasher.finish()
-            };
+            // For each async function, create a predictable task ID
+            // This replaces the randomly generated ID with a sequential one
+            let task_id = crate::profiling::NEXT_TASK_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             
             // Store the task ID in thread local storage before creating the profile
             crate::profiling::ASYNC_CONTEXT.with(|ctx| {

@@ -153,10 +153,10 @@ pub static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
 // Thread-local storage for profile paths
 thread_local! {
     // Maps task_id -> current path stack for that task
-    static THREAD_PROFILE_PATHS: RefCell<HashMap<u64, Vec<&'static str>>> = RefCell::new(HashMap::new());
+    pub static THREAD_PROFILE_PATHS: RefCell<HashMap<u64, Vec<&'static str>>> = RefCell::new(HashMap::new());
     static THREAD_ID: RefCell<ThreadId> = RefCell::new(thread::current().id());
     // Track the async task context to keep profiling paths separate across tasks
-    pub static ASYNC_CONTEXT: RefCell<u64> = RefCell::new(0);
+    pub static ASYNC_CONTEXT: RefCell<u64> = const { RefCell::new(0) };
 }
 
 #[derive(Clone)]
@@ -336,6 +336,7 @@ pub fn reset_profiling_stack() {
     ASYNC_CONTEXT.with(|ctx| {
         *ctx.borrow_mut() = 0;
     });
+    eprintln!("Finished resetting profiling stack");
 }
 
 /// Creates and initializes a single profile file with header information.
@@ -478,16 +479,18 @@ impl Profile {
 
         // Use the current thread's async context ID assigned by async fn wrapper
         let task_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
-        
+
         // Retrieve the current path for this task (if any)
         let mut path = THREAD_PROFILE_PATHS.with(|paths| {
             let paths_ref = paths.borrow();
             paths_ref.get(&task_id).cloned().unwrap_or_default()
         });
-        
+
+        eprintln!("Path={path:?}, name={name}, task_id={task_id}");
+
         // Add this profile to the path - this maintains the parent-child relationship
         path.push(name);
-        
+
         // Save the updated path for this task
         THREAD_PROFILE_PATHS.with(|paths| {
             let mut paths_mut = paths.borrow_mut();
@@ -637,14 +640,18 @@ impl Drop for Profile {
             }
         }
 
+        eprintln!("self.path={:?}", self.path);
         // Update the path in thread-local storage by removing the current function
         if !self.path.is_empty() {
             THREAD_PROFILE_PATHS.with(|paths| {
                 let mut paths_mut = paths.borrow_mut();
+                eprintln!("paths_mut={paths_mut:?}, task_id={}", self.task_id);
                 if let Some(task_path) = paths_mut.get_mut(&self.task_id) {
+                    eprintln!("task_path (before)={task_path:?}");
                     if !task_path.is_empty() {
                         task_path.pop();
                     }
+                    eprintln!("task_path (after)={task_path:?}");
                 }
             });
         }
@@ -705,13 +712,13 @@ fn verbose_only(fun: impl Fn()) {
 pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
     // Get the current async context ID
     let context_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
-    
+
     // Try to find the section in the context's path
     let mut found_in_thread_local = false;
-    
+
     THREAD_PROFILE_PATHS.with(|paths| {
         let mut paths_mut = paths.borrow_mut();
-        
+
         if let Some(path) = paths_mut.get_mut(&context_id) {
             // Find the section in this path
             if let Some(pos) = path.iter().position(|&name| name == section_name) {
@@ -721,7 +728,7 @@ pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
             }
         }
     });
-    
+
     if found_in_thread_local {
         return Some(true);
     }

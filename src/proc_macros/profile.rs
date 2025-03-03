@@ -292,31 +292,52 @@ fn generate_async_wrapper(
                     crate::profiling::ASYNC_CONTEXT.with(|ctx| {
                         *ctx.borrow_mut() = self.as_ref()._task_id;
                     });
-                
+
                     // Access our fields through the Pin
                     let this = unsafe { self.as_mut().get_unchecked_mut() };
-                    
+
                     // Poll the inner future
                     let result = unsafe { Pin::new_unchecked(&mut this.inner) }.poll(cx);
-                    
+
                     // If we're ready, clean up the profile to ensure it gets dropped
                     // before we return the result, completing the timing measurement
                     if result.is_ready() {
                         this._profile.take();
                     }
-                    
+
                     result
                 }
             }
 
+            // Use the current thread's async context ID assigned by async fn wrapper
+                let parent_task_id = crate::profiling::ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
+
+            // Retrieve the current path for the parent task (if any)
+            let mut path = crate::profiling::THREAD_PROFILE_PATHS.with(|paths| {
+                let paths_ref = paths.borrow();
+                paths_ref.get(&parent_task_id).cloned().unwrap_or_default()
+            });
+
+            eprintln!("Parent path={path:?}, parent_task_id={parent_task_id}");
+
             // For each async function, create a predictable task ID
             // This replaces the randomly generated ID with a sequential one
             let task_id = crate::profiling::NEXT_TASK_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            
-            // Store the task ID in thread local storage before creating the profile
-            crate::profiling::ASYNC_CONTEXT.with(|ctx| {
-                *ctx.borrow_mut() = task_id;
+
+            // // Store the task ID in thread local storage before creating the profile
+            // crate::profiling::ASYNC_CONTEXT.with(|ctx| {
+            //     *ctx.borrow_mut() = task_id;
+            // });
+
+            // Set the parent path for the new task (if any)
+            let mut path = crate::profiling::THREAD_PROFILE_PATHS.with(|paths| {
+                // let paths_ref = paths.borrow();
+                // paths_ref.get(&task_id).cloned().unwrap_or_default()
+                let mut paths_mut = paths.borrow_mut();
+                paths_mut.insert(task_id, path.clone());
             });
+
+            eprintln!("profile_name={}, task_id={task_id}, path={path:?}", #profile_name);
 
             let future = async #body;
             ProfiledFuture {

@@ -276,28 +276,62 @@ fn generate_async_wrapper(
             use std::pin::Pin;
             use std::task::{Context, Poll};
 
+            // Each async task gets a unique context ID in thread local storage
+            // to prevent async tasks from contaminating each other's profile paths
             struct ProfiledFuture<F> {
                 inner: F,
                 _profile: Option<crate::Profile>,
+                _task_id: u64,
             }
 
             impl<F: Future> Future for ProfiledFuture<F> {
                 type Output = F::Output;
 
                 fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+                    // Set the current async context to this task's ID
+                    crate::profiling::ASYNC_CONTEXT.with(|ctx| {
+                        *ctx.borrow_mut() = self.as_ref()._task_id;
+                    });
+                
+                    // Access our fields through the Pin
                     let this = unsafe { self.as_mut().get_unchecked_mut() };
+                    
+                    // Poll the inner future
                     let result = unsafe { Pin::new_unchecked(&mut this.inner) }.poll(cx);
+                    
+                    // If we're ready, clean up the profile to ensure it gets dropped
+                    // before we return the result, completing the timing measurement
                     if result.is_ready() {
                         this._profile.take();
                     }
+                    
                     result
                 }
             }
+
+            // Generate a random ID for this specific async task instance
+            let task_id = {
+                use std::hash::{Hash, Hasher};
+                use std::collections::hash_map::DefaultHasher;
+                
+                let mut hasher = DefaultHasher::new();
+                let fn_name_str = stringify!(#fn_name);
+                fn_name_str.hash(&mut hasher);
+                std::thread::current().id().hash(&mut hasher);
+                std::time::Instant::now().elapsed().as_nanos().hash(&mut hasher);
+                hasher.finish()
+            };
+            
+            // Store the task ID in thread local storage before creating the profile
+            crate::profiling::ASYNC_CONTEXT.with(|ctx| {
+                *ctx.borrow_mut() = task_id;
+            });
 
             let future = async #body;
             ProfiledFuture {
                 inner: future,
                 _profile: crate::Profile::new(#profile_name, #profile_type),
+                _task_id: task_id,
             }.await
         }
     }

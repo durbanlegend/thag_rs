@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["core", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["core", "simplelog"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
 */
 
 use futures::future::join_all;
@@ -11,7 +12,7 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_rs::{enable_profiling, profile, profiling, Profile};
+use thag_rs::{enable_profiling, profile, profile_section, profiling, Profile};
 
 struct Document {
     id: usize,
@@ -22,8 +23,9 @@ struct Document {
 }
 
 impl Document {
-    #[profile]
+    #[profile(imp = "Document")]
     fn new(id: usize, content: String) -> Self {
+        // let _ = sleep(Duration::from_millis(50 + (id % 10 * 5) as u64));
         Document {
             id,
             content,
@@ -228,6 +230,7 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
 
     for id in 0..count {
         tasks.push(async move {
+            profile_section!("fetch_and_process_document");
             let doc = fetch_document(id).await;
             process_document(doc).await
         });
@@ -238,6 +241,7 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
 
 #[tokio::main]
 #[enable_profiling]
+#[profile]
 async fn main() -> io::Result<()> {
     // Process a batch of documents asynchronously
     let docs = generate_and_process_documents(50).await;

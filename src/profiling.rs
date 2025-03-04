@@ -344,6 +344,7 @@ pub fn reset_profiling_stack() {
         *ctx.borrow_mut() = 0;
     });
     // Stack reset complete
+    eprintln!("Finished resetting profiling stack");
 }
 
 /// Creates and initializes a single profile file with header information.
@@ -499,10 +500,11 @@ impl Profile {
             let _mutex = PROFILE_PATHS.get_or_init(|| Mutex::new(HashMap::new()));
             Vec::new() // Return empty path for first initialization
         };
-                
+        eprintln!("Path={path:?}, name={name}, task_id={task_id}");
+
         // Add this profile to the path - this maintains the parent-child relationship
         path.push(name);
-        
+
         // Save the updated path for this task in the global map
         if let Some(paths_mutex) = PROFILE_PATHS.get() {
             if let Ok(mut paths) = paths_mutex.lock() {
@@ -660,14 +662,19 @@ impl Drop for Profile {
             }
         }
 
+        eprintln!("self.path={:?}", self.path);
         // Update the path in global storage by removing the current function
         if !self.path.is_empty() {
             if let Some(paths_mutex) = PROFILE_PATHS.get() {
+                eprintln!("paths_mutex={paths_mutex:?}, task_id={}", self.task_id);
                 if let Ok(mut paths) = paths_mutex.lock() {
+                    eprintln!("paths={paths:?}");
                     if let Some(task_path) = paths.get_mut(&self.task_id) {
+                        eprintln!("task_path (before)={task_path:?}");
                         if !task_path.is_empty() {
                             task_path.pop();
                         }
+                        eprintln!("task_path (after)={task_path:?}");
                     }
                 }
             }

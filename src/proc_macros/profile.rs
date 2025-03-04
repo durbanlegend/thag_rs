@@ -322,6 +322,7 @@ fn generate_async_wrapper(
             } else {
                 Vec::new() // Empty path if not initialized yet
             };
+            eprintln!("Parent path={path:?}, parent_task_id={parent_task_id}");
 
             // For each async function, create a predictable task ID
             // This replaces the randomly generated ID with a sequential one
@@ -346,7 +347,8 @@ fn generate_async_wrapper(
                     std::sync::Mutex::new(map)
                 });
             }
-
+            eprintln!("profile_name={}, task_id={task_id}, path={path:?}", #profile_name);
+            
             let future = async #body;
             ProfiledFuture {
                 inner: future,

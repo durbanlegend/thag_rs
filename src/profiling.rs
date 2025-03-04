@@ -15,6 +15,7 @@
 //! `demo/thag_profile.rs` also allows you to filter out unwanted events, e.g. to make it easier to drill down into the flamechart.
 //!
 use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
+use async_local::Context;
 use chrono::Local;
 use memory_stats::memory_stats;
 use std::cell::RefCell;
@@ -31,6 +32,7 @@ use std::sync::{
 use std::thread;
 use std::thread::ThreadId;
 use std::time::{Instant, SystemTime};
+
 // Single atomic for runtime profiling state
 static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
@@ -159,7 +161,8 @@ pub static PROFILE_PATHS: OnceLock<Mutex<HashMap<u64, Vec<&'static str>>>> = Onc
 thread_local! {
     static THREAD_ID: RefCell<ThreadId> = RefCell::new(thread::current().id());
     // Track the async task context to keep profiling paths separate across tasks
-    pub static ASYNC_CONTEXT: RefCell<u64> = const { RefCell::new(0) };
+    // pub static ASYNC_CONTEXT: RefCell<u64> = const { RefCell::new(0) };
+    pub static ASYNC_CONTEXT: Context<AtomicU64> = Context::new(AtomicU64::new(0));
 }
 
 #[derive(Clone)]
@@ -340,10 +343,13 @@ pub fn reset_profiling_stack() {
     }
 
     // Reset the async context ID
-    ASYNC_CONTEXT.with(|ctx| {
-        *ctx.borrow_mut() = 0;
+    ASYNC_CONTEXT.with(|_ctx| {
+        // Replace the context with a new one containing 0
+        let _ = Context::new(AtomicU64::new(0));
     });
+
     // Stack reset complete
+    eprintln!("Finished resetting profiling stack");
 }
 
 /// Creates and initializes a single profile file with header information.
@@ -451,8 +457,10 @@ impl Profile {
     #[must_use]
     #[inline(always)]
     #[allow(clippy::inline_always)]
-    pub fn new(name: &'static str, requested_type: ProfileType) -> Option<Self> {
+    pub fn new(name: &'static str, requested_type: ProfileType, task_id: u64) -> Option<Self> {
+        eprintln!("In Profile::new for {name}");
         if !is_profiling_enabled() {
+            eprintln!("Profiling not enabled!");
             return None;
         }
 
@@ -485,28 +493,32 @@ impl Profile {
         };
 
         // Use the current thread's async context ID assigned by async fn wrapper
-        let task_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
+        eprintln!("Profile::new: task_id={task_id}");
 
         // Retrieve the current path for this task from the global map
         let mut path = if let Some(paths_mutex) = PROFILE_PATHS.get() {
             if let Ok(paths) = paths_mutex.lock() {
+                eprintln!("Profile::new: Retrieved path={paths:?}, name={name}, task_id={task_id}");
                 paths.get(&task_id).cloned().unwrap_or_default()
             } else {
+                eprintln!("Profile::new: Fallback: no lock");
                 Vec::new() // Fallback if lock fails
             }
         } else {
             // Initialize if not already done
             let _mutex = PROFILE_PATHS.get_or_init(|| Mutex::new(HashMap::new()));
+            eprintln!("Profile::new: Fallback: PROFILE_PATHS is None");
             Vec::new() // Return empty path for first initialization
         };
-                
+
         // Add this profile to the path - this maintains the parent-child relationship
         path.push(name);
-        
+
         // Save the updated path for this task in the global map
         if let Some(paths_mutex) = PROFILE_PATHS.get() {
             if let Ok(mut paths) = paths_mutex.lock() {
                 paths.insert(task_id, path.clone());
+                eprint!("inserted");
             }
         } else {
             // Initialize and insert
@@ -515,6 +527,7 @@ impl Profile {
                 map.insert(task_id, path.clone());
                 Mutex::new(map)
             });
+            eprint!("Initialised and inserted");
         }
 
         Some(Self {
@@ -660,14 +673,19 @@ impl Drop for Profile {
             }
         }
 
+        eprintln!("Profile::drop: self.path={:?}", self.path);
+
         // Update the path in global storage by removing the current function
         if !self.path.is_empty() {
             if let Some(paths_mutex) = PROFILE_PATHS.get() {
                 if let Ok(mut paths) = paths_mutex.lock() {
+                    eprintln!("Profile::drop: paths={paths:?}, task_id={}", self.task_id);
                     if let Some(task_path) = paths.get_mut(&self.task_id) {
+                        eprintln!("Profile::drop: task_path (before)={task_path:?}");
                         if !task_path.is_empty() {
                             task_path.pop();
                         }
+                        eprintln!("Profile::drop: task_path (after)={task_path:?}");
                     }
                 }
             }
@@ -728,7 +746,7 @@ fn verbose_only(fun: impl Fn()) {
 #[must_use]
 pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
     // Get the current async context ID
-    let context_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
+    let context_id = ASYNC_CONTEXT.with(|ctx| (**ctx).load(Ordering::SeqCst));
 
     // Try to find the section in the context's path
     let mut found_in_global_paths = false;
@@ -804,8 +822,14 @@ pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
 #[macro_export]
 macro_rules! profile_fn {
     ($name:expr) => {
-        let _profile =
-            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
+        let task_id = $crate::profiling::ASYNC_CONTEXT
+            .with(|ctx| (*ctx).load(std::sync::atomic::Ordering::SeqCst));
+
+        let _profile = $crate::profiling::Profile::new(
+            $name,
+            $crate::profiling::get_global_profile_type(),
+            task_id,
+        );
     };
 }
 
@@ -836,8 +860,14 @@ macro_rules! profile_fn {
 #[macro_export]
 macro_rules! profile_section {
     ($name:expr) => {
-        let _profile =
-            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
+        let task_id = $crate::profiling::ASYNC_CONTEXT
+            .with(|ctx| ctx.deref().load(std::sync::atomic::Ordering::SeqCst));
+
+        let _profile = $crate::profiling::Profile::new(
+            $name,
+            $crate::profiling::get_global_profile_type(),
+            task_id,
+        );
     };
 }
 
@@ -1045,6 +1075,7 @@ pub fn safely_cleanup_profiling_after_test() -> ThagResult<()> {
 mod tests {
     use super::*;
     use serial_test::serial;
+    use std::cmp::Ordering;
     use std::panic;
     use std::time::Duration;
     use thag_proc_macros::profile;
@@ -1170,8 +1201,8 @@ mod tests {
             // Make sure the stack is empty
             reset_profiling_stack();
 
-            let _p1 = Profile::new("same", ProfileType::Time);
-            let _p2 = Profile::new("same", ProfileType::Time); // Should panic
+            let _p1 = Profile::new("same", ProfileType::Time, 0_u64);
+            let _p2 = Profile::new("same", ProfileType::Time, 0_u64); // Should panic
         });
     }
 
@@ -1183,9 +1214,9 @@ mod tests {
             reset_profiling_stack();
 
             {
-                let _p1 = Profile::new("time_prof", ProfileType::Time);
-                let _p2 = Profile::new("mem_prof", ProfileType::Memory);
-                let _p3 = Profile::new("both_prof", ProfileType::Both);
+                let _p1 = Profile::new("time_prof", ProfileType::Time, 0_u64);
+                let _p2 = Profile::new("mem_prof", ProfileType::Memory, 0_u64);
+                let _p3 = Profile::new("both_prof", ProfileType::Both, 0_u64);
 
                 let stack = get_profile_stack();
                 // Due to our test mode changes, some items might not be in the stack
@@ -1251,7 +1282,7 @@ mod tests {
         }
 
         // Wrap with our own profile to verify the async function gets profiled
-        let _profile = Profile::new("test_async_profiling_wrapper", ProfileType::Time);
+        let _profile = Profile::new("test_async_profiling_wrapper", ProfileType::Time, 0_u64);
 
         // Call the async function with #[profile] attribute
         let result = run_async_profiled().await;
@@ -1262,7 +1293,7 @@ mod tests {
         // Verify that our wrapper profile is still the only one in its context's path
         if let Some(paths_mutex) = PROFILE_PATHS.get() {
             if let Ok(paths) = paths_mutex.lock() {
-                let task_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
+                let task_id = ASYNC_CONTEXT.with(|ctx| (**ctx).load(Ordering::SeqCst));
                 if let Some(path) = paths.get(&task_id) {
                     assert_eq!(path.len(), 1);
                     assert_eq!(path[0], "test_async_profiling_wrapper");

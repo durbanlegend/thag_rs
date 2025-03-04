@@ -2,10 +2,7 @@
 use crate::{debug_log, profile, ThagResult};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    LazyLock, Mutex,
-};
+use std::sync::{atomic::AtomicBool, LazyLock, Mutex};
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 
 #[cfg(feature = "simplelog")]

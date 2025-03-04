@@ -458,9 +458,9 @@ impl Profile {
     #[inline(always)]
     #[allow(clippy::inline_always)]
     pub fn new(name: &'static str, requested_type: ProfileType, task_id: u64) -> Option<Self> {
-        eprintln!("In Profile::new for {name}");
+        // eprintln!("In Profile::new for {name}");
         if !is_profiling_enabled() {
-            eprintln!("Profiling not enabled!");
+            // eprintln!("Profiling not enabled!");
             return None;
         }
 
@@ -495,6 +495,17 @@ impl Profile {
         // Use the current thread's async context ID assigned by async fn wrapper
         eprintln!("Profile::new: task_id={task_id}");
 
+        let async_task_id =
+            crate::profiling::ASYNC_CONTEXT.with(|ctx| (**ctx).load(Ordering::SeqCst));
+        eprintln!("Profile::new: async_task_id={async_task_id}");
+
+        // Set the current async context to this task's ID
+        crate::profiling::ASYNC_CONTEXT.with(|_ctx| {
+            let _ = Context::new(AtomicU64::new(task_id));
+        });
+
+        eprintln!("Profile::new: set ASYNC_CONTEXT to {task_id}");
+
         // Retrieve the current path for this task from the global map
         let mut path = if let Some(paths_mutex) = PROFILE_PATHS.get() {
             if let Ok(paths) = paths_mutex.lock() {
@@ -518,7 +529,7 @@ impl Profile {
         if let Some(paths_mutex) = PROFILE_PATHS.get() {
             if let Ok(mut paths) = paths_mutex.lock() {
                 paths.insert(task_id, path.clone());
-                eprint!("inserted");
+                eprintln!("Profile::new: Inserted task_id={task_id}, path={path:?}");
             }
         } else {
             // Initialize and insert
@@ -527,7 +538,7 @@ impl Profile {
                 map.insert(task_id, path.clone());
                 Mutex::new(map)
             });
-            eprint!("Initialised and inserted");
+            eprintln!("Profile::new: Initialised and inserted task_id={task_id}, path={path:?}");
         }
 
         Some(Self {

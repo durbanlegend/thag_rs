@@ -5,6 +5,7 @@ dirs = "5.0"
 inquire = "0.7.5"
 semver = "1.0.23"
 serde = { version = "1.0.215", features = ["derive"] }
+thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
 thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
 tokio = { version = "1", features = ["full"] }
 toml = "0.8"
@@ -20,7 +21,8 @@ use inquire::{Confirm, Select, Text};
 use serde::Serialize;
 use std::{fs, path::PathBuf};
 
-use thag_rs::{enable_profiling, profile, profiling, Profile};
+// use thag_proc_macros::profile;
+use thag_rs::{async_local, enable_profiling, profile, profiling, Profile};
 
 type Error = CustomUserError;
 

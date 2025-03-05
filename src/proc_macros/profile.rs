@@ -147,58 +147,62 @@ pub fn is_profiled_function(name: &str) -> bool {
         .unwrap_or(false)
 }
 
-pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(attr as ProfileArgs);
+pub fn profile_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
 
+    // Extract function details
     let fn_name = &input.sig.ident;
+    let vis = &input.vis;
+    let sig = &input.sig;
+    let asyncness = &sig.asyncness;
+    let generics = &sig.generics;
+    let inputs = &sig.inputs;
+    let output = &sig.output;
+    let where_clause = &sig.generics.where_clause;
+    let body = &input.block;
 
-    // Register this function in the proc macro crate itself
-    register_profiled_function(&fn_name.to_string());
+    // Check if this is a method
+    let is_method = inputs.iter().any(|arg| matches!(arg, FnArg::Receiver(_)));
 
-    let inputs = &input.sig.inputs;
-    let output = &input.sig.output;
-    let generics = &input.sig.generics;
-    let is_async = input.sig.asyncness.is_some();
-
-    // Convert Punctuated to slice for is_method
-    let input_args: Vec<_> = inputs.iter().cloned().collect();
-    // Determine if this is a method
-    // eprintln!("fn_name={fn_name}");
-    let is_method = is_method(&input_args, output);
-
-    // Get generic parameters
-    let type_params: Vec<_> = generics
-        .params
-        .iter()
-        .map(|param| match param {
-            syn::GenericParam::Type(t) => t.ident.to_string(),
-            syn::GenericParam::Lifetime(l) => l.lifetime.to_string(),
-            syn::GenericParam::Const(c) => c.ident.to_string(),
-        })
-        .collect();
-
-    // Generate profile name
-    let profile_name = generate_profile_name(fn_name, is_method, &args, &type_params, is_async);
-
-    let ctx = FunctionContext {
-        vis: &input.vis,
-        fn_name,
-        generics: &input.sig.generics,
-        inputs: &input.sig.inputs,
-        output: &input.sig.output,
-        where_clause: input.sig.generics.where_clause.as_ref(),
-        body: &input.block,
-        profile_name,
-    };
-
-    let generated = if is_async {
-        generate_async_wrapper(&ctx, args.profile_type.as_ref())
+    // Create a wrapper that simply adds profiling
+    let profile_name = if is_method {
+        format!("method::{}", fn_name)
     } else {
-        generate_sync_wrapper(&ctx, args.profile_type.as_ref())
+        format!("fn::{}", fn_name)
     };
 
-    generated.into()
+    // Generate appropriate code based on whether this is async
+    let expanded = if asyncness.is_some() {
+        quote! {
+            #vis #asyncness fn #fn_name #generics (#inputs) #output #where_clause {
+                let _profile = crate::Profile::new(
+                    #profile_name,
+                    crate::profiling::get_global_profile_type(),
+                    &[] // No parent stack - simpler approach
+                );
+
+                // Execute original function body directly
+                async {
+                    #body
+                }.await
+            }
+        }
+    } else {
+        quote! {
+            #vis fn #fn_name #generics (#inputs) #output #where_clause {
+                let _profile = crate::Profile::new(
+                    #profile_name,
+                    crate::profiling::get_global_profile_type(),
+                    &[] // No parent stack - simpler approach
+                );
+
+                // Execute original function body directly
+                #body
+            }
+        }
+    };
+
+    expanded.into()
 }
 
 fn generate_profile_name(

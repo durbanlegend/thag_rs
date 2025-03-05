@@ -2230,6 +2230,7 @@ dependencies = [
  "memory-stats",
  "mockall",
  "nu-ansi-term",
+ "once_cell",
  "phf",
  "predicates",
  "prettyplease",

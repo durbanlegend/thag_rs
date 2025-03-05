@@ -209,7 +209,7 @@ pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn profile(attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(true, "profile", &attr, &item, profile_impl)
+    maybe_expand_attr_macro(false, "profile", &attr, &item, profile_impl)
 }
 
 /// Generates repetitive methods for all 14 `Style` fields of the `Palette` struct

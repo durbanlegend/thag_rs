@@ -17,6 +17,7 @@
 use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
 use chrono::Local;
 use memory_stats::memory_stats;
+use once_cell::sync::Lazy;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
@@ -418,17 +419,29 @@ impl ProfileType {
     }
 }
 
+// Global profile registry
+static PROFILES: Lazy<Mutex<HashMap<u64, ProfileData>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+static NEXT_PROFILE_ID: AtomicU64 = AtomicU64::new(1);
+
+struct ProfileData {
+    name: &'static str,
+    ancestors: Vec<&'static str>, // Full call stack
+    start_time: Instant,
+    initial_memory: Option<usize>,
+    profile_type: ProfileType,
+}
+
 /// A profile instance representing a specific function or code section being profiled
 pub struct Profile {
     id: u64,
     start: Option<Instant>,
     name: &'static str,
     // Path from root to this profile point
-    path: Vec<&'static str>,
+    // path: Vec<&'static str>,
     profile_type: ProfileType,
-    initial_memory: Option<usize>,     // For memory delta
+    initial_memory: Option<usize>, // For memory delta
     _not_send: PhantomData<*const ()>, // Makes Profile !Send
-    task_id: u64,                      // Unique ID for this profile instance
+                                   // task_id: u64,                      // Unique ID for this profile instance
 }
 
 impl Profile {
@@ -450,8 +463,6 @@ impl Profile {
             // eprintln!("Profiling not enabled!");
             return None;
         }
-
-        let id = NEXT_PROFILE_ID.fetch_add(1, Ordering::SeqCst);
 
         // In test mode with our test wrapper active, skip creating profile for #[profile] attribute
         #[cfg(test)]
@@ -525,17 +536,27 @@ impl Profile {
         Some(Self {
             id,
             name,
-            path,
+            // path,
             profile_type,
             start: Some(Instant::now()),
             initial_memory,
             _not_send: PhantomData,
-            task_id,
+            // task_id,
         })
     }
 
     pub fn id(&self) -> u64 {
         self.id
+    }
+
+    // Get this profile's path (for backward compatibility)
+    pub fn path(&self) -> Vec<&'static str> {
+        if let Ok(profiles) = PROFILES.lock() {
+            if let Some(data) = profiles.get(&self.id) {
+                return data.ancestors.clone();
+            }
+        }
+        vec![self.name] // Fallback
     }
 
     /// Writes a profiling event to the specified profile file.
@@ -595,11 +616,11 @@ impl Profile {
         }
 
         // Format entry with full path to preserve parent-child relationships
-        let entry = if self.path.is_empty() {
+        let entry = if self.path().is_empty() {
             format!("{} {micros}", self.name)
         } else {
             // Use the full path with semicolons to show proper nesting in flamegraphs
-            let path_str = self.path.join(";");
+            let path_str = self.path().join(";");
             format!("{path_str} {micros}")
         };
 
@@ -613,11 +634,11 @@ impl Profile {
         }
 
         // Format entry with full path to preserve parent-child relationships
-        let path_str = if self.path.is_empty() {
+        let path_str = if self.path().is_empty() {
             self.name.to_string()
         } else {
             // Use the full path with semicolons to show proper nesting in flamegraphs
-            self.path.join(";")
+            self.path().join(";")
         };
 
         let entry = format!("{path_str} {op}{delta}");
@@ -668,8 +689,7 @@ impl Drop for Profile {
                         );
                     }
                 }
-                ProfileType::Memory => { /* Memory profiling logic */ }
-                _ => {}
+                ProfileType::Memory => {}
             }
 
             // Handle memory profiling measurements
@@ -821,7 +841,7 @@ macro_rules! profile_fn {
         let _profile = $crate::profiling::Profile::new(
             $name,
             $crate::profiling::get_global_profile_type(),
-            None,
+            &[], // TODO figure out
         );
     };
 }
@@ -856,7 +876,7 @@ macro_rules! profile_section {
         let _profile = $crate::profiling::Profile::new(
             $name,
             $crate::profiling::get_global_profile_type(),
-            None,
+            &[], // TODO figure out?
         );
     };
 }
@@ -912,7 +932,7 @@ macro_rules! profile_method {
 macro_rules! profile_memory {
     ($name:expr) => {
         let _profile =
-            $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Memory, None);
+            $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Memory, &[]);
     };
 }
 

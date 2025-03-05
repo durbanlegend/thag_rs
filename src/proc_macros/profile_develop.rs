@@ -236,7 +236,14 @@ fn generate_sync_wrapper(
 
     quote! {
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
-            let _profile = crate::Profile::new(#profile_name, #profile_type, None);
+            use std::ops::Deref;
+            use std::sync::atomic::Ordering;
+
+            // let task_id = crate::profiling::ASYNC_CONTEXT.with(|ctx| (**ctx).load(Ordering::SeqCst));
+            // // eprintln!("generated_sync_wrapper for {}: Child profile_name={:?}, parent and child task_id={task_id:?}", fn_name, #profile_name);
+            // eprintln!("generated_sync_wrapper: Child profile_name={:?}, parent and child task_id={task_id:?}", #profile_name);
+
+            let _profile = crate::Profile::new(#profile_name, #profile_type, crate::profiling::ASYNC_CONTEXT.with(|ctx| (**ctx).load(Ordering::SeqCst)));
             #body
         }
     }
@@ -274,6 +281,7 @@ fn generate_async_wrapper(
         #vis async fn #fn_name #generics (#inputs) #output #where_clause {
             use std::future::Future;
             use std::pin::Pin;
+            use std::sync::atomic::{AtomicU64, Ordering};
             use std::task::{Context, Poll};
 
             // Each async task gets a unique context ID in thread local storage
@@ -288,10 +296,14 @@ fn generate_async_wrapper(
                 type Output = F::Output;
 
                 fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+                    use async_local::Context as AsyncLocalContext;
+
                     // Set the current async context to this task's ID
-                    crate::profiling::ASYNC_CONTEXT.with(|ctx| {
-                        *ctx.borrow_mut() = self.as_ref()._task_id;
+                    crate::profiling::ASYNC_CONTEXT.with(|_ctx| {
+                        let _ = AsyncLocalContext::new(AtomicU64::new(self.as_ref()._task_id));
                     });
+
+                    eprintln!("generated_async_wrapper: fn poll: set ASYNC_CONTEXT to {}", self._task_id);
 
                     // Access our fields through the Pin
                     let this = unsafe { self.as_mut().get_unchecked_mut() };
@@ -310,7 +322,8 @@ fn generate_async_wrapper(
             }
 
             // Use the current thread's async context ID assigned by async fn wrapper
-            let parent_task_id = crate::profiling::ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
+            let parent_task_id = crate::profiling::ASYNC_CONTEXT.with(|ctx| (**ctx).load(Ordering::SeqCst));
+            eprintln!("generated_async_wrapper: Parent parent_task_id={parent_task_id}");
 
             // Retrieve the current path for the parent task from global storage
             let mut path = if let Some(paths_mutex) = crate::profiling::PROFILE_PATHS.get() {
@@ -322,17 +335,21 @@ fn generate_async_wrapper(
             } else {
                 Vec::new() // Empty path if not initialized yet
             };
-            eprintln!("Parent path={path:?}, parent_task_id={parent_task_id}");
+
+            eprintln!("generated_async_wrapper: Parent path={path:?}, parent_task_id={parent_task_id}");
 
             // For each async function, create a predictable task ID
             // This replaces the randomly generated ID with a sequential one
-            let task_id = crate::profiling::NEXT_TASK_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            let task_id = crate::profiling::NEXT_TASK_ID.fetch_add(1, Ordering::SeqCst);
+
+            eprintln!("generated_async_wrapper: Child profile_name={}, Child task_id={task_id}, path={path:?}", #profile_name);
 
             // Store parent's path under child's task_id in the global map
             // This preserves lineage of the task
             if let Some(paths_mutex) = crate::profiling::PROFILE_PATHS.get() {
                 if let Ok(mut paths) = paths_mutex.lock() {
                     paths.insert(task_id, path.clone());
+                    eprintln!("generated_async_wrapper: Inserted parent path {path:?} under child task_id={task_id}");
                 }
             } else {
                 // Initialize if needed
@@ -341,13 +358,13 @@ fn generate_async_wrapper(
                     map.insert(task_id, path.clone());
                     std::sync::Mutex::new(map)
                 });
+                eprintln!("generated_async_wrapper: Inserted parent path {path:?} in brand new map as PROFILE_PATHS");
             }
-            eprintln!("profile_name={}, task_id={task_id}, path={path:?}", #profile_name);
 
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: crate::Profile::new(#profile_name, #profile_type, Some(task_id)),
+                _profile: crate::Profile::new(#profile_name, #profile_type, task_id),
                 _task_id: task_id,
             }.await
         }

@@ -164,39 +164,31 @@ pub fn profile_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     // Check if this is a method
     let is_method = inputs.iter().any(|arg| matches!(arg, FnArg::Receiver(_)));
 
-    // Create a wrapper that simply adds profiling
-    let profile_name = if is_method {
+    // Create appropriate profile name with clear marking
+    let profile_name = if asyncness.is_some() {
+        if is_method {
+            format!("async::method::{}", fn_name)
+        } else {
+            format!("async::fn::{}", fn_name)
+        }
+    } else if is_method {
         format!("method::{}", fn_name)
     } else {
         format!("fn::{}", fn_name)
     };
 
-    // Generate appropriate code based on whether this is async
+    // Simply add the profile at the function start - with correct quote syntax
     let expanded = if asyncness.is_some() {
         quote! {
             #vis #asyncness fn #fn_name #generics (#inputs) #output #where_clause {
-                let _profile = crate::Profile::new(
-                    #profile_name,
-                    crate::profiling::get_global_profile_type(),
-                    &[] // No parent stack - simpler approach
-                );
-
-                // Execute original function body directly
-                async {
-                    #body
-                }.await
+                let _profile = crate::Profile::new(#profile_name, crate::profiling::get_global_profile_type());
+                async { #body }.await
             }
         }
     } else {
         quote! {
             #vis fn #fn_name #generics (#inputs) #output #where_clause {
-                let _profile = crate::Profile::new(
-                    #profile_name,
-                    crate::profiling::get_global_profile_type(),
-                    &[] // No parent stack - simpler approach
-                );
-
-                // Execute original function body directly
+                let _profile = crate::Profile::new(#profile_name, crate::profiling::get_global_profile_type());
                 #body
             }
         }

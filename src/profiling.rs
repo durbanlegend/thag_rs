@@ -445,89 +445,28 @@ pub struct Profile {
 }
 
 impl Profile {
-    /// Creates a new `Profile` to profile a section of code.
-    ///
-    /// # Panics
-    ///
-    /// Panics if stack validation fails.
-    #[must_use]
-    #[inline(always)]
-    #[allow(clippy::inline_always)]
-    pub fn new(
-        name: &'static str,
-        requested_type: ProfileType,
-        parent_stack: &[u64],
-    ) -> Option<Self> {
-        // eprintln!("In Profile::new for {name}");
+    pub fn new(name: &'static str, profile_type: ProfileType) -> Option<Self> {
         if !is_profiling_enabled() {
-            // eprintln!("Profiling not enabled!");
             return None;
         }
 
-        // In test mode with our test wrapper active, skip creating profile for #[profile] attribute
-        #[cfg(test)]
-        if is_test_mode_active() {
-            // If this is from an attribute in a test, don't create a profile
-            // Our safe wrapper will handle profiling instead
-            return None;
-        }
+        let id = NEXT_PROFILE_ID.fetch_add(1, Ordering::SeqCst);
 
-        let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
-            2 => ProfileType::Memory,
-            3 => ProfileType::Both,
-            _ => ProfileType::Time, // default
-        };
-
-        // Use the more comprehensive of the two types
-        let profile_type = match (requested_type, global_type) {
-            (ProfileType::Both, _) | (_, ProfileType::Both) => ProfileType::Both,
-            (ProfileType::Memory, _) | (_, ProfileType::Memory) => ProfileType::Memory,
-            _ => ProfileType::Time,
-        };
-
-        let initial_memory = if matches!(requested_type, ProfileType::Memory | ProfileType::Both) {
-            // Get initial memory snapshot
+        let initial_memory = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
             memory_stats().map(|stats| stats.physical_mem)
         } else {
             None
         };
 
-        let id = NEXT_PROFILE_ID.fetch_add(1, Ordering::SeqCst);
-
-        // Create ancestors list from parent stack
-        let ancestors = if let Ok(profiles) = PROFILES.lock() {
-            let mut call_stack = Vec::new();
-
-            // Build call stack from parent IDs
-            for parent_id in parent_stack {
-                if let Some(parent_data) = profiles.get(parent_id) {
-                    call_stack.push(parent_data.name);
-                }
-            }
-
-            // Add self
-            call_stack.push(name);
-            call_stack
-        } else {
-            vec![name]
-        };
-
-        // Store profile data
+        // Store profile data with just its own name
         if let Ok(mut profiles) = PROFILES.lock() {
             profiles.insert(
                 id,
                 ProfileData {
                     name,
-                    ancestors,
+                    ancestors: vec![name], // Only include itself
                     start_time: Instant::now(),
-                    initial_memory: if matches!(
-                        profile_type,
-                        ProfileType::Memory | ProfileType::Both
-                    ) {
-                        memory_stats().map(|stats| stats.physical_mem)
-                    } else {
-                        None
-                    },
+                    initial_memory,
                     profile_type,
                 },
             );
@@ -536,16 +475,15 @@ impl Profile {
         Some(Self {
             id,
             name,
-            // path,
             profile_type,
             start: Some(Instant::now()),
             initial_memory,
             _not_send: PhantomData,
-            // task_id,
         })
     }
 
-    pub fn id(&self) -> u64 {
+    #[must_use]
+    pub const fn id(&self) -> u64 {
         self.id
     }
 
@@ -838,11 +776,8 @@ pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
 #[macro_export]
 macro_rules! profile_fn {
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new(
-            $name,
-            $crate::profiling::get_global_profile_type(),
-            &[], // TODO figure out
-        );
+        let _profile =
+            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 
@@ -873,11 +808,8 @@ macro_rules! profile_fn {
 #[macro_export]
 macro_rules! profile_section {
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new(
-            $name,
-            $crate::profiling::get_global_profile_type(),
-            &[], // TODO figure out?
-        );
+        let _profile =
+            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 
@@ -899,18 +831,12 @@ macro_rules! profile_section {
 macro_rules! profile_method {
     () => {
         const NAME: &'static str = concat!(module_path!(), "::", stringify!(profile_method));
-        let _profile = $crate::profiling::Profile::new(
-            NAME,
-            $crate::profiling::get_global_profile_type(),
-            None,
-        );
+        let _profile =
+            $crate::profiling::Profile::new(NAME, $crate::profiling::get_global_profile_type());
     };
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new(
-            $name,
-            $crate::profiling::get_global_profile_type(),
-            None,
-        );
+        let _profile =
+            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
     };
 }
 
@@ -932,7 +858,7 @@ macro_rules! profile_method {
 macro_rules! profile_memory {
     ($name:expr) => {
         let _profile =
-            $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Memory, &[]);
+            $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Memory);
     };
 }
 
@@ -953,8 +879,7 @@ macro_rules! profile_memory {
 #[macro_export]
 macro_rules! profile_both {
     ($name:expr) => {
-        let _profile =
-            $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Both, None);
+        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Both);
     };
 }
 
@@ -1217,8 +1142,8 @@ mod tests {
             // Make sure the stack is empty
             reset_profiling_stack();
 
-            let _p1 = Profile::new("same", ProfileType::Time, None);
-            let _p2 = Profile::new("same", ProfileType::Time, None); // Should panic
+            let _p1 = Profile::new("same", ProfileType::Time);
+            let _p2 = Profile::new("same", ProfileType::Time); // Should panic
         });
     }
 
@@ -1230,9 +1155,9 @@ mod tests {
             reset_profiling_stack();
 
             {
-                let _p1 = Profile::new("time_prof", ProfileType::Time, None);
-                let _p2 = Profile::new("mem_prof", ProfileType::Memory, None);
-                let _p3 = Profile::new("both_prof", ProfileType::Both, None);
+                let _p1 = Profile::new("time_prof", ProfileType::Time);
+                let _p2 = Profile::new("mem_prof", ProfileType::Memory);
+                let _p3 = Profile::new("both_prof", ProfileType::Both);
 
                 let stack = get_profile_stack();
                 // Due to our test mode changes, some items might not be in the stack
@@ -1298,7 +1223,7 @@ mod tests {
         }
 
         // Wrap with our own profile to verify the async function gets profiled
-        let _profile = Profile::new("test_async_profiling_wrapper", ProfileType::Time, None);
+        let _profile = Profile::new("test_async_profiling_wrapper", ProfileType::Time);
 
         // Call the async function with #[profile] attribute
         let result = run_async_profiled().await;

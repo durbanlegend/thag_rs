@@ -1,9 +1,11 @@
 #![allow(clippy::module_name_repetitions)]
+use once_cell::sync::Lazy;
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, FnArg, Generics, ItemFn, LitStr, ReturnType, Type, Visibility, WhereClause,
+    parse_macro_input, parse_quote, FnArg, Generics, Ident, ItemFn, LitStr, ReturnType, Type,
+    Visibility, WhereClause,
 };
 
 /// Configuration for profile attribute macro
@@ -127,11 +129,33 @@ fn contains_self_type(ty: &Type) -> bool {
     }
 }
 
+// Track which functions have profiled versions
+static PROFILED_FUNCTIONS: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+
+/// Register a function as having a profiled version
+fn register_profiled_function(name: &str) {
+    if let Ok(mut funcs) = PROFILED_FUNCTIONS.lock() {
+        funcs.insert(name.to_string());
+    }
+}
+
+/// Check if a function has a profiled version
+pub fn is_profiled_function(name: &str) -> bool {
+    PROFILED_FUNCTIONS
+        .lock()
+        .map(|funcs| funcs.contains(name))
+        .unwrap_or(false)
+}
+
 pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let args = parse_macro_input!(attr as ProfileArgs);
     let input = parse_macro_input!(item as ItemFn);
 
     let fn_name = &input.sig.ident;
+
+    // Register this function in the proc macro crate itself
+    register_profiled_function(&fn_name.to_string());
+
     let inputs = &input.sig.inputs;
     let output = &input.sig.output;
     let generics = &input.sig.generics;
@@ -168,12 +192,13 @@ pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         profile_name,
     };
 
-    if is_async {
+    let generated = if is_async {
         generate_async_wrapper(&ctx, args.profile_type.as_ref())
     } else {
         generate_sync_wrapper(&ctx, args.profile_type.as_ref())
-    }
-    .into()
+    };
+
+    generated.into()
 }
 
 fn generate_profile_name(
@@ -232,12 +257,39 @@ fn generate_sync_wrapper(
         profile_name,
     } = ctx;
 
-    let profile_type = resolve_profile_type(profile_type);
+    // Create profiled impl name
+    let profiled_name = format_ident!("{}_profiled", fn_name);
+
+    // Extract parameter names for forwarding to the profiled implementation
+    let param_names = extract_param_names(inputs);
+
+    // Transform the function body to call profiled versions
+    let mut transformed_body = body.clone().clone();
+    transform_function_calls(&mut transformed_body);
+
+    let profile_type_expr = resolve_profile_type(profile_type);
 
     quote! {
+        // Public function with original signature
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
-            let _profile = crate::Profile::new(#profile_name, #profile_type, None);
-            #body
+            // Call profiled implementation with empty stack
+            #profiled_name(#(#param_names,)* &[])
+        }
+
+        // Hidden implementation with profile stack parameter
+        fn #profiled_name #generics (#inputs, __profile_stack: &[u64]) #output #where_clause {
+            // Create profile with parent stack
+            let _profile = crate::Profile::new(#profile_name, #profile_type_expr, __profile_stack);
+
+            // Create child stack for nested calls
+            let mut child_stack = Vec::with_capacity(__profile_stack.len() + 1);
+            child_stack.extend_from_slice(__profile_stack);
+            if let Some(ref profile) = _profile {
+                child_stack.push(profile.id());
+            }
+
+            // Execute transformed body
+            #transformed_body
         }
     }
 }
@@ -268,88 +320,159 @@ fn generate_async_wrapper(
         profile_name,
     } = ctx;
 
-    let profile_type = resolve_profile_type(profile_type);
+    // Create profiled impl name
+    let profiled_name = format_ident!("{}_profiled", fn_name);
+
+    // Extract parameter names
+    let param_names = extract_param_names(inputs);
+
+    // Transform function body to call profiled versions
+    let mut transformed_body = body.clone().clone();
+    transform_function_calls(&mut transformed_body);
+
+    let profile_type_expr = resolve_profile_type(profile_type);
 
     quote! {
+        // Public async function with original signature
         #vis async fn #fn_name #generics (#inputs) #output #where_clause {
-            use std::future::Future;
-            use std::pin::Pin;
-            use std::task::{Context, Poll};
+            // Call profiled implementation with empty stack
+            #profiled_name(#(#param_names,)* &[]).await
+        }
 
-            // Each async task gets a unique context ID in thread local storage
-            // to prevent async tasks from contaminating each other's profile paths
-            struct ProfiledFuture<F> {
-                inner: F,
-                _profile: Option<crate::Profile>,
-                _task_id: u64,
+        // Hidden async implementation with profile stack parameter
+        async fn #profiled_name #generics (#inputs, __profile_stack: &[u64]) #output #where_clause {
+            // Create profile with parent stack
+            let _profile = crate::Profile::new(#profile_name, #profile_type_expr, __profile_stack);
+
+            // Create child stack for nested calls
+            let mut child_stack = Vec::with_capacity(__profile_stack.len() + 1);
+            child_stack.extend_from_slice(__profile_stack);
+            if let Some(ref profile) = _profile {
+                child_stack.push(profile.id());
             }
 
-            impl<F: Future> Future for ProfiledFuture<F> {
-                type Output = F::Output;
-
-                fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-                    // Set the current async context to this task's ID
-                    crate::profiling::ASYNC_CONTEXT.with(|ctx| {
-                        *ctx.borrow_mut() = self.as_ref()._task_id;
-                    });
-
-                    // Access our fields through the Pin
-                    let this = unsafe { self.as_mut().get_unchecked_mut() };
-
-                    // Poll the inner future
-                    let result = unsafe { Pin::new_unchecked(&mut this.inner) }.poll(cx);
-
-                    // If we're ready, clean up the profile to ensure it gets dropped
-                    // before we return the result, completing the timing measurement
-                    if result.is_ready() {
-                        this._profile.take();
-                    }
-
-                    result
-                }
-            }
-
-            // Use the current thread's async context ID assigned by async fn wrapper
-            let parent_task_id = crate::profiling::ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
-
-            // Retrieve the current path for the parent task from global storage
-            let mut path = if let Some(paths_mutex) = crate::profiling::PROFILE_PATHS.get() {
-                if let Ok(paths) = paths_mutex.lock() {
-                    paths.get(&parent_task_id).cloned().unwrap_or_default()
-                } else {
-                    Vec::new() // Fallback if lock fails
-                }
-            } else {
-                Vec::new() // Empty path if not initialized yet
-            };
-            eprintln!("Parent path={path:?}, parent_task_id={parent_task_id}");
-
-            // For each async function, create a predictable task ID
-            // This replaces the randomly generated ID with a sequential one
-            let task_id = crate::profiling::NEXT_TASK_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-
-            // Store parent's path under child's task_id in the global map
-            // This preserves lineage of the task
-            if let Some(paths_mutex) = crate::profiling::PROFILE_PATHS.get() {
-                if let Ok(mut paths) = paths_mutex.lock() {
-                    paths.insert(task_id, path.clone());
-                }
-            } else {
-                // Initialize if needed
-                let _ = crate::profiling::PROFILE_PATHS.get_or_init(|| {
-                    let mut map = std::collections::HashMap::new();
-                    map.insert(task_id, path.clone());
-                    std::sync::Mutex::new(map)
-                });
-            }
-            eprintln!("profile_name={}, task_id={task_id}, path={path:?}", #profile_name);
-
-            let future = async #body;
-            ProfiledFuture {
-                inner: future,
-                _profile: crate::Profile::new(#profile_name, #profile_type, Some(task_id)),
-                _task_id: task_id,
-            }.await
+            // Execute transformed body
+            #transformed_body
         }
     }
+}
+
+use std::{collections::HashSet, sync::Mutex};
+use syn::{visit_mut::VisitMut, Expr, ExprCall, Path};
+
+struct ProfileCallTransformer;
+
+impl VisitMut for ProfileCallTransformer {
+    fn visit_expr_call_mut(&mut self, call: &mut ExprCall) {
+        // First visit nested expressions
+        syn::visit_mut::visit_expr_call_mut(self, call);
+
+        // Check if this is a call to a profiled function
+        if let Expr::Path(expr_path) = &*call.func {
+            if let Some(ident) = path_to_ident(&expr_path.path) {
+                let func_name = ident.to_string();
+
+                if is_profiled_function(&func_name) {
+                    // Replace with profiled version
+                    let profiled_name = format!("{}_profiled", func_name);
+                    let profiled_ident = Ident::new(&profiled_name, ident.span());
+
+                    // Create new path with profiled name
+                    let mut new_path = expr_path.clone();
+                    if let Some(last) = new_path.path.segments.last_mut() {
+                        last.ident = profiled_ident;
+                    }
+
+                    // Replace function
+                    call.func = Box::new(Expr::Path(new_path));
+
+                    // Add child_stack argument
+                    let child_stack_arg = parse_quote!(&child_stack);
+                    call.args.push(child_stack_arg);
+                }
+            }
+        }
+    }
+}
+
+// Helper to get last ident from a path
+fn path_to_ident(path: &Path) -> Option<&Ident> {
+    path.segments.last().map(|seg| &seg.ident)
+}
+
+// Function to transform a block of code
+fn transform_function_calls(body: &mut syn::Block) {
+    let mut transformer = ProfileCallTransformer;
+    transformer.visit_block_mut(body);
+}
+
+/// Extracts parameter names from a function signature for forwarding to another function
+fn extract_param_names(
+    inputs: &syn::punctuated::Punctuated<syn::FnArg, syn::Token![,]>,
+) -> Vec<proc_macro2::TokenStream> {
+    inputs
+        .iter()
+        .map(|arg| match arg {
+            // Handle self receiver specially
+            syn::FnArg::Receiver(receiver) => {
+                if receiver.reference.is_some() {
+                    // &self or &mut self
+                    if receiver.mutability.is_some() {
+                        quote!(self)
+                    } else {
+                        quote!(self)
+                    }
+                } else {
+                    // self (by value)
+                    quote!(self)
+                }
+            }
+            // Handle normal parameters
+            syn::FnArg::Typed(pat_type) => {
+                match &*pat_type.pat {
+                    // Simple identifier (most common case)
+                    syn::Pat::Ident(pat_ident) => {
+                        let ident = &pat_ident.ident;
+                        quote!(#ident)
+                    }
+                    // Tuple pattern
+                    syn::Pat::Tuple(_pat_tuple) => {
+                        // For tuple patterns, we need to refer to the whole pattern
+                        // This is a simplification; more complex patterns might need special handling
+                        let pattern = &*pat_type.pat;
+                        quote!(#pattern)
+                    }
+                    // Struct pattern
+                    syn::Pat::Struct(_pat_struct) => {
+                        // For struct patterns, similar to tuples
+                        let pattern = &*pat_type.pat;
+                        quote!(#pattern)
+                    }
+                    // Array/slice pattern
+                    syn::Pat::Slice(_pat_slice) => {
+                        let pattern = &*pat_type.pat;
+                        quote!(#pattern)
+                    }
+                    // Reference pattern
+                    syn::Pat::Reference(_pat_ref) => {
+                        let pattern = &*pat_type.pat;
+                        quote!(#pattern)
+                    }
+                    // Wildcard pattern (_)
+                    syn::Pat::Wild(_) => {
+                        // Not directly forwardable - would need a temporary variable
+                        // This is a simplification
+                        quote!(_)
+                    }
+                    // Other patterns
+                    _ => {
+                        // Generic fallback for other pattern types
+                        // Note: This is a simplification and might not work for all complex patterns
+                        let pattern = &*pat_type.pat;
+                        quote!(#pattern)
+                    }
+                }
+            }
+        })
+        .collect()
 }

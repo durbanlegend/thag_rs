@@ -420,6 +420,7 @@ impl ProfileType {
 
 /// A profile instance representing a specific function or code section being profiled
 pub struct Profile {
+    id: u64,
     start: Option<Instant>,
     name: &'static str,
     // Path from root to this profile point
@@ -431,19 +432,6 @@ pub struct Profile {
 }
 
 impl Profile {
-    #[must_use]
-    pub const fn new_raw(name: &'static str) -> Self {
-        Self {
-            start: None,
-            name,
-            path: Vec::new(),
-            profile_type: ProfileType::Time, // Default to time profiling
-            initial_memory: None,
-            _not_send: PhantomData,
-            task_id: 0,
-        }
-    }
-
     /// Creates a new `Profile` to profile a section of code.
     ///
     /// # Panics
@@ -455,13 +443,15 @@ impl Profile {
     pub fn new(
         name: &'static str,
         requested_type: ProfileType,
-        maybe_task_id: Option<u64>,
+        parent_stack: &[u64],
     ) -> Option<Self> {
-        eprintln!("In Profile::new for {name}");
+        // eprintln!("In Profile::new for {name}");
         if !is_profiling_enabled() {
-            eprintln!("Profiling not enabled!");
+            // eprintln!("Profiling not enabled!");
             return None;
         }
+
+        let id = NEXT_PROFILE_ID.fetch_add(1, Ordering::SeqCst);
 
         // In test mode with our test wrapper active, skip creating profile for #[profile] attribute
         #[cfg(test)]
@@ -491,57 +481,49 @@ impl Profile {
             None
         };
 
-        let task_id = if let Some(task_id) = maybe_task_id {
-            // Store the task ID in thread local storage before creating the profile
-            crate::profiling::ASYNC_CONTEXT.with(|ctx| {
-                *ctx.borrow_mut() = task_id;
-            });
-            task_id
+        let id = NEXT_PROFILE_ID.fetch_add(1, Ordering::SeqCst);
+
+        // Create ancestors list from parent stack
+        let ancestors = if let Ok(profiles) = PROFILES.lock() {
+            let mut call_stack = Vec::new();
+
+            // Build call stack from parent IDs
+            for parent_id in parent_stack {
+                if let Some(parent_data) = profiles.get(parent_id) {
+                    call_stack.push(parent_data.name);
+                }
+            }
+
+            // Add self
+            call_stack.push(name);
+            call_stack
         } else {
-            ASYNC_CONTEXT.with(|ctx| *ctx.borrow())
+            vec![name]
         };
 
-        // // Use the current thread's async context ID assigned by async fn wrapper
-        // let task_id = ASYNC_CONTEXT.with(|ctx| *ctx.borrow());
-        // eprintln!("Profile::new: task_id={task_id}");
-
-        // Retrieve the current path for this task from the global map
-        let mut path = if let Some(paths_mutex) = PROFILE_PATHS.get() {
-            if let Ok(paths) = paths_mutex.lock() {
-                eprintln!("Profile::new: Retrieved path={paths:?}, name={name}, task_id={task_id}");
-                paths.get(&task_id).cloned().unwrap_or_default()
-            } else {
-                eprintln!("Profile::new: Fallback: no lock");
-                Vec::new() // Fallback if lock fails
-            }
-        } else {
-            // Initialize if not already done
-            let _mutex = PROFILE_PATHS.get_or_init(|| Mutex::new(HashMap::new()));
-            eprintln!("Profile::new: Fallback: PROFILE_PATHS is None");
-            Vec::new() // Return empty path for first initialization
-        };
-        eprintln!("Profile::new: Path={path:?}, name={name}, task_id={task_id}");
-
-        // Add this profile to the path - this maintains the parent-child relationship
-        path.push(name);
-
-        // Save the updated path for this task in the global map
-        if let Some(paths_mutex) = PROFILE_PATHS.get() {
-            if let Ok(mut paths) = paths_mutex.lock() {
-                paths.insert(task_id, path.clone());
-                eprintln!("Profile::new: Inserted task_id={task_id}, path={path:?}");
-            }
-        } else {
-            // Initialize and insert
-            let _mutex = PROFILE_PATHS.get_or_init(|| {
-                let mut map = HashMap::new();
-                map.insert(task_id, path.clone());
-                Mutex::new(map)
-            });
-            eprintln!("Profile::new: Initialised and inserted task_id={task_id}, path={path:?}");
+        // Store profile data
+        if let Ok(mut profiles) = PROFILES.lock() {
+            profiles.insert(
+                id,
+                ProfileData {
+                    name,
+                    ancestors,
+                    start_time: Instant::now(),
+                    initial_memory: if matches!(
+                        profile_type,
+                        ProfileType::Memory | ProfileType::Both
+                    ) {
+                        memory_stats().map(|stats| stats.physical_mem)
+                    } else {
+                        None
+                    },
+                    profile_type,
+                },
+            );
         }
 
         Some(Self {
+            id,
             name,
             path,
             profile_type,
@@ -550,6 +532,10 @@ impl Profile {
             _not_send: PhantomData,
             task_id,
         })
+    }
+
+    pub fn id(&self) -> u64 {
+        self.id
     }
 
     /// Writes a profiling event to the specified profile file.
@@ -658,45 +644,44 @@ impl Profile {
 
 impl Drop for Profile {
     fn drop(&mut self) {
-        // First, write the profiling measurements before we modify any state
-        if let Some(start) = self.start.take() {
-            // Handle time profiling
-            match self.profile_type {
+        // Get profile data from registry
+        let data = if let Ok(mut profiles) = PROFILES.lock() {
+            profiles.remove(&self.id)
+        } else {
+            None
+        };
+
+        if let Some(data) = data {
+            // Write profiling information using ancestors
+            let path_str = data.ancestors.join(";");
+
+            match data.profile_type {
                 ProfileType::Time | ProfileType::Both => {
-                    let elapsed = start.elapsed();
-                    let _ = self.write_time_event(elapsed);
-                }
-                ProfileType::Memory => (),
-            }
-        }
-
-        // Handle memory profiling measurements
-        if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
-            if let Some(initial) = self.initial_memory {
-                if let Some(stats) = memory_stats() {
-                    let final_memory = stats.physical_mem;
-                    let delta = final_memory.saturating_sub(initial);
-
-                    if delta > 0 {
-                        let _ = self.record_memory_change(delta);
+                    let elapsed = data.start_time.elapsed();
+                    let micros = elapsed.as_micros();
+                    if micros > 0 {
+                        let entry = format!("{path_str} {micros}");
+                        let _ = Self::write_profile_event(
+                            &ProfilePaths::get().time,
+                            TimeProfileFile::get(),
+                            &entry,
+                        );
                     }
                 }
+                ProfileType::Memory => { /* Memory profiling logic */ }
+                _ => {}
             }
-        }
 
-        eprintln!("Profile::drop: self.path={:?}", self.path);
+            // Handle memory profiling measurements
+            if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
+                if let Some(initial) = self.initial_memory {
+                    if let Some(stats) = memory_stats() {
+                        let final_memory = stats.physical_mem;
+                        let delta = final_memory.saturating_sub(initial);
 
-        // Update the path in global storage by removing the current function
-        if !self.path.is_empty() {
-            if let Some(paths_mutex) = PROFILE_PATHS.get() {
-                if let Ok(mut paths) = paths_mutex.lock() {
-                    eprintln!("Profile::drop: paths={paths:?}, task_id={}", self.task_id);
-                    if let Some(task_path) = paths.get_mut(&self.task_id) {
-                        eprintln!("Profile::drop: task_path (before)={task_path:?}");
-                        if !task_path.is_empty() {
-                            task_path.pop();
+                        if delta > 0 {
+                            let _ = self.record_memory_change(delta);
                         }
-                        eprintln!("Profile::drop: task_path (after)={task_path:?}");
                     }
                 }
             }

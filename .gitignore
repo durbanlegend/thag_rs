@@ -58,3 +58,5 @@ mods.svg
 demo/proc_macros/target/doc/static.files/favicon-2c020d218678b618.svg
 sync_docs_report.txt
 async_docs_report.txt
+bank/backtrace_1.rs
+bank/backtrace_and_demangle.rs

@@ -236,6 +236,7 @@ fn generate_sync_wrapper(
 
     quote! {
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
+            println!("From generate_sync_wrapper: profile_name={}", #profile_name);
             let _profile = crate::Profile::new(#profile_name, #profile_type);
             #body
         }
@@ -293,6 +294,8 @@ fn generate_async_wrapper(
                     result
                 }
             }
+
+            println!("From generate_async_wrapper: profile_name={}", #profile_name);
 
             let future = async #body;
             ProfiledFuture {

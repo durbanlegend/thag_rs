@@ -14,9 +14,11 @@
 //!
 //! `demo/thag_profile.rs` also allows you to filter out unwanted events, e.g. to make it easier to drill down into the flamechart.
 //!
-use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
+use crate::{lazy_static_var, regex, static_lazy, ThagError, ThagResult, Verbosity};
+use backtrace::Backtrace;
 use chrono::Local;
 use memory_stats::memory_stats;
+use rustc_demangle::demangle;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
@@ -28,6 +30,7 @@ use std::sync::{
     Mutex,
 };
 use std::time::{Instant, SystemTime};
+
 // Single atomic for runtime profiling state
 static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
@@ -422,66 +425,57 @@ impl Profile {
     #[inline(always)]
     #[allow(clippy::inline_always)]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Option<Self> {
-        use backtrace::Backtrace;
         if !is_profiling_enabled() {
             return None;
         }
-
-        // backtrace::trace(|frame| {
-        //     // Resolve this instruction pointer to a symbol name
-        //     backtrace::resolve_frame(frame, |symbol| {
-        //         if let Some(name) = symbol.name() {
-        //             eprintln!("Symbol name: {name}");
-        //         }
-        //     });
-
-        //     true // keep going to the next frame
-        // });
-
-        // let mut current_backtrace = Backtrace::new_unresolved();
-        // current_backtrace.resolve();
-        // Backtrace::frames(&current_backtrace)
-        //     .into_iter()
-        //     .for_each(|frame| {
-        //         for symbol in frame.symbols() {
-        //             eprintln!("name={:?}", symbol.name());
-        //         }
-        //     });
 
         let mut current_backtrace = Backtrace::new_unresolved();
         current_backtrace.resolve();
         let mut is_within_target_range = false;
 
-        Backtrace::frames(&current_backtrace)
-            .into_iter()
-            .for_each(|frame| {
-                for symbol in frame.symbols() {
-                    if let Some(name) = symbol.name() {
-                        let name_str = name.to_string();
+        // First, collect all relevant frames
+        let mut raw_frames: Vec<String> = Vec::new();
 
-                        // Check if we've reached the start condition
-                        if !is_within_target_range
-                            && name_str.contains("thag_rs::profiling::Profile::new")
-                        {
-                            is_within_target_range = true;
+        for frame in Backtrace::frames(&current_backtrace) {
+            for symbol in frame.symbols() {
+                if let Some(name) = symbol.name() {
+                    let name_str = name.to_string();
+
+                    // Check if we've reached the start condition
+                    if !is_within_target_range
+                        && name_str.contains("thag_rs::profiling::Profile::new")
+                    {
+                        is_within_target_range = true;
+                    }
+
+                    // Collect frames within our target range
+                    if is_within_target_range {
+                        // Skip tokio::runtime functions
+                        if name_str.starts_with("tokio::runtime") {
+                            continue;
                         }
 
-                        // Print only if we're within our target range
-                        if is_within_target_range {
-                            eprintln!("name={:?}", name);
-                        }
+                        // Demangle the symbol
+                        let demangled = demangle(&name_str).to_string();
+                        raw_frames.push(demangled);
 
                         // Check if we've reached the end condition
-                        if is_within_target_range
-                            && name_str
-                                .contains("std::sys::backtrace::__rust_begin_short_backtrace")
-                        {
+                        if name_str.contains("std::sys::backtrace::__rust_begin_short_backtrace") {
                             is_within_target_range = false;
-                            break; // Exit this frame's symbols loop
+                            break;
                         }
                     }
                 }
-            });
+            }
+        }
+
+        // Process the collected frames to collapse patterns and clean up
+        let cleaned_stack = clean_stack_trace(raw_frames);
+
+        // Print the processed stack trace
+        for func_name in cleaned_stack {
+            eprintln!("function={}", func_name);
+        }
 
         // In test mode with our test wrapper active, skip creating profile for #[profile] attribute
         #[cfg(test)]
@@ -699,6 +693,172 @@ impl Drop for Profile {
         // Pop from stack as before
         pop_profile();
     }
+}
+
+// // Helper function to extract the function name
+// fn extract_function_name(demangled: &str) -> String {
+//     // Split the demangled name by "::"
+//     let parts: Vec<&str> = demangled.split("::").collect();
+
+//     // Find the last meaningful part (not a closure or hash)
+//     for part in parts.iter().rev() {
+//         if !part.contains("closure")
+//             && !part.contains("{closure}")
+//             && !(part.starts_with('h') && part.chars().skip(1).all(|c| c.is_digit(16)))
+//         {
+//             return part.to_string();
+//         }
+//     }
+
+//     // If we couldn't find a good function name, return the full demangled string
+//     demangled.to_string()
+// }
+
+fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
+    let mut cleaned_frames = Vec::new();
+    let mut skip_until_index = 0;
+
+    // Remove the standard library functions we don't care about
+    let filtered_frames: Vec<String> = raw_frames
+        .into_iter()
+        .filter(|frame| {
+            !frame.contains("core::ops::function::FnOnce::call_once")
+                && !frame.contains("std::sys::backtrace::__rust_begin_short_backtrace")
+        })
+        .collect();
+
+    // Now process the filtered frames
+    let mut i = 0;
+    while i < filtered_frames.len() {
+        if i < skip_until_index {
+            i += 1;
+            continue;
+        }
+
+        // Extract clean name from the current frame
+        let clean_name = clean_function_name(&filtered_frames[i]);
+
+        // Look for ProfiledFuture pattern (sequence of 3 frames)
+        if i + 2 < filtered_frames.len() {
+            let curr = &filtered_frames[i];
+            let next1 = &filtered_frames[i + 1];
+            let next2 = &filtered_frames[i + 2];
+
+            if curr.contains("{{closure}}::h")
+                && next1.contains("ProfiledFuture")
+                && next1.contains("::poll::")
+                && next2.contains("{{closure}}::{{closure}}")
+            {
+                // Add only the clean name from the first frame
+                cleaned_frames.push(clean_name);
+                skip_until_index = i + 3;
+                i += 1;
+                continue;
+            }
+        }
+
+        // Look for async main pattern (sequence of closures)
+        if filtered_frames[i].contains("main::{{closure}}") {
+            // Find the last main closure in sequence
+            let mut last_main_idx = i;
+            for j in i..filtered_frames.len() {
+                if filtered_frames[j].contains("main::")
+                    && (filtered_frames[j].contains("{{closure}}")
+                        || !filtered_frames[j].contains("::h"))
+                {
+                    last_main_idx = j;
+                } else {
+                    break;
+                }
+            }
+
+            // Only add the main function without closures
+            cleaned_frames.push("main".to_string());
+            skip_until_index = last_main_idx + 1;
+            i += 1;
+            continue;
+        }
+
+        // Regular frame
+        cleaned_frames.push(clean_name);
+        i += 1;
+    }
+
+    cleaned_frames
+}
+
+fn clean_function_name(demangled: &str) -> String {
+    // Split by module path and function name
+    let parts: Vec<&str> = demangled.split("::").collect();
+
+    // Extract module path (everything before function name)
+    let mut module_parts = Vec::new();
+    let mut function_name = String::new();
+
+    for (i, part) in parts.iter().enumerate() {
+        // Skip empty parts
+        if part.is_empty() {
+            continue;
+        }
+
+        // Check if this is a function name (contains hash marker or is last part)
+        if part.contains('h') && part.len() > 10 && i == parts.len() - 1 {
+            // This is a hash suffix, get the function name from previous part
+            if i > 0 {
+                function_name = parts[i - 1].to_string();
+                // Remove the last module part as it's actually the function name
+                if !module_parts.is_empty() {
+                    module_parts.pop();
+                }
+            }
+            break;
+        } else if i == parts.len() - 1 {
+            // Last part with no hash is the function name
+            function_name = part.to_string();
+        } else {
+            // This is part of the module path
+            module_parts.push(*part);
+        }
+    }
+
+    // Clean up function name - remove closure markers and hash
+    function_name = function_name.replace("{{closure}}", "");
+
+    if let Some(idx) = function_name.find("::h") {
+        function_name = function_name[..idx].to_string();
+    }
+
+    // Join module path with function name
+    let module_path = module_parts.join("::");
+
+    if module_path.is_empty() {
+        function_name
+    } else if function_name.is_empty() {
+        module_path
+    } else {
+        format!("{}::{}", module_path, function_name)
+    }
+}
+
+#[allow(dead_code)]
+fn extract_function_name_regex(full_name: &str) -> String {
+    // This regex extracts the module path and function name without the hash
+    let re = regex!(r"^(.*?)::(?:{{closure}}::)*h[0-9a-f]+$");
+
+    if let Some(caps) = re.captures(full_name) {
+        let path = caps.get(1).unwrap().as_str();
+        let parts: Vec<&str> = path.split("::").collect();
+        if !parts.is_empty() {
+            return parts.last().unwrap().to_string();
+        }
+    }
+
+    // Fallback: just return anything before the hash
+    full_name
+        .split("::h")
+        .next()
+        .unwrap_or(full_name)
+        .to_string()
 }
 
 // Optional: add memory info to error handling

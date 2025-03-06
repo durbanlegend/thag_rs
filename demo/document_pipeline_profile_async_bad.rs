@@ -8,8 +8,8 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_rs::{profile, Profile, ProfileType};
 use thag_rs::profiling;
+use thag_rs::{profile, Profile, ProfileType};
 
 struct Document {
     id: usize,
@@ -37,7 +37,7 @@ impl Document {
     fn count_words(&mut self) {
         // Simulate CPU-intensive operation with fixed duration
         std::thread::sleep(Duration::from_millis(20));
-        
+
         let words = self.content.split_whitespace();
         for word in words {
             let word = word
@@ -56,7 +56,7 @@ impl Document {
     fn calculate_sentiment(&mut self) -> f64 {
         // Fixed duration for predictability
         std::thread::sleep(Duration::from_millis(30));
-        
+
         let positive_words = ["good", "great", "excellent", "happy", "positive"];
         let negative_words = ["bad", "awful", "terrible", "sad", "negative"];
 
@@ -112,29 +112,32 @@ async fn process_document(mut doc: Document) -> Document {
 async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     // Process documents one by one to make tracing easier
     let mut documents = Vec::with_capacity(count);
-    
+
     for id in 0..count {
         let doc = fetch_document(id).await;
         let processed_doc = process_document(doc).await;
         documents.push(processed_doc);
     }
-    
+
     documents
 }
 
 #[tokio::main]
-#[profile]
 async fn main() {
     // Enable profiling manually at the start
     profiling::enable_profiling(true, ProfileType::Time).unwrap();
     println!("Starting simplified document processing example");
-    
+
     // Only process 3 documents for easy tracing
     let start = Instant::now();
     let docs = generate_and_process_documents(3).await;
-    
-    println!("Processed {} documents in {:?}", docs.len(), start.elapsed());
-    
+
+    println!(
+        "Processed {} documents in {:?}",
+        docs.len(),
+        start.elapsed()
+    );
+
     // Print results for verification
     for doc in &docs {
         println!(
@@ -144,6 +147,6 @@ async fn main() {
             doc.sentiment_score
         );
     }
-    
+
     println!("Profiling data written to folded files in current directory");
 }

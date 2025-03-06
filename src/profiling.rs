@@ -18,6 +18,7 @@ use crate::{lazy_static_var, regex, static_lazy, ThagError, ThagResult, Verbosit
 use backtrace::Backtrace;
 use chrono::Local;
 use memory_stats::memory_stats;
+use once_cell::sync::Lazy;
 use rustc_demangle::demangle;
 use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
@@ -45,6 +46,9 @@ const PROFILING_FEATURE: bool = true;
 const PROFILING_FEATURE: bool = false;
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
+
+// Global registry of profiled functions
+static PROFILED_FUNCTIONS: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
@@ -255,6 +259,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
         // Check that the stack is empty before enabling profiling
         let stack_depth = STACK_DEPTH.load(Ordering::SeqCst);
         if stack_depth > 0 {
+            println!("profile stack = {:?}", get_profile_stack());
             return Err(ThagError::Profiling(format!("Cannot enable profiling: profiling stack is not empty (depth {stack_depth}). Another application may be using the profiling stack.")));
         }
 
@@ -405,16 +410,16 @@ pub struct Profile {
 }
 
 impl Profile {
-    #[must_use]
-    pub const fn new_raw(name: &'static str) -> Self {
-        Self {
-            start: None,
-            name,
-            profile_type: ProfileType::Time, // Default to time profiling
-            initial_memory: None,
-            _not_send: PhantomData,
-        }
-    }
+    // #[must_use]
+    // pub const fn new_raw(name: &'static str) -> Self {
+    //     Self {
+    //         start: None,
+    //         name,
+    //         profile_type: ProfileType::Time, // Default to time profiling
+    //         initial_memory: None,
+    //         _not_send: PhantomData,
+    //     }
+    // }
 
     /// Creates a new `Profile` to profile a section of code.
     ///
@@ -422,7 +427,7 @@ impl Profile {
     ///
     /// Panics if stack validation fails.
     #[must_use]
-    #[inline(always)]
+    // #[inline(always)]
     #[allow(clippy::inline_always)]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Option<Self> {
         if !is_profiling_enabled() {
@@ -474,7 +479,7 @@ impl Profile {
 
         // Print the processed stack trace
         for func_name in cleaned_stack {
-            eprintln!("function={}", func_name);
+            println!("function={func_name}");
         }
 
         // In test mode with our test wrapper active, skip creating profile for #[profile] attribute
@@ -715,71 +720,69 @@ impl Drop for Profile {
 // }
 
 fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
-    let mut cleaned_frames = Vec::new();
-    let mut skip_until_index = 0;
-
-    // Remove the standard library functions we don't care about
+    // First, filter out standard library infrastructure we don't care about
     let filtered_frames: Vec<String> = raw_frames
         .into_iter()
         .filter(|frame| {
             !frame.contains("core::ops::function::FnOnce::call_once")
                 && !frame.contains("std::sys::backtrace::__rust_begin_short_backtrace")
+                && !frame.contains("std::rt::lang_start")
+                && !frame.contains("std::panicking")
         })
         .collect();
 
-    // Now process the filtered frames
+    // These are patterns we want to remove from the stack
+    let scaffolding_patterns: Vec<&str> = vec![
+        "::poll::",
+        "::poll_next_unpin",
+        "alloc::",
+        "core::",
+        "<F as core::future::future::Future>::poll",
+        "FuturesOrdered<Fut>",
+        "FuturesUnordered<Fut>",
+        "ProfiledFuture",
+        "{{closure}}::{{closure}}",
+    ];
+
+    // Create a new cleaned stack, filtering out scaffolding
+    let mut cleaned_frames = Vec::new();
     let mut i = 0;
+    let mut already_seen = HashSet::new();
+    let mut seen_main = false;
+
     while i < filtered_frames.len() {
-        if i < skip_until_index {
+        let current_frame = &filtered_frames[i];
+
+        // Check if this is scaffolding we want to skip
+        let is_scaffolding = scaffolding_patterns
+            .iter()
+            .any(|pattern| current_frame.contains(pattern));
+
+        if is_scaffolding {
             i += 1;
             continue;
         }
 
-        // Extract clean name from the current frame
-        let clean_name = clean_function_name(&filtered_frames[i]);
+        // Clean the function name
+        let clean_name = clean_function_name(current_frame);
 
-        // Look for ProfiledFuture pattern (sequence of 3 frames)
-        if i + 2 < filtered_frames.len() {
-            let curr = &filtered_frames[i];
-            let next1 = &filtered_frames[i + 1];
-            let next2 = &filtered_frames[i + 2];
-
-            if curr.contains("{{closure}}::h")
-                && next1.contains("ProfiledFuture")
-                && next1.contains("::poll::")
-                && next2.contains("{{closure}}::{{closure}}")
-            {
-                // Add only the clean name from the first frame
-                cleaned_frames.push(clean_name);
-                skip_until_index = i + 3;
-                i += 1;
-                continue;
+        // Handle main function special case
+        if clean_name.ends_with("::main") || clean_name == "main" {
+            if !seen_main {
+                cleaned_frames.push("main".to_string());
+                seen_main = true;
             }
-        }
-
-        // Look for async main pattern (sequence of closures)
-        if filtered_frames[i].contains("main::{{closure}}") {
-            // Find the last main closure in sequence
-            let mut last_main_idx = i;
-            for j in i..filtered_frames.len() {
-                if filtered_frames[j].contains("main::")
-                    && (filtered_frames[j].contains("{{closure}}")
-                        || !filtered_frames[j].contains("::h"))
-                {
-                    last_main_idx = j;
-                } else {
-                    break;
-                }
-            }
-
-            // Only add the main function without closures
-            cleaned_frames.push("main".to_string());
-            skip_until_index = last_main_idx + 1;
             i += 1;
             continue;
         }
 
-        // Regular frame
+        // Skip duplicate function calls (helps with the {{closure}} pattern)
+        if already_seen.contains(&clean_name) {
+            i += 1;
+            continue;
+        }
+
+        already_seen.insert(clean_name.clone());
         cleaned_frames.push(clean_name);
         i += 1;
     }
@@ -788,56 +791,28 @@ fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
 }
 
 fn clean_function_name(demangled: &str) -> String {
-    // Split by module path and function name
-    let parts: Vec<&str> = demangled.split("::").collect();
+    // Remove hash suffixes and closure markers
+    let mut clean_name = demangled.to_string();
 
-    // Extract module path (everything before function name)
-    let mut module_parts = Vec::new();
-    let mut function_name = String::new();
-
-    for (i, part) in parts.iter().enumerate() {
-        // Skip empty parts
-        if part.is_empty() {
-            continue;
-        }
-
-        // Check if this is a function name (contains hash marker or is last part)
-        if part.contains('h') && part.len() > 10 && i == parts.len() - 1 {
-            // This is a hash suffix, get the function name from previous part
-            if i > 0 {
-                function_name = parts[i - 1].to_string();
-                // Remove the last module part as it's actually the function name
-                if !module_parts.is_empty() {
-                    module_parts.pop();
-                }
-            }
-            break;
-        } else if i == parts.len() - 1 {
-            // Last part with no hash is the function name
-            function_name = part.to_string();
-        } else {
-            // This is part of the module path
-            module_parts.push(*part);
+    // Find and remove hash suffixes (::h followed by hex digits)
+    if let Some(hash_pos) = clean_name.find("::h") {
+        if clean_name[hash_pos + 3..].chars().all(|c| c.is_digit(16)) {
+            clean_name = clean_name[..hash_pos].to_string();
         }
     }
 
-    // Clean up function name - remove closure markers and hash
-    function_name = function_name.replace("{{closure}}", "");
+    // Remove closure markers
+    clean_name = clean_name.replace("{{closure}}", "");
 
-    if let Some(idx) = function_name.find("::h") {
-        function_name = function_name[..idx].to_string();
+    // Clean up any double colons that might be left
+    while clean_name.contains("::::") {
+        clean_name = clean_name.replace("::::", "::");
+    }
+    if clean_name.ends_with("::") {
+        clean_name = clean_name[..clean_name.len() - 2].to_string();
     }
 
-    // Join module path with function name
-    let module_path = module_parts.join("::");
-
-    if module_path.is_empty() {
-        function_name
-    } else if function_name.is_empty() {
-        module_path
-    } else {
-        format!("{}::{}", module_path, function_name)
-    }
+    clean_name
 }
 
 #[allow(dead_code)]

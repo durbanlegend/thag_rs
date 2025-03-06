@@ -794,10 +794,22 @@ where
                 key!(f9) => {
                     crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
                     textarea.remove_line_number();
+                    textarea.set_block(
+                        Block::default()
+                            .borders(Borders::NONE)
+                            .title(display.title)
+                            .title_style(display.title_style),
+                    );
                 }
                 key!(f10) => {
                     crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
                     textarea.set_line_number_style(RataStyle::default().fg(Color::DarkGray));
+                    textarea.set_block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title(display.title)
+                            .title_style(display.title_style),
+                    );
                 }
                 key!(alt - '<') | key!(ctrl - alt - p) | key!(ctrl - alt - up) => {
                     textarea.move_cursor(CursorMove::Top);
@@ -1506,9 +1518,9 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (
         430,
         "F9",
-        "Suspend mouse capture and line numbers for system copy"
+        "Suspend mouse capture, line numbers and borders for system copy"
     ),
-    (440, "F10", "Resume mouse capture and line numbers"),
+    (440, "F10", "Resume capture, line numbers and borders"),
 ];
 
 #[derive(Clone, Debug, PartialEq, Eq)]

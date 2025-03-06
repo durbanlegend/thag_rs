@@ -2198,7 +2198,6 @@ name = "thag_proc_macros"
 version = "0.1.1"
 dependencies = [
  "inline_colorization",
- "once_cell",
  "prettyplease",
  "proc-macro2 1.0.94",
  "quote 1.0.39",
@@ -2231,6 +2230,7 @@ dependencies = [
  "memory-stats",
  "mockall",
  "nu-ansi-term",
+ "once_cell",
  "phf",
  "predicates",
  "prettyplease",

@@ -14,7 +14,7 @@
 //!
 //! `demo/thag_profile.rs` also allows you to filter out unwanted events, e.g. to make it easier to drill down into the flamechart.
 //!
-use crate::{lazy_static_var, regex, static_lazy, ThagError, ThagResult, Verbosity};
+use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
 use backtrace::Backtrace;
 use chrono::Local;
 use memory_stats::memory_stats;
@@ -49,6 +49,8 @@ static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Mem
 
 // Global registry of profiled functions
 static PROFILED_FUNCTIONS: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+
+// static NEXT_PROFILE_ID: AtomicU64 = AtomicU64::new(1);
 
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
@@ -402,38 +404,32 @@ impl ProfileType {
 }
 
 pub struct Profile {
+    // id: u64,
     start: Option<Instant>,
     name: &'static str,
     profile_type: ProfileType,
     initial_memory: Option<usize>,     // For memory delta
+    path: Vec<String>,                 // Full call stack (only profiled functions)
     _not_send: PhantomData<*const ()>, // Makes Profile !Send
 }
 
 impl Profile {
-    // #[must_use]
-    // pub const fn new_raw(name: &'static str) -> Self {
-    //     Self {
-    //         start: None,
-    //         name,
-    //         profile_type: ProfileType::Time, // Default to time profiling
-    //         initial_memory: None,
-    //         _not_send: PhantomData,
-    //     }
-    // }
-
     /// Creates a new `Profile` to profile a section of code.
     ///
     /// # Panics
     ///
     /// Panics if stack validation fails.
     #[must_use]
-    // #[inline(always)]
     #[allow(clippy::inline_always)]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Option<Self> {
         if !is_profiling_enabled() {
             return None;
         }
 
+        // Register this function
+        register_profiled_function(name);
+
+        // Get the current backtrace
         let mut current_backtrace = Backtrace::new_unresolved();
         current_backtrace.resolve();
         let mut is_within_target_range = false;
@@ -477,10 +473,39 @@ impl Profile {
         // Process the collected frames to collapse patterns and clean up
         let cleaned_stack = clean_stack_trace(raw_frames);
 
-        // Print the processed stack trace
-        for func_name in cleaned_stack {
-            println!("function={func_name}");
+        // Filter to only profiled functions
+        let mut path: Vec<String> = Vec::new();
+
+        // First add the most recent function (ourselves)
+        println!("Current function: {name}");
+        // path.push(name.to_string());
+
+        // Then add our ancestors that are profiled functions
+        if let Ok(registry) = PROFILED_FUNCTIONS.lock() {
+            for fn_name_str in cleaned_stack {
+                println!("Function name: {fn_name_str}");
+
+                let maybe_fn_only = extract_fn_only(&fn_name_str);
+                if let Some(fn_only) = maybe_fn_only {
+                    if registry.contains(&fn_only) {
+                        path.push(fn_only);
+                    } else {
+                        let maybe_class_method = extract_class_method(&fn_name_str);
+                        if let Some(class_method) = maybe_class_method {
+                            if registry.contains(&class_method) {
+                                path.push(class_method);
+                            }
+                        }
+                    }
+                }
+            }
         }
+
+        // Reverse the path so it goes from root caller to current function
+        path.reverse();
+
+        // Create the profile with filtered path
+        // let _id = NEXT_PROFILE_ID.fetch_add(1, Ordering::SeqCst);
 
         // In test mode with our test wrapper active, skip creating profile for #[profile] attribute
         #[cfg(test)]
@@ -533,10 +558,12 @@ impl Profile {
         push_profile(name);
 
         Some(Self {
+            // id,
             name,
             profile_type,
             start: Some(Instant::now()),
             initial_memory,
+            path,
             _not_send: PhantomData,
         })
     }
@@ -599,7 +626,7 @@ impl Profile {
             return Ok(());
         }
 
-        let stack = get_profile_stack();
+        let stack = &self.path;
         let entry = if stack.is_empty() {
             format!("{} {micros}", self.name)
         } else {
@@ -618,7 +645,7 @@ impl Profile {
 
         // Get current stack as string
         let stack_data = {
-            let stack = get_profile_stack();
+            let stack = &self.path;
             if stack.is_empty() {
                 self.name.to_string()
             } else {
@@ -700,24 +727,38 @@ impl Drop for Profile {
     }
 }
 
-// // Helper function to extract the function name
-// fn extract_function_name(demangled: &str) -> String {
-//     // Split the demangled name by "::"
-//     let parts: Vec<&str> = demangled.split("::").collect();
+// Register a function name with the profiling registry
+pub fn register_profiled_function(name: &str) {
+    if let Ok(mut registry) = PROFILED_FUNCTIONS.lock() {
+        registry.insert(name.to_string());
+    }
+}
 
-//     // Find the last meaningful part (not a closure or hash)
-//     for part in parts.iter().rev() {
-//         if !part.contains("closure")
-//             && !part.contains("{closure}")
-//             && !(part.starts_with('h') && part.chars().skip(1).all(|c| c.is_digit(16)))
-//         {
-//             return part.to_string();
-//         }
-//     }
+// Check if a function is registered for profiling
+pub fn is_profiled_function(name: &str) -> bool {
+    PROFILED_FUNCTIONS
+        .lock()
+        .is_ok_and(|registry| registry.contains(name))
+}
 
-//     // If we couldn't find a good function name, return the full demangled string
-//     demangled.to_string()
-// }
+// Extract the class::method part from a fully qualified function name
+fn extract_class_method(qualified_name: &str) -> Option<String> {
+    // Split by :: and get the last two components
+    let parts: Vec<&str> = qualified_name.split("::").collect();
+    if parts.len() >= 2 {
+        let class = parts[parts.len() - 2];
+        let method = parts[parts.len() - 1];
+        Some(format!("{class}::{method}"))
+    } else {
+        None
+    }
+}
+
+// Extract just the method name from a fully qualified function name
+fn extract_fn_only(qualified_name: &str) -> Option<String> {
+    // Split by :: and get the last component
+    qualified_name.split("::").last().map(ToString::to_string)
+}
 
 fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
     // First, filter out standard library infrastructure we don't care about
@@ -740,6 +781,7 @@ fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
         "<F as core::future::future::Future>::poll",
         "FuturesOrdered<Fut>",
         "FuturesUnordered<Fut>",
+        "Profile::new",
         "ProfiledFuture",
         "{{closure}}::{{closure}}",
     ];
@@ -796,7 +838,10 @@ fn clean_function_name(demangled: &str) -> String {
 
     // Find and remove hash suffixes (::h followed by hex digits)
     if let Some(hash_pos) = clean_name.find("::h") {
-        if clean_name[hash_pos + 3..].chars().all(|c| c.is_digit(16)) {
+        if clean_name[hash_pos + 3..]
+            .chars()
+            .all(|c| c.is_ascii_hexdigit())
+        {
             clean_name = clean_name[..hash_pos].to_string();
         }
     }
@@ -813,27 +858,6 @@ fn clean_function_name(demangled: &str) -> String {
     }
 
     clean_name
-}
-
-#[allow(dead_code)]
-fn extract_function_name_regex(full_name: &str) -> String {
-    // This regex extracts the module path and function name without the hash
-    let re = regex!(r"^(.*?)::(?:{{closure}}::)*h[0-9a-f]+$");
-
-    if let Some(caps) = re.captures(full_name) {
-        let path = caps.get(1).unwrap().as_str();
-        let parts: Vec<&str> = path.split("::").collect();
-        if !parts.is_empty() {
-            return parts.last().unwrap().to_string();
-        }
-    }
-
-    // Fallback: just return anything before the hash
-    full_name
-        .split("::h")
-        .next()
-        .unwrap_or(full_name)
-        .to_string()
 }
 
 // Optional: add memory info to error handling

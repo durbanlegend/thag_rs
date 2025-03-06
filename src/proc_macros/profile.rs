@@ -134,7 +134,7 @@ pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_name = &input.sig.ident;
     let inputs = &input.sig.inputs;
     let output = &input.sig.output;
-    let generics = &input.sig.generics;
+    // let generics = &input.sig.generics;
     let is_async = input.sig.asyncness.is_some();
 
     // Convert Punctuated to slice for is_method
@@ -144,18 +144,21 @@ pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let is_method = is_method(&input_args, output);
 
     // Get generic parameters
-    let type_params: Vec<_> = generics
-        .params
-        .iter()
-        .map(|param| match param {
-            syn::GenericParam::Type(t) => t.ident.to_string(),
-            syn::GenericParam::Lifetime(l) => l.lifetime.to_string(),
-            syn::GenericParam::Const(c) => c.ident.to_string(),
-        })
-        .collect();
+    // let type_params: Vec<_> = generics
+    //     .params
+    //     .iter()
+    //     .map(|param| match param {
+    //         syn::GenericParam::Type(t) => t.ident.to_string(),
+    //         syn::GenericParam::Lifetime(l) => l.lifetime.to_string(),
+    //         syn::GenericParam::Const(c) => c.ident.to_string(),
+    //     })
+    //     .collect();
 
     // Generate profile name
-    let profile_name = generate_profile_name(fn_name, is_method, &args, &type_params, is_async);
+    let profile_name =
+        generate_profile_name(fn_name, is_method, &args /*, &type_params, is_async */);
+    // Keep it simple unless and until we can figure out how to reconcile this with the `backtrace` crate.
+    // let profile_name = fn_name.to_string();
 
     let ctx = FunctionContext {
         vis: &input.vis,
@@ -176,43 +179,50 @@ pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
+#[allow(dead_code)]
 fn generate_profile_name(
     fn_name: &syn::Ident,
     is_method: bool,
     args: &ProfileArgs,
-    type_params: &[String],
-    is_async: bool,
+    // type_params: &[String],
+    // is_async: bool,
 ) -> String {
     let mut parts = Vec::new();
 
     // Add async prefix if applicable
-    if is_async {
-        parts.push("async".to_string());
-    }
+    // if is_async {
+    //     parts.push("async".to_string());
+    // }
 
     // Add context (impl/trait/fn)
+    // if is_method {
+    //     if let Some(trait_name) = &args.trait_name {
+    //         parts.push(format!("trait::{trait_name}"));
+    //         if let Some(impl_type) = &args.imp {
+    //             parts.push(format!("impl::{impl_type}"));
+    //         }
+    //     } else if let Some(impl_type) = &args.imp {
+    //         parts.push(format!("impl::{impl_type}"));
+    //     } else {
+    //         parts.push("method".to_string());
+    //     }
+    // } else {
+    //     parts.push("fn".to_string());
+    // }
+
     if is_method {
-        if let Some(trait_name) = &args.trait_name {
-            parts.push(format!("trait::{trait_name}"));
-            if let Some(impl_type) = &args.imp {
-                parts.push(format!("impl::{impl_type}"));
-            }
-        } else if let Some(impl_type) = &args.imp {
-            parts.push(format!("impl::{impl_type}"));
-        } else {
-            parts.push("method".to_string());
+        if let Some(impl_type) = &args.imp {
+            parts.push(impl_type.to_string());
         }
-    } else {
-        parts.push("fn".to_string());
     }
 
     // Add function name
     parts.push(fn_name.to_string());
 
-    // Add generic parameters if any
-    if !type_params.is_empty() {
-        parts.push(format!("<{}>", type_params.join(",")));
-    }
+    // // Add generic parameters if any
+    // if !type_params.is_empty() {
+    //     parts.push(format!("<{}>", type_params.join(",")));
+    // }
 
     parts.join("::")
 }

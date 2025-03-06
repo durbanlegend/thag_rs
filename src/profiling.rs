@@ -307,8 +307,8 @@ pub fn reset_profiling_stack() {
     STACK_DEPTH.store(0, Ordering::SeqCst);
 
     // Clean up existing entries
-    for i in 0..old_depth {
-        let ptr = PROFILE_STACK[i].swap(ptr::null_mut(), Ordering::SeqCst);
+    for atomic_ptr in PROFILE_STACK.iter().take(old_depth) {
+        let ptr = atomic_ptr.swap(ptr::null_mut(), Ordering::SeqCst);
         if !ptr.is_null() {
             unsafe {
                 drop(Box::from_raw(ptr));
@@ -317,8 +317,8 @@ pub fn reset_profiling_stack() {
     }
 
     // Ensure all entries are cleared
-    for i in old_depth..MAX_PROFILE_DEPTH {
-        PROFILE_STACK[i].store(ptr::null_mut(), Ordering::SeqCst);
+    for atomic_ptr in PROFILE_STACK.iter().take(MAX_PROFILE_DEPTH).skip(old_depth) {
+        atomic_ptr.store(ptr::null_mut(), Ordering::SeqCst);
     }
 }
 
@@ -422,9 +422,66 @@ impl Profile {
     #[inline(always)]
     #[allow(clippy::inline_always)]
     pub fn new(name: &'static str, requested_type: ProfileType) -> Option<Self> {
+        use backtrace::Backtrace;
         if !is_profiling_enabled() {
             return None;
         }
+
+        // backtrace::trace(|frame| {
+        //     // Resolve this instruction pointer to a symbol name
+        //     backtrace::resolve_frame(frame, |symbol| {
+        //         if let Some(name) = symbol.name() {
+        //             eprintln!("Symbol name: {name}");
+        //         }
+        //     });
+
+        //     true // keep going to the next frame
+        // });
+
+        // let mut current_backtrace = Backtrace::new_unresolved();
+        // current_backtrace.resolve();
+        // Backtrace::frames(&current_backtrace)
+        //     .into_iter()
+        //     .for_each(|frame| {
+        //         for symbol in frame.symbols() {
+        //             eprintln!("name={:?}", symbol.name());
+        //         }
+        //     });
+
+        let mut current_backtrace = Backtrace::new_unresolved();
+        current_backtrace.resolve();
+        let mut is_within_target_range = false;
+
+        Backtrace::frames(&current_backtrace)
+            .into_iter()
+            .for_each(|frame| {
+                for symbol in frame.symbols() {
+                    if let Some(name) = symbol.name() {
+                        let name_str = name.to_string();
+
+                        // Check if we've reached the start condition
+                        if !is_within_target_range
+                            && name_str.contains("thag_rs::profiling::Profile::new")
+                        {
+                            is_within_target_range = true;
+                        }
+
+                        // Print only if we're within our target range
+                        if is_within_target_range {
+                            eprintln!("name={:?}", name);
+                        }
+
+                        // Check if we've reached the end condition
+                        if is_within_target_range
+                            && name_str
+                                .contains("std::sys::backtrace::__rust_begin_short_backtrace")
+                        {
+                            is_within_target_range = false;
+                            break; // Exit this frame's symbols loop
+                        }
+                    }
+                }
+            });
 
         // In test mode with our test wrapper active, skip creating profile for #[profile] attribute
         #[cfg(test)]

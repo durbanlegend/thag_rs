@@ -22,6 +22,8 @@
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
 - [ ]  Profiling: split out to separate crate?
+- [ ]  Pass into Profile::new: more info (args) as to whether it's a method etc.
+        Also register methods accordingly, not just as functions.
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

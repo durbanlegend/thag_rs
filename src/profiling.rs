@@ -426,6 +426,8 @@ impl Profile {
             return None;
         }
 
+        // println!("Current function: {name}");
+
         // Register this function
         register_profiled_function(name);
 
@@ -477,24 +479,31 @@ impl Profile {
         let mut path: Vec<String> = Vec::new();
 
         // First add the most recent function (ourselves)
-        println!("Current function: {name}");
+        // println!("Current function: {name}");
         // path.push(name.to_string());
 
         // Then add our ancestors that are profiled functions
         if let Ok(registry) = PROFILED_FUNCTIONS.lock() {
             for fn_name_str in cleaned_stack {
-                println!("Function name: {fn_name_str}");
+                // println!("Function name: {fn_name_str}");
 
-                let maybe_fn_only = extract_fn_only(&fn_name_str);
-                if let Some(fn_only) = maybe_fn_only {
-                    if registry.contains(&fn_only) {
-                        path.push(fn_only);
+                let maybe_class_method = extract_class_method(&fn_name_str);
+                if let Some(class_method) = maybe_class_method {
+                    if registry.contains(&class_method) {
+                        path.push(class_method);
                     } else {
-                        let maybe_class_method = extract_class_method(&fn_name_str);
-                        if let Some(class_method) = maybe_class_method {
-                            if registry.contains(&class_method) {
-                                path.push(class_method);
+                        let maybe_fn_only = extract_fn_only(&fn_name_str);
+                        if let Some(fn_only) = maybe_fn_only {
+                            if registry.contains(&fn_only) {
+                                path.push(fn_only);
                             }
+                        }
+                    }
+                } else {
+                    let maybe_fn_only = extract_fn_only(&fn_name_str);
+                    if let Some(fn_only) = maybe_fn_only {
+                        if registry.contains(&fn_only) {
+                            path.push(fn_only);
                         }
                     }
                 }

@@ -431,7 +431,12 @@ fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile) {
         } else {
             0
         };
-        println!("{calls:>10} calls, {total_time:>12} μs total, {avg_time:>12} μs avg     {func}");
+        println!(
+            "{:>10} calls {:>12} μs total {:>12} μs avg     {func}",
+            thousands(calls),
+            thousands(total_time),
+            thousands(avg_time)
+        );
     }
 }
 

@@ -50,6 +50,10 @@ struct FunctionContext<'a> {
     body: &'a syn::Block,
     /// Generated profile name incorporating context (impl/trait/async/etc.)
     profile_name: String,
+    // /// Whether the function is asynchronous
+    // is_async: bool,
+    /// Whether the function is a method
+    is_method: bool,
 }
 
 impl Parse for ProfileArgs {
@@ -169,6 +173,8 @@ pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         where_clause: input.sig.generics.where_clause.as_ref(),
         body: &input.block,
         profile_name,
+        // is_async,
+        is_method,
     };
 
     if is_async {
@@ -240,14 +246,17 @@ fn generate_sync_wrapper(
         where_clause,
         body,
         profile_name,
-    } = ctx;
+        // is_async,
+        is_method,
+    }: &FunctionContext<'_> = ctx;
 
     let profile_type = resolve_profile_type(profile_type);
+    // let is_method = ctx.is_method;
 
     quote! {
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
             // eprintln!("From generate_sync_wrapper: profile_name={}", #profile_name);
-            let _profile = crate::Profile::new(#profile_name, #profile_type);
+            let _profile = crate::Profile::new(#profile_name, #profile_type, false, #is_method);
             #body
         }
     }
@@ -277,9 +286,12 @@ fn generate_async_wrapper(
         where_clause,
         body,
         profile_name,
+        // is_async,
+        is_method,
     } = ctx;
 
     let profile_type = resolve_profile_type(profile_type);
+    // let is_method = ctx.is_method;
 
     quote! {
         #vis async fn #fn_name #generics (#inputs) #output #where_clause {
@@ -310,7 +322,7 @@ fn generate_async_wrapper(
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: crate::Profile::new(#profile_name, #profile_type),
+                _profile: crate::Profile::new(#profile_name, #profile_type, true, #is_method),
             }.await
         }
     }

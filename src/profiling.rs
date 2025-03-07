@@ -48,7 +48,8 @@ const PROFILING_FEATURE: bool = false;
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
 
 // Global registry of profiled functions
-static PROFILED_FUNCTIONS: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+static PROFILED_FUNCTIONS: Lazy<Mutex<HashMap<String, FunctionAttributes>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 // static NEXT_PROFILE_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -403,6 +404,25 @@ impl ProfileType {
     }
 }
 
+/// Function attributes
+#[derive(Clone, Debug)]
+#[allow(dead_code, unused_variables)]
+pub struct FunctionAttributes {
+    /// Whether the function is asynchronous
+    is_async: bool,
+    /// Whether the function is a method
+    is_method: bool,
+}
+
+impl FunctionAttributes {
+    pub fn new(is_async: bool, is_method: bool) -> Self {
+        Self {
+            is_async,
+            is_method,
+        }
+    }
+}
+
 pub struct Profile {
     // id: u64,
     start: Option<Instant>,
@@ -421,7 +441,12 @@ impl Profile {
     /// Panics if stack validation fails.
     #[must_use]
     #[allow(clippy::inline_always)]
-    pub fn new(name: &'static str, requested_type: ProfileType) -> Option<Self> {
+    pub fn new(
+        name: &'static str,
+        requested_type: ProfileType,
+        is_async: bool,
+        is_method: bool,
+    ) -> Option<Self> {
         if !is_profiling_enabled() {
             return None;
         }
@@ -429,7 +454,7 @@ impl Profile {
         // println!("Current function: {name}");
 
         // Register this function
-        register_profiled_function(name);
+        register_profiled_function(name, FunctionAttributes::new(is_async, is_method));
 
         // Get the current backtrace
         let mut current_backtrace = Backtrace::new_unresolved();
@@ -489,12 +514,12 @@ impl Profile {
 
                 let maybe_class_method = extract_class_method(&fn_name_str);
                 if let Some(class_method) = maybe_class_method {
-                    if registry.contains(&class_method) {
+                    if registry.contains_key(&class_method) {
                         path.push(class_method);
                     } else {
                         let maybe_fn_only = extract_fn_only(&fn_name_str);
                         if let Some(fn_only) = maybe_fn_only {
-                            if registry.contains(&fn_only) {
+                            if registry.contains_key(&fn_only) {
                                 path.push(fn_only);
                             }
                         }
@@ -502,7 +527,7 @@ impl Profile {
                 } else {
                     let maybe_fn_only = extract_fn_only(&fn_name_str);
                     if let Some(fn_only) = maybe_fn_only {
-                        if registry.contains(&fn_only) {
+                        if registry.contains_key(&fn_only) {
                             path.push(fn_only);
                         }
                     }
@@ -636,11 +661,36 @@ impl Profile {
         }
 
         let stack = &self.path;
-        let entry = if stack.is_empty() {
-            format!("{} {micros}", self.name)
+
+        let stack_str = if stack.is_empty() {
+            eprintln!("Warning: found stack empty for {}", self.name);
+            if let Some(function_attributes) = get_function_attributes(self.name) {
+                if function_attributes.is_async {
+                    format!("async::{}", self.name)
+                } else {
+                    self.name.to_string()
+                }
+            } else {
+                self.name.to_string()
+            }
         } else {
-            format!("{} {micros}", stack.join(";"))
+            stack
+                .iter()
+                .map(|item| {
+                    if let Some(function_attributes) = get_function_attributes(item) {
+                        if function_attributes.is_async {
+                            format!("async::{item}")
+                        } else {
+                            item.to_string()
+                        }
+                    } else {
+                        item.to_string()
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(";")
         };
+        let entry = format!("{stack_str} {micros}");
 
         let paths = ProfilePaths::get();
         Self::write_profile_event(&paths.time, TimeProfileFile::get(), &entry)
@@ -737,9 +787,9 @@ impl Drop for Profile {
 }
 
 // Register a function name with the profiling registry
-pub fn register_profiled_function(name: &str) {
+pub fn register_profiled_function(name: &str, attributes: FunctionAttributes) {
     if let Ok(mut registry) = PROFILED_FUNCTIONS.lock() {
-        registry.insert(name.to_string());
+        registry.insert(name.to_string(), attributes);
     }
 }
 
@@ -747,7 +797,15 @@ pub fn register_profiled_function(name: &str) {
 pub fn is_profiled_function(name: &str) -> bool {
     PROFILED_FUNCTIONS
         .lock()
-        .is_ok_and(|registry| registry.contains(name))
+        .is_ok_and(|registry| registry.contains_key(name))
+}
+
+// Check if a function is registered for profiling
+pub fn get_function_attributes(name: &str) -> Option<FunctionAttributes> {
+    PROFILED_FUNCTIONS
+        .lock()
+        .ok()
+        .and_then(|registry| registry.get(name).cloned())
 }
 
 // Extract the class::method part from a fully qualified function name
@@ -987,9 +1045,13 @@ pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
 /// ```
 #[macro_export]
 macro_rules! profile_fn {
-    ($name:expr) => {
-        let _profile =
-            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
+    ($name:expr, $is_async:expr) => {
+        let _profile = $crate::profiling::Profile::new(
+            $name,
+            $crate::profiling::get_global_profile_type(),
+            $is_async,
+            false,
+        );
     };
 }
 
@@ -1020,8 +1082,12 @@ macro_rules! profile_fn {
 #[macro_export]
 macro_rules! profile_section {
     ($name:expr) => {
-        let _profile =
-            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
+        let _profile = $crate::profiling::Profile::new(
+            $name,
+            $crate::profiling::get_global_profile_type(),
+            false,
+            false,
+        );
     };
 }
 

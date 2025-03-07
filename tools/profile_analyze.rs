@@ -197,8 +197,10 @@ fn analyze_single_time_profile() -> ThagResult<()> {
 
             loop {
                 let options = vec![
-                    "Show Flamechart",
-                    "Filter Functions (Recursive or Exact Match)",
+                    "Show Flamechart (Individual)",
+                    "Filter Flamechart Functions (Recursive or Exact Match)",
+                    "Show Flamegraph (Aggregated)",
+                    "Filter Flamegraph Functions (Recursive or Exact Match)",
                     "Show Statistics",
                     "Back to Profile Selection",
                 ];
@@ -209,10 +211,15 @@ fn analyze_single_time_profile() -> ThagResult<()> {
 
                 match action {
                     "Back to Profile Selection" => break,
-                    "Show Flamechart" => generate_time_flamechart(&processed)?,
-                    "Filter Functions (Recursive or Exact Match)" => {
+                    "Show Flamechart (Individual)" => generate_time_flamegraph(&processed, true)?,
+                    "Filter Flamechart Functions (Recursive or Exact Match)" => {
                         let filtered = filter_functions(&processed)?;
-                        generate_time_flamechart(&filtered)?;
+                        generate_time_flamegraph(&filtered, true)?;
+                    }
+                    "Show Flamegraph (Aggregated)" => generate_time_flamegraph(&processed, false)?,
+                    "Filter Flamegraph Functions (Recursive or Exact Match)" => {
+                        let filtered = filter_functions(&processed)?;
+                        generate_time_flamegraph(&filtered, false)?;
                     }
                     "Show Statistics" => {
                         show_statistics(&stats, &processed);
@@ -252,8 +259,10 @@ fn analyze_memory_profiles() -> ThagResult<()> {
 
             loop {
                 let options = vec![
-                    "Show Memory Flamechart",
-                    "Filter Memory Patterns",
+                    "Show Memory Flamechart (Individual)",
+                    "Filter Memory Flamechart Patterns",
+                    "Show Memory Flamegraph (Aggregated)",
+                    "Filter Memory Flamegraph Patterns",
                     "Show Memory Statistics",
                     "Show Allocation Size Distribution",
                     "Back to Profile Selection",
@@ -266,13 +275,28 @@ fn analyze_memory_profiles() -> ThagResult<()> {
 
                 match selection {
                     "Back to Profile Selection" => break,
-                    "Show Memory Flamechart" => generate_memory_flamechart(&processed)
-                        .map_or_else(|e| println!("{e}"), |()| {}),
-                    "Filter Memory Patterns" => {
+                    "Show Memory Flamechart (Individual)" => {
+                        generate_memory_flamegraph(&processed, true)
+                            .map_or_else(|e| println!("{e}"), |()| {})
+                    }
+                    "Filter Memory Flamechart Patterns" => {
                         filter_memory_patterns(&processed).map_or_else(
                             |e| println!("{e}"),
                             |filtered| {
-                                generate_memory_flamechart(&filtered)
+                                generate_memory_flamegraph(&filtered, true)
+                                    .map_or_else(|e| println!("{e}"), |()| {});
+                            },
+                        );
+                    }
+                    "Show Memory Flamegraph (Aggregated)" => {
+                        generate_memory_flamegraph(&processed, false)
+                            .map_or_else(|e| println!("{e}"), |()| {})
+                    }
+                    "Filter Memory Flamegraph Patterns" => {
+                        filter_memory_patterns(&processed).map_or_else(
+                            |e| println!("{e}"),
+                            |filtered| {
+                                generate_memory_flamegraph(&filtered, false)
                                     .map_or_else(|e| println!("{e}"), |()| {});
                             },
                         );
@@ -291,7 +315,7 @@ fn analyze_memory_profiles() -> ThagResult<()> {
     }
 }
 
-fn generate_time_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
+fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> ThagResult<()> {
     if profile.stacks.is_empty() {
         return Err(ThagError::Profiling(
             "No profile data available".to_string(),
@@ -301,14 +325,18 @@ fn generate_time_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     let color_scheme = select_time_color_scheme()?;
 
     let chart_type = ChartType::TimeSequence;
-    let svg = "flamechart.svg";
+    let svg = if as_chart {
+        "flamechart.svg"
+    } else {
+        "flamegraph.svg"
+    };
     let output = File::create(svg)?;
     let mut opts = Options::default();
     chart_type.configure_options(&mut opts);
-    opts.title = if opts.flame_chart {
-        "Execution Timeline Chart".to_string()
+    opts.title = if as_chart {
+        "Execution Timeline Flamechart (Individual)".to_string()
     } else {
-        "Flame Graph".to_string()
+        "Execution Timeline Flamegraph (Aggregated)".to_string()
     };
     opts.subtitle = Some(format!(
         "Started: {}",
@@ -319,7 +347,7 @@ fn generate_time_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     "μs".clone_into(&mut opts.count_name);
     opts.min_width = 0.0;
     // opts.color_diffusion = true;
-    opts.flame_chart = true;
+    opts.flame_chart = as_chart;
 
     flamegraph::from_lines(
         &mut opts,
@@ -329,8 +357,11 @@ fn generate_time_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
 
     enhance_svg_accessibility(svg)?;
 
-    println!("Flame chart generated: flamechart.svg");
-    open_in_browser("flamechart.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
+    println!(
+        "Flame {} generated: {svg}",
+        if as_chart { "chart" } else { "graph" }
+    );
+    open_in_browser(&svg).map_err(|e| ThagError::Profiling(e.to_string()))?;
     Ok(())
 }
 
@@ -1099,7 +1130,7 @@ fn build_time_stats(processed: &ProcessedProfile) -> ThagResult<ProfileStats> {
     Ok(stats)
 }
 
-fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
+fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> ThagResult<()> {
     if profile.stacks.is_empty() {
         return Err(ThagError::Profiling(
             "No memory profile data available".to_string(),
@@ -1113,7 +1144,11 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
 
     let output = File::create("memory-flamechart.svg")?;
     let mut opts = Options::default();
-    opts.title = format!("{} (Memory Profile)", profile.title);
+    opts.title = if as_chart {
+        "Memory Profile Flamechart (Individual)".to_string()
+    } else {
+        "Memory Profile Flamegraph (Aggregated)".to_string()
+    };
     opts.subtitle = Some(format!(
         "{}\nStarted: {}\nTotal Bytes Alloc: {} Dealloc: {} Peak: {}",
         profile.subtitle,
@@ -1125,7 +1160,7 @@ fn generate_memory_flamechart(profile: &ProcessedProfile) -> ThagResult<()> {
     opts.colors = Palette::Basic(BasicPalette::Mem);
     "bytes".clone_into(&mut opts.count_name);
     opts.min_width = 0.001;
-    opts.flame_chart = true;
+    opts.flame_chart = as_chart;
 
     flamegraph::from_lines(
         &mut opts,

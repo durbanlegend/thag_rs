@@ -83,7 +83,7 @@ tui-textarea = { version = "0.7", features = [
 
 [build-dependencies]
 phf = { version = "0.11", features = ["macros"] }
-tempfile = "3.17"
+tempfile = "3.18"
 toml = "0.8.19"
 
 [target.'cfg(windows)'.dependencies]

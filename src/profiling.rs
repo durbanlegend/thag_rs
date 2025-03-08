@@ -48,7 +48,7 @@ const PROFILING_FEATURE: bool = false;
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
 
 // Global registry of profiled functions
-static PROFILED_FUNCTIONS: Lazy<Mutex<HashMap<String, FunctionAttributes>>> =
+static PROFILED_FUNCTIONS: Lazy<Mutex<HashMap<String, String>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
 // static NEXT_PROFILE_ID: AtomicU64 = AtomicU64::new(1);
@@ -404,29 +404,10 @@ impl ProfileType {
     }
 }
 
-/// Function attributes
-#[derive(Clone, Debug)]
-#[allow(dead_code, unused_variables)]
-pub struct FunctionAttributes {
-    /// Whether the function is asynchronous
-    is_async: bool,
-    /// Whether the function is a method
-    is_method: bool,
-}
-
-impl FunctionAttributes {
-    pub fn new(is_async: bool, is_method: bool) -> Self {
-        Self {
-            is_async,
-            is_method,
-        }
-    }
-}
-
 pub struct Profile {
     // id: u64,
     start: Option<Instant>,
-    name: &'static str,
+    // name: &'static str,
     profile_type: ProfileType,
     initial_memory: Option<usize>,     // For memory delta
     path: Vec<String>,                 // Full call stack (only profiled functions)
@@ -440,7 +421,7 @@ impl Profile {
     ///
     /// Panics if stack validation fails.
     #[must_use]
-    #[allow(clippy::inline_always)]
+    #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
     pub fn new(
         name: &'static str,
         requested_type: ProfileType,
@@ -451,10 +432,7 @@ impl Profile {
             return None;
         }
 
-        // println!("Current function: {name}");
-
-        // Register this function
-        register_profiled_function(name, FunctionAttributes::new(is_async, is_method));
+        // eprintln!("Current function: {name}");
 
         // Get the current backtrace
         let mut current_backtrace = Backtrace::new_unresolved();
@@ -464,22 +442,40 @@ impl Profile {
         // First, collect all relevant frames
         let mut raw_frames: Vec<String> = Vec::new();
 
+        // If this is a method, we'll capture the calling class
+        let mut maybe_method_name: Option<String> = None;
+        let mut first_frame_after_profile = false;
+
         for frame in Backtrace::frames(&current_backtrace) {
             for symbol in frame.symbols() {
                 if let Some(name) = symbol.name() {
                     let name_str = name.to_string();
+                    // eprintln!("Symbol name: {name_str}");
 
                     // Check if we've reached the start condition
                     if !is_within_target_range
                         && name_str.contains("thag_rs::profiling::Profile::new")
                     {
                         is_within_target_range = true;
+                        first_frame_after_profile = true;
+                        continue;
                     }
 
                     // Collect frames within our target range
                     if is_within_target_range {
+                        // If this is the first frame after Profile::new and it's a method,
+                        // then we can extract the class name
+                        if first_frame_after_profile && is_method {
+                            first_frame_after_profile = false;
+                            let demangled = demangle(&name_str).to_string();
+                            // Clean the demangled name
+                            let cleaned = clean_function_name(&demangled);
+                            maybe_method_name = extract_class_method(&cleaned);
+                            // eprintln!("class_method name: {maybe_method_name:?}");
+                        }
+
                         // Skip tokio::runtime functions
-                        if name_str.starts_with("tokio::runtime") {
+                        if name_str.starts_with("tokio::") {
                             continue;
                         }
 
@@ -497,42 +493,39 @@ impl Profile {
             }
         }
 
+        // Register this function
+        let fn_name = maybe_method_name
+            .as_ref()
+            .map_or(name, |method_name| method_name);
+        let desc_fn_name = if is_async {
+            format!("async::{fn_name}")
+        } else {
+            fn_name.to_string()
+        };
+        // eprintln!("name={name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, fn_name={fn_name}");
+        register_profiled_function(&fn_name, desc_fn_name);
+
         // Process the collected frames to collapse patterns and clean up
         let cleaned_stack = clean_stack_trace(raw_frames);
+        // eprintln!("cleaned_stack={cleaned_stack:?}");
 
         // Filter to only profiled functions
         let mut path: Vec<String> = Vec::new();
 
-        // First add the most recent function (ourselves)
-        // println!("Current function: {name}");
-        // path.push(name.to_string());
+        // Add self and ancestors that are profiled functions
+        for fn_name_str in cleaned_stack {
+            // println!("Function name: {fn_name_str}");
 
-        // Then add our ancestors that are profiled functions
-        if let Ok(registry) = PROFILED_FUNCTIONS.lock() {
-            for fn_name_str in cleaned_stack {
-                // println!("Function name: {fn_name_str}");
-
-                let maybe_class_method = extract_class_method(&fn_name_str);
-                if let Some(class_method) = maybe_class_method {
-                    if registry.contains_key(&class_method) {
-                        path.push(class_method);
-                    } else {
-                        let maybe_fn_only = extract_fn_only(&fn_name_str);
-                        if let Some(fn_only) = maybe_fn_only {
-                            if registry.contains_key(&fn_only) {
-                                path.push(fn_only);
-                            }
-                        }
-                    }
-                } else {
-                    let maybe_fn_only = extract_fn_only(&fn_name_str);
-                    if let Some(fn_only) = maybe_fn_only {
-                        if registry.contains_key(&fn_only) {
-                            path.push(fn_only);
-                        }
-                    }
-                }
-            }
+            let desc_fn_name = extract_class_method(&fn_name_str).map_or_else(
+                || get_fn_desc_name(&fn_name_str),
+                |class_method| {
+                    get_reg_desc_name(&class_method).map_or_else(
+                        || get_fn_desc_name(&fn_name_str),
+                        |desc_fn_name| desc_fn_name,
+                    )
+                },
+            );
+            path.push(desc_fn_name);
         }
 
         // Reverse the path so it goes from root caller to current function
@@ -569,31 +562,12 @@ impl Profile {
             None
         };
 
-        // // Validate the stack to check for duplicates - this should panic if duplicate entries are found
-        // if let Some(err) = validate_profile_stack() {
-        //     panic!("Stack validation failed: {err}");
-        // }
-
-        // // Check if this name is already in the stack (validates our test's assumption)
-        // let current_stack = get_profile_stack();
-        // if current_stack.contains(&name) {
-        //     for (i, name) in current_stack.iter().enumerate() {
-        //         eprintln!("  [{i}]: {name}");
-        //     }
-        //     panic!("Stack validation failed: Duplicate stack entry {name}");
-        // }
-
-        // assert!(
-        //     !current_stack.contains(&name),
-        //     "Stack validation failed: Duplicate stack entry"
-        // );
-
-        // Push to stack
+        // // Push to stack
         push_profile(name);
 
         Some(Self {
             // id,
-            name,
+            // name,
             profile_type,
             start: Some(Instant::now()),
             initial_memory,
@@ -662,34 +636,10 @@ impl Profile {
 
         let stack = &self.path;
 
-        let stack_str = if stack.is_empty() {
-            eprintln!("Warning: found stack empty for {}", self.name);
-            if let Some(function_attributes) = get_function_attributes(self.name) {
-                if function_attributes.is_async {
-                    format!("async::{}", self.name)
-                } else {
-                    self.name.to_string()
-                }
-            } else {
-                self.name.to_string()
-            }
-        } else {
-            stack
-                .iter()
-                .map(|item| {
-                    if let Some(function_attributes) = get_function_attributes(item) {
-                        if function_attributes.is_async {
-                            format!("async::{item}")
-                        } else {
-                            item.to_string()
-                        }
-                    } else {
-                        item.to_string()
-                    }
-                })
-                .collect::<Vec<String>>()
-                .join(";")
-        };
+        if stack.is_empty() {
+            return Err(ThagError::Profiling("Stack is empty".into()));
+        }
+        let stack_str = stack.join(";");
         let entry = format!("{stack_str} {micros}");
 
         let paths = ProfilePaths::get();
@@ -702,41 +652,18 @@ impl Profile {
             return Ok(());
         }
 
-        // Get current stack as string
-        let stack_data = {
-            let stack = &self.path;
-            if stack.is_empty() {
-                self.name.to_string()
-            } else {
-                stack.join(";")
-            }
-        };
-        let entry = format!("{stack_data} {op}{delta}");
+        let stack = &self.path;
+
+        if stack.is_empty() {
+            return Err(ThagError::Profiling("Stack is empty".into()));
+        }
+        let stack_str = stack.join(";");
+
+        let entry = format!("{stack_str} {op}{delta}");
 
         let paths = ProfilePaths::get();
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
     }
-
-    // fn write_memory_event(&self, delta: usize) -> ThagResult<()> {
-    //     if delta == 0 {
-    //         // Keep this as it's a business logic check
-    //         return Ok(());
-    //     }
-
-    //     // Get current stack as string
-    //     let stack_data = {
-    //         let stack = get_profile_stack();
-    //         if stack.is_empty() {
-    //             self.name.to_string()
-    //         } else {
-    //             format!("{};{}", stack.join(";"), self.name)
-    //         }
-    //     };
-    //     let entry = format!("{stack_data} {delta}");
-
-    //     let paths = ProfilePaths::get();
-    //     Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
-    // }
 
     fn record_memory_change(&self, delta: usize) -> ThagResult<()> {
         if delta == 0 {
@@ -752,6 +679,13 @@ impl Profile {
 
         Ok(())
     }
+}
+
+fn get_fn_desc_name(fn_name_str: &String) -> String {
+    extract_fn_only(fn_name_str).map_or_else(
+        || fn_name_str.to_string(),
+        |fn_only| get_reg_desc_name(&fn_only).map_or(fn_only, |desc_fn_name| desc_fn_name),
+    )
 }
 
 impl Drop for Profile {
@@ -786,10 +720,17 @@ impl Drop for Profile {
     }
 }
 
-// Register a function name with the profiling registry
-pub fn register_profiled_function(name: &str, attributes: FunctionAttributes) {
+/// Register a function name with the profiling registry
+///
+/// # Panics
+///
+/// Panics if it finds the name "new", which shows that the inclusion of the
+/// type in the method name is not working.
+pub fn register_profiled_function(name: &str, desc_name: String) {
+    #[cfg(debug_assertions)]
+    assert!(name != "new");
     if let Ok(mut registry) = PROFILED_FUNCTIONS.lock() {
-        registry.insert(name.to_string(), attributes);
+        registry.insert(name.to_string(), desc_name);
     }
 }
 
@@ -800,8 +741,8 @@ pub fn is_profiled_function(name: &str) -> bool {
         .is_ok_and(|registry| registry.contains_key(name))
 }
 
-// Check if a function is registered for profiling
-pub fn get_function_attributes(name: &str) -> Option<FunctionAttributes> {
+// Get the descriptive name of a profiledfunction
+pub fn get_reg_desc_name(name: &str) -> Option<String> {
     PROFILED_FUNCTIONS
         .lock()
         .ok()
@@ -811,12 +752,15 @@ pub fn get_function_attributes(name: &str) -> Option<FunctionAttributes> {
 // Extract the class::method part from a fully qualified function name
 fn extract_class_method(qualified_name: &str) -> Option<String> {
     // Split by :: and get the last two components
+    // eprintln!("Extracting class::method from {}", qualified_name);
     let parts: Vec<&str> = qualified_name.split("::").collect();
     if parts.len() >= 2 {
         let class = parts[parts.len() - 2];
         let method = parts[parts.len() - 1];
+        // eprintln!("Returning `{class}::{method}`");
         Some(format!("{class}::{method}"))
     } else {
+        eprintln!("Returning `None`");
         None
     }
 }
@@ -841,6 +785,7 @@ fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
 
     // These are patterns we want to remove from the stack
     let scaffolding_patterns: Vec<&str> = vec![
+        "::main::",
         "::poll::",
         "::poll_next_unpin",
         "alloc::",

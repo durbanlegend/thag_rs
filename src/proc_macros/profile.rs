@@ -144,8 +144,8 @@ pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Convert Punctuated to slice for is_method
     let input_args: Vec<_> = inputs.iter().cloned().collect();
     // Determine if this is a method
-    // eprintln!("fn_name={fn_name}");
     let is_method = is_method(&input_args, output);
+    // eprintln!("fn_name={fn_name}, is_method={is_method}");
 
     // Get generic parameters
     // let type_params: Vec<_> = generics

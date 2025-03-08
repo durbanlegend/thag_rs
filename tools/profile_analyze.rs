@@ -197,10 +197,10 @@ fn analyze_single_time_profile() -> ThagResult<()> {
 
             loop {
                 let options = vec![
-                    "Show Flamechart (Individual)",
-                    "Filter Flamechart Functions (Recursive or Exact Match)",
-                    "Show Flamegraph (Aggregated)",
-                    "Filter Flamegraph Functions (Recursive or Exact Match)",
+                    "Show Detailed Execution Timeline (Flamechart)",
+                    "...Filter Detailed Functions (Recursive or Exact Match)",
+                    "Show Aggregated Execution Timeline (Flamegraph)",
+                    "...Filter Aggregated Functions (Recursive or Exact Match)",
                     "Show Statistics",
                     "Back to Profile Selection",
                 ];
@@ -211,13 +211,17 @@ fn analyze_single_time_profile() -> ThagResult<()> {
 
                 match action {
                     "Back to Profile Selection" => break,
-                    "Show Flamechart (Individual)" => generate_time_flamegraph(&processed, true)?,
-                    "Filter Flamechart Functions (Recursive or Exact Match)" => {
+                    "Show Detailed Execution Timeline (Flamechart)" => {
+                        generate_time_flamegraph(&processed, true)?
+                    }
+                    "...Filter Detailed Functions (Recursive or Exact Match)" => {
                         let filtered = filter_functions(&processed)?;
                         generate_time_flamegraph(&filtered, true)?;
                     }
-                    "Show Flamegraph (Aggregated)" => generate_time_flamegraph(&processed, false)?,
-                    "Filter Flamegraph Functions (Recursive or Exact Match)" => {
+                    "Show Aggregated Execution Timeline (Flamegraph)" => {
+                        generate_time_flamegraph(&processed, false)?
+                    }
+                    "...Filter Aggregated Functions (Recursive or Exact Match)" => {
                         let filtered = filter_functions(&processed)?;
                         generate_time_flamegraph(&filtered, false)?;
                     }
@@ -259,10 +263,10 @@ fn analyze_memory_profiles() -> ThagResult<()> {
 
             loop {
                 let options = vec![
-                    "Show Memory Flamechart (Individual)",
-                    "Filter Memory Flamechart Patterns",
-                    "Show Memory Flamegraph (Aggregated)",
-                    "Filter Memory Flamegraph Patterns",
+                    "Show Detailed Memory Profile (Flamechart)",
+                    "...Filter Detailed Functions (Recursive or Exact Match)",
+                    "Show Aggregated Memory Profile (Flamegraph)",
+                    "...Filter Aggregated Functions (Recursive or Exact Match)",
                     "Show Memory Statistics",
                     "Show Allocation Size Distribution",
                     "Back to Profile Selection",
@@ -275,11 +279,11 @@ fn analyze_memory_profiles() -> ThagResult<()> {
 
                 match selection {
                     "Back to Profile Selection" => break,
-                    "Show Memory Flamechart (Individual)" => {
+                    "Show Detailed Memory Profile (Flamechart)" => {
                         generate_memory_flamegraph(&processed, true)
                             .map_or_else(|e| println!("{e}"), |()| {})
                     }
-                    "Filter Memory Flamechart Patterns" => {
+                    "...Filter Detailed Functions (Recursive or Exact Match)" => {
                         filter_memory_patterns(&processed).map_or_else(
                             |e| println!("{e}"),
                             |filtered| {
@@ -288,11 +292,11 @@ fn analyze_memory_profiles() -> ThagResult<()> {
                             },
                         );
                     }
-                    "Show Memory Flamegraph (Aggregated)" => {
+                    "Show Aggregated Memory Profile (Flamegraph)" => {
                         generate_memory_flamegraph(&processed, false)
                             .map_or_else(|e| println!("{e}"), |()| {})
                     }
-                    "Filter Memory Flamegraph Patterns" => {
+                    "...Filter Aggregated Functions (Recursive or Exact Match)" => {
                         filter_memory_patterns(&processed).map_or_else(
                             |e| println!("{e}"),
                             |filtered| {

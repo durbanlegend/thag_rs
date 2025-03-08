@@ -195,27 +195,6 @@ fn generate_profile_name(
 ) -> String {
     let mut parts = Vec::new();
 
-    // Add async prefix if applicable
-    // if is_async {
-    //     parts.push("async".to_string());
-    // }
-
-    // Add context (impl/trait/fn)
-    // if is_method {
-    //     if let Some(trait_name) = &args.trait_name {
-    //         parts.push(format!("trait::{trait_name}"));
-    //         if let Some(impl_type) = &args.imp {
-    //             parts.push(format!("impl::{impl_type}"));
-    //         }
-    //     } else if let Some(impl_type) = &args.imp {
-    //         parts.push(format!("impl::{impl_type}"));
-    //     } else {
-    //         parts.push("method".to_string());
-    //     }
-    // } else {
-    //     parts.push("fn".to_string());
-    // }
-
     if is_method {
         if let Some(impl_type) = &args.imp {
             parts.push(impl_type.to_string());
@@ -224,11 +203,6 @@ fn generate_profile_name(
 
     // Add function name
     parts.push(fn_name.to_string());
-
-    // // Add generic parameters if any
-    // if !type_params.is_empty() {
-    //     parts.push(format!("<{}>", type_params.join(",")));
-    // }
 
     parts.join("::")
 }

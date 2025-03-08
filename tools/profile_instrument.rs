@@ -108,7 +108,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
     let parse = SourceFile::parse(source, edition);
     let tree = parse.tree().clone_for_update();
 
-    let imports = ["use thag_rs::{enable_profiling, profile, profiling, Profile};"];
+    let imports = ["use thag_rs::{async_local, enable_profiling, profile, profiling, Profile};"];
 
     for import_text in imports.iter() {
         if !source.contains(import_text) {

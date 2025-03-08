@@ -7,6 +7,8 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [dependencies]
+# async-local = "4.0.0"
+# async-local = { version = "4.0.0", features = ["barrier-protected-runtime"] }
 inline_colorization = "0.1.6"
 prettyplease = "0.2.30"
 proc-macro2 = "1.0"

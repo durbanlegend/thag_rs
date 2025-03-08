@@ -82,6 +82,10 @@ pub mod shared;
 #[cfg(feature = "core")]
 pub mod styling;
 
+// Re-export the async_local crate for proc macros
+#[cfg(feature = "core")]
+pub use async_local;
+
 //-----------------------------------------------------------------------------
 // AST Analysis:
 //-----------------------------------------------------------------------------

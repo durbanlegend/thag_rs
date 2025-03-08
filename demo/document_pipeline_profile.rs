@@ -13,6 +13,7 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 use thag_rs::{enable_profiling, profile, profiling, Profile};
+// use thag_rs::profile_section;
 
 struct Document {
     id: usize,
@@ -23,8 +24,9 @@ struct Document {
 }
 
 impl Document {
-    #[profile]
+    #[profile(imp = "Document")]
     fn new(id: usize, content: String) -> Self {
+        // let _ = sleep(Duration::from_millis(50 + (id % 10 * 5) as u64));
         Document {
             id,
             content,

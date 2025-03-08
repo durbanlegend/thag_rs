@@ -7,7 +7,6 @@ use proc_macro2::TokenStream;
 use quote::ToTokens;
 use regex::Regex;
 use std::collections::HashSet;
-use std::ops::Deref;
 use std::{
     collections::HashMap,
     hash::BuildHasher,

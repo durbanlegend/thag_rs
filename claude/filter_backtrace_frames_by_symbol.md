@@ -4027,3 +4027,126 @@ With this restructuring:
 This structure maintains the separation of concerns while providing a clean API that's easy to use. The attribute still has value as a more convenient way to enable profiling with default settings.
 
 Does this implementation plan make sense for your needs?
+
+
+Yes, except to point out that 3. is not the case, because #[enable_profiling] allows the profile type/s to be specified, e.g.: `#[enable_profiling(profile_type = "time")]` (or `memory` or `both`)
+
+# Including Profile Type Options in #[enable_profiling]
+
+You're absolutely right - I overlooked that the `#[enable_profiling]` attribute already supports specifying the profile type. Let's correct that and ensure the attribute maintains its full functionality in the new structure.
+
+## Enhanced Implementation with Profile Type Options
+
+Here's how to properly implement the `#[enable_profiling]` attribute with profile type support:
+
+```rust
+// In thag_proc_macros/src/lib.rs
+#[proc_macro_attribute]
+pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ItemFn);
+
+    // Parse the attribute arguments to extract profile_type
+    let profile_type = if attr.is_empty() {
+        // Default to "both" if no type specified
+        quote! { thag_profiling::ProfileType::Both }
+    } else {
+        // Parse the attribute arguments
+        let attr_args = parse_macro_input!(attr as AttributeArgs);
+
+        // Find the profile_type argument
+        let mut profile_type = None;
+        for arg in attr_args {
+            if let NestedMeta::Meta(Meta::NameValue(name_value)) = arg {
+                if name_value.path.is_ident("profile_type") {
+                    if let Lit::Str(lit_str) = &name_value.lit {
+                        let type_str = lit_str.value();
+                        profile_type = Some(match type_str.as_str() {
+                            "time" => quote! { thag_profiling::ProfileType::User },
+                            "memory" => quote! { thag_profiling::ProfileType::System },
+                            "both" => quote! { thag_profiling::ProfileType::Both },
+                            "none" => quote! { thag_profiling::ProfileType::None },
+                            _ => {
+                                return syn::Error::new_spanned(
+                                    &name_value.lit,
+                                    "profile_type must be one of: time, memory, both, none"
+                                ).to_compile_error().into();
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        profile_type.unwrap_or(quote! { thag_profiling::ProfileType::Both })
+    };
+
+    if cfg!(feature = "profiling") {
+        // Generate code with the specified profile type
+        quote! {
+            const _: () = {
+                // This runs when the binary starts
+                thag_profiling::enable_profiling(true, #profile_type)
+                    .expect("Failed to enable profiling");
+            };
+
+            #input
+        }.into()
+    } else {
+        // Without the feature, pass through unchanged
+        quote! { #input }.into()
+    }
+}
+```
+
+## Usage Examples
+
+Now users can specify the profile type in any of these ways:
+
+```rust
+// Default (both time and memory)
+#[enable_profiling]
+fn main() {
+    // ...
+}
+
+// Just time profiling
+#[enable_profiling(profile_type = "time")]
+fn main() {
+    // ...
+}
+
+// Just memory profiling
+#[enable_profiling(profile_type = "memory")]
+fn main() {
+    // ...
+}
+
+// Explicitly specify both
+#[enable_profiling(profile_type = "both")]
+fn main() {
+    // ...
+}
+
+// Disable profiling even when feature is on
+#[enable_profiling(profile_type = "none")]
+fn main() {
+    // ...
+}
+```
+
+## Ensuring Backward Compatibility
+
+This preserves the existing functionality of the `#[enable_profiling]` attribute while adapting it to work with the new structure. The attribute remains the most convenient way to enable profiling with specific settings.
+
+## In Summary
+
+With this implementation:
+
+1. The `profiling` feature in `thag_profiling` controls whether profiling code is included
+2. The `#[enable_profiling]` attribute provides a convenient way to enable it with specific profile types
+3. Manual control is still possible using the `enable_profiling()` function
+4. The `PROFILING_ENABLED` constant makes it easy to check if profiling is available
+
+This gives users the full range of options from simple to advanced usage, maintaining all the existing functionality while adding the benefits of the new structure.
+
+Does this fully address the profile type specification in the attribute?

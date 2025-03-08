@@ -58,6 +58,5 @@ mods.svg
 demo/proc_macros/target/doc/static.files/favicon-2c020d218678b618.svg
 sync_docs_report.txt
 async_docs_report.txt
-demo/document_pipeline_profile_async_bad.rs
 src/proc_macros/profile_6ac8548.rs
 src/profiling_6ac8548.rs

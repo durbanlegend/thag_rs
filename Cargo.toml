@@ -28,8 +28,7 @@ license = false
 eula = false
 
 [dependencies]
-async-local = "4.0.0"
-# async-local = { version = "4.0.0", features = ["barrier-protected-runtime"] }
+backtrace = "0.3"
 bitflags = { version = "2.9.0", optional = true }
 cargo-lookup = { version = "0.1.0", optional = true }
 cargo_toml = { version = "0.21.0", optional = true }
@@ -46,15 +45,17 @@ log = "0.4.26"
 memory-stats = "1.2.0"
 mockall = { version = "0.13.1", optional = true }
 nu-ansi-term = { version = "0.50.1", optional = true }
+once_cell = "1.20.3"
 phf = { version = "0.11", features = ["macros"] }
-prettyplease = { version = "0.2.29", optional = true }
-proc-macro2 = "1.0.93"
+prettyplease = { version = "0.2.30", optional = true }
+proc-macro2 = "1.0.94"
 quote = { version = "1.0.39", optional = true }
 ratatui = { version = "0.29.0", optional = true }
 reedline = { version = "0.37.0", optional = true }
 regex = "1.11.1"
+rustc-demangle = "0.1.24"
 scopeguard = { version = "1.2.0", optional = true }
-semver = "1.0.25"
+semver = "1.0.26"
 serde = { version = "1.0.218", features = ["derive"] }
 serde_json = { version = "1.0.140", optional = true }
 serde_merge = { version = "0.1.3", optional = true }
@@ -82,7 +83,7 @@ tui-textarea = { version = "0.7", features = [
 
 [build-dependencies]
 phf = { version = "0.11", features = ["macros"] }
-tempfile = "3.17"
+tempfile = "3.18"
 toml = "0.8.19"
 
 [target.'cfg(windows)'.dependencies]
@@ -252,7 +253,7 @@ requires-any = [["simplelog", "env_logger"]]
 [dev-dependencies]
 assert_cmd = "2.0.16"
 criterion = "0.5.1"
-either = "1.14.0"
+either = "1.15.0"
 env_logger = "0.11.5"
 lazy_static = "1.5.0"
 predicates = "3.1.2"

@@ -2269,7 +2269,7 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
 
     // Find closest color in the 6x6x6 color cube (16-231)
     let find_closest = |v: u8| {
-        profile_fn!("find_closest");
+        profile_fn!("find_closest", false);
         u8::try_from(
             STEPS
                 .iter()

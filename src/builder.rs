@@ -1000,7 +1000,7 @@ pub fn generate(
     vlog!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {
-        profile_section!("transform_snippet");
+        let _profile_section = profile_section!("transform_snippet");
         // TODO make this configurable
         let rs_source: &str = {
             #[cfg(feature = "format_snippet")]

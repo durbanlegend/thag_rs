@@ -143,7 +143,7 @@ pub use {
     errors::{ThagError, ThagResult},
     log, // re-export log crate for debug_log
     logging::{get_verbosity, Verbosity, V},
-    profiling::{end_profile_section, Profile, ProfileType},
+    profiling::{Profile, ProfileType},
     shared::{
         debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, thousands,
     },

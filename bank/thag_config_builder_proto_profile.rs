@@ -22,7 +22,7 @@ use serde::Serialize;
 use std::{fs, path::PathBuf};
 
 // use thag_proc_macros::profile;
-use thag_rs::{async_local, enable_profiling, profile, profiling, Profile};
+use thag_rs::{enable_profiling, profile, profiling, Profile};
 
 type Error = CustomUserError;
 

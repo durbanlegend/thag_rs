@@ -15,22 +15,21 @@
 //! `demo/thag_profile.rs` also allows you to filter out unwanted events, e.g. to make it easier to drill down into the flamechart.
 //!
 use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
-use async_local::Context;
+use backtrace::Backtrace;
 use chrono::Local;
 use memory_stats::memory_stats;
-use std::cell::RefCell;
+use once_cell::sync::Lazy;
+use rustc_demangle::demangle;
 use std::collections::{HashMap, HashSet};
+use std::convert::Into;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::marker::PhantomData;
 use std::path::PathBuf;
-use std::ptr;
 use std::sync::{
-    atomic::{AtomicBool, AtomicPtr, AtomicU64, AtomicU8, AtomicUsize, Ordering},
-    Mutex, OnceLock,
+    atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
+    Mutex,
 };
-use std::thread;
-use std::thread::ThreadId;
 use std::time::{Instant, SystemTime};
 
 // Single atomic for runtime profiling state
@@ -47,6 +46,10 @@ const PROFILING_FEATURE: bool = true;
 const PROFILING_FEATURE: bool = false;
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
+
+// Global registry of profiled functions
+static PROFILED_FUNCTIONS: Lazy<Mutex<HashMap<String, String>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
@@ -75,95 +78,7 @@ static_lazy! {
     MemoryProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
-const MAX_PROFILE_DEPTH: usize = 100;
-
-static PROFILE_STACK: [AtomicPtr<&'static str>; MAX_PROFILE_DEPTH] =
-    [const { AtomicPtr::new(ptr::null_mut()) }; MAX_PROFILE_DEPTH];
-static STACK_DEPTH: AtomicUsize = AtomicUsize::new(0);
-
-// Safe interface for stack operations
-#[allow(dead_code)]
-pub(crate) fn push_profile(name: &'static str) -> bool {
-    let idx = STACK_DEPTH.load(Ordering::SeqCst);
-    if idx >= MAX_PROFILE_DEPTH {
-        return false;
-    }
-
-    let name_ptr = Box::into_raw(Box::new(name));
-    PROFILE_STACK[idx].store(name_ptr, Ordering::SeqCst);
-    STACK_DEPTH.store(idx + 1, Ordering::SeqCst);
-    true
-}
-
-pub fn pop_profile() {
-    let idx = STACK_DEPTH.load(Ordering::SeqCst);
-    if idx > 0 {
-        let old_ptr = PROFILE_STACK[idx - 1].swap(ptr::null_mut(), Ordering::SeqCst);
-        if !old_ptr.is_null() {
-            // Clean up the Box we created
-            unsafe {
-                drop(Box::from_raw(old_ptr));
-            }
-        }
-        STACK_DEPTH.store(idx - 1, Ordering::SeqCst);
-    }
-}
-
-pub(crate) fn get_profile_stack() -> Vec<&'static str> {
-    let depth = STACK_DEPTH.load(Ordering::SeqCst);
-    let mut result = Vec::with_capacity(depth);
-
-    for frame in PROFILE_STACK.iter().take(depth) {
-        let ptr = frame.load(Ordering::SeqCst);
-        if !ptr.is_null() {
-            unsafe {
-                let name = *ptr;
-                result.push(name);
-            }
-        }
-    }
-    result
-}
-
-/// For validation in debug builds
-// #[cfg(debug_assertions)]
-#[allow(dead_code)]
-fn validate_profile_stack() -> Option<String> {
-    let depth = STACK_DEPTH.load(Ordering::SeqCst);
-    if depth >= MAX_PROFILE_DEPTH {
-        return Some(format!("Stack depth {depth} exceeds limit"));
-    }
-
-    // Check for duplicate entries in stack
-    let stack = get_profile_stack();
-    let mut seen = HashSet::new();
-
-    for name in &stack {
-        if !seen.insert(name) {
-            return Some("Duplicate stack entry".to_string());
-        }
-    }
-
-    None
-}
-
 static START_TIME: AtomicU64 = AtomicU64::new(0);
-
-// Used by proc_macros for creating task IDs
-pub static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
-
-// Global storage for profile paths
-// Using a Mutex instead of thread_local to ensure paths are accessible across threads
-// This is crucial for async functions that might be polled on different threads
-pub static PROFILE_PATHS: OnceLock<Mutex<HashMap<u64, Vec<&'static str>>>> = OnceLock::new();
-
-// Thread-local storage for the currently active task ID
-thread_local! {
-    static THREAD_ID: RefCell<ThreadId> = RefCell::new(thread::current().id());
-    // Track the async task context to keep profiling paths separate across tasks
-    // pub static ASYNC_CONTEXT: RefCell<u64> = const { RefCell::new(0) };
-    pub static ASYNC_CONTEXT: Context<AtomicU64> = Context::new(AtomicU64::new(0));
-}
 
 #[derive(Clone)]
 struct ProfileFilePaths {
@@ -271,12 +186,6 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
         .map_err(|_| ThagError::Profiling("Failed to acquire profiling mutex".into()))?;
 
     if enabled {
-        // Check that the stack is empty before enabling profiling
-        let stack_depth = STACK_DEPTH.load(Ordering::SeqCst);
-        if stack_depth > 0 {
-            return Err(ThagError::Profiling(format!("Cannot enable profiling: profiling stack is not empty (depth {stack_depth}). Another application may be using the profiling stack.")));
-        }
-
         set_profile_type(profile_type);
 
         let Ok(now) = u64::try_from(
@@ -300,56 +209,6 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
 /// Disable profiling and reset the profiling stack.
 pub fn disable_profiling() {
     PROFILING_STATE.store(false, Ordering::SeqCst);
-    reset_profiling_stack();
-}
-
-// Resets the profiling stack, safely cleaning up any leftover entries
-///
-/// This is useful when tests need to ensure a clean state or when
-/// profiling needs to be reset without relying on scope-based cleanup.
-///
-/// Before resetting, this function may print all entries in the stack
-/// to help diagnose issues with nested profiling calls.
-pub fn reset_profiling_stack() {
-    // Get current depth
-    let old_depth = STACK_DEPTH.load(Ordering::SeqCst);
-
-    // Reset depth to 0
-    STACK_DEPTH.store(0, Ordering::SeqCst);
-
-    // Clean up existing entries
-    for atomic_ptr in PROFILE_STACK.iter().take(old_depth) {
-        let ptr = atomic_ptr.swap(ptr::null_mut(), Ordering::SeqCst);
-        if !ptr.is_null() {
-            unsafe {
-                drop(Box::from_raw(ptr));
-            }
-        }
-    }
-
-    // Ensure all entries are cleared
-    for atomic_ptr in PROFILE_STACK.iter().take(MAX_PROFILE_DEPTH).skip(old_depth) {
-        atomic_ptr.store(ptr::null_mut(), Ordering::SeqCst);
-    }
-
-    // Reset all profile paths
-    if let Some(paths_mutex) = PROFILE_PATHS.get() {
-        if let Ok(mut paths) = paths_mutex.lock() {
-            paths.clear();
-        }
-    } else {
-        // Initialize if not already done
-        let _ = PROFILE_PATHS.get_or_init(|| Mutex::new(HashMap::new()));
-    }
-
-    // Reset the async context ID
-    ASYNC_CONTEXT.with(|_ctx| {
-        // Replace the context with a new one containing 0
-        let _ = Context::new(AtomicU64::new(0));
-    });
-
-    // Stack reset complete
-    eprintln!("Finished resetting profiling stack");
 }
 
 /// Creates and initializes a single profile file with header information.
@@ -423,46 +282,132 @@ impl ProfileType {
     }
 }
 
-/// A profile instance representing a specific function or code section being profiled
 pub struct Profile {
+    // id: u64,
     start: Option<Instant>,
-    name: &'static str,
-    // Path from root to this profile point
-    path: Vec<&'static str>,
+    // name: &'static str,
     profile_type: ProfileType,
     initial_memory: Option<usize>,     // For memory delta
+    path: Vec<String>,                 // Full call stack (only profiled functions)
     _not_send: PhantomData<*const ()>, // Makes Profile !Send
-    task_id: u64,                      // Unique ID for this profile instance
 }
 
 impl Profile {
-    #[must_use]
-    pub const fn new_raw(name: &'static str) -> Self {
-        Self {
-            start: None,
-            name,
-            path: Vec::new(),
-            profile_type: ProfileType::Time, // Default to time profiling
-            initial_memory: None,
-            _not_send: PhantomData,
-            task_id: 0,
-        }
-    }
-
     /// Creates a new `Profile` to profile a section of code.
     ///
     /// # Panics
     ///
     /// Panics if stack validation fails.
-    #[must_use]
-    #[inline(always)]
-    #[allow(clippy::inline_always)]
-    pub fn new(name: &'static str, requested_type: ProfileType, task_id: u64) -> Option<Self> {
-        // eprintln!("In Profile::new for {name}");
+    #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
+    pub fn new(
+        name: String,
+        requested_type: ProfileType,
+        is_async: bool,
+        is_method: bool,
+    ) -> Option<Self> {
         if !is_profiling_enabled() {
-            // eprintln!("Profiling not enabled!");
             return None;
         }
+
+        // eprintln!("Current function: {name}");
+
+        // Get the current backtrace
+        let mut current_backtrace = Backtrace::new_unresolved();
+        current_backtrace.resolve();
+        let mut is_within_target_range = false;
+
+        // First, collect all relevant frames
+        let mut raw_frames: Vec<String> = Vec::new();
+
+        // If this is a method, we'll capture the calling class
+        let mut maybe_method_name: Option<String> = None;
+        let mut first_frame_after_profile = false;
+
+        for frame in Backtrace::frames(&current_backtrace) {
+            for symbol in frame.symbols() {
+                if let Some(name) = symbol.name() {
+                    let name_str = name.to_string();
+                    // eprintln!("Symbol name: {name_str}");
+
+                    // Check if we've reached the start condition
+                    if !is_within_target_range
+                        && name_str.contains("thag_rs::profiling::Profile::new")
+                    {
+                        is_within_target_range = true;
+                        first_frame_after_profile = true;
+                        continue;
+                    }
+
+                    // Collect frames within our target range
+                    if is_within_target_range {
+                        // If this is the first frame after Profile::new and it's a method,
+                        // then we can extract the class name
+                        if first_frame_after_profile && is_method {
+                            first_frame_after_profile = false;
+                            let demangled = demangle(&name_str).to_string();
+                            // Clean the demangled name
+                            let cleaned = clean_function_name(&demangled);
+                            maybe_method_name = extract_class_method(&cleaned);
+                            // eprintln!("class_method name: {maybe_method_name:?}");
+                        }
+
+                        // Skip tokio::runtime functions
+                        if name_str.starts_with("tokio::") {
+                            continue;
+                        }
+
+                        // Demangle the symbol
+                        let demangled = demangle(&name_str).to_string();
+                        raw_frames.push(demangled);
+
+                        // Check if we've reached the end condition
+                        if name_str.contains("std::sys::backtrace::__rust_begin_short_backtrace") {
+                            is_within_target_range = false;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Register this function
+        let fn_name = maybe_method_name.as_ref().map_or(name, Into::into);
+        let desc_fn_name = if is_async {
+            format!("async::{fn_name}")
+        } else {
+            fn_name.to_string()
+        };
+        // eprintln!("name={name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, fn_name={fn_name}");
+        register_profiled_function(&fn_name, desc_fn_name);
+
+        // Process the collected frames to collapse patterns and clean up
+        let cleaned_stack = clean_stack_trace(raw_frames);
+        // eprintln!("cleaned_stack={cleaned_stack:?}");
+
+        // Filter to only profiled functions
+        let mut path: Vec<String> = Vec::new();
+
+        // Add self and ancestors that are profiled functions
+        for fn_name_str in cleaned_stack {
+            // println!("Function name: {fn_name_str}");
+
+            let desc_fn_name = extract_class_method(&fn_name_str).map_or_else(
+                || get_fn_desc_name(&fn_name_str),
+                |class_method| {
+                    get_reg_desc_name(&class_method).map_or_else(
+                        || get_fn_desc_name(&fn_name_str),
+                        |desc_fn_name| desc_fn_name,
+                    )
+                },
+            );
+            path.push(desc_fn_name);
+        }
+
+        // Reverse the path so it goes from root caller to current function
+        path.reverse();
+
+        // Create the profile with filtered path
+        // let _id = NEXT_PROFILE_ID.fetch_add(1, Ordering::SeqCst);
 
         // In test mode with our test wrapper active, skip creating profile for #[profile] attribute
         #[cfg(test)]
@@ -492,63 +437,14 @@ impl Profile {
             None
         };
 
-        // Use the current thread's async context ID assigned by async fn wrapper
-        eprintln!("Profile::new: task_id={task_id}");
-
-        let async_task_id =
-            crate::profiling::ASYNC_CONTEXT.with(|ctx| (**ctx).load(Ordering::SeqCst));
-        eprintln!("Profile::new: async_task_id={async_task_id}");
-
-        // Set the current async context to this task's ID
-        crate::profiling::ASYNC_CONTEXT.with(|_ctx| {
-            let _ = Context::new(AtomicU64::new(task_id));
-        });
-
-        eprintln!("Profile::new: set ASYNC_CONTEXT to {task_id}");
-
-        // Retrieve the current path for this task from the global map
-        let mut path = if let Some(paths_mutex) = PROFILE_PATHS.get() {
-            if let Ok(paths) = paths_mutex.lock() {
-                eprintln!("Profile::new: Retrieved path={paths:?}, name={name}, task_id={task_id}");
-                paths.get(&task_id).cloned().unwrap_or_default()
-            } else {
-                eprintln!("Profile::new: Fallback: no lock");
-                Vec::new() // Fallback if lock fails
-            }
-        } else {
-            // Initialize if not already done
-            let _mutex = PROFILE_PATHS.get_or_init(|| Mutex::new(HashMap::new()));
-            eprintln!("Profile::new: Fallback: PROFILE_PATHS is None");
-            Vec::new() // Return empty path for first initialization
-        };
-
-        // Add this profile to the path - this maintains the parent-child relationship
-        path.push(name);
-
-        // Save the updated path for this task in the global map
-        if let Some(paths_mutex) = PROFILE_PATHS.get() {
-            if let Ok(mut paths) = paths_mutex.lock() {
-                paths.insert(task_id, path.clone());
-                eprintln!("Profile::new: Inserted task_id={task_id}, path={path:?}");
-            }
-        } else {
-            // Initialize and insert
-            let _mutex = PROFILE_PATHS.get_or_init(|| {
-                let mut map = HashMap::new();
-                map.insert(task_id, path.clone());
-                Mutex::new(map)
-            });
-            eprintln!("Profile::new: Initialised and inserted task_id={task_id}, path={path:?}");
-        }
-
         Some(Self {
-            name,
-            path,
+            // id,
+            // name,
             profile_type,
             start: Some(Instant::now()),
             initial_memory,
+            path,
             _not_send: PhantomData,
-            task_id,
         })
     }
 
@@ -602,20 +498,21 @@ impl Profile {
     /// # Errors
     /// Returns a `ThagError` if writing to the profile file fails
     fn write_time_event(&self, duration: std::time::Duration) -> ThagResult<()> {
-        // Skip zero-duration events
+        // Profile must exist and profiling must be enabled if we got here
+        // Only keep the business logic checks
+
         let micros = duration.as_micros();
         if micros == 0 {
             return Ok(());
         }
 
-        // Format entry with full path to preserve parent-child relationships
-        let entry = if self.path.is_empty() {
-            format!("{} {micros}", self.name)
-        } else {
-            // Use the full path with semicolons to show proper nesting in flamegraphs
-            let path_str = self.path.join(";");
-            format!("{path_str} {micros}")
-        };
+        let stack = &self.path;
+
+        if stack.is_empty() {
+            return Err(ThagError::Profiling("Stack is empty".into()));
+        }
+        let stack_str = stack.join(";");
+        let entry = format!("{stack_str} {micros}");
 
         let paths = ProfilePaths::get();
         Self::write_profile_event(&paths.time, TimeProfileFile::get(), &entry)
@@ -623,18 +520,18 @@ impl Profile {
 
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ThagResult<()> {
         if delta == 0 {
+            // Keep this as it's a business logic check
             return Ok(());
         }
 
-        // Format entry with full path to preserve parent-child relationships
-        let path_str = if self.path.is_empty() {
-            self.name.to_string()
-        } else {
-            // Use the full path with semicolons to show proper nesting in flamegraphs
-            self.path.join(";")
-        };
+        let stack = &self.path;
 
-        let entry = format!("{path_str} {op}{delta}");
+        if stack.is_empty() {
+            return Err(ThagError::Profiling("Stack is empty".into()));
+        }
+        let stack_str = stack.join(";");
+
+        let entry = format!("{stack_str} {op}{delta}");
 
         let paths = ProfilePaths::get();
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
@@ -656,11 +553,17 @@ impl Profile {
     }
 }
 
+fn get_fn_desc_name(fn_name_str: &String) -> String {
+    extract_fn_only(fn_name_str).map_or_else(
+        || fn_name_str.to_string(),
+        |fn_only| get_reg_desc_name(&fn_only).map_or(fn_only, |desc_fn_name| desc_fn_name),
+    )
+}
+
 impl Drop for Profile {
     fn drop(&mut self) {
-        // First, write the profiling measurements before we modify any state
         if let Some(start) = self.start.take() {
-            // Handle time profiling
+            // Handle time profiling as before
             match self.profile_type {
                 ProfileType::Time | ProfileType::Both => {
                     let elapsed = start.elapsed();
@@ -670,7 +573,7 @@ impl Drop for Profile {
             }
         }
 
-        // Handle memory profiling measurements
+        // Handle memory profiling
         if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
             if let Some(initial) = self.initial_memory {
                 if let Some(stats) = memory_stats() {
@@ -683,25 +586,186 @@ impl Drop for Profile {
                 }
             }
         }
+    }
+}
 
-        eprintln!("Profile::drop: self.path={:?}", self.path);
+pub struct ProfileSection {
+    profile: Option<Profile>,
+}
 
-        // Update the path in global storage by removing the current function
-        if !self.path.is_empty() {
-            if let Some(paths_mutex) = PROFILE_PATHS.get() {
-                if let Ok(mut paths) = paths_mutex.lock() {
-                    eprintln!("Profile::drop: paths={paths:?}, task_id={}", self.task_id);
-                    if let Some(task_path) = paths.get_mut(&self.task_id) {
-                        eprintln!("Profile::drop: task_path (before)={task_path:?}");
-                        if !task_path.is_empty() {
-                            task_path.pop();
-                        }
-                        eprintln!("Profile::drop: task_path (after)={task_path:?}");
-                    }
-                }
-            }
+impl ProfileSection {
+    #[must_use]
+    pub fn new(name: &str) -> Self {
+        Self {
+            profile: Profile::new(
+                name.to_string(),
+                get_global_profile_type(),
+                false, // log_to_file
+                false, // log_to_stdout
+            ),
         }
     }
+
+    pub fn end(self) {
+        // Profile (if any) will be dropped here
+    }
+
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        self.profile.is_some()
+    }
+}
+
+/// Register a function name with the profiling registry
+///
+/// # Panics
+///
+/// Panics if it finds the name "new", which shows that the inclusion of the
+/// type in the method name is not working.
+pub fn register_profiled_function(name: &str, desc_name: String) {
+    #[cfg(debug_assertions)]
+    assert!(name != "new");
+    if let Ok(mut registry) = PROFILED_FUNCTIONS.lock() {
+        registry.insert(name.to_string(), desc_name);
+    }
+}
+
+// Check if a function is registered for profiling
+pub fn is_profiled_function(name: &str) -> bool {
+    PROFILED_FUNCTIONS
+        .lock()
+        .is_ok_and(|registry| registry.contains_key(name))
+}
+
+// Get the descriptive name of a profiledfunction
+pub fn get_reg_desc_name(name: &str) -> Option<String> {
+    PROFILED_FUNCTIONS
+        .lock()
+        .ok()
+        .and_then(|registry| registry.get(name).cloned())
+}
+
+// Extract the class::method part from a fully qualified function name
+fn extract_class_method(qualified_name: &str) -> Option<String> {
+    // Split by :: and get the last two components
+    // eprintln!("Extracting class::method from {}", qualified_name);
+    let parts: Vec<&str> = qualified_name.split("::").collect();
+    if parts.len() >= 2 {
+        let class = parts[parts.len() - 2];
+        let method = parts[parts.len() - 1];
+        // eprintln!("Returning `{class}::{method}`");
+        Some(format!("{class}::{method}"))
+    } else {
+        eprintln!("Returning `None`");
+        None
+    }
+}
+
+// Extract just the method name from a fully qualified function name
+fn extract_fn_only(qualified_name: &str) -> Option<String> {
+    // Split by :: and get the last component
+    qualified_name.split("::").last().map(ToString::to_string)
+}
+
+fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
+    // First, filter out standard library infrastructure we don't care about
+    let filtered_frames: Vec<String> = raw_frames
+        .into_iter()
+        .filter(|frame| {
+            !frame.contains("core::ops::function::FnOnce::call_once")
+                && !frame.contains("std::sys::backtrace::__rust_begin_short_backtrace")
+                && !frame.contains("std::rt::lang_start")
+                && !frame.contains("std::panicking")
+        })
+        .collect();
+
+    // These are patterns we want to remove from the stack
+    let scaffolding_patterns: Vec<&str> = vec![
+        "::main::",
+        "::poll::",
+        "::poll_next_unpin",
+        "alloc::",
+        "core::",
+        "<F as core::future::future::Future>::poll",
+        "FuturesOrdered<Fut>",
+        "FuturesUnordered<Fut>",
+        "Profile::new",
+        "ProfiledFuture",
+        "{{closure}}::{{closure}}",
+    ];
+
+    // Create a new cleaned stack, filtering out scaffolding
+    let mut cleaned_frames = Vec::new();
+    let mut i = 0;
+    let mut already_seen = HashSet::new();
+    let mut seen_main = false;
+
+    while i < filtered_frames.len() {
+        let current_frame = &filtered_frames[i];
+
+        // Check if this is scaffolding we want to skip
+        let is_scaffolding = scaffolding_patterns
+            .iter()
+            .any(|pattern| current_frame.contains(pattern));
+
+        if is_scaffolding {
+            i += 1;
+            continue;
+        }
+
+        // Clean the function name
+        let clean_name = clean_function_name(current_frame);
+
+        // Handle main function special case
+        if clean_name.ends_with("::main") || clean_name == "main" {
+            if !seen_main {
+                cleaned_frames.push("main".to_string());
+                seen_main = true;
+            }
+            i += 1;
+            continue;
+        }
+
+        // Skip duplicate function calls (helps with the {{closure}} pattern)
+        if already_seen.contains(&clean_name) {
+            i += 1;
+            continue;
+        }
+
+        already_seen.insert(clean_name.clone());
+        cleaned_frames.push(clean_name);
+        i += 1;
+    }
+
+    cleaned_frames
+}
+
+fn clean_function_name(demangled: &str) -> String {
+    // Remove hash suffixes and closure markers
+    let mut clean_name = demangled.to_string();
+
+    // Find and remove hash suffixes (::h followed by hex digits)
+    if let Some(hash_pos) = clean_name.find("::h") {
+        if clean_name[hash_pos + 3..]
+            .chars()
+            .all(|c| c.is_ascii_hexdigit())
+        {
+            clean_name = clean_name[..hash_pos].to_string();
+        }
+    }
+
+    // Remove closure markers
+    clean_name = clean_name.replace("{{closure}}", "");
+
+    // Clean up any double colons that might be left
+    while clean_name.contains("::::") {
+        clean_name = clean_name.replace("::::", "::");
+    }
+    if clean_name.ends_with("::") {
+        clean_name = clean_name[..clean_name.len() - 2].to_string();
+    }
+
+    clean_name
 }
 
 // Optional: add memory info to error handling
@@ -740,80 +804,18 @@ fn verbose_only(fun: impl Fn()) {
     }
 }
 
-/// Ends profiling for a named section early by removing it and all nested
-/// sections after it from the profiling stack.
-///
-/// This is useful when you want to stop profiling a section before its
-/// natural scope ends.
-///
-/// # Arguments
-/// * `section_name` - The name of the section to end
-///
-/// # Returns
-/// Some(bool) if the section was found and ended, None if the section
-/// wasn't found in the current stack
-/// # Panics
-/// If the stack truncation position exceeds the current stack depth
-#[must_use]
-pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
-    // Get the current async context ID
-    let context_id = ASYNC_CONTEXT.with(|ctx| (**ctx).load(Ordering::SeqCst));
-
-    // Try to find the section in the context's path
-    let mut found_in_global_paths = false;
-
-    if let Some(paths_mutex) = PROFILE_PATHS.get() {
-        if let Ok(mut paths) = paths_mutex.lock() {
-            if let Some(path) = paths.get_mut(&context_id) {
-                // Find the section in this path
-                if let Some(pos) = path.iter().position(|&name| name == section_name) {
-                    // Truncate the path at this position
-                    path.truncate(pos);
-                    found_in_global_paths = true;
-                }
-            }
-        }
-    }
-
-    if found_in_global_paths {
-        return Some(true);
-    }
-
-    // For backward compatibility, also check the global stack
-    let depth = STACK_DEPTH.load(Ordering::SeqCst);
-    let mut pos = None;
-
-    // Find position of section
-    for (i, frame) in PROFILE_STACK.iter().enumerate().take(depth) {
-        let ptr = frame.load(Ordering::SeqCst);
-        if !ptr.is_null() {
-            unsafe {
-                if *ptr == section_name {
-                    pos = Some(i);
-                    break;
-                }
-            }
-        }
-    }
-
-    pos.map(|p| {
-        // Clean up everything after position p
-        for frame in PROFILE_STACK.iter().take(depth).skip(p) {
-            let ptr = frame.swap(ptr::null_mut(), Ordering::SeqCst);
-            if !ptr.is_null() {
-                unsafe {
-                    drop(Box::from_raw(ptr));
-                }
-            }
-        }
-
-        // Update depth with a memory ordering barrier
-        STACK_DEPTH.store(p, Ordering::SeqCst);
-
-        // Return a simple bool instead of a Profile object that would get dropped
-        true
-    })
-}
+// #[must_use]
+// /// Validates that the stack truncation will be valid
+// #[cfg(debug_assertions)]
+// fn validate_stack_truncation(pos: usize) -> Option<String> {
+//     let depth = STACK_DEPTH.load(Ordering::SeqCst);
+//     if pos >= depth {
+//         return Some(format!(
+//             "Truncation position {pos} exceeds stack depth {depth}"
+//         ));
+//     }
+//     None
+// }
 
 /// Profile the enclosing function if profiling is enabled.
 ///
@@ -832,14 +834,12 @@ pub fn end_profile_section(section_name: &'static str) -> Option<bool> {
 /// ```
 #[macro_export]
 macro_rules! profile_fn {
-    ($name:expr) => {
-        let task_id = $crate::profiling::ASYNC_CONTEXT
-            .with(|ctx| (*ctx).load(std::sync::atomic::Ordering::SeqCst));
-
+    ($name:expr, $is_async:expr) => {
         let _profile = $crate::profiling::Profile::new(
-            $name,
+            $name.to_string(),
             $crate::profiling::get_global_profile_type(),
-            task_id,
+            $is_async,
+            false,
         );
     };
 }
@@ -870,16 +870,10 @@ macro_rules! profile_fn {
 /// ```
 #[macro_export]
 macro_rules! profile_section {
-    ($name:expr) => {
-        let task_id = $crate::profiling::ASYNC_CONTEXT
-            .with(|ctx| ctx.deref().load(std::sync::atomic::Ordering::SeqCst));
-
-        let _profile = $crate::profiling::Profile::new(
-            $name,
-            $crate::profiling::get_global_profile_type(),
-            task_id,
-        );
-    };
+    ($name:expr) => {{
+        let section = $crate::profiling::ProfileSection::new($name);
+        section // Return the section
+    }};
 }
 
 /// Profile the enclosing method if profiling is enabled. Pass a descriptive name
@@ -1060,9 +1054,6 @@ pub fn safely_setup_profiling_for_test() -> ThagResult<()> {
     // Set test mode active to prevent #[profile] from creating duplicate entries
     TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
 
-    // Clear the profiling stack before enabling profiling
-    reset_profiling_stack();
-
     // Then enable profiling
     enable_profiling(true, ProfileType::Time)
 }
@@ -1072,9 +1063,6 @@ pub fn safely_setup_profiling_for_test() -> ThagResult<()> {
 pub fn safely_cleanup_profiling_after_test() -> ThagResult<()> {
     // First disable profiling
     let result = enable_profiling(false, ProfileType::Time);
-
-    // Then make sure the stack is clean
-    reset_profiling_stack();
 
     // Finally reset test mode flag
     TEST_MODE_ACTIVE.store(false, Ordering::SeqCst);
@@ -1086,7 +1074,6 @@ pub fn safely_cleanup_profiling_after_test() -> ThagResult<()> {
 mod tests {
     use super::*;
     use serial_test::serial;
-    use std::cmp::Ordering;
     use std::panic;
     use std::time::Duration;
     use thag_proc_macros::profile;
@@ -1095,8 +1082,6 @@ mod tests {
 
     impl Drop for TestGuard {
         fn drop(&mut self) {
-            // Ensure the stack is completely empty
-            reset_profiling_stack();
             // Since set_profiling_enabled is now private, we need to use enable_profiling
             let _ = enable_profiling(false, ProfileType::Time);
         }
@@ -1106,8 +1091,6 @@ mod tests {
     where
         T: FnOnce() + panic::UnwindSafe,
     {
-        // Setup
-        reset_profiling_stack();
         // Enable profiling using the proper interface
         let _ = enable_profiling(true, ProfileType::Time);
         // Make sure test mode is off for profiling tests
@@ -1126,203 +1109,6 @@ mod tests {
         }
     }
 
-    #[test]
-    #[serial]
-    fn test_profiling_stack_basic() {
-        println!("\n--- test_profiling_stack_basic starting ---"); // Debug
-
-        run_test(|| {
-            assert!(push_profile("first"));
-            println!("After push:"); // Debug
-            let depth = STACK_DEPTH.load(Ordering::SeqCst);
-            println!("STACK_DEPTH = {}", depth);
-
-            let stack = get_profile_stack();
-            println!("Stack = {:?}", stack);
-            assert_eq!(stack.len(), 1);
-            assert_eq!(stack[0], "first");
-
-            pop_profile();
-            assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), 0);
-            assert!(get_profile_stack().is_empty());
-        });
-    }
-
-    #[test]
-    #[serial]
-    fn test_profiling_stack_nesting() {
-        run_test(|| {
-            assert!(push_profile("outer"));
-            assert!(push_profile("inner"));
-
-            let stack = get_profile_stack();
-            assert_eq!(stack.len(), 2);
-            assert_eq!(stack[0], "outer");
-            assert_eq!(stack[1], "inner");
-
-            pop_profile();
-            let stack = get_profile_stack();
-            assert_eq!(stack.len(), 1);
-            assert_eq!(stack[0], "outer");
-
-            pop_profile();
-            assert!(get_profile_stack().is_empty());
-        });
-    }
-
-    #[test]
-    #[serial]
-    fn test_profiling_stack_capacity() {
-        run_test(|| {
-            // Make sure the stack is empty
-            reset_profiling_stack();
-
-            // Fill stack to capacity
-            for _ in 0..MAX_PROFILE_DEPTH {
-                assert!(push_profile("test"));
-            }
-
-            // Try to push one more
-            assert!(!push_profile("overflow"));
-
-            // Verify stack depth didn't change
-            assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), MAX_PROFILE_DEPTH);
-        });
-    }
-
-    #[test]
-    #[serial]
-    fn test_profiling_stack_empty_pop() {
-        run_test(|| {
-            // Make sure the stack is empty
-            reset_profiling_stack();
-
-            // Try to pop empty stack
-            pop_profile();
-            assert_eq!(STACK_DEPTH.load(Ordering::SeqCst), 0);
-        });
-    }
-
-    #[ignore = "because validation disabled due to legitimate dups from `syn` visits"]
-    #[test]
-    #[serial]
-    #[should_panic(expected = "Stack validation failed: Duplicate stack entry")]
-    fn test_profiling_duplicate_stack_entries() {
-        run_test(|| {
-            // Make sure the stack is empty
-            reset_profiling_stack();
-
-            let _p1 = Profile::new("same", ProfileType::Time, 0_u64);
-            let _p2 = Profile::new("same", ProfileType::Time, 0_u64); // Should panic
-        });
-    }
-
-    #[test]
-    #[serial]
-    fn test_profiling_type_stack_management() {
-        run_test(|| {
-            // Make sure the stack is empty
-            reset_profiling_stack();
-
-            {
-                let _p1 = Profile::new("time_prof", ProfileType::Time, 0_u64);
-                let _p2 = Profile::new("mem_prof", ProfileType::Memory, 0_u64);
-                let _p3 = Profile::new("both_prof", ProfileType::Both, 0_u64);
-
-                let stack = get_profile_stack();
-                // Due to our test mode changes, some items might not be in the stack
-                // Just check that the ones present are in the correct order
-                let expected_items = &["time_prof", "mem_prof", "both_prof"];
-                for item in stack.iter() {
-                    assert!(
-                        expected_items.contains(item),
-                        "Unexpected item in stack: {item}"
-                    );
-                }
-            } // All profiles should be dropped here
-
-            // Verify clean stack after drops
-            reset_profiling_stack(); // Ensure stack is cleaned up
-            let final_depth = STACK_DEPTH.load(Ordering::SeqCst);
-            assert_eq!(final_depth, 0, "Stack not empty after drops");
-            assert!(get_profile_stack().is_empty(), "Stack should be empty");
-        });
-    }
-
-    #[test]
-    #[serial]
-    fn test_profiling_end_profile_section() {
-        run_test(|| {
-            // Make sure the stack is empty
-            reset_profiling_stack();
-
-            assert!(push_profile("outer"));
-            assert!(push_profile("middle"));
-            assert!(push_profile("inner"));
-
-            let stack = get_profile_stack();
-            assert_eq!(&stack[..], &["outer", "middle", "inner"]);
-
-            let result = end_profile_section("middle");
-            assert!(result.is_some());
-            assert!(result.unwrap());
-
-            let stack = get_profile_stack();
-            assert_eq!(stack.len(), 1);
-            assert_eq!(stack[0], "outer");
-        });
-    }
-
-    // Test async profiling using #[profile] attribute
-    // This will exercise the generate_async_wrapper function in src/proc_macros/profile.rs
-    #[tokio::test]
-    #[serial]
-    async fn test_profiling_async() {
-        // Make sure the stack is empty
-        reset_profiling_stack();
-
-        // Enable profiling
-        let _ = enable_profiling(true, ProfileType::Time);
-
-        // This function uses the actual #[profile] attribute which will invoke generate_async_wrapper
-        #[allow(dead_code)]
-        async fn run_async_task() -> u32 {
-            // Just simulate some async work
-            tokio::time::sleep(Duration::from_millis(50)).await;
-            42
-        }
-
-        // Wrap with our own profile to verify the async function gets profiled
-        let _profile = Profile::new("test_async_profiling_wrapper", ProfileType::Time, 0_u64);
-
-        // Call the async function with #[profile] attribute
-        let result = run_async_profiled().await;
-
-        // Verify the result
-        assert_eq!(result, 42);
-
-        // Verify that our wrapper profile is still the only one in its context's path
-        if let Some(paths_mutex) = PROFILE_PATHS.get() {
-            if let Ok(paths) = paths_mutex.lock() {
-                let task_id = ASYNC_CONTEXT.with(|ctx| (**ctx).load(Ordering::SeqCst));
-                if let Some(path) = paths.get(&task_id) {
-                    assert_eq!(path.len(), 1);
-                    assert_eq!(path[0], "test_async_profiling_wrapper");
-                } else {
-                    panic!("No path found for current task ID");
-                }
-            } else {
-                panic!("Failed to lock PROFILE_PATHS");
-            }
-        } else {
-            // If PROFILE_PATHS hasn't been initialized yet, test passes
-        }
-
-        // Clean up
-        reset_profiling_stack();
-        let _ = enable_profiling(false, ProfileType::Time);
-    }
-
     // This function uses the #[profile] attribute which will invoke generate_async_wrapper
     #[profile]
     async fn run_async_profiled() -> u32 {
@@ -1330,4 +1116,15 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(50)).await;
         42
     }
+
+    // // Optional: debug helper
+    // #[cfg(test)]
+    // fn print_memory_info(context: &str) {
+    //     if let Some(stats) = memory_stats() {
+    //         println!(
+    //             "{}: Physical: {} bytes, Virtual: {} bytes",
+    //             context, stats.physical_mem, stats.virtual_mem
+    //         );
+    //     }
+    // }
 }

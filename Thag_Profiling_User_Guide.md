@@ -286,6 +286,110 @@ impl SomeTrait for MyStruct {
 }
 ```
 
+## Section profiling: TODO editing
+### Usage Examples
+
+Here are some usage examples to document in your code:
+
+#### Basic Usage
+
+```rust
+fn my_function() {
+    // Regular code here
+
+    // Start a profiled section
+    let section = profile_section!("expensive part");
+
+    // Code that will be profiled
+    expensive_operation();
+
+    // End the profiled section
+    section.end();
+
+    // More code that won't be profiled
+    cleanup();
+}
+```
+
+### With Active Checking
+
+```rust
+fn process_data(data: &[u32]) {
+    let section = profile_section!("data processing");
+
+    // Optional: You can check if profiling is active
+    if section.is_active() {
+        println!("Profiling is enabled for this section");
+    }
+
+    // Process the data
+    for item in data {
+        process_item(item);
+    }
+
+    // End the profiling
+    section.end();
+}
+```
+
+#### With Conditional Logic
+
+```rust
+fn process_data(data: &[u32]) {
+    let section = profile_section!("data processing");
+
+    if data.is_empty() {
+        // End early if there's no data
+        section.end();
+        return;
+    }
+
+    // Process the data
+    for item in data {
+        process_item(item);
+    }
+
+    // End the profiling
+    section.end();
+}
+```
+
+#### Error Handling Example
+
+```rust
+fn fallible_operation() -> Result<(), Error> {
+    let section = profile_section!("fallible op");
+
+    // Try the operation
+    let result = match do_something_risky() {
+        Ok(value) => value,
+        Err(e) => {
+            // End profiling before returning the error
+            section.end();
+            return Err(e);
+        }
+    };
+
+    // Continue with more operations
+    do_more_stuff(result)?;
+
+    // End profiling before returning success
+    section.end();
+    Ok(())
+}
+```
+
+### Implementation Notes
+
+1. This approach doesn't interfere with the code being profiled - it simply measures the time between creation and ending.
+
+2. The `end()` method consumes `self`, ensuring that a profile section can only be ended once.
+
+3. You don't need to add anything to your `Drop` implementation for `Profile` - it will work as is.
+
+4. If you want to add more functionality, like pausing/resuming profiling, you can add more methods to `ProfileSection`.
+
+
 ## Analyzing Profile Results
 
 ### Profile Output

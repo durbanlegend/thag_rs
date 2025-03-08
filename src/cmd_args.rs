@@ -1,6 +1,5 @@
 use crate::{
     config::{maybe_config, DependencyInference},
-    end_profile_section,
     logging::{set_global_verbosity, Verbosity, V},
     profile, profile_section, ThagError, ThagResult, RS_SUFFIX,
 };
@@ -266,7 +265,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();
     let is_infer = args.infer.is_some();
-    profile_section!("init_config_loop_assert");
+    let profile_section = profile_section!("init_config_loop_assert");
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
         // eprintln!("args={args:#?}");
@@ -306,9 +305,9 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
             ProcFlags::TOOLS,
             args.script.as_ref().is_some_and(|script| script == "tools"),
         );
-        let _ = end_profile_section("init_config_loop_assert");
+        profile_section.end();
 
-        profile_section!("config_loop_assert");
+        let profile_section = profile_section!("config_loop_assert");
         let unquote = args.unquote.map_or_else(
             || maybe_config().map_or_else(|| false, |config| config.misc.unquote),
             |unquote| {
@@ -318,9 +317,9 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         );
         proc_flags.set(ProcFlags::UNQUOTE, unquote);
         proc_flags.set(ProcFlags::CONFIG, args.config);
-        let _ = end_profile_section("config_loop_assert");
+        profile_section.end();
 
-        profile_section!("loop_assert");
+        let profile_section = profile_section!("loop_assert");
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
             if args.toml.is_some() {
                 eprintln!("Option --toml (-M) requires --loop (-l)");
@@ -333,7 +332,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
             }
             return Err("Missing --loop option".into());
         }
-        let _ = end_profile_section("loop_assert");
+        profile_section.end();
 
         #[cfg(debug_assertions)]
         {

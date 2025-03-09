@@ -9,6 +9,7 @@ use ra_ap_syntax::{
     ted::{self, Position},
     AstNode, Edition, Parse, SourceFile, SyntaxKind, SyntaxNode,
 };
+use std::env;
 use std::io::Read;
 
 /// A stand-alone convenience tool to instrument a Rust source program for `thag_rs` profiling.

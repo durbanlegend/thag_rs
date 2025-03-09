@@ -16,6 +16,7 @@ include = [
     "tools/**",
     "tests/**",
 ]
+default-run = "thag"
 readme = "README.md"
 repository = "https://github.com/durbanlegend/thag_rs"
 categories = ["command-line-utilities", "development-tools::build-utils"]
@@ -32,6 +33,7 @@ backtrace = "0.3"
 bitflags = { version = "2.9.0", optional = true }
 cargo-lookup = { version = "0.1.0", optional = true }
 cargo_toml = { version = "0.21.0", optional = true }
+dirs = { version = "6.0.0", optional = true }
 chrono = "0.4.39"
 clap = { version = "4.5.31", features = ["cargo", "derive"], optional = true }
 crokey = { version = "1.1.0", optional = true }
@@ -41,6 +43,8 @@ document-features = "0.2.10"
 documented = "0.9.1"
 edit = { version = "0.1.5", optional = true }
 env_logger = { version = "0.11.5", optional = true }
+inferno = { version = "0.12.0", optional = true }
+inquire = { version = "0.7.5", optional = true }
 log = "0.4.26"
 memory-stats = "1.2.0"
 mockall = { version = "0.13.1", optional = true }
@@ -50,6 +54,9 @@ phf = { version = "0.11", features = ["macros"] }
 prettyplease = { version = "0.2.30", optional = true }
 proc-macro2 = "1.0.94"
 quote = { version = "1.0.39", optional = true }
+# Tool-specific dependencies, made optional
+ra_ap_syntax = { version = "=0.0.264", optional = true }
+ra-ap-rustc_lexer = { version = "=0.96.0", optional = true }
 ratatui = { version = "0.29.0", optional = true }
 reedline = { version = "0.37.0", optional = true }
 regex = "1.11.1"
@@ -111,6 +118,22 @@ path = "src/lib.rs"
 [[bin]]
 name = "thag"
 path = "src/bin/thag_rs.rs"
+
+[[bin]]
+name = "thag_profile_instrument"
+path = "tools/profile_instrument.rs"
+required-features = ["core", "profile_instrument", "simplelog"]
+
+[[bin]]
+name = "thag_profile_remove"
+path = "tools/profile_remove.rs"
+required-features = ["core", "profile_instrument", "simplelog"]
+
+[[bin]]
+name = "thag_profile_analyze"
+path = "tools/profile_analyze.rs"
+default-features = false
+required-features = ["core", "profile_analyze", "simplelog"]
 
 [features]
 # Core and Logging Features
@@ -245,6 +268,18 @@ profiling = []
 # cargo add thag_rs --no-default-features --features="repl,simplelog"
 # or
 # cargo add thag_rs --no-default-features --features="repl,env_logger"
+
+# New feature for the profiling tools
+profile_analyze = [
+    "core",
+    "dirs",
+    "inferno",
+    "inquire",
+    "serde_json",
+    "simplelog",
+]
+profile_instrument = ["core", "ra_ap_syntax", "ra-ap-rustc_lexer", "simplelog"]
+profile_tools = ["profile_instrument", "profile_analyze"]
 
 [package.metadata.cargo-features-validate]
 # Additional validation that logging feature is satisfied

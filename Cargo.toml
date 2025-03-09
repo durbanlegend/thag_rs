@@ -79,7 +79,7 @@ syn = { version = "2.0.99", features = [
     "visit-mut",
 ], optional = true }
 termbg = { version = "0.6.1", optional = true }
-thag_proc_macros = { version = "0.1.1", path = "src/proc_macros" }
+thag_proc_macros = { version = "0.1.1", path = "thag_proc_macros" }
 toml = { version = "0.8.20" }
 toml_edit = { version = "0.22.24", optional = true }
 # `tui-textarea` is used for the `tui` feature`.
@@ -132,7 +132,6 @@ required-features = ["core", "profile_instrument", "simplelog"]
 [[bin]]
 name = "thag_profile_analyze"
 path = "tools/profile_analyze.rs"
-default-features = false
 required-features = ["core", "profile_analyze", "simplelog"]
 
 [features]
@@ -302,7 +301,7 @@ name = "filter_bench"
 harness = false
 
 [workspace]
-members = ["src/proc_macros"]
+members = ["thag_proc_macros"]
 exclude = ["bank/proc_macros", "demo/proc_macros"]
 
 # Config for 'cargo dist'

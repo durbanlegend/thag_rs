@@ -26,4 +26,4 @@ toml = { version = "0.8.19" }
 
 [lib]
 proc-macro = true
-path = "lib.rs"
+path = "src/lib.rs"

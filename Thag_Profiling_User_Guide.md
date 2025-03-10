@@ -1,31 +1,50 @@
-# Thag Profiling User Guide
+# User Guide to Application Profiling with `thag_profiler`
 
 ## Introduction
 
 Profiling is key to optimizing your Rust applications, but it tends to be time-consuming (no pun intended).
-`thag_rs` (informally known as `thag`), aims to provide quick, straightforward and consistent basic profiling for your Rust project or script across all platforms.
+`thag_profiler` aims to provide quick, straightforward and consistent basic run-time and memoryprofiling for your Rust project or script across all platforms.
 
 `thag` profiling is intrusive, meaning that you need to instrument your code at least temporarily for profiling.
 `thag` provides an automated instrumentation tool to do the instrumentation. This is designed to be "lossless", preserving the original code intact with its comments
-and formatting, and only adding minimal instrumentation using the `rust-analyzer` syntax tree library `ra_ap_syntax`.
+and formatting, and adding necessary instrumentation in the form of simple #[profile] function attributes (and #[enable_profiling] in the case of `fn main`) using the `rust-analyzer` syntax tree library `ra_ap_syntax`.
 A second tool is provided to remove the instrumentation.
 
 You can instrument and profile any module or modules of a project, or a user script provided that the script has a `main` function (i.e. not a snippet).
 
-This guide explains how to use `thag_rs`'s built-in profiling capabilities to identify performance bottlenecks, analyze memory usage, and optimize your code.
+The run-time overhead of instrumentation is zero if the `profiling` feature is disabled, as compilation will leave the instrumented functions untouched.
+If the `profiling` feature is enabled, a sync or async wrapper is transparently added around the function as appropriate, to instantiate a `Profile` object to
+profile the execution time and-or memory usage. Profiling overhead is excluded from the reported execution time.
+
+`thag_profiler` will work with async as well as non-async code. It uses Rust's `backtrace` crate to populate the call stack for each Profile instance,
+stripping out any non-profiled functions including scaffolding for asynccrates such as `tokio`.
+
+This guide explains how to use `thag_profiler`, alone or in conjunction with `thag_rs` to identify performance bottlenecks, analyze memory usage, and optimize your code.
 
 ## Quick-start guide
 
-In the following example, if you've compiled `tools/profile_instrument.rs` to `thag_profile_instrument`, you can use
-`thag_profile_instrument <yyyy>` in place of `thag tools/profile_instrument.rs -qq -- <yyyy>`
+# Installing the Profiling Tools
+
+Thag includes several profiling tools that can be installed separately:
+
+```bash
+# Install the instrumentation tool
+cargo install thag_rs --no-default-features --features=profile_instrument --bin thag_profile_instrument --force
+
+# Install the removal tool
+cargo install thag_rs --no-default-features --features=profile_instrument --bin thag_profile_remove --force
+
+# Install the analysis tool
+cargo install thag_rs --no-default-features --features=profile_analyze --bin thag_profile_analyze --force
+```
 
 1. Instrumenting your script or module:
 
     ```bash
-    thag tools/profile_instrument.rs -qq -- 2021 < demo/factorial_ibig_product.rs > demo/factorial_ibig_product_profile.rs
+    thag_profile_instrument 2021 < demo/factorial_ibig_product.rs > demo/factorial_ibig_product_profile.rs
     ```
 
-    Note that `tools/profile_instrument.rs` requires the Rust edition of your project or script for the benefit of the `ra_ap_syntax` crate.
+    Note that `thag_profile_instrument` requires the Rust edition of your project or script for the benefit of the `ra_ap_syntax` crate.
 
     Comparing before and after with `vimdiff`:
 
@@ -107,30 +126,23 @@ profiling::enable_profiling(true, ProfileType::Both)?;
 
 ### Automatic Instrumentation
 
-For easier profiling, `thag_rs` provides tools to automatically instrument your code:
+For easier profiling, `thag_rs` provides tools to automatically instrument your code. See the Quick-start guide for installation instructions.
 
 #### Using the profile_instrument tool
 
 For existing source files, you can use the profile_instrument tool to automatically add profiling attributes:
 
 ```bash
-thag tools/profile_instrument -- <edition_yyyy> < path/to/your/source.rs > path/to/destination.rs
-```
-or
-```bash
 thag_profile_instrument <edition_yyyy> < path/to/your/source.rs > path/to/destination.rs
 ```
 
-This will add `#[profile]` attributes to functions and methods (excluding tests, because these need extra thread safety measures), and #`[enable_profiling]`enable_profilingto main() if present.
+This will add `#[profile]` attributes to functions and methods (excluding tests, TODO investigate), and `#[enable_profiling]` to main() if present.
+You can of course
 
 #### Removing Instrumentation
 
 When you're done profiling, you can remove the instrumentation:
 
-```bash
-thag tools/profile_remove -- <edition_yyyy> < path/to/your/source.rs > path/to/destination.rs
-```
-or
 ```bash
 thag_profile_remove <edition_yyyy> < path/to/your/source.rs > path/to/destination.rs
 ```
@@ -207,13 +219,17 @@ fn my_function() {
 
     // Do some work...
 
-    // Profile a specific section
-    profile_section!("expensive_operation");
+    // Profile a specific section. Initializes a new Profile instance and returns a reference to it.
+    // You may optionally end the profile section manually as shown below, or it will automatically
+    // end at the end of the current scope (block or function).
+    let profile_section = profile_section!("expensive_operation");
     for i in 0..1000 {
         // Expensive operation here
     }
+    // End the profile section. Cause the Profile to be dropped, writing out the profile data in the `drop` function.
+    profile_section.end();
 
-    // Profile memory usage specifically
+    // Profile memory usage specifically TODO return a reference so we can manually end it.
     profile_memory!("allocate_large_buffer");
     let buffer = vec![0; 1_000_000];
 

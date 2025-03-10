@@ -1,0 +1,55 @@
+[package]
+name = "thag_profiler"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+backtrace = "0.3"
+chrono = "0.4.39"
+dirs = { version = "6.0.0", optional = true }
+inferno = { version = "0.12.0", optional = true }
+inquire = { version = "0.7.5", optional = true }
+memory-stats = "1.2.0"
+once_cell = "1.20.3"
+ra_ap_syntax = { version = "0.0.264", optional = true }
+ra-ap-rustc_lexer = { version = "0.100.0", optional = true }
+rustc-demangle = "0.1.24"
+serde = { version = "1.0.218", features = ["derive"] }
+serde_json = { version = "1.0.140", optional = true }
+strum = { version = "0.27.1", features = ["derive", "phf"] }
+thag_proc_macros = { path = "../thag_proc_macros", features = ["profiling"] }
+
+[dev-dependencies]
+serial_test = "3.2.0"
+tokio = { version = "1.36.0", features = ["rt", "macros", "time"] }
+
+[features]
+analyze-tool = [
+    "dirs",
+    "inferno",
+    "inquire",
+    "ra_ap_syntax",
+    "ra-ap-rustc_lexer",
+    "serde_json",
+]
+profiling = ["thag_proc_macros/profiling"] # Enable profiling in proc macros too
+tools = ["analyze-tool", "instrument-tool"] # Enable all tools
+instrument-tool = [
+    "ra_ap_syntax",
+    "ra-ap-rustc_lexer",
+] # Dependencies for instrument
+
+[[bin]]
+name = "thag-analyze"
+path = "src/bin/analyze.rs"
+required-features = ["analyze-tool"]
+
+[[bin]]
+name = "thag-instrument"
+path = "src/bin/instrument.rs"
+required-features = ["instrument-tool"]
+
+[[bin]]
+name = "thag-remove"
+path = "src/bin/remove.rs"
+required-features = ["instrument-tool"]

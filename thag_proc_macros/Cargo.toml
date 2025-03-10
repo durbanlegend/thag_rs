@@ -1,8 +1,8 @@
 [package]
 name = "thag_proc_macros"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
-description = "proc macros for the thag_rs crate"
+description = "Procedural macros for the thag_rs and thag_profiler crates"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 
@@ -23,6 +23,9 @@ syn = { version = "2.0", default-features = false, features = [
     "visit-mut",
 ] }
 toml = { version = "0.8.19" }
+
+[features]
+profiling = [] # New feature for conditional compilation
 
 [lib]
 proc-macro = true

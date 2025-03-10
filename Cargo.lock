@@ -1882,9 +1882,9 @@ dependencies = [
 
 [[package]]
 name = "ra-ap-rustc_lexer"
-version = "0.96.0"
+version = "0.100.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55d14f1fd36f7f83445254a075741f393119b02242d6473b19949ed1240cff39"
+checksum = "c8358702c2a510ea84ba5801ddc047d9ad9520902cfb0e6173277610cdce2c9c"
 dependencies = [
  "memchr",
  "unicode-properties",
@@ -2636,7 +2636,7 @@ checksum = "f18aa187839b2bdb1ad2fa35ead8c4c2976b64e4363c386d45ac0f7ee85c9233"
 
 [[package]]
 name = "thag_proc_macros"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "inline_colorization",
  "prettyplease",
@@ -2647,11 +2647,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "thag_profiler"
+version = "0.1.0"
+dependencies = [
+ "backtrace",
+ "chrono",
+ "dirs",
+ "inferno",
+ "inquire",
+ "memory-stats",
+ "once_cell",
+ "ra-ap-rustc_lexer 0.100.0",
+ "ra_ap_syntax",
+ "rustc-demangle",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "strum 0.27.1",
+ "thag_proc_macros",
+ "tokio",
+]
+
+[[package]]
 name = "thag_rs"
 version = "0.1.9"
 dependencies = [
  "assert_cmd",
- "backtrace",
  "bitflags 2.9.0",
  "cargo-lookup",
  "cargo_toml",
@@ -2661,31 +2682,23 @@ dependencies = [
  "crokey",
  "crossterm 0.28.1",
  "directories",
- "dirs",
  "document-features",
  "documented",
  "edit",
  "either",
  "env_logger",
- "inferno",
- "inquire",
  "lazy_static",
  "log",
- "memory-stats",
  "mockall",
  "nu-ansi-term",
- "once_cell",
  "phf",
  "predicates",
  "prettyplease",
  "proc-macro2 1.0.94",
  "quote 1.0.39",
- "ra-ap-rustc_lexer 0.96.0",
- "ra_ap_syntax",
  "ratatui",
  "reedline",
  "regex",
- "rustc-demangle",
  "scopeguard",
  "semver",
  "serde",
@@ -2701,6 +2714,7 @@ dependencies = [
  "termbg",
  "test-generator",
  "thag_proc_macros",
+ "thag_profiler",
  "tokio",
  "toml",
  "toml_edit",

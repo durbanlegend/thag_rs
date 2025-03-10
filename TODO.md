@@ -23,7 +23,30 @@
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
 - [ ]  Profiling: split out to separate crate?
 - [ ]  profile attribute macro: don't instrument if feature is disabled.
+- [ ]  Make all declarative profile macros follow the example of `profile_section` by returning a reference to the profile for manual scope control.
+- [ ]  Make a tool installation script?
 
+
+# Installation
+
+Add `thag_profiling` to your project:
+
+```toml
+[dependencies]
+thag_profiling = "0.1"
+```
+
+To install the profiling tools:
+
+```bash
+# Install all tools
+cargo install thag_profiling
+
+# Or install individual tools
+cargo install thag_profiling --bin thag-profile-instrument
+cargo install thag_profiling --bin thag-profile-remove
+cargo install thag_profiling --bin thag-profile-analyze
+```
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

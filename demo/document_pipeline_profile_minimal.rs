@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog", "profiling"] }
+thag_profiler = { version = "0.1", features = ["profiling"] }
 tokio = { version = "1", features = ["full"] }
 */
 
@@ -8,8 +8,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_rs::profiling;
-use thag_rs::{profile, Profile, ProfileType};
+use thag_profiler::{enable_profiling, profile, profile_section, ProfileType};
 
 struct Document {
     id: usize,
@@ -123,9 +122,10 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
 }
 
 #[tokio::main]
+#[enable_profiling(profile_type = "both")]
 async fn main() {
     // Enable profiling manually at the start
-    profiling::enable_profiling(true, ProfileType::Time).unwrap();
+    // profiling::enable_profiling(true, ProfileType::Time).unwrap();
     println!("Starting simplified document processing example");
 
     // Only process 3 documents for easy tracing
@@ -139,6 +139,7 @@ async fn main() {
     );
 
     // Print results for verification
+    let section = profile_section!("section::print_docs");
     for doc in &docs {
         println!(
             "Doc #{}: Word count: {}, Sentiment: {:.2}",
@@ -147,6 +148,7 @@ async fn main() {
             doc.sentiment_score
         );
     }
+    section.end();
 
     println!("Profiling data written to folded files in current directory");
 }

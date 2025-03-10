@@ -8,7 +8,7 @@ inquire = "0.7.5"
 side-by-side-diff = "0.1.2"
 tempfile = "3.17.1"
 thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
-# thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+# thag_proc_macros = { path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
 */
 
 /// Useful front-end for `thag --cargo <script> --expand`, which in turn uses `cargo-expand` to show the macro expansion

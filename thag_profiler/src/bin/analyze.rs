@@ -1,29 +1,4 @@
-/*[toml]
-[dependencies]
-chrono = "0.4.39"
-dirs = "6.0.0"
-inferno = "0.12.0"
-inquire = "0.7.5"
-serde = { version = "1.0.216", features = ["derive"] }
-serde_json = "1.0.138"
-strum = { version = "0.27.1", features = ["derive"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "simplelog"] }
-*/
-
-/// Profile graph/chart generator for the `thag` internal profiler.
-///
-/// E.g.:
-///
-///```
-/// thag demo/thag_profile.rs -x    # Compile this script as a command
-///
-/// cargo run --features thag/profile <path>/demo/time_cookbook.rs -f   # Profile a demo script
-///
-/// thag_profile    # Generate a flamechart or show stats for the new profile
-///```
-//# Purpose: Low-footprint profiling.
-//# Categories: tools
+// use crate::{profiling::ProfileStats, thousands, ProfileError, ProfileResult};
 use chrono::{
     DateTime, Local,
     LocalResult::{Ambiguous, None as Nada, Single},
@@ -43,8 +18,10 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 use strum::Display;
-use thag_rs::profiling::ProfileStats;
-use thag_rs::{thousands, ThagError, ThagResult};
+use thag_profiler::{
+    profiling::{self, ProfileStats},
+    thousands, ProfileError, ProfileResult,
+};
 
 #[derive(Debug, Default, Clone)]
 pub struct ProcessedProfile {
@@ -152,7 +129,7 @@ fn validate_memory_events(events: &[MemoryEvent]) -> Result<(), String> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Ensure profiling is disabled for the analyzer
     // Only takes effect if this tool is compiled (`thag tools/thag_profile.rs -x`).
-    thag_rs::profiling::disable_profiling();
+    profiling::disable_profiling();
     loop {
         let analysis_types = vec![
             "Time Profile - Single",
@@ -180,7 +157,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn analyze_single_time_profile() -> ThagResult<()> {
+fn analyze_single_time_profile() -> ProfileResult<()> {
     // Get time profile files (exclude memory profiles)
     let profile_groups = group_profile_files(|f| !f.contains("-memory"))?;
 
@@ -207,7 +184,7 @@ fn analyze_single_time_profile() -> ThagResult<()> {
 
                 let action = Select::new("Select action:", options)
                     .prompt()
-                    .map_err(|e| ThagError::Profiling(e.to_string()))?;
+                    .map_err(|e| ProfileError::General(e.to_string()))?;
 
                 match action {
                     "Back to Profile Selection" => break,
@@ -239,7 +216,7 @@ fn analyze_single_time_profile() -> ThagResult<()> {
     }
 }
 
-fn analyze_differential_profiles(profile_type: ProfileType) -> ThagResult<()> {
+fn analyze_differential_profiles(profile_type: ProfileType) -> ProfileResult<()> {
     let filter = |filename: &str| match profile_type {
         ProfileType::Time => !filename.contains("-memory"),
         ProfileType::Memory => filename.contains("-memory"),
@@ -248,7 +225,7 @@ fn analyze_differential_profiles(profile_type: ProfileType) -> ThagResult<()> {
     generate_differential_flamegraph(profile_type, &before, &after)
 }
 
-fn analyze_memory_profiles() -> ThagResult<()> {
+fn analyze_memory_profiles() -> ProfileResult<()> {
     let profile_groups = group_profile_files(|f| f.contains("-memory"))?;
 
     if profile_groups.is_empty() {
@@ -275,7 +252,7 @@ fn analyze_memory_profiles() -> ThagResult<()> {
                 // Show memory-specific menu and handle selection...
                 let selection = Select::new("Select action:", options)
                     .prompt()
-                    .map_err(|e| ThagError::Profiling(e.to_string()))?;
+                    .map_err(|e| ProfileError::General(e.to_string()))?;
 
                 match selection {
                     "Back to Profile Selection" => break,
@@ -319,9 +296,9 @@ fn analyze_memory_profiles() -> ThagResult<()> {
     }
 }
 
-fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> ThagResult<()> {
+fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> ProfileResult<()> {
     if profile.stacks.is_empty() {
-        return Err(ThagError::Profiling(
+        return Err(ProfileError::General(
             "No profile data available".to_string(),
         ));
     }
@@ -365,7 +342,7 @@ fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> ThagR
         "Flame {} generated: {svg}",
         if as_chart { "chart" } else { "graph" }
     );
-    open_in_browser(&svg).map_err(|e| ThagError::Profiling(e.to_string()))?;
+    open_in_browser(&svg).map_err(|e| ProfileError::General(e.to_string()))?;
     Ok(())
 }
 
@@ -373,7 +350,7 @@ fn generate_differential_flamegraph(
     profile_type: ProfileType,
     before: &PathBuf,
     after: &PathBuf,
-) -> ThagResult<()> {
+) -> ProfileResult<()> {
     // First, generate the differential data
     let mut diff_data = Vec::new();
     inferno::differential::from_files(
@@ -382,7 +359,7 @@ fn generate_differential_flamegraph(
         after,
         &mut diff_data,
     )
-    .map_err(|e| ThagError::Profiling(e.to_string()))?;
+    .map_err(|e| ProfileError::General(e.to_string()))?;
 
     // Extract timestamps from filenames for the subtitle
     let before_name = before.file_name().unwrap_or_default().to_string_lossy();
@@ -414,11 +391,11 @@ fn generate_differential_flamegraph(
 
     // Convert diff_data to lines
     let diff_lines =
-        String::from_utf8(diff_data).map_err(|e| ThagError::Profiling(e.to_string()))?;
+        String::from_utf8(diff_data).map_err(|e| ProfileError::General(e.to_string()))?;
     let lines: Vec<&str> = diff_lines.lines().collect();
 
     flamegraph::from_lines(&mut opts, lines.iter().copied(), output)
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+        .map_err(|e| ProfileError::General(e.to_string()))?;
 
     enhance_svg_accessibility(svg)?;
 
@@ -426,7 +403,7 @@ fn generate_differential_flamegraph(
     println!("Red indicates increased time, blue indicates decreased time");
     println!("The width of the boxes represents the absolute time difference");
 
-    open_in_browser("flamegraph-diff.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
+    open_in_browser("flamegraph-diff.svg").map_err(|e| ProfileError::General(e.to_string()))?;
     Ok(())
 }
 
@@ -475,7 +452,7 @@ fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile) {
     }
 }
 
-fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile> {
+fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<ProcessedProfile> {
     // Get unique top-level functions from the stacks
     let functions: HashSet<_> = processed
         .stacks
@@ -510,7 +487,7 @@ fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile
         ],
     )
     .prompt()
-    .map_err(|e| ThagError::Profiling(e.to_string()))?;
+    .map_err(|e| ProfileError::General(e.to_string()))?;
 
     let exact_match = filter_mode.starts_with("Exact Match");
 
@@ -527,7 +504,7 @@ fn filter_functions(processed: &ProcessedProfile) -> ThagResult<ProcessedProfile
 
     let to_filter = MultiSelect::new("Select functions to filter out:", function_list)
         .prompt()
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+        .map_err(|e| ProfileError::General(e.to_string()))?;
 
     // Apply appropriate filtering based on the chosen mode
     let filtered_stacks = if exact_match {
@@ -658,25 +635,25 @@ fn get_color_schemes() -> Vec<ColorSchemeOption> {
     ]
 }
 
-fn load_last_used_time_scheme() -> ThagResult<String> {
+fn load_last_used_time_scheme() -> ProfileResult<String> {
     let config_path = dirs::config_dir()
-        .ok_or_else(|| ThagError::Profiling("Could not find config directory".to_string()))?
+        .ok_or_else(|| ProfileError::General("Could not find config directory".to_string()))?
         .join("thag")
         .join("flamechart_colors.json");
 
     if config_path.exists() {
         let content = fs::read_to_string(config_path)?;
         let config: ColorSchemeConfig =
-            serde_json::from_str(&content).map_err(|e| ThagError::Profiling(e.to_string()))?;
+            serde_json::from_str(&content).map_err(|e| ProfileError::General(e.to_string()))?;
         Ok(config.last_used)
     } else {
         Ok(ColorSchemeConfig::default().last_used)
     }
 }
 
-fn save_time_color_scheme(name: &str) -> ThagResult<()> {
+fn save_time_color_scheme(name: &str) -> ProfileResult<()> {
     let config_dir = dirs::config_dir()
-        .ok_or_else(|| ThagError::Profiling("Could not find config directory".to_string()))?
+        .ok_or_else(|| ProfileError::General("Could not find config directory".to_string()))?
         .join("thag");
 
     fs::create_dir_all(&config_dir)?;
@@ -688,13 +665,13 @@ fn save_time_color_scheme(name: &str) -> ThagResult<()> {
     let config_path = config_dir.join("flamechart_colors.json");
     fs::write(
         config_path,
-        serde_json::to_string_pretty(&config).map_err(|e| ThagError::Profiling(e.to_string()))?,
+        serde_json::to_string_pretty(&config).map_err(|e| ProfileError::General(e.to_string()))?,
     )?;
 
     Ok(())
 }
 
-fn select_time_color_scheme() -> ThagResult<Palette> {
+fn select_time_color_scheme() -> ProfileResult<Palette> {
     let schemes = get_color_schemes();
     let last_used = load_last_used_time_scheme()?;
 
@@ -704,7 +681,7 @@ fn select_time_color_scheme() -> ThagResult<Palette> {
     ))
     .with_default(true)
     .prompt()
-    .map_err(|e| ThagError::Profiling(e.to_string()))?;
+    .map_err(|e| ProfileError::General(e.to_string()))?;
 
     if use_last {
         return Ok(schemes
@@ -734,7 +711,7 @@ fn select_time_color_scheme() -> ThagResult<Palette> {
         schemes.iter().map(|s| s.name).collect::<Vec<_>>(),
     )
     .prompt()
-    .map_err(|e| ThagError::Profiling(e.to_string()))?;
+    .map_err(|e| ProfileError::General(e.to_string()))?;
 
     // Save the selection
     save_time_color_scheme(selection)?;
@@ -746,7 +723,9 @@ fn select_time_color_scheme() -> ThagResult<Palette> {
         .palette)
 }
 
-fn group_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
+fn group_profile_files<T: Fn(&str) -> bool>(
+    filter: T,
+) -> ProfileResult<Vec<(String, Vec<PathBuf>)>> {
     let all_groups = collect_profile_files(&filter)?;
     let mut current_filter = String::new();
 
@@ -813,7 +792,7 @@ fn group_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<Vec<(String
 
         let selection = inquire::Select::new("Select an option:", options)
             .prompt()
-            .map_err(|e| ThagError::Profiling(e.to_string()))?;
+            .map_err(|e| ProfileError::General(e.to_string()))?;
 
         if selection == "Filter/modify selection" {
             // Show filter options
@@ -822,14 +801,14 @@ fn group_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<Vec<(String
                 vec!["Apply/modify filter", "Clear filter", "Back to selection"],
             )
             .prompt()
-            .map_err(|e| ThagError::Profiling(e.to_string()))?;
+            .map_err(|e| ProfileError::General(e.to_string()))?;
 
             match filter_action {
                 "Apply/modify filter" => {
                     current_filter = inquire::Text::new("Enter filter string:")
                         .with_initial_value(&current_filter)
                         .prompt()
-                        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+                        .map_err(|e| ProfileError::General(e.to_string()))?;
                 }
                 "Clear filter" => current_filter.clear(),
                 _ => {} // Back to selection
@@ -851,7 +830,7 @@ fn group_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<Vec<(String
 // Helper function to collect all profile files matching the initial filter
 fn collect_profile_files<T: Fn(&str) -> bool>(
     filter: &T,
-) -> ThagResult<Vec<(String, Vec<PathBuf>)>> {
+) -> ProfileResult<Vec<(String, Vec<PathBuf>)>> {
     let mut groups: HashMap<String, Vec<PathBuf>> = HashMap::new();
 
     // Use file_navigator to get the directory and list .folded files
@@ -883,11 +862,11 @@ fn collect_profile_files<T: Fn(&str) -> bool>(
     Ok(result)
 }
 
-fn select_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<(PathBuf, PathBuf)> {
+fn select_profile_files<T: Fn(&str) -> bool>(filter: T) -> ProfileResult<(PathBuf, PathBuf)> {
     let groups = group_profile_files(filter)?;
 
     if groups.is_empty() {
-        return Err(ThagError::Profiling("No profile files found".to_string()));
+        return Err(ProfileError::General("No profile files found".to_string()));
     }
 
     // First select the script group
@@ -898,16 +877,16 @@ fn select_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<(PathBuf, 
 
     let script_selection = Select::new("Select script to compare:", script_options.clone())
         .prompt()
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+        .map_err(|e| ProfileError::General(e.to_string()))?;
 
     let script_idx = script_options
         .iter()
         .position(|s| s == &script_selection)
-        .ok_or_else(|| ThagError::Profiling("Invalid selection".to_string()))?;
+        .ok_or_else(|| ProfileError::General("Invalid selection".to_string()))?;
 
     let files = &groups[script_idx].1;
     if files.len() < 2 {
-        return Err(ThagError::Profiling(
+        return Err(ProfileError::General(
             "Need at least 2 profiles to compare".to_string(),
         ));
     }
@@ -925,7 +904,7 @@ fn select_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<(PathBuf, 
 
     let before = Select::new("Select 'before' profile:", file_options.clone())
         .prompt()
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+        .map_err(|e| ProfileError::General(e.to_string()))?;
 
     // Create new options list excluding the 'before' selection
     let after_options: Vec<_> = file_options
@@ -935,7 +914,7 @@ fn select_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<(PathBuf, 
 
     let after = Select::new("Select 'after' profile:", after_options)
         .prompt()
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+        .map_err(|e| ProfileError::General(e.to_string()))?;
 
     Ok((
         files
@@ -951,7 +930,9 @@ fn select_profile_files<T: Fn(&str) -> bool>(filter: T) -> ThagResult<(PathBuf, 
     ))
 }
 
-fn select_profile_file(profile_groups: &[(String, Vec<PathBuf>)]) -> ThagResult<Option<PathBuf>> {
+fn select_profile_file(
+    profile_groups: &[(String, Vec<PathBuf>)],
+) -> ProfileResult<Option<PathBuf>> {
     if profile_groups.is_empty() {
         return Ok(None);
     }
@@ -965,7 +946,7 @@ fn select_profile_file(profile_groups: &[(String, Vec<PathBuf>)]) -> ThagResult<
 
     let selected = Select::new("Select profile to analyze:", file_options)
         .prompt()
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+        .map_err(|e| ProfileError::General(e.to_string()))?;
 
     if selected == "Back" {
         return Ok(None);
@@ -986,7 +967,7 @@ fn select_profile_file(profile_groups: &[(String, Vec<PathBuf>)]) -> ThagResult<
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss
 )]
-fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
+fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
     let input = File::open(path)?;
     let reader = BufReader::new(input);
     let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
@@ -1117,7 +1098,7 @@ fn read_and_process_profile(path: &PathBuf) -> ThagResult<ProcessedProfile> {
     Ok(processed)
 }
 
-fn build_time_stats(processed: &ProcessedProfile) -> ThagResult<ProfileStats> {
+fn build_time_stats(processed: &ProcessedProfile) -> ProfileResult<ProfileStats> {
     let mut stats = ProfileStats::default();
     for line in &processed.stacks {
         if let Some((stack, time)) = line.rsplit_once(' ') {
@@ -1125,7 +1106,8 @@ fn build_time_stats(processed: &ProcessedProfile) -> ThagResult<ProfileStats> {
                 stats.record(
                     stack,
                     Duration::from_micros(
-                        u64::try_from(duration).map_err(|e| ThagError::Profiling(e.to_string()))?,
+                        u64::try_from(duration)
+                            .map_err(|e| ProfileError::General(e.to_string()))?,
                     ),
                 );
             }
@@ -1134,9 +1116,9 @@ fn build_time_stats(processed: &ProcessedProfile) -> ThagResult<ProfileStats> {
     Ok(stats)
 }
 
-fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> ThagResult<()> {
+fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> ProfileResult<()> {
     if profile.stacks.is_empty() {
-        return Err(ThagError::Profiling(
+        return Err(ProfileError::General(
             "No memory profile data available".to_string(),
         ));
     }
@@ -1144,7 +1126,7 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Tha
     let memory_data = profile
         .memory_data
         .as_ref()
-        .ok_or_else(|| ThagError::Profiling("No memory statistics available".to_string()))?;
+        .ok_or_else(|| ProfileError::General("No memory statistics available".to_string()))?;
 
     let output = File::create("memory-flamechart.svg")?;
     let mut opts = Options::default();
@@ -1174,7 +1156,7 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Tha
 
     enhance_svg_accessibility("memory-flamechart.svg")?;
     println!("Memory flame chart generated: memory-flamechart.svg");
-    open_in_browser("memory-flamechart.svg").map_err(|e| ThagError::Profiling(e.to_string()))?;
+    open_in_browser("memory-flamechart.svg").map_err(|e| ProfileError::General(e.to_string()))?;
     Ok(())
 }
 
@@ -1264,11 +1246,11 @@ fn show_memory_statistics(profile: &ProcessedProfile) {
     clippy::cast_sign_loss,
     clippy::cast_precision_loss
 )]
-fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
+fn show_allocation_distribution(profile: &ProcessedProfile) -> ProfileResult<()> {
     let memory_data = profile
         .memory_data
         .as_ref()
-        .ok_or_else(|| ThagError::Profiling("No memory statistics available".to_string()))?;
+        .ok_or_else(|| ProfileError::General("No memory statistics available".to_string()))?;
 
     if memory_data.allocation_sizes.is_empty() {
         println!("No allocation data available.");
@@ -1334,7 +1316,7 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ThagResult<()> {
 }
 
 #[allow(clippy::cast_precision_loss)]
-fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedProfile> {
+fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<ProcessedProfile> {
     let patterns = vec![
         "Large allocations (>1MB)",
         "Temporary allocations",
@@ -1345,7 +1327,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
 
     let selected = MultiSelect::new("Select memory patterns to filter out:", patterns)
         .prompt()
-        .map_err(|e| ThagError::Profiling(e.to_string()))?;
+        .map_err(|e| ProfileError::General(e.to_string()))?;
 
     // If nothing selected, return unfiltered profile
     if selected.is_empty() {
@@ -1358,7 +1340,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ThagResult<ProcessedPro
     let custom_pattern = if selected.contains(&"Custom pattern...") {
         inquire::Text::new("Enter custom pattern to filter (e.g., 'vec' or 'string'):")
             .prompt()
-            .map_err(|e| ThagError::Profiling(e.to_string()))?
+            .map_err(|e| ProfileError::General(e.to_string()))?
     } else {
         String::new()
     };
@@ -1465,7 +1447,7 @@ fn matches_memory_pattern(stack: &str, pattern: &str) -> bool {
     }
 }
 
-fn enhance_svg_accessibility(svg_path: &str) -> ThagResult<()> {
+fn enhance_svg_accessibility(svg_path: &str) -> ProfileResult<()> {
     let content = fs::read_to_string(svg_path)?;
 
     // Make the inactive search link more visible

@@ -47,6 +47,13 @@ impl Parse for ProfileArgs {
 }
 
 pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
+    // Runtime check for feature flag to handle when the proc macro
+    // is compiled with the feature but used without it
+    if !cfg!(feature = "profiling") {
+        // No wrapper, return original function
+        return item;
+    }
+
     let args = parse_macro_input!(attr as ProfileArgs);
     let mut input = parse_macro_input!(item as ItemFn);
 

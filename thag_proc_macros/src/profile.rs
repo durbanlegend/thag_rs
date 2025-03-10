@@ -132,6 +132,13 @@ fn contains_self_type(ty: &Type) -> bool {
 }
 
 pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
+    // Always check the feature flag at runtime to handle when the proc macro
+    // is compiled with the feature but used without it
+    if !cfg!(feature = "profiling") {
+        return item;
+    }
+
+    // Only parse and expand if profiling is enabled
     let args = parse_macro_input!(attr as ProfileArgs);
     let input = parse_macro_input!(item as ItemFn);
 
@@ -161,8 +168,6 @@ pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Generate profile name
     let profile_name =
         generate_profile_name(fn_name, is_method, &args /*, &type_params, is_async */);
-    // Keep it simple unless and until we can figure out how to reconcile this with the `backtrace` crate.
-    // let profile_name = fn_name.to_string();
 
     let ctx = FunctionContext {
         vis: &input.vis,

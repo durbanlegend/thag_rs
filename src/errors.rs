@@ -148,6 +148,12 @@ impl From<ParseIntError> for ThagError {
     }
 }
 
+impl From<thag_profiler::ProfileError> for ThagError {
+    fn from(err: thag_profiler::ProfileError) -> Self {
+        Self::Profiling(err.to_string())
+    }
+}
+
 #[cfg(feature = "reedline")]
 impl From<ReedlineError> for ThagError {
     #[profile]

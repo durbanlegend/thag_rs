@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-ra_ap_syntax = "=0.0.264"
-ra-ap-rustc_lexer = "=0.96.0"
-*/
-
 use ra_ap_syntax::{
     ast::{self, HasModuleItem, HasName, HasVisibility, Item},
     ted::{self, Position},

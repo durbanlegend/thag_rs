@@ -10,7 +10,7 @@ serde = { version = "1.0.215", features = ["derive"] }
 syn = { version = "2.0.90", features = ["full"] }
 thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "simplelog"] }
-# thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+# thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "simplelog"] }
 toml = "0.8"
 */

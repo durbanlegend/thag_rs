@@ -72,9 +72,6 @@ pub mod errors;
 /// Core: Basic logging
 #[cfg(feature = "core")]
 pub mod logging;
-/// Core: Performance profiling
-#[cfg(feature = "core")]
-pub mod profiling;
 /// Core: Shared functionality
 #[cfg(feature = "core")]
 pub mod shared;
@@ -139,13 +136,18 @@ pub use {
     errors::{ThagError, ThagResult},
     log, // re-export log crate for debug_log
     logging::{get_verbosity, Verbosity, V},
-    profiling::{Profile, ProfileType},
     shared::{
         debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, thousands,
     },
     styling::{Color, ColorSupport, Level, Lvl, Role, Style, TermBgLuma},
-    thag_proc_macros::{enable_profiling, profile, repeat_dash},
 };
+
+pub use thag_profiler::*; // Re-export everything from profiler
+
+// #[cfg(not(feature = "profiling"))]
+// pub use thag_proc_macros::profile;
+
+pub use thag_proc_macros::repeat_dash;
 
 #[cfg(any(feature = "ast", feature = "build"))]
 pub use {

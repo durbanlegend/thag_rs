@@ -1,49 +1,56 @@
-#![allow(clippy::module_name_repetitions)]
-//!
-//! Basic profiling for `thag_rs`, also (TODO) intended as an option for user scripts.
-//!
-//! Placing the following instruction at the start of your code will allow profiling to be enabled by running with `--features=profiling`.
-//!
-//! ```ignore
-//! profiling::enable_profiling(true, ProfileType::Both)?; // Could feature-gate this
-//! ```
-//!
-//! Output will be in the form of a file called `thag-profile.folded` in the current working directory, and may be
-//! displayed as statistics or as an `inferno` [flamechart](https://medium.com/performance-engineering-for-the-ordinary-barbie/profiling-flame-chart-vs-flame-graph-7b212ddf3a83)
-//! using the `demo/thag_profile.rs` script, which you may wish to compile to a command first by using the `-x` option.
-//!
-//! `demo/thag_profile.rs` also allows you to filter out unwanted events, e.g. to make it easier to drill down into the flamechart.
-//!
-use crate::{lazy_static_var, static_lazy, ThagError, ThagResult, Verbosity};
-use backtrace::Backtrace;
+use crate::{static_lazy, ProfileError};
 use chrono::Local;
 use memory_stats::memory_stats;
 use once_cell::sync::Lazy;
-use rustc_demangle::demangle;
-use std::collections::{HashMap, HashSet};
-use std::convert::Into;
-use std::fs::{File, OpenOptions};
-use std::io::{BufWriter, Write};
-use std::marker::PhantomData;
-use std::path::PathBuf;
-use std::sync::{
-    atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
-    Mutex,
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    io::BufWriter,
+    marker::PhantomData,
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicU8, Ordering},
+        Mutex,
+    },
+    time::Instant,
 };
-use std::time::{Instant, SystemTime};
+
+// use std::fs::OpenOptions;
+// use std::io::Write;
+
+// #[cfg(feature = "profiling")]
+use backtrace::Backtrace;
+
+#[cfg(feature = "profiling")]
+use crate::ProfileResult;
+
+#[cfg(feature = "profiling")]
+use chrono::Local;
+
+// #[cfg(feature = "profiling")]
+use rustc_demangle::demangle;
+
+#[cfg(feature = "profiling")]
+use std::{
+    convert::Into,
+    fs::OpenOptions,
+    io::Write,
+    path::PathBuf,
+    sync::atomic::{AtomicBool, AtomicU64},
+    time::SystemTime,
+};
 
 // Single atomic for runtime profiling state
+#[cfg(feature = "profiling")]
 static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
 // Mutex to protect profiling state changes
+#[cfg(feature = "profiling")]
 static PROFILING_MUTEX: Mutex<()> = Mutex::new(());
 
 // Compile-time feature check
 #[cfg(feature = "profiling")]
 const PROFILING_FEATURE: bool = true;
-
-#[cfg(not(feature = "profiling"))]
-const PROFILING_FEATURE: bool = false;
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
 
@@ -51,6 +58,7 @@ static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Mem
 static PROFILED_FUNCTIONS: Lazy<Mutex<HashMap<String, String>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
+// #[cfg(feature = "profiling")]
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
         let script_path = std::env::current_exe()
@@ -70,21 +78,29 @@ static_lazy! {
 }
 
 // File handles
+// #[cfg(feature = "profiling")]
 static_lazy! {
     TimeProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
+// #[cfg(feature = "profiling")]
 static_lazy! {
     MemoryProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
+#[cfg(feature = "profiling")]
 static START_TIME: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
+#[allow(dead_code)]
 struct ProfileFilePaths {
     time: String,
     memory: String,
 }
+
+// // #[derive(Clone)]
+// #[cfg(not(feature = "profiling"))]
+// struct ProfileFilePaths {}
 
 /// Resets a profile file by clearing its buffer writer.
 ///
@@ -93,11 +109,12 @@ struct ProfileFilePaths {
 /// * `file_type` - A description of the file type for error messages (e.g., "time", "memory")
 ///
 /// # Errors
-/// Returns a `ThagError` if the mutex lock fails
-fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) -> ThagResult<()> {
+/// Returns a `ProfileError` if the mutex lock fails
+#[cfg(feature = "profiling")]
+fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) -> ProfileResult<()> {
     *file
         .lock()
-        .map_err(|_| ThagError::Profiling(format!("Failed to lock {file_type} profile file")))? =
+        .map_err(|_| ProfileError::General(format!("Failed to lock {file_type} profile file")))? =
         None;
     Ok(())
 }
@@ -113,8 +130,9 @@ fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) ->
 /// * `profile_type` - The type of profiling to initialize files for
 ///
 /// # Errors
-/// Returns a `ThagError` if any file operations fail
-fn initialize_profile_files(profile_type: ProfileType) -> ThagResult<()> {
+/// Returns a `ProfileError` if any file operations fail
+#[cfg(feature = "profiling")]
+fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
     let paths = ProfilePaths::get();
 
     match profile_type {
@@ -152,6 +170,8 @@ pub fn get_global_profile_type() -> ProfileType {
         _ => ProfileType::Time,
     }
 }
+
+#[cfg(feature = "profiling")]
 fn set_profile_type(profile_type: ProfileType) {
     let value = match profile_type {
         ProfileType::Time => 1,
@@ -175,15 +195,16 @@ fn set_profile_type(profile_type: ProfileType) {
 /// * `profile_type` - The type of profiling to enable (Time, Memory, or Both)
 ///
 /// # Errors
-/// Returns a `ThagError` if:
+/// Returns a `ProfileError` if:
 /// - Time value conversion fails
 /// - File operations fail
 /// - Mutex operations fail
-pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<()> {
+#[cfg(feature = "profiling")]
+pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResult<()> {
     // Acquire the mutex to ensure only one thread can enable/disable profiling at a time
     let _guard = PROFILING_MUTEX
         .lock()
-        .map_err(|_| ThagError::Profiling("Failed to acquire profiling mutex".into()))?;
+        .map_err(|_| ProfileError::General("Failed to acquire profiling mutex".into()))?;
 
     if enabled {
         set_profile_type(profile_type);
@@ -194,7 +215,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
                 .unwrap_or_default()
                 .as_micros(),
         ) else {
-            return Err(ThagError::Profiling("Time value too large".into()));
+            return Err(ProfileError::General("Time value too large".into()));
         };
         START_TIME.store(now, Ordering::SeqCst);
 
@@ -206,9 +227,28 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ThagResult<
     Ok(())
 }
 
+/// No-op version when profiling feature is disabled.
+///
+/// # Errors
+/// None
+#[cfg(not(feature = "profiling"))]
+pub const fn enable_profiling(
+    _enabled: bool,
+    _profile_type: ProfileType,
+) -> Result<(), ProfileError> {
+    // No-op implementation
+    Ok(())
+}
+
 /// Disable profiling and reset the profiling stack.
-pub fn disable_profiling() {
+#[cfg(feature = "profiling")]
+pub const fn disable_profiling() {
     PROFILING_STATE.store(false, Ordering::SeqCst);
+}
+
+#[cfg(not(feature = "profiling"))]
+pub const fn disable_profiling() {
+    // No-op implementation
 }
 
 /// Creates and initializes a single profile file with header information.
@@ -225,8 +265,9 @@ pub fn disable_profiling() {
 /// * `profile_type` - A description of the profile type for the header
 ///
 /// # Errors
-/// Returns a `ThagError` if file creation or writing fails
-fn initialize_profile_file(path: &str, profile_type: &str) -> ThagResult<()> {
+/// Returns a `ProfileError` if file creation or writing fails
+#[cfg(feature = "profiling")]
+fn initialize_profile_file(path: &str, profile_type: &str) -> ProfileResult<()> {
     let mut file = OpenOptions::new()
         .create(true)
         .write(true)
@@ -258,8 +299,15 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ThagResult<()> {
 /// `true` if profiling is enabled, `false` otherwise
 #[inline(always)]
 #[allow(clippy::inline_always)]
+#[cfg(feature = "profiling")]
 pub fn is_profiling_enabled() -> bool {
     PROFILING_FEATURE || PROFILING_STATE.load(Ordering::SeqCst)
+}
+
+#[cfg(not(feature = "profiling"))]
+#[must_use]
+pub const fn is_profiling_enabled() -> bool {
+    false
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -282,15 +330,19 @@ impl ProfileType {
     }
 }
 
+#[allow(dead_code)]
 pub struct Profile {
-    // id: u64,
     start: Option<Instant>,
-    // name: &'static str,
     profile_type: ProfileType,
     initial_memory: Option<usize>,     // For memory delta
     path: Vec<String>,                 // Full call stack (only profiled functions)
     _not_send: PhantomData<*const ()>, // Makes Profile !Send
 }
+
+// #[cfg(not(feature = "profiling"))]
+// pub struct Profile {
+//     _not_send: PhantomData<*const ()>, // Makes Profile !Send
+// }
 
 impl Profile {
     /// Creates a new `Profile` to profile a section of code.
@@ -460,18 +512,19 @@ impl Profile {
     /// * `entry` - The formatted entry to write (including stack trace and measurement)
     ///
     /// # Errors
-    /// Returns a `ThagError` if:
+    /// Returns a `ProfileError` if:
     /// * The mutex lock fails
     /// * File operations fail
     /// * Writing to the file fails
+    #[cfg(feature = "profiling")]
     fn write_profile_event(
         path: &str,
         file: &Mutex<Option<BufWriter<File>>>,
         entry: &str,
-    ) -> ThagResult<()> {
+    ) -> ProfileResult<()> {
         let mut guard = file
             .lock()
-            .map_err(|_| ThagError::Profiling("Failed to lock profile file".into()))?;
+            .map_err(|_| ProfileError::General("Failed to lock profile file".into()))?;
 
         if guard.is_none() {
             *guard = Some(BufWriter::new(
@@ -496,8 +549,9 @@ impl Profile {
     /// * `duration` - The elapsed time of the profiled section
     ///
     /// # Errors
-    /// Returns a `ThagError` if writing to the profile file fails
-    fn write_time_event(&self, duration: std::time::Duration) -> ThagResult<()> {
+    /// Returns a `ProfileError` if writing to the profile file fails
+    #[cfg(feature = "profiling")]
+    fn write_time_event(&self, duration: std::time::Duration) -> ProfileResult<()> {
         // Profile must exist and profiling must be enabled if we got here
         // Only keep the business logic checks
 
@@ -509,7 +563,7 @@ impl Profile {
         let stack = &self.path;
 
         if stack.is_empty() {
-            return Err(ThagError::Profiling("Stack is empty".into()));
+            return Err(ProfileError::General("Stack is empty".into()));
         }
         let stack_str = stack.join(";");
         let entry = format!("{stack_str} {micros}");
@@ -518,7 +572,8 @@ impl Profile {
         Self::write_profile_event(&paths.time, TimeProfileFile::get(), &entry)
     }
 
-    fn write_memory_event_with_op(&self, delta: usize, op: char) -> ThagResult<()> {
+    #[cfg(feature = "profiling")]
+    fn write_memory_event_with_op(&self, delta: usize, op: char) -> ProfileResult<()> {
         if delta == 0 {
             // Keep this as it's a business logic check
             return Ok(());
@@ -527,7 +582,7 @@ impl Profile {
         let stack = &self.path;
 
         if stack.is_empty() {
-            return Err(ThagError::Profiling("Stack is empty".into()));
+            return Err(ProfileError::General("Stack is empty".into()));
         }
         let stack_str = stack.join(";");
 
@@ -537,7 +592,8 @@ impl Profile {
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
     }
 
-    fn record_memory_change(&self, delta: usize) -> ThagResult<()> {
+    #[cfg(feature = "profiling")]
+    fn record_memory_change(&self, delta: usize) -> ProfileResult<()> {
         if delta == 0 {
             return Ok(());
         }
@@ -553,6 +609,7 @@ impl Profile {
     }
 }
 
+// #[cfg(feature = "profiling")]
 fn get_fn_desc_name(fn_name_str: &String) -> String {
     extract_fn_only(fn_name_str).map_or_else(
         || fn_name_str.to_string(),
@@ -560,6 +617,7 @@ fn get_fn_desc_name(fn_name_str: &String) -> String {
     )
 }
 
+#[cfg(feature = "profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
         if let Some(start) = self.start.take() {
@@ -589,10 +647,12 @@ impl Drop for Profile {
     }
 }
 
+#[cfg(feature = "profiling")]
 pub struct ProfileSection {
     profile: Option<Profile>,
 }
 
+#[cfg(feature = "profiling")]
 impl ProfileSection {
     #[must_use]
     pub fn new(name: &str) -> Self {
@@ -613,6 +673,23 @@ impl ProfileSection {
     #[must_use]
     pub const fn is_active(&self) -> bool {
         self.profile.is_some()
+    }
+}
+
+// Dummy implementation when profiling is disabled
+#[cfg(not(feature = "profiling"))]
+pub struct ProfileSection;
+
+#[cfg(not(feature = "profiling"))]
+impl ProfileSection {
+    #[must_use]
+    pub const fn new(_name: &str) -> Self {
+        Self
+    }
+    pub const fn end(self) {}
+    #[must_use]
+    pub const fn is_active(&self) -> bool {
+        false
     }
 }
 
@@ -646,6 +723,7 @@ pub fn get_reg_desc_name(name: &str) -> Option<String> {
 }
 
 // Extract the class::method part from a fully qualified function name
+// #[cfg(feature = "profiling")]
 fn extract_class_method(qualified_name: &str) -> Option<String> {
     // Split by :: and get the last two components
     // eprintln!("Extracting class::method from {}", qualified_name);
@@ -662,11 +740,13 @@ fn extract_class_method(qualified_name: &str) -> Option<String> {
 }
 
 // Extract just the method name from a fully qualified function name
+// #[cfg(feature = "profiling")]
 fn extract_fn_only(qualified_name: &str) -> Option<String> {
     // Split by :: and get the last component
     qualified_name.split("::").last().map(ToString::to_string)
 }
 
+// #[cfg(feature = "profiling")]
 fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
     // First, filter out standard library infrastructure we don't care about
     let filtered_frames: Vec<String> = raw_frames
@@ -740,6 +820,7 @@ fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
     cleaned_frames
 }
 
+// #[cfg(feature = "profiling")]
 fn clean_function_name(demangled: &str) -> String {
     // Remove hash suffixes and closure markers
     let mut clean_name = demangled.to_string();
@@ -789,34 +870,6 @@ fn get_memory_delta(initial: usize) -> Result<usize, MemoryError> {
         })
 }
 
-/// Run a function or closure only if the global verbosity is Verbose or higher.
-/// Intended to run an eprintln! of a message. This is meant as an equivalent to `vlog!`
-/// but without risking an infinite recursion with profiling trying to log and logging
-/// trying to profile.
-///
-/// Uses a function or closure as its argument rather than accept a pre-formatted message
-/// argument, so that we only do the formatting if we need to.
-#[allow(dead_code)]
-fn verbose_only(fun: impl Fn()) {
-    let verbosity = lazy_static_var!(Verbosity, crate::get_verbosity());
-    if *verbosity as u8 >= Verbosity::Verbose as u8 {
-        fun();
-    }
-}
-
-// #[must_use]
-// /// Validates that the stack truncation will be valid
-// #[cfg(debug_assertions)]
-// fn validate_stack_truncation(pos: usize) -> Option<String> {
-//     let depth = STACK_DEPTH.load(Ordering::SeqCst);
-//     if pos >= depth {
-//         return Some(format!(
-//             "Truncation position {pos} exceeds stack depth {depth}"
-//         ));
-//     }
-//     None
-// }
-
 /// Profile the enclosing function if profiling is enabled.
 ///
 /// Normally code this at the start of the function, after any declarations.
@@ -833,6 +886,7 @@ fn verbose_only(fun: impl Fn()) {
 ///
 /// ```
 #[macro_export]
+#[cfg(feature = "profiling")]
 macro_rules! profile_fn {
     ($name:expr, $is_async:expr) => {
         let _profile = $crate::profiling::Profile::new(
@@ -842,6 +896,14 @@ macro_rules! profile_fn {
             false,
         );
     };
+}
+
+#[cfg(not(feature = "profiling"))]
+#[macro_export]
+macro_rules! profile_fn {
+    ($name:expr, $is_async:expr) => {{
+        // No-op implementation
+    }};
 }
 
 /// Profile a specific section of code if profiling is enabled.
@@ -868,11 +930,25 @@ macro_rules! profile_fn {
 /// }
 ///
 /// ```
+#[cfg(feature = "profiling")]
 #[macro_export]
 macro_rules! profile_section {
     ($name:expr) => {{
         let section = $crate::profiling::ProfileSection::new($name);
         section // Return the section
+    }};
+}
+
+// Provide an empty implementation when profiling is disabled
+#[cfg(not(feature = "profiling"))]
+#[macro_export]
+macro_rules! profile_section {
+    ($name:expr) => {{
+        struct DummyProfileSection;
+        impl DummyProfileSection {
+            pub fn end(self) {}
+        }
+        DummyProfileSection
     }};
 }
 
@@ -1050,7 +1126,7 @@ pub fn is_test_mode_active() -> bool {
 
 #[cfg(test)]
 /// Sets up profiling for a test in a safe manner by first clearing the stack
-pub fn safely_setup_profiling_for_test() -> ThagResult<()> {
+pub fn safely_setup_profiling_for_test() -> ProfileResult<()> {
     // Set test mode active to prevent #[profile] from creating duplicate entries
     TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
 
@@ -1060,7 +1136,7 @@ pub fn safely_setup_profiling_for_test() -> ThagResult<()> {
 
 #[cfg(test)]
 /// Safely cleans up profiling after a test
-pub fn safely_cleanup_profiling_after_test() -> ThagResult<()> {
+pub fn safely_cleanup_profiling_after_test() -> ProfileResult<()> {
     // First disable profiling
     let result = enable_profiling(false, ProfileType::Time);
 

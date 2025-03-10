@@ -2,7 +2,7 @@
 [dependencies]
 syn = { version = "2.0.90", features = ["full"] }
 # thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
-thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
 toml = "0.8"
 */
 /// Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in

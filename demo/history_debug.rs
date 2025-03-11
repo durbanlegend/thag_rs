@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 regex = "1.10.6"
-serde = { version = "1.0.215", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.132"
 */
 

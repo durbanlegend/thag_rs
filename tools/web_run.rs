@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-syn = { version = "2.0.90", default-features = false, features = ["derive", "parsing", "full"] }
+syn = { version = "2", default-features = false, features = ["derive", "parsing", "full"] }
 tempfile = "3.14.0"
 tinyget = { version = "1.0.2", features = ["https"] }
 url = "2.5.4"

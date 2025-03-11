@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 crokey = "1.0.1"
-serde = { version = "1.0.215", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
 toml = "0.8.19"
 */
 

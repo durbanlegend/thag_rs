@@ -10,7 +10,7 @@ ratatui = "0.28.1"
 reedline = "0.36.0"
 regex = "1.10.4"
 scopeguard = "1.2.0"
-serde = "1.0.210"
+serde = "1.0.219"
 serde_json = "1.0.132"
 strum = "0.26.3"
 thag_rs = { path = "/Users/donf/projects/thag_rs/" }

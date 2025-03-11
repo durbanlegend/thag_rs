@@ -2,7 +2,7 @@
 [dependencies]
 prettyplease = "0.2.25"
 quote = "1.0.37"
-syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
+syn = { version = "2", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
 */
 
 /// Demo of selectively modifying source code using `syn` and `quote`. This is from a solution posted by user Yandros on the Rust Playground

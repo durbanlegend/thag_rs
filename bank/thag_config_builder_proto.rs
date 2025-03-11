@@ -4,7 +4,7 @@ colored = "2.1.0"
 dirs = "5.0"
 inquire = "0.7.5"
 semver = "1.0.23"
-serde = { version = "1.0.215", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
 thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
 tokio = { version = "1", features = ["full"] }
 toml = "0.8"

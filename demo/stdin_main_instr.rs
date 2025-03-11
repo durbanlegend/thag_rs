@@ -6,7 +6,7 @@ mockall = "0.13.0"
 ratatui = "0.28.1"
 regex = "1.10.4"
 scopeguard = "1.2.0"
-serde = "1.0.210"
+serde = "1.0.219"
 serde_json = "1.0.132"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
 thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core" ,"tui", "simplelog"] }

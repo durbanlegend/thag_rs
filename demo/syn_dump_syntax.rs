@@ -2,7 +2,7 @@
 [dependencies]
 colored = "2.1.0"
 quote = "1.0.37"
-syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing"] }
+syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 */
 

@@ -6,8 +6,8 @@ dirs = "5.0"
 documented = "0.9.1"
 inquire = "0.7.5"
 semver = "1.0.23"
-serde = { version = "1.0.215", features = ["derive"] }
-syn = { version = "2.0.90", features = ["full"] }
+serde = { version = "1.0.219", features = ["derive"] }
+syn = { version = "2", features = ["full"] }
 thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "simplelog"] }
 # thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/thag_proc_macros" }

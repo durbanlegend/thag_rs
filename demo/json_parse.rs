@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-serde = "1.0.204"
+serde = "1.0.219"
 serde_json = "1.0.132"
 */
 

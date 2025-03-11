@@ -2,7 +2,7 @@
 [dependencies]
 prettyplease = "0.2.29"
 quote = "1.0.38"
-syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "visit-mut"] }
+syn = { version = "2", features = ["extra-traits", "full", "parsing", "visit-mut"] }
 */
 
 /// Tries to profile a file via injection into its abstract syntax tree.

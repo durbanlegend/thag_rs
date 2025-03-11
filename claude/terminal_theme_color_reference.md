@@ -3557,13 +3557,13 @@ This toml block contains the same config manifest information that was generated
 /*[toml]
 [dependencies]
 documented = "0.9.1"
-serde = { version = "1.0.217", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive"] }
 toml = "0.8.19"
 */
 Versions in thag Cargo.toml:
 documented = "0.9.1"
-serde = { version = "1.0.215", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
 strum = { version = "0.26.3", features = ["derive", "phf"] }
 toml = { version = "0.8.19", optional = true }
 

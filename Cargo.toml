@@ -32,17 +32,17 @@ eula = false
 # backtrace = "0.3"
 bitflags = { version = "2.9.0", optional = true }
 cargo-lookup = { version = "0.1.0", optional = true }
-cargo_toml = { version = "0.22.0", optional = true }
+cargo_toml = { version = "0.22.1", optional = true }
 # dirs = { version = "6.0.0", optional = true }
 chrono = "0.4.39"
-clap = { version = "4.5.31", features = ["cargo", "derive"], optional = true }
+clap = { version = "4.5.32", features = ["cargo", "derive"], optional = true }
 crokey = { version = "1.1.0", optional = true }
 crossterm = { version = "0.28.1", features = ["use-dev-tty"], optional = true }
 directories = "5.0.1"
 document-features = "0.2.10"
 documented = "0.9.1"
 edit = { version = "0.1.5", optional = true }
-env_logger = { version = "0.11.5", optional = true }
+env_logger = { version = "0.11.7", optional = true }
 # inferno = { version = "0.12.0", optional = true }
 # inquire = { version = "0.7.5", optional = true }
 log = "0.4.26"

@@ -58,7 +58,7 @@ macro_rules! static_lazy {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::thousands;
+/// use thag_profiler::thousands;
 /// assert_eq!(thousands(1234567u32), "1,234,567");
 /// assert_eq!(thousands(9876u16), "9,876");
 /// assert_eq!(thousands(42u8), "42");

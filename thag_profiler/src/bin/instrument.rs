@@ -6,11 +6,11 @@ use ra_ap_syntax::{
 use std::env;
 use std::io::Read;
 
-/// A stand-alone convenience tool to instrument a Rust source program for `thag_rs` profiling.
+/// A stand-alone convenience tool to instrument a Rust source program for `thag_profiler` profiling.
 /// It accepts the source code on stdin and outputs instrumented code to stdout.
 /// The instrumentation consists of adding the #[enable_profiling] attribute to `fn main` if
 /// present, and the #[profile] attribute to all other functions and methods, as well as import
-/// statements for the `thag_rs` profiling.
+/// statements for the `thag_profiler` profiling.
 /// module and proc macro library. It is intended to be lossless, using the `rust-analyzer` crate
 /// to preserve the original source code intact with its comments and formatting. However, by using
 /// it you accept responsibility for all consequences of instrumentation and profiling.
@@ -21,12 +21,12 @@ use std::io::Read;
 /// Free tools for this purpose include `diff`, `sdiff` git diff, GitHub desktop and BBEdit.
 
 /// This tool attempts to position the injected code sensibly and to avoid duplication of existing
-/// `thag_rs` profiling code. It implements default profiling which currently includes both execution
+/// `thag_profiler` profiling code. It implements default profiling which currently includes both execution
 /// time and memory usage, but this is easily tweaked manually by modifying the instrumented code by
 /// adding the keyword `profile_type = ["time" | "memory"])` to the `#[enable_profiling]` attribute,
 /// e.g.: `#[enable_profiling(profile_type = "time")]`.
 ///
-/// This tool is intended for use with the `thag_rs` command-line tool or compiled into a binary.
+/// This tool is intended for use with the `thag_profiler` command-line tool or compiled into a binary.
 /// Run it with the `-qq` flag to suppress unwanted output. It requires a positive integer argument
 /// being a Rust edition number (2015, 2018, 2021, 2024).
 ///
@@ -103,7 +103,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
     let parse = SourceFile::parse(source, edition);
     let tree = parse.tree().clone_for_update();
 
-    let imports = ["use thag_rs::{async_local, enable_profiling, profile, profiling, Profile};"];
+    let imports = ["use thag_profiler::*;"];
 
     for import_text in imports.iter() {
         if !source.contains(import_text) {
@@ -267,7 +267,7 @@ fn foo() {}"#;
     fn test_basic_function_instrumentation() {
         let input = "fn foo() {}";
         let output = instrument_code(input);
-        let expected = "use thag_rs::profiling; \nuse thag_proc_macros::enable_profiling; \n\n#[profile] \nfn foo() {}";
+        let expected = "use thag_profiler::*; \n\n#[profile] \nfn foo() {}";
         assert!(
             compare_whitespace(expected, &output),
             "Whitespace mismatch between expected and actual output",
@@ -298,7 +298,8 @@ impl Foo {
 fn main() {}"#;
         let output = instrument_code(input);
         // eprintln!("output=[{output}]");
-        let expected = "use thag_rs::profiling; \nuse thag_proc_macros::enable_profiling; \n\n#[allow(dead_code)]\n#[enable_profiling] \nfn main() {}";
+        let expected =
+            "use thag_profiler::*; \n\n#[allow(dead_code)]\n#[enable_profiling] \nfn main() {}";
         assert!(
             compare_whitespace(expected, &output),
             "Whitespace mismatch between expected and actual output",

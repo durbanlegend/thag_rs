@@ -1,6 +1,8 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1", features = ["profiling"] }
+thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["core", "simplelog"] }
+# thag_profiler = { version = "0.1", features = ["profiling"] }
+# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler" }
 tokio = { version = "1", features = ["full"] }
 */
 
@@ -8,7 +10,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_profiler::{enable_profiling, profile, profile_section, ProfileType};
+use thag_profiler::*;
 
 struct Document {
     id: usize,

@@ -2,8 +2,8 @@
 [dependencies]
 nu-ansi-term = { version = "0.50.1", features = ["derive_serde_style"] }
 strum = { version = "0.27.1", features = ["derive"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "simplelog"] }
+thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "profiling", "simplelog"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "profiling", "simplelog"] }
 */
 /// Demonstrates the colour and styling options of `thag_rs`.
 /// Also demos the full 256-colour palette as per `demo/colors*.rs`.

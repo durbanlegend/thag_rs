@@ -5,11 +5,11 @@ use ra_ap_syntax::{
 };
 use std::io::Read;
 
-/// A stand-alone convenience tool to remove `thag_rs` profiling instrumentation from a Rust source
+/// A stand-alone convenience tool to remove `thag_profiler` profiling instrumentation from a Rust source
 /// program.
 /// It accepts the instrumented source code on stdin and outputs uninstrumented code to stdout.
 /// The process consists of removing any and all attribute macro and other ("legacy" / prototype)
-/// macro invocations of `thag_rs` profiling. It is intended to be lossless, using the `rust-analyzer`
+/// macro invocations of `thag_profiler` profiling. It is intended to be lossless, using the `rust-analyzer`
 /// crate to preserve the original source code intact with its comments and formatting. However, by
 /// using it you accept responsibility for all consequences.
 /// It's recommended to use profiling only in development environments and thoroughly test or
@@ -18,7 +18,7 @@ use std::io::Read;
 /// to ensure that the removal of instrumentation did not introduce any unintended changes.
 /// Free tools for this purpose include `diff`, `sdiff` git diff, GitHub desktop and BBEdit.
 ///
-/// This tool is intended for use with the `thag_rs` command-line tool or compiled into a binary.
+/// This tool is intended for use with the `thag_profiler` command-line tool or compiled into a binary.
 /// Run it with the `-qq` flag to suppress unwanted output. It requires a positive integer argument
 /// being a Rust edition number (2015, 2018, 2021, 2024).
 ///
@@ -36,7 +36,7 @@ use std::io::Read;
 /// profile_uninstr < demo/colors_instrumented.rs -- 2018 > demo/colors.rs
 /// ```
 ///
-//# Purpose: Stand-alone tool to remove any and all `thag_rs` profiling instrumentation from any Rust source code.
+//# Purpose: Stand-alone tool to remove any and all `thag_profiler` profiling instrumentation from any Rust source code.
 //# Categories: profiling, tools
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
@@ -86,7 +86,7 @@ fn deinstrument_code(edition: Edition, source: &str) -> String {
                                 let maybe_ident_token = name_ref.ident_token();
                                 if let Some(ident_token) = maybe_ident_token {
                                     eprintln!("Ident Token: {:?}", ident_token);
-                                    if ident_token.text().contains("thag_rs") {
+                                    if ident_token.text().contains("thag_profiler") {
                                         if let Some(use_tree_list) = use_tree_node.use_tree_list() {
                                             let var_name = use_tree_list.to_string();
                                             eprintln!("Use Tree List: {var_name}");

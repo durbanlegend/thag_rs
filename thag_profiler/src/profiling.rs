@@ -24,9 +24,6 @@ use backtrace::Backtrace;
 #[cfg(feature = "profiling")]
 use crate::ProfileResult;
 
-#[cfg(feature = "profiling")]
-use chrono::Local;
-
 // #[cfg(feature = "profiling")]
 use rustc_demangle::demangle;
 
@@ -35,7 +32,7 @@ use std::{
     convert::Into,
     fs::OpenOptions,
     io::Write,
-    path::PathBuf,
+    // path::PathBuf,
     sync::atomic::{AtomicBool, AtomicU64},
     time::SystemTime,
 };
@@ -242,7 +239,7 @@ pub const fn enable_profiling(
 
 /// Disable profiling and reset the profiling stack.
 #[cfg(feature = "profiling")]
-pub const fn disable_profiling() {
+pub fn disable_profiling() {
     PROFILING_STATE.store(false, Ordering::SeqCst);
 }
 
@@ -382,9 +379,7 @@ impl Profile {
                     // eprintln!("Symbol name: {name_str}");
 
                     // Check if we've reached the start condition
-                    if !is_within_target_range
-                        && name_str.contains("thag_rs::profiling::Profile::new")
-                    {
+                    if !is_within_target_range && name_str.contains("Profile::new") {
                         is_within_target_range = true;
                         first_frame_after_profile = true;
                         continue;
@@ -429,7 +424,7 @@ impl Profile {
         } else {
             fn_name.to_string()
         };
-        // eprintln!("name={name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, fn_name={fn_name}");
+        // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, desc_fn_name={desc_fn_name}");
         register_profiled_function(&fn_name, desc_fn_name);
 
         // Process the collected frames to collapse patterns and clean up
@@ -660,8 +655,8 @@ impl ProfileSection {
             profile: Profile::new(
                 name.to_string(),
                 get_global_profile_type(),
-                false, // log_to_file
-                false, // log_to_stdout
+                false, // is_async
+                false, // is_method
             ),
         }
     }
@@ -701,7 +696,9 @@ impl ProfileSection {
 /// type in the method name is not working.
 pub fn register_profiled_function(name: &str, desc_name: String) {
     #[cfg(debug_assertions)]
-    assert!(name != "new");
+    if name == "new" {
+        panic!("`new` is not a valid function name. desc_name={desc_name}");
+    }
     if let Ok(mut registry) = PROFILED_FUNCTIONS.lock() {
         registry.insert(name.to_string(), desc_name);
     }
@@ -970,12 +967,20 @@ macro_rules! profile_section {
 macro_rules! profile_method {
     () => {
         const NAME: &'static str = concat!(module_path!(), "::", stringify!(profile_method));
-        let _profile =
-            $crate::profiling::Profile::new(NAME, $crate::profiling::get_global_profile_type());
+        let _profile = $crate::profiling::Profile::new(
+            NAME,
+            $crate::profiling::get_global_profile_type(),
+            false,
+            true,
+        );
     };
     ($name:expr) => {
-        let _profile =
-            $crate::profiling::Profile::new($name, $crate::profiling::get_global_profile_type());
+        let _profile = $crate::profiling::Profile::new(
+            $name.to_string(),
+            $crate::profiling::get_global_profile_type(),
+            false,
+            true,
+        );
     };
 }
 
@@ -986,7 +991,7 @@ macro_rules! profile_method {
 ///
 /// # Example
 /// ```
-/// use thag_rs::profile_memory;
+/// use thag_profiler::profile_memory;
 /// fn allocate_buffer() {
 ///     profile_memory!("allocate_buffer");
 ///     let buffer = vec![0; 1024];
@@ -996,8 +1001,12 @@ macro_rules! profile_method {
 #[macro_export]
 macro_rules! profile_memory {
     ($name:expr) => {
-        let _profile =
-            $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Memory);
+        let _profile = $crate::profiling::Profile::new(
+            $name,
+            $crate::profiling::ProfileType::Memory,
+            false,
+            false,
+        );
     };
 }
 
@@ -1009,7 +1018,7 @@ macro_rules! profile_memory {
 ///
 /// # Example
 /// ```
-/// use thag_rs::profile_both;
+/// use thag_profiler::profile_both;
 /// fn process_data() {
 ///     profile_both!("process_data");
 ///     // Both time and memory usage will be tracked
@@ -1018,7 +1027,12 @@ macro_rules! profile_memory {
 #[macro_export]
 macro_rules! profile_both {
     ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new($name, $crate::profiling::ProfileType::Both);
+        let _profile = $crate::profiling::Profile::new(
+            $name,
+            $crate::profiling::ProfileType::Both,
+            false,
+            false,
+        );
     };
 }
 
@@ -1112,6 +1126,9 @@ impl ProfileStats {
         self.max_time
     }
 }
+
+#[cfg(test)]
+use std::sync::atomic::AtomicBool;
 
 #[cfg(test)]
 static TEST_MODE_ACTIVE: AtomicBool = AtomicBool::new(false);

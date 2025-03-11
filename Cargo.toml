@@ -29,7 +29,7 @@ eula = false
 [dependencies]
 bitflags = "2.9.0"
 cargo-lookup = "0.1.0"
-cargo_toml = "0.22.0"
+cargo_toml = "0.22.1"
 clap = { version = "4.5.32", features = ["cargo", "derive"] }
 crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
 dirs = "6.0.0"

@@ -17,7 +17,7 @@ rustc-demangle = "0.1.24"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", optional = true }
 strum = { version = "0.27.1", features = ["derive", "phf"] }
-thag_proc_macros = { path = "../thag_proc_macros", features = ["profiling"] }
+thag_proc_macros = { path = "../thag_proc_macros" }
 
 [dev-dependencies]
 serial_test = "3.2.0"

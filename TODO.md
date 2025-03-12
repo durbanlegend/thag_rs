@@ -21,9 +21,7 @@
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
-- [ ]  Profiling: split out to separate crate?
 - [ ]  profile attribute macro: don't instrument if feature is disabled.
-- [ ]  Make all declarative profile macros follow the example of `profile_section` by returning a reference to the profile for manual scope control.
 - [ ]  Make a tool installation script?
 
 

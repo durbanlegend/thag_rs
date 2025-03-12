@@ -35,6 +35,9 @@ use thag_profiler::{profile, profiled};
 pub struct Cli {
     /// Optional path of a script to run (`path`/`stem`.rs)
     pub script: Option<String>,
+    /// Features to enable when building the script (comma separated)
+    #[arg(long, help_heading = Some("Processing Options"))]
+    pub features: Option<String>,
     /// Any arguments for the script
     #[arg(last = true, requires = "script")]
     pub args: Vec<String>,
@@ -226,6 +229,7 @@ bitflags! {
         const INFER         = 8_388_608;
         const TEST_ONLY     = 16_777_216;
         const TOOLS         = 33_554_432;
+        const FEATURES      = 67_108_864;
     }
 }
 
@@ -266,6 +270,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();
     let is_infer = args.infer.is_some();
+    let is_features = args.features.is_some();
     let profile_section = profile!("init_config_loop_assert");
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
@@ -301,6 +306,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::EXPAND, args.expand);
         proc_flags.set(ProcFlags::CARGO, args.cargo);
         proc_flags.set(ProcFlags::INFER, is_infer);
+        proc_flags.set(ProcFlags::FEATURES, is_features);
         proc_flags.set(ProcFlags::TEST_ONLY, args.test_only);
         proc_flags.set(
             ProcFlags::TOOLS,

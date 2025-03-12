@@ -336,11 +336,6 @@ pub struct Profile {
     _not_send: PhantomData<*const ()>, // Makes Profile !Send
 }
 
-// #[cfg(not(feature = "profiling"))]
-// pub struct Profile {
-//     _not_send: PhantomData<*const ()>, // Makes Profile !Send
-// }
-
 impl Profile {
     /// Creates a new `Profile` to profile a section of code.
     ///
@@ -868,14 +863,6 @@ fn get_memory_delta(initial: usize) -> Result<usize, MemoryError> {
         })
 }
 
-#[cfg(not(feature = "profiling"))]
-#[macro_export]
-macro_rules! profile_fn {
-    ($name:expr, $is_async:expr) => {{
-        // No-op implementation
-    }};
-}
-
 /// Profile a section of code with customizable options
 ///
 /// # Examples
@@ -900,66 +887,71 @@ macro_rules! profile_fn {
 macro_rules! profile {
     // profile!(name)
     ($name:expr) => {
-        $crate::profile_internal!($name, $crate::ProfileType::Time, false, false)
+        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Time, false, false)
     };
 
     // profile!(name, type)
     ($name:expr, time) => {
-        $crate::profile_internal!($name, $crate::ProfileType::Time, false, false)
+        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Time, false, false)
     };
     ($name:expr, memory) => {
-        $crate::profile_internal!($name, $crate::ProfileType::Memory, false, false)
+        ::thag_profiler::profile_internal!(
+            $name,
+            ::thag_profiler::ProfileType::Memory,
+            false,
+            false
+        )
     };
     ($name:expr, both) => {
-        $crate::profile_internal!($name, $crate::ProfileType::Both, false, false)
+        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Both, false, false)
     };
 
     // profile!(name, async)
     ($name:expr, async) => {
-        $crate::profile_internal!($name, $crate::ProfileType::Time, true, false)
+        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Time, true, false)
     };
 
     // profile!(method)
     (method) => {
-        $crate::profile_internal!("", $crate::ProfileType::Time, false, true)
+        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Time, false, true)
     };
 
     // profile!(method, type)
     (method, time) => {
-        $crate::profile_internal!("", $crate::ProfileType::Time, false, true)
+        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Time, false, true)
     };
     (method, memory) => {
-        $crate::profile_internal!("", $crate::ProfileType::Memory, false, true)
+        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Memory, false, true)
     };
     (method, both) => {
-        $crate::profile_internal!("", $crate::ProfileType::Both, false, true)
+        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Both, false, true)
     };
 
     // profile!(method, async)
     (method, async) => {
-        $crate::profile_internal!("", $crate::ProfileType::Time, true, true)
+        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Time, true, true)
     };
 
     // profile!(method, type, async)
     (method, time, async) => {
-        $crate::profile_internal!("", $crate::ProfileType::Time, true, true)
+        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Time, true, true)
     };
     (method, memory, async) => {
-        $crate::profile_internal!("", $crate::ProfileType::Memory, true, true)
+        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Memory, true, true)
     };
     (method, both, async) => {
-        $crate::profile_internal!("", $crate::ProfileType::Both, true, true)
+        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Both, true, true)
     };
 
     // profile!(name, type, async)
     ($name:expr, time, async) => {
-        $crate::profile_internal!($name, $crate::ProfileType::Time, true, false)
+        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Time, true, false)
     };
     ($name:expr, memory, async) => {
-        $crate::profile_internal!($name, $crate::ProfileType::Memory, true, false)
+        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Memory, true, false)
     };
     ($name:expr, both, async) => {
-        $crate::profile_internal!($name, $crate::ProfileType::Both, true, false)
+        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Both, true, false)
     };
 }
 
@@ -969,66 +961,66 @@ macro_rules! profile {
 macro_rules! profile {
     // Basic variants
     ($name:expr) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
 
     // profile!(name, type)
     ($name:expr, time) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
     ($name:expr, memory) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
     ($name:expr, both) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
 
     // profile!(name, async)
     ($name:expr, async) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
 
     // profile!(method)
     (method) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
 
     // profile!(method, type)
     (method, time) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
     (method, memory) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
     (method, both) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
 
     // profile!(method, async)
     (method, async) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
 
     // profile!(method, type, async)
     (method, time, async) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
     (method, memory, async) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
     (method, both, async) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
 
     // profile!(name, type, async)
     ($name:expr, time, async) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
     ($name:expr, memory, async) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
     ($name:expr, both, async) => {{
-        $crate::ProfileSection {}
+        ::thag_profiler::ProfileSection {}
     }};
 }
 
@@ -1036,15 +1028,12 @@ macro_rules! profile {
 #[macro_export]
 macro_rules! profile_internal {
     ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
-        #[cfg(feature = "profiling")]
-        {
-            let profile = $crate::Profile::new($name.to_string(), $type, $is_async, $is_method);
-            $crate::ProfileSection { profile }
-        }
-
-        #[cfg(not(feature = "profiling"))]
-        {
-            $crate::ProfileSection::new_dummy()
+        if ::thag_profiler::PROFILING_ENABLED {
+            let profile =
+                ::thag_profiler::Profile::new($name.to_string(), $type, $is_async, $is_method);
+            ::thag_profiler::ProfileSection { profile }
+        } else {
+            ::thag_profiler::ProfileSection::new($name)
         }
     }};
 }

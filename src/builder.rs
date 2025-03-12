@@ -144,6 +144,7 @@ pub struct BuildState {
     pub crates_finder: Option<ast::CratesFinder>,
     pub metadata_finder: Option<ast::MetadataFinder>,
     pub infer: DependencyInference,
+    pub features: Option<String>,
     pub args: Vec<String>,
 }
 
@@ -365,6 +366,7 @@ impl BuildState {
                 Clone::clone,
             ),
             args: cli.args.clone(),
+            features: cli.features.clone(),
             ..Default::default()
         }
     }
@@ -1116,6 +1118,12 @@ fn build_command_args(
 
     if proc_flags.contains(ProcFlags::QUIET) || proc_flags.contains(ProcFlags::QUIETER) {
         args.push("--quiet".to_string());
+    }
+
+    // Add features if specified
+    if let Some(features) = &build_state.features {
+        args.push("--features".to_string());
+        args.push(features.clone());
     }
 
     if proc_flags.contains(ProcFlags::EXECUTABLE) {

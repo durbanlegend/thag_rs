@@ -29,6 +29,12 @@ pub use {
     thag_proc_macros::{enable_profiling, profiled},
 };
 
+#[cfg(feature = "profiling")]
+pub const PROFILING_ENABLED: bool = true;
+
+#[cfg(not(feature = "profiling"))]
+pub const PROFILING_ENABLED: bool = false;
+
 #[macro_export]
 #[doc(hidden)] // Makes it not appear in documentation
 macro_rules! static_lazy {

@@ -23,28 +23,7 @@
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
 - [ ]  profile attribute macro: don't instrument if feature is disabled.
 - [ ]  Make a tool installation script?
-
-
-# Installation
-
-Add `thag_profiling` to your project:
-
-```toml
-[dependencies]
-thag_profiling = "0.1"
-```
-
-To install the profiling tools:
-
-```bash
-# Install all tools
-cargo install thag_profiling
-
-# Or install individual tools
-cargo install thag_profiling --bin thag-profile-instrument
-cargo install thag_profiling --bin thag-profile-remove
-cargo install thag_profiling --bin thag-profile-analyze
-```
+- [ ]  Check if imp and trait_name serve any purpose in profiled / Profile::new.
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

@@ -11,8 +11,8 @@ use syn::{
 struct ProfileArgs {
     /// The implementing type (e.g., "`MyStruct`")
     imp: Option<String>,
-    /// The trait being implemented (e.g., "`Display`")
-    trait_name: Option<String>,
+    // The trait being implemented (e.g., "`Display`")
+    // trait_name: Option<String>,
     /// Explicit profile type override
     profile_type: Option<ProfileTypeOverride>,
 }
@@ -69,10 +69,10 @@ impl Parse for ProfileArgs {
                     let lit: LitStr = input.parse()?;
                     args.imp = Some(lit.value());
                 }
-                "trait_name" => {
-                    let lit: LitStr = input.parse()?;
-                    args.trait_name = Some(lit.value());
-                }
+                // "trait_name" => {
+                //     let lit: LitStr = input.parse()?;
+                //     args.trait_name = Some(lit.value());
+                // }
                 "profile_type" => {
                     let lit: LitStr = input.parse()?;
                     args.profile_type = Some(match lit.value().as_str() {
@@ -134,7 +134,7 @@ fn contains_self_type(ty: &Type) -> bool {
 pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Always check the feature flag at runtime to handle when the proc macro
     // is compiled with the feature but used without it
-    println!("profiling feature enabled: {}", cfg!(feature = "profiling"));
+    // println!("profiling feature enabled: {}", cfg!(feature = "profiling"));
 
     if cfg!(not(feature = "profiling")) {
         return item;
@@ -237,7 +237,7 @@ fn generate_sync_wrapper(
     quote! {
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
             // eprintln!("From generate_sync_wrapper: profile_name={}", #profile_name);
-            let _profile = ::thag_profiler::Profile::new(#profile_name.to_string(), #profile_type, false, #is_method);
+            let _profile = ::thag_profiler::Profile::new(#profile_name, #profile_type, false, #is_method);
             #body
         }
     }
@@ -303,7 +303,7 @@ fn generate_async_wrapper(
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: ::thag_profiler::Profile::new(#profile_name.to_string(), #profile_type, true, #is_method),
+                _profile: ::thag_profiler::Profile::new(#profile_name, #profile_type, true, #is_method),
             }.await
         }
     }

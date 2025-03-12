@@ -7,6 +7,7 @@ use std::{
     fs::File,
     io::BufWriter,
     marker::PhantomData,
+    ops::Deref,
     path::PathBuf,
     sync::{
         atomic::{AtomicU8, Ordering},
@@ -333,6 +334,7 @@ pub struct Profile {
     profile_type: ProfileType,
     initial_memory: Option<usize>,     // For memory delta
     path: Vec<String>,                 // Full call stack (only profiled functions)
+    custom_name: Option<String>,       // Custom section name when provided
     _not_send: PhantomData<*const ()>, // Makes Profile !Send
 }
 
@@ -344,7 +346,7 @@ impl Profile {
     /// Panics if stack validation fails.
     #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
     pub fn new(
-        name: String,
+        name: &str,
         requested_type: ProfileType,
         is_async: bool,
         is_method: bool,
@@ -353,7 +355,7 @@ impl Profile {
             return None;
         }
 
-        // eprintln!("Current function: {name}");
+        // eprintln!("Current function/section: {name}");
 
         // Get the current backtrace
         let mut current_backtrace = Backtrace::new_unresolved();
@@ -365,6 +367,7 @@ impl Profile {
 
         // If this is a method, we'll capture the calling class
         let mut maybe_method_name: Option<String> = None;
+        let mut maybe_function_name: Option<String> = None;
         let mut first_frame_after_profile = false;
 
         for frame in Backtrace::frames(&current_backtrace) {
@@ -384,14 +387,18 @@ impl Profile {
                     if is_within_target_range {
                         // If this is the first frame after Profile::new and it's a method,
                         // then we can extract the class name
-                        if first_frame_after_profile && is_method {
+                        if first_frame_after_profile {
                             first_frame_after_profile = false;
                             let demangled = demangle(&name_str).to_string();
                             // Clean the demangled name
                             let cleaned = clean_function_name(&demangled);
                             // eprintln!("cleaned name: {cleaned:?}");
-                            maybe_method_name = extract_class_method(&cleaned);
-                            // eprintln!("class_method name: {maybe_method_name:?}");
+                            if is_method {
+                                maybe_method_name = extract_class_method(&cleaned);
+                                // eprintln!("class_method name: {maybe_method_name:?}");
+                            } else {
+                                maybe_function_name = extract_fn_only(&cleaned);
+                            }
                         }
 
                         // Skip tokio::runtime functions
@@ -414,14 +421,17 @@ impl Profile {
         }
 
         // Register this function
-        let fn_name = maybe_method_name.as_ref().map_or(name, Into::into);
+        let fn_name = maybe_method_name.as_ref().map_or(
+            maybe_function_name.as_ref().map_or(name, Deref::deref),
+            Deref::deref,
+        );
         let desc_fn_name = if is_async {
             format!("async::{fn_name}")
         } else {
             fn_name.to_string()
         };
-        // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, desc_fn_name={desc_fn_name}");
-        register_profiled_function(&fn_name, desc_fn_name);
+        // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
+        register_profiled_function(fn_name, desc_fn_name);
 
         // Process the collected frames to collapse patterns and clean up
         let cleaned_stack = clean_stack_trace(raw_frames);
@@ -480,6 +490,18 @@ impl Profile {
             None
         };
 
+        // Store the original name as custom_name if it's a non-empty string literal
+        // and different from the function name itself
+        let custom_name = if !name.is_empty() && name != fn_name {
+            Some(name.to_string())
+        } else {
+            None
+        };
+
+        // println!(
+        //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}"
+        // );
+
         Some(Self {
             // id,
             // name,
@@ -487,6 +509,7 @@ impl Profile {
             start: Some(Instant::now()),
             initial_memory,
             path,
+            custom_name,
             _not_send: PhantomData,
         })
     }
@@ -556,7 +579,25 @@ impl Profile {
         if stack.is_empty() {
             return Err(ProfileError::General("Stack is empty".into()));
         }
-        let stack_str = stack.join(";");
+
+        // println!("DEBUG: write_time_event for stack: {:?}", stack);
+
+        // Create a copy of the stack for our modified output
+        let mut stack_with_custom_name = stack.clone();
+
+        // Add our custom section name to the end of the stack path if present
+        if let Some(name) = &self.custom_name {
+            // println!("DEBUG: Adding custom name '{}' to time stack", name);
+
+            // If the stack is not empty, get the last function name
+            if let Some(last_fn) = stack_with_custom_name.last_mut() {
+                // Append the custom name to the last function name
+                *last_fn = format!("{last_fn}:{name}");
+                // println!("DEBUG: Modified stack entry to '{}'", last_fn);
+            }
+        }
+
+        let stack_str = stack_with_custom_name.join(";");
         let entry = format!("{stack_str} {micros}");
 
         let paths = ProfilePaths::get();
@@ -575,8 +616,24 @@ impl Profile {
         if stack.is_empty() {
             return Err(ProfileError::General("Stack is empty".into()));
         }
-        let stack_str = stack.join(";");
 
+        // println!("DEBUG: write_memory_event for stack: {:?}", stack);
+
+        // Create a copy of the stack for our modified output
+        let mut stack_with_custom_name = stack.clone();
+
+        // Add our custom section name to the end of the stack path if present
+        if let Some(name) = &self.custom_name {
+            // println!("DEBUG: Adding custom name '{}' to memory stack", name);
+
+            // If the stack is not empty, get the last function name
+            if let Some(last_fn) = stack_with_custom_name.last_mut() {
+                // Append the custom name to the last function name
+                *last_fn = format!("{last_fn}:{name}");
+                // println!("DEBUG: Modified stack entry to '{}'", last_fn);
+            }
+        }
+        let stack_str = stack_with_custom_name.join(";");
         let entry = format!("{stack_str} {op}{delta}");
 
         let paths = ProfilePaths::get();
@@ -646,7 +703,7 @@ impl ProfileSection {
     pub fn new(name: &str) -> Self {
         Self {
             profile: Profile::new(
-                name.to_string(),
+                name,
                 get_global_profile_type(),
                 false, // is_async
                 false, // is_method
@@ -726,7 +783,7 @@ fn extract_class_method(qualified_name: &str) -> Option<String> {
         // eprintln!("Returning `{class}::{method}`");
         Some(format!("{class}::{method}"))
     } else {
-        eprintln!("Returning `None`");
+        // eprintln!("Returning `None`");
         None
     }
 }
@@ -1029,8 +1086,7 @@ macro_rules! profile {
 macro_rules! profile_internal {
     ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
         if ::thag_profiler::PROFILING_ENABLED {
-            let profile =
-                ::thag_profiler::Profile::new($name.to_string(), $type, $is_async, $is_method);
+            let profile = ::thag_profiler::Profile::new($name, $type, $is_async, $is_method);
             ::thag_profiler::ProfileSection { profile }
         } else {
             ::thag_profiler::ProfileSection::new($name)

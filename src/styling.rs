@@ -1858,6 +1858,11 @@ impl Theme {
         self.palette.style_for_role(role)
     }
 
+    /// Converts RGB values to an ANSI color index.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the color index cannot be converted to a u8.
     #[must_use]
     #[profiled]
     pub fn convert_rgb_to_ansi(r: u8, g: u8, b: u8) -> u8 {
@@ -1904,7 +1909,8 @@ impl Theme {
             }
         }
 
-        u8::try_from(closest).unwrap_or_else(|_| panic!("Failed to convert color index to u8"))
+        u8::try_from(closest)
+            .unwrap_or_else(|_| panic!("Failed to convert color index {closest} to u8"))
     }
 
     #[profiled]
@@ -2311,7 +2317,7 @@ fn find_closest_basic_color(rgb: (u8, u8, u8)) -> u8 {
 // Helper function to get RGB values for a color number (for verification)
 #[must_use]
 #[profiled]
-pub fn get_rgb(color: u8) -> (u8, u8, u8) {
+pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
     match color {
         0..=15 => BASIC_COLORS[color as usize],

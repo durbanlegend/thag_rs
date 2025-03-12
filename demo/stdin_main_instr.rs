@@ -58,7 +58,7 @@ struct History {
 }
 
 impl History {
-    #[profile]
+    #[profiled]
     fn new() -> Self {
         Self {
             entries: VecDeque::with_capacity(20),
@@ -66,7 +66,7 @@ impl History {
         }
     }
 
-    #[profile]
+    #[profiled]
     fn load_from_file(path: &PathBuf) -> Self {
         fs::read_to_string(path).map_or_else(
             |_| Self::default(),
@@ -74,21 +74,21 @@ impl History {
         )
     }
 
-    #[profile]
+    #[profiled]
     fn save_to_file(&self, path: &PathBuf) {
         if let Ok(data) = serde_json::to_string(self) {
             let _ = fs::write(path, data);
         }
     }
 
-    #[profile]
+    #[profiled]
     fn add_entry(&mut self, entry: String) {
         // Remove prior duplicates
         self.entries.retain(|f| f != &entry);
         self.entries.push_front(entry);
     }
 
-    #[profile]
+    #[profiled]
     fn get_current(&mut self) -> Option<&String> {
         if self.entries.is_empty() {
             return None;
@@ -98,7 +98,7 @@ impl History {
         self.entries.front()
     }
 
-    #[profile]
+    #[profiled]
     fn get_previous(&mut self) -> Option<&String> {
         if self.entries.is_empty() {
             return None;
@@ -108,7 +108,7 @@ impl History {
         self.current_index.and_then(|index| self.entries.get(index))
     }
 
-    #[profile]
+    #[profiled]
     fn get_next(&mut self) -> Option<&String> {
         if self.entries.is_empty() {
             return None;
@@ -138,7 +138,7 @@ pub trait EventReader {
 pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
-    #[profile]
+    #[profiled]
     fn read_event(&self) -> Result<Event, std::io::Error> {
         crossterm::event::read()
     }
@@ -182,7 +182,7 @@ fn main() -> Result<(), ThagError> {
 //
 // If the terminal cannot be reset.
 #[allow(clippy::too_many_lines)]
-#[profile]
+#[profiled]
 pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> {
     let input = std::io::stdin();
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
@@ -350,7 +350,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
 // # Errors
 //
 // If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
-#[profile]
+#[profiled]
 pub fn read() -> Result<String, std::io::Error> {
     vlog!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
@@ -373,7 +373,7 @@ pub fn read() -> Result<String, std::io::Error> {
 // # Errors
 //
 // If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
-#[profile]
+#[profiled]
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
@@ -384,7 +384,7 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 // standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
 // it stands).
 #[must_use]
-#[profile]
+#[profiled]
 pub fn normalize_newlines(input: &str) -> String {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"\r\n?").unwrap();
@@ -394,7 +394,7 @@ pub fn normalize_newlines(input: &str) -> String {
 
 /// Apply highlights to the text depending on the light or dark theme as detected, configured
 /// or defaulted, or as toggled by the user with Ctrl-t.
-#[profile]
+#[profiled]
 pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     if alt_highlights {
         // Dark theme-friendly colors
@@ -409,7 +409,7 @@ pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
     }
 }
 
-#[profile]
+#[profiled]
 fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> Result<(), ThagError> {
     disable_raw_mode()?;
     crossterm::execute!(
@@ -422,7 +422,7 @@ fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> Resul
 }
 
 #[allow(clippy::cast_possible_truncation)]
-#[profile]
+#[profiled]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
     let area = centered_rect(90, NUM_ROWS as u16 + 5, f.area());
     let inner = area.inner(Margin {
@@ -462,7 +462,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
     }
 }
 
-#[profile]
+#[profiled]
 fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),

@@ -77,26 +77,26 @@ impl App {
         }
     }
 
-    #[profile]
+    #[profiled]
     fn move_cursor_left(&mut self) {
         let cursor_moved_left = self.cursor_position.saturating_sub(1);
         self.cursor_position = self.clamp_cursor(cursor_moved_left);
     }
 
-    #[profile]
+    #[profiled]
     fn move_cursor_right(&mut self) {
         let cursor_moved_right = self.cursor_position.saturating_add(1);
         self.cursor_position = self.clamp_cursor(cursor_moved_right);
     }
 
-    #[profile]
+    #[profiled]
     fn enter_char(&mut self, new_char: char) {
         self.input.insert(self.cursor_position, new_char);
 
         self.move_cursor_right();
     }
 
-    #[profile]
+    #[profiled]
     fn delete_char(&mut self) {
         let is_not_cursor_leftmost = self.cursor_position != 0;
         if is_not_cursor_leftmost {
@@ -119,17 +119,17 @@ impl App {
         }
     }
 
-    #[profile]
+    #[profiled]
     fn clamp_cursor(&self, new_cursor_pos: usize) -> usize {
         new_cursor_pos.clamp(0, self.input.len())
     }
 
-    #[profile]
+    #[profiled]
     fn reset_cursor(&mut self) {
         self.cursor_position = 0;
     }
 
-    #[profile]
+    #[profiled]
     fn submit_message(&mut self) {
         self.messages.push(self.input.clone());
         self.input.clear();
@@ -166,7 +166,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[profile]
+#[profiled]
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     loop {
         terminal.draw(|f| ui(f, &app))?;
@@ -207,7 +207,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
     }
 }
 
-#[profile]
+#[profiled]
 fn ui(f: &mut Frame, app: &App) {
     let vertical = Layout::vertical([
         Constraint::Length(1),

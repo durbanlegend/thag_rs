@@ -6,7 +6,7 @@ mod file_navigator;
 mod generate_theme_types;
 mod palette_methods;
 mod preload_themes;
-mod profile;
+mod profiled;
 mod repeat_dash;
 mod tool_errors;
 
@@ -17,7 +17,7 @@ use crate::file_navigator::file_navigator_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
 use crate::palette_methods::palette_methods_impl;
 use crate::preload_themes::preload_themes_impl;
-use crate::profile::profile_impl;
+use crate::profiled::profiled_impl;
 use crate::repeat_dash::repeat_dash_impl;
 use crate::tool_errors::tool_errors_impl;
 use proc_macro::TokenStream;
@@ -208,8 +208,8 @@ pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn profile(attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(false, "profile", &attr, &item, profile_impl)
+pub fn profiled(attr: TokenStream, item: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(true, "profiled", &attr, &item, profiled_impl)
 }
 
 /// Generates repetitive methods for all 14 `Style` fields of the `Palette` struct

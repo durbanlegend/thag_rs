@@ -137,7 +137,7 @@ fn deinstrument_code(edition: Edition, source: &str) -> String {
         let attr_text = if fn_name.as_deref() == Some("main") {
             "#[enable_profiling]"
         } else {
-            "#[profile]"
+            "#[profiled]"
         };
         let function_syntax: &SyntaxNode = function.syntax();
         for child in function_syntax.descendants_with_tokens() {

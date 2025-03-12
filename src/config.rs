@@ -3,7 +3,6 @@ use crate::{
     clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, Color, ColorSupport, TermBgLuma,
     ThagError, ThagResult, Verbosity, V,
 };
-use crate::{enable_profiling, profile};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
 use mockall::{automock, predicate::str};
@@ -23,6 +22,7 @@ use std::{
     sync::Arc,
 };
 use strum::{Display, EnumString};
+use thag_profiler::{enable_profiling, profiled};
 use toml::Value;
 use toml_edit::DocumentMut;
 
@@ -65,7 +65,7 @@ impl Config {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered.
-    #[profile]
+    #[profiled]
     pub fn load_or_create_default(ctx: &impl Context) -> Result<Self, Box<dyn Error>> {
         let config_path = ctx.get_config_path();
 
@@ -127,7 +127,7 @@ impl Config {
     /// # Errors
     ///
     /// This function will bubble up any errors encountered.
-    #[profile]
+    #[profiled]
     pub fn load(path: &Path) -> Result<Self, ThagError> {
         let content = std::fs::read_to_string(path)?;
 
@@ -155,7 +155,7 @@ impl Config {
         }
     }
 
-    #[profile]
+    #[profiled]
     fn update_from_partial(&mut self, partial: PartialConfig) {
         if let Some(logging) = partial.logging {
             self.logging = logging;
@@ -174,7 +174,7 @@ impl Config {
         }
     }
 
-    #[profile(imp = "Config")]
+    #[profiled(imp = "Config")]
     fn validate(&self) -> Result<(), ThagError> {
         // Validate Dependencies section
         self.dependencies
@@ -210,7 +210,7 @@ pub struct Dependencies {
 }
 
 impl Default for Dependencies {
-    #[profile]
+    #[profiled]
     fn default() -> Self {
         Self {
             exclude_unstable_features: true,
@@ -226,7 +226,7 @@ impl Default for Dependencies {
 
 impl Dependencies {
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn filter_maximal_features(
         &self,
         crate_name: &str,
@@ -335,7 +335,7 @@ impl Dependencies {
 
     // Make should_include_feature use filter_features
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn should_include_feature(&self, feature: &str, crate_name: &str) -> bool {
         self.filter_maximal_features(crate_name, &[feature.to_string()])
             .0
@@ -344,7 +344,7 @@ impl Dependencies {
 
     // New method for config features based on overrides
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn apply_config_features(
         &self,
         crate_name: &str,
@@ -400,7 +400,7 @@ impl Dependencies {
 
     // Method to get features based on inference level
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn get_features_for_inference_level(
         &self,
         crate_name: &str,
@@ -422,7 +422,7 @@ impl Dependencies {
         }
     }
 
-    #[profile(imp = "Dependencies")]
+    #[profiled(imp = "Dependencies")]
     fn validate(&self) -> Result<(), String> {
         // Validate feature overrides
         for (crate_name, override_config) in &self.feature_overrides {
@@ -518,7 +518,7 @@ pub enum DependencyInference {
 
 // Custom deserializer to provide better error messages
 impl<'de> de::Deserialize<'de> for DependencyInference {
-    #[profile]
+    #[profiled]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -577,7 +577,7 @@ pub struct Styling {
 }
 
 impl Default for Styling {
-    #[profile]
+    #[profiled]
     fn default() -> Self {
         Self {
             color_support: ColorSupport::Undetermined,
@@ -619,7 +619,7 @@ pub struct Misc {
 }
 
 /// Custom deserialisation method for booleans, to accept current true/false or legacy "true"/"false".
-#[profile]
+#[profiled]
 fn boolean<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
     let deserialize = Deserialize::deserialize(deserializer);
     deserialize.map_or_else(Err, |val| match val {
@@ -649,7 +649,7 @@ impl RealContext {
     /// Panics if it fails to resolve the $APPDATA path.
     #[cfg(target_os = "windows")]
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn new() -> Self {
         let base_dir =
             PathBuf::from(env::var("APPDATA").expect("Error resolving path from $APPDATA"));
@@ -663,7 +663,7 @@ impl RealContext {
     /// Panics if it fails to resolve the home directory.
     #[cfg(not(target_os = "windows"))]
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn new() -> Self {
         let base_dir =
             PathBuf::from(crate::get_home_dir_string().expect("Could not find home directory"))
@@ -673,12 +673,12 @@ impl RealContext {
 }
 
 impl Context for RealContext {
-    #[profile]
+    #[profiled]
     fn get_config_path(&self) -> PathBuf {
         self.base_dir.join("thag_rs").join("config.toml")
     }
 
-    #[profile]
+    #[profiled]
     fn is_real(&self) -> bool {
         true
     }
@@ -686,7 +686,7 @@ impl Context for RealContext {
 
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
-#[profile]
+#[profiled]
 pub fn maybe_config() -> Option<Config> {
     lazy_static_var!(Option<Config>, {
         let context = RealContext::new();
@@ -696,7 +696,7 @@ pub fn maybe_config() -> Option<Config> {
     .clone()
 }
 
-#[profile]
+#[profiled]
 fn maybe_load_config() -> Option<Config> {
     // eprintln!("In maybe_load_config, should not see this message more than once");
 
@@ -723,7 +723,7 @@ fn maybe_load_config() -> Option<Config> {
 ///
 /// Panics if there is any issue accessing the current directory, e.g. if it doesn't exist or we don't have sufficient permissions to access it.
 #[must_use]
-#[profile]
+#[profiled]
 pub fn get_context() -> Arc<dyn Context> {
     let context: Arc<dyn Context> = if var("TEST_ENV").is_ok() {
         let current_dir = current_dir().expect("Could not get current dir");
@@ -747,7 +747,7 @@ pub fn get_context() -> Arc<dyn Context> {
 ///
 /// This function will return an error if it either finds a file and fails to read it,
 /// or reads the file and fails to parse it.
-#[profile]
+#[profiled]
 pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     let config_path = context.get_config_path();
 
@@ -775,7 +775,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 /// # Panics
 /// Will panic if it can't create the parent directory for the configuration.
 #[allow(clippy::unnecessary_wraps)]
-#[profile]
+#[profiled]
 pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
     let config_path = context.get_config_path();
     debug_log!("config_path={config_path:?}");
@@ -806,7 +806,7 @@ pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
 /// # Errors
 ///
 /// This function will bubble up any Toml parsing errors encountered.
-#[profile]
+#[profiled]
 pub fn validate_config_format(content: &str) -> Result<(), ThagError> {
     // Try to parse as generic TOML first
     let doc = content

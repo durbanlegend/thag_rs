@@ -26,14 +26,14 @@ struct UBigWrapper(UBig);
 // Step 2: Implement Deref and DerefMut
 impl Deref for UBigWrapper {
     type Target = UBig;
-    #[profile]
+    #[profiled]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for UBigWrapper {
-    #[profile]
+    #[profiled]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -41,14 +41,14 @@ impl DerefMut for UBigWrapper {
 
 // Step 3: Implement the Product Trait
 impl Product for UBigWrapper {
-    #[profile]
+    #[profiled]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(UBigWrapper(ubig!(1)), |acc, x| UBigWrapper(acc.0 * x.0))
     }
 }
 
 impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
-    #[profile]
+    #[profiled]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
             UBigWrapper(acc.0.clone() * x.0.clone())
@@ -57,7 +57,7 @@ impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
 }
 
 // Function example using Product
-#[profile]
+#[profiled]
 fn fac_product(n: usize) -> UBig {
     if n == 0 {
         ubig!(0)
@@ -70,7 +70,7 @@ fn fac_product(n: usize) -> UBig {
 }
 
 // Function example using successors
-#[profile]
+#[profiled]
 fn fac_successors(n: usize) -> UBig {
     successors(Some((ubig!(1), ubig!(1))), |(i, acc)| {
         Some((i + 1, acc * (i + 1)))

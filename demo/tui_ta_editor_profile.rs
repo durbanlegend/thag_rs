@@ -98,7 +98,7 @@ struct SearchBox<'a> {
 }
 
 impl<'a> Default for SearchBox<'a> {
-    #[profile]
+    #[profiled]
     fn default() -> Self {
         let mut textarea = TextArea::default();
         textarea.set_block(Block::default().borders(Borders::ALL).title("Search"));
@@ -111,12 +111,12 @@ impl<'a> Default for SearchBox<'a> {
 
 #[allow(dead_code)]
 impl<'a> SearchBox<'a> {
-    #[profile]
+    #[profiled]
     fn open(&mut self) {
         self.open = true;
     }
 
-    #[profile]
+    #[profiled]
     fn close(&mut self) {
         self.open = false;
         // Remove input for next search. Do not recreate `self.textarea` instance to keep undo history so that users can
@@ -125,7 +125,7 @@ impl<'a> SearchBox<'a> {
         self.textarea.delete_line_by_head();
     }
 
-    #[profile]
+    #[profiled]
     fn height(&self) -> u16 {
         if self.open {
             3
@@ -134,7 +134,7 @@ impl<'a> SearchBox<'a> {
         }
     }
 
-    #[profile]
+    #[profiled]
     fn input(&mut self, input: Input) -> Option<&'_ str> {
         match input {
             Input {
@@ -152,7 +152,7 @@ impl<'a> SearchBox<'a> {
         }
     }
 
-    #[profile]
+    #[profiled]
     fn set_error(&mut self, err: Option<impl Display>) {
         let b = if let Some(err) = err {
             Block::default()
@@ -175,7 +175,7 @@ struct Buffer<'a> {
 
 #[allow(dead_code)]
 impl<'a> Buffer<'a> {
-    #[profile]
+    #[profiled]
     fn new(path: PathBuf) -> io::Result<Self> {
         let mut textarea = if let Ok(md) = path.metadata() {
             if md.is_file() {
@@ -208,7 +208,7 @@ impl<'a> Buffer<'a> {
         })
     }
 
-    #[profile]
+    #[profiled]
     fn save(&mut self) -> io::Result<()> {
         let mut f = io::BufWriter::new(fs::File::create(&self.path)?);
         for line in self.textarea.lines() {
@@ -228,7 +228,7 @@ struct Output<'a> {
 }
 
 impl<'a> Output<'a> {
-    #[profile]
+    #[profiled]
     fn new() -> Self {
         let mut textarea = TextArea::default();
         textarea.set_style(Style::default().fg(Color::DarkGray));
@@ -259,7 +259,7 @@ pub(crate) struct Editor<'a> {
 
 #[allow(dead_code)]
 impl<'a> Editor<'a> {
-    #[profile]
+    #[profiled]
     pub(crate) fn new<I>(paths: I) -> io::Result<Self>
     where
         I: Iterator,
@@ -294,7 +294,7 @@ impl<'a> Editor<'a> {
     }
 
     #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
-    #[profile]
+    #[profiled]
     pub(crate) fn run(&mut self) -> io::Result<()> {
         loop {
             let search_height = self.search.height();
@@ -538,7 +538,7 @@ impl<'a> Editor<'a> {
         Ok(())
     }
 
-    #[profile]
+    #[profiled]
     fn write_output(&mut self, msg: &str) {
         self.output.textarea.insert_str(msg);
         self.output.textarea.insert_newline();
@@ -546,7 +546,7 @@ impl<'a> Editor<'a> {
     }
 }
 
-#[profile]
+#[profiled]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
     let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
     let inner = area.inner(Margin {
@@ -591,7 +591,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
 }
 
 impl<'a> Drop for Editor<'a> {
-    #[profile]
+    #[profiled]
     fn drop(&mut self) {
         self.term.show_cursor().unwrap();
         disable_raw_mode().unwrap();
@@ -605,7 +605,7 @@ impl<'a> Drop for Editor<'a> {
     }
 }
 
-#[profile]
+#[profiled]
 fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),

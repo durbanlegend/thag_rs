@@ -5,8 +5,8 @@
 )]
 
 use crate::{
-    cvlog_warning, debug_log, profile, profile_section, regex, vlog, Ast, ThagError, ThagResult,
-    DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR, V,
+    cvlog_warning, debug_log, regex, vlog, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR,
+    TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use regex::Regex;
 use std::{
@@ -21,6 +21,7 @@ use syn::{
     visit_mut::{self, VisitMut},
     AttrStyle, Expr, ExprBlock,
 };
+use thag_profiler::{profile, profiled};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;
@@ -43,7 +44,7 @@ struct RemoveInnerAttributes {
 }
 
 impl VisitMut for RemoveInnerAttributes {
-    #[profile]
+    #[profiled]
     fn visit_expr_block_mut(&mut self, expr_block: &mut ExprBlock) {
         // Count inner attributes
         self.found = expr_block
@@ -66,7 +67,7 @@ impl VisitMut for RemoveInnerAttributes {
 
 /// Remove inner attributes (`#![...]`) from the part of the AST that will be wrapped in
 /// `fn main`, as they need to be promoted to the crate level.
-#[profile]
+#[profiled]
 pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
     let remove_inner_attributes = &mut RemoveInnerAttributes { found: false };
     remove_inner_attributes.visit_expr_block_mut(expr);
@@ -76,7 +77,7 @@ pub fn remove_inner_attributes(expr: &mut syn::ExprBlock) -> bool {
 /// Read the contents of a file. For reading the Rust script.
 /// # Errors
 /// Will return `Err` if there is any file system error reading from the file path.
-#[profile]
+#[profiled]
 pub fn read_file_contents(path: &Path) -> ThagResult<String> {
     debug_log!("Reading from {path:?}");
     Ok(fs::read_to_string(path)?)
@@ -89,7 +90,7 @@ pub fn read_file_contents(path: &Path) -> ThagResult<String> {
 /// snippet path and is not encouraged as it is likely to process and wrap the code unnecessarily.
 /// # Errors
 /// Will return `Err` if there is any error encountered by the `syn` crate trying to parse the source string into an AST.
-#[profile]
+#[profiled]
 pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
     let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
     if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
@@ -106,7 +107,7 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
 /// Convert a Path to a string value, assuming the path contains only valid characters.
 /// # Errors
 /// Will return `Err` if there is any error caused by invalid characters in the path name.
-#[profile]
+#[profiled]
 pub fn path_to_str(path: &Path) -> ThagResult<String> {
     let string = path
         .to_path_buf()
@@ -122,7 +123,7 @@ pub fn path_to_str(path: &Path) -> ThagResult<String> {
 /// Display output captured to `std::process::Output`.
 /// # Errors
 /// Will return `Err` if the stdout or stderr is not found captured as expected.
-#[profile]
+#[profiled]
 pub fn display_output(output: &Output) -> ThagResult<()> {
     // Read the captured output from the pipe
     // let stdout = output.stdout;
@@ -147,7 +148,7 @@ pub fn display_output(output: &Output) -> ThagResult<()> {
 /// Will return `Err` if either the executable or the Cargo.toml for the script is missing,
 /// or if there is a logic error wrapping the path and modified time.
 #[cfg(feature = "build")]
-#[profile]
+#[profiled]
 pub fn modified_since_compiled(
     build_state: &BuildState,
 ) -> ThagResult<Option<(&PathBuf, SystemTime)>> {
@@ -199,13 +200,13 @@ pub fn modified_since_compiled(
 /// Parse the code into an abstract syntax tree for inspection
 /// if possible (should work if the code will compile)
 #[must_use]
-#[profile]
+#[profiled]
 pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     #[cfg(debug_assertions)]
     let start_ast = Instant::now();
     #[allow(clippy::option_if_let_else)]
     if let Ok(tree) = {
-        profile_section!("to_ast_syn_parse_file");
+        profile!("to_ast_syn_parse_file");
         syn::parse_file(source_code)
     } {
         #[cfg(debug_assertions)]
@@ -215,7 +216,7 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
         }
         Some(Ast::File(tree))
     } else if let Ok(tree) = {
-        profile_section!("to_ast_syn_parse_expr");
+        profile!("to_ast_syn_parse_expr");
         extract_ast_expr(source_code)
     } {
         #[cfg(debug_assertions)]
@@ -241,7 +242,7 @@ type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
 /// Prepare a snippet for wrapping in `fn main` by separating out any inner attributes,
 /// as they need to be promoted to crate level.
 #[must_use]
-#[profile]
+#[profiled]
 pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
     let inner_attrib_regex: &Regex = regex!(r"(?m)^[\s]*#!\[.+\]");
@@ -277,7 +278,7 @@ pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
 
 /// Convert a Rust code snippet into a program by wrapping it in a main method and other scaffolding.
 #[must_use]
-#[profile]
+#[profiled]
 pub fn wrap_snippet(inner_attribs: &str, body: &str) -> String {
     debug_log!("In wrap_snippet");
 
@@ -305,7 +306,7 @@ Ok(())
 /// Write the source to the destination source-code path.
 /// # Errors
 /// Will return `Err` if there is any error encountered opening or writing to the file.
-#[profile]
+#[profiled]
 pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> ThagResult<fs::File> {
     let mut to_rs_file = OpenOptions::new()
         .write(true)
@@ -328,7 +329,7 @@ pub fn write_source(to_rs_path: &PathBuf, rs_source: &str) -> ThagResult<fs::Fil
 /// and open it for writing.
 /// # Errors
 /// Will return Err if it can't create the `rs_dyn` directory.
-#[profile]
+#[profiled]
 pub fn create_temp_source_file() -> ThagResult<PathBuf> {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
@@ -351,7 +352,7 @@ pub fn create_temp_source_file() -> ThagResult<PathBuf> {
 /// Combine the elements of a loop filter into a well-formed program.
 #[must_use]
 #[cfg(feature = "build")]
-#[profile]
+#[profiled]
 pub fn build_loop(args: &Cli, filter: String) -> String {
     use crate::ast::is_unit_return_type;
     let maybe_ast = extract_ast_expr(&filter);
@@ -414,7 +415,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 /// Clean up temporary files.
 /// # Errors
 /// Will return `Err` if there is any error deleting the file.
-#[profile]
+#[profiled]
 pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<()> {
     // Delete the file
     remove_file(source_path)?;
@@ -426,7 +427,7 @@ pub fn clean_up(source_path: &PathBuf, target_dir_path: &PathBuf) -> io::Result<
 /// Display the contents of a given directory.
 /// # Errors
 /// Will return `Err` if there is any error reading the directory.
-#[profile]
+#[profiled]
 pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
@@ -454,7 +455,7 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 /// undo the effect of adding them to create an expression that can be parsed into
 /// an abstract syntax tree.
 #[must_use]
-#[profile]
+#[profiled]
 pub fn strip_curly_braces(haystack: &str) -> Option<String> {
     // Define the regex pattern
     let re: &Regex = regex!(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$");
@@ -466,7 +467,7 @@ pub fn strip_curly_braces(haystack: &str) -> Option<String> {
 
 #[must_use]
 #[cfg(feature = "build")]
-#[profile]
+#[profiled]
 pub fn get_source_path(build_state: &BuildState) -> String {
     let binding: &PathBuf = if build_state.build_from_orig_source {
         &build_state.source_path
@@ -485,7 +486,7 @@ pub fn get_source_path(build_state: &BuildState) -> String {
 /// Format a Rust source file in situ using rustfmt. For user diagnostic assistance only.
 /// # Panics
 /// Will panic if the `rustfmt` failed.
-#[profile]
+#[profiled]
 fn rustfmt(source_path_str: &str) {
     if Command::new("rustfmt").arg("--version").output().is_ok() {
         // Run rustfmt on the source file

@@ -1,11 +1,12 @@
 use crate::{
     config::{maybe_config, DependencyInference},
     logging::{set_global_verbosity, Verbosity, V},
-    profile, profile_section, ThagError, ThagResult, RS_SUFFIX,
+    ThagError, ThagResult, RS_SUFFIX,
 };
 use bitflags::bitflags;
 use clap::{ArgGroup /*, ColorChoice */, Parser};
 use std::{fmt, str};
+use thag_profiler::{profile, profiled};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and REPL.
 #[allow(clippy::struct_excessive_bools)]
@@ -142,7 +143,7 @@ pub struct Cli {
 
 /// Getter for clap command-line arguments
 #[must_use]
-#[profile]
+#[profiled]
 pub fn get_args() -> Cli {
     Cli::parse()
 }
@@ -150,7 +151,7 @@ pub fn get_args() -> Cli {
 /// Validates the command-line arguments
 /// # Errors
 /// Will return `Err` if there is a missing script name or missing .rs suffix.
-#[profile]
+#[profiled]
 pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
     if let Some(ref script) = args.script {
         if !script.ends_with(RS_SUFFIX) && script != "t" && script != "tools" {
@@ -172,7 +173,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
 /// Determine the desired logging verbosity for the current execution.
 /// # Errors
 /// Will return `Err` if the logger mutex cannot be locked.
-#[profile]
+#[profiled]
 pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
     let verbosity = if args.verbose >= 2 {
         Verbosity::Debug
@@ -229,14 +230,14 @@ bitflags! {
 }
 
 impl fmt::Debug for ProcFlags {
-    #[profile]
+    #[profiled]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         bitflags::parser::to_writer(self, f)
     }
 }
 
 impl fmt::Display for ProcFlags {
-    #[profile]
+    #[profiled]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         bitflags::parser::to_writer(self, f)
     }
@@ -245,7 +246,7 @@ impl fmt::Display for ProcFlags {
 impl str::FromStr for ProcFlags {
     type Err = bitflags::parser::ParseError;
 
-    #[profile]
+    #[profiled]
     fn from_str(flags: &str) -> Result<Self, Self::Err> {
         bitflags::parser::from_str(flags)
     }
@@ -259,13 +260,13 @@ impl str::FromStr for ProcFlags {
 /// # Panics
 ///
 /// Will panic if the internal correctness check fails.
-#[profile]
+#[profiled]
 pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     // eprintln!("args={args:#?}");
     let is_expr = args.expression.is_some();
     let is_loop = args.filter.is_some();
     let is_infer = args.infer.is_some();
-    let profile_section = profile_section!("init_config_loop_assert");
+    let profile_section = profile!("init_config_loop_assert");
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
         // eprintln!("args={args:#?}");
@@ -307,7 +308,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         );
         profile_section.end();
 
-        let profile_section = profile_section!("config_loop_assert");
+        let profile_section = profile!("config_loop_assert");
         let unquote = args.unquote.map_or_else(
             || maybe_config().map_or_else(|| false, |config| config.misc.unquote),
             |unquote| {
@@ -319,7 +320,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::CONFIG, args.config);
         profile_section.end();
 
-        let profile_section = profile_section!("loop_assert");
+        let profile_section = profile!("loop_assert");
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
             if args.toml.is_some() {
                 eprintln!("Option --toml (-M) requires --loop (-l)");
@@ -336,7 +337,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
 
         #[cfg(debug_assertions)]
         {
-            profile_section!("assert");
+            profile!("assert");
             // Check all good
             let formatted = proc_flags.to_string();
             let parsed = formatted.parse::<ProcFlags>()?;

@@ -16,7 +16,7 @@ pub trait Calcs {
 
 impl Calcs for XtermColors {
     /// Get RGB values for a color number
-    #[profile]
+    #[profiled]
     fn rgb_95_40(color: u8) -> (u8, u8, u8) {
         const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
 
@@ -44,7 +44,7 @@ struct WebColor {
 }
 
 impl WebColor {
-    #[profile]
+    #[profiled]
     fn from_line(line: &str) -> Option<Self> {
         let parts: Vec<&str> = line.split('\t').collect();
         if parts.len() >= 3 {
@@ -61,7 +61,7 @@ impl WebColor {
     }
 }
 
-#[profile]
+#[profiled]
 fn parse_rgb(s: &str) -> Option<(u8, u8, u8)> {
     let nums: Vec<u8> = s
         .split(',')
@@ -76,7 +76,7 @@ fn parse_rgb(s: &str) -> Option<(u8, u8, u8)> {
     }
 }
 
-#[profile]
+#[profiled]
 fn find_closest_color(web_rgb: (u8, u8, u8)) -> u8 {
     let mut closest_index = 0;
     let mut min_distance = u32::MAX;
@@ -92,7 +92,7 @@ fn find_closest_color(web_rgb: (u8, u8, u8)) -> u8 {
     closest_index
 }
 
-#[profile]
+#[profiled]
 fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8), is_system: bool) -> u32 {
     let dr = (c1.0 as i32 - c2.0 as i32) as f64 * 0.3;
     let dg = (c1.1 as i32 - c2.1 as i32) as f64 * 0.59;
@@ -151,7 +151,7 @@ fn main() {
     }
 }
 
-#[profile]
+#[profiled]
 fn format_color_block(color_num: u8) -> String {
     match color_num {
         0..=7 => format!("\x1b[3{}m   \x1b[0m", color_num), // Standard colors

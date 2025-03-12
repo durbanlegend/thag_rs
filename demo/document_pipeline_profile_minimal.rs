@@ -34,7 +34,7 @@ impl Document {
         }
     }
 
-    #[profile]
+    #[profiled]
     fn count_words(&mut self) {
         // Simulate CPU-intensive operation with fixed duration
         std::thread::sleep(Duration::from_millis(20));
@@ -53,7 +53,7 @@ impl Document {
         }
     }
 
-    #[profile]
+    #[profiled]
     fn calculate_sentiment(&mut self) -> f64 {
         // Fixed duration for predictability
         std::thread::sleep(Duration::from_millis(30));
@@ -82,7 +82,7 @@ impl Document {
     }
 }
 
-#[profile]
+#[profiled]
 async fn fetch_document(id: usize) -> Document {
     // Fixed async delay
     sleep(Duration::from_millis(40)).await;
@@ -96,7 +96,7 @@ async fn fetch_document(id: usize) -> Document {
     Document::new(id, content)
 }
 
-#[profile]
+#[profiled]
 async fn process_document(mut doc: Document) -> Document {
     // Process document with fixed timing
     doc.count_words();
@@ -109,7 +109,7 @@ async fn process_document(mut doc: Document) -> Document {
     doc
 }
 
-#[profile]
+#[profiled]
 async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     // Process documents one by one to make tracing easier
     let mut documents = Vec::with_capacity(count);

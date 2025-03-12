@@ -4,7 +4,6 @@ use quote::quote;
 
 pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
-       // use crate::lazy_static_var;
        use std::str::FromStr;
        use strum::{Display, EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 

@@ -131,10 +131,12 @@ fn contains_self_type(ty: &Type) -> bool {
     }
 }
 
-pub fn profile_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Always check the feature flag at runtime to handle when the proc macro
     // is compiled with the feature but used without it
-    if !cfg!(feature = "profiling") {
+    println!("profiling feature enabled: {}", cfg!(feature = "profiling"));
+
+    if cfg!(not(feature = "profiling")) {
         return item;
     }
 
@@ -235,7 +237,7 @@ fn generate_sync_wrapper(
     quote! {
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
             // eprintln!("From generate_sync_wrapper: profile_name={}", #profile_name);
-            let _profile = crate::Profile::new(#profile_name.to_string(), #profile_type, false, #is_method);
+            let _profile = ::thag_profiler::Profile::new(#profile_name.to_string(), #profile_type, false, #is_method);
             #body
         }
     }
@@ -244,11 +246,11 @@ fn generate_sync_wrapper(
 fn resolve_profile_type(profile_type: Option<&ProfileTypeOverride>) -> proc_macro2::TokenStream {
     match profile_type {
         Some(ProfileTypeOverride::Global) | None => {
-            quote!(crate::profiling::get_global_profile_type())
+            quote!(::thag_profiler::profiling::get_global_profile_type())
         }
-        Some(ProfileTypeOverride::Time) => quote!(crate::ProfileType::Time),
-        Some(ProfileTypeOverride::Memory) => quote!(crate::ProfileType::Memory),
-        Some(ProfileTypeOverride::Both) => quote!(crate::ProfileType::Both),
+        Some(ProfileTypeOverride::Time) => quote!(::thag_profiler::ProfileType::Time),
+        Some(ProfileTypeOverride::Memory) => quote!(::thag_profiler::ProfileType::Memory),
+        Some(ProfileTypeOverride::Both) => quote!(::thag_profiler::ProfileType::Both),
     }
 }
 
@@ -280,7 +282,7 @@ fn generate_async_wrapper(
 
             struct ProfiledFuture<F> {
                 inner: F,
-                _profile: Option<crate::Profile>,
+                _profile: Option<::thag_profiler::Profile>,
             }
 
             impl<F: Future> Future for ProfiledFuture<F> {
@@ -301,7 +303,7 @@ fn generate_async_wrapper(
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: crate::Profile::new(#profile_name.to_string(), #profile_type, true, #is_method),
+                _profile: ::thag_profiler::Profile::new(#profile_name.to_string(), #profile_type, true, #is_method),
             }.await
         }
     }

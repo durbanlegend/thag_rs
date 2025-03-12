@@ -9,7 +9,7 @@ use std::io::Read;
 /// A stand-alone convenience tool to instrument a Rust source program for `thag_profiler` profiling.
 /// It accepts the source code on stdin and outputs instrumented code to stdout.
 /// The instrumentation consists of adding the #[enable_profiling] attribute to `fn main` if
-/// present, and the #[profile] attribute to all other functions and methods, as well as import
+/// present, and the #[profiled] attribute to all other functions and methods, as well as import
 /// statements for the `thag_profiler` profiling.
 /// module and proc macro library. It is intended to be lossless, using the `rust-analyzer` crate
 /// to preserve the original source code intact with its comments and formatting. However, by using
@@ -137,7 +137,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             let attr_text = if fn_name.as_deref() == Some("main") {
                 "#[enable_profiling]"
             } else {
-                "#[profile]"
+                "#[profiled]"
             };
 
             let fn_token = function.fn_token().expect("Function token is None");
@@ -165,12 +165,11 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                     //     "fn_name={}; text: {text}",
                     //     fn_name.clone().expect("fn_name should be Some")
                     // );
-                    text.starts_with("#[profile")
+                    text.starts_with("#[profiled")
                         || text.starts_with("#[enable_profiling")
                         || text.starts_with("#[test")
                         || text.starts_with("profile!")
-                        || text.starts_with("profile_fn!")
-                        || text.starts_with("profile_method!")
+                        || text.starts_with("profile_")
                         || text.starts_with("enable_profiling")
                 })
             {
@@ -267,12 +266,12 @@ fn foo() {}"#;
     fn test_basic_function_instrumentation() {
         let input = "fn foo() {}";
         let output = instrument_code(input);
-        let expected = "use thag_profiler::*; \n\n#[profile] \nfn foo() {}";
+        let expected = "use thag_profiler::*; \n\n#[profiled] \nfn foo() {}";
         assert!(
             compare_whitespace(expected, &output),
             "Whitespace mismatch between expected and actual output",
         );
-        assert!(output.contains("#[profile] \nfn foo()"));
+        assert!(output.contains("#[profiled] \nfn foo()"));
     }
 
     #[test]
@@ -289,7 +288,7 @@ impl Foo {
     fn bar() {}
 }"#;
         let output = instrument_code(input);
-        assert!(output.contains("    #[profile] \n    fn bar()"));
+        assert!(output.contains("    #[profiled] \n    fn bar()"));
     }
 
     #[test]
@@ -314,8 +313,8 @@ fn outer() {
     fn inner() {}
 }"#;
         let output = instrument_code(input);
-        assert!(output.contains("#[profile] \nfn outer()"));
-        assert!(output.contains("    #[profile] \n    fn inner()"));
+        assert!(output.contains("#[profiled] \nfn outer()"));
+        assert!(output.contains("    #[profiled] \n    fn inner()"));
     }
 
     #[test]
@@ -326,8 +325,8 @@ impl Foo {
     fn method2(&self) {}
 }"#;
         let output = instrument_code(input);
-        assert!(output.contains("    #[profile] \n    fn method1"));
-        assert!(output.contains("    #[profile] \n    fn method2"));
+        assert!(output.contains("    #[profiled] \n    fn method1"));
+        assert!(output.contains("    #[profiled] \n    fn method2"));
     }
 
     #[test]
@@ -344,21 +343,21 @@ impl SomeTrait for Foo {
     fn required_method(&self) {}
 }"#;
         let output = instrument_code(input);
-        assert!(output.contains("    #[profile] \n    fn required_method"));
+        assert!(output.contains("    #[profiled] \n    fn required_method"));
     }
 
     #[test]
     fn test_async_functions() {
         let input = "async fn async_foo() {}";
         let output = instrument_code(input);
-        assert!(output.contains("#[profile] \nasync fn async_foo()"));
+        assert!(output.contains("#[profiled] \nasync fn async_foo()"));
     }
 
     #[test]
     fn test_generic_functions() {
         let input = "fn generic<T: Display>(value: T) {}";
         let output = instrument_code(input);
-        assert!(output.contains("#[profile] \nfn generic<T: Display>"));
+        assert!(output.contains("#[profiled] \nfn generic<T: Display>"));
     }
 
     #[test]
@@ -368,7 +367,7 @@ impl SomeTrait for Foo {
 fn documented() {}"#;
         let output = instrument_code(input);
         // eprintln!("{}", output);
-        assert!(output.contains("/// Doc comment\n#[profile] \nfn documented()"));
+        assert!(output.contains("/// Doc comment\n#[profiled] \nfn documented()"));
     }
 
     #[test]
@@ -382,6 +381,6 @@ fn foo() {}
 fn bar() {}"#;
         let output = instrument_code(input);
         // Check that blank lines between functions are preserved
-        assert!(output.contains("}\n\n#[profile] \nfn bar()"));
+        assert!(output.contains("}\n\n#[profiled] \nfn bar()"));
     }
 }

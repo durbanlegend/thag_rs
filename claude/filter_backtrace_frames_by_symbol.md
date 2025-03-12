@@ -561,7 +561,7 @@ function=thag_config_builder_proto_profile::main::hc6650931edd254f2
 function=core::ops::function::FnOnce::call_once::hb1eb7da98a867d4b
 function=std::sys::backtrace::__rust_begin_short_backtrace::h561e8abad309410c
 ```
-It also highlights a similar pattern with `async fn main`. which does not have or need a #[profile] attribute, so doesn't get the ProfiledFuture scaffolding. I don't need or want the `main` entries with closures, only the last of the 3. I also don't want the FnOnce::call_once or the backtrace::__rust_begin_short_backtrace, which for me is just a marker for the start of the backtrace.
+It also highlights a similar pattern with `async fn main`. which does not have or need a #[profiled] attribute, so doesn't get the ProfiledFuture scaffolding. I don't need or want the `main` entries with closures, only the last of the 3. I also don't want the FnOnce::call_once or the backtrace::__rust_begin_short_backtrace, which for me is just a marker for the start of the backtrace.
 
 # Improved Stack Frame Processing
 
@@ -2506,7 +2506,7 @@ fn my_function() {
 
 This approach should give you a clean, ergonomic API without the warnings.
 
-Thank you, I'm very happy with it. Now I want to think about ways to switch instrumentation on and off. Currently we have two alternative ways to enable profiling: via the `profiling` feature or via the #[enable_profiling] attribute. What I want to do would be straightforward if we were only using the feature, namely to turn off instrumentation when profiling is disabled. We could just test for the feature and disable the generation of the sync and async wrappers if it's not enabled. But as things are, we have the enable_profiling attribute, which is useful in certain contexts. Do we need another default feature, such as `instrument`, to control instrumentation when we're not using the feature? Or is there a way we could combine the two attributes, e.g. if #[profile] is on main, it could function as a toggle for profiling and instrumentation? I.e. replace #[enable_profiling] with #[profile] deployed on main. Unfortunately I can't see my way forward with this, but you quite often have ideas I haven't thought of.
+Thank you, I'm very happy with it. Now I want to think about ways to switch instrumentation on and off. Currently we have two alternative ways to enable profiling: via the `profiling` feature or via the #[enable_profiling] attribute. What I want to do would be straightforward if we were only using the feature, namely to turn off instrumentation when profiling is disabled. We could just test for the feature and disable the generation of the sync and async wrappers if it's not enabled. But as things are, we have the enable_profiling attribute, which is useful in certain contexts. Do we need another default feature, such as `instrument`, to control instrumentation when we're not using the feature? Or is there a way we could combine the two attributes, e.g. if #[profiled] is on main, it could function as a toggle for profiling and instrumentation? I.e. replace #[enable_profiling] with #[profiled] deployed on main. Unfortunately I can't see my way forward with this, but you quite often have ideas I haven't thought of.
 
 # Refining Profiling and Instrumentation Control
 
@@ -2519,8 +2519,8 @@ This approach uses a hierarchy of controls, from compile-time features down to r
 ```
 1. Compile-time feature flag `profiling`: Controls if profiling code is included
 2. Compile-time feature flag `instrument`: Controls if instrumentation is generated
-3. Attribute #[profile] on functions: Marks functions for profiling
-4. Attribute #[profile] on main: Acts as a global toggle
+3. Attribute #[profiled] on functions: Marks functions for profiling
+4. Attribute #[profiled] on main: Acts as a global toggle
 ```
 
 ### Implementation
@@ -2594,7 +2594,7 @@ pub fn profile(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Always check for main function
     if name.to_string() == "main" {
-        // Main with #[profile] enables profiling globally
+        // Main with #[profiled] enables profiling globally
         quote! {
             #[allow(non_upper_case_globals)]
             static PROFILING_ENABLED: std::sync::atomic::AtomicBool =
@@ -2663,13 +2663,13 @@ I recommend a combination of Options 1 and 2, which provides flexibility while r
 
 1. Use `profiling` feature to control if profiling code is included
 2. Use `instrument` feature to control if instrumentation is generated without profiling
-3. Use `#[profile]` on main to act as a runtime toggle
-4. Use `#[profile]` on functions to mark them for profiling when enabled
+3. Use `#[profiled]` on main to act as a runtime toggle
+4. Use `#[profiled]` on functions to mark them for profiling when enabled
 
 This gives you a clean hierarchy:
 - Compile-time features control if profiling/instrumentation is available
-- Putting `#[profile]` on main controls if it's enabled at runtime
-- Individual functions marked with `#[profile]` are profiled when enabled
+- Putting `#[profiled]` on main controls if it's enabled at runtime
+- Individual functions marked with `#[profiled]` are profiled when enabled
 
 ### Complete Implementation
 
@@ -2685,7 +2685,7 @@ pub fn profile(attr: TokenStream, item: TokenStream) -> TokenStream {
     let is_main = name.to_string() == "main";
 
     if is_main {
-        // Putting #[profile] on main enables profiling globally
+        // Putting #[profiled] on main enables profiling globally
         if cfg!(feature = "profiling") {
             let result = quote! {
                 #[allow(non_upper_case_globals)]
@@ -2748,7 +2748,7 @@ pub fn is_profiling_enabled() -> bool {
 
 This approach gives you:
 1. Clean compile-time control via features
-2. Runtime control via `#[profile]` on main
+2. Runtime control via `#[profiled]` on main
 3. The ability to profile specific functions
 4. Environmental overrides via `THAG_PROFILE` environment variable
 
@@ -2756,7 +2756,7 @@ Does this approach align with what you're looking for? I can modify it if you ha
 
 
 I have some doubts. Firstly I should mention that I'm not sure we mean the same thing by instrumentation. I mean simply to instrument for profiling, i.e. generate the wrappers, so that the profiling code is included in the final binary. So profiling would happen either if 1. feature `profiling` was enabled to turn on wrapper generation and profiling or 2. feature `instrument` was enabled to turn on wrapper generation and attribute #[enable_profiling] was enabled to turn on profiling.
-But mainly I'm looking for a way for #[enable_profiling] on the main function - or some equivalent proc macro - to control the compile-time behaviour in such a way as to switch the wrapper generation on or off across the board, so that we don't need an `instrument` feature. Which strikes me as a tall order. There's always build.rs as an alternative I guess. Or do we set up two alternative versions of the library, one with profiling and one without that we can switch between? I want the user to be able to instrument their code with #[profile] attributes without having to worry about the details of the profiling implementation.
+But mainly I'm looking for a way for #[enable_profiling] on the main function - or some equivalent proc macro - to control the compile-time behaviour in such a way as to switch the wrapper generation on or off across the board, so that we don't need an `instrument` feature. Which strikes me as a tall order. There's always build.rs as an alternative I guess. Or do we set up two alternative versions of the library, one with profiling and one without that we can switch between? I want the user to be able to instrument their code with #[profiled] attributes without having to worry about the details of the profiling implementation.
 
 
 # Clarifying Instrumentation, Profiling, and Control
@@ -2767,7 +2767,7 @@ Thanks for clarifying what you mean by instrumentation. I'll address your concer
 
 1. **Instrumentation** = Generating profiling wrappers (the code structure needed for profiling)
 2. **Profiling** = Actually collecting and reporting timing data
-3. You want `#[profile]` attributes to work regardless of whether profiling is active
+3. You want `#[profiled]` attributes to work regardless of whether profiling is active
 4. You want to control compile-time behavior with a proc macro attribute like `#[enable_profiling]` on main
 
 ## The Challenge
@@ -2942,7 +2942,7 @@ fn generate_zero_overhead_wrapper(attr: TokenStream, input: ItemFn) -> TokenStre
 ```
 
 This approach:
-1. Always instruments functions with `#[profile]`
+1. Always instruments functions with `#[profiled]`
 2. Uses `#[enable_profiling]` on main to control profiling at runtime
 3. Has minimal overhead when profiling is disabled
 4. Doesn't require additional features beyond the existing `profiling` feature
@@ -2952,11 +2952,11 @@ This approach:
 Based on your needs, I recommend:
 
 1. Keep the `profiling` feature for backward compatibility
-2. Always generate instrumentation with `#[profile]`
+2. Always generate instrumentation with `#[profiled]`
 3. Add a runtime check in the instrumentation to skip profiling when disabled
 4. Use `#[enable_profiling]` on main to control the runtime flag
 
-This provides users with a clean, single interface (`#[profile]`) without requiring them to understand the implementation details.
+This provides users with a clean, single interface (`#[profiled]`) without requiring them to understand the implementation details.
 
 Does this align with what you're looking for?
 
@@ -3007,7 +3007,7 @@ pub fn profile(attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 ```
 
-This ensures that when the `profiling` feature is disabled, the `#[profile]` attribute becomes a no-op, and the original function is used directly without any wrapper generation.
+This ensures that when the `profiling` feature is disabled, the `#[profiled]` attribute becomes a no-op, and the original function is used directly without any wrapper generation.
 
 ### The Best of Both Worlds
 
@@ -3117,7 +3117,7 @@ For thag profiling itself, you have two options:
 
 I recommend:
 
-1. Keep the simple conditional compilation in the `#[profile]` attribute
+1. Keep the simple conditional compilation in the `#[profiled]` attribute
 2. Add the runtime toggle via `#[enable_profiling]` for fine-grained control
 3. Document clearly that users should enable the `profiling` feature when they want profiling
 
@@ -3127,7 +3127,7 @@ Does this address your concerns about avoiding wrapper generation entirely?
 
 
 
-Thanks, I'm still digesting it but it makes sense. Perhaps we need to talk about whether to split out profiling into a separate crate (`thag_profiling`), which is something I've been considering on its own merits but which might help here because then the same rules would apply to `thag_rs` as to any other user code. And I think all we would have to do is make the `profiling` feature an attribute of the `thag_profiling` crate rather than of the `thag` crate. The user code just needs to include the `thag_profiling` crate to allow them to instrument their code with `#[profile]` attributes and the various `profile_*` declarative macros, and enable the `profiling` feature if they want to generate and use the profiling wrappers. We might need to work on the `profile_*` declarative macros to do nothing if profiling is disabled.
+Thanks, I'm still digesting it but it makes sense. Perhaps we need to talk about whether to split out profiling into a separate crate (`thag_profiling`), which is something I've been considering on its own merits but which might help here because then the same rules would apply to `thag_rs` as to any other user code. And I think all we would have to do is make the `profiling` feature an attribute of the `thag_profiling` crate rather than of the `thag` crate. The user code just needs to include the `thag_profiling` crate to allow them to instrument their code with `#[profiled]` attributes and the various `profile_*` declarative macros, and enable the `profiling` feature if they want to generate and use the profiling wrappers. We might need to work on the `profile_*` declarative macros to do nothing if profiling is disabled.
 
 
 # Splitting Profiling into a Separate Crate
@@ -3274,7 +3274,7 @@ impl DummyProfileSection {
 use thag_rs::SomeCore;
 use thag_profiling::profile;
 
-#[profile]  // This does nothing unless thag_profiling/profiling feature is enabled
+#[profiled]  // This does nothing unless thag_profiling/profiling feature is enabled
 fn my_function() {
     // Function code here
 
@@ -3342,7 +3342,7 @@ You're absolutely right that proc macros need to be in a separate crate. This is
 thag_rs/
 ├── thag_proc_macros/      (existing proc macro crate)
 │   └── src/
-│       ├── lib.rs         (contains #[profile] attribute macro)
+│       ├── lib.rs         (contains #[profiled] attribute macro)
 │       └── ...
 ├── thag_profiling/        (new profiling utilities crate)
 │   └── src/
@@ -3354,7 +3354,7 @@ thag_rs/
         └── ...
 ```
 
-The `thag_proc_macros` crate would continue to contain the `#[profile]` attribute, but would conditionally forward to the implementation based on whether `thag_profiling` is enabled with the `profiling` feature.
+The `thag_proc_macros` crate would continue to contain the `#[profiled]` attribute, but would conditionally forward to the implementation based on whether `thag_profiling` is enabled with the `profiling` feature.
 
 ## 2. Keeping thag_profiling in the Same Workspace
 
@@ -3472,7 +3472,7 @@ mod error;
 pub use error::{ProfileError, ProfileResult};
 
 // Re-export the profile attribute from thag_proc_macros
-pub use thag_proc_macros::profile;
+pub use thag_proc_macros::profiled;
 
 // Internal static_lazy macro
 #[macro_export]
@@ -3578,7 +3578,7 @@ Yes. Now currently for some reason we have:
 thag_rs/
 ├── src/
 │   └── proc_macros/       (existing proc macro crate)
-│       ├── lib.rs         (contains #[profile] attribute macro)
+│       ├── lib.rs         (contains #[profiled] attribute macro)
 │       └── ...
 ```
 
@@ -3587,7 +3587,7 @@ Will there be fallout from reversing the src and proc_macros directories and ren
 thag_rs/
 ├── thag_proc_macros/      (existing proc macro crate)
 │   └── src/
-│       ├── lib.rs         (contains #[profile] attribute macro)
+│       ├── lib.rs         (contains #[profiled] attribute macro)
 │       └── ...
 ```
 ?
@@ -3684,7 +3684,7 @@ And update them to use the new path:
 use proc_macros::profile;
 
 // To
-use thag_proc_macros::profile;
+use thag_proc_macros::profiled;
 ```
 
 ### 4. Test the New Structure
@@ -3781,7 +3781,7 @@ I recommend:
 thag_rs/
 ├── src/
 │   └── proc_macros/       (existing proc macro crate, unchanged)
-│       ├── lib.rs         (contains #[profile] attribute macro)
+│       ├── lib.rs         (contains #[profiled] attribute macro)
 │       └── ...
 ├── thag_profiling/        (new profiling utilities crate)
 │   └── src/

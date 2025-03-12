@@ -5,9 +5,9 @@
 //! ## Basic Usage
 //!
 //! ```
-//! use thag_profiler::{profile, profile_section};
+//! use thag_profiler::{profile, profiled};
 //!
-//! #[profile]
+//! #[profiled]
 //! fn my_function() {
 //!     // Function code
 //!
@@ -24,10 +24,9 @@ use std::fmt::Display;
 
 // Re-exports
 pub use {
-    // crate::{profile_fn, profile_section},
     errors::{ProfileError, ProfileResult},
-    profiling::{Profile, ProfileType},
-    thag_proc_macros::{enable_profiling, profile},
+    profiling::{get_global_profile_type, Profile, ProfileSection, ProfileType},
+    thag_proc_macros::{enable_profiling, profiled},
 };
 
 #[macro_export]

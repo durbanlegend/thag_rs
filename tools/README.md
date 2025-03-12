@@ -249,7 +249,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_
 **Description:**  A stand-alone convenience tool to instrument a Rust source program for `thag_rs` profiling.
  It accepts the source code on stdin and outputs instrumented code to stdout.
  The instrumentation consists of adding the #[enable_profiling] attribute to `fn main` if
- present, and the #[profile] attribute to all other functions and methods, as well as import
+ present, and the #[profiled] attribute to all other functions and methods, as well as import
  statements for the `thag_rs` profiling.
  module and proc macro library. It is intended to be lossless, using the `rust-analyzer` crate
  to preserve the original source code intact with its comments and formatting. However, by using
@@ -591,4 +591,3 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_helper.r
 ```
 
 ---
-

@@ -1,11 +1,12 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::{debug_log, profile, ThagResult};
+use crate::{debug_log, ThagResult};
 use std::fmt::Display;
 use std::{path::PathBuf, time::Instant};
+use thag_profiler::profiled;
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.
 #[inline]
-#[profile]
+#[profiled]
 pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     use std::fmt::Write;
     map.fold(String::new(), |mut output, b| {
@@ -17,7 +18,7 @@ pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
 /// Unescape \n markers to convert a string of raw text to readable lines.
 #[inline]
 #[must_use]
-#[profile]
+#[profiled]
 pub fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
@@ -27,21 +28,21 @@ pub fn disentangle(text_wall: &str) -> String {
 #[must_use]
 #[inline]
 #[cfg(target_os = "windows")]
-#[profile]
+#[profiled]
 pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.replace('\\', "/")
 }
 
 #[must_use]
 #[cfg(not(target_os = "windows"))]
-#[profile]
+#[profiled]
 pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.to_string()
 }
 
 /// Developer method to log method timings.
 #[inline]
-#[profile]
+#[profiled]
 pub fn debug_timings(start: &Instant, process: &str) {
     let dur = start.elapsed();
     debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
@@ -142,7 +143,7 @@ macro_rules! static_lazy {
 /// # Errors
 ///
 /// This function will return an error if it can't resolve the user directories.
-#[profile]
+#[profiled]
 pub fn get_home_dir_string() -> ThagResult<String> {
     let home_dir = &get_home_dir()?;
     Ok(home_dir.display().to_string())
@@ -153,7 +154,7 @@ pub fn get_home_dir_string() -> ThagResult<String> {
 /// # Errors
 ///
 /// This function will return an error if it can't resolve the user directories.
-#[profile]
+#[profiled]
 pub fn get_home_dir() -> ThagResult<PathBuf> {
     let user_dirs = directories::UserDirs::new().ok_or("Can't resolve user directories")?;
     let home_dir = user_dirs.home_dir();
@@ -188,7 +189,7 @@ pub fn get_home_dir() -> ThagResult<PathBuf> {
 ///
 /// If you need to format signed integers, you'll need a modified version
 /// that correctly handles negative numbers.
-#[profile]
+#[profiled]
 pub fn thousands<T: Display>(n: T) -> String {
     n.to_string()
         .as_bytes()

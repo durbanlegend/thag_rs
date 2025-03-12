@@ -36,7 +36,7 @@ impl Document {
         }
     }
 
-    #[profile]
+    #[profiled]
     fn count_words(&mut self) {
         // Simulate CPU-intensive operation
         let start = Instant::now();
@@ -60,7 +60,7 @@ impl Document {
         }
     }
 
-    #[profile]
+    #[profiled]
     fn calculate_sentiment(&mut self) -> f64 {
         // Very simple "sentiment analysis" - just for demonstration
         let positive_words = ["good", "great", "excellent", "happy", "positive"];
@@ -94,7 +94,7 @@ impl Document {
         score
     }
 
-    #[profile]
+    #[profiled]
     fn summarize(&self) -> String {
         // Generate a simple summary based on most frequent words
         let start = Instant::now();
@@ -122,7 +122,7 @@ impl Document {
     }
 }
 
-#[profile]
+#[profiled]
 async fn fetch_document(id: usize) -> Document {
     // Simulate network delay
     sleep(Duration::from_millis(50 + (id % 10 * 5) as u64)).await;
@@ -139,7 +139,7 @@ async fn fetch_document(id: usize) -> Document {
     Document::new(id, content)
 }
 
-#[profile]
+#[profiled]
 async fn process_document(mut doc: Document) -> Document {
     // Process document asynchronously
     doc.count_words();
@@ -152,7 +152,7 @@ async fn process_document(mut doc: Document) -> Document {
     doc
 }
 
-#[profile]
+#[profiled]
 fn batch_process_documents(documents: &mut [Document]) {
     for doc in documents.iter_mut() {
         doc.count_words();
@@ -161,7 +161,7 @@ fn batch_process_documents(documents: &mut [Document]) {
     }
 }
 
-#[profile]
+#[profiled]
 fn analyze_sentiment_distribution(documents: &[Document]) -> HashMap<String, usize> {
     let mut distribution = HashMap::new();
 
@@ -180,7 +180,7 @@ fn analyze_sentiment_distribution(documents: &[Document]) -> HashMap<String, usi
     distribution
 }
 
-#[profile]
+#[profiled]
 fn write_reports(documents: &[Document], path: &Path) -> io::Result<()> {
     let mut file = File::create(path)?;
 
@@ -194,7 +194,7 @@ fn write_reports(documents: &[Document], path: &Path) -> io::Result<()> {
 }
 
 #[allow(dead_code)]
-#[profile]
+#[profiled]
 fn load_documents_from_file(path: &Path) -> io::Result<Vec<Document>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
@@ -225,7 +225,7 @@ fn load_documents_from_file(path: &Path) -> io::Result<Vec<Document>> {
     Ok(documents)
 }
 
-#[profile]
+#[profiled]
 async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     let mut tasks = Vec::new();
 

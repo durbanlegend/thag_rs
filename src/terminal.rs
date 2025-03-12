@@ -4,15 +4,16 @@
 //! In particular, it manages raw mode status which can be affected by some detection operations.
 
 use crate::styling::{ColorSupport, TermBgLuma};
-use crate::{lazy_static_var, profile, vlog, ThagError, ThagResult, V};
+use crate::{lazy_static_var, vlog, ThagError, ThagResult, V};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use std::io::{stdout, Write};
 use supports_color::Stream;
+use thag_profiler::profiled;
 
 #[cfg(debug_assertions)]
 use crate::debug_log;
 
-#[profile]
+#[profiled]
 fn reset_terminal_state() {
     // eprintln!("Resetting terminal state...");
     print!("\r\n");
@@ -32,7 +33,7 @@ impl TerminalStateGuard {
 }
 
 impl Default for TerminalStateGuard {
-    #[profile]
+    #[profiled]
     fn default() -> Self {
         Self::new(false)
     }
@@ -40,7 +41,7 @@ impl Default for TerminalStateGuard {
 
 #[allow(unused_variables)]
 impl Drop for TerminalStateGuard {
-    #[profile]
+    #[profiled]
     fn drop(&mut self) {
         let raw_now = match is_raw_mode_enabled() {
             Ok(val) => val,
@@ -84,7 +85,7 @@ impl Drop for TerminalStateGuard {
 /// println!("Terminal color support: {:?}", support);
 /// ```
 #[must_use]
-#[profile]
+#[profiled]
 pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u8)) {
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
@@ -145,7 +146,7 @@ pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u
 /// let luma = get_term_bg_luma();
 /// println!("Terminal background intensity: {:?}", luma);
 /// ```
-#[profile]
+#[profiled]
 pub fn get_term_bg_luma() -> &'static TermBgLuma {
     lazy_static_var!(TermBgLuma, {
         let _guard = TerminalStateGuard::new(false);
@@ -162,7 +163,7 @@ pub fn get_term_bg_luma() -> &'static TermBgLuma {
 }
 
 #[must_use]
-#[profile]
+#[profiled]
 pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
     // Using perceived brightness formula
     let brightness =
@@ -193,11 +194,11 @@ pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
 /// let maybe_term_bg_rgb = get_term_bg_rgb();
 /// println!("Terminal background: {maybe_term_bg_rgb:?}");
 /// ```
-#[profile]
+#[profiled]
 pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
     struct RawModeGuard(bool);
     impl Drop for RawModeGuard {
-        #[profile]
+        #[profiled]
         fn drop(&mut self) {
             if !self.0 {
                 let _ = disable_raw_mode();
@@ -265,7 +266,7 @@ pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
 /// let maybe_term_bg_rgb = get_term_bg_rgb();
 /// println!("Terminal background: {maybe_term_bg_rgb:?}");
 /// ```
-#[profile]
+#[profiled]
 pub fn get_term_bg_rgb_unguarded() -> ThagResult<&'static (u8, u8, u8)> {
     // Now do theme detection
     lazy_static_var!(
@@ -293,7 +294,7 @@ pub fn get_term_bg_rgb_unguarded() -> ThagResult<&'static (u8, u8, u8)> {
 /// # Errors
 ///
 /// This function will bubble up any errors returned by `crossterm`.
-#[profile]
+#[profiled]
 pub fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
     if raw_before {
         enable_raw_mode()?;

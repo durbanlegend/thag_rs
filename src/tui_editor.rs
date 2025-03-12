@@ -2,7 +2,7 @@ use crate::{
     code_utils::write_source,
     debug_log,
     file_dialog::{DialogMode, FileDialog, Status},
-    profile, regex,
+    regex,
     stdin::edit_history,
     styling::Role,
     KeyCombination, ThagError, ThagResult,
@@ -39,6 +39,7 @@ use std::{
     path::PathBuf,
     time::Duration,
 };
+use thag_profiler::profiled;
 use tui_textarea::{CursorMove, Input, TextArea};
 
 pub const TITLE_TOP: &str = "Key bindings - subject to your terminal settings";
@@ -71,12 +72,12 @@ pub trait EventReader {
 pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
-    #[profile]
+    #[profiled]
     fn read_event(&self) -> ThagResult<Event> {
         crossterm::event::read().map_err(Into::<ThagError>::into)
     }
 
-    #[profile]
+    #[profiled]
     fn poll(&self, timeout: Duration) -> ThagResult<bool> {
         crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
     }
@@ -92,7 +93,7 @@ impl ManagedTerminal<'_> {
     /// # Errors
     ///
     /// This function will return an error if there is an issue drawing to the terminal.
-    #[profile]
+    #[profiled]
     pub fn draw<F>(&mut self, f: F) -> std::io::Result<CompletedFrame>
     where
         F: FnOnce(&mut Frame<'_>),
@@ -111,7 +112,7 @@ impl ManagedTerminal<'_> {
 ///
 /// # Errors
 ///
-#[profile]
+#[profiled]
 pub fn resolve_term<'a>() -> ThagResult<Option<ManagedTerminal<'a>>> {
     if var("TEST_ENV").is_ok() {
         return Ok(None);
@@ -147,14 +148,14 @@ pub struct Entry {
 }
 
 impl Display for Entry {
-    #[profile]
+    #[profiled]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}: {}", self.index, self.lines.join("\n"))
     }
 }
 
 impl Entry {
-    #[profile]
+    #[profiled]
     pub fn new(index: usize, content: &str) -> Self {
         Self {
             index,
@@ -164,7 +165,7 @@ impl Entry {
 
     // Extracts string contents of entry for use in the editor
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn contents(&self) -> String {
         self.lines.join("\n")
     }
@@ -178,7 +179,7 @@ pub struct History {
 
 impl History {
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn new() -> Self {
         Self {
             current_index: None,
@@ -187,7 +188,7 @@ impl History {
     }
 
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn load_from_file(path: &PathBuf) -> Self {
         let mut history = fs::read_to_string(path).map_or_else(
             |_| Self::default(),
@@ -215,7 +216,7 @@ impl History {
     }
 
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn at_start(&self) -> bool {
         debug_log!("at_start ...");
         self.current_index
@@ -223,14 +224,14 @@ impl History {
     }
 
     #[must_use]
-    #[profile]
+    #[profiled]
     pub fn at_end(&self) -> bool {
         debug_log!("at_end ...");
         self.current_index
             .is_none_or(|current_index| current_index == self.entries.len() - 1)
     }
 
-    #[profile]
+    #[profiled]
     pub fn add_entry(&mut self, text: &str) {
         let new_index = self.entries.len(); // Assign the next index based on current length
         let new_entry = Entry::new(new_index, text);
@@ -249,7 +250,7 @@ impl History {
         debug_log!("history={self:?}");
     }
 
-    #[profile]
+    #[profiled]
     pub fn update_entry(&mut self, index: usize, text: &str) {
         debug_log!("update_entry for index {index}...");
         // Get a mutable reference to the entry at the specified index
@@ -264,7 +265,7 @@ impl History {
         }
     }
 
-    #[profile]
+    #[profiled]
     pub fn delete_entry(&mut self, index: usize) {
         self.entries.retain(|entry| entry.index != index);
 
@@ -284,7 +285,7 @@ impl History {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered writing the file.
-    #[profile]
+    #[profiled]
     pub fn save_to_file(&mut self, path: &PathBuf) -> ThagResult<()> {
         self.reassign_indices();
         if let Ok(data) = serde_json::to_string(&self) {
@@ -315,7 +316,7 @@ impl History {
         Ok(())
     }
 
-    #[profile]
+    #[profiled]
     pub fn get_current(&mut self) -> Option<&Entry> {
         if self.entries.is_empty() {
             return None;
@@ -331,7 +332,7 @@ impl History {
         }
     }
 
-    #[profile]
+    #[profiled]
     pub fn get(&mut self, index: usize) -> Option<&Entry> {
         debug_log!("get({index})...");
         if !(0..self.entries.len()).contains(&index) {
@@ -349,7 +350,7 @@ impl History {
         entry
     }
 
-    #[profile]
+    #[profiled]
     pub fn get_mut(&mut self, index: usize) -> Option<&mut Entry> {
         debug_log!("get_mut({index})...");
 
@@ -375,7 +376,7 @@ impl History {
     /// # Panics
     ///
     /// Panics if a logic error is detected, likely when reaching the oldest History entry.
-    #[profile]
+    #[profiled]
     pub fn get_previous(&mut self) -> Option<&Entry> {
         // let this = &mut *self;
         debug_log!("get_previous...");
@@ -416,7 +417,7 @@ impl History {
     /// # Panics
     ///
     /// Panics if a logic error is detected, likely when reaching the newest History entry.
-    #[profile]
+    #[profiled]
     pub fn get_next(&mut self) -> Option<&Entry> {
         debug_log!("get_next...");
         let this = &mut *self;
@@ -453,7 +454,7 @@ impl History {
         )
     }
 
-    #[profile]
+    #[profiled]
     pub fn get_last(&mut self) -> Option<&Entry> {
         if self.entries.is_empty() {
             return None;
@@ -463,7 +464,7 @@ impl History {
     }
 
     // Reassign indices so that the newest entry has index 0, and the oldests has len - 1
-    #[profile]
+    #[profiled]
     fn reassign_indices(&mut self) {
         // let len = self.entries.len();
         for (i, entry) in self.entries.iter_mut().enumerate() {
@@ -484,7 +485,7 @@ pub struct EditData<'a> {
 }
 
 impl From<&crate::styling::Style> for RataStyle {
-    #[profile]
+    #[profiled]
     fn from(style: &crate::styling::Style) -> Self {
         let mut rata_style = Self::default();
 
@@ -508,7 +509,7 @@ impl From<&crate::styling::Style> for RataStyle {
 
 // Implement conversion to ratatui's Color
 impl From<&Role> for Color {
-    #[profile]
+    #[profiled]
     fn from(role: &Role) -> Self {
         Self::Indexed(u8::from(role))
     }
@@ -548,7 +549,7 @@ pub enum KeyAction {
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[allow(clippy::too_many_lines)]
-#[profile]
+#[profiled]
 pub fn tui_edit<R, F>(
     event_reader: &R,
     edit_data: &mut EditData,
@@ -890,7 +891,7 @@ where
     }
 }
 
-#[profile]
+#[profiled]
 pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) {
     textarea.set_selection_style(
         RataStyle::default()
@@ -905,7 +906,7 @@ pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) 
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[allow(clippy::too_many_lines, clippy::missing_panics_doc)]
-#[profile]
+#[profiled]
 pub fn script_key_handler(
     key_event: KeyEvent,
     maybe_term: Option<&mut ManagedTerminal>,
@@ -989,7 +990,7 @@ pub fn script_key_handler(
     }
 }
 
-#[profile]
+#[profiled]
 fn next_hist(edit_data: &mut EditData<'_>, textarea: &mut TextArea<'_>) {
     if let Some(ref mut hist) = edit_data.history {
         // save_if_changed(hist, textarea, &history_path)?;
@@ -1000,7 +1001,7 @@ fn next_hist(edit_data: &mut EditData<'_>, textarea: &mut TextArea<'_>) {
     }
 }
 
-#[profile]
+#[profiled]
 fn prev_hist(
     edit_data: &mut EditData<'_>,
     textarea: &mut TextArea<'_>,
@@ -1023,7 +1024,7 @@ fn prev_hist(
     Ok(())
 }
 
-#[profile]
+#[profiled]
 fn wipe_textarea(
     edit_data: &mut EditData<'_>,
     textarea: &mut TextArea<'_>,
@@ -1050,7 +1051,7 @@ fn wipe_textarea(
     Ok(())
 }
 
-#[profile]
+#[profiled]
 fn save_as(
     maybe_term: Option<&mut ManagedTerminal<'_>>,
     textarea: &mut TextArea<'_>,
@@ -1082,7 +1083,7 @@ fn save_as(
     }
 }
 
-#[profile]
+#[profiled]
 fn save(
     edit_data: &mut EditData<'_>,
     history_path: Option<&PathBuf>,
@@ -1109,7 +1110,7 @@ fn save(
     Ok(())
 }
 
-#[profile]
+#[profiled]
 fn save_and_submit(
     history_path: Option<&PathBuf>,
     edit_data: &mut EditData<'_>,
@@ -1130,7 +1131,7 @@ fn save_and_submit(
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encountered by `crossterm::enable_raw_mode`.
-#[profile]
+#[profiled]
 pub fn maybe_enable_raw_mode() -> ThagResult<()> {
     let test_env = &var("TEST_ENV");
     debug_log!("test_env={test_env:?}");
@@ -1141,7 +1142,7 @@ pub fn maybe_enable_raw_mode() -> ThagResult<()> {
     Ok(())
 }
 
-#[profile]
+#[profiled]
 pub fn display_popup(
     mappings: &[KeyDisplayLine],
     title_top: &str,
@@ -1217,7 +1218,7 @@ pub fn display_popup(
 }
 
 #[must_use]
-#[profile]
+#[profiled]
 pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),
@@ -1238,7 +1239,7 @@ pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 /// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
 /// it stands).
 #[must_use]
-#[profile]
+#[profiled]
 pub fn normalize_newlines(input: &str) -> String {
     let re: &Regex = regex!(r"\r\n?");
 
@@ -1251,7 +1252,7 @@ pub fn normalize_newlines(input: &str) -> String {
 ///
 /// This function will bubble up any `ratatui` or `crossterm` errors encountered.
 // TODO: move to shared or tui_editor?
-#[profile]
+#[profiled]
 pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>) -> ThagResult<()> {
     disable_raw_mode()?;
     crossterm::execute!(
@@ -1268,7 +1269,7 @@ pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>)
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encuntered.
-#[profile]
+#[profiled]
 pub fn save_if_changed(
     hist: &mut History,
     textarea: &mut TextArea<'_>,
@@ -1331,7 +1332,7 @@ pub fn save_if_changed(
 //     Ok(())
 // }
 
-#[profile]
+#[profiled]
 pub fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &Entry) {
     textarea.select_all();
     textarea.cut();
@@ -1344,7 +1345,7 @@ pub fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &Entry) {
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encuntered.
-#[profile]
+#[profiled]
 pub fn preserve(
     textarea: &mut TextArea<'_>,
     hist: &mut History,
@@ -1356,7 +1357,7 @@ pub fn preserve(
     Ok(())
 }
 
-#[profile]
+#[profiled]
 pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
     debug_log!("save_if_not_empty...");
 
@@ -1367,7 +1368,7 @@ pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
     }
 }
 
-#[profile]
+#[profiled]
 pub fn copy_text(textarea: &mut TextArea<'_>) -> String {
     textarea.select_all();
     textarea.copy();
@@ -1380,7 +1381,7 @@ pub fn copy_text(textarea: &mut TextArea<'_>) -> String {
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encuntered.
-#[profile]
+#[profiled]
 pub fn save_history(
     history: Option<&mut History>,
     history_path: Option<&PathBuf>,
@@ -1400,7 +1401,7 @@ pub fn save_history(
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encuntered.
-#[profile]
+#[profiled]
 pub fn save_source_file(
     to_rs_path: &PathBuf,
     textarea: &mut TextArea<'_>,
@@ -1531,7 +1532,7 @@ pub struct KeyDisplayLine {
 }
 
 impl PartialOrd for KeyDisplayLine {
-    #[profile]
+    #[profiled]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         // profile_method!("partial_cmp");
         Some(self.cmp(other))
@@ -1539,7 +1540,7 @@ impl PartialOrd for KeyDisplayLine {
 }
 
 impl Ord for KeyDisplayLine {
-    #[profile]
+    #[profiled]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         // profile_method!("cmp");
         usize::cmp(&self.seq, &other.seq)

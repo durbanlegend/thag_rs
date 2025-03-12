@@ -394,6 +394,7 @@ impl Profile {
                             let demangled = demangle(&name_str).to_string();
                             // Clean the demangled name
                             let cleaned = clean_function_name(&demangled);
+                            // eprintln!("cleaned name: {cleaned:?}");
                             maybe_method_name = extract_class_method(&cleaned);
                             // eprintln!("class_method name: {maybe_method_name:?}");
                         }
@@ -436,27 +437,27 @@ impl Profile {
 
         // Add self and ancestors that are profiled functions
         for fn_name_str in cleaned_stack {
-            // println!("Function name: {fn_name_str}");
-
-            let desc_fn_name = extract_class_method(&fn_name_str).map_or_else(
-                || get_fn_desc_name(&fn_name_str),
-                |class_method| {
-                    get_reg_desc_name(&class_method).map_or_else(
-                        || get_fn_desc_name(&fn_name_str),
-                        |desc_fn_name| desc_fn_name,
-                    )
-                },
-            );
-            path.push(desc_fn_name);
+            let maybe_class_name = extract_class_method(&fn_name_str);
+            if let Some(class_name) = maybe_class_name {
+                // eprintln!("Class name: {}", class_name);
+                if let Some(name) = get_reg_desc_name(&class_name) {
+                    // eprintln!("Registered desc name: {}", name);
+                    path.push(name);
+                    continue;
+                }
+            }
+            let key = get_fn_desc_name(&fn_name_str);
+            // eprintln!("Function desc name: {}", key);
+            if let Some(name) = get_reg_desc_name(&key) {
+                // eprintln!("Registered desc name: {}", name);
+                path.push(name);
+            }
         }
 
         // Reverse the path so it goes from root caller to current function
         path.reverse();
 
-        // Create the profile with filtered path
-        // let _id = NEXT_PROFILE_ID.fetch_add(1, Ordering::SeqCst);
-
-        // In test mode with our test wrapper active, skip creating profile for #[profile] attribute
+        // In test mode with our test wrapper active, skip creating profile for #[profiled] attribute
         #[cfg(test)]
         if is_test_mode_active() {
             // If this is from an attribute in a test, don't create a profile
@@ -604,12 +605,9 @@ impl Profile {
     }
 }
 
-// #[cfg(feature = "profiling")]
 fn get_fn_desc_name(fn_name_str: &String) -> String {
-    extract_fn_only(fn_name_str).map_or_else(
-        || fn_name_str.to_string(),
-        |fn_only| get_reg_desc_name(&fn_only).map_or(fn_only, |desc_fn_name| desc_fn_name),
-    )
+    // extract_fn_only(fn_name_str).map_or_else(|| fn_name_str.to_string(), |fn_only| fn_only)
+    extract_fn_only(fn_name_str).unwrap_or_else(|| fn_name_str.to_string())
 }
 
 #[cfg(feature = "profiling")]
@@ -644,7 +642,7 @@ impl Drop for Profile {
 
 #[cfg(feature = "profiling")]
 pub struct ProfileSection {
-    profile: Option<Profile>,
+    pub profile: Option<Profile>,
 }
 
 #[cfg(feature = "profiling")]
@@ -696,10 +694,12 @@ impl ProfileSection {
 /// type in the method name is not working.
 pub fn register_profiled_function(name: &str, desc_name: String) {
     #[cfg(debug_assertions)]
-    if name == "new" {
-        panic!("`new` is not a valid function name. desc_name={desc_name}");
-    }
+    assert!(
+        name != "new",
+        "`new` is not a valid function name. desc_name={desc_name}"
+    );
     if let Ok(mut registry) = PROFILED_FUNCTIONS.lock() {
+        // eprintln!("Registering function: {name}::{desc_name}",);
         registry.insert(name.to_string(), desc_name);
     }
 }
@@ -711,7 +711,7 @@ pub fn is_profiled_function(name: &str) -> bool {
         .is_ok_and(|registry| registry.contains_key(name))
 }
 
-// Get the descriptive name of a profiledfunction
+// Get the descriptive name of a profiled function
 pub fn get_reg_desc_name(name: &str) -> Option<String> {
     PROFILED_FUNCTIONS
         .lock()
@@ -736,7 +736,7 @@ fn extract_class_method(qualified_name: &str) -> Option<String> {
     }
 }
 
-// Extract just the method name from a fully qualified function name
+// Extract just the base function name from a fully qualified function name
 // #[cfg(feature = "profiling")]
 fn extract_fn_only(qualified_name: &str) -> Option<String> {
     // Split by :: and get the last component
@@ -823,7 +823,8 @@ fn clean_function_name(demangled: &str) -> String {
     let mut clean_name = demangled.to_string();
 
     // Find and remove hash suffixes (::h followed by hex digits)
-    if let Some(hash_pos) = clean_name.find("::h") {
+    // from the last path segment
+    if let Some(hash_pos) = clean_name.rfind("::h") {
         if clean_name[hash_pos + 3..]
             .chars()
             .all(|c| c.is_ascii_hexdigit())
@@ -867,34 +868,6 @@ fn get_memory_delta(initial: usize) -> Result<usize, MemoryError> {
         })
 }
 
-/// Profile the enclosing function if profiling is enabled.
-///
-/// Normally code this at the start of the function, after any declarations.
-/// Pass the function name (or alternative identifier if you know what you're
-/// doing) as a string literal argument.
-///
-/// E.g.:
-///
-/// ```Rust
-/// fn foo(bar) {
-///     profile_fn!("foo");
-///     ...
-/// }
-///
-/// ```
-#[macro_export]
-#[cfg(feature = "profiling")]
-macro_rules! profile_fn {
-    ($name:expr, $is_async:expr) => {
-        let _profile = $crate::profiling::Profile::new(
-            $name.to_string(),
-            $crate::profiling::get_global_profile_type(),
-            $is_async,
-            false,
-        );
-    };
-}
-
 #[cfg(not(feature = "profiling"))]
 #[macro_export]
 macro_rules! profile_fn {
@@ -903,137 +876,177 @@ macro_rules! profile_fn {
     }};
 }
 
-/// Profile a specific section of code if profiling is enabled.
-/// Pass a descriptive name as a string literal argument.
+/// Profile a section of code with customizable options
 ///
-/// The scope of the section will include all following profiled
-/// sections until the end of the function, or the end of the enclosing
-/// block. Unfortunately you can't just enclose the section of code in
-/// a block at will without hiding them from the surrounding code, because
-/// the normal Rust rules apply. So it's strongly recommended that the
-/// section names be chosen to reflect the fact that the scope also includes
-/// the following named sections, e.g. `bar_and_baz` in the example below.
-///
-/// E.g.:
-///
-/// ```Rust
-/// fn foo() {
-///     profile!("foo");
-///     ...
-///     profile_section!("bar_and_baz");
-///     ...
-///     profile_section!("baz");
-///     ...
-/// }
+/// # Examples
 ///
 /// ```
-#[cfg(feature = "profiling")]
+/// // Basic usage (profiles time, sync function)
+/// let section = profile!("expensive_operation");
+/// // ... code to profile
+/// section.end();
+///
+/// // With explicit type (profile memory)
+/// let section = profile!("allocation_heavy", memory);
+///
+/// // Method profiling
+/// let section = profile!(method);
+///
+/// // Async method with explicit type
+/// let section = profile!(method, both, async);
+/// ```
 #[macro_export]
-macro_rules! profile_section {
-    ($name:expr) => {{
-        let section = $crate::profiling::ProfileSection::new($name);
-        section // Return the section
-    }};
+#[cfg(feature = "profiling")]
+macro_rules! profile {
+    // profile!(name)
+    ($name:expr) => {
+        $crate::profile_internal!($name, $crate::ProfileType::Time, false, false)
+    };
+
+    // profile!(name, type)
+    ($name:expr, time) => {
+        $crate::profile_internal!($name, $crate::ProfileType::Time, false, false)
+    };
+    ($name:expr, memory) => {
+        $crate::profile_internal!($name, $crate::ProfileType::Memory, false, false)
+    };
+    ($name:expr, both) => {
+        $crate::profile_internal!($name, $crate::ProfileType::Both, false, false)
+    };
+
+    // profile!(name, async)
+    ($name:expr, async) => {
+        $crate::profile_internal!($name, $crate::ProfileType::Time, true, false)
+    };
+
+    // profile!(method)
+    (method) => {
+        $crate::profile_internal!("", $crate::ProfileType::Time, false, true)
+    };
+
+    // profile!(method, type)
+    (method, time) => {
+        $crate::profile_internal!("", $crate::ProfileType::Time, false, true)
+    };
+    (method, memory) => {
+        $crate::profile_internal!("", $crate::ProfileType::Memory, false, true)
+    };
+    (method, both) => {
+        $crate::profile_internal!("", $crate::ProfileType::Both, false, true)
+    };
+
+    // profile!(method, async)
+    (method, async) => {
+        $crate::profile_internal!("", $crate::ProfileType::Time, true, true)
+    };
+
+    // profile!(method, type, async)
+    (method, time, async) => {
+        $crate::profile_internal!("", $crate::ProfileType::Time, true, true)
+    };
+    (method, memory, async) => {
+        $crate::profile_internal!("", $crate::ProfileType::Memory, true, true)
+    };
+    (method, both, async) => {
+        $crate::profile_internal!("", $crate::ProfileType::Both, true, true)
+    };
+
+    // profile!(name, type, async)
+    ($name:expr, time, async) => {
+        $crate::profile_internal!($name, $crate::ProfileType::Time, true, false)
+    };
+    ($name:expr, memory, async) => {
+        $crate::profile_internal!($name, $crate::ProfileType::Memory, true, false)
+    };
+    ($name:expr, both, async) => {
+        $crate::profile_internal!($name, $crate::ProfileType::Both, true, false)
+    };
 }
 
-// Provide an empty implementation when profiling is disabled
+// No-op implementation for when profiling is disabled
 #[cfg(not(feature = "profiling"))]
 #[macro_export]
-macro_rules! profile_section {
+macro_rules! profile {
+    // Basic variants
     ($name:expr) => {{
-        struct DummyProfileSection;
-        impl DummyProfileSection {
-            pub fn end(self) {}
-        }
-        DummyProfileSection
+        $crate::ProfileSection {}
+    }};
+
+    // profile!(name, type)
+    ($name:expr, time) => {{
+        $crate::ProfileSection {}
+    }};
+    ($name:expr, memory) => {{
+        $crate::ProfileSection {}
+    }};
+    ($name:expr, both) => {{
+        $crate::ProfileSection {}
+    }};
+
+    // profile!(name, async)
+    ($name:expr, async) => {{
+        $crate::ProfileSection {}
+    }};
+
+    // profile!(method)
+    (method) => {{
+        $crate::ProfileSection {}
+    }};
+
+    // profile!(method, type)
+    (method, time) => {{
+        $crate::ProfileSection {}
+    }};
+    (method, memory) => {{
+        $crate::ProfileSection {}
+    }};
+    (method, both) => {{
+        $crate::ProfileSection {}
+    }};
+
+    // profile!(method, async)
+    (method, async) => {{
+        $crate::ProfileSection {}
+    }};
+
+    // profile!(method, type, async)
+    (method, time, async) => {{
+        $crate::ProfileSection {}
+    }};
+    (method, memory, async) => {{
+        $crate::ProfileSection {}
+    }};
+    (method, both, async) => {{
+        $crate::ProfileSection {}
+    }};
+
+    // profile!(name, type, async)
+    ($name:expr, time, async) => {{
+        $crate::ProfileSection {}
+    }};
+    ($name:expr, memory, async) => {{
+        $crate::ProfileSection {}
+    }};
+    ($name:expr, both, async) => {{
+        $crate::ProfileSection {}
     }};
 }
 
-/// Profile the enclosing method if profiling is enabled. Pass a descriptive name
-/// as a string literal argument.
-///
-/// E.g.:
-///
-/// ```Rust
-/// impl Foo {}
-///     fn new() {
-///         profile_method!("Foo::new");
-///         ...
-///     }
-/// }
-///
-/// ```
+#[doc(hidden)]
 #[macro_export]
-macro_rules! profile_method {
-    () => {
-        const NAME: &'static str = concat!(module_path!(), "::", stringify!(profile_method));
-        let _profile = $crate::profiling::Profile::new(
-            NAME,
-            $crate::profiling::get_global_profile_type(),
-            false,
-            true,
-        );
-    };
-    ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new(
-            $name.to_string(),
-            $crate::profiling::get_global_profile_type(),
-            false,
-            true,
-        );
-    };
-}
+macro_rules! profile_internal {
+    ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
+        #[cfg(feature = "profiling")]
+        {
+            let profile = $crate::Profile::new($name.to_string(), $type, $is_async, $is_method);
+            $crate::ProfileSection { profile }
+        }
 
-/// Profiles memory usage in the enclosing function or scope.
-///
-/// Records memory allocation patterns and changes in memory usage
-/// for the duration of the scope.
-///
-/// # Example
-/// ```
-/// use thag_profiler::profile_memory;
-/// fn allocate_buffer() {
-///     profile_memory!("allocate_buffer");
-///     let buffer = vec![0; 1024];
-///     // Memory usage will be tracked
-/// }
-/// ```
-#[macro_export]
-macro_rules! profile_memory {
-    ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new(
-            $name,
-            $crate::profiling::ProfileType::Memory,
-            false,
-            false,
-        );
-    };
-}
-
-/// Profiles both execution time and memory usage in the enclosing
-/// function or scope.
-///
-/// Combines time and memory profiling to provide a complete picture
-/// of both performance and memory usage.
-///
-/// # Example
-/// ```
-/// use thag_profiler::profile_both;
-/// fn process_data() {
-///     profile_both!("process_data");
-///     // Both time and memory usage will be tracked
-/// }
-/// ```
-#[macro_export]
-macro_rules! profile_both {
-    ($name:expr) => {
-        let _profile = $crate::profiling::Profile::new(
-            $name,
-            $crate::profiling::ProfileType::Both,
-            false,
-            false,
-        );
-    };
+        #[cfg(not(feature = "profiling"))]
+        {
+            $crate::ProfileSection::new_dummy()
+        }
+    }};
 }
 
 #[derive(Default)]
@@ -1144,12 +1157,15 @@ pub fn is_test_mode_active() -> bool {
 #[cfg(test)]
 /// Sets up profiling for a test in a safe manner by first clearing the stack
 pub fn safely_setup_profiling_for_test() -> ProfileResult<()> {
-    // Set test mode active to prevent #[profile] from creating duplicate entries
+    // Set test mode active to prevent #[profiled] from creating duplicate entries
     TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
 
     // Then enable profiling
     enable_profiling(true, ProfileType::Time)
 }
+
+#[cfg(test)]
+use crate::ProfileResult;
 
 #[cfg(test)]
 /// Safely cleans up profiling after a test
@@ -1169,7 +1185,7 @@ mod tests {
     use serial_test::serial;
     use std::panic;
     use std::time::Duration;
-    use thag_proc_macros::profile;
+    use thag_proc_macros::profiled;
 
     struct TestGuard;
 
@@ -1202,8 +1218,8 @@ mod tests {
         }
     }
 
-    // This function uses the #[profile] attribute which will invoke generate_async_wrapper
-    #[profile]
+    // This function uses the #[profiled] attribute which will invoke generate_async_wrapper
+    #[profiled]
     async fn run_async_profiled() -> u32 {
         // Simulate some async work
         tokio::time::sleep(Duration::from_millis(50)).await;

@@ -7,7 +7,7 @@ Profiling is key to optimizing your Rust applications, but it tends to be time-c
 
 `thag` profiling is intrusive, meaning that you need to instrument your code at least temporarily for profiling.
 `thag` provides an automated instrumentation tool to do the instrumentation. This is designed to be "lossless", preserving the original code intact with its comments
-and formatting, and adding necessary instrumentation in the form of simple #[profile] function attributes (and #[enable_profiling] in the case of `fn main`) using the `rust-analyzer` syntax tree library `ra_ap_syntax`.
+and formatting, and adding necessary instrumentation in the form of simple #[profiled] function attributes (and #[enable_profiling] in the case of `fn main`) using the `rust-analyzer` syntax tree library `ra_ap_syntax`.
 A second tool is provided to remove the instrumentation.
 
 You can instrument and profile any module or modules of a project, or a user script provided that the script has a `main` function (i.e. not a snippet).
@@ -136,7 +136,7 @@ For existing source files, you can use the profile_instrument tool to automatica
 thag_profile_instrument <edition_yyyy> < path/to/your/source.rs > path/to/destination.rs
 ```
 
-This will add `#[profile]` attributes to functions and methods (excluding tests, TODO investigate), and `#[enable_profiling]` to main() if present.
+This will add `#[profiled]` attributes to functions and methods (excluding tests, TODO investigate), and `#[enable_profiling]` to main() if present.
 You can of course
 
 #### Removing Instrumentation
@@ -150,29 +150,29 @@ thag_profile_remove <edition_yyyy> < path/to/your/source.rs > path/to/destinatio
 
 ### Manual Instrumentation
 
-#### Using the `#[profile]` attribute
+#### Using the `#[profiled]` attribute
 
-You can add the `#[profile]` attribute to any function to profile it with a meaningful function or method name:
+You can add the `#[profiled]` attribute to any function to profile it with a meaningful function or method name:
 For regular functions this will profile the function as `fn::<function_name>`.
 For methods, this will profile the method as `method::<method_name>`. See below for how to add the name of the
 implementation type or trait.
 
 ```rust
-use thag_proc_macros::profile;
+use thag_proc_macros::profiled;
 
-#[profile]
+#[profiled]
 fn expensive_calculation() -> u64 {
     // Your code here
 }
 
 // Also works with async functions!
-#[profile]
+#[profiled]
 async fn fetch_data() -> Result<String, Error> {
     // Async operations
 }
 ```
 
-The `#[profile]` attribute supports several options:
+The `#[profiled]` attribute supports several options:
 
 1. `imp` option (because "impl" is a reserved keyword):
 
@@ -545,10 +545,10 @@ This is important because `thag_rs` profiling maintains global state that isn't 
 
 ### Profiling Async Code
 
-The `#[profile]` attribute works seamlessly with async functions:
+The `#[profiled]` attribute works seamlessly with async functions:
 
 ```rust
-#[profile]
+#[profiled]
 async fn process_data() -> Result<Data, Error> {
     // Async operations
 }
@@ -579,7 +579,7 @@ You can provide custom names for profiled methods:
 
 ```rust
 impl MyStruct {
-    #[profile]
+    #[profiled]
     fn process(&self) {
         // This will be profiled as "fn::process"
     }
@@ -617,6 +617,6 @@ head your-executable-timestamp.folded
 `thag_rs` profiling aims to provide a simple but effective cross-platform solution for understanding and optimizing your Rust code
 by combining easy instrumentation, detailed analysis, and interactive visualizations to help make your code faster and more efficient.
 
-You can get started quickly by running `thag`'s `profile_instrument` tool to auto-instrument one or more source files of interest with #[profile]
+You can get started quickly by running `thag`'s `profile_instrument` tool to auto-instrument one or more source files of interest with #[profiled]
 attributes, and (in the case of `fn main`), `#[enable_profiling]` attributes. Then run your code as normal with the `#[enable_profiling]` attribute,
 or if running a script from `thag` you can use `features=profiling`, and on termination run the `profile_analyze` tool to select and analyze the profile data in the current directory.

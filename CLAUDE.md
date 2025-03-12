@@ -17,7 +17,7 @@
 - **Error handling**: Use `ThagResult<T>` and wrap errors with appropriate `From` implementations
 - **Naming**: CamelCase for types, snake_case for functions and variables
 - **Documentation**: Document all public items, especially interfaces and non-obvious behavior
-- **Profiling**: Use `#[profile]` attribute on functions that should be profiled
+- **Profiling**: Use `#[profiled]` attribute on functions that should be profiled
 - **Features**: Clearly mark feature-dependent code with `#[cfg(feature = "feature_name")]`
 - **Testing**: Write unit tests for modules, with integration tests for full workflows
 - **Formatting**: Follow rustfmt conventions; run `cargo fmt` before committing

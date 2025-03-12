@@ -16,7 +16,7 @@ One standout feature is dependency inference, which automatically detects and co
 
 Since version 0.2, `thag` offers cross-platform profiling capabilities that work consistently across different operating systems—no more platform-specific setup headaches. You can easily:
 
-- Instrument and de-instrument Rust source files automatically with simple #[profile] function attributes
+- Instrument and de-instrument Rust source files automatically with simple #[profiled] function attributes
 
 - Generate execution time and memory usage reports
 
@@ -91,7 +91,7 @@ ___
 Enable profiling either via `features=profiling` or the `enable_profiling` attribute.
 Profiling produces named and timestamped output files.
 
-    There's a tool to instrument functions and methods in a source file with `thag` profiling attributes (`#[profile]` or (for `fn main`: `#[enable_profiling]`)).
+    There's a tool to instrument functions and methods in a source file with `thag` profiling attributes (`#[profiled]` or (for `fn main`: `#[enable_profiling]`)).
 
     There's another to select and analyse the desired profiling output and display statistics and regular or differential before/after flamecharts for chosen profiling output files.
 
@@ -572,7 +572,7 @@ Core Feature Set (★):
 - Basic logging and error handling
 - Essential macros: cprtln, debug_log, lazy_static_var, vlog, regex
 - Styling system and macros: cvprtln, style_for_level
-- Profiling instrumentation macros: profile, profile_method, profile_section
+- Profiling instrumentation macros: profile
 - Fundamental types and traits
 Optional features:
 - profiling     # Enables profiling output (instrumentation always available in core)

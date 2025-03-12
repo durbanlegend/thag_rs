@@ -23,27 +23,27 @@ use std::time::Instant;
 
 use thag_rs::{enable_profiling, profile, profiling, Profile};
 
-#[profile]
+#[profiled]
 fn zero() -> Integer {
     Integer::new()
 }
 
-#[profile]
+#[profiled]
 fn one() -> Integer {
     Integer::from(1)
 }
 
-#[profile]
+#[profiled]
 fn two() -> Integer {
     Integer::from(2)
 }
 
-#[profile]
+#[profiled]
 fn is_even(n: usize) -> bool {
     n % 2 == 0
 }
 
-#[profile]
+#[profiled]
 fn fibo_ej_olson(n: usize, a: &mut Integer, b: &mut Integer) {
     if n == 0 {
         *a = zero();
@@ -64,7 +64,7 @@ fn fibo_ej_olson(n: usize, a: &mut Integer, b: &mut Integer) {
     }
 }
 
-#[profile]
+#[profiled]
 fn fibo_new_work(n: usize, a: &mut Integer, b: &mut Integer) {
     if n == 0 {
         *a = zero();
@@ -93,7 +93,7 @@ fn fibo_new_work(n: usize, a: &mut Integer, b: &mut Integer) {
     }
 }
 
-#[profile]
+#[profiled]
 fn fibo_new(n: usize, b: &mut Integer) {
     if n == 0 {
         *b = zero();
@@ -120,7 +120,7 @@ fn fibo_new(n: usize, b: &mut Integer) {
     }
 }
 
-#[profile]
+#[profiled]
 fn fibo_init() -> HashMap<usize, Integer> {
     let mut memo = HashMap::new();
     memo.insert(0, zero());
@@ -129,7 +129,7 @@ fn fibo_init() -> HashMap<usize, Integer> {
     memo
 }
 
-#[profile]
+#[profiled]
 fn fibo(n: usize, memo: &mut HashMap<usize, Integer>) -> Integer {
     if let Some(res) = memo.get(&n) {
         return res.clone();

@@ -75,7 +75,7 @@ syn = { version = "2", features = [
 ], optional = true }
 termbg = { version = "0.6.1", optional = true }
 thag_proc_macros = { version = "0.1.2", path = "thag_proc_macros" }
-thag_profiler = { path = "thag_profiler", version = "0.1", default-features = false }
+thag_profiler = { path = "thag_profiler", version = "0.1" }
 toml = { version = "0.8.20" }
 toml_edit = { version = "0.22.24", optional = true }
 # `tui-textarea` is used for the `tui` feature`.
@@ -114,21 +114,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "thag"
 path = "src/bin/thag_rs.rs"
-
-# [[bin]]
-# name = "thag_profile_instrument"
-# path = "tools/profile_instrument.rs"
-# required-features = ["core", "profile_instrument", "simplelog"]
-
-# [[bin]]
-# name = "thag_profile_remove"
-# path = "tools/profile_remove.rs"
-# required-features = ["core", "profile_instrument", "simplelog"]
-
-# [[bin]]
-# name = "thag_profile_analyze"
-# path = "tools/profile_analyze.rs"
-# required-features = ["core", "profile_analyze", "simplelog"]
 
 [features]
 # Core and Logging Features
@@ -230,12 +215,11 @@ profiling = ["thag_profiler/profiling", "thag_proc_macros/profiling"]
 # Core Feature Set (★):
 # - Basic logging and error handling
 # - Essential macros: cprtln, debug_log, lazy_static_var, vlog, regex
-# - Styling system and macros: cvprtln, style_for_level
-# - Profiling instrumentation macros: profile, profile_method, profile_section
+# - Styling system and macros: cvprtln, style_for_role
 # - Fundamental types and traits
 #
 # Optional features:
-# - profiling     # Enables profiling output (instrumentation always available in core)
+# - profiling     # Enables profiling via thag_profiler (for internal use)
 # - debug-logs
 # - nightly
 # - format_snippet

@@ -49,7 +49,7 @@ impl Parse for ProfileArgs {
 pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Runtime check for feature flag to handle when the proc macro
     // is compiled with the feature but used without it
-    if !cfg!(feature = "profiling") {
+    if cfg!(not(feature = "profiling")) {
         // No wrapper, return original function
         return item;
     }
@@ -66,7 +66,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     // Create the new function body
     let original_body = input.block;
     input.block = parse_quote! {{
-        use crate::profiling::{enable_profiling, ProfileType};
+        use ::thag_profiler::profiling::{enable_profiling, ProfileType};
         enable_profiling(true, #profile_type)
             .expect("Failed to enable profiling");
 

@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["profiling"] }
+# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["profiling"] }
 # thag_profiler = { version = "0.1", features = ["profiling"] }
-# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler" }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["profiling"] }
 */
 
 use futures::future::join_all;
@@ -24,7 +24,8 @@ struct Document {
 }
 
 impl Document {
-    #[profile(imp = "Document")]
+    // #[profiled(imp = "Document")]
+    #[profiled]
     fn new(id: usize, content: String) -> Self {
         // let _ = sleep(Duration::from_millis(50 + (id % 10 * 5) as u64));
         Document {

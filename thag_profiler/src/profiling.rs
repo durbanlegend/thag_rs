@@ -6,7 +6,6 @@ use std::{
     collections::{HashMap, HashSet},
     fs::File,
     io::BufWriter,
-    marker::PhantomData,
     ops::Deref,
     path::PathBuf,
     sync::{
@@ -332,10 +331,10 @@ impl ProfileType {
 pub struct Profile {
     start: Option<Instant>,
     profile_type: ProfileType,
-    initial_memory: Option<usize>,     // For memory delta
-    path: Vec<String>,                 // Full call stack (only profiled functions)
-    custom_name: Option<String>,       // Custom section name when provided
-    _not_send: PhantomData<*const ()>, // Makes Profile !Send
+    initial_memory: Option<usize>, // For memory delta
+    path: Vec<String>,             // Full call stack (only profiled functions)
+    custom_name: Option<String>,   // Custom section name when provided via profile!("name") macro
+                                   // _not_send: PhantomData<*const ()>, // Makes Profile !Send
 }
 
 impl Profile {
@@ -346,7 +345,7 @@ impl Profile {
     /// Panics if stack validation fails.
     #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
     pub fn new(
-        name: &str,
+        name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
         is_method: bool,
@@ -360,6 +359,11 @@ impl Profile {
         // Get the current backtrace
         let mut current_backtrace = Backtrace::new_unresolved();
         current_backtrace.resolve();
+
+        // if name == "inner_async_operation" {
+        //     eprintln!("Current backtrace: {current_backtrace:?}");
+        // }
+
         let mut is_within_target_range = false;
 
         // First, collect all relevant frames
@@ -422,7 +426,10 @@ impl Profile {
 
         // Register this function
         let fn_name = maybe_method_name.as_ref().map_or(
-            maybe_function_name.as_ref().map_or(name, Deref::deref),
+            maybe_function_name.as_ref().map_or_else(
+                || name.unwrap_or("unknown"), 
+                Deref::deref
+            ),
             Deref::deref,
         );
         let desc_fn_name = if is_async {
@@ -476,30 +483,53 @@ impl Profile {
             _ => ProfileType::Time, // default
         };
 
-        // Use the more comprehensive of the two types
-        let profile_type = match (requested_type, global_type) {
-            (ProfileType::Both, _) | (_, ProfileType::Both) => ProfileType::Both,
-            (ProfileType::Memory, _) | (_, ProfileType::Memory) => ProfileType::Memory,
-            _ => ProfileType::Time,
-        };
+        // // Use the more comprehensive of the two types
+        // let profile_type = match (requested_type, global_type) {
+        //     (ProfileType::Both, _) | (_, ProfileType::Both) => ProfileType::Both,
+        //     (ProfileType::Memory, _) | (_, ProfileType::Memory) => ProfileType::Memory,
+        //     _ => ProfileType::Time,
+        // };
 
-        let initial_memory = if matches!(requested_type, ProfileType::Memory | ProfileType::Both) {
+        // Try allowing overrides
+        let profile_type = requested_type;
+
+        let initial_memory = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
             // Get initial memory snapshot
             memory_stats().map(|stats| stats.physical_mem)
         } else {
             None
         };
 
-        // Store the original name as custom_name if it's a non-empty string literal
-        // and different from the function name itself
-        let custom_name = if !name.is_empty() && name != fn_name {
-            Some(name.to_string())
-        } else {
-            None
-        };
+        // Determine if we should keep the custom name
+        let custom_name = name.and_then(|n| {
+            if n.is_empty() {
+                return None; // Empty names are never useful
+            }
+            
+            // For methods (with Class::method syntax), check if custom name matches just the method part
+            if let Some(method_name) = &maybe_method_name {
+                // Extract the method part after the last ::
+                if let Some(pos) = method_name.rfind("::") {
+                    let method_part = &method_name[(pos + 2)..];
+                    // Don't use custom name if it exactly matches just the method part
+                    if n == method_part {
+                        return None;
+                    }
+                }
+            } 
+            // For regular functions, check if custom name matches the entire function name
+            else if let Some(function_name) = &maybe_function_name {
+                if n == function_name {
+                    return None;
+                }
+            }
+            // If we get here, the custom name adds value, so keep it
+            Some(n.to_string())
+        });
 
+        // Debug output can be turned back on if needed for troubleshooting
         // println!(
-        //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}"
+        //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
         // );
 
         Some(Self {
@@ -510,7 +540,7 @@ impl Profile {
             initial_memory,
             path,
             custom_name,
-            _not_send: PhantomData,
+            // _not_send: PhantomData,
         })
     }
 
@@ -571,12 +601,17 @@ impl Profile {
 
         let micros = duration.as_micros();
         if micros == 0 {
+            println!(
+                "DEBUG: Not writing time event for stack: {:?} due to zero duration",
+                self.path
+            );
             return Ok(());
         }
 
         let stack = &self.path;
 
         if stack.is_empty() {
+            println!("DEBUG: Stack is empty for {:?}", self.custom_name);
             return Err(ProfileError::General("Stack is empty".into()));
         }
 
@@ -593,7 +628,7 @@ impl Profile {
             if let Some(last_fn) = stack_with_custom_name.last_mut() {
                 // Append the custom name to the last function name
                 *last_fn = format!("{last_fn}:{name}");
-                // println!("DEBUG: Modified stack entry to '{}'", last_fn);
+                println!("DEBUG: Modified stack entry to '{}'", last_fn);
             }
         }
 
@@ -608,6 +643,10 @@ impl Profile {
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ProfileResult<()> {
         if delta == 0 {
             // Keep this as it's a business logic check
+            println!(
+                "DEBUG: Not writing memory event for stack: {:?} due to zero delta",
+                self.path
+            );
             return Ok(());
         }
 
@@ -665,6 +704,7 @@ fn get_fn_desc_name(fn_name_str: &String) -> String {
 #[cfg(feature = "profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
+        // println!("In drop for Profile {:?}", self);
         if let Some(start) = self.start.take() {
             // Handle time profiling as before
             match self.profile_type {
@@ -700,7 +740,7 @@ pub struct ProfileSection {
 #[cfg(feature = "profiling")]
 impl ProfileSection {
     #[must_use]
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: Option<&str>) -> Self {
         Self {
             profile: Profile::new(
                 name,
@@ -728,7 +768,7 @@ pub struct ProfileSection;
 #[cfg(not(feature = "profiling"))]
 impl ProfileSection {
     #[must_use]
-    pub const fn new(_name: &str) -> Self {
+    pub const fn new(_name: Option<&str>) -> Self {
         Self
     }
     pub const fn end(self) {}
@@ -737,6 +777,10 @@ impl ProfileSection {
         false
     }
 }
+
+// This is just for clarity - removing the PhantomData marker should be enough
+unsafe impl Send for Profile {}
+unsafe impl Send for ProfileSection {}
 
 /// Register a function name with the profiling registry
 ///
@@ -820,7 +864,7 @@ fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
         "FuturesUnordered<Fut>",
         "Profile::new",
         "ProfiledFuture",
-        "{{closure}}::{{closure}}",
+        // "{{closure}}::{{closure}}",
     ];
 
     // Create a new cleaned stack, filtering out scaffolding
@@ -944,71 +988,71 @@ fn get_memory_delta(initial: usize) -> Result<usize, MemoryError> {
 macro_rules! profile {
     // profile!(name)
     ($name:expr) => {
-        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Time, false, false)
+        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Time, false, false)
     };
 
     // profile!(name, type)
     ($name:expr, time) => {
-        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Time, false, false)
+        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Time, false, false)
     };
     ($name:expr, memory) => {
         ::thag_profiler::profile_internal!(
-            $name,
+            Some($name),
             ::thag_profiler::ProfileType::Memory,
             false,
             false
         )
     };
     ($name:expr, both) => {
-        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Both, false, false)
+        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Both, false, false)
     };
 
     // profile!(name, async)
     ($name:expr, async) => {
-        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Time, true, false)
+        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Time, true, false)
     };
 
-    // profile!(method)
+    // profile!(method) - no custom name
     (method) => {
-        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Time, false, true)
+        ::thag_profiler::profile_internal!(None, ::thag_profiler::ProfileType::Time, false, true)
     };
 
-    // profile!(method, type)
+    // profile!(method, type) - no custom name
     (method, time) => {
-        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Time, false, true)
+        ::thag_profiler::profile_internal!(None, ::thag_profiler::ProfileType::Time, false, true)
     };
     (method, memory) => {
-        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Memory, false, true)
+        ::thag_profiler::profile_internal!(None, ::thag_profiler::ProfileType::Memory, false, true)
     };
     (method, both) => {
-        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Both, false, true)
+        ::thag_profiler::profile_internal!(None, ::thag_profiler::ProfileType::Both, false, true)
     };
 
-    // profile!(method, async)
+    // profile!(method, async) - no custom name
     (method, async) => {
-        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Time, true, true)
+        ::thag_profiler::profile_internal!(None, ::thag_profiler::ProfileType::Time, true, true)
     };
 
-    // profile!(method, type, async)
+    // profile!(method, type, async) - no custom name
     (method, time, async) => {
-        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Time, true, true)
+        ::thag_profiler::profile_internal!(None, ::thag_profiler::ProfileType::Time, true, true)
     };
     (method, memory, async) => {
-        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Memory, true, true)
+        ::thag_profiler::profile_internal!(None, ::thag_profiler::ProfileType::Memory, true, true)
     };
     (method, both, async) => {
-        ::thag_profiler::profile_internal!("", ::thag_profiler::ProfileType::Both, true, true)
+        ::thag_profiler::profile_internal!(None, ::thag_profiler::ProfileType::Both, true, true)
     };
 
     // profile!(name, type, async)
     ($name:expr, time, async) => {
-        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Time, true, false)
+        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Time, true, false)
     };
     ($name:expr, memory, async) => {
-        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Memory, true, false)
+        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Memory, true, false)
     };
     ($name:expr, both, async) => {
-        ::thag_profiler::profile_internal!($name, ::thag_profiler::ProfileType::Both, true, false)
+        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Both, true, false)
     };
 }
 
@@ -1016,6 +1060,7 @@ macro_rules! profile {
 #[cfg(not(feature = "profiling"))]
 #[macro_export]
 macro_rules! profile {
+    // The implementations are all identical for the no-op version
     // Basic variants
     ($name:expr) => {{
         ::thag_profiler::ProfileSection {}

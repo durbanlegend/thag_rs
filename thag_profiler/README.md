@@ -87,12 +87,68 @@ fn complex_operation() {
 
 ### Enabling Profiling
 
-Enable profiling by adding the attribute to your main function:
+#### Manifest info
+
+##### In Scripts Run with thag
+
+When using `thag_profiler` in scripts, you have two options:
+
+1. **Enable via command line** (recommended):
+   ```bash
+   cargo run bank/mem_prof.rs --features=profile
+   ```
+
+   With this script configuration:
+   ```rust
+   /*[toml]
+   [dependencies]
+   thag_profiler = { version = "0.1" }
+
+   [features]
+   profile = ["thag_profiler/profiling"]
+   */
+   ```
+
+2. **Enable directly in the dependency**:
+   ```rust
+   /*[toml]
+   [dependencies]
+   thag_profiler = { version = "0.1", features = ["profiling"] }
+   */
+   ```
+
+##### In Regular Cargo Projects
+
+In standard Cargo projects, the same options apply, only directly in Cargo.toml:
+
+1. **Use feature propagation**:
+   ```toml
+   [dependencies]
+   thag_profiler = { version = "0.1" }
+
+   [features]
+   my_profiling = ["thag_profiler/profiling"]
+   ```
+
+   Then run with:
+   ```bash
+   cargo run --features my_profiling
+   ```
+
+2. **Enable directly in the dependency**:
+   ```toml
+   [dependencies]
+   thag_profiler = { version = "0.1", features = ["profiling"] }
+   ```
+
+#### In code
+
+Enable profiling by adding the #[enable_profiling] attribute to your main function:
 
 ```rust
 use thag_profiler::profiled;
 
-#[profiled]
+#[enable_profiling]
 fn main() {
     // Your program...
 }
@@ -101,7 +157,7 @@ fn main() {
 Or programmatically:
 
 ```rust
-use thag_profiler::{enable_profiling, ProfileType};
+use thag_profiler::{profiling::enable_profiling, ProfileType};
 
 fn main() {
     // Enable both time and memory profiling
@@ -153,15 +209,15 @@ impl MyStruct {
 
 #### Attribute Options
 
-The `#[profiled]` attribute supports several options:
+The `#[profiled]` and `#[enable_profiling]` attributes support a profile_type option:
 
 ```rust
-// Specify the implementation type for better method profiling
-#[profiled(imp = "MyStruct")]
-fn my_method(&self) { /* ... */ }
+// Specify at the global level what to profile (time, memory, or both)
+#[enable_profiling(profile_type = "memory")]
+fn main() { /* ... */ }
 
-// Specify what to profile (time, memory, or both)
-#[profiled(profile_type = "memory")]
+// Override the profile type for a specific function (time, memory, or both)
+#[profiled(profile_type = "both")]
 fn allocating_function() { /* ... */ }
 ```
 
@@ -218,8 +274,8 @@ fn complex_operation() { /* ... */ }
 
 Thag includes three command-line tools for working with profiles.
 
-Please take care to back up and protect your code. Remember that you take full responsibility for any consequences.
-Don't make Thag tap the license!
+Please take care to back up and protect your code before instrumenting or removing instrumentation.
+By using the tools you take full responsibility for any consequences.
 
 #### Instrumentation: thag-instrument and thag-remove
 
@@ -292,17 +348,30 @@ The analyzer provides:
 
 ### Flamegraphs and Flamecharts
 
-Cumulative flamegraphs and detailed flamecharts provide an intuitive visualization of your profiling data. The wider a function appears, the more time it takes relative to the total execution.
+Cumulative flamegraphs and detailed flamecharts provide an intuitive interactive visualization of your profiling data. The wider a function appears, the more time it takes relative to the total execution.
 
 Flamegraphs and flamecharts are interactive SVGs that allow you to:
+
 - Zoom in on specific functions
+
 - Hover over functions to see detailed information
+
 - Search for specific functions
+
 - Compare before/after optimizations
 
 ![Example Flamechart](../assets/flamechart_time_20250312-081119.png)
 
-[Try it!](../assets/flamechart_time_20250312-081119.svg)
+You can interact with the above example [here](../assets/flamechart_time_20250312-081119.svg).
+
+You may be more familiar with flamegraphs than flamecharts. Flamecharts are distinguished by laying out data on the horizontal axis chronologically instead of alphabetically.
+Flamecharts provide a detailed view that reflects the sequence of events, in particular for the execution timeline. For memory profiling the sequence will be the sequence of `drop` events,
+since this is the point at which `thag` profiling records the allocation and deallocation.
+
+`thag` uses the `inferno` crate to generate flamecharts.
+For the execution timeline, the analysis tool allows you to choose the `inferno` color scheme to use.
+For the memory flamechart, it adheres to `inferno`'s memory-optimized color scheme.
+
 
 ## Best Practices
 
@@ -333,10 +402,10 @@ This is important because `thag_profiler` maintains global state that isn't thre
 
 ### Common Issues
 
-1. **Missing profile output**: Ensure profiling is enabled and you have write permissions
-2. **Test failures**: Profiled tests must use the `#[serial]` attribute
+1. **Missing profile output**: Ensure profiling is enabled and you have write permissions in the current directory
+2. **Test failures**: TODO confirm: Profiled tests must use the `#[serial]` attribute
 3. **Performance impact**: Memory profiling adds some overhead
-4. **File redirect issues**: Never redirect output back to the input file
+4. **File redirect issues**: Never redirect output from the instrumentation tools back to the input file
 
 ### Inspecting Profile Files
 

@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, parse_quote, Ident, ItemFn, LitStr, Token,
+    parse_macro_input, Ident, ItemFn, LitStr, Token,
 };
 
 #[derive(Debug)]
@@ -55,7 +55,10 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     }
 
     let args = parse_macro_input!(attr as ProfileArgs);
-    let mut input = parse_macro_input!(item as ItemFn);
+    let input = parse_macro_input!(item as ItemFn);
+
+    // Check if the function is async
+    let is_async = input.sig.asyncness.is_some();
 
     let profile_type = match args.profile_type {
         Some(ProfileTypeOverride::Time) => quote! { ProfileType::Time },
@@ -63,23 +66,52 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         Some(ProfileTypeOverride::Both) | None => quote! { ProfileType::Both },
     };
 
-    // Create the new function body
-    let original_body = input.block;
-    input.block = parse_quote! {{
-        use ::thag_profiler::profiling::{enable_profiling, ProfileType};
-        enable_profiling(true, #profile_type)
-            .expect("Failed to enable profiling");
+    // Get function details
+    let fn_name = &input.sig.ident;
+    let inputs = &input.sig.inputs;
+    let output = &input.sig.output;
+    let generics = &input.sig.generics;
+    let where_clause = &input.sig.generics.where_clause;
+    let vis = &input.vis;
+    let block = &input.block;
+    let attrs = &input.attrs;
 
-        let result = (|| #original_body)();
+    let result = if is_async {
+        // Handle async function
+        quote! {
+            #(#attrs)*
+            #vis async fn #fn_name #generics(#inputs) #output #where_clause {
+                use ::thag_profiler::profiling::{enable_profiling, ProfileType};
 
-        enable_profiling(false, #profile_type)
-            .expect("Failed to disable profiling");
+                enable_profiling(true, #profile_type).expect("Failed to enable profiling");
 
-        result
-    }};
+                // For async functions, we need to use an async block
+                let result = async {
+                    #block
+                }.await;
 
-    quote! {
-        #input
-    }
-    .into()
+                enable_profiling(false, #profile_type).expect("Failed to disable profiling");
+                result
+            }
+        }
+    } else {
+        // Handle non-async function (existing implementation)
+        quote! {
+            #(#attrs)*
+            #vis fn #fn_name #generics(#inputs) #output #where_clause {
+                use ::thag_profiler::profiling::{enable_profiling, ProfileType};
+
+                enable_profiling(true, #profile_type).expect("Failed to enable profiling");
+
+                let result = (|| {
+                    #block
+                })();
+
+                enable_profiling(false, #profile_type).expect("Failed to disable profiling");
+                result
+            }
+        }
+    };
+
+    result.into()
 }

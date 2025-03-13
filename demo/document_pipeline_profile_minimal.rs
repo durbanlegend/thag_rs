@@ -21,7 +21,7 @@ struct Document {
 }
 
 impl Document {
-    #[profile(imp = "Document")]
+    #[profiled(imp = "Document")]
     fn new(id: usize, content: String) -> Self {
         // Fixed duration for predictability
         std::thread::sleep(Duration::from_millis(10));
@@ -141,7 +141,7 @@ async fn main() {
     );
 
     // Print results for verification
-    let section = profile_section!("section::print_docs");
+    let section = profile!("section::print_docs");
     for doc in &docs {
         println!(
             "Doc #{}: Word count: {}, Sentiment: {:.2}",

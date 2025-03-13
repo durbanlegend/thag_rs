@@ -467,7 +467,7 @@ After selecting a specific profile file, you'll see these options:
 
 After selecting two profile files to compare, you'll see:
 
-- **Show Differential Flamechart**: Generate a comparative flamechart highlighting differences
+- **Show Differential Flamegraph**: Generate a comparative flamegraph highlighting differences
 - **Show Statistics Comparison**: Compare statistical data between the two profiles
 - **Back to Profile Selection**: Return to the file selection menu
 
@@ -483,7 +483,7 @@ Similar to the Time Profile menu, but focused on memory allocation data:
 
 Compares memory usage between two profile runs:
 
-- **Show Differential Memory Flamechart**: Visual comparison of memory usage
+- **Show Differential Memory Flamegraph**: Visual comparison of memory usage
 - **Show Memory Statistics Comparison**: Compare allocation statistics
 - **Back to Profile Selection**: Return to the file selection menu
 

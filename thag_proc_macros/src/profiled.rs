@@ -9,9 +9,10 @@ use syn::{
 /// Configuration for profile attribute macro
 #[derive(Default)]
 struct ProfileArgs {
-    /// The implementing type (e.g., "`MyStruct`")
+    /// The implementing type (e.g., "`MyStruct`") - kept for backwards compatibility
+    /// but not used in Profile::new anymore (backtrace provides this information)
     imp: Option<String>,
-    // The trait being implemented (e.g., "`Display`")
+    // The trait being implemented (e.g., "`Display`") - removed as unused
     // trait_name: Option<String>,
     /// Explicit profile type override
     profile_type: Option<ProfileTypeOverride>,
@@ -48,8 +49,8 @@ struct FunctionContext<'a> {
     where_clause: Option<&'a WhereClause>,
     /// Function body
     body: &'a syn::Block,
-    /// Generated profile name incorporating context (impl/trait/async/etc.)
-    profile_name: String,
+    // Generated profile name incorporating context (impl/trait/async/etc.)
+    // profile_name: String,
     // /// Whether the function is asynchronous
     // is_async: bool,
     /// Whether the function is a method
@@ -154,7 +155,10 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input_args: Vec<_> = inputs.iter().cloned().collect();
     // Determine if this is a method
     let is_method = is_method(&input_args, output);
-    // eprintln!("fn_name={fn_name}, is_method={is_method}");
+    // Use a compile error to display debug information
+    // This will show up in the compiler output and then stop compilation
+    // To enable, uncomment the following line:
+    // return syn::Error::new(input.sig.span(), format!("DEBUG: fn_name={}, is_method={}", fn_name, is_method)).to_compile_error().into();
 
     // Get generic parameters
     // let type_params: Vec<_> = generics
@@ -168,8 +172,10 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     //     .collect();
 
     // Generate profile name
-    let profile_name =
-        generate_profile_name(fn_name, is_method, &args /*, &type_params, is_async */);
+    // We no longer need to generate a profile name string to pass to Profile::new
+    // Just to identify the function in the attribute macro for debugging
+    // let profile_name =
+    //     generate_profile_name(fn_name, is_method, &args /*, &type_params, is_async */);
 
     let ctx = FunctionContext {
         vis: &input.vis,
@@ -179,7 +185,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         output: &input.sig.output,
         where_clause: input.sig.generics.where_clause.as_ref(),
         body: &input.block,
-        profile_name,
+        // profile_name,
         // is_async,
         is_method,
     };
@@ -193,26 +199,34 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[allow(dead_code)]
-fn generate_profile_name(
-    fn_name: &syn::Ident,
-    is_method: bool,
-    args: &ProfileArgs,
-    // type_params: &[String],
-    // is_async: bool,
-) -> String {
-    let mut parts = Vec::new();
+// fn generate_profile_name(
+//     fn_name: &syn::Ident,
+//     is_method: bool,
+//     args: &ProfileArgs,
+//     // type_params: &[String],
+//     // is_async: bool,
+// ) -> String {
+//     let mut parts = Vec::new();
 
-    if is_method {
-        if let Some(impl_type) = &args.imp {
-            parts.push(impl_type.to_string());
-        }
-    }
+//     if is_method {
+//         if let Some(impl_type) = &args.imp {
+//             parts.push(impl_type.to_string());
+//         }
+//     }
 
-    // Add function name
-    parts.push(fn_name.to_string());
+//     // Add function name
+//     parts.push(fn_name.to_string());
 
-    parts.join("::")
-}
+//     // Use a compile error to display debug information
+//     // This will show up in the compiler output and then stop compilation
+//     // To enable, uncomment the following line:
+//     // return syn::Error::new_spanned(
+//     //    fn_name,
+//     //    format!("DEBUG: Profile name: {}", parts.join("::"))
+//     // ).to_compile_error().into();
+
+//     parts.join("::")
+// }
 
 fn generate_sync_wrapper(
     ctx: &FunctionContext,
@@ -226,7 +240,7 @@ fn generate_sync_wrapper(
         output,
         where_clause,
         body,
-        profile_name,
+        // profile_name,
         // is_async,
         is_method,
     }: &FunctionContext<'_> = ctx;
@@ -236,8 +250,8 @@ fn generate_sync_wrapper(
 
     quote! {
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
-            // eprintln!("From generate_sync_wrapper: profile_name={}", #profile_name);
-            let _profile = ::thag_profiler::Profile::new(#profile_name, #profile_type, false, #is_method);
+            // We pass None for the name as we rely on the backtrace to identify the function
+            let _profile = ::thag_profiler::Profile::new(None, #profile_type, false, #is_method);
             #body
         }
     }
@@ -266,7 +280,7 @@ fn generate_async_wrapper(
         output,
         where_clause,
         body,
-        profile_name,
+        // profile_name,
         // is_async,
         is_method,
     } = ctx;
@@ -303,7 +317,7 @@ fn generate_async_wrapper(
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: ::thag_profiler::Profile::new(#profile_name, #profile_type, true, #is_method),
+                _profile: ::thag_profiler::Profile::new(None, #profile_type, true, #is_method),
             }.await
         }
     }

@@ -209,7 +209,7 @@ pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn profiled(attr: TokenStream, item: TokenStream) -> TokenStream {
-    eprintln!("DEBUGLIB: profiled attribute macro called");
+    // eprintln!("DEBUGLIB: profiled attribute macro called");
     // Set to true to enable macro expansion output
     maybe_expand_attr_macro(false, "profiled", &attr, &item, profiled_impl)
 }

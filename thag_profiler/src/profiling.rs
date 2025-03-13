@@ -360,7 +360,7 @@ impl Profile {
         let mut current_backtrace = Backtrace::new_unresolved();
         current_backtrace.resolve();
 
-        // if name == "inner_async_operation" {
+        // if name == Some("new") {
         //     eprintln!("Current backtrace: {current_backtrace:?}");
         // }
 
@@ -426,10 +426,9 @@ impl Profile {
 
         // Register this function
         let fn_name = maybe_method_name.as_ref().map_or(
-            maybe_function_name.as_ref().map_or_else(
-                || name.unwrap_or("unknown"), 
-                Deref::deref
-            ),
+            maybe_function_name
+                .as_ref()
+                .map_or_else(|| name.unwrap_or("unknown"), Deref::deref),
             Deref::deref,
         );
         let desc_fn_name = if is_async {
@@ -505,7 +504,7 @@ impl Profile {
             if n.is_empty() {
                 return None; // Empty names are never useful
             }
-            
+
             // For methods (with Class::method syntax), check if custom name matches just the method part
             if let Some(method_name) = &maybe_method_name {
                 // Extract the method part after the last ::
@@ -516,7 +515,7 @@ impl Profile {
                         return None;
                     }
                 }
-            } 
+            }
             // For regular functions, check if custom name matches the entire function name
             else if let Some(function_name) = &maybe_function_name {
                 if n == function_name {
@@ -792,7 +791,7 @@ pub fn register_profiled_function(name: &str, desc_name: String) {
     #[cfg(debug_assertions)]
     assert!(
         name != "new",
-        "`new` is not a valid function name. desc_name={desc_name}"
+        "Logic error: `new` is not an accepted function name on its own. It must be qualified with the type name: `<Type>::new`. desc_name={desc_name}"
     );
     if let Ok(mut registry) = PROFILED_FUNCTIONS.lock() {
         // eprintln!("Registering function: {name}::{desc_name}",);
@@ -988,12 +987,22 @@ fn get_memory_delta(initial: usize) -> Result<usize, MemoryError> {
 macro_rules! profile {
     // profile!(name)
     ($name:expr) => {
-        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Time, false, false)
+        ::thag_profiler::profile_internal!(
+            Some($name),
+            ::thag_profiler::ProfileType::Time,
+            false,
+            false
+        )
     };
 
     // profile!(name, type)
     ($name:expr, time) => {
-        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Time, false, false)
+        ::thag_profiler::profile_internal!(
+            Some($name),
+            ::thag_profiler::ProfileType::Time,
+            false,
+            false
+        )
     };
     ($name:expr, memory) => {
         ::thag_profiler::profile_internal!(
@@ -1004,12 +1013,22 @@ macro_rules! profile {
         )
     };
     ($name:expr, both) => {
-        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Both, false, false)
+        ::thag_profiler::profile_internal!(
+            Some($name),
+            ::thag_profiler::ProfileType::Both,
+            false,
+            false
+        )
     };
 
     // profile!(name, async)
     ($name:expr, async) => {
-        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Time, true, false)
+        ::thag_profiler::profile_internal!(
+            Some($name),
+            ::thag_profiler::ProfileType::Time,
+            true,
+            false
+        )
     };
 
     // profile!(method) - no custom name
@@ -1046,13 +1065,28 @@ macro_rules! profile {
 
     // profile!(name, type, async)
     ($name:expr, time, async) => {
-        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Time, true, false)
+        ::thag_profiler::profile_internal!(
+            Some($name),
+            ::thag_profiler::ProfileType::Time,
+            true,
+            false
+        )
     };
     ($name:expr, memory, async) => {
-        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Memory, true, false)
+        ::thag_profiler::profile_internal!(
+            Some($name),
+            ::thag_profiler::ProfileType::Memory,
+            true,
+            false
+        )
     };
     ($name:expr, both, async) => {
-        ::thag_profiler::profile_internal!(Some($name), ::thag_profiler::ProfileType::Both, true, false)
+        ::thag_profiler::profile_internal!(
+            Some($name),
+            ::thag_profiler::ProfileType::Both,
+            true,
+            false
+        )
     };
 }
 

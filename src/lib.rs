@@ -142,7 +142,7 @@ pub use {
     styling::{Color, ColorSupport, Level, Lvl, Role, Style, TermBgLuma},
 };
 
-// pub use thag_profiler::*; // Re-export everything from profiler
+pub use thag_profiler::*; // Re-export everything from profiler
 
 // // Re-exports for convenience
 // // These are minimal and don't force users to go through thag_rs

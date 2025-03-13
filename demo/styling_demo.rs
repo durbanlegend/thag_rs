@@ -14,7 +14,7 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 // use nu_ansi_term::Color::Fixed;
 use strum::{Display, EnumIter, IntoEnumIterator};
 use thag_rs::{
-    cvprtln, profile_method,
+    cvprtln,
     styling::{
         display_theme_details, display_theme_roles, Color, ColorInitStrategy, Role, TermAttributes,
         TermBgLuma, Theme,
@@ -391,7 +391,6 @@ pub enum XtermColor {
 impl From<&XtermColor> for u8 {
     #[allow(clippy::too_many_lines)]
     fn from(xterm_color: &XtermColor) -> Self {
-        profile_method!("u8_from_xterm_color");
         match xterm_color {
             XtermColor::UserBlack => 0,
             XtermColor::UserRed => 1,

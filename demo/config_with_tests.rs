@@ -40,7 +40,7 @@ use std::{
 };
 use strum::{Display, EnumString};
 use thag_rs::{
-    clog, clog_error, cprtln, cvprtln, lazy_static_var, Color, ColorSupport, Level, Lvl,
+    clog, clog_error, cprtln, cvprtln, lazy_static_var, logging, Color, ColorSupport, Level, Lvl,
     TermBgLuma, ThagError, ThagResult, Verbosity, V,
 };
 use toml_edit::DocumentMut;
@@ -762,37 +762,27 @@ fn main() {
 
     if let Ok(Some(config)) = maybe_config {
         // #[cfg(debug_assertions)]
-        // debug!("Loaded config: {config:?}");
-        #[cfg(debug_assertions)]
-        debug!(
+        // debug_log!("Loaded config: {config:?}");
+        // #[cfg(debug_assertions)]
+        debug_log!(
             "verbosity={:?}, ColorSupport={:?}, TermBgLuma={:?}",
             config.logging.default_verbosity,
             config.colors.color_support,
             config.colors.term_bg_luma
         );
     } else {
-        debug!("No configuration file found.");
+        debug_log!("No configuration file found.");
     }
 }
 
 #[macro_export]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
-        // If the `debug-logs` feature is enabled, always log
-        #[cfg(any(feature = "debug-logs", feature = "simplelog"))]
-        {
-            $crate::log::debug!($($arg)*);
-        }
-
-        // In all builds, log if runtime debug logging is enabled (e.g., via `-vv`)
-        #[cfg(not(any(feature = "debug-logs", feature = "simplelog")))]
-        {
-            if $crate::logging::is_debug_logging_enabled() {
-                $crate::log::debug!($($arg)*);
-            } else {
-                // Avoid unused variable warnings in release mode if logging isn't enabled
-                let _ = format_args!($($arg)*);
-            }
+        if logging::is_debug_logging_enabled() {
+            thag_rs::log::debug!($($arg)*);
+        } else {
+            // Avoid unused variable warnings in release mode if logging isn't enabled
+            let _ = format_args!($($arg)*);
         }
     };
 }

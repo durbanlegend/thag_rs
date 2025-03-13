@@ -306,6 +306,8 @@ thag-remove 2021 < path/to/your/instrumented_file.rs > path/to/your/de-instrumen
 
 * Do not redirect the output to your source file! Trust Thag!
 
+* In the case of thag-remove, you may need to remove the relevant imports manually.
+
 * Compare the original and instrumented files to ensure correctness, especially if
 you're using a custom edition.
 

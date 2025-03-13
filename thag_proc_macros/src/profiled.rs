@@ -99,19 +99,31 @@ impl Parse for ProfileArgs {
 /// Determines if a function is a method by checking for:
 /// 1. Explicit self parameter
 /// 2. Return type of Self (including references to Self)
-/// 3. Location within an impl block (when available)
+/// 3. Return type containing Self as a generic parameter (Result<Self>, Option<Self>, etc.)
+/// 4. Location within an impl block (when available)
 fn is_method(inputs: &[FnArg], output: &ReturnType) -> bool {
-    // Check for self parameter
+    // Check for self parameter (the most reliable indicator)
     let has_self_param = inputs.iter().any(|arg| matches!(arg, FnArg::Receiver(_)));
     if has_self_param {
         return true;
     }
-
-    // Check for Self return type (including references to Self)
-    match output {
-        ReturnType::Type(_, ty) => contains_self_type(ty),
+    
+    // Check for Self return type (including references and wrapped types)
+    let returns_self = match output {
+        ReturnType::Type(_, ty) => {
+            // Use our enhanced contains_self_type function
+            contains_self_type(ty)
+        },
         ReturnType::Default => false,
+    };
+    
+    // Consider functions named "new" as methods even if they don't have self parameters
+    // This helps with constructor methods like `fn new() -> Result<Self, Error>`
+    if returns_self {
+        return true;
     }
+    
+    false
 }
 
 /// Recursively checks if a type contains Self
@@ -120,14 +132,51 @@ fn contains_self_type(ty: &Type) -> bool {
         // Handle reference types (&Self, &'static Self, etc.)
         Type::Reference(type_reference) => contains_self_type(&type_reference.elem),
 
-        // Handle plain Self
-        Type::Path(type_path) => type_path
-            .path
-            .segments
-            .iter()
-            .any(|segment| segment.ident == "Self"),
-
-        // Handle other type variants if needed
+        // Handle plain Self or paths containing Self (like module::Self)
+        Type::Path(type_path) => {
+            // Check if any path segment is exactly "Self"
+            let has_self_segment = type_path
+                .path
+                .segments
+                .iter()
+                .any(|segment| segment.ident == "Self");
+            
+            if has_self_segment {
+                return true;
+            }
+            
+            // Check for generic types that might contain Self (like Result<Self>)
+            type_path.path.segments.iter().any(|segment| {
+                // Check if this segment has generic parameters
+                if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
+                    // Examine each generic argument
+                    args.args.iter().any(|arg| {
+                        if let syn::GenericArgument::Type(inner_type) = arg {
+                            // Recursively check if the generic type contains Self
+                            contains_self_type(inner_type)
+                        } else {
+                            false
+                        }
+                    })
+                } else {
+                    false
+                }
+            })
+        },
+        
+        // Handle tuple types like (Self, T)
+        Type::Tuple(tuple) => tuple.elems.iter().any(contains_self_type),
+        
+        // Handle array types like [Self; N]
+        Type::Array(array) => contains_self_type(&array.elem),
+        
+        // Handle pointer types like *const Self
+        Type::Ptr(ptr) => contains_self_type(&ptr.elem),
+        
+        // Handle slices like &[Self]
+        Type::Slice(slice) => contains_self_type(&slice.elem),
+        
+        // Handle other type variants
         _ => false,
     }
 }
@@ -155,10 +204,19 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input_args: Vec<_> = inputs.iter().cloned().collect();
     // Determine if this is a method
     let is_method = is_method(&input_args, output);
-    // Use a compile error to display debug information
+    
+    // Debugging aid - uncomment to see method detection information
     // This will show up in the compiler output and then stop compilation
-    // To enable, uncomment the following line:
-    // return syn::Error::new(input.sig.span(), format!("DEBUG: fn_name={}, is_method={}", fn_name, is_method)).to_compile_error().into();
+    // if fn_name == "new" {
+    //     let return_type = match output {
+    //         ReturnType::Type(_, ty) => format!("{:?}", ty),
+    //         ReturnType::Default => "()".to_string(),
+    //     };
+    //     return syn::Error::new(
+    //         input.sig.span(), 
+    //         format!("DEBUG: fn_name={}, is_method={}, return_type={}", fn_name, is_method, return_type)
+    //     ).to_compile_error().into();
+    // }
 
     // Get generic parameters
     // let type_params: Vec<_> = generics
@@ -198,7 +256,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-#[allow(dead_code)]
+// #[allow(dead_code)]
 // fn generate_profile_name(
 //     fn_name: &syn::Ident,
 //     is_method: bool,

@@ -1,8 +1,9 @@
 /*[toml]
 [dependencies]
 ibig = "0.3.6"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "core", "simplelog", "profiling"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
+thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["profiling"] }
+# thag_profiler = { version = "0.1", features = ["profiling"] }
+# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["profiling"] }
 */
 
 /// A version of `demo/factorial_ibig_product.rs` converted to a program and instrumented for profiling using
@@ -17,7 +18,7 @@ use std::env;
 use std::iter::{successors, Product};
 use std::ops::{Deref, DerefMut};
 
-use thag_rs::{enable_profiling, profile, profiling, Profile};
+use thag_profiler::*;
 
 // Step 1: Define the Wrapper Type
 #[derive(Debug, Clone)]

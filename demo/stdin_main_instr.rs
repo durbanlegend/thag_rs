@@ -8,6 +8,9 @@ regex = "1.10.4"
 scopeguard = "1.2.0"
 serde = "1.0.219"
 serde_json = "1.0.132"
+thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["profiling"] }
+# thag_profiler = { version = "0.1", features = ["profiling"] }
+# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["profiling"] }
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
 # thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core" ,"tui", "simplelog"] }
 tui-textarea = { version = "0.6", features = ["search"] }
@@ -49,7 +52,7 @@ use std::{collections::VecDeque, fs, path::PathBuf};
 use thag_rs::{errors::ThagError, logging::Verbosity, vlog};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
-use thag_rs::{enable_profiling, profile, profiling, Profile};
+use thag_profiler::*;
 
 #[derive(Default, Serialize, Deserialize)]
 struct History {

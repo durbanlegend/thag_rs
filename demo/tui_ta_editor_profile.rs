@@ -2,21 +2,19 @@
 [dependencies]
 #crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 ratatui = "0.27.0"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["tui", "simplelog"] }
+thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["profiling"] }
+# thag_profiler = { version = "0.1", features = ["profiling"] }
+# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["profiling"] }
 tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 # tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
 */
 
-/// Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
-/// down to two files at a time, because it was developed to allow editing of generated code and
-/// cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
-/// or default to a standard editor. A more minimalist version is used to edit stdin input in
-/// the `--edit (-d)` option of `thag_rs`.
+/// A version of `tui_ta_editor_profile.rs` profiled with `thag_profiler` to demonstrate
+/// profiling.
 ///
 /// Not suitable for running from a URL.
-//# Purpose: Demo and explore TUI editor and featured crates, including `crossterm`.
-//# Categories: crates, exploration, technique
+//# Purpose: Demo `thag_profiler`.
+//# Categories: crates, profiling, technique
 //# Sample arguments: `-- demo/hello.rs demo/hello_minimal.rs`
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::read;
@@ -40,7 +38,7 @@ use std::fmt::Display;
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
-use thag_rs::{enable_profiling, profile, profiling, Profile};
+use thag_profiler::*;
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 macro_rules! error {
@@ -269,7 +267,7 @@ impl<'a> Editor<'a> {
             .map(|p| Buffer::new(p.into()))
             .collect::<io::Result<Vec<_>>>()?;
         if buffers.is_empty() {
-            return error!("USAGE: thag demo/tui_ta_editor.rs FILE1 FILE2");
+            return error!("USAGE: thag demo/tui_ta_editor_profile.rs FILE1 FILE2");
         }
         let mut stdout = io::stdout();
         enable_raw_mode()?;

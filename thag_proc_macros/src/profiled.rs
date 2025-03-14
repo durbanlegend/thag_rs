@@ -10,7 +10,7 @@ use syn::{
 #[derive(Default)]
 struct ProfileArgs {
     /// The implementing type (e.g., "`MyStruct`") - kept for backwards compatibility
-    /// but not used in Profile::new anymore (backtrace provides this information)
+    /// but not used in `Profile::new` any more (backtrace provides this information)
     imp: Option<String>,
     // The trait being implemented (e.g., "`Display`") - removed as unused
     // trait_name: Option<String>,
@@ -107,22 +107,22 @@ fn is_method(inputs: &[FnArg], output: &ReturnType) -> bool {
     if has_self_param {
         return true;
     }
-    
+
     // Check for Self return type (including references and wrapped types)
     let returns_self = match output {
         ReturnType::Type(_, ty) => {
             // Use our enhanced contains_self_type function
             contains_self_type(ty)
-        },
+        }
         ReturnType::Default => false,
     };
-    
+
     // Consider functions named "new" as methods even if they don't have self parameters
     // This helps with constructor methods like `fn new() -> Result<Self, Error>`
     if returns_self {
         return true;
     }
-    
+
     false
 }
 
@@ -140,11 +140,11 @@ fn contains_self_type(ty: &Type) -> bool {
                 .segments
                 .iter()
                 .any(|segment| segment.ident == "Self");
-            
+
             if has_self_segment {
                 return true;
             }
-            
+
             // Check for generic types that might contain Self (like Result<Self>)
             type_path.path.segments.iter().any(|segment| {
                 // Check if this segment has generic parameters
@@ -162,20 +162,20 @@ fn contains_self_type(ty: &Type) -> bool {
                     false
                 }
             })
-        },
-        
+        }
+
         // Handle tuple types like (Self, T)
         Type::Tuple(tuple) => tuple.elems.iter().any(contains_self_type),
-        
+
         // Handle array types like [Self; N]
         Type::Array(array) => contains_self_type(&array.elem),
-        
+
         // Handle pointer types like *const Self
         Type::Ptr(ptr) => contains_self_type(&ptr.elem),
-        
+
         // Handle slices like &[Self]
         Type::Slice(slice) => contains_self_type(&slice.elem),
-        
+
         // Handle other type variants
         _ => false,
     }
@@ -204,7 +204,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input_args: Vec<_> = inputs.iter().cloned().collect();
     // Determine if this is a method
     let is_method = is_method(&input_args, output);
-    
+
     // Debugging aid - uncomment to see method detection information
     // This will show up in the compiler output and then stop compilation
     // if fn_name == "new" {
@@ -213,7 +213,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     //         ReturnType::Default => "()".to_string(),
     //     };
     //     return syn::Error::new(
-    //         input.sig.span(), 
+    //         input.sig.span(),
     //         format!("DEBUG: fn_name={}, is_method={}, return_type={}", fn_name, is_method, return_type)
     //     ).to_compile_error().into();
     // }

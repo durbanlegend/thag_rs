@@ -29,6 +29,40 @@ pub use {
     thag_proc_macros::{enable_profiling, profiled},
 };
 
+#[cfg(test)]
+mod feature_tests {
+    use crate::profiling::is_profiling_enabled;
+
+    #[test]
+    fn test_profiling_feature_flag_behavior() {
+        // This test verifies the behavior of profiling features
+        
+        #[cfg(feature = "profiling")]
+        {
+            // When compiled with the "profiling" feature but profiling is disabled at runtime,
+            // is_profiling_enabled() should return false in test mode due to our special handling
+            assert!(!is_profiling_enabled(), 
+                "With profiling feature enabled but disabled at runtime, is_profiling_enabled() should return false in test mode");
+            
+            // We can enable profiling and it should work
+            // Force set the state directly rather than using enable_profiling which might have side effects
+            crate::profiling::force_set_profiling_state(true);
+            assert!(is_profiling_enabled(), 
+                "After enabling profiling, is_profiling_enabled() should return true");
+            
+            // Clean up
+            crate::profiling::force_set_profiling_state(false);
+        }
+        
+        #[cfg(not(feature = "profiling"))]
+        {
+            // When compiled without the "profiling" feature, is_profiling_enabled() should always return false
+            assert!(!is_profiling_enabled(),
+                "Without profiling feature, is_profiling_enabled() should always return false");
+        }
+    }
+}
+
 #[cfg(feature = "profiling")]
 pub const PROFILING_ENABLED: bool = true;
 

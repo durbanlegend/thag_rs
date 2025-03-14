@@ -220,6 +220,7 @@ fn read_stdin() -> std::io::Result<String> {
     Ok(buffer)
 }
 
+// Run with `cargo test --features="instrument-tool" --bin thag-instrument`
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -246,13 +247,13 @@ mod tests {
     }
 
     #[test]
-    fn test_no_duplicate_imports() {
+    fn test_instrument_no_duplicate_imports() {
         let input = r#"
 use some_crate::something;
 use thag_proc_macros::enable_profiling;
 
 fn foo() {}"#;
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         assert_eq!(
             output
                 .matches("use thag_proc_macros::enable_profiling")
@@ -263,9 +264,9 @@ fn foo() {}"#;
     }
 
     #[test]
-    fn test_basic_function_instrumentation() {
+    fn test_instrument_basic_function_instrumentation() {
         let input = "fn foo() {}";
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         let expected = "use thag_profiler::*; \n\n#[profiled] \nfn foo() {}";
         assert!(
             compare_whitespace(expected, &output),
@@ -275,27 +276,27 @@ fn foo() {}"#;
     }
 
     #[test]
-    fn test_main_function_special_handling() {
+    fn test_instrument_main_function_special_handling() {
         let input = "fn main() {}";
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         assert!(output.contains("#[enable_profiling] \nfn main()"));
     }
 
     #[test]
-    fn test_preserves_indentation() {
+    fn test_instrument_preserves_indentation() {
         let input = r#"
 impl Foo {
     fn bar() {}
 }"#;
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         assert!(output.contains("    #[profiled] \n    fn bar()"));
     }
 
     #[test]
-    fn test_multiple_attributes() {
+    fn test_instrument_multiple_attributes() {
         let input = r#"#[allow(dead_code)]
 fn main() {}"#;
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         // eprintln!("output=[{output}]");
         let expected =
             "use thag_profiler::*; \n\n#[allow(dead_code)]\n#[enable_profiling] \nfn main() {}";
@@ -307,71 +308,71 @@ fn main() {}"#;
     }
 
     #[test]
-    fn test_nested_functions() {
+    fn test_instrument_nested_functions() {
         let input = r#"
 fn outer() {
     fn inner() {}
 }"#;
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         assert!(output.contains("#[profiled] \nfn outer()"));
         assert!(output.contains("    #[profiled] \n    fn inner()"));
     }
 
     #[test]
-    fn test_impl_block_functions() {
+    fn test_instrument_impl_block_functions() {
         let input = r#"
 impl Foo {
     fn method1(&self) {}
     fn method2(&self) {}
 }"#;
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         assert!(output.contains("    #[profiled] \n    fn method1"));
         assert!(output.contains("    #[profiled] \n    fn method2"));
     }
 
     #[test]
-    fn test_preserves_file_start() {
+    fn test_instrument_preserves_file_start() {
         let input = "// Copyright notice\n\nfn foo() {}";
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         assert!(output.starts_with("// Copyright notice\n"));
     }
 
     #[test]
-    fn test_trait_impl_functions() {
+    fn test_instrument_trait_impl_functions() {
         let input = r#"
 impl SomeTrait for Foo {
     fn required_method(&self) {}
 }"#;
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         assert!(output.contains("    #[profiled] \n    fn required_method"));
     }
 
     #[test]
-    fn test_async_functions() {
+    fn test_instrument_async_functions() {
         let input = "async fn async_foo() {}";
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         assert!(output.contains("#[profiled] \nasync fn async_foo()"));
     }
 
     #[test]
-    fn test_generic_functions() {
+    fn test_instrument_generic_functions() {
         let input = "fn generic<T: Display>(value: T) {}";
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         assert!(output.contains("#[profiled] \nfn generic<T: Display>"));
     }
 
     #[test]
-    fn test_doc_comments_preserved() {
+    fn test_instrument_doc_comments_preserved() {
         let input = r#"
 /// Doc comment
 fn documented() {}"#;
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         // eprintln!("{}", output);
         assert!(output.contains("/// Doc comment\n#[profiled] \nfn documented()"));
     }
 
     #[test]
-    fn test_complex_spacing() {
+    fn test_instrument_complex_spacing() {
         let input = r#"
 use std::fmt;
 
@@ -379,7 +380,7 @@ use std::fmt;
 fn foo() {}
 
 fn bar() {}"#;
-        let output = instrument_code(input);
+        let output = instrument_code(Edition::Edition2021, input);
         // Check that blank lines between functions are preserved
         assert!(output.contains("}\n\n#[profiled] \nfn bar()"));
     }

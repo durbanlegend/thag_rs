@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-prettyplease = "0.2.29"
+prettyplease = "0.2.31"
 quote = "1.0.38"
 syn = { version = "2", features = ["extra-traits", "full", "parsing", "visit-mut"] }
 */

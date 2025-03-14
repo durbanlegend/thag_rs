@@ -40,18 +40,18 @@ pub fn main() -> ThagResult<()> {
 
     handle(&cli);
     let memory_use = MemoryUse::capture();
-    println!("memory_use={memory_use:?}");
+    // eprintln!("memory_use={memory_use:?}");
     let tracking_stats =
         accounting_allocator::tracking_stats().expect("Could not get tracking stats");
     let top_callstacks = tracking_stats.top_callstacks;
-    for callstack in top_callstacks {
-        println!(
-            "real estimate count={}, size={}, callstack={}",
-            callstack.stochastic_rate * callstack.extant.count,
-            thag_rs::thousands(callstack.stochastic_rate * callstack.extant.size),
-            callstack.readable_backtrace
-        );
-    }
+    // for callstack in top_callstacks {
+    //     eprintln!(
+    //         "real estimate count={}, size={}, callstack={}",
+    //         callstack.stochastic_rate * callstack.extant.count,
+    //         thag_rs::thousands(callstack.stochastic_rate * callstack.extant.size),
+    //         callstack.readable_backtrace
+    //     );
+    // }
     Ok(())
 }
 

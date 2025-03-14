@@ -1,6 +1,9 @@
 /*[toml]
 [dependencies]
 ibig = "0.3.6"
+thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["profiling"] }
+# thag_profiler = { version = "0.1", features = ["profiling"] }
+# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["profiling"] }
 */
 
 /// Fast factorial algorithm with arbitrary precision and avoiding recursion.
@@ -19,7 +22,7 @@ use std::env;
 use std::iter::{successors, Product};
 use std::ops::{Deref, DerefMut};
 
-use thag_profiler::*; 
+use thag_profiler::*;
 
 // Step 1: Define the Wrapper Type
 #[derive(Debug, Clone)]
@@ -28,14 +31,14 @@ struct UBigWrapper(UBig);
 // Step 2: Implement Deref and DerefMut
 impl Deref for UBigWrapper {
     type Target = UBig;
-    #[profiled] 
+    #[profiled]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for UBigWrapper {
-    #[profiled] 
+    #[profiled]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -43,7 +46,7 @@ impl DerefMut for UBigWrapper {
 
 // Step 3: Implement the Product Trait
 impl Product for UBigWrapper {
-    #[profiled] 
+    #[profiled]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
             UBigWrapper(acc.0 * x.0)
@@ -52,7 +55,7 @@ impl Product for UBigWrapper {
 }
 
 impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
-    #[profiled] 
+    #[profiled]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
             UBigWrapper(acc.0.clone() * x.0.clone())
@@ -61,7 +64,7 @@ impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
 }
 
 // Function example using Product
-#[profiled] 
+#[profiled]
 fn fac_product(n: usize) -> UBig {
     if n == 0 {
         ubig!(0)

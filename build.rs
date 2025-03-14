@@ -94,7 +94,11 @@ fn main() {
             "rug_arbitrary_precision_nums.rs",
         ];
 
-        let multimain = ["flume_async.rs", "flume_select.rs"];
+        let multimain = [
+            "flume_async.rs",
+            "flume_async_profile.rs",
+            "flume_select.rs",
+        ];
 
         let stable_only = [
             "duration_main.rs",

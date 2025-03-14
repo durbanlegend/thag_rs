@@ -48,7 +48,7 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
 
-use thag_rs::{enable_profiling, profile, profiling, Profile};
+use thag_rs::{enable_profiling, profiled};
 
 enum InputMode {
     Normal,
@@ -214,7 +214,7 @@ fn ui(f: &mut Frame, app: &App) {
         Constraint::Length(3),
         Constraint::Min(1),
     ]);
-    let [help_area, input_area, messages_area] = vertical.areas(f.size());
+    let [help_area, input_area, messages_area] = vertical.areas(f.area());
 
     let (msg, style) = match app.input_mode {
         InputMode::Normal => (

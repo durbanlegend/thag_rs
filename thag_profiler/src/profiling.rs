@@ -49,6 +49,7 @@ static PROFILING_MUTEX: Mutex<()> = Mutex::new(());
 #[cfg(all(feature = "profiling", not(test)))]
 const PROFILING_FEATURE: bool = true;
 
+#[allow(dead_code)]
 #[cfg(all(feature = "profiling", test))]
 const PROFILING_FEATURE: bool = false;
 
@@ -224,6 +225,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
 
     // Whether enabling or disabling, set the state
     PROFILING_STATE.store(enabled, Ordering::SeqCst);
+    // eprintln!("enable_profiling set PROFILING_STATE to {enabled}");
     Ok(())
 }
 
@@ -243,7 +245,7 @@ pub const fn enable_profiling(
 /// Disable profiling and reset the profiling stack.
 #[cfg(feature = "profiling")]
 pub fn disable_profiling() {
-    PROFILING_STATE.store(false, Ordering::SeqCst);
+    let _ = enable_profiling(false, ProfileType::Both);
 }
 
 #[cfg(not(feature = "profiling"))]
@@ -301,20 +303,52 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ProfileResult<()> 
 #[allow(clippy::inline_always)]
 #[cfg(feature = "profiling")]
 pub fn is_profiling_enabled() -> bool {
+    // eprintln!(
+    //     r#"cfg!(test)={}, cfg(feature = "profiling")={}"#,
+    //     cfg!(test),
+    //     cfg!(feature = "profiling")
+    // );
     // In test mode, only use the runtime state to allow enable/disable testing
     #[cfg(test)]
     let enabled = PROFILING_STATE.load(Ordering::SeqCst);
-    
+
     // In normal operation, use both feature flag and runtime state
     #[cfg(not(test))]
     let enabled = PROFILING_FEATURE || PROFILING_STATE.load(Ordering::SeqCst);
-    
+
     enabled
+}
+
+/// Checks if profiling state is currently enabled.
+///
+/// This is used in integration testing to determine whether profiling
+/// operations should be performed. We us this function because we don't
+/// want to check PROFILING_FEATURE, which is always true when testing with
+/// feature=profiling. It's atomic and thread-safe.
+///
+/// # Returns
+/// `true` if profiling state is enabled, `false` otherwise
+#[inline(always)]
+#[allow(clippy::inline_always)]
+#[cfg(feature = "profiling")]
+pub fn is_profiling_state_enabled() -> bool {
+    // eprintln!(
+    //     r#"cfg!(test)={}, cfg(feature = "profiling")={}"#,
+    //     cfg!(test),
+    //     cfg!(feature = "profiling")
+    // );
+    PROFILING_STATE.load(Ordering::SeqCst)
 }
 
 #[cfg(not(feature = "profiling"))]
 #[must_use]
 pub const fn is_profiling_enabled() -> bool {
+    false
+}
+
+#[cfg(not(feature = "profiling"))]
+#[must_use]
+pub const fn is_profiling_state_enabled() -> bool {
     false
 }
 
@@ -638,7 +672,7 @@ impl Profile {
             if let Some(last_fn) = stack_with_custom_name.last_mut() {
                 // Append the custom name to the last function name
                 *last_fn = format!("{last_fn}:{name}");
-                println!("DEBUG: Modified stack entry to '{}'", last_fn);
+                // println!("DEBUG: Modified stack entry to '{}'", last_fn);
             }
         }
 
@@ -998,48 +1032,23 @@ fn get_memory_delta(initial: usize) -> Result<usize, MemoryError> {
 macro_rules! profile {
     // profile!(name)
     ($name:expr) => {
-        $crate::profile_internal!(
-            Some($name),
-            $crate::ProfileType::Time,
-            false,
-            false
-        )
+        $crate::profile_internal!(Some($name), $crate::ProfileType::Time, false, false)
     };
 
     // profile!(name, type)
     ($name:expr, time) => {
-        $crate::profile_internal!(
-            Some($name),
-            $crate::ProfileType::Time,
-            false,
-            false
-        )
+        $crate::profile_internal!(Some($name), $crate::ProfileType::Time, false, false)
     };
     ($name:expr, memory) => {
-        $crate::profile_internal!(
-            Some($name),
-            $crate::ProfileType::Memory,
-            false,
-            false
-        )
+        $crate::profile_internal!(Some($name), $crate::ProfileType::Memory, false, false)
     };
     ($name:expr, both) => {
-        $crate::profile_internal!(
-            Some($name),
-            $crate::ProfileType::Both,
-            false,
-            false
-        )
+        $crate::profile_internal!(Some($name), $crate::ProfileType::Both, false, false)
     };
 
     // profile!(name, async)
     ($name:expr, async) => {
-        $crate::profile_internal!(
-            Some($name),
-            $crate::ProfileType::Time,
-            true,
-            false
-        )
+        $crate::profile_internal!(Some($name), $crate::ProfileType::Time, true, false)
     };
 
     // profile!(method) - no custom name
@@ -1076,28 +1085,13 @@ macro_rules! profile {
 
     // profile!(name, type, async)
     ($name:expr, time, async) => {
-        $crate::profile_internal!(
-            Some($name),
-            $crate::ProfileType::Time,
-            true,
-            false
-        )
+        $crate::profile_internal!(Some($name), $crate::ProfileType::Time, true, false)
     };
     ($name:expr, memory, async) => {
-        $crate::profile_internal!(
-            Some($name),
-            $crate::ProfileType::Memory,
-            true,
-            false
-        )
+        $crate::profile_internal!(Some($name), $crate::ProfileType::Memory, true, false)
     };
     ($name:expr, both, async) => {
-        $crate::profile_internal!(
-            Some($name),
-            $crate::ProfileType::Both,
-            true,
-            false
-        )
+        $crate::profile_internal!(Some($name), $crate::ProfileType::Both, true, false)
     };
 }
 
@@ -1176,7 +1170,7 @@ macro_rules! profile {
 macro_rules! profile_internal {
     ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
         // Within the crate itself, we should use relative paths
-        #[cfg(not(any(test, doctest)))]
+        // #[cfg(not(any(test, doctest)))]
         {
             if $crate::PROFILING_ENABLED {
                 let profile = $crate::Profile::new($name, $type, $is_async, $is_method);
@@ -1185,17 +1179,17 @@ macro_rules! profile_internal {
                 $crate::ProfileSection::new($name)
             }
         }
-        
-        // For testing, use direct calls to avoid import issues
-        #[cfg(any(test, doctest))]
-        {
-            if $crate::profiling::is_profiling_enabled() {
-                let profile = $crate::profiling::Profile::new($name, $type, $is_async, $is_method);
-                $crate::profiling::ProfileSection { profile }
-            } else {
-                $crate::profiling::ProfileSection::new($name)
-            }
-        }
+
+        // // For testing, use direct calls to avoid import issues
+        // #[cfg(any(test, doctest))]
+        // {
+        //     if $crate::profiling::is_profiling_enabled() {
+        //         let profile = $crate::profiling::Profile::new($name, $type, $is_async, $is_method);
+        //         $crate::profiling::ProfileSection { profile }
+        //     } else {
+        //         $crate::profiling::ProfileSection::new($name)
+        //     }
+        // }
     }};
 }
 
@@ -1351,47 +1345,9 @@ pub fn safely_cleanup_profiling_after_test() -> crate::ProfileResult<()> {
 mod tests {
     use super::*;
     use serial_test::serial;
-    use std::{panic, thread, time::Duration};
-
-    struct TestGuard;
-
-    impl Drop for TestGuard {
-        fn drop(&mut self) {
-            let _ = enable_profiling(false, ProfileType::Time);
-        }
-    }
-
-    fn run_test<T>(test: T) -> ()
-    where
-        T: FnOnce() + panic::UnwindSafe,
-    {
-        // Enable profiling
-        let _ = enable_profiling(true, ProfileType::Time);
-
-        // Make sure test mode is off for profiling tests
-        TEST_MODE_ACTIVE.store(false, Ordering::SeqCst);
-
-        // Create guard that will clean up even if test panics
-        let _guard = TestGuard;
-
-        // Run the test, catching any panics to ensure our guard runs
-        let result = panic::catch_unwind(test);
-
-        // Re-throw any panic after our guard has cleaned up
-        if let Err(e) = result {
-            panic::resume_unwind(e);
-        }
-    }
+    use std::time::Duration;
 
     // Basic profiling tests
-
-    #[test]
-    #[serial]
-    #[ignore = "Enable manually when profiling feature is enabled"]
-    fn test_profiling_profile_creation() {
-        // This test requires the profiling feature to be enabled
-        // Skipping by default to avoid unnecessary failures
-    }
 
     #[test]
     #[serial]
@@ -1400,22 +1356,6 @@ mod tests {
         assert_eq!(ProfileType::from_str("memory"), Some(ProfileType::Memory));
         assert_eq!(ProfileType::from_str("both"), Some(ProfileType::Both));
         assert_eq!(ProfileType::from_str("invalid"), None);
-    }
-
-    #[test]
-    #[serial]
-    #[ignore = "Enable manually when profiling feature is enabled"]
-    fn test_profiling_profile_section() {
-        // This test requires the profiling feature to be enabled
-        // Skipping by default to avoid unnecessary failures
-    }
-
-    #[test]
-    #[serial]
-    #[ignore = "Enable manually when profiling feature is enabled"]
-    fn test_profiling_nested_profile_sections() {
-        // This test requires the profiling feature to be enabled 
-        // Skipping by default to avoid unnecessary failures
     }
 
     // Function registry tests
@@ -1469,61 +1409,6 @@ mod tests {
 
     // Thread-safety tests
 
-    #[test]
-    #[serial]
-    #[ignore = "Enable manually when profiling feature is enabled"]
-    fn test_profiling_profile_send_trait() {
-        // This test requires the profiling feature to be enabled
-        // Skipping by default to avoid unnecessary failures
-    }
-
-    #[test]
-    #[serial]
-    #[ignore = "Enable manually when profiling feature is enabled"]
-    fn test_profiling_profile_section_send_trait() {
-        // This test requires the profiling feature to be enabled
-        // Skipping by default to avoid unnecessary failures
-    }
-
-    // Attribute macro tests
-
-    // We'll use the profile! macro directly in these tests
-    // since attribute macros can have path resolution issues in tests
-    fn simple_profiled_function() -> u32 {
-        let _section = profile!("simple_function");
-        // Simulate some work
-        thread::sleep(Duration::from_millis(10));
-        42
-    }
-
-    #[test]
-    #[serial]
-    #[ignore = "Enable manually when profiling feature is enabled"]
-    fn test_profiling_profiled_attribute() {
-        // This test requires the profiling feature to be enabled
-        // Skipping by default to avoid unnecessary failures
-    }
-
-    // Async profiling tests
-
-    // Using profile! macro instead for consistent test approach
-    async fn async_profiled_function() -> u32 {
-        let _section = profile!("async_func", async);
-        // Simulate some async work
-        async_std::task::sleep(Duration::from_millis(10)).await;
-        84
-    }
-
-    #[test]
-    #[serial]
-    #[ignore = "Enable manually when profiling feature is enabled"]
-    fn test_profiling_async_profiled_function() {
-        // This test requires the profiling feature to be enabled
-        // Skipping by default to avoid unnecessary failures
-    }
-
-    // macro tests
-
     // utils tests
 
     #[test]
@@ -1571,14 +1456,6 @@ mod tests {
     }
 
     // Memory profiling tests
-
-    #[test]
-    #[serial]
-    #[ignore = "Enable manually when profiling feature is enabled"]
-    fn test_profiling_memory_profiling() {
-        // This test requires the profiling feature to be enabled
-        // Skipping by default to avoid unnecessary failures
-    }
 
     // Test enabling/disabling profiling
 

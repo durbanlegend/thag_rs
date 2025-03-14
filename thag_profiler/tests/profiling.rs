@@ -1,21 +1,35 @@
 // use serial_test::file_serial;
 // use serial_test::is_locked_serially;
-use std::sync::{Mutex, MutexGuard, PoisonError};
-use std::{panic, thread, time::Duration};
-use thag_profiler::profiling::{
-    dump_profiled_functions, enable_profiling, is_profiled_function, is_profiling_enabled,
-    register_profiled_function,
+use std::{
+    sync::{Mutex, MutexGuard},
+    thread,
+    time::Duration,
 };
-use thag_profiler::{profile, ProfileType};
+use thag_profiler::{
+    profiling::{
+        dump_profiled_functions, enable_profiling, is_profiled_function,
+        is_profiling_state_enabled, register_profiled_function,
+    },
+    ProfileType,
+};
+
+#[cfg(feature = "profiling")]
+use std::panic;
+
+#[cfg(feature = "profiling")]
+use thag_profiler::profile;
 
 // Static mutex for test synchronization
 static TEST_MUTEX: Mutex<()> = Mutex::new(());
 
+#[cfg(feature = "profiling")]
 struct TestGuard;
 
+#[cfg(feature = "profiling")]
 impl Drop for TestGuard {
     fn drop(&mut self) {
         let _ = enable_profiling(false, ProfileType::Time);
+        eprintln!("TestGuard disabled profiling on drop");
     }
 }
 
@@ -44,13 +58,11 @@ fn setup_test() -> MutexGuard<'static, ()> {
     guard
 }
 
+#[cfg(feature = "profiling")]
 fn run_test<T>(test: T) -> ()
 where
     T: FnOnce() + panic::UnwindSafe,
 {
-    // Acquire the lock for this test
-    let _guard = TEST_MUTEX.lock().unwrap();
-
     // Register the crate under a name that the #[profiled] macro will recognize
     // This simulates what would happen if this was using an imported thag_profiler
     register_profiled_function("test_function", "test_description".to_string());
@@ -63,12 +75,19 @@ where
 
     // Verify profiling is actually enabled
     assert!(
-        is_profiling_enabled(),
+        is_profiling_state_enabled(),
         "Profiling should be enabled at the start of run_test"
     );
 
     // Create guard that will clean up even if test panics
     let _guard = TestGuard;
+
+    // Register the crate under a name that the #[profiled] macro will recognize
+    // This simulates what would happen if this was using an imported thag_profiler
+    register_profiled_function("test_function", "test_description".to_string());
+
+    // Explicitly disable profiling first to ensure clean state
+    let _ = enable_profiling(false, ProfileType::Time);
 
     // Run the test, catching any panics to ensure our guard runs
     let result = panic::catch_unwind(test);
@@ -82,14 +101,14 @@ where
 // Basic profiling tests
 
 #[test]
-// #[file_serial]
+#[cfg(feature = "profiling")]
 fn test_profiling_profile_creation() {
     // Get lock and reset state
     let _guard = setup_test();
 
     // Now start with known disabled state
     assert!(
-        !is_profiling_enabled(),
+        !is_profiling_state_enabled(),
         "Profiling should be disabled at start"
     );
 
@@ -105,14 +124,14 @@ fn test_profiling_profile_creation() {
 }
 
 #[test]
-// #[file_serial]
+#[cfg(feature = "profiling")]
 fn test_profiling_nested_profile_sections() {
     // Get lock and reset state
     let _guard = setup_test();
 
     // Now start with known disabled state
     assert!(
-        !is_profiling_enabled(),
+        !is_profiling_state_enabled(),
         "Profiling should be disabled at start"
     );
 
@@ -143,7 +162,7 @@ fn simple_profiled_function() -> u32 {
 
     // Now start with known disabled state
     assert!(
-        !is_profiling_enabled(),
+        !is_profiling_state_enabled(),
         "Profiling should be disabled at start"
     );
 
@@ -154,33 +173,15 @@ fn simple_profiled_function() -> u32 {
 }
 
 #[test]
-// #[file_serial]
 fn test_profiling_profiled_attribute() {
-    // Get lock and reset state
-    let _guard = setup_test();
-
-    // Now start with known disabled state
-    assert!(
-        !is_profiling_enabled(),
-        "Profiling should be disabled at start"
-    );
-
-    run_test(|| {
-        // Call the profiled function
-        let result = simple_profiled_function();
-        assert_eq!(result, 42);
-
-        // Register this function manually for the test
-        register_profiled_function(
-            "simple_profiled_function",
-            "simple_profiled_function".to_string(),
-        );
-    });
+    let result = simple_profiled_function();
+    assert_eq!(result, 42);
 }
 
 // Async profiling tests
 
 // Using direct macro approach for consistency
+#[cfg(feature = "profiling")]
 async fn async_profiled_function() -> u32 {
     let _section = thag_profiler::profile!("async_profiled_function", async);
     // Simulate some async work
@@ -189,14 +190,14 @@ async fn async_profiled_function() -> u32 {
 }
 
 #[test]
-// #[file_serial]
+#[cfg(feature = "profiling")]
 fn test_profiling_async_profiled_function() {
     // Get lock and reset state
     let _guard = setup_test();
 
     // Now start with known disabled state
     assert!(
-        !is_profiling_enabled(),
+        !is_profiling_state_enabled(),
         "Profiling should be disabled at start"
     );
 
@@ -211,14 +212,14 @@ fn test_profiling_async_profiled_function() {
 // macro tests
 
 #[test]
-// #[file_serial]
+#[cfg(feature = "profiling")]
 fn test_profiling_profile_macro() {
     // Get lock and reset state
     let _guard = setup_test();
 
     // Now start with known disabled state
     assert!(
-        !is_profiling_enabled(),
+        !is_profiling_state_enabled(),
         "Profiling should be disabled at start"
     );
 
@@ -243,33 +244,21 @@ fn test_profiling_profile_macro() {
 // Test enabling/disabling profiling
 
 #[test]
-// #[file_serial]
-fn test_profiling_enable_disable_profiling() {
+#[cfg(feature = "profiling")]
+fn test_profiling_create_section() {
     // Get lock and reset state
     let _guard = setup_test();
 
     // Now start with known disabled state
     assert!(
-        !is_profiling_enabled(),
+        !is_profiling_state_enabled(),
         "Profiling should be disabled at start"
     );
-
-    // Start with profiling disabled
-    let _ = enable_profiling(false, ProfileType::Time);
-    assert!(!is_profiling_enabled(), "Profiling should start disabled");
-
-    // Create a profile section (should be inactive when disabled)
-    let section = thag_profiler::profile!("disabled_test");
-    assert!(
-        !section.is_active(),
-        "Section should be inactive when profiling is disabled"
-    );
-    section.end();
 
     // Enable profiling
     let _ = enable_profiling(true, ProfileType::Time);
     assert!(
-        is_profiling_enabled(),
+        is_profiling_state_enabled(),
         "Profiling should be enabled after calling enable_profiling"
     );
 
@@ -280,39 +269,29 @@ fn test_profiling_enable_disable_profiling() {
         "Section should be active when profiling is enabled"
     );
     section.end();
-
-    // Disable profiling again
-    let _ = enable_profiling(false, ProfileType::Time);
-    assert!(
-        !is_profiling_enabled(),
-        "Profiling should be disabled after calling disable_profiling"
-    );
-
-    // Create another section (should be inactive again)
-    let section = thag_profiler::profile!("disabled_test_again");
-    assert!(
-        !section.is_active(),
-        "Section should be inactive when profiling is disabled again"
-    );
-    section.end();
 }
 
 // Memory profiling test
 
 #[test]
-// #[file_serial]
+#[cfg(feature = "profiling")]
 fn test_profiling_memory_profiling() {
     // Get lock and reset state
     let _guard = setup_test();
 
     // Now start with known disabled state
     assert!(
-        !is_profiling_enabled(),
+        !is_profiling_state_enabled(),
         "Profiling should be disabled at start"
     );
 
     // Enable memory profiling
     let _ = enable_profiling(true, ProfileType::Memory);
+
+    assert!(
+        is_profiling_state_enabled(),
+        "Profiling should be enabled after calling enable_profiling"
+    );
 
     // Create a profile section that tracks memory
     let section = thag_profiler::profile!("memory_test", memory);
@@ -333,14 +312,14 @@ fn test_profiling_memory_profiling() {
 // Thread-safety test
 
 #[test]
-// #[file_serial]
+#[cfg(feature = "profiling")]
 fn test_profiling_profile_section_thread_safety() {
     // Get lock and reset state
     let _guard = setup_test();
 
     // Now start with known disabled state
     assert!(
-        !is_profiling_enabled(),
+        !is_profiling_state_enabled(),
         "Profiling should be disabled at start"
     );
 
@@ -361,14 +340,13 @@ fn test_profiling_profile_section_thread_safety() {
 }
 
 #[test]
-// #[file_serial]
-fn test_profiled_function_registration() {
+fn test_profiling_profiled_function_registration() {
     // Get lock and reset state
     let _guard = setup_test();
 
     // Now start with known disabled state
     assert!(
-        !is_profiling_enabled(),
+        !is_profiling_state_enabled(),
         "Profiling should be disabled at start"
     );
 

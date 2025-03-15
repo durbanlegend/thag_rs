@@ -1407,7 +1407,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
     // Now add function-based filtering similar to filter_functions
 
     // Get unique top-level functions from the stacks
-    let functions: HashSet<_> = pattern_filtered
+    let functions: HashSet<String> = pattern_filtered
         .stacks
         .iter()
         .filter_map(|line| {
@@ -1416,14 +1416,18 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
                 // Extract stack trace part (without the size at the end)
                 let stack_str = parts[..parts.len() - 1].join(" ");
                 // Get the root function from the stack
-                stack_str.split(';').next().filter(|s| !s.is_empty())
+                stack_str
+                    .split(';')
+                    .next()
+                    .map(|s| s.to_string())
+                    .filter(|s| !s.is_empty())
             } else {
                 None
             }
         })
         .collect();
 
-    let mut function_list: Vec<_> = functions.into_iter().collect();
+    let mut function_list: Vec<String> = functions.into_iter().collect();
     function_list.sort_unstable();
 
     if function_list.is_empty() {
@@ -1490,7 +1494,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
                 let stack_str = parts[..parts.len() - 1].join(" ");
 
                 // First, extract the root function name
-                let root_func = stack_str.split(';').next().unwrap_or("");
+                let root_func = stack_str.split(';').next().unwrap_or("").to_string();
 
                 // If the root function is in our filter list
                 if to_filter.contains(&root_func) {
@@ -1519,7 +1523,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
                 let stack_str = parts[..parts.len() - 1].join(" ");
 
                 // Get the root function name
-                let func = stack_str.split(';').next().unwrap_or("");
+                let func = stack_str.split(';').next().unwrap_or("").to_string();
 
                 // If it's in the filter list, filter it out
                 !to_filter.contains(&func)

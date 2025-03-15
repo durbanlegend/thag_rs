@@ -17,9 +17,9 @@ nanorand = { version = "0.7", features = ["getrandom"], optional = true }
 # flume = "0.11"
 flume = { version = "0.11", features = ["async"] }
 rustix = "0.37.19"
-# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["profiling"] }
+thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["profiling"] }
 # thag_profiler = { version = "0.1", features = ["profiling"] }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler" }
+# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler" }
 */
 
 /// Published example from the `flume` channel crate.

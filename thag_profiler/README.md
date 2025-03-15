@@ -5,11 +5,12 @@ A straightforward, lightweight profiling library for Rust applications that prov
 ## Features
 
 - **Zero-cost abstraction**: No runtime overhead when profiling is disabled
-- **Time and memory profiling**: Track execution time or memory usage, or both
+- **Time and memory profiling**: Track execution time or memory usage, or both.
+Note: the optional `memory_profiling` feature uses the re_memory global allocator. This is incompatible with specifying your own global allocator.
 - **Function and section profiling**: Profile entire functions or specific code sections
 - **Async support**: Seamlessly works with async code
 - **Automatic instrumentation**: Tools to add and remove profiling code
-- **Interactive glamegraphs and flamecharts**: Visualize performance bottlenecks
+- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks
 - **Cross-platform**: Works on all platforms supported by Rust
 
 ## Quick Start
@@ -22,9 +23,14 @@ Add `thag_profiler` to your `Cargo.toml`:
 [dependencies]
 thag_profiler = "0.1"
 
-# If you want to enable profiling:
+# If you want to enable basic (time) profiling only:
 [features]
 my_profile_feature = ["thag_profiler/profiling"]
+```
+
+# If you want to enable memory profiling (this will also enable time profiling):
+[features]
+my_profile_feature = ["thag_profiler/memory_profiling"]
 ```
 
 Install the profiling tools:
@@ -105,7 +111,8 @@ When using `thag_profiler` in scripts, you have two options:
    thag_profiler = { version = "0.1" }
 
    [features]
-   profile = ["thag_profiler/profiling"]
+   profile = ["thag_profiler/profiling"]    # time profiling
+   # profile = ["thag_profiler/memory_profiling"]    # time and memoryprofiling
    */
    ```
 

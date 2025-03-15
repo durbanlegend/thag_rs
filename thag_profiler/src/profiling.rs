@@ -100,10 +100,6 @@ struct ProfileFilePaths {
     memory: String,
 }
 
-// // #[derive(Clone)]
-// #[cfg(not(feature = "profiling"))]
-// struct ProfileFilePaths {}
-
 /// Resets a profile file by clearing its buffer writer.
 ///
 /// # Arguments
@@ -696,6 +692,7 @@ impl Profile {
         Self::write_profile_event(&paths.time, TimeProfileFile::get(), &entry)
     }
 
+    // TODO remov op as redundant
     #[cfg(feature = "memory_profiling")]
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ProfileResult<()> {
         if delta == 0 {

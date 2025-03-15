@@ -1,7 +1,9 @@
 /*[toml]
 [dependencies]
 ratatui = "0.29.0"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["core", "simplelog"] }
+thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["memory_profiling"] }
+# thag_profiler = { version = "0.1", features = ["profiling"] }
+# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["memory_profiling"] }
 */
 
 /// Published example from the `ratatui` crate.
@@ -48,7 +50,7 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
 
-use thag_rs::{enable_profiling, profiled};
+use thag_profiler::*;
 
 enum InputMode {
     Normal,
@@ -258,13 +260,13 @@ fn ui(f: &mut Frame, app: &App) {
             // Make the cursor visible and ask ratatui to put it at the specified coordinates after
             // rendering
             #[allow(clippy::cast_possible_truncation)]
-            f.set_cursor(
+            f.set_cursor_position(Position::new(
                 // Draw the cursor at the current position in the input field.
                 // This position is can be controlled via the left and right arrow key
                 input_area.x + app.cursor_position as u16 + 1,
                 // Move one line down, from the border to the input line
                 input_area.y + 1,
-            );
+            ));
         }
     }
 

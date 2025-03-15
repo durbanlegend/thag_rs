@@ -23,7 +23,7 @@
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
 - [ ]  profile attribute macro: don't instrument if feature is disabled.
 - [ ]  Make a tool installation script?
-- [ ]  Check if imp and trait_name serve any purpose in profiled / Profile::new.
+- [ ]  TODO remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event.
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

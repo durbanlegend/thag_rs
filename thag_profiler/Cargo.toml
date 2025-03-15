@@ -34,7 +34,7 @@ analyze-tool = [
     "ra-ap-rustc_lexer",
     "serde_json",
 ]
-default = ["profiling"]
+default = []
 memory_profiling = ["profiling", "re_memory"] # Enhanced
 profiling = ["thag_proc_macros/profiling"] # Enable profiling in proc macros too
 tools = ["analyze-tool", "instrument-tool"] # Enable all tools

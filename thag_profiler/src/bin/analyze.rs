@@ -150,8 +150,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => println!("Invalid selection"),
         }
 
-        println!("\nPress Enter to continue...");
-        let _ = std::io::stdin().read_line(&mut String::new());
+        // println!("\nPress Enter to continue...");
+        // let _ = std::io::stdin().read_line(&mut String::new());
     }
 
     Ok(())
@@ -208,8 +208,8 @@ fn analyze_single_time_profile() -> ProfileResult<()> {
                     _ => println!("Unknown option"),
                 }
 
-                println!("\nPress Enter to continue...");
-                let _ = std::io::stdin().read_line(&mut String::new());
+                // println!("\nPress Enter to continue...");
+                // let _ = std::io::stdin().read_line(&mut String::new());
             }
             Ok(())
         }
@@ -288,8 +288,8 @@ fn analyze_memory_profiles() -> ProfileResult<()> {
                     _ => {}
                 }
 
-                println!("\nPress Enter to continue...");
-                let _ = std::io::stdin().read_line(&mut String::new());
+                // println!("\nPress Enter to continue...");
+                // let _ = std::io::stdin().read_line(&mut String::new());
             }
             Ok(())
         }
@@ -1052,30 +1052,29 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
             let mut current_memory = 0u64;
 
             for memory_event in &processed.memory_events {
-                // eprintln!(
-                //     "memory_data.bytes_allocated = {}; size = {}",
-                //     memory_data.bytes_allocated, memory_event.delta
-                // );
+                eprintln!(
+                    "memory_data.bytes_allocated = {}; size = {}",
+                    memory_data.bytes_allocated, memory_event.delta
+                );
 
-                // Convert to signed arithmetic to handle both allocations and deallocations
-                // memory_data.bytes_allocated =
-                //     (memory_data.bytes_allocated as i64 + memory_event.delta as i64) as u64;
-                // current_memory = (current_memory as i64 + memory_event.delta as i64) as u64;
-                if memory_event.operation == '+' {
-                    current_memory += memory_event.delta as u64;
-                    memory_data.bytes_allocated += memory_event.delta as u64;
-                    memory_data.allocation_count += 1;
-                    // Track allocation size distribution
-                    *memory_data
-                        .allocation_sizes
-                        .entry(memory_event.delta)
-                        .or_default() += 1;
-                } else if memory_event.operation == '-' {
-                    current_memory -= memory_event.delta as u64;
-                    memory_data.bytes_deallocated += memory_event.delta as u64;
-                    memory_data.deallocation_count += 1;
-                }
+                current_memory += memory_event.delta as u64;
+                memory_data.bytes_allocated += memory_event.delta as u64;
+                memory_data.allocation_count += 1;
+                // Track allocation size distribution
+                *memory_data
+                    .allocation_sizes
+                    .entry(memory_event.delta)
+                    .or_default() += 1;
+                // } else if memory_event.operation == '-' {
+                // }
                 memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
+                // Since each allocation comes from Profile::drop, as a first-order approximation
+                // we can assume they were deallocated, unless we're misattributing due to duplicate
+                // instances of the same function running in parallel with both leaky and non-leaky
+                // code paths .
+                current_memory -= memory_event.delta as u64;
+                memory_data.bytes_deallocated += memory_event.delta as u64;
+                memory_data.deallocation_count += 1;
 
                 // // Track allocation size distribution
                 // let size_abs = memory_event.delta;

@@ -1,22 +1,40 @@
-//! # `thag_profiler`
+//! # thag_profiler
 //!
-//! A Rust profiling library for measuring and analyzing code performance.
+//! A performance profiling library for Rust applications.
+//!
+//! ## Features
+//!
+//! - `time_profiling`: Enable time-based performance profiling (default)
+//! - `full_profiling`: Enable comprehensive profiling including time and memory usage
+//!
+//! ## Examples
+//!
+//! ```toml
+//! # Time profiling only (default)
+//! thag_profiler = { version = "0.1.0" }
+//!
+//! # Full profiling with memory tracking
+//! thag_profiler = { version = "0.1.0", features = ["full_profiling"] }
+//! ```
 //!
 //! ## Basic Usage
 //!
-//! ```
-//! use thag_profiler::{profile, profiled};
+//! ```rust
+//! use thag_profiler::Profile;
 //!
-//! #[profiled]
-//! fn my_function() {
-//!     // Function code
+//! // Time profiling
+//! {
+//!     let _p = Profile::new("my_function");
+//!     // Code to profile...
+//! }
 //!
-//!     let section = profile_section!("expensive part");
-//!     // Expensive operation
-//!     section.end();
+//! // Memory profiling (requires `full_profiling` feature)
+//! #[cfg(feature = "full_profiling")]
+//! {
+//!     let _p = Profile::new_memory("memory_intensive_function");
+//!     // Code to profile memory usage...
 //! }
 //! ```
-
 mod errors;
 pub mod profiling;
 
@@ -36,29 +54,33 @@ mod feature_tests {
     #[test]
     fn test_profiling_feature_flag_behavior() {
         // This test verifies the behavior of profiling features
-        
+
         #[cfg(feature = "profiling")]
         {
             // When compiled with the "profiling" feature but profiling is disabled at runtime,
             // is_profiling_enabled() should return false in test mode due to our special handling
-            assert!(!is_profiling_enabled(), 
+            assert!(!is_profiling_enabled(),
                 "With profiling feature enabled but disabled at runtime, is_profiling_enabled() should return false in test mode");
-            
+
             // We can enable profiling and it should work
             // Force set the state directly rather than using enable_profiling which might have side effects
             crate::profiling::force_set_profiling_state(true);
-            assert!(is_profiling_enabled(), 
-                "After enabling profiling, is_profiling_enabled() should return true");
-            
+            assert!(
+                is_profiling_enabled(),
+                "After enabling profiling, is_profiling_enabled() should return true"
+            );
+
             // Clean up
             crate::profiling::force_set_profiling_state(false);
         }
-        
+
         #[cfg(not(feature = "profiling"))]
         {
             // When compiled without the "profiling" feature, is_profiling_enabled() should always return false
-            assert!(!is_profiling_enabled(),
-                "Without profiling feature, is_profiling_enabled() should always return false");
+            assert!(
+                !is_profiling_enabled(),
+                "Without profiling feature, is_profiling_enabled() should always return false"
+            );
         }
     }
 }

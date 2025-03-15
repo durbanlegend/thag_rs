@@ -385,6 +385,27 @@ pub struct Profile {
 impl Profile {
     /// Creates a new `Profile` to profile a section of code.
     ///
+    /// This will track execution time by default. When the `full_profiling` feature
+    /// is enabled, it will also track memory usage if requested via `ProfileType`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use thag_profiler::{Profile, ProfileType};
+    ///
+    /// // Time profiling only
+    /// {
+    ///     let _p = Profile::new("time_only_function", ProfileType::Time);
+    ///     // Code to profile...
+    /// }
+    ///
+    /// // With memory profiling (requires `full_profiling` feature)
+    /// #[cfg(feature = "full_profiling")]
+    /// {
+    ///     let _p = Profile::new("memory_tracking_function", ProfileType::Memory);
+    ///     // Code to profile with memory tracking...
+    /// }
+    /// ```
     /// # Panics
     ///
     /// Panics if stack validation fails.

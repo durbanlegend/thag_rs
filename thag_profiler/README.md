@@ -1,36 +1,33 @@
 # thag_profiler
 
-A straightforward, lightweight profiling library for Rust applications that provides time and memory profiling with minimal overhead.
+A straightforward, lightweight profiling library for Rust applications that provides time profiling with minimal overhead, and memory profiling with
+an estimated 20-30% runtime overhead.
 
 ## Features
 
 - **Zero-cost abstraction**: No runtime overhead when profiling is disabled
 - **Time and memory profiling**: Track execution time or memory usage, or both.
-Note: the optional `memory_profiling` feature uses the re_memory global allocator. This is incompatible with specifying your own global allocator.
+Note: the optional `full_profiling` feature uses the `re_memory` crate's global allocator. This is incompatible with specifying your own global allocator.
 - **Function and section profiling**: Profile entire functions or specific code sections
 - **Async support**: Seamlessly works with async code
-- **Automatic instrumentation**: Tools to add and remove profiling code
-- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks
+- **Automatic instrumentation**: Tools to add and remove profiling code without losing comments or formatting (but verify!)
+- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks, do before-and-after comparisons
 - **Cross-platform**: Works on all platforms supported by Rust
 
-## Quick Start
-
-### Installation
+## Installation
 
 Add `thag_profiler` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-thag_profiler = "0.1"
+# For instrumentation only (default)
+thag_profiler = "0.1.0"
 
-# If you want to enable basic (time) profiling only:
-[features]
-my_profile_feature = ["thag_profiler/profiling"]
-```
+# For time profiling only
+thag_profiler = { version = "0.1.0", features = ["time_profiling"] }
 
-# If you want to enable memory profiling (this will also enable time profiling):
-[features]
-my_profile_feature = ["thag_profiler/memory_profiling"]
+# OR for comprehensive profiling (time + memory)
+thag_profiler = { version = "0.1.0", features = ["full_profiling"] }
 ```
 
 Install the profiling tools:
@@ -45,9 +42,11 @@ cargo install thag_profiler --features=remove-tool --bin thag-remove
 cargo install thag_profiler --features=analyze-tool --bin thag-analyze
 ```
 
-### Instrumenting Your Code
+## Quick Start
 
-Automatically instrument your code for profiling:
+### 1. Instrument Your Code
+
+#### a. Automatically instrument your code for profiling:
 
 Replace `2021` with your project's Rust edition:
 
@@ -61,12 +60,14 @@ thag-instrument 2021 < path/to/your/file.rs > path/to/your/instrumented_file.rs
 
 * Do not redirect the output to your source file! Trust Thag!
 
-* Compare generated code with original to ensure correctness before
+* Compare generated code with original to ensure correctness before overwriting
+any original code with instrumented code.
 
 Repeat for all modules you want to profile.
 
+####     ... AND / OR ...
 
-Or manually add profiling annotations:
+#### b. Manually add profiling annotations:
 
 ```rust
 use thag_profiler::{profiled, profile};
@@ -91,50 +92,57 @@ fn complex_operation() {
 }
 ```
 
-### Enabling Profiling
+### 2. Enable Profiling in Your Build
 
 #### Manifest info
 
-##### In Scripts Run with thag
+##### In Scripts run with the `thag` script runner
 
 When using `thag_profiler` in scripts, you have two options:
 
-1. **Enable via command line** (recommended):
-   ```bash
-   cargo run bank/mem_prof.rs --features=profile
-   ```
+**1. Enable via command line** (recommended):
 
-   With this script configuration:
-   ```rust
-   /*[toml]
-   [dependencies]
-   thag_profiler = { version = "0.1" }
+  ```bash
+  cargo run bank/mem_prof.rs --features=my_profiling
+  ```
 
-   [features]
-   profile = ["thag_profiler/profiling"]    # time profiling
-   # profile = ["thag_profiler/memory_profiling"]    # time and memoryprofiling
-   */
-   ```
+  With this script configuration:
 
-2. **Enable directly in the dependency**:
-   ```rust
-   /*[toml]
-   [dependencies]
-   thag_profiler = { version = "0.1", features = ["profiling"] }
-   */
-   ```
+  ```toml
+  /*[toml]
+  [dependencies]
+  thag_profiler = { version = "0.1" }
+
+  [features]
+  # For time profiling only
+  my_profiling = ["thag_profiler/time_profiling"]
+
+  # OR for comprehensive profiling (time + memory)
+  my_profiling = ["thag_profiler/full_profiling"]
+  ```
+
+**OR**
+
+**2. Enable directly in the dependency**:
+
+```rust
+/*[toml]
+[dependencies]
+thag_profiler = { version = "0.1", features = ["time_profiling"] }
+*/
+```
 
 ##### In Regular Cargo Projects
 
 In standard Cargo projects, the same options apply, only directly in Cargo.toml:
 
-1. **Use feature propagation**:
+**1. Use feature propagation**:
    ```toml
    [dependencies]
    thag_profiler = { version = "0.1" }
 
    [features]
-   my_profiling = ["thag_profiler/profiling"]
+   my_profiling = ["thag_profiler/time_profiling"]
    ```
 
    Then run with:
@@ -142,15 +150,23 @@ In standard Cargo projects, the same options apply, only directly in Cargo.toml:
    cargo run --features my_profiling
    ```
 
-2. **Enable directly in the dependency**:
+**OR**
+
+**2. Enable directly in the dependency**:
    ```toml
    [dependencies]
-   thag_profiler = { version = "0.1", features = ["profiling"] }
+   thag_profiler = { version = "0.1", features = ["time_profiling"] }
    ```
 
 #### In code
 
-Enable profiling by adding the #[enable_profiling] attribute to your main function:
+**EITHER**
+
+**1. With an attribute**
+
+Enable profiling by adding the #[enable_profiling] attribute to your main function.
+
+This is a compile-time attribute that is may be useful in certain development scenarios.
 
 ```rust
 use thag_profiler::profiled;
@@ -161,7 +177,14 @@ fn main() {
 }
 ```
 
-Or programmatically:
+**OR**
+
+
+**2. Programmatically**
+
+This is is more flexible as it allows you to enable or disable profiling at runtime according to
+command-line input, environment variables etc. You can also use it to restrict fully-instrumented
+code to only basic time profiling.
 
 ```rust
 use thag_profiler::{profiling::enable_profiling, ProfileType};
@@ -174,9 +197,12 @@ fn main() {
 }
 ```
 
-### Analyzing Results
+### 3. Run Your Application
 
-After running your program, analyze the results:
+### 4. Analyze Results
+
+After running your application with profiling enabled, folded stack files will be generated in the current working directory.
+Use the included analysis tool to visualize the results:
 
 ```bash
 thag-analyze
@@ -228,6 +254,29 @@ fn main() { /* ... */ }
 fn allocating_function() { /* ... */ }
 ```
 
+### Controlling Profiling at Runtime
+
+You can programmatically control profiling:
+
+```rust
+use thag_profiler::profiling;
+
+fn main() {
+    // Enable profiling programmatically
+    profiling::enable_profiling();
+
+    // Run code with profiling...
+
+    // Disable profiling for a section
+    profiling::disable_profiling();
+    run_unprofiled_section();
+
+    // Re-enable for another section
+    profiling::enable_profiling();
+    run_profiled_section();
+}
+```
+
 ### Code Section Profiling with `profile!`
 
 Use the `profile!` macro to profile specific sections of code:
@@ -263,9 +312,37 @@ fn complex_function() {
 }
 ```
 
-### Conditional Compilation
+### Nesting Profiles
 
-You can conditionally apply profiling:
+Profiles can be nested to track hierarchical operations:
+
+```rust
+use thag_profiler::profile;
+
+fn complex_operation() {
+    let meal_section = profile!("3_course_meal");
+
+    let starter_section = profile!("starter");
+    // Starter course code...
+    starter_section.end();
+
+    let mains_section = profile!("main_course");
+    // Main course code...
+    mains_section.end();
+
+    let dessert_section = profile!("dessert");
+    // Dessert course code...
+    dessert_section.end();  // Optional if about to go out of scope anyway
+
+    meal_section.end();  // Optional if about to go out of scope anywa
+}
+```
+
+### Conditional Profiling
+
+You can conditionally enable profiling based on build configuration:
+
+**1. Attribute macro example**
 
 ```rust
 // Only apply profiling when a feature is enabled
@@ -276,6 +353,84 @@ fn expensive_calculation() { /* ... */ }
 #[cfg_attr(debug_assertions, profiled)]
 fn complex_operation() { /* ... */ }
 ```
+
+
+**2. Declarative macro example**
+
+```rust
+fn process_data(data: &[u8]) {
+    // Only include profiling in debug builds
+    #[cfg(debug_assertions)]
+    let process_section = profile!("process_data");
+
+    // Your code here...
+
+    #[cfg(debug_assertions)]
+    process_section.end();
+
+    ...
+}
+```
+
+### Memory Profiling Details
+
+When using memory profiling (with the `full_profiling` feature), you can choose
+to do very limited and specific profiling:
+
+```rust
+#[cfg(feature = "full_profiling")]
+use thag_profiler::{Profile, ProfileType};
+
+fn memory_intensive_operation() {
+    #[cfg(feature = "full_profiling")]
+    let _p = Profile::new("memory_operation", ProfileType::Memory);
+
+    // This will track memory allocations and deallocations
+    let large_vec = vec![0; 1_000_000];
+
+    // Process the vector...
+
+    // Memory will be reported when _p goes out of scope
+}
+```
+
+## How It Works
+
+### Time Profiling
+
+Time profiling measures the wall-clock time between profile creation and destruction. It has minimal overhead and is suitable for most performance investigations.
+
+### Memory Profiling
+
+Disclaimer: `thag_profiler` memory profiling aims to provide a practical and convenient solution to memory profiling that is compatible with async operation.
+
+Memory profiling (available with the `full_profiling` feature) tracks heap allocations during the profiled section. It uses the `re_memory` crate, which
+works by installing a global memory allocator that uses sampling to track allocation events with their call stacks. When a `thag_profiler` `Profile` is dropped,
+as its final act it retrieves the tracking data from the `re_memory` allocator, finds the matching call stack and reports the associated usage estimate based on
+the sampled data.
+
+The memory allocation estimates in `thag_profiler` are thus a best estimate based on sampled data. They are intended to provide a rough first-order estimate of memory
+usage and identify hotspots. They can't cater for secondary effects such as multiple instances of the same function or code section running in parallel, so read
+the stats, flamegraphs and flamecharts with that caveat. They should certainly not be relied upon for precise measurements.
+
+I've tried various options and this is the best I've found so far. If you have any suggestions or improvements, please feel free to open an issue. If you prefer
+to use a different analysis tool like `valgrind` or `heaptrack`, you can disable `thag_profiler` memory profiling by removing the `full_profiling` feature or
+downgrading to the `time_profiling` feature.
+
+**Note:** Memory profiling is about memory analysis, not about speed. `thag_profiler` memory profiling has distinctly higher overhead than time profiling and will
+noticeably affect performance. In my testing I've found the effect to be about a 20-30% increase in run time.
+It's recommended to use it selectively for occasional health checks and targeted investigations in development rather than leave it enabled indefinitely.
+
+### Profile Output
+
+Profiles generate "folded" stack traces in the output directory:
+
+- `your_program-<yyyymmdd>-<hhmmss>.folded`: Time profiling data
+
+- `your_program-<yyyymmdd>-<hhmmss>-memory.folded`: Memory profiling data (if enabled)
+
+These files can be visualized with the included analyzer or with tools like [Inferno](https://github.com/jonhoo/inferno).
+
 
 ### Profiling Tools
 
@@ -311,13 +466,12 @@ thag-remove 2021 < path/to/your/instrumented_file.rs > path/to/your/de-instrumen
 
 * Replace `2021` with your project's Rust edition.
 
-* Do not redirect the output to your source file! Trust Thag!
+* Do not redirect the output back to your source file in the same command! Trust Thag!
 
 * In the case of thag-remove, you may need to remove the relevant imports manually.
 
 * Compare the original and instrumented files to ensure correctness, especially if
 you're using a custom edition.
-
 
   E.g.  Comparing before and after with `vimdiff`:
 
@@ -350,10 +504,10 @@ By using the tools, you agree to the license terms. Take precautions not to over
 
 The analyzer provides:
 
-1. **Statistical Summary**: Shows function calls, total time, average time
-2. **Interactive Flamegraphs and Flamecharts**: Visual representation of performance data, both cumulative and detailed
-3. **Differential Analysis**: Compare before/after optimizations (cumulative)
-4. **Memory Allocation Tracking**: Identify memory usage patterns
+**1. Statistical Summary**: Shows function calls, total time, average time
+**2. Interactive Flamegraphs and Flamecharts**: Visual representation of performance data, both cumulative and detailed
+**3. Differential Analysis**: Compare before/after optimizations (cumulative)
+**4. Memory Allocation Tracking**: Identify memory usage patterns
 
 ### Flamegraphs and Flamecharts
 
@@ -384,16 +538,16 @@ For the memory flamechart, it adheres to `inferno`'s memory-optimized color sche
 
 ## Best Practices
 
-1. **Profile representative workloads**: Make sure your test cases represent real-world usage
-2. **Focus on hot paths**: Look for the widest blocks in your flamechart - these are your performance bottlenecks
-3. **Compare before/after**: Always compare profiles before and after optimization
-4. **Watch for memory bloat**: Use memory profiling to identify excessive allocations
-5. **Verify changes**: Always verify automated changes with a diff tool
+**1. Profile representative workloads**: Make sure your test cases represent real-world usage
+**2. Focus on hot paths**: Look for the widest blocks in your flamechart - these are your performance bottlenecks
+**3. Compare before/after**: Always compare profiles before and after optimization
+**4. Watch for memory bloat**: Use memory profiling to identify excessive allocations
+**5. Verify changes**: Always verify automated changes with a diff tool
 
 ## Testing with Profiled Code
 
-TODO Re-check:
-When writing tests that use profiled functions, use the `serial_test` crate:
+When writing tests that use profiled functions, use the `serial_test` crate or some other serialization mechanism
+to ensure only one test runs at a time for thread safety:
 
 ```rust
 use serial_test::serial;
@@ -405,23 +559,23 @@ fn test_profiled_function() {
 }
 ```
 
-This is important because `thag_profiler` maintains global state that isn't thread-safe.
+This is important because `thag_profiler` maintains some global state that isn't thread-safe (although this shouldn't affect async profiling per se).
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Missing profile output**: Ensure profiling is enabled and you have write permissions in the current directory
-2. **Test failures**: TODO confirm: Profiled tests must use the `#[serial]` attribute
-3. **Performance impact**: Memory profiling adds some overhead
-4. **File redirect issues**: Never redirect output from the instrumentation tools back to the input file
+**1. Missing profile output**: Ensure profiling is enabled and you have write permissions in the current directory
+**2. Test failures**: TODO confirm: Profiled tests must use the `#[serial]` attribute
+**3. Performance impact**: Memory profiling adds some overhead
+**4. File redirect issues**: Never redirect output from the instrumentation tools back to the input file
 
 ### Inspecting Profile Files
 
 The folded stack files are human-readable:
 
 ```bash
-head your-executable-timestamp.folded
+head your_executable-<yyyymmdd>-<hhmmss>.folded
 ```
 
 ## License
@@ -437,7 +591,7 @@ or
     MIT license (LICENSE-MIT or http://opensource.org/licenses/MIT)
 
 as you prefer.
-`
+
 ## Contributing
 
 Contributions will be considered (under MIT/Apache 2 license) if they align with the aims of the project.

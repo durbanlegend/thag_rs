@@ -1317,6 +1317,7 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ProfileResult<()>
 
 #[allow(clippy::cast_precision_loss)]
 fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<ProcessedProfile> {
+    // First provide memory pattern selection
     let patterns = vec![
         "Large allocations (>1MB)",
         "Temporary allocations",
@@ -1325,19 +1326,12 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
         "Custom pattern...",
     ];
 
-    let selected = MultiSelect::new("Select memory patterns to filter out:", patterns)
+    let selected_patterns = MultiSelect::new("Select memory patterns to filter out:", patterns)
         .prompt()
         .map_err(|e| ProfileError::General(e.to_string()))?;
 
-    // If nothing selected, return unfiltered profile
-    if selected.is_empty() {
-        println!("No patterns selected - showing all entries");
-        return Ok(profile.clone());
-    }
-
     // Handle custom pattern if selected
-    #[allow(clippy::cast_precision_loss)]
-    let custom_pattern = if selected.contains(&"Custom pattern...") {
+    let custom_pattern = if selected_patterns.contains(&"Custom pattern...") {
         inquire::Text::new("Enter custom pattern to filter (e.g., 'vec' or 'string'):")
             .prompt()
             .map_err(|e| ProfileError::General(e.to_string()))?
@@ -1345,69 +1339,216 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
         String::new()
     };
 
-    // Track filtering statistics
-    let mut filter_stats: HashMap<&str, usize> = HashMap::new();
-    let total_entries = profile.stacks.len();
+    // Create a filtered profile based on memory patterns
+    let pattern_filtered = if !selected_patterns.is_empty() {
+        // Track filtering statistics
+        let mut filter_stats: HashMap<&str, usize> = HashMap::new();
+        let total_entries = profile.stacks.len();
 
-    // Create a new filtered profile
-    let mut filtered = profile.clone();
-    filtered.stacks = profile
+        // Create a new filtered profile
+        let mut filtered = profile.clone();
+        filtered.stacks = profile
+            .stacks
+            .iter()
+            .filter(|stack| {
+                selected_patterns.iter().any(|&pattern| {
+                    let matches = if pattern == "Custom pattern..." {
+                        stack
+                            .to_lowercase()
+                            .contains(&custom_pattern.to_lowercase())
+                    } else {
+                        matches_memory_pattern(stack, pattern)
+                    };
+                    if matches {
+                        *filter_stats.entry(pattern).or_insert(0) += 1;
+                    }
+                    !matches
+                })
+            })
+            .cloned()
+            .collect();
+
+        // Display filtering statistics
+        println!("\nPattern Filtering Statistics:");
+        println!("============================");
+        println!("Total entries: {total_entries}");
+
+        let mut total_filtered = 0;
+        for pattern in &selected_patterns {
+            let count = filter_stats.get(pattern).copied().unwrap_or(0);
+            total_filtered = total_filtered.max(count); // Use max to avoid double-counting
+            let percentage = (count as f64 / total_entries as f64 * 100.0).round();
+            if pattern == &"Custom pattern..." {
+                println!("Pattern '{custom_pattern}': {count} entries ({percentage:.1}%)");
+            } else {
+                println!("Pattern '{pattern}': {count} entries ({percentage:.1}%)");
+            }
+        }
+
+        let remaining = filtered.stacks.len();
+        let remaining_percentage = (remaining as f64 / total_entries as f64 * 100.0).round();
+        let filtered_percentage = (total_filtered as f64 / total_entries as f64 * 100.0).round();
+
+        println!("\nPattern Filtering Summary:");
+        println!("Entries remaining: {remaining} ({remaining_percentage:.1}%)");
+        println!("Entries filtered:  {total_filtered} ({filtered_percentage:.1}%)");
+
+        if filtered.stacks.is_empty() {
+            println!("\nWarning: All entries were filtered out by patterns.");
+            println!("Continuing with unfiltered profile for function filtering.");
+            profile.clone()
+        } else {
+            filtered
+        }
+    } else {
+        profile.clone()
+    };
+
+    // Now add function-based filtering similar to filter_functions
+
+    // Get unique top-level functions from the stacks
+    let functions: HashSet<_> = pattern_filtered
         .stacks
         .iter()
-        .filter(|stack| {
-            selected.iter().any(|&pattern| {
-                let matches = if pattern == "Custom pattern..." {
-                    stack
-                        .to_lowercase()
-                        .contains(&custom_pattern.to_lowercase())
-                } else {
-                    matches_memory_pattern(stack, pattern)
-                };
-                if matches {
-                    *filter_stats.entry(pattern).or_insert(0) += 1;
-                }
-                !matches
-            })
+        .filter_map(|line| {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                // Extract stack trace part (without the size at the end)
+                let stack_str = parts[..parts.len() - 1].join(" ");
+                // Get the root function from the stack
+                stack_str.split(';').next().filter(|s| !s.is_empty())
+            } else {
+                None
+            }
         })
-        .cloned()
         .collect();
 
-    // Display filtering statistics
-    println!("\nFiltering Statistics:");
-    println!("====================");
-    println!("Total entries: {total_entries}");
+    let mut function_list: Vec<_> = functions.into_iter().collect();
+    function_list.sort_unstable();
 
-    let mut total_filtered = 0;
-    for pattern in &selected {
-        let count = filter_stats.get(pattern).copied().unwrap_or(0);
-        total_filtered = total_filtered.max(count); // Use max to avoid double-counting
-        let percentage = (count as f64 / total_entries as f64 * 100.0).round();
-        if pattern == &"Custom pattern..." {
-            println!("Pattern '{custom_pattern}': {count} entries ({percentage:.1}%)");
+    if function_list.is_empty() {
+        println!("No unique functions found to filter.");
+        return Ok(pattern_filtered);
+    }
+
+    // Display information about filtering modes
+    println!("\nThere are two filtering modes available:");
+    println!("  1. Recursive: Removes functions and all their child calls");
+    println!(
+        "     For example, filtering out 'main' will remove main and everything called by main"
+    );
+    println!("  2. Exact Match: Removes functions ONLY as standalone entries but preserves them when they have children");
+    println!("     For example, filtering out 'allocate_buffer' will remove standalone 'allocate_buffer' entries");
+    println!("     but will keep 'allocate_buffer;copy_data' entries\n");
+
+    // Ask user to select filtering mode
+    let filter_mode = inquire::Select::new(
+        "Select filtering mode:",
+        vec![
+            "Recursive (filter out function and ALL its children)",
+            "Exact Match (filter out function only when it has NO children)",
+        ],
+    )
+    .prompt()
+    .map_err(|e| ProfileError::General(e.to_string()))?;
+
+    let exact_match = filter_mode.starts_with("Exact Match");
+
+    // Select functions to filter
+    println!(
+        "\nUsing {} filtering mode",
+        if exact_match {
+            "Exact Match"
         } else {
-            println!("Pattern '{pattern}': {count} entries ({percentage:.1}%)");
+            "Recursive"
         }
+    );
+
+    let to_filter = MultiSelect::new("Select functions to filter out:", function_list)
+        .prompt()
+        .map_err(|e| ProfileError::General(e.to_string()))?;
+
+    if to_filter.is_empty() {
+        println!("No functions selected for filtering.");
+        return Ok(pattern_filtered);
     }
 
-    let remaining = filtered.stacks.len();
-    let remaining_percentage = (remaining as f64 / total_entries as f64 * 100.0).round();
-    let filtered_percentage = (total_filtered as f64 / total_entries as f64 * 100.0).round();
+    // Apply appropriate filtering based on the chosen mode
+    let filtered_stacks: Vec<String> = if exact_match {
+        // In exact match mode, we need to keep any stack where the filtered function
+        // has children (i.e., is part of a call chain)
+        pattern_filtered
+            .stacks
+            .iter()
+            .filter(|line| {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() < 2 {
+                    return true; // Keep lines that don't match our expected format
+                }
 
-    println!("\nSummary:");
-    println!("Entries remaining: {remaining} ({remaining_percentage:.1}%)");
-    println!("Entries filtered:  {total_filtered} ({filtered_percentage:.1}%)");
+                // Extract stack trace part (without the size at the end)
+                let stack_str = parts[..parts.len() - 1].join(" ");
 
-    if filtered.stacks.is_empty() {
-        println!(
-            "\nWarning: All entries were filtered out. Displaying unfiltered profile instead."
-        );
-        println!("Consider adjusting your filter criteria.");
-        println!("\nPress Enter to continue with unfiltered display...");
-        let _ = std::io::stdin().read_line(&mut String::new());
-        Ok(profile.clone())
+                // First, extract the root function name
+                let root_func = stack_str.split(';').next().unwrap_or("");
+
+                // If the root function is in our filter list
+                if to_filter.contains(&root_func) {
+                    // Check if this is a multi-function stack (has children)
+                    let stack_parts = stack_str.split(';').collect::<Vec<_>>();
+                    return stack_parts.len() > 1;
+                }
+
+                // If the function is not in our filter list, keep it
+                true
+            })
+            .cloned()
+            .collect()
     } else {
-        Ok(filtered)
-    }
+        // Recursive mode: filter out function and all its children
+        pattern_filtered
+            .stacks
+            .iter()
+            .filter(|line| {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() < 2 {
+                    return true; // Keep lines that don't match our expected format
+                }
+
+                // Extract stack trace part (without the size at the end)
+                let stack_str = parts[..parts.len() - 1].join(" ");
+
+                // Get the root function name
+                let func = stack_str.split(';').next().unwrap_or("");
+
+                // If it's in the filter list, filter it out
+                !to_filter.contains(&func)
+            })
+            .cloned()
+            .collect()
+    };
+
+    // Track function filtering statistics
+    let function_filtered_count = pattern_filtered.stacks.len() - filtered_stacks.len();
+    let function_filtered_percent = if pattern_filtered.stacks.is_empty() {
+        0.0
+    } else {
+        (function_filtered_count as f64 / pattern_filtered.stacks.len() as f64) * 100.0
+    };
+
+    println!("\nFunction Filtering Statistics:");
+    println!("============================");
+    println!(
+        "Functions filtered: {} of {} ({:.1}%)",
+        function_filtered_count,
+        pattern_filtered.stacks.len(),
+        function_filtered_percent
+    );
+
+    Ok(ProcessedProfile {
+        stacks: filtered_stacks,
+        ..pattern_filtered.clone() // Keep the metadata
+    })
 }
 
 fn matches_memory_pattern(stack: &str, pattern: &str) -> bool {
